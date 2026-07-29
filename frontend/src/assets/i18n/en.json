@@ -1,0 +1,14 @@
+{
+  "dashboard": {
+    "kycBanner": "Complete your KYC verification to unlock payouts.",
+    "direct": "Direct",
+    "matching": "Matching",
+    "total": "Total",
+    "withdraw": "Withdraw",
+    "projectedMatch": "Will match at cycle close",
+    "nextRank": "Next rank",
+    "recordSale": "+ Record Sale",
+    "addReferral": "+ Add Referral",
+    "cycleCloses": "Cycle closes in {{days}} days"
+  }
+}
