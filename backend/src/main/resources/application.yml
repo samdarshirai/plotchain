@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/plotchain
+    username: plotchain
+    password: plotchain
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
+compensation:
+  preview-matching-rate: 0.07
