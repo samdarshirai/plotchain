@@ -46,7 +46,6 @@ CREATE INDEX idx_ledger_associate_cycle ON ledger_entry(associate_id, cycle_id);
 
 CREATE TABLE leg_volume (
     id UUID PRIMARY KEY,
-    tenant_id UUID NOT NULL,
     associate_id UUID NOT NULL REFERENCES associate(id),
     cycle_id UUID NOT NULL REFERENCES cycle(id),
     left_leg_volume NUMERIC(14,2) NOT NULL DEFAULT 0,

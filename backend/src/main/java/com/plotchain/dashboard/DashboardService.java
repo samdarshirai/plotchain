@@ -73,7 +73,7 @@ public class DashboardService {
         BigDecimal total = ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycle.getId());
 
         LegVolume legVolume = legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycle.getId())
-            .orElseGet(() -> LegVolume.empty(associateId, cycle.getId(), associate.getTenantId()));
+            .orElseGet(() -> LegVolume.empty(associateId, cycle.getId()));
         BigDecimal projectedMatch = legVolume.getLeftLegVolume()
             .min(legVolume.getRightLegVolume())
             .multiply(previewMatchingRate);

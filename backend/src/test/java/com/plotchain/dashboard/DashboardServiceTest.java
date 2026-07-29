@@ -77,7 +77,7 @@ class DashboardServiceTest {
         RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, BigDecimal.valueOf(5000));
         RankTier nextRank = new RankTier(nextRankId, "Sales Executive", 2, BigDecimal.valueOf(10000));
 
-        LegVolume legVolume = LegVolume.empty(associateId, cycleId, tenantId);
+        LegVolume legVolume = LegVolume.empty(associateId, cycleId);
 
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
