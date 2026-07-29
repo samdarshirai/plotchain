@@ -42,6 +42,12 @@ export class AuthService {
     return localStorage.getItem(MUST_CHANGE_KEY) === 'true';
   }
 
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.post<void>('/api/associates/me/password', { currentPassword, newPassword }).pipe(
+      tap(() => localStorage.setItem(MUST_CHANGE_KEY, 'false'))
+    );
+  }
+
   // Reads the JWT payload for client-side routing decisions only. The signature is NOT
   // verified here and cannot be — the backend is the only authority on token validity. This
   // exists so an expired token routes to /login without a round-trip, not as a security check.

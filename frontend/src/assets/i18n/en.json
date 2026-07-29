@@ -19,6 +19,11 @@
     "passwordLabel": "Password",
     "loginButton": "Log In",
     "loginError": "Invalid email or password. Please try again.",
-    "logout": "Log Out"
+    "logout": "Log Out",
+    "changePasswordTitle": "Change Your Password",
+    "currentPasswordLabel": "Current Password",
+    "newPasswordLabel": "New Password",
+    "changePasswordButton": "Change Password",
+    "changePasswordError": "Could not change your password. Please check your current password and try again."
   }
 }

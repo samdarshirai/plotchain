@@ -8,4 +8,10 @@ describe('routes', () => {
     expect(dashboardRoute).toBeTruthy();
     expect(dashboardRoute!.canActivate).toContain(authGuard);
   });
+
+  it('exposes a change-password route behind the auth guard', () => {
+    const route = routes.find(r => r.path === 'change-password');
+    expect(route).toBeTruthy();
+    expect(route!.canActivate).toContain(authGuard);
+  });
 });

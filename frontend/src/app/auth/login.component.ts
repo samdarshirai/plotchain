@@ -41,7 +41,7 @@ export class LoginComponent {
     }
     const { email, password } = this.form.getRawValue();
     this.authService.login(email!, password!).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
+      next: response => this.router.navigate([response.mustChangePassword ? '/change-password' : '/dashboard']),
       error: () => this.error = true
     });
   }

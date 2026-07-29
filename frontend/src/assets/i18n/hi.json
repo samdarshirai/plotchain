@@ -19,6 +19,11 @@
     "passwordLabel": "पासवर्ड",
     "loginButton": "लॉग इन करें",
     "loginError": "ईमेल या पासवर्ड गलत है। कृपया पुनः प्रयास करें।",
-    "logout": "लॉग आउट"
+    "logout": "लॉग आउट",
+    "changePasswordTitle": "अपना पासवर्ड बदलें",
+    "currentPasswordLabel": "वर्तमान पासवर्ड",
+    "newPasswordLabel": "नया पासवर्ड",
+    "changePasswordButton": "पासवर्ड बदलें",
+    "changePasswordError": "आपका पासवर्ड नहीं बदला जा सका। कृपया अपना वर्तमान पासवर्ड जांचें और पुनः प्रयास करें।"
   }
 }
