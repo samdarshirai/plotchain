@@ -16,7 +16,7 @@ public class Associate {
     private UUID parentId;
     private String position;
     private String name;
-    @Column(name = "rank_id", nullable = false)
+    @Column(name = "rank_id")
     private UUID rankId;
     @Enumerated(EnumType.STRING)
     @Column(name = "kyc_status", nullable = false)
@@ -34,6 +34,8 @@ public class Associate {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AssociateRole role;
+    @Column(name = "must_change_password", nullable = false)
+    private boolean mustChangePassword;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -61,4 +63,6 @@ public class Associate {
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
     public AssociateRole getRole() { return role; }
     public void setRole(AssociateRole role) { this.role = role; }
+    public boolean isMustChangePassword() { return mustChangePassword; }
+    public void setMustChangePassword(boolean mustChangePassword) { this.mustChangePassword = mustChangePassword; }
 }

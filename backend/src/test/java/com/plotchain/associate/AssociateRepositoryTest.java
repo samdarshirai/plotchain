@@ -88,6 +88,23 @@ class AssociateRepositoryTest {
         assertThat(found).isEmpty();
     }
 
+    @Test
+    void persistsAnAdminWithoutARank() {
+        Associate admin = newAssociate(null, null, null);
+        admin.setRole(AssociateRole.ADMIN);
+        admin.setRankId(null);
+        admin.setMustChangePassword(true);
+        associateRepository.save(admin);
+        entityManager.flush();
+        entityManager.clear();
+
+        Associate found = associateRepository.findById(admin.getId()).orElseThrow();
+
+        assertThat(found.getRankId()).isNull();
+        assertThat(found.getRole()).isEqualTo(AssociateRole.ADMIN);
+        assertThat(found.isMustChangePassword()).isTrue();
+    }
+
     // Uses the JVM default zone (matching how the DATE query params below are interpreted
     // against the TIMESTAMP-without-timezone joined_at column) so the boundary lines up.
     private static Instant instantAt(LocalDate date, LocalTime time) {
