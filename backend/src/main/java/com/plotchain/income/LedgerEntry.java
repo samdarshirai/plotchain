@@ -10,8 +10,6 @@ import java.util.UUID;
 public class LedgerEntry {
     @Id
     private UUID id;
-    @Column(name = "tenant_id", nullable = false)
-    private UUID tenantId;
     @Column(name = "associate_id", nullable = false)
     private UUID associateId;
     @Enumerated(EnumType.STRING)
@@ -35,8 +33,6 @@ public class LedgerEntry {
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
-    public UUID getTenantId() { return tenantId; }
-    public void setTenantId(UUID tenantId) { this.tenantId = tenantId; }
     public UUID getAssociateId() { return associateId; }
     public void setAssociateId(UUID associateId) { this.associateId = associateId; }
     public IncomeType getIncomeType() { return incomeType; }

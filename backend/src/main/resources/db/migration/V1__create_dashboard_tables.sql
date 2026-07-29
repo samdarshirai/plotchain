@@ -29,7 +29,6 @@ CREATE TABLE cycle (
 
 CREATE TABLE ledger_entry (
     id UUID PRIMARY KEY,
-    tenant_id UUID NOT NULL,
     associate_id UUID NOT NULL REFERENCES associate(id),
     income_type VARCHAR(30) NOT NULL CHECK (income_type IN ('DIRECT','MATCHING','SPONSOR_MATCHING','ROYALTY','REWARD','PERK')),
     cycle_id UUID NOT NULL REFERENCES cycle(id),
