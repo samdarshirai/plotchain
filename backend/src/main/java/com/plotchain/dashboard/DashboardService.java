@@ -110,7 +110,7 @@ public class DashboardService {
 
         long daysRemaining = Math.max(0, ChronoUnit.DAYS.between(LocalDate.now(), cycle.getPeriodEnd()));
 
-        List<Announcement> announcements = announcementRepository.findTop5ByTenantIdOrderByPublishedAtDesc(associate.getTenantId());
+        List<Announcement> announcements = announcementRepository.findTop5ByOrderByPublishedAtDesc();
 
         return new DashboardResponse(
             associate.getKycStatus() != KycStatus.VERIFIED,

@@ -62,10 +62,9 @@ CREATE TABLE wallet (
 
 CREATE TABLE announcement (
     id UUID PRIMARY KEY,
-    tenant_id UUID NOT NULL,
     title VARCHAR(300) NOT NULL,
     body TEXT NOT NULL,
     published_at TIMESTAMP NOT NULL,
     audience VARCHAR(50) NOT NULL DEFAULT 'ALL'
 );
-CREATE INDEX idx_announcement_tenant_published ON announcement(tenant_id, published_at DESC);
+CREATE INDEX idx_announcement_published ON announcement(published_at DESC);

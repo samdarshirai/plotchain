@@ -96,7 +96,7 @@ class DashboardServiceTest {
         when(associateRepository.countDownline(associateId, tenantId)).thenReturn(12L);
         when(associateRepository.countActiveToday(any(), any(), any())).thenReturn(3L);
         when(associateRepository.countJoinedBetween(any(), any(), any(), any())).thenReturn(2L);
-        when(announcementRepository.findTop5ByTenantIdOrderByPublishedAtDesc(tenantId)).thenReturn(List.of());
+        when(announcementRepository.findTop5ByOrderByPublishedAtDesc()).thenReturn(List.of());
 
         DashboardResponse response = dashboardService.getDashboard(associateId);
 
