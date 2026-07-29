@@ -1,13 +1,11 @@
 package com.plotchain.dashboard;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-// SECURITY: no authN/authZ yet — associateId is caller-supplied and unauthenticated.
-// Gated by the not-yet-written auth plan (see plan's Global Constraints).
 @RestController
 public class DashboardController {
 
@@ -17,8 +15,8 @@ public class DashboardController {
         this.dashboardService = dashboardService;
     }
 
-    @GetMapping("/api/associates/{associateId}/dashboard")
-    public DashboardResponse getDashboard(@PathVariable UUID associateId) {
+    @GetMapping("/api/associates/me/dashboard")
+    public DashboardResponse getDashboard(@AuthenticationPrincipal UUID associateId) {
         return dashboardService.getDashboard(associateId);
     }
 }

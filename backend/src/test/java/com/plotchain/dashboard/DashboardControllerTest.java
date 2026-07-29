@@ -1,6 +1,21 @@
 package com.plotchain.dashboard;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plotchain.announcement.AnnouncementRepository;
+import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateRole;
+import com.plotchain.associate.KycStatus;
+import com.plotchain.auth.JwtService;
+import com.plotchain.cycle.Cycle;
+import com.plotchain.cycle.CycleRepository;
+import com.plotchain.cycle.CycleStatus;
+import com.plotchain.income.LedgerEntryRepository;
+import com.plotchain.legvolume.LegVolume;
+import com.plotchain.legvolume.LegVolumeRepository;
+import com.plotchain.rank.RankTier;
+import com.plotchain.rank.RankTierRepository;
+import com.plotchain.wallet.Wallet;
+import com.plotchain.wallet.WalletRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -10,62 +25,112 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// @MockBean on the 7 repository INTERFACES (not on the concrete DashboardService) so this
+// runs a real DashboardService inside a real Spring Security filter chain — proving auth
+// actually gates this route — while avoiding the JDK25/ByteBuddy concrete-class-mocking
+// issue entirely (interfaces mock fine; see AuthControllerTest/DashboardServiceTest).
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class DashboardControllerTest {
 
     @Autowired MockMvc mockMvc;
-    @MockBean DashboardService dashboardService;
+    @Autowired JwtService jwtService;
+
+    @MockBean AssociateRepository associateRepository;
+    @MockBean RankTierRepository rankTierRepository;
+    @MockBean CycleRepository cycleRepository;
+    @MockBean LedgerEntryRepository ledgerEntryRepository;
+    @MockBean LegVolumeRepository legVolumeRepository;
+    @MockBean WalletRepository walletRepository;
+    @MockBean AnnouncementRepository announcementRepository;
+
+    private String tokenFor(UUID associateId) {
+        Associate token = new Associate();
+        token.setId(associateId);
+        token.setRole(AssociateRole.ASSOCIATE);
+        return jwtService.generateToken(token);
+    }
 
     @Test
-    void returnsDashboardJsonForKnownAssociate() throws Exception {
+    void returnsDashboardJsonForTheAuthenticatedAssociate() throws Exception {
         UUID associateId = UUID.randomUUID();
         UUID cycleId = UUID.randomUUID();
-        DashboardResponse response = new DashboardResponse(
-            true,
-            new DashboardResponse.CycleIncome(cycleId, BigDecimal.valueOf(1000), BigDecimal.valueOf(500), BigDecimal.valueOf(1500)),
-            new DashboardResponse.WalletSummary(BigDecimal.valueOf(2500)),
-            new DashboardResponse.LegVolumeSummary(BigDecimal.valueOf(3000), BigDecimal.valueOf(2000), BigDecimal.ZERO, BigDecimal.valueOf(1000), BigDecimal.valueOf(140)),
-            new DashboardResponse.RankProgress("Sales Associate", 1, "Sales Executive", 40, BigDecimal.valueOf(6000)),
-            new DashboardResponse.TeamSnapshot(12, 3, 2),
-            new DashboardResponse.CycleCountdown(cycleId, 10),
-            List.of()
-        );
-        when(dashboardService.getDashboard(associateId)).thenReturn(response);
+        UUID currentRankId = UUID.randomUUID();
 
-        mockMvc.perform(get("/api/associates/{associateId}/dashboard", associateId))
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRankId(currentRankId);
+        associate.setKycStatus(KycStatus.VERIFIED);
+        associate.setCumulativeMatchedVolume(BigDecimal.ZERO);
+
+        Cycle cycle = new Cycle();
+        cycle.setId(cycleId);
+        cycle.setStatus(CycleStatus.OPEN);
+        cycle.setPeriodStart(LocalDate.now().minusDays(5));
+        cycle.setPeriodEnd(LocalDate.now().plusDays(10));
+
+        RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, BigDecimal.valueOf(5000));
+
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(cycle));
+        when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(any(), any(), any())).thenReturn(BigDecimal.ZERO);
+        when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(legVolumeRepository.findByAssociateIdAndCycleId(any(), any()))
+            .thenReturn(Optional.of(LegVolume.empty(associateId, cycleId)));
+        when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
+        when(associateRepository.countDownline(any())).thenReturn(12L);
+        when(associateRepository.countActiveToday(any(), any())).thenReturn(3L);
+        when(associateRepository.countJoinedBetween(any(), any(), any())).thenReturn(2L);
+        when(announcementRepository.findTop5ByOrderByPublishedAtDesc()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/associates/me/dashboard")
+                .header("Authorization", "Bearer " + tokenFor(associateId)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.kycPendingBannerVisible").value(true))
-            .andExpect(jsonPath("$.cycleIncome.directIncome").value(1000))
             .andExpect(jsonPath("$.teamSnapshot.totalDownline").value(12));
+    }
+
+    @Test
+    void returns401WithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/associates/me/dashboard"))
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
     void returns404WhenAssociateNotFound() throws Exception {
         UUID associateId = UUID.randomUUID();
-        when(dashboardService.getDashboard(associateId))
-            .thenThrow(new com.plotchain.associate.AssociateNotFoundException(associateId));
+        when(associateRepository.findById(associateId)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/associates/{associateId}/dashboard", associateId))
+        mockMvc.perform(get("/api/associates/me/dashboard")
+                .header("Authorization", "Bearer " + tokenFor(associateId)))
             .andExpect(status().isNotFound());
     }
 
     @Test
     void returns409WhenNoOpenCycle() throws Exception {
         UUID associateId = UUID.randomUUID();
-        when(dashboardService.getDashboard(associateId))
-            .thenThrow(new com.plotchain.cycle.NoOpenCycleException());
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRankId(UUID.randomUUID());
+        associate.setKycStatus(KycStatus.VERIFIED);
+        associate.setCumulativeMatchedVolume(BigDecimal.ZERO);
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/associates/{associateId}/dashboard", associateId))
+        mockMvc.perform(get("/api/associates/me/dashboard")
+                .header("Authorization", "Bearer " + tokenFor(associateId)))
             .andExpect(status().isConflict());
     }
 }
