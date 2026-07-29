@@ -9,6 +9,8 @@
     "nextRank": "अगला रैंक",
     "recordSale": "+ बिक्री दर्ज करें",
     "addReferral": "+ रेफरल जोड़ें",
-    "cycleCloses": "साइकिल {{days}} दिनों में बंद होगी"
+    "cycleCloses": "साइकिल {{days}} दिनों में बंद होगी",
+    "leftLeg": "बायाँ",
+    "rightLeg": "दायाँ"
   }
 }

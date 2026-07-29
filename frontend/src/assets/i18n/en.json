@@ -9,6 +9,8 @@
     "nextRank": "Next rank",
     "recordSale": "+ Record Sale",
     "addReferral": "+ Add Referral",
-    "cycleCloses": "Cycle closes in {{days}} days"
+    "cycleCloses": "Cycle closes in {{days}} days",
+    "leftLeg": "L",
+    "rightLeg": "R"
   }
 }
