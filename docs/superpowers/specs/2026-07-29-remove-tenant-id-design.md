@@ -1,5 +1,7 @@
 # Remove tenant_id (single-tenant simplification)
 
+**Supersedes:** the multi-tenancy requirements in `land-mlm-platform-prd.md` (§2 goals, §4 persona, §5.3, §8 NFR, etc.) and the `tenant_id` field carried by entities in `docs/superpowers/specs/2026-07-29-mlm-land-platform-gaps-dashboard-design.md` (§4). Both documents predate the single-tenant product decision below.
+
 ## Context
 
 The dashboard endpoint `GET /api/associates/{associateId}/dashboard` returns HTTP 400 because the frontend's default route (`/dashboard/me`) sends the literal string `"me"` where the backend expects a UUID `associateId`. Fixing that requires building real auth (login, roles, resolving the caller's identity server-side) — see the companion auth design (separate spec, built after this one).
