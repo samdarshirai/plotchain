@@ -21,4 +21,9 @@ public class DashboardExceptionHandler {
     public ResponseEntity<Map<String, String>> handleNoOpenCycle(NoOpenCycleException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(NoRankAssignedException.class)
+    public ResponseEntity<Map<String, String>> handleNoRankAssigned(NoRankAssignedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
 }

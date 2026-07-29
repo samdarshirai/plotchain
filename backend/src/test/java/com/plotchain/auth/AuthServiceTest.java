@@ -16,6 +16,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,5 +67,38 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(new LoginRequest("jane@plotchain.test", "wrong-password")))
             .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
+    void changesThePasswordAndClearsTheMustChangeFlag() {
+        UUID associateId = UUID.randomUUID();
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRole(AssociateRole.ASSOCIATE);
+        associate.setPasswordHash(passwordEncoder.encode("OldPassword1!"));
+        associate.setMustChangePassword(true);
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+
+        authService.changePassword(associateId, new ChangePasswordRequest("OldPassword1!", "NewPassword1!"));
+
+        assertThat(passwordEncoder.matches("NewPassword1!", associate.getPasswordHash())).isTrue();
+        assertThat(associate.isMustChangePassword()).isFalse();
+        verify(associateRepository).save(associate);
+    }
+
+    @Test
+    void rejectsAPasswordChangeWhenTheCurrentPasswordIsWrong() {
+        UUID associateId = UUID.randomUUID();
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRole(AssociateRole.ASSOCIATE);
+        associate.setPasswordHash(passwordEncoder.encode("OldPassword1!"));
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+
+        assertThatThrownBy(() -> authService.changePassword(
+            associateId, new ChangePasswordRequest("wrong", "NewPassword1!")))
+            .isInstanceOf(InvalidCredentialsException.class);
+
+        verify(associateRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 }

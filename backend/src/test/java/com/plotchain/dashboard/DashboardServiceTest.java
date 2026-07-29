@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -119,5 +120,19 @@ class DashboardServiceTest {
         assertThat(response.cycleCountdown().cycleId()).isEqualTo(cycleId);
         assertThat(response.cycleCountdown().daysRemaining()).isEqualTo(10L);
         assertThat(response.announcements()).isEmpty();
+    }
+
+    @Test
+    void rejectsTheDashboardForAnAccountWithNoRank() {
+        UUID associateId = UUID.randomUUID();
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRankId(null);
+        associate.setKycStatus(KycStatus.VERIFIED);
+        associate.setCumulativeMatchedVolume(BigDecimal.ZERO);
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+
+        assertThatThrownBy(() -> dashboardService.getDashboard(associateId))
+            .isInstanceOf(NoRankAssignedException.class);
     }
 }

@@ -40,6 +40,10 @@ public class SecurityConfig {
                 // below, or POST /api/auth/login would be swallowed by the ADMIN-only POST
                 // rule and login itself would break.
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                // Self-service password change: an associate-reachable POST. Must precede the
+                // blanket ADMIN write rules below (first-match-wins) or associates could never
+                // clear their must-change-password state. SecurityConfigTest locks this.
+                .requestMatchers(HttpMethod.POST, "/api/associates/me/password").authenticated()
                 // Deny-by-default for writes: product policy is "admin can write; associates
                 // are read-only except their own profile". Without this, any future
                 // POST/PUT/PATCH/DELETE endpoint would be reachable by every authenticated

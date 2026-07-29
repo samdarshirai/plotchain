@@ -65,6 +65,10 @@ public class DashboardService {
         Associate associate = associateRepository.findById(associateId)
             .orElseThrow(() -> new AssociateNotFoundException(associateId));
 
+        if (associate.getRankId() == null) {
+            throw new NoRankAssignedException(associateId);
+        }
+
         Cycle cycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)
             .orElseThrow(NoOpenCycleException::new);
 

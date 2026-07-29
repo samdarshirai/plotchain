@@ -1,9 +1,12 @@
 package com.plotchain.auth;
 
 import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -27,6 +30,19 @@ public class AuthService {
         }
 
         String token = jwtService.generateToken(associate);
-        return new LoginResponse(token, associate.getId(), associate.getRole().name());
+        return new LoginResponse(token, associate.getId(), associate.getRole().name(), associate.isMustChangePassword());
+    }
+
+    public void changePassword(UUID associateId, ChangePasswordRequest request) {
+        Associate associate = associateRepository.findById(associateId)
+            .orElseThrow(() -> new AssociateNotFoundException(associateId));
+
+        if (!passwordEncoder.matches(request.currentPassword(), associate.getPasswordHash())) {
+            throw new InvalidCredentialsException();
+        }
+
+        associate.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        associate.setMustChangePassword(false);
+        associateRepository.save(associate);
     }
 }

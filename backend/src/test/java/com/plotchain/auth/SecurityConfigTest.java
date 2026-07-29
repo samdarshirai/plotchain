@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -92,5 +93,23 @@ class SecurityConfigTest {
                 .contentType("application/json")
                 .content("{}"))
             .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void passwordChangeIsReachableByAnAssociateToken() throws Exception {
+        // A POST under /api/** that an ASSOCIATE must be able to reach. It needs its own
+        // matcher ABOVE the blanket ADMIN write rules; without it this returns 403 and no
+        // associate could ever clear their must-change-password state.
+        //
+        // We assert "not 403" rather than a specific success/failure status: with an
+        // unstubbed repository and a deliberately short newPassword, the request can land on
+        // a 400 (bean validation) or a 404 (associate not found) depending on which check
+        // runs first downstream — both prove the request passed the security layer. Only a
+        // 403 here would mean the matcher ordering regressed.
+        mockMvc.perform(post("/api/associates/me/password")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
+                .contentType("application/json")
+                .content("{\"currentPassword\":\"x\",\"newPassword\":\"y\"}"))
+            .andExpect(status().is(not(403)));
     }
 }
