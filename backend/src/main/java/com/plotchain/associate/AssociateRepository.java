@@ -47,4 +47,8 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     long countJoinedBetween(@Param("associateId") UUID associateId, @Param("start") LocalDate start, @Param("end") LocalDate end);
 
     Optional<Associate> findByEmail(String email);
+
+    boolean existsByEmail(String email);
+
+    boolean existsByParentIdAndPosition(UUID parentId, String position);
 }
