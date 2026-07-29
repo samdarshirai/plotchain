@@ -13,5 +13,11 @@
     "leftLeg": "L",
     "rightLeg": "R",
     "loadError": "Something went wrong loading your dashboard. Please try again."
+  },
+  "auth": {
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "loginButton": "Log In",
+    "loginError": "Invalid email or password. Please try again."
   }
 }

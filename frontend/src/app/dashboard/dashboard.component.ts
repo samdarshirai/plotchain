@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { DashboardService } from './dashboard.service';
 import { DashboardResponse } from './models/dashboard-response.model';
@@ -41,11 +40,10 @@ export class DashboardComponent implements OnInit {
   dashboard: DashboardResponse | null = null;
   error: boolean = false;
 
-  constructor(private dashboardService: DashboardService, private route: ActivatedRoute) {}
+  constructor(private dashboardService: DashboardService) {}
 
   ngOnInit(): void {
-    const associateId = this.route.snapshot.paramMap.get('associateId')!;
-    this.dashboardService.getDashboard(associateId).subscribe({
+    this.dashboardService.getDashboard().subscribe({
       next: d => this.dashboard = d,
       error: () => this.error = true
     });

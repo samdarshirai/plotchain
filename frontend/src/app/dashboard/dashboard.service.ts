@@ -7,7 +7,7 @@ import { DashboardResponse } from './models/dashboard-response.model';
 export class DashboardService {
   constructor(private http: HttpClient) {}
 
-  getDashboard(associateId: string): Observable<DashboardResponse> {
-    return this.http.get<DashboardResponse>(`/api/associates/${associateId}/dashboard`);
+  getDashboard(): Observable<DashboardResponse> {
+    return this.http.get<DashboardResponse>('/api/associates/me/dashboard');
   }
 }

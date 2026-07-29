@@ -18,15 +18,14 @@ describe('DashboardService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('fetches the dashboard for a given associate id', () => {
-    const associateId = 'associate-123';
+  it("fetches the authenticated associate's dashboard", () => {
     const mockResponse: Partial<DashboardResponse> = { kycPendingBannerVisible: false };
 
-    service.getDashboard(associateId).subscribe(res => {
+    service.getDashboard().subscribe(res => {
       expect(res.kycPendingBannerVisible).toBeFalse();
     });
 
-    const req = httpMock.expectOne(`/api/associates/${associateId}/dashboard`);
+    const req = httpMock.expectOne('/api/associates/me/dashboard');
     expect(req.request.method).toBe('GET');
     req.flush(mockResponse);
   });

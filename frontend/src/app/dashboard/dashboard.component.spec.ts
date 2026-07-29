@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { DashboardComponent } from './dashboard.component';
@@ -23,17 +22,14 @@ describe('DashboardComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DashboardComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()],
-      providers: [
-        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ associateId: 'assoc-1' }) } } }
-      ]
+      imports: [DashboardComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(DashboardComponent);
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
 
-    const req = httpMock.expectOne('/api/associates/assoc-1/dashboard');
+    const req = httpMock.expectOne('/api/associates/me/dashboard');
     req.flush(mockResponse);
     fixture.detectChanges();
   });
