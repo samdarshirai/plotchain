@@ -1,1 +1,4 @@
+<header class="app-header" *ngIf="authService.isAuthenticated()">
+  <button type="button" class="logout" (click)="onLogout()">{{ 'auth.logout' | translate }}</button>
+</header>
 <router-outlet></router-outlet>

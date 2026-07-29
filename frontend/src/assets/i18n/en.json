@@ -18,6 +18,7 @@
     "emailLabel": "Email",
     "passwordLabel": "Password",
     "loginButton": "Log In",
-    "loginError": "Invalid email or password. Please try again."
+    "loginError": "Invalid email or password. Please try again.",
+    "logout": "Log Out"
   }
 }
