@@ -17,3 +17,8 @@ server:
 jwt:
   secret: ${JWT_SECRET:dev-only-change-me-this-needs-to-be-at-least-32-bytes-long}
   expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
+
+plotchain:
+  bootstrap:
+    admin-email: ${PLOTCHAIN_ADMIN_EMAIL:}
+    admin-password: ${PLOTCHAIN_ADMIN_PASSWORD:}
