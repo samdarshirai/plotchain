@@ -18,7 +18,13 @@
 
 `associate.rank_id` is currently `NOT NULL REFERENCES rank_tier(id)`. "Rank" is an MLM-associate concept that does not apply to a platform admin — the current V2 seed works around this by pointing its admin row at a fake `rank_order=999` tier, and a prior review flagged exactly this as "a structural FK artifact, not a real business fact." Bootstrapping a real admin would require inventing that fake tier again.
 
-**This plan drops the NOT NULL and adds `chk_associate_rank_required` (`role = 'ADMIN' OR rank_id IS NOT NULL`)** so the constraint expresses the actual rule: associates have a rank, admins don't. `Associate.rankId` becomes nullable in the entity. `DashboardService` already only runs for associate-shaped data, so no read path breaks — but Task 1 verifies that rather than assuming it.
+**This plan drops the NOT NULL and adds `chk_associate_rank_required` (`role = 'ADMIN' OR rank_id IS NOT NULL`)** so the constraint expresses the actual rule: associates have a rank, admins don't. `Associate.rankId` becomes nullable in the entity.
+
+**Consequence discovered during Task 1's review — do not skip this.** `DashboardService.getDashboard` resolves the associate's rank with `ranks.stream().filter(r -> r.getId().equals(associate.getRankId())).findFirst().orElseThrow(IllegalStateException::new)`. With a null `rankId` nothing matches, so it throws — surfacing as an unhandled **500**. The bootstrapped admin from Task 2 has `rankId = null`, so an admin would log in and immediately break on the dashboard. The old fake-rank seed masked this by pointing admins at a real (meaningless) tier.
+
+The existing suite does not catch it: no test constructs a rank-less associate for the dashboard path, so "tests pass" is not "this cannot break." Two changes address it, and both are required:
+- **Task 4** makes the backend fail *clearly* — a dedicated exception mapped to 409 with an actionable message, instead of a 500 from a leaked `IllegalStateException`.
+- **Task 7** stops admins reaching the associate dashboard at all, routing them to the admin area after login.
 
 ## Global Constraints
 
@@ -915,14 +921,76 @@ public record LoginResponse(String token, UUID associateId, String role, boolean
 
 and update `AuthService.login`'s construction to `new LoginResponse(token, associate.getId(), associate.getRole().name(), associate.isMustChangePassword())`. Fix the existing `AuthServiceTest`/`AuthControllerTest` expectations for the widened record.
 
-- [ ] **Step 4: Run and confirm they pass, then the full suite**
+- [ ] **Step 4: Make the dashboard fail clearly for a rank-less account**
+
+This closes the regression identified in Task 1's review: a null `rankId` currently escapes `DashboardService` as an unhandled `IllegalStateException` → 500. The bootstrapped admin has exactly that.
+
+Create `backend/src/main/java/com/plotchain/dashboard/NoRankAssignedException.java`:
+
+```java
+package com.plotchain.dashboard;
+
+import java.util.UUID;
+
+/**
+ * Raised when the associate dashboard is requested for an account that has no rank — in
+ * practice an ADMIN, which by design has no MLM rank (see chk_associate_rank_required). The
+ * dashboard is an associate-facing view; admins have no meaningful one.
+ */
+public class NoRankAssignedException extends RuntimeException {
+    public NoRankAssignedException(UUID associateId) {
+        super("No rank assigned to account " + associateId
+            + "; the associate dashboard does not apply to accounts without a rank");
+    }
+}
+```
+
+In `DashboardService.getDashboard`, guard before the rank lookup:
+
+```java
+        if (associate.getRankId() == null) {
+            throw new NoRankAssignedException(associateId);
+        }
+```
+
+In `DashboardExceptionHandler`, map it (same convention as the existing handlers):
+
+```java
+    @ExceptionHandler(NoRankAssignedException.class)
+    public ResponseEntity<Map<String, String>> handleNoRankAssigned(NoRankAssignedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+```
+
+Add a covering test to `DashboardServiceTest`:
+
+```java
+    @Test
+    void rejectsTheDashboardForAnAccountWithNoRank() {
+        UUID associateId = UUID.randomUUID();
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRankId(null);
+        associate.setKycStatus(KycStatus.VERIFIED);
+        associate.setCumulativeMatchedVolume(BigDecimal.ZERO);
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+
+        assertThatThrownBy(() -> dashboardService.getDashboard(associateId))
+            .isInstanceOf(NoRankAssignedException.class);
+    }
+```
+
+The guard must sit early enough that the test needs no cycle/ledger/wallet stubbing — if Mockito reports unnecessary stubbings or the test needs more `when(...)` calls than above, move the guard earlier in the method.
+
+- [ ] **Step 5: Run and confirm they pass, then the full suite**
 
 Run: `mvn -f backend/pom.xml test` → PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add backend/src/main/java/com/plotchain/auth/ backend/src/test/java/com/plotchain/auth/
+git add backend/src/main/java/com/plotchain/auth/ backend/src/test/java/com/plotchain/auth/ \
+        backend/src/main/java/com/plotchain/dashboard/ backend/src/test/java/com/plotchain/dashboard/
 git commit -m "feat: add self-service password change, surface mustChangePassword on login"
 ```
 
@@ -1183,6 +1251,24 @@ Route: `{ path: 'admin/associates/new', component: CreateAssociateComponent, can
 Add the corresponding i18n keys to both locale files.
 
 **Note the client-side role check is UX only** — the backend's `hasAuthority("ADMIN")` rule is the actual enforcement, and it is already tested by `SecurityConfigTest`. Add a comment in `admin.guard.ts` saying so, so nobody mistakes it for a security boundary.
+
+**Also route admins away from the associate dashboard** — the second half of the fix for the regression found in Task 1's review. An admin has no rank, so the associate dashboard cannot render for them; Task 4 made that fail cleanly with a 409, but an admin should never be sent there in the first place.
+
+In `login.component.ts`, extend the post-login routing to consider role as well as the password flag:
+
+```ts
+      next: response => {
+        if (response.mustChangePassword) {
+          this.router.navigate(['/change-password']);
+          return;
+        }
+        this.router.navigate([response.role === 'ADMIN' ? '/admin/associates/new' : '/dashboard']);
+      },
+```
+
+Apply the same rule in `change-password.component.ts`'s success handler, so an admin completing a forced password change also lands in the admin area rather than a dashboard that will 409.
+
+Add a spec case to `login.component.spec.ts` asserting an ADMIN login navigates to the admin route and an ASSOCIATE login navigates to `/dashboard`. Without it, this routing rule is exactly as deletable-without-consequence as the wiring gaps found in the previous plan.
 
 - [ ] **Step 4: Run both suites**
 
