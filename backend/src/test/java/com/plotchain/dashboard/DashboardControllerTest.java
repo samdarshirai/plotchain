@@ -62,9 +62,8 @@ class DashboardControllerTest {
     @Test
     void returns409WhenNoOpenCycle() throws Exception {
         UUID associateId = UUID.randomUUID();
-        UUID tenantId = UUID.randomUUID();
         when(dashboardService.getDashboard(associateId))
-            .thenThrow(new com.plotchain.cycle.NoOpenCycleException(tenantId));
+            .thenThrow(new com.plotchain.cycle.NoOpenCycleException());
 
         mockMvc.perform(get("/api/associates/{associateId}/dashboard", associateId))
             .andExpect(status().isConflict());

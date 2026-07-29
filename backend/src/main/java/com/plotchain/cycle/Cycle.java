@@ -9,8 +9,6 @@ import java.util.UUID;
 public class Cycle {
     @Id
     private UUID id;
-    @Column(name = "tenant_id", nullable = false)
-    private UUID tenantId;
     @Column(name = "period_start", nullable = false)
     private LocalDate periodStart;
     @Column(name = "period_end", nullable = false)
@@ -21,8 +19,6 @@ public class Cycle {
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
-    public UUID getTenantId() { return tenantId; }
-    public void setTenantId(UUID tenantId) { this.tenantId = tenantId; }
     public LocalDate getPeriodStart() { return periodStart; }
     public void setPeriodStart(LocalDate periodStart) { this.periodStart = periodStart; }
     public LocalDate getPeriodEnd() { return periodEnd; }

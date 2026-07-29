@@ -24,7 +24,6 @@ CREATE INDEX idx_associate_tenant_id ON associate(tenant_id);
 
 CREATE TABLE cycle (
     id UUID PRIMARY KEY,
-    tenant_id UUID NOT NULL,
     period_start DATE NOT NULL,
     period_end DATE NOT NULL,
     status VARCHAR(20) NOT NULL CHECK (status IN ('OPEN','CALCULATING','CLOSED','PAID'))

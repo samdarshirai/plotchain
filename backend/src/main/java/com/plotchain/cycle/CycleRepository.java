@@ -6,5 +6,5 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface CycleRepository extends JpaRepository<Cycle, UUID> {
-    Optional<Cycle> findFirstByTenantIdAndStatusOrderByPeriodStartDesc(UUID tenantId, CycleStatus status);
+    Optional<Cycle> findFirstByStatusOrderByPeriodStartDesc(CycleStatus status);
 }

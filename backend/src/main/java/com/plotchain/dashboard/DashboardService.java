@@ -65,8 +65,8 @@ public class DashboardService {
         Associate associate = associateRepository.findById(associateId)
             .orElseThrow(() -> new AssociateNotFoundException(associateId));
 
-        Cycle cycle = cycleRepository.findFirstByTenantIdAndStatusOrderByPeriodStartDesc(associate.getTenantId(), CycleStatus.OPEN)
-            .orElseThrow(() -> new NoOpenCycleException(associate.getTenantId()));
+        Cycle cycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)
+            .orElseThrow(NoOpenCycleException::new);
 
         BigDecimal direct = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.DIRECT);
         BigDecimal matching = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.MATCHING);

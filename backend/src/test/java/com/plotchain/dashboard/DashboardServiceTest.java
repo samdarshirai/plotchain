@@ -70,7 +70,6 @@ class DashboardServiceTest {
 
         Cycle cycle = new Cycle();
         cycle.setId(cycleId);
-        cycle.setTenantId(tenantId);
         cycle.setStatus(CycleStatus.OPEN);
         cycle.setPeriodStart(LocalDate.now().minusDays(5));
         cycle.setPeriodEnd(LocalDate.now().plusDays(10));
@@ -81,7 +80,7 @@ class DashboardServiceTest {
         LegVolume legVolume = LegVolume.empty(associateId, cycleId, tenantId);
 
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
-        when(cycleRepository.findFirstByTenantIdAndStatusOrderByPeriodStartDesc(tenantId, CycleStatus.OPEN))
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
             .thenReturn(Optional.of(cycle));
         when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.DIRECT))
             .thenReturn(BigDecimal.valueOf(1000));
