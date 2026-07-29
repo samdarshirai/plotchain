@@ -9,8 +9,6 @@ import java.util.UUID;
 public class RankTier {
     @Id
     private UUID id;
-    @Column(name = "tenant_id", nullable = false)
-    private UUID tenantId;
     private String name;
     @Column(name = "rank_order")
     private int rankOrder;
@@ -19,16 +17,14 @@ public class RankTier {
 
     protected RankTier() {}
 
-    public RankTier(UUID id, UUID tenantId, String name, int rankOrder, BigDecimal volumeThreshold) {
+    public RankTier(UUID id, String name, int rankOrder, BigDecimal volumeThreshold) {
         this.id = id;
-        this.tenantId = tenantId;
         this.name = name;
         this.rankOrder = rankOrder;
         this.volumeThreshold = volumeThreshold;
     }
 
     public UUID getId() { return id; }
-    public UUID getTenantId() { return tenantId; }
     public String getName() { return name; }
     public int getRankOrder() { return rankOrder; }
     public BigDecimal getVolumeThreshold() { return volumeThreshold; }

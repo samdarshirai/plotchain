@@ -30,7 +30,7 @@ class AssociateRepositoryTest {
     @Test
     void countDownlineCountsAllDescendantsRegardlessOfDepth() {
         UUID tenantId = UUID.randomUUID();
-        RankTier rank = new RankTier(UUID.randomUUID(), tenantId, "Sales Associate", 1, BigDecimal.valueOf(10000));
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
         entityManager.persist(rank);
 
         Associate root = newAssociate(tenantId, null, null, rank.getId());
@@ -48,8 +48,8 @@ class AssociateRepositoryTest {
     void countDownlineExcludesAssociatesFromAnotherTenantSharingTheSameParentId() {
         UUID tenantId = UUID.randomUUID();
         UUID otherTenantId = UUID.randomUUID();
-        RankTier rank = new RankTier(UUID.randomUUID(), tenantId, "Sales Associate", 1, BigDecimal.valueOf(10000));
-        RankTier otherRank = new RankTier(UUID.randomUUID(), otherTenantId, "Sales Associate", 1, BigDecimal.valueOf(10000));
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        RankTier otherRank = new RankTier(UUID.randomUUID(), "Sales Associate", 2, BigDecimal.valueOf(10000));
         entityManager.persist(rank);
         entityManager.persist(otherRank);
 
@@ -69,7 +69,7 @@ class AssociateRepositoryTest {
     @Test
     void countJoinedBetweenIncludesAssociatesWhoJoinOnTheEndDate() {
         UUID tenantId = UUID.randomUUID();
-        RankTier rank = new RankTier(UUID.randomUUID(), tenantId, "Sales Associate", 1, BigDecimal.valueOf(10000));
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
         entityManager.persist(rank);
 
         LocalDate start = LocalDate.now().minusDays(5);

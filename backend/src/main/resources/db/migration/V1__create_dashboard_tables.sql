@@ -1,10 +1,9 @@
 CREATE TABLE rank_tier (
     id UUID PRIMARY KEY,
-    tenant_id UUID NOT NULL,
     name VARCHAR(100) NOT NULL,
     rank_order INT NOT NULL,
     volume_threshold NUMERIC(14,2) NOT NULL,
-    UNIQUE (tenant_id, rank_order)
+    UNIQUE (rank_order)
 );
 
 CREATE TABLE associate (

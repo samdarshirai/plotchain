@@ -75,8 +75,8 @@ class DashboardServiceTest {
         cycle.setPeriodStart(LocalDate.now().minusDays(5));
         cycle.setPeriodEnd(LocalDate.now().plusDays(10));
 
-        RankTier currentRank = new RankTier(currentRankId, tenantId, "Sales Associate", 1, BigDecimal.valueOf(5000));
-        RankTier nextRank = new RankTier(nextRankId, tenantId, "Sales Executive", 2, BigDecimal.valueOf(10000));
+        RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, BigDecimal.valueOf(5000));
+        RankTier nextRank = new RankTier(nextRankId, "Sales Executive", 2, BigDecimal.valueOf(10000));
 
         LegVolume legVolume = LegVolume.empty(associateId, cycleId, tenantId);
 
@@ -92,7 +92,7 @@ class DashboardServiceTest {
         when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycleId))
             .thenReturn(Optional.of(legVolume));
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId, tenantId)));
-        when(rankTierRepository.findByTenantIdOrderByRankOrder(tenantId))
+        when(rankTierRepository.findAllByOrderByRankOrder())
             .thenReturn(List.of(currentRank, nextRank));
         when(associateRepository.countDownline(associateId, tenantId)).thenReturn(12L);
         when(associateRepository.countActiveToday(any(), any(), any())).thenReturn(3L);

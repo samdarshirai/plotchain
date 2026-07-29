@@ -81,7 +81,7 @@ public class DashboardService {
         Wallet wallet = walletRepository.findById(associateId)
             .orElseGet(() -> Wallet.zero(associateId, associate.getTenantId()));
 
-        List<RankTier> ranks = rankTierRepository.findByTenantIdOrderByRankOrder(associate.getTenantId());
+        List<RankTier> ranks = rankTierRepository.findAllByOrderByRankOrder();
         RankTier currentRank = ranks.stream()
             .filter(r -> r.getId().equals(associate.getRankId()))
             .findFirst()
