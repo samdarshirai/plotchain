@@ -85,7 +85,7 @@ public class DashboardService {
         RankTier currentRank = ranks.stream()
             .filter(r -> r.getId().equals(associate.getRankId()))
             .findFirst()
-            .orElseThrow(() -> new IllegalStateException("Associate's rank not found in tenant's rank table: " + associate.getRankId()));
+            .orElseThrow(() -> new IllegalStateException("Associate's rank not found in rank table: " + associate.getRankId()));
         Optional<RankTier> nextRank = ranks.stream()
             .filter(r -> r.getRankOrder() == currentRank.getRankOrder() + 1)
             .findFirst();
@@ -101,12 +101,12 @@ public class DashboardService {
             .map(nr -> nr.getVolumeThreshold().subtract(associate.getCumulativeMatchedVolume()).max(BigDecimal.ZERO))
             .orElse(BigDecimal.ZERO);
 
-        long totalDownline = associateRepository.countDownline(associateId, associate.getTenantId());
-        long activeToday = associateRepository.countActiveToday(associateId, associate.getTenantId(), LocalDate.now());
+        long totalDownline = associateRepository.countDownline(associateId);
+        long activeToday = associateRepository.countActiveToday(associateId, LocalDate.now());
         // Upper bound is exclusive, so pass the day *after* the cycle's last day to include
         // associates who joined on periodEnd itself (see AssociateRepository#countJoinedBetween).
         long newJoins = associateRepository.countJoinedBetween(
-            associateId, associate.getTenantId(), cycle.getPeriodStart(), cycle.getPeriodEnd().plusDays(1));
+            associateId, cycle.getPeriodStart(), cycle.getPeriodEnd().plusDays(1));
 
         long daysRemaining = Math.max(0, ChronoUnit.DAYS.between(LocalDate.now(), cycle.getPeriodEnd()));
 

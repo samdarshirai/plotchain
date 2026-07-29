@@ -8,7 +8,6 @@ CREATE TABLE rank_tier (
 
 CREATE TABLE associate (
     id UUID PRIMARY KEY,
-    tenant_id UUID NOT NULL,
     sponsor_id UUID,
     parent_id UUID REFERENCES associate(id),
     position VARCHAR(1) CHECK (position IN ('L','R')),
@@ -20,7 +19,6 @@ CREATE TABLE associate (
     last_active_at TIMESTAMP
 );
 CREATE INDEX idx_associate_parent_id ON associate(parent_id);
-CREATE INDEX idx_associate_tenant_id ON associate(tenant_id);
 
 CREATE TABLE cycle (
     id UUID PRIMARY KEY,

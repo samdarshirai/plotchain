@@ -55,7 +55,6 @@ class DashboardServiceTest {
 
     @Test
     void aggregatesAllDashboardWidgetsForAnAssociate() {
-        UUID tenantId = UUID.randomUUID();
         UUID associateId = UUID.randomUUID();
         UUID cycleId = UUID.randomUUID();
         UUID currentRankId = UUID.randomUUID();
@@ -63,7 +62,6 @@ class DashboardServiceTest {
 
         Associate associate = new Associate();
         associate.setId(associateId);
-        associate.setTenantId(tenantId);
         associate.setRankId(currentRankId);
         associate.setKycStatus(KycStatus.PENDING);
         associate.setCumulativeMatchedVolume(BigDecimal.valueOf(4000));
@@ -93,9 +91,9 @@ class DashboardServiceTest {
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
         when(rankTierRepository.findAllByOrderByRankOrder())
             .thenReturn(List.of(currentRank, nextRank));
-        when(associateRepository.countDownline(associateId, tenantId)).thenReturn(12L);
-        when(associateRepository.countActiveToday(any(), any(), any())).thenReturn(3L);
-        when(associateRepository.countJoinedBetween(any(), any(), any(), any())).thenReturn(2L);
+        when(associateRepository.countDownline(associateId)).thenReturn(12L);
+        when(associateRepository.countActiveToday(any(), any())).thenReturn(3L);
+        when(associateRepository.countJoinedBetween(any(), any(), any())).thenReturn(2L);
         when(announcementRepository.findTop5ByOrderByPublishedAtDesc()).thenReturn(List.of());
 
         DashboardResponse response = dashboardService.getDashboard(associateId);

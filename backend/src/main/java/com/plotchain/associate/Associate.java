@@ -10,8 +10,6 @@ import java.util.UUID;
 public class Associate {
     @Id
     private UUID id;
-    @Column(name = "tenant_id", nullable = false)
-    private UUID tenantId;
     @Column(name = "sponsor_id")
     private UUID sponsorId;
     @Column(name = "parent_id")
@@ -32,8 +30,6 @@ public class Associate {
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
-    public UUID getTenantId() { return tenantId; }
-    public void setTenantId(UUID tenantId) { this.tenantId = tenantId; }
     public UUID getSponsorId() { return sponsorId; }
     public void setSponsorId(UUID sponsorId) { this.sponsorId = sponsorId; }
     public UUID getParentId() { return parentId; }
