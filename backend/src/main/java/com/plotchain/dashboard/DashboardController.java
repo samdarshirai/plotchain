@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 // SECURITY: no authN/authZ yet — associateId is caller-supplied and unauthenticated.
-// Gated by the not-yet-written auth/tenant-context platform plan (see plan's Global Constraints).
+// Gated by the not-yet-written auth plan (see plan's Global Constraints).
 @RestController
 public class DashboardController {
 
