@@ -90,7 +90,7 @@ class DashboardServiceTest {
             .thenReturn(BigDecimal.valueOf(1500));
         when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycleId))
             .thenReturn(Optional.of(legVolume));
-        when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId, tenantId)));
+        when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
         when(rankTierRepository.findAllByOrderByRankOrder())
             .thenReturn(List.of(currentRank, nextRank));
         when(associateRepository.countDownline(associateId, tenantId)).thenReturn(12L);

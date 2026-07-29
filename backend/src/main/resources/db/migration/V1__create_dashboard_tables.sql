@@ -58,7 +58,6 @@ CREATE TABLE leg_volume (
 
 CREATE TABLE wallet (
     associate_id UUID PRIMARY KEY REFERENCES associate(id),
-    tenant_id UUID NOT NULL,
     balance NUMERIC(14,2) NOT NULL DEFAULT 0
 );
 

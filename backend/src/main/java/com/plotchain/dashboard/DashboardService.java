@@ -79,7 +79,7 @@ public class DashboardService {
             .multiply(previewMatchingRate);
 
         Wallet wallet = walletRepository.findById(associateId)
-            .orElseGet(() -> Wallet.zero(associateId, associate.getTenantId()));
+            .orElseGet(() -> Wallet.zero(associateId));
 
         List<RankTier> ranks = rankTierRepository.findAllByOrderByRankOrder();
         RankTier currentRank = ranks.stream()

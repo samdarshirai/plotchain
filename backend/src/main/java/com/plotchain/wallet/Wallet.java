@@ -10,19 +10,15 @@ public class Wallet {
     @Id
     @Column(name = "associate_id")
     private UUID associateId;
-    @Column(name = "tenant_id", nullable = false)
-    private UUID tenantId;
     @Column(nullable = false)
     private BigDecimal balance = BigDecimal.ZERO;
 
-    public static Wallet zero(UUID associateId, UUID tenantId) {
+    public static Wallet zero(UUID associateId) {
         Wallet w = new Wallet();
         w.associateId = associateId;
-        w.tenantId = tenantId;
         return w;
     }
 
     public UUID getAssociateId() { return associateId; }
-    public UUID getTenantId() { return tenantId; }
     public BigDecimal getBalance() { return balance; }
 }
