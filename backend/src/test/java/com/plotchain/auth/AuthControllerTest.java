@@ -1,0 +1,75 @@
+package com.plotchain.auth;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateRole;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+// Deliberately NOT @SpringBootTest/@MockBean: this JDK's Mockito/ByteBuddy combination
+// cannot mock concrete classes. Wiring a real AuthService against a mocked (interface)
+// AssociateRepository sidesteps that entirely while still exercising the real HTTP/JSON/
+// exception-mapping path via standalone MockMvc.
+@ExtendWith(MockitoExtension.class)
+class AuthControllerTest {
+
+    @Mock AssociateRepository associateRepository;
+
+    MockMvc mockMvc;
+    PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    @BeforeEach
+    void setUp() {
+        JwtService jwtService = new JwtService("test-secret-key-at-least-32-bytes-long-for-hs256", 60);
+        AuthService authService = new AuthService(associateRepository, passwordEncoder, jwtService);
+        mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService))
+            .setControllerAdvice(new AuthExceptionHandler())
+            .build();
+    }
+
+    @Test
+    void returnsATokenForValidCredentials() throws Exception {
+        Associate associate = new Associate();
+        associate.setId(UUID.randomUUID());
+        associate.setRole(AssociateRole.ASSOCIATE);
+        associate.setPasswordHash(passwordEncoder.encode("Password123!"));
+        when(associateRepository.findByEmail("jane@plotchain.test")).thenReturn(Optional.of(associate));
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType("application/json")
+                .content(new ObjectMapper().writeValueAsString(new LoginRequest("jane@plotchain.test", "Password123!"))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.token").isNotEmpty())
+            .andExpect(jsonPath("$.role").value("ASSOCIATE"));
+    }
+
+    @Test
+    void returns401ForWrongPassword() throws Exception {
+        Associate associate = new Associate();
+        associate.setId(UUID.randomUUID());
+        associate.setRole(AssociateRole.ASSOCIATE);
+        associate.setPasswordHash(passwordEncoder.encode("Password123!"));
+        when(associateRepository.findByEmail("jane@plotchain.test")).thenReturn(Optional.of(associate));
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType("application/json")
+                .content(new ObjectMapper().writeValueAsString(new LoginRequest("jane@plotchain.test", "wrong"))))
+            .andExpect(status().isUnauthorized());
+    }
+}
