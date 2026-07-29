@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 import { DashboardService } from './dashboard.service';
 import { DashboardResponse } from './models/dashboard-response.model';
 import { KycBannerComponent } from './widgets/kyc-banner/kyc-banner.component';
@@ -17,7 +18,7 @@ import { AnnouncementsStripComponent } from './widgets/announcements-strip/annou
   selector: 'app-dashboard',
   standalone: true,
   imports: [
-    CommonModule, KycBannerComponent, CycleIncomeCardComponent, WalletCardComponent,
+    CommonModule, TranslateModule, KycBannerComponent, CycleIncomeCardComponent, WalletCardComponent,
     LegVolumeGaugeComponent, RankProgressComponent, TeamSnapshotComponent,
     QuickActionsComponent, CycleCountdownComponent, AnnouncementsStripComponent
   ],
@@ -33,15 +34,20 @@ import { AnnouncementsStripComponent } from './widgets/announcements-strip/annou
       <app-cycle-countdown [data]="d.cycleCountdown"></app-cycle-countdown>
       <app-announcements-strip [announcements]="d.announcements"></app-announcements-strip>
     </div>
+    <div class="dashboard-error" *ngIf="error">{{ 'dashboard.loadError' | translate }}</div>
   `
 })
 export class DashboardComponent implements OnInit {
   dashboard: DashboardResponse | null = null;
+  error: boolean = false;
 
   constructor(private dashboardService: DashboardService, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     const associateId = this.route.snapshot.paramMap.get('associateId')!;
-    this.dashboardService.getDashboard(associateId).subscribe(d => this.dashboard = d);
+    this.dashboardService.getDashboard(associateId).subscribe({
+      next: d => this.dashboard = d,
+      error: () => this.error = true
+    });
   }
 }

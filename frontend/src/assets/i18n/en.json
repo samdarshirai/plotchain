@@ -11,6 +11,7 @@
     "addReferral": "+ Add Referral",
     "cycleCloses": "Cycle closes in {{days}} days",
     "leftLeg": "L",
-    "rightLeg": "R"
+    "rightLeg": "R",
+    "loadError": "Something went wrong loading your dashboard. Please try again."
   }
 }

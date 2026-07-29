@@ -94,9 +94,9 @@ class DashboardServiceTest {
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId, tenantId)));
         when(rankTierRepository.findByTenantIdOrderByRankOrder(tenantId))
             .thenReturn(List.of(currentRank, nextRank));
-        when(associateRepository.countDownline(associateId)).thenReturn(12L);
-        when(associateRepository.countActiveToday(any(), any())).thenReturn(3L);
-        when(associateRepository.countJoinedBetween(any(), any(), any())).thenReturn(2L);
+        when(associateRepository.countDownline(associateId, tenantId)).thenReturn(12L);
+        when(associateRepository.countActiveToday(any(), any(), any())).thenReturn(3L);
+        when(associateRepository.countJoinedBetween(any(), any(), any(), any())).thenReturn(2L);
         when(announcementRepository.findTop5ByTenantIdOrderByPublishedAtDesc(tenantId)).thenReturn(List.of());
 
         DashboardResponse response = dashboardService.getDashboard(associateId);
@@ -105,11 +105,22 @@ class DashboardServiceTest {
         assertThat(response.cycleIncome().directIncome()).isEqualByComparingTo("1000");
         assertThat(response.cycleIncome().matchingIncome()).isEqualByComparingTo("500");
         assertThat(response.cycleIncome().totalIncome()).isEqualByComparingTo("1500");
+        assertThat(response.wallet().balance()).isEqualByComparingTo("0");
+        assertThat(response.legVolume().leftVolume()).isEqualByComparingTo("0");
+        assertThat(response.legVolume().rightVolume()).isEqualByComparingTo("0");
+        assertThat(response.legVolume().carriedForwardLeft()).isEqualByComparingTo("0");
+        assertThat(response.legVolume().carriedForwardRight()).isEqualByComparingTo("0");
+        assertThat(response.legVolume().projectedMatchAmount()).isEqualByComparingTo("0");
         assertThat(response.rankProgress().currentRank()).isEqualTo("Sales Associate");
+        assertThat(response.rankProgress().currentRankOrder()).isEqualTo(1);
         assertThat(response.rankProgress().nextRank()).isEqualTo("Sales Executive");
         assertThat(response.rankProgress().progressPercent()).isEqualTo(40);
+        assertThat(response.rankProgress().volumeToNextRank()).isEqualByComparingTo("6000");
         assertThat(response.teamSnapshot().totalDownline()).isEqualTo(12L);
         assertThat(response.teamSnapshot().activeToday()).isEqualTo(3L);
         assertThat(response.teamSnapshot().newJoinsThisCycle()).isEqualTo(2L);
+        assertThat(response.cycleCountdown().cycleId()).isEqualTo(cycleId);
+        assertThat(response.cycleCountdown().daysRemaining()).isEqualTo(10L);
+        assertThat(response.announcements()).isEmpty();
     }
 }
