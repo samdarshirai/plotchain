@@ -69,6 +69,23 @@ describe('authInterceptor', () => {
     expect(caughtError).toBeTruthy();
   });
 
+  it('does not log out or redirect on a 401 from the change-password call', () => {
+    spyOn(authService, 'getToken').and.returnValue('abc.def.ghi');
+    spyOn(authService, 'logout');
+    spyOn(router, 'navigate');
+
+    let caughtError: unknown;
+    httpClient.post('/api/associates/me/password', { currentPassword: 'wrong', newPassword: 'NewPassword123!' })
+      .subscribe({ error: err => (caughtError = err) });
+
+    const req = httpMock.expectOne('/api/associates/me/password');
+    req.flush({ error: 'Invalid current password' }, { status: 401, statusText: 'Unauthorized' });
+
+    expect(authService.logout).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(caughtError).toBeTruthy();
+  });
+
   it('sends no Authorization header when no token is stored', () => {
     spyOn(authService, 'getToken').and.returnValue(null);
 

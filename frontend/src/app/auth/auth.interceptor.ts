@@ -4,6 +4,11 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
+// Endpoints where a 401 is an expected, in-form validation failure (bad credentials)
+// rather than an expired session. A blanket logout here would wipe a valid session and
+// navigate the user away before they can see the error.
+const EXPECTED_401_PATHS = ['/api/auth/login', '/api/associates/me/password'];
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
@@ -15,10 +20,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authorizedReq).pipe(
     catchError(error => {
-      // A 401 from the login call itself is an expected "bad credentials" response, not an
-      // expired session — logging the user out here would wipe a valid token when a logged-in
-      // user mistypes their password on the login screen.
-      if (error.status === 401 && !req.url.includes('/api/auth/login')) {
+      if (error.status === 401 && !EXPECTED_401_PATHS.some(path => req.url.includes(path))) {
         authService.logout();
         router.navigate(['/login']);
       }

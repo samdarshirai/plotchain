@@ -55,6 +55,20 @@ describe('AuthService', () => {
     expect(service.getToken()).toBeNull();
   });
 
+  it('changes the password and clears the mustChangePassword flag', () => {
+    localStorage.setItem('plotchain.auth.mustChangePassword', 'true');
+
+    service.changePassword('Temp1234!', 'NewPassword123!').subscribe();
+
+    const req = httpMock.expectOne('/api/associates/me/password');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ currentPassword: 'Temp1234!', newPassword: 'NewPassword123!' });
+    req.flush(null);
+
+    expect(localStorage.getItem('plotchain.auth.mustChangePassword')).toBe('false');
+    expect(service.mustChangePassword()).toBeFalse();
+  });
+
   it('reports not authenticated when the stored token has expired', () => {
     localStorage.setItem('plotchain.auth.token', tokenExpiringAt(-60));
     expect(service.isAuthenticated()).toBeFalse();
