@@ -41,7 +41,13 @@ export class LoginComponent {
     }
     const { email, password } = this.form.getRawValue();
     this.authService.login(email!, password!).subscribe({
-      next: response => this.router.navigate([response.mustChangePassword ? '/change-password' : '/dashboard']),
+      next: response => {
+        if (response.mustChangePassword) {
+          this.router.navigate(['/change-password']);
+          return;
+        }
+        this.router.navigate([response.role === 'ADMIN' ? '/admin/associates/new' : '/dashboard']);
+      },
       error: () => this.error = true
     });
   }

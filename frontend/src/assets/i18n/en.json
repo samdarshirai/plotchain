@@ -25,5 +25,17 @@
     "newPasswordLabel": "New Password",
     "changePasswordButton": "Change Password",
     "changePasswordError": "Could not change your password. Please check your current password and try again."
+  },
+  "admin": {
+    "createAssociateTitle": "Provision a New Associate",
+    "nameLabel": "Full Name",
+    "emailLabel": "Email",
+    "sponsorIdLabel": "Sponsor ID (optional)",
+    "parentIdLabel": "Parent ID (optional)",
+    "positionLabel": "Placement Side (optional)",
+    "submitButton": "Create Associate",
+    "createError": "Could not create the associate. Check the details and try again.",
+    "temporaryPasswordLabel": "Temporary Password",
+    "temporaryPasswordNotice": "This password is shown only once. Copy it now — if you navigate away, you will need to provision a new account."
   }
 }

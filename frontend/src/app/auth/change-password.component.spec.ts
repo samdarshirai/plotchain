@@ -22,7 +22,10 @@ describe('ChangePasswordComponent', () => {
     fixture.detectChanges();
   });
 
-  afterEach(() => httpMock.verify());
+  afterEach(() => {
+    httpMock.verify();
+    localStorage.clear();
+  });
 
   it('navigates to /dashboard on successful password change', () => {
     fixture.componentInstance.form.setValue({ currentPassword: 'Temp1234!', newPassword: 'NewPassword123!' });
@@ -34,6 +37,18 @@ describe('ChangePasswordComponent', () => {
     req.flush(null);
 
     expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+  });
+
+  it('navigates to the admin route when an ADMIN completes a forced password change', () => {
+    localStorage.setItem('plotchain.auth.role', 'ADMIN');
+
+    fixture.componentInstance.form.setValue({ currentPassword: 'Temp1234!', newPassword: 'NewPassword123!' });
+    fixture.componentInstance.onSubmit();
+
+    const req = httpMock.expectOne('/api/associates/me/password');
+    req.flush(null);
+
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/associates/new']);
   });
 
   it('shows an error on failed password change', () => {

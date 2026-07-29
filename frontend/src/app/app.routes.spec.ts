@@ -1,5 +1,6 @@
 import { routes } from './app.routes';
 import { authGuard } from './auth/auth.guard';
+import { adminGuard } from './admin/admin.guard';
 
 describe('routes', () => {
   it('guards the dashboard route with authGuard', () => {
@@ -13,5 +14,12 @@ describe('routes', () => {
     const route = routes.find(r => r.path === 'change-password');
     expect(route).toBeTruthy();
     expect(route!.canActivate).toContain(authGuard);
+  });
+
+  it('guards the admin create-associate route with both authGuard and adminGuard', () => {
+    const route = routes.find(r => r.path === 'admin/associates/new');
+    expect(route).toBeTruthy();
+    expect(route!.canActivate).toContain(authGuard);
+    expect(route!.canActivate).toContain(adminGuard);
   });
 });

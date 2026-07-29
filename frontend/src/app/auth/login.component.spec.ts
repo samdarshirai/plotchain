@@ -34,6 +34,26 @@ describe('LoginComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
   });
 
+  it('navigates to the admin route on successful ADMIN login', () => {
+    fixture.componentInstance.form.setValue({ email: 'admin@plotchain.test', password: 'Password123!' });
+    fixture.componentInstance.onSubmit();
+
+    const req = httpMock.expectOne('/api/auth/login');
+    req.flush({ token: 'abc.def.ghi', associateId: 'admin-1', role: 'ADMIN', mustChangePassword: false });
+
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/associates/new']);
+  });
+
+  it('navigates to /dashboard on successful ASSOCIATE login', () => {
+    fixture.componentInstance.form.setValue({ email: 'jane@plotchain.test', password: 'Password123!' });
+    fixture.componentInstance.onSubmit();
+
+    const req = httpMock.expectOne('/api/auth/login');
+    req.flush({ token: 'abc.def.ghi', associateId: 'assoc-1', role: 'ASSOCIATE', mustChangePassword: false });
+
+    expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+  });
+
   it('shows an error on failed login', () => {
     fixture.componentInstance.form.setValue({ email: 'jane@plotchain.test', password: 'wrong' });
     fixture.componentInstance.onSubmit();

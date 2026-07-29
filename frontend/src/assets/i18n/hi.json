@@ -25,5 +25,17 @@
     "newPasswordLabel": "नया पासवर्ड",
     "changePasswordButton": "पासवर्ड बदलें",
     "changePasswordError": "आपका पासवर्ड नहीं बदला जा सका। कृपया अपना वर्तमान पासवर्ड जांचें और पुनः प्रयास करें।"
+  },
+  "admin": {
+    "createAssociateTitle": "नया एसोसिएट पंजीकृत करें",
+    "nameLabel": "पूरा नाम",
+    "emailLabel": "ईमेल",
+    "sponsorIdLabel": "स्पॉन्सर आईडी (वैकल्पिक)",
+    "parentIdLabel": "पैरेंट आईडी (वैकल्पिक)",
+    "positionLabel": "प्लेसमेंट साइड (वैकल्पिक)",
+    "submitButton": "एसोसिएट बनाएं",
+    "createError": "एसोसिएट नहीं बनाया जा सका। विवरण जांचें और पुनः प्रयास करें।",
+    "temporaryPasswordLabel": "अस्थायी पासवर्ड",
+    "temporaryPasswordNotice": "यह पासवर्ड केवल एक बार दिखाया जाता है। इसे अभी नोट कर लें — यहाँ से जाने के बाद आपको नया खाता बनाना होगा।"
   }
 }

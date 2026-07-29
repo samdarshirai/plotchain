@@ -42,7 +42,7 @@ export class ChangePasswordComponent {
     }
     const { currentPassword, newPassword } = this.form.getRawValue();
     this.authService.changePassword(currentPassword!, newPassword!).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
+      next: () => this.router.navigate([this.authService.getRole() === 'ADMIN' ? '/admin/associates/new' : '/dashboard']),
       error: () => this.error = true
     });
   }

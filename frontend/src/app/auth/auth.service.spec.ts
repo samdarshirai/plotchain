@@ -43,16 +43,23 @@ describe('AuthService', () => {
 
     expect(service.getToken()).toBe(token);
     expect(service.isAuthenticated()).toBeTrue();
+    expect(service.getRole()).toBe('ASSOCIATE');
   });
 
   it('reports not authenticated when no token is stored', () => {
     expect(service.isAuthenticated()).toBeFalse();
   });
 
-  it('clears the token on logout', () => {
+  it('reports no stored role when none has been set', () => {
+    expect(service.getRole()).toBeNull();
+  });
+
+  it('clears the token and role on logout', () => {
     localStorage.setItem('plotchain.auth.token', 'some-token');
+    localStorage.setItem('plotchain.auth.role', 'ADMIN');
     service.logout();
     expect(service.getToken()).toBeNull();
+    expect(service.getRole()).toBeNull();
   });
 
   it('changes the password and clears the mustChangePassword flag', () => {

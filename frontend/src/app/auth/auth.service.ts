@@ -6,6 +6,7 @@ import { LoginResponse } from './models/login-response.model';
 
 const TOKEN_KEY = 'plotchain.auth.token';
 const MUST_CHANGE_KEY = 'plotchain.auth.mustChangePassword';
+const ROLE_KEY = 'plotchain.auth.role';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -17,6 +18,7 @@ export class AuthService {
       tap(response => {
         localStorage.setItem(TOKEN_KEY, response.token);
         localStorage.setItem(MUST_CHANGE_KEY, String(response.mustChangePassword));
+        localStorage.setItem(ROLE_KEY, response.role);
       })
     );
   }
@@ -24,10 +26,15 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(MUST_CHANGE_KEY);
+    localStorage.removeItem(ROLE_KEY);
   }
 
   getToken(): string | null {
     return localStorage.getItem(TOKEN_KEY);
+  }
+
+  getRole(): string | null {
+    return localStorage.getItem(ROLE_KEY);
   }
 
   isAuthenticated(): boolean {
