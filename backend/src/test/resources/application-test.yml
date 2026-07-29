@@ -10,3 +10,7 @@ spring:
     locations: classpath:db/migration
 compensation:
   preview-matching-rate: 0.07
+
+jwt:
+  secret: test-secret-key-at-least-32-bytes-long-for-hs256
+  expiration-minutes: 60
