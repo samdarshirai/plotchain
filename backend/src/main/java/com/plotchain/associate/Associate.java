@@ -27,6 +27,13 @@ public class Associate {
     private BigDecimal cumulativeMatchedVolume = BigDecimal.ZERO;
     @Column(name = "last_active_at")
     private Instant lastActiveAt;
+    @Column(nullable = false)
+    private String email;
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AssociateRole role;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -48,4 +55,10 @@ public class Associate {
     public void setCumulativeMatchedVolume(BigDecimal v) { this.cumulativeMatchedVolume = v; }
     public Instant getLastActiveAt() { return lastActiveAt; }
     public void setLastActiveAt(Instant lastActiveAt) { this.lastActiveAt = lastActiveAt; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public AssociateRole getRole() { return role; }
+    public void setRole(AssociateRole role) { this.role = role; }
 }

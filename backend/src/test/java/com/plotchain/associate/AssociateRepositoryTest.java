@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @ActiveProfiles("test")
 class AssociateRepositoryTest {
+
+    private static final String TEST_PASSWORD_HASH = "$2y$10$m1anhr1Y8va62ZGafTcLOODFQNYTpJDdbbnuriSLpRSELJIkV8J5C";
 
     @Autowired
     AssociateRepository associateRepository;
@@ -62,6 +65,29 @@ class AssociateRepositoryTest {
         assertThat(count).isEqualTo(1);
     }
 
+    @Test
+    void findByEmailReturnsTheMatchingAssociate() {
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        entityManager.persist(rank);
+
+        Associate associate = newAssociate(null, null, rank.getId());
+        associate.setEmail("jane@plotchain.test");
+        associateRepository.save(associate);
+        entityManager.flush();
+
+        Optional<Associate> found = associateRepository.findByEmail("jane@plotchain.test");
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getId()).isEqualTo(associate.getId());
+    }
+
+    @Test
+    void findByEmailReturnsEmptyForAnUnknownEmail() {
+        Optional<Associate> found = associateRepository.findByEmail("nobody@plotchain.test");
+
+        assertThat(found).isEmpty();
+    }
+
     // Uses the JVM default zone (matching how the DATE query params below are interpreted
     // against the TIMESTAMP-without-timezone joined_at column) so the boundary lines up.
     private static Instant instantAt(LocalDate date, LocalTime time) {
@@ -70,7 +96,8 @@ class AssociateRepositoryTest {
 
     private Associate newAssociate(UUID parentId, String position, UUID rankId) {
         Associate a = new Associate();
-        a.setId(UUID.randomUUID());
+        UUID id = UUID.randomUUID();
+        a.setId(id);
         a.setParentId(parentId);
         a.setPosition(position);
         a.setName("Test Associate");
@@ -78,6 +105,9 @@ class AssociateRepositoryTest {
         a.setKycStatus(KycStatus.VERIFIED);
         a.setJoinedAt(Instant.now());
         a.setCumulativeMatchedVolume(BigDecimal.ZERO);
+        a.setEmail(id + "@test.local");
+        a.setPasswordHash(TEST_PASSWORD_HASH);
+        a.setRole(AssociateRole.ASSOCIATE);
         return a;
     }
 }

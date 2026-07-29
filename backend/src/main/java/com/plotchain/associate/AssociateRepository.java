@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface AssociateRepository extends JpaRepository<Associate, UUID> {
@@ -44,4 +45,6 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         WHERE a2.joined_at >= :start AND a2.joined_at < :end
         """, nativeQuery = true)
     long countJoinedBetween(@Param("associateId") UUID associateId, @Param("start") LocalDate start, @Param("end") LocalDate end);
+
+    Optional<Associate> findByEmail(String email);
 }
