@@ -3,6 +3,7 @@ package com.plotchain.auth;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -34,7 +35,21 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/login").permitAll()
+                // Ordering matters: Spring Security matches first-wins, so the login
+                // permitAll() must be declared before the blanket write-authorization rules
+                // below, or POST /api/auth/login would be swallowed by the ADMIN-only POST
+                // rule and login itself would break.
+                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                // Deny-by-default for writes: product policy is "admin can write; associates
+                // are read-only except their own profile". Without this, any future
+                // POST/PUT/PATCH/DELETE endpoint would be reachable by every authenticated
+                // associate unless its author remembered to add @PreAuthorize. When an
+                // associate's own-profile write is built, it needs its own explicit matcher
+                // placed above these blanket ADMIN rules (same ordering trap as login above).
+                .requestMatchers(HttpMethod.POST, "/api/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/**").hasAuthority("ADMIN")
                 .anyRequest().authenticated())
             .exceptionHandling(ex -> ex.authenticationEntryPoint(
                 (request, response, authException) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))

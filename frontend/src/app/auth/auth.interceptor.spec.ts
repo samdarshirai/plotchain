@@ -51,4 +51,31 @@ describe('authInterceptor', () => {
     expect(authService.logout).toHaveBeenCalled();
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
+
+  it('does not log out or redirect on a 401 from the login call itself', () => {
+    spyOn(authService, 'getToken').and.returnValue(null);
+    spyOn(authService, 'logout');
+    spyOn(router, 'navigate');
+
+    let caughtError: unknown;
+    httpClient.post('/api/auth/login', { email: 'x@y.z', password: 'wrong' })
+      .subscribe({ error: err => (caughtError = err) });
+
+    const req = httpMock.expectOne('/api/auth/login');
+    req.flush({ error: 'Invalid credentials' }, { status: 401, statusText: 'Unauthorized' });
+
+    expect(authService.logout).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(caughtError).toBeTruthy();
+  });
+
+  it('sends no Authorization header when no token is stored', () => {
+    spyOn(authService, 'getToken').and.returnValue(null);
+
+    httpClient.get('/api/associates/me/dashboard').subscribe();
+
+    const req = httpMock.expectOne('/api/associates/me/dashboard');
+    expect(req.request.headers.has('Authorization')).toBeFalse();
+    req.flush({});
+  });
 });

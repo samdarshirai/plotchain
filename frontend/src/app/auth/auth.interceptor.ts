@@ -15,7 +15,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authorizedReq).pipe(
     catchError(error => {
-      if (error.status === 401) {
+      // A 401 from the login call itself is an expected "bad credentials" response, not an
+      // expired session — logging the user out here would wipe a valid token when a logged-in
+      // user mistypes their password on the login screen.
+      if (error.status === 401 && !req.url.includes('/api/auth/login')) {
         authService.logout();
         router.navigate(['/login']);
       }

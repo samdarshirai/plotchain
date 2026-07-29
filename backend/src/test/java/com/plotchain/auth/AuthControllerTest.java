@@ -72,4 +72,13 @@ class AuthControllerTest {
                 .content(new ObjectMapper().writeValueAsString(new LoginRequest("jane@plotchain.test", "wrong"))))
             .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void returns400ForMissingPassword() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                .contentType("application/json")
+                .content("{\"email\":\"jane@plotchain.test\"}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").isNotEmpty());
+    }
 }

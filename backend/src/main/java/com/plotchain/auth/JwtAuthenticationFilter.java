@@ -13,7 +13,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.UUID;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -35,13 +34,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith(BEARER_PREFIX)) {
             String token = header.substring(BEARER_PREFIX.length());
-            if (jwtService.isTokenValid(token)) {
-                UUID associateId = jwtService.extractAssociateId(token);
-                String role = jwtService.extractRole(token).name();
+            // Single parse/verify per request: a malformed-but-signed token (no role claim,
+            // non-UUID subject) must fall through to "unauthenticated", never throw.
+            jwtService.authenticate(token).ifPresent(authenticated -> {
                 var authentication = new UsernamePasswordAuthenticationToken(
-                    associateId, null, List.of(new SimpleGrantedAuthority(role)));
+                    authenticated.associateId(), null,
+                    List.of(new SimpleGrantedAuthority(authenticated.role().name())));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
+            });
         }
         filterChain.doFilter(request, response);
     }
