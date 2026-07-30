@@ -85,19 +85,20 @@ describe('CompensationStepComponent', () => {
     req.flush({ ...emptyPlan, directIncomePct: 50 });
   }));
 
-  it('sends royaltyBonusRates/rewardTiers reflecting current row state, with tierLevel derived by row index', fakeAsync(() => {
+  it('autosaves from a table-only edit, sending royaltyBonusRates/rewardTiers with tierLevel derived by row index', fakeAsync(() => {
     const component = fixture.componentInstance;
 
+    // No scalar field is touched here -- table row changes must independently drive the
+    // debounced save (via rowsChanged$), since royaltyRows/rewardTierRows aren't form controls
+    // and never flow through form.valueChanges.
     // Remove the first reward tier row -- the remaining row should shift from level 2 to 1.
     component.onRewardTierRowsChange([{ volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy' }]);
     component.onRoyaltyRowsChange([{ rankId: 'rank-2', royaltyPct: 3 }]);
-    // Row edits alone don't drive the debounced-save subscription (it watches form.valueChanges,
-    // matching branding's pattern); a scalar field edit is what triggers the save here, and it
-    // picks up the current row state at save time.
-    component.form.get('directIncomePct')?.setValue(20);
 
+    httpMock.expectNone('/api/company/compensation');
     tick(400);
     const req = httpMock.expectOne('/api/company/compensation');
+    expect(req.request.method).toBe('PUT');
     expect(req.request.body.royaltyBonusRates).toEqual([{ rankId: 'rank-2', royaltyPct: 3 }]);
     expect(req.request.body.rewardTiers).toEqual([
       { tierLevel: 1, volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy' }
@@ -129,6 +130,32 @@ describe('CompensationStepComponent', () => {
 
     expect(fixture.componentInstance.fieldError('directIncomePct')).toBe('must be between 0 and 100');
     expect(fixture.componentInstance.savedJustNow).toBeFalse();
+  }));
+
+  it('sets a translated submitError on a 500 with no fields map, since it has nowhere else to render', fakeAsync(() => {
+    fixture.componentInstance.form.get('directIncomePct')?.setValue(20);
+
+    tick(400);
+    httpMock.expectOne('/api/company/compensation').flush(
+      { error: 'boom' },
+      { status: 500, statusText: 'Server Error' }
+    );
+
+    expect(fixture.componentInstance.submitError).toBeTruthy();
+    expect(fixture.componentInstance.savedJustNow).toBeFalse();
+  }));
+
+  it('sets a translated submitError on a 400 keyed to a field with no visible field-error slot (settlementCycle)', fakeAsync(() => {
+    fixture.componentInstance.form.get('directIncomePct')?.setValue(20);
+
+    tick(400);
+    httpMock.expectOne('/api/company/compensation').flush(
+      { error: 'validation failed', fields: { settlementCycle: 'unsupported cycle' } },
+      { status: 400, statusText: 'Bad Request' }
+    );
+
+    expect(fixture.componentInstance.submitError).toBeTruthy();
+    expect(fixture.componentInstance.fieldError('directIncomePct')).toBeUndefined();
   }));
 
   it('calls setupService.refresh() only on a successful save', fakeAsync(() => {

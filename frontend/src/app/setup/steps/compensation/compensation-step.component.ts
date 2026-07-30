@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { Subject, Subscription } from 'rxjs';
+import { Subject, Subscription, merge } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
@@ -16,6 +16,20 @@ import { SetupService } from '../../setup.service';
 import { CompensationPlanRequest, RankOption } from '../../models/compensation-plan.model';
 
 const DEFAULT_SCENARIO_VOLUME = 1000000; // spec example: "sells ₹10L on each leg"
+
+// The only form fields with a visible <app-field-error> in the template. A server-side
+// field error keyed on anything else (settlementCycle, royaltyBonusRates, rewardTiers, or an
+// unkeyed 500) would otherwise render nothing at all -- those get routed to submitError instead.
+const RENDERED_FIELD_ERROR_KEYS = [
+  'directIncomePct',
+  'matchingIncomePct',
+  'sponsorMatchingPct',
+  'tdsPct',
+  'adminChargeWithPanPct',
+  'adminChargeWithoutPanPct',
+  'activationFee',
+  'minWithdrawal'
+];
 
 @Component({
   selector: 'app-compensation-step',
@@ -204,6 +218,9 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
   private translate = inject(TranslateService);
   private destroyed$ = new Subject<void>();
   private planSubscription?: Subscription;
+  // royaltyRows/rewardTierRows aren't form controls, so they don't flow through
+  // form.valueChanges -- this feeds their edits into the same debounced save arm.
+  private rowsChanged$ = new Subject<void>();
 
   form = this.fb.group({
     directIncomePct: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
@@ -248,13 +265,16 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
     // Undebounced: instant, local-only Sample Earnings Preview repaint, no network.
     this.form.valueChanges.pipe(takeUntil(this.destroyed$)).subscribe(() => this.recomputeSampleEarnings());
 
-    // Debounced: same cadence as the other steps' autosave.
-    this.form.valueChanges.pipe(takeUntil(this.destroyed$), debounceTime(400)).subscribe(() => {
-      this.savedJustNow = false;
-      if (this.form.valid) {
-        this.save();
-      }
-    });
+    // Debounced: same cadence as the other steps' autosave. Also fed by rowsChanged$ so that
+    // royalty/reward-tier table edits -- which never touch the form -- reach save() too.
+    merge(this.form.valueChanges, this.rowsChanged$)
+      .pipe(takeUntil(this.destroyed$), debounceTime(400))
+      .subscribe(() => {
+        this.savedJustNow = false;
+        if (this.form.valid) {
+          this.save();
+        }
+      });
   }
 
   ngOnDestroy(): void {
@@ -294,11 +314,13 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
   onRoyaltyRowsChange(rows: Record<string, string | number>[]): void {
     this.royaltyRows = rows;
     this.recomputeSampleEarnings();
+    this.rowsChanged$.next();
   }
 
   onRewardTierRowsChange(rows: Record<string, string | number>[]): void {
     this.rewardTierRows = rows;
     this.recomputeSampleEarnings();
+    this.rowsChanged$.next();
   }
 
   setSettlementCycle(value: string): void {
@@ -392,9 +414,20 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
           // RewardTierGapException's response body has no `fields` map, so it can't go
           // through the usual toFieldErrors() per-field path -- surface it as a banner instead.
           this.submitError = this.translate.instant('setup.compensation.validation.rewardTierGap');
-        } else {
+          return;
+        }
+        const fields = toFieldErrors(err);
+        const hasVisibleFieldError = RENDERED_FIELD_ERROR_KEYS.some(key => key in fields);
+        if (hasVisibleFieldError) {
+          // At least one returned field maps to a control that renders <app-field-error>.
           this.submitError = null;
-          this.serverFieldErrors = toFieldErrors(err);
+          this.serverFieldErrors = fields;
+        } else {
+          // Nothing in `fields` (a plain 500) or only keys with no visible field-error slot
+          // (settlementCycle, royaltyBonusRates, rewardTiers) -- without this, the error would
+          // be entirely invisible since autosave is the only save path.
+          this.serverFieldErrors = {};
+          this.submitError = this.translate.instant('setup.compensation.validation.genericSaveError');
         }
       }
     });
