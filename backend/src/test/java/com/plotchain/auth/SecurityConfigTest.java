@@ -317,6 +317,25 @@ class SecurityConfigTest {
     }
 
     @Test
+    void rootAssociatesListIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/root-associates")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    // Same unstubbed-default-empty-list reasoning as adminsListIsReachableForAnyAdminFamilyToken
+    // above: associateRepository is @MockBean'd unstubbed, so
+    // findByRoleAndParentIdIsNullAndSponsorIdIsNullOrderByJoinedAtAsc(...) resolves to an empty
+    // list and this is a plain 200.
+    @ParameterizedTest
+    @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
+    void rootAssociatesListIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/company/root-associates")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().isOk());
+    }
+
+    @Test
     void passwordChangeIsReachableByAnAssociateToken() throws Exception {
         // A POST under /api/** that an ASSOCIATE must be able to reach. It needs its own
         // matcher ABOVE the blanket ADMIN write rules; without it this returns 403 and no

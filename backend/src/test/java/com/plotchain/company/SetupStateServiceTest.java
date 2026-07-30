@@ -1,5 +1,6 @@
 package com.plotchain.company;
 
+import com.plotchain.associate.AssociateIdGenerator;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.compensation.CompensationPlanService;
@@ -78,7 +79,9 @@ class SetupStateServiceTest {
                 new SecretsEncryptionService("test-secrets-key-at-least-32-bytes-long-for-aes")),
             new PayoutBankAccountService(payoutBankAccountRepository),
             new ProjectService(projectRepository, plotRepository),
-            new AdminProvisioningService(associateRepository, passwordEncoder));
+            new AdminProvisioningService(associateRepository, passwordEncoder),
+            new RootAssociateProvisioningService(associateRepository, rankTierRepository, passwordEncoder,
+                new AssociateIdGenerator(associateRepository, "VP")));
 
         // getSetupState() calls isStepComplete("paymentsKyc") on every invocation, so every test
         // needs this stubbed even if it never asserts on paymentsKyc directly. lenient() because
@@ -92,6 +95,11 @@ class SetupStateServiceTest {
         // "adminTeam" is non-required and defaults to no admin-family rows beyond none at all,
         // matching the other non-required steps' default-incomplete stubbing above.
         lenient().when(associateRepository.countByRoleNot(AssociateRole.ASSOCIATE)).thenReturn(0L);
+        // "rootAssociates" is non-required and defaults to no root existing yet, matching the
+        // other non-required steps' default-incomplete stubbing above.
+        lenient()
+            .when(associateRepository.findByRoleAndParentIdIsNullAndSponsorIdIsNullOrderByJoinedAtAsc(AssociateRole.ASSOCIATE))
+            .thenReturn(List.of());
     }
 
     private void stubPaymentsKycComplete() {
@@ -421,6 +429,44 @@ class SetupStateServiceTest {
         assertThat(response.canGoLive()).isFalse();
         assertThat(response.steps().stream()
             .filter(s -> s.key().equals("adminTeam")).findFirst().orElseThrow().required())
+            .isFalse();
+    }
+
+    @Test
+    void rootAssociatesStepIsIncompleteWithNoRoots() {
+        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
+        stubCompanyProfile(new CompanyProfile());
+        stubCompanyBranding(blankBranding());
+        stubCompensationIncomplete();
+
+        SetupStateResponse response = setupStateService.getSetupState();
+
+        assertThat(response.steps().stream()
+            .filter(s -> s.key().equals("rootAssociates")).findFirst().orElseThrow().complete())
+            .isFalse();
+        // rootAssociates is optional -- canGoLive is unaffected either way.
+        assertThat(response.canGoLive()).isFalse();
+    }
+
+    @Test
+    void rootAssociatesStepIsCompleteWithOneRoot() {
+        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
+        stubCompanyProfile(new CompanyProfile());
+        stubCompanyBranding(blankBranding());
+        stubCompensationIncomplete();
+        com.plotchain.associate.Associate root = new com.plotchain.associate.Associate();
+        when(associateRepository.findByRoleAndParentIdIsNullAndSponsorIdIsNullOrderByJoinedAtAsc(AssociateRole.ASSOCIATE))
+            .thenReturn(List.of(root));
+
+        SetupStateResponse response = setupStateService.getSetupState();
+
+        assertThat(response.steps().stream()
+            .filter(s -> s.key().equals("rootAssociates")).findFirst().orElseThrow().complete())
+            .isTrue();
+        // rootAssociates is optional -- completing it must not affect the Go Live gate.
+        assertThat(response.canGoLive()).isFalse();
+        assertThat(response.steps().stream()
+            .filter(s -> s.key().equals("rootAssociates")).findFirst().orElseThrow().required())
             .isFalse();
     }
 

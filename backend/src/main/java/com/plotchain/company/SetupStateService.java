@@ -13,8 +13,7 @@ import java.util.List;
 public class SetupStateService {
 
     // Order and required-ness match the master roadmap's 8-step wizard and its Step 8 "canGoLive"
-    // gate (Company Profile + Compensation + Payments & KYC). "rootAssociates" reports
-    // incomplete until its own phase (11) lands and replaces its arm in isStepComplete below.
+    // gate (Company Profile + Compensation + Payments & KYC).
     private static final List<StepDefinition> STEP_DEFINITIONS = List.of(
         new StepDefinition(1, "companyProfile", true),
         new StepDefinition(2, "branding", false),
@@ -34,6 +33,7 @@ public class SetupStateService {
     private final PayoutBankAccountService payoutBankAccountService;
     private final ProjectService projectService;
     private final AdminProvisioningService adminProvisioningService;
+    private final RootAssociateProvisioningService rootAssociateProvisioningService;
 
     public SetupStateService(SetupStateRepository setupStateRepository,
                               CompanyProfileService companyProfileService,
@@ -42,7 +42,8 @@ public class SetupStateService {
                               PaymentConfigService paymentConfigService,
                               PayoutBankAccountService payoutBankAccountService,
                               ProjectService projectService,
-                              AdminProvisioningService adminProvisioningService) {
+                              AdminProvisioningService adminProvisioningService,
+                              RootAssociateProvisioningService rootAssociateProvisioningService) {
         this.setupStateRepository = setupStateRepository;
         this.companyProfileService = companyProfileService;
         this.companyBrandingService = companyBrandingService;
@@ -51,6 +52,7 @@ public class SetupStateService {
         this.payoutBankAccountService = payoutBankAccountService;
         this.projectService = projectService;
         this.adminProvisioningService = adminProvisioningService;
+        this.rootAssociateProvisioningService = rootAssociateProvisioningService;
     }
 
     public SetupStateResponse getSetupState() {
@@ -89,8 +91,6 @@ public class SetupStateService {
         return getSetupState();
     }
 
-    // "rootAssociates" falls through to the default arm (stubbed false) until its own phase
-    // (11) lands and replaces it here.
     private boolean isStepComplete(String key) {
         return switch (key) {
             case "companyProfile" -> companyProfileService.isComplete();
@@ -99,6 +99,7 @@ public class SetupStateService {
             case "paymentsKyc" -> paymentConfigService.isComplete() && payoutBankAccountService.isComplete();
             case "projects" -> projectService.isComplete();
             case "adminTeam" -> adminProvisioningService.isComplete();
+            case "rootAssociates" -> rootAssociateProvisioningService.isComplete();
             case "reviewLaunch" -> isLaunched();
             default -> false;
         };
