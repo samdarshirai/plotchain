@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -174,6 +175,32 @@ class CompensationPlanServiceTest {
         verify(versionRepository).save(captor.capture());
         assertThat(captor.getValue().getEffectiveFrom()).isEqualTo(LocalDate.now());
         assertThat(response.effectiveFrom()).isEqualTo(LocalDate.now());
+    }
+
+    @Test
+    void updatePlanThrowsWhenEffectiveDateAlreadyHasAVersion() {
+        when(versionRepository.findFirstByOrderByCreatedAtDesc()).thenReturn(Optional.of(seedVersion()));
+        lenient().when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
+
+        LocalDate effectiveFrom = LocalDate.now().plusDays(5);
+        List<RewardTierInput> validTiers = List.of(
+            new RewardTierInput(1, new BigDecimal("1000"), new BigDecimal("100"), "Tier 1")
+        );
+        CompensationPlanRequest request = requestWithTiersAndEffectiveFrom(validTiers, effectiveFrom);
+
+        // First save for this effective date succeeds.
+        compensationPlanService.updatePlan(request, ADMIN_ID);
+        verify(versionRepository, times(1)).save(any());
+
+        // Second save for the SAME effective date (e.g. admin notices a typo and re-saves the
+        // same day) must be rejected before any write, not surface the unique-index violation.
+        when(versionRepository.existsByEffectiveFrom(effectiveFrom)).thenReturn(true);
+
+        assertThatThrownBy(() -> compensationPlanService.updatePlan(request, ADMIN_ID))
+            .isInstanceOf(DuplicateEffectiveDateException.class)
+            .hasMessageContaining(effectiveFrom.toString());
+
+        verify(versionRepository, times(1)).save(any());
     }
 
     // -- isComplete ----------------------------------------------------------

@@ -14,4 +14,9 @@ public class CompensationExceptionHandler {
     public ResponseEntity<Map<String, String>> handleRewardTierGap(RewardTierGapException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(DuplicateEffectiveDateException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicateEffectiveDate(DuplicateEffectiveDateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
 }

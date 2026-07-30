@@ -59,6 +59,15 @@ public class CompensationPlanService {
         String nextVersionLabel = nextVersionLabel();
         LocalDate effectiveFrom = request.effectiveFrom() != null ? request.effectiveFrom() : LocalDate.now();
 
+        // idx_compensation_plan_version_effective_from (V8) allows at most one version per
+        // calendar date. Check before writing so a same-day double-save gets a clean domain
+        // error instead of an unmapped DataIntegrityViolationException.
+        if (versionRepository.existsByEffectiveFrom(effectiveFrom)) {
+            throw new DuplicateEffectiveDateException(
+                "A compensation plan version is already effective on " + effectiveFrom
+                    + "; choose a different effective date.");
+        }
+
         CompensationPlanVersion newVersion = new CompensationPlanVersion(
             UUID.randomUUID(),
             nextVersionLabel,
