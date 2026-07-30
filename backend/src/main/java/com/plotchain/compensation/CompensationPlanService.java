@@ -69,21 +69,27 @@ public class CompensationPlanService {
         // later save of a given day lands here with a row already present.
         CompensationPlanVersion existing = versionRepository.findByEffectiveFrom(effectiveFrom).orElse(null);
         String versionLabel;
+        boolean sameAuthor = existing != null
+            && existing.getCreatedByAssociateId() != null
+            && existing.getCreatedByAssociateId().equals(adminId);
         if (existing == null) {
             versionLabel = nextVersionLabel();
-        } else if (existing.getCreatedByAssociateId() == null
-                || !existing.getCreatedByAssociateId().equals(adminId)) {
+        } else if (!sameAuthor || !effectiveFrom.equals(LocalDate.now())) {
             // Null author = the V8 genesis seed row; a different non-null author = another
-            // admin's edit. Neither is ours to overwrite -- history stays immutable.
+            // admin's edit; a past effectiveFrom (even by the same author) is an already-effective
+            // historical version. None of these are ours to overwrite -- history stays immutable.
+            // Only today's row, by its own author, is a continuation rather than history.
             throw new DuplicateEffectiveDateException(
                 "A compensation plan version is already effective on " + effectiveFrom
                     + (existing.getCreatedByAssociateId() == null
                         ? "; it was not created by you"
-                        : "; it belongs to a different administrator's edit")
+                        : !sameAuthor
+                            ? "; it belongs to a different administrator's edit"
+                            : "; it is a past, already-effective version")
                     + " and cannot be replaced. Choose a different effective date.");
         } else {
-            // Same admin, same calendar date: this is a continuation of today's edit, not a new
-            // point in history. Replace the row (keeping its label) instead of appending.
+            // Same admin, same calendar date (today): this is a continuation of today's edit, not
+            // a new point in history. Replace the row (keeping its label) instead of appending.
             versionLabel = existing.getVersionLabel();
             replaceExistingVersion(existing);
         }

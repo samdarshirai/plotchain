@@ -208,6 +208,31 @@ class CompensationPlanServiceTest {
     }
 
     @Test
+    void updatePlanThrowsWhenEffectiveDateIsAPastDayEvenForTheSameAdmin() {
+        lenient().when(versionRepository.findFirstByOrderByCreatedAtDesc()).thenReturn(Optional.of(seedVersion()));
+        lenient().when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
+
+        LocalDate effectiveFrom = LocalDate.now().minusDays(1);
+        List<RewardTierInput> validTiers = List.of(
+            new RewardTierInput(1, new BigDecimal("1000"), new BigDecimal("100"), "Tier 1")
+        );
+        CompensationPlanRequest request = requestWithTiersAndEffectiveFrom(validTiers, effectiveFrom);
+
+        // A version already exists for this date, authored by THIS SAME admin. Same-author replace
+        // is only for continuing TODAY's edit -- a prior day's already-effective version must stay
+        // immutable even to its own author.
+        when(versionRepository.findByEffectiveFrom(effectiveFrom))
+            .thenReturn(Optional.of(versionOn(effectiveFrom, "v2", ADMIN_ID)));
+
+        assertThatThrownBy(() -> compensationPlanService.updatePlan(request, ADMIN_ID))
+            .isInstanceOf(DuplicateEffectiveDateException.class)
+            .hasMessageContaining(effectiveFrom.toString());
+
+        verify(versionRepository, never()).save(any());
+        verify(versionRepository, never()).delete(any());
+    }
+
+    @Test
     void updatePlanThrowsWhenEffectiveDateBelongsToTheGenesisSeedRowWithNoAuthor() {
         lenient().when(versionRepository.findFirstByOrderByCreatedAtDesc()).thenReturn(Optional.of(seedVersion()));
         lenient().when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
