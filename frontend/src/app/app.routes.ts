@@ -7,12 +7,12 @@ import { authGuard } from './auth/auth.guard';
 import { adminGuard } from './admin/admin.guard';
 import { setupModeGuard, launchedModeGuard } from './setup/setup.guard';
 import { SetupShellComponent } from './setup/setup-shell.component';
-import { SetupStepPlaceholderComponent } from './setup/setup-step-placeholder.component';
 import { CompanyProfileStepComponent } from './setup/steps/company-profile/company-profile-step.component';
 import { BrandingStepComponent } from './setup/steps/branding/branding-step.component';
 import { CompensationStepComponent } from './setup/steps/compensation/compensation-step.component';
 import { PaymentsKycStepComponent } from './setup/steps/payments-kyc/payments-kyc-step.component';
 import { AdminTeamStepComponent } from './setup/steps/admin-team/admin-team-step.component';
+import { RootAssociatesStepComponent } from './setup/steps/root-associates/root-associates-step.component';
 import { ProjectsStepComponent } from './setup/steps/projects/projects-step.component';
 import { ReviewLaunchStepComponent } from './setup/steps/review-launch/review-launch-step.component';
 import { SettingsShellComponent } from './settings/settings-shell.component';
@@ -37,7 +37,7 @@ export const routes: Routes = [
       { path: 'projects', component: ProjectsStepComponent, data: { stepKey: 'projects' } },
       { path: 'payments-kyc', component: PaymentsKycStepComponent, data: { stepKey: 'paymentsKyc' } },
       { path: 'admin-team', component: AdminTeamStepComponent, data: { stepKey: 'adminTeam' } },
-      { path: 'root-associates', component: SetupStepPlaceholderComponent, data: { stepKey: 'rootAssociates' } },
+      { path: 'root-associates', component: RootAssociatesStepComponent, data: { stepKey: 'rootAssociates' } },
       { path: 'review-launch', component: ReviewLaunchStepComponent, data: { stepKey: 'reviewLaunch' } },
       { path: '', redirectTo: 'company-profile', pathMatch: 'full' }
     ]
