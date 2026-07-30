@@ -19,6 +19,8 @@ jwt:
   expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
 
 plotchain:
+  associate-id-prefix: ${PLOTCHAIN_ASSOCIATE_ID_PREFIX:VP}
   bootstrap:
+    admin-user-id: ${PLOTCHAIN_ADMIN_USER_ID:admin}
     admin-email: ${PLOTCHAIN_ADMIN_EMAIL:}
     admin-password: ${PLOTCHAIN_ADMIN_PASSWORD:}

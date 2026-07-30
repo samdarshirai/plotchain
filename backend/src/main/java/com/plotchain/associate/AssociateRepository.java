@@ -51,4 +51,12 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     boolean existsByEmail(String email);
 
     boolean existsByParentIdAndPosition(UUID parentId, String position);
+
+    Optional<Associate> findByUserId(String userId);
+
+    boolean existsByUserId(String userId);
+
+    // Used to generate the next associate ID (e.g. VP00001 -> VP00002). Zero-padded fixed-width
+    // suffixes make string-descending order equal numeric order, so this needs no native SQL.
+    Optional<Associate> findTopByUserIdStartingWithOrderByUserIdDesc(String prefix);
 }

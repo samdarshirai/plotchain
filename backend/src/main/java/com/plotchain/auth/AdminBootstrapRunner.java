@@ -30,17 +30,20 @@ public class AdminBootstrapRunner implements ApplicationRunner {
 
     private final AssociateRepository associateRepository;
     private final PasswordEncoder passwordEncoder;
+    private final String adminUserId;
     private final String adminEmail;
     private final String adminPassword;
 
     public AdminBootstrapRunner(
         AssociateRepository associateRepository,
         PasswordEncoder passwordEncoder,
+        @Value("${plotchain.bootstrap.admin-user-id:admin}") String adminUserId,
         @Value("${plotchain.bootstrap.admin-email:}") String adminEmail,
         @Value("${plotchain.bootstrap.admin-password:}") String adminPassword
     ) {
         this.associateRepository = associateRepository;
         this.passwordEncoder = passwordEncoder;
+        this.adminUserId = adminUserId;
         this.adminEmail = adminEmail;
         this.adminPassword = adminPassword;
     }
@@ -56,6 +59,7 @@ public class AdminBootstrapRunner implements ApplicationRunner {
 
         Associate admin = new Associate();
         admin.setId(UUID.randomUUID());
+        admin.setUserId(adminUserId);
         admin.setName("Administrator");
         admin.setEmail(adminEmail);
         admin.setPasswordHash(passwordEncoder.encode(adminPassword));

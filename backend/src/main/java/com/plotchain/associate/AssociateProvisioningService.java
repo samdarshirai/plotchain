@@ -2,6 +2,7 @@ package com.plotchain.associate;
 
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -19,15 +20,18 @@ public class AssociateProvisioningService {
     private final AssociateRepository associateRepository;
     private final RankTierRepository rankTierRepository;
     private final PasswordEncoder passwordEncoder;
+    private final String associateIdPrefix;
 
     public AssociateProvisioningService(
         AssociateRepository associateRepository,
         RankTierRepository rankTierRepository,
-        PasswordEncoder passwordEncoder
+        PasswordEncoder passwordEncoder,
+        @Value("${plotchain.associate-id-prefix:VP}") String associateIdPrefix
     ) {
         this.associateRepository = associateRepository;
         this.rankTierRepository = rankTierRepository;
         this.passwordEncoder = passwordEncoder;
+        this.associateIdPrefix = associateIdPrefix;
     }
 
     public CreateAssociateResponse create(CreateAssociateRequest request) {
@@ -49,9 +53,11 @@ public class AssociateProvisioningService {
             .orElseThrow(NoRankTiersConfiguredException::new);
 
         String temporaryPassword = generateTemporaryPassword();
+        String userId = generateAssociateId();
 
         Associate associate = new Associate();
         associate.setId(UUID.randomUUID());
+        associate.setUserId(userId);
         associate.setName(request.name());
         associate.setEmail(request.email());
         associate.setPasswordHash(passwordEncoder.encode(temporaryPassword));
@@ -67,6 +73,30 @@ public class AssociateProvisioningService {
         associateRepository.save(associate);
 
         return new CreateAssociateResponse(associate.getId(), temporaryPassword);
+    }
+
+    // Generates a fixed-width, zero-padded ID (e.g. VP00001, VP00002, ...) so that string
+    // ordering matches numeric ordering, letting findTopByUserIdStartingWithOrderByUserIdDesc
+    // work without native SQL. Re-checks existsByUserId defensively before returning: two
+    // concurrent provisioning calls could otherwise compute the same next number.
+    private String generateAssociateId() {
+        int next = associateRepository.findTopByUserIdStartingWithOrderByUserIdDesc(associateIdPrefix)
+            .map(Associate::getUserId)
+            .map(existingId -> {
+                try {
+                    return Integer.parseInt(existingId.substring(associateIdPrefix.length())) + 1;
+                } catch (NumberFormatException e) {
+                    return 1;
+                }
+            })
+            .orElse(1);
+
+        String candidate;
+        do {
+            candidate = String.format("%s%05d", associateIdPrefix, next);
+            next++;
+        } while (associateRepository.existsByUserId(candidate));
+        return candidate;
     }
 
     private static String generateTemporaryPassword() {

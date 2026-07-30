@@ -26,13 +26,14 @@ class AdminBootstrapRunnerTest {
     void createsTheFirstAdminWhenTheTableIsEmpty() throws Exception {
         when(associateRepository.count()).thenReturn(0L);
         AdminBootstrapRunner runner = new AdminBootstrapRunner(
-            associateRepository, passwordEncoder, "boss@example.com", "s3cret-password");
+            associateRepository, passwordEncoder, "founder", "boss@example.com", "s3cret-password");
 
         runner.run(null);
 
         ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
         verify(associateRepository).save(saved.capture());
         Associate admin = saved.getValue();
+        assertThat(admin.getUserId()).isEqualTo("founder");
         assertThat(admin.getEmail()).isEqualTo("boss@example.com");
         assertThat(admin.getRole()).isEqualTo(AssociateRole.ADMIN);
         assertThat(admin.getRankId()).isNull();
@@ -45,7 +46,7 @@ class AdminBootstrapRunnerTest {
     void doesNothingWhenAssociatesAlreadyExist() throws Exception {
         when(associateRepository.count()).thenReturn(5L);
         AdminBootstrapRunner runner = new AdminBootstrapRunner(
-            associateRepository, passwordEncoder, "boss@example.com", "s3cret-password");
+            associateRepository, passwordEncoder, "founder", "boss@example.com", "s3cret-password");
 
         runner.run(null);
 
@@ -55,7 +56,7 @@ class AdminBootstrapRunnerTest {
     @Test
     void doesNothingWhenCredentialsAreNotConfigured() throws Exception {
         AdminBootstrapRunner runner = new AdminBootstrapRunner(
-            associateRepository, passwordEncoder, "", "");
+            associateRepository, passwordEncoder, "founder", "", "");
 
         runner.run(null);
 

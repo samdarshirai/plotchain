@@ -105,6 +105,49 @@ class AssociateRepositoryTest {
         assertThat(found.isMustChangePassword()).isTrue();
     }
 
+    @Test
+    void findByUserIdReturnsTheMatchingAssociate() {
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        entityManager.persist(rank);
+
+        Associate associate = newAssociate(null, null, rank.getId());
+        associate.setUserId("VP00001");
+        associateRepository.save(associate);
+        entityManager.flush();
+
+        Optional<Associate> found = associateRepository.findByUserId("VP00001");
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getId()).isEqualTo(associate.getId());
+    }
+
+    @Test
+    void findByUserIdReturnsEmptyForAnUnknownUserId() {
+        Optional<Associate> found = associateRepository.findByUserId("nobody");
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void persistsAnAssociateWithNoEmail() {
+        // Staff accounts created from the setup wizard (Company Settings -> Admin Team) carry
+        // a user ID and no email at all -- email is now a contact field, not a credential.
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        entityManager.persist(rank);
+
+        Associate staff = newAssociate(null, null, rank.getId());
+        staff.setEmail(null);
+        staff.setUserId("finance01");
+        associateRepository.save(staff);
+        entityManager.flush();
+        entityManager.clear();
+
+        Associate found = associateRepository.findById(staff.getId()).orElseThrow();
+
+        assertThat(found.getEmail()).isNull();
+        assertThat(found.getUserId()).isEqualTo("finance01");
+    }
+
     // Uses the JVM default zone (matching how the DATE query params below are interpreted
     // against the TIMESTAMP-without-timezone joined_at column) so the boundary lines up.
     private static Instant instantAt(LocalDate date, LocalTime time) {
@@ -122,6 +165,7 @@ class AssociateRepositoryTest {
         a.setKycStatus(KycStatus.VERIFIED);
         a.setJoinedAt(Instant.now());
         a.setCumulativeMatchedVolume(BigDecimal.ZERO);
+        a.setUserId("u-" + id);
         a.setEmail(id + "@test.local");
         a.setPasswordHash(TEST_PASSWORD_HASH);
         a.setRole(AssociateRole.ASSOCIATE);
