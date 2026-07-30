@@ -12,8 +12,8 @@ import { AuthService } from './auth.service';
   template: `
     <form class="login-form" [formGroup]="form" (ngSubmit)="onSubmit()">
       <label>
-        {{ 'auth.emailLabel' | translate }}
-        <input type="email" formControlName="email" />
+        {{ 'auth.userIdLabel' | translate }}
+        <input type="text" autocomplete="username" formControlName="userId" />
       </label>
       <label>
         {{ 'auth.passwordLabel' | translate }}
@@ -30,7 +30,7 @@ export class LoginComponent {
   private router = inject(Router);
 
   form = this.fb.group({
-    email: ['', [Validators.required, Validators.email]],
+    userId: ['', Validators.required],
     password: ['', Validators.required]
   });
   error = false;
@@ -39,8 +39,8 @@ export class LoginComponent {
     if (this.form.invalid) {
       return;
     }
-    const { email, password } = this.form.getRawValue();
-    this.authService.login(email!, password!).subscribe({
+    const { userId, password } = this.form.getRawValue();
+    this.authService.login(userId!, password!).subscribe({
       next: response => {
         if (response.mustChangePassword) {
           this.router.navigate(['/change-password']);

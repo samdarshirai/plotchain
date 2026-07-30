@@ -15,10 +15,10 @@
     "loadError": "आपका डैशबोर्ड लोड करने में समस्या हुई। कृपया पुनः प्रयास करें।"
   },
   "auth": {
-    "emailLabel": "ईमेल",
+    "userIdLabel": "एसोसिएट आईडी",
     "passwordLabel": "पासवर्ड",
     "loginButton": "लॉग इन करें",
-    "loginError": "ईमेल या पासवर्ड गलत है। कृपया पुनः प्रयास करें।",
+    "loginError": "आईडी या पासवर्ड गलत है। कृपया पुनः प्रयास करें।",
     "logout": "लॉग आउट",
     "changePasswordTitle": "अपना पासवर्ड बदलें",
     "currentPasswordLabel": "वर्तमान पासवर्ड",

@@ -32,13 +32,13 @@ describe('AuthService', () => {
     const token = tokenExpiringAt(3600);
     const mockResponse: LoginResponse = { token, associateId: 'assoc-1', role: 'ASSOCIATE', mustChangePassword: false };
 
-    service.login('jane@plotchain.test', 'Password123!').subscribe(res => {
+    service.login('jane', 'Password123!').subscribe(res => {
       expect(res.token).toBe(token);
     });
 
     const req = httpMock.expectOne('/api/auth/login');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ email: 'jane@plotchain.test', password: 'Password123!' });
+    expect(req.request.body).toEqual({ userId: 'jane', password: 'Password123!' });
     req.flush(mockResponse);
 
     expect(service.getToken()).toBe(token);

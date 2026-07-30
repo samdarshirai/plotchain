@@ -25,7 +25,7 @@ describe('LoginComponent', () => {
   afterEach(() => httpMock.verify());
 
   it('navigates to /dashboard on successful login', () => {
-    fixture.componentInstance.form.setValue({ email: 'jane@plotchain.test', password: 'Password123!' });
+    fixture.componentInstance.form.setValue({ userId: 'jane', password: 'Password123!' });
     fixture.componentInstance.onSubmit();
 
     const req = httpMock.expectOne('/api/auth/login');
@@ -35,7 +35,7 @@ describe('LoginComponent', () => {
   });
 
   it('navigates to the admin route on successful ADMIN login', () => {
-    fixture.componentInstance.form.setValue({ email: 'admin@plotchain.test', password: 'Password123!' });
+    fixture.componentInstance.form.setValue({ userId: 'admin', password: 'Password123!' });
     fixture.componentInstance.onSubmit();
 
     const req = httpMock.expectOne('/api/auth/login');
@@ -45,7 +45,7 @@ describe('LoginComponent', () => {
   });
 
   it('navigates to /dashboard on successful ASSOCIATE login', () => {
-    fixture.componentInstance.form.setValue({ email: 'jane@plotchain.test', password: 'Password123!' });
+    fixture.componentInstance.form.setValue({ userId: 'jane', password: 'Password123!' });
     fixture.componentInstance.onSubmit();
 
     const req = httpMock.expectOne('/api/auth/login');
@@ -55,11 +55,11 @@ describe('LoginComponent', () => {
   });
 
   it('shows an error on failed login', () => {
-    fixture.componentInstance.form.setValue({ email: 'jane@plotchain.test', password: 'wrong' });
+    fixture.componentInstance.form.setValue({ userId: 'jane', password: 'wrong' });
     fixture.componentInstance.onSubmit();
 
     const req = httpMock.expectOne('/api/auth/login');
-    req.flush({ error: 'Invalid email or password' }, { status: 401, statusText: 'Unauthorized' });
+    req.flush({ error: 'Invalid ID or password' }, { status: 401, statusText: 'Unauthorized' });
 
     expect(fixture.componentInstance.error).toBeTrue();
   });

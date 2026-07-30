@@ -58,7 +58,7 @@ describe('authInterceptor', () => {
     spyOn(router, 'navigate');
 
     let caughtError: unknown;
-    httpClient.post('/api/auth/login', { email: 'x@y.z', password: 'wrong' })
+    httpClient.post('/api/auth/login', { userId: 'jane', password: 'wrong' })
       .subscribe({ error: err => (caughtError = err) });
 
     const req = httpMock.expectOne('/api/auth/login');

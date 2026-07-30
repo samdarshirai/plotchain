@@ -15,10 +15,10 @@
     "loadError": "Something went wrong loading your dashboard. Please try again."
   },
   "auth": {
-    "emailLabel": "Email",
+    "userIdLabel": "Associate ID",
     "passwordLabel": "Password",
     "loginButton": "Log In",
-    "loginError": "Invalid email or password. Please try again.",
+    "loginError": "Invalid ID or password. Please try again.",
     "logout": "Log Out",
     "changePasswordTitle": "Change Your Password",
     "currentPasswordLabel": "Current Password",

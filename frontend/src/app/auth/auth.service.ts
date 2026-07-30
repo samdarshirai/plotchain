@@ -12,8 +12,8 @@ const ROLE_KEY = 'plotchain.auth.role';
 export class AuthService {
   constructor(private http: HttpClient) {}
 
-  login(email: string, password: string): Observable<LoginResponse> {
-    const request: LoginRequest = { email, password };
+  login(userId: string, password: string): Observable<LoginResponse> {
+    const request: LoginRequest = { userId, password };
     return this.http.post<LoginResponse>('/api/auth/login', request).pipe(
       tap(response => {
         localStorage.setItem(TOKEN_KEY, response.token);
