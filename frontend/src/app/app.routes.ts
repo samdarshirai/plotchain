@@ -10,6 +10,7 @@ import { SetupShellComponent } from './setup/setup-shell.component';
 import { SetupStepPlaceholderComponent } from './setup/setup-step-placeholder.component';
 import { CompanyProfileStepComponent } from './setup/steps/company-profile/company-profile-step.component';
 import { BrandingStepComponent } from './setup/steps/branding/branding-step.component';
+import { CompensationStepComponent } from './setup/steps/compensation/compensation-step.component';
 import { SettingsShellComponent } from './settings/settings-shell.component';
 
 export const routes: Routes = [
@@ -24,7 +25,7 @@ export const routes: Routes = [
     children: [
       { path: 'company-profile', component: CompanyProfileStepComponent, data: { stepKey: 'companyProfile' } },
       { path: 'branding', component: BrandingStepComponent, data: { stepKey: 'branding' } },
-      { path: 'compensation', component: SetupStepPlaceholderComponent, data: { stepKey: 'compensation' } },
+      { path: 'compensation', component: CompensationStepComponent, data: { stepKey: 'compensation' } },
       { path: 'projects', component: SetupStepPlaceholderComponent, data: { stepKey: 'projects' } },
       { path: 'payments-kyc', component: SetupStepPlaceholderComponent, data: { stepKey: 'paymentsKyc' } },
       { path: 'admin-team', component: SetupStepPlaceholderComponent, data: { stepKey: 'adminTeam' } },
