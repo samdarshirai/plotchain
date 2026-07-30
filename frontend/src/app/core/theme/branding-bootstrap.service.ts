@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { catchError, firstValueFrom, of, tap } from 'rxjs';
+import { catchError, firstValueFrom, of, tap, timeout } from 'rxjs';
 import { ThemeService } from './theme.service';
 
 // Phase 5 owns the full /api/company/branding/public contract. Phase 2 only needs enough to
@@ -17,10 +17,14 @@ export class BrandingBootstrapService {
 
   // Runs as an APP_INITIALIZER: the app must not hang or fail to boot if branding is
   // unavailable, so any error (404, network failure, etc.) resolves to `null` instead of
-  // rejecting (decision 9) and the theme is simply left at its default.
+  // rejecting (decision 9) and the theme is simply left at its default. A request that never
+  // completes (e.g. a hung backend mid-deploy) would otherwise block bootstrapApplication
+  // forever, so `timeout(3000)` turns a hang into a TimeoutError that the same catchError path
+  // swallows.
   initialize(): Promise<void> {
     return firstValueFrom(
       this.http.get<BrandingPublic>('/api/company/branding/public').pipe(
+        timeout(3000),
         tap(branding => {
           if (branding) {
             this.theme.apply(branding.primaryColor, branding.secondaryColor);

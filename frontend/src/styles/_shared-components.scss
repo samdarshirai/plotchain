@@ -33,7 +33,7 @@
 .inline-banner--info {
   border-color: var(--brand-primary-soft);
   background: color-mix(in srgb, var(--brand-primary) 10%, var(--surface-card));
-  color: var(--brand-primary);
+  color: var(--text-primary);
 }
 
 .inline-banner--warning {
@@ -206,7 +206,7 @@
 }
 
 .checklist-row__edit {
-  color: var(--brand-primary);
+  color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: 600;
 }

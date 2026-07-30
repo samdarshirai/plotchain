@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { BrandingBootstrapService } from './branding-bootstrap.service';
 import { ThemeService } from './theme.service';
@@ -57,4 +57,20 @@ describe('BrandingBootstrapService', () => {
     await expectAsync(promise).toBeResolved();
     expect(theme.apply).not.toHaveBeenCalled();
   });
+
+  it('resolves without applying a theme when the request hangs past the timeout', fakeAsync(() => {
+    spyOn(theme, 'apply');
+
+    let resolved = false;
+    service.initialize().then(() => (resolved = true));
+
+    httpMock.expectOne('/api/company/branding/public');
+
+    // Deliberately never flush a response - simulates a backend that accepts the
+    // connection but never responds.
+    tick(3000);
+
+    expect(resolved).toBe(true);
+    expect(theme.apply).not.toHaveBeenCalled();
+  }));
 });

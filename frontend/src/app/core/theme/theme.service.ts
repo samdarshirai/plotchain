@@ -49,5 +49,19 @@ export class ThemeService {
     target.style.setProperty('--brand-primary', primary);
     target.style.setProperty('--brand-secondary', secondary);
     target.style.setProperty('--brand-primary-contrast', primaryContrast);
+
+    // `--brand-gradient`/`--brand-primary-soft`/`--brand-primary-hover`/`--brand-secondary-soft`
+    // are declared once at :root in _tokens.scss, each referencing var(--brand-primary)/
+    // var(--brand-secondary) internally. A var() inside a custom-property declaration always
+    // resolves using the value visible at the element where THAT property is declared - so
+    // those :root-declared derived properties would keep resolving against :root's colors even
+    // when `target` is a descendant with its own local override (e.g. a live preview
+    // container). Re-declaring them directly on `target`, computed from the literal colors,
+    // makes the derived tokens scope correctly too. Keep these formulas byte-identical to
+    // _tokens.scss - that file is the source of truth; update both together.
+    target.style.setProperty('--brand-gradient', `linear-gradient(135deg, ${primary}, ${secondary})`);
+    target.style.setProperty('--brand-primary-soft', `color-mix(in srgb, ${primary} 14%, transparent)`);
+    target.style.setProperty('--brand-primary-hover', `color-mix(in srgb, ${primary} 85%, white)`);
+    target.style.setProperty('--brand-secondary-soft', `color-mix(in srgb, ${secondary} 14%, transparent)`);
   }
 }

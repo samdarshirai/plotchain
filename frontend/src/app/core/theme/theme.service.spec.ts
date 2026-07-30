@@ -72,4 +72,25 @@ describe('ThemeService', () => {
 
     expect(target.style.getPropertyValue('--brand-primary-contrast')).toBe('#FFFFFF');
   });
+
+  it('re-derives the :root-only derived brand tokens onto a scoped preview target', () => {
+    const target = document.createElement('div');
+    const child = document.createElement('span');
+    target.appendChild(child);
+    document.body.appendChild(target);
+
+    service.apply('#1A1A2E', '#FF00FF', target);
+
+    expect(target.style.getPropertyValue('--brand-gradient')).toContain('#1A1A2E');
+    expect(target.style.getPropertyValue('--brand-gradient')).toContain('#FF00FF');
+    expect(target.style.getPropertyValue('--brand-primary-soft')).toContain('#1A1A2E');
+    expect(target.style.getPropertyValue('--brand-primary-hover')).toContain('#1A1A2E');
+    expect(target.style.getPropertyValue('--brand-secondary-soft')).toContain('#FF00FF');
+
+    // A descendant should see the scoped derived tokens too, via normal custom-property
+    // inheritance - not just the flat --brand-primary/--brand-secondary values.
+    expect(getComputedStyle(child).getPropertyValue('--brand-gradient')).toContain('#1A1A2E');
+
+    document.body.removeChild(target);
+  });
 });
