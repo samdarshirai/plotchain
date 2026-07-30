@@ -1,8 +1,10 @@
 package com.plotchain.payments;
 
 import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.auth.JwtService;
+import com.plotchain.company.SettingsAuditLogRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,7 +25,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 // @MockBean on the repository INTERFACE so this runs a real PaymentConfigService (and a real
 // SecretsEncryptionService, autowired from the test context) inside a real Spring Security
-// filter chain, per CompanyBrandingControllerTest's pattern.
+// filter chain, per CompanyBrandingControllerTest's pattern. PaymentConfigService now depends
+// on the real SettingsAuditService bean, so its own repository dependencies
+// (SettingsAuditLogRepository, AssociateRepository) need mocking too -- per
+// CompanyProfileControllerTest's pattern.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -33,6 +38,8 @@ class PaymentConfigControllerTest {
     @Autowired JwtService jwtService;
 
     @MockBean PaymentConfigRepository paymentConfigRepository;
+    @MockBean SettingsAuditLogRepository settingsAuditLogRepository;
+    @MockBean AssociateRepository associateRepository;
 
     private String tokenFor(AssociateRole role) {
         Associate token = new Associate();

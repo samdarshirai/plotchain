@@ -1,8 +1,10 @@
 package com.plotchain.payments;
 
 import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.auth.JwtService;
+import com.plotchain.company.SettingsAuditLogRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -21,6 +23,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// @MockBean on the repository INTERFACE so this runs a real KycConfigService inside a real
+// Spring Security filter chain, per CompanyBrandingControllerTest's pattern. KycConfigService
+// now depends on the real SettingsAuditService bean, so its own repository dependencies
+// (SettingsAuditLogRepository, AssociateRepository) need mocking too -- per
+// CompanyProfileControllerTest's pattern.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -30,6 +37,8 @@ class KycConfigControllerTest {
     @Autowired JwtService jwtService;
 
     @MockBean KycConfigRepository kycConfigRepository;
+    @MockBean SettingsAuditLogRepository settingsAuditLogRepository;
+    @MockBean AssociateRepository associateRepository;
 
     private String tokenFor(AssociateRole role) {
         Associate token = new Associate();

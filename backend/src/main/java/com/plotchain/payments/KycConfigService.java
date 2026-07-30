@@ -1,31 +1,41 @@
 package com.plotchain.payments;
 
+import com.plotchain.company.SettingsAuditService;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class KycConfigService {
 
     private final KycConfigRepository kycConfigRepository;
+    private final SettingsAuditService settingsAuditService;
 
-    public KycConfigService(KycConfigRepository kycConfigRepository) {
+    public KycConfigService(KycConfigRepository kycConfigRepository,
+                             SettingsAuditService settingsAuditService) {
         this.kycConfigRepository = kycConfigRepository;
+        this.settingsAuditService = settingsAuditService;
     }
 
     public KycConfigResponse getConfig() {
         return toResponse(currentConfig());
     }
 
-    public KycConfigResponse updateConfig(KycConfigRequest request) {
+    public KycConfigResponse updateConfig(KycConfigRequest request, UUID actorId) {
         KycConfig config = currentConfig();
+        KycConfigResponse before = toResponse(config);
         config.setStrictness(request.strictness());
         config.setRequiredDocuments(joinDocuments(request.requiredDocuments()));
         config.setUpdatedAt(Instant.now());
         kycConfigRepository.save(config);
-        return toResponse(config);
+        KycConfigResponse after = toResponse(config);
+        settingsAuditService.record("PAYMENTS_KYC", "Updated KYC requirements",
+            Map.of("before", before, "after", after), actorId);
+        return after;
     }
 
     // Not part of SetupStateService's paymentsKyc predicate -- the seeded default (STRICT,

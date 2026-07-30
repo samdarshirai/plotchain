@@ -1,29 +1,36 @@
 package com.plotchain.payments;
 
+import com.plotchain.company.SettingsAuditService;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class PaymentConfigService {
 
     private final PaymentConfigRepository paymentConfigRepository;
     private final SecretsEncryptionService secretsEncryptionService;
+    private final SettingsAuditService settingsAuditService;
 
     public PaymentConfigService(PaymentConfigRepository paymentConfigRepository,
-                                 SecretsEncryptionService secretsEncryptionService) {
+                                 SecretsEncryptionService secretsEncryptionService,
+                                 SettingsAuditService settingsAuditService) {
         this.paymentConfigRepository = paymentConfigRepository;
         this.secretsEncryptionService = secretsEncryptionService;
+        this.settingsAuditService = settingsAuditService;
     }
 
     public PaymentConfigResponse getConfig() {
         return toResponse(currentConfig());
     }
 
-    public PaymentConfigResponse updateConfig(PaymentConfigRequest request) {
+    public PaymentConfigResponse updateConfig(PaymentConfigRequest request, UUID actorId) {
         PaymentConfig config = currentConfig();
+        PaymentConfigResponse before = toResponse(config);
         config.setGateway(request.gateway());
         config.setModesEnabled(joinModes(request.modesEnabled()));
         // Blank/absent credentials leave the previously stored ciphertext untouched -- see
@@ -33,7 +40,10 @@ public class PaymentConfigService {
         }
         config.setUpdatedAt(Instant.now());
         paymentConfigRepository.save(config);
-        return toResponse(config);
+        PaymentConfigResponse after = toResponse(config);
+        settingsAuditService.record("PAYMENTS_KYC", "Updated payment gateway configuration",
+            Map.of("before", before, "after", after), actorId);
+        return after;
     }
 
     // Gateway selection alone isn't "a way to collect money" -- credentials must actually be

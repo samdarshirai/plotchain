@@ -84,8 +84,8 @@ class SetupStateServiceTest {
             new CompensationPlanService(
                 compensationPlanVersionRepository, royaltyBonusRateRepository, rewardTierRepository, rankTierRepository, settingsAuditService),
             new PaymentConfigService(paymentConfigRepository,
-                new SecretsEncryptionService("test-secrets-key-at-least-32-bytes-long-for-aes")),
-            new PayoutBankAccountService(payoutBankAccountRepository),
+                new SecretsEncryptionService("test-secrets-key-at-least-32-bytes-long-for-aes"), settingsAuditService),
+            new PayoutBankAccountService(payoutBankAccountRepository, settingsAuditService),
             new ProjectService(projectRepository, plotRepository),
             new AdminProvisioningService(associateRepository, passwordEncoder),
             new RootAssociateProvisioningService(associateRepository, rankTierRepository, passwordEncoder,
