@@ -1,5 +1,6 @@
 package com.plotchain.company;
 
+import com.plotchain.compensation.CompensationPlanService;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -25,13 +26,16 @@ public class SetupStateService {
     private final SetupStateRepository setupStateRepository;
     private final CompanyProfileService companyProfileService;
     private final CompanyBrandingService companyBrandingService;
+    private final CompensationPlanService compensationPlanService;
 
     public SetupStateService(SetupStateRepository setupStateRepository,
                               CompanyProfileService companyProfileService,
-                              CompanyBrandingService companyBrandingService) {
+                              CompanyBrandingService companyBrandingService,
+                              CompensationPlanService compensationPlanService) {
         this.setupStateRepository = setupStateRepository;
         this.companyProfileService = companyProfileService;
         this.companyBrandingService = companyBrandingService;
+        this.compensationPlanService = compensationPlanService;
     }
 
     public SetupStateResponse getSetupState() {
@@ -70,11 +74,12 @@ public class SetupStateService {
         return getSetupState();
     }
 
-    // Each arm returns false (stubbed) until its own phase lands and replaces it here.
+    // Each remaining arm returns false (stubbed) until its own phase lands and replaces it here.
     private boolean isStepComplete(String key) {
         return switch (key) {
             case "companyProfile" -> companyProfileService.isComplete();
             case "branding" -> companyBrandingService.isComplete();
+            case "compensation" -> compensationPlanService.isComplete();
             default -> false;
         };
     }

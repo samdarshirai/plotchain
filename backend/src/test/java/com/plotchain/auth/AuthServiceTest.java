@@ -53,7 +53,10 @@ class AuthServiceTest {
         setupStateService = new SetupStateService(
             setupStateRepository,
             new CompanyProfileService(companyProfileRepository),
-            new CompanyBrandingService(companyBrandingRepository, new CompanyProfileService(companyProfileRepository)));
+            new CompanyBrandingService(companyBrandingRepository, new CompanyProfileService(companyProfileRepository)),
+            // Never invoked here: these tests only exercise isLaunched(), which doesn't touch
+            // compensationPlanService.
+            null);
         authService = new AuthService(associateRepository, passwordEncoder, jwtService, setupStateService);
     }
 
