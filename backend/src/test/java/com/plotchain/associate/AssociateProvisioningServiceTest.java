@@ -34,7 +34,12 @@ class AssociateProvisioningServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AssociateProvisioningService(associateRepository, rankTierRepository, passwordEncoder, "VP");
+        // AssociateIdGenerator is a concrete class -- this JDK's Mockito/ByteBuddy can't
+        // instrument it (see AssociateIdGeneratorTest for its own dedicated coverage), so it's
+        // constructed for real here, backed by the mocked repository, same as every other
+        // service-layer collaborator in this codebase.
+        AssociateIdGenerator associateIdGenerator = new AssociateIdGenerator(associateRepository, "VP");
+        service = new AssociateProvisioningService(associateRepository, rankTierRepository, passwordEncoder, associateIdGenerator);
         // Default stub for the ID-generation lookup: empty repository unless a test overrides it.
         org.mockito.Mockito.lenient()
             .when(associateRepository.findTopByUserIdStartingWithOrderByUserIdDesc("VP"))
@@ -69,40 +74,6 @@ class AssociateProvisioningServiceTest {
         // The response carries the plaintext once; only the hash is persisted.
         assertThat(created.getPasswordHash()).isNotEqualTo(response.temporaryPassword());
         assertThat(passwordEncoder.matches(response.temporaryPassword(), created.getPasswordHash())).isTrue();
-    }
-
-    @Test
-    void generatesTheNextIdGivenAnExistingMaximum() {
-        when(associateRepository.existsByEmail("new@plotchain.test")).thenReturn(false);
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(lowestRank));
-        Associate existing = new Associate();
-        existing.setUserId("VP00007");
-        when(associateRepository.findTopByUserIdStartingWithOrderByUserIdDesc("VP"))
-            .thenReturn(Optional.of(existing));
-
-        CreateAssociateResponse response = service.create(
-            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, null, null));
-
-        ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
-        org.mockito.Mockito.verify(associateRepository).save(saved.capture());
-        assertThat(saved.getValue().getUserId()).isEqualTo("VP00008");
-    }
-
-    @Test
-    void honoursAConfiguredPrefix() {
-        AssociateProvisioningService prefixedService =
-            new AssociateProvisioningService(associateRepository, rankTierRepository, passwordEncoder, "RS");
-        when(associateRepository.existsByEmail("new@plotchain.test")).thenReturn(false);
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(lowestRank));
-        when(associateRepository.findTopByUserIdStartingWithOrderByUserIdDesc("RS")).thenReturn(Optional.empty());
-        when(associateRepository.existsByUserId(org.mockito.ArgumentMatchers.anyString())).thenReturn(false);
-
-        CreateAssociateResponse ignored = prefixedService.create(
-            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, null, null));
-
-        ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
-        org.mockito.Mockito.verify(associateRepository).save(saved.capture());
-        assertThat(saved.getValue().getUserId()).isEqualTo("RS00001");
     }
 
     @Test

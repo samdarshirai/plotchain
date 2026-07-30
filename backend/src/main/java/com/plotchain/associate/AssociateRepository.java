@@ -64,4 +64,10 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     List<Associate> findByRoleNotOrderByUserIdAsc(AssociateRole role);
 
     long countByRoleNot(AssociateRole role);
+
+    // role = ASSOCIATE narrows out admin-family rows, which also have parentId = null by
+    // construction (AdminProvisioningService never sets it). sponsorId IS NULL narrows out
+    // ordinary associates placed via the generic provisioning endpoint without a parent. Together
+    // these identify root associates -- Associate rows seeded at the top of the binary tree.
+    List<Associate> findByRoleAndParentIdIsNullAndSponsorIdIsNullOrderByJoinedAtAsc(AssociateRole role);
 }

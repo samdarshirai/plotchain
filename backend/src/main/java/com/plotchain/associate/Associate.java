@@ -16,6 +16,7 @@ public class Associate {
     private UUID parentId;
     private String position;
     private String name;
+    private String phone;
     @Column(name = "rank_id")
     private UUID rankId;
     @Enumerated(EnumType.STRING)
@@ -48,6 +49,8 @@ public class Associate {
     public void setPosition(String position) { this.position = position; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
     public UUID getRankId() { return rankId; }
     public void setRankId(UUID rankId) { this.rankId = rankId; }
     public KycStatus getKycStatus() { return kycStatus; }
