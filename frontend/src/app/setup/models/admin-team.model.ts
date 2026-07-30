@@ -1,16 +1,23 @@
-export type AdminRole = 'SUPER_ADMIN' | 'FINANCE' | 'KYC_REVIEWER' | 'SUPPORT';
+// The four roles this step's UI can ever assign -- matches the spec's Role select exactly.
+export type AssignableAdminRole = 'SUPER_ADMIN' | 'FINANCE' | 'KYC_REVIEWER' | 'SUPPORT';
+
+// Widened for AdminSummary.role only: GET /api/company/admins (AdminProvisioningService.list())
+// returns every non-ASSOCIATE row, including the founding 'ADMIN' account AdminBootstrapRunner
+// always creates -- so every install has at least one row this type must be able to represent,
+// even though 'ADMIN' can never be *created* through this step's form.
+export type AdminRole = AssignableAdminRole | 'ADMIN';
 
 export interface CreateAdminRequest {
   userId: string;
   fullName: string;
-  role: AdminRole;
+  role: AssignableAdminRole;
   temporaryPassword?: string;
 }
 
 export interface CreateAdminResponse {
   id: string;
   userId: string;
-  role: AdminRole;
+  role: AssignableAdminRole;
   temporaryPassword: string;
 }
 
@@ -29,7 +36,7 @@ export interface UserIdAvailability {
 export type RolePermissions = Record<string, string[]>;
 
 export interface AdminRoleOption {
-  value: AdminRole;
+  value: AssignableAdminRole;
   labelKey: string;
 }
 

@@ -1,6 +1,5 @@
 package com.plotchain.company;
 
-import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.compensation.CompensationPlanService;
@@ -45,10 +44,10 @@ import static org.mockito.Mockito.when;
 class SetupStateServiceTest {
 
     @Mock SetupStateRepository setupStateRepository;
-    // CompanyProfileService/CompanyBrandingService/CompensationPlanService are concrete classes
-    // -- this JDK's Mockito/ByteBuddy can't instrument concrete classes, so real instances are
-    // built over mocked (interface) repositories instead, per the repo's established pattern
-    // (see AuthControllerTest).
+    // CompanyProfileService/CompanyBrandingService/CompensationPlanService are concrete classes.
+    // This repo's convention (see AuthControllerTest and every other service test) is to mock
+    // repository *interfaces* only and instantiate services for real over those mocks, rather
+    // than mocking the service classes themselves -- so real instances are built here too.
     @Mock CompanyProfileRepository companyProfileRepository;
     @Mock CompanyBrandingRepository companyBrandingRepository;
     @Mock CompensationPlanVersionRepository compensationPlanVersionRepository;
@@ -59,10 +58,9 @@ class SetupStateServiceTest {
     @Mock PayoutBankAccountRepository payoutBankAccountRepository;
     @Mock ProjectRepository projectRepository;
     @Mock PlotRepository plotRepository;
-    // AdminProvisioningService is a concrete class -- this JDK's Mockito/ByteBuddy can't
-    // instrument concrete classes, so a real instance is built over mocked (interface)
-    // repositories, same as CompanyProfileService/CompanyBrandingService/CompensationPlanService
-    // above.
+    // AdminProvisioningService is a concrete class, same as CompanyProfileService/
+    // CompanyBrandingService/CompensationPlanService above -- a real instance is built over
+    // mocked (interface) repositories per the same repo convention.
     @Mock AssociateRepository associateRepository;
     @Mock PasswordEncoder passwordEncoder;
 
@@ -93,7 +91,7 @@ class SetupStateServiceTest {
         lenient().when(projectRepository.findAll()).thenReturn(List.of());
         // "adminTeam" is non-required and defaults to no admin-family rows beyond none at all,
         // matching the other non-required steps' default-incomplete stubbing above.
-        lenient().when(associateRepository.findAll()).thenReturn(List.of());
+        lenient().when(associateRepository.countByRoleNot(AssociateRole.ASSOCIATE)).thenReturn(0L);
     }
 
     private void stubPaymentsKycComplete() {
@@ -395,10 +393,7 @@ class SetupStateServiceTest {
         stubCompanyProfile(new CompanyProfile());
         stubCompanyBranding(blankBranding());
         stubCompensationIncomplete();
-        Associate foundingAdmin = new Associate();
-        foundingAdmin.setId(UUID.randomUUID());
-        foundingAdmin.setRole(AssociateRole.ADMIN);
-        when(associateRepository.findAll()).thenReturn(List.of(foundingAdmin));
+        when(associateRepository.countByRoleNot(AssociateRole.ASSOCIATE)).thenReturn(1L);
 
         SetupStateResponse response = setupStateService.getSetupState();
 
@@ -415,13 +410,7 @@ class SetupStateServiceTest {
         stubCompanyProfile(new CompanyProfile());
         stubCompanyBranding(blankBranding());
         stubCompensationIncomplete();
-        Associate foundingAdmin = new Associate();
-        foundingAdmin.setId(UUID.randomUUID());
-        foundingAdmin.setRole(AssociateRole.ADMIN);
-        Associate finance = new Associate();
-        finance.setId(UUID.randomUUID());
-        finance.setRole(AssociateRole.FINANCE);
-        when(associateRepository.findAll()).thenReturn(List.of(foundingAdmin, finance));
+        when(associateRepository.countByRoleNot(AssociateRole.ASSOCIATE)).thenReturn(2L);
 
         SetupStateResponse response = setupStateService.getSetupState();
 

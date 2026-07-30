@@ -111,16 +111,14 @@ class AdminProvisioningServiceTest {
 
     @Test
     void isCompleteIsFalseWithOnlyTheFoundingAdmin() {
-        when(associateRepository.findAll()).thenReturn(List.of(adminFamilyRow(AssociateRole.ADMIN)));
+        when(associateRepository.countByRoleNot(AssociateRole.ASSOCIATE)).thenReturn(1L);
 
         assertThat(service.isComplete()).isFalse();
     }
 
     @Test
     void isCompleteIsTrueWithTwoOrMoreAdminFamilyRows() {
-        when(associateRepository.findAll()).thenReturn(List.of(
-            adminFamilyRow(AssociateRole.ADMIN),
-            adminFamilyRow(AssociateRole.FINANCE)));
+        when(associateRepository.countByRoleNot(AssociateRole.ASSOCIATE)).thenReturn(2L);
 
         assertThat(service.isComplete()).isTrue();
     }
@@ -131,7 +129,7 @@ class AdminProvisioningServiceTest {
         finance.setUserId("finance1");
         finance.setName("Jane Finance");
         finance.setLastActiveAt(Instant.now());
-        when(associateRepository.findByRoleNot(AssociateRole.ASSOCIATE)).thenReturn(List.of(finance));
+        when(associateRepository.findByRoleNotOrderByUserIdAsc(AssociateRole.ASSOCIATE)).thenReturn(List.of(finance));
 
         List<AdminSummaryResponse> summaries = service.list();
 

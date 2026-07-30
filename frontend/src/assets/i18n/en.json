@@ -196,6 +196,7 @@
       "roleFinanceLabel": "Finance",
       "roleKycReviewerLabel": "KYC Reviewer",
       "roleSupportLabel": "Support",
+      "roleAdminLabel": "Admin",
       "temporaryPasswordLabel": "Temporary Password",
       "generatePasswordButtonLabel": "Generate",
       "permissionsPreviewTitle": "Permissions Preview",

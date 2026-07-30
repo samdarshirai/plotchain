@@ -276,7 +276,8 @@ class SecurityConfigTest {
 
     // associateRepository is @MockBean'd at the class level above (unstubbed here), and
     // Mockito's default answer returns an empty List rather than null for a List-returning
-    // method, so findByRoleNot(...) resolves to an empty roster and this is a plain 200.
+    // method, so findByRoleNotOrderByUserIdAsc(...) resolves to an empty roster and this is
+    // a plain 200.
     @ParameterizedTest
     @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
     void adminsListIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {

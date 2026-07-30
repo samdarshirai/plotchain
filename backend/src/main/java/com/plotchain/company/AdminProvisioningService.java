@@ -56,7 +56,7 @@ public class AdminProvisioningService {
     }
 
     public List<AdminSummaryResponse> list() {
-        return associateRepository.findByRoleNot(AssociateRole.ASSOCIATE).stream()
+        return associateRepository.findByRoleNotOrderByUserIdAsc(AssociateRole.ASSOCIATE).stream()
             .map(a -> new AdminSummaryResponse(a.getId(), a.getUserId(), a.getName(), a.getRole().name(), a.getLastActiveAt()))
             .toList();
     }
@@ -68,11 +68,16 @@ public class AdminProvisioningService {
     // Step 6 is complete once at least one admin-family account exists beyond the founding
     // admin AdminBootstrapRunner creates -- matching the spec's "optional... but strongly
     // prompted" framing rather than being satisfied by the founding account alone.
+    //
+    // countByRoleNot(ASSOCIATE) is used instead of a findAll().stream().filter(isAdminFamily())
+    // scan: associate is this platform's unbounded-growth table (an MLM binary tree), and this
+    // method runs on every setup-state read. Every non-ASSOCIATE AssociateRole value happens to
+    // satisfy isAdminFamily() today (isAdminFamily() is defined as "!= ASSOCIATE"), so counting
+    // rows where role != ASSOCIATE is equivalent to counting admin-family rows -- but a future
+    // role added to the enum without updating isAdminFamily() accordingly would break that
+    // equivalence, so keep the two definitions in sync.
     public boolean isComplete() {
-        long adminFamilyCount = associateRepository.findAll().stream()
-            .filter(a -> a.getRole().isAdminFamily())
-            .count();
-        return adminFamilyCount > 1;
+        return associateRepository.countByRoleNot(AssociateRole.ASSOCIATE) > 1;
     }
 
     // ASSOCIATE is rejected because it isn't an admin-family role at all; ADMIN is rejected

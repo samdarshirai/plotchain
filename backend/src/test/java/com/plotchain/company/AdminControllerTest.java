@@ -98,7 +98,7 @@ class AdminControllerTest {
         finance.setName("Jane Finance");
         finance.setRole(AssociateRole.FINANCE);
         finance.setLastActiveAt(Instant.now());
-        when(associateRepository.findByRoleNot(AssociateRole.ASSOCIATE)).thenReturn(List.of(finance));
+        when(associateRepository.findByRoleNotOrderByUserIdAsc(AssociateRole.ASSOCIATE)).thenReturn(List.of(finance));
 
         mockMvc.perform(get("/api/company/admins")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))

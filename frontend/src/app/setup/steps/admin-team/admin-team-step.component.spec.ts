@@ -5,6 +5,7 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { AdminTeamStepComponent } from './admin-team-step.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
+import { SidePanelComponent } from '../../../shared/components/side-panel/side-panel.component';
 import { SetupService } from '../../setup.service';
 import { AdminSummary, RolePermissions, ROLE_OPTIONS } from '../../models/admin-team.model';
 
@@ -58,6 +59,24 @@ describe('AdminTeamStepComponent', () => {
     expect(tableText).toContain('admin1');
     expect(tableText).toContain('Ada Lovelace');
     expect(tableText).toContain('admin2');
+  });
+
+  it('renders the founding ADMIN row using the translated Admin label, not the raw role string', () => {
+    // GET /api/company/admins returns every non-ASSOCIATE row, including the founding 'ADMIN'
+    // account AdminBootstrapRunner always creates -- so every real install has at least one row
+    // shaped like this, even though 'ADMIN' is never an option in ROLE_OPTIONS.
+    const admins: AdminSummary[] = [
+      { id: 'a0', userId: 'admin', fullName: 'Founding Admin', role: 'ADMIN', lastActiveAt: null }
+    ];
+    flushInitialLoads(admins);
+    const component = fixture.componentInstance;
+
+    expect(component.roleLabel('ADMIN')).toBe('setup.adminTeam.roleAdminLabel');
+
+    fixture.detectChanges();
+    const roleCell = fixture.debugElement.query(By.css('tbody tr td:nth-child(3)'));
+    expect(roleCell.nativeElement.textContent).toContain('setup.adminTeam.roleAdminLabel');
+    expect(roleCell.nativeElement.textContent).not.toContain('ADMIN');
   });
 
   it('offers only the four ROLE_OPTIONS values in the role select, no ASSOCIATE/ADMIN option', () => {
@@ -226,7 +245,10 @@ describe('AdminTeamStepComponent', () => {
     httpMock.expectNone('/api/company/admins');
   }));
 
-  it('surfaces a duplicate userId 409 as a field error via toFieldErrors', () => {
+  it('surfaces a duplicate userId 409 as a submit-level banner, not a field error', () => {
+    // The real backend (CompanyExceptionHandler) returns { error: "..." } with no "fields" key
+    // for UserIdAlreadyRegisteredException -- toFieldErrors() would return {} for this shape, so
+    // this must render as a submit-level message instead of a per-field one.
     flushInitialLoads();
     const component = fixture.componentInstance;
     component.panelOpen = true;
@@ -241,18 +263,18 @@ describe('AdminTeamStepComponent', () => {
     component.onSubmit();
 
     const req = httpMock.expectOne('/api/company/admins');
-    req.flush(
-      { error: 'userId already in use', fields: { userId: 'This User ID is already taken' } },
-      { status: 409, statusText: 'Conflict' }
-    );
+    req.flush({ error: 'User ID already registered: dupe' }, { status: 409, statusText: 'Conflict' });
 
-    expect(component.fieldError('userId')).toBe('This User ID is already taken');
+    expect(component.fieldError('userId')).toBeUndefined();
+    expect(component.submitError).toBe('setup.adminTeam.validation.userIdTaken');
     fixture.detectChanges();
-    const fieldErrorEl = fixture.debugElement.query(By.css('app-field-error'));
-    expect(fieldErrorEl.nativeElement.textContent).toContain('This User ID is already taken');
+    const banner = fixture.debugElement.query(By.css('app-inline-banner'));
+    expect(banner.nativeElement.textContent).toContain('setup.adminTeam.validation.userIdTaken');
   });
 
-  it('surfaces an invalid role 400 as a field error via toFieldErrors', () => {
+  it('surfaces an invalid role 400 as a submit-level banner, not a field error', () => {
+    // Same real-shape argument as the 409 case above: InvalidAdminRoleException also comes back
+    // as a bare { error: "..." } with no "fields" key.
     flushInitialLoads();
     const component = fixture.componentInstance;
     component.panelOpen = true;
@@ -267,13 +289,96 @@ describe('AdminTeamStepComponent', () => {
     component.onSubmit();
 
     const req = httpMock.expectOne('/api/company/admins');
-    req.flush(
-      { error: 'invalid role', fields: { role: 'Selected role is not valid' } },
-      { status: 400, statusText: 'Bad Request' }
-    );
+    req.flush({ error: 'Invalid admin role: SUPPORT' }, { status: 400, statusText: 'Bad Request' });
 
-    expect(component.fieldError('role')).toBe('Selected role is not valid');
+    expect(component.fieldError('role')).toBeUndefined();
+    expect(component.submitError).toBe('setup.adminTeam.validation.invalidRole');
+    fixture.detectChanges();
+    const banner = fixture.debugElement.query(By.css('app-inline-banner'));
+    expect(banner.nativeElement.textContent).toContain('setup.adminTeam.validation.invalidRole');
   });
+
+  it('clears a stale submitError on the next submit attempt', fakeAsync(() => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+    component.panelOpen = true;
+    fixture.detectChanges();
+
+    component.form.setValue({
+      userId: 'dupe',
+      fullName: 'Dupe Admin',
+      role: 'SUPPORT',
+      temporaryPassword: ''
+    });
+    component.onSubmit();
+    httpMock
+      .expectOne('/api/company/admins')
+      .flush({ error: 'User ID already registered: dupe' }, { status: 409, statusText: 'Conflict' });
+    expect(component.submitError).toBe('setup.adminTeam.validation.userIdTaken');
+
+    component.form.patchValue({ userId: 'freshadmin' });
+    component.onSubmit();
+
+    expect(component.submitError).toBeNull();
+    const req = httpMock.expectOne('/api/company/admins');
+    req.flush({ id: 'a11', userId: 'freshadmin', role: 'SUPPORT', temporaryPassword: 'generated' });
+    httpMock.expectOne('/api/company/admins').flush([]);
+  }));
+
+  it('clears stale server errors when the User ID input changes again', fakeAsync(() => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+    component.panelOpen = true;
+    fixture.detectChanges();
+
+    component.form.setValue({
+      userId: 'dupe',
+      fullName: 'Dupe Admin',
+      role: 'SUPPORT',
+      temporaryPassword: ''
+    });
+    component.onSubmit();
+    httpMock
+      .expectOne('/api/company/admins')
+      .flush({ error: 'User ID already registered: dupe' }, { status: 409, statusText: 'Conflict' });
+    expect(component.submitError).toBe('setup.adminTeam.validation.userIdTaken');
+
+    component.onUserIdInput('somethingelse');
+    tick(400);
+    httpMock.expectOne(req => req.url === '/api/company/admins/user-id-available').flush({ available: true });
+
+    expect(component.submitError).toBeNull();
+  }));
+
+  it('closing the panel via the backdrop (the (closed) output) clears the one-time password banner too', fakeAsync(() => {
+    // (closed) fires on a backdrop click, not just the "Done" button. Both paths must converge
+    // on dismissBanner() so createdAdmin never survives into the next time the panel opens.
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+    component.panelOpen = true;
+    fixture.detectChanges();
+
+    component.form.setValue({
+      userId: 'newadmin3',
+      fullName: 'New Admin Three',
+      role: 'FINANCE',
+      temporaryPassword: 'preview123'
+    });
+    component.onSubmit();
+    httpMock
+      .expectOne('/api/company/admins')
+      .flush({ id: 'a12', userId: 'newadmin3', role: 'FINANCE', temporaryPassword: 'servergenerated3' });
+    httpMock.expectOne('/api/company/admins').flush([]);
+
+    expect(component.createdAdmin).not.toBeNull();
+    fixture.detectChanges();
+
+    const sidePanel = fixture.debugElement.query(By.directive(SidePanelComponent));
+    sidePanel.componentInstance.closed.emit();
+
+    expect(component.createdAdmin).toBeNull();
+    expect(component.panelOpen).toBe(false);
+  }));
 
   it('wires the step-nav to the adjacent setup steps', () => {
     flushInitialLoads();

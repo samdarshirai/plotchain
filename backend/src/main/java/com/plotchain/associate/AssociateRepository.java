@@ -61,5 +61,7 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     // suffixes make string-descending order equal numeric order, so this needs no native SQL.
     Optional<Associate> findTopByUserIdStartingWithOrderByUserIdDesc(String prefix);
 
-    List<Associate> findByRoleNot(AssociateRole role);
+    List<Associate> findByRoleNotOrderByUserIdAsc(AssociateRole role);
+
+    long countByRoleNot(AssociateRole role);
 }

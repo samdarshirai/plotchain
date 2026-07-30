@@ -5,6 +5,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, switchMap, takeUntil } from 'rxjs/operators';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
+import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { SidePanelComponent } from '../../../shared/components/side-panel/side-panel.component';
 import { ChecklistRowComponent } from '../../../shared/components/checklist-row/checklist-row.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
@@ -14,6 +15,7 @@ import { SetupService } from '../../setup.service';
 import {
   AdminRole,
   AdminSummary,
+  AssignableAdminRole,
   CreateAdminRequest,
   CreateAdminResponse,
   ROLE_OPTIONS,
@@ -28,6 +30,7 @@ import {
     ReactiveFormsModule,
     TranslateModule,
     FieldErrorComponent,
+    InlineBannerComponent,
     SidePanelComponent,
     ChecklistRowComponent,
     SetupStepNavComponent
@@ -64,7 +67,7 @@ import {
         <button type="button" (click)="openPanel()">{{ 'setup.adminTeam.addAdminButtonLabel' | translate }}</button>
       </div>
 
-      <app-side-panel [open]="panelOpen" [title]="'setup.adminTeam.panelTitle' | translate" (closed)="panelOpen = false">
+      <app-side-panel [open]="panelOpen" [title]="'setup.adminTeam.panelTitle' | translate" (closed)="dismissBanner()">
         <div class="admin-team-step__banner" *ngIf="createdAdmin">
           <p>
             {{ 'setup.adminTeam.bannerUserIdLabel' | translate }}:
@@ -122,6 +125,8 @@ import {
             [complete]="true"
           ></app-checklist-row>
 
+          <app-inline-banner *ngIf="submitError" tone="danger">{{ submitError }}</app-inline-banner>
+
           <button type="submit" [disabled]="form.invalid || userIdAvailable === false">
             {{ 'setup.adminTeam.submitButtonLabel' | translate }}
           </button>
@@ -149,12 +154,13 @@ export class AdminTeamStepComponent implements OnInit, OnDestroy {
   panelOpen = false;
   userIdAvailable: boolean | null = null;
   createdAdmin: CreateAdminResponse | null = null;
+  submitError: string | null = null;
   private serverFieldErrors: Record<string, string> = {};
 
   form = this.fb.nonNullable.group({
     userId: ['', Validators.required],
     fullName: ['', Validators.required],
-    role: this.fb.nonNullable.control<AdminRole>(ROLE_OPTIONS[0].value, Validators.required),
+    role: this.fb.nonNullable.control<AssignableAdminRole>(ROLE_OPTIONS[0].value, Validators.required),
     temporaryPassword: ['']
   });
 
@@ -204,11 +210,21 @@ export class AdminTeamStepComponent implements OnInit, OnDestroy {
   }
 
   roleLabel(role: AdminRole): string {
+    // 'ADMIN' (the founding account AdminBootstrapRunner always creates) is never assignable
+    // through this step's Role select, so it's deliberately absent from ROLE_OPTIONS -- but
+    // GET /api/company/admins returns that row too, and every install has at least one. Resolve
+    // it separately rather than adding it to ROLE_OPTIONS, which must stay limited to the four
+    // assignable roles.
+    if (role === 'ADMIN') {
+      return 'setup.adminTeam.roleAdminLabel';
+    }
     return ROLE_OPTIONS.find(o => o.value === role)?.labelKey ?? role;
   }
 
   onUserIdInput(value: string): void {
     this.userIdAvailable = null;
+    this.serverFieldErrors = {};
+    this.submitError = null;
     this.userIdChanged$.next(value);
   }
 
@@ -236,6 +252,8 @@ export class AdminTeamStepComponent implements OnInit, OnDestroy {
   }
 
   onSubmit(): void {
+    this.serverFieldErrors = {};
+    this.submitError = null;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -254,6 +272,7 @@ export class AdminTeamStepComponent implements OnInit, OnDestroy {
     this.adminTeamService.createAdmin(request).subscribe({
       next: res => {
         this.serverFieldErrors = {};
+        this.submitError = null;
         this.createdAdmin = res;
         this.userIdAvailable = null;
         this.form.reset({ userId: '', fullName: '', role: ROLE_OPTIONS[0].value, temporaryPassword: '' });
@@ -261,7 +280,24 @@ export class AdminTeamStepComponent implements OnInit, OnDestroy {
         this.setupService.refresh();
       },
       error: err => {
-        this.serverFieldErrors = toFieldErrors(err);
+        // CompanyExceptionHandler returns { error: "..." } with NO "fields" key for both of this
+        // endpoint's error responses (duplicate userId -> 409, invalid role -> 400) -- unlike
+        // bean-validation failures (blank fields), which DO come back with a "fields" object via
+        // ApiExceptionHandler. So a non-empty toFieldErrors() result means a real field-level
+        // validation error to render inline; an empty result means one of the two bare-message
+        // responses, distinguished by status code, surfaced as a submit-level banner instead.
+        const fields = toFieldErrors(err);
+        if (Object.keys(fields).length > 0) {
+          this.serverFieldErrors = fields;
+          return;
+        }
+        if (err.status === 409) {
+          this.submitError = this.translate.instant('setup.adminTeam.validation.userIdTaken');
+        } else if (err.status === 400) {
+          this.submitError = this.translate.instant('setup.adminTeam.validation.invalidRole');
+        } else {
+          this.submitError = this.translate.instant('setup.adminTeam.validation.genericSaveError');
+        }
       }
     });
   }
