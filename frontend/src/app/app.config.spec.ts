@@ -28,6 +28,12 @@ describe('appConfig', () => {
     expect(req.request.headers.get('Authorization')).toBe('Bearer abc.def.ghi');
     req.flush({});
 
+    // appConfig.providers now also registers APP_INITIALIZER (BrandingBootstrapService). TestBed's
+    // finalize() runs ApplicationInitStatus.runInitializers() the moment anything is injected above,
+    // which fires a real http.get('/api/company/branding/public') against this spec's testing
+    // backend. Without flushing it here, httpMock.verify() below throws on the unflushed request.
+    httpMock.expectOne('/api/company/branding/public').flush(null, { status: 404, statusText: 'Not Found' });
+
     httpMock.verify();
   });
 });
