@@ -212,6 +212,32 @@
         "genericSaveError": "Something went wrong. Please try again."
       }
     },
+    "rootAssociates": {
+      "formTitle": "Root Associate(s)",
+      "nameLabel": "Root Associate Name",
+      "phoneLabel": "Phone Number",
+      "seedRightRootLabel": "Also seed a right root",
+      "rightNameLabel": "Right Root Name",
+      "rightPhoneLabel": "Right Root Phone Number",
+      "submitButtonLabel": "Create Root Associate",
+      "warningBannerBody": "Referral placement won't work until at least one root associate exists.",
+      "treeTitle": "Binary Tree Preview",
+      "rootNodeLabel": "Root",
+      "leftSlotLabel": "Left",
+      "rightSlotLabel": "Right",
+      "emptySlotLabel": "Empty",
+      "bannerAssociateIdLabel": "Associate ID",
+      "bannerUserIdLabel": "User ID",
+      "bannerTemporaryPasswordLabel": "Temporary Password",
+      "bannerNoticeLabel": "This password is shown only once. Copy it now -- if you navigate away, you will need to create a new account.",
+      "doneButtonLabel": "Done",
+      "validation": {
+        "required": "This field is required.",
+        "rightFieldsRequired": "Right root name and phone are required when seeding a right root.",
+        "alreadyExists": "A root associate already exists.",
+        "genericSaveError": "Something went wrong. Please try again."
+      }
+    },
     "paymentsKyc": {
       "paymentCollectionTitle": "Payment Collection",
       "gatewayLabel": "Payment Gateway",

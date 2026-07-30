@@ -212,6 +212,32 @@
         "genericSaveError": "कुछ गलत हो गया। कृपया पुनः प्रयास करें।"
       }
     },
+    "rootAssociates": {
+      "formTitle": "रूट एसोसिएट(स)",
+      "nameLabel": "रूट एसोसिएट का नाम",
+      "phoneLabel": "फ़ोन नंबर",
+      "seedRightRootLabel": "एक राइट रूट भी जोड़ें",
+      "rightNameLabel": "राइट रूट का नाम",
+      "rightPhoneLabel": "राइट रूट फ़ोन नंबर",
+      "submitButtonLabel": "रूट एसोसिएट बनाएं",
+      "warningBannerBody": "जब तक कम से कम एक रूट एसोसिएट मौजूद न हो, रेफरल प्लेसमेंट काम नहीं करेगा।",
+      "treeTitle": "बाइनरी ट्री पूर्वावलोकन",
+      "rootNodeLabel": "रूट",
+      "leftSlotLabel": "लेफ्ट",
+      "rightSlotLabel": "राइट",
+      "emptySlotLabel": "खाली",
+      "bannerAssociateIdLabel": "एसोसिएट आईडी",
+      "bannerUserIdLabel": "उपयोगकर्ता आईडी",
+      "bannerTemporaryPasswordLabel": "अस्थायी पासवर्ड",
+      "bannerNoticeLabel": "यह पासवर्ड केवल एक बार दिखाया जाता है। इसे अभी नोट कर लें — यहाँ से जाने के बाद आपको नया खाता बनाना होगा।",
+      "doneButtonLabel": "पूर्ण",
+      "validation": {
+        "required": "यह फ़ील्ड आवश्यक है।",
+        "rightFieldsRequired": "राइट रूट जोड़ते समय नाम और फ़ोन नंबर आवश्यक हैं।",
+        "alreadyExists": "एक रूट एसोसिएट पहले से मौजूद है।",
+        "genericSaveError": "कुछ गलत हो गया। कृपया पुनः प्रयास करें।"
+      }
+    },
     "paymentsKyc": {
       "paymentCollectionTitle": "भुगतान संग्रहण",
       "gatewayLabel": "भुगतान गेटवे",
