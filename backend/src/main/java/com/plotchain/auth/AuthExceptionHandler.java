@@ -2,7 +2,6 @@ package com.plotchain.auth;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -16,8 +15,8 @@ public class AuthExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", ex.getMessage()));
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationFailure(MethodArgumentNotValidException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "email and password are required"));
-    }
+    // Bean-validation failures (MethodArgumentNotValidException) are handled application-wide
+    // by com.plotchain.api.ApiExceptionHandler, which reports which field failed instead of a
+    // login-specific message. Do not add a handler for it here: a second advice matching the
+    // same exception type makes resolution order-dependent.
 }

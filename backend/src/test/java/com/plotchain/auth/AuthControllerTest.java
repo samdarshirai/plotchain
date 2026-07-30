@@ -1,6 +1,7 @@
 package com.plotchain.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plotchain.api.ApiExceptionHandler;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
@@ -39,7 +40,7 @@ class AuthControllerTest {
         JwtService jwtService = new JwtService("test-secret-key-at-least-32-bytes-long-for-hs256", 60);
         AuthService authService = new AuthService(associateRepository, passwordEncoder, jwtService);
         mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService))
-            .setControllerAdvice(new AuthExceptionHandler())
+            .setControllerAdvice(new AuthExceptionHandler(), new ApiExceptionHandler())
             .build();
     }
 
@@ -79,6 +80,7 @@ class AuthControllerTest {
                 .contentType("application/json")
                 .content("{\"email\":\"jane@plotchain.test\"}"))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error").isNotEmpty());
+            .andExpect(jsonPath("$.error").isNotEmpty())
+            .andExpect(jsonPath("$.fields.password").isNotEmpty());
     }
 }
