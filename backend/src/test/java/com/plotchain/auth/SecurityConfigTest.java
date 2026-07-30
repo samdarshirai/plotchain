@@ -165,6 +165,45 @@ class SecurityConfigTest {
             .andExpect(status().isOk());
     }
 
+    @Test
+    void paymentsIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/payments")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void payoutAccountIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/payout-account")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void kycIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/kyc")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void withdrawalIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/withdrawal")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    // No @MockBean for the payments repositories in this class -- they run for real against the
+    // H2 test DB, which V9 seeds with a genesis row for each of the four tables (same reasoning
+    // as compensationIsReachableForAnyAdminFamilyToken above).
+    @ParameterizedTest
+    @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
+    void paymentsIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/company/payments")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().isOk());
+    }
+
     // Asserts no Authorization header at all, not merely "any role passes" -- that alone
     // wouldn't catch a matcher that accidentally still required some token.
     @Test

@@ -1,6 +1,8 @@
 package com.plotchain.company;
 
 import com.plotchain.compensation.CompensationPlanService;
+import com.plotchain.payments.PaymentConfigService;
+import com.plotchain.payments.PayoutBankAccountService;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -27,15 +29,21 @@ public class SetupStateService {
     private final CompanyProfileService companyProfileService;
     private final CompanyBrandingService companyBrandingService;
     private final CompensationPlanService compensationPlanService;
+    private final PaymentConfigService paymentConfigService;
+    private final PayoutBankAccountService payoutBankAccountService;
 
     public SetupStateService(SetupStateRepository setupStateRepository,
                               CompanyProfileService companyProfileService,
                               CompanyBrandingService companyBrandingService,
-                              CompensationPlanService compensationPlanService) {
+                              CompensationPlanService compensationPlanService,
+                              PaymentConfigService paymentConfigService,
+                              PayoutBankAccountService payoutBankAccountService) {
         this.setupStateRepository = setupStateRepository;
         this.companyProfileService = companyProfileService;
         this.companyBrandingService = companyBrandingService;
         this.compensationPlanService = compensationPlanService;
+        this.paymentConfigService = paymentConfigService;
+        this.payoutBankAccountService = payoutBankAccountService;
     }
 
     public SetupStateResponse getSetupState() {
@@ -80,6 +88,7 @@ public class SetupStateService {
             case "companyProfile" -> companyProfileService.isComplete();
             case "branding" -> companyBrandingService.isComplete();
             case "compensation" -> compensationPlanService.isComplete();
+            case "paymentsKyc" -> paymentConfigService.isComplete() && payoutBankAccountService.isComplete();
             default -> false;
         };
     }
