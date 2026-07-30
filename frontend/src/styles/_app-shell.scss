@@ -1,0 +1,296 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem;
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.app-header .logout {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.app-header .logout:hover {
+  color: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.dashboard-error {
+  margin: 1.5rem;
+  padding: 1.5rem;
+  background: var(--surface-card);
+  border: 1px solid var(--status-danger);
+  border-radius: 12px;
+  color: var(--status-danger);
+}
+
+.dashboard .wallet-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.dashboard .wallet-card .balance {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dashboard .wallet-card .withdraw-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.25rem;
+  background: var(--brand-gradient);
+  color: var(--brand-primary-contrast);
+  font-weight: 600;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  border-radius: 999px;
+  transition: opacity 0.15s ease;
+}
+
+.dashboard .wallet-card .withdraw-action:hover {
+  opacity: 0.92;
+}
+
+.dashboard .kyc-banner {
+  grid-column: 1 / -1;
+  padding: 1rem 1.5rem;
+  background: color-mix(in srgb, var(--status-warning) 14%, var(--surface-card));
+  border: 1px solid var(--status-warning);
+  border-radius: 12px;
+  color: var(--status-warning);
+  font-weight: 500;
+}
+
+.dashboard .cycle-income-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  color: var(--text-primary);
+  transition: border-color 0.15s ease;
+}
+
+.dashboard .cycle-income-card:hover {
+  border-color: var(--brand-primary);
+}
+
+.dashboard .cycle-income-card .direct,
+.dashboard .cycle-income-card .matching {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.dashboard .cycle-income-card .total {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dashboard .rank-progress {
+  padding: 1.5rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.dashboard .rank-progress .current-rank {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dashboard .rank-progress .progress-bar {
+  position: relative;
+  height: 8px;
+  margin: 0.75rem 0;
+  background: var(--surface-raised);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.dashboard .rank-progress .progress-fill {
+  height: 100%;
+  background: var(--brand-gradient);
+  border-radius: 999px;
+}
+
+.dashboard .rank-progress .next-rank {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.dashboard .leg-volume-gauge {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 3rem;
+  background: var(--brand-gradient);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.dashboard .leg-volume-gauge .leg {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--brand-primary-contrast);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.dashboard .leg-volume-gauge .leg.right {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.dashboard .leg-volume-gauge .projected-match {
+  flex: 1 1 100%;
+  padding: 0.5rem 1rem 0;
+  color: var(--brand-primary-contrast);
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.dashboard .team-snapshot {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.dashboard .team-snapshot > div {
+  flex: 1;
+}
+
+.dashboard .quick-actions {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.dashboard .quick-actions .record-sale,
+.dashboard .quick-actions .add-referral {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-align: center;
+  transition: opacity 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.dashboard .quick-actions .record-sale {
+  background: var(--brand-gradient);
+  color: var(--brand-primary-contrast);
+}
+
+.dashboard .quick-actions .record-sale:hover {
+  opacity: 0.92;
+}
+
+.dashboard .quick-actions .add-referral {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+}
+
+.dashboard .quick-actions .add-referral:hover {
+  color: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+
+.dashboard .cycle-countdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.dashboard .announcements-strip {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.dashboard .announcements-strip .announcement {
+  padding: 0.75rem 1rem;
+  background: var(--surface-raised);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 360px;
+  margin: 4rem auto;
+  padding: 2rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.login-form button[type='submit'] {
+  background: var(--brand-gradient);
+  color: var(--brand-primary-contrast);
+  font-weight: 600;
+  transition: opacity 0.15s ease;
+}
+
+.login-form button[type='submit']:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.login-form .login-error {
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--status-danger) 14%, var(--surface-card));
+  border: 1px solid var(--status-danger);
+  border-radius: 8px;
+  color: var(--status-danger);
+  font-size: 0.875rem;
+}
