@@ -8,6 +8,8 @@ import { adminGuard } from './admin/admin.guard';
 import { setupModeGuard, launchedModeGuard } from './setup/setup.guard';
 import { SetupShellComponent } from './setup/setup-shell.component';
 import { SetupStepPlaceholderComponent } from './setup/setup-step-placeholder.component';
+import { CompanyProfileStepComponent } from './setup/steps/company-profile/company-profile-step.component';
+import { BrandingStepComponent } from './setup/steps/branding/branding-step.component';
 import { SettingsShellComponent } from './settings/settings-shell.component';
 
 export const routes: Routes = [
@@ -20,8 +22,8 @@ export const routes: Routes = [
     component: SetupShellComponent,
     canActivate: [authGuard, adminGuard, setupModeGuard],
     children: [
-      { path: 'company-profile', component: SetupStepPlaceholderComponent, data: { stepKey: 'companyProfile' } },
-      { path: 'branding', component: SetupStepPlaceholderComponent, data: { stepKey: 'branding' } },
+      { path: 'company-profile', component: CompanyProfileStepComponent, data: { stepKey: 'companyProfile' } },
+      { path: 'branding', component: BrandingStepComponent, data: { stepKey: 'branding' } },
       { path: 'compensation', component: SetupStepPlaceholderComponent, data: { stepKey: 'compensation' } },
       { path: 'projects', component: SetupStepPlaceholderComponent, data: { stepKey: 'projects' } },
       { path: 'payments-kyc', component: SetupStepPlaceholderComponent, data: { stepKey: 'paymentsKyc' } },

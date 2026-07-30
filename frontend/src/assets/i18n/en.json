@@ -20,6 +20,8 @@
     "loginButton": "Log In",
     "loginError": "Invalid ID or password. Please try again.",
     "platformNotLiveError": "This platform has not launched yet. Please contact your administrator.",
+    "showPassword": "Show",
+    "hidePassword": "Hide",
     "logout": "Log Out",
     "changePasswordTitle": "Change Your Password",
     "currentPasswordLabel": "Current Password",
@@ -56,6 +58,43 @@
     "autosaveNote": "We save your progress automatically.",
     "stepPlaceholder": {
       "comingSoon": "This step is coming soon."
+    },
+    "companyProfile": {
+      "displayNameLabel": "Display Name",
+      "legalNameLabel": "Legal Name",
+      "registrationNumberLabel": "Registration Number (optional)",
+      "contactNameLabel": "Contact Person Name",
+      "contactPhoneLabel": "Contact Phone",
+      "contactEmailLabel": "Contact Email",
+      "registeredAddressLabel": "Registered Address",
+      "savedIndicator": "Saved just now",
+      "previewTitle": "Company Card Preview",
+      "previewPlaceholderName": "Your Company Name",
+      "validation": {
+        "required": "This field is required.",
+        "email": "Enter a valid email address.",
+        "pattern": "Enter a valid value."
+      }
+    },
+    "branding": {
+      "primaryColorLabel": "Primary Color",
+      "secondaryColorLabel": "Secondary Color",
+      "taglineLabel": "Tagline",
+      "squareLogoLabel": "Square Logo",
+      "wideLogoLabel": "Wide Logo",
+      "uploadLabel": "Upload",
+      "changeLabel": "Change",
+      "savedIndicator": "Saved just now",
+      "previewTitle": "Branding Preview",
+      "loginPreviewTitle": "Live Login Preview",
+      "contrastWarning": "This color may be hard to read against light text. Consider a darker shade.",
+      "validation": {
+        "required": "This field is required.",
+        "hexColor": "Enter a valid 6-digit hex color.",
+        "taglineTooLong": "Tagline must be 60 characters or fewer.",
+        "unsupportedFileType": "Unsupported file type. Use PNG, JPEG, SVG or WebP.",
+        "fileTooLarge": "File is too large."
+      }
     }
   },
   "settings": {

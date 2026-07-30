@@ -3,6 +3,11 @@ package com.plotchain.auth;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
+import com.plotchain.company.CompanyBrandingRepository;
+import com.plotchain.company.CompanyBrandingService;
+import com.plotchain.company.CompanyProfile;
+import com.plotchain.company.CompanyProfileRepository;
+import com.plotchain.company.CompanyProfileService;
 import com.plotchain.company.SetupState;
 import com.plotchain.company.SetupStateRepository;
 import com.plotchain.company.SetupStateService;
@@ -33,6 +38,10 @@ class AuthServiceTest {
     // concrete classes, so a real instance is built over a mocked (interface) repository
     // instead, per the repo's established pattern.
     @Mock SetupStateRepository setupStateRepository;
+    // CompanyProfileService/CompanyBrandingService are concrete classes -- mocked (interface)
+    // repositories underneath, same reasoning as SetupStateService above.
+    @Mock CompanyProfileRepository companyProfileRepository;
+    @Mock CompanyBrandingRepository companyBrandingRepository;
 
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     JwtService jwtService = new JwtService("test-secret-key-at-least-32-bytes-long-for-hs256", 60);
@@ -41,7 +50,10 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        setupStateService = new SetupStateService(setupStateRepository);
+        setupStateService = new SetupStateService(
+            setupStateRepository,
+            new CompanyProfileService(companyProfileRepository),
+            new CompanyBrandingService(companyBrandingRepository, new CompanyProfileService(companyProfileRepository)));
         authService = new AuthService(associateRepository, passwordEncoder, jwtService, setupStateService);
     }
 

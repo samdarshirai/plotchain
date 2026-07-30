@@ -133,6 +133,33 @@ class SecurityConfigTest {
     }
 
     @Test
+    void brandingIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/branding")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    // Asserts no Authorization header at all, not merely "any role passes" -- that alone
+    // wouldn't catch a matcher that accidentally still required some token.
+    @Test
+    void brandingPublicIsReachableWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/company/branding/public"))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void brandingLogoIsReachableWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/company/branding/logo/square"))
+            .andExpect(status().isNotFound()); // no logo uploaded in this test's seeded row -- proves it passed security, not authorization
+    }
+
+    @Test
+    void brandingFaviconIsReachableWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/company/branding/favicon"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
     void passwordChangeIsReachableByAnAssociateToken() throws Exception {
         // A POST under /api/** that an ASSOCIATE must be able to reach. It needs its own
         // matcher ABOVE the blanket ADMIN write rules; without it this returns 403 and no

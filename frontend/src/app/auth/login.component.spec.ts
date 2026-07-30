@@ -121,4 +121,43 @@ describe('LoginComponent', () => {
     expect(fixture.componentInstance.platformNotLive).toBeTrue();
     expect(fixture.componentInstance.error).toBeFalse();
   });
+
+  it('does not submit when previewMode is true', () => {
+    fixture.componentInstance.previewMode = true;
+    fixture.componentInstance.form.setValue({ userId: 'jane', password: 'Password123!' });
+
+    fixture.componentInstance.onSubmit();
+
+    httpMock.expectNone('/api/auth/login');
+  });
+
+  it('renders the logo only when hasSquareLogo is true', () => {
+    fixture.componentInstance.hasSquareLogo = true;
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.login-logo')).toBeTruthy();
+
+    fixture.componentInstance.hasSquareLogo = false;
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.login-logo')).toBeFalsy();
+  });
+
+  it('renders the tagline only when set', () => {
+    fixture.componentInstance.tagline = 'Land you can trust';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.login-tagline').textContent).toContain('Land you can trust');
+
+    fixture.componentInstance.tagline = null;
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.login-tagline')).toBeFalsy();
+  });
+
+  it('toggles the password field type via the show/hide button', () => {
+    const passwordInput: HTMLInputElement = fixture.nativeElement.querySelector('input[formControlName="password"]');
+    expect(passwordInput.type).toBe('password');
+
+    fixture.nativeElement.querySelector('.login-password-toggle').click();
+    fixture.detectChanges();
+
+    expect(passwordInput.type).toBe('text');
+  });
 });

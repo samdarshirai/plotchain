@@ -5,6 +5,10 @@ import com.plotchain.api.ApiExceptionHandler;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
+import com.plotchain.company.CompanyBrandingRepository;
+import com.plotchain.company.CompanyBrandingService;
+import com.plotchain.company.CompanyProfileRepository;
+import com.plotchain.company.CompanyProfileService;
 import com.plotchain.company.SetupState;
 import com.plotchain.company.SetupStateRepository;
 import com.plotchain.company.SetupStateService;
@@ -38,6 +42,8 @@ class AuthControllerTest {
 
     @Mock AssociateRepository associateRepository;
     @Mock SetupStateRepository setupStateRepository;
+    @Mock CompanyProfileRepository companyProfileRepository;
+    @Mock CompanyBrandingRepository companyBrandingRepository;
 
     MockMvc mockMvc;
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -45,7 +51,10 @@ class AuthControllerTest {
     @BeforeEach
     void setUp() {
         JwtService jwtService = new JwtService("test-secret-key-at-least-32-bytes-long-for-hs256", 60);
-        SetupStateService setupStateService = new SetupStateService(setupStateRepository);
+        SetupStateService setupStateService = new SetupStateService(
+            setupStateRepository,
+            new CompanyProfileService(companyProfileRepository),
+            new CompanyBrandingService(companyBrandingRepository, new CompanyProfileService(companyProfileRepository)));
         AuthService authService = new AuthService(associateRepository, passwordEncoder, jwtService, setupStateService);
         mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService))
             .setControllerAdvice(new AuthExceptionHandler(), new ApiExceptionHandler())

@@ -77,6 +77,24 @@ public class SecurityConfig {
                 // blanket POST rule above -- deliberately no separate matcher for it.
                 .requestMatchers(HttpMethod.GET, "/api/company/setup-state")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                // Same reasoning as setup-state above: GET /api/company/profile must stay
+                // admin-family-only. PUT /api/company/profile is a write and is already
+                // covered by the blanket PUT rule above -- deliberately no separate matcher.
+                .requestMatchers(HttpMethod.GET, "/api/company/profile")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                // Same reasoning as setup-state/profile above: GET /api/company/branding stays
+                // admin-family-only. PUT and the logo POST are writes, already covered by the
+                // blanket PUT/POST rules above -- deliberately no separate matchers for them.
+                .requestMatchers(HttpMethod.GET, "/api/company/branding")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                // Phase 5's genuinely public endpoints: the pre-login branding bootstrap, the
+                // raw logo bytes it and the login page render as <img> tags, and the favicon
+                // index.html links to -- all requested before any JWT exists. They only need to
+                // precede anyRequest().authenticated() below; a GET never matches the
+                // POST/PUT/PATCH/DELETE blanket rules above regardless of file order.
+                .requestMatchers(HttpMethod.GET, "/api/company/branding/public").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/company/branding/logo/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/company/branding/favicon").permitAll()
                 .anyRequest().authenticated())
             .exceptionHandling(ex -> ex.authenticationEntryPoint(
                 (request, response, authException) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))

@@ -3,17 +3,28 @@ import { HttpClient } from '@angular/common/http';
 import { catchError, firstValueFrom, of, tap, timeout } from 'rxjs';
 import { ThemeService } from './theme.service';
 
-// Phase 5 owns the full /api/company/branding/public contract. Phase 2 only needs enough to
-// paint the brand colors, so this type deliberately covers just those two fields rather than
-// modeling the whole response.
+// The full /api/company/branding/public contract (Phase 5). displayName/tagline/logo flags
+// are additive vs. Phase 2's original {primaryColor, secondaryColor}-only shape.
 export interface BrandingPublic {
+  displayName: string;
+  tagline: string;
   primaryColor: string;
   secondaryColor: string;
+  hasSquareLogo: boolean;
+  hasWideLogo: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
 export class BrandingBootstrapService {
+  private lastBranding: BrandingPublic | null = null;
+
   constructor(private http: HttpClient, private theme: ThemeService) {}
+
+  // Lets LoginComponent read the last-fetched branding (tagline, logo flags) without a second
+  // HTTP round trip, without changing initialize()'s Promise<void> signature.
+  getLast(): BrandingPublic | null {
+    return this.lastBranding;
+  }
 
   // Runs as an APP_INITIALIZER: the app must not hang or fail to boot if branding is
   // unavailable, so any error (404, network failure, etc.) resolves to `null` instead of
@@ -27,6 +38,7 @@ export class BrandingBootstrapService {
         timeout(3000),
         tap(branding => {
           if (branding) {
+            this.lastBranding = branding;
             this.theme.apply(branding.primaryColor, branding.secondaryColor);
           }
         }),

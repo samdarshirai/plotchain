@@ -23,9 +23,15 @@ public class SetupStateService {
     );
 
     private final SetupStateRepository setupStateRepository;
+    private final CompanyProfileService companyProfileService;
+    private final CompanyBrandingService companyBrandingService;
 
-    public SetupStateService(SetupStateRepository setupStateRepository) {
+    public SetupStateService(SetupStateRepository setupStateRepository,
+                              CompanyProfileService companyProfileService,
+                              CompanyBrandingService companyBrandingService) {
         this.setupStateRepository = setupStateRepository;
+        this.companyProfileService = companyProfileService;
+        this.companyBrandingService = companyBrandingService;
     }
 
     public SetupStateResponse getSetupState() {
@@ -64,9 +70,13 @@ public class SetupStateService {
         return getSetupState();
     }
 
-    // Stubbed until each step's own phase lands; every arm currently returns false.
+    // Each arm returns false (stubbed) until its own phase lands and replaces it here.
     private boolean isStepComplete(String key) {
-        return false;
+        return switch (key) {
+            case "companyProfile" -> companyProfileService.isComplete();
+            case "branding" -> companyBrandingService.isComplete();
+            default -> false;
+        };
     }
 
     private SetupState currentState() {

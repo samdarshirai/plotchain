@@ -20,6 +20,8 @@
     "loginButton": "लॉग इन करें",
     "loginError": "आईडी या पासवर्ड गलत है। कृपया पुनः प्रयास करें।",
     "platformNotLiveError": "यह प्लेटफ़ॉर्म अभी लॉन्च नहीं हुआ है। कृपया अपने प्रशासक से संपर्क करें।",
+    "showPassword": "दिखाएं",
+    "hidePassword": "छिपाएं",
     "logout": "लॉग आउट",
     "changePasswordTitle": "अपना पासवर्ड बदलें",
     "currentPasswordLabel": "वर्तमान पासवर्ड",
@@ -56,6 +58,43 @@
     "autosaveNote": "हम आपकी प्रगति स्वचालित रूप से सहेजते हैं।",
     "stepPlaceholder": {
       "comingSoon": "यह चरण जल्द ही आ रहा है।"
+    },
+    "companyProfile": {
+      "displayNameLabel": "प्रदर्शन नाम",
+      "legalNameLabel": "कानूनी नाम",
+      "registrationNumberLabel": "पंजीकरण संख्या (वैकल्पिक)",
+      "contactNameLabel": "संपर्क व्यक्ति का नाम",
+      "contactPhoneLabel": "संपर्क फ़ोन",
+      "contactEmailLabel": "संपर्क ईमेल",
+      "registeredAddressLabel": "पंजीकृत पता",
+      "savedIndicator": "अभी सहेजा गया",
+      "previewTitle": "कंपनी कार्ड पूर्वावलोकन",
+      "previewPlaceholderName": "आपकी कंपनी का नाम",
+      "validation": {
+        "required": "यह फ़ील्ड आवश्यक है।",
+        "email": "एक वैध ईमेल पता दर्ज करें।",
+        "pattern": "एक वैध मान दर्ज करें।"
+      }
+    },
+    "branding": {
+      "primaryColorLabel": "प्राथमिक रंग",
+      "secondaryColorLabel": "द्वितीयक रंग",
+      "taglineLabel": "टैगलाइन",
+      "squareLogoLabel": "स्क्वायर लोगो",
+      "wideLogoLabel": "वाइड लोगो",
+      "uploadLabel": "अपलोड करें",
+      "changeLabel": "बदलें",
+      "savedIndicator": "अभी सहेजा गया",
+      "previewTitle": "ब्रांडिंग पूर्वावलोकन",
+      "loginPreviewTitle": "लाइव लॉगिन पूर्वावलोकन",
+      "contrastWarning": "यह रंग हल्के टेक्स्ट के विरुद्ध पढ़ने में कठिन हो सकता है। गहरा शेड चुनें।",
+      "validation": {
+        "required": "यह फ़ील्ड आवश्यक है।",
+        "hexColor": "एक वैध 6-अंकीय हेक्स रंग दर्ज करें।",
+        "taglineTooLong": "टैगलाइन 60 वर्णों से अधिक नहीं होनी चाहिए।",
+        "unsupportedFileType": "असमर्थित फ़ाइल प्रकार। PNG, JPEG, SVG या WebP का उपयोग करें।",
+        "fileTooLarge": "फ़ाइल बहुत बड़ी है।"
+      }
     }
   },
   "settings": {

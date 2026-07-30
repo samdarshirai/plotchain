@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -7,6 +7,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from './auth.service';
 import { SetupService } from '../setup/setup.service';
 import { ADMIN_FAMILY_ROLES } from '../admin/admin.guard';
+import { BrandingBootstrapService } from '../core/theme/branding-bootstrap.service';
 
 @Component({
   selector: 'app-login',
@@ -14,13 +15,18 @@ import { ADMIN_FAMILY_ROLES } from '../admin/admin.guard';
   imports: [CommonModule, ReactiveFormsModule, TranslateModule],
   template: `
     <form class="login-form" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <img *ngIf="showSquareLogo" class="login-logo" src="/api/company/branding/logo/square" alt="" />
+      <p *ngIf="showTagline" class="login-tagline">{{ resolvedTagline }}</p>
       <label>
         {{ 'auth.userIdLabel' | translate }}
         <input type="text" autocomplete="username" formControlName="userId" />
       </label>
       <label>
         {{ 'auth.passwordLabel' | translate }}
-        <input type="password" formControlName="password" />
+        <input [type]="showPassword ? 'text' : 'password'" formControlName="password" />
+        <button type="button" class="login-password-toggle" (click)="showPassword = !showPassword">
+          {{ (showPassword ? 'auth.hidePassword' : 'auth.showPassword') | translate }}
+        </button>
       </label>
       <button type="submit" [disabled]="form.invalid">{{ 'auth.loginButton' | translate }}</button>
       <div class="login-error" *ngIf="error">{{ 'auth.loginError' | translate }}</div>
@@ -28,11 +34,18 @@ import { ADMIN_FAMILY_ROLES } from '../admin/admin.guard';
     </form>
   `
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private setupService = inject(SetupService);
   private router = inject(Router);
+  private brandingBootstrap = inject(BrandingBootstrapService);
+
+  // Non-functional render used by the Branding step's Live Login Preview, reusing this real
+  // component instead of a hand-copied duplicate so preview and reality can never drift apart.
+  @Input() previewMode = false;
+  @Input() tagline: string | null = null;
+  @Input() hasSquareLogo: boolean | null = null;
 
   form = this.fb.group({
     userId: ['', Validators.required],
@@ -40,9 +53,34 @@ export class LoginComponent {
   });
   error = false;
   platformNotLive = false;
+  showPassword = false;
+
+  ngOnInit(): void {
+    // In production (non-preview) use, fall back to the last-fetched public branding when the
+    // inputs aren't explicitly bound -- previewMode always binds them itself.
+    if (!this.previewMode && (this.tagline === null || this.hasSquareLogo === null)) {
+      const last = this.brandingBootstrap.getLast();
+      if (last) {
+        this.tagline = this.tagline ?? last.tagline;
+        this.hasSquareLogo = this.hasSquareLogo ?? last.hasSquareLogo;
+      }
+    }
+  }
+
+  get showSquareLogo(): boolean {
+    return !!this.hasSquareLogo;
+  }
+
+  get showTagline(): boolean {
+    return !!this.resolvedTagline;
+  }
+
+  get resolvedTagline(): string {
+    return this.tagline ?? '';
+  }
 
   onSubmit(): void {
-    if (this.form.invalid) {
+    if (this.previewMode || this.form.invalid) {
       return;
     }
     this.error = false;

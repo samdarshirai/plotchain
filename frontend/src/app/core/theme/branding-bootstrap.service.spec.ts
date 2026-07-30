@@ -34,6 +34,33 @@ describe('BrandingBootstrapService', () => {
     expect(theme.apply).toHaveBeenCalledWith('#1A1A2E', '#FF00FF');
   });
 
+  it('caches the full fetched payload for getLast()', async () => {
+    spyOn(theme, 'apply');
+
+    const promise = service.initialize();
+
+    const req = httpMock.expectOne('/api/company/branding/public');
+    req.flush({
+      displayName: 'Plotchain Estates',
+      tagline: 'Land you can trust',
+      primaryColor: '#1A1A2E',
+      secondaryColor: '#FF00FF',
+      hasSquareLogo: true,
+      hasWideLogo: false
+    });
+
+    await promise;
+
+    expect(service.getLast()).toEqual({
+      displayName: 'Plotchain Estates',
+      tagline: 'Land you can trust',
+      primaryColor: '#1A1A2E',
+      secondaryColor: '#FF00FF',
+      hasSquareLogo: true,
+      hasWideLogo: false
+    });
+  });
+
   it('resolves without applying a theme when the endpoint 404s', async () => {
     spyOn(theme, 'apply');
 
