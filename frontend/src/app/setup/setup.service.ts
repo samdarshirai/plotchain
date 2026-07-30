@@ -30,4 +30,17 @@ export class SetupService {
   firstIncompleteStepPath(state: SetupStateResponse): string {
     return STEP_PATHS[this.firstIncompleteStepKey(state)];
   }
+
+  nextStepPath(currentKey: string): string | null {
+    const keys = Object.keys(STEP_PATHS);
+    const path = STEP_PATHS[keys[keys.indexOf(currentKey) + 1]];
+    return path ?? null;
+  }
+
+  previousStepPath(currentKey: string): string | null {
+    const keys = Object.keys(STEP_PATHS);
+    const index = keys.indexOf(currentKey);
+    const path = index > 0 ? STEP_PATHS[keys[index - 1]] : undefined;
+    return path ?? null;
+  }
 }

@@ -1,12 +1,13 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
-import { StepStatus } from './models/setup-state.model';
+import { STEP_PATHS, StepStatus } from './models/setup-state.model';
 
 @Component({
   selector: 'app-setup-progress-rail',
   standalone: true,
-  imports: [CommonModule, TranslateModule],
+  imports: [CommonModule, RouterLink, TranslateModule],
   template: `
     <nav class="setup-progress-rail">
       <div class="setup-progress-rail__percent">
@@ -22,12 +23,14 @@ import { StepStatus } from './models/setup-state.model';
           [class.setup-progress-rail__step--active]="step.key === activeStepKey"
           [class.setup-progress-rail__step--complete]="step.complete"
         >
-          <span class="setup-progress-rail__step-number">{{ step.number }}</span>
-          <span class="setup-progress-rail__step-label">{{ 'setup.steps.' + step.key | translate }}</span>
-          <span class="setup-progress-rail__step-optional" *ngIf="!step.required">
-            ({{ 'setup.optionalLabel' | translate }})
-          </span>
-          <span class="setup-progress-rail__step-check" *ngIf="step.complete">&#10003;</span>
+          <a class="setup-progress-rail__step-link" [routerLink]="['/setup', stepPaths[step.key]]">
+            <span class="setup-progress-rail__step-number">{{ step.number }}</span>
+            <span class="setup-progress-rail__step-label">{{ 'setup.steps.' + step.key | translate }}</span>
+            <span class="setup-progress-rail__step-optional" *ngIf="!step.required">
+              ({{ 'setup.optionalLabel' | translate }})
+            </span>
+            <span class="setup-progress-rail__step-check" *ngIf="step.complete">&#10003;</span>
+          </a>
         </li>
       </ol>
       <p class="setup-progress-rail__autosave">{{ 'setup.autosaveNote' | translate }}</p>
@@ -37,6 +40,8 @@ import { StepStatus } from './models/setup-state.model';
 export class SetupProgressRailComponent {
   @Input() steps: StepStatus[] = [];
   @Input() activeStepKey?: string;
+
+  readonly stepPaths = STEP_PATHS;
 
   get percentComplete(): number {
     if (this.steps.length === 0) {

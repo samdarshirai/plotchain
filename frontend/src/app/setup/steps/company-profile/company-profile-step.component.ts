@@ -5,6 +5,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
+import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { CompanyProfileService } from './company-profile.service';
 import { SetupService } from '../../setup.service';
@@ -16,9 +17,9 @@ const GSTIN_PATTERN = /^[0-9A-Z]{15}$/;
 @Component({
   selector: 'app-company-profile-step',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, FieldErrorComponent],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, FieldErrorComponent, SetupStepNavComponent],
   template: `
-    <div class="company-profile-step">
+    <div class="company-profile-step step-grid">
       <form class="card" [formGroup]="form">
         <h1 class="card-title">{{ 'setup.steps.companyProfile' | translate }}</h1>
 
@@ -64,9 +65,7 @@ const GSTIN_PATTERN = /^[0-9A-Z]{15}$/;
         </label>
         <app-field-error [message]="fieldError('registeredAddress')"></app-field-error>
 
-        <div class="company-profile-step__saved" *ngIf="savedJustNow">
-          {{ 'setup.companyProfile.savedIndicator' | translate }}
-        </div>
+        <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="savedJustNow"></app-setup-step-nav>
       </form>
 
       <div class="card company-profile-step__preview">
@@ -98,6 +97,8 @@ export class CompanyProfileStepComponent implements OnInit, OnDestroy {
   });
 
   savedJustNow = false;
+  readonly previousPath = this.setupService.previousStepPath('companyProfile');
+  readonly nextPath = this.setupService.nextStepPath('companyProfile');
   private serverFieldErrors: Record<string, string> = {};
 
   ngOnInit(): void {

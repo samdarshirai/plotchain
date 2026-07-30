@@ -9,6 +9,7 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
 import { StatTileComponent } from '../../../shared/components/stat-tile/stat-tile.component';
 import { ToggleGroupComponent, ToggleOption } from '../../../shared/components/toggle-group/toggle-group.component';
 import { EditableTableColumn, EditableTableComponent } from '../../../shared/components/editable-table/editable-table.component';
+import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { CompensationPlanService } from './compensation-plan.service';
 import { computeSampleEarnings, SampleEarningsResult } from './sample-earnings';
@@ -65,10 +66,11 @@ const RENDERED_FIELD_ERROR_KEYS = [
     InlineBannerComponent,
     StatTileComponent,
     ToggleGroupComponent,
-    EditableTableComponent
+    EditableTableComponent,
+    SetupStepNavComponent
   ],
   template: `
-    <div class="compensation-step">
+    <div class="compensation-step step-grid">
       <form class="card" [formGroup]="form">
         <h1 class="card-title">{{ 'setup.steps.compensation' | translate }}</h1>
 
@@ -186,9 +188,7 @@ const RENDERED_FIELD_ERROR_KEYS = [
 
         <app-inline-banner *ngIf="submitError" tone="danger">{{ submitError }}</app-inline-banner>
 
-        <div class="compensation-step__saved" *ngIf="savedJustNow">
-          {{ 'setup.compensation.savedIndicator' | translate }}
-        </div>
+        <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="savedJustNow"></app-setup-step-nav>
       </form>
 
       <div class="card compensation-step__preview">
@@ -271,6 +271,8 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
   sampleEarnings: SampleEarningsResult | null = null;
 
   savedJustNow = false;
+  readonly previousPath = this.setupService.previousStepPath('compensation');
+  readonly nextPath = this.setupService.nextStepPath('compensation');
   submitError: string | null = null;
   // Set when the initial GET fails. Without it the form would keep its constructor-default
   // zeros and the very next keystroke's autosave would PUT those zeros over the live plan.

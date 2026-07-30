@@ -7,6 +7,7 @@ import { debounceTime, takeUntil } from 'rxjs/operators';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { ToggleGroupComponent, ToggleOption } from '../../../shared/components/toggle-group/toggle-group.component';
+import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { PaymentsKycService } from './payments-kyc.service';
 import { SetupService } from '../../setup.service';
@@ -39,7 +40,8 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
     TranslateModule,
     FieldErrorComponent,
     InlineBannerComponent,
-    ToggleGroupComponent
+    ToggleGroupComponent,
+    SetupStepNavComponent
   ],
   template: `
     <div class="payments-kyc-step">
@@ -188,6 +190,8 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
           {{ 'setup.paymentsKyc.savedIndicator' | translate }}
         </div>
       </div>
+
+      <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="anySavedJustNow"></app-setup-step-nav>
     </div>
   `
 })
@@ -247,6 +251,13 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
   withdrawalSubmitError: string | null = null;
   private withdrawalLoadFailed = false;
   private withdrawalChanged$ = new Subject<void>();
+
+  readonly previousPath = this.setupService.previousStepPath('paymentsKyc');
+  readonly nextPath = this.setupService.nextStepPath('paymentsKyc');
+
+  get anySavedJustNow(): boolean {
+    return this.paymentSavedJustNow || this.payoutSavedJustNow || this.kycSavedJustNow || this.withdrawalSavedJustNow;
+  }
   private withdrawalSub?: Subscription;
 
   get strictnessOptions(): ToggleOption[] {

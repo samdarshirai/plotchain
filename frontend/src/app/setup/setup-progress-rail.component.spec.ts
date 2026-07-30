@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { SetupProgressRailComponent } from './setup-progress-rail.component';
 import { StepStatus } from './models/setup-state.model';
@@ -15,7 +16,7 @@ describe('SetupProgressRailComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SetupProgressRailComponent, TranslateModule.forRoot()]
+      imports: [SetupProgressRailComponent, RouterTestingModule, TranslateModule.forRoot()]
     }).compileComponents();
     fixture = TestBed.createComponent(SetupProgressRailComponent);
   });
@@ -58,5 +59,14 @@ describe('SetupProgressRailComponent', () => {
     const rows = fixture.nativeElement.querySelectorAll('.setup-progress-rail__step');
     expect(rows[0].querySelector('.setup-progress-rail__step-optional')).toBeFalsy();
     expect(rows[1].querySelector('.setup-progress-rail__step-optional')).toBeTruthy();
+  });
+
+  it('links each row to its step route so the wizard can be navigated by clicking the rail', () => {
+    fixture.componentInstance.steps = steps;
+    fixture.detectChanges();
+    const rows = fixture.nativeElement.querySelectorAll('.setup-progress-rail__step-link');
+    expect(rows[0].getAttribute('href')).toBe('/setup/company-profile');
+    expect(rows[1].getAttribute('href')).toBe('/setup/branding');
+    expect(rows[3].getAttribute('href')).toBe('/setup/projects');
   });
 });

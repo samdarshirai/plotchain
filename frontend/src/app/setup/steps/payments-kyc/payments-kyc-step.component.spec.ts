@@ -1,7 +1,10 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { PaymentsKycStepComponent } from './payments-kyc-step.component';
+import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SetupService } from '../../setup.service';
 import {
   KycConfigResponse,
@@ -57,7 +60,7 @@ describe('PaymentsKycStepComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PaymentsKycStepComponent, HttpClientTestingModule, TranslateModule.forRoot()]
+      imports: [PaymentsKycStepComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PaymentsKycStepComponent);
@@ -186,4 +189,11 @@ describe('PaymentsKycStepComponent', () => {
       'auto-approve limit must be a positive amount when approval mode is AUTO_UNDER_LIMIT'
     );
   }));
+
+  it('wires the step-nav to the adjacent setup steps', () => {
+    flushInitialLoads();
+    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
+    expect(nav.componentInstance.previousPath).toBe('projects');
+    expect(nav.componentInstance.nextPath).toBe('admin-team');
+  });
 });

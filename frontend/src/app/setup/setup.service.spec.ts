@@ -85,4 +85,20 @@ describe('SetupService', () => {
   it('maps the first incomplete step key to its route path', () => {
     expect(service.firstIncompleteStepPath(response)).toBe('company-profile');
   });
+
+  it('returns the next step path for a middle step', () => {
+    expect(service.nextStepPath('branding')).toBe('compensation');
+  });
+
+  it('returns null for the next step path after the last step', () => {
+    expect(service.nextStepPath('reviewLaunch')).toBeNull();
+  });
+
+  it('returns the previous step path for a middle step', () => {
+    expect(service.previousStepPath('branding')).toBe('company-profile');
+  });
+
+  it('returns null for the previous step path before the first step', () => {
+    expect(service.previousStepPath('companyProfile')).toBeNull();
+  });
 });

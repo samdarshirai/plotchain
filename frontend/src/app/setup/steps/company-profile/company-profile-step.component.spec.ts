@@ -1,7 +1,10 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { CompanyProfileStepComponent } from './company-profile-step.component';
+import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SetupService } from '../../setup.service';
 import { CompanyProfileResponse } from '../../models/company-profile.model';
 
@@ -34,7 +37,7 @@ describe('CompanyProfileStepComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CompanyProfileStepComponent, HttpClientTestingModule, TranslateModule.forRoot()]
+      imports: [CompanyProfileStepComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(CompanyProfileStepComponent);
@@ -93,6 +96,13 @@ describe('CompanyProfileStepComponent', () => {
 
     expect(setupService.refresh).toHaveBeenCalled();
   }));
+
+  it('wires the step-nav to the adjacent setup steps', () => {
+    fixture.detectChanges();
+    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
+    expect(nav.componentInstance.previousPath).toBeNull();
+    expect(nav.componentInstance.nextPath).toBe('branding');
+  });
 
   it('surfaces server-side field errors from a failed autosave', fakeAsync(() => {
     fixture.componentInstance.form.patchValue(filledProfile);

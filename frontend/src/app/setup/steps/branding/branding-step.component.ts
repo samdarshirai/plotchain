@@ -8,6 +8,7 @@ import { FieldErrorComponent } from '../../../shared/components/field-error/fiel
 import { ColorFieldComponent } from '../../../shared/components/color-field/color-field.component';
 import { LogoUploaderComponent } from '../../../shared/components/logo-uploader/logo-uploader.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
+import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { ThemeService, contrastRatio } from '../../../core/theme/theme.service';
 import { BrandingService } from './branding.service';
@@ -34,10 +35,11 @@ const MIN_CONTRAST = 4.5;
     ColorFieldComponent,
     LogoUploaderComponent,
     InlineBannerComponent,
+    SetupStepNavComponent,
     LoginComponent
   ],
   template: `
-    <div class="branding-step">
+    <div class="branding-step step-grid">
       <form class="card" [formGroup]="form">
         <h1 class="card-title">{{ 'setup.steps.branding' | translate }}</h1>
 
@@ -88,9 +90,7 @@ const MIN_CONTRAST = 4.5;
           (fileSelected)="onLogoSelected('wide', $event)"
         ></app-logo-uploader>
 
-        <div class="branding-step__saved" *ngIf="savedJustNow">
-          {{ 'setup.branding.savedIndicator' | translate }}
-        </div>
+        <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="savedJustNow"></app-setup-step-nav>
       </form>
 
       <div class="card branding-step__preview">
@@ -128,6 +128,8 @@ export class BrandingStepComponent implements OnInit, OnDestroy {
   branding: CompanyBrandingResponse | null = null;
   savedJustNow = false;
   contrastWarning = false;
+  readonly previousPath = this.setupService.previousStepPath('branding');
+  readonly nextPath = this.setupService.nextStepPath('branding');
   private serverFieldErrors: Record<string, string> = {};
   private logoErrors: Record<LogoVariant, string | undefined> = { square: undefined, wide: undefined };
 

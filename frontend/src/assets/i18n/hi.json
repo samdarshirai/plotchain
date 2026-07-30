@@ -56,6 +56,11 @@
     "optionalLabel": "वैकल्पिक",
     "percentCompleteSuffix": "पूर्ण",
     "autosaveNote": "हम आपकी प्रगति स्वचालित रूप से सहेजते हैं।",
+    "savedIndicator": "अभी सहेजा गया",
+    "actions": {
+      "previous": "पिछला",
+      "next": "अगला"
+    },
     "stepPlaceholder": {
       "comingSoon": "यह चरण जल्द ही आ रहा है।"
     },
@@ -67,7 +72,6 @@
       "contactPhoneLabel": "संपर्क फ़ोन",
       "contactEmailLabel": "संपर्क ईमेल",
       "registeredAddressLabel": "पंजीकृत पता",
-      "savedIndicator": "अभी सहेजा गया",
       "previewTitle": "कंपनी कार्ड पूर्वावलोकन",
       "previewPlaceholderName": "आपकी कंपनी का नाम",
       "validation": {
@@ -84,7 +88,6 @@
       "wideLogoLabel": "वाइड लोगो",
       "uploadLabel": "अपलोड करें",
       "changeLabel": "बदलें",
-      "savedIndicator": "अभी सहेजा गया",
       "previewTitle": "ब्रांडिंग पूर्वावलोकन",
       "loginPreviewTitle": "लाइव लॉगिन पूर्वावलोकन",
       "contrastWarning": "यह रंग हल्के टेक्स्ट के विरुद्ध पढ़ने में कठिन हो सकता है। गहरा शेड चुनें।",
@@ -122,7 +125,6 @@
       "adminChargeWithoutPanLabel": "एडमिन शुल्क % (पैन रहित)",
       "activationFeeLabel": "सक्रियण / ई-पिन शुल्क",
       "minWithdrawalLabel": "न्यूनतम निकासी राशि",
-      "savedIndicator": "अभी सहेजा गया",
       "sampleEarningsTitle": "नमूना आय पूर्वावलोकन",
       "scenarioVolumeLabel": "परिदृश्य वॉल्यूम (प्रति लेग)",
       "hasPanLabel": "एसोसिएट के पास पैन है",

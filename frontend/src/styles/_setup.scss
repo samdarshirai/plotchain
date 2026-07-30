@@ -1,0 +1,186 @@
+.setup-shell {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+.setup-shell__content {
+  flex: 1;
+  min-width: 0;
+  padding: 2rem;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.setup-progress-rail {
+  flex: 0 0 280px;
+  width: 280px;
+  min-height: 100vh;
+  padding: 2rem 1.5rem;
+  background: var(--surface-card);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.setup-progress-rail__percent {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+
+  span {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+}
+
+.setup-progress-rail__bar {
+  height: 6px;
+  background: var(--surface-raised);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.setup-progress-rail__bar-fill {
+  height: 100%;
+  background: var(--brand-gradient);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.setup-progress-rail__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.setup-progress-rail__step-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 8px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.setup-progress-rail__step-link:hover {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.setup-progress-rail__step--active .setup-progress-rail__step-link {
+  background: var(--brand-primary-soft);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.setup-progress-rail__step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.setup-progress-rail__step--active .setup-progress-rail__step-number {
+  background: var(--brand-gradient);
+  color: var(--brand-primary-contrast);
+}
+
+.setup-progress-rail__step--complete .setup-progress-rail__step-number {
+  background: var(--status-success);
+  color: var(--surface-page);
+}
+
+.setup-progress-rail__step-label {
+  flex: 1;
+  font-size: 0.875rem;
+}
+
+.setup-progress-rail__step-optional {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.setup-progress-rail__step-check {
+  color: var(--status-success);
+  font-weight: 700;
+}
+
+.setup-progress-rail__autosave {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+// Two-column layout shared by the simple form-plus-preview steps (Company Profile, Branding,
+// Compensation). Payments & KYC has its own four-panel grid below -- it doesn't fit this shape.
+.step-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .setup-shell {
+    flex-direction: column;
+  }
+
+  .setup-progress-rail {
+    width: 100%;
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .step-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.payments-kyc-step {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+
+  app-setup-step-nav {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .payments-kyc-step {
+    grid-template-columns: 1fr;
+  }
+}
+
+.setup-step-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.setup-step-nav__saved {
+  font-size: 0.8rem;
+  color: var(--status-success);
+}
+
+.setup-step-nav__spacer {
+  flex: 1;
+}

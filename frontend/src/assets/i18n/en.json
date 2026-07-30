@@ -56,6 +56,11 @@
     "optionalLabel": "Optional",
     "percentCompleteSuffix": "Complete",
     "autosaveNote": "We save your progress automatically.",
+    "savedIndicator": "Saved just now",
+    "actions": {
+      "previous": "Previous",
+      "next": "Next"
+    },
     "stepPlaceholder": {
       "comingSoon": "This step is coming soon."
     },
@@ -67,7 +72,6 @@
       "contactPhoneLabel": "Contact Phone",
       "contactEmailLabel": "Contact Email",
       "registeredAddressLabel": "Registered Address",
-      "savedIndicator": "Saved just now",
       "previewTitle": "Company Card Preview",
       "previewPlaceholderName": "Your Company Name",
       "validation": {
@@ -84,7 +88,6 @@
       "wideLogoLabel": "Wide Logo",
       "uploadLabel": "Upload",
       "changeLabel": "Change",
-      "savedIndicator": "Saved just now",
       "previewTitle": "Branding Preview",
       "loginPreviewTitle": "Live Login Preview",
       "contrastWarning": "This color may be hard to read against light text. Consider a darker shade.",
@@ -122,7 +125,6 @@
       "adminChargeWithoutPanLabel": "Admin Charge % (without PAN)",
       "activationFeeLabel": "Activation / e-PIN Fee",
       "minWithdrawalLabel": "Minimum Withdrawal Amount",
-      "savedIndicator": "Saved just now",
       "sampleEarningsTitle": "Sample Earnings Preview",
       "scenarioVolumeLabel": "Scenario Volume (per leg)",
       "hasPanLabel": "Associate has PAN",
