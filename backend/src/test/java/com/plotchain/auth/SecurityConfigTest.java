@@ -139,6 +139,32 @@ class SecurityConfigTest {
             .andExpect(status().isForbidden());
     }
 
+    @Test
+    void compensationIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/compensation")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void compensationHistoryIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/compensation/history")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    // No @MockBean for the compensation repositories in this class -- they run for real against
+    // the H2 test DB, which Flyway seeds with a genesis compensation plan row (see the V8
+    // migration and CompensationPlanControllerTest). That's what makes isOk() the right
+    // assertion here rather than the "not 403" used elsewhere in this file for unstubbed paths.
+    @ParameterizedTest
+    @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
+    void compensationIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/company/compensation")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().isOk());
+    }
+
     // Asserts no Authorization header at all, not merely "any role passes" -- that alone
     // wouldn't catch a matcher that accidentally still required some token.
     @Test

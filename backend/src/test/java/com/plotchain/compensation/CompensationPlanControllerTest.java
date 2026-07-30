@@ -29,11 +29,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // @MockBean on the 4 repository INTERFACES CompensationPlanService depends on, so this runs a
 // real CompensationPlanService inside a real Spring Security filter chain, per
 // DashboardControllerTest's pattern.
-//
-// Test case 2 from the task brief ("GET with an ASSOCIATE token -> 403") is deliberately NOT
-// included here: it depends on Task 7's SecurityConfig matcher for GET /api/company/compensation,
-// which has not landed yet. Without it, GET falls through to anyRequest().authenticated() and
-// would return 200 for an associate token, not 403. Task 7 adds that test alongside its matcher.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -146,6 +141,19 @@ class CompensationPlanControllerTest {
             .andExpect(jsonPath("$.matchingIncomePct").value(7.00))
             .andExpect(jsonPath("$.directIncomePct").value(10.00))
             .andExpect(jsonPath("$.settlementCycle").value("SEMI_MONTHLY"));
+    }
+
+    // Test case 2 from the task brief. Deliberately deferred out of this file in Task 6 because
+    // it depends on Task 7's SecurityConfig matcher for GET /api/company/compensation -- without
+    // it, GET falls through to anyRequest().authenticated() and an associate token would get
+    // 200, not 403. That matcher now exists (SecurityConfig.java), so this passes for real: no
+    // repository stubbing needed, since the request is rejected at the security layer before it
+    // ever reaches CompensationPlanService.
+    @Test
+    void getCurrentIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/compensation")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
     }
 
     @Test

@@ -87,6 +87,12 @@ public class SecurityConfig {
                 // blanket PUT/POST rules above -- deliberately no separate matchers for them.
                 .requestMatchers(HttpMethod.GET, "/api/company/branding")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                // Same reasoning as setup-state/profile/branding above: GET
+                // /api/company/compensation and its history stay admin-family-only. PUT
+                // /api/company/compensation is a write and is already covered by the blanket
+                // PUT rule above -- deliberately no separate matcher for it.
+                .requestMatchers(HttpMethod.GET, "/api/company/compensation", "/api/company/compensation/history")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 // Phase 5's genuinely public endpoints: the pre-login branding bootstrap, the
                 // raw logo bytes it and the login page render as <img> tags, and the favicon
                 // index.html links to -- all requested before any JWT exists. They only need to
