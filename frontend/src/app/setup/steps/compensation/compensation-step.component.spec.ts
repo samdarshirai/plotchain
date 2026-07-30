@@ -106,17 +106,30 @@ describe('CompensationStepComponent', () => {
     req.flush(emptyPlan);
   }));
 
-  it('sets a translated submitError on a 409 and leaves savedJustNow false', fakeAsync(() => {
+  it("surfaces the backend's own message on a 409 rather than a hardcoded guess", fakeAsync(() => {
     fixture.componentInstance.form.get('directIncomePct')?.setValue(20);
 
     tick(400);
     httpMock.expectOne('/api/company/compensation').flush(
-      { error: 'Reward tiers have a gap at level 2' },
+      { error: "A compensation plan version is already effective on 2026-07-30; it belongs to a different administrator's edit" },
       { status: 409, statusText: 'Conflict' }
     );
 
-    expect(fixture.componentInstance.submitError).toBeTruthy();
+    // A 409 can now mean a tier gap, a non-increasing threshold, OR another admin owning
+    // today's version -- only the server knows which, so its text must reach the banner intact.
+    expect(fixture.componentInstance.submitError).toBe(
+      "A compensation plan version is already effective on 2026-07-30; it belongs to a different administrator's edit"
+    );
     expect(fixture.componentInstance.savedJustNow).toBeFalse();
+  }));
+
+  it('falls back to the generic message on a 409 with no error field in the body', fakeAsync(() => {
+    fixture.componentInstance.form.get('directIncomePct')?.setValue(20);
+
+    tick(400);
+    httpMock.expectOne('/api/company/compensation').flush({}, { status: 409, statusText: 'Conflict' });
+
+    expect(fixture.componentInstance.submitError).toBe('setup.compensation.validation.genericSaveError');
   }));
 
   it('surfaces server-side field errors from a 400 via the existing toFieldErrors path', fakeAsync(() => {
@@ -156,6 +169,71 @@ describe('CompensationStepComponent', () => {
 
     expect(fixture.componentInstance.submitError).toBeTruthy();
     expect(fixture.componentInstance.fieldError('directIncomePct')).toBeUndefined();
+  }));
+
+  it('does not autosave a blank reward-tier row from "+ Add", but does once it is filled in', fakeAsync(() => {
+    const component = fixture.componentInstance;
+    const existingRows = component.rewardTierRows;
+
+    // What editable-table emits when "+ Add" is clicked: the existing rows plus a blank one.
+    // volumeThreshold 0 fails the backend's @DecimalMin("0.01"), so saving now is guaranteed
+    // to error out on nothing more than the act of adding a row.
+    const blankRow = { volumeThreshold: 0, cashReward: 0, perkDescription: '' };
+    component.onRewardTierRowsChange([...existingRows, blankRow]);
+
+    // Local state and the preview still update immediately -- only the save is gated.
+    expect(component.rewardTierRows.length).toBe(existingRows.length + 1);
+    tick(400);
+    httpMock.expectNone('/api/company/compensation');
+
+    // Filling the row in makes the next edit save normally.
+    component.onRewardTierRowsChange([
+      ...existingRows,
+      { volumeThreshold: 300000, cashReward: 3000, perkDescription: 'Cruise' }
+    ]);
+    tick(400);
+    const req = httpMock.expectOne('/api/company/compensation');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body.rewardTiers.length).toBe(3);
+    req.flush(emptyPlan);
+  }));
+
+  it('does not autosave a blank royalty row with no rank selected, but does once a rank is picked', fakeAsync(() => {
+    const component = fixture.componentInstance;
+
+    // rankId '' would fail UUID deserialization server-side with a confusing generic error.
+    component.onRoyaltyRowsChange([...component.royaltyRows, { rankId: '', royaltyPct: 0 }]);
+    tick(400);
+    httpMock.expectNone('/api/company/compensation');
+
+    // 0% is a legitimate royalty rate -- only the missing rank made the row incomplete.
+    component.onRoyaltyRowsChange([...component.royaltyRows.slice(0, 1), { rankId: 'rank-2', royaltyPct: 0 }]);
+    tick(400);
+    const req = httpMock.expectOne('/api/company/compensation');
+    expect(req.request.body.royaltyBonusRates).toEqual([
+      { rankId: 'rank-1', royaltyPct: 1 },
+      { rankId: 'rank-2', royaltyPct: 0 }
+    ]);
+    req.flush(emptyPlan);
+  }));
+
+  it('blocks autosave entirely when the initial plan load fails, so defaults are never written back', fakeAsync(() => {
+    const failedFixture = TestBed.createComponent(CompensationStepComponent);
+    failedFixture.detectChanges();
+    httpMock
+      .expectOne('/api/company/compensation')
+      .flush({ error: 'boom' }, { status: 500, statusText: 'Server Error' });
+
+    const component = failedFixture.componentInstance;
+    expect(component.loadFailed).toBeTrue();
+    expect(component.submitError).toBe('setup.compensation.validation.loadFailed');
+
+    // Editing after a failed load must not PUT the constructor-default zeros over the real plan.
+    component.form.get('directIncomePct')?.setValue(20);
+    tick(400);
+    httpMock.expectNone('/api/company/compensation');
+
+    failedFixture.destroy();
   }));
 
   it('calls setupService.refresh() only on a successful save', fakeAsync(() => {

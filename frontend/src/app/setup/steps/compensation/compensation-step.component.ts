@@ -13,9 +13,32 @@ import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { CompensationPlanService } from './compensation-plan.service';
 import { computeSampleEarnings, SampleEarningsResult } from './sample-earnings';
 import { SetupService } from '../../setup.service';
-import { CompensationPlanRequest, RankOption } from '../../models/compensation-plan.model';
+import { CompensationPlanRequest, RankOption, SettlementCycle } from '../../models/compensation-plan.model';
 
 const DEFAULT_SCENARIO_VOLUME = 1000000; // spec example: "sells ₹10L on each leg"
+
+const SETTLEMENT_CYCLES: SettlementCycle[] = ['SEMI_MONTHLY', 'MONTHLY', 'CUSTOM'];
+
+function isSettlementCycle(value: string): value is SettlementCycle {
+  return SETTLEMENT_CYCLES.some(cycle => cycle === value);
+}
+
+// A table row only reaches the save trigger once it is fully filled in. Clicking "+ Add" emits a
+// (rowsChange) with a blank row, which would otherwise autosave a rankId of '' (fails UUID
+// deserialization) or a volumeThreshold of 0 (fails the backend's @DecimalMin("0.01")) and show
+// an error banner for the ordinary act of adding a row.
+function isFilledNumber(value: string | number | undefined): boolean {
+  // 0 is legitimate for royaltyPct/cashReward, so only blank/non-numeric is incomplete.
+  return value !== undefined && value !== null && String(value).trim() !== '' && !Number.isNaN(Number(value));
+}
+
+function isCompleteRoyaltyRow(row: Record<string, string | number>): boolean {
+  return String(row['rankId'] ?? '').trim() !== '' && isFilledNumber(row['royaltyPct']);
+}
+
+function isCompleteRewardTierRow(row: Record<string, string | number>): boolean {
+  return isFilledNumber(row['volumeThreshold']) && Number(row['volumeThreshold']) > 0 && isFilledNumber(row['cashReward']);
+}
 
 // The only form fields with a visible <app-field-error> in the template. A server-side
 // field error keyed on anything else (settlementCycle, royaltyBonusRates, rewardTiers, or an
@@ -222,11 +245,13 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
   // form.valueChanges -- this feeds their edits into the same debounced save arm.
   private rowsChanged$ = new Subject<void>();
 
-  form = this.fb.group({
+  // nonNullable so getRawValue() is assignable to CompensationPlanRequest without a cast -- the
+  // cast that previously hid effectiveFrom being missing from the payload entirely.
+  form = this.fb.nonNullable.group({
     directIncomePct: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     matchingIncomePct: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     sponsorMatchingPct: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
-    settlementCycle: ['SEMI_MONTHLY', Validators.required],
+    settlementCycle: this.fb.nonNullable.control<SettlementCycle>('SEMI_MONTHLY', Validators.required),
     tdsPct: [2, [Validators.required, Validators.min(0), Validators.max(100)]],
     adminChargeWithPanPct: [5, [Validators.required, Validators.min(0), Validators.max(100)]],
     adminChargeWithoutPanPct: [15, [Validators.required, Validators.min(0), Validators.max(100)]],
@@ -247,19 +272,28 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
 
   savedJustNow = false;
   submitError: string | null = null;
+  // Set when the initial GET fails. Without it the form would keep its constructor-default
+  // zeros and the very next keystroke's autosave would PUT those zeros over the live plan.
+  loadFailed = false;
   private serverFieldErrors: Record<string, string> = {};
 
   ngOnInit(): void {
-    this.planSubscription = this.compensationPlanService.getCurrent().subscribe(res => {
-      this.availableRanks = res.availableRanks;
-      this.form.patchValue(res, { emitEvent: false });
-      this.royaltyRows = res.royaltyBonusRates.map(r => ({ rankId: r.rankId, royaltyPct: r.royaltyPct }));
-      this.rewardTierRows = [...res.rewardTiers]
-        .sort((a, b) => a.tierLevel - b.tierLevel)
-        .map(t => ({ volumeThreshold: t.volumeThreshold, cashReward: t.cashReward, perkDescription: t.perkDescription }));
-      // patchValue with emitEvent:false suppresses both the preview and the debounced-save
-      // arms below -- so the initial preview needs this explicit one-time call.
-      this.recomputeSampleEarnings();
+    this.planSubscription = this.compensationPlanService.getCurrent().subscribe({
+      next: res => {
+        this.availableRanks = res.availableRanks;
+        this.form.patchValue(res, { emitEvent: false });
+        this.royaltyRows = res.royaltyBonusRates.map(r => ({ rankId: r.rankId, royaltyPct: r.royaltyPct }));
+        this.rewardTierRows = [...res.rewardTiers]
+          .sort((a, b) => a.tierLevel - b.tierLevel)
+          .map(t => ({ volumeThreshold: t.volumeThreshold, cashReward: t.cashReward, perkDescription: t.perkDescription }));
+        // patchValue with emitEvent:false suppresses both the preview and the debounced-save
+        // arms below -- so the initial preview needs this explicit one-time call.
+        this.recomputeSampleEarnings();
+      },
+      error: () => {
+        this.loadFailed = true;
+        this.submitError = this.translate.instant('setup.compensation.validation.loadFailed');
+      }
     });
 
     // Undebounced: instant, local-only Sample Earnings Preview repaint, no network.
@@ -312,19 +346,29 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
   }
 
   onRoyaltyRowsChange(rows: Record<string, string | number>[]): void {
+    // Local state + preview always update; only the SAVE trigger waits for a complete row, so
+    // clicking "+ Add" doesn't fire an autosave that is guaranteed to fail validation.
     this.royaltyRows = rows;
     this.recomputeSampleEarnings();
-    this.rowsChanged$.next();
+    if (rows.every(isCompleteRoyaltyRow)) {
+      this.rowsChanged$.next();
+    }
   }
 
   onRewardTierRowsChange(rows: Record<string, string | number>[]): void {
     this.rewardTierRows = rows;
     this.recomputeSampleEarnings();
-    this.rowsChanged$.next();
+    if (rows.every(isCompleteRewardTierRow)) {
+      this.rowsChanged$.next();
+    }
   }
 
   setSettlementCycle(value: string): void {
-    this.form.get('settlementCycle')?.setValue(value);
+    // Narrowed rather than cast: the toggle group is built from SETTLEMENT_CYCLES, so anything
+    // else is not a value this form can hold.
+    if (isSettlementCycle(value)) {
+      this.form.controls.settlementCycle.setValue(value);
+    }
   }
 
   setScenarioVolume(event: Event): void {
@@ -380,8 +424,15 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
   }
 
   private save(): void {
+    // The form never got the server's values, so everything in it is a constructor default.
+    // Saving now would overwrite the real plan with zeros.
+    if (this.loadFailed) {
+      return;
+    }
     const formValue = this.form.getRawValue();
-    const request = {
+    // Typed at the declaration (no `as` cast) so the compiler actually checks this shape --
+    // effectiveFrom is intentionally omitted and the backend defaults it to today.
+    const request: CompensationPlanRequest = {
       ...formValue,
       // royaltyRows carried through as-is (field names already match RoyaltyBonusRate minus
       // rankName); only type coercion is needed since editable-table cell values round-trip
@@ -399,7 +450,7 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
         cashReward: Number(row['cashReward']),
         perkDescription: String(row['perkDescription'])
       }))
-    } as CompensationPlanRequest;
+    };
 
     this.compensationPlanService.update(request).subscribe({
       next: () => {
@@ -411,9 +462,13 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
       error: err => {
         this.savedJustNow = false;
         if (err.status === 409) {
-          // RewardTierGapException's response body has no `fields` map, so it can't go
-          // through the usual toFieldErrors() per-field path -- surface it as a banner instead.
-          this.submitError = this.translate.instant('setup.compensation.validation.rewardTierGap');
+          // A 409 here is one of several distinct conflicts (reward-tier gap, non-increasing
+          // thresholds, or another admin already owning today's version), and the body has no
+          // `fields` map to route per-field. Show the server's own message rather than guessing
+          // at one -- same convention as branding-step.component.ts's logo upload errors.
+          this.serverFieldErrors = {};
+          this.submitError =
+            err.error?.error ?? this.translate.instant('setup.compensation.validation.genericSaveError');
           return;
         }
         const fields = toFieldErrors(err);

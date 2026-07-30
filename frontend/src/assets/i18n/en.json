@@ -137,8 +137,8 @@
       "validation": {
         "required": "This field is required.",
         "range": "Enter a value between 0 and 100.",
-        "rewardTierGap": "Reward tiers must be ordered with no gaps. Fix the tier levels and try again.",
-        "genericSaveError": "Something went wrong saving your changes. Please try again."
+        "genericSaveError": "Something went wrong saving your changes. Please try again.",
+        "loadFailed": "We could not load your current compensation plan, so editing is disabled to avoid overwriting it. Reload the page to try again."
       }
     }
   },
