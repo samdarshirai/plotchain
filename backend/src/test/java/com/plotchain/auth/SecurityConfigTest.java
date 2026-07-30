@@ -335,6 +335,24 @@ class SecurityConfigTest {
             .andExpect(status().isOk());
     }
 
+    // Single parameterized case covering every AssociateRole (unlike the paired
+    // xIsForbiddenForAnAssociateToken/xIsReachableForAnyAdminFamilyToken tests above): asserts
+    // 200 for every admin-family role and 403 for ASSOCIATE, driven off
+    // AssociateRole.isAdminFamily() so this stays in sync with the matcher's own
+    // hasAnyAuthority list without hardcoding two role lists here.
+    //
+    // settingsAuditLogRepository is not @MockBean'd in this class, so it runs for real against
+    // the H2 test DB, which has no seeded rows -- same unstubbed-default-empty-result reasoning
+    // as rootAssociatesListIsReachableForAnyAdminFamilyToken above, hence isOk() rather than a
+    // populated body for the admin-family case.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void auditLogIsReachableForEveryAdminFamilyTokenAndForbiddenForAssociate(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/company/audit-log")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role.isAdminFamily() ? 200 : 403));
+    }
+
     @Test
     void passwordChangeIsReachableByAnAssociateToken() throws Exception {
         // A POST under /api/** that an ASSOCIATE must be able to reach. It needs its own

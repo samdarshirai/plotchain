@@ -136,6 +136,12 @@ public class SecurityConfig {
                 // beyond the standard admin-family write rule).
                 .requestMatchers(HttpMethod.GET, "/api/company/root-associates")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                // Same reasoning as setup-state/profile/branding/compensation/payments/projects/
+                // admin-team/root-associates above: the audit-log GET stays admin-family-only.
+                // There is no mutating endpoint for this resource at all (append-only, written
+                // internally by SettingsAuditService) -- deliberately no write matcher.
+                .requestMatchers(HttpMethod.GET, "/api/company/audit-log")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 // Phase 5's genuinely public endpoints: the pre-login branding bootstrap, the
                 // raw logo bytes it and the login page render as <img> tags, and the favicon
                 // index.html links to -- all requested before any JWT exists. They only need to
