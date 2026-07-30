@@ -3,6 +3,7 @@ package com.plotchain.compensation;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -51,26 +52,45 @@ public class CompensationPlanService {
             .collect(Collectors.toList());
     }
 
+    // @Transactional because a single call writes 1 version row + N royalty rows + M reward-tier
+    // rows, and on the same-day replace path also DELETEs the previous version and its children
+    // first. Without atomicity a crash mid-replace could leave the live plan with no active
+    // version at all. (First service in this codebase to need it -- see report/notes.)
+    @Transactional
     public CompensationPlanResponse updatePlan(CompensationPlanRequest request, UUID adminId) {
-        // Contiguity validation MUST run before any repository write, so a bad request never
-        // creates a partial/orphaned version row.
+        // Contiguity validation MUST run before any repository write or delete, so a bad request
+        // never creates a partial/orphaned version row nor destroys the existing one.
         validateRewardTierContiguity(request.rewardTiers());
 
-        String nextVersionLabel = nextVersionLabel();
         LocalDate effectiveFrom = request.effectiveFrom() != null ? request.effectiveFrom() : LocalDate.now();
 
         // idx_compensation_plan_version_effective_from (V8) allows at most one version per
-        // calendar date. Check before writing so a same-day double-save gets a clean domain
-        // error instead of an unmapped DataIntegrityViolationException.
-        if (versionRepository.existsByEffectiveFrom(effectiveFrom)) {
+        // calendar date, and the UI autosaves on a 400ms debounce -- so the second and every
+        // later save of a given day lands here with a row already present.
+        CompensationPlanVersion existing = versionRepository.findByEffectiveFrom(effectiveFrom).orElse(null);
+        String versionLabel;
+        if (existing == null) {
+            versionLabel = nextVersionLabel();
+        } else if (existing.getCreatedByAssociateId() == null
+                || !existing.getCreatedByAssociateId().equals(adminId)) {
+            // Null author = the V8 genesis seed row; a different non-null author = another
+            // admin's edit. Neither is ours to overwrite -- history stays immutable.
             throw new DuplicateEffectiveDateException(
                 "A compensation plan version is already effective on " + effectiveFrom
-                    + "; choose a different effective date.");
+                    + (existing.getCreatedByAssociateId() == null
+                        ? "; it was not created by you"
+                        : "; it belongs to a different administrator's edit")
+                    + " and cannot be replaced. Choose a different effective date.");
+        } else {
+            // Same admin, same calendar date: this is a continuation of today's edit, not a new
+            // point in history. Replace the row (keeping its label) instead of appending.
+            versionLabel = existing.getVersionLabel();
+            replaceExistingVersion(existing);
         }
 
         CompensationPlanVersion newVersion = new CompensationPlanVersion(
             UUID.randomUUID(),
-            nextVersionLabel,
+            versionLabel,
             effectiveFrom,
             request.directIncomePct(),
             request.matchingIncomePct(),
@@ -106,6 +126,18 @@ public class CompensationPlanService {
         return versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
             .orElseThrow(() -> new IllegalStateException(
                 "compensation_plan_version row missing - V8 migration seeds it"));
+    }
+
+    // Deletes a same-day version and its child rows so the incoming save can take its place.
+    // The explicit flush() matters: Hibernate would otherwise order the new version's INSERT
+    // before this DELETE at commit time and trip the unique effective_from index (and the
+    // children's FK). Runs inside updatePlan's transaction, so a failure after this point
+    // rolls the deletes back.
+    private void replaceExistingVersion(CompensationPlanVersion existing) {
+        royaltyBonusRateRepository.deleteAll(royaltyBonusRateRepository.findAllByPlanVersionId(existing.getId()));
+        rewardTierRepository.deleteAll(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(existing.getId()));
+        versionRepository.delete(existing);
+        versionRepository.flush();
     }
 
     private String nextVersionLabel() {

@@ -20,7 +20,10 @@ public interface CompensationPlanVersionRepository extends JpaRepository<Compens
     List<CompensationPlanVersion> findAllByOrderByEffectiveFromDesc();
 
     // idx_compensation_plan_version_effective_from (V8) allows at most one version per calendar
-    // date. Used by PUT (Task 5) to reject a duplicate effective date with a clean domain
-    // exception instead of letting the unique-index violation surface as a raw 500.
-    boolean existsByEffectiveFrom(LocalDate effectiveFrom);
+    // date, so this returns at most one row. Used by PUT to decide between three outcomes:
+    // no row -> append a new version; a row this same admin authored -> replace it in place
+    // (autosave writes many times a day and must not append a version per keystroke burst);
+    // a row authored by someone else or by the migration seed (null author) -> reject, because
+    // history is immutable to everyone but its own author on its own day.
+    Optional<CompensationPlanVersion> findByEffectiveFrom(LocalDate effectiveFrom);
 }

@@ -7,7 +7,10 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 // Compensation plan versions are append-only: never mutate a version in place, always insert a
-// new row. Immutability here (no setters) makes that invariant compiler-enforced.
+// new row. Immutability here (no setters) makes that invariant compiler-enforced. The one
+// sanctioned exception lives in CompensationPlanService#updatePlan: a version whose
+// effective_from is today and whose author is the admin saving right now is deleted and
+// re-inserted wholesale (never mutated), so that a day's autosaves collapse into one version.
 @Entity
 @Table(name = "compensation_plan_version")
 public class CompensationPlanVersion {

@@ -66,10 +66,14 @@ class CompensationPlanServiceTest {
     }
 
     private CompensationPlanVersion savedVersion(UUID createdBy) {
+        return versionOn(LocalDate.now(), "v2", createdBy);
+    }
+
+    private CompensationPlanVersion versionOn(LocalDate effectiveFrom, String label, UUID createdBy) {
         return new CompensationPlanVersion(
             UUID.randomUUID(),
-            "v2",
-            LocalDate.now(),
+            label,
+            effectiveFrom,
             new BigDecimal("10.00"),
             new BigDecimal("7.00"),
             new BigDecimal("5.00"),
@@ -178,8 +182,8 @@ class CompensationPlanServiceTest {
     }
 
     @Test
-    void updatePlanThrowsWhenEffectiveDateAlreadyHasAVersion() {
-        when(versionRepository.findFirstByOrderByCreatedAtDesc()).thenReturn(Optional.of(seedVersion()));
+    void updatePlanThrowsWhenEffectiveDateBelongsToADifferentAdmin() {
+        lenient().when(versionRepository.findFirstByOrderByCreatedAtDesc()).thenReturn(Optional.of(seedVersion()));
         lenient().when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
 
         LocalDate effectiveFrom = LocalDate.now().plusDays(5);
@@ -188,19 +192,107 @@ class CompensationPlanServiceTest {
         );
         CompensationPlanRequest request = requestWithTiersAndEffectiveFrom(validTiers, effectiveFrom);
 
-        // First save for this effective date succeeds.
-        compensationPlanService.updatePlan(request, ADMIN_ID);
-        verify(versionRepository, times(1)).save(any());
-
-        // Second save for the SAME effective date (e.g. admin notices a typo and re-saves the
-        // same day) must be rejected before any write, not surface the unique-index violation.
-        when(versionRepository.existsByEffectiveFrom(effectiveFrom)).thenReturn(true);
+        // A version already exists for this date, authored by SOMEONE ELSE. Even though it is
+        // the same calendar date, it is not this admin's edit to overwrite.
+        UUID otherAdminId = UUID.randomUUID();
+        when(versionRepository.findByEffectiveFrom(effectiveFrom))
+            .thenReturn(Optional.of(versionOn(effectiveFrom, "v2", otherAdminId)));
 
         assertThatThrownBy(() -> compensationPlanService.updatePlan(request, ADMIN_ID))
             .isInstanceOf(DuplicateEffectiveDateException.class)
-            .hasMessageContaining(effectiveFrom.toString());
+            .hasMessageContaining(effectiveFrom.toString())
+            .hasMessageContaining("different administrator");
 
-        verify(versionRepository, times(1)).save(any());
+        verify(versionRepository, never()).save(any());
+        verify(versionRepository, never()).delete(any());
+    }
+
+    @Test
+    void updatePlanThrowsWhenEffectiveDateBelongsToTheGenesisSeedRowWithNoAuthor() {
+        lenient().when(versionRepository.findFirstByOrderByCreatedAtDesc()).thenReturn(Optional.of(seedVersion()));
+        lenient().when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
+
+        // The V8 seed row has created_by_associate_id = NULL. No admin "owns" it, so nobody may
+        // replace it -- not even by explicitly targeting its effective date.
+        LocalDate seedDate = LocalDate.of(2000, 1, 1);
+        when(versionRepository.findByEffectiveFrom(seedDate)).thenReturn(Optional.of(seedVersion()));
+
+        List<RewardTierInput> validTiers = List.of(
+            new RewardTierInput(1, new BigDecimal("1000"), new BigDecimal("100"), "Tier 1")
+        );
+
+        assertThatThrownBy(() -> compensationPlanService.updatePlan(
+                requestWithTiersAndEffectiveFrom(validTiers, seedDate), ADMIN_ID))
+            .isInstanceOf(DuplicateEffectiveDateException.class)
+            .hasMessageContaining("2000-01-01")
+            .hasMessageContaining("not created by you");
+
+        verify(versionRepository, never()).save(any());
+        verify(versionRepository, never()).delete(any());
+    }
+
+    @Test
+    void updatePlanReplacesTheSameDaysVersionBySameAdminKeepingItsVersionLabel() {
+        lenient().when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
+
+        // The admin already autosaved once today -- the UI never sends effectiveFrom, so every
+        // later keystroke's autosave lands on the same calendar date.
+        LocalDate today = LocalDate.now();
+        CompensationPlanVersion todaysVersion = versionOn(today, "v2", ADMIN_ID);
+        when(versionRepository.findByEffectiveFrom(today)).thenReturn(Optional.of(todaysVersion));
+
+        RoyaltyBonusRate staleRate =
+            new RoyaltyBonusRate(UUID.randomUUID(), todaysVersion.getId(), RANK_ID, new BigDecimal("9.00"));
+        RewardTier staleTier = new RewardTier(
+            UUID.randomUUID(), todaysVersion.getId(), 1, new BigDecimal("5"), new BigDecimal("5"), "stale");
+        when(royaltyBonusRateRepository.findAllByPlanVersionId(todaysVersion.getId()))
+            .thenReturn(List.of(staleRate));
+        when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(todaysVersion.getId()))
+            .thenReturn(List.of(staleTier));
+
+        List<RewardTierInput> validTiers = List.of(
+            new RewardTierInput(1, new BigDecimal("1000"), new BigDecimal("100"), "Tier 1"),
+            new RewardTierInput(2, new BigDecimal("2000"), new BigDecimal("200"), "Tier 2")
+        );
+
+        CompensationPlanResponse response = compensationPlanService.updatePlan(requestWithTiers(validTiers), ADMIN_ID);
+
+        // Old version and its children are gone...
+        verify(royaltyBonusRateRepository).deleteAll(List.of(staleRate));
+        verify(rewardTierRepository).deleteAll(List.of(staleTier));
+        verify(versionRepository).delete(todaysVersion);
+
+        // ...and the replacement reuses the SAME label rather than incrementing per autosave.
+        ArgumentCaptor<CompensationPlanVersion> captor = ArgumentCaptor.forClass(CompensationPlanVersion.class);
+        verify(versionRepository).save(captor.capture());
+        CompensationPlanVersion saved = captor.getValue();
+        assertThat(saved.getVersionLabel()).isEqualTo("v2");
+        assertThat(saved.getId()).isNotEqualTo(todaysVersion.getId());
+        assertThat(saved.getEffectiveFrom()).isEqualTo(today);
+        assertThat(saved.getCreatedByAssociateId()).isEqualTo(ADMIN_ID);
+        assertThat(response.versionLabel()).isEqualTo("v2");
+
+        // The label logic must not run at all on the replace path.
+        verify(versionRepository, never()).findFirstByOrderByCreatedAtDesc();
+        // New children were written against the NEW version id.
+        verify(royaltyBonusRateRepository, times(1)).save(any());
+        verify(rewardTierRepository, times(2)).save(any());
+    }
+
+    @Test
+    void updatePlanRejectsBeforeDeletingAnythingWhenTiersAreInvalid() {
+        // Contiguity must be checked before the replace path touches the existing version --
+        // otherwise a malformed autosave would destroy today's plan and write nothing back.
+        List<RewardTierInput> tiersWithGap = List.of(
+            new RewardTierInput(1, new BigDecimal("1000"), new BigDecimal("100"), "Tier 1"),
+            new RewardTierInput(3, new BigDecimal("2000"), new BigDecimal("200"), "Tier 3")
+        );
+
+        assertThatThrownBy(() -> compensationPlanService.updatePlan(requestWithTiers(tiersWithGap), ADMIN_ID))
+            .isInstanceOf(RewardTierGapException.class);
+
+        verify(versionRepository, never()).findByEffectiveFrom(any());
+        verify(versionRepository, never()).delete(any());
     }
 
     // -- isComplete ----------------------------------------------------------
