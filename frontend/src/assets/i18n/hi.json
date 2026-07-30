@@ -176,6 +176,41 @@
         "csvGenericError": "इस फ़ाइल को संसाधित करने में कुछ गलत हो गया। कृपया पुनः प्रयास करें।"
       }
     },
+    "adminTeam": {
+      "title": "एडमिन टीम और भूमिकाएं",
+      "addAdminButtonLabel": "नया एडमिन जोड़ें",
+      "userIdColumnLabel": "उपयोगकर्ता आईडी",
+      "fullNameColumnLabel": "पूरा नाम",
+      "roleColumnLabel": "भूमिका",
+      "lastLoginColumnLabel": "अंतिम लॉगिन",
+      "statusColumnLabel": "स्थिति",
+      "activeStatusLabel": "सक्रिय",
+      "neverLoggedInLabel": "—",
+      "panelTitle": "नया एडमिन जोड़ें",
+      "userIdLabel": "उपयोगकर्ता आईडी",
+      "userIdAvailableHint": "उपलब्ध",
+      "userIdTakenHint": "यह उपयोगकर्ता आईडी पहले से उपयोग में है",
+      "fullNameLabel": "पूरा नाम",
+      "roleLabel": "भूमिका",
+      "roleSuperAdminLabel": "सुपर एडमिन",
+      "roleFinanceLabel": "वित्त",
+      "roleKycReviewerLabel": "केवाईसी समीक्षक",
+      "roleSupportLabel": "सहायता",
+      "temporaryPasswordLabel": "अस्थायी पासवर्ड",
+      "generatePasswordButtonLabel": "उत्पन्न करें",
+      "permissionsPreviewTitle": "अनुमतियां पूर्वावलोकन",
+      "submitButtonLabel": "एडमिन बनाएं",
+      "bannerUserIdLabel": "उपयोगकर्ता आईडी",
+      "bannerTemporaryPasswordLabel": "अस्थायी पासवर्ड",
+      "bannerNoticeLabel": "यह पासवर्ड केवल एक बार दिखाया जाता है। इसे अभी नोट कर लें — यहाँ से जाने के बाद आपको नया खाता बनाना होगा।",
+      "doneButtonLabel": "पूर्ण",
+      "validation": {
+        "required": "यह फ़ील्ड आवश्यक है।",
+        "userIdTaken": "यह उपयोगकर्ता आईडी पहले से पंजीकृत है।",
+        "invalidRole": "कृपया एक मान्य भूमिका चुनें।",
+        "genericSaveError": "कुछ गलत हो गया। कृपया पुनः प्रयास करें।"
+      }
+    },
     "paymentsKyc": {
       "paymentCollectionTitle": "भुगतान संग्रहण",
       "gatewayLabel": "भुगतान गेटवे",
