@@ -1,0 +1,49 @@
+button {
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 0.625rem 1.25rem;
+  border: none;
+  background: none;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.brand-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--brand-gradient);
+  color: var(--brand-primary-contrast);
+  font-weight: 600;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.brand-button:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.brand-button--secondary {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+}
+
+.brand-button--ghost {
+  background: transparent;
+  color: var(--brand-primary);
+  border: 1px solid var(--brand-primary-soft);
+}
+
+.brand-button--danger {
+  background: var(--status-danger);
+  color: var(--brand-primary-contrast);
+}
+
+.brand-button--full {
+  display: flex;
+  width: 100%;
+}
