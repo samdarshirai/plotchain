@@ -40,9 +40,9 @@ class AuthServiceTest {
         associate.setId(UUID.randomUUID());
         associate.setRole(AssociateRole.ASSOCIATE);
         associate.setPasswordHash(passwordEncoder.encode("Password123!"));
-        when(associateRepository.findByEmail("jane@plotchain.test")).thenReturn(Optional.of(associate));
+        when(associateRepository.findByUserId("jane")).thenReturn(Optional.of(associate));
 
-        LoginResponse response = authService.login(new LoginRequest("jane@plotchain.test", "Password123!"));
+        LoginResponse response = authService.login(new LoginRequest("jane", "Password123!"));
 
         assertThat(response.token()).isNotBlank();
         assertThat(response.associateId()).isEqualTo(associate.getId());
@@ -50,10 +50,10 @@ class AuthServiceTest {
     }
 
     @Test
-    void rejectsAnUnknownEmail() {
-        when(associateRepository.findByEmail("nobody@plotchain.test")).thenReturn(Optional.empty());
+    void rejectsAnUnknownUserId() {
+        when(associateRepository.findByUserId("nobody")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.login(new LoginRequest("nobody@plotchain.test", "whatever")))
+        assertThatThrownBy(() -> authService.login(new LoginRequest("nobody", "whatever")))
             .isInstanceOf(InvalidCredentialsException.class);
     }
 
@@ -63,9 +63,9 @@ class AuthServiceTest {
         associate.setId(UUID.randomUUID());
         associate.setRole(AssociateRole.ASSOCIATE);
         associate.setPasswordHash(passwordEncoder.encode("Password123!"));
-        when(associateRepository.findByEmail("jane@plotchain.test")).thenReturn(Optional.of(associate));
+        when(associateRepository.findByUserId("jane")).thenReturn(Optional.of(associate));
 
-        assertThatThrownBy(() -> authService.login(new LoginRequest("jane@plotchain.test", "wrong-password")))
+        assertThatThrownBy(() -> authService.login(new LoginRequest("jane", "wrong-password")))
             .isInstanceOf(InvalidCredentialsException.class);
     }
 

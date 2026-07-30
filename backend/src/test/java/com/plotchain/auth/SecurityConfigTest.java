@@ -64,12 +64,12 @@ class SecurityConfigTest {
         associate.setId(UUID.randomUUID());
         associate.setRole(AssociateRole.ASSOCIATE);
         associate.setPasswordHash(passwordEncoder.encode("Password123!"));
-        when(associateRepository.findByEmail("jane@plotchain.test")).thenReturn(Optional.of(associate));
+        when(associateRepository.findByUserId("jane")).thenReturn(Optional.of(associate));
 
         mockMvc.perform(post("/api/auth/login")
                 .contentType("application/json")
                 .content(new ObjectMapper().writeValueAsString(
-                    new LoginRequest("jane@plotchain.test", "Password123!"))))
+                    new LoginRequest("jane", "Password123!"))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.token").isNotEmpty());
     }

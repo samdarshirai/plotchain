@@ -22,7 +22,7 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest request) {
-        Associate associate = associateRepository.findByEmail(request.email())
+        Associate associate = associateRepository.findByUserId(request.userId())
             .orElseThrow(InvalidCredentialsException::new);
 
         if (!passwordEncoder.matches(request.password(), associate.getPasswordHash())) {

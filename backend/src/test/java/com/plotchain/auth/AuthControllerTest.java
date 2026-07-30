@@ -50,11 +50,11 @@ class AuthControllerTest {
         associate.setId(UUID.randomUUID());
         associate.setRole(AssociateRole.ASSOCIATE);
         associate.setPasswordHash(passwordEncoder.encode("Password123!"));
-        when(associateRepository.findByEmail("jane@plotchain.test")).thenReturn(Optional.of(associate));
+        when(associateRepository.findByUserId("jane")).thenReturn(Optional.of(associate));
 
         mockMvc.perform(post("/api/auth/login")
                 .contentType("application/json")
-                .content(new ObjectMapper().writeValueAsString(new LoginRequest("jane@plotchain.test", "Password123!"))))
+                .content(new ObjectMapper().writeValueAsString(new LoginRequest("jane", "Password123!"))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.token").isNotEmpty())
             .andExpect(jsonPath("$.role").value("ASSOCIATE"));
@@ -66,11 +66,11 @@ class AuthControllerTest {
         associate.setId(UUID.randomUUID());
         associate.setRole(AssociateRole.ASSOCIATE);
         associate.setPasswordHash(passwordEncoder.encode("Password123!"));
-        when(associateRepository.findByEmail("jane@plotchain.test")).thenReturn(Optional.of(associate));
+        when(associateRepository.findByUserId("jane")).thenReturn(Optional.of(associate));
 
         mockMvc.perform(post("/api/auth/login")
                 .contentType("application/json")
-                .content(new ObjectMapper().writeValueAsString(new LoginRequest("jane@plotchain.test", "wrong"))))
+                .content(new ObjectMapper().writeValueAsString(new LoginRequest("jane", "wrong"))))
             .andExpect(status().isUnauthorized());
     }
 
@@ -78,7 +78,7 @@ class AuthControllerTest {
     void returns400ForMissingPassword() throws Exception {
         mockMvc.perform(post("/api/auth/login")
                 .contentType("application/json")
-                .content("{\"email\":\"jane@plotchain.test\"}"))
+                .content("{\"userId\":\"jane\"}"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.error").isNotEmpty())
             .andExpect(jsonPath("$.fields.password").isNotEmpty());
