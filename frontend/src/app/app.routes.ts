@@ -11,6 +11,7 @@ import { SetupStepPlaceholderComponent } from './setup/setup-step-placeholder.co
 import { CompanyProfileStepComponent } from './setup/steps/company-profile/company-profile-step.component';
 import { BrandingStepComponent } from './setup/steps/branding/branding-step.component';
 import { CompensationStepComponent } from './setup/steps/compensation/compensation-step.component';
+import { PaymentsKycStepComponent } from './setup/steps/payments-kyc/payments-kyc-step.component';
 import { SettingsShellComponent } from './settings/settings-shell.component';
 
 export const routes: Routes = [
@@ -27,7 +28,7 @@ export const routes: Routes = [
       { path: 'branding', component: BrandingStepComponent, data: { stepKey: 'branding' } },
       { path: 'compensation', component: CompensationStepComponent, data: { stepKey: 'compensation' } },
       { path: 'projects', component: SetupStepPlaceholderComponent, data: { stepKey: 'projects' } },
-      { path: 'payments-kyc', component: SetupStepPlaceholderComponent, data: { stepKey: 'paymentsKyc' } },
+      { path: 'payments-kyc', component: PaymentsKycStepComponent, data: { stepKey: 'paymentsKyc' } },
       { path: 'admin-team', component: SetupStepPlaceholderComponent, data: { stepKey: 'adminTeam' } },
       { path: 'root-associates', component: SetupStepPlaceholderComponent, data: { stepKey: 'rootAssociates' } },
       { path: 'review-launch', component: SetupStepPlaceholderComponent, data: { stepKey: 'reviewLaunch' } },
