@@ -20,3 +20,31 @@ td {
 tr:hover td {
   background: var(--surface-raised);
 }
+
+.editable-table__add-row {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.editable-table__remove-row {
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--status-danger);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.editable-table__empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
