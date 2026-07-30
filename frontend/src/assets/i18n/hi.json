@@ -19,6 +19,7 @@
     "passwordLabel": "पासवर्ड",
     "loginButton": "लॉग इन करें",
     "loginError": "आईडी या पासवर्ड गलत है। कृपया पुनः प्रयास करें।",
+    "platformNotLiveError": "यह प्लेटफ़ॉर्म अभी लॉन्च नहीं हुआ है। कृपया अपने प्रशासक से संपर्क करें।",
     "logout": "लॉग आउट",
     "changePasswordTitle": "अपना पासवर्ड बदलें",
     "currentPasswordLabel": "वर्तमान पासवर्ड",
@@ -38,5 +39,28 @@
     "assignedUserIdLabel": "एसोसिएट आईडी",
     "temporaryPasswordLabel": "अस्थायी पासवर्ड",
     "temporaryPasswordNotice": "यह पासवर्ड केवल एक बार दिखाया जाता है। इसे अभी नोट कर लें — यहाँ से जाने के बाद आपको नया खाता बनाना होगा।"
+  },
+  "setup": {
+    "steps": {
+      "companyProfile": "कंपनी प्रोफ़ाइल",
+      "branding": "ब्रांडिंग",
+      "compensation": "मुआवज़ा योजना",
+      "projects": "प्रोजेक्ट्स और प्लॉट्स",
+      "paymentsKyc": "भुगतान और केवाईसी",
+      "adminTeam": "एडमिन टीम और भूमिकाएं",
+      "rootAssociates": "रूट एसोसिएट(स)",
+      "reviewLaunch": "समीक्षा और लॉन्च"
+    },
+    "optionalLabel": "वैकल्पिक",
+    "percentCompleteSuffix": "पूर्ण",
+    "autosaveNote": "हम आपकी प्रगति स्वचालित रूप से सहेजते हैं।",
+    "stepPlaceholder": {
+      "comingSoon": "यह चरण जल्द ही आ रहा है।"
+    }
+  },
+  "settings": {
+    "placeholder": {
+      "comingSoon": "कंपनी सेटिंग्स जल्द ही आ रही हैं।"
+    }
   }
 }

@@ -3,6 +3,7 @@ package com.plotchain.auth;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.company.SetupStateService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -14,11 +15,18 @@ public class AuthService {
     private final AssociateRepository associateRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final SetupStateService setupStateService;
 
-    public AuthService(AssociateRepository associateRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(
+        AssociateRepository associateRepository,
+        PasswordEncoder passwordEncoder,
+        JwtService jwtService,
+        SetupStateService setupStateService
+    ) {
         this.associateRepository = associateRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.setupStateService = setupStateService;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -27,6 +35,12 @@ public class AuthService {
 
         if (!passwordEncoder.matches(request.password(), associate.getPasswordHash())) {
             throw new InvalidCredentialsException();
+        }
+
+        // Setup mode: associate-role logins are rejected until the founding admin goes live.
+        // Admin-family roles are exempt so the wizard itself stays reachable.
+        if (!associate.getRole().isAdminFamily() && !setupStateService.isLaunched()) {
+            throw new PlatformNotLiveException();
         }
 
         String token = jwtService.generateToken(associate);

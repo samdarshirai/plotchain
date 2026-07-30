@@ -3,6 +3,9 @@ package com.plotchain.auth;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
+import com.plotchain.company.SetupState;
+import com.plotchain.company.SetupStateRepository;
+import com.plotchain.company.SetupStateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,6 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,14 +29,28 @@ import static org.mockito.Mockito.when;
 class AuthServiceTest {
 
     @Mock AssociateRepository associateRepository;
+    // SetupStateService is a concrete class -- this JDK's Mockito/ByteBuddy can't instrument
+    // concrete classes, so a real instance is built over a mocked (interface) repository
+    // instead, per the repo's established pattern.
+    @Mock SetupStateRepository setupStateRepository;
 
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     JwtService jwtService = new JwtService("test-secret-key-at-least-32-bytes-long-for-hs256", 60);
+    SetupStateService setupStateService;
     AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(associateRepository, passwordEncoder, jwtService);
+        setupStateService = new SetupStateService(setupStateRepository);
+        authService = new AuthService(associateRepository, passwordEncoder, jwtService, setupStateService);
+    }
+
+    private void stubLaunched(boolean launched) {
+        SetupState state = new SetupState();
+        if (launched) {
+            state.setLaunchedAt(Instant.now());
+        }
+        when(setupStateRepository.findAll()).thenReturn(List.of(state));
     }
 
     @Test
@@ -41,12 +60,41 @@ class AuthServiceTest {
         associate.setRole(AssociateRole.ASSOCIATE);
         associate.setPasswordHash(passwordEncoder.encode("Password123!"));
         when(associateRepository.findByUserId("jane")).thenReturn(Optional.of(associate));
+        stubLaunched(true);
 
         LoginResponse response = authService.login(new LoginRequest("jane", "Password123!"));
 
         assertThat(response.token()).isNotBlank();
         assertThat(response.associateId()).isEqualTo(associate.getId());
         assertThat(response.role()).isEqualTo("ASSOCIATE");
+    }
+
+    @Test
+    void rejectsAnAssociateLoginWhilePlatformIsNotLive() {
+        Associate associate = new Associate();
+        associate.setId(UUID.randomUUID());
+        associate.setRole(AssociateRole.ASSOCIATE);
+        associate.setPasswordHash(passwordEncoder.encode("Password123!"));
+        when(associateRepository.findByUserId("jane")).thenReturn(Optional.of(associate));
+        stubLaunched(false);
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest("jane", "Password123!")))
+            .isInstanceOf(PlatformNotLiveException.class);
+    }
+
+    @Test
+    void admitsAnAdminFamilyLoginRegardlessOfLaunchState() {
+        Associate associate = new Associate();
+        associate.setId(UUID.randomUUID());
+        associate.setRole(AssociateRole.ADMIN);
+        associate.setPasswordHash(passwordEncoder.encode("Password123!"));
+        when(associateRepository.findByUserId("admin")).thenReturn(Optional.of(associate));
+        // Deliberately not stubbing setupStateRepository: an admin-family login short-circuits
+        // past the isLaunched() check entirely, so it must never even be consulted here.
+
+        LoginResponse response = authService.login(new LoginRequest("admin", "Password123!"));
+
+        assertThat(response.role()).isEqualTo("ADMIN");
     }
 
     @Test

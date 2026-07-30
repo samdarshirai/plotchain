@@ -1,6 +1,7 @@
 import { routes } from './app.routes';
 import { authGuard } from './auth/auth.guard';
 import { adminGuard } from './admin/admin.guard';
+import { setupModeGuard, launchedModeGuard } from './setup/setup.guard';
 
 describe('routes', () => {
   it('guards the dashboard route with authGuard', () => {
@@ -21,5 +22,51 @@ describe('routes', () => {
     expect(route).toBeTruthy();
     expect(route!.canActivate).toContain(authGuard);
     expect(route!.canActivate).toContain(adminGuard);
+  });
+
+  describe('setup route', () => {
+    const setupRoute = routes.find(r => r.path === 'setup');
+
+    it('is guarded by authGuard, adminGuard and setupModeGuard', () => {
+      expect(setupRoute).toBeTruthy();
+      expect(setupRoute!.canActivate).toContain(authGuard);
+      expect(setupRoute!.canActivate).toContain(adminGuard);
+      expect(setupRoute!.canActivate).toContain(setupModeGuard);
+    });
+
+    it('has all 8 wizard-step children plus the default redirect', () => {
+      const childPaths = setupRoute!.children!.map(c => c.path);
+      expect(childPaths).toEqual([
+        'company-profile',
+        'branding',
+        'compensation',
+        'projects',
+        'payments-kyc',
+        'admin-team',
+        'root-associates',
+        'review-launch',
+        ''
+      ]);
+    });
+
+    it('redirects the empty child path to company-profile', () => {
+      const emptyChild = setupRoute!.children!.find(c => c.path === '');
+      expect(emptyChild!.redirectTo).toBe('company-profile');
+    });
+
+    it('stamps each step child with its stepKey via route data', () => {
+      const brandingChild = setupRoute!.children!.find(c => c.path === 'branding');
+      expect(brandingChild!.data).toEqual({ stepKey: 'branding' });
+    });
+  });
+
+  describe('settings route', () => {
+    it('is guarded by authGuard, adminGuard and launchedModeGuard', () => {
+      const settingsRoute = routes.find(r => r.path === 'settings');
+      expect(settingsRoute).toBeTruthy();
+      expect(settingsRoute!.canActivate).toContain(authGuard);
+      expect(settingsRoute!.canActivate).toContain(adminGuard);
+      expect(settingsRoute!.canActivate).toContain(launchedModeGuard);
+    });
   });
 });

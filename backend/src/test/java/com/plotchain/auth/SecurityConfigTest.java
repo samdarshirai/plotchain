@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
+import com.plotchain.company.SetupState;
+import com.plotchain.company.SetupStateRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -15,11 +17,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -50,12 +55,22 @@ class SecurityConfigTest {
     @Autowired PasswordEncoder passwordEncoder;
 
     @MockBean AssociateRepository associateRepository;
+    @MockBean SetupStateRepository setupStateRepository;
 
     private String tokenFor(AssociateRole role) {
         Associate associate = new Associate();
         associate.setId(UUID.randomUUID());
         associate.setRole(role);
         return jwtService.generateToken(associate);
+    }
+
+    // Not related to setup gating -- this test proves permitAll() matcher ordering. Stubbed
+    // launched so an ASSOCIATE login here isn't also exercising PlatformNotLiveException;
+    // that gate has its own dedicated tests in AuthServiceTest/AuthControllerTest.
+    private void stubLaunched() {
+        SetupState state = new SetupState();
+        state.setLaunchedAt(Instant.now());
+        when(setupStateRepository.findAll()).thenReturn(List.of(state));
     }
 
     @Test
@@ -65,6 +80,7 @@ class SecurityConfigTest {
         associate.setRole(AssociateRole.ASSOCIATE);
         associate.setPasswordHash(passwordEncoder.encode("Password123!"));
         when(associateRepository.findByUserId("jane")).thenReturn(Optional.of(associate));
+        stubLaunched();
 
         mockMvc.perform(post("/api/auth/login")
                 .contentType("application/json")
@@ -97,6 +113,23 @@ class SecurityConfigTest {
                 .contentType("application/json")
                 .content("{}"))
             .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void setupStateIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/setup-state")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
+    void setupStateIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
+        when(setupStateRepository.findAll()).thenReturn(List.of(new SetupState()));
+
+        mockMvc.perform(get("/api/company/setup-state")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().isOk());
     }
 
     @Test

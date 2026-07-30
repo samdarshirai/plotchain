@@ -69,6 +69,14 @@ public class SecurityConfig {
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 .requestMatchers(HttpMethod.DELETE, "/api/**")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                // The blanket rules above only cover writes; a bare GET falls through to
+                // anyRequest().authenticated() below, which any associate token satisfies. The
+                // setup wizard's state must stay admin-family-only (associates have no business
+                // seeing wizard progress), so it needs its own explicit matcher here, above the
+                // catch-all. POST /api/company/launch is a write and is already covered by the
+                // blanket POST rule above -- deliberately no separate matcher for it.
+                .requestMatchers(HttpMethod.GET, "/api/company/setup-state")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 .anyRequest().authenticated())
             .exceptionHandling(ex -> ex.authenticationEntryPoint(
                 (request, response, authException) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))

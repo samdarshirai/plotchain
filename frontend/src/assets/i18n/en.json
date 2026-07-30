@@ -19,6 +19,7 @@
     "passwordLabel": "Password",
     "loginButton": "Log In",
     "loginError": "Invalid ID or password. Please try again.",
+    "platformNotLiveError": "This platform has not launched yet. Please contact your administrator.",
     "logout": "Log Out",
     "changePasswordTitle": "Change Your Password",
     "currentPasswordLabel": "Current Password",
@@ -38,5 +39,28 @@
     "assignedUserIdLabel": "Associate ID",
     "temporaryPasswordLabel": "Temporary Password",
     "temporaryPasswordNotice": "This password is shown only once. Copy it now — if you navigate away, you will need to provision a new account."
+  },
+  "setup": {
+    "steps": {
+      "companyProfile": "Company Profile",
+      "branding": "Branding",
+      "compensation": "Compensation Plan",
+      "projects": "Projects & Plots",
+      "paymentsKyc": "Payments & KYC",
+      "adminTeam": "Admin Team & Roles",
+      "rootAssociates": "Root Associate(s)",
+      "reviewLaunch": "Review & Launch"
+    },
+    "optionalLabel": "Optional",
+    "percentCompleteSuffix": "Complete",
+    "autosaveNote": "We save your progress automatically.",
+    "stepPlaceholder": {
+      "comingSoon": "This step is coming soon."
+    }
+  },
+  "settings": {
+    "placeholder": {
+      "comingSoon": "Company Settings is coming soon."
+    }
   }
 }
