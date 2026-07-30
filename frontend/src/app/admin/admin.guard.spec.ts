@@ -15,13 +15,15 @@ describe('adminGuard', () => {
     });
   });
 
-  it('allows navigation when the stored role is ADMIN', () => {
-    authService.getRole.and.returnValue('ADMIN');
-    const result = TestBed.runInInjectionContext(() => adminGuard({} as any, {} as any));
-    expect(result).toBeTrue();
-  });
+  for (const role of ['ADMIN', 'SUPER_ADMIN', 'FINANCE', 'KYC_REVIEWER', 'SUPPORT']) {
+    it(`allows navigation when the stored role is ${role}`, () => {
+      authService.getRole.and.returnValue(role);
+      const result = TestBed.runInInjectionContext(() => adminGuard({} as any, {} as any));
+      expect(result).toBeTrue();
+    });
+  }
 
-  it('redirects to /dashboard when the stored role is not ADMIN', () => {
+  it('redirects to /dashboard when the stored role is ASSOCIATE', () => {
     authService.getRole.and.returnValue('ASSOCIATE');
     const router = TestBed.inject(Router);
     const result = TestBed.runInInjectionContext(() => adminGuard({} as any, {} as any)) as UrlTree;
