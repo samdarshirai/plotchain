@@ -7,6 +7,7 @@ import com.plotchain.company.SetupStateService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -36,6 +37,9 @@ public class AuthService {
         if (!passwordEncoder.matches(request.password(), associate.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
+
+        associate.setLastActiveAt(Instant.now());
+        associateRepository.save(associate);
 
         // Setup mode: associate-role logins are rejected until the founding admin goes live.
         // Admin-family roles are exempt so the wizard itself stays reachable.

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -59,4 +60,6 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     // Used to generate the next associate ID (e.g. VP00001 -> VP00002). Zero-padded fixed-width
     // suffixes make string-descending order equal numeric order, so this needs no native SQL.
     Optional<Associate> findTopByUserIdStartingWithOrderByUserIdDesc(String prefix);
+
+    List<Associate> findByRoleNot(AssociateRole role);
 }
