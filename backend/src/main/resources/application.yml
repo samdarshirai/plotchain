@@ -22,6 +22,7 @@ jwt:
 
 plotchain:
   associate-id-prefix: ${PLOTCHAIN_ASSOCIATE_ID_PREFIX:VP}
+  secrets-key: ${PLOTCHAIN_SECRETS_KEY:dev-only-change-me-this-encryption-key-needs-32-bytes-too}
   bootstrap:
     admin-user-id: ${PLOTCHAIN_ADMIN_USER_ID:admin}
     admin-email: ${PLOTCHAIN_ADMIN_EMAIL:}

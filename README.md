@@ -37,6 +37,29 @@ jwt:
   expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
 ```
 
+### `PLOTCHAIN_SECRETS_KEY` — required outside `dev`/`test`
+
+```
+plotchain:
+  secrets-key: ${PLOTCHAIN_SECRETS_KEY:dev-only-change-me-this-encryption-key-needs-32-bytes-too}
+```
+
+Encrypts payment gateway credentials at rest (`payment_config.credentials_encrypted`). The
+committed default is public source, same problem as `JWT_SECRET` above — anyone who has read
+this repository knows it, so a deploy that boots with it still in effect would have every
+stored gateway credential encrypted with a key anyone can read off GitHub.
+
+[`SecretsEncryptionService`](backend/src/main/java/com/plotchain/payments/SecretsEncryptionService.java)
+checks the resolved key against that literal default at startup, with the same fail-closed
+guard as `JwtService`: if it matches **and** the active Spring profile is not `dev` or `test`,
+startup fails immediately with an `IllegalStateException`.
+
+Set a real key before starting outside `dev`/`test`:
+
+```bash
+export PLOTCHAIN_SECRETS_KEY=$(openssl rand -base64 32)
+```
+
 ### Logging in: User ID, not email
 
 Login (`POST /api/auth/login`) takes a **User ID**, not an email address. Every associate has a
