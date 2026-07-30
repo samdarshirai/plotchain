@@ -143,6 +143,39 @@
         "loadFailed": "हम आपकी वर्तमान कमीशन योजना लोड नहीं कर सके, इसलिए उसे अधिलेखित होने से बचाने के लिए संपादन अक्षम कर दिया गया है। पुनः प्रयास करने के लिए पृष्ठ पुनः लोड करें।"
       }
     },
+    "projects": {
+      "title": "परियोजनाएं और प्लॉट",
+      "addProjectAction": "+ परियोजना जोड़ें",
+      "saveProjectAction": "परियोजना सहेजें",
+      "manageAction": "प्रबंधित करें",
+      "deleteAction": "हटाएं",
+      "nameLabel": "परियोजना का नाम",
+      "locationLabel": "स्थान",
+      "totalPlotsLabel": "कुल",
+      "availablePlotsLabel": "उपलब्ध",
+      "soldPlotsLabel": "बिका हुआ",
+      "plotListTab": "प्लॉट सूची",
+      "importCsvTab": "CSV आयात करें",
+      "addPlotAction": "+ प्लॉट जोड़ें",
+      "plotNoLabel": "प्लॉट नंबर",
+      "plotTypeLabel": "प्रकार",
+      "areaLabel": "क्षेत्रफल (वर्ग फुट)",
+      "rateLabel": "दर",
+      "priceLabel": "मूल्य",
+      "statusLabel": "स्थिति",
+      "previousPageAction": "पिछला",
+      "nextPageAction": "अगला",
+      "showingLabel": "प्लॉट दिखाए जा रहे हैं",
+      "downloadTemplateAction": "CSV टेम्पलेट डाउनलोड करें",
+      "validateCsvAction": "सत्यापित करें",
+      "commitCsvAction": "आयात सुनिश्चित करें",
+      "csvSummaryLabel": "{{total}} में से {{valid}} पंक्तियाँ मान्य हैं",
+      "csvRowErrorLabel": "पंक्ति {{row}}: {{field}} - {{message}}",
+      "validation": {
+        "required": "यह फ़ील्ड आवश्यक है।",
+        "csvGenericError": "इस फ़ाइल को संसाधित करने में कुछ गलत हो गया। कृपया पुनः प्रयास करें।"
+      }
+    },
     "paymentsKyc": {
       "paymentCollectionTitle": "भुगतान संग्रहण",
       "gatewayLabel": "भुगतान गेटवे",

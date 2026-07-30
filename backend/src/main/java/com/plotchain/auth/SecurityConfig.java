@@ -101,6 +101,16 @@ public class SecurityConfig {
                         "/api/company/payments", "/api/company/payout-account",
                         "/api/company/kyc", "/api/company/withdrawal")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                // Same reasoning as setup-state/profile/branding/compensation/payments above:
+                // Phase 9's Projects & Plots GETs stay admin-family-only. Their POST/PUT/DELETE
+                // (including the CSV validate/commit endpoints, which are POSTs) are writes,
+                // already covered by the blanket write rules above -- deliberately no separate
+                // matchers for them.
+                .requestMatchers(HttpMethod.GET,
+                        "/api/company/projects", "/api/company/projects/*",
+                        "/api/company/projects/*/plots", "/api/company/projects/*/plots/*",
+                        "/api/company/projects/*/thumbnail", "/api/company/projects/plots/csv-template")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 // Phase 5's genuinely public endpoints: the pre-login branding bootstrap, the
                 // raw logo bytes it and the login page render as <img> tags, and the favicon
                 // index.html links to -- all requested before any JWT exists. They only need to

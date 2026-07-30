@@ -3,6 +3,7 @@ package com.plotchain.company;
 import com.plotchain.compensation.CompensationPlanService;
 import com.plotchain.payments.PaymentConfigService;
 import com.plotchain.payments.PayoutBankAccountService;
+import com.plotchain.projects.ProjectService;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -12,9 +13,9 @@ import java.util.List;
 public class SetupStateService {
 
     // Order and required-ness match the master roadmap's 8-step wizard and its Step 8 "canGoLive"
-    // gate (Company Profile + Compensation + Payments & KYC). "projects", "adminTeam", and
-    // "rootAssociates" report incomplete until their own phases (9-11) land and replace their
-    // arms in isStepComplete below.
+    // gate (Company Profile + Compensation + Payments & KYC). "adminTeam" and "rootAssociates"
+    // report incomplete until their own phases (10-11) land and replace their arms in
+    // isStepComplete below.
     private static final List<StepDefinition> STEP_DEFINITIONS = List.of(
         new StepDefinition(1, "companyProfile", true),
         new StepDefinition(2, "branding", false),
@@ -32,19 +33,22 @@ public class SetupStateService {
     private final CompensationPlanService compensationPlanService;
     private final PaymentConfigService paymentConfigService;
     private final PayoutBankAccountService payoutBankAccountService;
+    private final ProjectService projectService;
 
     public SetupStateService(SetupStateRepository setupStateRepository,
                               CompanyProfileService companyProfileService,
                               CompanyBrandingService companyBrandingService,
                               CompensationPlanService compensationPlanService,
                               PaymentConfigService paymentConfigService,
-                              PayoutBankAccountService payoutBankAccountService) {
+                              PayoutBankAccountService payoutBankAccountService,
+                              ProjectService projectService) {
         this.setupStateRepository = setupStateRepository;
         this.companyProfileService = companyProfileService;
         this.companyBrandingService = companyBrandingService;
         this.compensationPlanService = compensationPlanService;
         this.paymentConfigService = paymentConfigService;
         this.payoutBankAccountService = payoutBankAccountService;
+        this.projectService = projectService;
     }
 
     public SetupStateResponse getSetupState() {
@@ -90,6 +94,7 @@ public class SetupStateService {
             case "branding" -> companyBrandingService.isComplete();
             case "compensation" -> compensationPlanService.isComplete();
             case "paymentsKyc" -> paymentConfigService.isComplete() && payoutBankAccountService.isComplete();
+            case "projects" -> projectService.isComplete();
             case "reviewLaunch" -> isLaunched();
             default -> false;
         };

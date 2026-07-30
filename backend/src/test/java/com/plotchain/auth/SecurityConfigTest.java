@@ -204,6 +204,24 @@ class SecurityConfigTest {
             .andExpect(status().isOk());
     }
 
+    @Test
+    void projectsIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/projects")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    // No @MockBean for the projects repositories in this class -- they run for real against the
+    // H2 test DB. V10 seeds no rows, so this returns 200 with an empty list (same reasoning as
+    // compensationIsReachableForAnyAdminFamilyToken/paymentsIsReachableForAnyAdminFamilyToken).
+    @ParameterizedTest
+    @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
+    void projectsIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/company/projects")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().isOk());
+    }
+
     // Asserts no Authorization header at all, not merely "any role passes" -- that alone
     // wouldn't catch a matcher that accidentally still required some token.
     @Test

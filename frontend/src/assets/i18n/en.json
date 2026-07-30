@@ -143,6 +143,39 @@
         "loadFailed": "We could not load your current compensation plan, so editing is disabled to avoid overwriting it. Reload the page to try again."
       }
     },
+    "projects": {
+      "title": "Projects & Plots",
+      "addProjectAction": "+ Add Project",
+      "saveProjectAction": "Save Project",
+      "manageAction": "Manage",
+      "deleteAction": "Delete",
+      "nameLabel": "Project Name",
+      "locationLabel": "Location",
+      "totalPlotsLabel": "Total",
+      "availablePlotsLabel": "Available",
+      "soldPlotsLabel": "Sold",
+      "plotListTab": "Plot List",
+      "importCsvTab": "Import CSV",
+      "addPlotAction": "+ Add Plot",
+      "plotNoLabel": "Plot No.",
+      "plotTypeLabel": "Type",
+      "areaLabel": "Area (sq ft)",
+      "rateLabel": "Rate",
+      "priceLabel": "Price",
+      "statusLabel": "Status",
+      "previousPageAction": "Previous",
+      "nextPageAction": "Next",
+      "showingLabel": "Showing plots",
+      "downloadTemplateAction": "Download CSV Template",
+      "validateCsvAction": "Validate",
+      "commitCsvAction": "Commit Import",
+      "csvSummaryLabel": "{{valid}} of {{total}} rows are valid",
+      "csvRowErrorLabel": "Row {{row}}: {{field}} - {{message}}",
+      "validation": {
+        "required": "This field is required.",
+        "csvGenericError": "Something went wrong processing this file. Please try again."
+      }
+    },
     "paymentsKyc": {
       "paymentCollectionTitle": "Payment Collection",
       "gatewayLabel": "Payment Gateway",

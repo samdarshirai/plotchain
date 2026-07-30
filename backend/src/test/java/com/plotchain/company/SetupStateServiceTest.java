@@ -13,6 +13,10 @@ import com.plotchain.payments.PayoutBankAccount;
 import com.plotchain.payments.PayoutBankAccountRepository;
 import com.plotchain.payments.PayoutBankAccountService;
 import com.plotchain.payments.SecretsEncryptionService;
+import com.plotchain.projects.Project;
+import com.plotchain.projects.ProjectRepository;
+import com.plotchain.projects.ProjectService;
+import com.plotchain.projects.PlotRepository;
 import com.plotchain.rank.RankTierRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +53,8 @@ class SetupStateServiceTest {
     @Mock RankTierRepository rankTierRepository;
     @Mock PaymentConfigRepository paymentConfigRepository;
     @Mock PayoutBankAccountRepository payoutBankAccountRepository;
+    @Mock ProjectRepository projectRepository;
+    @Mock PlotRepository plotRepository;
 
     SetupStateService setupStateService;
 
@@ -62,7 +68,8 @@ class SetupStateServiceTest {
                 compensationPlanVersionRepository, royaltyBonusRateRepository, rewardTierRepository, rankTierRepository),
             new PaymentConfigService(paymentConfigRepository,
                 new SecretsEncryptionService("test-secrets-key-at-least-32-bytes-long-for-aes")),
-            new PayoutBankAccountService(payoutBankAccountRepository));
+            new PayoutBankAccountService(payoutBankAccountRepository),
+            new ProjectService(projectRepository, plotRepository));
 
         // getSetupState() calls isStepComplete("paymentsKyc") on every invocation, so every test
         // needs this stubbed even if it never asserts on paymentsKyc directly. lenient() because
@@ -70,6 +77,9 @@ class SetupStateServiceTest {
         // otherwise trip strict-stubbing's unnecessary-stub check.
         lenient().when(paymentConfigRepository.findAll()).thenReturn(List.of(new PaymentConfig()));
         lenient().when(payoutBankAccountRepository.findAll()).thenReturn(List.of(new PayoutBankAccount()));
+        // "projects" is non-required and defaults to no projects existing, matching the other
+        // non-required steps' default-incomplete stubbing above.
+        lenient().when(projectRepository.findAll()).thenReturn(List.of());
     }
 
     private void stubPaymentsKycComplete() {
@@ -343,6 +353,26 @@ class SetupStateServiceTest {
         SetupStateResponse response = setupStateService.getSetupState();
 
         assertThat(response.canGoLive()).isTrue();
+    }
+
+    @Test
+    void projectsStepIsCompleteWhenAProjectHasAtLeastOnePlot() {
+        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
+        stubCompanyProfile(new CompanyProfile());
+        stubCompanyBranding(blankBranding());
+        stubCompensationIncomplete();
+        UUID projectId = UUID.randomUUID();
+        when(projectRepository.findAll()).thenReturn(
+            List.of(new Project(projectId, "Green Valley", "Hyderabad", null, null, Instant.now())));
+        when(plotRepository.existsByProjectId(projectId)).thenReturn(true);
+
+        SetupStateResponse response = setupStateService.getSetupState();
+
+        assertThat(response.steps().stream()
+            .filter(s -> s.key().equals("projects")).findFirst().orElseThrow().complete())
+            .isTrue();
+        // Projects is optional -- completing it must not affect the Go Live gate.
+        assertThat(response.canGoLive()).isFalse();
     }
 
     @Test
