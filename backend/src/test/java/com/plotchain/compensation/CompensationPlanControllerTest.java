@@ -1,8 +1,10 @@
 package com.plotchain.compensation;
 
 import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.auth.JwtService;
+import com.plotchain.company.SettingsAuditLogRepository;
 import com.plotchain.rank.RankTierRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +43,8 @@ class CompensationPlanControllerTest {
     @MockBean RoyaltyBonusRateRepository royaltyBonusRateRepository;
     @MockBean RewardTierRepository rewardTierRepository;
     @MockBean RankTierRepository rankTierRepository;
+    @MockBean SettingsAuditLogRepository settingsAuditLogRepository;
+    @MockBean AssociateRepository associateRepository;
 
     private static final UUID SEED_VERSION_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 

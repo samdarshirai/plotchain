@@ -1,5 +1,6 @@
 package com.plotchain.compensation;
 
+import com.plotchain.company.SettingsAuditService;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
 import org.springframework.stereotype.Service;
@@ -27,16 +28,19 @@ public class CompensationPlanService {
     private final RoyaltyBonusRateRepository royaltyBonusRateRepository;
     private final RewardTierRepository rewardTierRepository;
     private final RankTierRepository rankTierRepository;
+    private final SettingsAuditService settingsAuditService;
 
     public CompensationPlanService(
             CompensationPlanVersionRepository versionRepository,
             RoyaltyBonusRateRepository royaltyBonusRateRepository,
             RewardTierRepository rewardTierRepository,
-            RankTierRepository rankTierRepository) {
+            RankTierRepository rankTierRepository,
+            SettingsAuditService settingsAuditService) {
         this.versionRepository = versionRepository;
         this.royaltyBonusRateRepository = royaltyBonusRateRepository;
         this.rewardTierRepository = rewardTierRepository;
         this.rankTierRepository = rankTierRepository;
+        this.settingsAuditService = settingsAuditService;
     }
 
     public CompensationPlanResponse getCurrentPlan() {
@@ -114,6 +118,11 @@ public class CompensationPlanService {
 
         List<RoyaltyBonusRate> savedRates = saveRoyaltyBonusRates(newVersion.getId(), request.royaltyBonusRates());
         List<RewardTier> savedTiers = saveRewardTiers(newVersion.getId(), request.rewardTiers());
+
+        settingsAuditService.record("COMPENSATION",
+            "Updated compensation plan (" + versionLabel + ")",
+            Map.of("versionLabel", newVersion.getVersionLabel(), "effectiveFrom", newVersion.getEffectiveFrom()),
+            adminId);
 
         // Built directly from what was just saved, NOT via getCurrentPlan() -- effectiveFrom may
         // be future-dated, so the new version might not be "current" yet.

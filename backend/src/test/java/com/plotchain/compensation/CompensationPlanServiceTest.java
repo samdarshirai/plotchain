@@ -1,5 +1,10 @@
 package com.plotchain.compensation;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plotchain.associate.AssociateRepository;
+import com.plotchain.company.SettingsAuditLog;
+import com.plotchain.company.SettingsAuditLogRepository;
+import com.plotchain.company.SettingsAuditService;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +24,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -32,6 +38,8 @@ class CompensationPlanServiceTest {
     @Mock RoyaltyBonusRateRepository royaltyBonusRateRepository;
     @Mock RewardTierRepository rewardTierRepository;
     @Mock RankTierRepository rankTierRepository;
+    @Mock SettingsAuditLogRepository settingsAuditLogRepository;
+    @Mock AssociateRepository associateRepository;
 
     CompensationPlanService compensationPlanService;
 
@@ -40,8 +48,10 @@ class CompensationPlanServiceTest {
 
     @BeforeEach
     void setUp() {
+        SettingsAuditService settingsAuditService = new SettingsAuditService(
+            settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
         compensationPlanService = new CompensationPlanService(
-            versionRepository, royaltyBonusRateRepository, rewardTierRepository, rankTierRepository);
+            versionRepository, royaltyBonusRateRepository, rewardTierRepository, rankTierRepository, settingsAuditService);
     }
 
     // -- fixtures --------------------------------------------------------
@@ -360,5 +370,25 @@ class CompensationPlanServiceTest {
         assertThat(response.royaltyBonusRates().get(0).rankName()).isEqualTo("Gold");
         assertThat(response.availableRanks()).hasSize(1);
         assertThat(response.availableRanks().get(0).name()).isEqualTo("Gold");
+    }
+
+    // -- audit hook -------------------------------------------------------
+
+    @Test
+    void updatePlanRecordsAnAuditEntryForTheNewVersion() {
+        when(versionRepository.findFirstByOrderByCreatedAtDesc()).thenReturn(Optional.of(seedVersion()));
+        lenient().when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
+
+        List<RewardTierInput> validTiers = List.of(
+            new RewardTierInput(1, new BigDecimal("1000"), new BigDecimal("100"), "Tier 1")
+        );
+
+        compensationPlanService.updatePlan(requestWithTiers(validTiers), ADMIN_ID);
+
+        ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
+        verify(settingsAuditLogRepository).save(captor.capture());
+        SettingsAuditLog saved = captor.getValue();
+        assertThat(saved.getSection()).isEqualTo("COMPENSATION");
+        assertThat(saved.getChangedByAssociateId()).isEqualTo(ADMIN_ID);
     }
 }
