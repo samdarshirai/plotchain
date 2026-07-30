@@ -111,6 +111,32 @@ describe('AdminTeamStepComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('setup.adminTeam.userIdTakenHint');
   }));
 
+  it('cancels a stale in-flight availability request via switchMap when the User ID is edited again', fakeAsync(() => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+    component.panelOpen = true;
+    fixture.detectChanges();
+
+    component.onUserIdInput('first');
+    tick(400);
+    const reqFirst = httpMock.expectOne(
+      req => req.url === '/api/company/admins/user-id-available' && req.params.get('userId') === 'first'
+    );
+
+    // Edit again before the first request resolves -- switchMap must cancel it, not merely
+    // subscribe alongside it, so a slow first response can never overwrite a newer result.
+    component.onUserIdInput('second');
+    tick(400);
+    expect(reqFirst.cancelled).toBe(true);
+
+    const reqSecond = httpMock.expectOne(
+      req => req.url === '/api/company/admins/user-id-available' && req.params.get('userId') === 'second'
+    );
+    reqSecond.flush({ available: true });
+
+    expect(component.userIdAvailable).toBe(true);
+  }));
+
   it('submits the create-admin form with the correct body, shows the one-time password banner, and refetches the list', fakeAsync(() => {
     flushInitialLoads();
     const component = fixture.componentInstance;
@@ -148,6 +174,56 @@ describe('AdminTeamStepComponent', () => {
     component.dismissBanner();
     expect(component.createdAdmin).toBeNull();
     expect(component.panelOpen).toBe(false);
+  }));
+
+  it('calls SetupService.refresh() after a successful admin creation', fakeAsync(() => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+    const setupService = TestBed.inject(SetupService);
+    const refreshSpy = spyOn(setupService, 'refresh');
+    component.panelOpen = true;
+    fixture.detectChanges();
+
+    component.form.setValue({
+      userId: 'newadmin2',
+      fullName: 'New Admin Two',
+      role: 'SUPPORT',
+      temporaryPassword: ''
+    });
+    component.onSubmit();
+
+    httpMock
+      .expectOne('/api/company/admins')
+      .flush({ id: 'a10', userId: 'newadmin2', role: 'SUPPORT', temporaryPassword: 'servergenerated2' });
+    httpMock.expectOne('/api/company/admins').flush([]);
+
+    expect(refreshSpy).toHaveBeenCalled();
+  }));
+
+  it('blocks submission client-side when the User ID is known to be taken, without a POST', fakeAsync(() => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+    component.panelOpen = true;
+    fixture.detectChanges();
+
+    component.form.setValue({
+      userId: 'takenadmin',
+      fullName: 'Taken Admin',
+      role: 'SUPPORT',
+      temporaryPassword: ''
+    });
+    component.onUserIdInput('takenadmin');
+    tick(400);
+    httpMock.expectOne(req => req.url === '/api/company/admins/user-id-available').flush({ available: false });
+    fixture.detectChanges();
+
+    expect(component.userIdAvailable).toBe(false);
+
+    const submitButton = fixture.debugElement.query(By.css('button[type="submit"]'));
+    expect(submitButton.nativeElement.disabled).toBe(true);
+
+    component.onSubmit();
+    httpMock.expectNone('/api/company/admins');
   }));
 
   it('surfaces a duplicate userId 409 as a field error via toFieldErrors', () => {

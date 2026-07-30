@@ -2,8 +2,8 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { Subject } from 'rxjs';
-import { debounceTime, takeUntil } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
+import { catchError, debounceTime, switchMap, takeUntil } from 'rxjs/operators';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { SidePanelComponent } from '../../../shared/components/side-panel/side-panel.component';
 import { ChecklistRowComponent } from '../../../shared/components/checklist-row/checklist-row.component';
@@ -122,7 +122,9 @@ import {
             [complete]="true"
           ></app-checklist-row>
 
-          <button type="submit" [disabled]="form.invalid">{{ 'setup.adminTeam.submitButtonLabel' | translate }}</button>
+          <button type="submit" [disabled]="form.invalid || userIdAvailable === false">
+            {{ 'setup.adminTeam.submitButtonLabel' | translate }}
+          </button>
         </form>
       </app-side-panel>
 
@@ -172,21 +174,24 @@ export class AdminTeamStepComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.userIdChanged$.pipe(takeUntil(this.destroyed$), debounceTime(400)).subscribe(value => {
-      const trimmed = value.trim();
-      if (!trimmed) {
-        this.userIdAvailable = null;
-        return;
-      }
-      this.adminTeamService.checkUserIdAvailable(trimmed).subscribe({
-        next: res => {
-          this.userIdAvailable = res.available;
-        },
-        error: () => {
-          this.userIdAvailable = null;
-        }
+    this.userIdChanged$
+      .pipe(
+        takeUntil(this.destroyed$),
+        debounceTime(400),
+        // switchMap (not a nested subscribe) so a fresh keystroke cancels any still-in-flight
+        // availability request -- otherwise a slow, stale response could resolve after a newer
+        // one and overwrite userIdAvailable with outdated data.
+        switchMap(value => {
+          const trimmed = value.trim();
+          if (!trimmed) {
+            return of(null);
+          }
+          return this.adminTeamService.checkUserIdAvailable(trimmed).pipe(catchError(() => of(null)));
+        })
+      )
+      .subscribe(result => {
+        this.userIdAvailable = result?.available ?? null;
       });
-    });
   }
 
   ngOnDestroy(): void {
@@ -232,6 +237,11 @@ export class AdminTeamStepComponent implements OnInit, OnDestroy {
 
   onSubmit(): void {
     if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    if (this.userIdAvailable === false) {
+      // Known-taken User ID -- block client-side rather than relying solely on the server's 409.
       return;
     }
     const raw = this.form.getRawValue();
