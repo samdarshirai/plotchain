@@ -140,6 +140,46 @@
         "genericSaveError": "आपके परिवर्तन सहेजते समय कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
         "loadFailed": "हम आपकी वर्तमान कमीशन योजना लोड नहीं कर सके, इसलिए उसे अधिलेखित होने से बचाने के लिए संपादन अक्षम कर दिया गया है। पुनः प्रयास करने के लिए पृष्ठ पुनः लोड करें।"
       }
+    },
+    "paymentsKyc": {
+      "paymentCollectionTitle": "भुगतान संग्रहण",
+      "gatewayLabel": "भुगतान गेटवे",
+      "gatewayPlaceholder": "एक गेटवे चुनें",
+      "modesEnabledLabel": "स्वीकृत भुगतान माध्यम",
+      "credentialsLabel": "गेटवे क्रेडेंशियल",
+      "credentialsConfigured": "कॉन्फ़िगर किया गया",
+      "credentialsNotConfigured": "कॉन्फ़िगर नहीं किया गया",
+      "changeCredentialsLabel": "क्रेडेंशियल बदलें",
+      "saveCredentialsLabel": "क्रेडेंशियल सहेजें",
+      "payoutAccountTitle": "भुगतान खाता",
+      "bankNameLabel": "बैंक का नाम",
+      "accountHolderLabel": "खाताधारक का नाम",
+      "accountNumberLabel": "खाता संख्या",
+      "ifscCodeLabel": "आईएफएससी कोड",
+      "accountTypeLabel": "खाता प्रकार",
+      "currentAccountLabel": "चालू",
+      "savingsAccountLabel": "बचत",
+      "kycRequirementsTitle": "केवाईसी आवश्यकताएं",
+      "kycStrictnessLabel": "केवाईसी सख्ती",
+      "strictLabel": "सख्त",
+      "relaxedLabel": "ढीला",
+      "requiredDocumentsLabel": "आवश्यक दस्तावेज़",
+      "withdrawalApprovalTitle": "निकासी अनुमोदन",
+      "approvalModeLabel": "अनुमोदन मोड",
+      "autoApproveLabel": "सीमा के अंतर्गत स्वतः स्वीकृत",
+      "alwaysManualLabel": "हमेशा मैन्युअल समीक्षा",
+      "autoApproveLimitLabel": "स्वतः स्वीकृति सीमा",
+      "flowRequestRaised": "अनुरोध किया गया",
+      "flowAdminReview": "एडमिन समीक्षा",
+      "flowApproved": "स्वीकृत",
+      "flowPayoutInitiated": "भुगतान शुरू किया गया",
+      "savedIndicator": "अभी सहेजा गया",
+      "validation": {
+        "required": "यह फ़ील्ड आवश्यक है।",
+        "ifscFormat": "एक मान्य आईएफएससी कोड दर्ज करें (जैसे HDFC0001234)।",
+        "genericSaveError": "आपके परिवर्तन सहेजते समय कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
+        "loadFailed": "हम आपकी वर्तमान भुगतान और केवाईसी सेटिंग्स लोड नहीं कर सके, इसलिए उन्हें अधिलेखित होने से बचाने के लिए संपादन अक्षम कर दिया गया है। पुनः प्रयास करने के लिए पृष्ठ पुनः लोड करें।"
+      }
     }
   },
   "settings": {

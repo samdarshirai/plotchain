@@ -140,6 +140,46 @@
         "genericSaveError": "Something went wrong saving your changes. Please try again.",
         "loadFailed": "We could not load your current compensation plan, so editing is disabled to avoid overwriting it. Reload the page to try again."
       }
+    },
+    "paymentsKyc": {
+      "paymentCollectionTitle": "Payment Collection",
+      "gatewayLabel": "Payment Gateway",
+      "gatewayPlaceholder": "Select a gateway",
+      "modesEnabledLabel": "Accepted Payment Modes",
+      "credentialsLabel": "Gateway Credentials",
+      "credentialsConfigured": "Configured",
+      "credentialsNotConfigured": "Not configured",
+      "changeCredentialsLabel": "Change credentials",
+      "saveCredentialsLabel": "Save credentials",
+      "payoutAccountTitle": "Payout Account",
+      "bankNameLabel": "Bank Name",
+      "accountHolderLabel": "Account Holder Name",
+      "accountNumberLabel": "Account Number",
+      "ifscCodeLabel": "IFSC Code",
+      "accountTypeLabel": "Account Type",
+      "currentAccountLabel": "Current",
+      "savingsAccountLabel": "Savings",
+      "kycRequirementsTitle": "KYC Requirements",
+      "kycStrictnessLabel": "KYC Strictness",
+      "strictLabel": "Strict",
+      "relaxedLabel": "Relaxed",
+      "requiredDocumentsLabel": "Required Documents",
+      "withdrawalApprovalTitle": "Withdrawal Approval",
+      "approvalModeLabel": "Approval Mode",
+      "autoApproveLabel": "Auto-approve under limit",
+      "alwaysManualLabel": "Always manual review",
+      "autoApproveLimitLabel": "Auto-approve Limit",
+      "flowRequestRaised": "Request Raised",
+      "flowAdminReview": "Admin Review",
+      "flowApproved": "Approved",
+      "flowPayoutInitiated": "Payout Initiated",
+      "savedIndicator": "Saved just now",
+      "validation": {
+        "required": "This field is required.",
+        "ifscFormat": "Enter a valid IFSC code (e.g. HDFC0001234).",
+        "genericSaveError": "Something went wrong saving your changes. Please try again.",
+        "loadFailed": "We could not load your current payments and KYC settings, so editing is disabled to avoid overwriting them. Reload the page to try again."
+      }
     }
   },
   "settings": {
