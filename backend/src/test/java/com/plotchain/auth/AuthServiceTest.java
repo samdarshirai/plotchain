@@ -1,5 +1,6 @@
 package com.plotchain.auth;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
@@ -8,6 +9,8 @@ import com.plotchain.company.CompanyBrandingService;
 import com.plotchain.company.CompanyProfile;
 import com.plotchain.company.CompanyProfileRepository;
 import com.plotchain.company.CompanyProfileService;
+import com.plotchain.company.SettingsAuditLogRepository;
+import com.plotchain.company.SettingsAuditService;
 import com.plotchain.company.SetupState;
 import com.plotchain.company.SetupStateRepository;
 import com.plotchain.company.SetupStateService;
@@ -43,6 +46,9 @@ class AuthServiceTest {
     // repositories underneath, same reasoning as SetupStateService above.
     @Mock CompanyProfileRepository companyProfileRepository;
     @Mock CompanyBrandingRepository companyBrandingRepository;
+    // SettingsAuditService is a concrete class -- mocked (interface) repository underneath,
+    // same reasoning as CompanyProfileService/CompanyBrandingService above.
+    @Mock SettingsAuditLogRepository settingsAuditLogRepository;
 
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     JwtService jwtService = new JwtService("test-secret-key-at-least-32-bytes-long-for-hs256", 60);
@@ -51,10 +57,13 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
+        SettingsAuditService settingsAuditService = new SettingsAuditService(
+            settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
         setupStateService = new SetupStateService(
             setupStateRepository,
-            new CompanyProfileService(companyProfileRepository),
-            new CompanyBrandingService(companyBrandingRepository, new CompanyProfileService(companyProfileRepository)),
+            new CompanyProfileService(companyProfileRepository, settingsAuditService),
+            new CompanyBrandingService(companyBrandingRepository,
+                new CompanyProfileService(companyProfileRepository, settingsAuditService), settingsAuditService),
             // Never invoked here: these tests only exercise isLaunched(), which doesn't touch
             // compensationPlanService/paymentConfigService/payoutBankAccountService/
             // projectService/adminProvisioningService/rootAssociateProvisioningService.

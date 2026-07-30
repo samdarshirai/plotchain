@@ -1,6 +1,7 @@
 package com.plotchain.company;
 
 import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.auth.JwtService;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 // @MockBean on the repository INTERFACES so this runs real CompanyBrandingService/
 // CompanyProfileService inside a real Spring Security filter chain, per
-// CompanyProfileControllerTest's pattern.
+// CompanyProfileControllerTest's pattern. Both now depend on the real SettingsAuditService
+// bean, so its own repository dependencies (SettingsAuditLogRepository, AssociateRepository)
+// need mocking too -- per SettingsAuditControllerTest's pattern.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -39,6 +42,8 @@ class CompanyBrandingControllerTest {
 
     @MockBean CompanyBrandingRepository companyBrandingRepository;
     @MockBean CompanyProfileRepository companyProfileRepository;
+    @MockBean SettingsAuditLogRepository settingsAuditLogRepository;
+    @MockBean AssociateRepository associateRepository;
 
     private String tokenFor(AssociateRole role) {
         Associate token = new Associate();

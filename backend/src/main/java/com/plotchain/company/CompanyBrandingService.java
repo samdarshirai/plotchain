@@ -6,8 +6,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class CompanyBrandingService {
@@ -17,28 +19,35 @@ public class CompanyBrandingService {
 
     private final CompanyBrandingRepository companyBrandingRepository;
     private final CompanyProfileService companyProfileService;
+    private final SettingsAuditService settingsAuditService;
 
     public CompanyBrandingService(CompanyBrandingRepository companyBrandingRepository,
-                                   CompanyProfileService companyProfileService) {
+                                   CompanyProfileService companyProfileService,
+                                   SettingsAuditService settingsAuditService) {
         this.companyBrandingRepository = companyBrandingRepository;
         this.companyProfileService = companyProfileService;
+        this.settingsAuditService = settingsAuditService;
     }
 
     public CompanyBrandingResponse getBranding() {
         return toResponse(currentBranding());
     }
 
-    public CompanyBrandingResponse updateBranding(CompanyBrandingRequest request) {
+    public CompanyBrandingResponse updateBranding(CompanyBrandingRequest request, UUID actorId) {
         CompanyBranding branding = currentBranding();
+        CompanyBrandingResponse before = toResponse(branding);
         branding.setPrimaryColor(request.primaryColor());
         branding.setSecondaryColor(request.secondaryColor());
         branding.setTagline(request.tagline());
         branding.setUpdatedAt(Instant.now());
         companyBrandingRepository.save(branding);
-        return toResponse(branding);
+        CompanyBrandingResponse after = toResponse(branding);
+        settingsAuditService.record("BRANDING", "Updated branding",
+            Map.of("before", before, "after", after), actorId);
+        return after;
     }
 
-    public void uploadLogo(String variant, MultipartFile file) {
+    public void uploadLogo(String variant, MultipartFile file, UUID actorId) {
         if (file == null || file.isEmpty()) {
             throw new InvalidLogoUploadException("logo file is empty");
         }
@@ -62,6 +71,8 @@ public class CompanyBrandingService {
         }
         branding.setUpdatedAt(Instant.now());
         companyBrandingRepository.save(branding);
+        settingsAuditService.record("BRANDING", "Uploaded " + variant + " logo",
+            Map.of("variant", variant, "contentType", contentType), actorId);
     }
 
     public Optional<LogoBytes> getLogo(String variant) {

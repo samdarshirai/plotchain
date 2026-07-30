@@ -1,5 +1,7 @@
 package com.plotchain.company;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plotchain.associate.AssociateRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,6 +12,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -23,13 +26,25 @@ class CompanyBrandingServiceTest {
     // CompanyProfileService is a concrete class -- built for real over a mocked repository,
     // per the repo's established pattern (see SetupStateServiceTest).
     @Mock CompanyProfileRepository companyProfileRepository;
+    // SettingsAuditService is also a concrete class -- this JDK's Mockito/ByteBuddy can't
+    // instrument concrete classes (see AuthControllerTest), so a real instance is built over
+    // mocked (interface) repositories instead. Audit calls are asserted via the
+    // settingsAuditLogRepository.save(...) captor, same as SettingsAuditServiceTest.
+    @Mock SettingsAuditLogRepository settingsAuditLogRepository;
+    @Mock AssociateRepository associateRepository;
 
     CompanyBrandingService companyBrandingService;
 
+    private static final UUID ACTOR_ID = UUID.randomUUID();
+
     @BeforeEach
     void setUp() {
+        SettingsAuditService settingsAuditService = new SettingsAuditService(
+            settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
         companyBrandingService = new CompanyBrandingService(
-            companyBrandingRepository, new CompanyProfileService(companyProfileRepository));
+            companyBrandingRepository,
+            new CompanyProfileService(companyProfileRepository, settingsAuditService),
+            settingsAuditService);
     }
 
     private CompanyBranding blankBranding() {
@@ -67,7 +82,7 @@ class CompanyBrandingServiceTest {
         stubBranding(blankBranding());
 
         CompanyBrandingResponse response = companyBrandingService.updateBranding(
-            new CompanyBrandingRequest("#E11D48", "#F59E0B", "Land you can trust"));
+            new CompanyBrandingRequest("#E11D48", "#F59E0B", "Land you can trust"), ACTOR_ID);
 
         ArgumentCaptor<CompanyBranding> captor = ArgumentCaptor.forClass(CompanyBranding.class);
         verify(companyBrandingRepository).save(captor.capture());
@@ -80,12 +95,29 @@ class CompanyBrandingServiceTest {
     }
 
     @Test
+    void updateBrandingRecordsAnAuditEntry() {
+        stubBranding(blankBranding());
+
+        companyBrandingService.updateBranding(
+            new CompanyBrandingRequest("#E11D48", "#F59E0B", "Land you can trust"), ACTOR_ID);
+
+        ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
+        verify(settingsAuditLogRepository).save(captor.capture());
+        SettingsAuditLog saved = captor.getValue();
+        assertThat(saved.getSection()).isEqualTo("BRANDING");
+        assertThat(saved.getSummary()).isEqualTo("Updated branding");
+        assertThat(saved.getChangedByAssociateId()).isEqualTo(ACTOR_ID);
+        assertThat(saved.getDetail()).contains("\"primaryColor\":\"#7C3AED\"")
+            .contains("\"primaryColor\":\"#E11D48\"");
+    }
+
+    @Test
     void uploadLogoStoresSquareBytesAndContentTypeWithoutTouchingWide() {
         CompanyBranding stored = blankBranding();
         stubBranding(stored);
         MockMultipartFile file = new MockMultipartFile("file", "logo.png", "image/png", new byte[]{1, 2, 3});
 
-        companyBrandingService.uploadLogo("square", file);
+        companyBrandingService.uploadLogo("square", file, ACTOR_ID);
 
         ArgumentCaptor<CompanyBranding> captor = ArgumentCaptor.forClass(CompanyBranding.class);
         verify(companyBrandingRepository).save(captor.capture());
@@ -101,7 +133,7 @@ class CompanyBrandingServiceTest {
         stubBranding(stored);
         MockMultipartFile file = new MockMultipartFile("file", "banner.webp", "image/webp", new byte[]{4, 5});
 
-        companyBrandingService.uploadLogo("wide", file);
+        companyBrandingService.uploadLogo("wide", file, ACTOR_ID);
 
         ArgumentCaptor<CompanyBranding> captor = ArgumentCaptor.forClass(CompanyBranding.class);
         verify(companyBrandingRepository).save(captor.capture());
@@ -112,10 +144,27 @@ class CompanyBrandingServiceTest {
     }
 
     @Test
+    void uploadLogoRecordsAnAuditEntryWithTheVariantName() {
+        CompanyBranding stored = blankBranding();
+        stubBranding(stored);
+        MockMultipartFile file = new MockMultipartFile("file", "logo.png", "image/png", new byte[]{1, 2, 3});
+
+        companyBrandingService.uploadLogo("square", file, ACTOR_ID);
+
+        ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
+        verify(settingsAuditLogRepository).save(captor.capture());
+        SettingsAuditLog saved = captor.getValue();
+        assertThat(saved.getSection()).isEqualTo("BRANDING");
+        assertThat(saved.getSummary()).isEqualTo("Uploaded square logo");
+        assertThat(saved.getChangedByAssociateId()).isEqualTo(ACTOR_ID);
+        assertThat(saved.getDetail()).contains("\"variant\":\"square\"").contains("\"contentType\":\"image/png\"");
+    }
+
+    @Test
     void uploadLogoThrowsForAnEmptyFile() {
         MockMultipartFile empty = new MockMultipartFile("file", "logo.png", "image/png", new byte[0]);
 
-        assertThatThrownBy(() -> companyBrandingService.uploadLogo("square", empty))
+        assertThatThrownBy(() -> companyBrandingService.uploadLogo("square", empty, ACTOR_ID))
             .isInstanceOf(InvalidLogoUploadException.class);
     }
 
@@ -123,7 +172,7 @@ class CompanyBrandingServiceTest {
     void uploadLogoThrowsForAnUnsupportedContentType() {
         MockMultipartFile gif = new MockMultipartFile("file", "logo.gif", "image/gif", new byte[]{1});
 
-        assertThatThrownBy(() -> companyBrandingService.uploadLogo("square", gif))
+        assertThatThrownBy(() -> companyBrandingService.uploadLogo("square", gif, ACTOR_ID))
             .isInstanceOf(InvalidLogoUploadException.class);
     }
 

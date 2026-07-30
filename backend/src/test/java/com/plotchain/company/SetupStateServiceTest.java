@@ -1,5 +1,6 @@
 package com.plotchain.company;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plotchain.associate.AssociateIdGenerator;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
@@ -59,6 +60,10 @@ class SetupStateServiceTest {
     @Mock PayoutBankAccountRepository payoutBankAccountRepository;
     @Mock ProjectRepository projectRepository;
     @Mock PlotRepository plotRepository;
+    // SettingsAuditService is a concrete class, same as CompanyProfileService/
+    // CompanyBrandingService above -- a real instance is built over mocked (interface)
+    // repositories per the same repo convention.
+    @Mock SettingsAuditLogRepository settingsAuditLogRepository;
     // AdminProvisioningService is a concrete class, same as CompanyProfileService/
     // CompanyBrandingService/CompensationPlanService above -- a real instance is built over
     // mocked (interface) repositories per the same repo convention.
@@ -69,10 +74,13 @@ class SetupStateServiceTest {
 
     @BeforeEach
     void setUp() {
+        SettingsAuditService settingsAuditService = new SettingsAuditService(
+            settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
         setupStateService = new SetupStateService(
             setupStateRepository,
-            new CompanyProfileService(companyProfileRepository),
-            new CompanyBrandingService(companyBrandingRepository, new CompanyProfileService(companyProfileRepository)),
+            new CompanyProfileService(companyProfileRepository, settingsAuditService),
+            new CompanyBrandingService(companyBrandingRepository,
+                new CompanyProfileService(companyProfileRepository, settingsAuditService), settingsAuditService),
             new CompensationPlanService(
                 compensationPlanVersionRepository, royaltyBonusRateRepository, rewardTierRepository, rankTierRepository),
             new PaymentConfigService(paymentConfigRepository,

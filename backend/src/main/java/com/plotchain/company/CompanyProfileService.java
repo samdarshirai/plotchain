@@ -3,22 +3,28 @@ package com.plotchain.company;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class CompanyProfileService {
 
     private final CompanyProfileRepository companyProfileRepository;
+    private final SettingsAuditService settingsAuditService;
 
-    public CompanyProfileService(CompanyProfileRepository companyProfileRepository) {
+    public CompanyProfileService(CompanyProfileRepository companyProfileRepository,
+                                  SettingsAuditService settingsAuditService) {
         this.companyProfileRepository = companyProfileRepository;
+        this.settingsAuditService = settingsAuditService;
     }
 
     public CompanyProfileResponse getProfile() {
         return toResponse(currentProfile());
     }
 
-    public CompanyProfileResponse updateProfile(CompanyProfileRequest request) {
+    public CompanyProfileResponse updateProfile(CompanyProfileRequest request, UUID actorId) {
         CompanyProfile profile = currentProfile();
+        CompanyProfileResponse before = toResponse(profile);
         profile.setDisplayName(request.displayName());
         profile.setLegalName(request.legalName());
         profile.setRegistrationNumber(request.registrationNumber());
@@ -28,7 +34,10 @@ public class CompanyProfileService {
         profile.setRegisteredAddress(request.registeredAddress());
         profile.setUpdatedAt(Instant.now());
         companyProfileRepository.save(profile);
-        return toResponse(profile);
+        CompanyProfileResponse after = toResponse(profile);
+        settingsAuditService.record("COMPANY_PROFILE", "Updated company profile",
+            Map.of("before", before, "after", after), actorId);
+        return after;
     }
 
     // The six fields SetupStateService's companyProfile step treats as required.

@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Duration;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/company/branding")
@@ -32,16 +34,21 @@ public class CompanyBrandingController {
     }
 
     @PutMapping
-    public CompanyBrandingResponse updateBranding(@Valid @RequestBody CompanyBrandingRequest request) {
-        return companyBrandingService.updateBranding(request);
+    public CompanyBrandingResponse updateBranding(
+            @Valid @RequestBody CompanyBrandingRequest request,
+            @AuthenticationPrincipal UUID actorId) {
+        return companyBrandingService.updateBranding(request, actorId);
     }
 
     // {variant:square|wide} constrains the path segment at the mapping level: any other value
     // never matches this handler and 404s via Spring's normal "no matching handler" path,
     // rather than a custom JSON 400 -- simpler and idiomatic for a fixed two-value enum.
     @PostMapping("/logo/{variant:square|wide}")
-    public ResponseEntity<Void> uploadLogo(@PathVariable String variant, @RequestParam("file") MultipartFile file) {
-        companyBrandingService.uploadLogo(variant, file);
+    public ResponseEntity<Void> uploadLogo(
+            @PathVariable String variant,
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal UUID actorId) {
+        companyBrandingService.uploadLogo(variant, file, actorId);
         return ResponseEntity.noContent().build();
     }
 
