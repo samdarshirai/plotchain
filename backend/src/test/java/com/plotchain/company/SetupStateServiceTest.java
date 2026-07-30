@@ -1,5 +1,8 @@
 package com.plotchain.company;
 
+import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateRole;
 import com.plotchain.compensation.CompensationPlanService;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
@@ -23,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -55,6 +59,12 @@ class SetupStateServiceTest {
     @Mock PayoutBankAccountRepository payoutBankAccountRepository;
     @Mock ProjectRepository projectRepository;
     @Mock PlotRepository plotRepository;
+    // AdminProvisioningService is a concrete class -- this JDK's Mockito/ByteBuddy can't
+    // instrument concrete classes, so a real instance is built over mocked (interface)
+    // repositories, same as CompanyProfileService/CompanyBrandingService/CompensationPlanService
+    // above.
+    @Mock AssociateRepository associateRepository;
+    @Mock PasswordEncoder passwordEncoder;
 
     SetupStateService setupStateService;
 
@@ -69,7 +79,8 @@ class SetupStateServiceTest {
             new PaymentConfigService(paymentConfigRepository,
                 new SecretsEncryptionService("test-secrets-key-at-least-32-bytes-long-for-aes")),
             new PayoutBankAccountService(payoutBankAccountRepository),
-            new ProjectService(projectRepository, plotRepository));
+            new ProjectService(projectRepository, plotRepository),
+            new AdminProvisioningService(associateRepository, passwordEncoder));
 
         // getSetupState() calls isStepComplete("paymentsKyc") on every invocation, so every test
         // needs this stubbed even if it never asserts on paymentsKyc directly. lenient() because
@@ -80,6 +91,9 @@ class SetupStateServiceTest {
         // "projects" is non-required and defaults to no projects existing, matching the other
         // non-required steps' default-incomplete stubbing above.
         lenient().when(projectRepository.findAll()).thenReturn(List.of());
+        // "adminTeam" is non-required and defaults to no admin-family rows beyond none at all,
+        // matching the other non-required steps' default-incomplete stubbing above.
+        lenient().when(associateRepository.findAll()).thenReturn(List.of());
     }
 
     private void stubPaymentsKycComplete() {
@@ -373,6 +387,52 @@ class SetupStateServiceTest {
             .isTrue();
         // Projects is optional -- completing it must not affect the Go Live gate.
         assertThat(response.canGoLive()).isFalse();
+    }
+
+    @Test
+    void adminTeamStepIsIncompleteWithOnlyOneAdminFamilyRow() {
+        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
+        stubCompanyProfile(new CompanyProfile());
+        stubCompanyBranding(blankBranding());
+        stubCompensationIncomplete();
+        Associate foundingAdmin = new Associate();
+        foundingAdmin.setId(UUID.randomUUID());
+        foundingAdmin.setRole(AssociateRole.ADMIN);
+        when(associateRepository.findAll()).thenReturn(List.of(foundingAdmin));
+
+        SetupStateResponse response = setupStateService.getSetupState();
+
+        assertThat(response.steps().stream()
+            .filter(s -> s.key().equals("adminTeam")).findFirst().orElseThrow().complete())
+            .isFalse();
+        // adminTeam is optional -- canGoLive is unaffected either way.
+        assertThat(response.canGoLive()).isFalse();
+    }
+
+    @Test
+    void adminTeamStepIsCompleteWithTwoOrMoreAdminFamilyRows() {
+        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
+        stubCompanyProfile(new CompanyProfile());
+        stubCompanyBranding(blankBranding());
+        stubCompensationIncomplete();
+        Associate foundingAdmin = new Associate();
+        foundingAdmin.setId(UUID.randomUUID());
+        foundingAdmin.setRole(AssociateRole.ADMIN);
+        Associate finance = new Associate();
+        finance.setId(UUID.randomUUID());
+        finance.setRole(AssociateRole.FINANCE);
+        when(associateRepository.findAll()).thenReturn(List.of(foundingAdmin, finance));
+
+        SetupStateResponse response = setupStateService.getSetupState();
+
+        assertThat(response.steps().stream()
+            .filter(s -> s.key().equals("adminTeam")).findFirst().orElseThrow().complete())
+            .isTrue();
+        // adminTeam is optional -- completing it must not affect the Go Live gate.
+        assertThat(response.canGoLive()).isFalse();
+        assertThat(response.steps().stream()
+            .filter(s -> s.key().equals("adminTeam")).findFirst().orElseThrow().required())
+            .isFalse();
     }
 
     @Test

@@ -44,6 +44,13 @@ public class SecurityConfig {
                 // blanket ADMIN write rules below (first-match-wins) or associates could never
                 // clear their must-change-password state. SecurityConfigTest locks this.
                 .requestMatchers(HttpMethod.POST, "/api/associates/me/password").authenticated()
+                // Admin Team creation is narrower than the blanket POST rule below: only
+                // ADMIN/SUPER_ADMIN may provision new admin-family accounts (FINANCE,
+                // KYC_REVIEWER, and SUPPORT can read the roster/permissions via the GET block
+                // further down, but must not be able to create new admin accounts themselves).
+                // Must precede the blanket rule (first-match-wins) or it would never be reached.
+                .requestMatchers(HttpMethod.POST, "/api/company/admins")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN")
                 // Deny-by-default for writes: product policy is "admin (or staff) can write;
                 // associates are read-only except their own profile". Without this, any future
                 // POST/PUT/PATCH/DELETE endpoint would be reachable by every authenticated
@@ -110,6 +117,16 @@ public class SecurityConfig {
                         "/api/company/projects", "/api/company/projects/*",
                         "/api/company/projects/*/plots", "/api/company/projects/*/plots/*",
                         "/api/company/projects/*/thumbnail", "/api/company/projects/plots/csv-template")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                // Same reasoning as setup-state/profile/branding/compensation/payments/projects
+                // above: Phase 10's Admin Team GETs (roster, userId availability check, and the
+                // read-only role-permissions preview) stay admin-family-only. The narrower
+                // ADMIN/SUPER_ADMIN-only POST that creates admin accounts is declared separately
+                // above, next to the other blanket write rules -- deliberately no separate
+                // matcher needed here for it.
+                .requestMatchers(HttpMethod.GET,
+                        "/api/company/admins", "/api/company/admins/user-id-available",
+                        "/api/company/admins/role-permissions")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 // Phase 5's genuinely public endpoints: the pre-login branding bootstrap, the
                 // raw logo bytes it and the login page render as <img> tags, and the favicon
