@@ -14,6 +14,7 @@ import com.plotchain.company.SetupStateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -55,8 +56,9 @@ class AuthServiceTest {
             new CompanyProfileService(companyProfileRepository),
             new CompanyBrandingService(companyBrandingRepository, new CompanyProfileService(companyProfileRepository)),
             // Never invoked here: these tests only exercise isLaunched(), which doesn't touch
-            // compensationPlanService/paymentConfigService/payoutBankAccountService/projectService.
-            null, null, null, null);
+            // compensationPlanService/paymentConfigService/payoutBankAccountService/
+            // projectService/adminProvisioningService.
+            null, null, null, null, null);
         authService = new AuthService(associateRepository, passwordEncoder, jwtService, setupStateService);
     }
 
@@ -82,6 +84,10 @@ class AuthServiceTest {
         assertThat(response.token()).isNotBlank();
         assertThat(response.associateId()).isEqualTo(associate.getId());
         assertThat(response.role()).isEqualTo("ASSOCIATE");
+
+        ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
+        verify(associateRepository).save(saved.capture());
+        assertThat(saved.getValue().getLastActiveAt()).isNotNull();
     }
 
     @Test

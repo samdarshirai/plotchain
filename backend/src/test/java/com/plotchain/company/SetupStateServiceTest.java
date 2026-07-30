@@ -1,5 +1,7 @@
 package com.plotchain.company;
 
+import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateRole;
 import com.plotchain.compensation.CompensationPlanService;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -41,10 +44,10 @@ import static org.mockito.Mockito.when;
 class SetupStateServiceTest {
 
     @Mock SetupStateRepository setupStateRepository;
-    // CompanyProfileService/CompanyBrandingService/CompensationPlanService are concrete classes
-    // -- this JDK's Mockito/ByteBuddy can't instrument concrete classes, so real instances are
-    // built over mocked (interface) repositories instead, per the repo's established pattern
-    // (see AuthControllerTest).
+    // CompanyProfileService/CompanyBrandingService/CompensationPlanService are concrete classes.
+    // This repo's convention (see AuthControllerTest and every other service test) is to mock
+    // repository *interfaces* only and instantiate services for real over those mocks, rather
+    // than mocking the service classes themselves -- so real instances are built here too.
     @Mock CompanyProfileRepository companyProfileRepository;
     @Mock CompanyBrandingRepository companyBrandingRepository;
     @Mock CompensationPlanVersionRepository compensationPlanVersionRepository;
@@ -55,6 +58,11 @@ class SetupStateServiceTest {
     @Mock PayoutBankAccountRepository payoutBankAccountRepository;
     @Mock ProjectRepository projectRepository;
     @Mock PlotRepository plotRepository;
+    // AdminProvisioningService is a concrete class, same as CompanyProfileService/
+    // CompanyBrandingService/CompensationPlanService above -- a real instance is built over
+    // mocked (interface) repositories per the same repo convention.
+    @Mock AssociateRepository associateRepository;
+    @Mock PasswordEncoder passwordEncoder;
 
     SetupStateService setupStateService;
 
@@ -69,7 +77,8 @@ class SetupStateServiceTest {
             new PaymentConfigService(paymentConfigRepository,
                 new SecretsEncryptionService("test-secrets-key-at-least-32-bytes-long-for-aes")),
             new PayoutBankAccountService(payoutBankAccountRepository),
-            new ProjectService(projectRepository, plotRepository));
+            new ProjectService(projectRepository, plotRepository),
+            new AdminProvisioningService(associateRepository, passwordEncoder));
 
         // getSetupState() calls isStepComplete("paymentsKyc") on every invocation, so every test
         // needs this stubbed even if it never asserts on paymentsKyc directly. lenient() because
@@ -80,6 +89,9 @@ class SetupStateServiceTest {
         // "projects" is non-required and defaults to no projects existing, matching the other
         // non-required steps' default-incomplete stubbing above.
         lenient().when(projectRepository.findAll()).thenReturn(List.of());
+        // "adminTeam" is non-required and defaults to no admin-family rows beyond none at all,
+        // matching the other non-required steps' default-incomplete stubbing above.
+        lenient().when(associateRepository.countByRoleNot(AssociateRole.ASSOCIATE)).thenReturn(0L);
     }
 
     private void stubPaymentsKycComplete() {
@@ -373,6 +385,43 @@ class SetupStateServiceTest {
             .isTrue();
         // Projects is optional -- completing it must not affect the Go Live gate.
         assertThat(response.canGoLive()).isFalse();
+    }
+
+    @Test
+    void adminTeamStepIsIncompleteWithOnlyOneAdminFamilyRow() {
+        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
+        stubCompanyProfile(new CompanyProfile());
+        stubCompanyBranding(blankBranding());
+        stubCompensationIncomplete();
+        when(associateRepository.countByRoleNot(AssociateRole.ASSOCIATE)).thenReturn(1L);
+
+        SetupStateResponse response = setupStateService.getSetupState();
+
+        assertThat(response.steps().stream()
+            .filter(s -> s.key().equals("adminTeam")).findFirst().orElseThrow().complete())
+            .isFalse();
+        // adminTeam is optional -- canGoLive is unaffected either way.
+        assertThat(response.canGoLive()).isFalse();
+    }
+
+    @Test
+    void adminTeamStepIsCompleteWithTwoOrMoreAdminFamilyRows() {
+        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
+        stubCompanyProfile(new CompanyProfile());
+        stubCompanyBranding(blankBranding());
+        stubCompensationIncomplete();
+        when(associateRepository.countByRoleNot(AssociateRole.ASSOCIATE)).thenReturn(2L);
+
+        SetupStateResponse response = setupStateService.getSetupState();
+
+        assertThat(response.steps().stream()
+            .filter(s -> s.key().equals("adminTeam")).findFirst().orElseThrow().complete())
+            .isTrue();
+        // adminTeam is optional -- completing it must not affect the Go Live gate.
+        assertThat(response.canGoLive()).isFalse();
+        assertThat(response.steps().stream()
+            .filter(s -> s.key().equals("adminTeam")).findFirst().orElseThrow().required())
+            .isFalse();
     }
 
     @Test

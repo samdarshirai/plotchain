@@ -13,9 +13,8 @@ import java.util.List;
 public class SetupStateService {
 
     // Order and required-ness match the master roadmap's 8-step wizard and its Step 8 "canGoLive"
-    // gate (Company Profile + Compensation + Payments & KYC). "adminTeam" and "rootAssociates"
-    // report incomplete until their own phases (10-11) land and replace their arms in
-    // isStepComplete below.
+    // gate (Company Profile + Compensation + Payments & KYC). "rootAssociates" reports
+    // incomplete until its own phase (11) lands and replaces its arm in isStepComplete below.
     private static final List<StepDefinition> STEP_DEFINITIONS = List.of(
         new StepDefinition(1, "companyProfile", true),
         new StepDefinition(2, "branding", false),
@@ -34,6 +33,7 @@ public class SetupStateService {
     private final PaymentConfigService paymentConfigService;
     private final PayoutBankAccountService payoutBankAccountService;
     private final ProjectService projectService;
+    private final AdminProvisioningService adminProvisioningService;
 
     public SetupStateService(SetupStateRepository setupStateRepository,
                               CompanyProfileService companyProfileService,
@@ -41,7 +41,8 @@ public class SetupStateService {
                               CompensationPlanService compensationPlanService,
                               PaymentConfigService paymentConfigService,
                               PayoutBankAccountService payoutBankAccountService,
-                              ProjectService projectService) {
+                              ProjectService projectService,
+                              AdminProvisioningService adminProvisioningService) {
         this.setupStateRepository = setupStateRepository;
         this.companyProfileService = companyProfileService;
         this.companyBrandingService = companyBrandingService;
@@ -49,6 +50,7 @@ public class SetupStateService {
         this.paymentConfigService = paymentConfigService;
         this.payoutBankAccountService = payoutBankAccountService;
         this.projectService = projectService;
+        this.adminProvisioningService = adminProvisioningService;
     }
 
     public SetupStateResponse getSetupState() {
@@ -87,7 +89,8 @@ public class SetupStateService {
         return getSetupState();
     }
 
-    // Each remaining arm returns false (stubbed) until its own phase lands and replaces it here.
+    // "rootAssociates" falls through to the default arm (stubbed false) until its own phase
+    // (11) lands and replaces it here.
     private boolean isStepComplete(String key) {
         return switch (key) {
             case "companyProfile" -> companyProfileService.isComplete();
@@ -95,6 +98,7 @@ public class SetupStateService {
             case "compensation" -> compensationPlanService.isComplete();
             case "paymentsKyc" -> paymentConfigService.isComplete() && payoutBankAccountService.isComplete();
             case "projects" -> projectService.isComplete();
+            case "adminTeam" -> adminProvisioningService.isComplete();
             case "reviewLaunch" -> isLaunched();
             default -> false;
         };

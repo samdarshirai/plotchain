@@ -7,15 +7,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.UUID;
 
 @Service
 public class AssociateProvisioningService {
-
-    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final AssociateRepository associateRepository;
     private final RankTierRepository rankTierRepository;
@@ -52,7 +48,7 @@ public class AssociateProvisioningService {
             .findFirst()
             .orElseThrow(NoRankTiersConfiguredException::new);
 
-        String temporaryPassword = generateTemporaryPassword();
+        String temporaryPassword = TemporaryPasswordGenerator.generate();
         String userId = generateAssociateId();
 
         Associate associate = new Associate();
@@ -97,11 +93,5 @@ public class AssociateProvisioningService {
             next++;
         } while (associateRepository.existsByUserId(candidate));
         return candidate;
-    }
-
-    private static String generateTemporaryPassword() {
-        byte[] bytes = new byte[12];
-        RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 }
