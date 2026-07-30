@@ -12,8 +12,9 @@ import java.util.List;
 public class SetupStateService {
 
     // Order and required-ness match the master roadmap's 8-step wizard and its Step 8 "canGoLive"
-    // gate (Company Profile + Compensation + Payments & KYC). Every step reports incomplete until
-    // its own phase (4-11) lands and replaces its arm in isStepComplete below.
+    // gate (Company Profile + Compensation + Payments & KYC). "projects", "adminTeam", and
+    // "rootAssociates" report incomplete until their own phases (9-11) land and replace their
+    // arms in isStepComplete below.
     private static final List<StepDefinition> STEP_DEFINITIONS = List.of(
         new StepDefinition(1, "companyProfile", true),
         new StepDefinition(2, "branding", false),
@@ -89,6 +90,7 @@ public class SetupStateService {
             case "branding" -> companyBrandingService.isComplete();
             case "compensation" -> compensationPlanService.isComplete();
             case "paymentsKyc" -> paymentConfigService.isComplete() && payoutBankAccountService.isComplete();
+            case "reviewLaunch" -> isLaunched();
             default -> false;
         };
     }

@@ -12,10 +12,15 @@ import { CompanyProfileStepComponent } from './setup/steps/company-profile/compa
 import { BrandingStepComponent } from './setup/steps/branding/branding-step.component';
 import { CompensationStepComponent } from './setup/steps/compensation/compensation-step.component';
 import { PaymentsKycStepComponent } from './setup/steps/payments-kyc/payments-kyc-step.component';
+import { ReviewLaunchStepComponent } from './setup/steps/review-launch/review-launch-step.component';
 import { SettingsShellComponent } from './settings/settings-shell.component';
+import { TermsOfServiceComponent } from './legal/terms-of-service.component';
+import { PrivacyPolicyComponent } from './legal/privacy-policy.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
+  { path: 'terms', component: TermsOfServiceComponent },
+  { path: 'privacy', component: PrivacyPolicyComponent },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
   { path: 'admin/associates/new', component: CreateAssociateComponent, canActivate: [authGuard, adminGuard] },
@@ -31,7 +36,7 @@ export const routes: Routes = [
       { path: 'payments-kyc', component: PaymentsKycStepComponent, data: { stepKey: 'paymentsKyc' } },
       { path: 'admin-team', component: SetupStepPlaceholderComponent, data: { stepKey: 'adminTeam' } },
       { path: 'root-associates', component: SetupStepPlaceholderComponent, data: { stepKey: 'rootAssociates' } },
-      { path: 'review-launch', component: SetupStepPlaceholderComponent, data: { stepKey: 'reviewLaunch' } },
+      { path: 'review-launch', component: ReviewLaunchStepComponent, data: { stepKey: 'reviewLaunch' } },
       { path: '', redirectTo: 'company-profile', pathMatch: 'full' }
     ]
   },

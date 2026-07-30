@@ -182,11 +182,37 @@
         "genericSaveError": "Something went wrong saving your changes. Please try again.",
         "loadFailed": "We could not load your current payments and KYC settings, so editing is disabled to avoid overwriting them. Reload the page to try again."
       }
+    },
+    "reviewLaunch": {
+      "checklistTitle": "Summary Checklist",
+      "editLabel": "Edit",
+      "completeBadge": "Complete",
+      "blockingBadge": "Blocking",
+      "allSetTitle": "You're all set!",
+      "allSetBody": "All required steps are complete. Accept the terms below and go live whenever you're ready.",
+      "blockedBody": "The following steps must be completed before you can go live: {{steps}}",
+      "termsLabel": "I accept the Terms of Service and Privacy Policy",
+      "termsLinkLabel": "Terms of Service",
+      "privacyLinkLabel": "Privacy Policy",
+      "goLiveLabel": "Go Live",
+      "launchedTitle": "You're live!",
+      "launchedBody": "Your instance is now live. Associates can log in, and this wizard is replaced by Company Settings.",
+      "genericLaunchError": "Something went wrong. Please try again."
     }
   },
   "settings": {
     "placeholder": {
       "comingSoon": "Company Settings is coming soon."
+    }
+  },
+  "legal": {
+    "terms": {
+      "title": "Terms of Service",
+      "body": "This is a placeholder Terms of Service page. Real legal copy has not been written yet."
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "body": "This is a placeholder Privacy Policy page. Real legal copy has not been written yet."
     }
   }
 }

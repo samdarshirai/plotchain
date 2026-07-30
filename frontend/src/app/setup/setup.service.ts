@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, shareReplay, switchMap } from 'rxjs';
-import { SetupStateResponse, STEP_PATHS } from './models/setup-state.model';
+import { LaunchRequest, SetupStateResponse, STEP_PATHS } from './models/setup-state.model';
 
 @Injectable({ providedIn: 'root' })
 export class SetupService {
@@ -20,6 +20,10 @@ export class SetupService {
   // Called after a step save so later phases pick up the new completeness immediately.
   refresh(): void {
     this.refresh$.next();
+  }
+
+  launch(acceptTerms: boolean): Observable<SetupStateResponse> {
+    return this.http.post<SetupStateResponse>('/api/company/launch', { acceptTerms } as LaunchRequest);
   }
 
   firstIncompleteStepKey(state: SetupStateResponse): string {

@@ -101,4 +101,17 @@ describe('SetupService', () => {
   it('returns null for the previous step path before the first step', () => {
     expect(service.previousStepPath('companyProfile')).toBeNull();
   });
+
+  it('posts to the launch endpoint with acceptTerms', () => {
+    const relaunched: SetupStateResponse = { ...response, canGoLive: true, launchedAt: '2026-01-01T00:00:00Z' };
+    let result: SetupStateResponse | undefined;
+    service.launch(true).subscribe(r => (result = r));
+
+    const req = httpMock.expectOne('/api/company/launch');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ acceptTerms: true });
+    req.flush(relaunched);
+
+    expect(result).toEqual(relaunched);
+  });
 });

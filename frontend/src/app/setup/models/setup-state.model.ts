@@ -12,6 +12,10 @@ export interface SetupStateResponse {
   launchedAt: string | null;
 }
 
+export interface LaunchRequest {
+  acceptTerms: boolean;
+}
+
 // The backend's step key (camelCase, matches SetupStateService's StepDefinition list) differs
 // from its route segment (kebab-case). Both must be extended together when a step is added.
 export const STEP_PATHS: Record<string, string> = {

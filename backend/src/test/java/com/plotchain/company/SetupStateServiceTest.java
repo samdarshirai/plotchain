@@ -344,4 +344,31 @@ class SetupStateServiceTest {
 
         assertThat(response.canGoLive()).isTrue();
     }
+
+    @Test
+    void reviewLaunchStepBecomesCompleteOnceLaunched() {
+        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
+        CompanyProfile filled = new CompanyProfile();
+        filled.setDisplayName("Plotchain Estates");
+        filled.setLegalName("Plotchain Estates Private Limited");
+        filled.setContactName("Jane Doe");
+        filled.setContactPhone("+919876543210");
+        filled.setContactEmail("jane@plotchain.test");
+        filled.setRegisteredAddress("123 MG Road, Bengaluru");
+        stubCompanyProfile(filled);
+        stubCompanyBranding(blankBranding());
+        stubCompensationComplete();
+        stubPaymentsKycComplete();
+
+        SetupStateResponse before = setupStateService.getSetupState();
+        assertThat(before.steps().stream()
+            .filter(s -> s.key().equals("reviewLaunch")).findFirst().orElseThrow().complete())
+            .isFalse();
+
+        SetupStateResponse after = setupStateService.launch();
+
+        assertThat(after.steps().stream()
+            .filter(s -> s.key().equals("reviewLaunch")).findFirst().orElseThrow().complete())
+            .isTrue();
+    }
 }
