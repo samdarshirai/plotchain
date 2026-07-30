@@ -32,8 +32,9 @@ describe('CreateAssociateComponent', () => {
       parentId: undefined,
       position: undefined
     });
-    req.flush({ associateId: 'assoc-1', temporaryPassword: 'Temp1234!' });
+    req.flush({ associateId: 'assoc-1', userId: 'VP00001', temporaryPassword: 'Temp1234!' });
 
+    expect(fixture.componentInstance.assignedUserId).toBe('VP00001');
     expect(fixture.componentInstance.temporaryPassword).toBe('Temp1234!');
     expect(fixture.componentInstance.error).toBeFalse();
     expect(fixture.componentInstance.form.get('name')!.value).toBeFalsy();
@@ -48,6 +49,7 @@ describe('CreateAssociateComponent', () => {
     req.flush({ error: 'Email already registered' }, { status: 409, statusText: 'Conflict' });
 
     expect(fixture.componentInstance.error).toBeTrue();
+    expect(fixture.componentInstance.assignedUserId).toBeNull();
     expect(fixture.componentInstance.temporaryPassword).toBeNull();
   });
 

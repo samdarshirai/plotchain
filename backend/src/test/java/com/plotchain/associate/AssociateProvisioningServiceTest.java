@@ -65,6 +65,7 @@ class AssociateProvisioningServiceTest {
 
         assertThat(response.temporaryPassword()).isNotBlank();
         assertThat(response.associateId()).isEqualTo(created.getId());
+        assertThat(response.userId()).isEqualTo("VP00001");
         // The response carries the plaintext once; only the hash is persisted.
         assertThat(created.getPasswordHash()).isNotEqualTo(response.temporaryPassword());
         assertThat(passwordEncoder.matches(response.temporaryPassword(), created.getPasswordHash())).isTrue();

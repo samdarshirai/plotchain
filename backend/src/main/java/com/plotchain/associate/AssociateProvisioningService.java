@@ -72,7 +72,7 @@ public class AssociateProvisioningService {
         associate.setMustChangePassword(true);
         associateRepository.save(associate);
 
-        return new CreateAssociateResponse(associate.getId(), temporaryPassword);
+        return new CreateAssociateResponse(associate.getId(), userId, temporaryPassword);
     }
 
     // Generates a fixed-width, zero-padded ID (e.g. VP00001, VP00002, ...) so that string

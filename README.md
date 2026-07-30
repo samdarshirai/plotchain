@@ -37,18 +37,40 @@ jwt:
   expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
 ```
 
-### `PLOTCHAIN_ADMIN_EMAIL` / `PLOTCHAIN_ADMIN_PASSWORD` — first-boot admin bootstrap
+### Logging in: User ID, not email
+
+Login (`POST /api/auth/login`) takes a **User ID**, not an email address. Every associate has a
+unique `user_id` — associates get one auto-generated at provisioning (see
+`PLOTCHAIN_ASSOCIATE_ID_PREFIX` below); admins and staff choose their own. Email is still
+captured as a contact field, but it is no longer a credential and is not required for staff
+accounts created from Company Settings.
+
+### `PLOTCHAIN_ASSOCIATE_ID_PREFIX` — associate ID generation
+
+```
+plotchain:
+  associate-id-prefix: ${PLOTCHAIN_ASSOCIATE_ID_PREFIX:VP}
+```
+
+[`AssociateProvisioningService`](backend/src/main/java/com/plotchain/associate/AssociateProvisioningService.java)
+generates each new associate's login ID as this prefix plus a zero-padded, incrementing number
+(`VP00001`, `VP00002`, ...). The default `VP` can be overridden per deployment; a running
+instance should not change its prefix after associates already exist, since existing IDs are
+not renumbered.
+
+### `PLOTCHAIN_ADMIN_USER_ID` / `PLOTCHAIN_ADMIN_EMAIL` / `PLOTCHAIN_ADMIN_PASSWORD` — first-boot admin bootstrap
 
 ```
 plotchain:
   bootstrap:
+    admin-user-id: ${PLOTCHAIN_ADMIN_USER_ID:admin}
     admin-email: ${PLOTCHAIN_ADMIN_EMAIL:}
     admin-password: ${PLOTCHAIN_ADMIN_PASSWORD:}
 ```
 
 [`AdminBootstrapRunner`](backend/src/main/java/com/plotchain/auth/AdminBootstrapRunner.java)
-runs on every application startup and creates a single `ADMIN` associate from these two values,
-so that the very first admin account can exist without any credentials being committed to the
+runs on every application startup and creates a single `ADMIN` associate from these values, so
+that the very first admin account can exist without any credentials being committed to the
 repository. It is a no-op — it does nothing and creates nothing — if **either**:
 
 - `PLOTCHAIN_ADMIN_EMAIL` or `PLOTCHAIN_ADMIN_PASSWORD` is unset or blank, **or**
@@ -56,12 +78,13 @@ repository. It is a no-op — it does nothing and creates nothing — if **eithe
   regardless of whether that row is an admin.
 
 In other words, this only ever fires on the very first boot against a genuinely empty database.
-The account it creates has `must_change_password = true`, so it is forced to change its
-password via `POST /api/associates/me/password` on first login — see below.
+The account it creates logs in with the `PLOTCHAIN_ADMIN_USER_ID` value (default `admin`) and has
+`must_change_password = true`, so it is forced to change its password via
+`POST /api/associates/me/password` on first login — see below.
 
-Once the initial admin exists, these two variables are safe to unset; they will not be read
-again in any way that matters (the runner still executes on every boot, but the row-count check
-short-circuits it).
+Once the initial admin exists, `PLOTCHAIN_ADMIN_EMAIL`/`PLOTCHAIN_ADMIN_PASSWORD` are safe to
+unset; they will not be read again in any way that matters (the runner still executes on every
+boot, but the row-count check short-circuits it).
 
 ### Database connection
 
@@ -89,10 +112,10 @@ Activating the `dev` Spring profile (`application-dev.yml`) adds an extra Flyway
 location, `classpath:db/migration-dev`, which seeds two accounts via
 [`V900__seed_dev_accounts.sql`](backend/src/main/resources/db/migration-dev/V900__seed_dev_accounts.sql):
 
-| Email | Password | Role |
+| User ID | Password | Role |
 |---|---|---|
-| `associate@plotchain.test` | `Password123!` | `ASSOCIATE` |
-| `admin@plotchain.test` | `Password123!` | `ADMIN` |
+| `associate01` | `Password123!` | `ASSOCIATE` |
+| `admin` | `Password123!` | `ADMIN` |
 
 **These credentials are public.** They are committed in plaintext-adjacent form (a fixed bcrypt
 hash) in this repository, so anyone with read access to the repo — or its git history — can log
@@ -116,6 +139,10 @@ So, in practice: an `ADMIN` account provisions every other account (associate or
 `POST /api/associates`, and each associate changes their own password afterwards through
 `POST /api/associates/me/password`. There is no path for an associate to create their own
 account or reset a forgotten password without administrator help.
+
+The response includes the generated `userId` (e.g. `VP00001`) alongside the one-time temporary
+password — the admin needs both to hand the new associate their login credentials, since the ID
+is not guessable or recoverable afterwards through the API.
 
 ### Note: pulling this branch invalidates existing local dev databases
 

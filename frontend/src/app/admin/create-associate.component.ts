@@ -11,6 +11,10 @@ import { AdminService } from './admin.service';
   template: `
     <div class="temporary-password-banner" *ngIf="temporaryPassword">
       <p>
+        {{ 'admin.assignedUserIdLabel' | translate }}:
+        <strong>{{ assignedUserId }}</strong>
+      </p>
+      <p>
         {{ 'admin.temporaryPasswordLabel' | translate }}:
         <strong>{{ temporaryPassword }}</strong>
       </p>
@@ -59,6 +63,7 @@ export class CreateAssociateComponent {
     position: ['']
   });
   error = false;
+  assignedUserId: string | null = null;
   temporaryPassword: string | null = null;
 
   onSubmit(): void {
@@ -77,11 +82,13 @@ export class CreateAssociateComponent {
       .subscribe({
         next: response => {
           this.error = false;
+          this.assignedUserId = response.userId;
           this.temporaryPassword = response.temporaryPassword;
           this.form.reset();
         },
         error: () => {
           this.error = true;
+          this.assignedUserId = null;
           this.temporaryPassword = null;
         }
       });

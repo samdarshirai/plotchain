@@ -19,7 +19,7 @@ describe('AdminService', () => {
   afterEach(() => httpMock.verify());
 
   it('creates an associate and returns the assigned id and temporary password', () => {
-    const mockResponse: CreateAssociateResponse = { associateId: 'assoc-1', temporaryPassword: 'Temp1234!' };
+    const mockResponse: CreateAssociateResponse = { associateId: 'assoc-1', userId: 'VP00001', temporaryPassword: 'Temp1234!' };
 
     service.createAssociate({ name: 'Jane Doe', email: 'jane@plotchain.test' }).subscribe(res => {
       expect(res).toEqual(mockResponse);
@@ -50,6 +50,6 @@ describe('AdminService', () => {
       parentId: 'parent-1',
       position: 'L'
     });
-    req.flush({ associateId: 'assoc-1', temporaryPassword: 'Temp1234!' });
+    req.flush({ associateId: 'assoc-1', userId: 'VP00001', temporaryPassword: 'Temp1234!' });
   });
 });

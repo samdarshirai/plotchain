@@ -35,6 +35,7 @@
     "positionLabel": "Placement Side (optional)",
     "submitButton": "Create Associate",
     "createError": "Could not create the associate. Check the details and try again.",
+    "assignedUserIdLabel": "Associate ID",
     "temporaryPasswordLabel": "Temporary Password",
     "temporaryPasswordNotice": "This password is shown only once. Copy it now — if you navigate away, you will need to provision a new account."
   }
