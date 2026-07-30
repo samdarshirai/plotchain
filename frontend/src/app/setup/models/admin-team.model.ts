@@ -1,14 +1,16 @@
+export type AdminRole = 'SUPER_ADMIN' | 'FINANCE' | 'KYC_REVIEWER' | 'SUPPORT';
+
 export interface CreateAdminRequest {
   userId: string;
   fullName: string;
-  role: string;
+  role: AdminRole;
   temporaryPassword?: string;
 }
 
 export interface CreateAdminResponse {
   id: string;
   userId: string;
-  role: string;
+  role: AdminRole;
   temporaryPassword: string;
 }
 
@@ -16,7 +18,7 @@ export interface AdminSummary {
   id: string;
   userId: string;
   fullName: string;
-  role: string;
+  role: AdminRole;
   lastActiveAt: string | null;
 }
 
@@ -27,7 +29,7 @@ export interface UserIdAvailability {
 export type RolePermissions = Record<string, string[]>;
 
 export interface AdminRoleOption {
-  value: string;
+  value: AdminRole;
   labelKey: string;
 }
 

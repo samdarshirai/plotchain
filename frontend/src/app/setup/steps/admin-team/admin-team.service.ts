@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   CreateAdminRequest,
@@ -22,7 +22,8 @@ export class AdminTeamService {
   }
 
   checkUserIdAvailable(userId: string): Observable<UserIdAvailability> {
-    return this.http.get<UserIdAvailability>(`/api/company/admins/user-id-available?userId=${userId}`);
+    const params = new HttpParams().set('userId', userId);
+    return this.http.get<UserIdAvailability>('/api/company/admins/user-id-available', { params });
   }
 
   getRolePermissions(): Observable<RolePermissions> {

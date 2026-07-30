@@ -95,7 +95,7 @@ describe('AdminTeamService', () => {
     let result: UserIdAvailability | undefined;
     service.checkUserIdAvailable(userId).subscribe(r => (result = r));
 
-    const req = httpMock.expectOne('/api/company/admins/user-id-available?userId=john.doe');
+    const req = httpMock.expectOne(req => req.url === '/api/company/admins/user-id-available' && req.params.get('userId') === 'john.doe');
     expect(req.request.method).toBe('GET');
     req.flush(userIdAvailability);
 
