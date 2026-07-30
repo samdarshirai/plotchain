@@ -6,6 +6,8 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.KycStatus;
+import com.plotchain.compensation.CompensationPlanVersion;
+import com.plotchain.compensation.CompensationPlanVersionRepository;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
@@ -18,7 +20,6 @@ import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
 import com.plotchain.wallet.Wallet;
 import com.plotchain.wallet.WalletRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -39,7 +40,7 @@ public class DashboardService {
     private final LegVolumeRepository legVolumeRepository;
     private final WalletRepository walletRepository;
     private final AnnouncementRepository announcementRepository;
-    private final BigDecimal previewMatchingRate;
+    private final CompensationPlanVersionRepository compensationPlanVersionRepository;
 
     public DashboardService(
         AssociateRepository associateRepository,
@@ -49,7 +50,7 @@ public class DashboardService {
         LegVolumeRepository legVolumeRepository,
         WalletRepository walletRepository,
         AnnouncementRepository announcementRepository,
-        @Value("${compensation.preview-matching-rate}") BigDecimal previewMatchingRate
+        CompensationPlanVersionRepository compensationPlanVersionRepository
     ) {
         this.associateRepository = associateRepository;
         this.rankTierRepository = rankTierRepository;
@@ -58,7 +59,7 @@ public class DashboardService {
         this.legVolumeRepository = legVolumeRepository;
         this.walletRepository = walletRepository;
         this.announcementRepository = announcementRepository;
-        this.previewMatchingRate = previewMatchingRate;
+        this.compensationPlanVersionRepository = compensationPlanVersionRepository;
     }
 
     public DashboardResponse getDashboard(UUID associateId) {
@@ -78,9 +79,13 @@ public class DashboardService {
 
         LegVolume legVolume = legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycle.getId())
             .orElseGet(() -> LegVolume.empty(associateId, cycle.getId()));
+        BigDecimal matchingIncomePct = compensationPlanVersionRepository
+            .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
+            .map(CompensationPlanVersion::getMatchingIncomePct)
+            .orElseThrow(() -> new IllegalStateException("compensation_plan_version row missing - V8 migration seeds it"));
         BigDecimal projectedMatch = legVolume.getLeftLegVolume()
             .min(legVolume.getRightLegVolume())
-            .multiply(previewMatchingRate);
+            .multiply(matchingIncomePct.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
 
         Wallet wallet = walletRepository.findById(associateId)
             .orElseGet(() -> Wallet.zero(associateId));

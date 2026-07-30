@@ -4,6 +4,9 @@ import com.plotchain.announcement.AnnouncementRepository;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.KycStatus;
+import com.plotchain.compensation.CompensationPlanVersion;
+import com.plotchain.compensation.CompensationPlanVersionRepository;
+import com.plotchain.compensation.SettlementCycle;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
@@ -20,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -43,6 +47,7 @@ class DashboardServiceTest {
     @Mock LegVolumeRepository legVolumeRepository;
     @Mock WalletRepository walletRepository;
     @Mock AnnouncementRepository announcementRepository;
+    @Mock CompensationPlanVersionRepository compensationPlanVersionRepository;
 
     DashboardService dashboardService;
 
@@ -51,7 +56,7 @@ class DashboardServiceTest {
         dashboardService = new DashboardService(
             associateRepository, rankTierRepository, cycleRepository,
             ledgerEntryRepository, legVolumeRepository, walletRepository,
-            announcementRepository, new BigDecimal("0.07"));
+            announcementRepository, compensationPlanVersionRepository);
     }
 
     @Test
@@ -89,6 +94,9 @@ class DashboardServiceTest {
             .thenReturn(BigDecimal.valueOf(1500));
         when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycleId))
             .thenReturn(Optional.of(legVolume));
+        when(compensationPlanVersionRepository
+                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(compensationPlanVersion(new BigDecimal("7.00"))));
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
         when(rankTierRepository.findAllByOrderByRankOrder())
             .thenReturn(List.of(currentRank, nextRank));
@@ -123,6 +131,56 @@ class DashboardServiceTest {
     }
 
     @Test
+    void projectsMatchAmountFromTheDbStoredMatchingIncomePercentNotAHardcodedFraction() {
+        UUID associateId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        UUID currentRankId = UUID.randomUUID();
+
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRankId(currentRankId);
+        associate.setKycStatus(KycStatus.VERIFIED);
+        associate.setCumulativeMatchedVolume(BigDecimal.ZERO);
+
+        Cycle cycle = new Cycle();
+        cycle.setId(cycleId);
+        cycle.setStatus(CycleStatus.OPEN);
+        cycle.setPeriodStart(LocalDate.now().minusDays(5));
+        cycle.setPeriodEnd(LocalDate.now().plusDays(10));
+
+        RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, BigDecimal.valueOf(5000));
+
+        LegVolume legVolume = LegVolume.empty(associateId, cycleId);
+        ReflectionTestUtils.setField(legVolume, "leftLegVolume", new BigDecimal("200000"));
+        ReflectionTestUtils.setField(legVolume, "rightLegVolume", new BigDecimal("150000"));
+
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
+            .thenReturn(Optional.of(cycle));
+        when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(any(), any(), any()))
+            .thenReturn(BigDecimal.ZERO);
+        when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(any(), any()))
+            .thenReturn(BigDecimal.ZERO);
+        when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycleId))
+            .thenReturn(Optional.of(legVolume));
+        when(compensationPlanVersionRepository
+                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(compensationPlanVersion(new BigDecimal("7.00"))));
+        when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
+        when(rankTierRepository.findAllByOrderByRankOrder())
+            .thenReturn(List.of(currentRank));
+        when(associateRepository.countDownline(associateId)).thenReturn(0L);
+        when(associateRepository.countActiveToday(any(), any())).thenReturn(0L);
+        when(associateRepository.countJoinedBetween(any(), any(), any())).thenReturn(0L);
+        when(announcementRepository.findTop5ByOrderByPublishedAtDesc()).thenReturn(List.of());
+
+        DashboardResponse response = dashboardService.getDashboard(associateId);
+
+        // min(200000, 150000) * (7.00 / 100) = 150000 * 0.07 = 10500.00
+        assertThat(response.legVolume().projectedMatchAmount()).isEqualByComparingTo("10500.00");
+    }
+
+    @Test
     void rejectsTheDashboardForAnAccountWithNoRank() {
         UUID associateId = UUID.randomUUID();
         Associate associate = new Associate();
@@ -134,5 +192,23 @@ class DashboardServiceTest {
 
         assertThatThrownBy(() -> dashboardService.getDashboard(associateId))
             .isInstanceOf(NoRankAssignedException.class);
+    }
+
+    private static CompensationPlanVersion compensationPlanVersion(BigDecimal matchingIncomePct) {
+        return new CompensationPlanVersion(
+            UUID.randomUUID(),
+            "v1",
+            LocalDate.now().minusDays(1),
+            new BigDecimal("10.00"),
+            matchingIncomePct,
+            new BigDecimal("3.00"),
+            new BigDecimal("5.00"),
+            new BigDecimal("2.00"),
+            new BigDecimal("4.00"),
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            SettlementCycle.MONTHLY,
+            Instant.now(),
+            null);
     }
 }
