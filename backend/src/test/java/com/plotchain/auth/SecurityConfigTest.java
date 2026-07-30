@@ -5,6 +5,8 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -83,13 +85,15 @@ class SecurityConfigTest {
             .andExpect(status().isForbidden());
     }
 
-    @Test
-    void writeRequestsPassTheSecurityLayerForAnAdminToken() throws Exception {
+    @ParameterizedTest
+    @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
+    void writeRequestsPassTheSecurityLayerForAnyAdminFamilyToken(AssociateRole role) throws Exception {
         // 404 rather than 403: no such handler exists, but the request got past authorization,
-        // which is the distinction being asserted. If this ever returns 403, the ADMIN write
-        // rule has stopped matching the ADMIN authority (e.g. a stray ROLE_ prefix).
+        // which is the distinction being asserted. If this ever returns 403 for one of these
+        // roles, the write rule has stopped matching that role's authority (e.g. a stray
+        // ROLE_ prefix, or the hasAnyAuthority list falling out of sync with isAdminFamily()).
         mockMvc.perform(post("/api/associates/some-future-write-endpoint")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content("{}"))
             .andExpect(status().isNotFound());

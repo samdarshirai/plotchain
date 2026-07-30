@@ -44,16 +44,31 @@ public class SecurityConfig {
                 // blanket ADMIN write rules below (first-match-wins) or associates could never
                 // clear their must-change-password state. SecurityConfigTest locks this.
                 .requestMatchers(HttpMethod.POST, "/api/associates/me/password").authenticated()
-                // Deny-by-default for writes: product policy is "admin can write; associates
-                // are read-only except their own profile". Without this, any future
+                // Deny-by-default for writes: product policy is "admin (or staff) can write;
+                // associates are read-only except their own profile". Without this, any future
                 // POST/PUT/PATCH/DELETE endpoint would be reachable by every authenticated
                 // associate unless its author remembered to add @PreAuthorize. When an
                 // associate's own-profile write is built, it needs its own explicit matcher
-                // placed above these blanket ADMIN rules (same ordering trap as login above).
-                .requestMatchers(HttpMethod.POST, "/api/**").hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/**").hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.PATCH, "/api/**").hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/**").hasAuthority("ADMIN")
+                // placed above these blanket admin-family rules (same ordering trap as login
+                // above).
+                //
+                // hasAnyAuthority, not hasAuthority("ADMIN"): the setup wizard's Admin Team
+                // step creates SUPER_ADMIN/FINANCE/KYC_REVIEWER/SUPPORT accounts too
+                // (AssociateRole.isAdminFamily() is the canonical list). A plain ADMIN-only
+                // rule would lock every one of those roles out of every write in the
+                // application -- silently, as 403s that look like a client bug. Per-role
+                // narrowing (e.g. only FINANCE can approve withdrawals) is a named follow-up
+                // (the setup wizard's Admin Team permission matrix), not assumed here: until
+                // then, any admin-family role can write, matching the spec's statement that
+                // the founding admin can act as all roles until more accounts are created.
+                .requestMatchers(HttpMethod.POST, "/api/**")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                .requestMatchers(HttpMethod.PUT, "/api/**")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                .requestMatchers(HttpMethod.PATCH, "/api/**")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                .requestMatchers(HttpMethod.DELETE, "/api/**")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 .anyRequest().authenticated())
             .exceptionHandling(ex -> ex.authenticationEntryPoint(
                 (request, response, authException) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
