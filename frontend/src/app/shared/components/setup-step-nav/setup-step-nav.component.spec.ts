@@ -52,4 +52,30 @@ describe('SetupStepNavComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.setup-step-nav__saved')).toBeTruthy();
   });
+
+  it('hidesPreviousAndNextWhenModeIsSettings', () => {
+    fixture.componentInstance.previousPath = 'branding';
+    fixture.componentInstance.nextPath = 'compensation';
+    fixture.componentInstance.mode = 'settings';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.setup-step-nav__previous')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.setup-step-nav__next')).toBeFalsy();
+  });
+
+  it('showsASaveButtonThatNavigatesToSettingsWhenModeIsSettings', () => {
+    fixture.componentInstance.mode = 'settings';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.setup-step-nav__save')).toBeTruthy();
+    fixture.nativeElement.querySelector('.setup-step-nav__save button').click();
+    expect(router.navigate).toHaveBeenCalledWith(['/settings']);
+  });
+
+  it('defaultsToSetupModeAndShowsPreviousNextWhenInputOmitted', () => {
+    fixture.componentInstance.previousPath = 'branding';
+    fixture.componentInstance.nextPath = 'compensation';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.setup-step-nav__previous')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.setup-step-nav__next')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.setup-step-nav__save')).toBeFalsy();
+  });
 });

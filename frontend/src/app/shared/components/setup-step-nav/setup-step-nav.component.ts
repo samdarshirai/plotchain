@@ -12,23 +12,28 @@ import { BrandButtonComponent } from '../brand-button/brand-button.component';
     <div class="setup-step-nav">
       <span class="setup-step-nav__saved" *ngIf="savedJustNow">{{ 'setup.savedIndicator' | translate }}</span>
       <span class="setup-step-nav__spacer"></span>
-      <app-brand-button
-        *ngIf="previousPath"
-        class="setup-step-nav__previous"
-        variant="ghost"
-        type="button"
-        (clicked)="goPrevious()"
-      >
-        {{ 'setup.actions.previous' | translate }}
-      </app-brand-button>
-      <app-brand-button
-        *ngIf="nextPath"
-        class="setup-step-nav__next"
-        variant="primary"
-        type="button"
-        (clicked)="goNext()"
-      >
-        {{ 'setup.actions.next' | translate }}
+      <ng-container *ngIf="mode === 'setup'">
+        <app-brand-button
+          *ngIf="previousPath"
+          class="setup-step-nav__previous"
+          variant="ghost"
+          type="button"
+          (clicked)="goPrevious()"
+        >
+          {{ 'setup.actions.previous' | translate }}
+        </app-brand-button>
+        <app-brand-button
+          *ngIf="nextPath"
+          class="setup-step-nav__next"
+          variant="primary"
+          type="button"
+          (clicked)="goNext()"
+        >
+          {{ 'setup.actions.next' | translate }}
+        </app-brand-button>
+      </ng-container>
+      <app-brand-button *ngIf="mode === 'settings'" class="setup-step-nav__save" variant="primary" type="button" (clicked)="goBackToSettings()">
+        {{ 'settings.actions.save' | translate }}
       </app-brand-button>
     </div>
   `
@@ -39,6 +44,7 @@ export class SetupStepNavComponent {
   @Input() previousPath: string | null = null;
   @Input() nextPath: string | null = null;
   @Input() savedJustNow = false;
+  @Input() mode: 'setup' | 'settings' = 'setup';
 
   goPrevious(): void {
     if (this.previousPath) {
@@ -50,5 +56,9 @@ export class SetupStepNavComponent {
     if (this.nextPath) {
       this.router.navigate(['/setup', this.nextPath]);
     }
+  }
+
+  goBackToSettings(): void {
+    this.router.navigate(['/settings']);
   }
 }

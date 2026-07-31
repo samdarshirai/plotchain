@@ -298,6 +298,9 @@
   "settings": {
     "placeholder": {
       "comingSoon": "Company Settings is coming soon."
+    },
+    "actions": {
+      "save": "Save"
     }
   },
   "legal": {
