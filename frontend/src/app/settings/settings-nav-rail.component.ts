@@ -1,0 +1,33 @@
+import { Component, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
+import { SECTION_PATHS } from './models/settings-section.model';
+
+@Component({
+  selector: 'app-settings-nav-rail',
+  standalone: true,
+  imports: [CommonModule, RouterLink, TranslateModule],
+  template: `
+    <nav class="settings-nav-rail">
+      <ol class="settings-nav-rail__items">
+        <li
+          *ngFor="let key of sectionKeys"
+          class="settings-nav-rail__item"
+          [class.settings-nav-rail__item--active]="key === activeSectionKey"
+        >
+          <a [routerLink]="['/settings', sectionPaths[key]]">{{ 'settings.sections.' + key | translate }}</a>
+        </li>
+        <li class="settings-nav-rail__item" [class.settings-nav-rail__item--active]="activeSectionKey === 'auditLog'">
+          <a [routerLink]="['/settings', 'audit-log']">{{ 'settings.sections.auditLog' | translate }}</a>
+        </li>
+      </ol>
+    </nav>
+  `
+})
+export class SettingsNavRailComponent {
+  @Input() activeSectionKey?: string;
+
+  readonly sectionPaths = SECTION_PATHS;
+  readonly sectionKeys = Object.keys(SECTION_PATHS);
+}
