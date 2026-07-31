@@ -1,6 +1,7 @@
 import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject, Subscription, merge } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
@@ -200,6 +201,7 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
   private paymentsKycService = inject(PaymentsKycService);
   private setupService = inject(SetupService);
   private translate = inject(TranslateService);
+  private route = inject(ActivatedRoute);
   private destroyed$ = new Subject<void>();
 
   @Input() mode: 'setup' | 'settings' = 'setup';
@@ -284,6 +286,7 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.mode = (this.route.snapshot.data['mode'] as 'setup' | 'settings') ?? 'setup';
     this.paymentSub = this.paymentsKycService.getPaymentConfig().subscribe({
       next: res => {
         this.paymentForm.patchValue({ gateway: res.gateway ?? '' }, { emitEvent: false });

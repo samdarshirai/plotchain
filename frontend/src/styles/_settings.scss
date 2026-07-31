@@ -1,0 +1,207 @@
+// Settings area layout: a left nav rail plus scrollable content, mirroring _setup.scss's
+// .setup-shell/.setup-progress-rail pattern. The nav rail here is a simpler sibling -- no
+// percent bar, no checkmarks, just a vertical link list with an active-state highlight.
+.settings-shell {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+.settings-shell__content {
+  flex: 1;
+  min-width: 0;
+  padding: 2rem;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.settings-nav-rail {
+  flex: 0 0 280px;
+  width: 280px;
+  min-height: 100vh;
+  padding: 2rem 1.5rem;
+  background: var(--surface-card);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.settings-nav-rail__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.settings-nav-rail__item a {
+  display: block;
+  padding: 0.625rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.settings-nav-rail__item a:hover {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.settings-nav-rail__item--active a {
+  background: var(--brand-primary-soft);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .settings-shell {
+    flex-direction: column;
+  }
+
+  .settings-nav-rail {
+    width: 100%;
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+}
+
+// --- Settings overview ---
+
+.settings-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.settings-overview__card {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-overview__card-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-overview__compensation-current {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.settings-overview__card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 1rem;
+}
+
+.settings-overview__history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.settings-overview__history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+// --- Audit log ---
+
+.audit-log__filter {
+  display: block;
+  margin: 1rem 0 1.5rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.audit-log__filter-select {
+  display: block;
+  margin-top: 0.375rem;
+}
+
+.audit-log__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.audit-log__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.audit-log__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--brand-gradient);
+  color: var(--brand-primary-contrast);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.audit-log__row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.audit-log__actor {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.audit-log__summary {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.audit-log__timestamp {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.audit-log__empty {
+  padding: 1rem 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.audit-log__pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.audit-log__page-indicator {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}

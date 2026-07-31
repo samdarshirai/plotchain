@@ -296,9 +296,7 @@
     }
   },
   "settings": {
-    "placeholder": {
-      "comingSoon": "Company Settings is coming soon."
-    },
+    "overviewLabel": "Company Settings",
     "actions": {
       "save": "Save"
     },
@@ -345,7 +343,9 @@
       "allSectionsOption": "All",
       "systemActor": "System",
       "previousPageAction": "Previous",
-      "nextPageAction": "Next"
+      "nextPageAction": "Next",
+      "emptyState": "No changes recorded yet.",
+      "pageIndicator": "Page {{page}} of {{totalPages}}"
     }
   },
   "legal": {

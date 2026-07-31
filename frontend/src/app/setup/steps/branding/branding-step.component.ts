@@ -1,6 +1,7 @@
 import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
@@ -112,6 +113,7 @@ export class BrandingStepComponent implements OnInit, OnDestroy {
   private setupService = inject(SetupService);
   private themeService = inject(ThemeService);
   private translate = inject(TranslateService);
+  private route = inject(ActivatedRoute);
   private destroyed$ = new Subject<void>();
   private brandingSubscription?: Subscription;
 
@@ -136,6 +138,7 @@ export class BrandingStepComponent implements OnInit, OnDestroy {
   private logoErrors: Record<LogoVariant, string | undefined> = { square: undefined, wide: undefined };
 
   ngOnInit(): void {
+    this.mode = (this.route.snapshot.data['mode'] as 'setup' | 'settings') ?? 'setup';
     this.brandingSubscription = this.brandingService.getBranding().subscribe(branding => {
       this.branding = branding;
       this.form.patchValue(

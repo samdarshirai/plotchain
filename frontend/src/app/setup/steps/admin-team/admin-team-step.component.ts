@@ -1,6 +1,7 @@
 import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, switchMap, takeUntil } from 'rxjs/operators';
@@ -142,6 +143,7 @@ export class AdminTeamStepComponent implements OnInit, OnDestroy {
   private adminTeamService = inject(AdminTeamService);
   private setupService = inject(SetupService);
   private translate = inject(TranslateService);
+  private route = inject(ActivatedRoute);
   private destroyed$ = new Subject<void>();
   private userIdChanged$ = new Subject<string>();
 
@@ -172,6 +174,7 @@ export class AdminTeamStepComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.mode = (this.route.snapshot.data['mode'] as 'setup' | 'settings') ?? 'setup';
     this.refreshAdmins();
     this.adminTeamService.getRolePermissions().subscribe({
       next: res => {

@@ -1,6 +1,7 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
@@ -118,6 +119,7 @@ export class RootAssociatesStepComponent implements OnInit {
   private rootAssociatesService = inject(RootAssociatesService);
   private setupService = inject(SetupService);
   private translate = inject(TranslateService);
+  private route = inject(ActivatedRoute);
 
   @Input() mode: 'setup' | 'settings' = 'setup';
 
@@ -141,6 +143,7 @@ export class RootAssociatesStepComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.mode = (this.route.snapshot.data['mode'] as 'setup' | 'settings') ?? 'setup';
     this.refreshSlots();
   }
 

@@ -1,6 +1,7 @@
 import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
@@ -83,6 +84,7 @@ export class CompanyProfileStepComponent implements OnInit, OnDestroy {
   private companyProfileService = inject(CompanyProfileService);
   private setupService = inject(SetupService);
   private translate = inject(TranslateService);
+  private route = inject(ActivatedRoute);
   private destroyed$ = new Subject<void>();
   private profileSubscription?: Subscription;
 
@@ -104,6 +106,7 @@ export class CompanyProfileStepComponent implements OnInit, OnDestroy {
   private serverFieldErrors: Record<string, string> = {};
 
   ngOnInit(): void {
+    this.mode = (this.route.snapshot.data['mode'] as 'setup' | 'settings') ?? 'setup';
     this.profileSubscription = this.companyProfileService.getProfile().subscribe(profile => {
       this.form.patchValue(profile, { emitEvent: false });
     });

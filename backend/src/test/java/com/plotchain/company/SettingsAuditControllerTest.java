@@ -91,6 +91,20 @@ class SettingsAuditControllerTest {
     }
 
     @Test
+    void listClampsAnOversizedSizeParamTo100() throws Exception {
+        when(settingsAuditLogRepository.findAllByOrderByChangedAtDesc(PageRequest.of(0, 100)))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 100), 0));
+
+        mockMvc.perform(get("/api/company/audit-log")
+                .param("size", "1000")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.size").value(100));
+
+        verify(settingsAuditLogRepository).findAllByOrderByChangedAtDesc(PageRequest.of(0, 100));
+    }
+
+    @Test
     void listIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(get("/api/company/audit-log")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))

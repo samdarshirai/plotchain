@@ -296,9 +296,7 @@
     }
   },
   "settings": {
-    "placeholder": {
-      "comingSoon": "कंपनी सेटिंग्स जल्द ही आ रही हैं।"
-    },
+    "overviewLabel": "कंपनी सेटिंग्स",
     "actions": {
       "save": "सहेजें"
     },
@@ -345,7 +343,9 @@
       "allSectionsOption": "सभी",
       "systemActor": "सिस्टम",
       "previousPageAction": "पिछला",
-      "nextPageAction": "अगला"
+      "nextPageAction": "अगला",
+      "emptyState": "अभी तक कोई बदलाव दर्ज नहीं हुआ है।",
+      "pageIndicator": "पृष्ठ {{page}} में से {{totalPages}}"
     }
   },
   "legal": {

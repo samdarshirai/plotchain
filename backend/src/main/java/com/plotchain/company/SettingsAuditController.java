@@ -19,6 +19,7 @@ public class SettingsAuditController {
             @RequestParam(required = false) String section,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+        size = Math.min(size, 100);
         return settingsAuditService.list(section, page, size);
     }
 }

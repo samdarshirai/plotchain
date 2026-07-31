@@ -1,6 +1,7 @@
 import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject, Subscription, merge } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
@@ -239,6 +240,7 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
   private compensationPlanService = inject(CompensationPlanService);
   private setupService = inject(SetupService);
   private translate = inject(TranslateService);
+  private route = inject(ActivatedRoute);
   private destroyed$ = new Subject<void>();
   private planSubscription?: Subscription;
   // royaltyRows/rewardTierRows aren't form controls, so they don't flow through
@@ -282,6 +284,7 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
   private serverFieldErrors: Record<string, string> = {};
 
   ngOnInit(): void {
+    this.mode = (this.route.snapshot.data['mode'] as 'setup' | 'settings') ?? 'setup';
     this.planSubscription = this.compensationPlanService.getCurrent().subscribe({
       next: res => {
         this.availableRanks = res.availableRanks;

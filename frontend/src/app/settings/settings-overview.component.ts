@@ -19,6 +19,8 @@ interface SettingsOverviewCard {
   standalone: true,
   imports: [CommonModule, RouterLink, TranslateModule, SidePanelComponent, BrandButtonComponent],
   template: `
+    <h1 class="card-title">{{ 'settings.overviewLabel' | translate }}</h1>
+
     <div class="settings-overview">
       <div class="settings-overview__card card" *ngFor="let card of cards">
         <h2 class="settings-overview__card-title">{{ 'settings.sections.' + card.key | translate }}</h2>
