@@ -2,8 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuditLogService } from './audit-log.service';
-import { AuditLogEntry, AuditLogPage } from './audit-log.model';
-import { SECTION_PATHS } from '../models/settings-section.model';
+import { AuditLogEntry, AuditLogPage, SECTION_FILTER_OPTIONS } from './audit-log.model';
 
 const PAGE_SIZE = 20;
 
@@ -18,8 +17,9 @@ const PAGE_SIZE = 20;
       <label class="audit-log__filter">
         {{ 'settings.auditLog.sectionFilterLabel' | translate }}
         <select class="audit-log__filter-select" (change)="onSectionChange($any($event.target).value)">
-          <option value="">{{ 'settings.auditLog.allSectionsOption' | translate }}</option>
-          <option *ngFor="let key of sectionKeys" [value]="key">{{ 'settings.sections.' + key | translate }}</option>
+          <option *ngFor="let key of filterOptions" [value]="key">
+            {{ (key === 'all' ? 'settings.auditLog.allSectionsOption' : 'settings.sections.' + key) | translate }}
+          </option>
         </select>
       </label>
 
@@ -53,7 +53,7 @@ export class AuditLogComponent implements OnInit {
   private auditLogService = inject(AuditLogService);
   private translate = inject(TranslateService);
 
-  readonly sectionKeys = Object.keys(SECTION_PATHS);
+  readonly filterOptions = SECTION_FILTER_OPTIONS;
 
   selectedSection: string | null = null;
   page: AuditLogPage | null = null;
@@ -67,7 +67,7 @@ export class AuditLogComponent implements OnInit {
   }
 
   onSectionChange(value: string): void {
-    this.selectedSection = value === '' ? null : value;
+    this.selectedSection = value === 'all' ? null : value;
     this.loadPage(0);
   }
 

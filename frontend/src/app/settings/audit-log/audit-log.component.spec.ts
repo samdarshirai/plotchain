@@ -100,7 +100,7 @@ describe('AuditLogComponent', () => {
     select.dispatchEvent(new Event('change'));
     httpMock.expectOne('/api/company/audit-log?page=0&size=20&section=COMPANY_PROFILE').flush(namedEntryPage);
 
-    select.value = '';
+    select.value = 'all';
     select.dispatchEvent(new Event('change'));
     const req = httpMock.expectOne('/api/company/audit-log?page=0&size=20');
     expect(req.request.params.has('section')).toBe(false);
