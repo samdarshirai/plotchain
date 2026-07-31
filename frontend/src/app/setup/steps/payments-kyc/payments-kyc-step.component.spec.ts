@@ -190,11 +190,10 @@ describe('PaymentsKycStepComponent', () => {
     );
   }));
 
-  it('wires the step-nav to the adjacent setup steps', () => {
+  it('does not render the inline step-nav when mode is setup (shell owns navigation there)', () => {
     flushInitialLoads();
     const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
-    expect(nav.componentInstance.previousPath).toBe('projects');
-    expect(nav.componentInstance.nextPath).toBe('admin-team');
+    expect(nav).toBeNull();
   });
 
   it('passes the settings mode through to the step-nav', () => {
@@ -203,12 +202,6 @@ describe('PaymentsKycStepComponent', () => {
     fixture.detectChanges();
     const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
     expect(nav.componentInstance.mode).toBe('settings');
-  });
-
-  it('defaults the step-nav mode to setup', () => {
-    flushInitialLoads();
-    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
-    expect(nav.componentInstance.mode).toBe('setup');
   });
 
   it('keeps the payment-mode checkbox toggle working after the loop-variable rename', () => {

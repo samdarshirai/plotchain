@@ -57,6 +57,11 @@
     "percentCompleteSuffix": "पूर्ण",
     "autosaveNote": "हम आपकी प्रगति स्वचालित रूप से सहेजते हैं।",
     "savedIndicator": "अभी सहेजा गया",
+    "header": {
+      "title": "एंटरप्राइज़ ऑनबोर्डिंग"
+    },
+    "inspectorDefaultTitle": "सहायता और मार्गदर्शन",
+    "inspectorDefaultBody": "बाईं ओर इस चरण का विवरण भरें। आपके बदलाव अपने आप सहेजे जाते हैं।",
     "actions": {
       "previous": "पिछला",
       "next": "अगला"
@@ -65,6 +70,13 @@
       "comingSoon": "यह चरण जल्द ही आ रहा है।"
     },
     "companyProfile": {
+      "stepEyebrowLabel": "चरण {{number}} / {{count}}",
+      "subtitle": "अपने संगठन की मुख्य पहचान तय करें। इस जानकारी का उपयोग कानूनी दस्तावेज़ीकरण और संगठन-व्यापी ब्रांडिंग के लिए किया जाएगा।",
+      "sections": {
+        "generalInfo": "सामान्य जानकारी",
+        "pointOfContact": "संपर्क बिंदु"
+      },
+      "gstBadgeLabel": "सरकारी रिकॉर्ड के विरुद्ध सत्यापित",
       "displayNameLabel": "प्रदर्शन नाम",
       "legalNameLabel": "कानूनी नाम",
       "registrationNumberLabel": "पंजीकरण संख्या (वैकल्पिक)",
@@ -81,6 +93,13 @@
       }
     },
     "branding": {
+      "stepEyebrowLabel": "चरण {{number}} / {{count}}",
+      "subtitle": "अपने संगठन की दृश्य पहचान परिभाषित करें। ये रंग, लोगो और टैगलाइन लॉगिन स्क्रीन और एसोसिएट-फेसिंग पोर्टलों पर दिखाई देते हैं।",
+      "sections": {
+        "brandAssets": "ब्रांड एसेट्स / लोगो",
+        "themeColors": "थीम रंग",
+        "tagline": "कॉपी / ब्रांड टैगलाइन"
+      },
       "primaryColorLabel": "प्राथमिक रंग",
       "secondaryColorLabel": "द्वितीयक रंग",
       "taglineLabel": "टैगलाइन",

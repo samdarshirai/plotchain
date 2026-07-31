@@ -3,21 +3,36 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
 import { SetupProgressRailComponent } from './setup-progress-rail.component';
+import { SetupHeaderComponent } from './setup-header.component';
+import { SetupInspectorAsideComponent } from './setup-inspector-aside.component';
+import { SetupShellFooterComponent } from './setup-shell-footer.component';
 import { SetupService } from './setup.service';
 
 @Component({
   selector: 'app-setup-shell',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SetupProgressRailComponent],
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    SetupProgressRailComponent,
+    SetupHeaderComponent,
+    SetupInspectorAsideComponent,
+    SetupShellFooterComponent
+  ],
   template: `
     <div class="setup-shell">
-      <app-setup-progress-rail
-        [steps]="(setupService.getState() | async)?.steps ?? []"
-        [activeStepKey]="activeStepKey"
-      ></app-setup-progress-rail>
-      <main class="setup-shell__content">
-        <router-outlet></router-outlet>
-      </main>
+      <app-setup-header [steps]="(setupService.getState() | async)?.steps ?? []"></app-setup-header>
+      <div class="setup-shell__body">
+        <app-setup-progress-rail
+          [steps]="(setupService.getState() | async)?.steps ?? []"
+          [activeStepKey]="activeStepKey"
+        ></app-setup-progress-rail>
+        <main class="setup-shell__content">
+          <router-outlet></router-outlet>
+        </main>
+        <app-setup-inspector-aside></app-setup-inspector-aside>
+      </div>
+      <app-setup-shell-footer [previousPath]="previousPath" [nextPath]="nextPath"></app-setup-shell-footer>
     </div>
   `
 })
@@ -28,14 +43,22 @@ export class SetupShellComponent implements OnInit, OnDestroy {
   private navigationSubscription?: Subscription;
 
   activeStepKey?: string;
+  previousPath: string | null = null;
+  nextPath: string | null = null;
 
   ngOnInit(): void {
-    this.activeStepKey = this.currentStepKey();
+    this.updateActiveStep();
     this.navigationSubscription = this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(() => {
-        this.activeStepKey = this.currentStepKey();
+        this.updateActiveStep();
       });
+  }
+
+  private updateActiveStep(): void {
+    this.activeStepKey = this.currentStepKey();
+    this.previousPath = this.activeStepKey ? this.setupService.previousStepPath(this.activeStepKey) : null;
+    this.nextPath = this.activeStepKey ? this.setupService.nextStepPath(this.activeStepKey) : null;
   }
 
   ngOnDestroy(): void {

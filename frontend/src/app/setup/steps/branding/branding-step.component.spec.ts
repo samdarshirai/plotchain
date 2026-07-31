@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ElementRef } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -6,8 +7,10 @@ import { TranslateModule } from '@ngx-translate/core';
 import { BrandingStepComponent } from './branding-step.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SetupService } from '../../setup.service';
+import { SetupInspectorService } from '../../setup-inspector.service';
 import { ThemeService } from '../../../core/theme/theme.service';
 import { CompanyBrandingResponse } from '../../models/branding.model';
+import { SetupStateResponse } from '../../models/setup-state.model';
 
 describe('BrandingStepComponent', () => {
   let fixture: ComponentFixture<BrandingStepComponent>;
@@ -24,6 +27,15 @@ describe('BrandingStepComponent', () => {
     updatedAt: null
   };
 
+  const setupState: SetupStateResponse = {
+    steps: [
+      { number: 1, key: 'companyProfile', complete: false, required: true, percentComplete: 0 },
+      { number: 2, key: 'branding', complete: false, required: true, percentComplete: 0 }
+    ],
+    canGoLive: false,
+    launchedAt: null
+  };
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [BrandingStepComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
@@ -35,7 +47,18 @@ describe('BrandingStepComponent', () => {
     themeService = TestBed.inject(ThemeService);
     spyOn(themeService, 'apply');
     fixture.detectChanges();
+
+    // #previewContainer only exists inside <ng-template #inspectorTpl>, which in the real app is
+    // instantiated by SetupInspectorAsideComponent's *ngTemplateOutlet, not by this component --
+    // there's no shell/aside here for that to happen, so paintPreview()'s
+    // `if (this.previewContainer)` guard would silently no-op for every test. These tests are
+    // about paintPreview's color-handling logic, not Angular's cross-component template-outlet
+    // wiring, so stub a real element in directly rather than fighting ng-template instantiation.
+    (fixture.componentInstance as unknown as { previewContainer: ElementRef<HTMLElement> }).previewContainer =
+      new ElementRef(document.createElement('div'));
+
     httpMock.expectOne('/api/company/branding').flush(emptyBranding);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
   });
 
   afterEach(() => {
@@ -57,6 +80,7 @@ describe('BrandingStepComponent', () => {
     httpMock.expectNone('/api/company/branding');
     tick(400);
     httpMock.expectOne('/api/company/branding').flush({ ...emptyBranding, primaryColor: '#E11D48' });
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
   }));
 
   it('saves via PUT 400ms after a valid change and re-themes the whole app', fakeAsync(() => {
@@ -67,6 +91,7 @@ describe('BrandingStepComponent', () => {
     expect(req.request.method).toBe('PUT');
     (themeService.apply as jasmine.Spy).calls.reset();
     req.flush({ ...emptyBranding, primaryColor: '#E11D48' });
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
 
     expect(themeService.apply).toHaveBeenCalledWith('#E11D48', '#22D3EE');
   }));
@@ -101,6 +126,7 @@ describe('BrandingStepComponent', () => {
 
     tick(400);
     httpMock.expectOne('/api/company/branding').flush({ ...emptyBranding, primaryColor: '#111111' });
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
   }));
 
   it('refreshes setup state after a successful autosave', fakeAsync(() => {
@@ -141,10 +167,9 @@ describe('BrandingStepComponent', () => {
     expect(fixture.componentInstance.logoError('square')).toBe('unsupported logo content type: image/gif');
   });
 
-  it('wires the step-nav to the adjacent setup steps', () => {
+  it('does not render the inline step-nav when mode is setup (shell owns navigation there)', () => {
     const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
-    expect(nav.componentInstance.previousPath).toBe('company-profile');
-    expect(nav.componentInstance.nextPath).toBe('compensation');
+    expect(nav).toBeNull();
   });
 
   it('passes the settings mode through to the step-nav', () => {
@@ -154,8 +179,25 @@ describe('BrandingStepComponent', () => {
     expect(nav.componentInstance.mode).toBe('settings');
   });
 
-  it('defaults the step-nav mode to setup', () => {
-    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
-    expect(nav.componentInstance.mode).toBe('setup');
+  it('registers its inspector preview template with SetupInspectorService in setup mode', () => {
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    spyOn(inspectorService, 'register');
+    fixture.componentInstance.ngAfterViewInit();
+    expect(inspectorService.register).toHaveBeenCalled();
+  });
+
+  it('does not register an inspector template in settings mode', () => {
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    spyOn(inspectorService, 'register');
+    fixture.componentInstance.mode = 'settings';
+    fixture.componentInstance.ngAfterViewInit();
+    expect(inspectorService.register).not.toHaveBeenCalled();
+  });
+
+  it('clears the inspector template on destroy', () => {
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    spyOn(inspectorService, 'clear');
+    fixture.destroy();
+    expect(inspectorService.clear).toHaveBeenCalled();
   });
 });

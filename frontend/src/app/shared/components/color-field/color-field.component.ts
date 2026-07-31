@@ -10,15 +10,17 @@ const HEX_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
   imports: [CommonModule, FormsModule],
   template: `
     <div class="color-field">
-      <label>{{ label }}</label>
+      <label class="color-field__label">{{ label }}</label>
       <div class="color-field__row">
-        <span class="color-field__swatch" [style.background]="value"></span>
-        <input
-          type="color"
-          class="color-field__picker"
-          [ngModel]="value"
-          (ngModelChange)="onPickerChange($event)"
-        />
+        <span class="color-field__swatch-wrap">
+          <span class="color-field__swatch" [style.background]="value"></span>
+          <input
+            type="color"
+            class="color-field__picker"
+            [ngModel]="value"
+            (ngModelChange)="onPickerChange($event)"
+          />
+        </span>
         <input
           type="text"
           class="color-field__hex"
@@ -26,6 +28,7 @@ const HEX_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
           [ngModel]="hexInput"
           (ngModelChange)="onHexChange($event)"
         />
+        <span class="material-symbols-outlined color-field__icon">colorize</span>
       </div>
     </div>
   `

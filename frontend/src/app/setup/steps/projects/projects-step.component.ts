@@ -139,7 +139,7 @@ const PAGE_SIZE = 20;
         </div>
       </div>
 
-      <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [mode]="mode"></app-setup-step-nav>
+      <app-setup-step-nav *ngIf="mode === 'settings'" [mode]="mode"></app-setup-step-nav>
     </div>
   `
 })
@@ -176,9 +176,6 @@ export class ProjectsStepComponent implements OnInit {
   csvValidation: CsvValidationResponse | null = null;
   csvSubmitError: string | null = null;
   readonly csvTemplateUrl = this.projectsService.csvTemplateUrl();
-
-  readonly previousPath = this.setupService.previousStepPath('projects');
-  readonly nextPath = this.setupService.nextStepPath('projects');
 
   get tabs(): TabDefinition[] {
     return [

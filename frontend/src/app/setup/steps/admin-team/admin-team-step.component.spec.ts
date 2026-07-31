@@ -380,11 +380,10 @@ describe('AdminTeamStepComponent', () => {
     expect(component.panelOpen).toBe(false);
   }));
 
-  it('wires the step-nav to the adjacent setup steps', () => {
+  it('does not render the inline step-nav when mode is setup (shell owns navigation there)', () => {
     flushInitialLoads();
     const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
-    expect(nav.componentInstance.previousPath).toBe('payments-kyc');
-    expect(nav.componentInstance.nextPath).toBe('root-associates');
+    expect(nav).toBeNull();
   });
 
   it('passes the settings mode through to the step-nav', () => {
@@ -393,11 +392,5 @@ describe('AdminTeamStepComponent', () => {
     fixture.detectChanges();
     const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
     expect(nav.componentInstance.mode).toBe('settings');
-  });
-
-  it('defaults the step-nav mode to setup', () => {
-    flushInitialLoads();
-    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
-    expect(nav.componentInstance.mode).toBe('setup');
   });
 });

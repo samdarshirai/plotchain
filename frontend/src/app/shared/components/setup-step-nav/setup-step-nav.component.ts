@@ -9,15 +9,16 @@ import { BrandButtonComponent } from '../brand-button/brand-button.component';
   standalone: true,
   imports: [CommonModule, TranslateModule, BrandButtonComponent],
   template: `
-    <div class="setup-step-nav">
+    <div class="setup-step-nav" [class.setup-step-nav--stacked]="layout === 'stacked'">
       <span class="setup-step-nav__saved" *ngIf="savedJustNow">{{ 'setup.savedIndicator' | translate }}</span>
-      <span class="setup-step-nav__spacer"></span>
+      <span class="setup-step-nav__spacer" *ngIf="layout === 'inline'"></span>
       <ng-container *ngIf="mode === 'setup'">
         <app-brand-button
           *ngIf="previousPath"
           class="setup-step-nav__previous"
           variant="ghost"
           type="button"
+          [fullWidth]="layout === 'stacked'"
           (clicked)="goPrevious()"
         >
           {{ 'setup.actions.previous' | translate }}
@@ -27,6 +28,7 @@ import { BrandButtonComponent } from '../brand-button/brand-button.component';
           class="setup-step-nav__next"
           variant="primary"
           type="button"
+          [fullWidth]="layout === 'stacked'"
           (clicked)="goNext()"
         >
           {{ 'setup.actions.next' | translate }}
@@ -45,6 +47,7 @@ export class SetupStepNavComponent {
   @Input() nextPath: string | null = null;
   @Input() savedJustNow = false;
   @Input() mode: 'setup' | 'settings' = 'setup';
+  @Input() layout: 'inline' | 'stacked' = 'inline';
 
   goPrevious(): void {
     if (this.previousPath) {

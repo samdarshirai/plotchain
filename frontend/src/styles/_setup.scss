@@ -1,24 +1,132 @@
 .setup-shell {
   display: flex;
-  align-items: flex-start;
-  min-height: 100vh;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.setup-shell__body {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
 .setup-shell__content {
   flex: 1;
   min-width: 0;
-  padding: 2rem;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.5rem 2rem;
   max-width: 960px;
   margin: 0 auto;
+}
+
+.setup-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 2rem;
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.setup-header__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.setup-header__progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.375rem;
+  width: 12rem;
+}
+
+.setup-header__progress-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+
+  span {
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+}
+
+.setup-header__progress-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--surface-raised);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.setup-header__progress-bar-fill {
+  height: 100%;
+  background: var(--brand-gradient);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+// app-setup-inspector-aside is the actual flex item stretched by .setup-shell__body's
+// align-items: stretch; its own <aside> child won't auto-fill that stretched height (a block
+// child's height: auto never fills a parent's height), so both need an explicit height: 100%
+// chain for content (e.g. company-profile's margin-top: auto nav) to push to the true bottom.
+app-setup-inspector-aside {
+  display: block;
+  height: 100%;
+}
+
+.setup-inspector-aside {
+  flex: 0 0 320px;
+  width: 320px;
+  height: 100%;
+  padding: 2rem 1.5rem;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.setup-inspector-aside__help {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.setup-shell__footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.625rem 2rem;
+  background: var(--surface-card);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.setup-shell__footer-saved {
+  font-size: 0.8rem;
+  color: var(--status-success);
+}
+
+.setup-shell__footer-spacer {
+  flex: 1;
 }
 
 .setup-progress-rail {
   flex: 0 0 280px;
   width: 280px;
-  min-height: 100vh;
   padding: 2rem 1.5rem;
   background: var(--surface-card);
   border-right: 1px solid var(--border-subtle);
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .setup-progress-rail__percent {
@@ -137,8 +245,15 @@
 }
 
 @media (max-width: 900px) {
-  .setup-shell {
+  .setup-shell__body {
     flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .setup-progress-rail,
+  .setup-inspector-aside,
+  .setup-shell__content {
+    overflow-y: visible;
   }
 
   .setup-progress-rail {
@@ -148,7 +263,317 @@
     border-bottom: 1px solid var(--border-subtle);
   }
 
+  app-setup-inspector-aside {
+    height: auto;
+  }
+
+  .setup-inspector-aside {
+    width: 100%;
+    height: auto;
+    flex-basis: auto;
+    padding: 1rem 2rem 2rem;
+  }
+
+  .setup-header__progress {
+    display: none;
+  }
+
   .step-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.company-profile-step {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 760px;
+}
+
+.company-profile-step__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.company-profile-step__eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--brand-primary);
+}
+
+.company-profile-step__title {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.company-profile-step__subtitle {
+  margin: 0;
+  max-width: 42rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.company-profile-step__card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.company-profile-step__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.company-profile-step__section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+
+  .material-symbols-outlined {
+    font-size: 20px;
+    color: var(--brand-primary);
+  }
+}
+
+.company-profile-step__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.company-profile-step__field-errors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.company-profile-step__gst-label {
+  display: block;
+}
+
+.company-profile-step__gst-input {
+  position: relative;
+
+  input {
+    padding-right: 2.5rem;
+  }
+}
+
+.company-profile-step__gst-badge {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: var(--brand-primary);
+  pointer-events: none;
+}
+
+.company-profile-step__aside-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  // Pushes the Previous/Next nav (a stacked <app-setup-step-nav> host element, itself the flex
+  // item here) flush to the bottom of the column so it lines up with the form card's bottom edge.
+  app-setup-step-nav {
+    margin-top: auto;
+  }
+}
+
+// Invisible duplicate of the real intro block, used purely to reserve the same vertical space
+// so the Company Card Preview's top edge lines up with the form card's top edge -- height tracks
+// the real intro (same markup/text) regardless of translation length or line-wrapping.
+.company-profile-step__intro--spacer {
+  visibility: hidden;
+}
+
+.company-profile-step__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.company-profile-step__preview-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.company-profile-step__preview-legal {
+  margin: 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.company-profile-step__preview-gst {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+
+  strong {
+    color: var(--brand-primary);
+  }
+}
+
+@media (max-width: 700px) {
+  .company-profile-step__row,
+  .company-profile-step__field-errors {
+    grid-template-columns: 1fr;
+  }
+}
+
+.branding-step {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 760px;
+}
+
+.branding-step__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.branding-step__eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--brand-primary);
+}
+
+.branding-step__title {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.branding-step__subtitle {
+  margin: 0;
+  max-width: 42rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.branding-step__card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.branding-step__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.branding-step__section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+
+  .material-symbols-outlined {
+    font-size: 20px;
+    color: var(--brand-primary);
+  }
+}
+
+.branding-step__logo-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.branding-step__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.branding-step__tagline-input {
+  position: relative;
+
+  input {
+    padding-right: 3.5rem;
+  }
+}
+
+.branding-step__counter {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.branding-step__aside-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  // Pushes the Previous/Next nav (a stacked <app-setup-step-nav> host element, itself the flex
+  // item here) flush to the bottom of the column so it lines up with the form card's bottom edge.
+  app-setup-step-nav {
+    margin-top: auto;
+  }
+}
+
+// Invisible duplicate of the real intro block, used purely to reserve the same vertical space
+// so the Live Login Preview's top edge lines up with the form card's top edge -- height tracks
+// the real intro (same markup/text) regardless of translation length or line-wrapping.
+.branding-step__intro--spacer {
+  visibility: hidden;
+}
+
+.branding-step__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.branding-step__login-preview {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+@media (max-width: 700px) {
+  .branding-step__logo-row,
+  .branding-step__row {
     grid-template-columns: 1fr;
   }
 }
@@ -174,6 +599,29 @@
   align-items: center;
   gap: 1rem;
   margin-top: 1.5rem;
+}
+
+// Used when this component renders inside the narrow inspector aside (e.g. company-profile's
+// nav below its Company Card preview) instead of a full-width footer bar -- buttons stack full
+// width with Next visually first, since there's no room for the inline previous/spacer/next row.
+.setup-step-nav--stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  margin-top: 1rem;
+
+  .setup-step-nav__saved {
+    order: 0;
+    text-align: center;
+  }
+
+  .setup-step-nav__next {
+    order: 1;
+  }
+
+  .setup-step-nav__previous {
+    order: 2;
+  }
 }
 
 .review-launch-step__terms-links {

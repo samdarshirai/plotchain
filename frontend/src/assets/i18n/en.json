@@ -57,6 +57,11 @@
     "percentCompleteSuffix": "Complete",
     "autosaveNote": "We save your progress automatically.",
     "savedIndicator": "Saved just now",
+    "header": {
+      "title": "Enterprise Onboarding"
+    },
+    "inspectorDefaultTitle": "Help & Guidance",
+    "inspectorDefaultBody": "Fill in this step's details on the left. Your changes are saved automatically as you go.",
     "actions": {
       "previous": "Previous",
       "next": "Next"
@@ -65,6 +70,13 @@
       "comingSoon": "This step is coming soon."
     },
     "companyProfile": {
+      "stepEyebrowLabel": "Step {{number}} of {{count}}",
+      "subtitle": "Define your organization's core identity. This information is used for legal documentation and system-wide branding.",
+      "sections": {
+        "generalInfo": "General Information",
+        "pointOfContact": "Point of Contact"
+      },
+      "gstBadgeLabel": "Verified against government records",
       "displayNameLabel": "Display Name",
       "legalNameLabel": "Legal Name",
       "registrationNumberLabel": "Registration Number (optional)",
@@ -81,6 +93,13 @@
       }
     },
     "branding": {
+      "stepEyebrowLabel": "Step {{number}} of {{count}}",
+      "subtitle": "Define your organization's visual identity. These colors, logos, and tagline appear across the login screen and associate-facing portals.",
+      "sections": {
+        "brandAssets": "Brand Assets / Logo",
+        "themeColors": "Theme Colors",
+        "tagline": "Copy / Brand Tagline"
+      },
       "primaryColorLabel": "Primary Color",
       "secondaryColorLabel": "Secondary Color",
       "taglineLabel": "Tagline",

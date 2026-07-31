@@ -86,7 +86,7 @@ import { CreateRootAssociateRequest, RootAssociateCreationResult, RootAssociateS
           <button type="submit" [disabled]="form.invalid">{{ 'setup.rootAssociates.submitButtonLabel' | translate }}</button>
         </form>
 
-        <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [mode]="mode"></app-setup-step-nav>
+        <app-setup-step-nav *ngIf="mode === 'settings'" [mode]="mode"></app-setup-step-nav>
       </div>
 
       <div class="card root-associates-step__tree">
@@ -122,9 +122,6 @@ export class RootAssociatesStepComponent implements OnInit {
   private route = inject(ActivatedRoute);
 
   @Input() mode: 'setup' | 'settings' = 'setup';
-
-  readonly previousPath = this.setupService.previousStepPath('rootAssociates');
-  readonly nextPath = this.setupService.nextStepPath('rootAssociates');
 
   roots: RootAssociateSummary[] = [];
   leftOccupied = false;

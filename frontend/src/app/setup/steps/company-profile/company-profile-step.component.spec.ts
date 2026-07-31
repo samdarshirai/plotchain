@@ -6,7 +6,9 @@ import { TranslateModule } from '@ngx-translate/core';
 import { CompanyProfileStepComponent } from './company-profile-step.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SetupService } from '../../setup.service';
+import { SetupInspectorService } from '../../setup-inspector.service';
 import { CompanyProfileResponse } from '../../models/company-profile.model';
+import { SetupStateResponse } from '../../models/setup-state.model';
 
 describe('CompanyProfileStepComponent', () => {
   let fixture: ComponentFixture<CompanyProfileStepComponent>;
@@ -35,6 +37,15 @@ describe('CompanyProfileStepComponent', () => {
     updatedAt: '2026-01-01T00:00:00Z'
   };
 
+  const setupState: SetupStateResponse = {
+    steps: [
+      { number: 1, key: 'companyProfile', complete: false, required: true, percentComplete: 0 },
+      { number: 2, key: 'branding', complete: false, required: true, percentComplete: 0 }
+    ],
+    canGoLive: false,
+    launchedAt: null
+  };
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [CompanyProfileStepComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
@@ -45,6 +56,7 @@ describe('CompanyProfileStepComponent', () => {
     setupService = TestBed.inject(SetupService);
     fixture.detectChanges();
     httpMock.expectOne('/api/company/profile').flush(emptyProfile);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
   });
 
   afterEach(() => {
@@ -56,6 +68,9 @@ describe('CompanyProfileStepComponent', () => {
     fixture = TestBed.createComponent(CompanyProfileStepComponent);
     fixture.detectChanges();
     httpMock.expectOne('/api/company/profile').flush(filledProfile);
+    // No second GET /api/company/setup-state here: SetupService.getState() is shareReplay(1)'d,
+    // so this second component instance's subscription replays the cached response from the
+    // first fixture's load in beforeEach rather than issuing a new request.
 
     expect(fixture.componentInstance.form.value.displayName).toBe('Plotchain Estates');
 
@@ -70,6 +85,10 @@ describe('CompanyProfileStepComponent', () => {
     const req = httpMock.expectOne('/api/company/profile');
     expect(req.request.method).toBe('PUT');
     req.flush(filledProfile);
+    // The save's success handler calls setupService.refresh(), which re-fires the shared
+    // GET /api/company/setup-state (shareReplay only skips the request when replaying a
+    // cached value to a new subscriber, not when the source itself is asked to refresh).
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
   }));
 
   it('does not autosave while the form is invalid', fakeAsync(() => {
@@ -84,6 +103,7 @@ describe('CompanyProfileStepComponent', () => {
     fixture.componentInstance.form.patchValue(filledProfile);
     tick(400);
     httpMock.expectOne('/api/company/profile').flush(filledProfile);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
 
     expect(fixture.componentInstance.savedJustNow).toBeTrue();
   }));
@@ -97,11 +117,10 @@ describe('CompanyProfileStepComponent', () => {
     expect(setupService.refresh).toHaveBeenCalled();
   }));
 
-  it('wires the step-nav to the adjacent setup steps', () => {
+  it('does not render the inline step-nav when mode is setup (shell owns navigation there)', () => {
     fixture.detectChanges();
     const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
-    expect(nav.componentInstance.previousPath).toBeNull();
-    expect(nav.componentInstance.nextPath).toBe('branding');
+    expect(nav).toBeNull();
   });
 
   it('passes the settings mode through to the step-nav', () => {
@@ -111,10 +130,26 @@ describe('CompanyProfileStepComponent', () => {
     expect(nav.componentInstance.mode).toBe('settings');
   });
 
-  it('defaults the step-nav mode to setup', () => {
-    fixture.detectChanges();
-    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
-    expect(nav.componentInstance.mode).toBe('setup');
+  it('registers its inspector preview template with SetupInspectorService in setup mode', () => {
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    spyOn(inspectorService, 'register');
+    fixture.componentInstance.ngAfterViewInit();
+    expect(inspectorService.register).toHaveBeenCalled();
+  });
+
+  it('does not register an inspector template in settings mode', () => {
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    spyOn(inspectorService, 'register');
+    fixture.componentInstance.mode = 'settings';
+    fixture.componentInstance.ngAfterViewInit();
+    expect(inspectorService.register).not.toHaveBeenCalled();
+  });
+
+  it('clears the inspector template on destroy', () => {
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    spyOn(inspectorService, 'clear');
+    fixture.destroy();
+    expect(inspectorService.clear).toHaveBeenCalled();
   });
 
   it('hides the previous/next buttons when mode is settings', () => {

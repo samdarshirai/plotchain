@@ -6,7 +6,6 @@ import { Observable } from 'rxjs';
 import { ChecklistRowComponent } from '../../../shared/components/checklist-row/checklist-row.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { BrandButtonComponent } from '../../../shared/components/brand-button/brand-button.component';
-import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SetupService } from '../../setup.service';
 import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-state.model';
 
@@ -19,8 +18,7 @@ import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-s
     TranslateModule,
     ChecklistRowComponent,
     InlineBannerComponent,
-    BrandButtonComponent,
-    SetupStepNavComponent
+    BrandButtonComponent
   ],
   template: `
     <div class="review-launch-step step-grid" *ngIf="(state$ | async) as state">
@@ -74,8 +72,6 @@ import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-s
           </div>
         </ng-template>
       </div>
-
-      <app-setup-step-nav [previousPath]="previousPath" [nextPath]="null"></app-setup-step-nav>
     </div>
   `
 })
@@ -84,7 +80,6 @@ export class ReviewLaunchStepComponent {
   private translate = inject(TranslateService);
 
   readonly stepPaths = STEP_PATHS;
-  readonly previousPath = this.setupService.previousStepPath('reviewLaunch');
   readonly state$: Observable<SetupStateResponse> = this.setupService.getState();
 
   termsAccepted = false;

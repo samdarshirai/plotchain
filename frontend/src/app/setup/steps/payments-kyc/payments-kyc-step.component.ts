@@ -12,6 +12,7 @@ import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav
 import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { PaymentsKycService } from './payments-kyc.service';
 import { SetupService } from '../../setup.service';
+import { SetupInspectorService } from '../../setup-inspector.service';
 import {
   KycConfigRequest,
   PaymentConfigRequest,
@@ -192,7 +193,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
         </div>
       </div>
 
-      <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="anySavedJustNow" [mode]="mode"></app-setup-step-nav>
+      <app-setup-step-nav *ngIf="mode === 'settings'" [savedJustNow]="anySavedJustNow" [mode]="mode"></app-setup-step-nav>
     </div>
   `
 })
@@ -200,6 +201,7 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private paymentsKycService = inject(PaymentsKycService);
   private setupService = inject(SetupService);
+  private inspectorService = inject(SetupInspectorService);
   private translate = inject(TranslateService);
   private route = inject(ActivatedRoute);
   private destroyed$ = new Subject<void>();
@@ -256,9 +258,6 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
   private withdrawalLoadFailed = false;
   private withdrawalChanged$ = new Subject<void>();
 
-  readonly previousPath = this.setupService.previousStepPath('paymentsKyc');
-  readonly nextPath = this.setupService.nextStepPath('paymentsKyc');
-
   get anySavedJustNow(): boolean {
     return this.paymentSavedJustNow || this.payoutSavedJustNow || this.kycSavedJustNow || this.withdrawalSavedJustNow;
   }
@@ -302,6 +301,7 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroyed$), debounceTime(400))
       .subscribe(() => {
         this.paymentSavedJustNow = false;
+        this.inspectorService.setSaved(this.anySavedJustNow);
         if (!this.paymentLoadFailed && this.paymentForm.valid) {
           this.savePayment();
         }
@@ -326,6 +326,7 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
     });
     this.payoutForm.valueChanges.pipe(takeUntil(this.destroyed$), debounceTime(400)).subscribe(() => {
       this.payoutSavedJustNow = false;
+      this.inspectorService.setSaved(this.anySavedJustNow);
       if (!this.payoutLoadFailed && this.payoutForm.valid) {
         this.savePayout();
       }
@@ -342,6 +343,7 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
     });
     this.kycChanged$.pipe(takeUntil(this.destroyed$), debounceTime(400)).subscribe(() => {
       this.kycSavedJustNow = false;
+      this.inspectorService.setSaved(this.anySavedJustNow);
       if (!this.kycLoadFailed && this.requiredDocuments.length > 0) {
         this.saveKyc();
       }
@@ -358,6 +360,7 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
     });
     this.withdrawalChanged$.pipe(takeUntil(this.destroyed$), debounceTime(400)).subscribe(() => {
       this.withdrawalSavedJustNow = false;
+      this.inspectorService.setSaved(this.anySavedJustNow);
       if (!this.withdrawalLoadFailed) {
         this.saveWithdrawal();
       }
@@ -405,6 +408,7 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
         this.credentialsInputValue = '';
         this.credentialsSubmitError = null;
         this.credentialsSavedJustNow = true;
+        this.inspectorService.setSaved(this.anySavedJustNow);
         this.setupService.refresh();
       },
       error: err => {
@@ -444,11 +448,13 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
         this.paymentServerFieldErrors = {};
         this.paymentSubmitError = null;
         this.paymentSavedJustNow = true;
+        this.inspectorService.setSaved(this.anySavedJustNow);
         this.credentialsConfigured = res.credentialsConfigured;
         this.setupService.refresh();
       },
       error: err => {
         this.paymentSavedJustNow = false;
+        this.inspectorService.setSaved(this.anySavedJustNow);
         const fields = toFieldErrors(err);
         const hasVisibleFieldError = RENDERED_PAYMENT_FIELD_ERROR_KEYS.some(key => key in fields);
         if (hasVisibleFieldError) {
@@ -496,10 +502,12 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
       next: () => {
         this.payoutServerFieldErrors = {};
         this.payoutSavedJustNow = true;
+        this.inspectorService.setSaved(this.anySavedJustNow);
         this.setupService.refresh();
       },
       error: err => {
         this.payoutSavedJustNow = false;
+        this.inspectorService.setSaved(this.anySavedJustNow);
         const fields = toFieldErrors(err);
         const hasVisibleFieldError = RENDERED_PAYOUT_FIELD_ERROR_KEYS.some(key => key in fields);
         this.payoutServerFieldErrors = hasVisibleFieldError ? fields : {};
@@ -529,10 +537,12 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
     this.paymentsKycService.updateKycConfig(request).subscribe({
       next: () => {
         this.kycSavedJustNow = true;
+        this.inspectorService.setSaved(this.anySavedJustNow);
         this.setupService.refresh();
       },
       error: () => {
         this.kycSavedJustNow = false;
+        this.inspectorService.setSaved(this.anySavedJustNow);
       }
     });
   }
@@ -556,11 +566,13 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
     this.paymentsKycService.updateWithdrawalConfig(request).subscribe({
       next: () => {
         this.withdrawalSavedJustNow = true;
+        this.inspectorService.setSaved(this.anySavedJustNow);
         this.withdrawalSubmitError = null;
         this.setupService.refresh();
       },
       error: err => {
         this.withdrawalSavedJustNow = false;
+        this.inspectorService.setSaved(this.anySavedJustNow);
         this.withdrawalSubmitError =
           err.error?.error ?? this.translate.instant('setup.paymentsKyc.validation.genericSaveError');
       }

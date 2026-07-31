@@ -1,9 +1,15 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, RouterOutlet } from '@angular/router';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { CommonModule, DOCUMENT } from '@angular/common';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
+import { filter, Subscription } from 'rxjs';
 import { AuthService } from './auth/auth.service';
 
+// The /setup wizard is fully light-themed (see _setup-theme.scss), but that override is scoped
+// to .setup-shell -- it can't reach this component's own dark app-header (a sibling, not an
+// ancestor) or <body>'s default dark background (an ancestor, so inheritance doesn't flow to
+// it). Both are handled here instead: the header is removed from the DOM entirely while on
+// /setup, and a body class carries the same light tokens so there's no dark edge/gap around it.
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -11,12 +17,32 @@ import { AuthService } from './auth/auth.service';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
-export class AppComponent {
+export class AppComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);
   private router = inject(Router);
+  private document = inject(DOCUMENT);
+  private navigationSubscription?: Subscription;
+
+  isSetupRoute = false;
+
+  ngOnInit(): void {
+    this.updateSetupRouteState(this.router.url);
+    this.navigationSubscription = this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(event => this.updateSetupRouteState(event.urlAfterRedirects));
+  }
+
+  ngOnDestroy(): void {
+    this.navigationSubscription?.unsubscribe();
+  }
 
   onLogout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  private updateSetupRouteState(url: string): void {
+    this.isSetupRoute = url.startsWith('/setup');
+    this.document.body.classList.toggle('setup-active', this.isSetupRoute);
   }
 }

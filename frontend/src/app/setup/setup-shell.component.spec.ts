@@ -18,8 +18,10 @@ describe('SetupShellComponent', () => {
   };
 
   beforeEach(async () => {
-    setupService = jasmine.createSpyObj('SetupService', ['getState']);
+    setupService = jasmine.createSpyObj('SetupService', ['getState', 'previousStepPath', 'nextStepPath']);
     setupService.getState.and.returnValue(of(state));
+    setupService.previousStepPath.and.returnValue(null);
+    setupService.nextStepPath.and.returnValue('branding');
 
     await TestBed.configureTestingModule({
       imports: [SetupShellComponent, RouterTestingModule, TranslateModule.forRoot()],
@@ -42,5 +44,25 @@ describe('SetupShellComponent', () => {
   it('passes the fetched steps down to the progress rail', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('app-setup-progress-rail')).toBeTruthy();
+  });
+
+  it('renders the header and inspector aside', () => {
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-setup-header')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('app-setup-inspector-aside')).toBeTruthy();
+  });
+
+  it('computes previousPath and nextPath for the active step via SetupService', () => {
+    fixture.detectChanges();
+    expect(setupService.previousStepPath).toHaveBeenCalledWith('companyProfile');
+    expect(setupService.nextStepPath).toHaveBeenCalledWith('companyProfile');
+    expect(fixture.componentInstance.previousPath).toBeNull();
+    expect(fixture.componentInstance.nextPath).toBe('branding');
+  });
+
+  it('passes previousPath and nextPath down to the shell footer', () => {
+    fixture.detectChanges();
+    const footer = fixture.nativeElement.querySelector('app-setup-shell-footer');
+    expect(footer).toBeTruthy();
   });
 });

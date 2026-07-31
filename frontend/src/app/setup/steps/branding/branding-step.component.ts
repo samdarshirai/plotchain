@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnDestroy, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -14,6 +14,7 @@ import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { ThemeService, contrastRatio } from '../../../core/theme/theme.service';
 import { BrandingService } from './branding.service';
 import { SetupService } from '../../setup.service';
+import { SetupInspectorService } from '../../setup-inspector.service';
 import { CompanyBrandingRequest, CompanyBrandingResponse, LogoVariant } from '../../models/branding.model';
 import { LoginComponent } from '../../../auth/login.component';
 
@@ -40,77 +41,131 @@ const MIN_CONTRAST = 4.5;
     LoginComponent
   ],
   template: `
-    <div class="branding-step step-grid">
-      <form class="card" [formGroup]="form">
-        <h1 class="card-title">{{ 'setup.steps.branding' | translate }}</h1>
-
-        <app-color-field
-          [label]="'setup.branding.primaryColorLabel' | translate"
-          [value]="form.value.primaryColor || '#7C3AED'"
-          (valueChange)="setColor('primaryColor', $event)"
-        ></app-color-field>
-
-        <app-inline-banner *ngIf="contrastWarning" tone="warning">
-          {{ 'setup.branding.contrastWarning' | translate }}
-        </app-inline-banner>
-
-        <app-color-field
-          [label]="'setup.branding.secondaryColorLabel' | translate"
-          [value]="form.value.secondaryColor || '#22D3EE'"
-          (valueChange)="setColor('secondaryColor', $event)"
-        ></app-color-field>
-
-        <label>
-          {{ 'setup.branding.taglineLabel' | translate }}
-          <input type="text" formControlName="tagline" [maxlength]="taglineMaxLength" />
-        </label>
-        <div class="branding-step__counter">{{ form.value.tagline?.length || 0 }}/{{ taglineMaxLength }}</div>
-        <app-field-error [message]="fieldError('tagline')"></app-field-error>
-
-        <app-logo-uploader
-          [label]="'setup.branding.squareLogoLabel' | translate"
-          variant="square"
-          [hasLogo]="branding?.hasSquareLogo || false"
-          [logoUrl]="brandingService.logoUrl('square')"
-          [placeholderText]="'setup.branding.squareLogoLabel' | translate"
-          [uploadLabel]="'setup.branding.uploadLabel' | translate"
-          [changeLabel]="'setup.branding.changeLabel' | translate"
-          [error]="logoError('square')"
-          (fileSelected)="onLogoSelected('square', $event)"
-        ></app-logo-uploader>
-
-        <app-logo-uploader
-          [label]="'setup.branding.wideLogoLabel' | translate"
-          variant="wide"
-          [hasLogo]="branding?.hasWideLogo || false"
-          [logoUrl]="brandingService.logoUrl('wide')"
-          [placeholderText]="'setup.branding.wideLogoLabel' | translate"
-          [uploadLabel]="'setup.branding.uploadLabel' | translate"
-          [changeLabel]="'setup.branding.changeLabel' | translate"
-          [error]="logoError('wide')"
-          (fileSelected)="onLogoSelected('wide', $event)"
-        ></app-logo-uploader>
-
-        <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="savedJustNow" [mode]="mode"></app-setup-step-nav>
-      </form>
-
-      <div class="card branding-step__preview">
-        <p class="card-subtitle">{{ 'setup.branding.loginPreviewTitle' | translate }}</p>
-        <div #previewContainer class="branding-step__login-preview">
-          <app-login
-            [previewMode]="true"
-            [tagline]="form.value.tagline || null"
-            [hasSquareLogo]="branding?.hasSquareLogo || false"
-          ></app-login>
-        </div>
+    <div class="branding-step">
+      <div class="branding-step__intro">
+        <span class="branding-step__eyebrow">
+          {{ 'setup.branding.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
+        </span>
+        <h1 class="branding-step__title">{{ 'setup.steps.branding' | translate }}</h1>
+        <p class="branding-step__subtitle">{{ 'setup.branding.subtitle' | translate }}</p>
       </div>
+
+      <form class="card branding-step__card" [formGroup]="form">
+        <section class="branding-step__section">
+          <h2 class="branding-step__section-title">
+            <span class="material-symbols-outlined">image</span>
+            {{ 'setup.branding.sections.brandAssets' | translate }}
+          </h2>
+
+          <div class="branding-step__logo-row">
+            <app-logo-uploader
+              [label]="'setup.branding.squareLogoLabel' | translate"
+              variant="square"
+              [hasLogo]="branding?.hasSquareLogo || false"
+              [logoUrl]="brandingService.logoUrl('square')"
+              [placeholderText]="'setup.branding.squareLogoLabel' | translate"
+              [uploadLabel]="'setup.branding.uploadLabel' | translate"
+              [changeLabel]="'setup.branding.changeLabel' | translate"
+              [error]="logoError('square')"
+              (fileSelected)="onLogoSelected('square', $event)"
+            ></app-logo-uploader>
+
+            <app-logo-uploader
+              [label]="'setup.branding.wideLogoLabel' | translate"
+              variant="wide"
+              [hasLogo]="branding?.hasWideLogo || false"
+              [logoUrl]="brandingService.logoUrl('wide')"
+              [placeholderText]="'setup.branding.wideLogoLabel' | translate"
+              [uploadLabel]="'setup.branding.uploadLabel' | translate"
+              [changeLabel]="'setup.branding.changeLabel' | translate"
+              [error]="logoError('wide')"
+              (fileSelected)="onLogoSelected('wide', $event)"
+            ></app-logo-uploader>
+          </div>
+        </section>
+
+        <section class="branding-step__section">
+          <h2 class="branding-step__section-title">
+            <span class="material-symbols-outlined">palette</span>
+            {{ 'setup.branding.sections.themeColors' | translate }}
+          </h2>
+
+          <div class="branding-step__row">
+            <app-color-field
+              [label]="'setup.branding.primaryColorLabel' | translate"
+              [value]="form.value.primaryColor || '#7C3AED'"
+              (valueChange)="setColor('primaryColor', $event)"
+            ></app-color-field>
+
+            <app-color-field
+              [label]="'setup.branding.secondaryColorLabel' | translate"
+              [value]="form.value.secondaryColor || '#22D3EE'"
+              (valueChange)="setColor('secondaryColor', $event)"
+            ></app-color-field>
+          </div>
+
+          <app-inline-banner *ngIf="contrastWarning" tone="warning">
+            {{ 'setup.branding.contrastWarning' | translate }}
+          </app-inline-banner>
+        </section>
+
+        <section class="branding-step__section">
+          <h2 class="branding-step__section-title">
+            <span class="material-symbols-outlined">format_quote</span>
+            {{ 'setup.branding.sections.tagline' | translate }}
+          </h2>
+
+          <label>
+            {{ 'setup.branding.taglineLabel' | translate }}
+            <div class="branding-step__tagline-input">
+              <input type="text" formControlName="tagline" [maxlength]="taglineMaxLength" />
+              <span class="branding-step__counter">{{ form.value.tagline?.length || 0 }}/{{ taglineMaxLength }}</span>
+            </div>
+          </label>
+          <app-field-error [message]="fieldError('tagline')"></app-field-error>
+        </section>
+
+        <app-setup-step-nav *ngIf="mode === 'settings'" [savedJustNow]="savedJustNow" [mode]="mode"></app-setup-step-nav>
+      </form>
     </div>
+
+    <ng-template #inspectorTpl>
+      <div class="branding-step__aside-column">
+        <div class="branding-step__intro branding-step__intro--spacer" aria-hidden="true">
+          <span class="branding-step__eyebrow">
+            {{ 'setup.branding.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
+          </span>
+          <h1 class="branding-step__title">{{ 'setup.steps.branding' | translate }}</h1>
+          <p class="branding-step__subtitle">{{ 'setup.branding.subtitle' | translate }}</p>
+        </div>
+
+        <div class="card branding-step__preview">
+          <p class="card-subtitle">{{ 'setup.branding.loginPreviewTitle' | translate }}</p>
+          <div #previewContainer class="branding-step__login-preview">
+            <app-login
+              [previewMode]="true"
+              [tagline]="form.value.tagline || null"
+              [hasSquareLogo]="branding?.hasSquareLogo || false"
+            ></app-login>
+          </div>
+        </div>
+
+        <app-setup-step-nav
+          [previousPath]="previousPath"
+          [nextPath]="nextPath"
+          [savedJustNow]="savedJustNow"
+          mode="setup"
+          layout="stacked"
+        ></app-setup-step-nav>
+      </div>
+    </ng-template>
   `
 })
-export class BrandingStepComponent implements OnInit, OnDestroy {
+export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy {
   private fb = inject(FormBuilder);
   brandingService = inject(BrandingService);
   private setupService = inject(SetupService);
+  private inspectorService = inject(SetupInspectorService);
   private themeService = inject(ThemeService);
   private translate = inject(TranslateService);
   private route = inject(ActivatedRoute);
@@ -118,6 +173,7 @@ export class BrandingStepComponent implements OnInit, OnDestroy {
   private brandingSubscription?: Subscription;
 
   @ViewChild('previewContainer') previewContainer!: ElementRef<HTMLElement>;
+  @ViewChild('inspectorTpl') private inspectorTpl!: TemplateRef<unknown>;
 
   readonly taglineMaxLength = TAGLINE_MAX_LENGTH;
 
@@ -132,6 +188,8 @@ export class BrandingStepComponent implements OnInit, OnDestroy {
   branding: CompanyBrandingResponse | null = null;
   savedJustNow = false;
   contrastWarning = false;
+  stepNumber = 1;
+  stepCount = 1;
   readonly previousPath = this.setupService.previousStepPath('branding');
   readonly nextPath = this.setupService.nextStepPath('branding');
   private serverFieldErrors: Record<string, string> = {};
@@ -151,6 +209,15 @@ export class BrandingStepComponent implements OnInit, OnDestroy {
       this.updateContrastWarning(branding.primaryColor);
     });
 
+    this.setupService
+      .getState()
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(state => {
+        const step = state.steps.find(s => s.key === 'branding');
+        this.stepNumber = step?.number ?? 1;
+        this.stepCount = state.steps.length;
+      });
+
     // Undebounced: instant, local-only preview repaint, no network.
     this.form.valueChanges.pipe(takeUntil(this.destroyed$)).subscribe(value => {
       if (value.primaryColor && HEX_COLOR_PATTERN.test(value.primaryColor)) {
@@ -167,16 +234,24 @@ export class BrandingStepComponent implements OnInit, OnDestroy {
     // Debounced: same cadence as the company-profile step's autosave.
     this.form.valueChanges.pipe(takeUntil(this.destroyed$), debounceTime(400)).subscribe(() => {
       this.savedJustNow = false;
+      this.inspectorService.setSaved(false);
       if (this.form.valid) {
         this.save();
       }
     });
   }
 
+  ngAfterViewInit(): void {
+    if (this.mode === 'setup') {
+      this.inspectorService.register(this.inspectorTpl);
+    }
+  }
+
   ngOnDestroy(): void {
     this.destroyed$.next();
     this.destroyed$.complete();
     this.brandingSubscription?.unsubscribe();
+    this.inspectorService.clear();
   }
 
   setColor(control: 'primaryColor' | 'secondaryColor', value: string): void {
@@ -236,12 +311,14 @@ export class BrandingStepComponent implements OnInit, OnDestroy {
       next: () => {
         this.serverFieldErrors = {};
         this.savedJustNow = true;
+        this.inspectorService.setSaved(true);
         this.themeService.apply(request.primaryColor, request.secondaryColor);
         this.setupService.refresh();
       },
       error: err => {
         this.serverFieldErrors = toFieldErrors(err);
         this.savedJustNow = false;
+        this.inspectorService.setSaved(false);
       }
     });
   }

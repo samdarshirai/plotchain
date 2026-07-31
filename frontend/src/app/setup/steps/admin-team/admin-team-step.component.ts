@@ -134,7 +134,7 @@ import {
         </form>
       </app-side-panel>
 
-      <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [mode]="mode"></app-setup-step-nav>
+      <app-setup-step-nav *ngIf="mode === 'settings'" [mode]="mode"></app-setup-step-nav>
     </div>
   `
 })
@@ -150,8 +150,6 @@ export class AdminTeamStepComponent implements OnInit, OnDestroy {
   @Input() mode: 'setup' | 'settings' = 'setup';
 
   readonly roleOptions = ROLE_OPTIONS;
-  readonly previousPath = this.setupService.previousStepPath('adminTeam');
-  readonly nextPath = this.setupService.nextStepPath('adminTeam');
 
   admins: AdminSummary[] = [];
   rolePermissions: RolePermissions = {};

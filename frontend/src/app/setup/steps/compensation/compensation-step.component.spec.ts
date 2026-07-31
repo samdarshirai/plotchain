@@ -262,10 +262,9 @@ describe('CompensationStepComponent', () => {
     expect(setupService.refresh).toHaveBeenCalled();
   }));
 
-  it('wires the step-nav to the adjacent setup steps', () => {
+  it('does not render the inline step-nav when mode is setup (shell owns navigation there)', () => {
     const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
-    expect(nav.componentInstance.previousPath).toBe('branding');
-    expect(nav.componentInstance.nextPath).toBe('projects');
+    expect(nav).toBeNull();
   });
 
   it('passes the settings mode through to the step-nav', () => {
@@ -273,10 +272,5 @@ describe('CompensationStepComponent', () => {
     fixture.detectChanges();
     const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
     expect(nav.componentInstance.mode).toBe('settings');
-  });
-
-  it('defaults the step-nav mode to setup', () => {
-    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
-    expect(nav.componentInstance.mode).toBe('setup');
   });
 });

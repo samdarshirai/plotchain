@@ -15,6 +15,7 @@ import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { CompensationPlanService } from './compensation-plan.service';
 import { computeSampleEarnings, SampleEarningsResult } from './sample-earnings';
 import { SetupService } from '../../setup.service';
+import { SetupInspectorService } from '../../setup-inspector.service';
 import { CompensationPlanRequest, RankOption, SettlementCycle } from '../../models/compensation-plan.model';
 
 const DEFAULT_SCENARIO_VOLUME = 1000000; // spec example: "sells ₹10L on each leg"
@@ -189,7 +190,7 @@ const RENDERED_FIELD_ERROR_KEYS = [
 
         <app-inline-banner *ngIf="submitError" tone="danger">{{ submitError }}</app-inline-banner>
 
-        <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="savedJustNow" [mode]="mode"></app-setup-step-nav>
+        <app-setup-step-nav *ngIf="mode === 'settings'" [savedJustNow]="savedJustNow" [mode]="mode"></app-setup-step-nav>
       </form>
 
       <div class="card compensation-step__preview">
@@ -239,6 +240,7 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private compensationPlanService = inject(CompensationPlanService);
   private setupService = inject(SetupService);
+  private inspectorService = inject(SetupInspectorService);
   private translate = inject(TranslateService);
   private route = inject(ActivatedRoute);
   private destroyed$ = new Subject<void>();
@@ -275,8 +277,6 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
   @Input() mode: 'setup' | 'settings' = 'setup';
 
   savedJustNow = false;
-  readonly previousPath = this.setupService.previousStepPath('compensation');
-  readonly nextPath = this.setupService.nextStepPath('compensation');
   submitError: string | null = null;
   // Set when the initial GET fails. Without it the form would keep its constructor-default
   // zeros and the very next keystroke's autosave would PUT those zeros over the live plan.
@@ -312,6 +312,7 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroyed$), debounceTime(400))
       .subscribe(() => {
         this.savedJustNow = false;
+        this.inspectorService.setSaved(false);
         if (this.form.valid) {
           this.save();
         }
@@ -464,10 +465,12 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
         this.serverFieldErrors = {};
         this.submitError = null;
         this.savedJustNow = true;
+        this.inspectorService.setSaved(true);
         this.setupService.refresh();
       },
       error: err => {
         this.savedJustNow = false;
+        this.inspectorService.setSaved(false);
         if (err.status === 409) {
           // A 409 here is one of several distinct conflicts (reward-tier gap, non-increasing
           // thresholds, or another admin already owning today's version), and the body has no
