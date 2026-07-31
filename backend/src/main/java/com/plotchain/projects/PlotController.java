@@ -3,6 +3,7 @@ package com.plotchain.projects;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,18 +39,21 @@ public class PlotController {
     }
 
     @PostMapping
-    public ResponseEntity<PlotResponse> create(@PathVariable UUID projectId, @Valid @RequestBody PlotRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(plotService.create(projectId, request));
+    public ResponseEntity<PlotResponse> create(@PathVariable UUID projectId, @Valid @RequestBody PlotRequest request,
+                                                @AuthenticationPrincipal UUID actorId) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(plotService.create(projectId, request, actorId));
     }
 
     @PutMapping("/{plotId}")
-    public PlotResponse update(@PathVariable UUID projectId, @PathVariable UUID plotId, @Valid @RequestBody PlotRequest request) {
-        return plotService.update(projectId, plotId, request);
+    public PlotResponse update(@PathVariable UUID projectId, @PathVariable UUID plotId, @Valid @RequestBody PlotRequest request,
+                                @AuthenticationPrincipal UUID actorId) {
+        return plotService.update(projectId, plotId, request, actorId);
     }
 
     @DeleteMapping("/{plotId}")
-    public ResponseEntity<Void> delete(@PathVariable UUID projectId, @PathVariable UUID plotId) {
-        plotService.delete(projectId, plotId);
+    public ResponseEntity<Void> delete(@PathVariable UUID projectId, @PathVariable UUID plotId,
+                                        @AuthenticationPrincipal UUID actorId) {
+        plotService.delete(projectId, plotId, actorId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -1,5 +1,6 @@
 package com.plotchain.projects;
 
+import com.plotchain.company.SettingsAuditService;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -16,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -31,9 +33,11 @@ public class PlotCsvService {
     private static final Set<String> VALID_STATUSES = Set.of("AVAILABLE", "BOOKED", "SOLD");
 
     private final PlotRepository plotRepository;
+    private final SettingsAuditService settingsAuditService;
 
-    public PlotCsvService(PlotRepository plotRepository) {
+    public PlotCsvService(PlotRepository plotRepository, SettingsAuditService settingsAuditService) {
         this.plotRepository = plotRepository;
+        this.settingsAuditService = settingsAuditService;
     }
 
     public byte[] generateTemplate() {
@@ -48,7 +52,7 @@ public class PlotCsvService {
     }
 
     @Transactional
-    public void commit(UUID projectId, MultipartFile file) {
+    public void commit(UUID projectId, MultipartFile file, UUID actorId) {
         List<CSVRecord> rows = parseRows(file);
         List<CsvRowError> errors = validateRows(projectId, rows);
         if (!errors.isEmpty()) {
@@ -67,6 +71,9 @@ public class PlotCsvService {
                 (status == null || status.isBlank()) ? PlotStatus.AVAILABLE : PlotStatus.valueOf(status)
             ));
         }
+        int rowCount = rows.size();
+        settingsAuditService.record("PROJECTS", "Bulk-imported " + rowCount + " plots via CSV",
+            Map.of("projectId", projectId, "rowCount", rowCount), actorId);
     }
 
     private List<CsvRowError> validateRows(UUID projectId, List<CSVRecord> rows) {

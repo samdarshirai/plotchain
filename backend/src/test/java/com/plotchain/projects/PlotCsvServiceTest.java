@@ -1,8 +1,14 @@
 package com.plotchain.projects;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plotchain.associate.AssociateRepository;
+import com.plotchain.company.SettingsAuditLog;
+import com.plotchain.company.SettingsAuditLogRepository;
+import com.plotchain.company.SettingsAuditService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
@@ -23,14 +29,21 @@ import static org.mockito.Mockito.when;
 class PlotCsvServiceTest {
 
     @Mock PlotRepository plotRepository;
+    // SettingsAuditService is a concrete class -- a real instance is built over mocked
+    // (interface) repositories per the repo's established pattern (see CompanyProfileServiceTest).
+    @Mock SettingsAuditLogRepository settingsAuditLogRepository;
+    @Mock AssociateRepository associateRepository;
 
     PlotCsvService plotCsvService;
 
     private static final UUID PROJECT_ID = UUID.randomUUID();
+    private static final UUID ACTOR_ID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        plotCsvService = new PlotCsvService(plotRepository);
+        SettingsAuditService settingsAuditService = new SettingsAuditService(
+            settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
+        plotCsvService = new PlotCsvService(plotRepository, settingsAuditService);
     }
 
     private MockMultipartFile csvFile(String content) {
@@ -120,7 +133,7 @@ class PlotCsvServiceTest {
     void commitThrowsAndPersistsNothingWhenAnyRowHasAnError() {
         MockMultipartFile file = csvFile(HEADER + "A-101,DIAMOND,1200,500,600000,AVAILABLE\n");
 
-        assertThatThrownBy(() -> plotCsvService.commit(PROJECT_ID, file))
+        assertThatThrownBy(() -> plotCsvService.commit(PROJECT_ID, file, ACTOR_ID))
             .isInstanceOf(CsvImportRejectedException.class);
 
         verify(plotRepository, never()).save(any());
@@ -133,8 +146,37 @@ class PlotCsvServiceTest {
             + "A-101,NORMAL,1200,500,600000,AVAILABLE\n"
             + "A-102,CORNER,1300,550,715000,\n");
 
-        plotCsvService.commit(PROJECT_ID, file);
+        plotCsvService.commit(PROJECT_ID, file, ACTOR_ID);
 
         verify(plotRepository, times(2)).save(any());
+    }
+
+    @Test
+    void commitRecordsAnAuditEntryWithTheRowCount() {
+        when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-101", "A-102"))).thenReturn(List.of());
+        MockMultipartFile file = csvFile(HEADER
+            + "A-101,NORMAL,1200,500,600000,AVAILABLE\n"
+            + "A-102,CORNER,1300,550,715000,\n");
+
+        plotCsvService.commit(PROJECT_ID, file, ACTOR_ID);
+
+        ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
+        verify(settingsAuditLogRepository).save(captor.capture());
+        SettingsAuditLog saved = captor.getValue();
+        assertThat(saved.getSection()).isEqualTo("PROJECTS");
+        assertThat(saved.getSummary()).isEqualTo("Bulk-imported 2 plots via CSV");
+        assertThat(saved.getChangedByAssociateId()).isEqualTo(ACTOR_ID);
+        assertThat(saved.getDetail()).contains("\"projectId\":\"" + PROJECT_ID + "\"")
+            .contains("\"rowCount\":2");
+    }
+
+    @Test
+    void commitDoesNotRecordAnAuditEntryWhenValidationFails() {
+        MockMultipartFile file = csvFile(HEADER + "A-101,DIAMOND,1200,500,600000,AVAILABLE\n");
+
+        assertThatThrownBy(() -> plotCsvService.commit(PROJECT_ID, file, ACTOR_ID))
+            .isInstanceOf(CsvImportRejectedException.class);
+
+        verify(settingsAuditLogRepository, never()).save(any());
     }
 }

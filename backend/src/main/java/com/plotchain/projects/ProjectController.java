@@ -5,6 +5,7 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,24 +42,27 @@ public class ProjectController {
     }
 
     @PostMapping
-    public ResponseEntity<ProjectResponse> create(@Valid @RequestBody ProjectRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(projectService.create(request));
+    public ResponseEntity<ProjectResponse> create(@Valid @RequestBody ProjectRequest request,
+                                                    @AuthenticationPrincipal UUID actorId) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(projectService.create(request, actorId));
     }
 
     @PutMapping("/{id}")
-    public ProjectResponse update(@PathVariable UUID id, @Valid @RequestBody ProjectRequest request) {
-        return projectService.update(id, request);
+    public ProjectResponse update(@PathVariable UUID id, @Valid @RequestBody ProjectRequest request,
+                                   @AuthenticationPrincipal UUID actorId) {
+        return projectService.update(id, request, actorId);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        projectService.delete(id);
+    public ResponseEntity<Void> delete(@PathVariable UUID id, @AuthenticationPrincipal UUID actorId) {
+        projectService.delete(id, actorId);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/thumbnail")
-    public ResponseEntity<Void> uploadThumbnail(@PathVariable UUID id, @RequestParam("file") MultipartFile file) {
-        projectService.uploadThumbnail(id, file);
+    public ResponseEntity<Void> uploadThumbnail(@PathVariable UUID id, @RequestParam("file") MultipartFile file,
+                                                 @AuthenticationPrincipal UUID actorId) {
+        projectService.uploadThumbnail(id, file, actorId);
         return ResponseEntity.noContent().build();
     }
 

@@ -3,6 +3,7 @@ package com.plotchain.projects;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.auth.JwtService;
+import com.plotchain.company.SettingsAuditLogRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -38,6 +39,7 @@ class PlotControllerTest {
     @Autowired JwtService jwtService;
 
     @MockBean PlotRepository plotRepository;
+    @MockBean SettingsAuditLogRepository settingsAuditLogRepository;
 
     private static final UUID PROJECT_ID = UUID.randomUUID();
     private static final UUID PLOT_ID = UUID.randomUUID();

@@ -86,7 +86,7 @@ class SetupStateServiceTest {
             new PaymentConfigService(paymentConfigRepository,
                 new SecretsEncryptionService("test-secrets-key-at-least-32-bytes-long-for-aes"), settingsAuditService),
             new PayoutBankAccountService(payoutBankAccountRepository, settingsAuditService),
-            new ProjectService(projectRepository, plotRepository),
+            new ProjectService(projectRepository, plotRepository, settingsAuditService),
             new AdminProvisioningService(associateRepository, passwordEncoder),
             new RootAssociateProvisioningService(associateRepository, rankTierRepository, passwordEncoder,
                 new AssociateIdGenerator(associateRepository, "VP")));

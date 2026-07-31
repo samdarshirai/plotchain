@@ -1,5 +1,6 @@
 package com.plotchain.projects;
 
+import com.plotchain.company.SettingsAuditService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -7,6 +8,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -19,10 +21,13 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final PlotRepository plotRepository;
+    private final SettingsAuditService settingsAuditService;
 
-    public ProjectService(ProjectRepository projectRepository, PlotRepository plotRepository) {
+    public ProjectService(ProjectRepository projectRepository, PlotRepository plotRepository,
+                           SettingsAuditService settingsAuditService) {
         this.projectRepository = projectRepository;
         this.plotRepository = plotRepository;
+        this.settingsAuditService = settingsAuditService;
     }
 
     public List<ProjectResponse> list() {
@@ -33,29 +38,37 @@ public class ProjectService {
         return toResponse(findOrThrow(id));
     }
 
-    public ProjectResponse create(ProjectRequest request) {
+    public ProjectResponse create(ProjectRequest request, UUID actorId) {
         Project project = new Project(UUID.randomUUID(), request.name(), request.location(), null, null, Instant.now());
         projectRepository.save(project);
-        return toResponse(project);
+        ProjectResponse response = toResponse(project);
+        settingsAuditService.record("PROJECTS", "Created project " + project.getName(), response, actorId);
+        return response;
     }
 
-    public ProjectResponse update(UUID id, ProjectRequest request) {
+    public ProjectResponse update(UUID id, ProjectRequest request, UUID actorId) {
         Project project = findOrThrow(id);
+        ProjectResponse before = toResponse(project);
         project.setName(request.name());
         project.setLocation(request.location());
         projectRepository.save(project);
-        return toResponse(project);
+        ProjectResponse after = toResponse(project);
+        settingsAuditService.record("PROJECTS", "Updated project " + project.getName(),
+            Map.of("before", before, "after", after), actorId);
+        return after;
     }
 
-    public void delete(UUID id) {
+    public void delete(UUID id, UUID actorId) {
         Project project = findOrThrow(id);
         if (plotRepository.existsByProjectId(id)) {
             throw new ProjectHasPlotsException("Cannot delete project " + id + " while it still has plots");
         }
         projectRepository.delete(project);
+        settingsAuditService.record("PROJECTS", "Deleted project " + project.getName(),
+            Map.of("deleted", toResponse(project)), actorId);
     }
 
-    public void uploadThumbnail(UUID id, MultipartFile file) {
+    public void uploadThumbnail(UUID id, MultipartFile file, UUID actorId) {
         if (file == null || file.isEmpty()) {
             throw new InvalidThumbnailUploadException("thumbnail file is empty");
         }
@@ -73,6 +86,8 @@ public class ProjectService {
         project.setThumbnail(bytes);
         project.setThumbnailContentType(contentType);
         projectRepository.save(project);
+        settingsAuditService.record("PROJECTS", "Uploaded thumbnail for project " + project.getName(),
+            Map.of("projectId", id, "contentType", contentType), actorId);
     }
 
     public Optional<ThumbnailBytes> getThumbnail(UUID id) {

@@ -1,19 +1,23 @@
 package com.plotchain.projects;
 
+import com.plotchain.company.SettingsAuditService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 public class PlotService {
 
     private final PlotRepository plotRepository;
+    private final SettingsAuditService settingsAuditService;
 
-    public PlotService(PlotRepository plotRepository) {
+    public PlotService(PlotRepository plotRepository, SettingsAuditService settingsAuditService) {
         this.plotRepository = plotRepository;
+        this.settingsAuditService = settingsAuditService;
     }
 
     public PlotPageResponse list(UUID projectId, int page, int size) {
@@ -26,7 +30,7 @@ public class PlotService {
         return toResponse(findOrThrow(projectId, plotId));
     }
 
-    public PlotResponse create(UUID projectId, PlotRequest request) {
+    public PlotResponse create(UUID projectId, PlotRequest request, UUID actorId) {
         assertPlotNoAvailable(projectId, request.plotNo(), null);
         Plot plot = new Plot(
             UUID.randomUUID(),
@@ -39,12 +43,15 @@ public class PlotService {
             resolveStatus(request.status())
         );
         plotRepository.save(plot);
-        return toResponse(plot);
+        PlotResponse response = toResponse(plot);
+        settingsAuditService.record("PROJECTS", "Created plot " + request.plotNo(), response, actorId);
+        return response;
     }
 
-    public PlotResponse update(UUID projectId, UUID plotId, PlotRequest request) {
+    public PlotResponse update(UUID projectId, UUID plotId, PlotRequest request, UUID actorId) {
         Plot plot = findOrThrow(projectId, plotId);
         assertPlotNoAvailable(projectId, request.plotNo(), plotId);
+        PlotResponse before = toResponse(plot);
         plot.setPlotNo(request.plotNo());
         plot.setPlotType(PlotType.valueOf(request.plotType()));
         plot.setAreaSqft(request.areaSqft());
@@ -52,11 +59,17 @@ public class PlotService {
         plot.setPrice(request.price());
         plot.setStatus(resolveStatus(request.status()));
         plotRepository.save(plot);
-        return toResponse(plot);
+        PlotResponse after = toResponse(plot);
+        settingsAuditService.record("PROJECTS", "Updated plot " + request.plotNo(),
+            Map.of("before", before, "after", after), actorId);
+        return after;
     }
 
-    public void delete(UUID projectId, UUID plotId) {
-        plotRepository.delete(findOrThrow(projectId, plotId));
+    public void delete(UUID projectId, UUID plotId, UUID actorId) {
+        Plot plot = findOrThrow(projectId, plotId);
+        plotRepository.delete(plot);
+        settingsAuditService.record("PROJECTS", "Deleted plot " + plot.getPlotNo(),
+            Map.of("deleted", toResponse(plot)), actorId);
     }
 
     private void assertPlotNoAvailable(UUID projectId, String plotNo, UUID excludingPlotId) {

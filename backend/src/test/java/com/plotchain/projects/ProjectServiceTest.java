@@ -1,5 +1,10 @@
 package com.plotchain.projects;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plotchain.associate.AssociateRepository;
+import com.plotchain.company.SettingsAuditLog;
+import com.plotchain.company.SettingsAuditLogRepository;
+import com.plotchain.company.SettingsAuditService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,14 +31,21 @@ class ProjectServiceTest {
 
     @Mock ProjectRepository projectRepository;
     @Mock PlotRepository plotRepository;
+    // SettingsAuditService is a concrete class -- a real instance is built over mocked
+    // (interface) repositories per the repo's established pattern (see CompanyProfileServiceTest).
+    @Mock SettingsAuditLogRepository settingsAuditLogRepository;
+    @Mock AssociateRepository associateRepository;
 
     ProjectService projectService;
 
     private static final UUID PROJECT_ID = UUID.randomUUID();
+    private static final UUID ACTOR_ID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        projectService = new ProjectService(projectRepository, plotRepository);
+        SettingsAuditService settingsAuditService = new SettingsAuditService(
+            settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
+        projectService = new ProjectService(projectRepository, plotRepository, settingsAuditService);
     }
 
     private Project seedProject() {
@@ -67,7 +80,7 @@ class ProjectServiceTest {
 
     @Test
     void createSavesAProjectWithGeneratedIdAndCreatedAt() {
-        ProjectResponse response = projectService.create(new ProjectRequest("Green Valley", "Hyderabad"));
+        ProjectResponse response = projectService.create(new ProjectRequest("Green Valley", "Hyderabad"), ACTOR_ID);
 
         ArgumentCaptor<Project> captor = ArgumentCaptor.forClass(Project.class);
         verify(projectRepository).save(captor.capture());
@@ -80,10 +93,23 @@ class ProjectServiceTest {
     }
 
     @Test
+    void createRecordsAnAuditEntry() {
+        projectService.create(new ProjectRequest("Green Valley", "Hyderabad"), ACTOR_ID);
+
+        ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
+        verify(settingsAuditLogRepository).save(captor.capture());
+        SettingsAuditLog saved = captor.getValue();
+        assertThat(saved.getSection()).isEqualTo("PROJECTS");
+        assertThat(saved.getSummary()).isEqualTo("Created project Green Valley");
+        assertThat(saved.getChangedByAssociateId()).isEqualTo(ACTOR_ID);
+        assertThat(saved.getDetail()).contains("\"name\":\"Green Valley\"");
+    }
+
+    @Test
     void updateChangesNameAndLocationOfAnExistingProject() {
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(seedProject()));
 
-        ProjectResponse response = projectService.update(PROJECT_ID, new ProjectRequest("Blue Ridge", "Pune"));
+        ProjectResponse response = projectService.update(PROJECT_ID, new ProjectRequest("Blue Ridge", "Pune"), ACTOR_ID);
 
         ArgumentCaptor<Project> captor = ArgumentCaptor.forClass(Project.class);
         verify(projectRepository).save(captor.capture());
@@ -93,11 +119,29 @@ class ProjectServiceTest {
     }
 
     @Test
+    void updateRecordsAnAuditEntry() {
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(seedProject()));
+
+        projectService.update(PROJECT_ID, new ProjectRequest("Blue Ridge", "Pune"), ACTOR_ID);
+
+        ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
+        verify(settingsAuditLogRepository).save(captor.capture());
+        SettingsAuditLog saved = captor.getValue();
+        assertThat(saved.getSection()).isEqualTo("PROJECTS");
+        assertThat(saved.getSummary()).isEqualTo("Updated project Blue Ridge");
+        assertThat(saved.getChangedByAssociateId()).isEqualTo(ACTOR_ID);
+        assertThat(saved.getDetail()).contains("\"before\":{\"id\":")
+            .contains("\"name\":\"Green Valley\"")
+            .contains("\"after\":{\"id\":")
+            .contains("\"name\":\"Blue Ridge\"");
+    }
+
+    @Test
     void deleteThrowsWhenProjectHasPlots() {
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(seedProject()));
         when(plotRepository.existsByProjectId(PROJECT_ID)).thenReturn(true);
 
-        assertThatThrownBy(() -> projectService.delete(PROJECT_ID))
+        assertThatThrownBy(() -> projectService.delete(PROJECT_ID, ACTOR_ID))
             .isInstanceOf(ProjectHasPlotsException.class);
 
         verify(projectRepository, never()).delete(any());
@@ -109,9 +153,30 @@ class ProjectServiceTest {
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(plotRepository.existsByProjectId(PROJECT_ID)).thenReturn(false);
 
-        projectService.delete(PROJECT_ID);
+        projectService.delete(PROJECT_ID, ACTOR_ID);
 
         verify(projectRepository).delete(project);
+    }
+
+    @Test
+    void deleteRecordsAnAuditEntryUsingTheSnapshotCapturedBeforeDeletion() {
+        Project project = seedProject();
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(plotRepository.existsByProjectId(PROJECT_ID)).thenReturn(false);
+
+        projectService.delete(PROJECT_ID, ACTOR_ID);
+
+        // findById must be called exactly once -- the audit snapshot reuses the entity fetched
+        // for the plots-existence check and delete, rather than re-querying the project.
+        verify(projectRepository, times(1)).findById(PROJECT_ID);
+        ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
+        verify(settingsAuditLogRepository).save(captor.capture());
+        SettingsAuditLog saved = captor.getValue();
+        assertThat(saved.getSection()).isEqualTo("PROJECTS");
+        assertThat(saved.getSummary()).isEqualTo("Deleted project Green Valley");
+        assertThat(saved.getChangedByAssociateId()).isEqualTo(ACTOR_ID);
+        assertThat(saved.getDetail()).contains("\"deleted\":{\"id\":")
+            .contains("\"name\":\"Green Valley\"");
     }
 
     @Test
@@ -120,7 +185,7 @@ class ProjectServiceTest {
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         MockMultipartFile file = new MockMultipartFile("file", "thumb.png", "image/png", new byte[]{1, 2, 3});
 
-        projectService.uploadThumbnail(PROJECT_ID, file);
+        projectService.uploadThumbnail(PROJECT_ID, file, ACTOR_ID);
 
         ArgumentCaptor<Project> captor = ArgumentCaptor.forClass(Project.class);
         verify(projectRepository).save(captor.capture());
@@ -129,10 +194,28 @@ class ProjectServiceTest {
     }
 
     @Test
+    void uploadThumbnailRecordsAnAuditEntry() {
+        Project project = seedProject();
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        MockMultipartFile file = new MockMultipartFile("file", "thumb.png", "image/png", new byte[]{1, 2, 3});
+
+        projectService.uploadThumbnail(PROJECT_ID, file, ACTOR_ID);
+
+        ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
+        verify(settingsAuditLogRepository).save(captor.capture());
+        SettingsAuditLog saved = captor.getValue();
+        assertThat(saved.getSection()).isEqualTo("PROJECTS");
+        assertThat(saved.getSummary()).isEqualTo("Uploaded thumbnail for project Green Valley");
+        assertThat(saved.getChangedByAssociateId()).isEqualTo(ACTOR_ID);
+        assertThat(saved.getDetail()).contains("\"projectId\":\"" + PROJECT_ID + "\"")
+            .contains("\"contentType\":\"image/png\"");
+    }
+
+    @Test
     void uploadThumbnailThrowsForUnsupportedContentType() {
         MockMultipartFile svg = new MockMultipartFile("file", "thumb.svg", "image/svg+xml", new byte[]{1});
 
-        assertThatThrownBy(() -> projectService.uploadThumbnail(PROJECT_ID, svg))
+        assertThatThrownBy(() -> projectService.uploadThumbnail(PROJECT_ID, svg, ACTOR_ID))
             .isInstanceOf(InvalidThumbnailUploadException.class);
     }
 
