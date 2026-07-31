@@ -87,9 +87,9 @@ class SetupStateServiceTest {
                 new SecretsEncryptionService("test-secrets-key-at-least-32-bytes-long-for-aes"), settingsAuditService),
             new PayoutBankAccountService(payoutBankAccountRepository, settingsAuditService),
             new ProjectService(projectRepository, plotRepository, settingsAuditService),
-            new AdminProvisioningService(associateRepository, passwordEncoder),
+            new AdminProvisioningService(associateRepository, passwordEncoder, settingsAuditService),
             new RootAssociateProvisioningService(associateRepository, rankTierRepository, passwordEncoder,
-                new AssociateIdGenerator(associateRepository, "VP")));
+                new AssociateIdGenerator(associateRepository, "VP"), settingsAuditService));
 
         // getSetupState() calls isStepComplete("paymentsKyc") on every invocation, so every test
         // needs this stubbed even if it never asserts on paymentsKyc directly. lenient() because

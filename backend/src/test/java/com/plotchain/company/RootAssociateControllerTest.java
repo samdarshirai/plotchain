@@ -29,6 +29,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // inside a real Spring Security filter chain, per AdminControllerTest's pattern. RankTierRepository
 // is mocked too since RootAssociateProvisioningService.create() requires a rank tier (root
 // associates are role = ASSOCIATE, and no rank tiers are seeded in the test schema).
+// RootAssociateProvisioningService now depends on the real SettingsAuditService bean, so its own
+// repository dependency (SettingsAuditLogRepository) needs mocking too -- per
+// CompanyProfileControllerTest's pattern -- otherwise the real H2 DB rejects the audit insert
+// since the JWT actor id was never persisted as a real associate row.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -39,6 +43,7 @@ class RootAssociateControllerTest {
 
     @MockBean AssociateRepository associateRepository;
     @MockBean RankTierRepository rankTierRepository;
+    @MockBean SettingsAuditLogRepository settingsAuditLogRepository;
 
     private final RankTier lowestRank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(5000));
 

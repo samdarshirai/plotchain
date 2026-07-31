@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 // Root associates are Associate rows seeded at the top of the binary tree: parentId, sponsorId,
@@ -27,20 +29,23 @@ public class RootAssociateProvisioningService {
     private final RankTierRepository rankTierRepository;
     private final PasswordEncoder passwordEncoder;
     private final AssociateIdGenerator associateIdGenerator;
+    private final SettingsAuditService settingsAuditService;
 
     public RootAssociateProvisioningService(
         AssociateRepository associateRepository,
         RankTierRepository rankTierRepository,
         PasswordEncoder passwordEncoder,
-        AssociateIdGenerator associateIdGenerator
+        AssociateIdGenerator associateIdGenerator,
+        SettingsAuditService settingsAuditService
     ) {
         this.associateRepository = associateRepository;
         this.rankTierRepository = rankTierRepository;
         this.passwordEncoder = passwordEncoder;
         this.associateIdGenerator = associateIdGenerator;
+        this.settingsAuditService = settingsAuditService;
     }
 
-    public CreateRootAssociateResponse create(CreateRootAssociateRequest request) {
+    public CreateRootAssociateResponse create(CreateRootAssociateRequest request, UUID actorId) {
         if (!findRoots().isEmpty()) {
             throw new RootAssociateAlreadyExistsException();
         }
@@ -56,6 +61,19 @@ public class RootAssociateProvisioningService {
         RootAssociateCreationResult right = request.seedRightRoot()
             ? createRoot(request.rightName(), request.rightPhone(), "RIGHT", lowestRank.getId())
             : null;
+
+        // temporaryPassword on RootAssociateCreationResult is a one-time plaintext secret -- it
+        // must never reach the audit detail, so the detail is hand-built from a narrow allowlist
+        // of fields per root rather than serializing either RootAssociateCreationResult wholesale.
+        //
+        // A HashMap (not Map.of) is required at the top level: Map.of throws NullPointerException
+        // on a null value, and "right" is null on every left-root-only creation -- the common case.
+        Map<String, Object> detail = new HashMap<>();
+        detail.put("left", Map.of("userId", left.userId(), "name", left.name(), "slotLabel", left.slotLabel()));
+        detail.put("right", right != null
+            ? Map.of("userId", right.userId(), "name", right.name(), "slotLabel", right.slotLabel())
+            : null);
+        settingsAuditService.record("ROOT_ASSOCIATES", "Seeded root associate(s)", detail, actorId);
 
         return new CreateRootAssociateResponse(left, right);
     }

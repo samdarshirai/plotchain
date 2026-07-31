@@ -26,7 +26,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // real Spring Security filter chain, per CompanyProfileControllerTest's pattern.
 // InvalidAdminRoleException (400) and UserIdAlreadyRegisteredException (409) are already wired
 // into CompanyExceptionHandler -- this class only asserts the resulting status codes, not the
-// handler wiring itself.
+// handler wiring itself. AdminProvisioningService now depends on the real SettingsAuditService
+// bean, so its own repository dependency (SettingsAuditLogRepository) needs mocking too -- per
+// CompanyProfileControllerTest's pattern -- otherwise the real H2 DB rejects the audit insert
+// since the JWT actor id was never persisted as a real associate row.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -36,6 +39,7 @@ class AdminControllerTest {
     @Autowired JwtService jwtService;
 
     @MockBean AssociateRepository associateRepository;
+    @MockBean SettingsAuditLogRepository settingsAuditLogRepository;
 
     private String tokenFor(AssociateRole role) {
         Associate token = new Associate();

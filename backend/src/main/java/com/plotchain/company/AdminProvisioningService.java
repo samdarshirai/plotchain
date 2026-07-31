@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 // Deliberately separate from AssociateProvisioningService: different role set, different
@@ -21,13 +22,16 @@ public class AdminProvisioningService {
 
     private final AssociateRepository associateRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SettingsAuditService settingsAuditService;
 
-    public AdminProvisioningService(AssociateRepository associateRepository, PasswordEncoder passwordEncoder) {
+    public AdminProvisioningService(AssociateRepository associateRepository, PasswordEncoder passwordEncoder,
+                                     SettingsAuditService settingsAuditService) {
         this.associateRepository = associateRepository;
         this.passwordEncoder = passwordEncoder;
+        this.settingsAuditService = settingsAuditService;
     }
 
-    public CreateAdminResponse create(CreateAdminRequest request) {
+    public CreateAdminResponse create(CreateAdminRequest request, UUID actorId) {
         AssociateRole role = parseAssignableRole(request.role());
 
         if (associateRepository.existsByUserId(request.userId())) {
@@ -51,6 +55,12 @@ public class AdminProvisioningService {
         admin.setCumulativeMatchedVolume(BigDecimal.ZERO);
         admin.setMustChangePassword(true);
         associateRepository.save(admin);
+
+        // temporaryPassword is a one-time plaintext secret -- it must never reach the audit
+        // detail (or anything else that gets persisted), so the detail is hand-built from a
+        // narrow allowlist of fields rather than serializing the response/request wholesale.
+        settingsAuditService.record("ADMIN_TEAM", "Created admin " + request.userId() + " (" + role.name() + ")",
+            Map.of("userId", request.userId(), "fullName", request.fullName(), "role", role.name()), actorId);
 
         return new CreateAdminResponse(admin.getId(), request.userId(), role.name(), temporaryPassword);
     }
