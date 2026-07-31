@@ -91,6 +91,30 @@ describe('CompanyProfileStepComponent', () => {
     httpMock.expectOne('/api/company/setup-state').flush(setupState);
   }));
 
+  it('flushes a pending autosave immediately when destroyed before the 400ms debounce fires', fakeAsync(() => {
+    fixture.componentInstance.form.patchValue(filledProfile);
+
+    fixture.destroy();
+
+    const req = httpMock.expectOne('/api/company/profile');
+    expect(req.request.method).toBe('PUT');
+    req.flush(filledProfile);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+  }));
+
+  it('uppercases a lower-case GSTIN as typed so it does not fail validation and block the whole form from saving', fakeAsync(() => {
+    fixture.componentInstance.form.patchValue({ ...filledProfile, registrationNumber: '29abcde1234f1z5' });
+
+    expect(fixture.componentInstance.form.valid).toBeTrue();
+    expect(fixture.componentInstance.form.value.registrationNumber).toBe('29ABCDE1234F1Z5');
+
+    tick(400);
+    const req = httpMock.expectOne('/api/company/profile');
+    expect(req.request.body.registrationNumber).toBe('29ABCDE1234F1Z5');
+    req.flush({ ...filledProfile, registrationNumber: '29ABCDE1234F1Z5' });
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+  }));
+
   it('does not autosave while the form is invalid', fakeAsync(() => {
     fixture.componentInstance.form.patchValue({ ...filledProfile, contactEmail: 'not-an-email' });
 

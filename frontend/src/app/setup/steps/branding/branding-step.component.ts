@@ -42,7 +42,7 @@ const MIN_CONTRAST = 4.5;
   ],
   template: `
     <div class="branding-step">
-      <div class="branding-step__intro">
+      <div class="branding-step__intro" #introEl>
         <span class="branding-step__eyebrow">
           {{ 'setup.branding.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
         </span>
@@ -50,7 +50,7 @@ const MIN_CONTRAST = 4.5;
         <p class="branding-step__subtitle">{{ 'setup.branding.subtitle' | translate }}</p>
       </div>
 
-      <form class="card branding-step__card" [formGroup]="form">
+      <form class="card branding-step__card" [formGroup]="form" #formCard>
         <section class="branding-step__section">
           <h2 class="branding-step__section-title">
             <span class="material-symbols-outlined">image</span>
@@ -131,7 +131,7 @@ const MIN_CONTRAST = 4.5;
 
     <ng-template #inspectorTpl>
       <div class="branding-step__aside-column">
-        <div class="branding-step__intro branding-step__intro--spacer" aria-hidden="true">
+        <div class="branding-step__intro branding-step__intro--spacer" aria-hidden="true" #introSpacerEl>
           <span class="branding-step__eyebrow">
             {{ 'setup.branding.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
           </span>
@@ -139,7 +139,7 @@ const MIN_CONTRAST = 4.5;
           <p class="branding-step__subtitle">{{ 'setup.branding.subtitle' | translate }}</p>
         </div>
 
-        <div class="card branding-step__preview">
+        <div class="card branding-step__preview" #previewCard>
           <p class="card-subtitle">{{ 'setup.branding.loginPreviewTitle' | translate }}</p>
           <div #previewContainer class="branding-step__login-preview">
             <app-login
@@ -149,14 +149,6 @@ const MIN_CONTRAST = 4.5;
             ></app-login>
           </div>
         </div>
-
-        <app-setup-step-nav
-          [previousPath]="previousPath"
-          [nextPath]="nextPath"
-          [savedJustNow]="savedJustNow"
-          mode="setup"
-          layout="stacked"
-        ></app-setup-step-nav>
       </div>
     </ng-template>
   `
@@ -174,6 +166,11 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('previewContainer') previewContainer!: ElementRef<HTMLElement>;
   @ViewChild('inspectorTpl') private inspectorTpl!: TemplateRef<unknown>;
+  @ViewChild('introEl') private introEl!: ElementRef<HTMLElement>;
+  @ViewChild('introSpacerEl') private introSpacerEl!: ElementRef<HTMLElement>;
+  @ViewChild('formCard') private formCard!: ElementRef<HTMLElement>;
+  @ViewChild('previewCard') private previewCard!: ElementRef<HTMLElement>;
+  private sizeObserver?: ResizeObserver;
 
   readonly taglineMaxLength = TAGLINE_MAX_LENGTH;
 
@@ -190,8 +187,6 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy {
   contrastWarning = false;
   stepNumber = 1;
   stepCount = 1;
-  readonly previousPath = this.setupService.previousStepPath('branding');
-  readonly nextPath = this.setupService.nextStepPath('branding');
   private serverFieldErrors: Record<string, string> = {};
   private logoErrors: Record<LogoVariant, string | undefined> = { square: undefined, wide: undefined };
 
@@ -207,6 +202,9 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy {
       // arms below -- so the initial preview paint needs this explicit one-time call.
       this.paintPreview(branding.primaryColor, branding.secondaryColor);
       this.updateContrastWarning(branding.primaryColor);
+      // By this point the aside has stamped #inspectorTpl (same timing paintPreview above
+      // relies on for #previewContainer), so the aside-only refs below are resolved too.
+      this.setupSizeSync();
     });
 
     this.setupService
@@ -243,7 +241,10 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     if (this.mode === 'setup') {
-      this.inspectorService.register(this.inspectorTpl);
+      // hideFooter: false -- the aside only holds the Live Login Preview here (no nav), so the
+      // shared setup-shell footer stays visible and handles Previous/Next/Saved, matching the
+      // Stitch mockup's shared bottom bar instead of duplicating nav inside the narrow aside.
+      this.inspectorService.register(this.inspectorTpl, { hideFooter: false });
     }
   }
 
@@ -252,6 +253,28 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy {
     this.destroyed$.complete();
     this.brandingSubscription?.unsubscribe();
     this.inspectorService.clear();
+    this.sizeObserver?.disconnect();
+  }
+
+  // Keeps the aside's Live Login Preview card pixel-matched to the form card, and the invisible
+  // intro spacer above it pixel-matched to the real intro -- both live in a separate, narrower
+  // column (the shared inspector aside), so CSS alone can't make them track a sibling's size.
+  // Observes both source elements so any height change (contrast banner appearing, a field
+  // error, window resize, translation length) re-syncs instead of drifting.
+  private setupSizeSync(): void {
+    if (this.sizeObserver || this.mode !== 'setup' || !this.formCard || !this.introEl) {
+      return;
+    }
+    this.sizeObserver = new ResizeObserver(() => {
+      if (this.introSpacerEl) {
+        this.introSpacerEl.nativeElement.style.height = `${this.introEl.nativeElement.offsetHeight}px`;
+      }
+      if (this.previewCard) {
+        this.previewCard.nativeElement.style.height = `${this.formCard.nativeElement.offsetHeight}px`;
+      }
+    });
+    this.sizeObserver.observe(this.formCard.nativeElement);
+    this.sizeObserver.observe(this.introEl.nativeElement);
   }
 
   setColor(control: 'primaryColor' | 'secondaryColor', value: string): void {

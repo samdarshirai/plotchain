@@ -193,6 +193,17 @@ export class CompanyProfileStepComponent implements OnInit, AfterViewInit, OnDes
         this.stepCount = state.steps.length;
       });
 
+    // GSTIN is canonically uppercase; users routinely type it lowercase. Without normalizing here,
+    // a lowercase entry fails the uppercase-only pattern (matching the backend's), which fails
+    // form.valid, which silently blocks the debounced autosave below for every field -- not just
+    // this one.
+    this.form.get('registrationNumber')?.valueChanges.pipe(takeUntil(this.destroyed$)).subscribe(value => {
+      const upper = (value ?? '').toUpperCase();
+      if (upper !== value) {
+        this.form.get('registrationNumber')?.setValue(upper, { emitEvent: false });
+      }
+    });
+
     this.form.valueChanges.pipe(takeUntil(this.destroyed$), debounceTime(400)).subscribe(() => {
       this.savedJustNow = false;
       this.inspectorService.setSaved(false);
