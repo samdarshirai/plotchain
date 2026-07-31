@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { take } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from './auth.service';
 import { ADMIN_FAMILY_ROLES } from '../admin/admin.guard';
@@ -48,7 +49,7 @@ export class ChangePasswordComponent {
       next: () => {
         const role = this.authService.getRole();
         if (role && ADMIN_FAMILY_ROLES.has(role)) {
-          this.setupService.getState().subscribe(state => {
+          this.setupService.getState().pipe(take(1)).subscribe(state => {
             if (!state.launchedAt) {
               this.router.navigate(['/setup', this.setupService.firstIncompleteStepPath(state)]);
             } else {

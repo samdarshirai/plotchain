@@ -454,7 +454,7 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     // clicking "+ Add" doesn't fire an autosave that is guaranteed to fail validation.
     this.royaltyRows = rows;
     this.recomputeSampleEarnings();
-    if (rows.every(isCompleteRoyaltyRow)) {
+    if (rows.length > 0 && rows.every(isCompleteRoyaltyRow)) {
       this.rowsChanged$.next();
     }
   }
@@ -462,7 +462,7 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
   onRewardTierRowsChange(rows: Record<string, string | number>[]): void {
     this.rewardTierRows = rows;
     this.recomputeSampleEarnings();
-    if (rows.every(isCompleteRewardTierRow)) {
+    if (rows.length > 0 && rows.every(isCompleteRewardTierRow)) {
       this.rowsChanged$.next();
     }
   }

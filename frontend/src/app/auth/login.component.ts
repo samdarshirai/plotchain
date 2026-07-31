@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { take } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from './auth.service';
 import { SetupService } from '../setup/setup.service';
@@ -93,7 +94,7 @@ export class LoginComponent implements OnInit {
           return;
         }
         if (ADMIN_FAMILY_ROLES.has(response.role)) {
-          this.setupService.getState().subscribe(state => {
+          this.setupService.getState().pipe(take(1)).subscribe(state => {
             if (!state.launchedAt) {
               this.router.navigate(['/setup', this.setupService.firstIncompleteStepPath(state)]);
             } else {
