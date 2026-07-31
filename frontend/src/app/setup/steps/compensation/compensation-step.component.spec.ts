@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TemplateRef } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -6,7 +7,9 @@ import { TranslateModule } from '@ngx-translate/core';
 import { CompensationStepComponent } from './compensation-step.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SetupService } from '../../setup.service';
+import { SetupInspectorService } from '../../setup-inspector.service';
 import { CompensationPlanResponse } from '../../models/compensation-plan.model';
+import { SetupStateResponse } from '../../models/setup-state.model';
 
 describe('CompensationStepComponent', () => {
   let fixture: ComponentFixture<CompensationStepComponent>;
@@ -37,6 +40,29 @@ describe('CompensationStepComponent', () => {
     createdAt: '2026-01-01T00:00:00Z'
   };
 
+  const setupState: SetupStateResponse = {
+    steps: [
+      { number: 1, key: 'companyProfile', complete: true, required: true, percentComplete: 100 },
+      { number: 2, key: 'branding', complete: true, required: true, percentComplete: 100 },
+      { number: 3, key: 'compensation', complete: false, required: true, percentComplete: 0 }
+    ],
+    canGoLive: false,
+    launchedAt: null
+  };
+
+  // The Earnings Simulator lives in <ng-template #inspectorTpl>, which in the real app is only
+  // instantiated by SetupInspectorAsideComponent's *ngTemplateOutlet inside the shell -- there's
+  // no shell/aside here, so it must be rendered directly via the TemplateRef to assert on its
+  // content (same reasoning as branding-step.component.spec.ts stubbing #previewContainer).
+  function renderInspectorTemplate(): HTMLElement {
+    const tpl = (fixture.componentInstance as unknown as { inspectorTpl: TemplateRef<unknown> }).inspectorTpl;
+    const view = tpl.createEmbeddedView({});
+    view.detectChanges();
+    const container = document.createElement('div');
+    view.rootNodes.forEach(node => container.appendChild(node));
+    return container;
+  }
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [CompensationStepComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
@@ -47,6 +73,7 @@ describe('CompensationStepComponent', () => {
     setupService = TestBed.inject(SetupService);
     fixture.detectChanges();
     httpMock.expectOne('/api/company/compensation').flush(emptyPlan);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
     fixture.detectChanges();
   });
 
@@ -69,28 +96,29 @@ describe('CompensationStepComponent', () => {
     httpMock.expectNone('/api/company/compensation');
   }));
 
-  it('recomputes the Sample Earnings Preview synchronously on a stat-tile edit, and separately autosaves after 400ms', fakeAsync(() => {
-    const finalEarningsEl: HTMLElement = fixture.nativeElement.querySelector('.compensation-step__final-earnings');
-    const before = finalEarningsEl.textContent;
+  it('recomputes the Earnings Simulator synchronously on a stat-tile edit, and separately autosaves after 400ms', fakeAsync(() => {
     const beforeValue = fixture.componentInstance.sampleEarnings?.finalEarnings;
 
     fixture.componentInstance.form.get('directIncomePct')?.setValue(50);
-    fixture.detectChanges();
 
     // No tick() -- the undebounced valueChanges subscription recomputes synchronously.
     expect(fixture.componentInstance.sampleEarnings?.finalEarnings).not.toEqual(beforeValue);
-    expect(finalEarningsEl.textContent).not.toEqual(before);
 
     httpMock.expectNone('/api/company/compensation');
     tick(400);
     const req = httpMock.expectOne('/api/company/compensation');
     expect(req.request.method).toBe('PUT');
     req.flush({ ...emptyPlan, directIncomePct: 50 });
+    // The save's success handler calls setupService.refresh(), which re-fires the shared
+    // GET /api/company/setup-state (shareReplay only skips the request when replaying a
+    // cached value to a new subscriber, not when the source itself is asked to refresh).
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
   }));
 
-  it('renders the sample earnings preview with the rupee symbol', () => {
-    const finalEarningsEl: HTMLElement = fixture.nativeElement.querySelector('.compensation-step__final-earnings');
-    expect(finalEarningsEl.textContent).toContain('₹');
+  it('renders the Earnings Simulator total with the rupee symbol', () => {
+    const el = renderInspectorTemplate();
+    const finalEarningsEl = el.querySelector('.compensation-step__final-earnings');
+    expect(finalEarningsEl?.textContent).toContain('₹');
   });
 
   it('autosaves from a table-only edit, sending royaltyBonusRates/rewardTiers with tierLevel derived by row index', fakeAsync(() => {
@@ -112,6 +140,7 @@ describe('CompensationStepComponent', () => {
       { tierLevel: 1, volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy' }
     ]);
     req.flush(emptyPlan);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
   }));
 
   it("surfaces the backend's own message on a 409 rather than a hardcoded guess", fakeAsync(() => {
@@ -204,6 +233,7 @@ describe('CompensationStepComponent', () => {
     expect(req.request.method).toBe('PUT');
     expect(req.request.body.rewardTiers.length).toBe(3);
     req.flush(emptyPlan);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
   }));
 
   it('does not autosave a blank royalty row with no rank selected, but does once a rank is picked', fakeAsync(() => {
@@ -223,6 +253,7 @@ describe('CompensationStepComponent', () => {
       { rankId: 'rank-2', royaltyPct: 0 }
     ]);
     req.flush(emptyPlan);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
   }));
 
   it('blocks autosave entirely when the initial plan load fails, so defaults are never written back', fakeAsync(() => {
@@ -231,6 +262,9 @@ describe('CompensationStepComponent', () => {
     httpMock
       .expectOne('/api/company/compensation')
       .flush({ error: 'boom' }, { status: 500, statusText: 'Server Error' });
+    // No second GET /api/company/setup-state here: SetupService.getState() is shareReplay(1)'d,
+    // so this second component instance's subscription replays the cached response from this
+    // spec's beforeEach load rather than issuing a new request.
 
     const component = failedFixture.componentInstance;
     expect(component.loadFailed).toBeTrue();
@@ -272,5 +306,27 @@ describe('CompensationStepComponent', () => {
     fixture.detectChanges();
     const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
     expect(nav.componentInstance.mode).toBe('settings');
+  });
+
+  it('registers its inspector template (Earnings Simulator) with SetupInspectorService in setup mode', () => {
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    spyOn(inspectorService, 'register');
+    fixture.componentInstance.ngAfterViewInit();
+    expect(inspectorService.register).toHaveBeenCalledWith(jasmine.anything(), { hideFooter: false });
+  });
+
+  it('does not register an inspector template in settings mode', () => {
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    spyOn(inspectorService, 'register');
+    fixture.componentInstance.mode = 'settings';
+    fixture.componentInstance.ngAfterViewInit();
+    expect(inspectorService.register).not.toHaveBeenCalled();
+  });
+
+  it('clears the inspector template on destroy', () => {
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    spyOn(inspectorService, 'clear');
+    fixture.destroy();
+    expect(inspectorService.clear).toHaveBeenCalled();
   });
 });

@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
+import { AfterViewInit, Component, Input, OnDestroy, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -72,171 +72,244 @@ const RENDERED_FIELD_ERROR_KEYS = [
     SetupStepNavComponent
   ],
   template: `
-    <div class="compensation-step step-grid">
-      <form class="card" [formGroup]="form">
-        <h1 class="card-title">{{ 'setup.steps.compensation' | translate }}</h1>
+    <div class="compensation-step">
+      <div class="compensation-step__intro">
+        <span class="compensation-step__eyebrow">
+          {{ 'setup.compensation.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
+        </span>
+        <h1 class="compensation-step__title">{{ 'setup.steps.compensation' | translate }}</h1>
+        <p class="compensation-step__subtitle">{{ 'setup.compensation.subtitle' | translate }}</p>
+      </div>
 
+      <form class="card compensation-step__card" [formGroup]="form">
         <app-inline-banner tone="warning">
           {{ 'setup.compensation.versioningNotice' | translate }}
         </app-inline-banner>
 
-        <div class="compensation-step__stat-tiles">
-          <app-stat-tile
-            [label]="'setup.compensation.directIncomeLabel' | translate"
-            [value]="(form.value.directIncomePct ?? 0) + '%'"
-          >
-            <input
-              tile-editor
-              type="number"
-              formControlName="directIncomePct"
-              (blur)="markTouched('directIncomePct')"
-            />
-          </app-stat-tile>
-          <app-field-error [message]="fieldError('directIncomePct')"></app-field-error>
+        <section class="compensation-step__section">
+          <h2 class="compensation-step__section-title">
+            <span class="material-symbols-outlined">payments</span>
+            {{ 'setup.compensation.sections.incomeRules' | translate }}
+          </h2>
 
-          <app-stat-tile
-            [label]="'setup.compensation.matchingIncomeLabel' | translate"
-            [value]="(form.value.matchingIncomePct ?? 0) + '%'"
-          >
-            <input
-              tile-editor
-              type="number"
-              formControlName="matchingIncomePct"
-              (blur)="markTouched('matchingIncomePct')"
-            />
-          </app-stat-tile>
-          <app-field-error [message]="fieldError('matchingIncomePct')"></app-field-error>
+          <div class="compensation-step__row compensation-step__row--stats">
+            <div class="compensation-step__stat">
+              <app-stat-tile
+                [label]="'setup.compensation.directIncomeLabel' | translate"
+                [value]="(form.value.directIncomePct ?? 0) + '%'"
+              >
+                <input
+                  tile-editor
+                  type="number"
+                  formControlName="directIncomePct"
+                  (blur)="markTouched('directIncomePct')"
+                />
+              </app-stat-tile>
+              <app-field-error [message]="fieldError('directIncomePct')"></app-field-error>
+            </div>
 
-          <app-stat-tile
-            [label]="'setup.compensation.sponsorMatchingLabel' | translate"
-            [value]="(form.value.sponsorMatchingPct ?? 0) + '%'"
-          >
-            <input
-              tile-editor
-              type="number"
-              formControlName="sponsorMatchingPct"
-              (blur)="markTouched('sponsorMatchingPct')"
-            />
-          </app-stat-tile>
-          <app-field-error [message]="fieldError('sponsorMatchingPct')"></app-field-error>
-        </div>
+            <div class="compensation-step__stat">
+              <app-stat-tile
+                tone="accent"
+                [label]="'setup.compensation.matchingIncomeLabel' | translate"
+                [value]="(form.value.matchingIncomePct ?? 0) + '%'"
+              >
+                <input
+                  tile-editor
+                  type="number"
+                  formControlName="matchingIncomePct"
+                  (blur)="markTouched('matchingIncomePct')"
+                />
+              </app-stat-tile>
+              <app-field-error [message]="fieldError('matchingIncomePct')"></app-field-error>
+            </div>
 
-        <label>
-          {{ 'setup.compensation.royaltyTableLabel' | translate }}
-          <app-editable-table
-            [columns]="royaltyColumns"
-            [rows]="royaltyRows"
-            [addRowLabel]="'setup.compensation.addRoyaltyRowLabel' | translate"
-            [removeRowLabel]="'setup.compensation.removeRowLabel' | translate"
-            [emptyStateLabel]="'setup.compensation.royaltyEmptyLabel' | translate"
-            (rowsChange)="onRoyaltyRowsChange($event)"
-          ></app-editable-table>
-        </label>
+            <div class="compensation-step__stat">
+              <app-stat-tile
+                [label]="'setup.compensation.sponsorMatchingLabel' | translate"
+                [value]="(form.value.sponsorMatchingPct ?? 0) + '%'"
+              >
+                <input
+                  tile-editor
+                  type="number"
+                  formControlName="sponsorMatchingPct"
+                  (blur)="markTouched('sponsorMatchingPct')"
+                />
+              </app-stat-tile>
+              <app-field-error [message]="fieldError('sponsorMatchingPct')"></app-field-error>
+            </div>
+          </div>
+        </section>
 
-        <label>
-          {{ 'setup.compensation.rewardTiersLabel' | translate }}
-          <app-editable-table
-            [columns]="rewardTierColumns"
-            [rows]="rewardTierRows"
-            [addRowLabel]="'setup.compensation.addRewardTierRowLabel' | translate"
-            [removeRowLabel]="'setup.compensation.removeRowLabel' | translate"
-            [emptyStateLabel]="'setup.compensation.rewardTiersEmptyLabel' | translate"
-            (rowsChange)="onRewardTierRowsChange($event)"
-          ></app-editable-table>
-        </label>
+        <section class="compensation-step__section">
+          <div class="compensation-step__row compensation-step__row--split">
+            <div class="compensation-step__subcard">
+              <h3 class="compensation-step__section-title">
+                <span class="material-symbols-outlined">military_tech</span>
+                {{ 'setup.compensation.sections.rewardTiers' | translate }}
+              </h3>
+              <app-editable-table
+                [columns]="rewardTierColumns"
+                [rows]="rewardTierRows"
+                [addRowLabel]="'setup.compensation.addRewardTierRowLabel' | translate"
+                [removeRowLabel]="'setup.compensation.removeRowLabel' | translate"
+                [emptyStateLabel]="'setup.compensation.rewardTiersEmptyLabel' | translate"
+                (rowsChange)="onRewardTierRowsChange($event)"
+              ></app-editable-table>
+            </div>
 
-        <label>
-          {{ 'setup.compensation.settlementCycleLabel' | translate }}
-          <app-toggle-group
-            [options]="settlementCycleOptions"
-            [value]="form.value.settlementCycle || null"
-            (valueChange)="setSettlementCycle($event)"
-          ></app-toggle-group>
-        </label>
+            <div class="compensation-step__subcard">
+              <h3 class="compensation-step__section-title">
+                <span class="material-symbols-outlined">workspace_premium</span>
+                {{ 'setup.compensation.sections.globalRoyalty' | translate }}
+              </h3>
+              <app-editable-table
+                [columns]="royaltyColumns"
+                [rows]="royaltyRows"
+                [addRowLabel]="'setup.compensation.addRoyaltyRowLabel' | translate"
+                [removeRowLabel]="'setup.compensation.removeRowLabel' | translate"
+                [emptyStateLabel]="'setup.compensation.royaltyEmptyLabel' | translate"
+                (rowsChange)="onRoyaltyRowsChange($event)"
+              ></app-editable-table>
+            </div>
+          </div>
+        </section>
 
-        <label>
-          {{ 'setup.compensation.tdsLabel' | translate }}
-          <input type="number" formControlName="tdsPct" (blur)="markTouched('tdsPct')" />
-        </label>
-        <app-field-error [message]="fieldError('tdsPct')"></app-field-error>
+        <section class="compensation-step__section">
+          <h2 class="compensation-step__section-title">
+            <span class="material-symbols-outlined">account_balance</span>
+            {{ 'setup.compensation.sections.feesSettlement' | translate }}
+          </h2>
 
-        <label>
-          {{ 'setup.compensation.adminChargeWithPanLabel' | translate }}
-          <input type="number" formControlName="adminChargeWithPanPct" (blur)="markTouched('adminChargeWithPanPct')" />
-        </label>
-        <app-field-error [message]="fieldError('adminChargeWithPanPct')"></app-field-error>
+          <label>
+            {{ 'setup.compensation.settlementCycleLabel' | translate }}
+            <app-toggle-group
+              [options]="settlementCycleOptions"
+              [value]="form.value.settlementCycle || null"
+              (valueChange)="setSettlementCycle($event)"
+            ></app-toggle-group>
+          </label>
 
-        <label>
-          {{ 'setup.compensation.adminChargeWithoutPanLabel' | translate }}
-          <input
-            type="number"
-            formControlName="adminChargeWithoutPanPct"
-            (blur)="markTouched('adminChargeWithoutPanPct')"
-          />
-        </label>
-        <app-field-error [message]="fieldError('adminChargeWithoutPanPct')"></app-field-error>
+          <div class="compensation-step__row">
+            <label>
+              {{ 'setup.compensation.tdsLabel' | translate }}
+              <input type="number" formControlName="tdsPct" (blur)="markTouched('tdsPct')" />
+            </label>
+            <label>
+              {{ 'setup.compensation.adminChargeWithPanLabel' | translate }}
+              <input
+                type="number"
+                formControlName="adminChargeWithPanPct"
+                (blur)="markTouched('adminChargeWithPanPct')"
+              />
+            </label>
+          </div>
+          <div class="compensation-step__field-errors">
+            <app-field-error [message]="fieldError('tdsPct')"></app-field-error>
+            <app-field-error [message]="fieldError('adminChargeWithPanPct')"></app-field-error>
+          </div>
 
-        <label>
-          {{ 'setup.compensation.activationFeeLabel' | translate }}
-          <input type="number" formControlName="activationFee" (blur)="markTouched('activationFee')" />
-        </label>
-        <app-field-error [message]="fieldError('activationFee')"></app-field-error>
+          <div class="compensation-step__row">
+            <label>
+              {{ 'setup.compensation.adminChargeWithoutPanLabel' | translate }}
+              <input
+                type="number"
+                formControlName="adminChargeWithoutPanPct"
+                (blur)="markTouched('adminChargeWithoutPanPct')"
+              />
+            </label>
+            <label>
+              {{ 'setup.compensation.activationFeeLabel' | translate }}
+              <input type="number" formControlName="activationFee" (blur)="markTouched('activationFee')" />
+            </label>
+          </div>
+          <div class="compensation-step__field-errors">
+            <app-field-error [message]="fieldError('adminChargeWithoutPanPct')"></app-field-error>
+            <app-field-error [message]="fieldError('activationFee')"></app-field-error>
+          </div>
 
-        <label>
-          {{ 'setup.compensation.minWithdrawalLabel' | translate }}
-          <input type="number" formControlName="minWithdrawal" (blur)="markTouched('minWithdrawal')" />
-        </label>
-        <app-field-error [message]="fieldError('minWithdrawal')"></app-field-error>
+          <label>
+            {{ 'setup.compensation.minWithdrawalLabel' | translate }}
+            <input type="number" formControlName="minWithdrawal" (blur)="markTouched('minWithdrawal')" />
+          </label>
+          <app-field-error [message]="fieldError('minWithdrawal')"></app-field-error>
+        </section>
 
         <app-inline-banner *ngIf="submitError" tone="danger">{{ submitError }}</app-inline-banner>
 
         <app-setup-step-nav *ngIf="mode === 'settings'" [savedJustNow]="savedJustNow" [mode]="mode"></app-setup-step-nav>
       </form>
+    </div>
 
-      <div class="card compensation-step__preview">
-        <p class="card-subtitle">{{ 'setup.compensation.sampleEarningsTitle' | translate }}</p>
+    <ng-template #inspectorTpl>
+      <div class="compensation-step__aside-column">
+        <div class="compensation-step__intro compensation-step__intro--spacer" aria-hidden="true">
+          <span class="compensation-step__eyebrow">
+            {{ 'setup.compensation.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
+          </span>
+          <h1 class="compensation-step__title">{{ 'setup.steps.compensation' | translate }}</h1>
+          <p class="compensation-step__subtitle">{{ 'setup.compensation.subtitle' | translate }}</p>
+        </div>
 
-        <label>
-          {{ 'setup.compensation.scenarioVolumeLabel' | translate }}
-          <input type="number" [value]="scenarioVolume" (input)="setScenarioVolume($event)" />
-        </label>
+        <div class="compensation-step__simulator">
+          <h4 class="compensation-step__simulator-title">
+            <span class="material-symbols-outlined">calculate</span>
+            {{ 'setup.compensation.sections.earningsSimulator' | translate }}
+          </h4>
 
-        <label>
-          <input type="checkbox" [checked]="hasPan" (change)="setHasPan($event)" />
-          {{ 'setup.compensation.hasPanLabel' | translate }}
-        </label>
+          <label class="compensation-step__simulator-field">
+            {{ 'setup.compensation.scenarioVolumeLabel' | translate }}
+            <input type="number" [value]="scenarioVolume" (input)="setScenarioVolume($event)" />
+          </label>
 
-        <dl class="compensation-step__earnings" *ngIf="sampleEarnings as earnings">
-          <dt>{{ 'setup.compensation.directIncomeLineLabel' | translate }}</dt>
-          <dd>{{ earnings.directIncome | currency:'INR':'symbol':'1.0-2' }}</dd>
+          <label class="compensation-step__simulator-checkbox">
+            <input type="checkbox" [checked]="hasPan" (change)="setHasPan($event)" />
+            {{ 'setup.compensation.hasPanLabel' | translate }}
+          </label>
 
-          <dt>{{ 'setup.compensation.matchingIncomeLineLabel' | translate }}</dt>
-          <dd>{{ earnings.matchingIncome | currency:'INR':'symbol':'1.0-2' }}</dd>
+          <dl class="compensation-step__simulator-breakdown" *ngIf="sampleEarnings as earnings">
+            <div class="compensation-step__simulator-line">
+              <dt>{{ 'setup.compensation.directIncomeLineLabel' | translate }}</dt>
+              <dd>{{ earnings.directIncome | currency:'INR':'symbol':'1.0-2' }}</dd>
+            </div>
+            <div class="compensation-step__simulator-line">
+              <dt>{{ 'setup.compensation.matchingIncomeLineLabel' | translate }}</dt>
+              <dd>{{ earnings.matchingIncome | currency:'INR':'symbol':'1.0-2' }}</dd>
+            </div>
+            <div class="compensation-step__simulator-line">
+              <dt>{{ 'setup.compensation.sponsorBonusLineLabel' | translate }}</dt>
+              <dd>{{ earnings.sponsorBonus | currency:'INR':'symbol':'1.0-2' }}</dd>
+            </div>
+            <div class="compensation-step__simulator-line">
+              <dt>{{ 'setup.compensation.royaltyBonusLineLabel' | translate }}</dt>
+              <dd>{{ earnings.royaltyBonus | currency:'INR':'symbol':'1.0-2' }}</dd>
+            </div>
+            <div class="compensation-step__simulator-line">
+              <dt>{{ 'setup.compensation.grossIncomeLineLabel' | translate }}</dt>
+              <dd>{{ earnings.grossIncome | currency:'INR':'symbol':'1.0-2' }}</dd>
+            </div>
+            <div class="compensation-step__simulator-line">
+              <dt>{{ 'setup.compensation.adminChargeLineLabel' | translate }}</dt>
+              <dd>{{ earnings.adminCharge | currency:'INR':'symbol':'1.0-2' }}</dd>
+            </div>
+            <div class="compensation-step__simulator-line">
+              <dt>{{ 'setup.compensation.tdsLineLabel' | translate }}</dt>
+              <dd>{{ earnings.tds | currency:'INR':'symbol':'1.0-2' }}</dd>
+            </div>
+          </dl>
 
-          <dt>{{ 'setup.compensation.sponsorBonusLineLabel' | translate }}</dt>
-          <dd>{{ earnings.sponsorBonus | currency:'INR':'symbol':'1.0-2' }}</dd>
-
-          <dt>{{ 'setup.compensation.royaltyBonusLineLabel' | translate }}</dt>
-          <dd>{{ earnings.royaltyBonus | currency:'INR':'symbol':'1.0-2' }}</dd>
-
-          <dt>{{ 'setup.compensation.grossIncomeLineLabel' | translate }}</dt>
-          <dd>{{ earnings.grossIncome | currency:'INR':'symbol':'1.0-2' }}</dd>
-
-          <dt>{{ 'setup.compensation.adminChargeLineLabel' | translate }}</dt>
-          <dd>{{ earnings.adminCharge | currency:'INR':'symbol':'1.0-2' }}</dd>
-
-          <dt>{{ 'setup.compensation.tdsLineLabel' | translate }}</dt>
-          <dd>{{ earnings.tds | currency:'INR':'symbol':'1.0-2' }}</dd>
-        </dl>
-
-        <div class="compensation-step__final-earnings" *ngIf="sampleEarnings as earnings">
-          {{ 'setup.compensation.finalEarningsLineLabel' | translate }}: {{ earnings.finalEarnings | currency:'INR':'symbol':'1.0-2' }}
+          <div class="compensation-step__simulator-total" *ngIf="sampleEarnings as earnings">
+            <span>{{ 'setup.compensation.finalEarningsLineLabel' | translate }}</span>
+            <strong class="compensation-step__final-earnings">
+              {{ earnings.finalEarnings | currency:'INR':'symbol':'1.0-2' }}
+            </strong>
+          </div>
         </div>
       </div>
-    </div>
+    </ng-template>
   `
 })
-export class CompensationStepComponent implements OnInit, OnDestroy {
+export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestroy {
   private fb = inject(FormBuilder);
   private compensationPlanService = inject(CompensationPlanService);
   private setupService = inject(SetupService);
@@ -248,6 +321,8 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
   // royaltyRows/rewardTierRows aren't form controls, so they don't flow through
   // form.valueChanges -- this feeds their edits into the same debounced save arm.
   private rowsChanged$ = new Subject<void>();
+
+  @ViewChild('inspectorTpl') private inspectorTpl!: TemplateRef<unknown>;
 
   // nonNullable so getRawValue() is assignable to CompensationPlanRequest without a cast -- the
   // cast that previously hid effectiveFrom being missing from the payload entirely.
@@ -269,7 +344,7 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
   rewardTierRows: Record<string, string | number>[] = [];
   availableRanks: RankOption[] = [];
 
-  // Local-only inputs for the Sample Earnings Preview -- never persisted/saved.
+  // Local-only inputs for the Earnings Simulator -- never persisted/saved.
   scenarioVolume = DEFAULT_SCENARIO_VOLUME;
   hasPan = true;
   sampleEarnings: SampleEarningsResult | null = null;
@@ -277,6 +352,8 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
   @Input() mode: 'setup' | 'settings' = 'setup';
 
   savedJustNow = false;
+  stepNumber = 1;
+  stepCount = 1;
   submitError: string | null = null;
   // Set when the initial GET fails. Without it the form would keep its constructor-default
   // zeros and the very next keystroke's autosave would PUT those zeros over the live plan.
@@ -303,7 +380,16 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Undebounced: instant, local-only Sample Earnings Preview repaint, no network.
+    this.setupService
+      .getState()
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(state => {
+        const step = state.steps.find(s => s.key === 'compensation');
+        this.stepNumber = step?.number ?? 1;
+        this.stepCount = state.steps.length;
+      });
+
+    // Undebounced: instant, local-only Earnings Simulator repaint, no network.
     this.form.valueChanges.pipe(takeUntil(this.destroyed$)).subscribe(() => this.recomputeSampleEarnings());
 
     // Debounced: same cadence as the other steps' autosave. Also fed by rowsChanged$ so that
@@ -319,10 +405,20 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
       });
   }
 
+  ngAfterViewInit(): void {
+    if (this.mode === 'setup') {
+      // hideFooter: false -- the aside only holds the Earnings Simulator here (no nav), so the
+      // shared setup-shell footer stays visible and handles Previous/Next/Saved, matching the
+      // Stitch mockup's shared bottom bar.
+      this.inspectorService.register(this.inspectorTpl, { hideFooter: false });
+    }
+  }
+
   ngOnDestroy(): void {
     this.destroyed$.next();
     this.destroyed$.complete();
     this.planSubscription?.unsubscribe();
+    this.inspectorService.clear();
   }
 
   get royaltyColumns(): EditableTableColumn[] {

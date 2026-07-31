@@ -119,6 +119,15 @@
       }
     },
     "compensation": {
+      "stepEyebrowLabel": "Step {{number}} of {{count}}",
+      "subtitle": "Configure multi-tier income rules, royalty distributions, and performance-based rewards. Changes are simulated in the right-hand panel for real-time validation.",
+      "sections": {
+        "incomeRules": "Income Rules",
+        "rewardTiers": "Reward Tiers",
+        "globalRoyalty": "Global Royalty",
+        "feesSettlement": "Fees & Settlement",
+        "earningsSimulator": "Earnings Simulator"
+      },
       "versioningNotice": "Changes here apply to future cycles only. Past payouts are never recalculated.",
       "directIncomeLabel": "Direct Income %",
       "matchingIncomeLabel": "Matching Income %",

@@ -119,6 +119,15 @@
       }
     },
     "compensation": {
+      "stepEyebrowLabel": "चरण {{number}} / {{count}}",
+      "subtitle": "बहु-स्तरीय आय नियम, रॉयल्टी वितरण, और प्रदर्शन-आधारित पुरस्कार कॉन्फ़िगर करें। परिवर्तन दाईं ओर के पैनल में वास्तविक समय में सिम्युलेट किए जाते हैं।",
+      "sections": {
+        "incomeRules": "आय नियम",
+        "rewardTiers": "रिवॉर्ड टियर",
+        "globalRoyalty": "ग्लोबल रॉयल्टी",
+        "feesSettlement": "शुल्क और निपटान",
+        "earningsSimulator": "आय सिम्युलेटर"
+      },
       "versioningNotice": "यहां किए गए परिवर्तन केवल भविष्य के चक्रों पर लागू होंगे। पिछले भुगतानों की दोबारा गणना कभी नहीं की जाती।",
       "directIncomeLabel": "प्रत्यक्ष आय %",
       "matchingIncomeLabel": "मैचिंग आय %",

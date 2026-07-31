@@ -84,10 +84,13 @@ app-setup-inspector-aside {
 }
 
 .setup-inspector-aside {
-  flex: 0 0 320px;
-  width: 320px;
+  flex: 0 0 440px;
+  width: 440px;
   height: 100%;
-  padding: 2rem 1.5rem;
+  // Top/bottom padding matches .setup-shell__content's (1.5rem) so aside content that mirrors
+  // the main column's intro block (e.g. branding's spacer-synced Live Login Preview) lines up
+  // exactly instead of sitting a few pixels lower.
+  padding: 1.5rem;
   overflow-y: auto;
   min-height: 0;
 }
@@ -545,21 +548,24 @@ app-setup-inspector-aside {
   display: flex;
   flex-direction: column;
   height: 100%;
-
-  // Pushes the Previous/Next nav (a stacked <app-setup-step-nav> host element, itself the flex
-  // item here) flush to the bottom of the column so it lines up with the form card's bottom edge.
-  app-setup-step-nav {
-    margin-top: auto;
-  }
+  // Matches .branding-step's own gap between its intro and card -- without it the preview card
+  // sits 1rem higher than the form card despite the intro spacer's height being synced.
+  gap: 1rem;
 }
 
-// Invisible duplicate of the real intro block, used purely to reserve the same vertical space
-// so the Live Login Preview's top edge lines up with the form card's top edge -- height tracks
-// the real intro (same markup/text) regardless of translation length or line-wrapping.
+// Invisible duplicate of the real intro block, purely to reserve the same vertical space so the
+// Live Login Preview's top edge lines up with the form card's top edge. The narrow aside column
+// wraps this text onto more lines than the wide main column does, so CSS alone can't make its
+// height match -- BrandingStepComponent's ResizeObserver (setupSizeSync) sets an explicit
+// inline height here each time the real intro's height changes, overriding the wrap-driven one.
 .branding-step__intro--spacer {
   visibility: hidden;
+  overflow: hidden;
 }
 
+// Height is set inline by BrandingStepComponent's ResizeObserver to match the form card's
+// rendered height exactly (see setupSizeSync) -- flex/min-height intentionally omitted so that
+// inline height isn't overridden by flex-basis sizing.
 .branding-step__preview {
   display: flex;
   flex-direction: column;
@@ -567,13 +573,248 @@ app-setup-inspector-aside {
 }
 
 .branding-step__login-preview {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: hidden auto;
 }
 
 @media (max-width: 700px) {
   .branding-step__logo-row,
   .branding-step__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.compensation-step {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 900px;
+}
+
+.compensation-step__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.compensation-step__eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--brand-primary);
+}
+
+.compensation-step__title {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.compensation-step__subtitle {
+  margin: 0;
+  max-width: 42rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.compensation-step__card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.compensation-step__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.compensation-step__section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+
+  .material-symbols-outlined {
+    font-size: 20px;
+    color: var(--brand-primary);
+  }
+}
+
+.compensation-step__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+// The three Income Rules stat tiles (Direct/Matching/Sponsor), matching the mockup's 3-up layout.
+.compensation-step__row--stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+// Reward Tiers + Global Royalty side by side.
+.compensation-step__row--split {
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+}
+
+.compensation-step__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.compensation-step__field-errors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+// Nested card for each half of the Reward Tiers / Global Royalty split -- a tone step above the
+// main card so the two tables read as distinct sub-panels without a full border.
+.compensation-step__subcard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+}
+
+.compensation-step__aside-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+}
+
+// Invisible duplicate of the real intro block, purely to reserve the same vertical space so the
+// Earnings Simulator's top edge lines up with the form card's top edge -- same technique as
+// company-profile-step__intro--spacer/branding-step__intro--spacer.
+.compensation-step__intro--spacer {
+  visibility: hidden;
+}
+
+// Elevated a tone above the surrounding aside (which sits directly on the page background) so it
+// reads as the mockup's dark "Earnings Simulator" panel, using the existing dark-theme tokens
+// rather than introducing new colors.
+.compensation-step__simulator {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-primary) 18%, transparent) inset;
+}
+
+.compensation-step__simulator-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+
+  .material-symbols-outlined {
+    font-size: 20px;
+    color: var(--brand-primary);
+  }
+}
+
+.compensation-step__simulator-field,
+.compensation-step__simulator-checkbox {
+  display: flex;
+  gap: 0.375rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.compensation-step__simulator-field {
+  flex-direction: column;
+}
+
+.compensation-step__simulator-checkbox {
+  flex-direction: row;
+  align-items: center;
+}
+
+.compensation-step__simulator-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.compensation-step__simulator-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 0.8rem;
+
+  dt {
+    margin: 0;
+    color: var(--text-muted);
+  }
+
+  dd {
+    margin: 0;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.compensation-step__simulator-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+
+  span {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+  }
+
+  strong {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--brand-primary);
+  }
+}
+
+@media (max-width: 900px) {
+  .compensation-step__row--stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .compensation-step__row,
+  .compensation-step__row--stats,
+  .compensation-step__row--split,
+  .compensation-step__field-errors {
     grid-template-columns: 1fr;
   }
 }
