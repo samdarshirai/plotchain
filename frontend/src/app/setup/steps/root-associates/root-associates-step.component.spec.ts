@@ -218,6 +218,27 @@ describe('RootAssociatesStepComponent', () => {
     expect(dangerBanner?.nativeElement.textContent).toContain('setup.rootAssociates.validation.alreadyExists');
   });
 
+  it('surfaces a 409 caused by unconfigured rank tiers with a distinct message', () => {
+    flushInitialLoad();
+    const component = fixture.componentInstance;
+    component.form.setValue({
+      name: 'Root Left',
+      phone: '9990001111',
+      seedRightRoot: false,
+      rightName: '',
+      rightPhone: ''
+    });
+    component.onSubmit();
+
+    const req = httpMock.expectOne('/api/company/root-associates');
+    req.flush(
+      { error: 'No rank tiers are configured; an associate cannot be created without a rank' },
+      { status: 409, statusText: 'Conflict' }
+    );
+
+    expect(component.submitError).toBe('setup.rootAssociates.validation.noRankTiersConfigured');
+  });
+
   it('wires the step-nav to the adjacent setup steps', () => {
     flushInitialLoad();
     const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));

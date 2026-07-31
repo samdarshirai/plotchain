@@ -4,6 +4,8 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from './auth.service';
+import { ADMIN_FAMILY_ROLES } from '../admin/admin.guard';
+import { SetupService } from '../setup/setup.service';
 
 @Component({
   selector: 'app-change-password',
@@ -29,6 +31,7 @@ export class ChangePasswordComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private setupService = inject(SetupService);
 
   form = this.fb.group({
     currentPassword: ['', Validators.required],
@@ -42,7 +45,20 @@ export class ChangePasswordComponent {
     }
     const { currentPassword, newPassword } = this.form.getRawValue();
     this.authService.changePassword(currentPassword!, newPassword!).subscribe({
-      next: () => this.router.navigate([this.authService.getRole() === 'ADMIN' ? '/admin/associates/new' : '/dashboard']),
+      next: () => {
+        const role = this.authService.getRole();
+        if (role && ADMIN_FAMILY_ROLES.has(role)) {
+          this.setupService.getState().subscribe(state => {
+            if (!state.launchedAt) {
+              this.router.navigate(['/setup', this.setupService.firstIncompleteStepPath(state)]);
+            } else {
+              this.router.navigate([role === 'ADMIN' ? '/admin/associates/new' : '/dashboard']);
+            }
+          });
+          return;
+        }
+        this.router.navigate(['/dashboard']);
+      },
       error: () => this.error = true
     });
   }

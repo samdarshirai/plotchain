@@ -235,6 +235,7 @@
         "required": "This field is required.",
         "rightFieldsRequired": "Right root name and phone are required when seeding a right root.",
         "alreadyExists": "A root associate already exists.",
+        "noRankTiersConfigured": "No ranks are configured yet. Contact support before creating a root associate.",
         "genericSaveError": "Something went wrong. Please try again."
       }
     },

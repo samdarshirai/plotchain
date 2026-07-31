@@ -88,6 +88,11 @@ describe('CompensationStepComponent', () => {
     req.flush({ ...emptyPlan, directIncomePct: 50 });
   }));
 
+  it('renders the sample earnings preview with the rupee symbol', () => {
+    const finalEarningsEl: HTMLElement = fixture.nativeElement.querySelector('.compensation-step__final-earnings');
+    expect(finalEarningsEl.textContent).toContain('₹');
+  });
+
   it('autosaves from a table-only edit, sending royaltyBonusRates/rewardTiers with tierLevel derived by row index', fakeAsync(() => {
     const component = fixture.componentInstance;
 

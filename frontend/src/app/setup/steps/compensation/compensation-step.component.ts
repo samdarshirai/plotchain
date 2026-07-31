@@ -207,29 +207,29 @@ const RENDERED_FIELD_ERROR_KEYS = [
 
         <dl class="compensation-step__earnings" *ngIf="sampleEarnings as earnings">
           <dt>{{ 'setup.compensation.directIncomeLineLabel' | translate }}</dt>
-          <dd>{{ earnings.directIncome | number: '1.0-2' }}</dd>
+          <dd>{{ earnings.directIncome | currency:'INR':'symbol':'1.0-2' }}</dd>
 
           <dt>{{ 'setup.compensation.matchingIncomeLineLabel' | translate }}</dt>
-          <dd>{{ earnings.matchingIncome | number: '1.0-2' }}</dd>
+          <dd>{{ earnings.matchingIncome | currency:'INR':'symbol':'1.0-2' }}</dd>
 
           <dt>{{ 'setup.compensation.sponsorBonusLineLabel' | translate }}</dt>
-          <dd>{{ earnings.sponsorBonus | number: '1.0-2' }}</dd>
+          <dd>{{ earnings.sponsorBonus | currency:'INR':'symbol':'1.0-2' }}</dd>
 
           <dt>{{ 'setup.compensation.royaltyBonusLineLabel' | translate }}</dt>
-          <dd>{{ earnings.royaltyBonus | number: '1.0-2' }}</dd>
+          <dd>{{ earnings.royaltyBonus | currency:'INR':'symbol':'1.0-2' }}</dd>
 
           <dt>{{ 'setup.compensation.grossIncomeLineLabel' | translate }}</dt>
-          <dd>{{ earnings.grossIncome | number: '1.0-2' }}</dd>
+          <dd>{{ earnings.grossIncome | currency:'INR':'symbol':'1.0-2' }}</dd>
 
           <dt>{{ 'setup.compensation.adminChargeLineLabel' | translate }}</dt>
-          <dd>{{ earnings.adminCharge | number: '1.0-2' }}</dd>
+          <dd>{{ earnings.adminCharge | currency:'INR':'symbol':'1.0-2' }}</dd>
 
           <dt>{{ 'setup.compensation.tdsLineLabel' | translate }}</dt>
-          <dd>{{ earnings.tds | number: '1.0-2' }}</dd>
+          <dd>{{ earnings.tds | currency:'INR':'symbol':'1.0-2' }}</dd>
         </dl>
 
         <div class="compensation-step__final-earnings" *ngIf="sampleEarnings as earnings">
-          {{ 'setup.compensation.finalEarningsLineLabel' | translate }}: {{ earnings.finalEarnings | number: '1.0-2' }}
+          {{ 'setup.compensation.finalEarningsLineLabel' | translate }}: {{ earnings.finalEarnings | currency:'INR':'symbol':'1.0-2' }}
         </div>
       </div>
     </div>

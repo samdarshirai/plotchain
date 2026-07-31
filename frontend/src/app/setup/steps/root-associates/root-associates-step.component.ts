@@ -218,7 +218,7 @@ export class RootAssociatesStepComponent implements OnInit {
           return;
         }
         if (err.status === 409) {
-          this.submitError = this.translate.instant('setup.rootAssociates.validation.alreadyExists');
+          this.submitError = this.messageForConflict(err.error?.error);
         } else if (err.status === 400) {
           this.submitError = this.translate.instant('setup.rootAssociates.validation.rightFieldsRequired');
         } else {
@@ -231,6 +231,13 @@ export class RootAssociatesStepComponent implements OnInit {
   dismissBanner(): void {
     this.createdLeft = null;
     this.createdRight = null;
+  }
+
+  private messageForConflict(backendMessage: string | undefined): string {
+    if (backendMessage === 'No rank tiers are configured; an associate cannot be created without a rank') {
+      return this.translate.instant('setup.rootAssociates.validation.noRankTiersConfigured');
+    }
+    return this.translate.instant('setup.rootAssociates.validation.alreadyExists');
   }
 
   private refreshSlots(): void {

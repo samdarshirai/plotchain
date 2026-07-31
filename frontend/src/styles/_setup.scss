@@ -176,6 +176,18 @@
   margin-top: 1.5rem;
 }
 
+.review-launch-step__terms-links {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.projects-step,
+.admin-team-step {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .setup-step-nav__saved {
   font-size: 0.8rem;
   color: var(--status-success);
