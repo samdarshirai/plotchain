@@ -301,6 +301,51 @@
     },
     "actions": {
       "save": "Save"
+    },
+    "sections": {
+      "companyProfile": "Company Profile",
+      "branding": "Branding",
+      "compensation": "Compensation Plan",
+      "projects": "Projects & Plots",
+      "paymentsKyc": "Payments & KYC",
+      "adminTeam": "Admin Team & Roles",
+      "rootAssociates": "Root Associate(s)",
+      "auditLog": "Audit Log"
+    },
+    "cards": {
+      "companyProfile": {
+        "actionLabel": "Edit"
+      },
+      "branding": {
+        "actionLabel": "Edit"
+      },
+      "compensation": {
+        "actionLabel": "Edit"
+      },
+      "projects": {
+        "actionLabel": "Manage"
+      },
+      "paymentsKyc": {
+        "actionLabel": "Edit"
+      },
+      "adminTeam": {
+        "actionLabel": "Manage"
+      },
+      "rootAssociates": {
+        "actionLabel": "Manage"
+      }
+    },
+    "compensationCard": {
+      "currentVersionLabel": "Current Version {{versionLabel}} (Effective {{effectiveFrom}})",
+      "viewHistoryLabel": "View History",
+      "historyPanelTitle": "Compensation Plan History"
+    },
+    "auditLog": {
+      "sectionFilterLabel": "Section",
+      "allSectionsOption": "All",
+      "systemActor": "System",
+      "previousPageAction": "Previous",
+      "nextPageAction": "Next"
     }
   },
   "legal": {

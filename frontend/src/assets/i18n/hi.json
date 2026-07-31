@@ -301,6 +301,51 @@
     },
     "actions": {
       "save": "सहेजें"
+    },
+    "sections": {
+      "companyProfile": "कंपनी प्रोफ़ाइल",
+      "branding": "ब्रांडिंग",
+      "compensation": "मुआवज़ा योजना",
+      "projects": "प्रोजेक्ट्स और प्लॉट्स",
+      "paymentsKyc": "भुगतान और केवाईसी",
+      "adminTeam": "एडमिन टीम और भूमिकाएं",
+      "rootAssociates": "रूट एसोसिएट(स)",
+      "auditLog": "ऑडिट लॉग"
+    },
+    "cards": {
+      "companyProfile": {
+        "actionLabel": "संपादित करें"
+      },
+      "branding": {
+        "actionLabel": "संपादित करें"
+      },
+      "compensation": {
+        "actionLabel": "संपादित करें"
+      },
+      "projects": {
+        "actionLabel": "प्रबंधित करें"
+      },
+      "paymentsKyc": {
+        "actionLabel": "संपादित करें"
+      },
+      "adminTeam": {
+        "actionLabel": "प्रबंधित करें"
+      },
+      "rootAssociates": {
+        "actionLabel": "प्रबंधित करें"
+      }
+    },
+    "compensationCard": {
+      "currentVersionLabel": "वर्तमान संस्करण {{versionLabel}} (प्रभावी {{effectiveFrom}})",
+      "viewHistoryLabel": "इतिहास देखें",
+      "historyPanelTitle": "मुआवज़ा योजना इतिहास"
+    },
+    "auditLog": {
+      "sectionFilterLabel": "अनुभाग",
+      "allSectionsOption": "सभी",
+      "systemActor": "सिस्टम",
+      "previousPageAction": "पिछला",
+      "nextPageAction": "अगला"
     }
   },
   "legal": {
