@@ -16,6 +16,8 @@ import { RootAssociatesStepComponent } from './setup/steps/root-associates/root-
 import { ProjectsStepComponent } from './setup/steps/projects/projects-step.component';
 import { ReviewLaunchStepComponent } from './setup/steps/review-launch/review-launch-step.component';
 import { SettingsShellComponent } from './settings/settings-shell.component';
+import { SettingsOverviewComponent } from './settings/settings-overview.component';
+import { AuditLogComponent } from './settings/audit-log/audit-log.component';
 import { TermsOfServiceComponent } from './legal/terms-of-service.component';
 import { PrivacyPolicyComponent } from './legal/privacy-policy.component';
 
@@ -42,6 +44,21 @@ export const routes: Routes = [
       { path: '', redirectTo: 'company-profile', pathMatch: 'full' }
     ]
   },
-  { path: 'settings', component: SettingsShellComponent, canActivate: [authGuard, adminGuard, launchedModeGuard] },
+  {
+    path: 'settings',
+    component: SettingsShellComponent,
+    canActivate: [authGuard, adminGuard, launchedModeGuard],
+    children: [
+      { path: '', component: SettingsOverviewComponent, pathMatch: 'full' },
+      { path: 'company-profile', component: CompanyProfileStepComponent, data: { sectionKey: 'companyProfile', mode: 'settings' } },
+      { path: 'branding', component: BrandingStepComponent, data: { sectionKey: 'branding', mode: 'settings' } },
+      { path: 'compensation', component: CompensationStepComponent, data: { sectionKey: 'compensation', mode: 'settings' } },
+      { path: 'projects', component: ProjectsStepComponent, data: { sectionKey: 'projects', mode: 'settings' } },
+      { path: 'payments-kyc', component: PaymentsKycStepComponent, data: { sectionKey: 'paymentsKyc', mode: 'settings' } },
+      { path: 'admin-team', component: AdminTeamStepComponent, data: { sectionKey: 'adminTeam', mode: 'settings' } },
+      { path: 'root-associates', component: RootAssociatesStepComponent, data: { sectionKey: 'rootAssociates', mode: 'settings' } },
+      { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } }
+    ]
+  },
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' }
 ];
