@@ -870,11 +870,344 @@ app-setup-inspector-aside {
   gap: 0.75rem;
 }
 
-.projects-step,
 .admin-team-step {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+.projects-step {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 900px;
+}
+
+.projects-step__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+
+  // Without this the button is a shrinkable flex sibling of the (wider) intro block and gets
+  // squeezed narrower than its own text, wrapping "Add New Project" across two lines.
+  app-brand-button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+
+.projects-step__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.projects-step__eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--brand-primary);
+}
+
+.projects-step__title {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.projects-step__subtitle {
+  margin: 0;
+  max-width: 42rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.projects-step__add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.projects-step__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.projects-step__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.projects-step__card {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.projects-step__card--selected {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-primary) 40%, transparent) inset;
+}
+
+.projects-step__card-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 12rem;
+  height: 8rem;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-raised);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .material-symbols-outlined {
+    font-size: 32px;
+    color: var(--text-muted);
+  }
+}
+
+.projects-step__card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.875rem;
+  min-width: 0;
+}
+
+.projects-step__card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.projects-step__card-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.projects-step__card-location {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0.125rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+
+  .material-symbols-outlined {
+    font-size: 16px;
+  }
+}
+
+// Shared by the project card's delete button and each plot row's delete button.
+.projects-step__icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 8px;
+
+  &:hover {
+    color: var(--status-danger);
+    background: var(--surface-raised);
+  }
+}
+
+.projects-step__counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.projects-step__card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.projects-step__progress {
+  flex: 1;
+  height: 6px;
+  background: var(--surface-raised);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.projects-step__progress-fill {
+  height: 100%;
+  background: var(--brand-gradient);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.projects-step__view-link {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  color: var(--brand-primary);
+  font-weight: 500;
+  cursor: pointer;
+
+  .material-symbols-outlined {
+    font-size: 18px;
+  }
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.projects-step__empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.projects-step__manage-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.projects-step__section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+
+  .material-symbols-outlined {
+    font-size: 20px;
+    color: var(--brand-primary);
+  }
+}
+
+.projects-step__add-plot-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+// The Add Plot form has 6 fields -- 3-up reads better than the 2-up default .projects-step__row.
+.projects-step__row--plot-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.projects-step__plot-table {
+  margin-bottom: 1rem;
+
+  td,
+  th {
+    &:nth-child(3),
+    &:nth-child(4),
+    &:nth-child(5) {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+}
+
+// Same pill treatment as .checklist-row__badge, tinted per plot status.
+.projects-step__status-pill {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.projects-step__status-pill--available {
+  background: color-mix(in srgb, var(--status-success) 16%, var(--surface-card));
+  color: var(--status-success);
+}
+
+.projects-step__status-pill--booked {
+  background: color-mix(in srgb, var(--status-warning) 16%, var(--surface-card));
+  color: var(--status-warning);
+}
+
+.projects-step__status-pill--sold {
+  background: var(--surface-raised);
+  color: var(--text-muted);
+}
+
+.projects-step__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.projects-step__pagination-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.projects-step__csv-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.projects-step__csv-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.projects-step__csv-summary {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.projects-step__csv-errors {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  color: var(--status-danger);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 700px) {
+  .projects-step__row,
+  .projects-step__row--plot-form,
+  .projects-step__counts {
+    grid-template-columns: 1fr;
+  }
+
+  .projects-step__card {
+    flex-direction: column;
+  }
+
+  .projects-step__card-thumb {
+    flex: 0 0 auto;
+    width: 100%;
+  }
 }
 
 .setup-step-nav__saved {

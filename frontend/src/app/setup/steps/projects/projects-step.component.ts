@@ -1,12 +1,16 @@
-import { Component, Input, OnInit, inject } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { StatTileComponent } from '../../../shared/components/stat-tile/stat-tile.component';
 import { TabBarComponent, TabDefinition } from '../../../shared/components/tab-bar/tab-bar.component';
+import { BrandButtonComponent } from '../../../shared/components/brand-button/brand-button.component';
+import { LogoUploaderComponent } from '../../../shared/components/logo-uploader/logo-uploader.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { ProjectsService } from './projects.service';
 import { SetupService } from '../../setup.service';
@@ -25,69 +29,169 @@ const PAGE_SIZE = 20;
     InlineBannerComponent,
     StatTileComponent,
     TabBarComponent,
+    BrandButtonComponent,
+    LogoUploaderComponent,
     SetupStepNavComponent
   ],
   template: `
     <div class="projects-step">
-      <div class="card">
-        <div class="projects-step__header">
-          <h1 class="card-title">{{ 'setup.projects.title' | translate }}</h1>
-          <button type="button" (click)="toggleAddProjectForm()">{{ 'setup.projects.addProjectAction' | translate }}</button>
+      <div class="projects-step__header">
+        <div class="projects-step__intro">
+          <span class="projects-step__eyebrow">
+            {{ 'setup.projects.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
+          </span>
+          <h1 class="projects-step__title">{{ 'setup.steps.projects' | translate }}</h1>
+          <p class="projects-step__subtitle">{{ 'setup.projects.subtitle' | translate }}</p>
         </div>
+        <app-brand-button variant="primary" (clicked)="toggleAddProjectForm()">
+          <span class="material-symbols-outlined">add_circle</span>
+          {{ 'setup.projects.addProjectAction' | translate }}
+        </app-brand-button>
+      </div>
 
-        <form class="projects-step__add-form" [formGroup]="addProjectForm" *ngIf="showAddProjectForm">
+      <form class="card projects-step__add-form" [formGroup]="addProjectForm" *ngIf="showAddProjectForm">
+        <div class="projects-step__row">
           <label>
             {{ 'setup.projects.nameLabel' | translate }}
             <input type="text" formControlName="name" />
           </label>
-          <app-field-error [message]="addProjectForm.get('name')?.touched && addProjectForm.get('name')?.errors?.['required'] ? ('setup.projects.validation.required' | translate) : undefined"></app-field-error>
-
           <label>
             {{ 'setup.projects.locationLabel' | translate }}
             <input type="text" formControlName="location" />
           </label>
+        </div>
+        <app-field-error [message]="addProjectForm.get('name')?.touched && addProjectForm.get('name')?.errors?.['required'] ? ('setup.projects.validation.required' | translate) : undefined"></app-field-error>
 
-          <button type="button" (click)="submitAddProject()">{{ 'setup.projects.saveProjectAction' | translate }}</button>
-        </form>
+        <app-logo-uploader
+          [label]="'setup.projects.photoLabel' | translate"
+          variant="wide"
+          [hasLogo]="!!pendingThumbnailPreview"
+          [logoUrl]="pendingThumbnailPreview ?? ''"
+          [placeholderText]="'setup.projects.photoPlaceholderLabel' | translate"
+          [uploadLabel]="'setup.projects.addPhotoAction' | translate"
+          [changeLabel]="'setup.projects.changePhotoAction' | translate"
+          (fileSelected)="onPendingThumbnailSelected($event)"
+        ></app-logo-uploader>
 
+        <app-brand-button type="button" variant="primary" (clicked)="submitAddProject()">
+          {{ 'setup.projects.saveProjectAction' | translate }}
+        </app-brand-button>
+      </form>
+
+      <ng-container *ngIf="projects.length > 0; else emptyProjects">
         <div class="projects-step__cards">
           <div
-            class="projects-step__card"
+            class="card projects-step__card"
             *ngFor="let project of projects"
             [class.projects-step__card--selected]="project.id === selectedProjectId"
           >
-            <h2>{{ project.name }}</h2>
-            <p>{{ project.location }}</p>
-            <div class="projects-step__counts">
-              <app-stat-tile [label]="'setup.projects.totalPlotsLabel' | translate" [value]="project.totalPlots.toString()"></app-stat-tile>
-              <app-stat-tile [label]="'setup.projects.availablePlotsLabel' | translate" [value]="project.availablePlots.toString()"></app-stat-tile>
-              <app-stat-tile [label]="'setup.projects.soldPlotsLabel' | translate" [value]="project.soldPlots.toString()"></app-stat-tile>
+            <div class="projects-step__card-thumb">
+              <img *ngIf="thumbnailObjectUrls[project.id] as src; else thumbPlaceholder" [src]="src" alt="" />
+              <ng-template #thumbPlaceholder>
+                <span class="material-symbols-outlined">apartment</span>
+              </ng-template>
             </div>
-            <button type="button" (click)="selectProject(project.id)">{{ 'setup.projects.manageAction' | translate }}</button>
-            <button type="button" (click)="deleteProject(project.id)">{{ 'setup.projects.deleteAction' | translate }}</button>
+
+            <div class="projects-step__card-body">
+              <div class="projects-step__card-heading">
+                <div>
+                  <h3 class="projects-step__card-title">{{ project.name }}</h3>
+                  <p class="projects-step__card-location">
+                    <span class="material-symbols-outlined">location_on</span>
+                    {{ project.location }}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="projects-step__icon-button"
+                  [attr.aria-label]="'setup.projects.deleteAction' | translate"
+                  (click)="deleteProject(project.id)"
+                >
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+
+              <div class="projects-step__counts">
+                <app-stat-tile [label]="'setup.projects.totalPlotsLabel' | translate" [value]="project.totalPlots.toString()"></app-stat-tile>
+                <app-stat-tile tone="accent" [label]="'setup.projects.availablePlotsLabel' | translate" [value]="project.availablePlots.toString()"></app-stat-tile>
+                <app-stat-tile [label]="'setup.projects.soldPlotsLabel' | translate" [value]="project.soldPlots.toString()"></app-stat-tile>
+              </div>
+
+              <div class="projects-step__card-footer">
+                <div class="projects-step__progress">
+                  <div class="projects-step__progress-fill" [style.width.%]="soldRatio(project)"></div>
+                </div>
+                <button type="button" class="projects-step__view-link" (click)="selectProject(project.id)">
+                  {{ 'setup.projects.viewProjectAction' | translate }}
+                  <span class="material-symbols-outlined">arrow_forward</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </ng-container>
+      <ng-template #emptyProjects>
+        <div class="card projects-step__empty">{{ 'setup.projects.emptyLabel' | translate }}</div>
+      </ng-template>
 
-      <div class="card" *ngIf="selectedProjectId">
+      <div class="card projects-step__manage-card" *ngIf="selectedProject as project">
+        <h2 class="projects-step__section-title">
+          <span class="material-symbols-outlined">account_tree</span>
+          {{ project.name }}
+        </h2>
+
+        <app-logo-uploader
+          [label]="'setup.projects.photoLabel' | translate"
+          variant="wide"
+          [hasLogo]="!!thumbnailObjectUrls[project.id]"
+          [logoUrl]="thumbnailObjectUrls[project.id] ?? ''"
+          [placeholderText]="'setup.projects.photoPlaceholderLabel' | translate"
+          [uploadLabel]="'setup.projects.addPhotoAction' | translate"
+          [changeLabel]="'setup.projects.changePhotoAction' | translate"
+          (fileSelected)="onManageThumbnailSelected(project.id, $event)"
+        ></app-logo-uploader>
+
         <app-tab-bar [tabs]="tabs" [activeTabId]="activeTab" (tabChange)="onTabChange($event)"></app-tab-bar>
 
         <div *ngIf="activeTab === 'plotList'">
           <form class="projects-step__add-plot-form" [formGroup]="plotForm">
-            <input type="text" formControlName="plotNo" [placeholder]="'setup.projects.plotNoLabel' | translate" />
-            <select formControlName="plotType">
-              <option value="NORMAL">NORMAL</option>
-              <option value="CORNER">CORNER</option>
-            </select>
-            <input type="number" formControlName="areaSqft" [placeholder]="'setup.projects.areaLabel' | translate" />
-            <input type="number" formControlName="rate" [placeholder]="'setup.projects.rateLabel' | translate" />
-            <input type="number" formControlName="price" [placeholder]="'setup.projects.priceLabel' | translate" />
-            <select formControlName="status">
-              <option value="AVAILABLE">AVAILABLE</option>
-              <option value="BOOKED">BOOKED</option>
-              <option value="SOLD">SOLD</option>
-            </select>
-            <button type="button" (click)="submitAddPlot()">{{ 'setup.projects.addPlotAction' | translate }}</button>
+            <div class="projects-step__row projects-step__row--plot-form">
+              <label>
+                {{ 'setup.projects.plotNoLabel' | translate }}
+                <input type="text" formControlName="plotNo" />
+              </label>
+              <label>
+                {{ 'setup.projects.plotTypeLabel' | translate }}
+                <select formControlName="plotType">
+                  <option value="NORMAL">{{ 'setup.projects.plotTypeNormalLabel' | translate }}</option>
+                  <option value="CORNER">{{ 'setup.projects.plotTypeCornerLabel' | translate }}</option>
+                </select>
+              </label>
+              <label>
+                {{ 'setup.projects.areaLabel' | translate }}
+                <input type="number" formControlName="areaSqft" />
+              </label>
+              <label>
+                {{ 'setup.projects.rateLabel' | translate }}
+                <input type="number" formControlName="rate" />
+              </label>
+              <label>
+                {{ 'setup.projects.priceLabel' | translate }}
+                <input type="number" formControlName="price" />
+              </label>
+              <label>
+                {{ 'setup.projects.statusLabel' | translate }}
+                <select formControlName="status">
+                  <option value="AVAILABLE">{{ 'setup.projects.statusAvailableLabel' | translate }}</option>
+                  <option value="BOOKED">{{ 'setup.projects.statusBookedLabel' | translate }}</option>
+                  <option value="SOLD">{{ 'setup.projects.statusSoldLabel' | translate }}</option>
+                </select>
+              </label>
+            </div>
+            <app-brand-button type="button" variant="secondary" (clicked)="submitAddPlot()">
+              <span class="material-symbols-outlined">add</span>
+              {{ 'setup.projects.addPlotAction' | translate }}
+            </app-brand-button>
           </form>
 
           <table class="projects-step__plot-table">
@@ -105,34 +209,61 @@ const PAGE_SIZE = 20;
             <tbody>
               <tr *ngFor="let plot of plotPage?.plots">
                 <td>{{ plot.plotNo }}</td>
-                <td>{{ plot.plotType }}</td>
+                <td>{{ plotTypeLabel(plot.plotType) }}</td>
                 <td>{{ plot.areaSqft }}</td>
                 <td>{{ plot.rate }}</td>
                 <td>{{ plot.price }}</td>
-                <td>{{ plot.status }}</td>
-                <td><button type="button" (click)="deletePlot(plot.id)">{{ 'setup.projects.deleteAction' | translate }}</button></td>
+                <td>
+                  <span class="projects-step__status-pill" [ngClass]="plotStatusClass(plot.status)">
+                    {{ plotStatusLabel(plot.status) }}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="projects-step__icon-button"
+                    [attr.aria-label]="'setup.projects.deleteAction' | translate"
+                    (click)="deletePlot(plot.id)"
+                  >
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
 
           <div class="projects-step__pagination" *ngIf="plotPage">
-            <button type="button" [disabled]="plotPage.page === 0" (click)="goToPage(plotPage.page - 1)">{{ 'setup.projects.previousPageAction' | translate }}</button>
-            <span>{{ 'setup.projects.showingLabel' | translate }}</span>
-            <button type="button" [disabled]="(plotPage.page + 1) * plotPage.size >= plotPage.totalElements" (click)="goToPage(plotPage.page + 1)">{{ 'setup.projects.nextPageAction' | translate }}</button>
+            <app-brand-button variant="ghost" [disabled]="plotPage.page === 0" (clicked)="goToPage(plotPage.page - 1)">
+              {{ 'setup.projects.previousPageAction' | translate }}
+            </app-brand-button>
+            <span class="projects-step__pagination-label">{{ 'setup.projects.showingLabel' | translate }}</span>
+            <app-brand-button
+              variant="ghost"
+              [disabled]="(plotPage.page + 1) * plotPage.size >= plotPage.totalElements"
+              (clicked)="goToPage(plotPage.page + 1)"
+            >
+              {{ 'setup.projects.nextPageAction' | translate }}
+            </app-brand-button>
           </div>
         </div>
 
-        <div *ngIf="activeTab === 'importCsv'">
+        <div class="projects-step__csv-panel" *ngIf="activeTab === 'importCsv'">
           <a [href]="csvTemplateUrl">{{ 'setup.projects.downloadTemplateAction' | translate }}</a>
           <input type="file" accept=".csv" (change)="onCsvFileSelected($event)" />
-          <button type="button" [disabled]="!csvFile" (click)="validateCsvFile()">{{ 'setup.projects.validateCsvAction' | translate }}</button>
-          <button type="button" [disabled]="!canCommitCsv" (click)="commitCsvFile()">{{ 'setup.projects.commitCsvAction' | translate }}</button>
+          <div class="projects-step__csv-actions">
+            <app-brand-button variant="secondary" [disabled]="!csvFile" (clicked)="validateCsvFile()">
+              {{ 'setup.projects.validateCsvAction' | translate }}
+            </app-brand-button>
+            <app-brand-button variant="primary" [disabled]="!canCommitCsv" (clicked)="commitCsvFile()">
+              {{ 'setup.projects.commitCsvAction' | translate }}
+            </app-brand-button>
+          </div>
 
           <app-inline-banner *ngIf="csvSubmitError" tone="danger">{{ csvSubmitError }}</app-inline-banner>
 
-          <div *ngIf="csvValidation">
+          <div class="projects-step__csv-summary" *ngIf="csvValidation">
             <p>{{ 'setup.projects.csvSummaryLabel' | translate: { valid: csvValidation.validRows, total: csvValidation.totalRows } }}</p>
-            <ul>
+            <ul class="projects-step__csv-errors">
               <li *ngFor="let error of csvValidation.errors">{{ 'setup.projects.csvRowErrorLabel' | translate: { row: error.rowNumber, field: error.field, message: error.message } }}</li>
             </ul>
           </div>
@@ -143,14 +274,18 @@ const PAGE_SIZE = 20;
     </div>
   `
 })
-export class ProjectsStepComponent implements OnInit {
+export class ProjectsStepComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
-  private projectsService = inject(ProjectsService);
+  protected projectsService = inject(ProjectsService);
   private setupService = inject(SetupService);
   private translate = inject(TranslateService);
   private route = inject(ActivatedRoute);
+  private destroyed$ = new Subject<void>();
 
   @Input() mode: 'setup' | 'settings' = 'setup';
+
+  stepNumber = 1;
+  stepCount = 1;
 
   projects: Project[] = [];
   showAddProjectForm = false;
@@ -158,6 +293,13 @@ export class ProjectsStepComponent implements OnInit {
     name: ['', Validators.required],
     location: ['', Validators.required]
   });
+  pendingThumbnail: File | null = null;
+  pendingThumbnailPreview: string | null = null;
+
+  // Object URLs for fetched thumbnail blobs, keyed by project id (see ProjectsService.
+  // getThumbnailBlob for why this can't just be a plain <img src="...">). Protected so the
+  // template can index into it directly.
+  protected thumbnailObjectUrls: Record<string, string> = {};
 
   selectedProjectId: string | null = null;
   activeTab: 'plotList' | 'importCsv' = 'plotList';
@@ -188,13 +330,98 @@ export class ProjectsStepComponent implements OnInit {
     return !!this.csvFile && !!this.csvValidation && this.csvValidation.errors.length === 0;
   }
 
+  get selectedProject(): Project | undefined {
+    return this.projects.find(p => p.id === this.selectedProjectId);
+  }
+
   ngOnInit(): void {
     this.mode = (this.route.snapshot.data['mode'] as 'setup' | 'settings') ?? 'setup';
-    this.projectsService.listProjects().subscribe(projects => (this.projects = projects));
+    this.projectsService.listProjects().subscribe(projects => {
+      this.projects = projects;
+      projects.filter(p => p.hasThumbnail).forEach(p => this.loadThumbnail(p.id));
+    });
+
+    this.setupService
+      .getState()
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(state => {
+        const step = state.steps.find(s => s.key === 'projects');
+        this.stepNumber = step?.number ?? 1;
+        this.stepCount = state.steps.length;
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroyed$.next();
+    this.destroyed$.complete();
+    this.clearPendingThumbnail();
+    Object.values(this.thumbnailObjectUrls).forEach(url => URL.revokeObjectURL(url));
+  }
+
+  soldRatio(project: Project): number {
+    return project.totalPlots > 0 ? Math.min(100, (project.soldPlots / project.totalPlots) * 100) : 0;
+  }
+
+  plotTypeLabel(type: PlotType): string {
+    return this.translate.instant(type === 'CORNER' ? 'setup.projects.plotTypeCornerLabel' : 'setup.projects.plotTypeNormalLabel');
+  }
+
+  plotStatusLabel(status: PlotStatus): string {
+    return this.translate.instant(`setup.projects.${this.plotStatusKey(status)}`);
+  }
+
+  plotStatusClass(status: PlotStatus): string {
+    return `projects-step__status-pill--${status.toLowerCase()}`;
+  }
+
+  private plotStatusKey(status: PlotStatus): string {
+    switch (status) {
+      case 'BOOKED':
+        return 'statusBookedLabel';
+      case 'SOLD':
+        return 'statusSoldLabel';
+      default:
+        return 'statusAvailableLabel';
+    }
+  }
+
+  private loadThumbnail(projectId: string): void {
+    this.projectsService.getThumbnailBlob(projectId).subscribe({
+      next: blob => {
+        this.releaseThumbnail(projectId);
+        this.thumbnailObjectUrls = { ...this.thumbnailObjectUrls, [projectId]: URL.createObjectURL(blob) };
+      },
+      // Leave it unset on failure -- the card/uploader falls back to its placeholder.
+      error: () => undefined
+    });
+  }
+
+  private releaseThumbnail(projectId: string): void {
+    const existing = this.thumbnailObjectUrls[projectId];
+    if (existing) {
+      URL.revokeObjectURL(existing);
+    }
   }
 
   toggleAddProjectForm(): void {
     this.showAddProjectForm = !this.showAddProjectForm;
+    if (!this.showAddProjectForm) {
+      this.clearPendingThumbnail();
+    }
+  }
+
+  onPendingThumbnailSelected(file: File): void {
+    this.clearPendingThumbnail();
+    this.pendingThumbnail = file;
+    this.pendingThumbnailPreview = URL.createObjectURL(file);
+  }
+
+  private clearPendingThumbnail(): void {
+    if (this.pendingThumbnailPreview) {
+      URL.revokeObjectURL(this.pendingThumbnailPreview);
+    }
+    this.pendingThumbnail = null;
+    this.pendingThumbnailPreview = null;
   }
 
   submitAddProject(): void {
@@ -202,11 +429,36 @@ export class ProjectsStepComponent implements OnInit {
       this.addProjectForm.markAllAsTouched();
       return;
     }
+    const pendingFile = this.pendingThumbnail;
     this.projectsService.createProject(this.addProjectForm.getRawValue()).subscribe(project => {
-      this.projects = [...this.projects, project];
-      this.addProjectForm.reset({ name: '', location: '' });
-      this.showAddProjectForm = false;
-      this.setupService.refresh();
+      const finish = (created: Project) => {
+        this.projects = [...this.projects, created];
+        this.addProjectForm.reset({ name: '', location: '' });
+        this.showAddProjectForm = false;
+        this.clearPendingThumbnail();
+        this.setupService.refresh();
+      };
+      if (pendingFile) {
+        // Project creation itself never accepts a photo -- upload is a second call against the
+        // id we just got back. If it fails, the project still exists; the user can retry the
+        // photo from the "Change Photo" control in the Manage panel below.
+        this.projectsService.uploadThumbnail(project.id, pendingFile).subscribe({
+          next: () => {
+            finish({ ...project, hasThumbnail: true });
+            this.loadThumbnail(project.id);
+          },
+          error: () => finish(project)
+        });
+      } else {
+        finish(project);
+      }
+    });
+  }
+
+  onManageThumbnailSelected(projectId: string, file: File): void {
+    this.projectsService.uploadThumbnail(projectId, file).subscribe(() => {
+      this.projects = this.projects.map(p => (p.id === projectId ? { ...p, hasThumbnail: true } : p));
+      this.loadThumbnail(projectId);
     });
   }
 

@@ -44,6 +44,14 @@ export class ProjectsService {
     return `/api/company/projects/${id}/thumbnail`;
   }
 
+  // The thumbnail endpoint requires the Bearer token, which the auth interceptor only attaches to
+  // HttpClient requests -- a plain <img src="..."> tag bypasses it entirely and 401s. Fetching as
+  // a blob here (through HttpClient, so the interceptor applies) and handing the caller an object
+  // URL is the only way to display it.
+  getThumbnailBlob(id: string): Observable<Blob> {
+    return this.http.get(this.thumbnailUrl(id), { responseType: 'blob' });
+  }
+
   listPlots(projectId: string, page: number, size: number): Observable<PlotPageResponse> {
     const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get<PlotPageResponse>(`/api/company/projects/${projectId}/plots`, { params });
