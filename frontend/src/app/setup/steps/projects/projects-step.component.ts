@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -138,7 +138,7 @@ const PAGE_SIZE = 20;
         </div>
       </div>
 
-      <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath"></app-setup-step-nav>
+      <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [mode]="mode"></app-setup-step-nav>
     </div>
   `
 })
@@ -147,6 +147,8 @@ export class ProjectsStepComponent implements OnInit {
   private projectsService = inject(ProjectsService);
   private setupService = inject(SetupService);
   private translate = inject(TranslateService);
+
+  @Input() mode: 'setup' | 'settings' = 'setup';
 
   projects: Project[] = [];
   showAddProjectForm = false;

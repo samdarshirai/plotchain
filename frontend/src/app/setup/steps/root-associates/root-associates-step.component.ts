@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -85,7 +85,7 @@ import { CreateRootAssociateRequest, RootAssociateCreationResult, RootAssociateS
           <button type="submit" [disabled]="form.invalid">{{ 'setup.rootAssociates.submitButtonLabel' | translate }}</button>
         </form>
 
-        <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath"></app-setup-step-nav>
+        <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [mode]="mode"></app-setup-step-nav>
       </div>
 
       <div class="card root-associates-step__tree">
@@ -118,6 +118,8 @@ export class RootAssociatesStepComponent implements OnInit {
   private rootAssociatesService = inject(RootAssociatesService);
   private setupService = inject(SetupService);
   private translate = inject(TranslateService);
+
+  @Input() mode: 'setup' | 'settings' = 'setup';
 
   readonly previousPath = this.setupService.previousStepPath('rootAssociates');
   readonly nextPath = this.setupService.nextStepPath('rootAssociates');

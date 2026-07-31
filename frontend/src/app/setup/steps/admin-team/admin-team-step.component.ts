@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -133,7 +133,7 @@ import {
         </form>
       </app-side-panel>
 
-      <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath"></app-setup-step-nav>
+      <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [mode]="mode"></app-setup-step-nav>
     </div>
   `
 })
@@ -144,6 +144,8 @@ export class AdminTeamStepComponent implements OnInit, OnDestroy {
   private translate = inject(TranslateService);
   private destroyed$ = new Subject<void>();
   private userIdChanged$ = new Subject<string>();
+
+  @Input() mode: 'setup' | 'settings' = 'setup';
 
   readonly roleOptions = ROLE_OPTIONS;
   readonly previousPath = this.setupService.previousStepPath('adminTeam');

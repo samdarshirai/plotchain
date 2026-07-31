@@ -104,6 +104,27 @@ describe('CompanyProfileStepComponent', () => {
     expect(nav.componentInstance.nextPath).toBe('branding');
   });
 
+  it('passes the settings mode through to the step-nav', () => {
+    fixture.componentInstance.mode = 'settings';
+    fixture.detectChanges();
+    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
+    expect(nav.componentInstance.mode).toBe('settings');
+  });
+
+  it('defaults the step-nav mode to setup', () => {
+    fixture.detectChanges();
+    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
+    expect(nav.componentInstance.mode).toBe('setup');
+  });
+
+  it('hides the previous/next buttons when mode is settings', () => {
+    fixture.componentInstance.mode = 'settings';
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('.setup-step-nav__previous'))).toBeNull();
+    expect(fixture.debugElement.query(By.css('.setup-step-nav__next'))).toBeNull();
+    expect(fixture.debugElement.query(By.css('.setup-step-nav__save'))).not.toBeNull();
+  });
+
   it('surfaces server-side field errors from a failed autosave', fakeAsync(() => {
     fixture.componentInstance.form.patchValue(filledProfile);
     tick(400);

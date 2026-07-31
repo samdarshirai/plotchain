@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -90,7 +90,7 @@ const MIN_CONTRAST = 4.5;
           (fileSelected)="onLogoSelected('wide', $event)"
         ></app-logo-uploader>
 
-        <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="savedJustNow"></app-setup-step-nav>
+        <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="savedJustNow" [mode]="mode"></app-setup-step-nav>
       </form>
 
       <div class="card branding-step__preview">
@@ -124,6 +124,8 @@ export class BrandingStepComponent implements OnInit, OnDestroy {
     secondaryColor: ['#22D3EE', [Validators.required, Validators.pattern(HEX_COLOR_PATTERN)]],
     tagline: ['', Validators.maxLength(TAGLINE_MAX_LENGTH)]
   });
+
+  @Input() mode: 'setup' | 'settings' = 'setup';
 
   branding: CompanyBrandingResponse | null = null;
   savedJustNow = false;

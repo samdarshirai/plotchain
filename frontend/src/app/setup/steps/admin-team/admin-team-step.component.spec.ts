@@ -386,4 +386,18 @@ describe('AdminTeamStepComponent', () => {
     expect(nav.componentInstance.previousPath).toBe('payments-kyc');
     expect(nav.componentInstance.nextPath).toBe('root-associates');
   });
+
+  it('passes the settings mode through to the step-nav', () => {
+    flushInitialLoads();
+    fixture.componentInstance.mode = 'settings';
+    fixture.detectChanges();
+    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
+    expect(nav.componentInstance.mode).toBe('settings');
+  });
+
+  it('defaults the step-nav mode to setup', () => {
+    flushInitialLoads();
+    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
+    expect(nav.componentInstance.mode).toBe('setup');
+  });
 });

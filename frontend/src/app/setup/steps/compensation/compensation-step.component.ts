@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -188,7 +188,7 @@ const RENDERED_FIELD_ERROR_KEYS = [
 
         <app-inline-banner *ngIf="submitError" tone="danger">{{ submitError }}</app-inline-banner>
 
-        <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="savedJustNow"></app-setup-step-nav>
+        <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="savedJustNow" [mode]="mode"></app-setup-step-nav>
       </form>
 
       <div class="card compensation-step__preview">
@@ -269,6 +269,8 @@ export class CompensationStepComponent implements OnInit, OnDestroy {
   scenarioVolume = DEFAULT_SCENARIO_VOLUME;
   hasPan = true;
   sampleEarnings: SampleEarningsResult | null = null;
+
+  @Input() mode: 'setup' | 'settings' = 'setup';
 
   savedJustNow = false;
   readonly previousPath = this.setupService.previousStepPath('compensation');

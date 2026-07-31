@@ -238,4 +238,18 @@ describe('ProjectsStepComponent', () => {
     expect(nav.componentInstance.previousPath).toBe('compensation');
     expect(nav.componentInstance.nextPath).toBe('payments-kyc');
   });
+
+  it('passes the settings mode through to the step-nav', () => {
+    flushProjectsList();
+    fixture.componentInstance.mode = 'settings';
+    fixture.detectChanges();
+    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
+    expect(nav.componentInstance.mode).toBe('settings');
+  });
+
+  it('defaults the step-nav mode to setup', () => {
+    flushProjectsList();
+    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
+    expect(nav.componentInstance.mode).toBe('setup');
+  });
 });

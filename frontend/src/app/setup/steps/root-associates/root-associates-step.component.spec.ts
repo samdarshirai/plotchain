@@ -224,4 +224,18 @@ describe('RootAssociatesStepComponent', () => {
     expect(nav.componentInstance.previousPath).toBe('admin-team');
     expect(nav.componentInstance.nextPath).toBe('review-launch');
   });
+
+  it('passes the settings mode through to the step-nav', () => {
+    flushInitialLoad();
+    fixture.componentInstance.mode = 'settings';
+    fixture.detectChanges();
+    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
+    expect(nav.componentInstance.mode).toBe('settings');
+  });
+
+  it('defaults the step-nav mode to setup', () => {
+    flushInitialLoad();
+    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
+    expect(nav.componentInstance.mode).toBe('setup');
+  });
 });

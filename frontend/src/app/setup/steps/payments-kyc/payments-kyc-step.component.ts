@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -59,13 +59,13 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
 
         <div class="payments-kyc-step__checkbox-group">
           <span>{{ 'setup.paymentsKyc.modesEnabledLabel' | translate }}</span>
-          <label *ngFor="let mode of modeOptions">
+          <label *ngFor="let paymentMode of modeOptions">
             <input
               type="checkbox"
-              [checked]="isModeEnabled(mode)"
-              (change)="toggleMode(mode, $any($event.target).checked)"
+              [checked]="isModeEnabled(paymentMode)"
+              (change)="toggleMode(paymentMode, $any($event.target).checked)"
             />
-            {{ mode }}
+            {{ paymentMode }}
           </label>
         </div>
 
@@ -191,7 +191,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
         </div>
       </div>
 
-      <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="anySavedJustNow"></app-setup-step-nav>
+      <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="anySavedJustNow" [mode]="mode"></app-setup-step-nav>
     </div>
   `
 })
@@ -201,6 +201,8 @@ export class PaymentsKycStepComponent implements OnInit, OnDestroy {
   private setupService = inject(SetupService);
   private translate = inject(TranslateService);
   private destroyed$ = new Subject<void>();
+
+  @Input() mode: 'setup' | 'settings' = 'setup';
 
   readonly gatewayOptions = GATEWAY_OPTIONS;
   readonly modeOptions = MODE_OPTIONS;

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -65,7 +65,7 @@ const GSTIN_PATTERN = /^[0-9A-Z]{15}$/;
         </label>
         <app-field-error [message]="fieldError('registeredAddress')"></app-field-error>
 
-        <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="savedJustNow"></app-setup-step-nav>
+        <app-setup-step-nav [previousPath]="previousPath" [nextPath]="nextPath" [savedJustNow]="savedJustNow" [mode]="mode"></app-setup-step-nav>
       </form>
 
       <div class="card company-profile-step__preview">
@@ -95,6 +95,8 @@ export class CompanyProfileStepComponent implements OnInit, OnDestroy {
     contactEmail: ['', [Validators.required, Validators.email]],
     registeredAddress: ['', Validators.required]
   });
+
+  @Input() mode: 'setup' | 'settings' = 'setup';
 
   savedJustNow = false;
   readonly previousPath = this.setupService.previousStepPath('companyProfile');

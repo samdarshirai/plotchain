@@ -196,4 +196,28 @@ describe('PaymentsKycStepComponent', () => {
     expect(nav.componentInstance.previousPath).toBe('projects');
     expect(nav.componentInstance.nextPath).toBe('admin-team');
   });
+
+  it('passes the settings mode through to the step-nav', () => {
+    flushInitialLoads();
+    fixture.componentInstance.mode = 'settings';
+    fixture.detectChanges();
+    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
+    expect(nav.componentInstance.mode).toBe('settings');
+  });
+
+  it('defaults the step-nav mode to setup', () => {
+    flushInitialLoads();
+    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
+    expect(nav.componentInstance.mode).toBe('setup');
+  });
+
+  it('keeps the payment-mode checkbox toggle working after the loop-variable rename', () => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    component.toggleMode('UPI', true);
+
+    expect(component.isModeEnabled('UPI')).toBe(true);
+    expect(component.modesEnabled).toContain('UPI');
+  });
 });

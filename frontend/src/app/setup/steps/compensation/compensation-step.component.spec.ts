@@ -262,4 +262,16 @@ describe('CompensationStepComponent', () => {
     expect(nav.componentInstance.previousPath).toBe('branding');
     expect(nav.componentInstance.nextPath).toBe('projects');
   });
+
+  it('passes the settings mode through to the step-nav', () => {
+    fixture.componentInstance.mode = 'settings';
+    fixture.detectChanges();
+    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
+    expect(nav.componentInstance.mode).toBe('settings');
+  });
+
+  it('defaults the step-nav mode to setup', () => {
+    const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
+    expect(nav.componentInstance.mode).toBe('setup');
+  });
 });
