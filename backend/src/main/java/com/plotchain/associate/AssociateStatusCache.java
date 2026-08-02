@@ -12,6 +12,10 @@ import java.util.UUID;
  * suspended associate's still-valid JWT stops working on their next request rather than
  * only at natural token expiry. AdminAssociateService evicts explicitly on suspend/reactivate;
  * the TTL here is only a safety net for any path that misses that eviction.
+ *
+ * <p>This cache is per-JVM/per-instance. With more than one application replica, an
+ * eviction only takes effect on the node that served the admin's suspend/reactivate
+ * request — other nodes keep serving the stale cached status for up to the TTL.
  */
 @Component
 public class AssociateStatusCache {

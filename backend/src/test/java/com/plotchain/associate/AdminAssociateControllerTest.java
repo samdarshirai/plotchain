@@ -150,4 +150,33 @@ class AdminAssociateControllerTest {
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.KYC_REVIEWER)))
             .andExpect(status().isForbidden());
     }
+
+    @Test
+    void tokenForANewlySuspendedAssociateIsRejectedOnTheVeryNextRequest() throws Exception {
+        // Uses a freshly generated id rather than the shared ASSOCIATE_ID constant: the real
+        // AssociateStatusCache is a singleton Spring bean shared across every test in this
+        // class, so reusing a constant id risks a stale cached entry leaking in from another
+        // test's execution order.
+        UUID id = UUID.randomUUID();
+        Associate associate = new Associate();
+        associate.setId(id);
+        associate.setUserId("VP00099");
+        associate.setRole(AssociateRole.ASSOCIATE);
+        associate.setStatus(AssociateStatus.ACTIVE);
+        when(associateRepository.findById(id)).thenReturn(Optional.of(associate));
+        when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        String associateToken = jwtService.generateToken(associate);
+
+        mockMvc.perform(post("/api/admin/associates/" + id + "/suspend")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk());
+
+        // No role restriction on this endpoint in SecurityConfig -- any authenticated principal
+        // can reach it, so a 401 here proves the auth layer (real AssociateStatusCache) rejected
+        // the request, not a role-based 403 that would happen even if eviction were broken.
+        mockMvc.perform(get("/api/associates/me/dashboard")
+                .header("Authorization", "Bearer " + associateToken))
+            .andExpect(status().isUnauthorized());
+    }
 }

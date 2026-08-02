@@ -13,6 +13,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -80,7 +82,7 @@ public class AdminAssociateService {
         Associate associate = findOrThrow(id);
         associate.setStatus(AssociateStatus.SUSPENDED);
         associateRepository.save(associate);
-        associateStatusCache.evict(id);
+        evictStatusCacheAfterCommit(id);
         settingsAuditService.record("associate", "Suspended " + associate.getUserId(),
             Map.of("associateId", id.toString()), actorId);
         return toDetail(associate);
@@ -91,7 +93,7 @@ public class AdminAssociateService {
         Associate associate = findOrThrow(id);
         associate.setStatus(AssociateStatus.ACTIVE);
         associateRepository.save(associate);
-        associateStatusCache.evict(id);
+        evictStatusCacheAfterCommit(id);
         settingsAuditService.record("associate", "Reactivated " + associate.getUserId(),
             Map.of("associateId", id.toString()), actorId);
         return toDetail(associate);
@@ -107,6 +109,19 @@ public class AdminAssociateService {
         settingsAuditService.record("associate", "Reset password for " + associate.getUserId(),
             Map.of("associateId", id.toString()), actorId);
         return new ResetPasswordResponse(temporaryPassword);
+    }
+
+    private void evictStatusCacheAfterCommit(UUID associateId) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    associateStatusCache.evict(associateId);
+                }
+            });
+        } else {
+            associateStatusCache.evict(associateId);
+        }
     }
 
     private Associate findOrThrow(UUID id) {
