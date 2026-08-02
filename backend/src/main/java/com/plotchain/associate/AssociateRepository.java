@@ -63,6 +63,10 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
 
     List<Associate> findByRoleNotOrderByUserIdAsc(AssociateRole role);
 
+    // Backs the parent-picker dropdown on the Create Associate form: admins pick a parent by
+    // its human-readable userId (e.g. VP00001), not the UUID primary key they never see.
+    List<Associate> findAllByOrderByUserIdAsc();
+
     long countByRoleNot(AssociateRole role);
 
     // role = ASSOCIATE narrows out admin-family rows, which also have parentId = null by

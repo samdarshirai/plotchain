@@ -7,6 +7,7 @@ import { ProjectsStepComponent } from './projects-step.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SetupService } from '../../setup.service';
 import { CsvValidationResponse, Plot, PlotPageResponse, Project } from '../../models/project.model';
+import { SetupStateResponse } from '../../models/setup-state.model';
 
 describe('ProjectsStepComponent', () => {
   let fixture: ComponentFixture<ProjectsStepComponent>;
@@ -33,8 +34,23 @@ describe('ProjectsStepComponent', () => {
     status: 'AVAILABLE'
   };
 
+  const setupState: SetupStateResponse = {
+    steps: [{ number: 4, key: 'projects', complete: false, required: true, percentComplete: 0 }],
+    canGoLive: false,
+    launchedAt: null
+  };
+
+  // The step subscribes to SetupService.getState() (a shared, refresh$-driven observable) on
+  // init, and again every time refresh() fires after a successful create/update/delete -- each
+  // subscription triggers its own GET that HttpTestingController requires to be flushed or
+  // matched, even though nothing in the component actually waits on the response.
+  function flushSetupState(): void {
+    httpMock.match('/api/company/setup-state').forEach(req => req.flush(setupState));
+  }
+
   function flushProjectsList(projects: Project[] = [project]): void {
     httpMock.expectOne('/api/company/projects').flush(projects);
+    flushSetupState();
     fixture.detectChanges();
   }
 
@@ -70,6 +86,7 @@ describe('ProjectsStepComponent', () => {
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ name: 'Green Valley', location: 'Hyderabad' });
     req.flush(project);
+    flushSetupState();
 
     expect(component.projects).toEqual([project]);
     expect(component.showAddProjectForm).toBe(false);
@@ -132,6 +149,7 @@ describe('ProjectsStepComponent', () => {
 
     const reloadReq = httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=20');
     reloadReq.flush({ plots: [plot], page: 0, size: 20, totalElements: 1 });
+    flushSetupState();
 
     expect(component.plotPage?.plots).toEqual([plot]);
     expect(component.plotForm.value.plotNo).toBe('');
@@ -146,6 +164,7 @@ describe('ProjectsStepComponent', () => {
     const req = httpMock.expectOne('/api/company/projects/p1');
     expect(req.request.method).toBe('DELETE');
     req.flush(null);
+    flushSetupState();
 
     expect(component.projects).toEqual([]);
   });
@@ -190,6 +209,7 @@ describe('ProjectsStepComponent', () => {
 
     const reloadReq = httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=20');
     reloadReq.flush({ plots: [plot], page: 0, size: 20, totalElements: 1 });
+    flushSetupState();
 
     expect(component.csvValidation).toBeNull();
     expect(component.csvFile).toBeNull();

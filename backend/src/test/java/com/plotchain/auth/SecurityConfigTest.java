@@ -335,6 +335,24 @@ class SecurityConfigTest {
             .andExpect(status().isOk());
     }
 
+    @Test
+    void associatesListIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/associates")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    // Same unstubbed-default-empty-list reasoning as rootAssociatesListIsReachableForAnyAdminFamilyToken
+    // above: associateRepository is @MockBean'd unstubbed, so findAllByOrderByUserIdAsc()
+    // resolves to an empty list and this is a plain 200.
+    @ParameterizedTest
+    @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
+    void associatesListIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/associates")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().isOk());
+    }
+
     // Single parameterized case covering every AssociateRole (unlike the paired
     // xIsForbiddenForAnAssociateToken/xIsReachableForAnyAdminFamilyToken tests above): asserts
     // 200 for every admin-family role and 403 for ASSOCIATE, driven off

@@ -1,55 +1,178 @@
-import { Component, Input, OnInit, inject } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
+import { BrandButtonComponent } from '../../../shared/components/brand-button/brand-button.component';
+import { SidePanelComponent } from '../../../shared/components/side-panel/side-panel.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { RootAssociatesService } from './root-associates.service';
 import { SetupService } from '../../setup.service';
 import { CreateRootAssociateRequest, RootAssociateCreationResult, RootAssociateSummary } from '../../models/root-associates.model';
 
+interface SampleCandidate {
+  initial: string;
+  name: string;
+  id?: string;
+  statusLabel?: string;
+  available: boolean;
+}
+
 @Component({
   selector: 'app-root-associates-step',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, FieldErrorComponent, InlineBannerComponent, SetupStepNavComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    TranslateModule,
+    FieldErrorComponent,
+    InlineBannerComponent,
+    BrandButtonComponent,
+    SidePanelComponent,
+    SetupStepNavComponent
+  ],
   template: `
-    <div class="root-associates-step step-grid">
-      <div class="card root-associates-step__form-card">
-        <h1 class="card-title">{{ 'setup.rootAssociates.formTitle' | translate }}</h1>
+    <div class="root-associates-step">
+      <div class="root-associates-step__header">
+        <div class="root-associates-step__intro">
+          <span class="root-associates-step__eyebrow">
+            {{ 'setup.rootAssociates.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
+          </span>
+          <h1 class="root-associates-step__title">{{ 'setup.steps.rootAssociates' | translate }}</h1>
+          <p class="root-associates-step__subtitle">{{ 'setup.rootAssociates.subtitle' | translate }}</p>
+        </div>
+      </div>
 
-        <div class="root-associates-step__banner" *ngIf="createdLeft">
+      <app-inline-banner *ngIf="createdLeft" tone="success">
+        <p>
+          {{ 'setup.rootAssociates.bannerUserIdLabel' | translate }}
+          ({{ 'setup.rootAssociates.leftSlotLabel' | translate }}):
+          <strong>{{ createdLeft.userId }}</strong>
+        </p>
+        <p>
+          {{ 'setup.rootAssociates.bannerTemporaryPasswordLabel' | translate }}:
+          <strong>{{ createdLeft.temporaryPassword }}</strong>
+        </p>
+        <ng-container *ngIf="createdRight">
           <p>
-            {{ 'setup.rootAssociates.bannerAssociateIdLabel' | translate }}
-            ({{ 'setup.rootAssociates.leftSlotLabel' | translate }}):
-            <strong>{{ createdLeft.userId }}</strong>
+            {{ 'setup.rootAssociates.bannerUserIdLabel' | translate }}
+            ({{ 'setup.rootAssociates.rightSlotLabel' | translate }}):
+            <strong>{{ createdRight.userId }}</strong>
           </p>
           <p>
             {{ 'setup.rootAssociates.bannerTemporaryPasswordLabel' | translate }}:
-            <strong>{{ createdLeft.temporaryPassword }}</strong>
+            <strong>{{ createdRight.temporaryPassword }}</strong>
           </p>
-          <ng-container *ngIf="createdRight">
-            <p>
-              {{ 'setup.rootAssociates.bannerAssociateIdLabel' | translate }}
-              ({{ 'setup.rootAssociates.rightSlotLabel' | translate }}):
-              <strong>{{ createdRight.userId }}</strong>
-            </p>
-            <p>
-              {{ 'setup.rootAssociates.bannerTemporaryPasswordLabel' | translate }}:
-              <strong>{{ createdRight.temporaryPassword }}</strong>
-            </p>
-          </ng-container>
-          <p class="root-associates-step__banner-notice">{{ 'setup.rootAssociates.bannerNoticeLabel' | translate }}</p>
-          <button type="button" (click)="dismissBanner()">{{ 'setup.rootAssociates.doneButtonLabel' | translate }}</button>
+        </ng-container>
+        <p class="root-associates-step__banner-notice">{{ 'setup.rootAssociates.bannerNoticeLabel' | translate }}</p>
+        <app-brand-button type="button" variant="secondary" (clicked)="dismissBanner()">
+          {{ 'setup.rootAssociates.doneButtonLabel' | translate }}
+        </app-brand-button>
+      </app-inline-banner>
+
+      <app-inline-banner *ngIf="!leftOccupied && !createdLeft" tone="warning">
+        {{ 'setup.rootAssociates.warningBannerBody' | translate }}
+      </app-inline-banner>
+
+      <div class="card root-associates-step__tree">
+        <p class="card-subtitle">{{ 'setup.rootAssociates.treeTitle' | translate }}</p>
+
+        <div class="root-associates-step__root-node">
+          <span class="material-symbols-outlined">hub</span>
+          <span class="root-associates-step__root-node-label">{{ 'setup.rootAssociates.rootNodeLabel' | translate }}</span>
         </div>
 
-        <app-inline-banner *ngIf="!leftOccupied && !createdLeft" tone="warning">
-          {{ 'setup.rootAssociates.warningBannerBody' | translate }}
-        </app-inline-banner>
+        <div class="root-associates-step__slots">
+          <ng-container *ngIf="leftRoot() as root; else vacantLeft">
+            <div class="root-associates-step__slot-card root-associates-step__slot-card--filled">
+              <div class="root-associates-step__slot-avatar">{{ root.name.charAt(0) }}</div>
+              <span class="root-associates-step__slot-label">{{ 'setup.rootAssociates.leftSlotLabel' | translate }}</span>
+              <strong class="root-associates-step__slot-name">{{ root.name }}</strong>
+              <span class="root-associates-step__slot-meta">{{ root.userId }}</span>
+            </div>
+          </ng-container>
+          <ng-template #vacantLeft>
+            <button
+              type="button"
+              class="root-associates-step__slot-card root-associates-step__slot-card--vacant"
+              [disabled]="leftOccupied"
+              (click)="openAssignDrawer('LEFT')"
+            >
+              <div class="root-associates-step__slot-avatar">
+                <span class="material-symbols-outlined">add</span>
+              </div>
+              <span class="root-associates-step__slot-label">{{ 'setup.rootAssociates.assignLeftLabel' | translate }}</span>
+              <span class="root-associates-step__slot-meta">{{ 'setup.rootAssociates.vacantNodeLabel' | translate }}</span>
+            </button>
+          </ng-template>
 
-        <form [formGroup]="form" (ngSubmit)="onSubmit()" *ngIf="!leftOccupied && !createdLeft">
+          <ng-container *ngIf="rightRoot() as root; else vacantRight">
+            <div class="root-associates-step__slot-card root-associates-step__slot-card--filled">
+              <div class="root-associates-step__slot-avatar">{{ root.name.charAt(0) }}</div>
+              <span class="root-associates-step__slot-label">{{ 'setup.rootAssociates.rightSlotLabel' | translate }}</span>
+              <strong class="root-associates-step__slot-name">{{ root.name }}</strong>
+              <span class="root-associates-step__slot-meta">{{ root.userId }}</span>
+            </div>
+          </ng-container>
+          <ng-template #vacantRight>
+            <!--
+              Right can only ever be seeded together with left (RootAssociateProvisioningService.create
+              rejects any call once a root already exists) -- so once left is occupied, this card is a
+              permanent empty state, not a still-pending action. Disabling it (rather than leaving it
+              clickable and 409ing) reflects that constraint honestly.
+            -->
+            <button
+              type="button"
+              class="root-associates-step__slot-card root-associates-step__slot-card--vacant"
+              [disabled]="leftOccupied"
+              (click)="openAssignDrawer('RIGHT')"
+            >
+              <div class="root-associates-step__slot-avatar">
+                <span class="material-symbols-outlined">add</span>
+              </div>
+              <span class="root-associates-step__slot-label">{{ 'setup.rootAssociates.assignRightLabel' | translate }}</span>
+              <span class="root-associates-step__slot-meta">{{ 'setup.rootAssociates.vacantNodeLabel' | translate }}</span>
+            </button>
+          </ng-template>
+        </div>
+      </div>
+
+      <app-side-panel
+        *ngIf="!leftOccupied && !createdLeft"
+        [open]="panelOpen"
+        [title]="'setup.rootAssociates.drawerTitleLabel' | translate"
+        (closed)="closeDrawer()"
+      >
+        <div class="root-associates-step__search">
+          <span class="material-symbols-outlined">search</span>
+          <input type="text" [placeholder]="'setup.rootAssociates.searchPlaceholderLabel' | translate" disabled />
+        </div>
+
+        <p class="root-associates-step__section-label">{{ 'setup.rootAssociates.recommendedAssociatesLabel' | translate }}</p>
+
+        <!-- Presentational only: there is no associate-search/assign-existing endpoint yet, so
+             these rows are static sample data and never trigger a request. -->
+        <div
+          class="root-associates-step__candidate-row"
+          *ngFor="let candidate of sampleCandidates"
+          [class.root-associates-step__candidate-row--unavailable]="!candidate.available"
+        >
+          <div class="root-associates-step__slot-avatar">{{ candidate.initial }}</div>
+          <div class="root-associates-step__candidate-info">
+            <strong>{{ candidate.name }}</strong>
+            <span>{{ candidate.available ? candidate.id : candidate.statusLabel }}</span>
+          </div>
+          <span class="material-symbols-outlined">{{ candidate.available ? 'chevron_right' : 'lock' }}</span>
+        </div>
+
+        <p class="root-associates-step__insight-callout">{{ 'setup.rootAssociates.insightCalloutLabel' | translate }}</p>
+
+        <form class="root-associates-step__form" [formGroup]="form" (ngSubmit)="onSubmit()">
           <label>
             {{ 'setup.rootAssociates.nameLabel' | translate }}
             <input type="text" formControlName="name" (blur)="markTouched('name')" />
@@ -62,7 +185,7 @@ import { CreateRootAssociateRequest, RootAssociateCreationResult, RootAssociateS
           </label>
           <app-field-error [message]="fieldError('phone')"></app-field-error>
 
-          <label>
+          <label class="root-associates-step__checkbox">
             <input type="checkbox" formControlName="seedRightRoot" (change)="onSeedRightRootChange()" />
             {{ 'setup.rootAssociates.seedRightRootLabel' | translate }}
           </label>
@@ -83,45 +206,28 @@ import { CreateRootAssociateRequest, RootAssociateCreationResult, RootAssociateS
 
           <app-inline-banner *ngIf="submitError" tone="danger">{{ submitError }}</app-inline-banner>
 
-          <button type="submit" [disabled]="form.invalid">{{ 'setup.rootAssociates.submitButtonLabel' | translate }}</button>
+          <app-brand-button type="submit" variant="primary" [fullWidth]="true" [disabled]="form.invalid">
+            {{ 'setup.rootAssociates.submitButtonLabel' | translate }}
+          </app-brand-button>
         </form>
+      </app-side-panel>
 
-        <app-setup-step-nav *ngIf="mode === 'settings'" [mode]="mode"></app-setup-step-nav>
-      </div>
-
-      <div class="card root-associates-step__tree">
-        <p class="card-subtitle">{{ 'setup.rootAssociates.treeTitle' | translate }}</p>
-        <div class="root-associates-step__root-node">{{ 'setup.rootAssociates.rootNodeLabel' | translate }}</div>
-        <div class="root-associates-step__slots">
-          <div class="root-associates-step__slot">
-            <span>{{ 'setup.rootAssociates.leftSlotLabel' | translate }}</span>
-            <ng-container *ngIf="leftRoot() as root; else emptyLeft">
-              <strong>{{ root.name }}</strong>
-              <span>{{ root.userId }}</span>
-            </ng-container>
-            <ng-template #emptyLeft>{{ 'setup.rootAssociates.emptySlotLabel' | translate }}</ng-template>
-          </div>
-          <div class="root-associates-step__slot">
-            <span>{{ 'setup.rootAssociates.rightSlotLabel' | translate }}</span>
-            <ng-container *ngIf="rightRoot() as root; else emptyRight">
-              <strong>{{ root.name }}</strong>
-              <span>{{ root.userId }}</span>
-            </ng-container>
-            <ng-template #emptyRight>{{ 'setup.rootAssociates.emptySlotLabel' | translate }}</ng-template>
-          </div>
-        </div>
-      </div>
+      <app-setup-step-nav *ngIf="mode === 'settings'" [mode]="mode"></app-setup-step-nav>
     </div>
   `
 })
-export class RootAssociatesStepComponent implements OnInit {
+export class RootAssociatesStepComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private rootAssociatesService = inject(RootAssociatesService);
   private setupService = inject(SetupService);
   private translate = inject(TranslateService);
   private route = inject(ActivatedRoute);
+  private destroyed$ = new Subject<void>();
 
   @Input() mode: 'setup' | 'settings' = 'setup';
+
+  stepNumber = 1;
+  stepCount = 1;
 
   roots: RootAssociateSummary[] = [];
   leftOccupied = false;
@@ -129,7 +235,15 @@ export class RootAssociatesStepComponent implements OnInit {
   createdLeft: RootAssociateCreationResult | null = null;
   createdRight: RootAssociateCreationResult | null = null;
   submitError: string | null = null;
+  panelOpen = false;
+  activeSlot: 'LEFT' | 'RIGHT' | null = null;
   private serverFieldErrors: Record<string, string> = {};
+
+  // Presentational only -- see the note above the candidate rows in the template.
+  readonly sampleCandidates: SampleCandidate[] = [
+    { initial: 'R', name: 'Rahul Vardhan', id: 'ID: EXE-9920', available: true },
+    { initial: 'S', name: 'Sarah Jenkins', statusLabel: 'Busy until Q4', available: false }
+  ];
 
   form = this.fb.nonNullable.group({
     name: ['', Validators.required],
@@ -142,6 +256,20 @@ export class RootAssociatesStepComponent implements OnInit {
   ngOnInit(): void {
     this.mode = (this.route.snapshot.data['mode'] as 'setup' | 'settings') ?? 'setup';
     this.refreshSlots();
+
+    this.setupService
+      .getState()
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(state => {
+        const step = state.steps.find(s => s.key === 'rootAssociates');
+        this.stepNumber = step?.number ?? 1;
+        this.stepCount = state.steps.length;
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroyed$.next();
+    this.destroyed$.complete();
   }
 
   leftRoot(): RootAssociateSummary | undefined {
@@ -150,6 +278,23 @@ export class RootAssociatesStepComponent implements OnInit {
 
   rightRoot(): RootAssociateSummary | undefined {
     return this.roots.find(r => r.slotLabel === 'RIGHT');
+  }
+
+  openAssignDrawer(slot: 'LEFT' | 'RIGHT'): void {
+    if (this.leftOccupied) {
+      return;
+    }
+    this.activeSlot = slot;
+    this.panelOpen = true;
+    if (slot === 'RIGHT' && !this.form.value.seedRightRoot) {
+      this.form.patchValue({ seedRightRoot: true });
+      this.onSeedRightRootChange();
+    }
+  }
+
+  closeDrawer(): void {
+    this.panelOpen = false;
+    this.activeSlot = null;
   }
 
   onSeedRightRootChange(): void {
@@ -205,6 +350,7 @@ export class RootAssociatesStepComponent implements OnInit {
         this.submitError = null;
         this.createdLeft = res.left;
         this.createdRight = res.right;
+        this.closeDrawer();
         this.refreshSlots();
         this.setupService.refresh();
       },

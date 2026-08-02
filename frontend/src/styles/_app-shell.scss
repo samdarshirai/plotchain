@@ -269,16 +269,47 @@
   font-size: 0.875rem;
 }
 
+// /login is themed after the same Stitch mockup as create-associate (docs/design/
+// stitch_premium_admin_setup_wizard/new_associate) -- light surfaces, soft shadow instead of a
+// border, Inter/JetBrains Mono type. Brand primary/gradient stay dynamic (per-tenant, written by
+// ThemeService), same reasoning as _setup-theme.scss and _admin.scss. body.login-active flips
+// the page background too, since the ancestor <body> is outside .login-form's own scope.
+body.login-active {
+  --surface-page: #f8f9ff;
+}
+
 .login-form {
+  --surface-card: #ffffff;
+  --surface-raised: #eff4ff;
+  --border-subtle: #c2c6d9;
+  --text-primary: #0b1c30;
+  --text-muted: #424656;
+
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   max-width: 360px;
   margin: 4rem auto;
-  padding: 2rem;
+  padding: 2.5rem;
   background: var(--surface-card);
-  border: 1px solid var(--border-subtle);
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+  font-family: 'Inter', var(--font-sans);
+}
+
+.login-form label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.login-form input {
   border-radius: 12px;
+  padding: 0.75rem 1rem;
 }
 
 .login-form button[type='submit'] {

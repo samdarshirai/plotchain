@@ -15,6 +15,8 @@ describe('CreateAssociateComponent', () => {
     fixture = TestBed.createComponent(CreateAssociateComponent);
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
+
+    httpMock.expectOne(req => req.url === '/api/associates' && req.method === 'GET').flush([]);
   });
 
   afterEach(() => httpMock.verify());
@@ -34,23 +36,22 @@ describe('CreateAssociateComponent', () => {
     });
     req.flush({ associateId: 'assoc-1', userId: 'VP00001', temporaryPassword: 'Temp1234!' });
 
-    expect(fixture.componentInstance.assignedUserId).toBe('VP00001');
-    expect(fixture.componentInstance.temporaryPassword).toBe('Temp1234!');
-    expect(fixture.componentInstance.error).toBeFalse();
+    expect(fixture.componentInstance.created?.userId).toBe('VP00001');
+    expect(fixture.componentInstance.created?.temporaryPassword).toBe('Temp1234!');
+    expect(fixture.componentInstance.submitError).toBeNull();
     expect(fixture.componentInstance.form.get('name')!.value).toBeFalsy();
     expect(fixture.componentInstance.form.get('email')!.value).toBeFalsy();
   });
 
-  it('sets an error flag on a 409 conflict and does not set a temporary password', () => {
+  it('sets a submit error on a 409 conflict and does not set a temporary password', () => {
     fixture.componentInstance.form.patchValue({ name: 'Jane Doe', email: 'jane@plotchain.test' });
     fixture.componentInstance.onSubmit();
 
     const req = httpMock.expectOne('/api/associates');
-    req.flush({ error: 'Email already registered' }, { status: 409, statusText: 'Conflict' });
+    req.flush({ error: 'Email already registered: jane@plotchain.test' }, { status: 409, statusText: 'Conflict' });
 
-    expect(fixture.componentInstance.error).toBeTrue();
-    expect(fixture.componentInstance.assignedUserId).toBeNull();
-    expect(fixture.componentInstance.temporaryPassword).toBeNull();
+    expect(fixture.componentInstance.submitError).toBeTruthy();
+    expect(fixture.componentInstance.created).toBeNull();
   });
 
   it('does not submit when the form is invalid', () => {
@@ -58,7 +59,21 @@ describe('CreateAssociateComponent', () => {
     fixture.componentInstance.onSubmit();
 
     httpMock.expectNone('/api/associates');
-    expect(fixture.componentInstance.temporaryPassword).toBeNull();
-    expect(fixture.componentInstance.error).toBeFalse();
+    expect(fixture.componentInstance.created).toBeNull();
+    expect(fixture.componentInstance.submitError).toBeNull();
+  });
+
+  it('submits the selected parent associate UUID from the dropdown', () => {
+    fixture.componentInstance.associates = [{ id: '22222222-2222-2222-2222-222222222222', userId: 'VP00001', name: 'Root Left' }];
+    fixture.componentInstance.form.patchValue({
+      name: 'Jane Doe',
+      email: 'jane@plotchain.test',
+      parentId: '22222222-2222-2222-2222-222222222222'
+    });
+    fixture.componentInstance.onSubmit();
+
+    const req = httpMock.expectOne('/api/associates');
+    expect(req.request.body.parentId).toBe('22222222-2222-2222-2222-222222222222');
+    req.flush({ associateId: 'assoc-1', userId: 'VP00002', temporaryPassword: 'Temp1234!' });
   });
 });

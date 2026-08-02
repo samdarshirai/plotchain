@@ -48,4 +48,12 @@ describe('SidePanelComponent', () => {
     fixture.nativeElement.querySelector('.side-panel__backdrop').click();
     expect(spy).toHaveBeenCalledTimes(1);
   });
+
+  it('clicking the header close button emits closed', () => {
+    fixture.detectChanges();
+    const spy = jasmine.createSpy('closed');
+    fixture.componentInstance.closed.subscribe(spy);
+    fixture.nativeElement.querySelector('.side-panel__close').click();
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
 });

@@ -153,6 +153,10 @@
 }
 
 .side-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -161,6 +165,24 @@
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.side-panel__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: var(--surface-raised);
+    color: var(--text-primary);
+  }
 }
 
 .side-panel__body {
@@ -177,17 +199,30 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.checklist-row__indicator {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 999px;
-  background: var(--status-success);
-  color: var(--brand-primary-contrast);
-  font-size: 0.75rem;
-  font-weight: 700;
+.checklist-row__icon {
+  color: var(--status-success);
+  font-size: 1.25rem;
+}
+
+.checklist-row--blocking {
+  .checklist-row__icon {
+    color: var(--status-danger);
+  }
+
+  .checklist-row__label {
+    color: var(--status-danger);
+    font-weight: 600;
+  }
+}
+
+.checklist-row--optional {
+  .checklist-row__icon {
+    color: var(--text-muted);
+  }
+
+  .checklist-row__label {
+    color: var(--text-muted);
+  }
 }
 
 .checklist-row__label {
@@ -199,10 +234,20 @@
 .checklist-row__badge {
   padding: 0.25rem 0.625rem;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--status-warning) 16%, var(--surface-card));
-  color: var(--status-warning);
+  background: color-mix(in srgb, var(--status-success) 16%, var(--surface-card));
+  color: var(--status-success);
   font-size: 0.75rem;
   font-weight: 600;
+
+  .checklist-row--blocking & {
+    background: color-mix(in srgb, var(--status-danger) 16%, var(--surface-card));
+    color: var(--status-danger);
+  }
+
+  .checklist-row--optional & {
+    background: var(--surface-raised);
+    color: var(--text-muted);
+  }
 }
 
 .checklist-row__edit {

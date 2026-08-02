@@ -7,6 +7,7 @@ import { RootAssociatesStepComponent } from './root-associates-step.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SetupService } from '../../setup.service';
 import { RootAssociateSlots } from '../../models/root-associates.model';
+import { SetupStateResponse } from '../../models/setup-state.model';
 
 describe('RootAssociatesStepComponent', () => {
   let fixture: ComponentFixture<RootAssociatesStepComponent>;
@@ -14,8 +15,23 @@ describe('RootAssociatesStepComponent', () => {
 
   const emptySlots: RootAssociateSlots = { roots: [], leftOccupied: false, rightOccupied: false };
 
+  const setupState: SetupStateResponse = {
+    steps: [{ number: 7, key: 'rootAssociates', complete: false, required: true, percentComplete: 0 }],
+    canGoLive: false,
+    launchedAt: null
+  };
+
+  // The step subscribes to SetupService.getState() (a shared, refresh$-driven observable) on
+  // init, and again every time refresh() fires after a successful create -- each subscription
+  // triggers its own GET that HttpTestingController requires to be flushed or matched, even
+  // though nothing in the component actually waits on the response.
+  function flushSetupState(): void {
+    httpMock.match('/api/company/setup-state').forEach(req => req.flush(setupState));
+  }
+
   function flushInitialLoad(slots = emptySlots): void {
     httpMock.expectOne('/api/company/root-associates').flush(slots);
+    flushSetupState();
     fixture.detectChanges();
   }
 
@@ -53,6 +69,44 @@ describe('RootAssociatesStepComponent', () => {
     expect(fixture.debugElement.query(By.css('form'))).toBeFalsy();
     expect(fixture.nativeElement.textContent).toContain('Root One');
     expect(fixture.nativeElement.textContent).toContain('VP00001');
+  });
+
+  it('renders a static, non-interactive candidate list in the assign drawer (no backing search yet)', () => {
+    flushInitialLoad();
+
+    const rows = fixture.debugElement.queryAll(By.css('.root-associates-step__candidate-row'));
+    expect(rows.length).toBe(2);
+
+    rows.forEach(row => row.nativeElement.click());
+    fixture.detectChanges();
+
+    // Clicking a sample row must never fire a request -- these are presentational only until a
+    // real associate-search/assign-existing endpoint exists.
+    httpMock.expectNone(req => req.url !== '/api/company/root-associates' && req.url !== '/api/company/setup-state');
+  });
+
+  it('opens the assign drawer and pre-checks "seed right root" when the vacant right node is clicked', () => {
+    flushInitialLoad();
+
+    const vacantButtons = fixture.debugElement.queryAll(By.css('.root-associates-step__slot-card--vacant'));
+    expect(vacantButtons.length).toBe(2);
+    vacantButtons[1].nativeElement.click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.panelOpen).toBe(true);
+    expect(fixture.componentInstance.form.value.seedRightRoot).toBe(true);
+  });
+
+  it('disables the vacant right node once left is already occupied (right can only be seeded together with left)', () => {
+    flushInitialLoad({
+      roots: [{ associateId: 'r1', userId: 'VP00001', name: 'Root One', phone: '9990001111', slotLabel: 'LEFT' }],
+      leftOccupied: true,
+      rightOccupied: false
+    });
+
+    const vacantButtons = fixture.debugElement.queryAll(By.css('.root-associates-step__slot-card--vacant'));
+    expect(vacantButtons.length).toBe(1);
+    expect(vacantButtons[0].nativeElement.disabled).toBe(true);
   });
 
   it('requires right name/phone only once "seed right root" is checked', () => {
@@ -94,6 +148,7 @@ describe('RootAssociatesStepComponent', () => {
       leftOccupied: true,
       rightOccupied: false
     });
+    flushSetupState();
   });
 
   it('submits with right-root fields included when seedRightRoot is true', () => {
@@ -128,11 +183,13 @@ describe('RootAssociatesStepComponent', () => {
       leftOccupied: true,
       rightOccupied: true
     });
+    flushSetupState();
   });
 
-  it('shows both one-time results in the banner, refetches slots, and hides the form afterward', fakeAsync(() => {
+  it('shows both one-time results in the banner, refetches slots, closes the drawer, and hides the form afterward', fakeAsync(() => {
     flushInitialLoad();
     const component = fixture.componentInstance;
+    component.openAssignDrawer('LEFT');
     component.form.setValue({
       name: 'Root Left',
       phone: '9990001111',
@@ -154,10 +211,12 @@ describe('RootAssociatesStepComponent', () => {
       leftOccupied: true,
       rightOccupied: true
     });
+    flushSetupState();
 
     expect(component.createdLeft?.temporaryPassword).toBe('temp1');
     expect(component.createdRight?.temporaryPassword).toBe('temp2');
     expect(component.leftOccupied).toBe(true);
+    expect(component.panelOpen).toBe(false);
 
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('temp1');

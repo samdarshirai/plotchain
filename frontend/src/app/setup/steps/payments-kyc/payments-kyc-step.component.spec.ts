@@ -7,11 +7,13 @@ import { PaymentsKycStepComponent } from './payments-kyc-step.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SetupService } from '../../setup.service';
 import {
+  BookingEmiConfigResponse,
   KycConfigResponse,
   PaymentConfigResponse,
   PayoutBankAccountResponse,
   WithdrawalConfigResponse
 } from '../../models/payments-kyc.model';
+import { SetupStateResponse } from '../../models/setup-state.model';
 
 describe('PaymentsKycStepComponent', () => {
   let fixture: ComponentFixture<PaymentsKycStepComponent>;
@@ -45,16 +47,47 @@ describe('PaymentsKycStepComponent', () => {
     updatedAt: null
   };
 
+  const defaultBookingEmiConfig: BookingEmiConfigResponse = {
+    emiEnabled: false,
+    defaultInstallmentCount: 1,
+    confirmRule: 'MANUAL',
+    confirmThresholdPercent: null,
+    updatedAt: null
+  };
+
+  const setupState: SetupStateResponse = {
+    steps: [
+      { number: 1, key: 'companyProfile', complete: true, required: true, percentComplete: 100 },
+      { number: 2, key: 'branding', complete: true, required: true, percentComplete: 100 },
+      { number: 3, key: 'compensation', complete: true, required: true, percentComplete: 100 },
+      { number: 4, key: 'projects', complete: true, required: true, percentComplete: 100 },
+      { number: 5, key: 'paymentsKyc', complete: false, required: true, percentComplete: 0 }
+    ],
+    canGoLive: false,
+    launchedAt: null
+  };
+
+  // Every successful save calls setupService.refresh(), which re-fires the shared
+  // GET /api/company/setup-state (shareReplay only skips the request when replaying a cached
+  // value to a new subscriber, not when the source itself is asked to refresh) -- same reasoning
+  // as compensation-step.component.spec.ts.
+  function flushSetupState(): void {
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+  }
+
   function flushInitialLoads(
     payment = emptyPaymentConfig,
     payout = emptyPayoutAccount,
     kyc = defaultKycConfig,
-    withdrawal = defaultWithdrawalConfig
+    withdrawal = defaultWithdrawalConfig,
+    bookingEmi = defaultBookingEmiConfig
   ): void {
     httpMock.expectOne('/api/company/payments').flush(payment);
     httpMock.expectOne('/api/company/payout-account').flush(payout);
     httpMock.expectOne('/api/company/kyc').flush(kyc);
     httpMock.expectOne('/api/company/withdrawal').flush(withdrawal);
+    httpMock.expectOne('/api/company/booking-emi').flush(bookingEmi);
+    flushSetupState();
     fixture.detectChanges();
   }
 
@@ -73,19 +106,22 @@ describe('PaymentsKycStepComponent', () => {
     httpMock.verify();
   });
 
-  it('loads all four sections independently without triggering an autosave', fakeAsync(() => {
+  it('loads all five sections independently without triggering an autosave', fakeAsync(() => {
     flushInitialLoads();
     const component = fixture.componentInstance;
 
     expect(component.strictness).toBe('STRICT');
     expect(component.requiredDocuments).toEqual(['AADHAAR', 'PAN', 'BANK_PASSBOOK']);
     expect(component.approvalMode).toBe('ALWAYS_MANUAL');
+    expect(component.emiEnabled).toBe(false);
+    expect(component.confirmRule).toBe('MANUAL');
 
     tick(500);
     httpMock.expectNone('/api/company/payments');
     httpMock.expectNone('/api/company/payout-account');
     httpMock.expectNone('/api/company/kyc');
     httpMock.expectNone('/api/company/withdrawal');
+    httpMock.expectNone('/api/company/booking-emi');
   }));
 
   it('autosaves the payment section on a gateway change, independently of the other sections', fakeAsync(() => {
@@ -99,10 +135,12 @@ describe('PaymentsKycStepComponent', () => {
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual({ gateway: 'RAZORPAY', modesEnabled: [] });
     req.flush({ ...emptyPaymentConfig, gateway: 'RAZORPAY' });
+    flushSetupState();
 
     httpMock.expectNone('/api/company/payout-account');
     httpMock.expectNone('/api/company/kyc');
     httpMock.expectNone('/api/company/withdrawal');
+    httpMock.expectNone('/api/company/booking-emi');
   }));
 
   it('autosaves the payout section on a valid IFSC code and rejects a malformed one', fakeAsync(() => {
@@ -125,6 +163,7 @@ describe('PaymentsKycStepComponent', () => {
     const req = httpMock.expectOne('/api/company/payout-account');
     expect(req.request.body.ifscCode).toBe('HDFC0001234');
     req.flush({ ...emptyPayoutAccount, ifscCode: 'HDFC0001234' });
+    flushSetupState();
   }));
 
   it('autosaves the KYC section on a document toggle', fakeAsync(() => {
@@ -137,6 +176,7 @@ describe('PaymentsKycStepComponent', () => {
     const req = httpMock.expectOne('/api/company/kyc');
     expect(req.request.body).toEqual({ strictness: 'STRICT', requiredDocuments: ['PAN', 'BANK_PASSBOOK'] });
     req.flush({ ...defaultKycConfig, requiredDocuments: ['PAN', 'BANK_PASSBOOK'] });
+    flushSetupState();
   }));
 
   it('does not offer an OFF option for KYC strictness', () => {
@@ -155,6 +195,7 @@ describe('PaymentsKycStepComponent', () => {
     const req = httpMock.expectOne('/api/company/payments');
     expect(req.request.body.credentials).toBeUndefined();
     req.flush({ ...emptyPaymentConfig, gateway: 'RAZORPAY' });
+    flushSetupState();
   }));
 
   it('saves credentials only via the explicit action, not the debounced autosave', fakeAsync(() => {
@@ -168,6 +209,7 @@ describe('PaymentsKycStepComponent', () => {
     const req = httpMock.expectOne('/api/company/payments');
     expect(req.request.body).toEqual({ gateway: '', modesEnabled: [], credentials: 'sk_live_secret' });
     req.flush({ ...emptyPaymentConfig, credentialsConfigured: true });
+    flushSetupState();
 
     expect(component.credentialsConfigured).toBe(true);
     expect(component.showCredentialsInput).toBe(false);
@@ -190,18 +232,77 @@ describe('PaymentsKycStepComponent', () => {
     );
   }));
 
+  it('autosaves the booking & EMI section on a confirm-rule change, independently of the other sections', fakeAsync(() => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    component.setConfirmRule('KYC_GATED');
+    tick(400);
+
+    const req = httpMock.expectOne('/api/company/booking-emi');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({
+      emiEnabled: false,
+      defaultInstallmentCount: 1,
+      confirmRule: 'KYC_GATED',
+      confirmThresholdPercent: null
+    });
+    req.flush({ ...defaultBookingEmiConfig, confirmRule: 'KYC_GATED' });
+    flushSetupState();
+
+    httpMock.expectNone('/api/company/payments');
+    httpMock.expectNone('/api/company/payout-account');
+    httpMock.expectNone('/api/company/kyc');
+    httpMock.expectNone('/api/company/withdrawal');
+  }));
+
+  it('surfaces the booking & EMI cross-field 409 as a banner, not a field error', fakeAsync(() => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    component.setConfirmRule('AUTO_THRESHOLD');
+    tick(400);
+
+    httpMock.expectOne('/api/company/booking-emi').flush(
+      { error: 'confirm threshold percent must be a positive value when confirm rule is AUTO_THRESHOLD' },
+      { status: 409, statusText: 'Conflict' }
+    );
+
+    expect(component.bookingEmiSubmitError).toBe(
+      'confirm threshold percent must be a positive value when confirm rule is AUTO_THRESHOLD'
+    );
+    expect(component.bookingEmiSavedJustNow).toBeFalse();
+  }));
+
+  it('only renders the confirm-threshold field when confirmRule is AUTO_THRESHOLD', () => {
+    flushInitialLoads();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('input[min="1"][max="100"]')).toBeNull();
+
+    fixture.componentInstance.setConfirmRule('AUTO_THRESHOLD');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('input[min="1"][max="100"]')).toBeTruthy();
+  });
+
   it('does not render the inline step-nav when mode is setup (shell owns navigation there)', () => {
     flushInitialLoads();
     const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
     expect(nav).toBeNull();
   });
 
-  it('passes the settings mode through to the step-nav', () => {
+  it('passes the settings mode through to the step-nav, nested inside the last card', () => {
     flushInitialLoads();
     fixture.componentInstance.mode = 'settings';
     fixture.detectChanges();
     const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
     expect(nav.componentInstance.mode).toBe('settings');
+    // Regression guard for the projects-step bug (settings-mode nav floating outside the card
+    // layout grid instead of sitting under the last card): the nav must be nested inside the
+    // Booking & EMI Policy card, not a direct child of the top-level step container.
+    expect(nav.nativeElement.closest('.payments-kyc-step__card--final')).toBeTruthy();
+    expect(nav.nativeElement.parentElement?.classList.contains('payments-kyc-step')).toBeFalse();
   });
 
   it('keeps the payment-mode checkbox toggle working after the loop-variable rename', () => {

@@ -18,13 +18,23 @@ describe('ChecklistRowComponent', () => {
     expect(fixture.nativeElement.querySelector('.checklist-row__label').textContent).toContain('KYC verification');
   });
 
-  it('shows the complete-state indicator only when complete', () => {
+  it('defaults to the complete tone and icon', () => {
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.checklist-row__indicator')).toBeFalsy();
+    const row = fixture.nativeElement.querySelector('.checklist-row');
+    expect(row.classList).toContain('checklist-row--complete');
+    expect(fixture.nativeElement.querySelector('.checklist-row__icon').textContent).toContain('check_circle');
+  });
 
-    fixture.componentInstance.complete = true;
+  it('switches icon and row class per tone', () => {
+    fixture.componentInstance.tone = 'blocking';
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.checklist-row__indicator')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.checklist-row').classList).toContain('checklist-row--blocking');
+    expect(fixture.nativeElement.querySelector('.checklist-row__icon').textContent).toContain('warning');
+
+    fixture.componentInstance.tone = 'optional';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.checklist-row').classList).toContain('checklist-row--optional');
+    expect(fixture.nativeElement.querySelector('.checklist-row__icon').textContent).toContain('rule');
   });
 
   it('renders the badge when badgeLabel is set', () => {

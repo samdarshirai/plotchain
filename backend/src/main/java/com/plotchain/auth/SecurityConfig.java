@@ -106,7 +106,7 @@ public class SecurityConfig {
                 // matchers for them.
                 .requestMatchers(HttpMethod.GET,
                         "/api/company/payments", "/api/company/payout-account",
-                        "/api/company/kyc", "/api/company/withdrawal")
+                        "/api/company/kyc", "/api/company/withdrawal", "/api/company/booking-emi")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 // Same reasoning as setup-state/profile/branding/compensation/payments above:
                 // Phase 9's Projects & Plots GETs stay admin-family-only. Their POST/PUT/DELETE
@@ -141,6 +141,11 @@ public class SecurityConfig {
                 // There is no mutating endpoint for this resource at all (append-only, written
                 // internally by SettingsAuditService) -- deliberately no write matcher.
                 .requestMatchers(HttpMethod.GET, "/api/company/audit-log")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                // Backs the Create Associate form's parent-picker dropdown: same admin-family
+                // reasoning as the GETs above. POST /api/associates is a write and is already
+                // covered by the blanket POST rule above -- deliberately no separate matcher.
+                .requestMatchers(HttpMethod.GET, "/api/associates")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 // Phase 5's genuinely public endpoints: the pre-login branding bootstrap, the
                 // raw logo bytes it and the login page render as <img> tags, and the favicon

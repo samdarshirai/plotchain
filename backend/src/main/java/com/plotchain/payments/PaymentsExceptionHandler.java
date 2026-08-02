@@ -14,4 +14,9 @@ public class PaymentsExceptionHandler {
     public ResponseEntity<Map<String, String>> handleInvalidWithdrawalConfig(InvalidWithdrawalConfigException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(InvalidBookingEmiConfigException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidBookingEmiConfig(InvalidBookingEmiConfigException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
 }

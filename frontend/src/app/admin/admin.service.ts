@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { CreateAssociateRequest } from './models/create-associate-request.model';
 import { CreateAssociateResponse } from './models/create-associate-response.model';
+import { AssociateSummary } from './models/associate-summary.model';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
@@ -10,5 +11,9 @@ export class AdminService {
 
   createAssociate(request: CreateAssociateRequest): Observable<CreateAssociateResponse> {
     return this.http.post<CreateAssociateResponse>('/api/associates', request);
+  }
+
+  listAssociates(): Observable<AssociateSummary[]> {
+    return this.http.get<AssociateSummary[]>('/api/associates');
   }
 }

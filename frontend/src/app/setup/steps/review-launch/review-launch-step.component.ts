@@ -1,12 +1,16 @@
-import { Component, inject } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { Observable } from 'rxjs';
-import { ChecklistRowComponent } from '../../../shared/components/checklist-row/checklist-row.component';
+import { Observable, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { ChecklistRowComponent, ChecklistRowTone } from '../../../shared/components/checklist-row/checklist-row.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { BrandButtonComponent } from '../../../shared/components/brand-button/brand-button.component';
+import { StatTileComponent } from '../../../shared/components/stat-tile/stat-tile.component';
+import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SetupService } from '../../setup.service';
+import { SetupInspectorService } from '../../setup-inspector.service';
 import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-state.model';
 
 @Component({
@@ -18,23 +22,47 @@ import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-s
     TranslateModule,
     ChecklistRowComponent,
     InlineBannerComponent,
-    BrandButtonComponent
+    BrandButtonComponent,
+    StatTileComponent,
+    SetupStepNavComponent
   ],
   template: `
-    <div class="review-launch-step step-grid" *ngIf="(state$ | async) as state">
-      <div class="card review-launch-step__checklist">
-        <h1 class="card-title">{{ 'setup.reviewLaunch.checklistTitle' | translate }}</h1>
+    <div class="review-launch-step" *ngIf="(state$ | async) as state">
+      <div class="review-launch-step__intro">
+        <span class="review-launch-step__eyebrow">
+          {{ 'setup.reviewLaunch.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
+        </span>
+        <h1 class="review-launch-step__title">{{ 'setup.steps.reviewLaunch' | translate }}</h1>
+        <p class="review-launch-step__subtitle">{{ 'setup.reviewLaunch.subtitle' | translate }}</p>
+      </div>
+
+      <div class="card review-launch-step__status">
+        <h2 class="card-title">{{ 'setup.reviewLaunch.checklistTitle' | translate }}</h2>
         <app-checklist-row
           *ngFor="let step of summarySteps(state)"
           [label]="'setup.steps.' + step.key | translate"
-          [complete]="step.complete"
+          [tone]="rowTone(step)"
           [badgeLabel]="badgeLabel(step)"
           [editLabel]="'setup.reviewLaunch.editLabel' | translate"
           [editHref]="'/setup/' + stepPaths[step.key]"
         ></app-checklist-row>
       </div>
 
-      <div class="card review-launch-step__launch">
+      <div class="review-launch-step__stats">
+        <app-stat-tile
+          [label]="'setup.reviewLaunch.requiredStepsLabel' | translate"
+          [value]="requiredStepsSummary(state)"
+        ></app-stat-tile>
+        <app-stat-tile
+          tone="accent"
+          [label]="'setup.reviewLaunch.optionalModulesLabel' | translate"
+          [value]="optionalStepsSummary(state)"
+        ></app-stat-tile>
+      </div>
+    </div>
+
+    <ng-template #inspectorTpl>
+      <div class="card review-launch-step__launch" *ngIf="(state$ | async) as state">
         <ng-container *ngIf="!launched; else launchedPanel">
           <div class="review-launch-step__all-set" *ngIf="state.canGoLive">
             <h2>{{ 'setup.reviewLaunch.allSetTitle' | translate }}</h2>
@@ -58,7 +86,7 @@ import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-s
           <app-brand-button
             variant="primary"
             [fullWidth]="true"
-            [disabled]="!state.canGoLive || !termsAccepted || launching"
+            [disabled]="goLiveDisabled(state)"
             (clicked)="goLive()"
           >
             {{ 'setup.reviewLaunch.goLiveLabel' | translate }}
@@ -72,23 +100,61 @@ import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-s
           </div>
         </ng-template>
       </div>
-    </div>
+
+      <app-setup-step-nav [previousPath]="previousPath" [nextPath]="null" mode="setup" layout="stacked"></app-setup-step-nav>
+    </ng-template>
   `
 })
-export class ReviewLaunchStepComponent {
+export class ReviewLaunchStepComponent implements OnInit, AfterViewInit, OnDestroy {
   private setupService = inject(SetupService);
+  private inspectorService = inject(SetupInspectorService);
   private translate = inject(TranslateService);
+  private destroyed$ = new Subject<void>();
+
+  @ViewChild('inspectorTpl') private inspectorTpl!: TemplateRef<unknown>;
 
   readonly stepPaths = STEP_PATHS;
   readonly state$: Observable<SetupStateResponse> = this.setupService.getState();
+  readonly previousPath = this.setupService.previousStepPath('reviewLaunch');
+
+  stepNumber = 1;
+  stepCount = 1;
 
   termsAccepted = false;
   launching = false;
   launched = false;
   launchError?: string;
 
+  ngOnInit(): void {
+    this.setupService
+      .getState()
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(state => {
+        const step = state.steps.find(s => s.key === 'reviewLaunch');
+        this.stepNumber = step?.number ?? 1;
+        this.stepCount = state.steps.length;
+      });
+  }
+
+  ngAfterViewInit(): void {
+    this.inspectorService.register(this.inspectorTpl);
+  }
+
+  ngOnDestroy(): void {
+    this.destroyed$.next();
+    this.destroyed$.complete();
+    this.inspectorService.clear();
+  }
+
   summarySteps(state: SetupStateResponse): StepStatus[] {
     return state.steps.filter(s => s.key !== 'reviewLaunch');
+  }
+
+  rowTone(step: StepStatus): ChecklistRowTone {
+    if (step.complete) {
+      return 'complete';
+    }
+    return step.required ? 'blocking' : 'optional';
   }
 
   badgeLabel(step: StepStatus): string | undefined {
@@ -98,7 +164,17 @@ export class ReviewLaunchStepComponent {
     if (step.required) {
       return this.translate.instant('setup.reviewLaunch.blockingBadge');
     }
-    return undefined;
+    return this.translate.instant('setup.optionalLabel');
+  }
+
+  requiredStepsSummary(state: SetupStateResponse): string {
+    const required = this.summarySteps(state).filter(s => s.required);
+    return `${required.filter(s => s.complete).length}/${required.length}`;
+  }
+
+  optionalStepsSummary(state: SetupStateResponse): string {
+    const optional = this.summarySteps(state).filter(s => !s.required);
+    return `${optional.filter(s => s.complete).length}/${optional.length}`;
   }
 
   blockingStepLabels(state: SetupStateResponse): string {
@@ -106,6 +182,10 @@ export class ReviewLaunchStepComponent {
       .filter(s => s.required && !s.complete)
       .map(s => this.translate.instant('setup.steps.' + s.key))
       .join(', ');
+  }
+
+  goLiveDisabled(state: SetupStateResponse): boolean {
+    return !state.canGoLive || !this.termsAccepted || this.launching;
   }
 
   goLive(): void {

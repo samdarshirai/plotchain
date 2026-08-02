@@ -5,8 +5,8 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { ReviewLaunchStepComponent } from './review-launch-step.component';
 import { ChecklistRowComponent } from '../../../shared/components/checklist-row/checklist-row.component';
-import { BrandButtonComponent } from '../../../shared/components/brand-button/brand-button.component';
 import { SetupService } from '../../setup.service';
+import { SetupInspectorService } from '../../setup-inspector.service';
 import { SetupStateResponse, StepStatus } from '../../models/setup-state.model';
 
 describe('ReviewLaunchStepComponent', () => {
@@ -60,29 +60,43 @@ describe('ReviewLaunchStepComponent', () => {
     expect(rows.map(r => r.componentInstance.label)).not.toContain('reviewLaunch');
   });
 
+  it('gives a complete row the complete tone and an incomplete required row the blocking tone', async () => {
+    await createAndFlush(stateWith(false));
+
+    const rows = fixture.debugElement.queryAll(By.directive(ChecklistRowComponent));
+    const companyProfileRow = rows.find(r => r.componentInstance.editHref === '/setup/company-profile');
+    const brandingRow = rows.find(r => r.componentInstance.editHref === '/setup/branding');
+
+    expect(companyProfileRow?.componentInstance.tone).toBe('blocking');
+    expect(brandingRow?.componentInstance.tone).toBe('optional');
+  });
+
+  it('gives a complete step the complete tone', async () => {
+    await createAndFlush(stateWith(true));
+
+    const rows = fixture.debugElement.queryAll(By.directive(ChecklistRowComponent));
+    const companyProfileRow = rows.find(r => r.componentInstance.editHref === '/setup/company-profile');
+    expect(companyProfileRow?.componentInstance.tone).toBe('complete');
+  });
+
   it('disables Go Live when canGoLive is false, even with terms accepted', async () => {
     await createAndFlush(stateWith(false));
     fixture.componentInstance.termsAccepted = true;
-    fixture.detectChanges();
 
-    const button = fixture.debugElement.query(By.directive(BrandButtonComponent));
-    expect(button.componentInstance.disabled).toBeTrue();
+    expect(fixture.componentInstance.goLiveDisabled(stateWith(false))).toBeTrue();
   });
 
   it('disables Go Live when canGoLive is true but terms are not accepted', async () => {
     await createAndFlush(stateWith(true));
 
-    const button = fixture.debugElement.query(By.directive(BrandButtonComponent));
-    expect(button.componentInstance.disabled).toBeTrue();
+    expect(fixture.componentInstance.goLiveDisabled(stateWith(true))).toBeTrue();
   });
 
   it('enables Go Live and posts to /api/company/launch when both conditions are met', async () => {
     await createAndFlush(stateWith(true));
     fixture.componentInstance.termsAccepted = true;
-    fixture.detectChanges();
 
-    const button = fixture.debugElement.query(By.directive(BrandButtonComponent));
-    expect(button.componentInstance.disabled).toBeFalse();
+    expect(fixture.componentInstance.goLiveDisabled(stateWith(true))).toBeFalse();
 
     fixture.componentInstance.goLive();
     const req = httpMock.expectOne('/api/company/launch');
@@ -119,5 +133,30 @@ describe('ReviewLaunchStepComponent', () => {
 
     expect(fixture.componentInstance.launched).toBeFalse();
     expect(fixture.componentInstance.launchError).toContain('Cannot go live');
+  });
+
+  it('resolves previousPath to the step before review-launch', async () => {
+    await createAndFlush(stateWith(false));
+    expect(fixture.componentInstance.previousPath).toBe('root-associates');
+  });
+
+  it('registers its inspector panel template with SetupInspectorService after view init', async () => {
+    await createAndFlush(stateWith(false));
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    spyOn(inspectorService, 'register');
+
+    fixture.componentInstance.ngAfterViewInit();
+
+    expect(inspectorService.register).toHaveBeenCalled();
+  });
+
+  it('clears the inspector template on destroy', async () => {
+    await createAndFlush(stateWith(false));
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    spyOn(inspectorService, 'clear');
+
+    fixture.destroy();
+
+    expect(inspectorService.clear).toHaveBeenCalled();
   });
 });

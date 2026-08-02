@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
+  BookingEmiConfigRequest,
+  BookingEmiConfigResponse,
   KycConfigRequest,
   KycConfigResponse,
   PaymentConfigRequest,
@@ -46,5 +48,13 @@ export class PaymentsKycService {
 
   updateWithdrawalConfig(request: WithdrawalConfigRequest): Observable<WithdrawalConfigResponse> {
     return this.http.put<WithdrawalConfigResponse>('/api/company/withdrawal', request);
+  }
+
+  getBookingEmiConfig(): Observable<BookingEmiConfigResponse> {
+    return this.http.get<BookingEmiConfigResponse>('/api/company/booking-emi');
+  }
+
+  updateBookingEmiConfig(request: BookingEmiConfigRequest): Observable<BookingEmiConfigResponse> {
+    return this.http.put<BookingEmiConfigResponse>('/api/company/booking-emi', request);
   }
 }

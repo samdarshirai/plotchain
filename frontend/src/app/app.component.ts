@@ -5,11 +5,12 @@ import { TranslateModule } from '@ngx-translate/core';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from './auth/auth.service';
 
-// The /setup wizard is fully light-themed (see _setup-theme.scss), but that override is scoped
-// to .setup-shell -- it can't reach this component's own dark app-header (a sibling, not an
-// ancestor) or <body>'s default dark background (an ancestor, so inheritance doesn't flow to
-// it). Both are handled here instead: the header is removed from the DOM entirely while on
-// /setup, and a body class carries the same light tokens so there's no dark edge/gap around it.
+// /setup and /admin/associates/new are fully light-themed (see _setup-theme.scss and
+// _admin.scss), but those overrides are scoped to their own root class -- neither can reach
+// this component's own dark app-header (a sibling, not an ancestor) or <body>'s default dark
+// background (an ancestor, so inheritance doesn't flow to it). Both are handled here instead:
+// the header is removed from the DOM entirely on these chromeless routes, and a body class
+// carries the same light tokens so there's no dark edge/gap around the page.
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -24,6 +25,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private navigationSubscription?: Subscription;
 
   isSetupRoute = false;
+  isChromelessRoute = false;
 
   ngOnInit(): void {
     this.updateSetupRouteState(this.router.url);
@@ -44,5 +46,11 @@ export class AppComponent implements OnInit, OnDestroy {
   private updateSetupRouteState(url: string): void {
     this.isSetupRoute = url.startsWith('/setup');
     this.document.body.classList.toggle('setup-active', this.isSetupRoute);
+    const isAdminAssociateRoute = url.startsWith('/admin/associates/new');
+    this.document.body.classList.toggle('admin-associate-active', isAdminAssociateRoute);
+    this.isChromelessRoute = this.isSetupRoute || isAdminAssociateRoute;
+    // /login never shows the app-header (it only renders once authenticated), so it just needs
+    // the body background flipped light -- no header/DOM removal to handle here.
+    this.document.body.classList.toggle('login-active', url.startsWith('/login'));
   }
 }

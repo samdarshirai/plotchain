@@ -7,6 +7,7 @@ import { AdminTeamStepComponent } from './admin-team-step.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SidePanelComponent } from '../../../shared/components/side-panel/side-panel.component';
 import { SetupService } from '../../setup.service';
+import { SetupStateResponse } from '../../models/setup-state.model';
 import { AdminSummary, RolePermissions, ROLE_OPTIONS } from '../../models/admin-team.model';
 
 describe('AdminTeamStepComponent', () => {
@@ -22,9 +23,19 @@ describe('AdminTeamStepComponent', () => {
     SUPPORT: ['view_tickets']
   };
 
+  const setupState: SetupStateResponse = {
+    steps: [
+      { number: 1, key: 'companyProfile', complete: true, required: true, percentComplete: 100 },
+      { number: 6, key: 'adminTeam', complete: false, required: true, percentComplete: 0 }
+    ],
+    canGoLive: false,
+    launchedAt: null
+  };
+
   function flushInitialLoads(admins = emptyAdmins, rolePermissions = defaultRolePermissions): void {
     httpMock.expectOne('/api/company/admins').flush(admins);
     httpMock.expectOne('/api/company/admins/role-permissions').flush(rolePermissions);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
     fixture.detectChanges();
   }
 
@@ -55,10 +66,12 @@ describe('AdminTeamStepComponent', () => {
     expect(component.rolePermissions).toEqual(defaultRolePermissions);
 
     fixture.detectChanges();
-    const tableText = fixture.nativeElement.textContent as string;
-    expect(tableText).toContain('admin1');
-    expect(tableText).toContain('Ada Lovelace');
-    expect(tableText).toContain('admin2');
+    const rows = fixture.debugElement.queryAll(By.css('.admin-team-step__row'));
+    expect(rows.length).toBe(2);
+    const directoryText = fixture.nativeElement.textContent as string;
+    expect(directoryText).toContain('admin1');
+    expect(directoryText).toContain('Ada Lovelace');
+    expect(directoryText).toContain('admin2');
   });
 
   it('renders the founding ADMIN row using the translated Admin label, not the raw role string', () => {
@@ -74,9 +87,48 @@ describe('AdminTeamStepComponent', () => {
     expect(component.roleLabel('ADMIN')).toBe('setup.adminTeam.roleAdminLabel');
 
     fixture.detectChanges();
-    const roleCell = fixture.debugElement.query(By.css('tbody tr td:nth-child(3)'));
-    expect(roleCell.nativeElement.textContent).toContain('setup.adminTeam.roleAdminLabel');
-    expect(roleCell.nativeElement.textContent).not.toContain('ADMIN');
+    const roleChip = fixture.debugElement.query(By.css('.admin-team-step__role-chip'));
+    expect(roleChip.nativeElement.textContent).toContain('setup.adminTeam.roleAdminLabel');
+    expect(roleChip.nativeElement.textContent).not.toContain('ADMIN');
+    expect(roleChip.nativeElement.classList).toContain('admin-team-step__role-chip--owner');
+  });
+
+  it('derives avatar initials from up to the first two words of the admin name', () => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    expect(component.initials('Ada Lovelace')).toBe('AL');
+    expect(component.initials('Cher')).toBe('C');
+    expect(component.initials('')).toBe('');
+  });
+
+  it('computes "Active Now" from admins active within the last 24 hours', () => {
+    const now = Date.now();
+    const admins: AdminSummary[] = [
+      { id: 'a1', userId: 'recent', fullName: 'Recent Admin', role: 'SUPPORT', lastActiveAt: new Date(now - 60_000).toISOString() },
+      { id: 'a2', userId: 'stale', fullName: 'Stale Admin', role: 'SUPPORT', lastActiveAt: new Date(now - 48 * 60 * 60 * 1000).toISOString() },
+      { id: 'a3', userId: 'never', fullName: 'Never Admin', role: 'SUPPORT', lastActiveAt: null }
+    ];
+    flushInitialLoads(admins);
+
+    expect(fixture.componentInstance.activeNowCount).toBe(1);
+  });
+
+  it('shows both granted (check_circle) and not-granted (cancel) permission icons for the selected role', () => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+    component.panelOpen = true;
+    fixture.detectChanges();
+
+    // Defaults to the first ROLE_OPTIONS entry (SUPER_ADMIN), which grants 2 of the 5 union
+    // permissions across defaultRolePermissions.
+    component.form.patchValue({ role: 'FINANCE' });
+    fixture.detectChanges();
+
+    const rows = fixture.debugElement.queryAll(By.css('.admin-team-step__permission-row'));
+    expect(rows.length).toBe(5); // union of all permissions across all roles in defaultRolePermissions
+    const granted = fixture.debugElement.queryAll(By.css('.admin-team-step__permission-icon--granted'));
+    expect(granted.length).toBe(1); // FINANCE only grants 'view_ledger'
   });
 
   it('offers only the four ROLE_OPTIONS values in the role select, no ASSOCIATE/ADMIN option', () => {
@@ -186,6 +238,9 @@ describe('AdminTeamStepComponent', () => {
     httpMock.expectOne('/api/company/admins').flush([
       { id: 'a9', userId: 'newadmin', fullName: 'New Admin', role: 'FINANCE', lastActiveAt: null }
     ]);
+    // setupService.refresh() re-fires the state$ pipe while this component's own getState()
+    // subscription (for stepNumber/stepCount) is still alive, issuing a second GET.
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
 
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('servergenerated1');
@@ -323,6 +378,7 @@ describe('AdminTeamStepComponent', () => {
     const req = httpMock.expectOne('/api/company/admins');
     req.flush({ id: 'a11', userId: 'freshadmin', role: 'SUPPORT', temporaryPassword: 'generated' });
     httpMock.expectOne('/api/company/admins').flush([]);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
   }));
 
   it('clears stale server errors when the User ID input changes again', fakeAsync(() => {
@@ -369,6 +425,7 @@ describe('AdminTeamStepComponent', () => {
       .expectOne('/api/company/admins')
       .flush({ id: 'a12', userId: 'newadmin3', role: 'FINANCE', temporaryPassword: 'servergenerated3' });
     httpMock.expectOne('/api/company/admins').flush([]);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
 
     expect(component.createdAdmin).not.toBeNull();
     fixture.detectChanges();

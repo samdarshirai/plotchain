@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { AdminService } from './admin.service';
 import { CreateAssociateResponse } from './models/create-associate-response.model';
+import { AssociateSummary } from './models/associate-summary.model';
 
 describe('AdminService', () => {
   let service: AdminService;
@@ -51,5 +52,17 @@ describe('AdminService', () => {
       position: 'L'
     });
     req.flush({ associateId: 'assoc-1', userId: 'VP00001', temporaryPassword: 'Temp1234!' });
+  });
+
+  it('lists associates for the parent picker', () => {
+    const mockResponse: AssociateSummary[] = [{ id: 'assoc-1', userId: 'VP00001', name: 'Root Left' }];
+
+    service.listAssociates().subscribe(res => {
+      expect(res).toEqual(mockResponse);
+    });
+
+    const req = httpMock.expectOne('/api/associates');
+    expect(req.request.method).toBe('GET');
+    req.flush(mockResponse);
   });
 });

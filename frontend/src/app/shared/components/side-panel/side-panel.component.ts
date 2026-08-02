@@ -10,6 +10,9 @@ import { CommonModule } from '@angular/common';
     <aside class="side-panel" [class.side-panel--open]="open">
       <header class="side-panel__header">
         <span class="side-panel__title">{{ title }}</span>
+        <button type="button" class="side-panel__close" (click)="close()" aria-label="Close">
+          <span class="material-symbols-outlined">close</span>
+        </button>
       </header>
       <div class="side-panel__body"><ng-content></ng-content></div>
     </aside>
