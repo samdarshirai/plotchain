@@ -3,6 +3,7 @@ package com.plotchain.auth;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateStatus;
 import com.plotchain.company.SetupStateService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,10 @@ public class AuthService {
 
         if (!passwordEncoder.matches(request.password(), associate.getPasswordHash())) {
             throw new InvalidCredentialsException();
+        }
+
+        if (associate.getStatus() == AssociateStatus.SUSPENDED) {
+            throw new AssociateSuspendedException();
         }
 
         associate.setLastActiveAt(Instant.now());

@@ -23,6 +23,14 @@ public class AuthExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", ex.getMessage()));
     }
 
+    // Unlike a bad userId/password (which must stay indistinguishable from each other), a
+    // suspension notice is not a credential-guessing risk, so the real reason is reported
+    // rather than folded into a generic 401.
+    @ExceptionHandler(AssociateSuspendedException.class)
+    public ResponseEntity<Map<String, String>> handleAssociateSuspended(AssociateSuspendedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", ex.getMessage()));
+    }
+
     // Bean-validation failures (MethodArgumentNotValidException) are handled application-wide
     // by com.plotchain.api.ApiExceptionHandler, which reports which field failed instead of a
     // login-specific message. Do not add a handler for it here: a second advice matching the

@@ -22,6 +22,9 @@ public class Associate {
     @Enumerated(EnumType.STRING)
     @Column(name = "kyc_status", nullable = false)
     private KycStatus kycStatus;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AssociateStatus status = AssociateStatus.ACTIVE;
     @Column(name = "joined_at", nullable = false)
     private Instant joinedAt;
     @Column(name = "cumulative_matched_volume", nullable = false)
@@ -55,6 +58,8 @@ public class Associate {
     public void setRankId(UUID rankId) { this.rankId = rankId; }
     public KycStatus getKycStatus() { return kycStatus; }
     public void setKycStatus(KycStatus kycStatus) { this.kycStatus = kycStatus; }
+    public AssociateStatus getStatus() { return status; }
+    public void setStatus(AssociateStatus status) { this.status = status; }
     public Instant getJoinedAt() { return joinedAt; }
     public void setJoinedAt(Instant joinedAt) { this.joinedAt = joinedAt; }
     public BigDecimal getCumulativeMatchedVolume() { return cumulativeMatchedVolume; }

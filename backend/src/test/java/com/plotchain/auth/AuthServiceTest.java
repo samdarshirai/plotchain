@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
+import com.plotchain.associate.AssociateStatus;
 import com.plotchain.company.CompanyBrandingRepository;
 import com.plotchain.company.CompanyBrandingService;
 import com.plotchain.company.CompanyProfile;
@@ -178,5 +179,35 @@ class AuthServiceTest {
             .isInstanceOf(InvalidCredentialsException.class);
 
         verify(associateRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void rejectsLoginForASuspendedAssociate() {
+        Associate associate = new Associate();
+        associate.setId(UUID.randomUUID());
+        associate.setRole(AssociateRole.ASSOCIATE);
+        associate.setPasswordHash(passwordEncoder.encode("Password123!"));
+        associate.setStatus(AssociateStatus.SUSPENDED);
+        when(associateRepository.findByUserId("jane")).thenReturn(Optional.of(associate));
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest("jane", "Password123!")))
+            .isInstanceOf(AssociateSuspendedException.class);
+
+        verify(associateRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void admitsLoginForAnActiveAssociate() {
+        Associate associate = new Associate();
+        associate.setId(UUID.randomUUID());
+        associate.setRole(AssociateRole.ASSOCIATE);
+        associate.setPasswordHash(passwordEncoder.encode("Password123!"));
+        associate.setStatus(AssociateStatus.ACTIVE);
+        when(associateRepository.findByUserId("jane")).thenReturn(Optional.of(associate));
+        stubLaunched(true);
+
+        LoginResponse response = authService.login(new LoginRequest("jane", "Password123!"));
+
+        assertThat(response.token()).isNotBlank();
     }
 }
