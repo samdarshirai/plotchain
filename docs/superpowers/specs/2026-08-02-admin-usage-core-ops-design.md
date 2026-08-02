@@ -31,11 +31,17 @@ exist yet):
 - **e-PIN generation/allocation, Support ticket queue, Announcement composer, Reports &
   exports** — none of these have supporting entities yet either; each becomes its own spec.
 
-**Not reviewed against the reference-app screen recording.** The `.mov` file couldn't be viewed
-directly (no video tool, and the file is owner-read-only). This design is built from the PRD,
-the existing technical spec, the two Samvardhani compensation PDFs, and the current codebase.
-Exported frames were expected in `docs/competitor-screens/` — check that directory before
-implementation and reconcile any visual/flow differences found there against this spec.
+**Reviewed against the reference-app screen recording** (56 frames extracted via `ffmpeg`, one
+every 5s, full runtime). Finding: the recording is entirely the associate-facing self-service
+portal — no admin views appear anywhere in it, so it can't directly validate these three admin
+screens. It's still useful as domain-vocabulary confirmation, reflected in §3 and §5 below.
+Notable items it surfaced that are **out of scope for this spec but relevant to later ones**:
+a separate transaction password (gates KYC/bank/e-PIN actions in the reference app, doesn't
+exist anywhere in this codebase yet — not even the associate-facing side, which the
+setup-onboarding spec already lists as a gap); KYC bundling a bank-passbook photo in with
+PAN/Aadhar as one 4-document submission; and a recurring DataTables-style export toolbar
+(search, CSV/Excel/PDF/print, column toggle) worth matching for UI consistency once these
+screens get built.
 
 ## 2. RBAC
 
@@ -71,7 +77,7 @@ parent-picker on the Create Associate form and other code may depend on that exa
 | Endpoint | Access | Notes |
 |---|---|---|
 | `GET /api/admin/associates?search=&rank=&kycStatus=&status=&joinedFrom=&joinedTo=&page=&size=` | all admin-family | search by name/userId; page-response shape matches `PlotPageResponse`/`SettingsAuditPageResponse` |
-| `GET /api/admin/associates/{id}` | all admin-family | full profile + direct/total downline counts (reuses `AssociateRepository.countDownline`) + current-cycle leg volumes |
+| `GET /api/admin/associates/{id}` | all admin-family | full profile + direct/total downline counts (reuses `AssociateRepository.countDownline`) + current-cycle leg volumes; includes Sponsor ID (`sponsorId`) and Placement ID (`parentId` + `position`) — both already exist on `Associate`, and the reference app's genealogy tables treat them as standard directory columns |
 | `POST /api/admin/associates/{id}/suspend` | SUPER_ADMIN/ADMIN | sets new `status` column to `SUSPENDED`; blocks login |
 | `POST /api/admin/associates/{id}/reactivate` | SUPER_ADMIN/ADMIN | sets `status` back to `ACTIVE` |
 | `POST /api/admin/associates/{id}/reset-password` | SUPER_ADMIN/ADMIN | reuses `TemporaryPasswordGenerator`; sets `must_change_password=true`; returns the temp password once, never stored/retrievable after |
@@ -81,6 +87,13 @@ parent-picker on the Create Associate form and other code may depend on that exa
 `Associate` gets a new column: `status ENUM('ACTIVE','SUSPENDED') NOT NULL DEFAULT 'ACTIVE'`.
 `AuthenticationService`'s login check gets a `status == SUSPENDED` branch alongside its existing
 `must_change_password` check.
+
+Note: this `status` is about login access (admin-imposed), distinct from "active/inactive team"
+in the PRD/reference app, which is a date-range-computed business-activity measure (already
+served by `AssociateRepository.countActiveToday` against `lastActiveAt`, no schema change). Two
+different concepts sharing similar names — worth keeping the naming distinction clear in the UI
+(e.g. "Account suspended" vs. an "Inactive" business-activity badge) so they don't read as the
+same thing.
 
 All four mutating actions call `SettingsAuditService.record("associate", summary, detail,
 actorId)` — reuses the existing append-only audit trail, surfaces in the same Audit Log screen
