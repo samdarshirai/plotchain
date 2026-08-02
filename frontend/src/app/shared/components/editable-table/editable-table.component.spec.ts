@@ -136,3 +136,44 @@ describe('EditableTableComponent', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 });
+
+import { Component } from '@angular/core';
+
+@Component({
+  standalone: true,
+  imports: [EditableTableComponent],
+  template: `
+    <app-editable-table
+      [readOnly]="true"
+      [columns]="columns"
+      [rows]="rows"
+      [actionTemplate]="actionTpl"
+      [emptyStateLabel]="'No rows'"
+    ></app-editable-table>
+    <ng-template #actionTpl let-row let-i="index">
+      <button class="action-cell" [attr.data-index]="i">{{ row.note }}</button>
+    </ng-template>
+  `
+})
+class ActionColumnHostComponent {
+  columns: EditableTableColumn[] = [
+    { key: 'note', label: 'Note', type: 'text' },
+    { key: 'actions', label: 'Actions', type: 'action' }
+  ];
+  rows: Record<string, string | number>[] = [{ note: 'top tier' }, { note: 'mid tier' }];
+}
+
+describe('EditableTableComponent action column', () => {
+  it('renders the caller-supplied template in an action-type column cell', () => {
+    TestBed.configureTestingModule({ imports: [ActionColumnHostComponent] });
+    const fixture = TestBed.createComponent(ActionColumnHostComponent);
+    fixture.detectChanges();
+
+    const buttons = fixture.nativeElement.querySelectorAll('.action-cell');
+    expect(buttons.length).toBe(2);
+    expect(buttons[0].textContent).toContain('top tier');
+    expect(buttons[0].getAttribute('data-index')).toBe('0');
+    expect(buttons[1].textContent).toContain('mid tier');
+    expect(buttons[1].getAttribute('data-index')).toBe('1');
+  });
+});

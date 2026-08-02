@@ -1,10 +1,15 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+
+export interface ActionCellContext {
+  $implicit: Record<string, string | number>;
+  index: number;
+}
 
 export interface EditableTableColumn {
   key: string;
   label: string;
-  type: 'text' | 'number' | 'select';
+  type: 'text' | 'number' | 'select' | 'action';
   options?: { value: string; label: string }[];
 }
 
@@ -22,25 +27,32 @@ export interface EditableTableColumn {
       <tbody *ngIf="rows.length > 0; else emptyState">
         <tr *ngFor="let row of rows; let i = index" (click)="onRowClick(i)">
           <td *ngFor="let column of columns">
-            <span *ngIf="readOnly">{{ row[column.key] }}</span>
-            <ng-container *ngIf="!readOnly">
-              <select
-                *ngIf="column.type === 'select'; else textOrNumberCell"
-                [value]="row[column.key]"
-                (change)="onCellInput($event, i, column.key)"
-              >
-                <option *ngFor="let option of column.options" [value]="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
-              <ng-template #textOrNumberCell>
-                <input
-                  [type]="column.type"
-                  [value]="row[column.key]"
-                  (input)="onCellInput($event, i, column.key)"
-                />
-              </ng-template>
+            <ng-container *ngIf="column.type === 'action'; else dataCell">
+              <ng-container
+                *ngTemplateOutlet="actionTemplate ?? null; context: { $implicit: row, index: i }"
+              ></ng-container>
             </ng-container>
+            <ng-template #dataCell>
+              <span *ngIf="readOnly">{{ row[column.key] }}</span>
+              <ng-container *ngIf="!readOnly">
+                <select
+                  *ngIf="column.type === 'select'; else textOrNumberCell"
+                  [value]="row[column.key]"
+                  (change)="onCellInput($event, i, column.key)"
+                >
+                  <option *ngFor="let option of column.options" [value]="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+                <ng-template #textOrNumberCell>
+                  <input
+                    [type]="column.type"
+                    [value]="row[column.key]"
+                    (input)="onCellInput($event, i, column.key)"
+                  />
+                </ng-template>
+              </ng-container>
+            </ng-template>
           </td>
           <td *ngIf="!readOnly">
             <button type="button" class="editable-table__remove-row" (click)="removeRow(i)">
@@ -71,6 +83,7 @@ export class EditableTableComponent {
   @Input() removeRowLabel = '';
   @Input() emptyStateLabel = '';
   @Input() readOnly = false;
+  @Input() actionTemplate?: TemplateRef<ActionCellContext>;
   @Output() rowsChange = new EventEmitter<Record<string, string | number>[]>();
   @Output() rowClick = new EventEmitter<number>();
 
