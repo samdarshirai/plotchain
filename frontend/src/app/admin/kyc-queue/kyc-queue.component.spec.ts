@@ -16,6 +16,8 @@ describe('KycQueueComponent', () => {
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
 
+    httpMock.expectOne('/api/admin/kyc/counts')
+      .flush({ pending: 1, verified: 4, rejected: 2 });
     httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20')
       .flush({ entries: [{ id: 'a1', userId: 'VP00001', name: 'Jane', kycStatus: 'PENDING', joinedAt: '2026-01-01T00:00:00Z' }], page: 0, size: 20, totalElements: 1 });
   });
@@ -57,6 +59,7 @@ describe('KycQueueComponent', () => {
 
     const reload = httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20');
     reload.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne('/api/admin/kyc/counts').flush({ pending: 0, verified: 0, rejected: 0 });
   });
 
   it('rejects an entry with a reason', () => {
@@ -69,6 +72,7 @@ describe('KycQueueComponent', () => {
 
     const reload = httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20');
     reload.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne('/api/admin/kyc/counts').flush({ pending: 0, verified: 0, rejected: 0 });
   });
 
   it('keeps each row\'s reject reason independent, so rejecting one leaves the other untouched', () => {
@@ -83,6 +87,7 @@ describe('KycQueueComponent', () => {
 
     const reload = httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20');
     reload.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne('/api/admin/kyc/counts').flush({ pending: 0, verified: 0, rejected: 0 });
 
     expect(fixture.componentInstance.rejectReasons['a1']).toBeUndefined();
     expect(fixture.componentInstance.rejectReasons['a2']).toBe('Name mismatch');
@@ -123,5 +128,23 @@ describe('KycQueueComponent', () => {
       .flush({ entries: [], page: 0, size: 20, totalElements: 0 });
 
     expect(fixture.componentInstance.decisionError).toBe(false);
+  });
+
+  it('loads and displays queue counts on init', () => {
+    expect(fixture.componentInstance.counts).toEqual({ pending: 1, verified: 4, rejected: 2 });
+  });
+
+  it('reloads counts after an approval decision', () => {
+    fixture.componentInstance.approve('a1');
+
+    const decisionReq = httpMock.expectOne('/api/admin/kyc/a1/decision');
+    decisionReq.flush({ id: 'a1', userId: 'VP00001', name: 'Jane', kycStatus: 'VERIFIED', joinedAt: '2026-01-01T00:00:00Z' });
+
+    httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20')
+      .flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne('/api/admin/kyc/counts')
+      .flush({ pending: 0, verified: 5, rejected: 2 });
+
+    expect(fixture.componentInstance.counts).toEqual({ pending: 0, verified: 5, rejected: 2 });
   });
 });

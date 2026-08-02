@@ -4,17 +4,25 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { KycQueueService } from './kyc-queue.service';
 import { KycPage } from '../models/kyc-page.model';
+import { KycCounts } from '../models/kyc-counts.model';
 import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/tab-bar.component';
+import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.component';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-kyc-queue',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, TabBarComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, TabBarComponent, StatTileComponent],
   template: `
     <div class="kyc-queue card">
       <h1 class="card-title">{{ 'admin.kycQueue.title' | translate }}</h1>
+
+      <div class="kyc-queue__stat-tiles">
+        <app-stat-tile [label]="'admin.kycQueue.tabPending' | translate" [value]="(counts?.pending ?? 0).toString()"></app-stat-tile>
+        <app-stat-tile [label]="'admin.kycQueue.tabVerified' | translate" [value]="(counts?.verified ?? 0).toString()"></app-stat-tile>
+        <app-stat-tile [label]="'admin.kycQueue.tabRejected' | translate" [value]="(counts?.rejected ?? 0).toString()"></app-stat-tile>
+      </div>
 
       <app-tab-bar [tabs]="tabs" [activeTabId]="activeStatus" (tabChange)="onTabChange($event)"></app-tab-bar>
 
@@ -59,6 +67,7 @@ export class KycQueueComponent implements OnInit {
   private translate = inject(TranslateService);
 
   page: KycPage | null = null;
+  counts: KycCounts | null = null;
   activeStatus = 'PENDING';
   rejectReasons: Record<string, string> = {};
   loadError = false;
@@ -73,6 +82,7 @@ export class KycQueueComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadCounts();
     this.loadPage(0);
   }
 
@@ -84,7 +94,10 @@ export class KycQueueComponent implements OnInit {
   approve(id: string): void {
     this.decisionError = false;
     this.kycQueueService.decide(id, 'VERIFIED').subscribe({
-      next: () => this.loadPage(this.page?.page ?? 0),
+      next: () => {
+        this.loadPage(this.page?.page ?? 0);
+        this.loadCounts();
+      },
       error: () => (this.decisionError = true)
     });
   }
@@ -95,6 +108,7 @@ export class KycQueueComponent implements OnInit {
       next: () => {
         delete this.rejectReasons[id];
         this.loadPage(this.page?.page ?? 0);
+        this.loadCounts();
       },
       error: () => (this.decisionError = true)
     });
@@ -107,5 +121,9 @@ export class KycQueueComponent implements OnInit {
       next: res => (this.page = res),
       error: () => (this.loadError = true)
     });
+  }
+
+  private loadCounts(): void {
+    this.kycQueueService.counts().subscribe(res => (this.counts = res));
   }
 }
