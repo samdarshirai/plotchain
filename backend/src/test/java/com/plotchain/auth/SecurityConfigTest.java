@@ -409,4 +409,13 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
             .andExpect(status().isForbidden());
     }
+
+    @Test
+    void kycDecisionIsForbiddenForASupportToken() throws Exception {
+        mockMvc.perform(post("/api/admin/kyc/" + UUID.randomUUID() + "/decision")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.SUPPORT))
+                .contentType("application/json")
+                .content("{\"decision\":\"VERIFIED\"}"))
+            .andExpect(status().isForbidden());
+    }
 }

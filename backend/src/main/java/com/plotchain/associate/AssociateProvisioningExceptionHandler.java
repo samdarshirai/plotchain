@@ -24,4 +24,9 @@ public class AssociateProvisioningExceptionHandler {
     public ResponseEntity<Map<String, String>> handleNoRanks(NoRankTiersConfiguredException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(InvalidKycDecisionException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidKycDecision(InvalidKycDecisionException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
+    }
 }

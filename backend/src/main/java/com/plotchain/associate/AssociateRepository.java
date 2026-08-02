@@ -80,6 +80,8 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
 
     Optional<Associate> findByIdAndRole(UUID id, AssociateRole role);
 
+    Page<Associate> findByRoleAndKycStatusOrderByJoinedAtAsc(AssociateRole role, KycStatus kycStatus, Pageable pageable);
+
     long countByParentId(UUID parentId);
 
     List<Associate> findByParentId(UUID parentId);
