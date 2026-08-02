@@ -2,6 +2,7 @@ package com.plotchain.dashboard;
 
 import com.plotchain.announcement.AnnouncementRepository;
 import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.KycStatus;
 import com.plotchain.compensation.CompensationPlanVersion;
@@ -192,6 +193,15 @@ class DashboardServiceTest {
 
         assertThatThrownBy(() -> dashboardService.getDashboard(associateId))
             .isInstanceOf(NoRankAssignedException.class);
+    }
+
+    @Test
+    void throwsAssociateNotFoundExceptionWhenAssociateDoesNotExist() {
+        UUID associateId = UUID.randomUUID();
+        when(associateRepository.findById(associateId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> dashboardService.getDashboard(associateId))
+            .isInstanceOf(AssociateNotFoundException.class);
     }
 
     private static CompensationPlanVersion compensationPlanVersion(BigDecimal matchingIncomePct) {

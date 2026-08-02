@@ -63,12 +63,6 @@ class DashboardControllerTest {
         return jwtService.generateToken(associate);
     }
 
-    private String tokenForActiveAssociate(UUID associateId, Associate associate) {
-        // Configure the mock to return this ACTIVE associate when queried during filter authentication
-        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
-        return jwtService.generateToken(associate);
-    }
-
     @Test
     void returnsDashboardJsonForTheAuthenticatedAssociate() throws Exception {
         UUID associateId = UUID.randomUUID();
