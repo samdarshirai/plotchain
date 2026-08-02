@@ -80,4 +80,30 @@ describe('AssociateDirectoryComponent', () => {
 
     expect(fixture.componentInstance.temporaryPassword).toBe('Temp1234!');
   });
+
+  it('shows a load error when the page reload fails, without silently doing nothing', () => {
+    fixture.componentInstance.goToPage(1);
+
+    const req = httpMock.expectOne('/api/admin/associates?page=1&size=20');
+    req.flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.loadError).toBe(true);
+    const errorEl: HTMLElement | null = fixture.nativeElement.querySelector('.associate-directory__load-error');
+    expect(errorEl?.textContent?.trim()).toBeTruthy();
+  });
+
+  it('shows an action error when suspend fails, without silently doing nothing', () => {
+    fixture.componentInstance.selected = { id: 'a1', userId: 'VP00001', status: 'ACTIVE' } as any;
+
+    fixture.componentInstance.suspendSelected();
+
+    const req = httpMock.expectOne('/api/admin/associates/a1/suspend');
+    req.flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.actionError).toBe(true);
+    const errorEl: HTMLElement | null = fixture.nativeElement.querySelector('.associate-directory__action-error');
+    expect(errorEl?.textContent?.trim()).toBeTruthy();
+  });
 });

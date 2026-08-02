@@ -28,6 +28,8 @@ public class AdminAssociateController {
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size
     ) {
+        page = Math.max(page, 0);
+        size = Math.min(size, 100);
         return adminAssociateService.list(search, rank, kycStatus, status, joinedFrom, joinedTo, page, size);
     }
 

@@ -41,7 +41,7 @@ const PAGE_SIZE = 20;
               </button>
               <input
                 type="text"
-                [(ngModel)]="rejectReason"
+                [(ngModel)]="rejectReasons[entry.id]"
                 [placeholder]="'admin.kycQueue.rejectReasonPlaceholder' | translate"
               />
               <button type="button" (click)="reject(entry.id)">
@@ -60,7 +60,7 @@ export class KycQueueComponent implements OnInit {
 
   page: KycPage | null = null;
   activeStatus = 'PENDING';
-  rejectReason = '';
+  rejectReasons: Record<string, string> = {};
   loadError = false;
   decisionError = false;
 
@@ -91,9 +91,9 @@ export class KycQueueComponent implements OnInit {
 
   reject(id: string): void {
     this.decisionError = false;
-    this.kycQueueService.decide(id, 'REJECTED', this.rejectReason).subscribe({
+    this.kycQueueService.decide(id, 'REJECTED', this.rejectReasons[id]).subscribe({
       next: () => {
-        this.rejectReason = '';
+        delete this.rejectReasons[id];
         this.loadPage(this.page?.page ?? 0);
       },
       error: () => (this.decisionError = true)

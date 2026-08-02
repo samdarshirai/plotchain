@@ -60,7 +60,7 @@ describe('KycQueueComponent', () => {
   });
 
   it('rejects an entry with a reason', () => {
-    fixture.componentInstance.rejectReason = 'Blurry PAN photo';
+    fixture.componentInstance.rejectReasons['a1'] = 'Blurry PAN photo';
     fixture.componentInstance.reject('a1');
 
     const req = httpMock.expectOne('/api/admin/kyc/a1/decision');
@@ -69,6 +69,23 @@ describe('KycQueueComponent', () => {
 
     const reload = httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20');
     reload.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('keeps each row\'s reject reason independent, so rejecting one leaves the other untouched', () => {
+    fixture.componentInstance.rejectReasons['a1'] = 'Blurry PAN photo';
+    fixture.componentInstance.rejectReasons['a2'] = 'Name mismatch';
+
+    fixture.componentInstance.reject('a1');
+
+    const req = httpMock.expectOne('/api/admin/kyc/a1/decision');
+    expect(req.request.body).toEqual({ decision: 'REJECTED', reason: 'Blurry PAN photo' });
+    req.flush({ id: 'a1', userId: 'VP00001', name: 'Jane', kycStatus: 'REJECTED', joinedAt: '2026-01-01T00:00:00Z' });
+
+    const reload = httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20');
+    reload.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+
+    expect(fixture.componentInstance.rejectReasons['a1']).toBeUndefined();
+    expect(fixture.componentInstance.rejectReasons['a2']).toBe('Name mismatch');
   });
 
   it('shows a decision error when approve fails, without silently doing nothing', () => {
@@ -84,7 +101,7 @@ describe('KycQueueComponent', () => {
   });
 
   it('shows a decision error when reject fails, without silently doing nothing', () => {
-    fixture.componentInstance.rejectReason = 'Blurry PAN photo';
+    fixture.componentInstance.rejectReasons['a1'] = 'Blurry PAN photo';
     fixture.componentInstance.reject('a1');
 
     const req = httpMock.expectOne('/api/admin/kyc/a1/decision');

@@ -79,7 +79,9 @@
       "suspendAction": "Suspend",
       "reactivateAction": "Reactivate",
       "resetPasswordAction": "Reset Password",
-      "temporaryPasswordNotice": "New temporary password (shown once)"
+      "temporaryPasswordNotice": "New temporary password (shown once)",
+      "loadError": "Something went wrong loading the associate directory. Try again.",
+      "actionError": "Could not complete that action. Please try again."
     },
     "treeExplorer": {
       "title": "Tree Explorer",

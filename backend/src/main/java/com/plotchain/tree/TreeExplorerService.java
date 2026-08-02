@@ -77,11 +77,19 @@ public class TreeExplorerService {
             : associateRepository.findByParentId(a.getId()).stream()
                 .map(child -> buildNode(child, remainingDepth - 1, ranksById, openCycle))
                 .toList();
+        // When remainingDepth > 0 the children were just fetched above via findByParentId, so
+        // children.size() is already the direct-downline count -- no need to re-ask the
+        // database. Only at the depth boundary (remainingDepth <= 0, children never fetched)
+        // do we fall back to a real count query, since an empty `children` there doesn't tell
+        // us whether the associate actually has zero children or recursion simply stopped.
+        long directDownlineCount = remainingDepth > 0
+            ? children.size()
+            : associateRepository.countByParentId(a.getId());
         RankTier rank = ranksById.get(a.getRankId());
         return new TreeNodeResponse(
             a.getId(), a.getUserId(), a.getName(), rank == null ? null : rank.getName(),
             a.getKycStatus(), a.getPosition(), legs[0], legs[1],
-            isSkewed(legs[0], legs[1]), isStagnant(a), children);
+            isSkewed(legs[0], legs[1]), isStagnant(a, directDownlineCount), children);
     }
 
     private boolean isSkewed(BigDecimal left, BigDecimal right) {
@@ -93,11 +101,7 @@ public class TreeExplorerService {
         return larger.compareTo(smaller.multiply(BigDecimal.valueOf(MAX_LEG_SKEW_RATIO))) >= 0;
     }
 
-    private boolean isStagnant(Associate a) {
-        // Deliberately not short-circuited on oldEnough: countByParentId is called for every
-        // node regardless of join date, so a node's "no direct downline" status is always
-        // computed the same way rather than depending on evaluation order.
-        long directDownlineCount = associateRepository.countByParentId(a.getId());
+    private boolean isStagnant(Associate a, long directDownlineCount) {
         boolean oldEnough = a.getJoinedAt().isBefore(Instant.now().minus(STAGNANT_THRESHOLD_DAYS, ChronoUnit.DAYS));
         return oldEnough && directDownlineCount == 0;
     }

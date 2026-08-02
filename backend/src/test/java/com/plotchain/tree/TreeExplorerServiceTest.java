@@ -78,7 +78,9 @@ class TreeExplorerServiceTest {
         when(associateRepository.findByParentId(rootId)).thenReturn(List.of(child));
         // No findByParentId(childId) stub: depth 1 stops recursion at the child (remainingDepth
         // reaches 0 there), so buildNode never queries the child's own children.
-        when(associateRepository.countByParentId(rootId)).thenReturn(1L);
+        // No countByParentId(rootId) stub: root's remainingDepth (1) is > 0, so its
+        // direct-downline count is derived from the already-fetched children list, not a
+        // separate count query. Only the child (at the depth boundary) needs countByParentId.
         when(associateRepository.countByParentId(childId)).thenReturn(0L);
 
         TreeNodeResponse response = service.subtree(rootId, 1);
@@ -87,6 +89,9 @@ class TreeExplorerServiceTest {
         assertThat(response.children()).hasSize(1);
         assertThat(response.children().get(0).userId()).isEqualTo("VP00002");
         assertThat(response.children().get(0).children()).isEmpty();
+        // The root's direct-downline count for isStagnant must come from the already-fetched
+        // children list, not a redundant countByParentId query.
+        org.mockito.Mockito.verify(associateRepository, org.mockito.Mockito.never()).countByParentId(rootId);
     }
 
     @Test

@@ -24,6 +24,9 @@ const PAGE_SIZE = 20;
         />
       </div>
 
+      <p *ngIf="loadError" class="associate-directory__load-error">{{ 'admin.associateDirectory.loadError' | translate }}</p>
+      <p *ngIf="actionError" class="associate-directory__action-error">{{ 'admin.associateDirectory.actionError' | translate }}</p>
+
       <table class="associate-directory__table">
         <thead>
           <tr>
@@ -86,6 +89,8 @@ export class AssociateDirectoryComponent implements OnInit {
   selected: AdminAssociateDetail | null = null;
   panelOpen = false;
   temporaryPassword: string | null = null;
+  loadError = false;
+  actionError = false;
   private search = '';
 
   ngOnInit(): void {
@@ -115,30 +120,44 @@ export class AssociateDirectoryComponent implements OnInit {
 
   suspendSelected(): void {
     if (!this.selected) return;
-    this.associateDirectoryService.suspend(this.selected.id).subscribe(detail => {
-      this.selected = detail;
-      this.loadPage(this.page?.page ?? 0);
+    this.actionError = false;
+    this.associateDirectoryService.suspend(this.selected.id).subscribe({
+      next: detail => {
+        this.selected = detail;
+        this.loadPage(this.page?.page ?? 0);
+      },
+      error: () => (this.actionError = true)
     });
   }
 
   reactivateSelected(): void {
     if (!this.selected) return;
-    this.associateDirectoryService.reactivate(this.selected.id).subscribe(detail => {
-      this.selected = detail;
-      this.loadPage(this.page?.page ?? 0);
+    this.actionError = false;
+    this.associateDirectoryService.reactivate(this.selected.id).subscribe({
+      next: detail => {
+        this.selected = detail;
+        this.loadPage(this.page?.page ?? 0);
+      },
+      error: () => (this.actionError = true)
     });
   }
 
   resetPasswordForSelected(): void {
     if (!this.selected) return;
-    this.associateDirectoryService.resetPassword(this.selected.id).subscribe(res => {
-      this.temporaryPassword = res.temporaryPassword;
+    this.actionError = false;
+    this.associateDirectoryService.resetPassword(this.selected.id).subscribe({
+      next: res => (this.temporaryPassword = res.temporaryPassword),
+      error: () => (this.actionError = true)
     });
   }
 
   private loadPage(page: number): void {
+    this.loadError = false;
     this.associateDirectoryService
       .list(this.search ? { search: this.search } : {}, page, PAGE_SIZE)
-      .subscribe(res => (this.page = res));
+      .subscribe({
+        next: res => (this.page = res),
+        error: () => (this.loadError = true)
+      });
   }
 }

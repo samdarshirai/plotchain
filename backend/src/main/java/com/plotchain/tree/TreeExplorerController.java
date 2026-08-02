@@ -20,6 +20,7 @@ public class TreeExplorerController {
 
     @GetMapping("/{associateId}")
     public TreeNodeResponse subtree(@PathVariable UUID associateId, @RequestParam(defaultValue = "3") int depth) {
+        depth = Math.max(0, Math.min(depth, 5));
         return treeExplorerService.subtree(associateId, depth);
     }
 

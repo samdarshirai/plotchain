@@ -4,6 +4,7 @@ import com.plotchain.company.SettingsAuditService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ public class KycReviewService {
         return new KycPageResponse(entries, page, size, result.getTotalElements());
     }
 
+    @Transactional
     public KycQueueEntryResponse decide(UUID associateId, KycDecisionRequest request, UUID actorId) {
         // Look up the associate before validating the decision body, matching the
         // findOrThrow-first pattern used by AdminAssociateService.suspend/reactivate/

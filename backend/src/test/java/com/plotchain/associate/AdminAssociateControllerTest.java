@@ -8,6 +8,7 @@ import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,8 +24,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -87,6 +90,34 @@ class AdminAssociateControllerTest {
         mockMvc.perform(get("/api/admin/associates")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
             .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void listClampsAnOversizedPageSizeToTheServerSideMaximum() throws Exception {
+        when(associateRepository.searchDirectory(any(), any(), any(), any(), any(), any(), any()))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 100), 0));
+
+        mockMvc.perform(get("/api/admin/associates").param("size", "999999")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.SUPPORT)))
+            .andExpect(status().isOk());
+
+        ArgumentCaptor<PageRequest> pageableCaptor = ArgumentCaptor.forClass(PageRequest.class);
+        verify(associateRepository).searchDirectory(any(), any(), any(), any(), any(), any(), pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(100);
+    }
+
+    @Test
+    void listClampsANegativePageToZeroInsteadOfThrowing() throws Exception {
+        when(associateRepository.searchDirectory(any(), any(), any(), any(), any(), any(), any()))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        mockMvc.perform(get("/api/admin/associates").param("page", "-5")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.SUPPORT)))
+            .andExpect(status().isOk());
+
+        ArgumentCaptor<PageRequest> pageableCaptor = ArgumentCaptor.forClass(PageRequest.class);
+        verify(associateRepository).searchDirectory(any(), any(), any(), any(), any(), any(), pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(0);
     }
 
     @Test

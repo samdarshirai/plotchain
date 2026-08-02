@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -71,6 +72,7 @@ public class AdminAssociateService {
         return toDetail(findOrThrow(id));
     }
 
+    @Transactional
     public AdminAssociateDetailResponse suspend(UUID id, UUID actorId) {
         Associate associate = findOrThrow(id);
         associate.setStatus(AssociateStatus.SUSPENDED);
@@ -80,6 +82,7 @@ public class AdminAssociateService {
         return toDetail(associate);
     }
 
+    @Transactional
     public AdminAssociateDetailResponse reactivate(UUID id, UUID actorId) {
         Associate associate = findOrThrow(id);
         associate.setStatus(AssociateStatus.ACTIVE);
@@ -89,6 +92,7 @@ public class AdminAssociateService {
         return toDetail(associate);
     }
 
+    @Transactional
     public ResetPasswordResponse resetPassword(UUID id, UUID actorId) {
         Associate associate = findOrThrow(id);
         String temporaryPassword = TemporaryPasswordGenerator.generate();
