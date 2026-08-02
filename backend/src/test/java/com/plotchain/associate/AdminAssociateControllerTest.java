@@ -52,10 +52,12 @@ class AdminAssociateControllerTest {
     private final RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(5000));
 
     private String tokenFor(AssociateRole role) {
-        Associate token = new Associate();
-        token.setId(UUID.randomUUID());
-        token.setRole(role);
-        return jwtService.generateToken(token);
+        Associate associate = new Associate();
+        associate.setId(UUID.randomUUID());
+        associate.setRole(role);
+        // Configure the mock to return this ACTIVE associate when queried during filter authentication
+        when(associateRepository.findById(associate.getId())).thenReturn(Optional.of(associate));
+        return jwtService.generateToken(associate);
     }
 
     private Associate seedAssociate() {

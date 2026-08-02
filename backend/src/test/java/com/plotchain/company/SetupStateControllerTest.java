@@ -1,6 +1,7 @@
 package com.plotchain.company;
 
 import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.auth.JwtService;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.Mockito.when;
@@ -30,13 +32,16 @@ class SetupStateControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired JwtService jwtService;
 
+    @MockBean AssociateRepository associateRepository;
     @MockBean SetupStateRepository setupStateRepository;
 
     private String tokenFor(AssociateRole role) {
-        Associate token = new Associate();
-        token.setId(UUID.randomUUID());
-        token.setRole(role);
-        return jwtService.generateToken(token);
+        Associate associate = new Associate();
+        associate.setId(UUID.randomUUID());
+        associate.setRole(role);
+        // Configure the mock to return this ACTIVE associate when queried during filter authentication
+        when(associateRepository.findById(associate.getId())).thenReturn(Optional.of(associate));
+        return jwtService.generateToken(associate);
     }
 
     @Test

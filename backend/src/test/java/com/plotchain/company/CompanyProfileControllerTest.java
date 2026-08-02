@@ -18,6 +18,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -41,10 +42,12 @@ class CompanyProfileControllerTest {
     @MockBean AssociateRepository associateRepository;
 
     private String tokenFor(AssociateRole role) {
-        Associate token = new Associate();
-        token.setId(UUID.randomUUID());
-        token.setRole(role);
-        return jwtService.generateToken(token);
+        Associate associate = new Associate();
+        associate.setId(UUID.randomUUID());
+        associate.setRole(role);
+        // Configure the mock to return this ACTIVE associate when queried during filter authentication
+        when(associateRepository.findById(associate.getId())).thenReturn(Optional.of(associate));
+        return jwtService.generateToken(associate);
     }
 
     private static final String VALID_PROFILE_JSON = """

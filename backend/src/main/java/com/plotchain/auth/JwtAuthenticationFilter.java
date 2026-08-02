@@ -1,5 +1,6 @@
 package com.plotchain.auth;
 
+import com.plotchain.associate.AssociateStatusCache;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,9 +21,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtService jwtService;
+    private final AssociateStatusCache associateStatusCache;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    public JwtAuthenticationFilter(JwtService jwtService, AssociateStatusCache associateStatusCache) {
         this.jwtService = jwtService;
+        this.associateStatusCache = associateStatusCache;
     }
 
     @Override
@@ -35,8 +38,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith(BEARER_PREFIX)) {
             String token = header.substring(BEARER_PREFIX.length());
             // Single parse/verify per request: a malformed-but-signed token (no role claim,
-            // non-UUID subject) must fall through to "unauthenticated", never throw.
+            // non-UUID subject) must fall through to "unauthenticated", never throw. A
+            // well-formed token for a since-suspended associate falls through the same way --
+            // AssociateStatusCache is what makes suspend take effect before the token expires.
             jwtService.authenticate(token).ifPresent(authenticated -> {
+                if (!associateStatusCache.isActive(authenticated.associateId())) {
+                    return;
+                }
                 var authentication = new UsernamePasswordAuthenticationToken(
                     authenticated.associateId(), null,
                     List.of(new SimpleGrantedAuthority(authenticated.role().name())));

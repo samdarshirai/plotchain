@@ -57,10 +57,16 @@ class DashboardControllerTest {
     @MockBean AnnouncementRepository announcementRepository;
 
     private String tokenFor(UUID associateId) {
-        Associate token = new Associate();
-        token.setId(associateId);
-        token.setRole(AssociateRole.ASSOCIATE);
-        return jwtService.generateToken(token);
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRole(AssociateRole.ASSOCIATE);
+        return jwtService.generateToken(associate);
+    }
+
+    private String tokenForActiveAssociate(UUID associateId, Associate associate) {
+        // Configure the mock to return this ACTIVE associate when queried during filter authentication
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+        return jwtService.generateToken(associate);
     }
 
     @Test
@@ -83,6 +89,7 @@ class DashboardControllerTest {
 
         RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, BigDecimal.valueOf(5000));
 
+        // Set up mock for both filter and DashboardService
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(cycle));
         when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(any(), any(), any())).thenReturn(BigDecimal.ZERO);
@@ -109,13 +116,18 @@ class DashboardControllerTest {
     }
 
     @Test
-    void returns404WhenAssociateNotFound() throws Exception {
+    void returns409WhenAssociateHasNoRank() throws Exception {
         UUID associateId = UUID.randomUUID();
-        when(associateRepository.findById(associateId)).thenReturn(Optional.empty());
+        // Configure the associate to be found and active for the filter to pass
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+        // Don't set a rank, which causes the service to return 409 Conflict
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
 
         mockMvc.perform(get("/api/associates/me/dashboard")
                 .header("Authorization", "Bearer " + tokenFor(associateId)))
-            .andExpect(status().isNotFound());
+            .andExpect(status().isConflict());
     }
 
     @Test

@@ -14,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,10 +47,12 @@ class CompanyBrandingControllerTest {
     @MockBean AssociateRepository associateRepository;
 
     private String tokenFor(AssociateRole role) {
-        Associate token = new Associate();
-        token.setId(UUID.randomUUID());
-        token.setRole(role);
-        return jwtService.generateToken(token);
+        Associate associate = new Associate();
+        associate.setId(UUID.randomUUID());
+        associate.setRole(role);
+        // Configure the mock to return this ACTIVE associate when queried during filter authentication
+        when(associateRepository.findById(associate.getId())).thenReturn(Optional.of(associate));
+        return jwtService.generateToken(associate);
     }
 
     private CompanyBranding blankBranding() {

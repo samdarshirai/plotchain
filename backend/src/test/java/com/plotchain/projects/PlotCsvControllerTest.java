@@ -1,6 +1,7 @@
 package com.plotchain.projects;
 
 import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.auth.JwtService;
 import com.plotchain.company.SettingsAuditLogRepository;
@@ -15,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.Mockito.when;
@@ -32,6 +34,7 @@ class PlotCsvControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired JwtService jwtService;
 
+    @MockBean AssociateRepository associateRepository;
     @MockBean PlotRepository plotRepository;
     @MockBean SettingsAuditLogRepository settingsAuditLogRepository;
 
@@ -39,10 +42,12 @@ class PlotCsvControllerTest {
     private static final String HEADER = "plot_no,plot_type,area_sqft,rate,price,status\n";
 
     private String tokenFor(AssociateRole role) {
-        Associate token = new Associate();
-        token.setId(UUID.randomUUID());
-        token.setRole(role);
-        return jwtService.generateToken(token);
+        Associate associate = new Associate();
+        associate.setId(UUID.randomUUID());
+        associate.setRole(role);
+        // Configure the mock to return this ACTIVE associate when queried during filter authentication
+        when(associateRepository.findById(associate.getId())).thenReturn(Optional.of(associate));
+        return jwtService.generateToken(associate);
     }
 
     @Test
