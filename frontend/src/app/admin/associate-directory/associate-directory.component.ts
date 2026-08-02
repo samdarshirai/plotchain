@@ -2,9 +2,11 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { AssociateDirectoryService } from './associate-directory.service';
-import { AdminAssociatePage } from '../models/admin-associate-page.model';
+import { AdminAssociatePage, AdminAssociateFilters } from '../models/admin-associate-page.model';
 import { AdminAssociateDetail } from '../models/admin-associate-detail.model';
 import { SidePanelComponent } from '../../shared/components/side-panel/side-panel.component';
+import { CompensationPlanService } from '../../setup/steps/compensation/compensation-plan.service';
+import { RankOption } from '../../setup/models/compensation-plan.model';
 
 const PAGE_SIZE = 20;
 
@@ -22,6 +24,38 @@ const PAGE_SIZE = 20;
           [placeholder]="'admin.associateDirectory.searchPlaceholder' | translate"
           (input)="onSearchInput($any($event.target).value)"
         />
+        <label>
+          {{ 'admin.associateDirectory.rankFilterLabel' | translate }}
+          <select (change)="onRankChange($any($event.target).value)">
+            <option value="">{{ 'admin.associateDirectory.rankFilterAllOption' | translate }}</option>
+            <option *ngFor="let rank of availableRanks" [value]="rank.id">{{ rank.name }}</option>
+          </select>
+        </label>
+        <label>
+          {{ 'admin.associateDirectory.kycStatusFilterLabel' | translate }}
+          <select (change)="onKycStatusChange($any($event.target).value)">
+            <option value="">{{ 'admin.associateDirectory.kycStatusFilterAllOption' | translate }}</option>
+            <option value="PENDING">PENDING</option>
+            <option value="VERIFIED">VERIFIED</option>
+            <option value="REJECTED">REJECTED</option>
+          </select>
+        </label>
+        <label>
+          {{ 'admin.associateDirectory.statusFilterLabel' | translate }}
+          <select (change)="onStatusChange($any($event.target).value)">
+            <option value="">{{ 'admin.associateDirectory.statusFilterAllOption' | translate }}</option>
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="SUSPENDED">SUSPENDED</option>
+          </select>
+        </label>
+        <label>
+          {{ 'admin.associateDirectory.joinedFromLabel' | translate }}
+          <input type="date" (change)="onJoinedFromChange($any($event.target).value)" />
+        </label>
+        <label>
+          {{ 'admin.associateDirectory.joinedToLabel' | translate }}
+          <input type="date" (change)="onJoinedToChange($any($event.target).value)" />
+        </label>
       </div>
 
       <p *ngIf="loadError" class="associate-directory__load-error">{{ 'admin.associateDirectory.loadError' | translate }}</p>
@@ -84,6 +118,7 @@ const PAGE_SIZE = 20;
 })
 export class AssociateDirectoryComponent implements OnInit {
   private associateDirectoryService = inject(AssociateDirectoryService);
+  private compensationPlanService = inject(CompensationPlanService);
 
   page: AdminAssociatePage | null = null;
   selected: AdminAssociateDetail | null = null;
@@ -91,14 +126,46 @@ export class AssociateDirectoryComponent implements OnInit {
   temporaryPassword: string | null = null;
   loadError = false;
   actionError = false;
+  availableRanks: RankOption[] = [];
   private search = '';
+  private rank = '';
+  private kycStatus = '';
+  private status = '';
+  private joinedFrom = '';
+  private joinedTo = '';
 
   ngOnInit(): void {
+    this.compensationPlanService.getCurrent().subscribe(res => (this.availableRanks = res.availableRanks));
     this.loadPage(0);
   }
 
   onSearchInput(value: string): void {
     this.search = value;
+    this.loadPage(0);
+  }
+
+  onRankChange(value: string): void {
+    this.rank = value;
+    this.loadPage(0);
+  }
+
+  onKycStatusChange(value: string): void {
+    this.kycStatus = value;
+    this.loadPage(0);
+  }
+
+  onStatusChange(value: string): void {
+    this.status = value;
+    this.loadPage(0);
+  }
+
+  onJoinedFromChange(value: string): void {
+    this.joinedFrom = value;
+    this.loadPage(0);
+  }
+
+  onJoinedToChange(value: string): void {
+    this.joinedTo = value;
     this.loadPage(0);
   }
 
@@ -153,11 +220,16 @@ export class AssociateDirectoryComponent implements OnInit {
 
   private loadPage(page: number): void {
     this.loadError = false;
-    this.associateDirectoryService
-      .list(this.search ? { search: this.search } : {}, page, PAGE_SIZE)
-      .subscribe({
-        next: res => (this.page = res),
-        error: () => (this.loadError = true)
-      });
+    const filters: AdminAssociateFilters = {};
+    if (this.search) filters.search = this.search;
+    if (this.rank) filters.rank = this.rank;
+    if (this.kycStatus) filters.kycStatus = this.kycStatus;
+    if (this.status) filters.status = this.status;
+    if (this.joinedFrom) filters.joinedFrom = this.joinedFrom;
+    if (this.joinedTo) filters.joinedTo = this.joinedTo;
+    this.associateDirectoryService.list(filters, page, PAGE_SIZE).subscribe({
+      next: res => (this.page = res),
+      error: () => (this.loadError = true)
+    });
   }
 }

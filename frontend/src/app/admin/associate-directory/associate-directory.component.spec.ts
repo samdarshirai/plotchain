@@ -16,6 +16,8 @@ describe('AssociateDirectoryComponent', () => {
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
 
+    httpMock.expectOne('/api/company/compensation')
+      .flush({ availableRanks: [{ id: 'r1', name: 'Sales Associate' }] });
     httpMock.expectOne('/api/admin/associates?page=0&size=20')
       .flush({ associates: [{ id: 'a1', userId: 'VP00001', name: 'Jane', rankName: 'Sales Associate', kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', lastActiveAt: null }], page: 0, size: 20, totalElements: 1 });
   });
@@ -105,5 +107,47 @@ describe('AssociateDirectoryComponent', () => {
     expect(fixture.componentInstance.actionError).toBe(true);
     const errorEl: HTMLElement | null = fixture.nativeElement.querySelector('.associate-directory__action-error');
     expect(errorEl?.textContent?.trim()).toBeTruthy();
+  });
+
+  it('loads available ranks for the rank filter dropdown', () => {
+    expect(fixture.componentInstance.availableRanks).toEqual([{ id: 'r1', name: 'Sales Associate' }]);
+  });
+
+  it('changing the rank filter reloads page 0 with the rank param', () => {
+    fixture.componentInstance.onRankChange('r1');
+
+    const req = httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('rank') === 'r1' && r.params.get('page') === '0');
+    req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('changing the KYC status filter reloads page 0 with the kycStatus param', () => {
+    fixture.componentInstance.onKycStatusChange('VERIFIED');
+
+    const req = httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('kycStatus') === 'VERIFIED' && r.params.get('page') === '0');
+    req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('changing the status filter reloads page 0 with the status param', () => {
+    fixture.componentInstance.onStatusChange('SUSPENDED');
+
+    const req = httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('status') === 'SUSPENDED' && r.params.get('page') === '0');
+    req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('changing joinedFrom/joinedTo reloads page 0 with both params', () => {
+    fixture.componentInstance.onJoinedFromChange('2026-01-01');
+    let req = httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('joinedFrom') === '2026-01-01');
+    req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+
+    fixture.componentInstance.onJoinedToChange('2026-06-30');
+    req = httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('joinedFrom') === '2026-01-01' && r.params.get('joinedTo') === '2026-06-30');
+    req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('an empty filter value omits that param instead of sending an empty string', () => {
+    fixture.componentInstance.onRankChange('');
+
+    const req = httpMock.expectOne('/api/admin/associates?page=0&size=20');
+    req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
   });
 });

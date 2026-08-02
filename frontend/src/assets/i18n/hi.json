@@ -81,7 +81,15 @@
       "resetPasswordAction": "Reset Password",
       "temporaryPasswordNotice": "New temporary password (shown once)",
       "loadError": "Something went wrong loading the associate directory. Try again.",
-      "actionError": "Could not complete that action. Please try again."
+      "actionError": "Could not complete that action. Please try again.",
+      "rankFilterLabel": "Rank",
+      "rankFilterAllOption": "All ranks",
+      "kycStatusFilterLabel": "KYC Status",
+      "kycStatusFilterAllOption": "All KYC statuses",
+      "statusFilterLabel": "Status",
+      "statusFilterAllOption": "All statuses",
+      "joinedFromLabel": "Joined from",
+      "joinedToLabel": "Joined to"
     },
     "treeExplorer": {
       "title": "Tree Explorer",
