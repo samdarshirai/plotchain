@@ -136,4 +136,17 @@ class KycReviewServiceTest {
         assertThatThrownBy(() -> service.decide(id, new KycDecisionRequest(KycStatus.PENDING, null), ACTOR_ID))
             .isInstanceOf(AssociateNotFoundException.class);
     }
+
+    @Test
+    void countsReturnsCountsPerStatus() {
+        when(associateRepository.countByRoleAndKycStatus(AssociateRole.ASSOCIATE, KycStatus.PENDING)).thenReturn(3L);
+        when(associateRepository.countByRoleAndKycStatus(AssociateRole.ASSOCIATE, KycStatus.VERIFIED)).thenReturn(10L);
+        when(associateRepository.countByRoleAndKycStatus(AssociateRole.ASSOCIATE, KycStatus.REJECTED)).thenReturn(2L);
+
+        KycCountsResponse response = service.counts();
+
+        assertThat(response.pending()).isEqualTo(3L);
+        assertThat(response.verified()).isEqualTo(10L);
+        assertThat(response.rejected()).isEqualTo(2L);
+    }
 }

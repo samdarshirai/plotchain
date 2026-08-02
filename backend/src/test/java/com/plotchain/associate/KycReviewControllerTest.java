@@ -125,4 +125,18 @@ class KycReviewControllerTest {
                 .content(new ObjectMapper().writeValueAsString(new KycDecisionRequest(KycStatus.VERIFIED, null))))
             .andExpect(status().isForbidden());
     }
+
+    @Test
+    void countsReturnsCountsForAnyAdminFamilyToken() throws Exception {
+        when(associateRepository.countByRoleAndKycStatus(AssociateRole.ASSOCIATE, KycStatus.PENDING)).thenReturn(3L);
+        when(associateRepository.countByRoleAndKycStatus(AssociateRole.ASSOCIATE, KycStatus.VERIFIED)).thenReturn(10L);
+        when(associateRepository.countByRoleAndKycStatus(AssociateRole.ASSOCIATE, KycStatus.REJECTED)).thenReturn(2L);
+
+        mockMvc.perform(get("/api/admin/kyc/counts")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.FINANCE)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.pending").value(3))
+            .andExpect(jsonPath("$.verified").value(10))
+            .andExpect(jsonPath("$.rejected").value(2));
+    }
 }

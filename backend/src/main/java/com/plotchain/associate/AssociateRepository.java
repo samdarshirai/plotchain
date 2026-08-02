@@ -72,6 +72,8 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
 
     long countByRoleNot(AssociateRole role);
 
+    long countByRoleAndKycStatus(AssociateRole role, KycStatus kycStatus);
+
     // role = ASSOCIATE narrows out admin-family rows, which also have parentId = null by
     // construction (AdminProvisioningService never sets it). sponsorId IS NULL narrows out
     // ordinary associates placed via the generic provisioning endpoint without a parent. Together

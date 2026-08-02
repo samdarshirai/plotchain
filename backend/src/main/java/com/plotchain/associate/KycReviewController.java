@@ -28,6 +28,11 @@ public class KycReviewController {
         return kycReviewService.list(status, page, size);
     }
 
+    @GetMapping("/counts")
+    public KycCountsResponse counts() {
+        return kycReviewService.counts();
+    }
+
     @PostMapping("/{associateId}/decision")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPER_ADMIN','KYC_REVIEWER')")
     public KycQueueEntryResponse decide(@PathVariable UUID associateId, @Valid @RequestBody KycDecisionRequest request,

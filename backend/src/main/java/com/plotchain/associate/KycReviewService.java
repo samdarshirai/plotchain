@@ -55,6 +55,14 @@ public class KycReviewService {
         return toEntry(associate);
     }
 
+    public KycCountsResponse counts() {
+        return new KycCountsResponse(
+            associateRepository.countByRoleAndKycStatus(AssociateRole.ASSOCIATE, KycStatus.PENDING),
+            associateRepository.countByRoleAndKycStatus(AssociateRole.ASSOCIATE, KycStatus.VERIFIED),
+            associateRepository.countByRoleAndKycStatus(AssociateRole.ASSOCIATE, KycStatus.REJECTED)
+        );
+    }
+
     private static KycQueueEntryResponse toEntry(Associate a) {
         return new KycQueueEntryResponse(a.getId(), a.getUserId(), a.getName(), a.getKycStatus(), a.getJoinedAt());
     }
