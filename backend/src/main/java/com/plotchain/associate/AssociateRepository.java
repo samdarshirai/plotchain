@@ -1,9 +1,12 @@
 package com.plotchain.associate;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -74,4 +77,35 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     // ordinary associates placed via the generic provisioning endpoint without a parent. Together
     // these identify root associates -- Associate rows seeded at the top of the binary tree.
     List<Associate> findByRoleAndParentIdIsNullAndSponsorIdIsNullOrderByJoinedAtAsc(AssociateRole role);
+
+    Optional<Associate> findByIdAndRole(UUID id, AssociateRole role);
+
+    long countByParentId(UUID parentId);
+
+    List<Associate> findByParentId(UUID parentId);
+
+    // All five filters are optional (null = "don't filter on this"). Scoped to role = ASSOCIATE
+    // only -- this is the associate network directory, not the Admin Team staff roster.
+    // joinedToExclusive is an EXCLUSIVE upper bound, same convention as countJoinedBetween above:
+    // callers pass the day *after* the last day to include.
+    @Query("""
+        SELECT a FROM Associate a
+        WHERE a.role = com.plotchain.associate.AssociateRole.ASSOCIATE
+        AND (:search IS NULL OR LOWER(a.name) LIKE LOWER(CONCAT('%', :search, '%'))
+             OR LOWER(a.userId) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:rankId IS NULL OR a.rankId = :rankId)
+        AND (:kycStatus IS NULL OR a.kycStatus = :kycStatus)
+        AND (:status IS NULL OR a.status = :status)
+        AND (:joinedFrom IS NULL OR a.joinedAt >= :joinedFrom)
+        AND (:joinedToExclusive IS NULL OR a.joinedAt < :joinedToExclusive)
+        ORDER BY a.userId ASC
+        """)
+    Page<Associate> searchDirectory(
+        @Param("search") String search,
+        @Param("rankId") UUID rankId,
+        @Param("kycStatus") KycStatus kycStatus,
+        @Param("status") AssociateStatus status,
+        @Param("joinedFrom") Instant joinedFrom,
+        @Param("joinedToExclusive") Instant joinedToExclusive,
+        Pageable pageable);
 }

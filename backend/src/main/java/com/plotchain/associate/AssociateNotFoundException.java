@@ -6,4 +6,8 @@ public class AssociateNotFoundException extends RuntimeException {
     public AssociateNotFoundException(UUID associateId) {
         super("Associate not found: " + associateId);
     }
+
+    public AssociateNotFoundException(String userId) {
+        super("Associate not found: " + userId);
+    }
 }

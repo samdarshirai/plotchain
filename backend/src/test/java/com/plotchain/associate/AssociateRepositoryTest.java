@@ -1,9 +1,12 @@
 package com.plotchain.associate;
 
 import com.plotchain.rank.RankTier;
+import com.plotchain.rank.RankTierRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
@@ -24,6 +27,9 @@ class AssociateRepositoryTest {
 
     @Autowired
     AssociateRepository associateRepository;
+
+    @Autowired
+    RankTierRepository rankTierRepository;
 
     @Autowired
     org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager entityManager;
@@ -146,6 +152,112 @@ class AssociateRepositoryTest {
 
         assertThat(found.getEmail()).isNull();
         assertThat(found.getUserId()).isEqualTo("finance01");
+    }
+
+    @Test
+    void findByIdAndRoleOnlyMatchesAssociateRoleRows() {
+        RankTier rank = persistRank("Sales Associate", 1);
+        Associate associate = persistAssociate("VP00001", "Jane", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        Associate admin = persistAssociate("admin", "Admin", AssociateRole.ADMIN, null,
+            KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
+        entityManager.flush();
+
+        assertThat(associateRepository.findByIdAndRole(associate.getId(), AssociateRole.ASSOCIATE)).isPresent();
+        assertThat(associateRepository.findByIdAndRole(admin.getId(), AssociateRole.ASSOCIATE)).isEmpty();
+    }
+
+    @Test
+    void countByParentIdCountsOnlyDirectChildren() {
+        RankTier rank = persistRank("Sales Associate", 1);
+        Associate parent = persistAssociate("VP00001", "Parent", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        Associate child = persistAssociate("VP00002", "Child", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        child.setParentId(parent.getId());
+        Associate grandchild = persistAssociate("VP00003", "Grandchild", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        grandchild.setParentId(child.getId());
+        entityManager.flush();
+
+        assertThat(associateRepository.countByParentId(parent.getId())).isEqualTo(1);
+    }
+
+    @Test
+    void searchDirectoryFiltersBySearchRankKycStatusAndStatus() {
+        RankTier rankA = persistRank("Sales Associate", 1);
+        RankTier rankB = persistRank("Sales Executive", 2);
+        persistAssociate("VP00001", "Jane Doe", AssociateRole.ASSOCIATE, rankA.getId(),
+            KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
+        persistAssociate("VP00002", "John Smith", AssociateRole.ASSOCIATE, rankB.getId(),
+            KycStatus.PENDING, AssociateStatus.SUSPENDED, Instant.now());
+        persistAssociate("admin", "Admin", AssociateRole.ADMIN, null,
+            KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
+        entityManager.flush();
+
+        Page<Associate> bySearch = associateRepository.searchDirectory(
+            "jane", null, null, null, null, null, PageRequest.of(0, 20));
+        assertThat(bySearch.getContent()).extracting(Associate::getUserId).containsExactly("VP00001");
+
+        Page<Associate> byRank = associateRepository.searchDirectory(
+            null, rankB.getId(), null, null, null, null, PageRequest.of(0, 20));
+        assertThat(byRank.getContent()).extracting(Associate::getUserId).containsExactly("VP00002");
+
+        Page<Associate> byKycStatus = associateRepository.searchDirectory(
+            null, null, KycStatus.PENDING, null, null, null, PageRequest.of(0, 20));
+        assertThat(byKycStatus.getContent()).extracting(Associate::getUserId).containsExactly("VP00002");
+
+        Page<Associate> byStatus = associateRepository.searchDirectory(
+            null, null, null, AssociateStatus.SUSPENDED, null, null, PageRequest.of(0, 20));
+        assertThat(byStatus.getContent()).extracting(Associate::getUserId).containsExactly("VP00002");
+
+        Page<Associate> noFilters = associateRepository.searchDirectory(
+            null, null, null, null, null, null, PageRequest.of(0, 20));
+        assertThat(noFilters.getContent()).extracting(Associate::getUserId)
+            .containsExactlyInAnyOrder("VP00001", "VP00002");
+    }
+
+    @Test
+    void searchDirectoryFiltersByJoinedDateRange() {
+        RankTier rank = persistRank("Sales Associate", 1);
+        Instant inRange = Instant.parse("2026-01-15T00:00:00Z");
+        Instant outOfRange = Instant.parse("2026-02-15T00:00:00Z");
+        persistAssociate("VP00001", "Jane", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, inRange);
+        persistAssociate("VP00002", "John", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, outOfRange);
+        entityManager.flush();
+
+        Page<Associate> result = associateRepository.searchDirectory(
+            null, null, null, null,
+            Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2026-02-01T00:00:00Z"),
+            PageRequest.of(0, 20));
+
+        assertThat(result.getContent()).extracting(Associate::getUserId).containsExactly("VP00001");
+    }
+
+    private RankTier persistRank(String name, int order) {
+        RankTier rank = new RankTier(UUID.randomUUID(), name, order, BigDecimal.valueOf(5000));
+        entityManager.persist(rank);
+        return rank;
+    }
+
+    private Associate persistAssociate(String userId, String name, AssociateRole role, UUID rankId,
+                                        KycStatus kycStatus, AssociateStatus status, Instant joinedAt) {
+        Associate a = new Associate();
+        a.setId(UUID.randomUUID());
+        a.setUserId(userId);
+        a.setName(name);
+        a.setRole(role);
+        a.setRankId(rankId);
+        a.setKycStatus(kycStatus);
+        a.setStatus(status);
+        a.setJoinedAt(joinedAt);
+        a.setPasswordHash("hash");
+        a.setCumulativeMatchedVolume(BigDecimal.ZERO);
+        a.setMustChangePassword(false);
+        entityManager.persist(a);
+        return a;
     }
 
     // Uses the JVM default zone (matching how the DATE query params below are interpreted

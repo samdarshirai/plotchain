@@ -147,6 +147,20 @@ public class SecurityConfig {
                 // covered by the blanket POST rule above -- deliberately no separate matcher.
                 .requestMatchers(HttpMethod.GET, "/api/associates")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                // Admin Usage: Associate Directory, Tree Explorer, and KYC Review Queue GETs
+                // stay admin-family-only, same reasoning as every other admin-only GET above.
+                // Their mutating POSTs (suspend/reactivate/reset-password/kyc decision) are
+                // covered by the blanket POST rule above for the admin-family baseline, then
+                // narrowed further per-role by @PreAuthorize on the controller methods
+                // themselves (AdminAssociateController, KycReviewController) -- the first use
+                // of real per-role narrowing in this codebase, per AdminRolePermissions' stated
+                // follow-up.
+                .requestMatchers(HttpMethod.GET, "/api/admin/associates", "/api/admin/associates/*")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                .requestMatchers(HttpMethod.GET, "/api/admin/tree/*")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                .requestMatchers(HttpMethod.GET, "/api/admin/kyc")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 // Phase 5's genuinely public endpoints: the pre-login branding bootstrap, the
                 // raw logo bytes it and the login page render as <img> tags, and the favicon
                 // index.html links to -- all requested before any JWT exists. They only need to

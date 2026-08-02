@@ -388,4 +388,25 @@ class SecurityConfigTest {
                 .content("{\"currentPassword\":\"x\",\"newPassword\":\"y\"}"))
             .andExpect(status().is(not(403)));
     }
+
+    @Test
+    void adminAssociatesIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/admin/associates")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminTreeIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/admin/tree/" + UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminKycIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/admin/kyc")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
 }
