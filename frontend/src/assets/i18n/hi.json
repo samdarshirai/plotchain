@@ -82,6 +82,7 @@
       "temporaryPasswordNotice": "New temporary password (shown once)",
       "loadError": "Something went wrong loading the associate directory. Try again.",
       "actionError": "Could not complete that action. Please try again.",
+      "rankLoadError": "Something went wrong loading rank options.",
       "rankFilterLabel": "Rank",
       "rankFilterAllOption": "All ranks",
       "kycStatusFilterLabel": "KYC Status",

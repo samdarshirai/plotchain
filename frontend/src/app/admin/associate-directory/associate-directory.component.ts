@@ -60,6 +60,7 @@ const PAGE_SIZE = 20;
 
       <p *ngIf="loadError" class="associate-directory__load-error">{{ 'admin.associateDirectory.loadError' | translate }}</p>
       <p *ngIf="actionError" class="associate-directory__action-error">{{ 'admin.associateDirectory.actionError' | translate }}</p>
+      <p *ngIf="rankLoadError" class="associate-directory__rank-load-error">{{ 'admin.associateDirectory.rankLoadError' | translate }}</p>
 
       <table class="associate-directory__table">
         <thead>
@@ -126,6 +127,7 @@ export class AssociateDirectoryComponent implements OnInit {
   temporaryPassword: string | null = null;
   loadError = false;
   actionError = false;
+  rankLoadError = false;
   availableRanks: RankOption[] = [];
   private search = '';
   private rank = '';
@@ -135,7 +137,10 @@ export class AssociateDirectoryComponent implements OnInit {
   private joinedTo = '';
 
   ngOnInit(): void {
-    this.compensationPlanService.getCurrent().subscribe(res => (this.availableRanks = res.availableRanks));
+    this.compensationPlanService.getCurrent().subscribe({
+      next: res => (this.availableRanks = res.availableRanks),
+      error: () => (this.rankLoadError = true)
+    });
     this.loadPage(0);
   }
 

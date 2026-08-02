@@ -117,6 +117,7 @@ describe('AssociateDirectoryComponent', () => {
     fixture.componentInstance.onRankChange('r1');
 
     const req = httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('rank') === 'r1' && r.params.get('page') === '0');
+    expect(req.request.method).toBe('GET');
     req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
   });
 
@@ -124,6 +125,7 @@ describe('AssociateDirectoryComponent', () => {
     fixture.componentInstance.onKycStatusChange('VERIFIED');
 
     const req = httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('kycStatus') === 'VERIFIED' && r.params.get('page') === '0');
+    expect(req.request.method).toBe('GET');
     req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
   });
 
@@ -131,16 +133,19 @@ describe('AssociateDirectoryComponent', () => {
     fixture.componentInstance.onStatusChange('SUSPENDED');
 
     const req = httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('status') === 'SUSPENDED' && r.params.get('page') === '0');
+    expect(req.request.method).toBe('GET');
     req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
   });
 
   it('changing joinedFrom/joinedTo reloads page 0 with both params', () => {
     fixture.componentInstance.onJoinedFromChange('2026-01-01');
     let req = httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('joinedFrom') === '2026-01-01');
+    expect(req.request.method).toBe('GET');
     req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
 
     fixture.componentInstance.onJoinedToChange('2026-06-30');
     req = httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('joinedFrom') === '2026-01-01' && r.params.get('joinedTo') === '2026-06-30');
+    expect(req.request.method).toBe('GET');
     req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
   });
 
@@ -148,6 +153,30 @@ describe('AssociateDirectoryComponent', () => {
     fixture.componentInstance.onRankChange('');
 
     const req = httpMock.expectOne('/api/admin/associates?page=0&size=20');
+    expect(req.request.method).toBe('GET');
     req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('shows a rank load error when the ranks fetch fails, without silently doing nothing', async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [AssociateDirectoryComponent, HttpClientTestingModule, TranslateModule.forRoot()]
+    }).compileComponents();
+
+    const isolatedFixture = TestBed.createComponent(AssociateDirectoryComponent);
+    const isolatedHttpMock = TestBed.inject(HttpTestingController);
+    isolatedFixture.detectChanges();
+
+    isolatedHttpMock.expectOne('/api/company/compensation')
+      .flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+    isolatedHttpMock.expectOne('/api/admin/associates?page=0&size=20')
+      .flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+    isolatedFixture.detectChanges();
+
+    expect(isolatedFixture.componentInstance.rankLoadError).toBe(true);
+    const errorEl: HTMLElement | null = isolatedFixture.nativeElement.querySelector('.associate-directory__rank-load-error');
+    expect(errorEl?.textContent?.trim()).toBeTruthy();
+
+    isolatedHttpMock.verify();
   });
 });
