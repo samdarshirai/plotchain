@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { KycQueueService } from './kyc-queue.service';
@@ -7,13 +7,15 @@ import { KycPage } from '../models/kyc-page.model';
 import { KycCounts } from '../models/kyc-counts.model';
 import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/tab-bar.component';
 import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.component';
+import { EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-kyc-queue',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, TabBarComponent, StatTileComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, TabBarComponent, StatTileComponent, EditableTableComponent],
+  providers: [DatePipe],
   template: `
     <div class="kyc-queue card">
       <h1 class="card-title">{{ 'admin.kycQueue.title' | translate }}</h1>
@@ -29,36 +31,26 @@ const PAGE_SIZE = 20;
       <p *ngIf="loadError" class="kyc-queue__load-error">{{ 'admin.kycQueue.loadError' | translate }}</p>
       <p *ngIf="decisionError" class="kyc-queue__decision-error">{{ 'admin.kycQueue.decisionError' | translate }}</p>
 
-      <table class="kyc-queue__table">
-        <thead>
-          <tr>
-            <th>{{ 'admin.kycQueue.columnUserId' | translate }}</th>
-            <th>{{ 'admin.kycQueue.columnName' | translate }}</th>
-            <th>{{ 'admin.kycQueue.columnJoinedAt' | translate }}</th>
-            <th *ngIf="activeStatus === 'PENDING'">{{ 'admin.kycQueue.columnActions' | translate }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let entry of page?.entries">
-            <td>{{ entry.userId }}</td>
-            <td>{{ entry.name }}</td>
-            <td>{{ entry.joinedAt | date: 'medium' }}</td>
-            <td *ngIf="activeStatus === 'PENDING'">
-              <button type="button" (click)="approve(entry.id)">
-                {{ 'admin.kycQueue.approveAction' | translate }}
-              </button>
-              <input
-                type="text"
-                [(ngModel)]="rejectReasons[entry.id]"
-                [placeholder]="'admin.kycQueue.rejectReasonPlaceholder' | translate"
-              />
-              <button type="button" (click)="reject(entry.id)">
-                {{ 'admin.kycQueue.rejectAction' | translate }}
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <app-editable-table
+        [readOnly]="true"
+        [columns]="kycColumns"
+        [rows]="kycRows"
+        [actionTemplate]="actionsTpl"
+        [emptyStateLabel]="'admin.kycQueue.emptyState' | translate"
+      ></app-editable-table>
+      <ng-template #actionsTpl let-i="index">
+        <button type="button" class="kyc-queue__approve-action" (click)="approve(page!.entries[i].id)">
+          {{ 'admin.kycQueue.approveAction' | translate }}
+        </button>
+        <input
+          type="text"
+          [(ngModel)]="rejectReasons[page!.entries[i].id]"
+          [placeholder]="'admin.kycQueue.rejectReasonPlaceholder' | translate"
+        />
+        <button type="button" (click)="reject(page!.entries[i].id)">
+          {{ 'admin.kycQueue.rejectAction' | translate }}
+        </button>
+      </ng-template>
 
       <div class="kyc-queue__pagination" *ngIf="page">
         <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
@@ -81,6 +73,7 @@ const PAGE_SIZE = 20;
 export class KycQueueComponent implements OnInit {
   private kycQueueService = inject(KycQueueService);
   private translate = inject(TranslateService);
+  private datePipe = inject(DatePipe);
 
   page: KycPage | null = null;
   counts: KycCounts | null = null;
@@ -106,6 +99,26 @@ export class KycQueueComponent implements OnInit {
       return 1;
     }
     return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
+  }
+
+  get kycColumns(): EditableTableColumn[] {
+    const columns: EditableTableColumn[] = [
+      { key: 'userId', label: this.translate.instant('admin.kycQueue.columnUserId'), type: 'text' },
+      { key: 'name', label: this.translate.instant('admin.kycQueue.columnName'), type: 'text' },
+      { key: 'joinedAt', label: this.translate.instant('admin.kycQueue.columnJoinedAt'), type: 'text' }
+    ];
+    if (this.activeStatus === 'PENDING') {
+      columns.push({ key: 'actions', label: this.translate.instant('admin.kycQueue.columnActions'), type: 'action' });
+    }
+    return columns;
+  }
+
+  get kycRows(): Record<string, string>[] {
+    return (this.page?.entries ?? []).map(entry => ({
+      userId: entry.userId,
+      name: entry.name,
+      joinedAt: this.datePipe.transform(entry.joinedAt, 'medium') ?? entry.joinedAt
+    }));
   }
 
   ngOnInit(): void {

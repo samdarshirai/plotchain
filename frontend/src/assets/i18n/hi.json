@@ -108,7 +108,8 @@
       "decisionError": "Could not save that decision. Please try again.",
       "previousPageAction": "Previous",
       "nextPageAction": "Next",
-      "pageIndicator": "Page {{page}} of {{totalPages}}"
+      "pageIndicator": "Page {{page}} of {{totalPages}}",
+      "emptyState": "No entries in this status."
     }
   },
   "setup": {

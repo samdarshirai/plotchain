@@ -35,7 +35,8 @@ describe('KycQueueComponent', () => {
           decisionError: 'Could not save that decision. Please try again.',
           previousPageAction: 'Previous',
           nextPageAction: 'Next',
-          pageIndicator: 'Page {{page}} of {{totalPages}}'
+          pageIndicator: 'Page {{page}} of {{totalPages}}',
+          emptyState: 'No entries in this status.'
         }
       }
     });
@@ -197,5 +198,35 @@ describe('KycQueueComponent', () => {
     req.flush({ entries: [], page: 1, size: 20, totalElements: 21 });
 
     expect(fixture.componentInstance.page?.page).toBe(1);
+  });
+
+  it('shows an empty-state row when the queue has no entries', () => {
+    fixture.componentInstance.onTabChange('REJECTED');
+    httpMock.expectOne('/api/admin/kyc?status=REJECTED&page=0&size=20')
+      .flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    fixture.detectChanges();
+
+    const emptyCell: HTMLElement | null = fixture.nativeElement.querySelector('.editable-table__empty');
+    expect(emptyCell?.textContent?.trim()).toBeTruthy();
+  });
+
+  it('only includes the actions column on the PENDING tab', () => {
+    expect(fixture.componentInstance.kycColumns.some(c => c.key === 'actions')).toBeTrue();
+
+    fixture.componentInstance.onTabChange('VERIFIED');
+    httpMock.expectOne('/api/admin/kyc?status=VERIFIED&page=0&size=20')
+      .flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+
+    expect(fixture.componentInstance.kycColumns.some(c => c.key === 'actions')).toBeFalse();
+  });
+
+  it('approve button in the rendered action cell calls approve with the row entry id', () => {
+    fixture.detectChanges();
+    const spy = spyOn(fixture.componentInstance, 'approve');
+
+    const approveButton: HTMLButtonElement = fixture.nativeElement.querySelector('.kyc-queue__approve-action');
+    approveButton.click();
+
+    expect(spy).toHaveBeenCalledWith('a1');
   });
 });
