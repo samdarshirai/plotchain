@@ -14,10 +14,10 @@ describe('SettingsNavRailComponent', () => {
     fixture = TestBed.createComponent(SettingsNavRailComponent);
   });
 
-  it('renders one row per section plus hardcoded associate directory, tree explorer, and audit log rows', () => {
+  it('renders one row per section plus hardcoded associate directory, tree explorer, kyc queue, and audit log rows', () => {
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('.settings-nav-rail__item');
-    expect(items.length).toBe(Object.keys(SECTION_PATHS).length + 3);
+    expect(items.length).toBe(Object.keys(SECTION_PATHS).length + 4);
   });
 
   it('marks the active section', () => {

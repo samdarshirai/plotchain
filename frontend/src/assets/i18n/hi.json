@@ -89,6 +89,21 @@
       "loadError": "Something went wrong loading this associate's tree. Try again.",
       "skewedLegsFlag": "Skewed legs",
       "stagnantFlag": "Stagnant"
+    },
+    "kycQueue": {
+      "title": "KYC Review Queue",
+      "tabPending": "Pending",
+      "tabVerified": "Verified",
+      "tabRejected": "Rejected",
+      "columnUserId": "Associate ID",
+      "columnName": "Name",
+      "columnJoinedAt": "Joined",
+      "columnActions": "Actions",
+      "approveAction": "Approve",
+      "rejectAction": "Reject",
+      "rejectReasonPlaceholder": "Reason for rejection",
+      "loadError": "Something went wrong loading the KYC queue. Try again.",
+      "decisionError": "Could not save that decision. Please try again."
     }
   },
   "setup": {
@@ -459,6 +474,7 @@
       "rootAssociates": "रूट एसोसिएट(स)",
       "associateDirectory": "Associate Directory",
       "treeExplorer": "Tree Explorer",
+      "kycQueue": "KYC Review Queue",
       "auditLog": "ऑडिट लॉग"
     },
     "cards": {

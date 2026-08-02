@@ -24,6 +24,9 @@ import { SECTION_PATHS } from './models/settings-section.model';
         <li class="settings-nav-rail__item" [class.settings-nav-rail__item--active]="activeSectionKey === 'treeExplorer'">
           <a [routerLink]="['/settings', 'tree-explorer']">{{ 'settings.sections.treeExplorer' | translate }}</a>
         </li>
+        <li class="settings-nav-rail__item" [class.settings-nav-rail__item--active]="activeSectionKey === 'kycQueue'">
+          <a [routerLink]="['/settings', 'kyc-queue']">{{ 'settings.sections.kycQueue' | translate }}</a>
+        </li>
         <li class="settings-nav-rail__item" [class.settings-nav-rail__item--active]="activeSectionKey === 'auditLog'">
           <a [routerLink]="['/settings', 'audit-log']">{{ 'settings.sections.auditLog' | translate }}</a>
         </li>
