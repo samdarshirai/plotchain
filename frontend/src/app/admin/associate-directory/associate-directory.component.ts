@@ -117,6 +117,7 @@ export class AssociateDirectoryComponent implements OnInit {
     if (!this.selected) return;
     this.associateDirectoryService.suspend(this.selected.id).subscribe(detail => {
       this.selected = detail;
+      this.loadPage(this.page?.page ?? 0);
     });
   }
 
@@ -124,6 +125,7 @@ export class AssociateDirectoryComponent implements OnInit {
     if (!this.selected) return;
     this.associateDirectoryService.reactivate(this.selected.id).subscribe(detail => {
       this.selected = detail;
+      this.loadPage(this.page?.page ?? 0);
     });
   }
 

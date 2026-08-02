@@ -50,7 +50,24 @@ describe('AssociateDirectoryComponent', () => {
     const req = httpMock.expectOne('/api/admin/associates/a1/suspend');
     req.flush({ id: 'a1', userId: 'VP00001', status: 'SUSPENDED' });
 
+    const reloadReq = httpMock.expectOne('/api/admin/associates?page=0&size=20');
+    reloadReq.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+
     expect(fixture.componentInstance.selected?.status).toBe('SUSPENDED');
+  });
+
+  it('reactivates the selected associate and refreshes detail', () => {
+    fixture.componentInstance.selected = { id: 'a1', userId: 'VP00001', status: 'SUSPENDED' } as any;
+
+    fixture.componentInstance.reactivateSelected();
+
+    const req = httpMock.expectOne('/api/admin/associates/a1/reactivate');
+    req.flush({ id: 'a1', userId: 'VP00001', status: 'ACTIVE' });
+
+    const reloadReq = httpMock.expectOne('/api/admin/associates?page=0&size=20');
+    reloadReq.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+
+    expect(fixture.componentInstance.selected?.status).toBe('ACTIVE');
   });
 
   it('shows the one-time temporary password after a reset', () => {
