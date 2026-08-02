@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { KycQueueComponent } from './kyc-queue.component';
 
 describe('KycQueueComponent', () => {
@@ -14,6 +14,33 @@ describe('KycQueueComponent', () => {
 
     fixture = TestBed.createComponent(KycQueueComponent);
     httpMock = TestBed.inject(HttpTestingController);
+
+    const translateService = TestBed.inject(TranslateService);
+    translateService.setDefaultLang('en');
+    translateService.setTranslation('en', {
+      admin: {
+        kycQueue: {
+          title: 'KYC Review Queue',
+          tabPending: 'Pending',
+          tabVerified: 'Verified',
+          tabRejected: 'Rejected',
+          columnUserId: 'Associate ID',
+          columnName: 'Name',
+          columnJoinedAt: 'Joined',
+          columnActions: 'Actions',
+          approveAction: 'Approve',
+          rejectAction: 'Reject',
+          rejectReasonPlaceholder: 'Reason for rejection',
+          loadError: 'Something went wrong loading the KYC queue. Try again.',
+          decisionError: 'Could not save that decision. Please try again.',
+          previousPageAction: 'Previous',
+          nextPageAction: 'Next',
+          pageIndicator: 'Page {{page}} of {{totalPages}}'
+        }
+      }
+    });
+    translateService.use('en');
+
     fixture.detectChanges();
 
     httpMock.expectOne('/api/admin/kyc/counts')
@@ -146,5 +173,29 @@ describe('KycQueueComponent', () => {
       .flush({ pending: 0, verified: 5, rejected: 2 });
 
     expect(fixture.componentInstance.counts).toEqual({ pending: 0, verified: 5, rejected: 2 });
+  });
+
+  it('computes a 1-based current page and total pages from the loaded page', () => {
+    expect(fixture.componentInstance.currentPage).toBe(1);
+    expect(fixture.componentInstance.totalPages).toBe(1);
+  });
+
+  it('renders Prev/Next buttons and a page indicator, Prev disabled on page 1', () => {
+    fixture.detectChanges();
+
+    const prevButton: HTMLButtonElement = fixture.nativeElement.querySelector('.kyc-queue__pagination button:first-child');
+    expect(prevButton.disabled).toBeTrue();
+
+    const indicator: HTMLElement = fixture.nativeElement.querySelector('.kyc-queue__page-indicator');
+    expect(indicator.textContent).toContain('1');
+  });
+
+  it('clicking Next loads the next page', () => {
+    fixture.componentInstance.goToPage(1);
+
+    const req = httpMock.expectOne('/api/admin/kyc?status=PENDING&page=1&size=20');
+    req.flush({ entries: [], page: 1, size: 20, totalElements: 21 });
+
+    expect(fixture.componentInstance.page?.page).toBe(1);
   });
 });

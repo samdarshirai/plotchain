@@ -59,6 +59,22 @@ const PAGE_SIZE = 20;
           </tr>
         </tbody>
       </table>
+
+      <div class="kyc-queue__pagination" *ngIf="page">
+        <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
+          {{ 'admin.kycQueue.previousPageAction' | translate }}
+        </button>
+        <span class="kyc-queue__page-indicator">
+          {{ 'admin.kycQueue.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
+        </span>
+        <button
+          type="button"
+          [disabled]="(page.page + 1) * page.size >= page.totalElements"
+          (click)="goToPage(page.page + 1)"
+        >
+          {{ 'admin.kycQueue.nextPageAction' | translate }}
+        </button>
+      </div>
     </div>
   `
 })
@@ -81,6 +97,17 @@ export class KycQueueComponent implements OnInit {
     ];
   }
 
+  get currentPage(): number {
+    return (this.page?.page ?? 0) + 1;
+  }
+
+  get totalPages(): number {
+    if (!this.page || this.page.size === 0) {
+      return 1;
+    }
+    return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
+  }
+
   ngOnInit(): void {
     this.loadCounts();
     this.loadPage(0);
@@ -89,6 +116,10 @@ export class KycQueueComponent implements OnInit {
   onTabChange(status: string): void {
     this.activeStatus = status;
     this.loadPage(0);
+  }
+
+  goToPage(page: number): void {
+    this.loadPage(page);
   }
 
   approve(id: string): void {

@@ -105,7 +105,10 @@
       "rejectAction": "Reject",
       "rejectReasonPlaceholder": "Reason for rejection",
       "loadError": "Something went wrong loading the KYC queue. Try again.",
-      "decisionError": "Could not save that decision. Please try again."
+      "decisionError": "Could not save that decision. Please try again.",
+      "previousPageAction": "Previous",
+      "nextPageAction": "Next",
+      "pageIndicator": "Page {{page}} of {{totalPages}}"
     }
   },
   "setup": {
