@@ -62,6 +62,24 @@
       "placementUnavailable": "That placement is already occupied. Choose a different leg.",
       "noRankTiersConfigured": "No rank tiers are configured; an associate cannot be created without a rank.",
       "genericSaveError": "Could not create the associate. Check the details and try again."
+    },
+    "associateDirectory": {
+      "title": "Associate Directory",
+      "searchPlaceholder": "Search by name or ID",
+      "columnUserId": "Associate ID",
+      "columnName": "Name",
+      "columnRank": "Rank",
+      "columnKycStatus": "KYC Status",
+      "columnStatus": "Status",
+      "previousPageAction": "Previous",
+      "nextPageAction": "Next",
+      "sponsorLabel": "Sponsor",
+      "placementLabel": "Placement",
+      "downlineLabel": "Downline (direct / total)",
+      "suspendAction": "Suspend",
+      "reactivateAction": "Reactivate",
+      "resetPasswordAction": "Reset Password",
+      "temporaryPasswordNotice": "New temporary password (shown once)"
     }
   },
   "setup": {
@@ -430,6 +448,7 @@
       "paymentsKyc": "Payments & KYC",
       "adminTeam": "Admin Team & Roles",
       "rootAssociates": "Root Associate(s)",
+      "associateDirectory": "Associate Directory",
       "auditLog": "Audit Log"
     },
     "cards": {

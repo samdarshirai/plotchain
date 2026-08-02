@@ -18,6 +18,7 @@ import { ReviewLaunchStepComponent } from './setup/steps/review-launch/review-la
 import { SettingsShellComponent } from './settings/settings-shell.component';
 import { SettingsOverviewComponent } from './settings/settings-overview.component';
 import { AuditLogComponent } from './settings/audit-log/audit-log.component';
+import { AssociateDirectoryComponent } from './admin/associate-directory/associate-directory.component';
 import { TermsOfServiceComponent } from './legal/terms-of-service.component';
 import { PrivacyPolicyComponent } from './legal/privacy-policy.component';
 
@@ -57,6 +58,7 @@ export const routes: Routes = [
       { path: 'payments-kyc', component: PaymentsKycStepComponent, data: { sectionKey: 'paymentsKyc', mode: 'settings' } },
       { path: 'admin-team', component: AdminTeamStepComponent, data: { sectionKey: 'adminTeam', mode: 'settings' } },
       { path: 'root-associates', component: RootAssociatesStepComponent, data: { sectionKey: 'rootAssociates', mode: 'settings' } },
+      { path: 'associate-directory', component: AssociateDirectoryComponent, data: { sectionKey: 'associateDirectory' } },
       { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } }
     ]
   },

@@ -62,6 +62,24 @@
       "placementUnavailable": "यह प्लेसमेंट पहले से भरी हुई है। कोई अन्य लेग चुनें।",
       "noRankTiersConfigured": "कोई रैंक टियर कॉन्फ़िगर नहीं है; रैंक के बिना एसोसिएट नहीं बनाया जा सकता।",
       "genericSaveError": "एसोसिएट नहीं बनाया जा सका। विवरण जांचें और पुनः प्रयास करें।"
+    },
+    "associateDirectory": {
+      "title": "Associate Directory",
+      "searchPlaceholder": "Search by name or ID",
+      "columnUserId": "Associate ID",
+      "columnName": "Name",
+      "columnRank": "Rank",
+      "columnKycStatus": "KYC Status",
+      "columnStatus": "Status",
+      "previousPageAction": "Previous",
+      "nextPageAction": "Next",
+      "sponsorLabel": "Sponsor",
+      "placementLabel": "Placement",
+      "downlineLabel": "Downline (direct / total)",
+      "suspendAction": "Suspend",
+      "reactivateAction": "Reactivate",
+      "resetPasswordAction": "Reset Password",
+      "temporaryPasswordNotice": "New temporary password (shown once)"
     }
   },
   "setup": {
@@ -430,6 +448,7 @@
       "paymentsKyc": "भुगतान और केवाईसी",
       "adminTeam": "एडमिन टीम और भूमिकाएं",
       "rootAssociates": "रूट एसोसिएट(स)",
+      "associateDirectory": "Associate Directory",
       "auditLog": "ऑडिट लॉग"
     },
     "cards": {
