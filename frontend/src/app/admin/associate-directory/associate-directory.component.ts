@@ -1,19 +1,20 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AssociateDirectoryService } from './associate-directory.service';
 import { AdminAssociatePage, AdminAssociateFilters } from '../models/admin-associate-page.model';
 import { AdminAssociateDetail } from '../models/admin-associate-detail.model';
 import { SidePanelComponent } from '../../shared/components/side-panel/side-panel.component';
 import { CompensationPlanService } from '../../setup/steps/compensation/compensation-plan.service';
 import { RankOption } from '../../setup/models/compensation-plan.model';
+import { EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-associate-directory',
   standalone: true,
-  imports: [CommonModule, TranslateModule, SidePanelComponent],
+  imports: [CommonModule, TranslateModule, SidePanelComponent, EditableTableComponent],
   template: `
     <div class="associate-directory card">
       <h1 class="card-title">{{ 'admin.associateDirectory.title' | translate }}</h1>
@@ -62,26 +63,13 @@ const PAGE_SIZE = 20;
       <p *ngIf="actionError" class="associate-directory__action-error">{{ 'admin.associateDirectory.actionError' | translate }}</p>
       <p *ngIf="rankLoadError" class="associate-directory__rank-load-error">{{ 'admin.associateDirectory.rankLoadError' | translate }}</p>
 
-      <table class="associate-directory__table">
-        <thead>
-          <tr>
-            <th>{{ 'admin.associateDirectory.columnUserId' | translate }}</th>
-            <th>{{ 'admin.associateDirectory.columnName' | translate }}</th>
-            <th>{{ 'admin.associateDirectory.columnRank' | translate }}</th>
-            <th>{{ 'admin.associateDirectory.columnKycStatus' | translate }}</th>
-            <th>{{ 'admin.associateDirectory.columnStatus' | translate }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let associate of page?.associates" (click)="selectAssociate(associate.id)">
-            <td>{{ associate.userId }}</td>
-            <td>{{ associate.name }}</td>
-            <td>{{ associate.rankName }}</td>
-            <td>{{ associate.kycStatus }}</td>
-            <td>{{ associate.status }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <app-editable-table
+        [readOnly]="true"
+        [columns]="directoryColumns"
+        [rows]="directoryRows"
+        [emptyStateLabel]="'admin.associateDirectory.emptyState' | translate"
+        (rowClick)="selectAssociate(page!.associates[$event].id)"
+      ></app-editable-table>
 
       <div class="associate-directory__pagination" *ngIf="page">
         <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
@@ -120,6 +108,7 @@ const PAGE_SIZE = 20;
 export class AssociateDirectoryComponent implements OnInit {
   private associateDirectoryService = inject(AssociateDirectoryService);
   private compensationPlanService = inject(CompensationPlanService);
+  private translate = inject(TranslateService);
 
   page: AdminAssociatePage | null = null;
   selected: AdminAssociateDetail | null = null;
@@ -176,6 +165,26 @@ export class AssociateDirectoryComponent implements OnInit {
 
   goToPage(page: number): void {
     this.loadPage(page);
+  }
+
+  get directoryColumns(): EditableTableColumn[] {
+    return [
+      { key: 'userId', label: this.translate.instant('admin.associateDirectory.columnUserId'), type: 'text' },
+      { key: 'name', label: this.translate.instant('admin.associateDirectory.columnName'), type: 'text' },
+      { key: 'rankName', label: this.translate.instant('admin.associateDirectory.columnRank'), type: 'text' },
+      { key: 'kycStatus', label: this.translate.instant('admin.associateDirectory.columnKycStatus'), type: 'text' },
+      { key: 'status', label: this.translate.instant('admin.associateDirectory.columnStatus'), type: 'text' }
+    ];
+  }
+
+  get directoryRows(): Record<string, string>[] {
+    return (this.page?.associates ?? []).map(a => ({
+      userId: a.userId,
+      name: a.name,
+      rankName: a.rankName ?? '',
+      kycStatus: a.kycStatus,
+      status: a.status
+    }));
   }
 
   selectAssociate(id: string): void {

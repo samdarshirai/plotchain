@@ -90,7 +90,8 @@
       "statusFilterLabel": "Status",
       "statusFilterAllOption": "All statuses",
       "joinedFromLabel": "Joined from",
-      "joinedToLabel": "Joined to"
+      "joinedToLabel": "Joined to",
+      "emptyState": "No associates match these filters."
     },
     "treeExplorer": {
       "title": "Tree Explorer",

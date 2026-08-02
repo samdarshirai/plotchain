@@ -179,4 +179,32 @@ describe('AssociateDirectoryComponent', () => {
 
     isolatedHttpMock.verify();
   });
+
+  it('shows an empty-state row when no associates match', () => {
+    fixture.componentInstance.onRankChange('r1');
+    httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('rank') === 'r1')
+      .flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+    fixture.detectChanges();
+
+    const emptyCell: HTMLElement | null = fixture.nativeElement.querySelector('.editable-table__empty');
+    expect(emptyCell?.textContent?.trim()).toBeTruthy();
+  });
+
+  it('clicking a rendered row opens the detail panel for that associate', () => {
+    fixture.detectChanges();
+
+    const bodyRows = fixture.nativeElement.querySelectorAll('tbody tr');
+    bodyRows[0].click();
+
+    const req = httpMock.expectOne('/api/admin/associates/a1');
+    req.flush({
+      id: 'a1', userId: 'VP00001', name: 'Jane', email: null, phone: null, rankName: 'Sales Associate',
+      kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', lastActiveAt: null,
+      sponsorId: null, sponsorUserId: null, parentId: null, parentUserId: null, position: null,
+      directDownlineCount: 0, totalDownlineCount: 0, leftLegVolume: 0, rightLegVolume: 0
+    });
+
+    expect(fixture.componentInstance.selected?.userId).toBe('VP00001');
+    expect(fixture.componentInstance.panelOpen).toBeTrue();
+  });
 });
