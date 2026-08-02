@@ -22,6 +22,19 @@ public class LegVolume {
     @Column(name = "carried_forward_right", nullable = false)
     private BigDecimal carriedForwardRight = BigDecimal.ZERO;
 
+    protected LegVolume() {}
+
+    public LegVolume(UUID id, UUID associateId, UUID cycleId, BigDecimal leftLegVolume, BigDecimal rightLegVolume,
+                      BigDecimal carriedForwardLeft, BigDecimal carriedForwardRight) {
+        this.id = id;
+        this.associateId = associateId;
+        this.cycleId = cycleId;
+        this.leftLegVolume = leftLegVolume;
+        this.rightLegVolume = rightLegVolume;
+        this.carriedForwardLeft = carriedForwardLeft;
+        this.carriedForwardRight = carriedForwardRight;
+    }
+
     public static LegVolume empty(UUID associateId, UUID cycleId) {
         LegVolume lv = new LegVolume();
         lv.id = UUID.randomUUID();

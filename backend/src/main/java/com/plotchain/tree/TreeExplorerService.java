@@ -1,0 +1,113 @@
+package com.plotchain.tree;
+
+import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateNotFoundException;
+import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateRole;
+import com.plotchain.cycle.Cycle;
+import com.plotchain.cycle.CycleRepository;
+import com.plotchain.cycle.CycleStatus;
+import com.plotchain.legvolume.LegVolume;
+import com.plotchain.legvolume.LegVolumeRepository;
+import com.plotchain.rank.RankTier;
+import com.plotchain.rank.RankTierRepository;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+public class TreeExplorerService {
+
+    private static final int MAX_LEG_SKEW_RATIO = 10;
+    private static final long STAGNANT_THRESHOLD_DAYS = 90;
+
+    private final AssociateRepository associateRepository;
+    private final RankTierRepository rankTierRepository;
+    private final CycleRepository cycleRepository;
+    private final LegVolumeRepository legVolumeRepository;
+
+    public TreeExplorerService(
+        AssociateRepository associateRepository,
+        RankTierRepository rankTierRepository,
+        CycleRepository cycleRepository,
+        LegVolumeRepository legVolumeRepository
+    ) {
+        this.associateRepository = associateRepository;
+        this.rankTierRepository = rankTierRepository;
+        this.cycleRepository = cycleRepository;
+        this.legVolumeRepository = legVolumeRepository;
+    }
+
+    public TreeNodeResponse subtree(UUID associateId, int depth) {
+        Associate root = associateRepository.findByIdAndRole(associateId, AssociateRole.ASSOCIATE)
+            .orElseThrow(() -> new AssociateNotFoundException(associateId));
+        Map<UUID, RankTier> ranksById = rankTierRepository.findAllByOrderByRankOrder().stream()
+            .collect(Collectors.toMap(RankTier::getId, r -> r));
+        Optional<Cycle> openCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN);
+        return buildNode(root, depth, ranksById, openCycle);
+    }
+
+    public TreeSearchResponse search(String userId) {
+        Associate target = associateRepository.findByUserId(userId)
+            .filter(a -> a.getRole() == AssociateRole.ASSOCIATE)
+            .orElseThrow(() -> new AssociateNotFoundException(userId));
+
+        List<UUID> chain = associateRepository.findAncestorChain(target.getId());
+        Map<UUID, Associate> byId = associateRepository.findAllById(chain).stream()
+            .collect(Collectors.toMap(Associate::getId, a -> a));
+        List<TreeNodeSummary> path = chain.stream()
+            .map(byId::get)
+            .map(a -> new TreeNodeSummary(a.getId(), a.getUserId(), a.getName()))
+            .toList();
+        return new TreeSearchResponse(path);
+    }
+
+    private TreeNodeResponse buildNode(Associate a, int remainingDepth, Map<UUID, RankTier> ranksById,
+                                        Optional<Cycle> openCycle) {
+        BigDecimal[] legs = legVolumesFor(a.getId(), openCycle);
+        List<TreeNodeResponse> children = remainingDepth <= 0
+            ? List.of()
+            : associateRepository.findByParentId(a.getId()).stream()
+                .map(child -> buildNode(child, remainingDepth - 1, ranksById, openCycle))
+                .toList();
+        RankTier rank = ranksById.get(a.getRankId());
+        return new TreeNodeResponse(
+            a.getId(), a.getUserId(), a.getName(), rank == null ? null : rank.getName(),
+            a.getKycStatus(), a.getPosition(), legs[0], legs[1],
+            isSkewed(legs[0], legs[1]), isStagnant(a), children);
+    }
+
+    private boolean isSkewed(BigDecimal left, BigDecimal right) {
+        if (left.signum() == 0 || right.signum() == 0) {
+            return false;
+        }
+        BigDecimal larger = left.max(right);
+        BigDecimal smaller = left.min(right);
+        return larger.compareTo(smaller.multiply(BigDecimal.valueOf(MAX_LEG_SKEW_RATIO))) >= 0;
+    }
+
+    private boolean isStagnant(Associate a) {
+        // Deliberately not short-circuited on oldEnough: countByParentId is called for every
+        // node regardless of join date, so a node's "no direct downline" status is always
+        // computed the same way rather than depending on evaluation order.
+        long directDownlineCount = associateRepository.countByParentId(a.getId());
+        boolean oldEnough = a.getJoinedAt().isBefore(Instant.now().minus(STAGNANT_THRESHOLD_DAYS, ChronoUnit.DAYS));
+        return oldEnough && directDownlineCount == 0;
+    }
+
+    private BigDecimal[] legVolumesFor(UUID associateId, Optional<Cycle> openCycle) {
+        if (openCycle.isEmpty()) {
+            return new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO};
+        }
+        return legVolumeRepository.findByAssociateIdAndCycleId(associateId, openCycle.get().getId())
+            .map(lv -> new BigDecimal[]{lv.getLeftLegVolume(), lv.getRightLegVolume()})
+            .orElse(new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
+    }
+}

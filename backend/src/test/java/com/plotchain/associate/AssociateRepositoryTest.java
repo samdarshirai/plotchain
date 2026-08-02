@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -234,6 +235,24 @@ class AssociateRepositoryTest {
             PageRequest.of(0, 20));
 
         assertThat(result.getContent()).extracting(Associate::getUserId).containsExactly("VP00001");
+    }
+
+    @Test
+    void findAncestorChainReturnsRootToTargetInclusiveInOrder() {
+        RankTier rank = persistRank("Sales Associate", 1);
+        Associate root = persistAssociate("VP00001", "Root", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        Associate middle = persistAssociate("VP00002", "Middle", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        middle.setParentId(root.getId());
+        Associate leaf = persistAssociate("VP00003", "Leaf", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        leaf.setParentId(middle.getId());
+        entityManager.flush();
+
+        List<UUID> chain = associateRepository.findAncestorChain(leaf.getId());
+
+        assertThat(chain).containsExactly(root.getId(), middle.getId(), leaf.getId());
     }
 
     private RankTier persistRank(String name, int order) {

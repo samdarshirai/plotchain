@@ -84,6 +84,35 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
 
     List<Associate> findByParentId(UUID parentId);
 
+    // Walks UP from a target associate to the root of its binary-tree branch. depth 0 is the
+    // target itself; each step further out is +1. ORDER BY depth DESC puts the root first and
+    // the target last -- root-to-target inclusive, the order the UI expands top-down.
+    //
+    // Returns String, not UUID: a bare native scalar query (no owning entity / result-set
+    // mapping) leaves Hibernate to trust whatever the JDBC driver's getObject() hands back for
+    // the column. Postgres's driver returns a java.util.UUID for a uuid column, so a List<UUID>
+    // return type works there -- but H2's driver returns a raw byte[] for this same query shape,
+    // which Spring's ConversionService has no byte[]->UUID converter for, so it blows up with
+    // ConverterNotFoundException in tests (H2-backed) despite being fine in production
+    // (Postgres-backed). Casting to VARCHAR sidesteps the driver-specific object mapping
+    // entirely and is standard SQL that behaves identically on both databases; findAncestorChain
+    // below parses the canonical UUID text form back into UUID in Java. Do not "simplify" this
+    // back to List<UUID> on the native query -- it will pass on Postgres and fail on H2.
+    @Query(value = """
+        WITH RECURSIVE ancestors(id, parent_id, depth) AS (
+            SELECT id, parent_id, 0 FROM associate WHERE id = :associateId
+            UNION ALL
+            SELECT a.id, a.parent_id, anc.depth + 1
+            FROM associate a JOIN ancestors anc ON a.id = anc.parent_id
+        )
+        SELECT CAST(id AS VARCHAR) FROM ancestors ORDER BY depth DESC
+        """, nativeQuery = true)
+    List<String> findAncestorChainIds(@Param("associateId") UUID associateId);
+
+    default List<UUID> findAncestorChain(UUID associateId) {
+        return findAncestorChainIds(associateId).stream().map(UUID::fromString).toList();
+    }
+
     // All five filters are optional (null = "don't filter on this"). Scoped to role = ASSOCIATE
     // only -- this is the associate network directory, not the Admin Team staff roster.
     // joinedToExclusive is an EXCLUSIVE upper bound, same convention as countJoinedBetween above:
