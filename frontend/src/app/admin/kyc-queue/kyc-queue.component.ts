@@ -102,6 +102,7 @@ export class KycQueueComponent implements OnInit {
 
   private loadPage(page: number): void {
     this.loadError = false;
+    this.decisionError = false;
     this.kycQueueService.list(this.activeStatus, page, PAGE_SIZE).subscribe({
       next: res => (this.page = res),
       error: () => (this.loadError = true)

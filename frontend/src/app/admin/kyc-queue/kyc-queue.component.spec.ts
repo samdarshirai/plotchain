@@ -36,6 +36,18 @@ describe('KycQueueComponent', () => {
     expect(fixture.componentInstance.activeStatus).toBe('REJECTED');
   });
 
+  it('shows a load error when the tab-change reload fails, without silently doing nothing', () => {
+    fixture.componentInstance.onTabChange('REJECTED');
+
+    const req = httpMock.expectOne('/api/admin/kyc?status=REJECTED&page=0&size=20');
+    req.flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.loadError).toBe(true);
+    const errorEl: HTMLElement | null = fixture.nativeElement.querySelector('.kyc-queue__load-error');
+    expect(errorEl?.textContent?.trim()).toBeTruthy();
+  });
+
   it('approves an entry and removes it from the pending list', () => {
     fixture.componentInstance.approve('a1');
 
@@ -64,8 +76,11 @@ describe('KycQueueComponent', () => {
 
     const req = httpMock.expectOne('/api/admin/kyc/a1/decision');
     req.flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
 
     expect(fixture.componentInstance.decisionError).toBe(true);
+    const errorEl: HTMLElement | null = fixture.nativeElement.querySelector('.kyc-queue__decision-error');
+    expect(errorEl?.textContent?.trim()).toBeTruthy();
   });
 
   it('shows a decision error when reject fails, without silently doing nothing', () => {
@@ -74,7 +89,22 @@ describe('KycQueueComponent', () => {
 
     const req = httpMock.expectOne('/api/admin/kyc/a1/decision');
     req.flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
 
     expect(fixture.componentInstance.decisionError).toBe(true);
+    const errorEl: HTMLElement | null = fixture.nativeElement.querySelector('.kyc-queue__decision-error');
+    expect(errorEl?.textContent?.trim()).toBeTruthy();
+  });
+
+  it('clears a stale decision error once a subsequent list load succeeds', () => {
+    fixture.componentInstance.approve('a1');
+    httpMock.expectOne('/api/admin/kyc/a1/decision').flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+    expect(fixture.componentInstance.decisionError).toBe(true);
+
+    fixture.componentInstance.onTabChange('REJECTED');
+    httpMock.expectOne('/api/admin/kyc?status=REJECTED&page=0&size=20')
+      .flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+
+    expect(fixture.componentInstance.decisionError).toBe(false);
   });
 });
