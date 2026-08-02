@@ -121,16 +121,26 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     // only -- this is the associate network directory, not the Admin Team staff roster.
     // joinedToExclusive is an EXCLUSIVE upper bound, same convention as countJoinedBetween above:
     // callers pass the day *after* the last day to include.
+    // Postgres prepares this statement once and must assign every bind parameter a static type
+    // up front, before it knows whether the value is actually null at runtime. Left untyped:
+    // :search (String) inside CONCAT resolves to bytea, and LOWER(bytea) has no overload
+    // ("function lower(bytea) does not exist"); :joinedFrom/:joinedToExclusive (Instant), used
+    // only in a bare "? IS NULL" check with no adjoining comparison at that position, can't be
+    // inferred at all ("could not determine data type of parameter"). H2 (used by this
+    // repository's tests) infers types from context either way and never hits this -- only real
+    // Postgres does. Explicit CASTs fix each bind's static type regardless of the runtime value.
+    // :rankId/:kycStatus/:status don't need this: Hibernate resolves UUID- and enum-typed
+    // parameters from their Java type alone, independent of the surrounding SQL expression.
     @Query("""
         SELECT a FROM Associate a
         WHERE a.role = com.plotchain.associate.AssociateRole.ASSOCIATE
-        AND (:search IS NULL OR LOWER(a.name) LIKE LOWER(CONCAT('%', :search, '%'))
-             OR LOWER(a.userId) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:search IS NULL OR LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+             OR LOWER(a.userId) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))
         AND (:rankId IS NULL OR a.rankId = :rankId)
         AND (:kycStatus IS NULL OR a.kycStatus = :kycStatus)
         AND (:status IS NULL OR a.status = :status)
-        AND (:joinedFrom IS NULL OR a.joinedAt >= :joinedFrom)
-        AND (:joinedToExclusive IS NULL OR a.joinedAt < :joinedToExclusive)
+        AND (CAST(:joinedFrom AS timestamp) IS NULL OR a.joinedAt >= :joinedFrom)
+        AND (CAST(:joinedToExclusive AS timestamp) IS NULL OR a.joinedAt < :joinedToExclusive)
         ORDER BY a.userId ASC
         """)
     Page<Associate> searchDirectory(
