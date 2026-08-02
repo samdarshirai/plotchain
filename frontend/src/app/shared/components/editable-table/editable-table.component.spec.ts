@@ -135,6 +135,29 @@ describe('EditableTableComponent', () => {
 
     expect(spy).not.toHaveBeenCalled();
   });
+
+  it('preserves row DOM node identity across change detection when the rows array is replaced by a new-but-equal-content array (trackBy regression)', () => {
+    // Consumers like KycQueueComponent used to expose rows via a getter that `.map()`ed
+    // fresh row object literals on every access, so every CD tick handed NgFor a
+    // brand-new array of brand-new row objects even though nothing actually changed.
+    // Without a trackBy, NgForOf's default identity-based differ read that as "everything
+    // removed, everything re-added" and tore down/rebuilt every <tr>, dropping focus out
+    // of any input the user was typing into. This test replaces `rows` with a fresh array
+    // of fresh objects (columns stays the same reference, isolating the row-level trackBy
+    // from column-level churn) and asserts the same <input> element survives it, which
+    // only holds because of trackByIndex on the row *ngFor.
+    fixture.detectChanges();
+    const bodyRowsBefore = fixture.nativeElement.querySelectorAll('tbody tr');
+    const inputBefore: HTMLInputElement = bodyRowsBefore[0].querySelectorAll('input')[0];
+
+    fixture.componentInstance.rows = rows.map(r => ({ ...r }));
+    fixture.detectChanges();
+
+    const bodyRowsAfter = fixture.nativeElement.querySelectorAll('tbody tr');
+    const inputAfter: HTMLInputElement = bodyRowsAfter[0].querySelectorAll('input')[0];
+
+    expect(inputAfter).toBe(inputBefore);
+  });
 });
 
 import { Component } from '@angular/core';

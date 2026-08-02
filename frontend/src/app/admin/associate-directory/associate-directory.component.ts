@@ -118,6 +118,8 @@ export class AssociateDirectoryComponent implements OnInit {
   actionError = false;
   rankLoadError = false;
   availableRanks: RankOption[] = [];
+  directoryColumns: EditableTableColumn[] = [];
+  directoryRows: Record<string, string>[] = [];
   private search = '';
   private rank = '';
   private kycStatus = '';
@@ -126,6 +128,13 @@ export class AssociateDirectoryComponent implements OnInit {
   private joinedTo = '';
 
   ngOnInit(): void {
+    this.directoryColumns = [
+      { key: 'userId', label: this.translate.instant('admin.associateDirectory.columnUserId'), type: 'text' },
+      { key: 'name', label: this.translate.instant('admin.associateDirectory.columnName'), type: 'text' },
+      { key: 'rankName', label: this.translate.instant('admin.associateDirectory.columnRank'), type: 'text' },
+      { key: 'kycStatus', label: this.translate.instant('admin.associateDirectory.columnKycStatus'), type: 'text' },
+      { key: 'status', label: this.translate.instant('admin.associateDirectory.columnStatus'), type: 'text' }
+    ];
     this.compensationPlanService.getCurrent().subscribe({
       next: res => (this.availableRanks = res.availableRanks),
       error: () => (this.rankLoadError = true)
@@ -165,26 +174,6 @@ export class AssociateDirectoryComponent implements OnInit {
 
   goToPage(page: number): void {
     this.loadPage(page);
-  }
-
-  get directoryColumns(): EditableTableColumn[] {
-    return [
-      { key: 'userId', label: this.translate.instant('admin.associateDirectory.columnUserId'), type: 'text' },
-      { key: 'name', label: this.translate.instant('admin.associateDirectory.columnName'), type: 'text' },
-      { key: 'rankName', label: this.translate.instant('admin.associateDirectory.columnRank'), type: 'text' },
-      { key: 'kycStatus', label: this.translate.instant('admin.associateDirectory.columnKycStatus'), type: 'text' },
-      { key: 'status', label: this.translate.instant('admin.associateDirectory.columnStatus'), type: 'text' }
-    ];
-  }
-
-  get directoryRows(): Record<string, string>[] {
-    return (this.page?.associates ?? []).map(a => ({
-      userId: a.userId,
-      name: a.name,
-      rankName: a.rankName ?? '',
-      kycStatus: a.kycStatus,
-      status: a.status
-    }));
   }
 
   selectAssociate(id: string): void {
@@ -242,7 +231,16 @@ export class AssociateDirectoryComponent implements OnInit {
     if (this.joinedFrom) filters.joinedFrom = this.joinedFrom;
     if (this.joinedTo) filters.joinedTo = this.joinedTo;
     this.associateDirectoryService.list(filters, page, PAGE_SIZE).subscribe({
-      next: res => (this.page = res),
+      next: res => {
+        this.page = res;
+        this.directoryRows = (this.page?.associates ?? []).map(a => ({
+          userId: a.userId,
+          name: a.name,
+          rankName: a.rankName ?? '',
+          kycStatus: a.kycStatus,
+          status: a.status
+        }));
+      },
       error: () => (this.loadError = true)
     });
   }

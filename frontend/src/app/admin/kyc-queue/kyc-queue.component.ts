@@ -81,6 +81,8 @@ export class KycQueueComponent implements OnInit {
   rejectReasons: Record<string, string> = {};
   loadError = false;
   decisionError = false;
+  kycColumns: EditableTableColumn[] = [];
+  kycRows: Record<string, string>[] = [];
 
   get tabs(): TabDefinition[] {
     return [
@@ -99,26 +101,6 @@ export class KycQueueComponent implements OnInit {
       return 1;
     }
     return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
-  }
-
-  get kycColumns(): EditableTableColumn[] {
-    const columns: EditableTableColumn[] = [
-      { key: 'userId', label: this.translate.instant('admin.kycQueue.columnUserId'), type: 'text' },
-      { key: 'name', label: this.translate.instant('admin.kycQueue.columnName'), type: 'text' },
-      { key: 'joinedAt', label: this.translate.instant('admin.kycQueue.columnJoinedAt'), type: 'text' }
-    ];
-    if (this.activeStatus === 'PENDING') {
-      columns.push({ key: 'actions', label: this.translate.instant('admin.kycQueue.columnActions'), type: 'action' });
-    }
-    return columns;
-  }
-
-  get kycRows(): Record<string, string>[] {
-    return (this.page?.entries ?? []).map(entry => ({
-      userId: entry.userId,
-      name: entry.name,
-      joinedAt: this.datePipe.transform(entry.joinedAt, 'medium') ?? entry.joinedAt
-    }));
   }
 
   ngOnInit(): void {
@@ -162,12 +144,33 @@ export class KycQueueComponent implements OnInit {
     this.loadError = false;
     this.decisionError = false;
     this.kycQueueService.list(this.activeStatus, page, PAGE_SIZE).subscribe({
-      next: res => (this.page = res),
+      next: res => {
+        this.page = res;
+        this.updateTableData();
+      },
       error: () => (this.loadError = true)
     });
   }
 
   private loadCounts(): void {
     this.kycQueueService.counts().subscribe(res => (this.counts = res));
+  }
+
+  private updateTableData(): void {
+    const columns: EditableTableColumn[] = [
+      { key: 'userId', label: this.translate.instant('admin.kycQueue.columnUserId'), type: 'text' },
+      { key: 'name', label: this.translate.instant('admin.kycQueue.columnName'), type: 'text' },
+      { key: 'joinedAt', label: this.translate.instant('admin.kycQueue.columnJoinedAt'), type: 'text' }
+    ];
+    if (this.activeStatus === 'PENDING') {
+      columns.push({ key: 'actions', label: this.translate.instant('admin.kycQueue.columnActions'), type: 'action' });
+    }
+    this.kycColumns = columns;
+
+    this.kycRows = (this.page?.entries ?? []).map(entry => ({
+      userId: entry.userId,
+      name: entry.name,
+      joinedAt: this.datePipe.transform(entry.joinedAt, 'medium') ?? entry.joinedAt
+    }));
   }
 }

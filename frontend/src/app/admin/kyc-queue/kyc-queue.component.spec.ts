@@ -229,4 +229,32 @@ describe('KycQueueComponent', () => {
 
     expect(spy).toHaveBeenCalledWith('a1');
   });
+
+  it('accumulates sequential keystrokes in the reject-reason input instead of resetting on every change-detection cycle (regression)', () => {
+    // Before the fix, kycRows/kycColumns were getters that produced brand-new
+    // array/object identities on every CD tick. With no trackBy on the editable-table's
+    // *ngFor, that meant every ngModel-driven CD run (triggered automatically by zone.js
+    // right after the `input` event) tore down and rebuilt the row, including this same
+    // <input>. The net effect: an admin could type exactly one character before focus
+    // (and the DOM node) was destroyed out from under them. This test grabs the input
+    // element ONCE, dispatches two real `input` events against that same reference with a
+    // detectChanges() in between (forcing the CD cycle the bug depends on), and asserts
+    // the model ends up with the full accumulated string. If the row were torn down
+    // between events, the second dispatch would land on a detached, delistened node and
+    // the second keystroke would be silently lost.
+    fixture.detectChanges();
+
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input[type="text"]');
+    expect(input).toBeTruthy();
+
+    input.value = 'B';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    input.value = 'Bl';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.rejectReasons['a1']).toBe('Bl');
+  });
 });

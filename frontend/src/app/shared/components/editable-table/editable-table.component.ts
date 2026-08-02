@@ -25,7 +25,7 @@ export interface EditableTableColumn {
         </tr>
       </thead>
       <tbody *ngIf="rows.length > 0; else emptyState">
-        <tr *ngFor="let row of rows; let i = index" (click)="onRowClick(i)">
+        <tr *ngFor="let row of rows; let i = index; trackBy: trackByIndex" (click)="onRowClick(i)">
           <td *ngFor="let column of columns">
             <ng-container *ngIf="column.type === 'action'; else dataCell">
               <ng-container
@@ -86,6 +86,10 @@ export class EditableTableComponent {
   @Input() actionTemplate?: TemplateRef<ActionCellContext>;
   @Output() rowsChange = new EventEmitter<Record<string, string | number>[]>();
   @Output() rowClick = new EventEmitter<number>();
+
+  trackByIndex(index: number): number {
+    return index;
+  }
 
   onRowClick(index: number): void {
     if (this.readOnly) {
