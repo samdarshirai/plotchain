@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { KycQueueService } from './kyc-queue.service';
 import { KycPage } from '../models/kyc-page.model';
+import { KycCounts } from '../models/kyc-counts.model';
 
 describe('KycQueueService', () => {
   let service: KycQueueService;
@@ -43,5 +44,15 @@ describe('KycQueueService', () => {
     const req = httpMock.expectOne('/api/admin/kyc/a1/decision');
     expect(req.request.body).toEqual({ decision: 'REJECTED', reason: 'Blurry PAN photo' });
     req.flush({});
+  });
+
+  it('fetches KYC queue counts', () => {
+    const mockCounts: KycCounts = { pending: 3, verified: 10, rejected: 2 };
+
+    service.counts().subscribe(res => expect(res).toEqual(mockCounts));
+
+    const req = httpMock.expectOne('/api/admin/kyc/counts');
+    expect(req.request.method).toBe('GET');
+    req.flush(mockCounts);
   });
 });
