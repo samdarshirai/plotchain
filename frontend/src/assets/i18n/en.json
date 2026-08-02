@@ -86,6 +86,7 @@
       "searchPlaceholder": "Enter Associate ID",
       "searchAction": "Search",
       "notFound": "No associate found with that ID.",
+      "loadError": "Something went wrong loading this associate's tree. Try again.",
       "skewedLegsFlag": "Skewed legs",
       "stagnantFlag": "Stagnant"
     }

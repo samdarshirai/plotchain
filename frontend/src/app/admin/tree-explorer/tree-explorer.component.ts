@@ -25,6 +25,7 @@ const DEFAULT_DEPTH = 3;
       </div>
 
       <p *ngIf="notFound" class="tree-explorer__not-found">{{ 'admin.treeExplorer.notFound' | translate }}</p>
+      <p *ngIf="loadError" class="tree-explorer__load-error">{{ 'admin.treeExplorer.loadError' | translate }}</p>
 
       <ng-container *ngIf="root">
         <ng-container *ngTemplateOutlet="nodeTemplate; context: { node: root }"></ng-container>
@@ -56,14 +57,22 @@ export class TreeExplorerComponent {
   searchQuery = '';
   root: TreeNode | null = null;
   notFound = false;
+  loadError = false;
 
   onSearch(): void {
     if (!this.searchQuery) return;
     this.notFound = false;
+    this.loadError = false;
     this.treeExplorerService.search(this.searchQuery).subscribe({
       next: result => {
         const target = result.ancestorPath[result.ancestorPath.length - 1];
-        this.treeExplorerService.subtree(target.id, DEFAULT_DEPTH).subscribe(node => (this.root = node));
+        this.treeExplorerService.subtree(target.id, DEFAULT_DEPTH).subscribe({
+          next: node => (this.root = node),
+          error: () => {
+            this.root = null;
+            this.loadError = true;
+          }
+        });
       },
       error: () => {
         this.root = null;
