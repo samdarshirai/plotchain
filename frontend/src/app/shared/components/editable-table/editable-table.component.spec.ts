@@ -100,4 +100,39 @@ describe('EditableTableComponent', () => {
     expect(options[0].textContent).toContain('Gold');
     expect(options[1].textContent).toContain('Silver');
   });
+
+  it('readOnly renders plain-text cells and hides add/remove affordances', () => {
+    fixture.componentInstance.readOnly = true;
+    fixture.detectChanges();
+
+    const bodyRows = fixture.nativeElement.querySelectorAll('tbody tr');
+    expect(bodyRows[0].querySelector('input')).toBeNull();
+    expect(bodyRows[0].querySelector('select')).toBeNull();
+    expect(bodyRows[0].textContent).toContain('gold');
+    expect(fixture.nativeElement.querySelector('.editable-table__add-row')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.editable-table__remove-row')).toBeNull();
+  });
+
+  it('readOnly clicking a row emits rowClick with that row\'s index', () => {
+    fixture.componentInstance.readOnly = true;
+    fixture.detectChanges();
+    const spy = jasmine.createSpy('rowClick');
+    fixture.componentInstance.rowClick.subscribe(spy);
+
+    const bodyRows = fixture.nativeElement.querySelectorAll('tbody tr');
+    bodyRows[1].click();
+
+    expect(spy).toHaveBeenCalledWith(1);
+  });
+
+  it('non-readOnly clicking a row does not emit rowClick', () => {
+    fixture.detectChanges();
+    const spy = jasmine.createSpy('rowClick');
+    fixture.componentInstance.rowClick.subscribe(spy);
+
+    const bodyRows = fixture.nativeElement.querySelectorAll('tbody tr');
+    bodyRows[0].click();
+
+    expect(spy).not.toHaveBeenCalled();
+  });
 });

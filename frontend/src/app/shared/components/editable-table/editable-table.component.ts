@@ -20,26 +20,29 @@ export interface EditableTableColumn {
         </tr>
       </thead>
       <tbody *ngIf="rows.length > 0; else emptyState">
-        <tr *ngFor="let row of rows; let i = index">
+        <tr *ngFor="let row of rows; let i = index" (click)="onRowClick(i)">
           <td *ngFor="let column of columns">
-            <select
-              *ngIf="column.type === 'select'; else textOrNumberCell"
-              [value]="row[column.key]"
-              (change)="onCellInput($event, i, column.key)"
-            >
-              <option *ngFor="let option of column.options" [value]="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-            <ng-template #textOrNumberCell>
-              <input
-                [type]="column.type"
+            <span *ngIf="readOnly">{{ row[column.key] }}</span>
+            <ng-container *ngIf="!readOnly">
+              <select
+                *ngIf="column.type === 'select'; else textOrNumberCell"
                 [value]="row[column.key]"
-                (input)="onCellInput($event, i, column.key)"
-              />
-            </ng-template>
+                (change)="onCellInput($event, i, column.key)"
+              >
+                <option *ngFor="let option of column.options" [value]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+              <ng-template #textOrNumberCell>
+                <input
+                  [type]="column.type"
+                  [value]="row[column.key]"
+                  (input)="onCellInput($event, i, column.key)"
+                />
+              </ng-template>
+            </ng-container>
           </td>
-          <td>
+          <td *ngIf="!readOnly">
             <button type="button" class="editable-table__remove-row" (click)="removeRow(i)">
               {{ removeRowLabel }}
             </button>
@@ -49,14 +52,14 @@ export interface EditableTableColumn {
       <ng-template #emptyState>
         <tbody>
           <tr>
-            <td class="editable-table__empty" [attr.colspan]="columns.length + 1">
+            <td class="editable-table__empty" [attr.colspan]="readOnly ? columns.length : columns.length + 1">
               {{ emptyStateLabel }}
             </td>
           </tr>
         </tbody>
       </ng-template>
     </table>
-    <button type="button" class="editable-table__add-row" (click)="addRow()">
+    <button *ngIf="!readOnly" type="button" class="editable-table__add-row" (click)="addRow()">
       {{ addRowLabel }}
     </button>
   `
@@ -67,7 +70,15 @@ export class EditableTableComponent {
   @Input() addRowLabel = '';
   @Input() removeRowLabel = '';
   @Input() emptyStateLabel = '';
+  @Input() readOnly = false;
   @Output() rowsChange = new EventEmitter<Record<string, string | number>[]>();
+  @Output() rowClick = new EventEmitter<number>();
+
+  onRowClick(index: number): void {
+    if (this.readOnly) {
+      this.rowClick.emit(index);
+    }
+  }
 
   onCellInput(event: Event, rowIndex: number, key: string): void {
     const target = event.target as HTMLInputElement | HTMLSelectElement;
