@@ -122,4 +122,18 @@ class KycReviewServiceTest {
         assertThatThrownBy(() -> service.decide(id, new KycDecisionRequest(KycStatus.VERIFIED, null), ACTOR_ID))
             .isInstanceOf(AssociateNotFoundException.class);
     }
+
+    @Test
+    void decideThrowsAssociateNotFoundEvenWhenDecisionIsAlsoInvalid() {
+        // Precedence check: when BOTH the associateId is bogus AND the decision body is
+        // invalid (PENDING is never a valid decision value), the lookup runs first, so the
+        // associate-not-found case wins -- callers see 404, not 400. This locks in the
+        // lookup-first ordering (see KycReviewService.decide) against ever silently flipping
+        // back to validate-first, which none of the other tests here would catch.
+        UUID id = UUID.randomUUID();
+        when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.decide(id, new KycDecisionRequest(KycStatus.PENDING, null), ACTOR_ID))
+            .isInstanceOf(AssociateNotFoundException.class);
+    }
 }
