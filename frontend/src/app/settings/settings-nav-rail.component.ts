@@ -21,6 +21,9 @@ import { SECTION_PATHS } from './models/settings-section.model';
         <li class="settings-nav-rail__item" [class.settings-nav-rail__item--active]="activeSectionKey === 'associateDirectory'">
           <a [routerLink]="['/settings', 'associate-directory']">{{ 'settings.sections.associateDirectory' | translate }}</a>
         </li>
+        <li class="settings-nav-rail__item" [class.settings-nav-rail__item--active]="activeSectionKey === 'treeExplorer'">
+          <a [routerLink]="['/settings', 'tree-explorer']">{{ 'settings.sections.treeExplorer' | translate }}</a>
+        </li>
         <li class="settings-nav-rail__item" [class.settings-nav-rail__item--active]="activeSectionKey === 'auditLog'">
           <a [routerLink]="['/settings', 'audit-log']">{{ 'settings.sections.auditLog' | translate }}</a>
         </li>

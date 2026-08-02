@@ -80,6 +80,14 @@
       "reactivateAction": "Reactivate",
       "resetPasswordAction": "Reset Password",
       "temporaryPasswordNotice": "New temporary password (shown once)"
+    },
+    "treeExplorer": {
+      "title": "Tree Explorer",
+      "searchPlaceholder": "Enter Associate ID",
+      "searchAction": "Search",
+      "notFound": "No associate found with that ID.",
+      "skewedLegsFlag": "Skewed legs",
+      "stagnantFlag": "Stagnant"
     }
   },
   "setup": {
@@ -449,6 +457,7 @@
       "adminTeam": "एडमिन टीम और भूमिकाएं",
       "rootAssociates": "रूट एसोसिएट(स)",
       "associateDirectory": "Associate Directory",
+      "treeExplorer": "Tree Explorer",
       "auditLog": "ऑडिट लॉग"
     },
     "cards": {
