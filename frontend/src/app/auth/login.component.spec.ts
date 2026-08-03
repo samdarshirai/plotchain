@@ -54,7 +54,7 @@ describe('LoginComponent', () => {
       launchedAt: null
     });
 
-    expect(router.navigate).toHaveBeenCalledWith(['/setup', 'company-profile']);
+    expect(router.navigate).toHaveBeenCalledWith(['/setup/company-profile']);
   });
 
   it('navigates to the admin route on an ADMIN login once launched', () => {
@@ -73,7 +73,7 @@ describe('LoginComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/admin/associates/new']);
   });
 
-  it('navigates to /dashboard on a non-ADMIN admin-family login once launched', () => {
+  it('navigates to /settings on a non-ADMIN admin-family login once launched', () => {
     fixture.componentInstance.form.setValue({ userId: 'finance01', password: 'Password123!' });
     fixture.componentInstance.onSubmit();
 
@@ -86,7 +86,7 @@ describe('LoginComponent', () => {
       launchedAt: '2026-01-01T00:00:00Z'
     });
 
-    expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+    expect(router.navigate).toHaveBeenCalledWith(['/settings']);
   });
 
   it('redirects to /change-password before ever consulting setup state', () => {

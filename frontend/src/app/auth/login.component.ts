@@ -8,6 +8,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from './auth.service';
 import { SetupService } from '../setup/setup.service';
 import { ADMIN_FAMILY_ROLES } from '../admin/admin.guard';
+import { postAuthLandingPath } from './post-auth-redirect';
 import { BrandingBootstrapService } from '../core/theme/branding-bootstrap.service';
 
 @Component({
@@ -95,11 +96,8 @@ export class LoginComponent implements OnInit {
         }
         if (ADMIN_FAMILY_ROLES.has(response.role)) {
           this.setupService.getState().pipe(take(1)).subscribe(state => {
-            if (!state.launchedAt) {
-              this.router.navigate(['/setup', this.setupService.firstIncompleteStepPath(state)]);
-            } else {
-              this.router.navigate([response.role === 'ADMIN' ? '/admin/associates/new' : '/dashboard']);
-            }
+            const incompleteStepPath = state.launchedAt ? '' : this.setupService.firstIncompleteStepPath(state);
+            this.router.navigate([postAuthLandingPath(response.role, state, incompleteStepPath)]);
           });
           return;
         }
