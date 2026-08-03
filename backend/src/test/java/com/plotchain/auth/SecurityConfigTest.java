@@ -61,6 +61,8 @@ class SecurityConfigTest {
         Associate associate = new Associate();
         associate.setId(UUID.randomUUID());
         associate.setRole(role);
+        // Configure the mock to return this ACTIVE associate when queried during filter authentication
+        when(associateRepository.findById(associate.getId())).thenReturn(Optional.of(associate));
         return jwtService.generateToken(associate);
     }
 

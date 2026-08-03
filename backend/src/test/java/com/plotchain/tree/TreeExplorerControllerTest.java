@@ -45,10 +45,12 @@ class TreeExplorerControllerTest {
     private static final UUID ROOT_ID = UUID.randomUUID();
 
     private String tokenFor(AssociateRole role) {
-        Associate token = new Associate();
-        token.setId(UUID.randomUUID());
-        token.setRole(role);
-        return jwtService.generateToken(token);
+        Associate associate = new Associate();
+        associate.setId(UUID.randomUUID());
+        associate.setRole(role);
+        // Configure the mock to return this ACTIVE associate when queried during filter authentication
+        when(associateRepository.findById(associate.getId())).thenReturn(Optional.of(associate));
+        return jwtService.generateToken(associate);
     }
 
     private Associate seedRoot() {

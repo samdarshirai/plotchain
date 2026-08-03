@@ -46,6 +46,7 @@ class AdminAssociateServiceTest {
     @Mock CycleRepository cycleRepository;
     @Mock LegVolumeRepository legVolumeRepository;
     @Mock SettingsAuditLogRepository settingsAuditLogRepository;
+    @Mock AssociateStatusCache associateStatusCache;
 
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     AdminAssociateService service;
@@ -59,7 +60,7 @@ class AdminAssociateServiceTest {
             settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
         service = new AdminAssociateService(
             associateRepository, rankTierRepository, cycleRepository, legVolumeRepository,
-            passwordEncoder, settingsAuditService);
+            passwordEncoder, settingsAuditService, associateStatusCache);
     }
 
     private Associate newAssociate(UUID id, String userId) {
@@ -176,6 +177,19 @@ class AdminAssociateServiceTest {
     }
 
     @Test
+    void suspendEvictsTheAssociateFromTheStatusCache() {
+        UUID id = UUID.randomUUID();
+        Associate associate = newAssociate(id, "VP00001");
+        when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
+        when(rankTierRepository.findById(rank.getId())).thenReturn(Optional.of(rank));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+
+        service.suspend(id, ACTOR_ID);
+
+        verify(associateStatusCache).evict(id);
+    }
+
+    @Test
     void reactivateSetsStatusBackToActive() {
         UUID id = UUID.randomUUID();
         Associate associate = newAssociate(id, "VP00001");
@@ -188,6 +202,20 @@ class AdminAssociateServiceTest {
 
         assertThat(associate.getStatus()).isEqualTo(AssociateStatus.ACTIVE);
         assertThat(response.status()).isEqualTo(AssociateStatus.ACTIVE);
+    }
+
+    @Test
+    void reactivateEvictsTheAssociateFromTheStatusCache() {
+        UUID id = UUID.randomUUID();
+        Associate associate = newAssociate(id, "VP00001");
+        associate.setStatus(AssociateStatus.SUSPENDED);
+        when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
+        when(rankTierRepository.findById(rank.getId())).thenReturn(Optional.of(rank));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+
+        service.reactivate(id, ACTOR_ID);
+
+        verify(associateStatusCache).evict(id);
     }
 
     @Test
