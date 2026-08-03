@@ -51,7 +51,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private updateSetupRouteState(url: string): void {
     this.isSetupRoute = url.startsWith('/setup');
-    this.document.body.classList.toggle('setup-active', this.isSetupRoute);
     // Still toggled for _admin.scss's hidden-scrollbar rule, even though this route is no
     // longer chromeless.
     this.document.body.classList.toggle('admin-associate-active', url.startsWith('/admin/associates/new'));
