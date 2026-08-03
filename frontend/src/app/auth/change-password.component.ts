@@ -7,6 +7,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from './auth.service';
 import { ADMIN_FAMILY_ROLES } from '../admin/admin.guard';
 import { SetupService } from '../setup/setup.service';
+import { postAuthLandingPath } from './post-auth-redirect';
 
 @Component({
   selector: 'app-change-password',
@@ -50,11 +51,8 @@ export class ChangePasswordComponent {
         const role = this.authService.getRole();
         if (role && ADMIN_FAMILY_ROLES.has(role)) {
           this.setupService.getState().pipe(take(1)).subscribe(state => {
-            if (!state.launchedAt) {
-              this.router.navigate(['/setup', this.setupService.firstIncompleteStepPath(state)]);
-            } else {
-              this.router.navigate([role === 'ADMIN' ? '/admin/associates/new' : '/dashboard']);
-            }
+            const incompleteStepPath = state.launchedAt ? '' : this.setupService.firstIncompleteStepPath(state);
+            this.router.navigate([postAuthLandingPath(role, state, incompleteStepPath)]);
           });
           return;
         }

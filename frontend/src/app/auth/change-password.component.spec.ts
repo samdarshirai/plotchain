@@ -53,7 +53,7 @@ describe('ChangePasswordComponent', () => {
       launchedAt: null
     });
 
-    expect(router.navigate).toHaveBeenCalledWith(['/setup', 'company-profile']);
+    expect(router.navigate).toHaveBeenCalledWith(['/setup/company-profile']);
   });
 
   it('navigates to the admin route when an ADMIN completes a forced password change once launched', () => {
@@ -72,7 +72,7 @@ describe('ChangePasswordComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/admin/associates/new']);
   });
 
-  it('navigates to /dashboard when a non-ADMIN admin-family role completes a forced password change once launched', () => {
+  it('navigates to /settings when a non-ADMIN admin-family role completes a forced password change once launched', () => {
     localStorage.setItem('plotchain.auth.role', 'FINANCE');
 
     fixture.componentInstance.form.setValue({ currentPassword: 'Temp1234!', newPassword: 'NewPassword123!' });
@@ -85,7 +85,7 @@ describe('ChangePasswordComponent', () => {
       launchedAt: '2026-01-01T00:00:00Z'
     });
 
-    expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+    expect(router.navigate).toHaveBeenCalledWith(['/settings']);
   });
 
   it('shows an error on failed password change', () => {
