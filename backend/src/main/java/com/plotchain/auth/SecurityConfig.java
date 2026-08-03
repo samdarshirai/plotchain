@@ -161,6 +161,10 @@ public class SecurityConfig {
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 .requestMatchers(HttpMethod.GET, "/api/admin/kyc")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                // Company-wide admin stats: same admin-family-only reasoning as every other
+                // admin-aggregate GET above. Read-only, no corresponding write endpoint.
+                .requestMatchers(HttpMethod.GET, "/api/admin/stats")
+                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 // Phase 5's genuinely public endpoints: the pre-login branding bootstrap, the
                 // raw logo bytes it and the login page render as <img> tags, and the favicon
                 // index.html links to -- all requested before any JWT exists. They only need to

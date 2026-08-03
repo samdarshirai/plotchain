@@ -373,6 +373,18 @@ class SecurityConfigTest {
             .andExpect(status().is(role.isAdminFamily() ? 200 : 403));
     }
 
+    // Same reasoning as auditLogIsReachableForEveryAdminFamilyTokenAndForbiddenForAssociate above:
+    // walletRepository/cycleRepository are not @MockBean'd in this class, so they run for real
+    // against the empty H2 test DB -- sumAllBalances() coalesces to 0 and there's no OPEN cycle,
+    // both handled without error by AdminStatsService, hence isOk() for every admin-family role.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminStatsIsReachableForEveryAdminFamilyTokenAndForbiddenForAssociate(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/admin/stats")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role.isAdminFamily() ? 200 : 403));
+    }
+
     @Test
     void passwordChangeIsReachableByAnAssociateToken() throws Exception {
         // A POST under /api/** that an ASSOCIATE must be able to reach. It needs its own

@@ -74,6 +74,18 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
 
     long countByRoleAndKycStatus(AssociateRole role, KycStatus kycStatus);
 
+    long countByRole(AssociateRole role);
+
+    // Company-wide sibling of countJoinedBetween above, for AdminStatsService: not scoped to a
+    // single associate's downline, and takes Instant (not LocalDate) to mirror searchDirectory's
+    // exclusive-upper-bound convention (see that method's comment) rather than the native-query
+    // LocalDate coercion countJoinedBetween relies on.
+    @Query("""
+        SELECT COUNT(a) FROM Associate a
+        WHERE a.role = :role AND a.joinedAt >= :start AND a.joinedAt < :end
+        """)
+    long countByRoleAndJoinedBetween(@Param("role") AssociateRole role, @Param("start") Instant start, @Param("end") Instant end);
+
     // role = ASSOCIATE narrows out admin-family rows, which also have parentId = null by
     // construction (AdminProvisioningService never sets it). sponsorId IS NULL narrows out
     // ordinary associates placed via the generic provisioning endpoint without a parent. Together
