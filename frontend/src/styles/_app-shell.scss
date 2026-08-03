@@ -1,7 +1,7 @@
 .app-header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 1rem 1.5rem;
   background: var(--surface-card);
   border-bottom: 1px solid var(--border-subtle);
@@ -17,6 +17,32 @@
 .app-header .logout:hover {
   color: var(--brand-primary);
   border-color: var(--brand-primary);
+}
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.app-nav__link {
+  padding: 0.5rem 0.875rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.app-nav__link:hover {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.app-nav__link--active {
+  background: var(--brand-primary-soft);
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .dashboard {

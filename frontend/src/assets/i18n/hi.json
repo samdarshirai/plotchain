@@ -14,6 +14,11 @@
     "rightLeg": "दायाँ",
     "loadError": "आपका डैशबोर्ड लोड करने में समस्या हुई। कृपया पुनः प्रयास करें।"
   },
+  "nav": {
+    "dashboard": "डैशबोर्ड",
+    "provisionAssociate": "एसोसिएट पंजीकृत करें",
+    "settings": "सेटिंग्स"
+  },
   "auth": {
     "userIdLabel": "एसोसिएट आईडी",
     "passwordLabel": "पासवर्ड",

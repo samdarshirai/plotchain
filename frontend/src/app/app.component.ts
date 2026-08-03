@@ -1,9 +1,10 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from './auth/auth.service';
+import { ADMIN_FAMILY_ROLES } from './admin/admin.guard';
 
 // /setup is a guided, pre-launch-only wizard (setupModeGuard) with its own dedicated
 // step-nav -- it stays chromeless (no global header) so cross-navigation doesn't undercut the
@@ -14,7 +15,7 @@ import { AuthService } from './auth/auth.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, TranslateModule],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, TranslateModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -26,6 +27,11 @@ export class AppComponent implements OnInit, OnDestroy {
 
   isSetupRoute = false;
   isChromelessRoute = false;
+
+  get isAdminFamily(): boolean {
+    const role = this.authService.getRole();
+    return role !== null && ADMIN_FAMILY_ROLES.has(role);
+  }
 
   ngOnInit(): void {
     this.updateSetupRouteState(this.router.url);

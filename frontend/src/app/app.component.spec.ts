@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { Router } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { of } from 'rxjs';
 import { AppComponent } from './app.component';
 import { AuthService } from './auth/auth.service';
 
@@ -78,5 +79,49 @@ describe('AppComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.app-header')).toBeFalsy();
+  });
+
+  it('shows only the Dashboard nav link for a plain associate role', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const authService = TestBed.inject(AuthService);
+    const translateService = TestBed.inject(TranslateService);
+    spyOn(authService, 'isAuthenticated').and.returnValue(true);
+    spyOn(authService, 'getRole').and.returnValue('ASSOCIATE');
+    spyOn(translateService, 'get').and.callFake((key: string) => {
+      const translations: { [key: string]: string } = {
+        'nav.dashboard': 'Dashboard',
+        'nav.provisionAssociate': 'Provision Associate',
+        'nav.settings': 'Settings',
+        'auth.logout': 'Log Out'
+      };
+      return of(translations[key] || key);
+    });
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const links = Array.from(compiled.querySelectorAll('.app-nav__link')).map(el => el.textContent?.trim());
+    expect(links).toEqual(['Dashboard']);
+  });
+
+  it('shows Dashboard, Provision Associate, and Settings nav links for an admin-family role', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const authService = TestBed.inject(AuthService);
+    const translateService = TestBed.inject(TranslateService);
+    spyOn(authService, 'isAuthenticated').and.returnValue(true);
+    spyOn(authService, 'getRole').and.returnValue('ADMIN');
+    spyOn(translateService, 'get').and.callFake((key: string) => {
+      const translations: { [key: string]: string } = {
+        'nav.dashboard': 'Dashboard',
+        'nav.provisionAssociate': 'Provision Associate',
+        'nav.settings': 'Settings',
+        'auth.logout': 'Log Out'
+      };
+      return of(translations[key] || key);
+    });
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const links = Array.from(compiled.querySelectorAll('.app-nav__link')).map(el => el.textContent?.trim());
+    expect(links).toEqual(['Dashboard', 'Provision Associate', 'Settings']);
   });
 });

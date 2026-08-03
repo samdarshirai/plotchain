@@ -14,6 +14,11 @@
     "rightLeg": "R",
     "loadError": "Something went wrong loading your dashboard. Please try again."
   },
+  "nav": {
+    "dashboard": "Dashboard",
+    "provisionAssociate": "Provision Associate",
+    "settings": "Settings"
+  },
   "auth": {
     "userIdLabel": "Associate ID",
     "passwordLabel": "Password",
