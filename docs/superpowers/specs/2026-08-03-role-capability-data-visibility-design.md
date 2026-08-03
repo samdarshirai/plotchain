@@ -108,6 +108,6 @@ Audited all 21 backend `@RestController` classes against the matrix. Status per 
 
 ### Migration approach
 
-`role` is `VARCHAR(20)` with a `CHECK` constraint (`V4__user_id_login_and_admin_roles.sql`), not a native Postgres enum — cheap to narrow, same shape as the `tenant_id` precedent (`docs/superpowers/specs/2026-07-29-remove-tenant-id-design.md`). Open question for the plan: **is there any deployed database (shared dev/staging) that already has `SUPER_ADMIN`/`FINANCE`/`KYC_REVIEWER`/`SUPPORT`-role rows or a seeded Root Associate row?** If not, `V4`/`V2` and the root-associate migration can be edited in place, same as the `tenant_id` removal did with `V1`. If such data exists, a real backfill (reassign those rows to `ADMIN` or delete them) is needed before narrowing the `CHECK` constraint, and that becomes its own migration step in the plan.
+`role` is `VARCHAR(20)` with a `CHECK` constraint (`V4__user_id_login_and_admin_roles.sql`), not a native Postgres enum — cheap to narrow, same shape as the `tenant_id` precedent (`docs/superpowers/specs/2026-07-29-remove-tenant-id-design.md`). **Resolved: local/dev only, no deployed database carries `SUPER_ADMIN`/`FINANCE`/`KYC_REVIEWER`/`SUPPORT`-role rows or a seeded Root Associate row.** No backfill needed — `V2`/`V4` and the root-associate migration are edited in place, same as the `tenant_id` removal did with `V1`.
 
 This audit is the writing-plans input.
