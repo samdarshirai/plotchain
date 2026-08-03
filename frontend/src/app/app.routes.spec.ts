@@ -1,15 +1,17 @@
 import { routes } from './app.routes';
 import { authGuard } from './auth/auth.guard';
+import { associateOnlyGuard } from './auth/associate-only.guard';
 import { rootRedirectGuard } from './auth/root-redirect.guard';
 import { adminGuard } from './admin/admin.guard';
 import { setupModeGuard, launchedModeGuard } from './setup/setup.guard';
 
 describe('routes', () => {
-  it('guards the dashboard route with authGuard', () => {
+  it('guards the dashboard route with authGuard and associateOnlyGuard', () => {
     const dashboardRoute = routes.find(route => route.path === 'dashboard');
 
     expect(dashboardRoute).toBeTruthy();
     expect(dashboardRoute!.canActivate).toContain(authGuard);
+    expect(dashboardRoute!.canActivate).toContain(associateOnlyGuard);
   });
 
   it('exposes a change-password route behind the auth guard', () => {
