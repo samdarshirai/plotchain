@@ -72,6 +72,42 @@ No screen is admin-family-conditional anymore (no "Finance sees this tab, Suppor
 
 **Associate write scope, generally**: an Associate can view every report in their matrix column and edit their own profile. Every other action that might look associate-initiated in the source PRD/spec (new sale, refer/invite placement, withdrawal request, plot booking, e-PIN redemption, raising a support ticket) is instead something Admin does *on the associate's behalf* — reflected in both the matrix and Screens section above.
 
-## Reconciliation & gap-fill (next step)
+## Reconciliation & gap-fill
 
-This spec defines the target state. Before writing the implementation plan, a reconciliation pass is needed against the current codebase: for every endpoint currently gated by the admin-family blanket rule, confirm it becomes `ADMIN`-only under the new model (it does, since there's no more admin-family split), then separately audit every domain in the matrix above against what's actually query-scoped to "self + descendants" vs. what today accidentally returns company-wide data to an associate token. That audit plus the deletions listed above becomes the writing-plans input.
+Audited all 21 backend `@RestController` classes against the matrix. Status per domain:
+
+| Domain | Status | Detail |
+|---|---|---|
+| Dashboard/stats | **Aligned** | `GET /api/admin/stats` (company-wide), `GET /api/associates/me/dashboard` (self-scoped via `@AuthenticationPrincipal`, not a path param) — both already correct. Only the role-collapse (below) touches these. |
+| Tree/genealogy | **Aligned (Admin)** / **Not built (Associate)** | `GET /api/admin/tree/{associateId}` + `/search` exist, admin-only. No "my subtree" endpoint for an Associate at all. |
+| Associate directory | **Aligned** | `GET /api/admin/associates` (paginated/filterable), `GET /api/associates` (flat list), `POST /api/associates` (create/place) all exist, admin-only. No associate-facing directory endpoint exists — correct by omission. Unverified: whether `AssociateProvisioningService.create()`'s request shape already carries parent + L/R position — check before planning, don't assume. |
+| Sales | **Not built** | No `sale` package/entity/controller exists anywhere in the codebase. This is upstream of the whole compensation engine — biggest single gap. |
+| Income/ledger | **Not built** | `income` package has `LedgerEntry` entity + repository only, no controller (neither an admin audit view nor an associate own-ledger view). |
+| Wallet/withdrawal | **Not built** | `wallet` package has `Wallet` entity + repository only, no controller. The `payments` package (`WithdrawalConfigController`, etc.) is entirely setup-wizard *policy config* (minimum threshold, frequency) — no `WithdrawalRequest` entity or runtime approval-queue endpoint exists. |
+| Plot/project inventory | **Aligned (Admin)** / **Gap (Associate)** | `ProjectController`/`PlotController` full CRUD exists, but their `GET`s are gated admin-family-only in `SecurityConfig` — an Associate token gets 403 on viewing plots today, contradicting the matrix. Needs a new associate-reachable read scope. `PlotBooking`/`EMISchedule` entities don't exist (only `BookingEmiConfig`, a policy setting) — booking/EMI runtime **not built**. |
+| KYC | **Gap** | `GET/POST /api/admin/kyc` exist; `decide()` currently allows `KYC_REVIEWER` as an alternate to `ADMIN`/`SUPER_ADMIN` — collapsing that role is a real behavior change (see Migration approach below), not just cleanup. No associate-facing KYC submission (doc upload) or own-status endpoint exists at all — **not built**. |
+| Compensation rules | **Aligned (Admin)** / **Not built (Associate)** | `CompensationPlanController` (get/history/put) exists, admin-only, versioned. No associate-facing "my rank progress / reward tiers" endpoint — `rank` package is entity+repo only. |
+| Cycle management | **Not built** | `cycle` package is entity/repo/exception only — no controller to trigger, monitor, or view cycle state, for either role. |
+| e-PIN | **Not built** | No entity, no package, nothing — full stop. |
+| Announcements | **Not built** | `announcement` package is entity+repo only, no controller (neither compose nor read-feed). |
+| Support tickets | **Not built** | No package/entity/controller exists anywhere. |
+| Audit log | **Likely aligned, verify** | `SettingsAuditController`/`SettingsAuditService` exist and are referenced as the write path for config changes; confirm coverage extends to KYC decisions and suspend/reactivate actions when those controllers are touched during implementation, don't assume. |
+| Digital ID card | **Not built** | No endpoint (spec always described this as render-on-demand, not persisted — consistent with not having started). |
+| Own profile | **Partially built** | Only `POST /api/associates/me/password` exists (correctly self-scoped by construction). No endpoint for name/contact/bank-details/KYC-doc self-edit. |
+
+### Mechanical role-collapse (applies everywhere, no design decision left)
+
+- `SecurityConfig.java`: all 14 occurrences of `hasAnyAuthority("ADMIN","SUPER_ADMIN","FINANCE","KYC_REVIEWER","SUPPORT")` → `hasAuthority("ADMIN")`.
+- `AdminAssociateController` suspend/reactivate/reset-password `@PreAuthorize("hasAnyAuthority('ADMIN','SUPER_ADMIN')")` → `hasAuthority('ADMIN')` — no functional change (`SUPER_ADMIN` was always admin-equivalent).
+- `KycReviewController.decide()` `@PreAuthorize(...,'KYC_REVIEWER')` → `hasAuthority('ADMIN')` — **functional change**, see below.
+- `AssociateRole` enum: drop `SUPER_ADMIN`/`FINANCE`/`KYC_REVIEWER`/`SUPPORT`; `isAdminFamily()` removed (verify no remaining caller needs it before deleting, rather than assuming).
+- Delete outright: `AdminController`, `AdminProvisioningService`, `AdminRolePermissions`, `CreateAdminRequest/Response`, `AdminSummaryResponse`, `UserIdAvailabilityResponse`, `InvalidAdminRoleException`, `UserIdAlreadyRegisteredException` (verify this exception isn't reused by `AssociateProvisioningService`'s own duplicate-userId path before deleting), `AssociateRepository.findByRoleNot` (verify no other caller).
+- Delete outright: `RootAssociateController`, `RootAssociateProvisioningService`, `CreateRootAssociateRequest/Response`, `RootAssociateSlotsResponse`, `RootAssociateAlreadyExistsException`, `RightRootDetailsRequiredException`, `RootAssociateCreationResult`.
+- `AdminBootstrapRunner` deleted, replaced by a new Flyway migration seeding the one `ADMIN` row directly (Resolved decisions #1).
+- Frontend: delete the Admin Team step (`setup/steps/admin-team/**`, `admin-team.model.ts`) and Root Associate step, their routes, and their `SetupStateService.STEP_DEFINITIONS` entries; Review & Launch step-count references need updating to match.
+
+### Migration approach
+
+`role` is `VARCHAR(20)` with a `CHECK` constraint (`V4__user_id_login_and_admin_roles.sql`), not a native Postgres enum — cheap to narrow, same shape as the `tenant_id` precedent (`docs/superpowers/specs/2026-07-29-remove-tenant-id-design.md`). Open question for the plan: **is there any deployed database (shared dev/staging) that already has `SUPER_ADMIN`/`FINANCE`/`KYC_REVIEWER`/`SUPPORT`-role rows or a seeded Root Associate row?** If not, `V4`/`V2` and the root-associate migration can be edited in place, same as the `tenant_id` removal did with `V1`. If such data exists, a real backfill (reassign those rows to `ADMIN` or delete them) is needed before narrowing the `CHECK` constraint, and that becomes its own migration step in the plan.
+
+This audit is the writing-plans input.
