@@ -270,21 +270,11 @@
 }
 
 // /login is themed after the same Stitch mockup as create-associate (docs/design/
-// stitch_premium_admin_setup_wizard/new_associate) -- light surfaces, soft shadow instead of a
-// border, Inter/JetBrains Mono type. Brand primary/gradient stay dynamic (per-tenant, written by
-// ThemeService), same reasoning as _setup-theme.scss and _admin.scss. body.login-active flips
-// the page background too, since the ancestor <body> is outside .login-form's own scope.
-body.login-active {
-  --surface-page: #f8f9ff;
-}
-
+// stitch_premium_admin_setup_wizard/new_associate) -- soft shadow instead of a border,
+// Inter/JetBrains Mono type. Brand primary/gradient stay dynamic (per-tenant, written by
+// ThemeService). Colors come from :root -- light is the global default now, so no scoped
+// override is needed here.
 .login-form {
-  --surface-card: #ffffff;
-  --surface-raised: #eff4ff;
-  --border-subtle: #c2c6d9;
-  --text-primary: #0b1c30;
-  --text-muted: #424656;
-
   display: flex;
   flex-direction: column;
   gap: 1.25rem;

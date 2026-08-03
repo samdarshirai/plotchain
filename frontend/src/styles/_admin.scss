@@ -1,22 +1,8 @@
-// Provision-a-new-associate is themed after its Stitch mockup (docs/design/
-// stitch_premium_admin_setup_wizard/new_associate) rather than the app's default dark
-// tokens -- scoped the same way _setup-theme.scss scopes the wizard's light theme. Brand
-// primary/secondary/gradients are deliberately NOT overridden here, for the same reason
-// _setup-theme.scss leaves them alone: ThemeService writes them per-tenant, and freezing them
-// to the mockup's literal blue would undo that personalization.
-body.admin-associate-active,
-.create-associate {
-  --surface-page: #f8f9ff;
-  --surface-card: #ffffff;
-  --surface-raised: #eff4ff;
-  --border-subtle: #c2c6d9;
-  --text-primary: #0b1c30;
-  --text-muted: #424656;
-}
-
 // Matches the mockup's own hidden-scrollbar chrome (code.html's ::-webkit-scrollbar{display:
-// none}). Scoped to this route's body class, not global -- only this chromeless page opts out
-// of the browser scrollbar; scrolling itself still works.
+// none}). Scoped to this route's body class, not global -- only this page opts out of the
+// browser scrollbar; scrolling itself still works. (Colors used to be scoped here too, back
+// when the app's default theme was dark -- now that light is the global default, this page's
+// colors come from :root like everywhere else.)
 body.admin-associate-active {
   scrollbar-width: none;
 
