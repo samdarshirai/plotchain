@@ -75,8 +75,7 @@ describe('routes', () => {
     it('redirects via authGuard and rootRedirectGuard, rendering nothing itself', () => {
       const rootRoute = routes.find(r => r.path === '');
       expect(rootRoute).toBeTruthy();
-      expect(rootRoute!.canActivate).toContain(authGuard);
-      expect(rootRoute!.canActivate).toContain(rootRedirectGuard);
+      expect(rootRoute!.canActivate).toEqual([authGuard, rootRedirectGuard]);
       expect(rootRoute!.children).toEqual([]);
     });
   });

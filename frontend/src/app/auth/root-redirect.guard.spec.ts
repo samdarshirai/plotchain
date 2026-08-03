@@ -28,15 +28,13 @@ describe('rootRedirectGuard', () => {
     router = TestBed.inject(Router);
   });
 
-  it('redirects an ASSOCIATE to /dashboard without checking setup state', done => {
+  it('redirects an ASSOCIATE to /dashboard without checking setup state', () => {
     authService.getRole.and.returnValue('ASSOCIATE');
     setupService.getState.and.returnValue(of(unlaunchedState));
 
-    const result$ = TestBed.runInInjectionContext(() => rootRedirectGuard({} as any, {} as any)) as any;
-    result$.subscribe((result: UrlTree) => {
-      expect(result.toString()).toBe(router.parseUrl('/dashboard').toString());
-      done();
-    });
+    const result = TestBed.runInInjectionContext(() => rootRedirectGuard({} as any, {} as any)) as UrlTree;
+    expect(result.toString()).toBe(router.parseUrl('/dashboard').toString());
+    expect(setupService.getState).not.toHaveBeenCalled();
   });
 
   it('redirects ADMIN to the first incomplete setup step while unlaunched', done => {
