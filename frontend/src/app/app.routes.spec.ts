@@ -1,5 +1,6 @@
 import { routes } from './app.routes';
 import { authGuard } from './auth/auth.guard';
+import { rootRedirectGuard } from './auth/root-redirect.guard';
 import { adminGuard } from './admin/admin.guard';
 import { setupModeGuard, launchedModeGuard } from './setup/setup.guard';
 
@@ -67,6 +68,16 @@ describe('routes', () => {
       expect(settingsRoute!.canActivate).toContain(authGuard);
       expect(settingsRoute!.canActivate).toContain(adminGuard);
       expect(settingsRoute!.canActivate).toContain(launchedModeGuard);
+    });
+  });
+
+  describe('root route', () => {
+    it('redirects via authGuard and rootRedirectGuard, rendering nothing itself', () => {
+      const rootRoute = routes.find(r => r.path === '');
+      expect(rootRoute).toBeTruthy();
+      expect(rootRoute!.canActivate).toContain(authGuard);
+      expect(rootRoute!.canActivate).toContain(rootRedirectGuard);
+      expect(rootRoute!.children).toEqual([]);
     });
   });
 });

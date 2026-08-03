@@ -4,6 +4,7 @@ import { LoginComponent } from './auth/login.component';
 import { ChangePasswordComponent } from './auth/change-password.component';
 import { CreateAssociateComponent } from './admin/create-associate.component';
 import { authGuard } from './auth/auth.guard';
+import { rootRedirectGuard } from './auth/root-redirect.guard';
 import { adminGuard } from './admin/admin.guard';
 import { setupModeGuard, launchedModeGuard } from './setup/setup.guard';
 import { SetupShellComponent } from './setup/setup-shell.component';
@@ -66,5 +67,5 @@ export const routes: Routes = [
       { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } }
     ]
   },
-  { path: '', redirectTo: '/dashboard', pathMatch: 'full' }
+  { path: '', pathMatch: 'full', canActivate: [authGuard, rootRedirectGuard], children: [] }
 ];
