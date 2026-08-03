@@ -2,7 +2,7 @@
 
 **Filed:** 2026-08-03
 **Source:** Manual admin walkaround of the running app (login as `admin` / `Password123!`, headless Playwright driving `http://localhost:4200`), requested to see the app from a user's perspective.
-**Status:** Open
+**Status:** Resolved — see docs/superpowers/specs/2026-08-03-admin-dashboard-redirect-fix-design.md
 
 ## What's wrong
 
