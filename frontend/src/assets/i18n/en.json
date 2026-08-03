@@ -496,7 +496,8 @@
       "associateDirectory": "Associate Directory",
       "treeExplorer": "Tree Explorer",
       "kycQueue": "KYC Review Queue",
-      "auditLog": "Audit Log"
+      "auditLog": "Audit Log",
+      "adminStats": "Admin Stats"
     },
     "cards": {
       "companyProfile": {
@@ -534,6 +535,22 @@
       "nextPageAction": "Next",
       "emptyState": "No changes recorded yet.",
       "pageIndicator": "Page {{page}} of {{totalPages}}"
+    },
+    "adminStats": {
+      "totalAssociatesLabel": "Total Associates",
+      "walletBalanceLabel": "Total Wallet Balance",
+      "kycBreakdownTitle": "KYC Breakdown",
+      "kycPendingLabel": "Pending",
+      "kycVerifiedLabel": "Verified",
+      "kycRejectedLabel": "Rejected",
+      "currentCycleTitle": "Current Cycle",
+      "periodLabel": "Period",
+      "daysRemainingLabel": "Days Remaining",
+      "directIncomeLabel": "Direct Income",
+      "matchingIncomeLabel": "Matching Income",
+      "totalIncomeLabel": "Total Income",
+      "newAssociatesLabel": "New Associates This Cycle",
+      "noCycleEmptyState": "No open cycle right now."
     }
   },
   "legal": {

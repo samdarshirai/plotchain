@@ -20,6 +20,7 @@ import { ReviewLaunchStepComponent } from './setup/steps/review-launch/review-la
 import { SettingsShellComponent } from './settings/settings-shell.component';
 import { SettingsOverviewComponent } from './settings/settings-overview.component';
 import { AuditLogComponent } from './settings/audit-log/audit-log.component';
+import { AdminStatsComponent } from './settings/admin-stats/admin-stats.component';
 import { AssociateDirectoryComponent } from './admin/associate-directory/associate-directory.component';
 import { TreeExplorerComponent } from './admin/tree-explorer/tree-explorer.component';
 import { KycQueueComponent } from './admin/kyc-queue/kyc-queue.component';
@@ -65,7 +66,8 @@ export const routes: Routes = [
       { path: 'associate-directory', component: AssociateDirectoryComponent, data: { sectionKey: 'associateDirectory' } },
       { path: 'tree-explorer', component: TreeExplorerComponent, data: { sectionKey: 'treeExplorer' } },
       { path: 'kyc-queue', component: KycQueueComponent, data: { sectionKey: 'kycQueue' } },
-      { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } }
+      { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } },
+      { path: 'admin-stats', component: AdminStatsComponent, data: { sectionKey: 'adminStats' } }
     ]
   },
   { path: '', pathMatch: 'full', canActivate: [authGuard, rootRedirectGuard], children: [] }
