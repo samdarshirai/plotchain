@@ -63,7 +63,7 @@ Pure function, no DI — callers resolve `role`, `state` (from `setupService.get
     );
   };
   ```
-  This guard always returns a `UrlTree` — it never renders the route itself, so `children: []` (rather than a component) satisfies Angular's route-config validation. `authGuard` runs first in the `canActivate` array, so an unauthenticated visit to `/` still bounces to `/login` exactly as it does today (previously via `/dashboard`'s own `authGuard`, now directly on `''`).
+  This guard always returns a `UrlTree` — it never renders the route itself, so `children: []` (rather than a component) satisfies Angular's route-config validation. Guards in a `canActivate` array do not run in sequence: Angular's router (`runCanActivateChecks`/`prioritizedGuardValue` in `@angular/router`) runs every guard concurrently via `combineLatest`, and only the *final decision* respects array order (the first non-`true` result wins). So an unauthenticated visit to `/` still bounces to `/login` exactly as it does today, but because `rootRedirectGuard` is safe to execute even when unauthenticated (its own `ADMIN_FAMILY_ROLES` check short-circuits before touching setup state) and `authGuard`'s `/login` redirect wins priority over whatever `rootRedirectGuard` would have returned — not because `authGuard` runs "first."
 
 ### Data flow
 

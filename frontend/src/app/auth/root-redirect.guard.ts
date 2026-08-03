@@ -14,6 +14,12 @@ import { ADMIN_FAMILY_ROLES } from '../admin/admin.guard';
 // authInterceptor only recovers from 401s, not 403s -- so a non-admin-family role must never
 // call setupService.getState() here. Mirrors the same short-circuit login.component.ts already
 // uses for its post-login routing.
+//
+// This guard also has to be safe to *run* when unauthenticated: guards in a canActivate array
+// run concurrently (not in sequence), so authGuard rejecting the visit doesn't stop this guard
+// from executing too. The ADMIN_FAMILY_ROLES check below is what makes that safe -- an
+// unauthenticated visitor has no role in localStorage, so it short-circuits to '/dashboard'
+// without ever calling setupService.getState().
 export const rootRedirectGuard: CanActivateFn = (): Observable<UrlTree> | UrlTree => {
   const authService = inject(AuthService);
   const setupService = inject(SetupService);
