@@ -550,7 +550,8 @@
       "matchingIncomeLabel": "Matching Income",
       "totalIncomeLabel": "Total Income",
       "newAssociatesLabel": "New Associates This Cycle",
-      "noCycleEmptyState": "No open cycle right now."
+      "noCycleEmptyState": "No open cycle right now.",
+      "loadError": "Couldn't load stats. Try again later."
     }
   },
   "legal": {

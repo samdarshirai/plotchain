@@ -73,4 +73,13 @@ describe('AdminStatsComponent', () => {
     expect(text).toContain('settings.adminStats.noCycleEmptyState');
     expect(text).not.toContain('1500');
   });
+
+  it('sets loadError and renders the error message when the request fails', () => {
+    httpMock.expectOne('/api/admin/stats').flush('boom', { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.loadError).toBe(true);
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('settings.adminStats.loadError');
+  });
 });

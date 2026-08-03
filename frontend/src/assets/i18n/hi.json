@@ -550,7 +550,8 @@
       "matchingIncomeLabel": "मैचिंग आय",
       "totalIncomeLabel": "कुल आय",
       "newAssociatesLabel": "इस चक्र में नए एसोसिएट्स",
-      "noCycleEmptyState": "अभी कोई खुला चक्र नहीं है।"
+      "noCycleEmptyState": "अभी कोई खुला चक्र नहीं है।",
+      "loadError": "आंकड़े लोड नहीं हो सके। बाद में पुनः प्रयास करें।"
     }
   },
   "legal": {
