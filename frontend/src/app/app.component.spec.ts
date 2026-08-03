@@ -6,6 +6,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { of } from 'rxjs';
 import { AppComponent } from './app.component';
 import { AuthService } from './auth/auth.service';
+import { ADMIN_FAMILY_ROLES } from './admin/admin.guard';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
@@ -103,7 +104,7 @@ describe('AppComponent', () => {
     expect(links).toEqual(['Dashboard']);
   });
 
-  it('shows Dashboard, Provision Associate, and Settings nav links for an admin-family role', () => {
+  it('shows Provision Associate and Settings but hides Dashboard for an admin-family role', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const authService = TestBed.inject(AuthService);
     const translateService = TestBed.inject(TranslateService);
@@ -122,6 +123,23 @@ describe('AppComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     const links = Array.from(compiled.querySelectorAll('.app-nav__link')).map(el => el.textContent?.trim());
-    expect(links).toEqual(['Dashboard', 'Provision Associate', 'Settings']);
+    expect(links).toEqual(['Provision Associate', 'Settings']);
+  });
+
+  it('hides the Dashboard nav link for every admin-family role', () => {
+    const authService = TestBed.inject(AuthService);
+    spyOn(authService, 'isAuthenticated').and.returnValue(true);
+    const getRoleSpy = spyOn(authService, 'getRole');
+
+    for (const role of ADMIN_FAMILY_ROLES) {
+      getRoleSpy.and.returnValue(role);
+      const fixture = TestBed.createComponent(AppComponent);
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.querySelector('a[href="/dashboard"]')).toBeFalsy();
+
+      fixture.destroy();
+    }
   });
 });
