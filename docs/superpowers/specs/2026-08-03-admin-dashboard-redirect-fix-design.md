@@ -25,6 +25,8 @@ Global nav (already shipped in `f4ff1e6`) means this is no longer a total dead e
 
 ## Design
 
+> The shipped code evolved during implementation per fix-round and final-review findings (notably: `rootRedirectGuard` gained an `ADMIN_FAMILY_ROLES` short-circuit before touching setup state, and `postAuthLandingPath`'s `incompleteStepPath` parameter became a lazy thunk) — the code blocks below are illustrative of the original design intent, not the literal final diff.
+
 ### Shared decision function
 
 New file `frontend/src/app/auth/post-auth-redirect.ts`:
