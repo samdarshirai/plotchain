@@ -8,12 +8,16 @@
   --brand-secondary-soft: color-mix(in srgb, var(--brand-secondary) 14%, transparent);
   --brand-primary-contrast: #FFFFFF; /* recomputed by ThemeService per chosen color */
 
-  --surface-page: #0F1420;
-  --surface-card: #151B2B;
-  --surface-raised: #1C2436;
-  --border-subtle: #263148;
-  --text-primary: #E8ECF6;
-  --text-muted: #8C98B4;
+  // Light theme is the app's single default (previously dark; /login, /setup, and
+  // /admin/associates/new each carried their own scoped light override to avoid clashing with
+  // this file's old dark default -- now that this IS the default, those overrides are deleted
+  // in a later task rather than left as redundant duplicates).
+  --surface-page: #f8f9ff;
+  --surface-card: #ffffff;
+  --surface-raised: #eff4ff;
+  --border-subtle: #c2c6d9;
+  --text-primary: #0b1c30;
+  --text-muted: #424656;
   --status-success: #34D399;
   --status-warning: #F59E0B;
   --status-danger: #F87171;
