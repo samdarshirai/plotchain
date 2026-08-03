@@ -31,27 +31,30 @@ The authoritative answer to "who sees what," organized by domain. This is what e
 |---|---|---|
 | Dashboard / company stats | Company-wide: total associates, total sales volume, rank distribution, cycle-over-cycle growth | Own cycle summary only: own L/R carry-forward, own new business, own associate counts, own income totals |
 | Tree / genealogy | Full org tree from root, any node, leg-volume anomaly flags | Subtree rooted at self only — own direct downline + full L/R descendants. No visibility into ancestors above self or siblings' other branches |
-| Associate directory | Full list, filter by rank/KYC status/join date, drill into any profile | No directory access. "Refer / Invite" adds a new associate placed under self (L or R) |
-| Sales | Full sales register — all associates, void/export | Own sales + descendant sales (team-volume reports); can record a new sale |
-| Income / ledger | All associates' ledger entries (for reports/audit) | Own ledger entries only, itemized by income type (direct/matching/sponsor/royalty/reward) |
-| Wallet & withdrawal | Approval queue — approve/reject/hold any associate's withdrawal request | Own wallet balance, own withdrawal requests + status |
-| Plot / project inventory | Full CRUD — create projects, plots, pricing, EMI plans | View available plots, book a plot for a buyer, view own bookings + EMI schedule |
-| KYC | Review queue — approve/reject any associate's submission | Own KYC submission + status only |
+| Associate directory | Full list, filter by rank/KYC status/join date, drill into any profile; places every new associate (choose parent + L/R) | No directory access, no self-serve invite — Admin places new associates on their behalf |
+| Sales | Full sales register — all associates, void/export, records every sale | Own sales + descendant sales (team-volume reports), view-only |
+| Income / ledger | All associates' ledger entries (for reports/audit) | Own ledger entries only, itemized by income type (direct/matching/sponsor/royalty/reward), view-only |
+| Wallet & withdrawal | Approval queue — approve/reject/hold; also submits withdrawal requests on an associate's behalf | Own wallet balance, own withdrawal history + status, view-only |
+| Plot / project inventory | Full CRUD — create projects, plots, pricing, EMI plans; books plots against any associate's record | View available plots, own bookings + EMI schedule, view-only |
+| KYC | Review queue — approve/reject any associate's submission | Own KYC submission + status only, view-only |
 | Compensation rules | Configure direct/matching/sponsor %, royalty table, reward thresholds (versioned) | View own rank progress / reward tiers (read-only) |
 | Cycle management | Trigger/monitor/re-run settlement cycle close | Own cycle-scoped reports only, no control over cycle state |
-| e-PIN | Generate/allocate batches | Redeem a PIN for own activation or downline top-up |
+| e-PIN | Generate/allocate batches, redeems on an associate's behalf | Own PIN/activation status, view-only |
 | Announcements | Compose/publish | Read-only feed |
-| Support tickets | Queue — view/respond to all tickets | Raise/track own tickets |
+| Support tickets | Queue — logs and responds to tickets on any associate's behalf | Own ticket history, view-only |
 | Audit log | Full log, every actor and action | No access |
 | Digital ID card | No dedicated screen (not the persona this serves) | Own ID card only (photo, ID number, rank, QR) |
+| **Own profile** | Own profile (Admin has no separate "profile edit" concept beyond password) | **View and edit own profile — the one write action available to an Associate** (name, contact, bank details, KYC docs, login/transaction password) |
 
 ## Screens (derived from the matrix)
 
-**Admin (back-office, web)**: Company Dashboard, Associate Directory + profile drill-down, Tree Explorer (full org), Sales Register, Project & Plot Management, Cycle Management, Compensation Rules Config, Withdrawal/Payout Approval Queue, KYC Review Queue, e-PIN Generation, Announcement Composer, Support Ticket Queue, Reports & Exports, Audit Log.
+Every associate-initiated action beyond editing their own profile — recording a sale, placing a new associate (L/R), requesting a withdrawal, booking a plot, redeeming an e-PIN, raising a support ticket — is performed by Admin on the associate's behalf, not self-serve in the associate app. This is a deliberate v1 narrowing (matches how the manual back-office reference process already works), not an oversight; the associate app is a reporting/visibility surface plus profile management, full stop.
 
-**Associate (mobile-first)**: Dashboard/Home, My Tree (own subtree), Sales/New Sale, Income Statement (per income type), Payout/Withdrawal History + request, Refer/Invite (choose L/R placement), Rewards & Perks progress, Profile & Bank/KYC details, Plot booking + EMI view, Digital ID Card, Support tickets (raise/track), Announcements feed (read-only), Notifications.
+**Admin (back-office, web)**: Company Dashboard, Associate Directory + profile drill-down + add new associate (choose parent + L/R), Tree Explorer (full org), Sales Register + record new sale (for any associate), Project & Plot Management + book a plot (against any associate), Cycle Management, Compensation Rules Config, Withdrawal/Payout Approval Queue + submit a withdrawal request (on an associate's behalf), KYC Review Queue, e-PIN Generation + redemption (on an associate's behalf), Announcement Composer, Support Ticket Queue + log a ticket (on an associate's behalf), Reports & Exports, Audit Log.
 
-No screen is admin-family-conditional anymore (no "Finance sees this tab, Support doesn't") — a screen is either Admin-only, Associate-only, or (rare — e.g. Announcements feed content) the same data both can read.
+**Associate (mobile-first, view + own-profile-edit only)**: Dashboard/Home, My Tree (own subtree, view-only), Sales History (own + descendant, view-only), Income Statement (per income type, view-only), Payout/Withdrawal History (view-only), Rewards & Perks progress (view-only), Plot Bookings + EMI schedule (view-only), Digital ID Card (view-only), Support Ticket history (view-only), Announcements feed (view-only), Notifications (view-only), **Profile & Bank/KYC Details (the one editable screen)**.
+
+No screen is admin-family-conditional anymore (no "Finance sees this tab, Support doesn't") — a screen is either Admin-only, Associate-only, or (rare — e.g. Announcements feed content) the same data both can read. Within Associate-only screens, exactly one (Profile) accepts writes; the rest are pure reports.
 
 ## Out of scope / removed (not deferred)
 
@@ -59,12 +62,15 @@ No screen is admin-family-conditional anymore (no "Finance sees this tab, Suppor
 - `company/RootAssociateProvisioningService.java`, `RootAssociateController`, `CreateRootAssociateRequest`/`Response`, `RootAssociateSlotsResponse`, `RootAssociateAlreadyExistsException`, `RightRootDetailsRequiredException`, the Root Associate setup step (Step 7) and its frontend.
 - Per-role narrowing already shipped in `AdminAssociateController` (suspend/reactivate/reset-password) and `KycReviewController` (decide) collapses to a plain `ADMIN`-only check (no more `SUPER_ADMIN`/`KYC_REVIEWER` alternates).
 - `SecurityConfig.java`'s blanket admin-family `hasAnyAuthority(...)` write rules simplify to `hasAuthority("ADMIN")`.
+- `auth/AdminBootstrapRunner.java` (the `ApplicationRunner` that seeds the founding `ADMIN` row from environment variables on first boot) — replaced by a Flyway migration that seeds the single admin row directly (see Resolved decisions #1).
 
-## Open questions
+## Resolved decisions
 
-1. Where does the Admin account itself get created — is `AdminBootstrapRunner` (currently seeding a founding `ADMIN` row) also the mechanism that gives it root tree position (`parent_id = null`), or does that need its own field/flag distinguishing "the one admin" from a future associate with no parent? Needs a look at `AdminBootstrapRunner` before the implementation plan is written.
-2. Does the Admin's root position participate in leg-volume/matching-income calculations at all, or is it purely a tree anchor with no income of its own? (The compensation engine spec computes matching income per associate — the root may need to be explicitly excluded.)
-3. Self-serve e-PIN generation by an Associate for their own downline top-up — PRD open question #2, still unresolved, orthogonal to this role model but affects the Associate e-PIN screen's exact affordances.
+1. **Admin seeding**: always via a Flyway migration, not `AdminBootstrapRunner`'s environment-variable-driven `ApplicationRunner`. The migration inserts the one `ADMIN` row with `parent_id = null` (making it the tree root by construction, no separate flag needed) and `must_change_password = true`, forcing a password change on first login — same forced-rotation pattern `AdminProvisioningService`/`AdminBootstrapRunner` already use elsewhere. The seeded password is a fixed default baked into the migration; forced change on first login is the control that makes that acceptable.
+2. **Admin participates in compensation.** The root's own left/right leg volumes feed into matching income, sponsor matching, royalty, and reward calculations exactly like any other associate node — no special-cased exclusion in the compensation engine.
+3. **No self-serve e-PIN (or any other self-serve action) for Associates** — resolved by the broader decision below.
+
+**Associate write scope, generally**: an Associate can view every report in their matrix column and edit their own profile. Every other action that might look associate-initiated in the source PRD/spec (new sale, refer/invite placement, withdrawal request, plot booking, e-PIN redemption, raising a support ticket) is instead something Admin does *on the associate's behalf* — reflected in both the matrix and Screens section above.
 
 ## Reconciliation & gap-fill (next step)
 
