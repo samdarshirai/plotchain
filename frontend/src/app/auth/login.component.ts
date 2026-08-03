@@ -96,8 +96,7 @@ export class LoginComponent implements OnInit {
         }
         if (ADMIN_FAMILY_ROLES.has(response.role)) {
           this.setupService.getState().pipe(take(1)).subscribe(state => {
-            const incompleteStepPath = state.launchedAt ? '' : this.setupService.firstIncompleteStepPath(state);
-            this.router.navigate([postAuthLandingPath(response.role, state, incompleteStepPath)]);
+            this.router.navigate([postAuthLandingPath(response.role, state, () => this.setupService.firstIncompleteStepPath(state))]);
           });
           return;
         }

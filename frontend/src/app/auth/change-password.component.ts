@@ -51,8 +51,7 @@ export class ChangePasswordComponent {
         const role = this.authService.getRole();
         if (role && ADMIN_FAMILY_ROLES.has(role)) {
           this.setupService.getState().pipe(take(1)).subscribe(state => {
-            const incompleteStepPath = state.launchedAt ? '' : this.setupService.firstIncompleteStepPath(state);
-            this.router.navigate([postAuthLandingPath(role, state, incompleteStepPath)]);
+            this.router.navigate([postAuthLandingPath(role, state, () => this.setupService.firstIncompleteStepPath(state))]);
           });
           return;
         }

@@ -23,6 +23,6 @@ export const rootRedirectGuard: CanActivateFn = (): Observable<UrlTree> | UrlTre
     return router.parseUrl('/dashboard');
   }
   return setupService.getState().pipe(
-    map(state => router.parseUrl(postAuthLandingPath(role, state, setupService.firstIncompleteStepPath(state))))
+    map(state => router.parseUrl(postAuthLandingPath(role, state, () => setupService.firstIncompleteStepPath(state))))
   );
 };
