@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -97,5 +98,37 @@ class CycleControllerTest {
             .andExpect(status().isOk());
 
         verify(cycleService).list(any(), eq(0), eq(20));
+    }
+
+    @Test
+    void closeReturnsThePlaceholderResponseForAnAdminToken() throws Exception {
+        UUID cycleId = UUID.randomUUID();
+        when(cycleService.close(cycleId)).thenReturn(new CycleCloseResponse(cycleId, CycleStatus.OPEN));
+
+        mockMvc.perform(post("/api/admin/cycles/{id}/close", cycleId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.cycleId").value(cycleId.toString()))
+            .andExpect(jsonPath("$.status").value("OPEN"));
+    }
+
+    @Test
+    void closeReturns404WhenTheCycleDoesNotExist() throws Exception {
+        UUID cycleId = UUID.randomUUID();
+        when(cycleService.close(cycleId)).thenThrow(new CycleNotFoundException(cycleId));
+
+        mockMvc.perform(post("/api/admin/cycles/{id}/close", cycleId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void closeReturns409WhenTheCycleIsNotOpen() throws Exception {
+        UUID cycleId = UUID.randomUUID();
+        when(cycleService.close(cycleId)).thenThrow(new CycleAlreadyClosedException(cycleId));
+
+        mockMvc.perform(post("/api/admin/cycles/{id}/close", cycleId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isConflict());
     }
 }
