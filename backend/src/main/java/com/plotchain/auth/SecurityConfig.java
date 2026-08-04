@@ -68,6 +68,17 @@ public class SecurityConfig {
                 // (the setup wizard's Admin Team permission matrix), not assumed here: until
                 // then, any admin-family role can write, matching the spec's statement that
                 // the founding admin can act as all roles until more accounts are created.
+                // Cycle close: ADMIN-only, per cycle-management unit 3
+                // (docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
+                // "POST /api/admin/cycles/{id}/close -- ADMIN-only"), same target-role-model
+                // reasoning as the GET /api/admin/cycles matcher further down. Declared HERE,
+                // before the blanket POST rule, not next to that GET matcher: first-match-wins
+                // (see the Admin Team creation comment above) means a narrower POST rule
+                // declared after the blanket POST "/api/**" rule below would never be reached --
+                // the blanket rule would match first and grant admin-family access instead of
+                // the ADMIN-only access this route requires.
+                .requestMatchers(HttpMethod.POST, "/api/admin/cycles/*/close")
+                    .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/**")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 .requestMatchers(HttpMethod.PUT, "/api/**")
@@ -168,9 +179,11 @@ public class SecurityConfig {
                 // Admin cycle history: ADMIN-only, not the admin-family hasAnyAuthority(...)
                 // pattern every other admin GET above still uses. Built directly to the target
                 // role model from role-capability unit 1 (approved, not yet implemented) rather
-                // than to the pattern that spec deletes. Read-only; there is no corresponding
-                // write matcher here because POST /api/admin/cycles/{id}/close (a future unit)
-                // will need its own matcher when it's built, also ADMIN-only per that same spec.
+                // than to the pattern that spec deletes. Read-only; the write counterpart, POST
+                // /api/admin/cycles/{id}/close (cycle-management unit 3), has its own ADMIN-only
+                // matcher declared up near the other narrower POST rules, above the blanket
+                // POST "/api/**" rule -- not here, since first-match-wins would otherwise let
+                // the blanket rule swallow it (see that matcher's own comment for why).
                 .requestMatchers(HttpMethod.GET, "/api/admin/cycles")
                     .hasAuthority("ADMIN")
                 // Phase 5's genuinely public endpoints: the pre-login branding bootstrap, the

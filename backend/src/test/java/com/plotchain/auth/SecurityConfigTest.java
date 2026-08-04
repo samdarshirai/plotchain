@@ -6,7 +6,9 @@ import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.company.SetupState;
 import com.plotchain.company.SetupStateRepository;
+import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
+import com.plotchain.cycle.CycleStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -404,6 +406,29 @@ class SecurityConfigTest {
     void adminCyclesIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
         stubEmptyCyclePage();
         mockMvc.perform(get("/api/admin/cycles")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+    }
+
+    // ADMIN-only, cycle-management unit 3's POST /api/admin/cycles/{id}/close matcher --
+    // declared up near the file's other narrower POST rules, before the blanket POST rule
+    // (see that matcher's own comment for why it isn't declared here next to the sibling GET
+    // matcher above). cycleRepository.findByIdForUpdate is stubbed to return an OPEN cycle so
+    // an ADMIN token reaches 200; every other role, including the soon-to-be-deleted
+    // admin-family sub-roles, gets 403 at the filter layer before the controller/service ever
+    // runs.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminCyclesCloseIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        UUID cycleId = UUID.randomUUID();
+        Cycle cycle = new Cycle();
+        cycle.setId(cycleId);
+        cycle.setPeriodStart(java.time.LocalDate.of(2026, 7, 1));
+        cycle.setPeriodEnd(java.time.LocalDate.of(2026, 7, 15));
+        cycle.setStatus(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycleId)).thenReturn(Optional.of(cycle));
+
+        mockMvc.perform(post("/api/admin/cycles/{id}/close", cycleId)
                 .header("Authorization", "Bearer " + tokenFor(role)))
             .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
     }
