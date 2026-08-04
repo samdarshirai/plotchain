@@ -52,7 +52,7 @@ Every associate-initiated action beyond editing their own profile — recording 
 
 **Admin (back-office, web)**: Company Dashboard, Associate Directory + profile drill-down + add new associate (choose parent + L/R), Tree Explorer (full org), Sales Register + record new sale (for any associate), Project & Plot Management + book a plot (against any associate), Cycle Management, Compensation Rules Config, Withdrawal/Payout Approval Queue + submit a withdrawal request (on an associate's behalf), KYC Review Queue, e-PIN Generation + redemption (on an associate's behalf), Announcement Composer, Support Ticket Queue + log a ticket (on an associate's behalf), Reports & Exports, Audit Log.
 
-**Associate (mobile-first, view + own-profile-edit only)**: Dashboard/Home, My Tree (own subtree, view-only), Sales History (own + descendant, view-only), Income Statement (per income type, view-only), Payout/Withdrawal History (view-only), Rewards & Perks progress (view-only), Plot Bookings + EMI schedule (view-only), Digital ID Card (view-only), Support Ticket history (view-only), Announcements feed (view-only), Notifications (view-only), **Profile & Bank/KYC Details (the one editable screen)**.
+**Associate (responsive web, view + own-profile-edit only)**: Dashboard/Home, My Tree (own subtree, view-only), Sales History (own + descendant, view-only), Income Statement (per income type, view-only), Payout/Withdrawal History (view-only), Rewards & Perks progress (view-only), Plot Bookings + EMI schedule (view-only), Digital ID Card (view-only), Support Ticket history (view-only), Announcements feed (view-only), Notifications (view-only), **Profile & Bank/KYC Details (the one editable screen)**.
 
 No screen is admin-family-conditional anymore (no "Finance sees this tab, Support doesn't") — a screen is either Admin-only, Associate-only, or (rare — e.g. Announcements feed content) the same data both can read. Within Associate-only screens, exactly one (Profile) accepts writes; the rest are pure reports.
 
@@ -71,6 +71,8 @@ No screen is admin-family-conditional anymore (no "Finance sees this tab, Suppor
 3. **No self-serve e-PIN (or any other self-serve action) for Associates** — resolved by the broader decision below.
 
 **Associate write scope, generally**: an Associate can view every report in their matrix column and edit their own profile. Every other action that might look associate-initiated in the source PRD/spec (new sale, refer/invite placement, withdrawal request, plot booking, e-PIN redemption, raising a support ticket) is instead something Admin does *on the associate's behalf* — reflected in both the matrix and Screens section above.
+
+4. **Associate app is responsive web, not mobile-first.** Same web app family as Admin — the same Angular frontend, same underlying design-token conventions — built responsive (phone/tablet/desktop) but designed and reviewed web-first rather than phone-first. Supersedes this doc's original "mobile-first" framing in the Screens section above; the Associate screen list itself is unchanged, only the design/delivery approach.
 
 ## Reconciliation & gap-fill
 

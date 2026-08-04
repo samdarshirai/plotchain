@@ -168,3 +168,29 @@ The shape language is generous and friendly, softening the technical nature of t
 - **Sticky Footer (Status Bar):** A fixed, bottom-docked element with a slight backdrop blur (Glassmorphism). It contains the "Saved" status in `label-mono` and primary workflow navigation.
 - **Progress Indicators:** Thin, high-contrast lines at the very top of the viewport or subtle "step" circles with micro-animations on transition.
 - **Chips/Badges:** Monospaced text in JetBrains Mono, using a semi-transparent fill of the status color (e.g., subtle green for "Success").
+## Responsive Behavior
+
+The reference screens in this folder (`pl-72 pr-96` fixed sidebar + inspector rail) are desktop-fixed-width only — no `md:`/`lg:` classes exist yet in any `code.html`. This section is the addendum that makes the system responsive. Resolved 2026-08-04: the Associate app reuses this same system (responsive web, not a separate mobile-first design — see `2026-08-03-role-capability-data-visibility-design.md` Resolved decision #4), so these rules apply to every screen in both the Admin and Associate surfaces, not just the setup wizard.
+
+**Breakpoints:** Tailwind defaults (already on the Tailwind CDN in every `code.html`) — `sm` 640px, `md` 768px, `lg` 1024px, `xl` 1280px.
+
+**Three-column wizard/dashboard shell** (fixed left nav `w-72` + fixed right inspector `w-96`):
+- Below `lg`: inspector rail collapses into a bottom drawer, opened by a summary button — not deleted, not always-open.
+- Below `md`: left nav collapses into a slide-over triggered from the fixed header (`h-16` stays fixed at every breakpoint); main content goes full-width.
+
+**Dense data tables** (Sales Register, Income Ledger, Associate Directory, Audit Log):
+- Below `md`: rows become stacked cards, one card per row — key column (name/date/amount) as the card title in `label-mono`, remaining fields as label:value pairs below it.
+- Horizontal scroll is a fallback for genuinely wide exports only, never the default row layout.
+
+**Tree Explorer / genealogy view:**
+- Below `md`: vertically scrollable with pinch-zoom/pan; node cards shrink to icon + name only. Rank badge and volume figures move behind a tap-to-expand node detail sheet instead of showing inline.
+
+**Multi-column forms** (e.g. `grid-cols-2` field groups):
+- Below `sm`: every `grid-cols-2` becomes `grid-cols-1`.
+
+**Sticky footer status bar:**
+- Stays fixed, full-width at every breakpoint. Padding steps down from `margin-page` (40px) to `gutter` (24px) below `md`.
+
+**Touch targets:** minimum 44px hit area for any interactive control below `md` (nav items, table row taps, buttons) — the existing `stack-sm`/`base` spacing tokens alone don't guarantee this on dense rows, pad explicitly.
+
+**Design-review requirement:** any new `screen.png`/`code.html`/`DESIGN.md` triple produced from this point forward must include the `md:`/`lg:` responsive classes implementing the rules above — a fixed-width-only reference (like the current setup-wizard screens) doesn't satisfy `code-review`'s Spec axis once this section exists.
