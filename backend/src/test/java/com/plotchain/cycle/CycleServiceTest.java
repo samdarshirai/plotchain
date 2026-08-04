@@ -9,9 +9,11 @@ import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -61,5 +63,44 @@ class CycleServiceTest {
         assertThat(response.page()).isEqualTo(1);
         assertThat(response.size()).isEqualTo(10);
         assertThat(response.totalElements()).isEqualTo(11);
+    }
+
+    @Test
+    void closeThrowsCycleNotFoundExceptionWhenTheCycleDoesNotExist() {
+        service = new CycleService(cycleRepository);
+        UUID id = UUID.randomUUID();
+        when(cycleRepository.findByIdForUpdate(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.close(id)).isInstanceOf(CycleNotFoundException.class);
+    }
+
+    @Test
+    void closeThrowsCycleAlreadyClosedExceptionWhenStatusIsClosed() {
+        service = new CycleService(cycleRepository);
+        Cycle cycle = newCycle(CycleStatus.CLOSED);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+
+        assertThatThrownBy(() -> service.close(cycle.getId())).isInstanceOf(CycleAlreadyClosedException.class);
+    }
+
+    @Test
+    void closeThrowsCycleAlreadyClosedExceptionWhenStatusIsPaid() {
+        service = new CycleService(cycleRepository);
+        Cycle cycle = newCycle(CycleStatus.PAID);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+
+        assertThatThrownBy(() -> service.close(cycle.getId())).isInstanceOf(CycleAlreadyClosedException.class);
+    }
+
+    @Test
+    void closeSucceedsAndReturnsAPlaceholderResponseWhenStatusIsOpen() {
+        service = new CycleService(cycleRepository);
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+
+        CycleCloseResponse response = service.close(cycle.getId());
+
+        assertThat(response.cycleId()).isEqualTo(cycle.getId());
+        assertThat(response.status()).isEqualTo(CycleStatus.OPEN);
     }
 }
