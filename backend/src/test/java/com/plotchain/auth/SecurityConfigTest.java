@@ -6,6 +6,7 @@ import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.company.SetupState;
 import com.plotchain.company.SetupStateRepository;
+import com.plotchain.cycle.CycleRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -56,6 +57,7 @@ class SecurityConfigTest {
 
     @MockBean AssociateRepository associateRepository;
     @MockBean SetupStateRepository setupStateRepository;
+    @MockBean CycleRepository cycleRepository;
 
     private String tokenFor(AssociateRole role) {
         Associate associate = new Associate();
@@ -73,6 +75,11 @@ class SecurityConfigTest {
         SetupState state = new SetupState();
         state.setLaunchedAt(Instant.now());
         when(setupStateRepository.findAll()).thenReturn(List.of(state));
+    }
+
+    private void stubEmptyCyclePage() {
+        when(cycleRepository.findAllByOrderByPeriodStartDesc(org.springframework.data.domain.PageRequest.of(0, 20)))
+            .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of()));
     }
 
     @Test
@@ -383,6 +390,22 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/admin/stats")
                 .header("Authorization", "Bearer " + tokenFor(role)))
             .andExpect(status().is(role.isAdminFamily() ? 200 : 403));
+    }
+
+    // Deliberately NOT the isAdminFamily() convention used by the other parameterized tests in
+    // this file (e.g. adminStatsIsReachableForEveryAdminFamilyTokenAndForbiddenForAssociate).
+    // This route is built directly to the target role model from
+    // docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md
+    // (role-capability unit 1, approved, not yet implemented): only ADMIN gets 200 here, every
+    // other role — including the SUPER_ADMIN/FINANCE/KYC_REVIEWER/SUPPORT roles that unit deletes
+    // outright — gets 403, same as ASSOCIATE. cycleRepository is @MockBean'd here.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminCyclesIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        stubEmptyCyclePage();
+        mockMvc.perform(get("/api/admin/cycles")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
     }
 
     @Test

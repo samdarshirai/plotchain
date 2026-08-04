@@ -165,6 +165,14 @@ public class SecurityConfig {
                 // admin-aggregate GET above. Read-only, no corresponding write endpoint.
                 .requestMatchers(HttpMethod.GET, "/api/admin/stats")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                // Admin cycle history: ADMIN-only, not the admin-family hasAnyAuthority(...)
+                // pattern every other admin GET above still uses. Built directly to the target
+                // role model from role-capability unit 1 (approved, not yet implemented) rather
+                // than to the pattern that spec deletes. Read-only; there is no corresponding
+                // write matcher here because POST /api/admin/cycles/{id}/close (a future unit)
+                // will need its own matcher when it's built, also ADMIN-only per that same spec.
+                .requestMatchers(HttpMethod.GET, "/api/admin/cycles")
+                    .hasAuthority("ADMIN")
                 // Phase 5's genuinely public endpoints: the pre-login branding bootstrap, the
                 // raw logo bytes it and the login page render as <img> tags, and the favicon
                 // index.html links to -- all requested before any JWT exists. They only need to
