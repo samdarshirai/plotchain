@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Spec of record: `docs/superpowers/specs/2026-08-03-role-capability-data-visibility-design.md`. Every task below traces to a specific line in that spec's Reconciliation & gap-fill or Out-of-scope/removed sections — don't invent scope beyond it.
+- Spec of record: `docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md`. Every task below traces to a specific line in that spec's Reconciliation & gap-fill or Out-of-scope/removed sections — don't invent scope beyond it.
 - **Not in this plan**: Sales, Income/Ledger, Wallet/Withdrawal, Cycle Management, e-PIN, Announcements, Support Tickets — none of these has a controller today, and none has been through its own brainstorming/spec pass yet. Each is a separate future spec + plan.
 - **Not in this plan**: new frontend UI for the two new associate-facing endpoints this plan adds (My Tree, own-profile edit). Both land backend-only here; consuming them in the Associate app is a small follow-up once a UI pattern is agreed, not fabricated here without a design pass.
 - Confirmed: no deployed database carries `SUPER_ADMIN`/`FINANCE`/`KYC_REVIEWER`/`SUPPORT`-role rows or a seeded Root Associate row (local/dev only) — migrations below edit existing files in place rather than adding a backfill step.

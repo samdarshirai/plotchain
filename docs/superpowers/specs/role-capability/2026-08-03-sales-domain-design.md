@@ -2,7 +2,7 @@
 
 ## Context
 
-No `sale` package exists anywhere in the codebase today — the biggest single gap found by the reconciliation audit in `docs/superpowers/specs/2026-08-03-role-capability-data-visibility-design.md`. Sales is upstream of the whole compensation engine (Income/Ledger, Wallet/Withdrawal, and Cycle Management's settlement batch all consume what this spec produces), so it's brainstormed first among the seven not-built domains.
+No `sale` package exists anywhere in the codebase today — the biggest single gap found by the reconciliation audit in `docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md`. Sales is upstream of the whole compensation engine (Income/Ledger, Wallet/Withdrawal, and Cycle Management's settlement batch all consume what this spec produces), so it's brainstormed first among the seven not-built domains.
 
 Grounding docs: `land-mlm-platform-prd.md` §5.2/§7.3, `mlm-land-platform-spec.md` §2.2 (original `Sale` entity sketch) and §3 step 1 (Direct Income). Both predate the real `Plot`/`Project` inventory (`com.plotchain.projects`) and the real `CompensationPlanVersion` config (`com.plotchain.compensation`) that now exist in code — this spec reconciles the old sketch against what's actually built, not just re-implements it verbatim.
 
