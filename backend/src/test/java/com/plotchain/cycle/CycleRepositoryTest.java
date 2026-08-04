@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,5 +49,23 @@ class CycleRepositoryTest {
 
         assertThat(result.getContent()).extracting(Cycle::getId).containsExactly(open.getId());
         assertThat(result.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void findByIdForUpdateReturnsTheCycleWhenItExists() {
+        Cycle cycle = newCycle(LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 15), CycleStatus.OPEN);
+
+        Optional<Cycle> result = cycleRepository.findByIdForUpdate(cycle.getId());
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getId()).isEqualTo(cycle.getId());
+        assertThat(result.get().getStatus()).isEqualTo(CycleStatus.OPEN);
+    }
+
+    @Test
+    void findByIdForUpdateReturnsEmptyWhenTheCycleDoesNotExist() {
+        Optional<Cycle> result = cycleRepository.findByIdForUpdate(UUID.randomUUID());
+
+        assertThat(result).isEmpty();
     }
 }
