@@ -69,6 +69,6 @@ Page<Announcement> findAllByOrderByPublishedAtDesc(Pageable pageable);
 - `SecurityConfigTest` additions: `POST /api/admin/announcements` — associate token → 403, admin token → 201; `GET /api/announcements` — both admin and associate tokens → 200.
 - No dedicated `AnnouncementRepositoryTest`: `findAllByOrderByPublishedAtDesc` is a single derived Spring Data query with no custom SQL (unlike, e.g., Sales' recursive native query), and its ordering is already exercised indirectly by `AnnouncementControllerTest`'s feed-order assertion.
 
-## Open questions
+## Resolved decisions (post-review)
 
-1. **No correction path for a bad announcement** (Decision 3): once composed, an announcement is permanent — no edit, unpublish, or delete. If that turns out to matter operationally (e.g. a typo or a factual error goes out to every associate), this spec would need a follow-up decision on whether to add a status field (`PUBLISHED`/`RETRACTED`, matching the `Sale` void pattern) or just accept "post a correction as a new announcement" as the permanent policy.
+1. **No correction path, confirmed as permanent policy, not a placeholder.** Decision 3's "compose a new announcement to correct a mistake" stays the only mechanism. No `PUBLISHED`/`RETRACTED` status field is added.
