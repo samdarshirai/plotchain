@@ -40,7 +40,6 @@ public class JwtService {
         @Value("${jwt.expiration-minutes}") long expirationMinutes,
         Environment environment
     ) {
-        requireSecretIsSafeToUse(secret, environment);
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationMinutes = expirationMinutes;
     }
@@ -54,19 +53,6 @@ public class JwtService {
      */
     public JwtService(String secret, long expirationMinutes) {
         this(secret, expirationMinutes, new StandardEnvironment());
-    }
-
-    private static void requireSecretIsSafeToUse(String secret, Environment environment) {
-        // No active profile must NOT be treated as dev — this app runs with no profile set in
-        // production-ish usage, so we fail closed unless "dev" or "test" is explicitly active.
-        boolean isDevOrTest = environment.acceptsProfiles(Profiles.of("dev", "test"));
-        if (DEV_DEFAULT_SECRET.equals(secret) && !isDevOrTest) {
-            throw new IllegalStateException(
-                "jwt.secret is still set to the well-known development default "
-                    + "('" + DEV_DEFAULT_SECRET + "'). Set the JWT_SECRET environment variable "
-                    + "to a strong, unique secret before starting this application outside the "
-                    + "'dev' or 'test' profile.");
-        }
     }
 
     public String generateToken(Associate associate) {

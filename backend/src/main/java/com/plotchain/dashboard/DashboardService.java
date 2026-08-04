@@ -95,8 +95,11 @@ public class DashboardService {
             .filter(r -> r.getId().equals(associate.getRankId()))
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("Associate's rank not found in rank table: " + associate.getRankId()));
+        // ranks is ordered ascending by rankOrder, and rankOrder values are not necessarily
+        // consecutive (e.g. seeded as 10/20/30/40) -- the next rank is the first one strictly
+        // above the current, not "current + 1".
         Optional<RankTier> nextRank = ranks.stream()
-            .filter(r -> r.getRankOrder() == currentRank.getRankOrder() + 1)
+            .filter(r -> r.getRankOrder() > currentRank.getRankOrder())
             .findFirst();
 
         int progressPercent = nextRank
