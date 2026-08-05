@@ -1,15 +1,28 @@
 package com.plotchain.sales;
 
+import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
+import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleService;
+import com.plotchain.income.IncomeType;
+import com.plotchain.income.LedgerEntry;
 import com.plotchain.income.LedgerEntryRepository;
+import com.plotchain.income.LedgerEntryStatus;
 import com.plotchain.projects.Plot;
 import com.plotchain.projects.PlotNotFoundException;
 import com.plotchain.projects.PlotRepository;
 import com.plotchain.projects.PlotStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.UUID;
 
 @Service
 public class SaleService {
@@ -37,11 +50,10 @@ public class SaleService {
     }
 
     // Sales unit 2 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
-    // flow "Record a sale", steps 1-3): guards only. Unit 3 inserts the happy-path Plot->SOLD
-    // flip, cycle lookup, Sale persistence, and Direct Income ledger entry between the
-    // associate lookup below and the placeholder throw -- sequentially, without changing this
-    // method's signature -- following the same convention CycleService.close() established for
-    // its own unit 4 placeholder.
+    // flow "Record a sale", steps 1-3): guards. Sales unit 3 (same doc, flow steps 4-9): the
+    // Plot->SOLD flip, cycle lookup, Sale persistence, and Direct Income ledger entry, inserted
+    // between the associate lookup and the response mapping below, all inside one transaction.
+    @Transactional
     public SaleResponse recordSale(CreateSaleRequest request) {
         Plot plot = plotRepository.findById(request.plotId())
             .orElseThrow(() -> new PlotNotFoundException(request.plotId()));
@@ -50,12 +62,83 @@ public class SaleService {
             throw new PlotNotAvailableException(plot.getId());
         }
 
-        associateRepository.findById(request.associateId())
+        Associate associate = associateRepository.findById(request.associateId())
             .orElseThrow(() -> new AssociateNotFoundException(request.associateId()));
 
-        // Placeholder: unit 3 replaces this line with Plot->SOLD, cycle lookup, Sale creation,
-        // and the Direct Income ledger entry (source spec flow steps 4-9).
-        throw new UnsupportedOperationException(
-            "Sale recording happy path is not yet implemented (Sales unit 3)");
+        // Flow step 4: flip Plot -> SOLD (Decision 1).
+        plot.setStatus(PlotStatus.SOLD);
+        plotRepository.save(plot);
+
+        // Flow step 5.
+        Cycle cycle = cycleService.getOrOpenCurrent();
+
+        // Flow step 6: amount and legCredited are snapshots taken now, never live references
+        // (Decisions 1 and 7) -- plot.getPrice() and associate.getPosition() are read once,
+        // here, and never re-read from Sale later.
+        Sale sale = new Sale();
+        sale.setId(UUID.randomUUID());
+        sale.setPlotId(plot.getId());
+        sale.setAssociateId(associate.getId());
+        sale.setBuyerName(request.buyerName());
+        sale.setBuyerPhone(request.buyerPhone());
+        sale.setBuyerEmail(request.buyerEmail());
+        sale.setAmount(plot.getPrice());
+        sale.setCycleId(cycle.getId());
+        sale.setLegCredited(associate.getPosition());
+        sale.setStatus(SaleStatus.RECORDED);
+        sale.setRecordedAt(Instant.now());
+        sale = saleRepository.save(sale);
+
+        // Flow step 7: same pattern DashboardService already uses. An empty result here is a
+        // data-integrity problem, not a valid "no income" case -- see this plan's "Missing
+        // compensation plan version" section for why this throws instead of zeroing the ledger
+        // entry. @Transactional means this also rolls back the Plot flip and Sale row above.
+        CompensationPlanVersion planVersion = compensationPlanVersionRepository
+            .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
+            .orElseThrow(() -> new IllegalStateException(
+                "compensation_plan_version row missing - V8 migration seeds it"));
+
+        // Flow step 8: Direct Income, computed synchronously. Admin-charge deduction always
+        // uses the without-PAN tier (Decision 4) -- Associate has no pan_number field.
+        BigDecimal grossAmount = sale.getAmount()
+            .multiply(planVersion.getDirectIncomePct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+        BigDecimal tdsDeduction = grossAmount
+            .multiply(planVersion.getTdsPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+        BigDecimal adminDeduction = grossAmount
+            .multiply(planVersion.getAdminChargeWithoutPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+        BigDecimal netAmount = grossAmount.subtract(tdsDeduction).subtract(adminDeduction);
+
+        LedgerEntry ledgerEntry = new LedgerEntry();
+        ledgerEntry.setId(UUID.randomUUID());
+        ledgerEntry.setIncomeType(IncomeType.DIRECT);
+        ledgerEntry.setAssociateId(sale.getAssociateId());
+        ledgerEntry.setCycleId(sale.getCycleId());
+        ledgerEntry.setGrossAmount(grossAmount);
+        ledgerEntry.setTdsDeduction(tdsDeduction);
+        ledgerEntry.setAdminDeduction(adminDeduction);
+        ledgerEntry.setNetAmount(netAmount);
+        ledgerEntry.setStatus(LedgerEntryStatus.PENDING);
+        ledgerEntry.setSourceRef(sale.getId());
+        ledgerEntry.setCreatedAt(Instant.now());
+        ledgerEntryRepository.save(ledgerEntry);
+
+        // Flow step 9.
+        return toResponse(sale);
+    }
+
+    private SaleResponse toResponse(Sale sale) {
+        return new SaleResponse(
+            sale.getId(),
+            sale.getPlotId(),
+            sale.getAssociateId(),
+            sale.getBuyerName(),
+            sale.getBuyerPhone(),
+            sale.getBuyerEmail(),
+            sale.getAmount(),
+            sale.getCycleId(),
+            sale.getLegCredited(),
+            sale.getStatus().name(),
+            sale.getVoidReason(),
+            sale.getRecordedAt());
     }
 }

@@ -136,13 +136,105 @@ class SaleServiceTest {
     }
 
     @Test
-    void recordSaleReachesThePlaceholderWhenAllGuardsPass() {
+    void recordSaleFlipsThePlotToSold() {
+        stubHappyPathGuardsAndDependencies();
+
+        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        ArgumentCaptor<Plot> captor = ArgumentCaptor.forClass(Plot.class);
+        verify(plotRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(PlotStatus.SOLD);
+    }
+
+    @Test
+    void recordSaleStampsTheCurrentCycleOntoTheSale() {
+        stubHappyPathGuardsAndDependencies();
+
+        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        verify(cycleService).getOrOpenCurrent();
+        ArgumentCaptor<Sale> captor = ArgumentCaptor.forClass(Sale.class);
+        verify(saleRepository).save(captor.capture());
+        assertThat(captor.getValue().getCycleId()).isEqualTo(CYCLE_ID);
+    }
+
+    @Test
+    void recordSaleSavesASaleWithAmountAndLegSnapshottedAtRecordTime() {
+        stubHappyPathGuardsAndDependencies();
+
+        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        ArgumentCaptor<Sale> captor = ArgumentCaptor.forClass(Sale.class);
+        verify(saleRepository).save(captor.capture());
+        Sale saved = captor.getValue();
+        assertThat(saved.getPlotId()).isEqualTo(PLOT_ID);
+        assertThat(saved.getAssociateId()).isEqualTo(ASSOCIATE_ID);
+        assertThat(saved.getAmount()).isEqualByComparingTo("600000.00");
+        assertThat(saved.getLegCredited()).isEqualTo("L");
+        assertThat(saved.getStatus()).isEqualTo(SaleStatus.RECORDED);
+        assertThat(saved.getRecordedAt()).isNotNull();
+        assertThat(saved.getBuyerName()).isEqualTo("Jane Buyer");
+        assertThat(saved.getBuyerPhone()).isEqualTo("9999999999");
+    }
+
+    @Test
+    void recordSaleSavesADirectIncomeLedgerEntryWithCorrectMath() {
+        stubHappyPathGuardsAndDependencies();
+
+        SaleResponse response = saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository).save(captor.capture());
+        LedgerEntry entry = captor.getValue();
+        assertThat(entry.getIncomeType()).isEqualTo(IncomeType.DIRECT);
+        assertThat(entry.getAssociateId()).isEqualTo(ASSOCIATE_ID);
+        assertThat(entry.getCycleId()).isEqualTo(CYCLE_ID);
+        // gross = 600000.00 * (10.00 / 100) = 60000
+        assertThat(entry.getGrossAmount()).isEqualByComparingTo("60000");
+        // tds = 60000 * (5.00 / 100) = 3000
+        assertThat(entry.getTdsDeduction()).isEqualByComparingTo("3000");
+        // admin = 60000 * (4.00 / 100) = 2400 -- always the without-PAN tier (Decision 4)
+        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("2400");
+        // net = 60000 - 3000 - 2400 = 54600
+        assertThat(entry.getNetAmount()).isEqualByComparingTo("54600");
+        assertThat(entry.getStatus()).isEqualTo(LedgerEntryStatus.PENDING);
+        assertThat(entry.getSourceRef()).isEqualTo(response.id());
+        assertThat(entry.getCreatedAt()).isNotNull();
+    }
+
+    @Test
+    void recordSaleReturnsAFullyPopulatedSaleResponse() {
+        stubHappyPathGuardsAndDependencies();
+
+        SaleResponse response = saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        assertThat(response.id()).isNotNull();
+        assertThat(response.plotId()).isEqualTo(PLOT_ID);
+        assertThat(response.associateId()).isEqualTo(ASSOCIATE_ID);
+        assertThat(response.buyerName()).isEqualTo("Jane Buyer");
+        assertThat(response.buyerPhone()).isEqualTo("9999999999");
+        assertThat(response.buyerEmail()).isNull();
+        assertThat(response.amount()).isEqualByComparingTo("600000.00");
+        assertThat(response.cycleId()).isEqualTo(CYCLE_ID);
+        assertThat(response.legCredited()).isEqualTo("L");
+        assertThat(response.status()).isEqualTo("RECORDED");
+        assertThat(response.voidReason()).isNull();
+        assertThat(response.recordedAt()).isNotNull();
+    }
+
+    @Test
+    void recordSaleThrowsIllegalStateExceptionWhenNoCompensationPlanVersionIsConfigured() {
         when(plotRepository.findById(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(new Associate()));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(compensationPlanVersionRepository
+                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID)))
-            .isInstanceOf(UnsupportedOperationException.class);
+            .isInstanceOf(IllegalStateException.class);
 
-        verify(plotRepository, never()).save(any());
+        verify(ledgerEntryRepository, never()).save(any());
     }
 }
