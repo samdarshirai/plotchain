@@ -79,6 +79,20 @@ public class SecurityConfig {
                 // the ADMIN-only access this route requires.
                 .requestMatchers(HttpMethod.POST, "/api/admin/cycles/*/close")
                     .hasAuthority("ADMIN")
+                // Record a sale: ADMIN-only, per Sales unit 2
+                // (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
+                // Decision 8 and the Testing section: "record/void/register are ADMIN-only"),
+                // same target-role-model reasoning as the cycle close matcher directly above.
+                // Declared here, before the blanket POST rule, for the same first-match-wins
+                // reason documented on that matcher -- a narrower POST rule declared after the
+                // blanket rule below would never be reached. Only POST /api/admin/sales is
+                // added here: this unit's own scope is guards only (unknown/unavailable plot or
+                // associate rejected before any row is written); the void (unit 4 of the Sales
+                // unit queue) and list (unit 6) endpoints don't exist in code yet, so their
+                // matchers are deferred to those units rather than added speculatively against
+                // routes that would 404 today regardless of the authorization rule.
+                .requestMatchers(HttpMethod.POST, "/api/admin/sales")
+                    .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/**")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 .requestMatchers(HttpMethod.PUT, "/api/**")
