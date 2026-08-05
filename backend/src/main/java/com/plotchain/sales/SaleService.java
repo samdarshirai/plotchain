@@ -2,6 +2,9 @@ package com.plotchain.sales;
 
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.compensation.CompensationPlanVersionRepository;
+import com.plotchain.cycle.CycleService;
+import com.plotchain.income.LedgerEntryRepository;
 import com.plotchain.projects.Plot;
 import com.plotchain.projects.PlotNotFoundException;
 import com.plotchain.projects.PlotRepository;
@@ -13,10 +16,24 @@ public class SaleService {
 
     private final PlotRepository plotRepository;
     private final AssociateRepository associateRepository;
+    private final CycleService cycleService;
+    private final CompensationPlanVersionRepository compensationPlanVersionRepository;
+    private final SaleRepository saleRepository;
+    private final LedgerEntryRepository ledgerEntryRepository;
 
-    public SaleService(PlotRepository plotRepository, AssociateRepository associateRepository) {
+    public SaleService(
+            PlotRepository plotRepository,
+            AssociateRepository associateRepository,
+            CycleService cycleService,
+            CompensationPlanVersionRepository compensationPlanVersionRepository,
+            SaleRepository saleRepository,
+            LedgerEntryRepository ledgerEntryRepository) {
         this.plotRepository = plotRepository;
         this.associateRepository = associateRepository;
+        this.cycleService = cycleService;
+        this.compensationPlanVersionRepository = compensationPlanVersionRepository;
+        this.saleRepository = saleRepository;
+        this.ledgerEntryRepository = ledgerEntryRepository;
     }
 
     // Sales unit 2 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,

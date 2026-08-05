@@ -30,6 +30,8 @@ public class LedgerEntry {
     private LedgerEntryStatus status;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+    @Column(name = "source_ref")
+    private UUID sourceRef;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -51,4 +53,6 @@ public class LedgerEntry {
     public void setStatus(LedgerEntryStatus status) { this.status = status; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public UUID getSourceRef() { return sourceRef; }
+    public void setSourceRef(UUID sourceRef) { this.sourceRef = sourceRef; }
 }
