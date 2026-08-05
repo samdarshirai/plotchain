@@ -8,7 +8,7 @@ Sliced from `docs/superpowers/specs/role-capability/2026-08-03-cycle-management-
 |---|---|---|---|---|---|
 | 1 | Admin views cycle history | none | **merged** | `docs/superpowers/plans/2026-08-04-admin-cycle-history.md` | `33e69a7`..`fe3eb54` on `master` |
 | 2 | Admin views a single cycle's per-income-type totals | none | pending | — | — |
-| 3 | Closing a cycle that isn't OPEN is rejected; concurrent close attempts serialize | none | pending | — | — |
+| 3 | Closing a cycle that isn't OPEN is rejected; concurrent close attempts serialize | none | **merged** | `docs/superpowers/plans/2026-08-04-cycle-close-endpoint.md` | `90bfe31`..`50a99ef` on `master` |
 | 4 | Closing an OPEN cycle computes leg-volume rollup tree-wide, OPEN→CLOSED, opens next cycle | 3 | pending | — | — |
 | 5 | Matching Income credited, net of deductions, KYC-gated | 4 | pending | — | — |
 | 6 | Rank advances to highest qualified tier, never demotes | 5 | pending | — | — |
@@ -21,4 +21,4 @@ Sliced from `docs/superpowers/specs/role-capability/2026-08-03-cycle-management-
 
 **Open questions carried, not resolved here:** OQ2 (CARRIED_FORWARD reconciliation — lives in Wallet/Withdrawal spec), OQ1 (batch perf/chunking — deferred).
 
-**Next pending unit:** 2 (no unmet dependencies) or 3 (unblocks the largest chain — 4 through 10 all trace back to it). Neither is blocked; pick either.
+**Next pending unit:** 2 (no unmet dependencies) or 4 (needs unit 3, now merged — the settlement batch itself: leg-volume rollup, OPEN→CLOSED, opens next cycle).
