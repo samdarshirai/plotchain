@@ -14,6 +14,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,6 +32,25 @@ class CycleServiceTest {
         cycle.setPeriodEnd(LocalDate.of(2026, 7, 15));
         cycle.setStatus(status);
         return cycle;
+    }
+
+    private Cycle newCycleWithBounds(LocalDate start, LocalDate end, CycleStatus status) {
+        Cycle cycle = new Cycle();
+        cycle.setId(UUID.randomUUID());
+        cycle.setPeriodStart(start);
+        cycle.setPeriodEnd(end);
+        cycle.setStatus(status);
+        return cycle;
+    }
+
+    private LocalDate expectedPeriodStart(LocalDate date) {
+        return date.getDayOfMonth() <= 15 ? date.withDayOfMonth(1) : date.withDayOfMonth(16);
+    }
+
+    private LocalDate expectedPeriodEnd(LocalDate date) {
+        return date.getDayOfMonth() <= 15
+            ? date.withDayOfMonth(15)
+            : date.withDayOfMonth(date.lengthOfMonth());
     }
 
     @Test
@@ -102,5 +124,58 @@ class CycleServiceTest {
 
         assertThat(response.cycleId()).isEqualTo(cycle.getId());
         assertThat(response.status()).isEqualTo(CycleStatus.OPEN);
+    }
+
+    @Test
+    void getOrOpenCurrentCreatesANewCycleWhenNoCycleCoversToday() {
+        service = new CycleService(cycleRepository);
+        LocalDate today = LocalDate.now();
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
+            .thenReturn(Optional.empty());
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Cycle result = service.getOrOpenCurrent();
+
+        assertThat(result.getPeriodStart()).isEqualTo(expectedPeriodStart(today));
+        assertThat(result.getPeriodEnd()).isEqualTo(expectedPeriodEnd(today));
+        assertThat(result.getStatus()).isEqualTo(CycleStatus.OPEN);
+        assertThat(result.getId()).isNotNull();
+        verify(cycleRepository).save(any(Cycle.class));
+    }
+
+    @Test
+    void getOrOpenCurrentReturnsTheExistingOpenCycleWhenItCoversToday() {
+        service = new CycleService(cycleRepository);
+        LocalDate today = LocalDate.now();
+        Cycle existing = newCycleWithBounds(expectedPeriodStart(today), expectedPeriodEnd(today), CycleStatus.OPEN);
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
+            .thenReturn(Optional.of(existing));
+
+        Cycle result = service.getOrOpenCurrent();
+
+        assertThat(result.getId()).isEqualTo(existing.getId());
+        verify(cycleRepository, never()).save(any(Cycle.class));
+    }
+
+    @Test
+    void getOrOpenCurrentCreatesTheNextCycleWhenTheExistingOpenCycleDoesNotCoverToday() {
+        service = new CycleService(cycleRepository);
+        LocalDate today = LocalDate.now();
+        // Deliberately a stale period comfortably in the past relative to "today", regardless
+        // of which day-of-month the test happens to run on: [-40, -26] days never overlaps
+        // today's computed [periodStart, periodEnd] window (that window is at most 31 days wide
+        // and always includes today itself).
+        Cycle stale = newCycleWithBounds(today.minusDays(40), today.minusDays(26), CycleStatus.OPEN);
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
+            .thenReturn(Optional.of(stale));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Cycle result = service.getOrOpenCurrent();
+
+        assertThat(result.getId()).isNotEqualTo(stale.getId());
+        assertThat(result.getPeriodStart()).isEqualTo(expectedPeriodStart(today));
+        assertThat(result.getPeriodEnd()).isEqualTo(expectedPeriodEnd(today));
+        assertThat(result.getStatus()).isEqualTo(CycleStatus.OPEN);
+        verify(cycleRepository).save(any(Cycle.class));
     }
 }
