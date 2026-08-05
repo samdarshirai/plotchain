@@ -14,12 +14,15 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -91,5 +94,27 @@ class SaleControllerTest {
                 .contentType("application/json")
                 .content(REQUEST_BODY.formatted(UUID.randomUUID(), UUID.randomUUID())))
             .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void recordReturns201WithAFullyPopulatedSaleResponse() throws Exception {
+        UUID saleId = UUID.randomUUID();
+        UUID plotId = UUID.randomUUID();
+        UUID associateId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        SaleResponse response = new SaleResponse(
+            saleId, plotId, associateId, "Jane Buyer", "9999999999", null,
+            new BigDecimal("600000.00"), cycleId, "L", "RECORDED", null, Instant.now());
+        when(saleService.recordSale(any(CreateSaleRequest.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/admin/sales")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(REQUEST_BODY.formatted(plotId, associateId)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value(saleId.toString()))
+            .andExpect(jsonPath("$.status").value("RECORDED"))
+            .andExpect(jsonPath("$.legCredited").value("L"))
+            .andExpect(jsonPath("$.cycleId").value(cycleId.toString()));
     }
 }
