@@ -8,7 +8,7 @@ Sliced from `docs/superpowers/specs/role-capability/2026-08-03-sales-domain-desi
 
 | # | Type | Unit | Depends on | Status | Plan file | Merged as |
 |---|---|---|---|---|---|---|
-| 1 | backend | `CycleService.getOrOpenCurrent()` returns today's OPEN cycle, creating one only if none exists | none | planned | `docs/superpowers/plans/2026-08-05-cycle-get-or-open-current.md` | — |
+| 1 | backend | `CycleService.getOrOpenCurrent()` returns today's OPEN cycle, creating one only if none exists | none | **merged** | `docs/superpowers/plans/2026-08-05-cycle-get-or-open-current.md` | `abde5dc` on `master` |
 | 2 | backend | Recording a sale against an unavailable plot, or an unknown plot/associate, is rejected with no side effects | none | pending | — | — |
 | 3 | backend | Recording a sale against an available plot flips it to SOLD and synchronously credits Direct Income | 1, 2 | pending | — | — |
 | 4 | backend | Voiding a sale that doesn't exist, or is already voided, is rejected with no side effects | 3 | pending | — | — |
@@ -36,4 +36,4 @@ Units 1 and 2 are mutually independent — build order between them doesn't matt
 
 **Explicitly excluded (per spec's own Scope section, not units):** Matching/Sponsor Matching/Royalty/Reward income, leg-volume rollup batch, admin-triggered cycle open/close/re-run, cycle monitoring UI, EMI/installment tracking, PAN capture on `Associate` — all named out-of-scope or deferred in the spec; none should surface as a unit or as a stray acceptance criterion.
 
-**Next pending unit:** 1 (`getOrOpenCurrent()`) — this is the one blocking cycle-management unit 4. Unit 2 is independently buildable in parallel priority but has no urgent external dependency.
+**Next pending unit:** 2 (record-sale guards) — independently buildable, no deps. Unit 1's landing also unblocks cycle-management unit 4, which can now resume planning.
