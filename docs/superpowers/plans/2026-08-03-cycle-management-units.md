@@ -9,7 +9,7 @@ Sliced from `docs/superpowers/specs/role-capability/2026-08-03-cycle-management-
 | 1 | backend | Admin views cycle history | none | **merged** | `docs/superpowers/plans/2026-08-04-admin-cycle-history.md` | `33e69a7`..`fe3eb54` on `master` |
 | 2 | backend | Admin views a single cycle's per-income-type totals | none | pending | — | — |
 | 3 | backend | Closing a cycle that isn't OPEN is rejected; concurrent close attempts serialize | none | **merged** | `docs/superpowers/plans/2026-08-04-cycle-close-endpoint.md` | `90bfe31`..`50a99ef` on `master` |
-| 4 | backend | Closing an OPEN cycle computes leg-volume rollup tree-wide, OPEN→CLOSED, opens next cycle | 3 | planned | `docs/superpowers/plans/2026-08-10-cycle-close-legvolume-rollup.md` | — |
+| 4 | backend | Closing an OPEN cycle computes leg-volume rollup tree-wide, OPEN→CLOSED, opens next cycle | 3 | **merged** | `docs/superpowers/plans/2026-08-10-cycle-close-legvolume-rollup.md` | `daa1bdc`..`e21bc69` on `master` |
 | 5 | backend | Matching Income credited, net of deductions, KYC-gated | 4 | pending | — | — |
 | 6 | backend | Rank advances to highest qualified tier, never demotes | 5 | pending | — | — |
 | 7 | backend | Sponsor Matching, one entry per direct sponsee | 5 | pending | — | — |
@@ -24,4 +24,6 @@ Unit 11 added 2026-08-05, retroactively — added late because screens weren't s
 
 **Open questions carried, not resolved here:** OQ2 (CARRIED_FORWARD reconciliation — lives in Wallet/Withdrawal spec), OQ1 (batch perf/chunking — deferred).
 
-**Next pending unit:** 2 (no unmet dependencies) or 5 (needs unit 4, now planned — Matching Income credited, net of deductions, KYC-gated). Unit 11 (screen) is blocked until both 2 and 4 land; 4 is planned but not yet merged.
+**Next pending unit:** 2 (no unmet dependencies) or 5 (needs unit 4, now merged — Matching Income credited, net of deductions, KYC-gated; inserts into `CycleService.close()` between the leg-volume rollup and the CLOSED flip, per the sequential-insertion pattern units 3→4 established). Unit 11 (screen) still blocked on unit 2.
+
+**Note for unit 5's plan:** `CycleService.close()`'s post-rollup insertion point, `CycleCloseResponse`'s current shape (`cycleId, status, legVolumeRowsWritten, newCycleId`), and `LegVolume`'s new `carriedForwardLeft`/`carriedForwardRight` setters are all now real and merged — unit 5 can build directly against them rather than guessing.
