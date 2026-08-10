@@ -21,4 +21,14 @@ public class SalesExceptionHandler {
     public ResponseEntity<Map<String, String>> handlePlotNotAvailable(PlotNotAvailableException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(SaleNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleSaleNotFound(SaleNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(SaleAlreadyVoidedException.class)
+    public ResponseEntity<Map<String, String>> handleSaleAlreadyVoided(SaleAlreadyVoidedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
 }

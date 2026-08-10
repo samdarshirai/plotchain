@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -116,5 +117,40 @@ class SaleControllerTest {
             .andExpect(jsonPath("$.status").value("RECORDED"))
             .andExpect(jsonPath("$.legCredited").value("L"))
             .andExpect(jsonPath("$.cycleId").value(cycleId.toString()));
+    }
+
+    @Test
+    void voidReturns404WhenTheSaleDoesNotExist() throws Exception {
+        UUID saleId = UUID.randomUUID();
+        when(saleService.voidSale(eq(saleId), any(VoidSaleRequest.class)))
+            .thenThrow(new SaleNotFoundException(saleId));
+
+        mockMvc.perform(post("/api/admin/sales/{id}/void", saleId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"reason\":\"Buyer backed out\"}"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void voidReturns409WhenTheSaleIsAlreadyVoided() throws Exception {
+        UUID saleId = UUID.randomUUID();
+        when(saleService.voidSale(eq(saleId), any(VoidSaleRequest.class)))
+            .thenThrow(new SaleAlreadyVoidedException(saleId));
+
+        mockMvc.perform(post("/api/admin/sales/{id}/void", saleId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"reason\":\"Buyer backed out\"}"))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void voidIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(post("/api/admin/sales/{id}/void", UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
+                .contentType("application/json")
+                .content("{\"reason\":\"Buyer backed out\"}"))
+            .andExpect(status().isForbidden());
     }
 }
