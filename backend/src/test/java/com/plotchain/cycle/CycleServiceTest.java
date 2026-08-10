@@ -740,4 +740,72 @@ class CycleServiceTest {
         assertThat(root.getRankId()).isEqualTo(goldId);
         verify(associateRepository, never()).save(root);
     }
+
+    @Test
+    void closeSkipsRankAdvancementForAdmin() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+
+        UUID bronzeId = UUID.randomUUID();
+        UUID silverId = UUID.randomUUID();
+        UUID goldId = UUID.randomUUID();
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(rankTiersFixture(bronzeId, silverId, goldId));
+
+        // rankId null and cumulativeMatchedVolume high enough to qualify for Gold if evaluated --
+        // proves the skip is a deliberate guard, not an accident of low volume.
+        Associate admin = associateFixture(null, null);
+        admin.setRole(AssociateRole.ADMIN);
+        admin.setKycStatus(KycStatus.VERIFIED);
+        admin.setRankId(null);
+        admin.setCumulativeMatchedVolume(new BigDecimal("1000"));
+        when(associateRepository.findAll()).thenReturn(List.of(admin));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        assertThat(admin.getRankId()).isNull();
+        verify(associateRepository, never()).save(admin);
+    }
+
+    @Test
+    void closeSkipsRankAdvancementForNonAssociateStaffRoles() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+
+        UUID bronzeId = UUID.randomUUID();
+        UUID silverId = UUID.randomUUID();
+        UUID goldId = UUID.randomUUID();
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(rankTiersFixture(bronzeId, silverId, goldId));
+
+        // FINANCE is one of the four staff roles chk_associate_rank_required also exempts from
+        // needing a rank (V4__user_id_login_and_admin_roles.sql) -- not just ADMIN.
+        Associate financeStaff = associateFixture(null, null);
+        financeStaff.setRole(AssociateRole.FINANCE);
+        financeStaff.setKycStatus(KycStatus.VERIFIED);
+        financeStaff.setRankId(null);
+        financeStaff.setCumulativeMatchedVolume(new BigDecimal("1000"));
+        when(associateRepository.findAll()).thenReturn(List.of(financeStaff));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        assertThat(financeStaff.getRankId()).isNull();
+        verify(associateRepository, never()).save(financeStaff);
+    }
 }
