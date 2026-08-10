@@ -2,6 +2,13 @@ package com.plotchain.cycle;
 
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.compensation.CompensationPlanVersion;
+import com.plotchain.compensation.CompensationPlanVersionRepository;
+import com.plotchain.associate.KycStatus;
+import com.plotchain.income.IncomeType;
+import com.plotchain.income.LedgerEntry;
+import com.plotchain.income.LedgerEntryRepository;
+import com.plotchain.income.LedgerEntryStatus;
 import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.sales.Sale;
@@ -14,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,17 +37,23 @@ public class CycleService {
     private final AssociateRepository associateRepository;
     private final LegVolumeRepository legVolumeRepository;
     private final SaleRepository saleRepository;
+    private final CompensationPlanVersionRepository compensationPlanVersionRepository;
+    private final LedgerEntryRepository ledgerEntryRepository;
 
     public CycleService(
         CycleRepository cycleRepository,
         AssociateRepository associateRepository,
         LegVolumeRepository legVolumeRepository,
-        SaleRepository saleRepository
+        SaleRepository saleRepository,
+        CompensationPlanVersionRepository compensationPlanVersionRepository,
+        LedgerEntryRepository ledgerEntryRepository
     ) {
         this.cycleRepository = cycleRepository;
         this.associateRepository = associateRepository;
         this.legVolumeRepository = legVolumeRepository;
         this.saleRepository = saleRepository;
+        this.compensationPlanVersionRepository = compensationPlanVersionRepository;
+        this.ledgerEntryRepository = ledgerEntryRepository;
     }
 
     public CyclePageResponse list(CycleStatus status, int page, int size) {
@@ -52,12 +67,12 @@ public class CycleService {
             page, size, result.getTotalElements());
     }
 
-    // Cycle-management unit 3 (row lock + OPEN check, unchanged) + unit 4 (everything from the
-    // CALCULATING flip onward) -- docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
-    // Decision #2, settlement batch flow steps 1, 2, 8. Steps 3-7 (Matching, Rank, Sponsor
-    // Matching, Royalty, Reward) are NOT implemented here -- units 5-9 insert their own logic
-    // between the rollup below and the CLOSED flip, without changing this method's signature or
-    // transaction boundary, the same sequential-insertion pattern unit 3 -> unit 4 already used.
+    // Cycle-management unit 3 (row lock + OPEN check, unchanged) + unit 4 (leg-volume rollup) +
+    // unit 5 (Matching Income) -- docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
+    // Decision #2, settlement batch flow steps 1, 2, 3, 8. Steps 4-7 (Rank, Sponsor Matching,
+    // Royalty, Reward) are NOT implemented here -- units 6-9 insert their own logic between the
+    // Matching step below and the CLOSED flip, without changing this method's signature or
+    // transaction boundary, the same sequential-insertion pattern units 3 -> 4 -> 5 already used.
     @Transactional
     public CycleCloseResponse close(UUID id) {
         Cycle cycle = cycleRepository.findByIdForUpdate(id)
@@ -79,6 +94,16 @@ public class CycleService {
         // Flow step 2.
         List<LegVolume> legVolumes = rollUpLegVolumes(cycle.getId(), associates, sales);
         legVolumeRepository.saveAll(legVolumes);
+
+        // Flow step 3 (Decision #10): resolved once per batch run, against cycle.getPeriodStart()
+        // -- deliberately not LocalDate.now() -- so a plan version an admin publishes after this
+        // cycle's period already ended never retroactively changes the rate this cycle's volume
+        // was earned under. Same missing-version convention as SaleService/DashboardService.
+        CompensationPlanVersion planVersion = compensationPlanVersionRepository
+            .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart())
+            .orElseThrow(() -> new IllegalStateException(
+                "compensation_plan_version row missing - V8 migration seeds it"));
+        creditMatchingIncome(cycle.getId(), associates, legVolumes, planVersion);
 
         // Flow step 8. getOrOpenCurrent() is a plain (non-@Transactional) self-invocation here,
         // so it runs inside the transaction this @Transactional method's proxy already started
@@ -178,6 +203,79 @@ public class CycleService {
             UUID.randomUUID(), associateId, cycleId, leftLegVolume, rightLegVolume, BigDecimal.ZERO, BigDecimal.ZERO));
 
         return subtreeVolume;
+    }
+
+    // Flow step 3 (Decision #5, #6, #10, #11, #12): one MATCHING LedgerEntry per associate whose
+    // just-computed LegVolume row (this exact cycle's, unit 4's rollup) has min(left,right) > 0.
+    // All of write-entry / carry-forward-excess / increment-cumulativeMatchedVolume happen inside
+    // the same min > 0 guard -- a zero-matched associate's row is left untouched (its unmatched
+    // leg, if any, is not carried forward under this unit's implementation; that's the spec's
+    // Flow step 3 text taken literally, not an oversight).
+    private void creditMatchingIncome(
+        UUID cycleId,
+        List<Associate> associates,
+        List<LegVolume> legVolumes,
+        CompensationPlanVersion planVersion
+    ) {
+        Map<UUID, Associate> associatesById = new HashMap<>();
+        for (Associate associate : associates) {
+            associatesById.put(associate.getId(), associate);
+        }
+
+        for (LegVolume legVolume : legVolumes) {
+            BigDecimal matchedVolume = legVolume.getLeftLegVolume().min(legVolume.getRightLegVolume());
+            if (matchedVolume.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
+            Associate associate = associatesById.get(legVolume.getAssociateId());
+
+            // Decision #12: check-then-insert. A hit here skips the whole block below -- entry,
+            // carried-forward mutation, and cumulativeMatchedVolume increment together -- so a
+            // skipped write can never partially double-count.
+            boolean alreadyCredited = ledgerEntryRepository.existsByAssociateIdAndCycleIdAndIncomeTypeAndSourceRef(
+                associate.getId(), cycleId, IncomeType.MATCHING, legVolume.getId());
+            if (alreadyCredited) {
+                continue;
+            }
+
+            BigDecimal grossAmount = matchedVolume.multiply(
+                planVersion.getMatchingIncomePct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+            BigDecimal tdsDeduction = grossAmount.multiply(
+                planVersion.getTdsPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+            BigDecimal adminDeduction = grossAmount.multiply(
+                planVersion.getAdminChargeWithoutPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+            BigDecimal netAmount = grossAmount.subtract(tdsDeduction).subtract(adminDeduction);
+
+            LedgerEntry entry = new LedgerEntry();
+            entry.setId(UUID.randomUUID());
+            entry.setAssociateId(associate.getId());
+            entry.setIncomeType(IncomeType.MATCHING);
+            entry.setCycleId(cycleId);
+            entry.setGrossAmount(grossAmount);
+            entry.setTdsDeduction(tdsDeduction);
+            entry.setAdminDeduction(adminDeduction);
+            entry.setNetAmount(netAmount);
+            entry.setStatus(associate.getKycStatus() == KycStatus.VERIFIED
+                ? LedgerEntryStatus.PENDING
+                : LedgerEntryStatus.CARRIED_FORWARD);
+            entry.setSourceRef(legVolume.getId());
+            entry.setCreatedAt(Instant.now());
+            ledgerEntryRepository.save(entry);
+
+            // Decision #5: excess on the larger leg carries forward on this SAME row for unit 4's
+            // rollup to consume next cycle -- never a new row.
+            if (legVolume.getLeftLegVolume().compareTo(legVolume.getRightLegVolume()) > 0) {
+                legVolume.setCarriedForwardLeft(legVolume.getLeftLegVolume().subtract(legVolume.getRightLegVolume()));
+            } else if (legVolume.getRightLegVolume().compareTo(legVolume.getLeftLegVolume()) > 0) {
+                legVolume.setCarriedForwardRight(legVolume.getRightLegVolume().subtract(legVolume.getLeftLegVolume()));
+            }
+            legVolumeRepository.save(legVolume);
+
+            // Decision #6: raw matched volume, not the post-percentage income amount.
+            associate.setCumulativeMatchedVolume(associate.getCumulativeMatchedVolume().add(matchedVolume));
+            associateRepository.save(associate);
+        }
     }
 
     // Sales unit 1 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,

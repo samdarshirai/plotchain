@@ -2,6 +2,14 @@ package com.plotchain.cycle;
 
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.KycStatus;
+import com.plotchain.compensation.CompensationPlanVersion;
+import com.plotchain.compensation.CompensationPlanVersionRepository;
+import com.plotchain.compensation.SettlementCycle;
+import com.plotchain.income.IncomeType;
+import com.plotchain.income.LedgerEntry;
+import com.plotchain.income.LedgerEntryRepository;
+import com.plotchain.income.LedgerEntryStatus;
 import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.sales.Sale;
@@ -16,6 +24,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +45,8 @@ class CycleServiceTest {
     @Mock AssociateRepository associateRepository;
     @Mock LegVolumeRepository legVolumeRepository;
     @Mock SaleRepository saleRepository;
+    @Mock CompensationPlanVersionRepository compensationPlanVersionRepository;
+    @Mock LedgerEntryRepository ledgerEntryRepository;
     CycleService service;
 
     private Cycle newCycle(CycleStatus status) {
@@ -68,7 +79,8 @@ class CycleServiceTest {
 
     @Test
     void listWithNoStatusFilterDelegatesToFindAll() {
-        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository);
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
         Cycle cycle = newCycle(CycleStatus.OPEN);
         when(cycleRepository.findAllByOrderByPeriodStartDesc(PageRequest.of(0, 20)))
             .thenReturn(new PageImpl<>(List.of(cycle), PageRequest.of(0, 20), 1));
@@ -87,7 +99,8 @@ class CycleServiceTest {
 
     @Test
     void listWithStatusFilterDelegatesToFindByStatus() {
-        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository);
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
         Cycle cycle = newCycle(CycleStatus.CLOSED);
         when(cycleRepository.findByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED, PageRequest.of(1, 10)))
             .thenReturn(new PageImpl<>(List.of(cycle), PageRequest.of(1, 10), 11));
@@ -102,7 +115,8 @@ class CycleServiceTest {
 
     @Test
     void closeThrowsCycleNotFoundExceptionWhenTheCycleDoesNotExist() {
-        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository);
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
         UUID id = UUID.randomUUID();
         when(cycleRepository.findByIdForUpdate(id)).thenReturn(Optional.empty());
 
@@ -111,7 +125,8 @@ class CycleServiceTest {
 
     @Test
     void closeThrowsCycleAlreadyClosedExceptionWhenStatusIsClosed() {
-        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository);
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
         Cycle cycle = newCycle(CycleStatus.CLOSED);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
 
@@ -120,7 +135,8 @@ class CycleServiceTest {
 
     @Test
     void closeThrowsCycleAlreadyClosedExceptionWhenStatusIsPaid() {
-        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository);
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
         Cycle cycle = newCycle(CycleStatus.PAID);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
 
@@ -129,10 +145,13 @@ class CycleServiceTest {
 
     @Test
     void closeWithNoAssociatesWritesNoLegVolumeRowsAndStillClosesAndReopens() {
-        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository);
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
         Cycle cycle = newCycle(CycleStatus.OPEN);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
 
         CycleCloseResponse response = service.close(cycle.getId());
 
@@ -146,7 +165,8 @@ class CycleServiceTest {
 
     @Test
     void closeComputesLegVolumeRollupTreeWideOnAMixedFixtureTreeAndWritesOneRowPerAssociate() {
-        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository);
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
 
         // Fixture tree (Admin is the root, per the role-model spec):
         //           admin
@@ -188,6 +208,9 @@ class CycleServiceTest {
         when(legVolumeRepository.findByAssociateIdAndCycleId(b1.getId(), priorClosedCycle.getId()))
             .thenReturn(Optional.of(b1PriorLegVolume));
 
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
         CycleCloseResponse response = service.close(cycle.getId());
 
         @SuppressWarnings("unchecked")
@@ -196,20 +219,24 @@ class CycleServiceTest {
         List<LegVolume> written = legVolumesCaptor.getValue();
 
         assertThat(written).hasSize(7);
-        assertLegVolume(written, admin.getId(), cycle.getId(), "150", "30");
-        assertLegVolume(written, b1.getId(), cycle.getId(), "120", "55");
-        assertLegVolume(written, b2.getId(), cycle.getId(), "30", "0");
-        assertLegVolume(written, c1.getId(), cycle.getId(), "0", "0");
-        assertLegVolume(written, c2.getId(), cycle.getId(), "0", "0");
-        assertLegVolume(written, c3.getId(), cycle.getId(), "0", "0");
-        assertLegVolume(written, d.getId(), cycle.getId(), "0", "0");
+        // admin: min(150,30)=30 > 0 -> matched. left(150) > right(30) -> excess 120 carried on the left.
+        assertLegVolume(written, admin.getId(), cycle.getId(), "150", "30", "120", "0");
+        // b1: min(120,55)=55 > 0 -> matched. left(120) > right(55) -> excess 65 carried on the left.
+        assertLegVolume(written, b1.getId(), cycle.getId(), "120", "55", "65", "0");
+        // b2: min(30,0)=0 -> no match, no carried-forward mutation (unit 5's own scope rule).
+        assertLegVolume(written, b2.getId(), cycle.getId(), "30", "0", "0", "0");
+        assertLegVolume(written, c1.getId(), cycle.getId(), "0", "0", "0", "0");
+        assertLegVolume(written, c2.getId(), cycle.getId(), "0", "0", "0", "0");
+        assertLegVolume(written, c3.getId(), cycle.getId(), "0", "0", "0", "0");
+        assertLegVolume(written, d.getId(), cycle.getId(), "0", "0", "0", "0");
 
         assertThat(response.legVolumeRowsWritten()).isEqualTo(7);
         assertThat(response.status()).isEqualTo(CycleStatus.CLOSED);
     }
 
     private void assertLegVolume(List<LegVolume> written, UUID associateId, UUID cycleId,
-                                  String expectedLeft, String expectedRight) {
+                                  String expectedLeft, String expectedRight,
+                                  String expectedCarriedForwardLeft, String expectedCarriedForwardRight) {
         LegVolume match = written.stream()
             .filter(lv -> associateId.equals(lv.getAssociateId()))
             .findFirst()
@@ -217,10 +244,8 @@ class CycleServiceTest {
         assertThat(match.getCycleId()).isEqualTo(cycleId);
         assertThat(match.getLeftLegVolume()).isEqualByComparingTo(expectedLeft);
         assertThat(match.getRightLegVolume()).isEqualByComparingTo(expectedRight);
-        // Unit 4 never sets these to anything but zero -- unit 5 (Matching) is what writes into
-        // them, on these same rows, later.
-        assertThat(match.getCarriedForwardLeft()).isEqualByComparingTo("0");
-        assertThat(match.getCarriedForwardRight()).isEqualByComparingTo("0");
+        assertThat(match.getCarriedForwardLeft()).isEqualByComparingTo(expectedCarriedForwardLeft);
+        assertThat(match.getCarriedForwardRight()).isEqualByComparingTo(expectedCarriedForwardRight);
     }
 
     private Associate associateFixture(UUID parentId, String position) {
@@ -229,6 +254,15 @@ class CycleServiceTest {
         associate.setParentId(parentId);
         associate.setPosition(position);
         return associate;
+    }
+
+    private CompensationPlanVersion planVersionFixture() {
+        return new CompensationPlanVersion(
+            UUID.randomUUID(), "v1", LocalDate.of(2026, 1, 1),
+            BigDecimal.ZERO, new BigDecimal("10.00"), BigDecimal.ZERO,
+            new BigDecimal("5.00"), BigDecimal.ZERO, new BigDecimal("4.00"),
+            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY,
+            Instant.now(), null);
     }
 
     private Sale saleFixture(UUID associateId, UUID cycleId, BigDecimal amount) {
@@ -242,8 +276,294 @@ class CycleServiceTest {
     }
 
     @Test
+    void closeCreditsMatchingIncomeForAnAssociateWithANonzeroMatchedPair() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setKycStatus(KycStatus.VERIFIED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
+        ));
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<LegVolume>> legVolumesCaptor = ArgumentCaptor.forClass(List.class);
+        verify(legVolumeRepository).saveAll(legVolumesCaptor.capture());
+        LegVolume rootLegVolume = legVolumesCaptor.getValue().stream()
+            .filter(lv -> root.getId().equals(lv.getAssociateId())).findFirst().orElseThrow();
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository).save(entryCaptor.capture());
+        LedgerEntry entry = entryCaptor.getValue();
+
+        assertThat(entry.getIncomeType()).isEqualTo(IncomeType.MATCHING);
+        assertThat(entry.getAssociateId()).isEqualTo(root.getId());
+        assertThat(entry.getCycleId()).isEqualTo(cycle.getId());
+        assertThat(entry.getSourceRef()).isEqualTo(rootLegVolume.getId());
+        // min(left=100, right=50) = 50 matched. gross = 50 * 10% = 5.00
+        assertThat(entry.getGrossAmount()).isEqualByComparingTo("5.00");
+        // tds = 5.00 * 5% = 0.25
+        assertThat(entry.getTdsDeduction()).isEqualByComparingTo("0.25");
+        // admin = 5.00 * 4% = 0.20
+        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("0.20");
+        // net = 5.00 - 0.25 - 0.20 = 4.55
+        assertThat(entry.getNetAmount()).isEqualByComparingTo("4.55");
+        assertThat(entry.getStatus()).isEqualTo(LedgerEntryStatus.PENDING);
+        assertThat(entry.getCreatedAt()).isNotNull();
+    }
+
+    @Test
+    void closeWritesNoMatchingEntryWhenOneLegIsZero() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setKycStatus(KycStatus.VERIFIED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        // Only the right leg sells anything -- left stays at zero, so min(left, right) = 0.
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("40"))
+        ));
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
+        verify(associateRepository, never()).save(any(Associate.class));
+    }
+
+    @Test
+    void closeCarriesTheExcessOnTheLargerLeftLegForwardOnTheSameLegVolumeRow() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setKycStatus(KycStatus.VERIFIED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        // left(100) > right(50) -> min=50 matched, excess 50 carried on the LEFT.
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
+        ));
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LegVolume> savedLegVolumeCaptor = ArgumentCaptor.forClass(LegVolume.class);
+        verify(legVolumeRepository).save(savedLegVolumeCaptor.capture());
+        LegVolume saved = savedLegVolumeCaptor.getValue();
+        assertThat(saved.getAssociateId()).isEqualTo(root.getId());
+        assertThat(saved.getCarriedForwardLeft()).isEqualByComparingTo("50");
+        assertThat(saved.getCarriedForwardRight()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void closeCarriesTheExcessOnTheLargerRightLegForwardOnTheSameLegVolumeRow() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setKycStatus(KycStatus.VERIFIED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        // right(100) > left(50) -> min=50 matched, excess 50 carried on the RIGHT.
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("50")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("100"))
+        ));
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LegVolume> savedLegVolumeCaptor = ArgumentCaptor.forClass(LegVolume.class);
+        verify(legVolumeRepository).save(savedLegVolumeCaptor.capture());
+        LegVolume saved = savedLegVolumeCaptor.getValue();
+        assertThat(saved.getAssociateId()).isEqualTo(root.getId());
+        assertThat(saved.getCarriedForwardLeft()).isEqualByComparingTo("0");
+        assertThat(saved.getCarriedForwardRight()).isEqualByComparingTo("50");
+    }
+
+    @Test
+    void closeIncrementsCumulativeMatchedVolumeByTheMatchedVolumeNotTheIncomeAmount() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setKycStatus(KycStatus.VERIFIED);
+        root.setCumulativeMatchedVolume(new BigDecimal("20"));
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
+        ));
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<Associate> savedAssociateCaptor = ArgumentCaptor.forClass(Associate.class);
+        verify(associateRepository).save(savedAssociateCaptor.capture());
+        Associate saved = savedAssociateCaptor.getValue();
+        assertThat(saved.getId()).isEqualTo(root.getId());
+        // 20 (pre-existing) + min(100, 50)=50 matched volume = 70 -- not 5.00 (the income amount).
+        assertThat(saved.getCumulativeMatchedVolume()).isEqualByComparingTo("70");
+    }
+
+    @Test
+    void closeSetsCarriedForwardStatusWhenAssociateKycIsPending() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setKycStatus(KycStatus.PENDING);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
+        ));
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository).save(entryCaptor.capture());
+        assertThat(entryCaptor.getValue().getStatus()).isEqualTo(LedgerEntryStatus.CARRIED_FORWARD);
+    }
+
+    @Test
+    void closeSetsCarriedForwardStatusWhenAssociateKycIsRejected() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setKycStatus(KycStatus.REJECTED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
+        ));
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository).save(entryCaptor.capture());
+        assertThat(entryCaptor.getValue().getStatus()).isEqualTo(LedgerEntryStatus.CARRIED_FORWARD);
+    }
+
+    @Test
+    void closeSkipsWritingWhenAnIdempotentEntryAlreadyExistsForThatLegVolumeRow() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setKycStatus(KycStatus.VERIFIED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
+        ));
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+        // The LegVolume row's id is only generated at runtime inside close(), so match on the
+        // known associateId/cycleId/incomeType and accept any sourceRef.
+        when(ledgerEntryRepository.existsByAssociateIdAndCycleIdAndIncomeTypeAndSourceRef(
+            eq(root.getId()), eq(cycle.getId()), eq(IncomeType.MATCHING), any(UUID.class)))
+            .thenReturn(true);
+
+        service.close(cycle.getId());
+
+        verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
+        verify(legVolumeRepository, never()).save(any(LegVolume.class));
+        verify(associateRepository, never()).save(any(Associate.class));
+    }
+
+    @Test
     void getOrOpenCurrentCreatesANewCycleWhenNoCycleCoversToday() {
-        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository);
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
         LocalDate today = LocalDate.now();
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
             .thenReturn(Optional.empty());
@@ -260,7 +580,8 @@ class CycleServiceTest {
 
     @Test
     void getOrOpenCurrentReturnsTheExistingOpenCycleWhenItCoversToday() {
-        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository);
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
         LocalDate today = LocalDate.now();
         Cycle existing = newCycleWithBounds(expectedPeriodStart(today), expectedPeriodEnd(today), CycleStatus.OPEN);
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
@@ -274,7 +595,8 @@ class CycleServiceTest {
 
     @Test
     void getOrOpenCurrentCreatesTheNextCycleWhenTheExistingOpenCycleDoesNotCoverToday() {
-        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository);
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository);
         LocalDate today = LocalDate.now();
         // Deliberately a stale period comfortably in the past relative to "today", regardless
         // of which day-of-month the test happens to run on: [-40, -26] days never overlaps
