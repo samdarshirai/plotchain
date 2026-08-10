@@ -808,4 +808,45 @@ class CycleServiceTest {
         assertThat(financeStaff.getRankId()).isNull();
         verify(associateRepository, never()).save(financeStaff);
     }
+
+    @Test
+    void closeKeepsCurrentRankUnchangedWhenMatchedVolumeDoesNotCrossAnyNewThreshold() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+
+        UUID bronzeId = UUID.randomUUID();
+        UUID silverId = UUID.randomUUID();
+        UUID goldId = UUID.randomUUID();
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(rankTiersFixture(bronzeId, silverId, goldId));
+
+        // Already at Silver (threshold 100), cumulativeMatchedVolume 150 pre-existing. This
+        // cycle matches another 50 (min(100,50)) -> 150 + 50 = 200, still short of Gold's 500.
+        // Rank must stay exactly Silver -- not reset to null/Bronze, not bumped to Gold.
+        Associate root = associateFixture(null, null);
+        root.setRole(AssociateRole.ASSOCIATE);
+        root.setKycStatus(KycStatus.VERIFIED);
+        root.setRankId(silverId);
+        root.setCumulativeMatchedVolume(new BigDecimal("150"));
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
+        ));
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        assertThat(root.getCumulativeMatchedVolume()).isEqualByComparingTo("200");
+        assertThat(root.getRankId()).isEqualTo(silverId);
+    }
 }
