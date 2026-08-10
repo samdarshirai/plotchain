@@ -50,4 +50,12 @@ public class LegVolume {
     public BigDecimal getRightLegVolume() { return rightLegVolume; }
     public BigDecimal getCarriedForwardLeft() { return carriedForwardLeft; }
     public BigDecimal getCarriedForwardRight() { return carriedForwardRight; }
+
+    // Cycle-management unit 4 adds these two setters as forward-compatibility for unit 5
+    // (Matching Income, Decision #5): unit 5 mutates carriedForwardLeft/carriedForwardRight on
+    // the SAME LegVolume row a cycle's rollup just wrote, to carry the unmatched excess into
+    // next cycle's rollup. Unit 4's own logic never calls these -- it only ever constructs rows
+    // with both fields at BigDecimal.ZERO via the constructor above.
+    public void setCarriedForwardLeft(BigDecimal carriedForwardLeft) { this.carriedForwardLeft = carriedForwardLeft; }
+    public void setCarriedForwardRight(BigDecimal carriedForwardRight) { this.carriedForwardRight = carriedForwardRight; }
 }
