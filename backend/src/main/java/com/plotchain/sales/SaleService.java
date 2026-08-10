@@ -55,7 +55,7 @@ public class SaleService {
     // between the associate lookup and the response mapping below, all inside one transaction.
     @Transactional
     public SaleResponse recordSale(CreateSaleRequest request) {
-        Plot plot = plotRepository.findById(request.plotId())
+        Plot plot = plotRepository.findByIdForUpdate(request.plotId())
             .orElseThrow(() -> new PlotNotFoundException(request.plotId()));
 
         if (plot.getStatus() != PlotStatus.AVAILABLE) {

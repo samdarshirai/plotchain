@@ -92,7 +92,7 @@ class SaleServiceTest {
     }
 
     private void stubHappyPathGuardsAndDependencies() {
-        when(plotRepository.findById(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
         when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -102,9 +102,25 @@ class SaleServiceTest {
             .thenReturn(Optional.of(compensationPlanVersion()));
     }
 
+    // Code-review finding (pre-merge review of this branch): recordSale read Plot via a plain
+    // unlocked findById before checking AVAILABLE and flipping to SOLD, so two concurrent
+    // POST /api/admin/sales requests against the same plot could both pass the guard before
+    // either committed, double-selling the plot. Fix mirrors CycleRepository.findByIdForUpdate
+    // (cycle-management unit 3): recordSale must acquire the row lock via findByIdForUpdate,
+    // never the unlocked findById, as its first statement.
+    @Test
+    void recordSaleAcquiresTheRowLockOnThePlotViaFindByIdForUpdateNotFindById() {
+        stubHappyPathGuardsAndDependencies();
+
+        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        verify(plotRepository).findByIdForUpdate(PLOT_ID);
+        verify(plotRepository, never()).findById(any());
+    }
+
     @Test
     void recordSaleThrowsPlotNotFoundExceptionWhenThePlotDoesNotExist() {
-        when(plotRepository.findById(PLOT_ID)).thenReturn(Optional.empty());
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID)))
             .isInstanceOf(PlotNotFoundException.class);
@@ -115,7 +131,7 @@ class SaleServiceTest {
 
     @Test
     void recordSaleThrowsPlotNotAvailableExceptionWhenThePlotIsNotAvailable() {
-        when(plotRepository.findById(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.SOLD)));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.SOLD)));
 
         assertThatThrownBy(() -> saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID)))
             .isInstanceOf(PlotNotAvailableException.class);
@@ -126,7 +142,7 @@ class SaleServiceTest {
 
     @Test
     void recordSaleThrowsAssociateNotFoundExceptionWhenTheAssociateDoesNotExist() {
-        when(plotRepository.findById(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID)))
@@ -224,7 +240,7 @@ class SaleServiceTest {
 
     @Test
     void recordSaleThrowsIllegalStateExceptionWhenNoCompensationPlanVersionIsConfigured() {
-        when(plotRepository.findById(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
         when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
