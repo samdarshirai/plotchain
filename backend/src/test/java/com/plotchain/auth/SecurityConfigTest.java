@@ -479,6 +479,26 @@ class SecurityConfigTest {
             .andExpect(status().is(not(403)));
     }
 
+    // Sales unit 7 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
+    // "Associate own view -- GET /api/associates/me/sales, any authenticated associate"): needs
+    // no explicit SecurityConfig matcher -- a bare GET never collides with the blanket
+    // POST/PUT/PATCH/DELETE write rules above, so it falls through to
+    // anyRequest().authenticated() below, the same way GET /api/associates/me/dashboard already
+    // does with no matcher of its own. This test proves the route is reachable by an ordinary
+    // associate token, not accidentally blocked by 403.
+    //
+    // AssociateRepository is a @MockBean in this test class; findSelfAndDownlineIds is
+    // unstubbed and returns null by default, which SaleService.getMySales()'s call chain trips
+    // on downstream (a null ID list reaching the real, unmocked SaleRepository) -- a 500, not a
+    // 403. Same "assert not 403" reasoning as passwordChangeIsReachableByAnAssociateToken above:
+    // only a 403 here would mean the route regressed to being blocked at the security layer.
+    @Test
+    void associateMeSalesIsReachableByAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/associates/me/sales")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().is(not(403)));
+    }
+
     @Test
     void adminAssociatesIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(get("/api/admin/associates")
