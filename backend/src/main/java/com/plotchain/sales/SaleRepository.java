@@ -19,6 +19,14 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
     // the status filter; the batch never sees them.
     List<Sale> findByCycleIdAndStatus(UUID cycleId, SaleStatus status);
 
+    // Sales unit 7 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
+    // "Associate own view -- GET /api/associates/me/sales"): filters Sale rows down to the
+    // caller's self-plus-downline ID set (AssociateRepository.findSelfAndDownline). A plain
+    // Spring Data derived query -- no @Query needed, unlike searchRegister's optional-filter
+    // shape, since this always has exactly one non-optional filter (the ID set) and a fixed
+    // sort order. ORDER BY recordedAt DESC: same newest-first convention as searchRegister.
+    Page<Sale> findByAssociateIdInOrderByRecordedAtDesc(List<UUID> associateIds, Pageable pageable);
+
     // Sales unit 6 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
     // "Admin register -- GET /api/admin/sales"): all four filters are optional (null = "don't
     // filter on this"), same IS NULL OR pattern as AssociateRepository.searchDirectory.

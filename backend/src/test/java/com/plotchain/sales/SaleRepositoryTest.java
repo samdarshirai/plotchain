@@ -20,6 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -145,6 +146,29 @@ class SaleRepositoryTest {
         entityManager.flush();
 
         Page<Sale> result = saleRepository.searchRegister(null, null, null, null, PageRequest.of(0, 20));
+
+        assertThat(result.getContent()).extracting(Sale::getId)
+            .containsExactly(laterSale.getId(), earlierSale.getId());
+    }
+
+    @Test
+    void findByAssociateIdInOrderByRecordedAtDescReturnsOnlyMatchingAssociatesNewestFirst() {
+        UUID projectId = persistProject();
+        UUID plotId = persistPlot(projectId);
+        UUID cycleId = persistCycle();
+        UUID associateA = persistAssociate();
+        UUID associateB = persistAssociate();
+        UUID associateC = persistAssociate();
+        Instant earlier = Instant.parse("2026-01-10T00:00:00Z");
+        Instant later = Instant.parse("2026-01-20T00:00:00Z");
+        Sale earlierSale = persistSale(associateA, plotId, cycleId, SaleStatus.RECORDED, earlier);
+        Sale laterSale = persistSale(associateB, plotId, cycleId, SaleStatus.RECORDED, later);
+        // Not in the IN-list below -- must be excluded even though it's a real, persisted sale.
+        persistSale(associateC, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        entityManager.flush();
+
+        Page<Sale> result = saleRepository.findByAssociateIdInOrderByRecordedAtDesc(
+            List.of(associateA, associateB), PageRequest.of(0, 20));
 
         assertThat(result.getContent()).extracting(Sale::getId)
             .containsExactly(laterSale.getId(), earlierSale.getId());
