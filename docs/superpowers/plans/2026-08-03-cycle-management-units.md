@@ -11,7 +11,7 @@ Sliced from `docs/superpowers/specs/role-capability/2026-08-03-cycle-management-
 | 3 | backend | Closing a cycle that isn't OPEN is rejected; concurrent close attempts serialize | none | **merged** | `docs/superpowers/plans/2026-08-04-cycle-close-endpoint.md` | `90bfe31`..`50a99ef` on `master` |
 | 4 | backend | Closing an OPEN cycle computes leg-volume rollup tree-wide, OPEN→CLOSED, opens next cycle | 3 | **merged** | `docs/superpowers/plans/2026-08-10-cycle-close-legvolume-rollup.md` | `daa1bdc`..`e21bc69` on `master` |
 | 5 | backend | Matching Income credited, net of deductions, KYC-gated | 4 | **merged** | `docs/superpowers/plans/2026-08-10-cycle-management-matching-income.md` | `bac5cef`..`0b38f4b` on `master` |
-| 6 | backend | Rank advances to highest qualified tier, never demotes | 5 | pending | — | — |
+| 6 | backend | Rank advances to highest qualified tier, never demotes | 5 | planned | `docs/superpowers/plans/2026-08-10-cycle-management-rank-progression.md` | — |
 | 7 | backend | Sponsor Matching, one entry per direct sponsee | 5 | pending | — | — |
 | 8 | backend | Royalty at post-advancement rank, no-op if no rate configured | 5, 6 | pending | — | — |
 | 9 | backend | Reward tiers, awarded once ever (no cycle scoping) | 5 | pending | — | — |
