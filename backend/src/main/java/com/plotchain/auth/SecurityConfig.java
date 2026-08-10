@@ -93,6 +93,18 @@ public class SecurityConfig {
                 // routes that would 404 today regardless of the authorization rule.
                 .requestMatchers(HttpMethod.POST, "/api/admin/sales")
                     .hasAuthority("ADMIN")
+                // Void a sale: ADMIN-only, per Sales unit 4
+                // (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
+                // Decision 8 and the Testing section: "record/void/register are ADMIN-only"),
+                // same target-role-model reasoning as the record-a-sale matcher directly above.
+                // Declared here, before the blanket POST rule, for the same first-match-wins
+                // reason documented on that matcher -- a narrower POST rule declared after the
+                // blanket rule below would never be reached. This unit's own scope is guards
+                // only (unknown or already-voided Sale rejected with no side effects); Sales
+                // unit 5's actual reversal reuses this same matcher, no security change needed
+                // when that unit lands.
+                .requestMatchers(HttpMethod.POST, "/api/admin/sales/*/void")
+                    .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/**")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 .requestMatchers(HttpMethod.PUT, "/api/**")

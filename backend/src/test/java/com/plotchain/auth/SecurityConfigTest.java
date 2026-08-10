@@ -500,6 +500,24 @@ class SecurityConfigTest {
             .andExpect(status().isForbidden());
     }
 
+    // Sales unit 4: POST /api/admin/sales/{id}/void is ADMIN-only, the same target-role-model
+    // pattern as POST /api/admin/sales directly above and /api/admin/cycles/*/close further up.
+    // A random, non-existent saleId reaches the real (H2, unmocked) SaleRepository and 404s for
+    // the ADMIN token -- proof the request passed the security layer, not proof of any
+    // particular business outcome, same "assert not 403" reasoning as
+    // passwordChangeIsReachableByAnAssociateToken below. Every other role, including the
+    // soon-to-be-deleted admin-family sub-roles, is blocked at the filter layer before the
+    // controller ever runs.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminSalesVoidIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(post("/api/admin/sales/{id}/void", UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(role))
+                .contentType("application/json")
+                .content("{\"reason\":\"Buyer backed out\"}"))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+    }
+
     @Test
     void kycDecisionIsForbiddenForASupportToken() throws Exception {
         mockMvc.perform(post("/api/admin/kyc/" + UUID.randomUUID() + "/decision")
