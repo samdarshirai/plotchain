@@ -129,6 +129,35 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         return findAncestorChainIds(associateId).stream().map(UUID::fromString).toList();
     }
 
+    // Sales unit 7 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
+    // "Associate own view -- GET /api/associates/me/sales"): the associate's own sales plus
+    // their full descendant subtree, for SaleService.getMySales() to filter Sale rows by.
+    //
+    // Base case is id = :associateId, not parent_id = :associateId like countDownline above --
+    // this list must include the caller's own sales too, not just descendants'.
+    //
+    // Returns String, not UUID, cast via CAST(id AS VARCHAR): the same H2-vs-Postgres driver
+    // reasoning as findAncestorChainIds above -- a bare native scalar query leaves Hibernate to
+    // trust whatever the JDBC driver's getObject() hands back for the column, and H2's driver
+    // returns a raw byte[] for a uuid column where Postgres's returns java.util.UUID, blowing
+    // up with ConverterNotFoundException in H2-backed tests only. CAST to VARCHAR sidesteps the
+    // driver-specific mapping and is standard SQL on both databases; the default method below
+    // parses the canonical UUID text form back into UUID in Java. Do not "simplify" this back to
+    // List<UUID> on the native query -- it will pass on Postgres and fail on H2.
+    @Query(value = """
+        WITH RECURSIVE downline(id) AS (
+            SELECT id FROM associate WHERE id = :associateId
+            UNION ALL
+            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
+        )
+        SELECT CAST(id AS VARCHAR) FROM downline
+        """, nativeQuery = true)
+    List<String> findSelfAndDownlineIds(@Param("associateId") UUID associateId);
+
+    default List<UUID> findSelfAndDownline(UUID associateId) {
+        return findSelfAndDownlineIds(associateId).stream().map(UUID::fromString).toList();
+    }
+
     // All five filters are optional (null = "don't filter on this"). Scoped to role = ASSOCIATE
     // only -- this is the associate network directory, not the Admin Team staff roster.
     // joinedToExclusive is an EXCLUSIVE upper bound, same convention as countJoinedBetween above:

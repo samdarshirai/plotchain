@@ -255,6 +255,37 @@ class AssociateRepositoryTest {
         assertThat(chain).containsExactly(root.getId(), middle.getId(), leaf.getId());
     }
 
+    @Test
+    void findSelfAndDownlineReturnsTheCallerPlusEveryDescendantExcludingSiblingsAncestorsAndUnrelated() {
+        RankTier rank = persistRank("Sales Associate", 1);
+        Associate root = persistAssociate("VP00001", "Root", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        Associate caller = persistAssociate("VP00002", "Caller", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        caller.setParentId(root.getId());
+        Associate sibling = persistAssociate("VP00003", "Sibling", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        sibling.setParentId(root.getId());
+        Associate child = persistAssociate("VP00004", "Child", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        child.setParentId(caller.getId());
+        Associate grandchild = persistAssociate("VP00005", "Grandchild", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        grandchild.setParentId(child.getId());
+        Associate unrelated = persistAssociate("VP00006", "Unrelated", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        entityManager.flush();
+
+        List<UUID> ids = associateRepository.findSelfAndDownline(caller.getId());
+
+        // Includes the caller itself (base case is id = :associateId, not parent_id =
+        // :associateId like countDownline) plus every descendant, however deep.
+        assertThat(ids).containsExactlyInAnyOrder(caller.getId(), child.getId(), grandchild.getId());
+        // Excludes the sibling (same parent, not a descendant), the ancestor (root), and an
+        // unrelated associate in a different branch entirely.
+        assertThat(ids).doesNotContain(root.getId(), sibling.getId(), unrelated.getId());
+    }
+
     private RankTier persistRank(String name, int order) {
         RankTier rank = new RankTier(UUID.randomUUID(), name, order, BigDecimal.valueOf(5000));
         entityManager.persist(rank);
