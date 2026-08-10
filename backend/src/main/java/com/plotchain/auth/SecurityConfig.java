@@ -105,6 +105,18 @@ public class SecurityConfig {
                 // when that unit lands.
                 .requestMatchers(HttpMethod.POST, "/api/admin/sales/*/void")
                     .hasAuthority("ADMIN")
+                // Admin sales register: ADMIN-only, per Sales unit 6
+                // (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
+                // "Admin register -- GET /api/admin/sales, ADMIN-only" and the Testing section:
+                // "record/void/register are ADMIN-only"), same target-role-model pattern as the
+                // record/void matchers directly above and GET /api/admin/cycles further down --
+                // not the admin-family hasAnyAuthority(...) pattern most other admin GETs still
+                // use. Grouped here with the other /api/admin/sales matchers for readability; a
+                // GET never collides with the POST/PUT/PATCH/DELETE blanket rules above
+                // regardless of placement, so there's no first-match-wins ordering requirement
+                // forcing it to live in one spot over the other.
+                .requestMatchers(HttpMethod.GET, "/api/admin/sales")
+                    .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/**")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
                 .requestMatchers(HttpMethod.PUT, "/api/**")

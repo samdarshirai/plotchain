@@ -518,6 +518,20 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
     }
 
+    // Sales unit 6: GET /api/admin/sales is ADMIN-only, the same target-role-model pattern as
+    // the record/void matchers above and GET /api/admin/cycles further up. An ADMIN token
+    // reaches the real (H2, unmocked) SaleRepository and gets 200 with an empty page -- there's
+    // no not-found case for a list endpoint, unlike record/void's single-resource lookups.
+    // Every other role, including the soon-to-be-deleted admin-family sub-roles, is blocked at
+    // the filter layer before the controller ever runs.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminSalesListIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/admin/sales")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+    }
+
     @Test
     void kycDecisionIsForbiddenForASupportToken() throws Exception {
         mockMvc.perform(post("/api/admin/kyc/" + UUID.randomUUID() + "/decision")

@@ -16,12 +16,14 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -172,6 +174,35 @@ class SaleControllerTest {
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
                 .contentType("application/json")
                 .content("{\"reason\":\"Buyer backed out\"}"))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void listReturns200WithFilters() throws Exception {
+        UUID saleId = UUID.randomUUID();
+        UUID associateId = UUID.randomUUID();
+        SaleResponse sale = new SaleResponse(
+            saleId, UUID.randomUUID(), associateId, "Jane Buyer", "9999999999", null,
+            new BigDecimal("600000.00"), UUID.randomUUID(), "L", "RECORDED", null, Instant.now());
+        AdminSalePageResponse page = new AdminSalePageResponse(List.of(sale), 0, 20, 1);
+        when(saleService.list(eq(associateId), eq(SaleStatus.RECORDED), any(), any(), eq(0), eq(20)))
+            .thenReturn(page);
+
+        mockMvc.perform(get("/api/admin/sales")
+                .param("associateId", associateId.toString())
+                .param("status", "RECORDED")
+                .param("recordedFrom", "2026-01-01")
+                .param("recordedTo", "2026-01-31")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.sales[0].id").value(saleId.toString()))
+            .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    void listIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/admin/sales")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
             .andExpect(status().isForbidden());
     }
 }
