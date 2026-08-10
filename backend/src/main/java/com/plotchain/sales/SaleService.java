@@ -15,6 +15,8 @@ import com.plotchain.projects.Plot;
 import com.plotchain.projects.PlotNotFoundException;
 import com.plotchain.projects.PlotRepository;
 import com.plotchain.projects.PlotStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -168,6 +172,25 @@ public class SaleService {
 
         // Flow step 6.
         return toResponse(sale);
+    }
+
+    // Sales unit 6 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
+    // "Admin register -- GET /api/admin/sales"): same optional-filter, page/size-clamped-by-the-
+    // caller pattern as AdminAssociateService.list(). recordedTo is converted to an EXCLUSIVE
+    // upper-bound Instant the same way joinedTo is in that method -- recorded_at is a TIMESTAMP
+    // column, so a bare same-day Instant would exclude same-day sales on the last day requested.
+    public AdminSalePageResponse list(
+            UUID associateId, SaleStatus status, LocalDate recordedFrom, LocalDate recordedTo, int page, int size) {
+        Instant recordedFromInstant = recordedFrom == null
+            ? null : recordedFrom.atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant recordedToExclusive = recordedTo == null
+            ? null : recordedTo.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+
+        Page<Sale> result = saleRepository.searchRegister(
+            associateId, status, recordedFromInstant, recordedToExclusive, PageRequest.of(page, size));
+
+        List<SaleResponse> sales = result.getContent().stream().map(this::toResponse).toList();
+        return new AdminSalePageResponse(sales, page, size, result.getTotalElements());
     }
 
     private SaleResponse toResponse(Sale sale) {

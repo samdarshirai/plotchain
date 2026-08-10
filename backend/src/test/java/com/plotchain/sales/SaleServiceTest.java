@@ -23,16 +23,23 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -413,5 +420,50 @@ class SaleServiceTest {
             .isInstanceOf(IllegalStateException.class);
 
         verify(ledgerEntryRepository, never()).save(any());
+    }
+
+    // Sales unit 6 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
+    // "Admin register -- GET /api/admin/sales"): list() delegation and date-range conversion.
+    @Test
+    void listReturnsAPageMappedToSaleResponses() {
+        Sale sale = recordedSale(UUID.randomUUID(), PLOT_ID);
+        when(saleRepository.searchRegister(
+            eq(ASSOCIATE_ID), eq(SaleStatus.RECORDED), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(java.util.List.of(sale), PageRequest.of(0, 20), 1));
+
+        AdminSalePageResponse response = saleService.list(ASSOCIATE_ID, SaleStatus.RECORDED, null, null, 0, 20);
+
+        assertThat(response.totalElements()).isEqualTo(1);
+        assertThat(response.page()).isEqualTo(0);
+        assertThat(response.size()).isEqualTo(20);
+        assertThat(response.sales()).hasSize(1);
+        assertThat(response.sales().get(0).id()).isEqualTo(sale.getId());
+        assertThat(response.sales().get(0).status()).isEqualTo("RECORDED");
+    }
+
+    @Test
+    void listConvertsRecordedDateRangeToAnExclusiveUpperBoundInstant() {
+        when(saleRepository.searchRegister(isNull(), isNull(), any(), any(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(java.util.List.of()));
+
+        saleService.list(null, null, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31), 0, 20);
+
+        ArgumentCaptor<Instant> fromCaptor = ArgumentCaptor.forClass(Instant.class);
+        ArgumentCaptor<Instant> toCaptor = ArgumentCaptor.forClass(Instant.class);
+        verify(saleRepository).searchRegister(isNull(), isNull(), fromCaptor.capture(), toCaptor.capture(), any());
+        assertThat(fromCaptor.getValue()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
+        // Exclusive upper bound: the day AFTER recordedTo, so Jan 31 itself is included.
+        assertThat(toCaptor.getValue()).isEqualTo(Instant.parse("2026-02-01T00:00:00Z"));
+    }
+
+    @Test
+    void listPassesNullFiltersThroughWhenNoneAreProvided() {
+        when(saleRepository.searchRegister(isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(java.util.List.of()));
+
+        AdminSalePageResponse response = saleService.list(null, null, null, null, 0, 20);
+
+        assertThat(response.totalElements()).isEqualTo(0);
+        verify(saleRepository).searchRegister(isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20)));
     }
 }
