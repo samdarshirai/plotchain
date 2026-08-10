@@ -466,4 +466,42 @@ class SaleServiceTest {
         assertThat(response.totalElements()).isEqualTo(0);
         verify(saleRepository).searchRegister(isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20)));
     }
+
+    // Sales unit 7 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
+    // "Associate own view -- GET /api/associates/me/sales"): getMySales() resolves the caller's
+    // self-plus-downline ID set first, then filters Sale rows by it.
+    @Test
+    void getMySalesResolvesSelfAndDownlineIdsThenFiltersSalesByThem() {
+        List<UUID> selfAndDownlineIds = List.of(ASSOCIATE_ID, UUID.randomUUID());
+        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(selfAndDownlineIds);
+        Sale sale = recordedSale(UUID.randomUUID(), PLOT_ID);
+        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(
+            eq(selfAndDownlineIds), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(sale), PageRequest.of(0, 20), 1));
+
+        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, 0, 20);
+
+        verify(associateRepository).findSelfAndDownline(ASSOCIATE_ID);
+        verify(saleRepository).findByAssociateIdInOrderByRecordedAtDesc(
+            selfAndDownlineIds, PageRequest.of(0, 20));
+        assertThat(response.totalElements()).isEqualTo(1);
+        assertThat(response.page()).isEqualTo(0);
+        assertThat(response.size()).isEqualTo(20);
+        assertThat(response.sales()).hasSize(1);
+        assertThat(response.sales().get(0).id()).isEqualTo(sale.getId());
+        assertThat(response.sales().get(0).status()).isEqualTo("RECORDED");
+    }
+
+    @Test
+    void getMySalesReturnsAnEmptyPageWhenTheCallerHasNoSalesInTheirSubtree() {
+        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
+        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(
+            eq(List.of(ASSOCIATE_ID)), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of()));
+
+        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, 0, 20);
+
+        assertThat(response.totalElements()).isEqualTo(0);
+        assertThat(response.sales()).isEmpty();
+    }
 }
