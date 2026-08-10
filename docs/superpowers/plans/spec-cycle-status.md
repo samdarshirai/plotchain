@@ -11,8 +11,8 @@ Index over `docs/superpowers/specs/role-capability/*.md`. This is the file a new
 | Spec | Status | Units file | Merged / total |
 |---|---|---|---|
 | `2026-08-03-role-capability-data-visibility-design.md` | sliced (7/16 already have a pre-existing plan — see units file; units 12–16 are screens, added 2026-08-05) | `2026-08-03-role-capability-units.md` | 0 / 16 |
-| `2026-08-03-cycle-management-domain-design.md` | **in progress** (unit 4 unblocked, ready to plan) | `2026-08-03-cycle-management-units.md` | 2 / 11 |
-| `2026-08-03-sales-domain-design.md` | **in progress** | `2026-08-03-sales-units.md` | 2 / 9 |
+| `2026-08-03-cycle-management-domain-design.md` | **in progress** (unit 4 fully unblocked — real Sale data now exists, ready to plan) | `2026-08-03-cycle-management-units.md` | 2 / 11 |
+| `2026-08-03-sales-domain-design.md` | **in progress** | `2026-08-03-sales-units.md` | 3 / 9 |
 | `2026-08-03-income-ledger-domain-design.md` | not started | — | — |
 | `2026-08-04-wallet-withdrawal-domain-design.md` | not started | — | — |
 | `2026-08-03-epin-domain-design.md` | not started | — | — |
