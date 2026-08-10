@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -427,6 +428,12 @@ class SecurityConfigTest {
         cycle.setPeriodEnd(java.time.LocalDate.of(2026, 7, 15));
         cycle.setStatus(CycleStatus.OPEN);
         when(cycleRepository.findByIdForUpdate(cycleId)).thenReturn(Optional.of(cycle));
+        // Cycle-management unit 4: close() now runs the real settlement batch (leg-volume
+        // rollup, CALCULATING/CLOSED flips, getOrOpenCurrent() reopen) for the ADMIN case
+        // instead of unit 3's placeholder, so save() must echo back its argument like
+        // CycleServiceTest's own tests do -- otherwise Mockito's default null return for an
+        // unstubbed Cycle-returning method NPEs on getOrOpenCurrent()'s reopened cycle.
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         mockMvc.perform(post("/api/admin/cycles/{id}/close", cycleId)
                 .header("Authorization", "Bearer " + tokenFor(role)))
