@@ -28,10 +28,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 // under test is a property of the database (SELECT ... FOR UPDATE blocking a second transaction
 // until the first resolves), not application code, so a mocked repository couldn't exercise it.
 //
-// Cycle-management unit 4 (the settlement batch) doesn't exist yet, so nothing in this codebase
-// currently writes CLOSED/PAID. The second test below manually flips status inside the "holder"
-// transaction to stand in for what unit 4 will eventually do at commit time, so the
-// blocks-then-409 path can be proven now instead of waiting on unit 4 to exist.
+// Cycle-management unit 4 (the settlement batch: leg-volume rollup, OPEN -> CALCULATING ->
+// CLOSED, reopen) now exists, and the first test below exercises it directly: this class seeds
+// zero Associate rows, so the second call's real batch rolls up zero LegVolume rows and closes
+// cleanly. The second test still manually flips status inside the "holder" transaction rather
+// than letting a real close() run there too -- it only needs to stand in for "a previous close
+// already succeeded," not re-exercise the batch a second time in the same test.
 @SpringBootTest
 @ActiveProfiles("test")
 class CycleCloseConcurrencyTest {
@@ -104,7 +106,11 @@ class CycleCloseConcurrencyTest {
         CycleCloseResponse response = second.get(5, TimeUnit.SECONDS);
 
         assertThat(events).containsExactly("holder-locked", "second-calling", "second-returned");
-        assertThat(response.status()).isEqualTo(CycleStatus.OPEN);
+        // Unit 4: the second call's close() now runs the real batch to completion (zero
+        // Associates seeded in this class -> zero LegVolume rows), ending in CLOSED, not the
+        // pre-unit-4 placeholder's unchanged OPEN.
+        assertThat(response.status()).isEqualTo(CycleStatus.CLOSED);
+        assertThat(response.newCycleId()).isNotNull();
         pool.shutdownNow();
     }
 

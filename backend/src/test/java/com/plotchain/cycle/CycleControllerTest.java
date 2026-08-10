@@ -101,15 +101,19 @@ class CycleControllerTest {
     }
 
     @Test
-    void closeReturnsThePlaceholderResponseForAnAdminToken() throws Exception {
+    void closeReturnsTheSettlementResultForAnAdminToken() throws Exception {
         UUID cycleId = UUID.randomUUID();
-        when(cycleService.close(cycleId)).thenReturn(new CycleCloseResponse(cycleId, CycleStatus.OPEN));
+        UUID newCycleId = UUID.randomUUID();
+        when(cycleService.close(cycleId))
+            .thenReturn(new CycleCloseResponse(cycleId, CycleStatus.CLOSED, 3, newCycleId));
 
         mockMvc.perform(post("/api/admin/cycles/{id}/close", cycleId)
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.cycleId").value(cycleId.toString()))
-            .andExpect(jsonPath("$.status").value("OPEN"));
+            .andExpect(jsonPath("$.status").value("CLOSED"))
+            .andExpect(jsonPath("$.legVolumeRowsWritten").value(3))
+            .andExpect(jsonPath("$.newCycleId").value(newCycleId.toString()));
     }
 
     @Test
