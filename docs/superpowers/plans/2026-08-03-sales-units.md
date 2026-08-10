@@ -13,7 +13,7 @@ Sliced from `docs/superpowers/specs/role-capability/2026-08-03-sales-domain-desi
 | 3 | backend | Recording a sale against an available plot flips it to SOLD and synchronously credits Direct Income | 1, 2 | **merged** | `docs/superpowers/plans/2026-08-05-sales-record-sale-happy-path.md` | `0d5a1c8`..`bcf5008` on `master` |
 | 4 | backend | Voiding a sale that doesn't exist, or is already voided, is rejected with no side effects | 3 | **merged** | `docs/superpowers/plans/2026-08-10-sales-void-guards.md` | `b1a9e86`..`192c69c` on `master` |
 | 5 | backend | Voiding a RECORDED sale reverts the plot to AVAILABLE and reverses its linked ledger entry | 3, 4 | **merged** | `docs/superpowers/plans/2026-08-10-sales-void-happy-path.md` | `9b8278c`..`8c77e7b` on `master` |
-| 6 | backend | Admin lists and filters sales in the register | 3 | pending | — | — |
+| 6 | backend | Admin lists and filters sales in the register | 3 | **merged** | `docs/superpowers/plans/2026-08-10-sales-admin-register-list.md` | `7ddb5fd`..`3776430` on `master` |
 | 7 | backend | An associate views their own and descendant sales, read-only | 3 | pending | — | — |
 | 8 | **screen** | Admin "Sales Register" screen — list/filter (6), record new sale (3), void with reason (4, 5) | 3, 4, 5, 6 | pending | — | — |
 | 9 | **screen** | Associate "Sales History" screen — own + descendant, view-only | 7 | pending | — | — |
@@ -38,6 +38,6 @@ Units 1 and 2 are mutually independent — build order between them doesn't matt
 
 **Note on unit 3's merge:** post-implementation code review found a Plot double-sale race (unlocked `findById` before the SOLD flip) — fixed as a follow-up commit (`bcf5008`) adding `PlotRepository.findByIdForUpdate` (mirroring `CycleRepository`'s), re-reviewed clean, then merged. `Sale` rows are now real: `status=RECORDED`, `cycleId` populated via `getOrOpenCurrent()` — cycle-management unit 4 can now plan against real data.
 
-**Next pending unit:** 6 and 7 (admin register list, associate own-view) are both independently buildable now that 3/4/5 are merged — neither touches `voidSale()`. Cross-spec note: cycle-management unit 4 (previously flagged here as more time-sensitive) merged 2026-08-10 — no external blocker remains on this queue.
+**Next pending unit:** 7 (associate own+descendant view) — independently buildable, no blockers. Unit 8 (Admin Sales Register screen) is now unblocked too (needs 3,4,5,6 — all merged). Cross-spec note: cycle-management unit 4 (previously flagged here as more time-sensitive) merged 2026-08-10 — no external blocker remains on this queue.
 
 **Known scoping decision, not a bug (2026-08-10):** unit 5's `voidSale()` sets `voidReason` unconditionally — no guard rejects a null/blank `reason`. The spec's data-model note (line 44, "required by the API when voiding, not by the DB constraint") arguably calls for this, but the spec's own flow steps (3-6) and error-handling table don't list a reason-blank guard or a 400 status for it. Code review flagged this tension explicitly; user chose to merge as planned rather than add validation. If a blank-reason rejection is wanted later, it's a new, separately-spec'd requirement — not something to silently backfill into a future unit.
