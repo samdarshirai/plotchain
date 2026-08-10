@@ -16,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -117,5 +118,27 @@ class LedgerEntryRepositoryTest {
         assertThatThrownBy(() ->
             ledgerEntryRepository.saveAndFlush(newEntry(associate.getId(), cycle.getId(), IncomeType.MATCHING, null)))
             .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    // Sales unit 5 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
+    // flow "Void a sale", step 5): SaleService.voidSale needs to find the DIRECT LedgerEntry a
+    // RECORDED sale created at record time (sourceRef = sale.id) so it can flip it to REVERSED.
+    @Test
+    void findBySourceRefReturnsTheMatchingEntry() {
+        Associate associate = seedAssociate();
+        Cycle cycle = seedCycle();
+        UUID sourceRef = UUID.randomUUID();
+        LedgerEntry saved = ledgerEntryRepository.saveAndFlush(
+            newEntry(associate.getId(), cycle.getId(), IncomeType.DIRECT, sourceRef));
+
+        Optional<LedgerEntry> found = ledgerEntryRepository.findBySourceRef(sourceRef);
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getId()).isEqualTo(saved.getId());
+    }
+
+    @Test
+    void findBySourceRefReturnsEmptyWhenNoEntryMatches() {
+        assertThat(ledgerEntryRepository.findBySourceRef(UUID.randomUUID())).isEmpty();
     }
 }
