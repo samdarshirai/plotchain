@@ -127,12 +127,11 @@ public class SaleService {
     }
 
     // Sales unit 4 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
-    // flow "Void a sale", steps 1-2): guards only. Sales unit 5 inserts the happy-path
-    // Sale->VOIDED flip, voidReason assignment, Plot->AVAILABLE flip, and LedgerEntry reversal
-    // between the already-voided guard below and the placeholder throw -- sequentially, without
-    // changing this method's signature -- following the same guard-only convention
-    // recordSale's Sales unit 2 established (see commit 2a55b33, "Sales unit 2 ... guards
-    // only").
+    // flow "Void a sale", steps 1-2): guards. Sales unit 5 (same doc, flow steps 3-6): the
+    // Sale->VOIDED flip, voidReason assignment, Plot->AVAILABLE flip, and LedgerEntry reversal,
+    // inserted between the already-voided guard and the response mapping below, all inside one
+    // transaction.
+    @Transactional
     public SaleResponse voidSale(UUID id, VoidSaleRequest request) {
         Sale sale = saleRepository.findById(id)
             .orElseThrow(() -> new SaleNotFoundException(id));
@@ -141,11 +140,34 @@ public class SaleService {
             throw new SaleAlreadyVoidedException(id);
         }
 
-        // Placeholder: unit 5 replaces this line with the Sale->VOIDED flip, voidReason
-        // assignment, Plot->AVAILABLE flip, and LedgerEntry reversal (source spec flow
-        // steps 3-6).
-        throw new UnsupportedOperationException(
-            "Sale void happy path is not yet implemented (Sales unit 5)");
+        // Flow step 3: Sale -> VOIDED, stamp the reason (Decision 6: a reversal, not a delete
+        // or edit -- the Sale row is never removed).
+        sale.setStatus(SaleStatus.VOIDED);
+        sale.setVoidReason(request.reason());
+        saleRepository.save(sale);
+
+        // Flow step 4: Plot -> AVAILABLE, undoing the SOLD flip recordSale made (Decision 1).
+        // A missing Plot row here is a data-integrity problem, not a valid outcome -- plot_id
+        // has a NOT NULL FK constraint (V16__sale.sql), so every Sale always references a real
+        // Plot row.
+        Plot plot = plotRepository.findById(sale.getPlotId())
+            .orElseThrow(() -> new IllegalStateException(
+                "plot row missing for sale " + sale.getId() + " - plot_id has a NOT NULL FK constraint"));
+        plot.setStatus(PlotStatus.AVAILABLE);
+        plotRepository.save(plot);
+
+        // Flow step 5: reverse the Direct Income ledger entry this sale created at record time
+        // (Decision 6). Same data-integrity reasoning as the missing-Plot case above --
+        // recordSale always creates exactly one LedgerEntry per Sale, in the same transaction.
+        LedgerEntry ledgerEntry = ledgerEntryRepository.findBySourceRef(sale.getId())
+            .orElseThrow(() -> new IllegalStateException(
+                "ledger_entry row missing for sale " + sale.getId()
+                    + " - recordSale always creates one in the same transaction"));
+        ledgerEntry.setStatus(LedgerEntryStatus.REVERSED);
+        ledgerEntryRepository.save(ledgerEntry);
+
+        // Flow step 6.
+        return toResponse(sale);
     }
 
     private SaleResponse toResponse(Sale sale) {

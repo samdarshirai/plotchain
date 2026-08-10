@@ -287,19 +287,131 @@ class SaleServiceTest {
         verify(ledgerEntryRepository, never()).save(any());
     }
 
+    // Sales unit 5 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
+    // flow "Void a sale", steps 3-6): happy-path reversal tests.
+    private Sale recordedSale(UUID saleId, UUID plotId) {
+        Sale sale = new Sale();
+        sale.setId(saleId);
+        sale.setPlotId(plotId);
+        sale.setAssociateId(ASSOCIATE_ID);
+        sale.setBuyerName("Jane Buyer");
+        sale.setBuyerPhone("9999999999");
+        sale.setAmount(new BigDecimal("600000.00"));
+        sale.setCycleId(CYCLE_ID);
+        sale.setLegCredited("L");
+        sale.setStatus(SaleStatus.RECORDED);
+        sale.setRecordedAt(Instant.now());
+        return sale;
+    }
+
+    private LedgerEntry pendingLedgerEntry(UUID sourceRef) {
+        LedgerEntry entry = new LedgerEntry();
+        entry.setId(UUID.randomUUID());
+        entry.setIncomeType(IncomeType.DIRECT);
+        entry.setAssociateId(ASSOCIATE_ID);
+        entry.setCycleId(CYCLE_ID);
+        entry.setGrossAmount(new BigDecimal("60000"));
+        entry.setTdsDeduction(new BigDecimal("3000"));
+        entry.setAdminDeduction(new BigDecimal("2400"));
+        entry.setNetAmount(new BigDecimal("54600"));
+        entry.setStatus(LedgerEntryStatus.PENDING);
+        entry.setSourceRef(sourceRef);
+        entry.setCreatedAt(Instant.now());
+        return entry;
+    }
+
+    private void stubVoidHappyPath(Sale sale, LedgerEntry ledgerEntry) {
+        when(saleRepository.findById(sale.getId())).thenReturn(Optional.of(sale));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(plotRepository.findById(sale.getPlotId())).thenReturn(Optional.of(plotWithStatus(PlotStatus.SOLD)));
+        when(plotRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(ledgerEntryRepository.findBySourceRef(sale.getId())).thenReturn(Optional.of(ledgerEntry));
+        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    }
+
     @Test
-    void voidSaleReachesThePlaceholderWhenGuardsPass() {
+    void voidSaleFlipsSaleToVoidedAndStampsTheVoidReason() {
         UUID saleId = UUID.randomUUID();
-        Sale recordedSale = new Sale();
-        recordedSale.setId(saleId);
-        recordedSale.setStatus(SaleStatus.RECORDED);
-        when(saleRepository.findById(saleId)).thenReturn(Optional.of(recordedSale));
+        Sale sale = recordedSale(saleId, PLOT_ID);
+        stubVoidHappyPath(sale, pendingLedgerEntry(saleId));
+
+        saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out"));
+
+        ArgumentCaptor<Sale> captor = ArgumentCaptor.forClass(Sale.class);
+        verify(saleRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(SaleStatus.VOIDED);
+        assertThat(captor.getValue().getVoidReason()).isEqualTo("Buyer backed out");
+    }
+
+    @Test
+    void voidSaleFlipsThePlotBackToAvailable() {
+        UUID saleId = UUID.randomUUID();
+        Sale sale = recordedSale(saleId, PLOT_ID);
+        stubVoidHappyPath(sale, pendingLedgerEntry(saleId));
+
+        saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out"));
+
+        ArgumentCaptor<Plot> captor = ArgumentCaptor.forClass(Plot.class);
+        verify(plotRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(PlotStatus.AVAILABLE);
+    }
+
+    @Test
+    void voidSaleReversesTheLinkedLedgerEntry() {
+        UUID saleId = UUID.randomUUID();
+        Sale sale = recordedSale(saleId, PLOT_ID);
+        stubVoidHappyPath(sale, pendingLedgerEntry(saleId));
+
+        saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out"));
+
+        verify(ledgerEntryRepository).findBySourceRef(saleId);
+        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(LedgerEntryStatus.REVERSED);
+        assertThat(captor.getValue().getSourceRef()).isEqualTo(saleId);
+    }
+
+    @Test
+    void voidSaleReturnsAFullyPopulatedSaleResponseReflectingTheReversal() {
+        UUID saleId = UUID.randomUUID();
+        Sale sale = recordedSale(saleId, PLOT_ID);
+        stubVoidHappyPath(sale, pendingLedgerEntry(saleId));
+
+        SaleResponse response = saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out"));
+
+        assertThat(response.id()).isEqualTo(saleId);
+        assertThat(response.plotId()).isEqualTo(PLOT_ID);
+        assertThat(response.status()).isEqualTo("VOIDED");
+        assertThat(response.voidReason()).isEqualTo("Buyer backed out");
+    }
+
+    @Test
+    void voidSaleThrowsIllegalStateExceptionWhenThePlotRowIsMissing() {
+        UUID saleId = UUID.randomUUID();
+        Sale sale = recordedSale(saleId, PLOT_ID);
+        when(saleRepository.findById(saleId)).thenReturn(Optional.of(sale));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(plotRepository.findById(PLOT_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out")))
-            .isInstanceOf(UnsupportedOperationException.class);
+            .isInstanceOf(IllegalStateException.class);
 
-        verify(saleRepository, never()).save(any());
-        verify(plotRepository, never()).save(any());
+        verify(ledgerEntryRepository, never()).save(any());
+    }
+
+    @Test
+    void voidSaleThrowsIllegalStateExceptionWhenTheLedgerEntryRowIsMissing() {
+        UUID saleId = UUID.randomUUID();
+        Sale sale = recordedSale(saleId, PLOT_ID);
+        when(saleRepository.findById(saleId)).thenReturn(Optional.of(sale));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(plotRepository.findById(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.SOLD)));
+        when(plotRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(ledgerEntryRepository.findBySourceRef(saleId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out")))
+            .isInstanceOf(IllegalStateException.class);
+
         verify(ledgerEntryRepository, never()).save(any());
     }
 }
