@@ -126,6 +126,28 @@ public class SaleService {
         return toResponse(sale);
     }
 
+    // Sales unit 4 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
+    // flow "Void a sale", steps 1-2): guards only. Sales unit 5 inserts the happy-path
+    // Sale->VOIDED flip, voidReason assignment, Plot->AVAILABLE flip, and LedgerEntry reversal
+    // between the already-voided guard below and the placeholder throw -- sequentially, without
+    // changing this method's signature -- following the same guard-only convention
+    // recordSale's Sales unit 2 established (see commit 2a55b33, "Sales unit 2 ... guards
+    // only").
+    public SaleResponse voidSale(UUID id, VoidSaleRequest request) {
+        Sale sale = saleRepository.findById(id)
+            .orElseThrow(() -> new SaleNotFoundException(id));
+
+        if (sale.getStatus() == SaleStatus.VOIDED) {
+            throw new SaleAlreadyVoidedException(id);
+        }
+
+        // Placeholder: unit 5 replaces this line with the Sale->VOIDED flip, voidReason
+        // assignment, Plot->AVAILABLE flip, and LedgerEntry reversal (source spec flow
+        // steps 3-6).
+        throw new UnsupportedOperationException(
+            "Sale void happy path is not yet implemented (Sales unit 5)");
+    }
+
     private SaleResponse toResponse(Sale sale) {
         return new SaleResponse(
             sale.getId(),

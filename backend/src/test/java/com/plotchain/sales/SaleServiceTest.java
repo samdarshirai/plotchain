@@ -253,4 +253,53 @@ class SaleServiceTest {
 
         verify(ledgerEntryRepository, never()).save(any());
     }
+
+    // Sales unit 4 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
+    // flow "Void a sale", steps 1-2): guard-only tests. The happy-path reversal (steps 3-6) is
+    // Sales unit 5's job -- voidSaleReachesThePlaceholderWhenGuardsPass below only proves the
+    // guards let a RECORDED sale through, not that anything gets reversed.
+    @Test
+    void voidSaleThrowsSaleNotFoundExceptionWhenTheSaleDoesNotExist() {
+        UUID saleId = UUID.randomUUID();
+        when(saleRepository.findById(saleId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out")))
+            .isInstanceOf(SaleNotFoundException.class);
+
+        verify(saleRepository, never()).save(any());
+        verify(plotRepository, never()).save(any());
+        verify(ledgerEntryRepository, never()).save(any());
+    }
+
+    @Test
+    void voidSaleThrowsSaleAlreadyVoidedExceptionWhenTheSaleIsAlreadyVoided() {
+        UUID saleId = UUID.randomUUID();
+        Sale voidedSale = new Sale();
+        voidedSale.setId(saleId);
+        voidedSale.setStatus(SaleStatus.VOIDED);
+        when(saleRepository.findById(saleId)).thenReturn(Optional.of(voidedSale));
+
+        assertThatThrownBy(() -> saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out")))
+            .isInstanceOf(SaleAlreadyVoidedException.class);
+
+        verify(saleRepository, never()).save(any());
+        verify(plotRepository, never()).save(any());
+        verify(ledgerEntryRepository, never()).save(any());
+    }
+
+    @Test
+    void voidSaleReachesThePlaceholderWhenGuardsPass() {
+        UUID saleId = UUID.randomUUID();
+        Sale recordedSale = new Sale();
+        recordedSale.setId(saleId);
+        recordedSale.setStatus(SaleStatus.RECORDED);
+        when(saleRepository.findById(saleId)).thenReturn(Optional.of(recordedSale));
+
+        assertThatThrownBy(() -> saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out")))
+            .isInstanceOf(UnsupportedOperationException.class);
+
+        verify(saleRepository, never()).save(any());
+        verify(plotRepository, never()).save(any());
+        verify(ledgerEntryRepository, never()).save(any());
+    }
 }
