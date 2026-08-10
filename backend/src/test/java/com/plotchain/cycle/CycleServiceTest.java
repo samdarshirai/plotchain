@@ -2,6 +2,7 @@ package com.plotchain.cycle;
 
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateRole;
 import com.plotchain.associate.KycStatus;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
@@ -257,6 +258,14 @@ class CycleServiceTest {
         associate.setParentId(parentId);
         associate.setPosition(position);
         return associate;
+    }
+
+    private List<RankTier> rankTiersFixture(UUID bronzeId, UUID silverId, UUID goldId) {
+        return List.of(
+            new RankTier(bronzeId, "Bronze", 10, new BigDecimal("0")),
+            new RankTier(silverId, "Silver", 20, new BigDecimal("100")),
+            new RankTier(goldId, "Gold", 30, new BigDecimal("500"))
+        );
     }
 
     private CompensationPlanVersion planVersionFixture() {
@@ -617,5 +626,84 @@ class CycleServiceTest {
         assertThat(result.getPeriodEnd()).isEqualTo(expectedPeriodEnd(today));
         assertThat(result.getStatus()).isEqualTo(CycleStatus.OPEN);
         verify(cycleRepository).save(any(Cycle.class));
+    }
+
+    @Test
+    void closeAdvancesRankWhenCumulativeMatchedVolumeCrossesOneThreshold() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+
+        UUID bronzeId = UUID.randomUUID();
+        UUID silverId = UUID.randomUUID();
+        UUID goldId = UUID.randomUUID();
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(rankTiersFixture(bronzeId, silverId, goldId));
+
+        Associate root = associateFixture(null, null);
+        root.setRole(AssociateRole.ASSOCIATE);
+        root.setKycStatus(KycStatus.VERIFIED);
+        root.setRankId(bronzeId);
+        root.setCumulativeMatchedVolume(new BigDecimal("80")); // pre-existing, below Silver's 100 threshold
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        // matched volume = min(100, 50) = 50 -> cumulativeMatchedVolume becomes 80 + 50 = 130,
+        // crosses Silver's 100 threshold but not Gold's 500.
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
+        ));
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        assertThat(root.getRankId()).isEqualTo(silverId);
+    }
+
+    @Test
+    void closeAdvancesRankToTheHighestTierWhenCumulativeMatchedVolumeCrossesTwoThresholdsInOneCycle() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+
+        UUID bronzeId = UUID.randomUUID();
+        UUID silverId = UUID.randomUUID();
+        UUID goldId = UUID.randomUUID();
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(rankTiersFixture(bronzeId, silverId, goldId));
+
+        Associate root = associateFixture(null, null);
+        root.setRole(AssociateRole.ASSOCIATE);
+        root.setKycStatus(KycStatus.VERIFIED);
+        root.setRankId(bronzeId);
+        root.setCumulativeMatchedVolume(BigDecimal.ZERO);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        // matched volume = min(1200, 600) = 600 -> cumulativeMatchedVolume becomes 0 + 600 = 600,
+        // crosses BOTH Silver's 100 AND Gold's 500 in a single cycle. Rank must land on Gold
+        // directly, not step through Silver.
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("1200")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("600"))
+        ));
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        assertThat(root.getRankId()).isEqualTo(goldId);
     }
 }

@@ -74,11 +74,13 @@ public class CycleService {
     }
 
     // Cycle-management unit 3 (row lock + OPEN check, unchanged) + unit 4 (leg-volume rollup) +
-    // unit 5 (Matching Income) -- docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
-    // Decision #2, settlement batch flow steps 1, 2, 3, 8. Steps 4-7 (Rank, Sponsor Matching,
-    // Royalty, Reward) are NOT implemented here -- units 6-9 insert their own logic between the
-    // Matching step below and the CLOSED flip, without changing this method's signature or
-    // transaction boundary, the same sequential-insertion pattern units 3 -> 4 -> 5 already used.
+    // unit 5 (Matching Income) + unit 6 (Rank progression) --
+    // docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
+    // Decision #2, settlement batch flow steps 1, 2, 3, 4, 8. Steps 5-7 (Sponsor Matching,
+    // Royalty, Reward) are NOT implemented here -- units 7-9 insert their own logic between the
+    // advanceRanks call below and the CLOSED flip, without changing this method's signature or
+    // transaction boundary, the same sequential-insertion pattern units 3 -> 4 -> 5 -> 6 already
+    // used.
     @Transactional
     public CycleCloseResponse close(UUID id) {
         Cycle cycle = cycleRepository.findByIdForUpdate(id)
@@ -110,6 +112,11 @@ public class CycleService {
             .orElseThrow(() -> new IllegalStateException(
                 "compensation_plan_version row missing - V8 migration seeds it"));
         creditMatchingIncome(cycle.getId(), associates, legVolumes, planVersion);
+
+        // Flow step 4 (Decision #7): advance rankId for each ASSOCIATE-role associate to the
+        // highest RankTier their updated cumulativeMatchedVolume now qualifies for. Never
+        // demotes. Skipped for ADMIN and the four staff roles (see advanceRanks' own comment).
+        advanceRanks(associates);
 
         // Flow step 8. getOrOpenCurrent() is a plain (non-@Transactional) self-invocation here,
         // so it runs inside the transaction this @Transactional method's proxy already started
@@ -281,6 +288,61 @@ public class CycleService {
             // Decision #6: raw matched volume, not the post-percentage income amount.
             associate.setCumulativeMatchedVolume(associate.getCumulativeMatchedVolume().add(matchedVolume));
             associateRepository.save(associate);
+        }
+    }
+
+    // Flow step 4 (Decision #7): for each ASSOCIATE-role associate, advance rankId to the
+    // highest RankTier whose volumeThreshold is now met by the just-updated
+    // cumulativeMatchedVolume (Decision #6, already incremented by creditMatchingIncome above,
+    // for every associate in this cycle -- not just those with a Matching entry this cycle, see
+    // the plan's "Resolved open question 1"). Never demotes: a candidate only wins if its
+    // rankOrder is strictly greater than the associate's CURRENT rank's rankOrder, so a
+    // cumulativeMatchedVolume that (defensively; it shouldn't per Decision #6) failed to
+    // monotonically increase can never lower rankId.
+    //
+    // Guard is role == ASSOCIATE, not role != ADMIN: chk_associate_rank_required
+    // (V4__user_id_login_and_admin_roles.sql) reads `role <> 'ASSOCIATE' OR rank_id IS NOT NULL`
+    // -- rank_id is required ONLY for ASSOCIATE, nullable for ADMIN *and* the four staff roles
+    // (SUPER_ADMIN, FINANCE, KYC_REVIEWER, SUPPORT; AdminProvisioningService provisions all four
+    // with rankId = null, same as AdminBootstrapRunner does for ADMIN). Excluding only ADMIN
+    // here would leave staff rows structurally eligible for a rank advancement that's exactly as
+    // semantically meaningless for them as it is for Admin -- V4's own migration comment says it
+    // plainly: "only associates have a rank."
+    private void advanceRanks(List<Associate> associates) {
+        List<RankTier> ranks = rankTierRepository.findAllByOrderByRankOrder();
+        if (ranks.isEmpty()) {
+            return;
+        }
+
+        Map<UUID, RankTier> ranksById = new HashMap<>();
+        for (RankTier rank : ranks) {
+            ranksById.put(rank.getId(), rank);
+        }
+
+        for (Associate associate : associates) {
+            if (associate.getRole() != AssociateRole.ASSOCIATE) {
+                continue;
+            }
+
+            // ranks is ascending by rankOrder; keep overwriting so the last candidate that
+            // individually qualifies is the one with the highest rankOrder among ALL qualifying
+            // tiers -- correct even if volumeThreshold isn't strictly monotonic with rankOrder.
+            RankTier highestQualified = null;
+            for (RankTier candidate : ranks) {
+                if (candidate.getVolumeThreshold().compareTo(associate.getCumulativeMatchedVolume()) <= 0) {
+                    highestQualified = candidate;
+                }
+            }
+            if (highestQualified == null) {
+                continue;
+            }
+
+            RankTier currentRank = associate.getRankId() == null ? null : ranksById.get(associate.getRankId());
+            int currentRankOrder = currentRank == null ? Integer.MIN_VALUE : currentRank.getRankOrder();
+            if (highestQualified.getRankOrder() > currentRankOrder) {
+                associate.setRankId(highestQualified.getId());
+                associateRepository.save(associate);
+            }
         }
     }
 
