@@ -146,6 +146,27 @@ class SaleControllerTest {
     }
 
     @Test
+    void voidReturns200WithAFullyPopulatedSaleResponseReflectingTheReversal() throws Exception {
+        UUID saleId = UUID.randomUUID();
+        UUID plotId = UUID.randomUUID();
+        UUID associateId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        SaleResponse response = new SaleResponse(
+            saleId, plotId, associateId, "Jane Buyer", "9999999999", null,
+            new BigDecimal("600000.00"), cycleId, "L", "VOIDED", "Buyer backed out", Instant.now());
+        when(saleService.voidSale(eq(saleId), any(VoidSaleRequest.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/admin/sales/{id}/void", saleId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"reason\":\"Buyer backed out\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(saleId.toString()))
+            .andExpect(jsonPath("$.status").value("VOIDED"))
+            .andExpect(jsonPath("$.voidReason").value("Buyer backed out"));
+    }
+
+    @Test
     void voidIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(post("/api/admin/sales/{id}/void", UUID.randomUUID())
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
