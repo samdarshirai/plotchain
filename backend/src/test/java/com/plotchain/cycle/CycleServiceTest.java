@@ -12,6 +12,8 @@ import com.plotchain.income.LedgerEntryRepository;
 import com.plotchain.income.LedgerEntryStatus;
 import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
+import com.plotchain.rank.RankTier;
+import com.plotchain.rank.RankTierRepository;
 import com.plotchain.sales.Sale;
 import com.plotchain.sales.SaleRepository;
 import com.plotchain.sales.SaleStatus;
@@ -47,6 +49,7 @@ class CycleServiceTest {
     @Mock SaleRepository saleRepository;
     @Mock CompensationPlanVersionRepository compensationPlanVersionRepository;
     @Mock LedgerEntryRepository ledgerEntryRepository;
+    @Mock RankTierRepository rankTierRepository;
     CycleService service;
 
     private Cycle newCycle(CycleStatus status) {
@@ -80,7 +83,7 @@ class CycleServiceTest {
     @Test
     void listWithNoStatusFilterDelegatesToFindAll() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
         Cycle cycle = newCycle(CycleStatus.OPEN);
         when(cycleRepository.findAllByOrderByPeriodStartDesc(PageRequest.of(0, 20)))
             .thenReturn(new PageImpl<>(List.of(cycle), PageRequest.of(0, 20), 1));
@@ -100,7 +103,7 @@ class CycleServiceTest {
     @Test
     void listWithStatusFilterDelegatesToFindByStatus() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
         Cycle cycle = newCycle(CycleStatus.CLOSED);
         when(cycleRepository.findByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED, PageRequest.of(1, 10)))
             .thenReturn(new PageImpl<>(List.of(cycle), PageRequest.of(1, 10), 11));
@@ -116,7 +119,7 @@ class CycleServiceTest {
     @Test
     void closeThrowsCycleNotFoundExceptionWhenTheCycleDoesNotExist() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
         UUID id = UUID.randomUUID();
         when(cycleRepository.findByIdForUpdate(id)).thenReturn(Optional.empty());
 
@@ -126,7 +129,7 @@ class CycleServiceTest {
     @Test
     void closeThrowsCycleAlreadyClosedExceptionWhenStatusIsClosed() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
         Cycle cycle = newCycle(CycleStatus.CLOSED);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
 
@@ -136,7 +139,7 @@ class CycleServiceTest {
     @Test
     void closeThrowsCycleAlreadyClosedExceptionWhenStatusIsPaid() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
         Cycle cycle = newCycle(CycleStatus.PAID);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
 
@@ -146,7 +149,7 @@ class CycleServiceTest {
     @Test
     void closeWithNoAssociatesWritesNoLegVolumeRowsAndStillClosesAndReopens() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
         Cycle cycle = newCycle(CycleStatus.OPEN);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -166,7 +169,7 @@ class CycleServiceTest {
     @Test
     void closeComputesLegVolumeRollupTreeWideOnAMixedFixtureTreeAndWritesOneRowPerAssociate() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
 
         // Fixture tree (Admin is the root, per the role-model spec):
         //           admin
@@ -278,7 +281,7 @@ class CycleServiceTest {
     @Test
     void closeCreditsMatchingIncomeForAnAssociateWithANonzeroMatchedPair() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.VERIFIED);
@@ -330,7 +333,7 @@ class CycleServiceTest {
     @Test
     void closeWritesNoMatchingEntryWhenOneLegIsZero() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.VERIFIED);
@@ -360,7 +363,7 @@ class CycleServiceTest {
     @Test
     void closeCarriesTheExcessOnTheLargerLeftLegForwardOnTheSameLegVolumeRow() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.VERIFIED);
@@ -395,7 +398,7 @@ class CycleServiceTest {
     @Test
     void closeCarriesTheExcessOnTheLargerRightLegForwardOnTheSameLegVolumeRow() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.VERIFIED);
@@ -430,7 +433,7 @@ class CycleServiceTest {
     @Test
     void closeIncrementsCumulativeMatchedVolumeByTheMatchedVolumeNotTheIncomeAmount() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.VERIFIED);
@@ -465,7 +468,7 @@ class CycleServiceTest {
     @Test
     void closeSetsCarriedForwardStatusWhenAssociateKycIsPending() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.PENDING);
@@ -496,7 +499,7 @@ class CycleServiceTest {
     @Test
     void closeSetsCarriedForwardStatusWhenAssociateKycIsRejected() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.REJECTED);
@@ -527,7 +530,7 @@ class CycleServiceTest {
     @Test
     void closeSkipsWritingWhenAnIdempotentEntryAlreadyExistsForThatLegVolumeRow() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.VERIFIED);
@@ -563,7 +566,7 @@ class CycleServiceTest {
     @Test
     void getOrOpenCurrentCreatesANewCycleWhenNoCycleCoversToday() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
         LocalDate today = LocalDate.now();
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
             .thenReturn(Optional.empty());
@@ -581,7 +584,7 @@ class CycleServiceTest {
     @Test
     void getOrOpenCurrentReturnsTheExistingOpenCycleWhenItCoversToday() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
         LocalDate today = LocalDate.now();
         Cycle existing = newCycleWithBounds(expectedPeriodStart(today), expectedPeriodEnd(today), CycleStatus.OPEN);
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
@@ -596,7 +599,7 @@ class CycleServiceTest {
     @Test
     void getOrOpenCurrentCreatesTheNextCycleWhenTheExistingOpenCycleDoesNotCoverToday() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
         LocalDate today = LocalDate.now();
         // Deliberately a stale period comfortably in the past relative to "today", regardless
         // of which day-of-month the test happens to run on: [-40, -26] days never overlaps

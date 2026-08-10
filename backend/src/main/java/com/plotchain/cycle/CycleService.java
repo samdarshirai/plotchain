@@ -11,6 +11,9 @@ import com.plotchain.income.LedgerEntryRepository;
 import com.plotchain.income.LedgerEntryStatus;
 import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
+import com.plotchain.associate.AssociateRole;
+import com.plotchain.rank.RankTier;
+import com.plotchain.rank.RankTierRepository;
 import com.plotchain.sales.Sale;
 import com.plotchain.sales.SaleRepository;
 import com.plotchain.sales.SaleStatus;
@@ -39,6 +42,7 @@ public class CycleService {
     private final SaleRepository saleRepository;
     private final CompensationPlanVersionRepository compensationPlanVersionRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
+    private final RankTierRepository rankTierRepository;
 
     public CycleService(
         CycleRepository cycleRepository,
@@ -46,7 +50,8 @@ public class CycleService {
         LegVolumeRepository legVolumeRepository,
         SaleRepository saleRepository,
         CompensationPlanVersionRepository compensationPlanVersionRepository,
-        LedgerEntryRepository ledgerEntryRepository
+        LedgerEntryRepository ledgerEntryRepository,
+        RankTierRepository rankTierRepository
     ) {
         this.cycleRepository = cycleRepository;
         this.associateRepository = associateRepository;
@@ -54,6 +59,7 @@ public class CycleService {
         this.saleRepository = saleRepository;
         this.compensationPlanVersionRepository = compensationPlanVersionRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
+        this.rankTierRepository = rankTierRepository;
     }
 
     public CyclePageResponse list(CycleStatus status, int page, int size) {
