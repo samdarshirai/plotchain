@@ -706,4 +706,38 @@ class CycleServiceTest {
 
         assertThat(root.getRankId()).isEqualTo(goldId);
     }
+
+    @Test
+    void closeNeverDemotesRankEvenWhenCurrentCycleAloneWouldOnlyQualifyForALowerTier() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+
+        UUID bronzeId = UUID.randomUUID();
+        UUID silverId = UUID.randomUUID();
+        UUID goldId = UUID.randomUUID();
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(rankTiersFixture(bronzeId, silverId, goldId));
+
+        // Already at Gold from a prior cycle. This cycle: no sales at all, cumulativeMatchedVolume
+        // stays at 50 -- which alone would only qualify for Bronze (threshold 0). Rank must stay Gold.
+        Associate root = associateFixture(null, null);
+        root.setRole(AssociateRole.ASSOCIATE);
+        root.setKycStatus(KycStatus.VERIFIED);
+        root.setRankId(goldId);
+        root.setCumulativeMatchedVolume(new BigDecimal("50"));
+        when(associateRepository.findAll()).thenReturn(List.of(root));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        assertThat(root.getRankId()).isEqualTo(goldId);
+        verify(associateRepository, never()).save(root);
+    }
 }
