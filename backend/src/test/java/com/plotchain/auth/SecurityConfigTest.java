@@ -411,6 +411,30 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
     }
 
+    // ADMIN-only, cycle-management unit 2's GET /api/admin/cycles/{id} matcher -- same
+    // target-role-model reasoning as the list matcher directly above, not the isAdminFamily()
+    // convention most other admin GETs use. "/api/admin/cycles" (the list matcher) is an exact
+    // Ant-pattern match and does NOT cover this path as a prefix, so this route needs its own
+    // matcher or it would fall through to the blanket anyRequest().authenticated() and become
+    // reachable by any authenticated associate. cycleRepository.findById is stubbed to return a
+    // real cycle so an ADMIN token reaches 200; ledgerEntryRepository is not @MockBean'd in this
+    // class, so its sum queries run for real against the empty H2 test DB and return 0.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminCyclesDetailIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        UUID cycleId = UUID.randomUUID();
+        Cycle cycle = new Cycle();
+        cycle.setId(cycleId);
+        cycle.setPeriodStart(java.time.LocalDate.of(2026, 7, 1));
+        cycle.setPeriodEnd(java.time.LocalDate.of(2026, 7, 15));
+        cycle.setStatus(CycleStatus.CLOSED);
+        when(cycleRepository.findById(cycleId)).thenReturn(Optional.of(cycle));
+
+        mockMvc.perform(get("/api/admin/cycles/{id}", cycleId)
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+    }
+
     // ADMIN-only, cycle-management unit 3's POST /api/admin/cycles/{id}/close matcher --
     // declared up near the file's other narrower POST rules, before the blanket POST rule
     // (see that matcher's own comment for why it isn't declared here next to the sibling GET

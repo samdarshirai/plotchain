@@ -224,6 +224,16 @@ public class SecurityConfig {
                 // the blanket rule swallow it (see that matcher's own comment for why).
                 .requestMatchers(HttpMethod.GET, "/api/admin/cycles")
                     .hasAuthority("ADMIN")
+                // Cycle detail (monitor half of trigger/monitor/re-run): ADMIN-only,
+                // cycle-management unit 2
+                // (docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
+                // lines 95-97). Separate matcher from the list route directly above --
+                // "/api/admin/cycles" is an exact match in Spring Security's AntPathMatcher and
+                // does NOT cover "/api/admin/cycles/{id}" as a prefix, so without this line the
+                // detail route would fall through to the blanket anyRequest().authenticated()
+                // below and be reachable by any authenticated associate, not just ADMIN.
+                .requestMatchers(HttpMethod.GET, "/api/admin/cycles/*")
+                    .hasAuthority("ADMIN")
                 // Phase 5's genuinely public endpoints: the pre-login branding bootstrap, the
                 // raw logo bytes it and the login page render as <img> tags, and the favicon
                 // index.html links to -- all requested before any JWT exists. They only need to
