@@ -15,7 +15,7 @@ Sliced from `docs/superpowers/specs/role-capability/2026-08-03-sales-domain-desi
 | 5 | backend | Voiding a RECORDED sale reverts the plot to AVAILABLE and reverses its linked ledger entry | 3, 4 | **merged** | `docs/superpowers/plans/2026-08-10-sales-void-happy-path.md` | `9b8278c`..`8c77e7b` on `master` |
 | 6 | backend | Admin lists and filters sales in the register | 3 | **merged** | `docs/superpowers/plans/2026-08-10-sales-admin-register-list.md` | `7ddb5fd`..`3776430` on `master` |
 | 7 | backend | An associate views their own and descendant sales, read-only | 3 | **merged** | `docs/superpowers/plans/2026-08-10-sales-associate-own-view.md` | `578db76`..`576a3d6` on `master` |
-| 8 | **screen** | Admin "Sales Register" screen — list/filter (6), record new sale (3), void with reason (4, 5) | 3, 4, 5, 6 | pending | — | — |
+| 8 | **screen** | Admin "Sales Register" screen — list/filter (6), record new sale (3), void with reason (4, 5) | 3, 4, 5, 6 | **merged** | `docs/superpowers/plans/2026-08-11-sales-admin-register-screen.md` | `a3f30f8`..`98ea33c` on `master` |
 | 9 | **screen** | Associate "Sales History" screen — own + descendant, view-only | 7 | pending | — | — |
 
 Units 8–9 added 2026-08-05, same pass as cycle-management unit 11 and role-capability units 12–16 — screens weren't sliced alongside endpoints. One Admin screen (8) covers list/record/void per the spec's own Admin row ("Full sales register — all associates, void/export, records every sale"), not three.
