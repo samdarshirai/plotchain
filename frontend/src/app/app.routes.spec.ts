@@ -14,6 +14,14 @@ describe('routes', () => {
     expect(dashboardRoute!.canActivate).toContain(associateOnlyGuard);
   });
 
+  it('guards the sales-history route with authGuard and associateOnlyGuard', () => {
+    const route = routes.find(r => r.path === 'sales-history');
+
+    expect(route).toBeTruthy();
+    expect(route!.canActivate).toContain(authGuard);
+    expect(route!.canActivate).toContain(associateOnlyGuard);
+  });
+
   it('exposes a change-password route behind the auth guard', () => {
     const route = routes.find(r => r.path === 'change-password');
     expect(route).toBeTruthy();

@@ -28,12 +28,14 @@ import { SalesRegisterComponent } from './admin/sales-register/sales-register.co
 import { RecordSaleComponent } from './admin/sales-register/record-sale.component';
 import { TermsOfServiceComponent } from './legal/terms-of-service.component';
 import { PrivacyPolicyComponent } from './legal/privacy-policy.component';
+import { SalesHistoryComponent } from './sales-history/sales-history.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'terms', component: TermsOfServiceComponent },
   { path: 'privacy', component: PrivacyPolicyComponent },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'sales-history', component: SalesHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
   { path: 'admin/associates/new', component: CreateAssociateComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/sales/new', component: RecordSaleComponent, canActivate: [authGuard, adminGuard] },
