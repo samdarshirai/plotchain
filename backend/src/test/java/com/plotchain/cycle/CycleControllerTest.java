@@ -101,6 +101,36 @@ class CycleControllerTest {
     }
 
     @Test
+    void detailReturnsTheBreakdownForAnAdminToken() throws Exception {
+        UUID cycleId = UUID.randomUUID();
+        when(cycleService.getDetail(cycleId)).thenReturn(
+            new CycleDetailResponse(cycleId, java.time.LocalDate.of(2026, 7, 1),
+                java.time.LocalDate.of(2026, 7, 15), CycleStatus.CLOSED,
+                List.of(new CycleIncomeTypeTotal(com.plotchain.income.IncomeType.DIRECT,
+                    java.math.BigDecimal.valueOf(100))),
+                java.math.BigDecimal.valueOf(100)));
+
+        mockMvc.perform(get("/api/admin/cycles/{id}", cycleId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(cycleId.toString()))
+            .andExpect(jsonPath("$.status").value("CLOSED"))
+            .andExpect(jsonPath("$.incomeTypeTotals[0].incomeType").value("DIRECT"))
+            .andExpect(jsonPath("$.incomeTypeTotals[0].totalNet").value(100))
+            .andExpect(jsonPath("$.totalNet").value(100));
+    }
+
+    @Test
+    void detailReturns404WhenTheCycleDoesNotExist() throws Exception {
+        UUID cycleId = UUID.randomUUID();
+        when(cycleService.getDetail(cycleId)).thenThrow(new CycleNotFoundException(cycleId));
+
+        mockMvc.perform(get("/api/admin/cycles/{id}", cycleId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
     void closeReturnsTheSettlementResultForAnAdminToken() throws Exception {
         UUID cycleId = UUID.randomUUID();
         UUID newCycleId = UUID.randomUUID();

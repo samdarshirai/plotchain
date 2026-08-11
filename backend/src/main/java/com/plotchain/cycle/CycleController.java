@@ -30,6 +30,11 @@ public class CycleController {
         return cycleService.list(status, page, size);
     }
 
+    @GetMapping("/{id}")
+    public CycleDetailResponse detail(@PathVariable UUID id) {
+        return cycleService.getDetail(id);
+    }
+
     @PostMapping("/{id}/close")
     public CycleCloseResponse close(@PathVariable UUID id) {
         return cycleService.close(id);
