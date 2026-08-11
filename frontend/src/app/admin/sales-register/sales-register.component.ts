@@ -8,13 +8,14 @@ import { AdminSalePage, AdminSaleFilters } from '../models/admin-sale-page.model
 import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
+import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-sales-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, RouterLink, EditableTableComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, RouterLink, EditableTableComponent, InlineBannerComponent],
   providers: [DatePipe],
   template: `
     <div class="sales-register">
@@ -53,8 +54,8 @@ const PAGE_SIZE = 20;
         </label>
       </div>
 
-      <p *ngIf="loadError" class="sales-register__load-error inline-banner inline-banner--danger">{{ 'admin.salesRegister.loadError' | translate }}</p>
-      <p *ngIf="actionError" class="sales-register__action-error inline-banner inline-banner--danger">{{ 'admin.salesRegister.actionError' | translate }}</p>
+      <app-inline-banner *ngIf="loadError" tone="danger" [dismissible]="true" class="sales-register__load-error" (dismissed)="loadError = false">{{ 'admin.salesRegister.loadError' | translate }}</app-inline-banner>
+      <app-inline-banner *ngIf="actionError" tone="danger" [dismissible]="true" class="sales-register__action-error" (dismissed)="actionError = false">{{ 'admin.salesRegister.actionError' | translate }}</app-inline-banner>
 
       <div class="card">
         <app-editable-table
