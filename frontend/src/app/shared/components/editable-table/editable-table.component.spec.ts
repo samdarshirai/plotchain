@@ -42,6 +42,14 @@ describe('EditableTableComponent', () => {
     expect(bodyRows.length).toBe(rows.length);
   });
 
+  it('stamps each td with a data-label attribute matching its column label, for mobile stacked-card CSS', () => {
+    fixture.detectChanges();
+    const firstRowCells = fixture.nativeElement.querySelectorAll('tbody tr')[0].querySelectorAll('td');
+    expect(firstRowCells[0].getAttribute('data-label')).toBe('Rank');
+    expect(firstRowCells[1].getAttribute('data-label')).toBe('Percent');
+    expect(firstRowCells[2].getAttribute('data-label')).toBe('Note');
+  });
+
   it('typing into a text/number cell emits rowsChange with the updated value at that row/key, other rows unchanged', () => {
     fixture.detectChanges();
     const spy = jasmine.createSpy('rowsChange');

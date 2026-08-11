@@ -26,7 +26,7 @@ export interface EditableTableColumn {
       </thead>
       <tbody *ngIf="rows.length > 0; else emptyState">
         <tr *ngFor="let row of rows; let i = index; trackBy: trackByIndex" (click)="onRowClick(i)">
-          <td *ngFor="let column of columns">
+          <td *ngFor="let column of columns" [attr.data-label]="column.label">
             <ng-container *ngIf="column.type === 'action'; else dataCell">
               <ng-container
                 *ngTemplateOutlet="actionTemplate ?? null; context: { $implicit: row, index: i }"

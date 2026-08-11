@@ -17,10 +17,10 @@ const PAGE_SIZE = 20;
   imports: [CommonModule, FormsModule, TranslateModule, RouterLink, EditableTableComponent],
   providers: [DatePipe],
   template: `
-    <div class="sales-register card">
+    <div class="sales-register">
       <div class="sales-register__header">
         <h1 class="card-title">{{ 'admin.salesRegister.title' | translate }}</h1>
-        <a class="sales-register__record-link" [routerLink]="['/admin/sales/new']">
+        <a class="sales-register__record-link brand-button" [routerLink]="['/admin/sales/new']">
           {{ 'admin.salesRegister.recordSaleLink' | translate }}
         </a>
       </div>
@@ -53,16 +53,18 @@ const PAGE_SIZE = 20;
         </label>
       </div>
 
-      <p *ngIf="loadError" class="sales-register__load-error">{{ 'admin.salesRegister.loadError' | translate }}</p>
-      <p *ngIf="actionError" class="sales-register__action-error">{{ 'admin.salesRegister.actionError' | translate }}</p>
+      <p *ngIf="loadError" class="sales-register__load-error inline-banner inline-banner--danger">{{ 'admin.salesRegister.loadError' | translate }}</p>
+      <p *ngIf="actionError" class="sales-register__action-error inline-banner inline-banner--danger">{{ 'admin.salesRegister.actionError' | translate }}</p>
 
-      <app-editable-table
-        [readOnly]="true"
-        [columns]="registerColumns"
-        [rows]="registerRows"
-        [actionTemplate]="actionsTpl"
-        [emptyStateLabel]="'admin.salesRegister.emptyState' | translate"
-      ></app-editable-table>
+      <div class="card">
+        <app-editable-table
+          [readOnly]="true"
+          [columns]="registerColumns"
+          [rows]="registerRows"
+          [actionTemplate]="actionsTpl"
+          [emptyStateLabel]="'admin.salesRegister.emptyState' | translate"
+        ></app-editable-table>
+      </div>
       <ng-template #actionsTpl let-i="index">
         <ng-container *ngIf="page!.sales[i].status === 'RECORDED'; else voidedTpl">
           <input
@@ -71,7 +73,7 @@ const PAGE_SIZE = 20;
             [(ngModel)]="voidReasons[page!.sales[i].id]"
             [placeholder]="'admin.salesRegister.voidReasonPlaceholder' | translate"
           />
-          <button type="button" class="sales-register__void-action" (click)="voidSale(page!.sales[i].id)">
+          <button type="button" class="sales-register__void-action brand-button brand-button--danger" (click)="voidSale(page!.sales[i].id)">
             {{ 'admin.salesRegister.voidAction' | translate }}
           </button>
         </ng-container>
@@ -83,13 +85,13 @@ const PAGE_SIZE = 20;
       </ng-template>
 
       <div class="sales-register__pagination" *ngIf="page">
-        <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
+        <button type="button" class="brand-button brand-button--secondary" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
           {{ 'admin.salesRegister.previousPageAction' | translate }}
         </button>
         <span class="sales-register__page-indicator">
           {{ 'admin.salesRegister.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
         </span>
-        <button type="button" [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="goToPage(page.page + 1)">
+        <button type="button" class="brand-button brand-button--secondary" [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="goToPage(page.page + 1)">
           {{ 'admin.salesRegister.nextPageAction' | translate }}
         </button>
       </div>
