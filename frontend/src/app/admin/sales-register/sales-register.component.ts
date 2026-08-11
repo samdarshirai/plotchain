@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
 import { SalesRegisterService } from './sales-register.service';
@@ -13,7 +14,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-sales-register',
   standalone: true,
-  imports: [CommonModule, TranslateModule, RouterLink, EditableTableComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, RouterLink, EditableTableComponent],
   providers: [DatePipe],
   template: `
     <div class="sales-register card">
@@ -59,8 +60,27 @@ const PAGE_SIZE = 20;
         [readOnly]="true"
         [columns]="registerColumns"
         [rows]="registerRows"
+        [actionTemplate]="actionsTpl"
         [emptyStateLabel]="'admin.salesRegister.emptyState' | translate"
       ></app-editable-table>
+      <ng-template #actionsTpl let-i="index">
+        <ng-container *ngIf="page!.sales[i].status === 'RECORDED'; else voidedTpl">
+          <input
+            type="text"
+            class="sales-register__void-reason-input"
+            [(ngModel)]="voidReasons[page!.sales[i].id]"
+            [placeholder]="'admin.salesRegister.voidReasonPlaceholder' | translate"
+          />
+          <button type="button" class="sales-register__void-action" (click)="voidSale(page!.sales[i].id)">
+            {{ 'admin.salesRegister.voidAction' | translate }}
+          </button>
+        </ng-container>
+        <ng-template #voidedTpl>
+          <span class="sales-register__voided-tag">
+            {{ 'admin.salesRegister.voidedTag' | translate }}: {{ page!.sales[i].voidReason }}
+          </span>
+        </ng-template>
+      </ng-template>
 
       <div class="sales-register__pagination" *ngIf="page">
         <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
@@ -88,6 +108,7 @@ export class SalesRegisterComponent implements OnInit {
   associates: AssociateSummary[] = [];
   registerColumns: EditableTableColumn[] = [];
   registerRows: Record<string, string>[] = [];
+  voidReasons: Record<string, string> = {};
   private associateId = '';
   private status = '';
   private recordedFrom = '';
@@ -111,7 +132,8 @@ export class SalesRegisterComponent implements OnInit {
       { key: 'amount', label: this.translate.instant('admin.salesRegister.columnAmount'), type: 'text' },
       { key: 'legCredited', label: this.translate.instant('admin.salesRegister.columnLegCredited'), type: 'text' },
       { key: 'status', label: this.translate.instant('admin.salesRegister.columnStatus'), type: 'text' },
-      { key: 'recordedAt', label: this.translate.instant('admin.salesRegister.columnRecordedAt'), type: 'text' }
+      { key: 'recordedAt', label: this.translate.instant('admin.salesRegister.columnRecordedAt'), type: 'text' },
+      { key: 'actions', label: this.translate.instant('admin.salesRegister.columnActions'), type: 'action' }
     ];
     this.adminService.listAssociates().subscribe(associates => (this.associates = associates));
     this.loadPage(0);
@@ -139,6 +161,17 @@ export class SalesRegisterComponent implements OnInit {
 
   goToPage(page: number): void {
     this.loadPage(page);
+  }
+
+  voidSale(id: string): void {
+    this.actionError = false;
+    this.salesRegisterService.voidSale(id, this.voidReasons[id] ?? '').subscribe({
+      next: () => {
+        delete this.voidReasons[id];
+        this.loadPage(this.page?.page ?? 0);
+      },
+      error: () => (this.actionError = true)
+    });
   }
 
   protected loadPage(page: number): void {

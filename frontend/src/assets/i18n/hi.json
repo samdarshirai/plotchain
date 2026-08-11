@@ -149,7 +149,10 @@
       "previousPageAction": "Previous",
       "nextPageAction": "Next",
       "pageIndicator": "Page {{page}} of {{totalPages}}",
-      "emptyState": "No sales match these filters."
+      "emptyState": "No sales match these filters.",
+      "voidReasonPlaceholder": "Reason for voiding",
+      "voidAction": "Void",
+      "voidedTag": "Voided"
     }
   },
   "setup": {
