@@ -44,6 +44,16 @@ public class CycleService {
     private final LedgerEntryRepository ledgerEntryRepository;
     private final RankTierRepository rankTierRepository;
 
+    // Cycle-management unit 2 (GET /api/admin/cycles/{id}, spec lines 95-97): fixed order
+    // matching the spec's literal "DIRECT/MATCHING/SPONSOR_MATCHING/ROYALTY/REWARD" listing,
+    // not IncomeType.values() filtered at call time -- explicit here so a future IncomeType
+    // constant added before PERK can't silently join this breakdown without a deliberate edit
+    // to this list. PERK itself is excluded: per Decision #8 of the domain-design spec, it's
+    // descriptive metadata attached to REWARD entries, never its own ledger line.
+    private static final List<IncomeType> BREAKDOWN_INCOME_TYPES = List.of(
+        IncomeType.DIRECT, IncomeType.MATCHING, IncomeType.SPONSOR_MATCHING,
+        IncomeType.ROYALTY, IncomeType.REWARD);
+
     public CycleService(
         CycleRepository cycleRepository,
         AssociateRepository associateRepository,
@@ -71,6 +81,26 @@ public class CycleService {
         return new CyclePageResponse(
             result.getContent().stream().map(this::toSummary).toList(),
             page, size, result.getTotalElements());
+    }
+
+    // GET /api/admin/cycles/{id} -- cycle-management unit 2, the "monitor" half of
+    // "trigger/monitor/re-run" (spec lines 95-97). Plain findById, no row lock: this is a
+    // read-only view, unlike close()'s findByIdForUpdate, which exists solely to serialize
+    // concurrent writers against the same cycle.
+    public CycleDetailResponse getDetail(UUID id) {
+        Cycle cycle = cycleRepository.findById(id)
+            .orElseThrow(() -> new CycleNotFoundException(id));
+
+        List<CycleIncomeTypeTotal> incomeTypeTotals = BREAKDOWN_INCOME_TYPES.stream()
+            .map(type -> new CycleIncomeTypeTotal(
+                type, ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), type)))
+            .toList();
+
+        BigDecimal totalNet = ledgerEntryRepository.sumNetAmountByCycle(cycle.getId());
+
+        return new CycleDetailResponse(
+            cycle.getId(), cycle.getPeriodStart(), cycle.getPeriodEnd(), cycle.getStatus(),
+            incomeTypeTotals, totalNet);
     }
 
     // Cycle-management unit 3 (row lock + OPEN check, unchanged) + unit 4 (leg-volume rollup) +

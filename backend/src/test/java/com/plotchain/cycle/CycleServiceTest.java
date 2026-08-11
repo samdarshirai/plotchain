@@ -118,6 +118,50 @@ class CycleServiceTest {
     }
 
     @Test
+    void getDetailReturnsCycleFieldsPlusPerIncomeTypeBreakdownAndOverallTotal() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+        Cycle cycle = newCycle(CycleStatus.CLOSED);
+        when(cycleRepository.findById(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), IncomeType.DIRECT))
+            .thenReturn(BigDecimal.valueOf(100));
+        when(ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), IncomeType.MATCHING))
+            .thenReturn(BigDecimal.valueOf(50));
+        when(ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), IncomeType.SPONSOR_MATCHING))
+            .thenReturn(BigDecimal.valueOf(10));
+        when(ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), IncomeType.ROYALTY))
+            .thenReturn(BigDecimal.valueOf(5));
+        when(ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), IncomeType.REWARD))
+            .thenReturn(BigDecimal.valueOf(2));
+        when(ledgerEntryRepository.sumNetAmountByCycle(cycle.getId())).thenReturn(BigDecimal.valueOf(167));
+
+        CycleDetailResponse response = service.getDetail(cycle.getId());
+
+        assertThat(response.id()).isEqualTo(cycle.getId());
+        assertThat(response.periodStart()).isEqualTo(cycle.getPeriodStart());
+        assertThat(response.periodEnd()).isEqualTo(cycle.getPeriodEnd());
+        assertThat(response.status()).isEqualTo(CycleStatus.CLOSED);
+        assertThat(response.totalNet()).isEqualByComparingTo(BigDecimal.valueOf(167));
+        assertThat(response.incomeTypeTotals()).containsExactly(
+            new CycleIncomeTypeTotal(IncomeType.DIRECT, BigDecimal.valueOf(100)),
+            new CycleIncomeTypeTotal(IncomeType.MATCHING, BigDecimal.valueOf(50)),
+            new CycleIncomeTypeTotal(IncomeType.SPONSOR_MATCHING, BigDecimal.valueOf(10)),
+            new CycleIncomeTypeTotal(IncomeType.ROYALTY, BigDecimal.valueOf(5)),
+            new CycleIncomeTypeTotal(IncomeType.REWARD, BigDecimal.valueOf(2)));
+    }
+
+    @Test
+    void getDetailThrowsCycleNotFoundExceptionWhenIdDoesNotResolve() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+        UUID missingId = UUID.randomUUID();
+        when(cycleRepository.findById(missingId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getDetail(missingId))
+            .isInstanceOf(CycleNotFoundException.class);
+    }
+
+    @Test
     void closeThrowsCycleNotFoundExceptionWhenTheCycleDoesNotExist() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
