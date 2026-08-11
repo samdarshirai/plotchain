@@ -185,6 +185,40 @@ class AssociateRepositoryTest {
     }
 
     @Test
+    void findBySponsorIdReturnsOnlyDirectSponseesNotTheWholeDownline() {
+        RankTier rank = persistRank("Sales Associate", 1);
+        Associate sponsor = persistAssociate("VP00001", "Sponsor", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
+        Associate directSponsee = persistAssociate("VP00002", "Direct Sponsee", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
+        directSponsee.setSponsorId(sponsor.getId());
+        // indirectSponsee is sponsored BY directSponsee, not by sponsor -- one level removed on
+        // the sponsorship graph, must NOT appear in sponsor's own findBySponsorId result even
+        // though it's part of sponsor's wider organization.
+        Associate indirectSponsee = persistAssociate("VP00003", "Indirect Sponsee", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
+        indirectSponsee.setSponsorId(directSponsee.getId());
+        // unrelated has no sponsor at all.
+        persistAssociate("VP00004", "Unrelated", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
+        entityManager.flush();
+
+        List<Associate> found = associateRepository.findBySponsorId(sponsor.getId());
+
+        assertThat(found).extracting(Associate::getId).containsExactly(directSponsee.getId());
+    }
+
+    @Test
+    void findBySponsorIdReturnsEmptyWhenTheAssociateHasNoSponsees() {
+        RankTier rank = persistRank("Sales Associate", 1);
+        Associate lonely = persistAssociate("VP00001", "Lonely", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
+        entityManager.flush();
+
+        assertThat(associateRepository.findBySponsorId(lonely.getId())).isEmpty();
+    }
+
+    @Test
     void searchDirectoryFiltersBySearchRankKycStatusAndStatus() {
         RankTier rankA = persistRank("Sales Associate", 1);
         RankTier rankB = persistRank("Sales Executive", 2);

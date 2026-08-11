@@ -100,6 +100,13 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
 
     List<Associate> findByParentId(UUID parentId);
 
+    // Cycle-management unit 7 (docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
+    // Decision #9): Sponsor Matching's per-sponsor sponsee lookup -- mirrors findByParentId's
+    // shape exactly, but walks the sponsorship graph (sponsor_id), not the binary placement tree
+    // (parent_id). The two are independent relationships on the same Associate row; a sponsor's
+    // direct sponsees are not necessarily their binary-tree children.
+    List<Associate> findBySponsorId(UUID sponsorId);
+
     // Walks UP from a target associate to the root of its binary-tree branch. depth 0 is the
     // target itself; each step further out is +1. ORDER BY depth DESC puts the root first and
     // the target last -- root-to-target inclusive, the order the UI expands top-down.
