@@ -14,8 +14,25 @@
     "rightLeg": "दायाँ",
     "loadError": "आपका डैशबोर्ड लोड करने में समस्या हुई। कृपया पुनः प्रयास करें।"
   },
+  "salesHistory": {
+    "title": "Sales History",
+    "subtitle": "Your own and your team's recorded sales.",
+    "columnBuyerName": "Buyer",
+    "columnBuyerPhone": "Phone",
+    "columnAmount": "Amount",
+    "columnAssociateId": "Associate",
+    "columnLegCredited": "Leg",
+    "columnStatus": "Status",
+    "columnRecordedAt": "Recorded At",
+    "loadError": "Something went wrong loading your sales history. Please try again.",
+    "emptyState": "No sales to show yet.",
+    "previousPageAction": "Previous",
+    "nextPageAction": "Next",
+    "pageIndicator": "Page {{page}} of {{totalPages}}"
+  },
   "nav": {
     "dashboard": "डैशबोर्ड",
+    "salesHistory": "बिक्री इतिहास",
     "provisionAssociate": "एसोसिएट पंजीकृत करें",
     "settings": "सेटिंग्स"
   },
