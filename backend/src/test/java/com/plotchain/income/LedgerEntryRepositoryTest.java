@@ -120,6 +120,34 @@ class LedgerEntryRepositoryTest {
             .isInstanceOf(DataIntegrityViolationException.class);
     }
 
+    @Test
+    void findByAssociateIdAndCycleIdAndIncomeTypeReturnsTheMatchingRowForThatExactTuple() {
+        Associate associate = seedAssociate();
+        Cycle cycle = seedCycle();
+        LedgerEntry saved = ledgerEntryRepository.saveAndFlush(
+            newEntry(associate.getId(), cycle.getId(), IncomeType.MATCHING, UUID.randomUUID()));
+
+        Optional<LedgerEntry> found = ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(
+            associate.getId(), cycle.getId(), IncomeType.MATCHING);
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getId()).isEqualTo(saved.getId());
+    }
+
+    @Test
+    void findByAssociateIdAndCycleIdAndIncomeTypeReturnsEmptyWhenNoEntryOfThatIncomeTypeExists() {
+        Associate associate = seedAssociate();
+        Cycle cycle = seedCycle();
+        // A DIRECT entry exists for this associate+cycle, but the caller is asking about MATCHING.
+        ledgerEntryRepository.saveAndFlush(
+            newEntry(associate.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID()));
+
+        Optional<LedgerEntry> found = ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(
+            associate.getId(), cycle.getId(), IncomeType.MATCHING);
+
+        assertThat(found).isEmpty();
+    }
+
     // Sales unit 5 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
     // flow "Void a sale", step 5): SaleService.voidSale needs to find the DIRECT LedgerEntry a
     // RECORDED sale created at record time (sourceRef = sale.id) so it can flip it to REVERSED.

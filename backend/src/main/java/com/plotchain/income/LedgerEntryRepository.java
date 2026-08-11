@@ -30,6 +30,17 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
     boolean existsByAssociateIdAndCycleIdAndIncomeTypeAndSourceRef(
         UUID associateId, UUID cycleId, IncomeType incomeType, UUID sourceRef);
 
+    // Cycle-management unit 7 (docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
+    // Decision #9): locates a sponsee's Matching LedgerEntry for this cycle, so Sponsor Matching
+    // can base its own grossAmount on it. A fresh query, not a carry-over from creditMatchingIncome's
+    // in-memory work -- see this unit's plan for why that's the deliberate choice, and Task 4's
+    // integration test for the proof it's safe within the single settlement-batch transaction.
+    // Unqualified by associateId+cycleId+incomeType alone being enough to disambiguate: an
+    // associate has at most one MATCHING entry per cycle (unit 5 writes exactly one per associate
+    // per cycle, guarded by its own idempotency check), so Optional<LedgerEntry> is correct, not
+    // a lossy simplification of a potential multi-row result.
+    Optional<LedgerEntry> findByAssociateIdAndCycleIdAndIncomeType(UUID associateId, UUID cycleId, IncomeType incomeType);
+
     // Sales unit 5 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
     // flow "Void a sale", step 5): looks up the DIRECT LedgerEntry a RECORDED sale created at
     // record time (sourceRef = sale.id, set by SaleService.recordSale), so SaleService.voidSale
