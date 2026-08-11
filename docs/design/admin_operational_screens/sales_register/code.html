@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sales Register — Admin Operational Screen Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ============================================================
+     Tokens -- copied 1:1 from frontend/src/styles/_tokens.scss.
+     No new hex values are introduced anywhere below this block.
+     ============================================================ */
+  :root {
+    --brand-primary: #7C3AED;
+    --brand-secondary: #22D3EE;
+    --brand-gradient: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    --brand-primary-soft: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+    --brand-primary-hover: color-mix(in srgb, var(--brand-primary) 85%, white);
+    --brand-secondary-soft: color-mix(in srgb, var(--brand-secondary) 14%, transparent);
+    --brand-primary-contrast: #FFFFFF;
+
+    --surface-page: #f8f9ff;
+    --surface-card: #ffffff;
+    --surface-raised: #eff4ff;
+    --border-subtle: #c2c6d9;
+    --text-primary: #0b1c30;
+    --text-muted: #424656;
+    --status-success: #34D399;
+    --status-warning: #F59E0B;
+    --status-danger: #F87171;
+
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--surface-page);
+    color: var(--text-primary);
+    font-family: 'Inter', var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ============================================================
+     Generic primitives -- copied 1:1 from _cards.scss / _buttons.scss /
+     _forms.scss / _tables.scss / _shared-components.scss. These are the
+     REAL classes the live app renders today; the sales-register/
+     record-sale rules further down are additive, scoped contextually
+     (mirrors .create-associate .card { ... } precedent in _admin.scss).
+     ============================================================ */
+  .card { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.5rem; }
+  .card-title { margin: 0 0 0.25rem; font-size: 1.125rem; font-weight: 600; color: var(--text-primary); }
+  .card-subtitle { margin: 0; font-size: 0.875rem; color: var(--text-muted); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: 600; text-align: left; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
+  td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-subtle); }
+  tr:hover td { background: var(--surface-raised); }
+  .editable-table__empty { padding: 1.5rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.875rem; }
+
+  button { cursor: pointer; border-radius: 8px; padding: 0.625rem 1.25rem; border: none; background: none; font-family: inherit; }
+  button:disabled { cursor: not-allowed; opacity: 0.5; }
+  .brand-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background: var(--brand-gradient); color: var(--brand-primary-contrast); font-weight: 600; transition: opacity .15s ease, transform .15s ease; }
+  .brand-button:hover:not(:disabled) { opacity: .92; }
+  .brand-button--secondary { background: var(--surface-raised); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+  .brand-button--ghost { background: transparent; color: var(--text-primary); border: 1px solid var(--brand-primary-soft); }
+  .brand-button--danger { background: var(--status-danger); color: var(--brand-primary-contrast); }
+
+  label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); }
+  input[type='text'], input[type='email'], input[type='tel'], input[type='date'], select {
+    display: block; width: 100%; padding: 0.625rem 0.875rem; background: var(--surface-raised);
+    border: 1px solid var(--border-subtle); border-radius: 8px; font-family: inherit; font-size: 0.875rem; color: var(--text-primary);
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px var(--brand-primary-soft); }
+  input:disabled, select:disabled { opacity: 0.55; cursor: not-allowed; }
+  ::placeholder { color: var(--text-muted); }
+
+  .field-error { margin-top: 0.375rem; font-size: 0.8125rem; color: var(--status-danger); }
+
+  .inline-banner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.875rem 1.25rem; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-primary); font-size: 0.875rem; }
+  .inline-banner__content { flex: 1; }
+  .inline-banner__content p { margin: 0 0 0.375rem; }
+  .inline-banner__content p:last-child { margin-bottom: 0; }
+  .inline-banner__dismiss { background: transparent; border: none; color: inherit; font-size: 1.125rem; line-height: 1; padding: 0; cursor: pointer; opacity: .7; }
+  .inline-banner--danger { border-color: var(--status-danger); background: color-mix(in srgb, var(--status-danger) 14%, var(--surface-card)); color: var(--status-danger); }
+  .inline-banner--success { border-color: var(--status-success); background: color-mix(in srgb, var(--status-success) 14%, var(--surface-card)); color: #146c43; }
+  .inline-banner--success strong { color: #0b1c30; }
+
+  /* ============================================================
+     Sales Register -- new bespoke rules for Task 7 (_admin.scss,
+     appended after .create-associate__*). Contextually scoped to
+     .sales-register, same technique .create-associate .card uses.
+     ============================================================ */
+  .sales-register { display: flex; flex-direction: column; gap: 1.5rem; max-width: 1120px; margin: 0 auto; padding: 1.5rem 2rem; font-family: 'Inter', var(--font-sans); }
+
+  .sales-register__intro { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
+  .sales-register__intro-copy { display: flex; flex-direction: column; gap: 0.375rem; }
+  .sales-register__eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; color: var(--brand-primary); }
+  .sales-register__title { margin: 0; font-family: 'Geist', var(--font-sans); font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; color: var(--text-primary); }
+  .sales-register__subtitle { margin: 0; max-width: 40rem; font-size: 0.9375rem; line-height: 1.6; color: var(--text-muted); }
+
+  .sales-register__toolbar { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 1.25rem; padding: 1.25rem 1.5rem; background: var(--surface-raised); border-radius: 16px; }
+  .sales-register__filter-field { display: flex; flex-direction: column; gap: 0.375rem; min-width: 168px; }
+  .sales-register__filter-field label { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  .sales-register__filter-field select, .sales-register__filter-field input { background: var(--surface-card); }
+  .sales-register__toolbar-reset { margin-left: auto; }
+
+  .sales-register .card { border: none; border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); padding: 0; overflow: hidden; }
+  .sales-register .editable-table { margin: 0; }
+  .sales-register .editable-table thead th { font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; background: var(--surface-card); }
+  .sales-register .editable-table tbody td { font-size: 0.875rem; color: var(--text-primary); vertical-align: middle; }
+  .sales-register .editable-table tbody tr:last-child td { border-bottom: none; }
+
+  /* Amount column (3rd) -- ledger typography */
+  .sales-register .editable-table td:nth-child(3) { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  /* Leg Credited column (4th) -- directional glyphs baked into the row's string value */
+  .sales-register .editable-table td:nth-child(4) { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; letter-spacing: 0.02em; color: var(--text-muted); text-align: center; }
+  /* Status column (5th) -- can't be per-value colored (plain-text cell, see DESIGN.md); uniform ledger treatment */
+  .sales-register .editable-table td:nth-child(5) { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  /* Recorded At column (6th) */
+  .sales-register .editable-table td:nth-child(6) { font-variant-numeric: tabular-nums; color: var(--text-muted); font-size: 0.8125rem; }
+
+  .sales-register__void-action { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .sales-register__void-action input[type='text'] { width: 200px; padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+  .sales-register__void-action .brand-button { padding: 0.5rem 0.875rem; font-size: 0.8125rem; border-radius: 8px; }
+
+  .sales-register__voided-tag { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 999px; background: color-mix(in srgb, var(--status-danger) 16%, var(--surface-card)); color: #b42318; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .sales-register__void-reason { display: block; margin-top: 0.25rem; font-size: 0.8125rem; font-style: italic; color: var(--text-muted); max-width: 220px; }
+
+  .sales-register .editable-table__empty { padding: 3rem 1.5rem; }
+  .sales-register__empty-state { display: flex; flex-direction: column; align-items: center; gap: 0.375rem; }
+  .sales-register__empty-state-title { font-weight: 600; color: var(--text-primary); }
+  .sales-register__empty-state-hint { font-size: 0.8125rem; color: var(--text-muted); }
+
+  .sales-register__pagination { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; padding: 0 0.25rem; }
+  .sales-register__page-indicator { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; color: var(--text-muted); }
+  .sales-register__pagination .brand-button--secondary { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+
+  /* ============================================================
+     Record Sale -- mirrors .create-associate structurally (same
+     eyebrow/title/subtitle/row/field/hint/optional-tag idiom) but
+     without the wizard's placement-tree visualization.
+     ============================================================ */
+  .record-sale { display: flex; flex-direction: column; gap: 1.5rem; max-width: 760px; margin: 0 auto; padding: 1.5rem 2rem; font-family: 'Inter', var(--font-sans); }
+  .record-sale__intro { display: flex; flex-direction: column; gap: 0.375rem; }
+  .record-sale__eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; color: var(--brand-primary); }
+  .record-sale__title { margin: 0; font-family: 'Geist', var(--font-sans); font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; color: var(--text-primary); }
+  .record-sale__subtitle { margin: 0; max-width: 38rem; font-size: 0.9375rem; line-height: 1.6; color: var(--text-muted); }
+
+  .record-sale .card { border: none; border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); }
+  .record-sale__form { display: flex; flex-direction: column; gap: 1.5rem; padding: 2rem; }
+  .record-sale__row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .record-sale__field { display: flex; flex-direction: column; }
+  .record-sale__field label { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-muted); }
+  .record-sale__field-header { display: flex; align-items: center; justify-content: space-between; }
+  .record-sale__field-header label { margin-bottom: 0; }
+  .record-sale__optional-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-muted); opacity: 0.75; }
+  .record-sale__hint { margin-top: 0.375rem; font-size: 0.8rem; color: var(--text-muted); }
+  .record-sale__actions { display: flex; justify-content: flex-end; padding-top: 0.5rem; }
+  .record-sale .field-error { margin-top: 0.375rem; }
+  .record-sale__field input, .record-sale__field select { border-radius: 12px; padding: 0.75rem 1rem; margin-top: 0.5rem; }
+  .record-sale__field-header + input, .record-sale__field-header + select { margin-top: 0.5rem; }
+
+  /* ============================================================
+     Docs-page chrome (review harness only -- not part of the design)
+     ============================================================ */
+  .docs-index { position: sticky; top: 0; z-index: 10; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; padding: 0.875rem 2rem; background: var(--text-primary); color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+  .docs-index a { color: #cbd5ff; text-decoration: none; padding: 0.25rem 0.625rem; border-radius: 999px; }
+  .docs-index a:hover { background: rgba(255,255,255,0.12); color: #fff; }
+  .docs-index strong { color: #fff; font-weight: 700; margin-right: 0.5rem; }
+  .docs-frame { padding: 2.5rem 1.5rem; border-bottom: 1px dashed var(--border-subtle); }
+  .docs-frame__label { max-width: 1120px; margin: 0 auto 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--brand-primary); }
+  .docs-frame__stage { background: var(--surface-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding-bottom: 2rem; }
+
+  /* ============================================================
+     Responsive addendum (wizard DESIGN.md's Responsive Behavior
+     section, applied at its stated breakpoints: md=768px for dense
+     tables, 720px for multi-column forms matching create-associate's
+     own live breakpoint).
+     ============================================================ */
+  @media (max-width: 768px) {
+    .sales-register__toolbar { flex-direction: column; align-items: stretch; }
+    .sales-register__filter-field { min-width: 0; }
+    .sales-register__toolbar-reset { margin-left: 0; }
+    .sales-register__toolbar-reset .brand-button { width: 100%; }
+
+    .sales-register .editable-table { table-layout: fixed; width: 100%; }
+    .sales-register .editable-table thead { display: none; }
+    .sales-register .editable-table tbody tr { display: block; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); }
+    .sales-register .editable-table tbody td { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 0.375rem 0; border-bottom: none; text-align: right; min-width: 0; }
+    .sales-register .editable-table tbody td > * { min-width: 0; }
+    .sales-register .editable-table tbody td::before { content: attr(data-label); flex: 0 0 auto; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    .sales-register .editable-table tbody td, .sales-register__void-reason { overflow-wrap: anywhere; word-break: break-word; }
+    .sales-register .editable-table tbody td:first-child { font-family: 'Geist', var(--font-sans); font-size: 1rem; font-weight: 600; }
+    .sales-register .editable-table td:nth-child(3),
+    .sales-register .editable-table td:nth-child(4),
+    .sales-register .editable-table td:nth-child(5),
+    .sales-register .editable-table td:nth-child(6) { text-align: right; }
+    .sales-register .editable-table td:last-child { display: block; text-align: left; padding-top: 0.75rem; }
+    .sales-register .editable-table td:last-child::before { display: none; }
+    .sales-register__void-action input[type='text'] { width: 100%; }
+    .sales-register__void-action .brand-button, .sales-register__pagination .brand-button--secondary, .record-sale .brand-button { min-height: 44px; }
+  }
+
+  @media (max-width: 720px) {
+    .record-sale__row { grid-template-columns: 1fr; }
+    .sales-register__intro { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="docs-index">
+  <strong>Sales Register — screen states</strong>
+  <a href="#state-1">1. Register / loaded</a>
+  <a href="#state-2">2. Empty state</a>
+  <a href="#state-3">3. Row actions</a>
+  <a href="#state-4">4. Error banners</a>
+  <a href="#state-5">5. Record Sale</a>
+  <a href="#state-6">6. Record Sale success</a>
+  <a href="#state-7">7. Record Sale errors</a>
+</nav>
+
+<!-- ============================================================
+     STATE 1 -- Sales Register, default/loaded
+     (also covers STATE 3 -- row actions split by RECORDED/VOIDED,
+     since a realistic loaded table naturally contains both)
+     ============================================================ -->
+<section id="state-1" class="docs-frame">
+  <p class="docs-frame__label">State 1 &amp; 3 — Sales Register: default/loaded, row actions split by status</p>
+  <div class="docs-frame__stage">
+    <div class="sales-register">
+      <div class="sales-register__intro">
+        <div class="sales-register__intro-copy">
+          <span class="sales-register__eyebrow">Admin · Sales Register</span>
+          <h1 class="sales-register__title">Sales Register</h1>
+          <p class="sales-register__subtitle">Every recorded and voided plot sale, across every project and associate.</p>
+        </div>
+        <button type="button" class="brand-button">+ Record Sale</button>
+      </div>
+
+      <div class="sales-register__toolbar">
+        <div class="sales-register__filter-field">
+          <label for="f-associate">Associate</label>
+          <select id="f-associate">
+            <option>All associates</option>
+            <option>PC-01042 — Ritu Sharma</option>
+            <option>PC-00981 — Arvind Rao</option>
+          </select>
+        </div>
+        <div class="sales-register__filter-field">
+          <label for="f-status">Status</label>
+          <select id="f-status">
+            <option>All</option>
+            <option>Recorded</option>
+            <option>Voided</option>
+          </select>
+        </div>
+        <div class="sales-register__filter-field">
+          <label for="f-from">Recorded from</label>
+          <input id="f-from" type="date" value="2026-07-01" />
+        </div>
+        <div class="sales-register__filter-field">
+          <label for="f-to">Recorded to</label>
+          <input id="f-to" type="date" value="2026-08-11" />
+        </div>
+        <div class="sales-register__toolbar-reset">
+          <button type="button" class="brand-button brand-button--ghost">Reset filters</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead>
+            <tr>
+              <th>Buyer Name</th>
+              <th>Buyer Phone</th>
+              <th>Amount</th>
+              <th>Leg Credited</th>
+              <th>Status</th>
+              <th>Recorded At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Buyer Name">Meera Iyer</td>
+              <td data-label="Buyer Phone">+91 98450 11234</td>
+              <td data-label="Amount">₹18,50,000</td>
+              <td data-label="Leg Credited">◂ LEFT</td>
+              <td data-label="Status">RECORDED</td>
+              <td data-label="Recorded At">11 Aug 2026, 9:12 am</td>
+              <td data-label="Actions">
+                <div class="sales-register__void-action">
+                  <input type="text" placeholder="Reason for voiding (optional)" />
+                  <button type="button" class="brand-button brand-button--danger">Void</button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td data-label="Buyer Name">Sanjay Kulkarni</td>
+              <td data-label="Buyer Phone">+91 90210 88765</td>
+              <td data-label="Amount">₹9,75,000</td>
+              <td data-label="Leg Credited">RIGHT ▸</td>
+              <td data-label="Status">VOIDED</td>
+              <td data-label="Recorded At">10 Aug 2026, 4:47 pm</td>
+              <td data-label="Actions">
+                <span class="sales-register__voided-tag">Voided</span>
+                <span class="sales-register__void-reason">Buyer requested cancellation before payment cleared.</span>
+              </td>
+            </tr>
+            <tr>
+              <td data-label="Buyer Name">Farhan Sheikh</td>
+              <td data-label="Buyer Phone">+91 99887 65432</td>
+              <td data-label="Amount">₹24,20,000</td>
+              <td data-label="Leg Credited">◂ LEFT</td>
+              <td data-label="Status">RECORDED</td>
+              <td data-label="Recorded At">10 Aug 2026, 11:03 am</td>
+              <td data-label="Actions">
+                <div class="sales-register__void-action">
+                  <input type="text" placeholder="Reason for voiding (optional)" />
+                  <button type="button" class="brand-button brand-button--danger">Void</button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td data-label="Buyer Name">Neha Verma</td>
+              <td data-label="Buyer Phone">+91 96123 44556</td>
+              <td data-label="Amount">₹6,40,000</td>
+              <td data-label="Leg Credited">RIGHT ▸</td>
+              <td data-label="Status">RECORDED</td>
+              <td data-label="Recorded At">9 Aug 2026, 2:31 pm</td>
+              <td data-label="Actions">
+                <div class="sales-register__void-action">
+                  <input type="text" placeholder="Reason for voiding (optional)" />
+                  <button type="button" class="brand-button brand-button--danger">Void</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sales-register__pagination">
+        <span class="sales-register__page-indicator">Page 2 of 6</span>
+        <button type="button" class="brand-button brand-button--secondary">Previous</button>
+        <button type="button" class="brand-button brand-button--secondary">Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 2 -- Empty state
+     ============================================================ -->
+<section id="state-2" class="docs-frame">
+  <p class="docs-frame__label">State 2 — Sales Register: empty state (no sales match current filters)</p>
+  <div class="docs-frame__stage">
+    <div class="sales-register">
+      <div class="sales-register__intro">
+        <div class="sales-register__intro-copy">
+          <span class="sales-register__eyebrow">Admin · Sales Register</span>
+          <h1 class="sales-register__title">Sales Register</h1>
+          <p class="sales-register__subtitle">Every recorded and voided plot sale, across every project and associate.</p>
+        </div>
+        <button type="button" class="brand-button">+ Record Sale</button>
+      </div>
+
+      <div class="sales-register__toolbar">
+        <div class="sales-register__filter-field">
+          <label>Associate</label>
+          <select><option>PC-00512 — Deepak Nair</option></select>
+        </div>
+        <div class="sales-register__filter-field">
+          <label>Status</label>
+          <select><option>Voided</option></select>
+        </div>
+        <div class="sales-register__filter-field">
+          <label>Recorded from</label>
+          <input type="date" value="2026-08-01" />
+        </div>
+        <div class="sales-register__filter-field">
+          <label>Recorded to</label>
+          <input type="date" value="2026-08-11" />
+        </div>
+        <div class="sales-register__toolbar-reset">
+          <button type="button" class="brand-button brand-button--ghost">Reset filters</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead>
+            <tr>
+              <th>Buyer Name</th><th>Buyer Phone</th><th>Amount</th><th>Leg Credited</th><th>Status</th><th>Recorded At</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="editable-table__empty" colspan="7">
+                <div class="sales-register__empty-state">
+                  <span class="sales-register__empty-state-title">No sales match these filters</span>
+                  <span class="sales-register__empty-state-hint">Try widening the date range or clearing a filter.</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 4 -- Load error / action error banners
+     ============================================================ -->
+<section id="state-4" class="docs-frame">
+  <p class="docs-frame__label">State 4 — Sales Register: load error and void-action error banners</p>
+  <div class="docs-frame__stage">
+    <div class="sales-register">
+      <div class="sales-register__intro">
+        <div class="sales-register__intro-copy">
+          <span class="sales-register__eyebrow">Admin · Sales Register</span>
+          <h1 class="sales-register__title">Sales Register</h1>
+          <p class="sales-register__subtitle">Every recorded and voided plot sale, across every project and associate.</p>
+        </div>
+        <button type="button" class="brand-button">+ Record Sale</button>
+      </div>
+
+      <div class="sales-register__toolbar">
+        <div class="sales-register__filter-field"><label>Associate</label><select><option>All associates</option></select></div>
+        <div class="sales-register__filter-field"><label>Status</label><select><option>All</option></select></div>
+        <div class="sales-register__filter-field"><label>Recorded from</label><input type="date" /></div>
+        <div class="sales-register__filter-field"><label>Recorded to</label><input type="date" /></div>
+        <div class="sales-register__toolbar-reset"><button type="button" class="brand-button brand-button--ghost">Reset filters</button></div>
+      </div>
+
+      <div class="inline-banner inline-banner--danger">
+        <div class="inline-banner__content">Couldn't load the sales register. Refresh the page or try again in a moment.</div>
+        <button type="button" class="inline-banner__dismiss">&times;</button>
+      </div>
+      <div class="inline-banner inline-banner--danger">
+        <div class="inline-banner__content">Couldn't void that sale. Refresh and try again.</div>
+        <button type="button" class="inline-banner__dismiss">&times;</button>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead><tr><th>Buyer Name</th><th>Buyer Phone</th><th>Amount</th><th>Leg Credited</th><th>Status</th><th>Recorded At</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="editable-table__empty" colspan="7">
+                <div class="sales-register__empty-state">
+                  <span class="sales-register__empty-state-title">No sales match these filters</span>
+                  <span class="sales-register__empty-state-hint">Try widening the date range or clearing a filter.</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 5 -- Record Sale, form default
+     ============================================================ -->
+<section id="state-5" class="docs-frame">
+  <p class="docs-frame__label">State 5 — Record Sale: form default (Project → Plot dependent select)</p>
+  <div class="docs-frame__stage">
+    <div class="record-sale">
+      <div class="record-sale__intro">
+        <span class="record-sale__eyebrow">Admin · Record Sale</span>
+        <h1 class="record-sale__title">Record a Sale</h1>
+        <p class="record-sale__subtitle">Log a completed plot sale and credit the associate's binary leg immediately.</p>
+      </div>
+
+      <form class="card record-sale__form">
+        <div class="record-sale__row">
+          <div class="record-sale__field">
+            <label>Project</label>
+            <select>
+              <option>Select a project…</option>
+              <option>Emerald Meadows — Phase 2</option>
+              <option>Sunrise Acres</option>
+            </select>
+          </div>
+          <div class="record-sale__field">
+            <label>Plot</label>
+            <select disabled><option>Select a project first</option></select>
+            <span class="record-sale__hint">Only plots marked Available in the chosen project are shown.</span>
+          </div>
+        </div>
+
+        <div class="record-sale__row">
+          <div class="record-sale__field">
+            <label>Associate</label>
+            <select>
+              <option>Select an associate…</option>
+              <option>PC-01042 — Ritu Sharma</option>
+              <option>PC-00981 — Arvind Rao</option>
+            </select>
+          </div>
+          <div></div>
+        </div>
+
+        <div class="record-sale__row">
+          <div class="record-sale__field">
+            <label>Buyer Name</label>
+            <input type="text" placeholder="e.g. Meera Iyer" />
+          </div>
+          <div class="record-sale__field">
+            <label>Buyer Phone</label>
+            <input type="tel" placeholder="+91 98450 11234" />
+          </div>
+        </div>
+
+        <div class="record-sale__row">
+          <div class="record-sale__field">
+            <div class="record-sale__field-header">
+              <label>Buyer Email</label>
+              <span class="record-sale__optional-tag">Optional</span>
+            </div>
+            <input type="email" placeholder="meera@example.com" />
+          </div>
+          <div></div>
+        </div>
+
+        <div class="record-sale__actions">
+          <button type="button" class="brand-button">Record Sale</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 6 -- Record Sale, success
+     ============================================================ -->
+<section id="state-6" class="docs-frame">
+  <p class="docs-frame__label">State 6 — Record Sale: success (banner above reset form)</p>
+  <div class="docs-frame__stage">
+    <div class="record-sale">
+      <div class="record-sale__intro">
+        <span class="record-sale__eyebrow">Admin · Record Sale</span>
+        <h1 class="record-sale__title">Record a Sale</h1>
+        <p class="record-sale__subtitle">Log a completed plot sale and credit the associate's binary leg immediately.</p>
+      </div>
+
+      <div class="inline-banner inline-banner--success">
+        <div class="inline-banner__content">
+          <p>Sale recorded: <strong>₹18,50,000</strong> from <strong>Meera Iyer</strong>.</p>
+          <p>Credited to <strong>PC-01042 — Ritu Sharma</strong>'s left leg.</p>
+        </div>
+        <button type="button" class="brand-button brand-button--secondary">Record Another</button>
+      </div>
+
+      <form class="card record-sale__form">
+        <div class="record-sale__row">
+          <div class="record-sale__field"><label>Project</label><select><option>Select a project…</option></select></div>
+          <div class="record-sale__field"><label>Plot</label><select disabled><option>Select a project first</option></select></div>
+        </div>
+        <div class="record-sale__row">
+          <div class="record-sale__field"><label>Associate</label><select><option>Select an associate…</option></select></div>
+          <div></div>
+        </div>
+        <div class="record-sale__row">
+          <div class="record-sale__field"><label>Buyer Name</label><input type="text" placeholder="e.g. Meera Iyer" /></div>
+          <div class="record-sale__field"><label>Buyer Phone</label><input type="tel" placeholder="+91 98450 11234" /></div>
+        </div>
+        <div class="record-sale__row">
+          <div class="record-sale__field">
+            <div class="record-sale__field-header"><label>Buyer Email</label><span class="record-sale__optional-tag">Optional</span></div>
+            <input type="email" placeholder="meera@example.com" />
+          </div>
+          <div></div>
+        </div>
+        <div class="record-sale__actions"><button type="button" class="brand-button">Record Sale</button></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 7 -- Record Sale, validation/conflict errors
+     ============================================================ -->
+<section id="state-7" class="docs-frame">
+  <p class="docs-frame__label">State 7 — Record Sale: field validation + 404/409 conflict banner</p>
+  <div class="docs-frame__stage">
+    <div class="record-sale">
+      <div class="record-sale__intro">
+        <span class="record-sale__eyebrow">Admin · Record Sale</span>
+        <h1 class="record-sale__title">Record a Sale</h1>
+        <p class="record-sale__subtitle">Log a completed plot sale and credit the associate's binary leg immediately.</p>
+      </div>
+
+      <div class="inline-banner inline-banner--danger">
+        <div class="inline-banner__content">This plot is no longer available — someone else may have just sold it. Choose a different plot.</div>
+        <button type="button" class="inline-banner__dismiss">&times;</button>
+      </div>
+
+      <form class="card record-sale__form">
+        <div class="record-sale__row">
+          <div class="record-sale__field">
+            <label>Project</label>
+            <select><option selected>Emerald Meadows — Phase 2</option></select>
+          </div>
+          <div class="record-sale__field">
+            <label>Plot</label>
+            <select><option selected>Plot 14-B</option></select>
+            <div class="field-error">This plot was just sold. Pick another plot.</div>
+          </div>
+        </div>
+
+        <div class="record-sale__row">
+          <div class="record-sale__field">
+            <label>Associate</label>
+            <select><option>Select an associate…</option></select>
+            <div class="field-error">Choose the associate this sale credits.</div>
+          </div>
+          <div></div>
+        </div>
+
+        <div class="record-sale__row">
+          <div class="record-sale__field">
+            <label>Buyer Name</label>
+            <input type="text" placeholder="e.g. Meera Iyer" />
+            <div class="field-error">Buyer name is required.</div>
+          </div>
+          <div class="record-sale__field">
+            <label>Buyer Phone</label>
+            <input type="tel" placeholder="+91 98450 11234" />
+            <div class="field-error">Enter a valid phone number.</div>
+          </div>
+        </div>
+
+        <div class="record-sale__row">
+          <div class="record-sale__field">
+            <div class="record-sale__field-header"><label>Buyer Email</label><span class="record-sale__optional-tag">Optional</span></div>
+            <input type="email" placeholder="meera@example.com" />
+          </div>
+          <div></div>
+        </div>
+
+        <div class="record-sale__actions"><button type="button" class="brand-button">Record Sale</button></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
