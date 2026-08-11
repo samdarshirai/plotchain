@@ -125,6 +125,31 @@
       "nextPageAction": "Next",
       "pageIndicator": "Page {{page}} of {{totalPages}}",
       "emptyState": "No entries in this status."
+    },
+    "salesRegister": {
+      "title": "Sales Register",
+      "associateFilterLabel": "Associate",
+      "associateFilterAllOption": "All associates",
+      "statusFilterLabel": "Status",
+      "statusFilterAllOption": "All statuses",
+      "statusRecordedOption": "Recorded",
+      "statusVoidedOption": "Voided",
+      "recordedFromLabel": "Recorded from",
+      "recordedToLabel": "Recorded to",
+      "recordSaleLink": "+ Record Sale",
+      "columnBuyerName": "Buyer",
+      "columnBuyerPhone": "Phone",
+      "columnAmount": "Amount",
+      "columnLegCredited": "Leg",
+      "columnStatus": "Status",
+      "columnRecordedAt": "Recorded At",
+      "columnActions": "Actions",
+      "loadError": "Something went wrong loading the sales register. Please try again.",
+      "actionError": "Could not save that action. Please try again.",
+      "previousPageAction": "Previous",
+      "nextPageAction": "Next",
+      "pageIndicator": "Page {{page}} of {{totalPages}}",
+      "emptyState": "No sales match these filters."
     }
   },
   "setup": {
