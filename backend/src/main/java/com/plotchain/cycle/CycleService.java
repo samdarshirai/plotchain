@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -104,13 +105,12 @@ public class CycleService {
     }
 
     // Cycle-management unit 3 (row lock + OPEN check, unchanged) + unit 4 (leg-volume rollup) +
-    // unit 5 (Matching Income) + unit 6 (Rank progression) --
+    // unit 5 (Matching Income) + unit 6 (Rank progression) + unit 7 (Sponsor Matching) --
     // docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
-    // Decision #2, settlement batch flow steps 1, 2, 3, 4, 8. Steps 5-7 (Sponsor Matching,
-    // Royalty, Reward) are NOT implemented here -- units 7-9 insert their own logic between the
-    // advanceRanks call below and the CLOSED flip, without changing this method's signature or
-    // transaction boundary, the same sequential-insertion pattern units 3 -> 4 -> 5 -> 6 already
-    // used.
+    // Decision #2, settlement batch flow steps 1, 2, 3, 4, 5, 8. Steps 6-7 (Royalty, Reward) are
+    // NOT implemented here -- units 8-9 insert their own logic between the creditSponsorMatching
+    // call above and the CLOSED flip, without changing this method's signature or transaction
+    // boundary, the same sequential-insertion pattern units 3 -> 4 -> 5 -> 6 -> 7 already used.
     @Transactional
     public CycleCloseResponse close(UUID id) {
         Cycle cycle = cycleRepository.findByIdForUpdate(id)
@@ -147,6 +147,14 @@ public class CycleService {
         // highest RankTier their updated cumulativeMatchedVolume now qualifies for. Never
         // demotes. Skipped for ADMIN and the four staff roles (see advanceRanks' own comment).
         advanceRanks(associates);
+
+        // Flow step 5 (Decision #9): second pass, requires step 3 (creditMatchingIncome) complete
+        // tree-wide. One SPONSOR_MATCHING entry per direct sponsee who earned Matching Income this
+        // cycle, credited to their sponsor. No role guard -- applies to Admin in full (Decision #7:
+        // "Matching and Sponsor Matching... are unaffected and do apply to Admin in full"). This is
+        // this unit's own insertion point; unit 8 (Royalty) inserts its own step immediately after
+        // this call, before the CLOSED flip below.
+        creditSponsorMatching(cycle.getId(), associates, planVersion);
 
         // Flow step 8. getOrOpenCurrent() is a plain (non-@Transactional) self-invocation here,
         // so it runs inside the transaction this @Transactional method's proxy already started
@@ -372,6 +380,72 @@ public class CycleService {
             if (highestQualified.getRankOrder() > currentRankOrder) {
                 associate.setRankId(highestQualified.getId());
                 associateRepository.save(associate);
+            }
+        }
+    }
+
+    // Flow step 5 (Decision #9, #10, #11, #12): iterate over `associates` once as candidate
+    // SPONSORS (not sponsees -- see this unit's plan for why this is the equivalent, non-redundant
+    // reading of Decision #9's prose). For each candidate sponsor's direct sponsees
+    // (findBySponsorId), look up that sponsee's Matching LedgerEntry for THIS cycle via a fresh
+    // repository query (deliberately not an in-memory carry-over from creditMatchingIncome -- see
+    // this unit's plan's Global Constraints for the full correctness/simplicity tradeoff writeup).
+    // If the sponsee has one, credit the sponsor a SPONSOR_MATCHING entry: grossAmount is a
+    // percentage of the sponsee's Matching grossAmount (never netAmount -- deductions apply once,
+    // per-entry, at creation), sourceRef = that Matching entry's id. Deductions and KYC-gating use
+    // the SPONSOR's own numbers/kycStatus -- the sponsor is who this entry pays. No role guard:
+    // unlike Rank/Royalty, this applies to Admin in full (Decision #7).
+    private void creditSponsorMatching(
+        UUID cycleId,
+        List<Associate> associates,
+        CompensationPlanVersion planVersion
+    ) {
+        for (Associate sponsor : associates) {
+            List<Associate> directSponsees = associateRepository.findBySponsorId(sponsor.getId());
+
+            for (Associate sponsee : directSponsees) {
+                Optional<LedgerEntry> sponseeMatchingEntry = ledgerEntryRepository
+                    .findByAssociateIdAndCycleIdAndIncomeType(sponsee.getId(), cycleId, IncomeType.MATCHING);
+                if (sponseeMatchingEntry.isEmpty()) {
+                    continue;
+                }
+                LedgerEntry matchingEntry = sponseeMatchingEntry.get();
+
+                // Decision #12: check-then-insert, same pattern as creditMatchingIncome.
+                boolean alreadyCredited = ledgerEntryRepository.existsByAssociateIdAndCycleIdAndIncomeTypeAndSourceRef(
+                    sponsor.getId(), cycleId, IncomeType.SPONSOR_MATCHING, matchingEntry.getId());
+                if (alreadyCredited) {
+                    continue;
+                }
+
+                // Decision #9: percentage of the sponsee's Matching grossAmount, never netAmount.
+                BigDecimal grossAmount = matchingEntry.getGrossAmount().multiply(
+                    planVersion.getSponsorMatchingPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+                if (grossAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+
+                BigDecimal tdsDeduction = grossAmount.multiply(
+                    planVersion.getTdsPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+                BigDecimal adminDeduction = grossAmount.multiply(
+                    planVersion.getAdminChargeWithoutPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+                BigDecimal netAmount = grossAmount.subtract(tdsDeduction).subtract(adminDeduction);
+
+                LedgerEntry entry = new LedgerEntry();
+                entry.setId(UUID.randomUUID());
+                entry.setAssociateId(sponsor.getId());
+                entry.setIncomeType(IncomeType.SPONSOR_MATCHING);
+                entry.setCycleId(cycleId);
+                entry.setGrossAmount(grossAmount);
+                entry.setTdsDeduction(tdsDeduction);
+                entry.setAdminDeduction(adminDeduction);
+                entry.setNetAmount(netAmount);
+                entry.setStatus(sponsor.getKycStatus() == KycStatus.VERIFIED
+                    ? LedgerEntryStatus.PENDING
+                    : LedgerEntryStatus.CARRIED_FORWARD);
+                entry.setSourceRef(matchingEntry.getId());
+                entry.setCreatedAt(Instant.now());
+                ledgerEntryRepository.save(entry);
             }
         }
     }

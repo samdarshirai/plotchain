@@ -315,10 +315,24 @@ class CycleServiceTest {
     private CompensationPlanVersion planVersionFixture() {
         return new CompensationPlanVersion(
             UUID.randomUUID(), "v1", LocalDate.of(2026, 1, 1),
-            BigDecimal.ZERO, new BigDecimal("10.00"), BigDecimal.ZERO,
+            BigDecimal.ZERO, new BigDecimal("10.00"), new BigDecimal("11.00"),
             new BigDecimal("5.00"), BigDecimal.ZERO, new BigDecimal("4.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY,
             Instant.now(), null);
+    }
+
+    private LedgerEntry matchingEntryFixture(UUID associateId, UUID cycleId, BigDecimal grossAmount) {
+        LedgerEntry entry = new LedgerEntry();
+        entry.setId(UUID.randomUUID());
+        entry.setAssociateId(associateId);
+        entry.setCycleId(cycleId);
+        entry.setIncomeType(IncomeType.MATCHING);
+        entry.setGrossAmount(grossAmount);
+        entry.setNetAmount(grossAmount); // netAmount is irrelevant to every caller of this fixture -- Sponsor Matching must ignore it (Decision #9's "never netAmount" rule) and only these tests' assertions decide whether that held
+        entry.setStatus(LedgerEntryStatus.PENDING);
+        entry.setSourceRef(UUID.randomUUID());
+        entry.setCreatedAt(Instant.now());
+        return entry;
     }
 
     private Sale saleFixture(UUID associateId, UUID cycleId, BigDecimal amount) {
@@ -892,5 +906,300 @@ class CycleServiceTest {
 
         assertThat(root.getCumulativeMatchedVolume()).isEqualByComparingTo("200");
         assertThat(root.getRankId()).isEqualTo(silverId);
+    }
+
+    @Test
+    void closeCreditsSponsorMatchingForADirectSponseesMatchingEntryThisCycle() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+
+        Associate sponsor = associateFixture(null, null);
+        sponsor.setKycStatus(KycStatus.VERIFIED);
+        Associate sponsee = associateFixture(null, null);
+        sponsee.setSponsorId(sponsor.getId());
+        when(associateRepository.findAll()).thenReturn(List.of(sponsor, sponsee));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        LedgerEntry sponseeMatchingEntry = matchingEntryFixture(sponsee.getId(), cycle.getId(), new BigDecimal("50.00"));
+        when(associateRepository.findBySponsorId(sponsor.getId())).thenReturn(List.of(sponsee));
+        when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponsee.getId(), cycle.getId(), IncomeType.MATCHING))
+            .thenReturn(Optional.of(sponseeMatchingEntry));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository).save(entryCaptor.capture());
+        LedgerEntry entry = entryCaptor.getValue();
+
+        assertThat(entry.getIncomeType()).isEqualTo(IncomeType.SPONSOR_MATCHING);
+        assertThat(entry.getAssociateId()).isEqualTo(sponsor.getId());
+        assertThat(entry.getCycleId()).isEqualTo(cycle.getId());
+        assertThat(entry.getSourceRef()).isEqualTo(sponseeMatchingEntry.getId());
+        // gross = 50.00 * 11% = 5.5000
+        assertThat(entry.getGrossAmount()).isEqualByComparingTo("5.50");
+        // tds = 5.5000 * 5% = 0.2750
+        assertThat(entry.getTdsDeduction()).isEqualByComparingTo("0.275");
+        // admin = 5.5000 * 4% = 0.2200
+        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("0.22");
+        // net = 5.5000 - 0.2750 - 0.2200 = 5.0050
+        assertThat(entry.getNetAmount()).isEqualByComparingTo("5.005");
+        assertThat(entry.getStatus()).isEqualTo(LedgerEntryStatus.PENDING);
+        assertThat(entry.getCreatedAt()).isNotNull();
+    }
+
+    @Test
+    void closeWritesOneSponsorMatchingEntryPerDirectSponseeNotAggregated() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+
+        Associate sponsor = associateFixture(null, null);
+        sponsor.setKycStatus(KycStatus.VERIFIED);
+        Associate sponseeOne = associateFixture(null, null);
+        sponseeOne.setSponsorId(sponsor.getId());
+        Associate sponseeTwo = associateFixture(null, null);
+        sponseeTwo.setSponsorId(sponsor.getId());
+        when(associateRepository.findAll()).thenReturn(List.of(sponsor, sponseeOne, sponseeTwo));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        LedgerEntry sponseeOneMatchingEntry = matchingEntryFixture(sponseeOne.getId(), cycle.getId(), new BigDecimal("50.00"));
+        LedgerEntry sponseeTwoMatchingEntry = matchingEntryFixture(sponseeTwo.getId(), cycle.getId(), new BigDecimal("30.00"));
+        when(associateRepository.findBySponsorId(sponsor.getId())).thenReturn(List.of(sponseeOne, sponseeTwo));
+        when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponseeOne.getId(), cycle.getId(), IncomeType.MATCHING))
+            .thenReturn(Optional.of(sponseeOneMatchingEntry));
+        when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponseeTwo.getId(), cycle.getId(), IncomeType.MATCHING))
+            .thenReturn(Optional.of(sponseeTwoMatchingEntry));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(entryCaptor.capture());
+        List<LedgerEntry> written = entryCaptor.getAllValues();
+
+        assertThat(written).hasSize(2);
+        assertThat(written).allMatch(e -> e.getAssociateId().equals(sponsor.getId())
+            && e.getIncomeType() == IncomeType.SPONSOR_MATCHING);
+        assertThat(written).extracting(LedgerEntry::getSourceRef)
+            .containsExactlyInAnyOrder(sponseeOneMatchingEntry.getId(), sponseeTwoMatchingEntry.getId());
+    }
+
+    @Test
+    void closeWritesNoSponsorMatchingEntryWhenTheSponseeHasNoMatchingEntryThisCycle() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+
+        Associate sponsor = associateFixture(null, null);
+        sponsor.setKycStatus(KycStatus.VERIFIED);
+        Associate sponsee = associateFixture(null, null);
+        sponsee.setSponsorId(sponsor.getId());
+        when(associateRepository.findAll()).thenReturn(List.of(sponsor, sponsee));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        when(associateRepository.findBySponsorId(sponsor.getId())).thenReturn(List.of(sponsee));
+        when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponsee.getId(), cycle.getId(), IncomeType.MATCHING))
+            .thenReturn(Optional.empty());
+
+        service.close(cycle.getId());
+
+        verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
+    }
+
+    @Test
+    void closeBasesSponsorMatchingGrossOnTheSponseesMatchingGrossAmountNeverNetAmount() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+
+        Associate sponsor = associateFixture(null, null);
+        sponsor.setKycStatus(KycStatus.VERIFIED);
+        Associate sponsee = associateFixture(null, null);
+        sponsee.setSponsorId(sponsor.getId());
+        when(associateRepository.findAll()).thenReturn(List.of(sponsor, sponsee));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        // grossAmount and netAmount deliberately far apart -- if Sponsor Matching ever mistakenly
+        // read netAmount instead of grossAmount, this test's math would only match the wrong one.
+        LedgerEntry sponseeMatchingEntry = new LedgerEntry();
+        sponseeMatchingEntry.setId(UUID.randomUUID());
+        sponseeMatchingEntry.setAssociateId(sponsee.getId());
+        sponseeMatchingEntry.setCycleId(cycle.getId());
+        sponseeMatchingEntry.setIncomeType(IncomeType.MATCHING);
+        sponseeMatchingEntry.setGrossAmount(new BigDecimal("100.00"));
+        sponseeMatchingEntry.setNetAmount(new BigDecimal("1.00"));
+        sponseeMatchingEntry.setStatus(LedgerEntryStatus.PENDING);
+        sponseeMatchingEntry.setSourceRef(UUID.randomUUID());
+        sponseeMatchingEntry.setCreatedAt(Instant.now());
+        when(associateRepository.findBySponsorId(sponsor.getId())).thenReturn(List.of(sponsee));
+        when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponsee.getId(), cycle.getId(), IncomeType.MATCHING))
+            .thenReturn(Optional.of(sponseeMatchingEntry));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository).save(entryCaptor.capture());
+        // gross = 100.00 (the sponsee's GROSS, not its 1.00 net) * 11% = 11.0000
+        assertThat(entryCaptor.getValue().getGrossAmount()).isEqualByComparingTo("11.00");
+    }
+
+    @Test
+    void closeGatesSponsorMatchingStatusOnTheSponsorsOwnKycStatusNotTheSponsees() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+
+        Associate sponsor = associateFixture(null, null);
+        sponsor.setKycStatus(KycStatus.PENDING); // sponsor unverified
+        Associate sponsee = associateFixture(null, null);
+        sponsee.setSponsorId(sponsor.getId());
+        sponsee.setKycStatus(KycStatus.VERIFIED); // sponsee itself IS verified -- must not matter here
+        when(associateRepository.findAll()).thenReturn(List.of(sponsor, sponsee));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        LedgerEntry sponseeMatchingEntry = matchingEntryFixture(sponsee.getId(), cycle.getId(), new BigDecimal("50.00"));
+        when(associateRepository.findBySponsorId(sponsor.getId())).thenReturn(List.of(sponsee));
+        when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponsee.getId(), cycle.getId(), IncomeType.MATCHING))
+            .thenReturn(Optional.of(sponseeMatchingEntry));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository).save(entryCaptor.capture());
+        assertThat(entryCaptor.getValue().getStatus()).isEqualTo(LedgerEntryStatus.CARRIED_FORWARD);
+    }
+
+    @Test
+    void closeSkipsSponsorMatchingWriteWhenAnIdempotentEntryAlreadyExists() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+
+        Associate sponsor = associateFixture(null, null);
+        sponsor.setKycStatus(KycStatus.VERIFIED);
+        Associate sponsee = associateFixture(null, null);
+        sponsee.setSponsorId(sponsor.getId());
+        when(associateRepository.findAll()).thenReturn(List.of(sponsor, sponsee));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        LedgerEntry sponseeMatchingEntry = matchingEntryFixture(sponsee.getId(), cycle.getId(), new BigDecimal("50.00"));
+        when(associateRepository.findBySponsorId(sponsor.getId())).thenReturn(List.of(sponsee));
+        when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponsee.getId(), cycle.getId(), IncomeType.MATCHING))
+            .thenReturn(Optional.of(sponseeMatchingEntry));
+        when(ledgerEntryRepository.existsByAssociateIdAndCycleIdAndIncomeTypeAndSourceRef(
+            sponsor.getId(), cycle.getId(), IncomeType.SPONSOR_MATCHING, sponseeMatchingEntry.getId()))
+            .thenReturn(true);
+
+        service.close(cycle.getId());
+
+        verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
+    }
+
+    @Test
+    void closeSkipsSponsorMatchingWriteWhenComputedGrossAmountIsZero() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+
+        Associate sponsor = associateFixture(null, null);
+        sponsor.setKycStatus(KycStatus.VERIFIED);
+        Associate sponsee = associateFixture(null, null);
+        sponsee.setSponsorId(sponsor.getId());
+        when(associateRepository.findAll()).thenReturn(List.of(sponsor, sponsee));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
+
+        // sponsorMatchingPct = 0 -- a valid admin configuration, distinct from the shared fixture.
+        CompensationPlanVersion zeroSponsorMatchingPlanVersion = new CompensationPlanVersion(
+            UUID.randomUUID(), "v1", LocalDate.of(2026, 1, 1),
+            BigDecimal.ZERO, new BigDecimal("10.00"), BigDecimal.ZERO,
+            new BigDecimal("5.00"), BigDecimal.ZERO, new BigDecimal("4.00"),
+            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null);
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(zeroSponsorMatchingPlanVersion));
+
+        LedgerEntry sponseeMatchingEntry = matchingEntryFixture(sponsee.getId(), cycle.getId(), new BigDecimal("50.00"));
+        when(associateRepository.findBySponsorId(sponsor.getId())).thenReturn(List.of(sponsee));
+        when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponsee.getId(), cycle.getId(), IncomeType.MATCHING))
+            .thenReturn(Optional.of(sponseeMatchingEntry));
+
+        service.close(cycle.getId());
+
+        verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
+    }
+
+    @Test
+    void closeCreditsSponsorMatchingToAdminWhenAdminIsTheSponsor() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository);
+
+        // Decision #7: "Matching and Sponsor Matching... do apply to Admin in full." Admin has no
+        // rankId, no role guard should exclude it from being credited as a sponsor.
+        Associate admin = associateFixture(null, null);
+        admin.setRole(AssociateRole.ADMIN);
+        admin.setKycStatus(KycStatus.VERIFIED);
+        admin.setRankId(null);
+        Associate sponsee = associateFixture(null, null);
+        sponsee.setSponsorId(admin.getId());
+        when(associateRepository.findAll()).thenReturn(List.of(admin, sponsee));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        LedgerEntry sponseeMatchingEntry = matchingEntryFixture(sponsee.getId(), cycle.getId(), new BigDecimal("50.00"));
+        when(associateRepository.findBySponsorId(admin.getId())).thenReturn(List.of(sponsee));
+        when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponsee.getId(), cycle.getId(), IncomeType.MATCHING))
+            .thenReturn(Optional.of(sponseeMatchingEntry));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository).save(entryCaptor.capture());
+        assertThat(entryCaptor.getValue().getAssociateId()).isEqualTo(admin.getId());
+        assertThat(entryCaptor.getValue().getIncomeType()).isEqualTo(IncomeType.SPONSOR_MATCHING);
     }
 }
