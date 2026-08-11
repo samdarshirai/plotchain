@@ -16,7 +16,7 @@ Sliced from `docs/superpowers/specs/role-capability/2026-08-03-sales-domain-desi
 | 6 | backend | Admin lists and filters sales in the register | 3 | **merged** | `docs/superpowers/plans/2026-08-10-sales-admin-register-list.md` | `7ddb5fd`..`3776430` on `master` |
 | 7 | backend | An associate views their own and descendant sales, read-only | 3 | **merged** | `docs/superpowers/plans/2026-08-10-sales-associate-own-view.md` | `578db76`..`576a3d6` on `master` |
 | 8 | **screen** | Admin "Sales Register" screen — list/filter (6), record new sale (3), void with reason (4, 5) | 3, 4, 5, 6 | **merged** | `docs/superpowers/plans/2026-08-11-sales-admin-register-screen.md` | `a3f30f8`..`98ea33c` on `master` |
-| 9 | **screen** | Associate "Sales History" screen — own + descendant, view-only | 7 | pending | — | — |
+| 9 | **screen** | Associate "Sales History" screen — own + descendant, view-only | 7 | **merged** | `docs/superpowers/plans/2026-08-11-sales-associate-history-screen.md` | `39df9f8`..`4b9679a` on `master` |
 
 Units 8–9 added 2026-08-05, same pass as cycle-management unit 11 and role-capability units 12–16 — screens weren't sliced alongside endpoints. One Admin screen (8) covers list/record/void per the spec's own Admin row ("Full sales register — all associates, void/export, records every sale"), not three.
 
@@ -38,6 +38,6 @@ Units 1 and 2 are mutually independent — build order between them doesn't matt
 
 **Note on unit 3's merge:** post-implementation code review found a Plot double-sale race (unlocked `findById` before the SOLD flip) — fixed as a follow-up commit (`bcf5008`) adding `PlotRepository.findByIdForUpdate` (mirroring `CycleRepository`'s), re-reviewed clean, then merged. `Sale` rows are now real: `status=RECORDED`, `cycleId` populated via `getOrOpenCurrent()` — cycle-management unit 4 can now plan against real data.
 
-**Next pending unit:** Both remaining units are screens, now fully unblocked — 8 (Admin Sales Register: needs 3,4,5,6, all merged) and 9 (Associate Sales History: needs 7, merged). All 7 backend units for this spec are done.
+**All 9 units merged.** Sales spec complete.
 
 **Known scoping decision, not a bug (2026-08-10):** unit 5's `voidSale()` sets `voidReason` unconditionally — no guard rejects a null/blank `reason`. The spec's data-model note (line 44, "required by the API when voiding, not by the DB constraint") arguably calls for this, but the spec's own flow steps (3-6) and error-handling table don't list a reason-blank guard or a 400 status for it. Code review flagged this tension explicitly; user chose to merge as planned rather than add validation. If a blank-reason rejection is wanted later, it's a new, separately-spec'd requirement — not something to silently backfill into a future unit.
