@@ -550,7 +550,8 @@
       "treeExplorer": "Tree Explorer",
       "kycQueue": "KYC Review Queue",
       "auditLog": "ऑडिट लॉग",
-      "adminStats": "एडमिन आंकड़े"
+      "adminStats": "एडमिन आंकड़े",
+      "salesRegister": "बिक्री रजिस्टर"
     },
     "cards": {
       "companyProfile": {

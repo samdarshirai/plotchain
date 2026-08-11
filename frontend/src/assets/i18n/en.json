@@ -550,7 +550,8 @@
       "treeExplorer": "Tree Explorer",
       "kycQueue": "KYC Review Queue",
       "auditLog": "Audit Log",
-      "adminStats": "Admin Stats"
+      "adminStats": "Admin Stats",
+      "salesRegister": "Sales Register"
     },
     "cards": {
       "companyProfile": {

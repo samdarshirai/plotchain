@@ -27,6 +27,13 @@ describe('routes', () => {
     expect(route!.canActivate).toContain(adminGuard);
   });
 
+  it('guards the admin record-sale route with both authGuard and adminGuard', () => {
+    const route = routes.find(r => r.path === 'admin/sales/new');
+    expect(route).toBeTruthy();
+    expect(route!.canActivate).toContain(authGuard);
+    expect(route!.canActivate).toContain(adminGuard);
+  });
+
   describe('setup route', () => {
     const setupRoute = routes.find(r => r.path === 'setup');
 
@@ -70,6 +77,13 @@ describe('routes', () => {
       expect(settingsRoute!.canActivate).toContain(authGuard);
       expect(settingsRoute!.canActivate).toContain(adminGuard);
       expect(settingsRoute!.canActivate).toContain(launchedModeGuard);
+    });
+
+    it('has a sales-register child stamped with sectionKey salesRegister', () => {
+      const settingsRoute = routes.find(r => r.path === 'settings');
+      const salesRegisterChild = settingsRoute!.children!.find(c => c.path === 'sales-register');
+      expect(salesRegisterChild).toBeTruthy();
+      expect(salesRegisterChild!.data).toEqual({ sectionKey: 'salesRegister' });
     });
   });
 

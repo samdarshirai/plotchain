@@ -24,6 +24,8 @@ import { AdminStatsComponent } from './settings/admin-stats/admin-stats.componen
 import { AssociateDirectoryComponent } from './admin/associate-directory/associate-directory.component';
 import { TreeExplorerComponent } from './admin/tree-explorer/tree-explorer.component';
 import { KycQueueComponent } from './admin/kyc-queue/kyc-queue.component';
+import { SalesRegisterComponent } from './admin/sales-register/sales-register.component';
+import { RecordSaleComponent } from './admin/sales-register/record-sale.component';
 import { TermsOfServiceComponent } from './legal/terms-of-service.component';
 import { PrivacyPolicyComponent } from './legal/privacy-policy.component';
 
@@ -34,6 +36,7 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
   { path: 'admin/associates/new', component: CreateAssociateComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/sales/new', component: RecordSaleComponent, canActivate: [authGuard, adminGuard] },
   {
     path: 'setup',
     component: SetupShellComponent,
@@ -66,6 +69,7 @@ export const routes: Routes = [
       { path: 'associate-directory', component: AssociateDirectoryComponent, data: { sectionKey: 'associateDirectory' } },
       { path: 'tree-explorer', component: TreeExplorerComponent, data: { sectionKey: 'treeExplorer' } },
       { path: 'kyc-queue', component: KycQueueComponent, data: { sectionKey: 'kycQueue' } },
+      { path: 'sales-register', component: SalesRegisterComponent, data: { sectionKey: 'salesRegister' } },
       { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } },
       { path: 'admin-stats', component: AdminStatsComponent, data: { sectionKey: 'adminStats' } }
     ]
