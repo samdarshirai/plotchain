@@ -153,6 +153,31 @@
       "voidReasonPlaceholder": "Reason for voiding",
       "voidAction": "Void",
       "voidedTag": "Voided"
+    },
+    "recordSale": {
+      "title": "Record Sale",
+      "subtitle": "Record a sale on behalf of an associate and credit their Direct Income.",
+      "projectLabel": "Project",
+      "projectPlaceholder": "Select a project",
+      "plotLabel": "Plot",
+      "plotPlaceholder": "Select an available plot",
+      "plotEmptyOption": "No available plots in this project",
+      "associateLabel": "Associate",
+      "associatePlaceholder": "Select an associate",
+      "buyerNameLabel": "Buyer Name",
+      "buyerPhoneLabel": "Buyer Phone",
+      "buyerEmailLabel": "Buyer Email",
+      "optionalTagLabel": "Optional",
+      "submitButton": "Record Sale",
+      "recordAnotherButton": "Record Another",
+      "successAmountLabel": "Amount",
+      "successBuyerLabel": "Buyer",
+      "successSaleIdLabel": "Sale ID",
+      "validation": {
+        "required": "This field is required.",
+        "plotUnavailable": "That plot is no longer available. Choose a different plot.",
+        "genericSaveError": "Could not record the sale. Check the details and try again."
+      }
     }
   },
   "setup": {
