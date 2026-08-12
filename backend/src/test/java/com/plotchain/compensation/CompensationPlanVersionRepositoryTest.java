@@ -104,6 +104,36 @@ class CompensationPlanVersionRepositoryTest {
     }
 
     @Test
+    void findByPlanVersionIdAndRankIdReturnsTheRateForThatExactRank() {
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Executive", 2, BigDecimal.valueOf(20000));
+        entityManager.persist(rank);
+
+        RoyaltyBonusRate rate = new RoyaltyBonusRate(UUID.randomUUID(), SEED_VERSION_ID, rank.getId(), new BigDecimal("3.00"));
+        royaltyBonusRateRepository.save(rate);
+        entityManager.flush();
+
+        Optional<RoyaltyBonusRate> found = royaltyBonusRateRepository.findByPlanVersionIdAndRankId(SEED_VERSION_ID, rank.getId());
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getId()).isEqualTo(rate.getId());
+        assertThat(found.get().getRoyaltyPct()).isEqualByComparingTo("3.00");
+    }
+
+    @Test
+    void findByPlanVersionIdAndRankIdReturnsEmptyWhenNoRateIsConfiguredForThatRank() {
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        entityManager.persist(rank);
+        entityManager.flush();
+        // No RoyaltyBonusRate row exists for this rank at all -- the "no-op if no rate
+        // configured" case CycleService's Royalty step (unit 8) needs to distinguish from an
+        // error, per Flow step 6's own "not an error" text.
+
+        Optional<RoyaltyBonusRate> found = royaltyBonusRateRepository.findByPlanVersionIdAndRankId(SEED_VERSION_ID, rank.getId());
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
     void findAllByPlanVersionIdOrderByTierLevelReturnsTiersInAscendingOrder() {
         RewardTier tierTwo = new RewardTier(UUID.randomUUID(), SEED_VERSION_ID, 2, new BigDecimal("50000.00"), new BigDecimal("5000.00"), "Trip");
         RewardTier tierOne = new RewardTier(UUID.randomUUID(), SEED_VERSION_ID, 1, new BigDecimal("10000.00"), new BigDecimal("1000.00"), null);
