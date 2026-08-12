@@ -18,11 +18,11 @@ describe('TreeExplorerComponent', () => {
     leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false,
     children: [
       {
-        id: 'a2', userId: 'VP00002', name: 'Child', rankName: null, kycStatus: 'PENDING', position: 'LEFT',
+        id: 'a2', userId: 'VP00002', name: 'Child', rankName: null, kycStatus: 'PENDING', position: 'L',
         leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false,
         children: [
           {
-            id: 'a3', userId: 'VP00003', name: 'Grandchild', rankName: null, kycStatus: 'PENDING', position: 'LEFT',
+            id: 'a3', userId: 'VP00003', name: 'Grandchild', rankName: null, kycStatus: 'PENDING', position: 'L',
             leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false,
             children: []
           }
