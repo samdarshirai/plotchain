@@ -98,6 +98,39 @@ class LedgerEntryRepositoryTest {
             associate.getId(), cycle.getId(), IncomeType.DIRECT, sourceRef)).isFalse();
     }
 
+    // Cycle-management unit 9 (docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
+    // Decision #8): Reward's own idempotency check, deliberately narrower than
+    // existsByAssociateIdAndCycleIdAndIncomeTypeAndSourceRef above -- omits cycleId entirely,
+    // because a RewardTier is awarded once EVER, in whichever cycle first crosses it, not once
+    // per cycle. This method has no cycleId parameter at all, so there is nothing for a caller in
+    // a later cycle to (correctly or incorrectly) scope the check to -- proven by construction,
+    // not just by this test's assertion.
+    @Test
+    void existsByAssociateIdAndIncomeTypeAndSourceRefFindsAnEntryRegardlessOfWhichCycleItWasCreditedIn() {
+        Associate associate = seedAssociate();
+        Cycle cycle = seedCycle();
+        UUID tierId = UUID.randomUUID();
+        ledgerEntryRepository.saveAndFlush(newEntry(associate.getId(), cycle.getId(), IncomeType.REWARD, tierId));
+
+        assertThat(ledgerEntryRepository.existsByAssociateIdAndIncomeTypeAndSourceRef(
+            associate.getId(), IncomeType.REWARD, tierId)).isTrue();
+    }
+
+    @Test
+    void existsByAssociateIdAndIncomeTypeAndSourceRefReturnsFalseForADifferentTierOrIncomeType() {
+        Associate associate = seedAssociate();
+        Cycle cycle = seedCycle();
+        UUID tierId = UUID.randomUUID();
+        ledgerEntryRepository.saveAndFlush(newEntry(associate.getId(), cycle.getId(), IncomeType.REWARD, tierId));
+
+        // Different sourceRef (a different tier) -> no match, even for the same associate/type.
+        assertThat(ledgerEntryRepository.existsByAssociateIdAndIncomeTypeAndSourceRef(
+            associate.getId(), IncomeType.REWARD, UUID.randomUUID())).isFalse();
+        // Same sourceRef but a different incomeType -> no match, proving the type filter is real.
+        assertThat(ledgerEntryRepository.existsByAssociateIdAndIncomeTypeAndSourceRef(
+            associate.getId(), IncomeType.ROYALTY, tierId)).isFalse();
+    }
+
     @Test
     void uniqueConstraintRejectsADuplicateAssociateCycleIncomeTypeSourceRefTuple() {
         Associate associate = seedAssociate();
