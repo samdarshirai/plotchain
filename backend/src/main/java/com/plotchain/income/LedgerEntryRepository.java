@@ -30,6 +30,16 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
     boolean existsByAssociateIdAndCycleIdAndIncomeTypeAndSourceRef(
         UUID associateId, UUID cycleId, IncomeType incomeType, UUID sourceRef);
 
+    // Cycle-management unit 9 (docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
+    // Decision #8): Reward's own idempotency check. Deliberately narrower than
+    // existsByAssociateIdAndCycleIdAndIncomeTypeAndSourceRef above -- omits cycleId on purpose,
+    // because a RewardTier is awarded once EVER, not once per cycle. Same plain Spring Data
+    // derived query shape as the cycle-scoped version; the DB-level uq_ledger_entry_idempotency
+    // constraint (V17) is still cycle-scoped, so this application-level check is what actually
+    // does the cross-cycle work -- see this unit's plan, Global Constraints.
+    boolean existsByAssociateIdAndIncomeTypeAndSourceRef(
+        UUID associateId, IncomeType incomeType, UUID sourceRef);
+
     // Cycle-management unit 7 (docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
     // Decision #9): locates a sponsee's Matching LedgerEntry for this cycle, so Sponsor Matching
     // can base its own grossAmount on it. A fresh query, not a carry-over from creditMatchingIncome's
