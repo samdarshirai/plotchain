@@ -116,11 +116,11 @@ public class CycleService {
 
     // Cycle-management unit 3 (row lock + OPEN check, unchanged) + unit 4 (leg-volume rollup) +
     // unit 5 (Matching Income) + unit 6 (Rank progression) + unit 7 (Sponsor Matching) + unit 8
-    // (Royalty) -- docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
-    // Decision #2, settlement batch flow steps 1, 2, 3, 4, 5, 6, 8. Step 7 (Reward) is NOT
-    // implemented here -- unit 9 inserts its own logic between the creditRoyalty call above and
-    // the CLOSED flip, without changing this method's signature or transaction boundary, the same
-    // sequential-insertion pattern units 3 -> 4 -> 5 -> 6 -> 7 -> 8 already used.
+    // (Royalty) + unit 9 (Reward) --
+    // docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
+    // Decision #2, settlement batch flow steps 1, 2, 3, 4, 5, 6, 7, 8. Every flow step (1-8) this
+    // batch calls for is now implemented; unit 10 is atomicity/re-run hardening across the whole
+    // pipeline above, not a new flow step of its own.
     @Transactional
     public CycleCloseResponse close(UUID id) {
         Cycle cycle = cycleRepository.findByIdForUpdate(id)
@@ -169,10 +169,15 @@ public class CycleService {
         // rate immediately. No-op per associate when no RoyaltyBonusRate is configured for their
         // rank (not an error -- some low ranks have none). Guard is role == ASSOCIATE, same
         // reasoning as advanceRanks' own guard: rank_id is null for Admin AND the four staff
-        // roles (chk_associate_rank_required, V4), not just Admin. This is this unit's own
-        // insertion point; unit 9 (Reward) inserts its own step immediately after this call,
-        // before the CLOSED flip below.
+        // roles (chk_associate_rank_required, V4), not just Admin.
         creditRoyalty(cycle.getId(), associates, legVolumes, planVersion);
+
+        // Flow step 7 (Decision #8): for EVERY associate, including Admin -- RewardTier has no FK
+        // to rank_tier, so nothing here excludes any role, unlike Royalty above. Idempotency is
+        // checked WITHOUT a cycleId (Decision #8: a tier is awarded once EVER, in whichever cycle
+        // first crosses it). This is this unit's own insertion point; unit 10's atomicity/re-run
+        // hardening depends on this step existing but is not expected to insert a new call here.
+        creditReward(cycle.getId(), associates, planVersion);
 
         // Flow step 8. getOrOpenCurrent() is a plain (non-@Transactional) self-invocation here,
         // so it runs inside the transaction this @Transactional method's proxy already started
@@ -560,6 +565,66 @@ public class CycleService {
             entry.setSourceRef(legVolume.getId());
             entry.setCreatedAt(Instant.now());
             ledgerEntryRepository.save(entry);
+        }
+    }
+
+    // Flow step 7 (Decision #8): for EVERY associate (Admin included -- RewardTier has no FK to
+    // rank_tier, unlike Royalty, so nothing here excludes any role), walk RewardTiers in
+    // ascending tierLevel order (findAllByPlanVersionIdOrderByTierLevel, already ordered) and
+    // award any tier whose volumeThreshold is now met by the associate's cumulativeMatchedVolume
+    // (already updated by creditMatchingIncome, step 3, before this reads it -- Decision #6).
+    // Idempotency is checked WITHOUT a cycleId filter (existsByAssociateIdAndIncomeTypeAndSourceRef,
+    // deliberately narrower than the other four income types' cycle-scoped equivalent) -- a tier
+    // is awarded once EVER, and re-running the batch or running a later cycle must never re-award
+    // it even though cumulativeMatchedVolume stays above the threshold forever after (Decision
+    // #8's own words). Multiple tiers can be newly-crossed in a single cycle (a large one-off
+    // sale can jump an associate past several thresholds at once) -- each gets its own entry,
+    // sourceRef = tier.id. perkDescription is never written as its own ledger line: it's
+    // descriptive metadata reachable by looking up the RewardTier row this entry's sourceRef
+    // points to.
+    private void creditReward(
+        UUID cycleId,
+        List<Associate> associates,
+        CompensationPlanVersion planVersion
+    ) {
+        List<RewardTier> tiers = rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId());
+        if (tiers.isEmpty()) {
+            return;
+        }
+
+        for (Associate associate : associates) {
+            for (RewardTier tier : tiers) {
+                if (tier.getVolumeThreshold().compareTo(associate.getCumulativeMatchedVolume()) > 0) {
+                    continue;
+                }
+
+                boolean alreadyAwarded = ledgerEntryRepository.existsByAssociateIdAndIncomeTypeAndSourceRef(
+                    associate.getId(), IncomeType.REWARD, tier.getId());
+                if (alreadyAwarded) {
+                    continue;
+                }
+
+                BigDecimal grossAmount = tier.getCashReward();
+                if (grossAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+
+                Deductions deductions = applyDeductions(grossAmount, planVersion);
+
+                LedgerEntry entry = new LedgerEntry();
+                entry.setId(UUID.randomUUID());
+                entry.setAssociateId(associate.getId());
+                entry.setIncomeType(IncomeType.REWARD);
+                entry.setCycleId(cycleId);
+                entry.setGrossAmount(grossAmount);
+                entry.setTdsDeduction(deductions.tdsDeduction());
+                entry.setAdminDeduction(deductions.adminDeduction());
+                entry.setNetAmount(deductions.netAmount());
+                entry.setStatus(kycGatedStatus(associate));
+                entry.setSourceRef(tier.getId());
+                entry.setCreatedAt(Instant.now());
+                ledgerEntryRepository.save(entry);
+            }
         }
     }
 
