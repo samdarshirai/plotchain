@@ -110,12 +110,12 @@ public class CycleService {
     }
 
     // Cycle-management unit 3 (row lock + OPEN check, unchanged) + unit 4 (leg-volume rollup) +
-    // unit 5 (Matching Income) + unit 6 (Rank progression) + unit 7 (Sponsor Matching) --
-    // docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
-    // Decision #2, settlement batch flow steps 1, 2, 3, 4, 5, 8. Steps 6-7 (Royalty, Reward) are
-    // NOT implemented here -- units 8-9 insert their own logic between the creditSponsorMatching
-    // call above and the CLOSED flip, without changing this method's signature or transaction
-    // boundary, the same sequential-insertion pattern units 3 -> 4 -> 5 -> 6 -> 7 already used.
+    // unit 5 (Matching Income) + unit 6 (Rank progression) + unit 7 (Sponsor Matching) + unit 8
+    // (Royalty) -- docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
+    // Decision #2, settlement batch flow steps 1, 2, 3, 4, 5, 6, 8. Step 7 (Reward) is NOT
+    // implemented here -- unit 9 inserts its own logic between the creditRoyalty call above and
+    // the CLOSED flip, without changing this method's signature or transaction boundary, the same
+    // sequential-insertion pattern units 3 -> 4 -> 5 -> 6 -> 7 -> 8 already used.
     @Transactional
     public CycleCloseResponse close(UUID id) {
         Cycle cycle = cycleRepository.findByIdForUpdate(id)
@@ -156,10 +156,18 @@ public class CycleService {
         // Flow step 5 (Decision #9): second pass, requires step 3 (creditMatchingIncome) complete
         // tree-wide. One SPONSOR_MATCHING entry per direct sponsee who earned Matching Income this
         // cycle, credited to their sponsor. No role guard -- applies to Admin in full (Decision #7:
-        // "Matching and Sponsor Matching... are unaffected and do apply to Admin in full"). This is
-        // this unit's own insertion point; unit 8 (Royalty) inserts its own step immediately after
-        // this call, before the CLOSED flip below.
+        // "Matching and Sponsor Matching... are unaffected and do apply to Admin in full").
         creditSponsorMatching(cycle.getId(), associates, planVersion);
+
+        // Flow step 6 (Decision #7, #10, #11, #12): Royalty at the associate's POST-rank-advancement
+        // rank (step 4, above) -- an achievement crossed this cycle earns this cycle's royalty
+        // rate immediately. No-op per associate when no RoyaltyBonusRate is configured for their
+        // rank (not an error -- some low ranks have none). Guard is role == ASSOCIATE, same
+        // reasoning as advanceRanks' own guard: rank_id is null for Admin AND the four staff
+        // roles (chk_associate_rank_required, V4), not just Admin. This is this unit's own
+        // insertion point; unit 9 (Reward) inserts its own step immediately after this call,
+        // before the CLOSED flip below.
+        creditRoyalty(cycle.getId(), associates, legVolumes, planVersion);
 
         // Flow step 8. getOrOpenCurrent() is a plain (non-@Transactional) self-invocation here,
         // so it runs inside the transaction this @Transactional method's proxy already started
@@ -473,6 +481,80 @@ public class CycleService {
                 entry.setCreatedAt(Instant.now());
                 ledgerEntryRepository.save(entry);
             }
+        }
+    }
+
+    // Flow step 6 (Decision #7, #10, #11, #12): for each associate whose just-computed
+    // matched-pair volume this cycle is positive -- recomputed here as
+    // min(legVolume.leftLegVolume, legVolume.rightLegVolume), the exact same predicate
+    // creditMatchingIncome (step 3) uses to decide whether it wrote a MATCHING entry, since
+    // creditMatchingIncome never mutates leftLegVolume/rightLegVolume themselves (only
+    // carriedForwardLeft/Right) -- look up RoyaltyBonusRate for (planVersion, associate's
+    // POST-rank-advancement rankId). advanceRanks (step 4) and creditSponsorMatching (step 5)
+    // have both already run by the time this executes, so associate.getRankId() already reflects
+    // any advancement earned THIS cycle (Decision #7: "an achievement crossed this cycle earns
+    // this cycle's royalty rate immediately"). No rate configured -> no-op, not an error (some
+    // low ranks structurally have none). Guard is role == ASSOCIATE, not role != ADMIN -- same
+    // reasoning as advanceRanks' own guard: RoyaltyBonusRate is rank-keyed and rank_id is NULL
+    // for Admin AND the four staff roles (chk_associate_rank_required, V4). sourceRef =
+    // legVolume.id, the same row Matching used for this associate+cycle (Decision #12: "both
+    // derive from the same cycle-computed matched-pair volume").
+    private void creditRoyalty(
+        UUID cycleId,
+        List<Associate> associates,
+        List<LegVolume> legVolumes,
+        CompensationPlanVersion planVersion
+    ) {
+        Map<UUID, Associate> associatesById = new HashMap<>();
+        for (Associate associate : associates) {
+            associatesById.put(associate.getId(), associate);
+        }
+
+        for (LegVolume legVolume : legVolumes) {
+            BigDecimal matchedVolume = legVolume.getLeftLegVolume().min(legVolume.getRightLegVolume());
+            if (matchedVolume.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
+            Associate associate = associatesById.get(legVolume.getAssociateId());
+            if (associate.getRole() != AssociateRole.ASSOCIATE) {
+                continue;
+            }
+
+            Optional<RoyaltyBonusRate> rate = royaltyBonusRateRepository
+                .findByPlanVersionIdAndRankId(planVersion.getId(), associate.getRankId());
+            if (rate.isEmpty()) {
+                continue;
+            }
+
+            // Decision #12: check-then-insert, same pattern as creditMatchingIncome/creditSponsorMatching.
+            boolean alreadyCredited = ledgerEntryRepository.existsByAssociateIdAndCycleIdAndIncomeTypeAndSourceRef(
+                associate.getId(), cycleId, IncomeType.ROYALTY, legVolume.getId());
+            if (alreadyCredited) {
+                continue;
+            }
+
+            BigDecimal grossAmount = matchedVolume.multiply(
+                rate.get().getRoyaltyPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+            if (grossAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
+            Deductions deductions = applyDeductions(grossAmount, planVersion);
+
+            LedgerEntry entry = new LedgerEntry();
+            entry.setId(UUID.randomUUID());
+            entry.setAssociateId(associate.getId());
+            entry.setIncomeType(IncomeType.ROYALTY);
+            entry.setCycleId(cycleId);
+            entry.setGrossAmount(grossAmount);
+            entry.setTdsDeduction(deductions.tdsDeduction());
+            entry.setAdminDeduction(deductions.adminDeduction());
+            entry.setNetAmount(deductions.netAmount());
+            entry.setStatus(kycGatedStatus(associate));
+            entry.setSourceRef(legVolume.getId());
+            entry.setCreatedAt(Instant.now());
+            ledgerEntryRepository.save(entry);
         }
     }
 
