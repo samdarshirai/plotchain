@@ -262,6 +262,39 @@ public class CycleService {
     // the same min > 0 guard -- a zero-matched associate's row is left untouched (its unmatched
     // leg, if any, is not carried forward under this unit's implementation; that's the spec's
     // Flow step 3 text taken literally, not an oversight).
+    // Cycle-management unit 8 (Royalty): extracted out of creditMatchingIncome (unit 5) and
+    // creditSponsorMatching (unit 7), which had each inline-duplicated this exact math (Decision
+    // #10). Unit 7's own code review flagged that a third inline copy in creditRoyalty would be
+    // one copy too many -- see docs/superpowers/plans/2026-08-03-cycle-management-units.md's
+    // "Also flagged, non-blocking" note. Bundled as a record (not three separate return values)
+    // because every caller needs tds/admin/net together to populate one LedgerEntry.
+    private record Deductions(BigDecimal tdsDeduction, BigDecimal adminDeduction, BigDecimal netAmount) {}
+
+    // Decision #10: tdsDeduction = gross * tdsPct/100, adminDeduction = gross *
+    // adminChargeWithoutPanPct/100 (always the without-PAN tier -- Associate has no pan_number
+    // field), netAmount = gross - tds - admin. planVersion is the single CompensationPlanVersion
+    // resolved once per close() run against cycle.getPeriodStart() (Decision #10) -- every income
+    // type in this batch shares that one resolved version; no caller re-resolves its own.
+    private Deductions applyDeductions(BigDecimal grossAmount, CompensationPlanVersion planVersion) {
+        BigDecimal tdsDeduction = grossAmount.multiply(
+            planVersion.getTdsPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+        BigDecimal adminDeduction = grossAmount.multiply(
+            planVersion.getAdminChargeWithoutPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+        BigDecimal netAmount = grossAmount.subtract(tdsDeduction).subtract(adminDeduction);
+        return new Deductions(tdsDeduction, adminDeduction, netAmount);
+    }
+
+    // Decision #11: VERIFIED KYC -> PENDING (computed, not yet paid); anything else (PENDING or
+    // REJECTED KYC) -> CARRIED_FORWARD (computed correctly, withheld pending KYC verification).
+    // Every income type in this batch gates on the CREDITED associate's own kycStatus -- for
+    // Sponsor Matching that's the sponsor, not the sponsee whose entry triggered the credit;
+    // callers pass whichever associate is actually being paid by the entry under construction.
+    private LedgerEntryStatus kycGatedStatus(Associate associate) {
+        return associate.getKycStatus() == KycStatus.VERIFIED
+            ? LedgerEntryStatus.PENDING
+            : LedgerEntryStatus.CARRIED_FORWARD;
+    }
+
     private void creditMatchingIncome(
         UUID cycleId,
         List<Associate> associates,
@@ -292,11 +325,7 @@ public class CycleService {
 
             BigDecimal grossAmount = matchedVolume.multiply(
                 planVersion.getMatchingIncomePct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-            BigDecimal tdsDeduction = grossAmount.multiply(
-                planVersion.getTdsPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-            BigDecimal adminDeduction = grossAmount.multiply(
-                planVersion.getAdminChargeWithoutPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-            BigDecimal netAmount = grossAmount.subtract(tdsDeduction).subtract(adminDeduction);
+            Deductions deductions = applyDeductions(grossAmount, planVersion);
 
             LedgerEntry entry = new LedgerEntry();
             entry.setId(UUID.randomUUID());
@@ -304,12 +333,10 @@ public class CycleService {
             entry.setIncomeType(IncomeType.MATCHING);
             entry.setCycleId(cycleId);
             entry.setGrossAmount(grossAmount);
-            entry.setTdsDeduction(tdsDeduction);
-            entry.setAdminDeduction(adminDeduction);
-            entry.setNetAmount(netAmount);
-            entry.setStatus(associate.getKycStatus() == KycStatus.VERIFIED
-                ? LedgerEntryStatus.PENDING
-                : LedgerEntryStatus.CARRIED_FORWARD);
+            entry.setTdsDeduction(deductions.tdsDeduction());
+            entry.setAdminDeduction(deductions.adminDeduction());
+            entry.setNetAmount(deductions.netAmount());
+            entry.setStatus(kycGatedStatus(associate));
             entry.setSourceRef(legVolume.getId());
             entry.setCreatedAt(Instant.now());
             ledgerEntryRepository.save(entry);
@@ -425,11 +452,7 @@ public class CycleService {
                     continue;
                 }
 
-                BigDecimal tdsDeduction = grossAmount.multiply(
-                    planVersion.getTdsPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-                BigDecimal adminDeduction = grossAmount.multiply(
-                    planVersion.getAdminChargeWithoutPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-                BigDecimal netAmount = grossAmount.subtract(tdsDeduction).subtract(adminDeduction);
+                Deductions deductions = applyDeductions(grossAmount, planVersion);
 
                 LedgerEntry entry = new LedgerEntry();
                 entry.setId(UUID.randomUUID());
@@ -437,12 +460,10 @@ public class CycleService {
                 entry.setIncomeType(IncomeType.SPONSOR_MATCHING);
                 entry.setCycleId(cycleId);
                 entry.setGrossAmount(grossAmount);
-                entry.setTdsDeduction(tdsDeduction);
-                entry.setAdminDeduction(adminDeduction);
-                entry.setNetAmount(netAmount);
-                entry.setStatus(sponsor.getKycStatus() == KycStatus.VERIFIED
-                    ? LedgerEntryStatus.PENDING
-                    : LedgerEntryStatus.CARRIED_FORWARD);
+                entry.setTdsDeduction(deductions.tdsDeduction());
+                entry.setAdminDeduction(deductions.adminDeduction());
+                entry.setNetAmount(deductions.netAmount());
+                entry.setStatus(kycGatedStatus(sponsor));
                 entry.setSourceRef(matchingEntry.getId());
                 entry.setCreatedAt(Instant.now());
                 ledgerEntryRepository.save(entry);
