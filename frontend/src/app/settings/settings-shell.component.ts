@@ -11,7 +11,7 @@ import { SettingsNavRailComponent } from './settings-nav-rail.component';
   template: `
     <div class="settings-shell">
       <app-settings-nav-rail [activeSectionKey]="activeSectionKey"></app-settings-nav-rail>
-      <main class="settings-shell__content">
+      <main class="settings-shell__content" [class.settings-shell__content--full]="activeSectionKey === 'treeExplorer'">
         <router-outlet></router-outlet>
       </main>
     </div>

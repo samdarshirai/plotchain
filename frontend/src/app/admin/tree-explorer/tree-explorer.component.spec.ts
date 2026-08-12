@@ -76,6 +76,33 @@ describe('TreeExplorerComponent', () => {
     expect(nodeIdEls.map(el => el.textContent?.trim())).toEqual(['VP00001', 'VP00002', 'VP00003']);
   });
 
+  it('shows stats-pill counts scoped to the loaded subtree, not a whole-downline total', () => {
+    httpMock = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+
+    fixture.componentInstance.root = nestedTree;
+    fixture.detectChanges();
+
+    const values: string[] = Array.from(fixture.nativeElement.querySelectorAll('.tree-explorer__stats-pill b'))
+      .map((el: any) => el.textContent?.trim());
+
+    // nestedTree: 3 filled nodes (root/child/grandchild) + 4 vacant slots synthesized
+    // around them (bounded by maxSlotDepth=3) = 7 total positions in the loaded subtree.
+    expect(values).toEqual(['7', '3', '4']);
+  });
+
+  it('renders one vacant-card per vacant slot in the loaded subtree', () => {
+    httpMock = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+
+    fixture.componentInstance.root = nestedTree;
+    fixture.detectChanges();
+
+    const vacantEls = fixture.nativeElement.querySelectorAll('.tree-explorer__vacant-card');
+    expect(vacantEls.length).toBe(fixture.componentInstance.layout?.vacantCount);
+    expect(vacantEls.length).toBe(4);
+  });
+
   it('shows a load error when the search succeeds but the subtree fetch fails', () => {
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();

@@ -132,7 +132,19 @@
       "rightLegLabel": "Right leg",
       "noRankLabel": "No rank",
       "skewedLegsFlag": "Skewed legs",
-      "stagnantFlag": "Stagnant"
+      "stagnantFlag": "Stagnant",
+      "statsVisiblePositionsLabel": "visible positions",
+      "statsFilledLabel": "filled",
+      "statsVacantLabel": "vacant",
+      "statsScopeHint": "Counts reflect the {{depth}} levels currently loaded below this associate, not their full downline.",
+      "panZoomHint": "Drag to pan · scroll or pinch to zoom",
+      "zoomInTitle": "Zoom in",
+      "zoomOutTitle": "Zoom out",
+      "fitToScreenLabel": "Fit",
+      "fitToScreenTitle": "Fit to screen",
+      "legendVerifiedLabel": "Verified",
+      "legendPendingLabel": "Pending",
+      "legendRejectedLabel": "Rejected"
     },
     "kycQueue": {
       "title": "KYC Review Queue",

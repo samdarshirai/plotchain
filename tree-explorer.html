@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tree Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F2FB;
+    --ink:#181528;
+    --muted:#6E6A8A;
+    --primary:#6D5DFC;
+    --primary-dark:#4E3FE0;
+    --accent-cyan:#22D3EE;
+    --card-border:#E7E3F7;
+    --status-active:#22C55E;
+    --status-pending:#F59E0B;
+    --status-inactive:#9CA3AF;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    overflow:hidden;
+  }
+  .topbar{
+    height:54px;flex:none;background:#161226;color:#fff;
+    display:flex;align-items:center;gap:10px;padding:0 22px;
+  }
+  .topbar .grid-dots{width:18px;height:18px;display:grid;grid-template-columns:repeat(3,1fr);gap:2px;opacity:.75;}
+  .topbar .grid-dots span{width:3.5px;height:3.5px;background:#fff;border-radius:50%;}
+  .topbar .brand{font-weight:700;font-size:14.5px;letter-spacing:.2px;}
+
+  .page{
+    flex:1;min-height:0;
+    padding:26px 30px 22px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .panel-header h1{margin:0 0 4px;font-size:25px;font-weight:800;letter-spacing:-.2px;}
+  .panel-header p{margin:0;color:var(--muted);font-size:13.5px;}
+
+  .controls-row{display:flex;align-items:flex-start;gap:14px;margin-top:14px;flex-wrap:wrap;}
+  .search-row{display:flex;gap:10px;flex:1;min-width:280px;max-width:620px;}
+  .search-box{
+    flex:1;display:flex;align-items:center;gap:9px;
+    background:#EFECFB;border-radius:12px;padding:0 14px;height:46px;
+    border:1.5px solid transparent;transition:border-color .15s;
+  }
+  .search-box:focus-within{border-color:var(--primary);}
+  .search-box svg{width:17px;height:17px;color:#8B85B8;flex:none;}
+  .search-box input{border:none;background:transparent;outline:none;font-size:14.5px;width:100%;color:var(--ink);font-family:inherit;}
+  .search-row button{
+    background:var(--primary);color:#fff;border:none;padding:0 24px;height:46px;
+    border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;
+    transition:background .15s;font-family:inherit;flex:none;
+  }
+  .search-row button:hover{background:var(--primary-dark);}
+  .stats-pill{
+    display:flex;gap:16px;background:#fff;border:1px solid var(--card-border);
+    border-radius:12px;padding:0 18px;height:46px;align-items:center;font-size:12.5px;color:var(--muted);
+  }
+  .stats-pill b{color:var(--ink);font-weight:700;}
+  .search-msg{color:#DC2626;font-size:12.5px;min-height:16px;margin:2px 0 0 2px;}
+
+  .canvas-wrap{
+    position:relative;flex:1;min-height:0;
+    background:
+      radial-gradient(circle,#DAD4F3 1.3px,transparent 1.3px) 0 0/24px 24px,
+      var(--bg);
+    border-radius:18px;overflow:hidden;border:1px solid #E7E3F7;
+    cursor:grab;touch-action:none;
+  }
+  .canvas-wrap.grabbing{cursor:grabbing;}
+  .canvas-inner{position:absolute;top:0;left:0;transform-origin:0 0;}
+  .canvas-inner.animate{transition:transform .45s cubic-bezier(.2,.8,.2,1);}
+  #linkLayer{position:absolute;top:0;left:0;overflow:visible;pointer-events:none;}
+  #nodeLayer{position:absolute;top:0;left:0;}
+
+  .node-card{
+    position:absolute;width:220px;height:158px;background:#fff;border-radius:16px;
+    padding:14px 16px;box-shadow:0 6px 18px rgba(45,29,120,.08);
+    border:1.5px solid var(--card-border);
+  }
+  .node-card.highlight{
+    border-color:var(--primary);
+    box-shadow:0 0 0 4px rgba(109,93,252,.22),0 12px 26px rgba(45,29,120,.2);
+  }
+  .result-tag{
+    position:absolute;top:-24px;left:2px;font-size:10.5px;font-weight:800;
+    letter-spacing:.7px;color:var(--primary);text-transform:uppercase;white-space:nowrap;
+  }
+  .node-top{display:flex;align-items:center;gap:9px;}
+  .avatar{
+    width:34px;height:34px;border-radius:50%;flex:none;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13.5px;
+  }
+  .node-id-wrap{flex:1;min-width:0;}
+  .node-id{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .node-role{font-size:11.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .status-dot{width:9px;height:9px;border-radius:50%;flex:none;margin-left:auto;}
+
+  .rank-pill{
+    display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;
+    border-radius:999px;margin:11px 0 10px;
+  }
+  .vol-bar{height:6px;border-radius:999px;background:#EEECFA;overflow:hidden;}
+  .vol-bar-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent-cyan));}
+  .vol-row{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:8px;}
+
+  .leg-badge{
+    position:absolute;top:-10px;width:20px;height:20px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;
+    color:#fff;box-shadow:0 2px 5px rgba(0,0,0,.18);
+  }
+  .leg-badge.L{background:var(--primary);left:-10px;}
+  .leg-badge.R{background:var(--accent-cyan);right:-10px;}
+
+  .vacant-card{
+    position:absolute;width:220px;height:92px;border-radius:16px;
+    border:1.6px dashed #C9C4E8;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;color:#A29CC9;gap:2px;
+    background:rgba(255,255,255,.45);
+  }
+  .vacant-card .plus{font-size:19px;line-height:1;font-weight:600;}
+  .vacant-card .label{font-size:11.5px;font-weight:700;letter-spacing:.2px;}
+
+  .zoom-controls{
+    position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;
+    background:#fff;border-radius:12px;box-shadow:0 6px 16px rgba(45,29,120,.14);
+    overflow:hidden;border:1px solid var(--card-border);
+  }
+  .zoom-controls button{
+    width:38px;height:36px;border:none;background:#fff;font-size:16px;cursor:pointer;
+    color:var(--ink);border-bottom:1px solid var(--card-border);font-family:inherit;
+  }
+  .zoom-controls button:last-child{border-bottom:none;}
+  .zoom-controls button:hover{background:#F3F1FC;}
+  .zoom-controls button#fitBtn{font-size:10.5px;font-weight:800;letter-spacing:.3px;}
+
+  .legend{
+    position:absolute;left:16px;bottom:16px;background:#fff;border:1px solid var(--card-border);
+    border-radius:12px;padding:9px 14px;display:flex;gap:14px;font-size:11.5px;color:var(--muted);
+    box-shadow:0 6px 16px rgba(45,29,120,.08);
+  }
+  .legend span{display:flex;align-items:center;gap:6px;}
+  .legend i.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none;}
+  .dot.active{background:var(--status-active);}
+  .dot.pending{background:var(--status-pending);}
+  .dot.inactive{background:var(--status-inactive);}
+
+  .hint{
+    position:absolute;top:14px;left:50%;transform:translateX(-50%);
+    background:rgba(22,18,38,.82);color:#fff;font-size:11.5px;padding:7px 14px;
+    border-radius:999px;pointer-events:none;transition:opacity .4s ease;
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="grid-dots"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="brand">Tree Explorer</div>
+  </div>
+
+  <div class="page">
+    <div class="panel-header">
+      <h1>Tree Explorer</h1>
+      <p>Search an associate to inspect their binary-tree placement, downline, and leg-volume balance.</p>
+    </div>
+
+    <div class="controls-row">
+      <div class="search-row">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="searchInput" placeholder="Search by ID, e.g. VP00001" autocomplete="off" />
+        </div>
+        <button id="searchBtn">Search</button>
+      </div>
+      <div class="stats-pill">
+        <span><b id="statTotal">0</b> positions</span>
+        <span><b id="statFilled">0</b> filled</span>
+        <span><b id="statVacant">0</b> vacant</span>
+      </div>
+    </div>
+    <div id="searchMsg" class="search-msg"></div>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <div class="canvas-inner" id="canvasInner">
+        <svg id="linkLayer"></svg>
+        <div id="nodeLayer"></div>
+      </div>
+      <div class="hint" id="hint">Drag to pan &nbsp;·&nbsp; scroll or pinch to zoom</div>
+      <div class="zoom-controls">
+        <button id="zoomIn" title="Zoom in">+</button>
+        <button id="fitBtn" title="Fit to screen">FIT</button>
+        <button id="zoomOut" title="Zoom out">&minus;</button>
+      </div>
+      <div class="legend">
+        <span><i class="dot active"></i>Active</span>
+        <span><i class="dot pending"></i>Pending</span>
+        <span><i class="dot inactive"></i>Inactive</span>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+
+  // ---------------------------------------------------------------
+  // 1. SAMPLE DATA
+  // Every "filled" node always has exactly two leg slots: `left` and
+  // `right`. A slot is either another filled node, or `null` meaning
+  // vacant (nothing placed there yet, so nothing renders beneath it).
+  // ---------------------------------------------------------------
+  const treeData = {
+    id:'VP00001', name:'Root A', rank:'Gold', status:'active', leftVol:84200, rightVol:71300,
+    left:{
+      id:'VP00002', name:'B · Left', rank:'Silver', status:'active', leftVol:40200, rightVol:31500,
+      left:{
+        id:'VP00004', name:'D · Left-Left', rank:'Bronze', status:'active', leftVol:12000, rightVol:8000,
+        left:{ id:'VP00007', name:'G · Left', rank:'Bronze', status:'inactive', leftVol:4000, rightVol:4000, left:null, right:null },
+        right:null
+      },
+      right:{
+        id:'VP00005', name:'E · Right', rank:'Silver', status:'pending', leftVol:18000, rightVol:13500,
+        left:null,
+        right:{
+          id:'VP00008', name:'H · Right', rank:'Silver', status:'active', leftVol:9000, rightVol:6000,
+          left:{ id:'VP00011', name:'K · Left', rank:'Bronze', status:'active', leftVol:2000, rightVol:1500, left:null, right:null },
+          right:null
+        }
+      }
+    },
+    right:{
+      id:'VP00003', name:'C · Right', rank:'Gold', status:'pending', leftVol:52000, rightVol:19300,
+      left:{
+        id:'VP00006', name:'F · Left', rank:'Silver', status:'active', leftVol:22000, rightVol:30000,
+        left:{ id:'VP00009', name:'I · Left', rank:'Bronze', status:'active', leftVol:11000, rightVol:5000, left:null, right:null },
+        right:{
+          id:'VP00010', name:'J · Right', rank:'Silver', status:'pending', leftVol:15000, rightVol:9000,
+          left:{ id:'VP00012', name:'L · Left', rank:'Bronze', status:'active', leftVol:3000, rightVol:2200, left:null, right:null },
+          right:null
+        }
+      },
+      right:null
+    }
+  };
+
+  // ---------------------------------------------------------------
+  // 2. LAYOUT — classic "tidy binary tree" placement.
+  // Every terminal slot (vacant, or a filled leaf) claims the next
+  // free leaf column. Every internal node is centered exactly above
+  // the midpoint of its two children. Because each node has 0 or 2
+  // children (never 1), this simple centering never overlaps or
+  // crosses links — which is what was broken in the screenshot.
+  // ---------------------------------------------------------------
+  const CARD_W = 220, CARD_H = 158, VACANT_H = 92;
+  const LEAF_GAP = 260, LEVEL_GAP = 78, ROW_H = CARD_H + LEVEL_GAP;
+  const TOP_MARGIN = 50, LEFT_MARGIN = 60;
+
+  const nodes = [];
+  const links = [];
+  let leafCounter = 0;
+  let maxDepth = 0;
+  let filledCount = 0, vacantCount = 0;
+
+  function layout(slot, depth, leg){
+    maxDepth = Math.max(maxDepth, depth);
+    if (slot === null){
+      vacantCount++;
+      const entry = { vacant:true, depth, leg, x: leafCounter++ };
+      nodes.push(entry);
+      return entry;
+    }
+    filledCount++;
+    const leftEntry = layout(slot.left, depth + 1, 'L');
+    const rightEntry = layout(slot.right, depth + 1, 'R');
+    const x = (leftEntry.x + rightEntry.x) / 2;
+    const entry = { vacant:false, depth, leg, x, data:slot };
+    nodes.push(entry);
+    links.push({ parent:entry, left:leftEntry, right:rightEntry });
+    return entry;
+  }
+  layout(treeData, 0, null);
+
+  function px(entry){ return LEFT_MARGIN + (entry.x + 0.5) * LEAF_GAP; }
+  function py(entry){ return TOP_MARGIN + entry.depth * ROW_H; }
+
+  const contentW = LEFT_MARGIN * 2 + leafCounter * LEAF_GAP;
+  const contentH = TOP_MARGIN * 2 + maxDepth * ROW_H + CARD_H;
+
+  // ---------------------------------------------------------------
+  // 3. RENDER
+  // ---------------------------------------------------------------
+  const RANK_STYLE = {
+    Gold:   { avatarBg:'#F5C451', avatarFg:'#6B4A00', pillBg:'#FDF1D6', pillFg:'#8A5A00' },
+    Silver: { avatarBg:'#CBD3E1', avatarFg:'#33415C', pillBg:'#EDEFF5', pillFg:'#52607A' },
+    Bronze: { avatarBg:'#D9A579', avatarFg:'#5C3113', pillBg:'#F6E9DF', pillFg:'#8A4B23' }
+  };
+  const STATUS_COLOR = { active:'var(--status-active)', pending:'var(--status-pending)', inactive:'var(--status-inactive)' };
+
+  const nodeLayer = document.getElementById('nodeLayer');
+  const linkLayer = document.getElementById('linkLayer');
+  const canvasInner = document.getElementById('canvasInner');
+  const nodeEls = {}; // id -> DOM element
+
+  function fmtRupee(n){ return '₹' + n.toLocaleString('en-IN'); }
+
+  function renderNodes(){
+    const frag = document.createDocumentFragment();
+    nodes.forEach(entry => {
+      const left = px(entry) - CARD_W / 2;
+      const top = py(entry);
+      const el = document.createElement('div');
+
+      if (entry.vacant){
+        el.className = 'vacant-card';
+        el.style.left = left + 'px';
+        el.style.top = top + 'px';
+        el.innerHTML = '<div class="plus">+</div><div class="label">Vacant</div>';
+      } else {
+        const d = entry.data;
+        const rs = RANK_STYLE[d.rank] || RANK_STYLE.Silver;
+        el.className = 'node-card';
+        el.id = 'card-' + d.id;
+        el.style.left = left + 'px';
+        el.style.top = top + 'px';
+        el.innerHTML =
+          (entry.leg ? '<div class="leg-badge ' + entry.leg + '">' + entry.leg + '</div>' : '') +
+          '<div class="node-top">' +
+            '<div class="avatar" style="background:' + rs.avatarBg + ';color:' + rs.avatarFg + '">' + d.name.charAt(0) + '</div>' +
+            '<div class="node-id-wrap"><div class="node-id">' + d.id + '</div><div class="node-role">' + d.name + '</div></div>' +
+            '<span class="status-dot" style="background:' + STATUS_COLOR[d.status] + '"></span>' +
+          '</div>' +
+          '<span class="rank-pill" style="background:' + rs.pillBg + ';color:' + rs.pillFg + '">' + d.rank + '</span>' +
+          '<div class="vol-bar"><div class="vol-bar-fill" style="width:' + (d.leftVol / (d.leftVol + d.rightVol) * 100) + '%"></div></div>' +
+          '<div class="vol-row"><span>Left leg: ' + fmtRupee(d.leftVol) + '</span><span>Right leg: ' + fmtRupee(d.rightVol) + '</span></div>';
+        nodeEls[d.id] = el;
+      }
+      frag.appendChild(el);
+    });
+    nodeLayer.appendChild(frag);
+  }
+
+  function renderLinks(){
+    linkLayer.setAttribute('width', contentW);
+    linkLayer.setAttribute('height', contentH);
+    linkLayer.setAttribute('viewBox', '0 0 ' + contentW + ' ' + contentH);
+    const ns = 'http://www.w3.org/2000/svg';
+    const frag = document.createDocumentFragment();
+    links.forEach(link => {
+      const pX = px(link.parent), pBottom = py(link.parent) + CARD_H;
+      const midY = pBottom + LEVEL_GAP / 2;
+      const lX = px(link.left), lY = py(link.left);
+      const rX = px(link.right), rY = py(link.right);
+      const d = [
+        'M', pX, pBottom, 'L', pX, midY,
+        'M', lX, midY, 'L', rX, midY,
+        'M', lX, midY, 'L', lX, lY,
+        'M', rX, midY, 'L', rX, rY
+      ].join(' ');
+      const path = document.createElementNS(ns, 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('stroke', '#C7C2E4');
+      path.setAttribute('stroke-width', '1.75');
+      path.setAttribute('fill', 'none');
+      frag.appendChild(path);
+    });
+    linkLayer.appendChild(frag);
+  }
+
+  renderLinks();
+  renderNodes();
+  canvasInner.style.width = contentW + 'px';
+  canvasInner.style.height = contentH + 'px';
+
+  document.getElementById('statTotal').textContent = nodes.length;
+  document.getElementById('statFilled').textContent = filledCount;
+  document.getElementById('statVacant').textContent = vacantCount;
+
+  // ---------------------------------------------------------------
+  // 4. PAN & ZOOM
+  // ---------------------------------------------------------------
+  const wrap = document.getElementById('canvasWrap');
+  const state = { x:0, y:0, scale:1 };
+  const MIN_SCALE = 0.3, MAX_SCALE = 2.5;
+
+  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+  function applyTransform(){
+    canvasInner.style.transform = 'translate(' + state.x + 'px,' + state.y + 'px) scale(' + state.scale + ')';
+  }
+  function withAnimation(fn){
+    canvasInner.classList.add('animate');
+    fn();
+    window.setTimeout(() => canvasInner.classList.remove('animate'), 460);
+  }
+
+  function fitToScreen(animated){
+    const rect = wrap.getBoundingClientRect();
+    const scale = clamp(Math.min(rect.width / contentW, rect.height / contentH) * 0.92, MIN_SCALE, MAX_SCALE);
+    const newX = (rect.width - contentW * scale) / 2;
+    const newY = 24;
+    const run = () => { state.scale = scale; state.x = newX; state.y = newY; applyTransform(); };
+    if (animated) withAnimation(run); else run();
+  }
+
+  function zoomAround(cx, cy, factor){
+    const newScale = clamp(state.scale * factor, MIN_SCALE, MAX_SCALE);
+    const contentX = (cx - state.x) / state.scale;
+    const contentY = (cy - state.y) / state.scale;
+    state.scale = newScale;
+    state.x = cx - contentX * newScale;
+    state.y = cy - contentY * newScale;
+    applyTransform();
+  }
+
+  // --- drag to pan (mouse + touch, single pointer) + pinch zoom (two pointers)
+  const activePointers = new Map();
+  let panFrom = null;
+  let pinch = null;
+
+  wrap.addEventListener('pointerdown', e => {
+    wrap.setPointerCapture(e.pointerId);
+    activePointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+    if (activePointers.size === 1){
+      panFrom = { px:e.clientX, py:e.clientY, sx:state.x, sy:state.y };
+      wrap.classList.add('grabbing');
+    } else if (activePointers.size === 2){
+      panFrom = null;
+      const pts = Array.from(activePointers.values());
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      const rect = wrap.getBoundingClientRect();
+      pinch = {
+        dist,
+        scale: state.scale,
+        mid: { x:(pts[0].x + pts[1].x) / 2 - rect.left, y:(pts[0].y + pts[1].y) / 2 - rect.top }
+      };
+    }
+  });
+
+  wrap.addEventListener('pointermove', e => {
+    if (!activePointers.has(e.pointerId)) return;
+    activePointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+
+    if (activePointers.size === 1 && panFrom){
+      state.x = panFrom.sx + (e.clientX - panFrom.px);
+      state.y = panFrom.sy + (e.clientY - panFrom.py);
+      applyTransform();
+    } else if (activePointers.size === 2 && pinch){
+      const pts = Array.from(activePointers.values());
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      const ratio = dist / pinch.dist;
+      const newScale = clamp(pinch.scale * ratio, MIN_SCALE, MAX_SCALE);
+      const contentX = (pinch.mid.x - state.x) / state.scale;
+      const contentY = (pinch.mid.y - state.y) / state.scale;
+      state.scale = newScale;
+      state.x = pinch.mid.x - contentX * newScale;
+      state.y = pinch.mid.y - contentY * newScale;
+      applyTransform();
+    }
+  });
+
+  function releasePointer(e){
+    activePointers.delete(e.pointerId);
+    wrap.classList.remove('grabbing');
+    if (activePointers.size < 2) pinch = null;
+    if (activePointers.size === 1){
+      const p = Array.from(activePointers.values())[0];
+      panFrom = { px:p.x, py:p.y, sx:state.x, sy:state.y };
+    } else if (activePointers.size === 0){
+      panFrom = null;
+    }
+  }
+  wrap.addEventListener('pointerup', releasePointer);
+  wrap.addEventListener('pointercancel', releasePointer);
+  wrap.addEventListener('pointerleave', e => { if (activePointers.size <= 1) releasePointer(e); });
+
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    const rect = wrap.getBoundingClientRect();
+    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    zoomAround(e.clientX - rect.left, e.clientY - rect.top, factor);
+  }, { passive:false });
+
+  document.getElementById('zoomIn').addEventListener('click', () => {
+    const rect = wrap.getBoundingClientRect();
+    zoomAround(rect.width / 2, rect.height / 2, 1.2);
+  });
+  document.getElementById('zoomOut').addEventListener('click', () => {
+    const rect = wrap.getBoundingClientRect();
+    zoomAround(rect.width / 2, rect.height / 2, 1 / 1.2);
+  });
+  document.getElementById('fitBtn').addEventListener('click', () => fitToScreen(true));
+
+  const hint = document.getElementById('hint');
+  wrap.addEventListener('pointerdown', () => { hint.style.opacity = '0'; }, { once:true });
+  window.setTimeout(() => { hint.style.opacity = '0'; }, 3500);
+
+  // ---------------------------------------------------------------
+  // 5. SEARCH
+  // ---------------------------------------------------------------
+  const searchInput = document.getElementById('searchInput');
+  const searchMsg = document.getElementById('searchMsg');
+  let highlighted = null;
+
+  function clearHighlight(){
+    if (highlighted){
+      highlighted.classList.remove('highlight');
+      const tag = highlighted.querySelector('.result-tag');
+      if (tag) tag.remove();
+      highlighted = null;
+    }
+  }
+
+  function centerOnCard(el){
+    const rect = wrap.getBoundingClientRect();
+    const targetScale = clamp(Math.max(state.scale, 0.85), MIN_SCALE, MAX_SCALE);
+    const cx = parseFloat(el.style.left) + CARD_W / 2;
+    const cy = parseFloat(el.style.top) + CARD_H / 2;
+    withAnimation(() => {
+      state.scale = targetScale;
+      state.x = rect.width / 2 - cx * targetScale;
+      state.y = rect.height / 2 - cy * targetScale;
+      applyTransform();
+    });
+  }
+
+  function doSearch(){
+    const q = searchInput.value.trim();
+    clearHighlight();
+    if (!q){ searchMsg.textContent = ''; return; }
+    const el = nodeEls[q.toUpperCase()];
+    if (el){
+      el.classList.add('highlight');
+      const tag = document.createElement('div');
+      tag.className = 'result-tag';
+      tag.textContent = 'Search result';
+      el.appendChild(tag);
+      highlighted = el;
+      centerOnCard(el);
+      searchMsg.textContent = '';
+    } else {
+      searchMsg.textContent = 'No associate found with ID "' + q + '".';
+    }
+  }
+  document.getElementById('searchBtn').addEventListener('click', doSearch);
+  searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+  // ---------------------------------------------------------------
+  // 6. INIT
+  // ---------------------------------------------------------------
+  fitToScreen(false);
+  window.addEventListener('resize', () => fitToScreen(false));
+  searchInput.value = 'VP00001';
+  doSearch();
+
+})();
+</script>
+</body>
+</html>

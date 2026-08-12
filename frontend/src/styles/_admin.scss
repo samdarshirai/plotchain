@@ -701,10 +701,12 @@ body.admin-associate-active {
   }
 }
 
-// Tree Explorer -- visualizes the associate binary tree as a literal org-chart, reusing the
-// same left=brand-primary / right=brand-secondary color coding and slot-card/vacant-node
-// vocabulary that the setup wizard's Root Associates step already established, so the two
-// binary-tree views in the app read as the same visual language rather than two unrelated UIs.
+// Tree Explorer -- visualizes the associate binary tree as a free-form, pannable/zoomable
+// org-chart canvas (dot-grid background, orthogonal SVG connectors, absolutely-positioned
+// cards), matching the tree-explorer.html design mockup while reusing this app's own tokens
+// (brand-primary/secondary, status colors) rather than the mockup's raw hex values, and
+// dropping the mockup's standalone dark topbar since it's redundant with the real
+// SettingsShellComponent chrome this screen already renders inside.
 
 .tree-explorer__intro {
   display: flex;
@@ -720,12 +722,22 @@ body.admin-associate-active {
   color: var(--text-muted);
 }
 
+.tree-explorer__controls-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
 .tree-explorer__search {
   position: relative;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  flex: 1;
+  min-width: 280px;
+  max-width: 620px;
 
   .material-symbols-outlined {
     position: absolute;
@@ -753,6 +765,28 @@ body.admin-associate-active {
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
+  }
+}
+
+// Deliberately worded "visible" (not "total") and carries a title tooltip spelling out the
+// scope -- these counts reflect only the currently-loaded subtree (bounded by maxSlotDepth),
+// not the associate's full downline, and the API has no whole-downline-count endpoint today.
+.tree-explorer__stats-pill {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  height: 46px;
+  padding: 0 1.125rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+
+  b {
+    color: var(--text-primary);
+    font-weight: 700;
   }
 }
 
@@ -787,104 +821,150 @@ body.admin-associate-active {
   font-size: 0.8125rem;
 }
 
-// A plain flex `align-items: center` here would center-with-symmetric-overflow once the tree
-// is wider than the box -- both edges bleed out equally and scrollLeft starts already clipped,
-// which reads as "cards escaping their container" rather than "scroll for more". The
-// fit-content + min-width:100% + margin:auto inner wrapper below is the standard fix: it
-// centers when content fits, and collapses its auto-margins to flush-left (normal scroll
-// behavior, starting at the true left edge) once content overflows.
-.tree-explorer__canvas {
-  overflow-x: auto;
-  padding: 1.5rem 1rem 1rem;
-  scrollbar-width: thin;
-  scrollbar-color: var(--brand-primary) var(--surface-raised);
+// Canvas viewport: the settings-shell content column scrolls normally (unlike the mockup's
+// 100vh/overflow:hidden body), so this needs an explicit bounded height to act as its own
+// self-contained pan/zoom surface -- min() caps it on very tall viewports, min-height guards
+// short/mobile ones. Pan/zoom transforms are written directly to .tree-explorer__canvas-inner's
+// style by the component (bypassing Angular change detection on the pointer/wheel hot path),
+// never bound via [style.transform] here.
+.tree-explorer__canvas-wrap {
+  position: relative;
+  height: min(70vh, 640px);
+  min-height: 420px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  cursor: grab;
+  touch-action: none;
+  background:
+    radial-gradient(circle, var(--border-subtle) 1.3px, transparent 1.3px) 0 0 / 24px 24px,
+    var(--surface-page);
+}
 
-  &::-webkit-scrollbar {
-    height: 8px;
-  }
+.tree-explorer__canvas-wrap--grabbing {
+  cursor: grabbing;
+}
 
-  &::-webkit-scrollbar-track {
-    background: var(--surface-raised);
-    border-radius: 999px;
-  }
+// Full-bleed override (see .settings-shell__content--full in _settings.scss): let the card
+// and canvas stretch to fill the whole content column instead of the bounded default above.
+// app-tree-explorer is the actual flex item inside .settings-shell__content--full (router-outlet
+// renders it as a sibling element, not a wrapper), so flex:1 must land there, not just on the
+// .tree-explorer.card div nested inside it -- otherwise the card only sizes to its own content.
+.settings-shell__content--full app-tree-explorer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
 
-  &::-webkit-scrollbar-thumb {
-    background: var(--brand-primary);
-    border-radius: 999px;
-  }
+.settings-shell__content--full .tree-explorer.card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  padding: 1.5rem 2rem;
+}
+
+.settings-shell__content--full .tree-explorer__canvas-wrap {
+  flex: 1;
+  height: auto;
+  min-height: 420px;
+  border: none;
+  border-radius: 0;
+  margin: 0 -2rem -1.5rem;
 }
 
 .tree-explorer__canvas-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  width: fit-content;
-  min-width: 100%;
-  margin: 0 auto;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
 }
 
-.tree-explorer__result-eyebrow {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+.tree-explorer__canvas-inner--animate {
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.tree-explorer__link-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.tree-explorer__link {
+  stroke: var(--border-subtle);
+  stroke-width: 1.75;
+  fill: none;
+}
+
+.tree-explorer__node-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.tree-explorer__node-card {
+  position: absolute;
+  width: 220px;
+  height: 158px;
+  padding: 0.875rem 1rem;
+  border-radius: 16px;
+  border: 1.5px solid var(--border-subtle);
+  background: var(--surface-card);
+  box-shadow: 0 6px 18px rgba(45, 29, 120, 0.08);
+}
+
+.tree-explorer__node-card--highlight {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 4px var(--brand-primary-soft), 0 12px 26px rgba(45, 29, 120, 0.2);
+}
+
+.tree-explorer__result-tag {
+  position: absolute;
+  top: -22px;
+  left: 2px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--brand-primary);
+  white-space: nowrap;
 }
 
-.tree-explorer__level {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.tree-explorer__node {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-  width: 210px;
-  padding: 1rem 1.125rem;
-  border-radius: 14px;
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-card);
-  box-shadow: 0 8px 20px -14px rgba(0, 0, 0, 0.25);
-}
-
-.tree-explorer__node--root {
-  border: 2px solid transparent;
-  background:
-    linear-gradient(var(--surface-card), var(--surface-card)) padding-box,
-    var(--brand-gradient) border-box;
-  box-shadow: 0 12px 24px -10px color-mix(in srgb, var(--brand-primary) 40%, transparent);
-}
-
-.tree-explorer__position-badge {
+.tree-explorer__leg-badge {
   position: absolute;
-  top: -0.55rem;
-  left: 1rem;
-  padding: 0.05rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--brand-primary-contrast);
-  background: var(--text-muted);
+  top: -10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 800;
+  color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
 }
 
-.tree-explorer__position-badge--left {
+.tree-explorer__leg-badge--l {
   background: var(--brand-primary);
+  left: -10px;
 }
 
-.tree-explorer__position-badge--right {
+.tree-explorer__leg-badge--r {
   background: var(--brand-secondary);
+  right: -10px;
   color: #06313a;
 }
 
-.tree-explorer__node-header {
+.tree-explorer__node-top {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 0.5rem;
 }
 
 .tree-explorer__node-avatar {
@@ -892,39 +972,46 @@ body.admin-associate-active {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: var(--surface-raised);
   color: var(--text-primary);
-  font-weight: 700;
-  font-size: 0.9375rem;
+  font-weight: 800;
+  font-size: 0.85rem;
 }
 
-.tree-explorer__node--root .tree-explorer__node-avatar {
-  background: var(--brand-gradient);
-  color: var(--brand-primary-contrast);
+// Only "gold" ranks get a distinct treatment (reusing --status-warning, already an amber
+// hex, via color-mix); every other freeform rankName -- Silver/Bronze/custom/null -- keeps
+// this neutral look, which is the graceful degradation for an unbounded tier system.
+.tree-explorer__node-avatar--gold {
+  background: color-mix(in srgb, var(--status-warning) 22%, var(--surface-card));
+  color: color-mix(in srgb, var(--status-warning) 70%, black);
 }
 
-.tree-explorer__node-identity {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.tree-explorer__node-id-wrap {
   flex: 1;
+  min-width: 0;
 }
 
 .tree-explorer__node-id {
-  font-size: 0.8125rem;
+  display: block;
   font-weight: 700;
+  font-size: 0.85rem;
   color: var(--text-primary);
-}
-
-.tree-explorer__node-name {
-  font-size: 0.75rem;
-  color: var(--text-muted);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.tree-explorer__node-role {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 1px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tree-explorer__kyc-dot {
@@ -947,148 +1034,190 @@ body.admin-associate-active {
   background: var(--status-danger);
 }
 
-.tree-explorer__rank-chip {
-  align-self: flex-start;
-  padding: 0.1rem 0.5rem;
+// Skewed/stagnant surface as small tooltip-bearing icon badges rather than chips -- the
+// mockup's fixed 158px card has no spare row, and the layout algorithm assumes every card
+// shares the same footprint, so card height must stay constant regardless of flags present.
+.tree-explorer__flag-icon {
+  flex-shrink: 0;
+  font-size: 15px !important;
+}
+
+.tree-explorer__flag-icon--skewed {
+  color: var(--status-warning);
+}
+
+.tree-explorer__flag-icon--stagnant {
+  color: var(--status-danger);
+}
+
+.tree-explorer__rank-pill {
+  display: inline-block;
+  margin: 0.55rem 0 0.5rem;
+  padding: 0.15rem 0.55rem;
   border-radius: 999px;
   background: var(--surface-raised);
   color: var(--text-muted);
-  font-size: 0.6875rem;
-  font-weight: 600;
+  font-size: 0.65rem;
+  font-weight: 700;
 }
 
-.tree-explorer__leg-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
+.tree-explorer__rank-pill--gold {
+  background: color-mix(in srgb, var(--status-warning) 18%, var(--surface-card));
+  color: color-mix(in srgb, var(--status-warning) 65%, black);
 }
 
-.tree-explorer__leg-bar-track {
-  display: flex;
+.tree-explorer__vol-bar {
   height: 6px;
   border-radius: 999px;
   overflow: hidden;
   background: var(--surface-raised);
 }
 
-.tree-explorer__leg-bar-segment--left {
-  background: var(--brand-primary);
+.tree-explorer__vol-bar-fill {
+  height: 100%;
+  background: var(--brand-gradient);
 }
 
-.tree-explorer__leg-bar-segment--right {
-  background: var(--brand-secondary);
-}
-
-.tree-explorer__leg-bar--skewed .tree-explorer__leg-bar-track {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--status-warning) 60%, transparent);
-}
-
-.tree-explorer__leg-bar-values {
+.tree-explorer__vol-row {
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
+  margin-top: 0.4rem;
   font-size: 0.625rem;
   color: var(--text-muted);
-  white-space: nowrap;
 }
 
-.tree-explorer__flags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-}
-
-.tree-explorer__flag {
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.625rem;
-  font-weight: 700;
-}
-
-.tree-explorer__flag--skewed {
-  background: color-mix(in srgb, var(--status-warning) 18%, transparent);
-  color: color-mix(in srgb, var(--status-warning) 70%, black);
-}
-
-.tree-explorer__flag--stagnant {
-  background: color-mix(in srgb, var(--status-danger) 18%, transparent);
-  color: color-mix(in srgb, var(--status-danger) 60%, black);
-}
-
-.tree-explorer__children {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 2rem;
-  padding-top: 1.5rem;
-  margin-top: 0.25rem;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    width: 2px;
-    height: 1rem;
-    background: var(--border-subtle);
-    transform: translateX(-50%);
-  }
-}
-
-// Both branches are forced to the same width (flex-basis 0 + equal grow, ignoring their own
-// content) so a parent's vertical stub -- drawn at 50% of the row -- always lands exactly on
-// the seam between the two branches, and therefore exactly between the two children's own
-// centers. Without this, a lopsided pair (e.g. one side with a deep downline, the other a bare
-// vacant slot) pulls the row's content-driven midpoint away from the true seam and the
-// connector visibly misses both children.
-.tree-explorer__branch {
-  position: relative;
-  flex: 1 1 0;
-  min-width: 0;
-  padding-top: 1rem;
-  display: flex;
-  justify-content: center;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 1rem;
-    height: 2px;
-    background: var(--border-subtle);
-  }
-
-  &:first-child::before {
-    left: 50%;
-    right: 0;
-  }
-
-  &:last-child::before {
-    left: 0;
-    right: 50%;
-  }
-}
-
-.tree-explorer__vacant-slot {
+.tree-explorer__vacant-card {
+  position: absolute;
+  width: 220px;
+  height: 92px;
+  border-radius: 16px;
+  border: 1.6px dashed var(--border-subtle);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
-  width: 210px;
-  padding: 1rem;
-  border-radius: 14px;
-  border: 2px dashed var(--border-subtle);
+  gap: 2px;
   color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
+  background: color-mix(in srgb, var(--surface-card) 45%, transparent);
 
   .material-symbols-outlined {
-    font-size: 20px;
+    font-size: 19px;
   }
 }
 
+.tree-explorer__hint {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-primary) 82%, transparent);
+  color: #fff;
+  font-size: 0.7rem;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.tree-explorer__zoom-controls {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+  box-shadow: 0 6px 16px rgba(45, 29, 120, 0.14);
+
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 36px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--surface-card);
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 1;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  button:last-child {
+    border-bottom: none;
+  }
+
+  button:hover {
+    background: var(--surface-raised);
+  }
+}
+
+.tree-explorer__fit-btn {
+  font-size: 0.65rem !important;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.tree-explorer__legend {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  display: flex;
+  gap: 0.85rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  box-shadow: 0 6px 16px rgba(45, 29, 120, 0.08);
+
+  span {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+}
+
+.tree-explorer__legend-dot {
+  flex-shrink: 0;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.tree-explorer__legend-dot--verified {
+  background: var(--status-success);
+}
+
+.tree-explorer__legend-dot--pending {
+  background: var(--status-warning);
+}
+
+.tree-explorer__legend-dot--rejected {
+  background: var(--status-danger);
+}
+
 @media (max-width: 700px) {
-  .tree-explorer__canvas-inner {
-    align-items: flex-start;
+  .tree-explorer__controls-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tree-explorer__search {
+    max-width: none;
+  }
+
+  .tree-explorer__legend {
+    display: none;
   }
 }

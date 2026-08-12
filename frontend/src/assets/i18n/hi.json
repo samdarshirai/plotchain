@@ -132,7 +132,19 @@
       "rightLegLabel": "Right leg",
       "noRankLabel": "No rank",
       "skewedLegsFlag": "Skewed legs",
-      "stagnantFlag": "Stagnant"
+      "stagnantFlag": "Stagnant",
+      "statsVisiblePositionsLabel": "दृश्य पद",
+      "statsFilledLabel": "भरे हुए",
+      "statsVacantLabel": "खाली",
+      "statsScopeHint": "गणना इस सहयोगी के नीचे वर्तमान में लोड किए गए {{depth}} स्तरों को दर्शाती है, उनकी पूरी डाउनलाइन को नहीं।",
+      "panZoomHint": "पैन करने के लिए खींचें · ज़ूम करने के लिए स्क्रॉल या पिंच करें",
+      "zoomInTitle": "ज़ूम इन करें",
+      "zoomOutTitle": "ज़ूम आउट करें",
+      "fitToScreenLabel": "फ़िट करें",
+      "fitToScreenTitle": "स्क्रीन में फ़िट करें",
+      "legendVerifiedLabel": "सत्यापित",
+      "legendPendingLabel": "लंबित",
+      "legendRejectedLabel": "अस्वीकृत"
     },
     "kycQueue": {
       "title": "KYC Review Queue",
