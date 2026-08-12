@@ -4,6 +4,8 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
+import com.plotchain.compensation.RoyaltyBonusRate;
+import com.plotchain.compensation.RoyaltyBonusRateRepository;
 import com.plotchain.associate.KycStatus;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntry;
@@ -44,6 +46,7 @@ public class CycleService {
     private final CompensationPlanVersionRepository compensationPlanVersionRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
     private final RankTierRepository rankTierRepository;
+    private final RoyaltyBonusRateRepository royaltyBonusRateRepository;
 
     // Cycle-management unit 2 (GET /api/admin/cycles/{id}, spec lines 95-97): fixed order
     // matching the spec's literal "DIRECT/MATCHING/SPONSOR_MATCHING/ROYALTY/REWARD" listing,
@@ -62,7 +65,8 @@ public class CycleService {
         SaleRepository saleRepository,
         CompensationPlanVersionRepository compensationPlanVersionRepository,
         LedgerEntryRepository ledgerEntryRepository,
-        RankTierRepository rankTierRepository
+        RankTierRepository rankTierRepository,
+        RoyaltyBonusRateRepository royaltyBonusRateRepository
     ) {
         this.cycleRepository = cycleRepository;
         this.associateRepository = associateRepository;
@@ -71,6 +75,7 @@ public class CycleService {
         this.compensationPlanVersionRepository = compensationPlanVersionRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.rankTierRepository = rankTierRepository;
+        this.royaltyBonusRateRepository = royaltyBonusRateRepository;
     }
 
     public CyclePageResponse list(CycleStatus status, int page, int size) {
