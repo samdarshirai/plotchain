@@ -81,33 +81,19 @@ generates each new associate's login ID as this prefix plus a zero-padded, incre
 instance should not change its prefix after associates already exist, since existing IDs are
 not renumbered.
 
-### `PLOTCHAIN_ADMIN_USER_ID` / `PLOTCHAIN_ADMIN_EMAIL` / `PLOTCHAIN_ADMIN_PASSWORD` — first-boot admin bootstrap
+### Founding admin account (seeded by migration)
 
-```
-plotchain:
-  bootstrap:
-    admin-user-id: ${PLOTCHAIN_ADMIN_USER_ID:admin}
-    admin-email: ${PLOTCHAIN_ADMIN_EMAIL:}
-    admin-password: ${PLOTCHAIN_ADMIN_PASSWORD:}
-```
+[`V18__seed_founding_admin.sql`](backend/src/main/resources/db/migration/V18__seed_founding_admin.sql)
+inserts a single `ADMIN` associate row (`user_id` `admin`, password `ChangeMe123!`) into every
+fresh database, in every environment — including every test run — with no environment variable
+or manual bootstrap step required. `parent_id = NULL` makes this row the root of the binary tree
+by construction, and `must_change_password = true` forces a password change via
+`POST /api/associates/me/password` on first login, which is what makes shipping a fixed default
+password acceptable.
 
-[`AdminBootstrapRunner`](backend/src/main/java/com/plotchain/auth/AdminBootstrapRunner.java)
-runs on every application startup and creates a single `ADMIN` associate from these values, so
-that the very first admin account can exist without any credentials being committed to the
-repository. It is a no-op — it does nothing and creates nothing — if **either**:
-
-- `PLOTCHAIN_ADMIN_EMAIL` or `PLOTCHAIN_ADMIN_PASSWORD` is unset or blank, **or**
-- the `associate` table already has at least one row (`associateRepository.count() > 0`),
-  regardless of whether that row is an admin.
-
-In other words, this only ever fires on the very first boot against a genuinely empty database.
-The account it creates logs in with the `PLOTCHAIN_ADMIN_USER_ID` value (default `admin`) and has
-`must_change_password = true`, so it is forced to change its password via
-`POST /api/associates/me/password` on first login — see below.
-
-Once the initial admin exists, `PLOTCHAIN_ADMIN_EMAIL`/`PLOTCHAIN_ADMIN_PASSWORD` are safe to
-unset; they will not be read again in any way that matters (the runner still executes on every
-boot, but the row-count check short-circuits it).
+This replaces the old `PLOTCHAIN_ADMIN_USER_ID` / `PLOTCHAIN_ADMIN_EMAIL` /
+`PLOTCHAIN_ADMIN_PASSWORD` environment-variable bootstrap (`AdminBootstrapRunner`, deleted) —
+there is nothing left to configure for the founding admin to exist.
 
 ### Database connection
 
@@ -132,18 +118,22 @@ spring:
 ### Running locally with seeded test accounts
 
 Activating the `dev` Spring profile (`application-dev.yml`) adds an extra Flyway migration
-location, `classpath:db/migration-dev`, which seeds two accounts via
+location, `classpath:db/migration-dev`, which seeds one extra test account via
 [`V900__seed_dev_accounts.sql`](backend/src/main/resources/db/migration-dev/V900__seed_dev_accounts.sql):
 
 | User ID | Password | Role |
 |---|---|---|
 | `associate01` | `Password123!` | `ASSOCIATE` |
-| `admin` | `Password123!` | `ADMIN` |
 
-**These credentials are public.** They are committed in plaintext-adjacent form (a fixed bcrypt
-hash) in this repository, so anyone with read access to the repo — or its git history — can log
-in as either account. They must never be applied to, or left reachable from, a real deployment.
-The `dev` profile is intended for local development against a disposable database only.
+The `ADMIN` account isn't seeded here — it already exists in every environment, `dev` included,
+via `V18__seed_founding_admin.sql` (see above): log in as `admin` / `ChangeMe123!` and expect to
+be forced through a password change on first login.
+
+**`associate01`'s credentials are public.** They are committed in plaintext-adjacent form (a
+fixed bcrypt hash) in this repository, so anyone with read access to the repo — or its git
+history — can log in as that account. It must never be applied to, or left reachable from, a
+real deployment. The `dev` profile is intended for local development against a disposable
+database only.
 
 ### Account creation
 
