@@ -66,11 +66,17 @@ class ProjectControllerTest {
             .andExpect(jsonPath("$[0].name").value("Green Valley"));
     }
 
+    // Associates can browse the plot/project catalog (role-capability unit 6,
+    // docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
+    // "View available plots") -- was ADMIN-only prior to this unit.
     @Test
-    void listIsForbiddenForAnAssociateToken() throws Exception {
+    void listReturnsProjectsForAnAssociateToken() throws Exception {
+        when(projectRepository.findAll()).thenReturn(List.of(seedProject()));
+
         mockMvc.perform(get("/api/company/projects")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].name").value("Green Valley"));
     }
 
     @Test

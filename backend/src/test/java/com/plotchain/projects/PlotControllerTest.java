@@ -72,11 +72,19 @@ class PlotControllerTest {
             .andExpect(jsonPath("$.totalElements").value(1));
     }
 
+    // Associates can browse the plot/project catalog (role-capability unit 6,
+    // docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
+    // "View available plots") -- was ADMIN-only prior to this unit.
     @Test
-    void listIsForbiddenForAnAssociateToken() throws Exception {
+    void listReturnsAPageForAnAssociateToken() throws Exception {
+        Page<Plot> page = new PageImpl<>(List.of(seedPlot()), PageRequest.of(0, 20), 1);
+        when(plotRepository.findAllByProjectId(eq(PROJECT_ID), any())).thenReturn(page);
+
         mockMvc.perform(get("/api/company/projects/" + PROJECT_ID + "/plots")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.plots[0].plotNo").value("A-101"))
+            .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test

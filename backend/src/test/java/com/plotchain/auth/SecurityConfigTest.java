@@ -219,10 +219,80 @@ class SecurityConfigTest {
     }
 
     @Test
-    void projectsIsForbiddenForAnAssociateToken() throws Exception {
+    void projectsIsReachableForAnAssociateToken() throws Exception {
         mockMvc.perform(get("/api/company/projects")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void projectThumbnailIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/projects/" + UUID.randomUUID() + "/thumbnail")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
             .andExpect(status().isForbidden());
+    }
+
+    // ProjectRepository is not @MockBean'd in this class (same "real H2, unseeded" reasoning
+    // as projectsIsReachableForAnyAdminFamilyToken above), so a random project id is a genuine
+    // miss: ProjectService.get() throws ProjectNotFoundException, mapped by
+    // ProjectsExceptionHandler to 404. Asserting the precise 404 (not just "not 403") proves
+    // the request passed the security layer via the new .authenticated() matcher rather than
+    // happening to land on some other non-403 status.
+    @Test
+    void projectDetailIsReachableForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/projects/" + UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isNotFound());
+    }
+
+    // PlotRepository is not @MockBean'd either, and PlotService.list() never checks the
+    // project exists before querying -- an unknown projectId yields a real, empty page (200),
+    // not a 404. Asserting the precise 200 proves the request passed the security layer.
+    @Test
+    void projectPlotsListIsReachableForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/projects/" + UUID.randomUUID() + "/plots")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk());
+    }
+
+    // Unlike the plots list above, PlotService.get() does look the plot up and throws
+    // PlotNotFoundException (404) when it's missing -- same reasoning as
+    // projectDetailIsReachableForAnAssociateToken.
+    @Test
+    void plotDetailIsReachableForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/projects/" + UUID.randomUUID() + "/plots/" + UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isNotFound());
+    }
+
+    // ProjectService.getThumbnail() also throws ProjectNotFoundException for an unknown id,
+    // but that's a 404 from ProjectsExceptionHandler -- an ADMIN token must get PAST the
+    // security layer first to ever see it, so 404 (not 403) is what proves this matcher still
+    // grants ADMIN access after the split.
+    @ParameterizedTest
+    @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
+    void projectThumbnailIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/company/projects/" + UUID.randomUUID() + "/thumbnail")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void csvTemplateIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/projects/plots/csv-template")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    // PlotCsvController.csvTemplate() does no DB lookup -- it always returns 200 with
+    // generated CSV bytes, so an ADMIN token reaching 200 (not 404, unlike the thumbnail
+    // case above) is the correct proof this matcher still grants ADMIN access.
+    @ParameterizedTest
+    @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
+    void csvTemplateIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/company/projects/plots/csv-template")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().isOk());
     }
 
     // No @MockBean for the projects repositories in this class -- they run for real against the
