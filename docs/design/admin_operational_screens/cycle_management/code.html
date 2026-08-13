@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cycle Management — Admin Operational Screen Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ============================================================
+     Tokens -- copied 1:1 from frontend/src/styles/_tokens.scss.
+     No new hex values are introduced anywhere below this block.
+     ============================================================ */
+  :root {
+    --brand-primary: #7C3AED;
+    --brand-secondary: #22D3EE;
+    --brand-gradient: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    --brand-primary-soft: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+    --brand-primary-hover: color-mix(in srgb, var(--brand-primary) 85%, white);
+    --brand-secondary-soft: color-mix(in srgb, var(--brand-secondary) 14%, transparent);
+    --brand-primary-contrast: #FFFFFF;
+
+    --surface-page: #f8f9ff;
+    --surface-card: #ffffff;
+    --surface-raised: #eff4ff;
+    --border-subtle: #c2c6d9;
+    --text-primary: #0b1c30;
+    --text-muted: #424656;
+    --status-success: #34D399;
+    --status-warning: #F59E0B;
+    --status-danger: #F87171;
+
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--surface-page);
+    color: var(--text-primary);
+    font-family: 'Inter', var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ============================================================
+     Generic primitives -- copied 1:1 from _cards.scss / _buttons.scss /
+     _forms.scss / _tables.scss / _shared-components.scss. These are the
+     REAL classes the live app renders today; the cycle-management__*
+     rules further down are additive, contextually scoped, same technique
+     as .sales-register__*.
+     ============================================================ */
+  .card { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.5rem; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: 600; text-align: left; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
+  td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-subtle); }
+  tr:hover td { background: var(--surface-raised); }
+  .editable-table__empty { padding: 1.5rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.875rem; }
+
+  button { cursor: pointer; border-radius: 8px; padding: 0.625rem 1.25rem; border: none; background: none; font-family: inherit; }
+  button:disabled { cursor: not-allowed; opacity: 0.5; }
+  .brand-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background: var(--brand-gradient); color: var(--brand-primary-contrast); font-weight: 600; transition: opacity .15s ease, transform .15s ease; }
+  .brand-button:hover:not(:disabled) { opacity: .92; }
+  .brand-button--secondary { background: var(--surface-raised); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+  .brand-button--ghost { background: transparent; color: var(--text-primary); border: 1px solid var(--brand-primary-soft); }
+  .brand-button--danger { background: var(--status-danger); color: var(--brand-primary-contrast); }
+  .brand-button--full { width: 100%; }
+
+  label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); }
+  select {
+    display: block; width: 100%; padding: 0.625rem 0.875rem; background: var(--surface-card);
+    border: 1px solid var(--border-subtle); border-radius: 8px; font-family: inherit; font-size: 0.875rem; color: var(--text-primary);
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  select:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px var(--brand-primary-soft); }
+
+  .inline-banner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.875rem 1.25rem; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-primary); font-size: 0.875rem; }
+  .inline-banner__content { flex: 1; }
+  .inline-banner__content p { margin: 0 0 0.375rem; }
+  .inline-banner__content p:last-child { margin-bottom: 0; }
+  .inline-banner__dismiss { background: transparent; border: none; color: inherit; font-size: 1.125rem; line-height: 1; padding: 0; cursor: pointer; opacity: .7; }
+  .inline-banner--danger { border-color: var(--status-danger); background: color-mix(in srgb, var(--status-danger) 14%, var(--surface-card)); color: var(--status-danger); }
+  .inline-banner--success { border-color: var(--status-success); background: color-mix(in srgb, var(--status-success) 14%, var(--surface-card)); color: #146c43; }
+  .inline-banner--success strong { color: #0b1c30; }
+
+  /* .side-panel__* -- copied 1:1 from _shared-components.scss (SidePanelComponent's live styles) */
+  .side-panel-demo { position: relative; width: min(420px, 100%); margin-left: auto; display: flex; flex-direction: column; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); overflow: hidden; }
+  .side-panel-demo__header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-subtle); }
+  .side-panel-demo__title { font-size: 1.125rem; font-weight: 600; color: var(--text-primary); }
+  .side-panel-demo__close { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: none; background: transparent; color: var(--text-muted); border-radius: 999px; font-size: 1rem; }
+  .side-panel-demo__body { padding: 1.5rem; }
+
+  /* ============================================================
+     Cycle Management -- new bespoke rules for Task 7 (_admin.scss,
+     appended after .sales-register__*/.record-sale__*). Contextually
+     scoped to .cycle-management, same technique .sales-register uses.
+     ============================================================ */
+  .cycle-management { display: flex; flex-direction: column; gap: 1.5rem; max-width: 1120px; margin: 0 auto; padding: 1.5rem 2rem; font-family: 'Inter', var(--font-sans); }
+
+  .cycle-management__intro { display: flex; flex-direction: column; gap: 0.375rem; }
+  .cycle-management__eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; color: var(--brand-primary); }
+  .cycle-management__title { margin: 0; font-family: 'Geist', var(--font-sans); font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; color: var(--text-primary); }
+  .cycle-management__subtitle { margin: 0; max-width: 40rem; font-size: 0.9375rem; line-height: 1.6; color: var(--text-muted); }
+
+  /* Current Cycle strip -- signature host #1 for the Cycle Rail */
+  .cycle-management__current { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; padding: 1.5rem 1.75rem; background: var(--surface-raised); border: 1px solid var(--brand-primary-soft); border-radius: 16px; }
+  .cycle-management__current-meta { display: flex; flex-direction: column; gap: 0.625rem; }
+  .cycle-management__current-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--brand-primary); }
+  .cycle-management__current-period { font-family: 'Geist', var(--font-sans); font-size: 1.125rem; font-weight: 600; color: var(--text-primary); }
+  .cycle-management__current-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; }
+  .cycle-management__current-hint { max-width: 240px; font-size: 0.75rem; line-height: 1.5; color: var(--text-muted); text-align: right; }
+
+  /* Cycle Rail -- the signature element. A four-node track that renders CycleStatus's
+     real, fixed, one-directional sequence: OPEN -> CALCULATING -> CLOSED -> PAID. */
+  .cycle-rail { display: flex; align-items: center; list-style: none; margin: 0; padding: 0; }
+  .cycle-rail__stage { display: flex; align-items: center; gap: 0.4375rem; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
+  .cycle-rail__dot { width: 8px; height: 8px; border-radius: 999px; background: var(--border-subtle); flex: 0 0 auto; }
+  .cycle-rail__connector { width: 22px; height: 1px; background: var(--border-subtle); margin: 0 0.4375rem; }
+  .cycle-rail__stage--reached { color: var(--text-primary); }
+  .cycle-rail__stage--reached .cycle-rail__dot { background: var(--brand-primary); }
+  .cycle-rail__connector--reached { background: var(--brand-primary); }
+  .cycle-rail__stage--current { color: var(--brand-primary); }
+  .cycle-rail__stage--current .cycle-rail__dot { background: var(--brand-primary); box-shadow: 0 0 0 3px var(--brand-primary-soft); }
+
+  /* Close-result banner's chip transition -- the rail's quieter echo */
+  .cycle-transition { display: flex; align-items: center; gap: 0.625rem; margin-top: 0.625rem; }
+  .cycle-chip { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; }
+  .cycle-chip--closed { background: color-mix(in srgb, var(--text-muted) 14%, var(--surface-card)); color: var(--text-primary); }
+  .cycle-chip--open { background: var(--brand-primary-soft); color: var(--brand-primary); }
+  .cycle-transition__arrow { color: var(--text-muted); font-size: 0.875rem; }
+
+  .cycle-management__filter { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.25rem; background: var(--surface-raised); border-radius: 16px; }
+  .cycle-management__filter label { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
+  .cycle-management__filter select { width: auto; min-width: 180px; background: var(--surface-card); }
+
+  .cycle-management .card { border: none; border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); padding: 0; overflow: hidden; }
+  .cycle-management .editable-table { margin: 0; }
+  .cycle-management .editable-table thead th { font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; background: var(--surface-card); }
+  .cycle-management .editable-table tbody td { font-size: 0.875rem; color: var(--text-primary); vertical-align: middle; }
+  .cycle-management .editable-table tbody tr:last-child td { border-bottom: none; }
+
+  /* Period Start / Period End (1st/2nd) -- tabular-nums on Inter, matching Sales Register's
+     own "Recorded At" date-column treatment, not full ledger-mono (dates aren't money). */
+  .cycle-management .editable-table td:nth-child(1),
+  .cycle-management .editable-table td:nth-child(2) { font-variant-numeric: tabular-nums; }
+  /* Status (3rd) -- can't be per-value colored, see DESIGN.md's Implementation constraint;
+     uniform ledger treatment identical to Sales Register's Status column. */
+  .cycle-management .editable-table td:nth-child(3) { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+
+  .cycle-management .editable-table__empty { padding: 3rem 1.5rem; }
+  .cycle-management__empty-state { display: flex; flex-direction: column; align-items: center; gap: 0.375rem; }
+  .cycle-management__empty-state-title { font-weight: 600; color: var(--text-primary); }
+  .cycle-management__empty-state-hint { font-size: 0.8125rem; color: var(--text-muted); }
+
+  .cycle-management__pagination { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; padding: 0 0.25rem; }
+  .cycle-management__page-indicator { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; color: var(--text-muted); }
+  .cycle-management__pagination .brand-button--secondary { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+
+  /* Detail side panel -- signature host #2 for the Cycle Rail */
+  .cycle-detail__meta { display: flex; flex-direction: column; gap: 0.75rem; padding-bottom: 1.25rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle); }
+  .cycle-detail__period { font-family: 'Geist', var(--font-sans); font-size: 1.0625rem; font-weight: 600; color: var(--text-primary); }
+  .cycle-detail__breakdown { display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0; list-style: none; }
+  .cycle-detail__row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.625rem 0; border-bottom: 1px solid var(--border-subtle); }
+  .cycle-detail__row-label { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); }
+  .cycle-detail__row-value { font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .cycle-detail__row--total { border-bottom: none; border-top: 2px solid var(--text-primary); margin-top: 0.25rem; padding-top: 0.875rem; }
+  .cycle-detail__row--total .cycle-detail__row-label { color: var(--text-primary); font-weight: 700; }
+  .cycle-detail__row--total .cycle-detail__row-value { font-size: 1rem; font-weight: 700; }
+
+  /* ============================================================
+     Docs-page chrome (review harness only -- not part of the design)
+     ============================================================ */
+  .docs-index { position: sticky; top: 0; z-index: 10; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; padding: 0.875rem 2rem; background: var(--text-primary); color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+  .docs-index a { color: #cbd5ff; text-decoration: none; padding: 0.25rem 0.625rem; border-radius: 999px; }
+  .docs-index a:hover { background: rgba(255,255,255,0.12); color: #fff; }
+  .docs-index strong { color: #fff; font-weight: 700; margin-right: 0.5rem; }
+  .docs-frame { padding: 2.5rem 1.5rem; border-bottom: 1px dashed var(--border-subtle); }
+  .docs-frame__label { max-width: 1120px; margin: 0 auto 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--brand-primary); }
+  .docs-frame__stage { background: var(--surface-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding-bottom: 2rem; }
+  .docs-frame__stage--panel { display: flex; justify-content: flex-end; padding: 1.5rem; }
+
+  /* ============================================================
+     Responsive addendum -- 768px for the dense history table and the
+     Current Cycle strip (matches Sales Register's own md=768px rule).
+     ============================================================ */
+  @media (max-width: 768px) {
+    .cycle-management__current { flex-direction: column; align-items: stretch; }
+    .cycle-management__current-actions { align-items: stretch; }
+    .cycle-management__current-hint { max-width: none; text-align: left; }
+
+    .cycle-management .editable-table { table-layout: fixed; width: 100%; }
+    .cycle-management .editable-table thead { display: none; }
+    .cycle-management .editable-table tbody tr { display: block; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); }
+    .cycle-management .editable-table tbody td { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 0.375rem 0; border-bottom: none; text-align: right; min-width: 0; }
+    .cycle-management .editable-table tbody td::before { content: attr(data-label); flex: 0 0 auto; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    .cycle-management .editable-table tbody td:first-child { font-family: 'Geist', var(--font-sans); font-size: 1rem; font-weight: 600; }
+    .cycle-management .editable-table td:last-child { display: block; text-align: left; padding-top: 0.75rem; }
+    .cycle-management .editable-table td:last-child::before { display: none; }
+    .cycle-management__pagination .brand-button--secondary { min-height: 44px; }
+  }
+
+  @media (max-width: 480px) {
+    .cycle-rail__stage span.cycle-rail__label { display: none; }
+    .cycle-rail__connector { width: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="docs-index">
+  <strong>Cycle Management — screen states</strong>
+  <a href="#state-1">1. Default + Current Cycle</a>
+  <a href="#state-2">2. Empty state</a>
+  <a href="#state-3">3. Close success</a>
+  <a href="#state-4">4. Close conflict (409)</a>
+  <a href="#state-5">5. History load error</a>
+  <a href="#state-6">6. Detail panel</a>
+  <a href="#state-7">7. Detail panel error</a>
+</nav>
+
+<!-- ============================================================
+     STATE 1 -- History default/loaded, combined with the Current
+     Cycle strip (any realistic loaded page with an OPEN cycle shows
+     both together, same combination Sales Register's states 1&3 use)
+     ============================================================ -->
+<section id="state-1" class="docs-frame">
+  <p class="docs-frame__label">State 1 — Default/loaded history + Current Cycle strip (signature: Cycle Rail)</p>
+  <div class="docs-frame__stage">
+    <div class="cycle-management">
+      <div class="cycle-management__intro">
+        <span class="cycle-management__eyebrow">Admin · Cycle Management</span>
+        <h1 class="cycle-management__title">Cycle Management</h1>
+        <p class="cycle-management__subtitle">Every settlement cycle — its period, status, and close history.</p>
+      </div>
+
+      <div class="cycle-management__current">
+        <div class="cycle-management__current-meta">
+          <span class="cycle-management__current-eyebrow">Current Cycle</span>
+          <span class="cycle-management__current-period">1 Aug 2026 – 31 Aug 2026</span>
+          <ol class="cycle-rail" aria-label="Cycle status: Open">
+            <li class="cycle-rail__stage cycle-rail__stage--current"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Open</span></li>
+            <li class="cycle-rail__connector"></li>
+            <li class="cycle-rail__stage"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Calculating</span></li>
+            <li class="cycle-rail__connector"></li>
+            <li class="cycle-rail__stage"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Closed</span></li>
+            <li class="cycle-rail__connector"></li>
+            <li class="cycle-rail__stage"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Paid</span></li>
+          </ol>
+        </div>
+        <div class="cycle-management__current-actions">
+          <button type="button" class="brand-button brand-button--danger">Close Cycle</button>
+          <span class="cycle-management__current-hint">Closing rolls up leg volume and opens the next cycle. This can't be undone.</span>
+        </div>
+      </div>
+
+      <div class="cycle-management__filter">
+        <label for="f-status">Status</label>
+        <select id="f-status">
+          <option>All</option>
+          <option selected>Open</option>
+          <option>Calculating</option>
+          <option>Closed</option>
+          <option>Paid</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead>
+            <tr>
+              <th>Period Start</th>
+              <th>Period End</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Period Start">1 Aug 2026</td>
+              <td data-label="Period End">31 Aug 2026</td>
+              <td data-label="Status">OPEN</td>
+              <td data-label="Actions"><button type="button" class="brand-button brand-button--secondary">View Detail</button></td>
+            </tr>
+            <tr>
+              <td data-label="Period Start">1 Jul 2026</td>
+              <td data-label="Period End">31 Jul 2026</td>
+              <td data-label="Status">CLOSED</td>
+              <td data-label="Actions"><button type="button" class="brand-button brand-button--secondary">View Detail</button></td>
+            </tr>
+            <tr>
+              <td data-label="Period Start">1 Jun 2026</td>
+              <td data-label="Period End">30 Jun 2026</td>
+              <td data-label="Status">PAID</td>
+              <td data-label="Actions"><button type="button" class="brand-button brand-button--secondary">View Detail</button></td>
+            </tr>
+            <tr>
+              <td data-label="Period Start">1 May 2026</td>
+              <td data-label="Period End">31 May 2026</td>
+              <td data-label="Status">PAID</td>
+              <td data-label="Actions"><button type="button" class="brand-button brand-button--secondary">View Detail</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="cycle-management__pagination">
+        <span class="cycle-management__page-indicator">Page 1 of 3</span>
+        <button type="button" class="brand-button brand-button--secondary" disabled>Previous</button>
+        <button type="button" class="brand-button brand-button--secondary">Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 2 -- Empty state
+     ============================================================ -->
+<section id="state-2" class="docs-frame">
+  <p class="docs-frame__label">State 2 — History: empty state (no cycles match current filter, no OPEN cycle loaded)</p>
+  <div class="docs-frame__stage">
+    <div class="cycle-management">
+      <div class="cycle-management__intro">
+        <span class="cycle-management__eyebrow">Admin · Cycle Management</span>
+        <h1 class="cycle-management__title">Cycle Management</h1>
+        <p class="cycle-management__subtitle">Every settlement cycle — its period, status, and close history.</p>
+      </div>
+
+      <div class="cycle-management__filter">
+        <label>Status</label>
+        <select><option selected>Paid</option></select>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead>
+            <tr><th>Period Start</th><th>Period End</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="editable-table__empty" colspan="4">
+                <div class="cycle-management__empty-state">
+                  <span class="cycle-management__empty-state-title">No cycles match this filter</span>
+                  <span class="cycle-management__empty-state-hint">Try a different status, or check back once the next cycle closes.</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 3 -- Close Cycle success/monitor
+     ============================================================ -->
+<section id="state-3" class="docs-frame">
+  <p class="docs-frame__label">State 3 — Close Cycle: success/monitor (only the real CycleCloseResponse fields; history reloaded)</p>
+  <div class="docs-frame__stage">
+    <div class="cycle-management">
+      <div class="cycle-management__intro">
+        <span class="cycle-management__eyebrow">Admin · Cycle Management</span>
+        <h1 class="cycle-management__title">Cycle Management</h1>
+        <p class="cycle-management__subtitle">Every settlement cycle — its period, status, and close history.</p>
+      </div>
+
+      <div class="cycle-management__current">
+        <div class="cycle-management__current-meta">
+          <span class="cycle-management__current-eyebrow">Current Cycle</span>
+          <span class="cycle-management__current-period">1 Sep 2026 – 30 Sep 2026</span>
+          <ol class="cycle-rail" aria-label="Cycle status: Open">
+            <li class="cycle-rail__stage cycle-rail__stage--current"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Open</span></li>
+            <li class="cycle-rail__connector"></li>
+            <li class="cycle-rail__stage"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Calculating</span></li>
+            <li class="cycle-rail__connector"></li>
+            <li class="cycle-rail__stage"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Closed</span></li>
+            <li class="cycle-rail__connector"></li>
+            <li class="cycle-rail__stage"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Paid</span></li>
+          </ol>
+        </div>
+        <div class="cycle-management__current-actions">
+          <button type="button" class="brand-button brand-button--danger">Close Cycle</button>
+          <span class="cycle-management__current-hint">Closing rolls up leg volume and opens the next cycle. This can't be undone.</span>
+        </div>
+      </div>
+
+      <div class="inline-banner inline-banner--success">
+        <div class="inline-banner__content">
+          <p>Cycle <strong>a3f9e21c</strong> closed — 482 leg-volume rows written for settlement.</p>
+          <div class="cycle-transition">
+            <span class="cycle-chip cycle-chip--closed">a3f9e21c · CLOSED</span>
+            <span class="cycle-transition__arrow">→</span>
+            <span class="cycle-chip cycle-chip--open">b71c0dfa · OPEN</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cycle-management__filter">
+        <label>Status</label>
+        <select><option selected>All</option></select>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead><tr><th>Period Start</th><th>Period End</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr>
+              <td data-label="Period Start">1 Sep 2026</td>
+              <td data-label="Period End">30 Sep 2026</td>
+              <td data-label="Status">OPEN</td>
+              <td data-label="Actions"><button type="button" class="brand-button brand-button--secondary">View Detail</button></td>
+            </tr>
+            <tr>
+              <td data-label="Period Start">1 Aug 2026</td>
+              <td data-label="Period End">31 Aug 2026</td>
+              <td data-label="Status">CLOSED</td>
+              <td data-label="Actions"><button type="button" class="brand-button brand-button--secondary">View Detail</button></td>
+            </tr>
+            <tr>
+              <td data-label="Period Start">1 Jul 2026</td>
+              <td data-label="Period End">31 Jul 2026</td>
+              <td data-label="Status">CLOSED</td>
+              <td data-label="Actions"><button type="button" class="brand-button brand-button--secondary">View Detail</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="cycle-management__pagination">
+        <span class="cycle-management__page-indicator">Page 1 of 3</span>
+        <button type="button" class="brand-button brand-button--secondary" disabled>Previous</button>
+        <button type="button" class="brand-button brand-button--secondary">Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 4 -- Close Cycle conflict (409)
+     ============================================================ -->
+<section id="state-4" class="docs-frame">
+  <p class="docs-frame__label">State 4 — Close Cycle: conflict/error (409, already closed by a concurrent request)</p>
+  <div class="docs-frame__stage">
+    <div class="cycle-management">
+      <div class="cycle-management__intro">
+        <span class="cycle-management__eyebrow">Admin · Cycle Management</span>
+        <h1 class="cycle-management__title">Cycle Management</h1>
+        <p class="cycle-management__subtitle">Every settlement cycle — its period, status, and close history.</p>
+      </div>
+
+      <div class="cycle-management__current">
+        <div class="cycle-management__current-meta">
+          <span class="cycle-management__current-eyebrow">Current Cycle</span>
+          <span class="cycle-management__current-period">1 Aug 2026 – 31 Aug 2026</span>
+          <ol class="cycle-rail" aria-label="Cycle status: Open">
+            <li class="cycle-rail__stage cycle-rail__stage--current"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Open</span></li>
+            <li class="cycle-rail__connector"></li>
+            <li class="cycle-rail__stage"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Calculating</span></li>
+            <li class="cycle-rail__connector"></li>
+            <li class="cycle-rail__stage"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Closed</span></li>
+            <li class="cycle-rail__connector"></li>
+            <li class="cycle-rail__stage"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Paid</span></li>
+          </ol>
+        </div>
+        <div class="cycle-management__current-actions">
+          <button type="button" class="brand-button brand-button--danger">Close Cycle</button>
+          <span class="cycle-management__current-hint">Closing rolls up leg volume and opens the next cycle. This can't be undone.</span>
+        </div>
+      </div>
+
+      <div class="inline-banner inline-banner--danger">
+        <div class="inline-banner__content">This cycle was already closed — likely by another request that finished first. Refresh the history below to see its current status.</div>
+        <button type="button" class="inline-banner__dismiss">&times;</button>
+      </div>
+
+      <div class="cycle-management__filter">
+        <label>Status</label>
+        <select><option selected>All</option></select>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead><tr><th>Period Start</th><th>Period End</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr>
+              <td data-label="Period Start">1 Aug 2026</td>
+              <td data-label="Period End">31 Aug 2026</td>
+              <td data-label="Status">OPEN</td>
+              <td data-label="Actions"><button type="button" class="brand-button brand-button--secondary">View Detail</button></td>
+            </tr>
+            <tr>
+              <td data-label="Period Start">1 Jul 2026</td>
+              <td data-label="Period End">31 Jul 2026</td>
+              <td data-label="Status">CLOSED</td>
+              <td data-label="Actions"><button type="button" class="brand-button brand-button--secondary">View Detail</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="cycle-management__pagination">
+        <span class="cycle-management__page-indicator">Page 1 of 3</span>
+        <button type="button" class="brand-button brand-button--secondary" disabled>Previous</button>
+        <button type="button" class="brand-button brand-button--secondary">Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 5 -- History load error
+     ============================================================ -->
+<section id="state-5" class="docs-frame">
+  <p class="docs-frame__label">State 5 — History load error (banner placement mirrors sales-register__load-error)</p>
+  <div class="docs-frame__stage">
+    <div class="cycle-management">
+      <div class="cycle-management__intro">
+        <span class="cycle-management__eyebrow">Admin · Cycle Management</span>
+        <h1 class="cycle-management__title">Cycle Management</h1>
+        <p class="cycle-management__subtitle">Every settlement cycle — its period, status, and close history.</p>
+      </div>
+
+      <div class="cycle-management__filter">
+        <label>Status</label>
+        <select><option selected>All</option></select>
+      </div>
+
+      <div class="inline-banner inline-banner--danger">
+        <div class="inline-banner__content">Couldn't load the cycle history. Refresh the page or try again in a moment.</div>
+        <button type="button" class="inline-banner__dismiss">&times;</button>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead><tr><th>Period Start</th><th>Period End</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="editable-table__empty" colspan="4">
+                <div class="cycle-management__empty-state">
+                  <span class="cycle-management__empty-state-title">Nothing to show</span>
+                  <span class="cycle-management__empty-state-hint">The history couldn't load — see the message above.</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 6 -- Detail drill-down, loaded
+     ============================================================ -->
+<section id="state-6" class="docs-frame">
+  <p class="docs-frame__label">State 6 — Detail drill-down (SidePanelComponent): breakdown loaded (signature: Cycle Rail again)</p>
+  <div class="docs-frame__stage docs-frame__stage--panel">
+    <div class="side-panel-demo">
+      <header class="side-panel-demo__header">
+        <span class="side-panel-demo__title">Cycle Detail</span>
+        <button type="button" class="side-panel-demo__close">✕</button>
+      </header>
+      <div class="side-panel-demo__body">
+        <div class="cycle-detail__meta">
+          <span class="cycle-detail__period">1 Jul 2026 – 31 Jul 2026</span>
+          <ol class="cycle-rail" aria-label="Cycle status: Closed">
+            <li class="cycle-rail__stage cycle-rail__stage--reached"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Open</span></li>
+            <li class="cycle-rail__connector cycle-rail__connector--reached"></li>
+            <li class="cycle-rail__stage cycle-rail__stage--reached"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Calculating</span></li>
+            <li class="cycle-rail__connector cycle-rail__connector--reached"></li>
+            <li class="cycle-rail__stage cycle-rail__stage--current"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Closed</span></li>
+            <li class="cycle-rail__connector"></li>
+            <li class="cycle-rail__stage"><span class="cycle-rail__dot"></span><span class="cycle-rail__label">Paid</span></li>
+          </ol>
+        </div>
+        <ul class="cycle-detail__breakdown">
+          <li class="cycle-detail__row"><span class="cycle-detail__row-label">Direct</span><span class="cycle-detail__row-value">₹4,82,000</span></li>
+          <li class="cycle-detail__row"><span class="cycle-detail__row-label">Matching</span><span class="cycle-detail__row-value">₹2,15,400</span></li>
+          <li class="cycle-detail__row"><span class="cycle-detail__row-label">Sponsor Matching</span><span class="cycle-detail__row-value">₹96,750</span></li>
+          <li class="cycle-detail__row"><span class="cycle-detail__row-label">Royalty</span><span class="cycle-detail__row-value">₹41,200</span></li>
+          <li class="cycle-detail__row"><span class="cycle-detail__row-label">Reward</span><span class="cycle-detail__row-value">₹18,600</span></li>
+          <li class="cycle-detail__row cycle-detail__row--total"><span class="cycle-detail__row-label">Total Net</span><span class="cycle-detail__row-value">₹8,53,950</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 7 -- Detail drill-down, load error
+     ============================================================ -->
+<section id="state-7" class="docs-frame">
+  <p class="docs-frame__label">State 7 — Detail drill-down: the breakdown fetch itself failed (panel still open)</p>
+  <div class="docs-frame__stage docs-frame__stage--panel">
+    <div class="side-panel-demo">
+      <header class="side-panel-demo__header">
+        <span class="side-panel-demo__title">Cycle Detail</span>
+        <button type="button" class="side-panel-demo__close">✕</button>
+      </header>
+      <div class="side-panel-demo__body">
+        <div class="inline-banner inline-banner--danger">
+          <div class="inline-banner__content">Couldn't load this cycle's breakdown. Close the panel and try again.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
