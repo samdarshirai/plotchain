@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,6 +30,7 @@ import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -500,6 +502,27 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
                 .contentType("application/json")
                 .content("{\"currentPassword\":\"x\",\"newPassword\":\"y\"}"))
+            .andExpect(status().is(not(403)));
+    }
+
+    // Role-capability unit 8: POST /api/associates/me/kyc/documents/{type} needs its own
+    // matcher ABOVE the blanket ADMIN write rules, same ordering trap as
+    // passwordChangeIsReachableByAnAssociateToken above. AssociateKycDocumentRepository is not
+    // @MockBean'd in this class (same "some repositories run for real against H2" convention
+    // as compensation/payments/projects above), and associateRepository IS a @MockBean here
+    // returning a fake associate never actually persisted to the real H2 database -- so the
+    // real AssociateKycDocumentRepository.save() hits a foreign-key violation against that
+    // non-existent associate row, surfacing as a 409 via ApiExceptionHandler's
+    // DataIntegrityViolationException mapping. Whether it lands on 409 (FK violation) or some
+    // other non-403 status doesn't matter for this test -- only a 403 here would mean the
+    // matcher ordering regressed.
+    @Test
+    void kycDocumentUploadIsReachableByAnAssociateToken() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "pan.png", "image/png", new byte[]{1});
+
+        mockMvc.perform(multipart("/api/associates/me/kyc/documents/PAN")
+                .file(file)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
             .andExpect(status().is(not(403)));
     }
 

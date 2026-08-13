@@ -44,6 +44,18 @@ public class SecurityConfig {
                 // blanket ADMIN write rules below (first-match-wins) or associates could never
                 // clear their must-change-password state. SecurityConfigTest locks this.
                 .requestMatchers(HttpMethod.POST, "/api/associates/me/password").authenticated()
+                // Self-service KYC document submission: an associate-reachable POST, same
+                // shape as the password-change matcher directly above (role-capability unit 8,
+                // docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
+                // KYC row: "Own KYC submission + status only" -- submission is one of the two
+                // write actions Associates get, alongside profile edit). Must precede the
+                // blanket ADMIN write rules below (first-match-wins) or an associate could
+                // never submit KYC documents. GET /api/associates/me/kyc needs no matcher of
+                // its own -- a bare GET never collides with the POST/PUT/PATCH/DELETE blanket
+                // rules, so it falls through to anyRequest().authenticated() below, the same
+                // way GET /api/associates/me/dashboard and GET /api/associates/me/sales
+                // already do with no matcher of their own.
+                .requestMatchers(HttpMethod.POST, "/api/associates/me/kyc/documents/*").authenticated()
                 // Admin Team creation is narrower than the blanket POST rule below: only
                 // ADMIN/SUPER_ADMIN may provision new admin-family accounts (FINANCE,
                 // KYC_REVIEWER, and SUPPORT can read the roster/permissions via the GET block
