@@ -523,6 +523,26 @@ class SecurityConfigTest {
             .andExpect(status().is(not(403)));
     }
 
+    // role-capability unit 9 (docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
+    // "Compensation rules" row -- Associate sees "View own rank progress / reward tiers
+    // (read-only)"): needs no explicit SecurityConfig matcher -- a bare GET never collides with
+    // the blanket POST/PUT/PATCH/DELETE write rules above, so it falls through to
+    // anyRequest().authenticated() below, the same way GET /api/associates/me/dashboard and GET
+    // /api/associates/me/sales already do with no matcher of their own. This test proves the route
+    // is reachable by an ordinary associate token, not accidentally blocked by 403.
+    //
+    // tokenFor(role) mints a random associateId and stubs associateRepository.findById(...) to
+    // return a bare Associate with no rankId set, so the request reaches
+    // CompensationPlanService.getMyRankProgress and throws NoRankAssignedException (409) -- not a
+    // 403. Same "assert not 403" reasoning as associateMeSalesIsReachableByAnAssociateToken above:
+    // only a 403 here would mean the route regressed to being blocked at the security layer.
+    @Test
+    void associateMeRankProgressIsReachableByAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/associates/me/rank-progress")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().is(not(403)));
+    }
+
     @Test
     void adminAssociatesIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(get("/api/admin/associates")
