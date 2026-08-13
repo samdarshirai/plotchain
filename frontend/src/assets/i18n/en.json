@@ -630,7 +630,8 @@
       "kycQueue": "KYC Review Queue",
       "auditLog": "Audit Log",
       "adminStats": "Admin Stats",
-      "salesRegister": "Sales Register"
+      "salesRegister": "Sales Register",
+      "cycleManagement": "Cycle Management"
     },
     "cards": {
       "companyProfile": {

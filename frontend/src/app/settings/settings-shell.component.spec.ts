@@ -25,11 +25,11 @@ describe('SettingsShellComponent', () => {
     fixture = TestBed.createComponent(SettingsShellComponent);
   });
 
-  it('rendersTheNavRailWithSevenSectionsPlusAssociateDirectoryPlusTreeExplorerPlusKycQueuePlusAuditLogPlusAdminStatsPlusSalesRegister', () => {
+  it('rendersTheNavRailWithSevenSectionsPlusAssociateDirectoryPlusTreeExplorerPlusKycQueuePlusAuditLogPlusAdminStatsPlusSalesRegisterPlusCycleManagement', () => {
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('.settings-nav-rail__item');
-    expect(items.length).toBe(Object.keys(SECTION_PATHS).length + 6);
-    expect(items.length).toBe(13);
+    expect(items.length).toBe(Object.keys(SECTION_PATHS).length + 7);
+    expect(items.length).toBe(14);
   });
 
   it('highlightsTheActiveSectionKeyFromTheDeepestChildRoute', () => {

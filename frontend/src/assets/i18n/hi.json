@@ -630,7 +630,8 @@
       "kycQueue": "KYC Review Queue",
       "auditLog": "ऑडिट लॉग",
       "adminStats": "एडमिन आंकड़े",
-      "salesRegister": "बिक्री रजिस्टर"
+      "salesRegister": "बिक्री रजिस्टर",
+      "cycleManagement": "चक्र प्रबंधन"
     },
     "cards": {
       "companyProfile": {

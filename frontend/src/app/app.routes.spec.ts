@@ -93,6 +93,13 @@ describe('routes', () => {
       expect(salesRegisterChild).toBeTruthy();
       expect(salesRegisterChild!.data).toEqual({ sectionKey: 'salesRegister' });
     });
+
+    it('has a cycle-management child stamped with sectionKey cycleManagement', () => {
+      const settingsRoute = routes.find(r => r.path === 'settings');
+      const cycleManagementChild = settingsRoute!.children!.find(c => c.path === 'cycle-management');
+      expect(cycleManagementChild).toBeTruthy();
+      expect(cycleManagementChild!.data).toEqual({ sectionKey: 'cycleManagement' });
+    });
   });
 
   describe('root route', () => {

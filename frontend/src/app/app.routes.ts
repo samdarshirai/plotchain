@@ -26,6 +26,7 @@ import { TreeExplorerComponent } from './admin/tree-explorer/tree-explorer.compo
 import { KycQueueComponent } from './admin/kyc-queue/kyc-queue.component';
 import { SalesRegisterComponent } from './admin/sales-register/sales-register.component';
 import { RecordSaleComponent } from './admin/sales-register/record-sale.component';
+import { CycleManagementComponent } from './admin/cycle-management/cycle-management.component';
 import { TermsOfServiceComponent } from './legal/terms-of-service.component';
 import { PrivacyPolicyComponent } from './legal/privacy-policy.component';
 import { SalesHistoryComponent } from './sales-history/sales-history.component';
@@ -72,6 +73,7 @@ export const routes: Routes = [
       { path: 'tree-explorer', component: TreeExplorerComponent, data: { sectionKey: 'treeExplorer' } },
       { path: 'kyc-queue', component: KycQueueComponent, data: { sectionKey: 'kycQueue' } },
       { path: 'sales-register', component: SalesRegisterComponent, data: { sectionKey: 'salesRegister' } },
+      { path: 'cycle-management', component: CycleManagementComponent, data: { sectionKey: 'cycleManagement' } },
       { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } },
       { path: 'admin-stats', component: AdminStatsComponent, data: { sectionKey: 'adminStats' } }
     ]
