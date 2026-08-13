@@ -10,7 +10,7 @@ Index over `docs/superpowers/specs/role-capability/*.md`. This is the file a new
 
 | Spec | Status | Units file | Merged / total |
 |---|---|---|---|
-| `2026-08-03-role-capability-data-visibility-design.md` | in progress (7/16 already have a pre-existing plan — see units file; units 12–16 are screens, added 2026-08-05) | `2026-08-03-role-capability-units.md` | 3 / 16 |
+| `2026-08-03-role-capability-data-visibility-design.md` | in progress (7/16 already have a pre-existing plan — see units file; units 12–16 are screens, added 2026-08-05) | `2026-08-03-role-capability-units.md` | 4 / 16 |
 | `2026-08-03-cycle-management-domain-design.md` | **done** | `2026-08-03-cycle-management-units.md` | 11 / 11 |
 | `2026-08-03-sales-domain-design.md` | **done** | `2026-08-03-sales-units.md` | 9 / 9 |
 | `2026-08-03-income-ledger-domain-design.md` | not started | — | — |
