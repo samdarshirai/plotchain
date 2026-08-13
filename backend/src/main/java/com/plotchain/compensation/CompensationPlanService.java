@@ -1,5 +1,8 @@
 package com.plotchain.compensation;
 
+import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateNotFoundException;
+import com.plotchain.associate.AssociateRepository;
 import com.plotchain.company.SettingsAuditService;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
@@ -7,11 +10,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,18 +34,21 @@ public class CompensationPlanService {
     private final RewardTierRepository rewardTierRepository;
     private final RankTierRepository rankTierRepository;
     private final SettingsAuditService settingsAuditService;
+    private final AssociateRepository associateRepository;
 
     public CompensationPlanService(
             CompensationPlanVersionRepository versionRepository,
             RoyaltyBonusRateRepository royaltyBonusRateRepository,
             RewardTierRepository rewardTierRepository,
             RankTierRepository rankTierRepository,
-            SettingsAuditService settingsAuditService) {
+            SettingsAuditService settingsAuditService,
+            AssociateRepository associateRepository) {
         this.versionRepository = versionRepository;
         this.royaltyBonusRateRepository = royaltyBonusRateRepository;
         this.rewardTierRepository = rewardTierRepository;
         this.rankTierRepository = rankTierRepository;
         this.settingsAuditService = settingsAuditService;
+        this.associateRepository = associateRepository;
     }
 
     public CompensationPlanResponse getCurrentPlan() {
@@ -48,6 +56,72 @@ public class CompensationPlanService {
         List<RoyaltyBonusRate> rates = royaltyBonusRateRepository.findAllByPlanVersionId(version.getId());
         List<RewardTier> tiers = rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(version.getId());
         return toResponse(version, rates, tiers);
+    }
+
+    // role-capability unit 9 (docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
+    // "Compensation rules" row -- Associate sees "View own rank progress / reward tiers
+    // (read-only)"). Self-scoped by construction: associateId always comes from the caller's own
+    // JWT (see AssociateRankProgressController), never from the request -- no caller can view
+    // another associate's rank progress through this method.
+    //
+    // The current/next-rank + progressPercent/volumeToNextRank computation intentionally mirrors
+    // DashboardService.getDashboard(...)'s identical logic (same ranks-ordered-ascending walk, same
+    // clamping) rather than extracting a shared helper -- these are two independent per-feature
+    // aggregations, not a shared library method, matching this codebase's existing precedent of
+    // small per-feature duplication over cross-package extraction (e.g. AdminSalePageResponse vs.
+    // AssociateSalePageResponse in Sales unit 7). The reward-tier `achieved` predicate mirrors
+    // CycleService#creditReward's own volumeThreshold-vs-cumulativeMatchedVolume comparison.
+    public AssociateRankProgressResponse getMyRankProgress(UUID associateId) {
+        Associate associate = associateRepository.findById(associateId)
+            .orElseThrow(() -> new AssociateNotFoundException(associateId));
+        if (associate.getRankId() == null) {
+            throw new NoRankAssignedException(associateId);
+        }
+
+        List<RankTier> ranks = rankTierRepository.findAllByOrderByRankOrder();
+        RankTier currentRank = ranks.stream()
+            .filter(r -> r.getId().equals(associate.getRankId()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException(
+                "Associate's rank not found in rank table: " + associate.getRankId()));
+        // ranks is ordered ascending by rankOrder, and rankOrder values are not necessarily
+        // consecutive -- the next rank is the first one strictly above the current, not
+        // "current + 1".
+        Optional<RankTier> nextRank = ranks.stream()
+            .filter(r -> r.getRankOrder() > currentRank.getRankOrder())
+            .findFirst();
+
+        int progressPercent = nextRank
+            .map(nr -> associate.getCumulativeMatchedVolume()
+                .multiply(BigDecimal.valueOf(100))
+                .divide(nr.getVolumeThreshold(), 0, RoundingMode.DOWN)
+                .min(BigDecimal.valueOf(100))
+                .intValue())
+            .orElse(100);
+        BigDecimal volumeToNextRank = nextRank
+            .map(nr -> nr.getVolumeThreshold().subtract(associate.getCumulativeMatchedVolume()).max(BigDecimal.ZERO))
+            .orElse(BigDecimal.ZERO);
+
+        CompensationPlanVersion version = currentVersion();
+        List<RewardTier> tiers = rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(version.getId());
+        List<AssociateRewardTierDto> tierDtos = tiers.stream()
+            .map(t -> new AssociateRewardTierDto(
+                t.getTierLevel(),
+                t.getVolumeThreshold(),
+                t.getCashReward(),
+                t.getPerkDescription(),
+                t.getVolumeThreshold().compareTo(associate.getCumulativeMatchedVolume()) <= 0))
+            .collect(Collectors.toList());
+
+        return new AssociateRankProgressResponse(
+            currentRank.getName(),
+            currentRank.getRankOrder(),
+            nextRank.map(RankTier::getName).orElse(null),
+            progressPercent,
+            associate.getCumulativeMatchedVolume(),
+            volumeToNextRank,
+            tierDtos
+        );
     }
 
     public List<CompensationPlanSummaryResponse> getHistory() {
