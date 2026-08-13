@@ -380,7 +380,7 @@ class SecurityConfigTest {
     void auditLogIsReachableForEveryAdminFamilyTokenAndForbiddenForAssociate(AssociateRole role) throws Exception {
         mockMvc.perform(get("/api/company/audit-log")
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role.isAdminFamily() ? 200 : 403));
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
     }
 
     // Same reasoning as auditLogIsReachableForEveryAdminFamilyTokenAndForbiddenForAssociate above:
@@ -392,7 +392,7 @@ class SecurityConfigTest {
     void adminStatsIsReachableForEveryAdminFamilyTokenAndForbiddenForAssociate(AssociateRole role) throws Exception {
         mockMvc.perform(get("/api/admin/stats")
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role.isAdminFamily() ? 200 : 403));
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
     }
 
     // Deliberately NOT the isAdminFamily() convention used by the other parameterized tests in
@@ -577,9 +577,9 @@ class SecurityConfigTest {
     }
 
     @Test
-    void kycDecisionIsForbiddenForASupportToken() throws Exception {
+    void kycDecisionIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(post("/api/admin/kyc/" + UUID.randomUUID() + "/decision")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.SUPPORT))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
                 .contentType("application/json")
                 .content("{\"decision\":\"VERIFIED\"}"))
             .andExpect(status().isForbidden());
