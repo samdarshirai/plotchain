@@ -701,6 +701,440 @@ body.admin-associate-active {
   }
 }
 
+// Cycle Management -- the Admin operational screen covering settlement-cycle history,
+// per-cycle detail drill-down, and the close-cycle action. Follows the design artifact at
+// docs/design/admin_operational_screens/cycle_management/{DESIGN.md,code.html}, which itself
+// extends Sales Register's design system (same tokens, same 'Geist'/'Inter'/'JetBrains Mono'
+// stack) rather than inventing a new one. Every color below resolves to a _tokens.scss custom
+// property -- no new hex values are introduced here.
+
+.cycle-management {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cycle-management__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.cycle-management__eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--brand-primary);
+}
+
+.cycle-management__title {
+  margin: 0;
+  font-family: 'Geist', var(--font-sans);
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.cycle-management__subtitle {
+  margin: 0;
+  max-width: 40rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+// Current Cycle strip -- signature host #1 for the Cycle Rail.
+.cycle-management__current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  padding: 1.5rem 1.75rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--brand-primary-soft);
+  border-radius: 16px;
+}
+
+.cycle-management__current-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.cycle-management__current-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--brand-primary);
+}
+
+.cycle-management__current-period {
+  font-family: 'Geist', var(--font-sans);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cycle-management__current-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+// Cycle Rail -- the signature element. A four-node track rendering CycleStatus's real, fixed,
+// one-directional sequence: OPEN -> CALCULATING -> CLOSED -> PAID. Appears in exactly two
+// places (Current Cycle strip, Detail side panel) so it stays the one unmistakable thing this
+// screen is remembered by, per DESIGN.md.
+.cycle-rail {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cycle-rail__stage {
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.cycle-rail__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border-subtle);
+  flex: 0 0 auto;
+}
+
+.cycle-rail__connector {
+  width: 22px;
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 0 0.4375rem;
+}
+
+.cycle-rail__stage--reached {
+  color: var(--text-primary);
+
+  .cycle-rail__dot {
+    background: var(--brand-primary);
+  }
+}
+
+.cycle-rail__connector--reached {
+  background: var(--brand-primary);
+}
+
+.cycle-rail__stage--current {
+  color: var(--brand-primary);
+
+  .cycle-rail__dot {
+    background: var(--brand-primary);
+    box-shadow: 0 0 0 3px var(--brand-primary-soft);
+  }
+}
+
+// Close-result banner's chip transition -- the rail's quieter echo.
+.cycle-transition {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-top: 0.625rem;
+}
+
+.cycle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.cycle-chip--closed {
+  background: color-mix(in srgb, var(--text-muted) 14%, var(--surface-card));
+  color: var(--text-primary);
+}
+
+.cycle-chip--open {
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+}
+
+.cycle-transition__arrow {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.cycle-management__filter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-raised);
+  border-radius: 16px;
+
+  label {
+    margin: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  select {
+    width: auto;
+    min-width: 180px;
+    background: var(--surface-card);
+  }
+}
+
+.cycle-management .card {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+  padding: 0;
+  overflow: hidden;
+}
+
+.cycle-management .editable-table {
+  margin: 0;
+}
+
+.cycle-management .editable-table thead th {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--surface-card);
+}
+
+.cycle-management .editable-table tbody td {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.cycle-management .editable-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+// Period Start / Period End -- tabular-nums on Inter, matching Sales Register's own
+// "Recorded At" date-column treatment, not full ledger-mono (dates aren't money).
+.cycle-management .editable-table td:nth-child(1),
+.cycle-management .editable-table td:nth-child(2) {
+  font-variant-numeric: tabular-nums;
+}
+
+// Status -- can't be per-value colored (EditableTableComponent's data cells are plain text),
+// so it gets the same uniform ledger treatment Sales Register's Status column already uses.
+.cycle-management .editable-table td:nth-child(3) {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cycle-management .editable-table__empty {
+  padding: 3rem 1.5rem;
+}
+
+.cycle-management__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 0 0.25rem;
+}
+
+.cycle-management__page-indicator {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.cycle-management__pagination .brand-button--secondary {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
+// Detail side panel -- signature host #2 for the Cycle Rail.
+.cycle-detail__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cycle-detail__period {
+  font-family: 'Geist', var(--font-sans);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cycle-detail__breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cycle-detail__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cycle-detail__row-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cycle-detail__row-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.cycle-detail__row--total {
+  border-bottom: none;
+  border-top: 2px solid var(--text-primary);
+  margin-top: 0.25rem;
+  padding-top: 0.875rem;
+
+  .cycle-detail__row-label {
+    color: var(--text-primary);
+    font-weight: 700;
+  }
+
+  .cycle-detail__row-value {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+}
+
+@media (max-width: 768px) {
+  .cycle-management__current {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cycle-management__current-actions {
+    align-items: stretch;
+  }
+
+  .cycle-management .editable-table {
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .cycle-management .editable-table thead {
+    display: none;
+  }
+
+  .cycle-management .editable-table tbody tr {
+    display: block;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .cycle-management .editable-table tbody td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.375rem 0;
+    border-bottom: none;
+    text-align: right;
+    min-width: 0;
+
+    &::before {
+      content: attr(data-label);
+      flex: 0 0 auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-align: left;
+    }
+
+    &:first-child {
+      font-family: 'Geist', var(--font-sans);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+  }
+
+  .cycle-management .editable-table td:last-child {
+    display: block;
+    text-align: left;
+    padding-top: 0.75rem;
+
+    &::before {
+      display: none;
+    }
+  }
+
+  .cycle-management__pagination .brand-button--secondary {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cycle-rail__label {
+    display: none;
+  }
+
+  .cycle-rail__connector {
+    width: 14px;
+  }
+}
+
 // Tree Explorer -- visualizes the associate binary tree as a free-form, pannable/zoomable
 // org-chart canvas (dot-grid background, orthogonal SVG connectors, absolutely-positioned
 // cards), matching the tree-explorer.html design mockup while reusing this app's own tokens

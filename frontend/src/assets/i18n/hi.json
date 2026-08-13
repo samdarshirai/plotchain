@@ -219,6 +219,7 @@
       }
     },
     "cycleManagement": {
+      "eyebrow": "Admin · Cycle Management",
       "title": "Cycle Management",
       "subtitle": "Review past settlement cycles and trigger the close for the current one.",
       "statusFilterLabel": "Status",
