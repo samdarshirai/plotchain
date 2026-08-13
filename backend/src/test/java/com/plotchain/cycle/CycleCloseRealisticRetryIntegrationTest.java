@@ -41,11 +41,13 @@ import static org.mockito.Mockito.when;
 // CycleCloseRollbackTest already proves the rollback MECHANISM works, but against a near-empty
 // single-Admin-node fixture and a failure forced at the very first write (step 2, right after the
 // CALCULATING flip). This test forces the failure much LATER -- inside creditReward (step 7),
-// after Matching, Rank progression, Sponsor Matching, and Royalty have all already run and issued
-// writes within the same uncommitted transaction -- against a REAL multi-node tree with real
-// sales. It proves (a) that late a failure still rolls back every already-attempted write, not
-// just the placeholder ones, and (b) that a genuine second close() call on the same cycle, with
-// the failure removed, succeeds cleanly with fully correct numbers -- not merely "didn't crash."
+// after Matching, Rank progression, and Sponsor Matching have all already run and issued writes
+// within the same uncommitted transaction -- against a REAL multi-node tree with real sales.
+// (Royalty, step 6, runs too but no-ops: this fixture seeds every associate at Silver with no
+// RoyaltyBonusRate configured for it, so no Royalty entry is ever created here to roll back.)
+// It proves (a) that a late failure still rolls back every already-attempted write, not just the
+// placeholder ones, and (b) that a genuine second close() call on the same cycle, with the
+// failure removed, succeeds cleanly with fully correct numbers -- not merely "didn't crash."
 @SpringBootTest
 @ActiveProfiles("test")
 class CycleCloseRealisticRetryIntegrationTest {
