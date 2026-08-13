@@ -39,19 +39,19 @@ public class AdminAssociateController {
     }
 
     @PostMapping("/{id}/suspend")
-    @PreAuthorize("hasAnyAuthority('ADMIN','SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public AdminAssociateDetailResponse suspend(@PathVariable UUID id, @AuthenticationPrincipal UUID actorId) {
         return adminAssociateService.suspend(id, actorId);
     }
 
     @PostMapping("/{id}/reactivate")
-    @PreAuthorize("hasAnyAuthority('ADMIN','SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public AdminAssociateDetailResponse reactivate(@PathVariable UUID id, @AuthenticationPrincipal UUID actorId) {
         return adminAssociateService.reactivate(id, actorId);
     }
 
     @PostMapping("/{id}/reset-password")
-    @PreAuthorize("hasAnyAuthority('ADMIN','SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResetPasswordResponse resetPassword(@PathVariable UUID id, @AuthenticationPrincipal UUID actorId) {
         return adminAssociateService.resetPassword(id, actorId);
     }

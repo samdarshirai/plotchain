@@ -81,7 +81,7 @@ class AdminAssociateControllerTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
 
         mockMvc.perform(get("/api/admin/associates")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.SUPPORT)))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.associates[0].userId").value("VP00001"))
             .andExpect(jsonPath("$.totalElements").value(1));
@@ -100,7 +100,7 @@ class AdminAssociateControllerTest {
             .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 100), 0));
 
         mockMvc.perform(get("/api/admin/associates").param("size", "999999")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.SUPPORT)))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
         ArgumentCaptor<PageRequest> pageableCaptor = ArgumentCaptor.forClass(PageRequest.class);
@@ -114,7 +114,7 @@ class AdminAssociateControllerTest {
             .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
         mockMvc.perform(get("/api/admin/associates").param("page", "-5")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.SUPPORT)))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
         ArgumentCaptor<PageRequest> pageableCaptor = ArgumentCaptor.forClass(PageRequest.class);
@@ -136,18 +136,19 @@ class AdminAssociateControllerTest {
     }
 
     @Test
-    void suspendIsForbiddenForAFinanceToken() throws Exception {
-        // 403 here proves the @PreAuthorize narrowing beyond the blanket admin-family POST rule:
-        // FINANCE passes SecurityConfig's web-layer check but must be rejected by method security.
+    void suspendIsForbiddenForAnAssociateToken() throws Exception {
+        // 403 proves @PreAuthorize narrowing is still in force: ASSOCIATE is blocked twice over
+        // (the blanket POST rule and this method's own @PreAuthorize), same reasoning the old
+        // FINANCE-token test used to prove before FINANCE existed as a role.
         mockMvc.perform(post("/api/admin/associates/" + ASSOCIATE_ID + "/suspend")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.FINANCE)))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
             .andExpect(status().isForbidden());
     }
 
     @Test
-    void resetPasswordIsForbiddenForAKycReviewerToken() throws Exception {
+    void resetPasswordIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(post("/api/admin/associates/" + ASSOCIATE_ID + "/reset-password")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.KYC_REVIEWER)))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
             .andExpect(status().isForbidden());
     }
 
