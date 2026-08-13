@@ -1,5 +1,6 @@
 package com.plotchain.cycle;
 
+import com.plotchain.legvolume.LegVolumeRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,17 +30,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 // until the first resolves), not application code, so a mocked repository couldn't exercise it.
 //
 // Cycle-management unit 4 (the settlement batch: leg-volume rollup, OPEN -> CALCULATING ->
-// CLOSED, reopen) now exists, and the first test below exercises it directly: this class seeds
-// zero Associate rows, so the second call's real batch rolls up zero LegVolume rows and closes
-// cleanly. The second test still manually flips status inside the "holder" transaction rather
-// than letting a real close() run there too -- it only needs to stand in for "a previous close
-// already succeeded," not re-exercise the batch a second time in the same test.
+// CLOSED, reopen) now exists, and the first test below exercises it directly: this class seeds no
+// Associate fixtures of its own, so the second call's real batch rolls up only the one permanent
+// ADMIN row V18__seed_founding_admin.sql seeds in every environment (a leaf root with no
+// descendants and no sales here, so its LegVolume row is all-zero) and closes cleanly. The second
+// test still manually flips status inside the "holder" transaction rather than letting a real
+// close() run there too -- it only needs to stand in for "a previous close already succeeded,"
+// not re-exercise the batch a second time in the same test.
 @SpringBootTest
 @ActiveProfiles("test")
 class CycleCloseConcurrencyTest {
 
     @Autowired CycleService cycleService;
     @Autowired CycleRepository cycleRepository;
+    @Autowired LegVolumeRepository legVolumeRepository;
     @Autowired PlatformTransactionManager transactionManager;
 
     private UUID cycleId;
@@ -47,6 +51,15 @@ class CycleCloseConcurrencyTest {
     @AfterEach
     void cleanUp() {
         if (cycleId != null) {
+            // V18__seed_founding_admin.sql permanently seeds one real ADMIN row (parent_id =
+            // NULL) in every environment including every test run -- close()'s real batch now
+            // always sweeps it in as a tree root and writes its own zero-value LegVolume row
+            // under this cycleId (Decision #2: "no special-cased exclusion in the compensation
+            // engine"), even though this class otherwise creates no Associate fixtures of its
+            // own. That row must be deleted before the cycle it references, or this delete hits
+            // leg_volume's FK to cycle.
+            legVolumeRepository.deleteAll(legVolumeRepository.findAll().stream()
+                .filter(lv -> cycleId.equals(lv.getCycleId())).toList());
             cycleRepository.deleteById(cycleId);
         }
     }
@@ -106,9 +119,10 @@ class CycleCloseConcurrencyTest {
         CycleCloseResponse response = second.get(5, TimeUnit.SECONDS);
 
         assertThat(events).containsExactly("holder-locked", "second-calling", "second-returned");
-        // Unit 4: the second call's close() now runs the real batch to completion (zero
-        // Associates seeded in this class -> zero LegVolume rows), ending in CLOSED, not the
-        // pre-unit-4 placeholder's unchanged OPEN.
+        // Unit 4: the second call's close() now runs the real batch to completion (no Associate
+        // fixtures of this class's own -> only the one permanent seeded ADMIN row rolls up, an
+        // all-zero LegVolume row), ending in CLOSED, not the pre-unit-4 placeholder's unchanged
+        // OPEN.
         assertThat(response.status()).isEqualTo(CycleStatus.CLOSED);
         assertThat(response.newCycleId()).isNotNull();
         pool.shutdownNow();
