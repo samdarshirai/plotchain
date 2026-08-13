@@ -219,8 +219,15 @@ class SecurityConfigTest {
     }
 
     @Test
-    void projectsIsForbiddenForAnAssociateToken() throws Exception {
+    void projectsIsReachableForAnAssociateToken() throws Exception {
         mockMvc.perform(get("/api/company/projects")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void projectThumbnailIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/company/projects/" + UUID.randomUUID() + "/thumbnail")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
             .andExpect(status().isForbidden());
     }

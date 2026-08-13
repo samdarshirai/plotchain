@@ -163,14 +163,14 @@ public class SecurityConfig {
                         "/api/company/payments", "/api/company/payout-account",
                         "/api/company/kyc", "/api/company/withdrawal", "/api/company/booking-emi")
                     .hasAuthority("ADMIN")
-                // Same reasoning as setup-state/profile/branding/compensation/payments above:
-                // Phase 9's Projects & Plots GETs stay admin-family-only. Their POST/PUT/DELETE
-                // (including the CSV validate/commit endpoints, which are POSTs) are writes,
-                // already covered by the blanket write rules above -- deliberately no separate
-                // matchers for them.
+                // Associate-reachable: the plot catalog is what the matrix calls "View available
+                // plots" for an Associate. Thumbnail and the CSV import template stay admin-only
+                // -- they're back-office affordances, not part of what an Associate browses.
                 .requestMatchers(HttpMethod.GET,
                         "/api/company/projects", "/api/company/projects/*",
-                        "/api/company/projects/*/plots", "/api/company/projects/*/plots/*",
+                        "/api/company/projects/*/plots", "/api/company/projects/*/plots/*")
+                    .authenticated()
+                .requestMatchers(HttpMethod.GET,
                         "/api/company/projects/*/thumbnail", "/api/company/projects/plots/csv-template")
                     .hasAuthority("ADMIN")
                 // Same reasoning as setup-state/profile/branding/compensation/payments/projects
