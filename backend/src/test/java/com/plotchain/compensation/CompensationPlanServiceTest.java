@@ -1,6 +1,8 @@
 package com.plotchain.compensation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.company.SettingsAuditLog;
 import com.plotchain.company.SettingsAuditLogRepository;
@@ -51,7 +53,8 @@ class CompensationPlanServiceTest {
         SettingsAuditService settingsAuditService = new SettingsAuditService(
             settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
         compensationPlanService = new CompensationPlanService(
-            versionRepository, royaltyBonusRateRepository, rewardTierRepository, rankTierRepository, settingsAuditService);
+            versionRepository, royaltyBonusRateRepository, rewardTierRepository, rankTierRepository,
+            settingsAuditService, associateRepository);
     }
 
     // -- fixtures --------------------------------------------------------
@@ -117,6 +120,100 @@ class CompensationPlanServiceTest {
             tiers,
             effectiveFrom
         );
+    }
+
+    // -- getMyRankProgress --------------------------------------------------
+
+    @Test
+    void getMyRankProgressReturnsCurrentAndNextRankWithProgressAndRewardTiers() {
+        UUID associateId = UUID.randomUUID();
+        UUID currentRankId = UUID.randomUUID();
+        UUID nextRankId = UUID.randomUUID();
+
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRankId(currentRankId);
+        associate.setCumulativeMatchedVolume(new BigDecimal("4000"));
+
+        RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, new BigDecimal("2000"));
+        RankTier nextRank = new RankTier(nextRankId, "Sales Executive", 2, new BigDecimal("10000"));
+
+        CompensationPlanVersion version = seedVersion();
+        RewardTier achievedTier = new RewardTier(
+            UUID.randomUUID(), version.getId(), 1, new BigDecimal("1000"), new BigDecimal("100"), "Tier 1");
+        RewardTier unreachedTier = new RewardTier(
+            UUID.randomUUID(), version.getId(), 2, new BigDecimal("5000"), new BigDecimal("500"), "Tier 2");
+
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank, nextRank));
+        when(versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(version));
+        when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(version.getId()))
+            .thenReturn(List.of(achievedTier, unreachedTier));
+
+        AssociateRankProgressResponse response = compensationPlanService.getMyRankProgress(associateId);
+
+        assertThat(response.currentRank()).isEqualTo("Sales Associate");
+        assertThat(response.currentRankOrder()).isEqualTo(1);
+        assertThat(response.nextRank()).isEqualTo("Sales Executive");
+        // progressPercent = 4000 * 100 / 10000 = 40
+        assertThat(response.progressPercent()).isEqualTo(40);
+        assertThat(response.cumulativeMatchedVolume()).isEqualByComparingTo("4000");
+        assertThat(response.volumeToNextRank()).isEqualByComparingTo("6000");
+        assertThat(response.rewardTiers()).hasSize(2);
+        assertThat(response.rewardTiers().get(0).tierLevel()).isEqualTo(1);
+        assertThat(response.rewardTiers().get(0).achieved()).isTrue();
+        assertThat(response.rewardTiers().get(1).tierLevel()).isEqualTo(2);
+        assertThat(response.rewardTiers().get(1).achieved()).isFalse();
+    }
+
+    @Test
+    void getMyRankProgressAtMaxRankReturnsNullNextRankAndFullProgress() {
+        UUID associateId = UUID.randomUUID();
+        UUID currentRankId = UUID.randomUUID();
+
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRankId(currentRankId);
+        associate.setCumulativeMatchedVolume(new BigDecimal("50000"));
+
+        RankTier currentRank = new RankTier(currentRankId, "Sales Legend", 5, new BigDecimal("40000"));
+        CompensationPlanVersion version = seedVersion();
+
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
+        when(versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(version));
+        when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(version.getId()))
+            .thenReturn(List.of());
+
+        AssociateRankProgressResponse response = compensationPlanService.getMyRankProgress(associateId);
+
+        assertThat(response.nextRank()).isNull();
+        assertThat(response.progressPercent()).isEqualTo(100);
+        assertThat(response.volumeToNextRank()).isEqualByComparingTo("0");
+        assertThat(response.rewardTiers()).isEmpty();
+    }
+
+    @Test
+    void getMyRankProgressThrowsNoRankAssignedExceptionWhenAssociateHasNoRank() {
+        UUID associateId = UUID.randomUUID();
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRankId(null);
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+
+        assertThatThrownBy(() -> compensationPlanService.getMyRankProgress(associateId))
+            .isInstanceOf(NoRankAssignedException.class);
+    }
+
+    @Test
+    void getMyRankProgressThrowsAssociateNotFoundExceptionWhenAssociateDoesNotExist() {
+        UUID associateId = UUID.randomUUID();
+        when(associateRepository.findById(associateId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> compensationPlanService.getMyRankProgress(associateId))
+            .isInstanceOf(AssociateNotFoundException.class);
     }
 
     // -- contiguity validation --------------------------------------------
