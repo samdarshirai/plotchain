@@ -168,6 +168,37 @@ class CompensationPlanServiceTest {
     }
 
     @Test
+    void getMyRankProgressMarksATierAchievedWhenVolumeExactlyEqualsThreshold() {
+        // Boundary case for the achieved predicate's <= comparison: cumulativeMatchedVolume
+        // exactly equal to volumeThreshold (not strictly above, not strictly below) must still
+        // count as achieved, mirroring CycleService#creditReward's own <= comparison.
+        UUID associateId = UUID.randomUUID();
+        UUID currentRankId = UUID.randomUUID();
+
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRankId(currentRankId);
+        associate.setCumulativeMatchedVolume(new BigDecimal("1000"));
+
+        RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, new BigDecimal("500"));
+        CompensationPlanVersion version = seedVersion();
+        RewardTier exactThresholdTier = new RewardTier(
+            UUID.randomUUID(), version.getId(), 1, new BigDecimal("1000"), new BigDecimal("100"), "Tier 1");
+
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
+        when(versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(version));
+        when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(version.getId()))
+            .thenReturn(List.of(exactThresholdTier));
+
+        AssociateRankProgressResponse response = compensationPlanService.getMyRankProgress(associateId);
+
+        assertThat(response.rewardTiers()).hasSize(1);
+        assertThat(response.rewardTiers().get(0).achieved()).isTrue();
+    }
+
+    @Test
     void getMyRankProgressAtMaxRankReturnsNullNextRankAndFullProgress() {
         UUID associateId = UUID.randomUUID();
         UUID currentRankId = UUID.randomUUID();
