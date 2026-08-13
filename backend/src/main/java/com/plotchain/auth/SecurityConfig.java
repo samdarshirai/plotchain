@@ -51,23 +51,17 @@ public class SecurityConfig {
                 // Must precede the blanket rule (first-match-wins) or it would never be reached.
                 .requestMatchers(HttpMethod.POST, "/api/company/admins")
                     .hasAnyAuthority("ADMIN", "SUPER_ADMIN")
-                // Deny-by-default for writes: product policy is "admin (or staff) can write;
-                // associates are read-only except their own profile". Without this, any future
+                // Deny-by-default for writes: product policy is "ADMIN can write; associates
+                // are read-only except their own profile". Without this, any future
                 // POST/PUT/PATCH/DELETE endpoint would be reachable by every authenticated
                 // associate unless its author remembered to add @PreAuthorize. When an
                 // associate's own-profile write is built, it needs its own explicit matcher
-                // placed above these blanket admin-family rules (same ordering trap as login
-                // above).
+                // placed above these blanket rules (same ordering trap as login above).
                 //
-                // hasAnyAuthority, not hasAuthority("ADMIN"): the setup wizard's Admin Team
-                // step creates SUPER_ADMIN/FINANCE/KYC_REVIEWER/SUPPORT accounts too
-                // (AssociateRole.isAdminFamily() is the canonical list). A plain ADMIN-only
-                // rule would lock every one of those roles out of every write in the
-                // application -- silently, as 403s that look like a client bug. Per-role
-                // narrowing (e.g. only FINANCE can approve withdrawals) is a named follow-up
-                // (the setup wizard's Admin Team permission matrix), not assumed here: until
-                // then, any admin-family role can write, matching the spec's statement that
-                // the founding admin can act as all roles until more accounts are created.
+                // Only one role has back-office authority (role-capability unit 1,
+                // docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
+                // "Role model" section) -- so the write rule is simply hasAuthority("ADMIN"),
+                // not a multi-role hasAnyAuthority(...) list.
                 // Cycle close: ADMIN-only, per cycle-management unit 3
                 // (docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
                 // "POST /api/admin/cycles/{id}/close -- ADMIN-only"), same target-role-model
@@ -118,13 +112,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/admin/sales")
                     .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/**")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/**")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.PATCH, "/api/**")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/**")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 // The blanket rules above only cover writes; a bare GET falls through to
                 // anyRequest().authenticated() below, which any associate token satisfies. The
                 // setup wizard's state must stay admin-family-only (associates have no business
@@ -132,23 +126,23 @@ public class SecurityConfig {
                 // catch-all. POST /api/company/launch is a write and is already covered by the
                 // blanket POST rule above -- deliberately no separate matcher for it.
                 .requestMatchers(HttpMethod.GET, "/api/company/setup-state")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 // Same reasoning as setup-state above: GET /api/company/profile must stay
                 // admin-family-only. PUT /api/company/profile is a write and is already
                 // covered by the blanket PUT rule above -- deliberately no separate matcher.
                 .requestMatchers(HttpMethod.GET, "/api/company/profile")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 // Same reasoning as setup-state/profile above: GET /api/company/branding stays
                 // admin-family-only. PUT and the logo POST are writes, already covered by the
                 // blanket PUT/POST rules above -- deliberately no separate matchers for them.
                 .requestMatchers(HttpMethod.GET, "/api/company/branding")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 // Same reasoning as setup-state/profile/branding above: GET
                 // /api/company/compensation and its history stay admin-family-only. PUT
                 // /api/company/compensation is a write and is already covered by the blanket
                 // PUT rule above -- deliberately no separate matcher for it.
                 .requestMatchers(HttpMethod.GET, "/api/company/compensation", "/api/company/compensation/history")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 // Same reasoning as setup-state/profile/branding/compensation above: Phase 7's
                 // four Payments & KYC GETs stay admin-family-only. Their PUTs are writes,
                 // already covered by the blanket PUT rule above -- deliberately no separate
@@ -156,7 +150,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET,
                         "/api/company/payments", "/api/company/payout-account",
                         "/api/company/kyc", "/api/company/withdrawal", "/api/company/booking-emi")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 // Same reasoning as setup-state/profile/branding/compensation/payments above:
                 // Phase 9's Projects & Plots GETs stay admin-family-only. Their POST/PUT/DELETE
                 // (including the CSV validate/commit endpoints, which are POSTs) are writes,
@@ -166,7 +160,7 @@ public class SecurityConfig {
                         "/api/company/projects", "/api/company/projects/*",
                         "/api/company/projects/*/plots", "/api/company/projects/*/plots/*",
                         "/api/company/projects/*/thumbnail", "/api/company/projects/plots/csv-template")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 // Same reasoning as setup-state/profile/branding/compensation/payments/projects
                 // above: Phase 10's Admin Team GETs (roster, userId availability check, and the
                 // read-only role-permissions preview) stay admin-family-only. The narrower
@@ -176,7 +170,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET,
                         "/api/company/admins", "/api/company/admins/user-id-available",
                         "/api/company/admins/role-permissions")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 // Same reasoning as setup-state/profile/branding/compensation/payments/projects/
                 // admin-team above: Phase 11's Root Associates GET stays admin-family-only. The
                 // POST that creates a root is a write and is already covered by the blanket POST
@@ -184,18 +178,18 @@ public class SecurityConfig {
                 // narrower POST, there is no stated reason to restrict root-associate creation
                 // beyond the standard admin-family write rule).
                 .requestMatchers(HttpMethod.GET, "/api/company/root-associates")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 // Same reasoning as setup-state/profile/branding/compensation/payments/projects/
                 // admin-team/root-associates above: the audit-log GET stays admin-family-only.
                 // There is no mutating endpoint for this resource at all (append-only, written
                 // internally by SettingsAuditService) -- deliberately no write matcher.
                 .requestMatchers(HttpMethod.GET, "/api/company/audit-log")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 // Backs the Create Associate form's parent-picker dropdown: same admin-family
                 // reasoning as the GETs above. POST /api/associates is a write and is already
                 // covered by the blanket POST rule above -- deliberately no separate matcher.
                 .requestMatchers(HttpMethod.GET, "/api/associates")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 // Admin Usage: Associate Directory, Tree Explorer, and KYC Review Queue GETs
                 // stay admin-family-only, same reasoning as every other admin-only GET above.
                 // Their mutating POSTs (suspend/reactivate/reset-password/kyc decision) are
@@ -205,15 +199,15 @@ public class SecurityConfig {
                 // of real per-role narrowing in this codebase, per AdminRolePermissions' stated
                 // follow-up.
                 .requestMatchers(HttpMethod.GET, "/api/admin/associates", "/api/admin/associates/*")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/admin/tree/*")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/admin/kyc")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 // Company-wide admin stats: same admin-family-only reasoning as every other
                 // admin-aggregate GET above. Read-only, no corresponding write endpoint.
                 .requestMatchers(HttpMethod.GET, "/api/admin/stats")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN", "FINANCE", "KYC_REVIEWER", "SUPPORT")
+                    .hasAuthority("ADMIN")
                 // Admin cycle history: ADMIN-only, not the admin-family hasAnyAuthority(...)
                 // pattern every other admin GET above still uses. Built directly to the target
                 // role model from role-capability unit 1 (approved, not yet implemented) rather
