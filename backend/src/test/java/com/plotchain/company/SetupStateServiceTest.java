@@ -64,9 +64,6 @@ class SetupStateServiceTest {
     // CompanyBrandingService above -- a real instance is built over mocked (interface)
     // repositories per the same repo convention.
     @Mock SettingsAuditLogRepository settingsAuditLogRepository;
-    // AdminProvisioningService is a concrete class, same as CompanyProfileService/
-    // CompanyBrandingService/CompensationPlanService above -- a real instance is built over
-    // mocked (interface) repositories per the same repo convention.
     @Mock AssociateRepository associateRepository;
     @Mock PasswordEncoder passwordEncoder;
 
@@ -88,7 +85,6 @@ class SetupStateServiceTest {
                 new SecretsEncryptionService("test-secrets-key-at-least-32-bytes-long-for-aes"), settingsAuditService),
             new PayoutBankAccountService(payoutBankAccountRepository, settingsAuditService),
             new ProjectService(projectRepository, plotRepository, settingsAuditService),
-            new AdminProvisioningService(associateRepository, passwordEncoder, settingsAuditService),
             new RootAssociateProvisioningService(associateRepository, rankTierRepository, passwordEncoder,
                 new AssociateIdGenerator(associateRepository, "VP"), settingsAuditService));
 
@@ -101,9 +97,6 @@ class SetupStateServiceTest {
         // "projects" is non-required and defaults to no projects existing, matching the other
         // non-required steps' default-incomplete stubbing above.
         lenient().when(projectRepository.findAll()).thenReturn(List.of());
-        // "adminTeam" is non-required and defaults to no admin-family rows beyond none at all,
-        // matching the other non-required steps' default-incomplete stubbing above.
-        lenient().when(associateRepository.countByRoleNot(AssociateRole.ASSOCIATE)).thenReturn(0L);
         // "rootAssociates" is non-required and defaults to no root existing yet, matching the
         // other non-required steps' default-incomplete stubbing above.
         lenient()
@@ -204,7 +197,7 @@ class SetupStateServiceTest {
 
         SetupStateResponse response = setupStateService.getSetupState();
 
-        assertThat(response.steps()).hasSize(8);
+        assertThat(response.steps()).hasSize(7);
         assertThat(response.steps()).allMatch(s -> !s.complete() && s.percentComplete() == 0);
         assertThat(response.canGoLive()).isFalse();
         assertThat(response.launchedAt()).isNull();
@@ -402,43 +395,6 @@ class SetupStateServiceTest {
             .isTrue();
         // Projects is optional -- completing it must not affect the Go Live gate.
         assertThat(response.canGoLive()).isFalse();
-    }
-
-    @Test
-    void adminTeamStepIsIncompleteWithOnlyOneAdminFamilyRow() {
-        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
-        stubCompanyProfile(new CompanyProfile());
-        stubCompanyBranding(blankBranding());
-        stubCompensationIncomplete();
-        when(associateRepository.countByRoleNot(AssociateRole.ASSOCIATE)).thenReturn(1L);
-
-        SetupStateResponse response = setupStateService.getSetupState();
-
-        assertThat(response.steps().stream()
-            .filter(s -> s.key().equals("adminTeam")).findFirst().orElseThrow().complete())
-            .isFalse();
-        // adminTeam is optional -- canGoLive is unaffected either way.
-        assertThat(response.canGoLive()).isFalse();
-    }
-
-    @Test
-    void adminTeamStepIsCompleteWithTwoOrMoreAdminFamilyRows() {
-        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
-        stubCompanyProfile(new CompanyProfile());
-        stubCompanyBranding(blankBranding());
-        stubCompensationIncomplete();
-        when(associateRepository.countByRoleNot(AssociateRole.ASSOCIATE)).thenReturn(2L);
-
-        SetupStateResponse response = setupStateService.getSetupState();
-
-        assertThat(response.steps().stream()
-            .filter(s -> s.key().equals("adminTeam")).findFirst().orElseThrow().complete())
-            .isTrue();
-        // adminTeam is optional -- completing it must not affect the Go Live gate.
-        assertThat(response.canGoLive()).isFalse();
-        assertThat(response.steps().stream()
-            .filter(s -> s.key().equals("adminTeam")).findFirst().orElseThrow().required())
-            .isFalse();
     }
 
     @Test

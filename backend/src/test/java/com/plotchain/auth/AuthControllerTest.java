@@ -65,8 +65,8 @@ class AuthControllerTest {
                 new CompanyProfileService(companyProfileRepository, settingsAuditService), settingsAuditService),
             // Never invoked here: these tests only exercise isLaunched(), which doesn't touch
             // compensationPlanService/paymentConfigService/payoutBankAccountService/
-            // projectService/adminProvisioningService/rootAssociateProvisioningService.
-            null, null, null, null, null, null);
+            // projectService/rootAssociateProvisioningService.
+            null, null, null, null, null);
         AuthService authService = new AuthService(associateRepository, passwordEncoder, jwtService, setupStateService);
         mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService))
             .setControllerAdvice(new AuthExceptionHandler(), new ApiExceptionHandler())
