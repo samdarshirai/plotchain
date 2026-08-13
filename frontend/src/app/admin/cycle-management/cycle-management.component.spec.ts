@@ -64,4 +64,42 @@ describe('CycleManagementComponent', () => {
     const emptyCell: HTMLElement | null = fixture.nativeElement.querySelector('.editable-table__empty');
     expect(emptyCell?.textContent?.trim()).toBeTruthy();
   });
+
+  it('fetches and opens the detail side panel when View Detail is clicked', () => {
+    fixture.detectChanges();
+    fixture.componentInstance.viewDetail('c1');
+
+    const req = httpMock.expectOne('/api/admin/cycles/c1');
+    req.flush({
+      id: 'c1', periodStart: '2026-08-01', periodEnd: '2026-08-15', status: 'CLOSED',
+      incomeTypeTotals: [
+        { incomeType: 'DIRECT', totalNet: 500 },
+        { incomeType: 'MATCHING', totalNet: 200 },
+        { incomeType: 'SPONSOR_MATCHING', totalNet: 20 },
+        { incomeType: 'ROYALTY', totalNet: 10 },
+        { incomeType: 'REWARD', totalNet: 0 }
+      ],
+      totalNet: 730
+    });
+
+    expect(fixture.componentInstance.selectedDetail?.totalNet).toBe(730);
+    expect(fixture.componentInstance.detailPanelOpen).toBe(true);
+  });
+
+  it('shows a detail error when the drill-down fetch fails, without silently doing nothing', () => {
+    fixture.componentInstance.viewDetail('c1');
+
+    const req = httpMock.expectOne('/api/admin/cycles/c1');
+    req.flush({ error: 'boom' }, { status: 500, statusText: 'Server Error' });
+
+    expect(fixture.componentInstance.detailError).toBe(true);
+    expect(fixture.componentInstance.selectedDetail).toBeNull();
+  });
+
+  it('closes the detail panel via closeDetailPanel', () => {
+    fixture.componentInstance.detailPanelOpen = true;
+    fixture.componentInstance.closeDetailPanel();
+
+    expect(fixture.componentInstance.detailPanelOpen).toBe(false);
+  });
 });

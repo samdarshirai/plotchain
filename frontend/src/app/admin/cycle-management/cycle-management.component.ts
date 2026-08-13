@@ -3,15 +3,17 @@ import { CommonModule } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { CycleManagementService } from './cycle-management.service';
 import { CycleStatus, CyclePage } from '../models/cycle.model';
+import { CycleDetail } from '../models/cycle-detail.model';
 import { EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
+import { SidePanelComponent } from '../../shared/components/side-panel/side-panel.component';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-cycle-management',
   standalone: true,
-  imports: [CommonModule, TranslateModule, EditableTableComponent, InlineBannerComponent],
+  imports: [CommonModule, TranslateModule, EditableTableComponent, InlineBannerComponent, SidePanelComponent],
   template: `
     <div class="cycle-management">
       <div class="cycle-management__header">
@@ -39,9 +41,15 @@ const PAGE_SIZE = 20;
           [readOnly]="true"
           [columns]="historyColumns"
           [rows]="historyRows"
+          [actionTemplate]="actionsTpl"
           [emptyStateLabel]="'admin.cycleManagement.emptyState' | translate"
         ></app-editable-table>
       </div>
+      <ng-template #actionsTpl let-i="index">
+        <button type="button" class="cycle-management__view-detail-action brand-button brand-button--secondary" (click)="viewDetail(page!.cycles[i].id)">
+          {{ 'admin.cycleManagement.viewDetailAction' | translate }}
+        </button>
+      </ng-template>
 
       <div class="cycle-management__pagination" *ngIf="page">
         <button type="button" class="brand-button brand-button--secondary" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
@@ -54,6 +62,26 @@ const PAGE_SIZE = 20;
           {{ 'admin.cycleManagement.nextPageAction' | translate }}
         </button>
       </div>
+
+      <app-side-panel
+        [open]="detailPanelOpen"
+        [title]="'admin.cycleManagement.detailPanelTitle' | translate"
+        (closed)="closeDetailPanel()"
+      >
+        <app-inline-banner *ngIf="detailError" tone="danger" class="cycle-management__detail-error">{{ 'admin.cycleManagement.detailError' | translate }}</app-inline-banner>
+        <div class="cycle-management__detail-body" *ngIf="selectedDetail as detail">
+          <p><strong>{{ 'admin.cycleManagement.detailPeriodLabel' | translate }}:</strong> {{ detail.periodStart }} – {{ detail.periodEnd }}</p>
+          <p><strong>{{ 'admin.cycleManagement.detailStatusLabel' | translate }}:</strong> {{ detail.status }}</p>
+          <h3>{{ 'admin.cycleManagement.detailBreakdownTitle' | translate }}</h3>
+          <ul class="cycle-management__breakdown-list">
+            <li *ngFor="let row of detail.incomeTypeTotals" class="cycle-management__breakdown-row">
+              <span>{{ 'admin.cycleManagement.incomeType' + incomeTypeLabelSuffix(row.incomeType) | translate }}</span>
+              <span class="cycle-management__breakdown-amount">{{ row.totalNet }}</span>
+            </li>
+          </ul>
+          <p class="cycle-management__detail-total"><strong>{{ 'admin.cycleManagement.detailTotalNetLabel' | translate }}:</strong> {{ detail.totalNet }}</p>
+        </div>
+      </app-side-panel>
     </div>
   `
 })
@@ -65,6 +93,9 @@ export class CycleManagementComponent implements OnInit {
   loadError = false;
   historyColumns: EditableTableColumn[] = [];
   historyRows: Record<string, string>[] = [];
+  selectedDetail: CycleDetail | null = null;
+  detailPanelOpen = false;
+  detailError = false;
   private status: CycleStatus | '' = '';
 
   get currentPage(): number {
@@ -82,7 +113,8 @@ export class CycleManagementComponent implements OnInit {
     this.historyColumns = [
       { key: 'periodStart', label: this.translate.instant('admin.cycleManagement.columnPeriodStart'), type: 'text' },
       { key: 'periodEnd', label: this.translate.instant('admin.cycleManagement.columnPeriodEnd'), type: 'text' },
-      { key: 'status', label: this.translate.instant('admin.cycleManagement.columnStatus'), type: 'text' }
+      { key: 'status', label: this.translate.instant('admin.cycleManagement.columnStatus'), type: 'text' },
+      { key: 'actions', label: this.translate.instant('admin.cycleManagement.columnActions'), type: 'action' }
     ];
     this.loadPage(0);
   }
@@ -113,5 +145,30 @@ export class CycleManagementComponent implements OnInit {
       periodEnd: cycle.periodEnd,
       status: cycle.status
     }));
+  }
+
+  viewDetail(id: string): void {
+    this.detailError = false;
+    this.selectedDetail = null;
+    this.cycleManagementService.detail(id).subscribe({
+      next: detail => {
+        this.selectedDetail = detail;
+        this.detailPanelOpen = true;
+      },
+      error: () => (this.detailError = true)
+    });
+  }
+
+  closeDetailPanel(): void {
+    this.detailPanelOpen = false;
+  }
+
+  incomeTypeLabelSuffix(incomeType: string): string {
+    // 'SPONSOR_MATCHING' -> 'SponsorMatching', matching the i18n key suffixes above.
+    return incomeType
+      .toLowerCase()
+      .split('_')
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join('') + 'Label';
   }
 }

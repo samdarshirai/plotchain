@@ -235,7 +235,19 @@
       "previousPageAction": "Previous",
       "nextPageAction": "Next",
       "pageIndicator": "Page {{page}} of {{totalPages}}",
-      "emptyState": "No cycles match this filter."
+      "emptyState": "No cycles match this filter.",
+      "viewDetailAction": "View Detail",
+      "detailPanelTitle": "Cycle Detail",
+      "detailPeriodLabel": "Period",
+      "detailStatusLabel": "Status",
+      "detailBreakdownTitle": "Income Breakdown",
+      "detailTotalNetLabel": "Total Net",
+      "detailError": "Could not load this cycle's detail. Please try again.",
+      "incomeTypeDirectLabel": "Direct",
+      "incomeTypeMatchingLabel": "Matching",
+      "incomeTypeSponsorMatchingLabel": "Sponsor Matching",
+      "incomeTypeRoyaltyLabel": "Royalty",
+      "incomeTypeRewardLabel": "Reward"
     }
   },
   "setup": {
