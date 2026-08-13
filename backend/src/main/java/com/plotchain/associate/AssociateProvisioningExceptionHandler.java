@@ -29,4 +29,9 @@ public class AssociateProvisioningExceptionHandler {
     public ResponseEntity<Map<String, String>> handleInvalidKycDecision(InvalidKycDecisionException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(InvalidKycUploadException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidKycUpload(InvalidKycUploadException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
+    }
 }
