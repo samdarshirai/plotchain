@@ -29,6 +29,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -241,8 +242,15 @@ class CycleCloseRealisticRetryIntegrationTest {
             .filter(e -> cycleId.equals(e.getCycleId())).count();
         assertThat(ledgerEntriesAfterRetry).isEqualTo(3); // 2 MATCHING + 1 SPONSOR_MATCHING; no ROYALTY/REWARD configured
 
+        // Scoped to this test's own fixture associates: V18__seed_founding_admin.sql permanently
+        // seeds one real ADMIN row (parent_id = NULL) in every test run, which close() correctly
+        // sweeps in as its own extra tree root (Decision #2), adding its own zero-value LegVolume
+        // row under this same cycleId. Filtering by cycleId alone no longer isolates this test's
+        // own tree from that real seeded row, so this filters to the known fixture IDs too.
         long legVolumesAfterRetry = legVolumeRepository.findAll().stream()
-            .filter(lv -> cycleId.equals(lv.getCycleId())).count();
+            .filter(lv -> cycleId.equals(lv.getCycleId()))
+            .filter(lv -> Set.of(sId, adminId, b1Id, b2Id, c1Id, c2Id).contains(lv.getAssociateId()))
+            .count();
         assertThat(legVolumesAfterRetry).isEqualTo(6); // admin, b1, b2, c1, c2, S
 
         Associate b1AfterRetry = associateRepository.findById(b1Id).orElseThrow();

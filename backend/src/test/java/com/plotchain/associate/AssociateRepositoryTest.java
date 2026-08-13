@@ -160,7 +160,7 @@ class AssociateRepositoryTest {
         RankTier rank = persistRank("Sales Associate", 1);
         Associate associate = persistAssociate("VP00001", "Jane", AssociateRole.ASSOCIATE, rank.getId(),
             KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
-        Associate admin = persistAssociate("admin", "Admin", AssociateRole.ADMIN, null,
+        Associate admin = persistAssociate("testadmin", "Admin", AssociateRole.ADMIN, null,
             KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
         entityManager.flush();
 
@@ -226,7 +226,7 @@ class AssociateRepositoryTest {
             KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
         persistAssociate("VP00002", "John Smith", AssociateRole.ASSOCIATE, rankB.getId(),
             KycStatus.PENDING, AssociateStatus.SUSPENDED, Instant.now());
-        persistAssociate("admin", "Admin", AssociateRole.ADMIN, null,
+        persistAssociate("testadmin", "Admin", AssociateRole.ADMIN, null,
             KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
         entityManager.flush();
 

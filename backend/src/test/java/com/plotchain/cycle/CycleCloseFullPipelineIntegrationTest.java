@@ -38,6 +38,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -282,7 +283,18 @@ class CycleCloseFullPipelineIntegrationTest {
         CycleCloseResponse response = cycleService.close(cycleId);
 
         assertThat(response.status()).isEqualTo(CycleStatus.CLOSED);
-        assertThat(response.legVolumeRowsWritten()).isEqualTo(8);
+        // Scoped to this test's own fixture associates, not response.legVolumeRowsWritten()'s raw
+        // batch-wide total: V18__seed_founding_admin.sql permanently seeds one real ADMIN row
+        // (parent_id = NULL) in every environment including every test run, which close()
+        // correctly sweeps in as an extra tree root (Decision #2 -- "no special-cased exclusion in
+        // the compensation engine"), adding its own zero-value LegVolume row to that raw total.
+        // That's correct production behavior, not a bug -- this assertion is scoped to prove this
+        // test's own 8-node tree specifically, independent of whatever else is seeded globally.
+        long legVolumeRowsForFixture = legVolumeRepository.findAll().stream()
+            .filter(lv -> cycleId.equals(lv.getCycleId()))
+            .filter(lv -> Set.of(sId, adminId, b1Id, b2Id, c1Id, c2Id, c3Id, dId).contains(lv.getAssociateId()))
+            .count();
+        assertThat(legVolumeRowsForFixture).isEqualTo(8);
 
         // --- Leg-volume rollup + carried-forward excess. ---
         LegVolume b1LegVolume = legVolumeRepository.findByAssociateIdAndCycleId(b1Id, cycleId).orElseThrow();
