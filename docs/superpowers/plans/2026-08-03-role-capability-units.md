@@ -8,7 +8,7 @@ Sliced from `docs/superpowers/specs/role-capability/2026-08-03-role-capability-d
 
 | # | Type | Unit | Depends on | Status | Plan file | Merged as |
 |---|---|---|---|---|---|---|
-| 1 | backend | Only ADMIN role carries back-office authority | none | planned | `2026-08-03-role-model-collapse.md` Tasks 2–3 | — |
+| 1 | backend | Only ADMIN role carries back-office authority | none | merged | `2026-08-05-role-capability-unit-1-admin-only-authority.md` (own plan, written from scratch — verified `role-model-collapse.md` Tasks 2-3 had drifted, e.g. 18 vs. stated 14 `SecurityConfig` occurrences) | `857a27d..5befd78` |
 | 2 | backend | Admin seeded as single root account via Flyway migration | none | planned | `2026-08-03-role-model-collapse.md` Task 1 | — |
 | 3 | backend+removal | Root Associate no longer exists as separate account/step | 2 | planned | `2026-08-03-role-model-collapse.md` Task 5 (+ Task 9 frontend) | — |
 | 4 | backend+removal | Admin Team setup step removed | 1 | planned | `2026-08-03-role-model-collapse.md` Task 4 (+ Task 9 frontend) | — |
@@ -32,3 +32,5 @@ Units 12–16 added 2026-08-05, retroactively, same reason as cycle-management u
 **Before executing units 1–6 or 11:** read `role-model-collapse.md`'s relevant task(s) in full and confirm its acceptance criteria actually satisfy this slice's — it was written independently of this slice and may diverge in scope or convention (e.g. check it against this repo's current `SecurityConfig.java`/`AssociateRole` state, which may have moved since `c949339`). Confirmed by direct read (2026-08-05): Tasks 7 and 8 are backend-only (new endpoints, no Angular work) — units 12 and 14's screen work is not secretly already done by this plan.
 
 **Units 7–10 need a plan written from scratch** — nothing pre-existing covers them. **Units 12–16 (all screens) need a plan written from scratch too** — the pre-existing plan never touches the frontend beyond deleting the two setup-wizard steps.
+
+**Unit 1 merged 2026-08-13 (`857a27d..5befd78`), executed strictly in isolation** (not combined with units 2-4, per explicit choice at the orchestrator checkpoint despite the pre-existing reference plan treating Tasks 1-5 as one interlocked sequence). Its own plan documented 8 expected-residual-red test methods (Admin Team/Root Associate routes, resolved only when unit 4 deletes those controllers) — `mvn test` after merge confirmed exactly those 8 plus 2 more with an identical root cause the plan's table omitted (`AdminControllerTest.createReturnsCreatedWithAOneTimePassword`, `AdminProvisioningServiceTest.listExcludesAssociateRows`), plus 4 fully unrelated pre-existing failures (`JwtServiceTest`/`SecretsEncryptionServiceTest` — a latent no-op fail-closed check, confirmed via git log as untouched by this unit). **Before planning unit 4 (Admin Team removal): fold both table-gap tests into its own expected-red accounting so they aren't mistaken for new regressions.**
