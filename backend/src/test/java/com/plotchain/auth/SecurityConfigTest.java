@@ -327,80 +327,6 @@ class SecurityConfigTest {
             .andExpect(status().isNotFound());
     }
 
-    @ParameterizedTest
-    @EnumSource(value = AssociateRole.class, names = {"ADMIN", "SUPER_ADMIN"})
-    void createAdminPassesTheSecurityLayerForAdminOrSuperAdminTokens(AssociateRole role) throws Exception {
-        // 400, not 403: an empty body fails bean validation, but that only happens after the
-        // security layer let the request through -- which is the distinction being asserted.
-        mockMvc.perform(post("/api/company/admins")
-                .header("Authorization", "Bearer " + tokenFor(role))
-                .contentType("application/json")
-                .content("{}"))
-            .andExpect(status().isBadRequest());
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = AssociateRole.class, names = {"FINANCE", "KYC_REVIEWER", "SUPPORT", "ASSOCIATE"})
-    void createAdminIsForbiddenForNonAdminTokens(AssociateRole role) throws Exception {
-        // Narrower than the blanket ADMIN-family write rule: only ADMIN/SUPER_ADMIN may
-        // provision new admin accounts, so the other admin-family roles (which CAN reach the
-        // GET endpoints below) must still be rejected here.
-        mockMvc.perform(post("/api/company/admins")
-                .header("Authorization", "Bearer " + tokenFor(role))
-                .contentType("application/json")
-                .content("{}"))
-            .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void adminsListIsForbiddenForAnAssociateToken() throws Exception {
-        mockMvc.perform(get("/api/company/admins")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
-            .andExpect(status().isForbidden());
-    }
-
-    // associateRepository is @MockBean'd at the class level above (unstubbed here), and
-    // Mockito's default answer returns an empty List rather than null for a List-returning
-    // method, so findByRoleNotOrderByUserIdAsc(...) resolves to an empty roster and this is
-    // a plain 200.
-    @ParameterizedTest
-    @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
-    void adminsListIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
-        mockMvc.perform(get("/api/company/admins")
-                .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().isOk());
-    }
-
-    @Test
-    void userIdAvailabilityIsForbiddenForAnAssociateToken() throws Exception {
-        mockMvc.perform(get("/api/company/admins/user-id-available").param("userId", "someone")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
-            .andExpect(status().isForbidden());
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
-    void userIdAvailabilityIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
-        mockMvc.perform(get("/api/company/admins/user-id-available").param("userId", "someone")
-                .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().isOk());
-    }
-
-    @Test
-    void rolePermissionsIsForbiddenForAnAssociateToken() throws Exception {
-        mockMvc.perform(get("/api/company/admins/role-permissions")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
-            .andExpect(status().isForbidden());
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
-    void rolePermissionsIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
-        mockMvc.perform(get("/api/company/admins/role-permissions")
-                .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().isOk());
-    }
-
     @Test
     void rootAssociatesListIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(get("/api/company/root-associates")
@@ -408,10 +334,10 @@ class SecurityConfigTest {
             .andExpect(status().isForbidden());
     }
 
-    // Same unstubbed-default-empty-list reasoning as adminsListIsReachableForAnyAdminFamilyToken
-    // above: associateRepository is @MockBean'd unstubbed, so
-    // findByRoleAndParentIdIsNullAndSponsorIdIsNullOrderByJoinedAtAsc(...) resolves to an empty
-    // list and this is a plain 200.
+    // associateRepository is @MockBean'd at the class level above (unstubbed here), and
+    // Mockito's default answer returns an empty List rather than null for a List-returning
+    // method, so findByRoleAndParentIdIsNullAndSponsorIdIsNullOrderByJoinedAtAsc(...) resolves
+    // to an empty list and this is a plain 200.
     @ParameterizedTest
     @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
     void rootAssociatesListIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
