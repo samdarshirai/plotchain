@@ -247,7 +247,16 @@
       "incomeTypeMatchingLabel": "Matching",
       "incomeTypeSponsorMatchingLabel": "Sponsor Matching",
       "incomeTypeRoyaltyLabel": "Royalty",
-      "incomeTypeRewardLabel": "Reward"
+      "incomeTypeRewardLabel": "Reward",
+      "currentCycleTitle": "Current Cycle",
+      "currentCyclePeriodLabel": "Period",
+      "closeCycleAction": "Close Cycle",
+      "closeSuccessTitle": "Cycle closed",
+      "closeSuccessClosedCycleLabel": "Closed cycle",
+      "closeSuccessLegVolumeRowsLabel": "Leg-volume rows written",
+      "closeSuccessNewCycleLabel": "New cycle opened",
+      "closeConflictError": "This cycle was already closed (possibly by a concurrent request). Refresh to see its current status.",
+      "closeGenericError": "Could not close this cycle. Please try again."
     }
   },
   "setup": {

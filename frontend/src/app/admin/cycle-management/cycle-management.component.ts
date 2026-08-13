@@ -1,25 +1,45 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { CycleManagementService } from './cycle-management.service';
-import { CycleStatus, CyclePage } from '../models/cycle.model';
+import { CycleStatus, CyclePage, CycleSummary } from '../models/cycle.model';
 import { CycleDetail } from '../models/cycle-detail.model';
+import { CycleCloseResponse } from '../models/cycle-close-response.model';
 import { EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { SidePanelComponent } from '../../shared/components/side-panel/side-panel.component';
+import { BrandButtonComponent } from '../../shared/components/brand-button/brand-button.component';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-cycle-management',
   standalone: true,
-  imports: [CommonModule, TranslateModule, EditableTableComponent, InlineBannerComponent, SidePanelComponent],
+  imports: [CommonModule, TranslateModule, EditableTableComponent, InlineBannerComponent, SidePanelComponent, BrandButtonComponent],
   template: `
     <div class="cycle-management">
       <div class="cycle-management__header">
         <h1 class="card-title">{{ 'admin.cycleManagement.title' | translate }}</h1>
         <p class="cycle-management__subtitle">{{ 'admin.cycleManagement.subtitle' | translate }}</p>
       </div>
+
+      <div class="cycle-management__current card" *ngIf="currentOpenCycle as open">
+        <h2>{{ 'admin.cycleManagement.currentCycleTitle' | translate }}</h2>
+        <p>{{ 'admin.cycleManagement.currentCyclePeriodLabel' | translate }}: {{ open.periodStart }} – {{ open.periodEnd }}</p>
+        <app-brand-button variant="danger" class="cycle-management__close-cycle-action" (clicked)="closeCycle()">
+          {{ 'admin.cycleManagement.closeCycleAction' | translate }}
+        </app-brand-button>
+      </div>
+
+      <app-inline-banner *ngIf="closeResult as result" tone="success" [dismissible]="true" class="cycle-management__close-success" (dismissed)="closeResult = null">
+        <p>{{ 'admin.cycleManagement.closeSuccessTitle' | translate }}</p>
+        <p>{{ 'admin.cycleManagement.closeSuccessClosedCycleLabel' | translate }}: <strong>{{ result.cycleId }}</strong> ({{ result.status }})</p>
+        <p>{{ 'admin.cycleManagement.closeSuccessLegVolumeRowsLabel' | translate }}: <strong>{{ result.legVolumeRowsWritten }}</strong></p>
+        <p>{{ 'admin.cycleManagement.closeSuccessNewCycleLabel' | translate }}: <strong>{{ result.newCycleId }}</strong></p>
+      </app-inline-banner>
+      <app-inline-banner *ngIf="closeError === 'conflict'" tone="danger" [dismissible]="true" class="cycle-management__close-conflict-error" (dismissed)="closeError = null">{{ 'admin.cycleManagement.closeConflictError' | translate }}</app-inline-banner>
+      <app-inline-banner *ngIf="closeError === 'generic'" tone="danger" [dismissible]="true" class="cycle-management__close-generic-error" (dismissed)="closeError = null">{{ 'admin.cycleManagement.closeGenericError' | translate }}</app-inline-banner>
 
       <div class="cycle-management__filters">
         <label>
@@ -96,6 +116,9 @@ export class CycleManagementComponent implements OnInit {
   selectedDetail: CycleDetail | null = null;
   detailPanelOpen = false;
   detailError = false;
+  currentOpenCycle: CycleSummary | null = null;
+  closeResult: CycleCloseResponse | null = null;
+  closeError: 'conflict' | 'generic' | null = null;
   private status: CycleStatus | '' = '';
 
   get currentPage(): number {
@@ -134,6 +157,12 @@ export class CycleManagementComponent implements OnInit {
       next: res => {
         this.page = res;
         this.updateTableRows();
+        // Only an UNFILTERED load is informative about whether an OPEN cycle exists -- see
+        // this task's "Design decision" note. A filtered page's absence of an OPEN row must not
+        // clear a previously-known currentOpenCycle.
+        if (!this.status) {
+          this.currentOpenCycle = res.cycles.find(c => c.status === 'OPEN') ?? null;
+        }
       },
       error: () => (this.loadError = true)
     });
@@ -170,5 +199,22 @@ export class CycleManagementComponent implements OnInit {
       .split('_')
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))
       .join('') + 'Label';
+  }
+
+  closeCycle(): void {
+    if (!this.currentOpenCycle) {
+      return;
+    }
+    this.closeError = null;
+    this.cycleManagementService.close(this.currentOpenCycle.id).subscribe({
+      next: result => {
+        this.closeResult = result;
+        this.loadPage(0);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.closeResult = null;
+        this.closeError = err.status === 409 ? 'conflict' : 'generic';
+      }
+    });
   }
 }

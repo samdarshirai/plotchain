@@ -102,4 +102,66 @@ describe('CycleManagementComponent', () => {
 
     expect(fixture.componentInstance.detailPanelOpen).toBe(false);
   });
+
+  it('derives the current OPEN cycle from the unfiltered history page and shows a Close Cycle button', () => {
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.currentOpenCycle?.id).toBe('c2');
+    const button: HTMLButtonElement | null = fixture.nativeElement.querySelector('.cycle-management__close-cycle-action');
+    expect(button).toBeTruthy();
+  });
+
+  it('does not show a Close Cycle button when no OPEN cycle is present', () => {
+    fixture.componentInstance.onStatusChange('CLOSED');
+    httpMock.expectOne(r => r.params.get('status') === 'CLOSED').flush({
+      cycles: [{ id: 'c1', periodStart: '2026-08-01', periodEnd: '2026-08-15', status: 'CLOSED' }],
+      page: 0, size: 20, totalElements: 1
+    });
+    fixture.detectChanges();
+
+    // currentOpenCycle keeps its last-known value from the unfiltered load above (c2) --
+    // filtering to CLOSED must not clear it, per this task's design decision.
+    expect(fixture.componentInstance.currentOpenCycle?.id).toBe('c2');
+  });
+
+  it('closes the current cycle and shows the SettlementResult monitor banner', () => {
+    fixture.detectChanges();
+    fixture.componentInstance.closeCycle();
+
+    const req = httpMock.expectOne('/api/admin/cycles/c2/close');
+    expect(req.request.method).toBe('POST');
+    req.flush({ cycleId: 'c2', status: 'CLOSED', legVolumeRowsWritten: 5, newCycleId: 'c3' });
+
+    httpMock.expectOne('/api/admin/cycles?page=0&size=20').flush({
+      cycles: [
+        { id: 'c2', periodStart: '2026-08-16', periodEnd: '2026-08-31', status: 'CLOSED' },
+        { id: 'c3', periodStart: '2026-09-01', periodEnd: '2026-09-15', status: 'OPEN' }
+      ],
+      page: 0, size: 20, totalElements: 2
+    });
+
+    expect(fixture.componentInstance.closeResult?.newCycleId).toBe('c3');
+    expect(fixture.componentInstance.closeError).toBeNull();
+  });
+
+  it('shows a conflict error on a 409 without crashing', () => {
+    fixture.detectChanges();
+    fixture.componentInstance.closeCycle();
+
+    const req = httpMock.expectOne('/api/admin/cycles/c2/close');
+    req.flush({ error: 'Cycle is not open, cannot close' }, { status: 409, statusText: 'Conflict' });
+
+    expect(fixture.componentInstance.closeError).toBe('conflict');
+    expect(fixture.componentInstance.closeResult).toBeNull();
+  });
+
+  it('shows a generic error on a non-409 close failure', () => {
+    fixture.detectChanges();
+    fixture.componentInstance.closeCycle();
+
+    const req = httpMock.expectOne('/api/admin/cycles/c2/close');
+    req.flush({ error: 'boom' }, { status: 500, statusText: 'Server Error' });
+
+    expect(fixture.componentInstance.closeError).toBe('generic');
+  });
 });
