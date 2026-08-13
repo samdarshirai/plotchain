@@ -217,6 +217,25 @@
         "plotUnavailable": "That plot is no longer available. Choose a different plot.",
         "genericSaveError": "Could not record the sale. Check the details and try again."
       }
+    },
+    "cycleManagement": {
+      "title": "Cycle Management",
+      "subtitle": "Review past settlement cycles and trigger the close for the current one.",
+      "statusFilterLabel": "Status",
+      "statusFilterAllOption": "All statuses",
+      "statusOpenOption": "Open",
+      "statusCalculatingOption": "Calculating",
+      "statusClosedOption": "Closed",
+      "statusPaidOption": "Paid",
+      "columnPeriodStart": "Period Start",
+      "columnPeriodEnd": "Period End",
+      "columnStatus": "Status",
+      "columnActions": "Actions",
+      "loadError": "Something went wrong loading cycle history. Please try again.",
+      "previousPageAction": "Previous",
+      "nextPageAction": "Next",
+      "pageIndicator": "Page {{page}} of {{totalPages}}",
+      "emptyState": "No cycles match this filter."
     }
   },
   "setup": {
