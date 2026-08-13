@@ -103,7 +103,7 @@ class AdminControllerTest {
         finance.setId(UUID.randomUUID());
         finance.setUserId("finance1");
         finance.setName("Jane Finance");
-        finance.setRole(AssociateRole.FINANCE);
+        finance.setRole(AssociateRole.ADMIN);
         finance.setLastActiveAt(Instant.now());
         when(associateRepository.findByRoleNotOrderByUserIdAsc(AssociateRole.ASSOCIATE)).thenReturn(List.of(finance));
 

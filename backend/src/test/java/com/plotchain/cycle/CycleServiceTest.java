@@ -883,10 +883,10 @@ class CycleServiceTest {
         UUID goldId = UUID.randomUUID();
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(rankTiersFixture(bronzeId, silverId, goldId));
 
-        // FINANCE is one of the four staff roles chk_associate_rank_required also exempts from
-        // needing a rank (V4__user_id_login_and_admin_roles.sql) -- not just ADMIN.
+        // ADMIN is exempt from needing a rank (chk_associate_rank_required,
+        // V4__user_id_login_and_admin_roles.sql) same as any non-ASSOCIATE role always was.
         Associate financeStaff = associateFixture(null, null);
-        financeStaff.setRole(AssociateRole.FINANCE);
+        financeStaff.setRole(AssociateRole.ADMIN);
         financeStaff.setKycStatus(KycStatus.VERIFIED);
         financeStaff.setRankId(null);
         financeStaff.setCumulativeMatchedVolume(new BigDecimal("1000"));
@@ -1439,11 +1439,11 @@ class CycleServiceTest {
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
             rewardTierRepository);
 
-        // FINANCE is one of the four staff roles chk_associate_rank_required also exempts from
-        // needing a rank (V4__user_id_login_and_admin_roles.sql) -- not just ADMIN, same fact
-        // unit 6's advanceRanks guard already established.
+        // ADMIN is exempt from needing a rank (chk_associate_rank_required,
+        // V4__user_id_login_and_admin_roles.sql) same as any non-ASSOCIATE role always was,
+        // same fact unit 6's advanceRanks guard already established.
         Associate financeStaff = associateFixture(null, null);
-        financeStaff.setRole(AssociateRole.FINANCE);
+        financeStaff.setRole(AssociateRole.ADMIN);
         financeStaff.setKycStatus(KycStatus.VERIFIED);
         financeStaff.setRankId(null);
         Associate left = associateFixture(financeStaff.getId(), "L");

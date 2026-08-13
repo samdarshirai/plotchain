@@ -66,7 +66,7 @@ class AdminProvisioningServiceTest {
 
         assertThat(created.getUserId()).isEqualTo("finance1");
         assertThat(created.getName()).isEqualTo("Jane Finance");
-        assertThat(created.getRole()).isEqualTo(AssociateRole.FINANCE);
+        assertThat(created.getRole()).isEqualTo(AssociateRole.ADMIN);
         assertThat(created.getRankId()).isNull();
         assertThat(created.getKycStatus()).isEqualTo(KycStatus.VERIFIED);
         assertThat(created.isMustChangePassword()).isTrue();
@@ -160,7 +160,7 @@ class AdminProvisioningServiceTest {
 
     @Test
     void listExcludesAssociateRows() {
-        Associate finance = adminFamilyRow(AssociateRole.FINANCE);
+        Associate finance = adminFamilyRow(AssociateRole.ADMIN);
         finance.setUserId("finance1");
         finance.setName("Jane Finance");
         finance.setLastActiveAt(Instant.now());

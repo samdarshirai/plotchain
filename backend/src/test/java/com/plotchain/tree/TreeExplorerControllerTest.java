@@ -72,7 +72,7 @@ class TreeExplorerControllerTest {
         when(associateRepository.countByParentId(ROOT_ID)).thenReturn(0L);
 
         mockMvc.perform(get("/api/admin/tree/" + ROOT_ID)
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.SUPPORT)))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.userId").value("VP00001"));
     }
@@ -106,7 +106,7 @@ class TreeExplorerControllerTest {
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/admin/tree/" + ROOT_ID).param("depth", "999")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.SUPPORT)))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
         // depth=999 must be silently clamped to the server-side maximum of 5: buildNode expands
@@ -131,7 +131,7 @@ class TreeExplorerControllerTest {
         when(associateRepository.findAllById(List.of(ROOT_ID))).thenReturn(List.of(root));
 
         mockMvc.perform(get("/api/admin/tree/search").param("q", "VP00001")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.SUPPORT)))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ancestorPath[0].userId").value("VP00001"));
     }
