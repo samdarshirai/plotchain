@@ -69,7 +69,7 @@ class KycReviewControllerTest {
             .thenReturn(new PageImpl<>(List.of(seedAssociate()), PageRequest.of(0, 20), 1));
 
         mockMvc.perform(get("/api/admin/kyc")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.FINANCE)))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.entries[0].userId").value("VP00001"));
     }
@@ -80,7 +80,7 @@ class KycReviewControllerTest {
             .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 100), 0));
 
         mockMvc.perform(get("/api/admin/kyc").param("size", "999999")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.FINANCE)))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
         ArgumentCaptor<PageRequest> pageableCaptor = ArgumentCaptor.forClass(PageRequest.class);
@@ -95,7 +95,7 @@ class KycReviewControllerTest {
             .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
         mockMvc.perform(get("/api/admin/kyc").param("page", "-5")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.FINANCE)))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
         ArgumentCaptor<PageRequest> pageableCaptor = ArgumentCaptor.forClass(PageRequest.class);
@@ -105,12 +105,12 @@ class KycReviewControllerTest {
     }
 
     @Test
-    void decideSucceedsForAKycReviewerToken() throws Exception {
+    void decideSucceedsForAnAdminToken() throws Exception {
         when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE))
             .thenReturn(Optional.of(seedAssociate()));
 
         mockMvc.perform(post("/api/admin/kyc/" + ASSOCIATE_ID + "/decision")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.KYC_REVIEWER))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
                 .contentType("application/json")
                 .content(new ObjectMapper().writeValueAsString(new KycDecisionRequest(KycStatus.VERIFIED, null))))
             .andExpect(status().isOk())
@@ -118,11 +118,11 @@ class KycReviewControllerTest {
     }
 
     @Test
-    void decideIsForbiddenForAFinanceToken() throws Exception {
-        // 403 proves @PreAuthorize narrowing: FINANCE passes the blanket admin-family POST
-        // rule at the web layer but is not in KycReviewController's allowed-authority list.
+    void decideIsForbiddenForAnAssociateToken() throws Exception {
+        // 403 proves @PreAuthorize narrowing: ASSOCIATE passes no admin-family rule at all
+        // (blocked twice over -- the blanket POST rule and this method's own @PreAuthorize).
         mockMvc.perform(post("/api/admin/kyc/" + ASSOCIATE_ID + "/decision")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.FINANCE))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
                 .contentType("application/json")
                 .content(new ObjectMapper().writeValueAsString(new KycDecisionRequest(KycStatus.VERIFIED, null))))
             .andExpect(status().isForbidden());
@@ -135,7 +135,7 @@ class KycReviewControllerTest {
         when(associateRepository.countByRoleAndKycStatus(AssociateRole.ASSOCIATE, KycStatus.REJECTED)).thenReturn(2L);
 
         mockMvc.perform(get("/api/admin/kyc/counts")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.FINANCE)))
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.pending").value(3))
             .andExpect(jsonPath("$.verified").value(10))

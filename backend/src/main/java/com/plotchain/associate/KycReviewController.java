@@ -34,7 +34,7 @@ public class KycReviewController {
     }
 
     @PostMapping("/{associateId}/decision")
-    @PreAuthorize("hasAnyAuthority('ADMIN','SUPER_ADMIN','KYC_REVIEWER')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public KycQueueEntryResponse decide(@PathVariable UUID associateId, @Valid @RequestBody KycDecisionRequest request,
                                          @AuthenticationPrincipal UUID actorId) {
         return kycReviewService.decide(associateId, request, actorId);
