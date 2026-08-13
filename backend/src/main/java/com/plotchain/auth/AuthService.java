@@ -3,6 +3,7 @@ package com.plotchain.auth;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateRole;
 import com.plotchain.associate.AssociateStatus;
 import com.plotchain.company.SetupStateService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -48,7 +49,7 @@ public class AuthService {
 
         // Setup mode: associate-role logins are rejected until the founding admin goes live.
         // Admin-family roles are exempt so the wizard itself stays reachable.
-        if (!associate.getRole().isAdminFamily() && !setupStateService.isLaunched()) {
+        if (associate.getRole() == AssociateRole.ASSOCIATE && !setupStateService.isLaunched()) {
             throw new PlatformNotLiveException();
         }
 
