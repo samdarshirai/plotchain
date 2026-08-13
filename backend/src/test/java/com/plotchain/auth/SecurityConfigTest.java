@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -593,6 +594,22 @@ class SecurityConfigTest {
         mockMvc.perform(multipart("/api/associates/me/kyc/documents/PAN")
                 .file(file)
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().is(not(403)));
+    }
+
+    // Role-capability unit 11: PUT /api/associates/me/profile needs its own matcher ABOVE the
+    // blanket ADMIN write rules, same ordering trap as passwordChangeIsReachableByAnAssociateToken
+    // and kycDocumentUploadIsReachableByAnAssociateToken above. associateRepository is a
+    // @MockBean here returning a fake associate never actually persisted to the real H2
+    // database, and existsByEmail is unstubbed (defaults to false via Mockito), so the request
+    // reaches AssociateProfileService.updateProfile and succeeds -- 200, not 403. Only a 403 here
+    // would mean the matcher ordering regressed.
+    @Test
+    void profileUpdateIsReachableByAnAssociateToken() throws Exception {
+        mockMvc.perform(put("/api/associates/me/profile")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
+                .contentType("application/json")
+                .content("{\"name\":\"Jane Doe\",\"phone\":\"9990001111\",\"email\":\"jane@example.com\"}"))
             .andExpect(status().is(not(403)));
     }
 

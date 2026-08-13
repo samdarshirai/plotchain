@@ -56,6 +56,17 @@ public class SecurityConfig {
                 // way GET /api/associates/me/dashboard and GET /api/associates/me/sales
                 // already do with no matcher of their own.
                 .requestMatchers(HttpMethod.POST, "/api/associates/me/kyc/documents/*").authenticated()
+                // Self-service profile edit: an associate-reachable PUT (role-capability unit
+                // 11, docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
+                // "Own profile" row -- name/contact edit is the one write action alongside
+                // password change and KYC submission above). Must precede the blanket ADMIN
+                // write rules below (first-match-wins) or an associate could never edit their
+                // own profile. GET /api/associates/me/profile needs no matcher of its own -- a
+                // bare GET never collides with the POST/PUT/PATCH/DELETE blanket rules, so it
+                // falls through to anyRequest().authenticated() below, same as GET
+                // /api/associates/me/dashboard, GET /api/associates/me/sales, and GET
+                // /api/associates/me/kyc already do.
+                .requestMatchers(HttpMethod.PUT, "/api/associates/me/profile").authenticated()
                 // Admin Team creation is narrower than the blanket POST rule below: only
                 // ADMIN/SUPER_ADMIN may provision new admin-family accounts (FINANCE,
                 // KYC_REVIEWER, and SUPPORT can read the roster/permissions via the GET block
