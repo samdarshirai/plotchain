@@ -171,6 +171,62 @@
   color: var(--text-muted);
 }
 
+.rewards .rank-progress {
+  padding: 1.5rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.rewards .rank-progress .current-rank {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rewards .rank-progress .progress-bar {
+  position: relative;
+  height: 8px;
+  margin: 0.75rem 0;
+  background: var(--surface-raised);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.rewards .rank-progress .progress-fill {
+  height: 100%;
+  background: var(--brand-gradient);
+  border-radius: 999px;
+}
+
+.rewards .rank-progress .next-rank {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.rewards__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.rewards__tiers-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.rewards__subtitle {
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.rewards__load-error {
+  color: var(--color-danger, #c0392b);
+}
+
 .dashboard .leg-volume-gauge {
   display: flex;
   flex-wrap: wrap;
