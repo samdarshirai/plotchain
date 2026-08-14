@@ -20,14 +20,4 @@ public class CompanyExceptionHandler {
     public ResponseEntity<Map<String, String>> handleInvalidLogoUpload(InvalidLogoUploadException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
     }
-
-    @ExceptionHandler(RootAssociateAlreadyExistsException.class)
-    public ResponseEntity<Map<String, String>> handleRootAssociateAlreadyExists(RootAssociateAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
-    }
-
-    @ExceptionHandler(RightRootDetailsRequiredException.class)
-    public ResponseEntity<Map<String, String>> handleRightRootDetailsRequired(RightRootDetailsRequiredException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
-    }
 }
