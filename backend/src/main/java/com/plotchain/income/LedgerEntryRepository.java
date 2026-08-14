@@ -1,5 +1,7 @@
 package com.plotchain.income;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -61,4 +63,29 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
     // a *different* associate/cycle, this query would need revisiting to disambiguate by
     // incomeType too, but that's out of scope for this unit.
     Optional<LedgerEntry> findBySourceRef(UUID sourceRef);
+
+    // Income/Ledger unit 1 (docs/superpowers/specs/role-capability/2026-08-03-income-ledger-domain-design.md,
+    // Decision 4, Flow "Admin ledger register"): shared by both the admin register endpoint and
+    // (a follow-up unit's) associate-self endpoint -- the associate endpoint always passes its
+    // own caller id as associateId (never null), while the admin endpoint passes through
+    // whatever the caller supplied (possibly null). Same null-safe "(:param IS NULL OR ...)"
+    // JPQL pattern AssociateRepository#searchDirectory already uses. UUID- and enum-typed params
+    // (associateId, incomeType, cycleId, status) don't need the explicit CAST that
+    // searchDirectory's :search string param needs -- Hibernate resolves UUID/enum parameter
+    // types from the Java method signature alone, independent of the surrounding SQL, per that
+    // method's own comment.
+    @Query("""
+        SELECT l FROM LedgerEntry l
+        WHERE (:associateId IS NULL OR l.associateId = :associateId)
+        AND (:incomeType IS NULL OR l.incomeType = :incomeType)
+        AND (:cycleId IS NULL OR l.cycleId = :cycleId)
+        AND (:status IS NULL OR l.status = :status)
+        ORDER BY l.createdAt DESC
+        """)
+    Page<LedgerEntry> search(
+        @Param("associateId") UUID associateId,
+        @Param("incomeType") IncomeType incomeType,
+        @Param("cycleId") UUID cycleId,
+        @Param("status") LedgerEntryStatus status,
+        Pageable pageable);
 }
