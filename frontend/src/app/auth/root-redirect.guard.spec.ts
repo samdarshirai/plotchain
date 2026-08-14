@@ -60,14 +60,4 @@ describe('rootRedirectGuard', () => {
     });
   });
 
-  it('redirects a non-ADMIN admin-family role to /settings once launched', done => {
-    authService.getRole.and.returnValue('FINANCE');
-    setupService.getState.and.returnValue(of(launchedState));
-
-    const result$ = TestBed.runInInjectionContext(() => rootRedirectGuard({} as any, {} as any)) as any;
-    result$.subscribe((result: UrlTree) => {
-      expect(result.toString()).toBe(router.parseUrl('/settings').toString());
-      done();
-    });
-  });
 });

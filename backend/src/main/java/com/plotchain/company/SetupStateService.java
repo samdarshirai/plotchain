@@ -12,7 +12,7 @@ import java.util.List;
 @Service
 public class SetupStateService {
 
-    // Order and required-ness match the master roadmap's 8-step wizard and its Step 8 "canGoLive"
+    // Order and required-ness match the master roadmap's 7-step wizard and its Step 7 "canGoLive"
     // gate (Company Profile + Compensation + Payments & KYC).
     private static final List<StepDefinition> STEP_DEFINITIONS = List.of(
         new StepDefinition(1, "companyProfile", true),
@@ -20,9 +20,8 @@ public class SetupStateService {
         new StepDefinition(3, "compensation", true),
         new StepDefinition(4, "projects", false),
         new StepDefinition(5, "paymentsKyc", true),
-        new StepDefinition(6, "adminTeam", false),
-        new StepDefinition(7, "rootAssociates", false),
-        new StepDefinition(8, "reviewLaunch", false)
+        new StepDefinition(6, "rootAssociates", false),
+        new StepDefinition(7, "reviewLaunch", false)
     );
 
     private final SetupStateRepository setupStateRepository;
@@ -32,7 +31,6 @@ public class SetupStateService {
     private final PaymentConfigService paymentConfigService;
     private final PayoutBankAccountService payoutBankAccountService;
     private final ProjectService projectService;
-    private final AdminProvisioningService adminProvisioningService;
     private final RootAssociateProvisioningService rootAssociateProvisioningService;
 
     public SetupStateService(SetupStateRepository setupStateRepository,
@@ -42,7 +40,6 @@ public class SetupStateService {
                               PaymentConfigService paymentConfigService,
                               PayoutBankAccountService payoutBankAccountService,
                               ProjectService projectService,
-                              AdminProvisioningService adminProvisioningService,
                               RootAssociateProvisioningService rootAssociateProvisioningService) {
         this.setupStateRepository = setupStateRepository;
         this.companyProfileService = companyProfileService;
@@ -51,7 +48,6 @@ public class SetupStateService {
         this.paymentConfigService = paymentConfigService;
         this.payoutBankAccountService = payoutBankAccountService;
         this.projectService = projectService;
-        this.adminProvisioningService = adminProvisioningService;
         this.rootAssociateProvisioningService = rootAssociateProvisioningService;
     }
 
@@ -98,7 +94,6 @@ public class SetupStateService {
             case "compensation" -> compensationPlanService.isComplete();
             case "paymentsKyc" -> paymentConfigService.isComplete() && payoutBankAccountService.isComplete();
             case "projects" -> projectService.isComplete();
-            case "adminTeam" -> adminProvisioningService.isComplete();
             case "rootAssociates" -> rootAssociateProvisioningService.isComplete();
             case "reviewLaunch" -> isLaunched();
             default -> false;

@@ -67,13 +67,6 @@ public class SecurityConfig {
                 // /api/associates/me/dashboard, GET /api/associates/me/sales, and GET
                 // /api/associates/me/kyc already do.
                 .requestMatchers(HttpMethod.PUT, "/api/associates/me/profile").authenticated()
-                // Admin Team creation is narrower than the blanket POST rule below: only
-                // ADMIN/SUPER_ADMIN may provision new admin-family accounts (FINANCE,
-                // KYC_REVIEWER, and SUPPORT can read the roster/permissions via the GET block
-                // further down, but must not be able to create new admin accounts themselves).
-                // Must precede the blanket rule (first-match-wins) or it would never be reached.
-                .requestMatchers(HttpMethod.POST, "/api/company/admins")
-                    .hasAnyAuthority("ADMIN", "SUPER_ADMIN")
                 // Deny-by-default for writes: product policy is "ADMIN can write; associates
                 // are read-only except their own profile". Without this, any future
                 // POST/PUT/PATCH/DELETE endpoint would be reachable by every authenticated
@@ -185,27 +178,15 @@ public class SecurityConfig {
                         "/api/company/projects/*/thumbnail", "/api/company/projects/plots/csv-template")
                     .hasAuthority("ADMIN")
                 // Same reasoning as setup-state/profile/branding/compensation/payments/projects
-                // above: Phase 10's Admin Team GETs (roster, userId availability check, and the
-                // read-only role-permissions preview) stay admin-family-only. The narrower
-                // ADMIN/SUPER_ADMIN-only POST that creates admin accounts is declared separately
-                // above, next to the other blanket write rules -- deliberately no separate
-                // matcher needed here for it.
-                .requestMatchers(HttpMethod.GET,
-                        "/api/company/admins", "/api/company/admins/user-id-available",
-                        "/api/company/admins/role-permissions")
-                    .hasAuthority("ADMIN")
-                // Same reasoning as setup-state/profile/branding/compensation/payments/projects/
-                // admin-team above: Phase 11's Root Associates GET stays admin-family-only. The
-                // POST that creates a root is a write and is already covered by the blanket POST
-                // rule above -- deliberately no separate matcher for it (unlike Admin Team's
-                // narrower POST, there is no stated reason to restrict root-associate creation
-                // beyond the standard admin-family write rule).
+                // above: Phase 11's Root Associates GET stays admin-family-only. The POST that
+                // creates a root is a write and is already covered by the blanket POST rule
+                // above -- deliberately no separate matcher for it.
                 .requestMatchers(HttpMethod.GET, "/api/company/root-associates")
                     .hasAuthority("ADMIN")
                 // Same reasoning as setup-state/profile/branding/compensation/payments/projects/
-                // admin-team/root-associates above: the audit-log GET stays admin-family-only.
-                // There is no mutating endpoint for this resource at all (append-only, written
-                // internally by SettingsAuditService) -- deliberately no write matcher.
+                // root-associates above: the audit-log GET stays admin-family-only. There is no
+                // mutating endpoint for this resource at all (append-only, written internally by
+                // SettingsAuditService) -- deliberately no write matcher.
                 .requestMatchers(HttpMethod.GET, "/api/company/audit-log")
                     .hasAuthority("ADMIN")
                 // Backs the Create Associate form's parent-picker dropdown: same admin-family
@@ -219,8 +200,7 @@ public class SecurityConfig {
                 // covered by the blanket POST rule above for the admin-family baseline, then
                 // narrowed further per-role by @PreAuthorize on the controller methods
                 // themselves (AdminAssociateController, KycReviewController) -- the first use
-                // of real per-role narrowing in this codebase, per AdminRolePermissions' stated
-                // follow-up.
+                // of real per-role narrowing in this codebase.
                 .requestMatchers(HttpMethod.GET, "/api/admin/associates", "/api/admin/associates/*")
                     .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/admin/tree/*")

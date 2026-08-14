@@ -26,9 +26,8 @@ describe('ReviewLaunchStepComponent', () => {
         step({ number: 3, key: 'compensation', required: true, complete: canGoLive }),
         step({ number: 4, key: 'projects', required: false, complete: false }),
         step({ number: 5, key: 'paymentsKyc', required: true, complete: canGoLive }),
-        step({ number: 6, key: 'adminTeam', required: false, complete: false }),
-        step({ number: 7, key: 'rootAssociates', required: false, complete: false }),
-        step({ number: 8, key: 'reviewLaunch', required: false, complete: false })
+        step({ number: 6, key: 'rootAssociates', required: false, complete: false }),
+        step({ number: 7, key: 'reviewLaunch', required: false, complete: false })
       ],
       canGoLive,
       launchedAt: null
@@ -56,7 +55,7 @@ describe('ReviewLaunchStepComponent', () => {
     await createAndFlush(stateWith(false));
 
     const rows = fixture.debugElement.queryAll(By.directive(ChecklistRowComponent));
-    expect(rows.length).toBe(7);
+    expect(rows.length).toBe(6);
     expect(rows.map(r => r.componentInstance.label)).not.toContain('reviewLaunch');
   });
 

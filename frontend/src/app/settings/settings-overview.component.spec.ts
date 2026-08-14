@@ -46,7 +46,7 @@ describe('SettingsOverviewComponent', () => {
     httpMock.verify();
   });
 
-  it('rendersSevenCardsWithTheirTranslatedLabelsAndLinks', () => {
+  it('rendersSixCardsWithTheirTranslatedLabelsAndLinks', () => {
     fixture.detectChanges();
     httpMock.expectOne('/api/company/compensation').flush(samplePlan);
     fixture.detectChanges();
@@ -54,12 +54,12 @@ describe('SettingsOverviewComponent', () => {
     const sectionKeys = Object.keys(SECTION_PATHS);
     const cards = fixture.nativeElement.querySelectorAll('.settings-overview__card');
     expect(cards.length).toBe(sectionKeys.length);
-    expect(cards.length).toBe(7);
+    expect(cards.length).toBe(6);
 
     const titles: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.settings-overview__card-title');
     const links: NodeListOf<HTMLAnchorElement> = fixture.nativeElement.querySelectorAll('.settings-overview__card-action');
-    expect(titles.length).toBe(7);
-    expect(links.length).toBe(7);
+    expect(titles.length).toBe(6);
+    expect(links.length).toBe(6);
 
     sectionKeys.forEach((key, index) => {
       // No translations are loaded in this suite, so ngx-translate falls back to the key path --

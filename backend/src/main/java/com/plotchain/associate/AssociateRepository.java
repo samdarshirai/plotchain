@@ -64,13 +64,9 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     // suffixes make string-descending order equal numeric order, so this needs no native SQL.
     Optional<Associate> findTopByUserIdStartingWithOrderByUserIdDesc(String prefix);
 
-    List<Associate> findByRoleNotOrderByUserIdAsc(AssociateRole role);
-
     // Backs the parent-picker dropdown on the Create Associate form: admins pick a parent by
     // its human-readable userId (e.g. VP00001), not the UUID primary key they never see.
     List<Associate> findAllByOrderByUserIdAsc();
-
-    long countByRoleNot(AssociateRole role);
 
     long countByRoleAndKycStatus(AssociateRole role, KycStatus kycStatus);
 
@@ -87,7 +83,7 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     long countByRoleAndJoinedBetween(@Param("role") AssociateRole role, @Param("start") Instant start, @Param("end") Instant end);
 
     // role = ASSOCIATE narrows out admin-family rows, which also have parentId = null by
-    // construction (AdminProvisioningService never sets it). sponsorId IS NULL narrows out
+    // construction (no admin-family provisioning path ever sets it). sponsorId IS NULL narrows out
     // ordinary associates placed via the generic provisioning endpoint without a parent. Together
     // these identify root associates -- Associate rows seeded at the top of the binary tree.
     List<Associate> findByRoleAndParentIdIsNullAndSponsorIdIsNullOrderByJoinedAtAsc(AssociateRole role);
