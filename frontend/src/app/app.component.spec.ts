@@ -91,6 +91,7 @@ describe('AppComponent', () => {
     spyOn(translateService, 'get').and.callFake((key: string) => {
       const translations: { [key: string]: string } = {
         'nav.dashboard': 'Dashboard',
+        'nav.myTree': 'My Tree',
         'nav.salesHistory': 'Sales History',
         'nav.provisionAssociate': 'Provision Associate',
         'nav.settings': 'Settings',
@@ -102,7 +103,7 @@ describe('AppComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     const links = Array.from(compiled.querySelectorAll('.app-nav__link')).map(el => el.textContent?.trim());
-    expect(links).toEqual(['Dashboard', 'Sales History']);
+    expect(links).toEqual(['Dashboard', 'My Tree', 'Sales History']);
   });
 
   it('shows Provision Associate and Settings but hides Dashboard for an admin-family role', () => {
