@@ -5,6 +5,7 @@
     <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/sales-history" routerLinkActive="app-nav__link--active">{{ 'nav.salesHistory' | translate }}</a>
     <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/plot-bookings" routerLinkActive="app-nav__link--active">{{ 'nav.plotBookings' | translate }}</a>
     <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/profile" routerLinkActive="app-nav__link--active">{{ 'nav.profileKyc' | translate }}</a>
+    <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/rewards" routerLinkActive="app-nav__link--active">{{ 'nav.rewards' | translate }}</a>
     <ng-container *ngIf="isAdminFamily">
       <a class="app-nav__link" routerLink="/admin/associates/new" routerLinkActive="app-nav__link--active">{{ 'nav.provisionAssociate' | translate }}</a>
       <a class="app-nav__link" routerLink="/settings" routerLinkActive="app-nav__link--active">{{ 'nav.settings' | translate }}</a>
