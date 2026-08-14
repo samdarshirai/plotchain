@@ -32,6 +32,7 @@ import { MyTreeComponent } from './my-tree/my-tree.component';
 import { PlotBookingsComponent } from './plot-bookings/plot-bookings.component';
 import { ProfileKycComponent } from './profile-kyc/profile-kyc.component';
 import { RewardsComponent } from './rewards/rewards.component';
+import { DigitalIdCardComponent } from './digital-id-card/digital-id-card.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -43,6 +44,7 @@ export const routes: Routes = [
   { path: 'plot-bookings', component: PlotBookingsComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'profile', component: ProfileKycComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'rewards', component: RewardsComponent, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'digital-id-card', component: DigitalIdCardComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
   { path: 'admin/associates/new', component: CreateAssociateComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/sales/new', component: RecordSaleComponent, canActivate: [authGuard, adminGuard] },
