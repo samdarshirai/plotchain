@@ -127,6 +127,15 @@ public class SecurityConfig {
                 // forcing it to live in one spot over the other.
                 .requestMatchers(HttpMethod.GET, "/api/admin/sales")
                     .hasAuthority("ADMIN")
+                // Book a plot: ADMIN-only, per role-capability unit 7
+                // (docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
+                // Plot/project inventory row, Admin column: "books plots against any associate's
+                // record"), same target-role-model reasoning and first-match-wins placement as
+                // the Sales matchers directly above -- not load-bearing on its own (the blanket
+                // POST rule below already covers it), added for the same readability/grouping
+                // reason those Sales matchers document.
+                .requestMatchers(HttpMethod.POST, "/api/admin/bookings")
+                    .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/**")
                     .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/**")

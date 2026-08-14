@@ -484,6 +484,39 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
     }
 
+    // Role-capability unit 7 (docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
+    // Plot/project inventory row, Admin column: "books plots against any associate's record"):
+    // POST /api/admin/bookings is ADMIN-only, same target-role-model pattern and first-match-wins
+    // placement as the Sales matchers directly above. A random, non-existent plotId reaches the
+    // real (H2, unmocked) PlotRepository and 404s for the ADMIN token -- proof the request passed
+    // the security layer, not proof of any particular business outcome, same "assert not 403"
+    // reasoning as passwordChangeIsReachableByAnAssociateToken elsewhere in this file. Every
+    // other role is blocked at the filter layer before the controller ever runs.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminBookingsCreateIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        String body = new ObjectMapper().writeValueAsString(
+            new com.plotchain.booking.CreateBookingRequest(UUID.randomUUID(), UUID.randomUUID()));
+
+        mockMvc.perform(post("/api/admin/bookings")
+                .header("Authorization", "Bearer " + tokenFor(role))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+    }
+
+    // Role-capability unit 7: GET /api/associates/me/bookings needs no explicit SecurityConfig
+    // matcher -- a bare GET never collides with the blanket POST/PUT/PATCH/DELETE write rules
+    // above, so it falls through to anyRequest().authenticated() below, the same way GET
+    // /api/associates/me/sales already does with no matcher of its own. This test proves the
+    // route is reachable by an ordinary associate token, not accidentally blocked by 403.
+    @Test
+    void associateMeBookingsIsReachableByAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/associates/me/bookings")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().is(not(403)));
+    }
+
     @Test
     void passwordChangeIsReachableByAnAssociateToken() throws Exception {
         // A POST under /api/** that an ASSOCIATE must be able to reach. It needs its own
