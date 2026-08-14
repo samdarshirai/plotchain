@@ -84,6 +84,20 @@ describe('ProfileKycComponent', () => {
     httpMock.expectNone('/api/associates/me/profile');
   });
 
+  it('renders a save-error banner in the DOM on a non-409 save failure (e.g. a 500)', () => {
+    init();
+    fixture.componentInstance.onSubmit();
+
+    httpMock.expectOne('/api/associates/me/profile')
+      .flush({ error: 'boom' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.saveError).toBeTruthy();
+    const banner: HTMLElement | null = fixture.nativeElement.querySelector('.profile-kyc__save-error');
+    expect(banner).toBeTruthy();
+    expect(banner?.textContent).toContain(fixture.componentInstance.saveError);
+  });
+
   it('surfaces a 409 email-conflict as a field-level error, read from the flat error body', () => {
     init();
     fixture.componentInstance.form.patchValue({ email: 'taken@example.com' });

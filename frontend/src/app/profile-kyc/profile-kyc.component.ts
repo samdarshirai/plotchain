@@ -50,6 +50,7 @@ import { toFieldErrors } from '../core/api/field-errors.model';
 
         <button type="submit" [disabled]="form.invalid">{{ 'profileKyc.saveAction' | translate }}</button>
         <app-inline-banner *ngIf="saveSuccess" tone="success">{{ 'profileKyc.saveSuccess' | translate }}</app-inline-banner>
+        <app-inline-banner *ngIf="saveError" tone="danger" class="profile-kyc__save-error">{{ saveError }}</app-inline-banner>
       </form>
 
       <section class="profile-kyc__bank-section">
