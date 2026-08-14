@@ -389,6 +389,42 @@
       "closeSuccessNewCycleLabel": "New cycle opened",
       "closeConflictError": "This cycle was already closed (possibly by a concurrent request). Refresh to see its current status.",
       "closeGenericError": "Could not close this cycle. Please try again."
+    },
+    "ledgerRegister": {
+      "eyebrow": "Admin · Ledger Register",
+      "title": "Ledger Register",
+      "subtitle": "Every posted ledger entry, across every associate and cycle — a raw, view-only audit trail. No entry here can be edited or removed.",
+      "associateFilterLabel": "Associate",
+      "associateFilterAllOption": "All associates",
+      "incomeTypeFilterLabel": "Income Type",
+      "incomeTypeFilterAllOption": "All income types",
+      "incomeTypeDirectOption": "Direct",
+      "incomeTypeMatchingOption": "Matching",
+      "incomeTypeSponsorMatchingOption": "Sponsor Matching",
+      "incomeTypeRoyaltyOption": "Royalty",
+      "incomeTypeRewardOption": "Reward",
+      "incomeTypePerkOption": "Perk",
+      "cycleFilterLabel": "Cycle",
+      "cycleFilterAllOption": "All cycles",
+      "statusFilterLabel": "Status",
+      "statusFilterAllOption": "All statuses",
+      "statusPendingOption": "Pending",
+      "statusCarriedForwardOption": "Carried Forward",
+      "statusPaidOption": "Paid",
+      "statusReversedOption": "Reversed",
+      "columnAssociate": "Associate",
+      "columnCyclePeriod": "Cycle Period",
+      "columnIncomeType": "Income Type",
+      "columnStatus": "Status",
+      "columnNetAmount": "Net Amount",
+      "columnSourceRef": "Source Ref",
+      "columnCreatedAt": "Created At",
+      "noSourceRef": "—",
+      "loadError": "Something went wrong loading the ledger register. Please try again.",
+      "previousPageAction": "Previous",
+      "nextPageAction": "Next",
+      "pageIndicator": "Page {{page}} of {{totalPages}}",
+      "emptyState": "No ledger entries match these filters."
     }
   },
   "setup": {
@@ -676,7 +712,8 @@
       "auditLog": "Audit Log",
       "adminStats": "Admin Stats",
       "salesRegister": "Sales Register",
-      "cycleManagement": "Cycle Management"
+      "cycleManagement": "Cycle Management",
+      "ledgerRegister": "Ledger Register"
     },
     "cards": {
       "companyProfile": {
