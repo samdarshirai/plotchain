@@ -1412,6 +1412,352 @@ body.admin-associate-active {
   }
 }
 
+// ============================================================
+// Income Statement (associate-facing) -- structurally mirrors .ledger-register (eyebrow/title/
+// subtitle, a tab-bar, a surface-raised filter strip, a zero-padding statement card, mono ledger
+// typography, shared pagination-footer idiom) per
+// docs/design/associate_operational_screens/income_statement/DESIGN.md. What's new here is the
+// "payslip ladder": columns 4-7 (Gross, TDS Deduction, Admin Deduction, Net Amount) read
+// left-to-right as a subtraction, each carrying its own color/weight step -- unlike
+// .ledger-register's single uncolored Net Amount column, since this screen's whole reason to
+// exist is showing that arithmetic to the associate. IncomeStatementComponent's updateTableRows()
+// formats the money strings themselves (currency + leading minus sign on the two deduction
+// columns); the CSS below only supplies color/weight/chip presentation, not the sign.
+// ============================================================
+
+.income-statement {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  font-family: 'Inter', var(--font-sans);
+}
+
+.income-statement__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.income-statement__title {
+  margin: 0;
+  font-family: 'Geist', var(--font-sans);
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.income-statement__subtitle {
+  margin: 0;
+  max-width: 46rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+// Tab bar wrapper -- horizontal scroll, hidden scrollbar, so the seven tabs never wrap or
+// overflow the viewport (TabBarComponent itself is unchanged).
+.income-statement__tabs {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-bar {
+    width: max-content;
+  }
+}
+
+.income-statement__filters {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--surface-raised);
+  border-radius: 16px;
+}
+
+.income-statement__filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 220px;
+  flex: 1 1 220px;
+
+  label {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  select {
+    background: var(--surface-card);
+  }
+}
+
+.income-statement__load-error {
+  margin: 0;
+}
+
+.income-statement .card {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+  padding: 0;
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+.income-statement .editable-table {
+  margin: 0;
+  min-width: 920px;
+}
+
+.income-statement .editable-table thead th {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--surface-card);
+  white-space: nowrap;
+}
+
+.income-statement .editable-table tbody td {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.income-statement .editable-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+// Income Type column (1st) -- raw enum text, mono uppercase (same domain convention as Ledger Register)
+.income-statement .editable-table td:nth-child(1) {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+// Cycle Period column (2nd) -- tabular-nums, muted
+.income-statement .editable-table td:nth-child(2) {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+// Status column (3rd) -- raw enum text, mono uppercase, uniform weight (no per-value color,
+// same reasoning Ledger Register documents for REVERSED)
+.income-statement .editable-table td:nth-child(3) {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+// ---- The "payslip ladder" (signature element): columns 4-7 read left-to-right as a subtraction ----
+
+// Gross Amount column (4th) -- muted, the plain starting figure
+.income-statement .editable-table td:nth-child(4) {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+// TDS Deduction column (5th) -- danger-tinted, smaller (statutory deduction, always applies)
+.income-statement .editable-table td:nth-child(5) {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--status-danger);
+  white-space: nowrap;
+}
+
+// Admin Deduction column (6th) -- warning-tinted, smaller (platform-side cost, distinct from TDS)
+.income-statement .editable-table td:nth-child(6) {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: color-mix(in srgb, var(--status-warning) 82%, var(--text-primary));
+  white-space: nowrap;
+}
+
+// Net Amount column (7th) -- bold, chip background: the number the associate actually takes home.
+// EditableTableComponent's read-only cell renders the row value as plain text (no inner markup
+// hook), so the chip is applied to the td itself rather than to a nested span.
+.income-statement .editable-table td:nth-child(7) {
+  text-align: right;
+  white-space: nowrap;
+
+  span {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    background: var(--brand-primary-soft);
+    padding: 0.25rem 0.625rem;
+    border-radius: 999px;
+  }
+}
+
+// ---- end payslip ladder ----
+
+// Source Ref column (8th) -- muted, mono, dash for null
+.income-statement .editable-table td:nth-child(8) {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+// Created At column (9th) -- tabular-nums, muted
+.income-statement .editable-table td:nth-child(9) {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.income-statement .editable-table__empty {
+  padding: 3rem 1.5rem;
+}
+
+.income-statement__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 0 0.25rem;
+}
+
+.income-statement__page-indicator {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.income-statement__pagination .brand-button--secondary {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 768px) {
+  .income-statement__filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .income-statement__filter-field {
+    min-width: 0;
+  }
+
+  .income-statement .editable-table {
+    table-layout: fixed;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .income-statement .editable-table thead {
+    display: none;
+  }
+
+  .income-statement .editable-table tbody tr {
+    display: block;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .income-statement .editable-table tbody td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.375rem 0;
+    border-bottom: none;
+    text-align: right;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+
+    > * {
+      min-width: 0;
+    }
+
+    &::before {
+      content: attr(data-label);
+      flex: 0 0 auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-align: left;
+    }
+  }
+
+  .income-statement .editable-table tbody td:first-child {
+    font-family: 'Geist', var(--font-sans);
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+    white-space: normal;
+    color: var(--text-primary);
+  }
+
+  .income-statement .editable-table td:nth-child(2),
+  .income-statement .editable-table td:nth-child(3),
+  .income-statement .editable-table td:nth-child(4),
+  .income-statement .editable-table td:nth-child(5),
+  .income-statement .editable-table td:nth-child(6),
+  .income-statement .editable-table td:nth-child(7),
+  .income-statement .editable-table td:nth-child(8),
+  .income-statement .editable-table td:nth-child(9) {
+    text-align: right;
+    white-space: normal;
+  }
+
+  .income-statement__pagination .brand-button--secondary,
+  .income-statement__tabs .tab-bar__tab {
+    min-height: 44px;
+  }
+}
+
 // Tree Explorer -- visualizes the associate binary tree as a free-form, pannable/zoomable
 // org-chart canvas (dot-grid background, orthogonal SVG connectors, absolutely-positioned
 // cards), matching the tree-explorer.html design mockup while reusing this app's own tokens
