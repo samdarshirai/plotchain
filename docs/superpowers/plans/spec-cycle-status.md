@@ -13,7 +13,7 @@ Index over `docs/superpowers/specs/role-capability/*.md`. This is the file a new
 | `2026-08-03-role-capability-data-visibility-design.md` | **done** | `2026-08-03-role-capability-units.md` | 16 / 16 |
 | `2026-08-03-cycle-management-domain-design.md` | **done** | `2026-08-03-cycle-management-units.md` | 11 / 11 |
 | `2026-08-03-sales-domain-design.md` | **done** | `2026-08-03-sales-units.md` | 9 / 9 |
-| `2026-08-03-income-ledger-domain-design.md` | **sliced** | `2026-08-03-income-ledger-units.md` | 0 / 4 |
+| `2026-08-03-income-ledger-domain-design.md` | **in progress** | `2026-08-03-income-ledger-units.md` | 1 / 4 |
 | `2026-08-04-wallet-withdrawal-domain-design.md` | not started | — | — |
 | `2026-08-03-epin-domain-design.md` | not started | — | — |
 | `2026-08-03-support-tickets-domain-design.md` | not started | — | — |
