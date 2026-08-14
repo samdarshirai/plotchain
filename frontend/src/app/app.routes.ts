@@ -13,7 +13,6 @@ import { CompanyProfileStepComponent } from './setup/steps/company-profile/compa
 import { BrandingStepComponent } from './setup/steps/branding/branding-step.component';
 import { CompensationStepComponent } from './setup/steps/compensation/compensation-step.component';
 import { PaymentsKycStepComponent } from './setup/steps/payments-kyc/payments-kyc-step.component';
-import { RootAssociatesStepComponent } from './setup/steps/root-associates/root-associates-step.component';
 import { ProjectsStepComponent } from './setup/steps/projects/projects-step.component';
 import { ReviewLaunchStepComponent } from './setup/steps/review-launch/review-launch-step.component';
 import { SettingsShellComponent } from './settings/settings-shell.component';
@@ -49,7 +48,6 @@ export const routes: Routes = [
       { path: 'compensation', component: CompensationStepComponent, data: { stepKey: 'compensation' } },
       { path: 'projects', component: ProjectsStepComponent, data: { stepKey: 'projects' } },
       { path: 'payments-kyc', component: PaymentsKycStepComponent, data: { stepKey: 'paymentsKyc' } },
-      { path: 'root-associates', component: RootAssociatesStepComponent, data: { stepKey: 'rootAssociates' } },
       { path: 'review-launch', component: ReviewLaunchStepComponent, data: { stepKey: 'reviewLaunch' } },
       { path: '', redirectTo: 'company-profile', pathMatch: 'full' }
     ]
@@ -65,7 +63,6 @@ export const routes: Routes = [
       { path: 'compensation', component: CompensationStepComponent, data: { sectionKey: 'compensation', mode: 'settings' } },
       { path: 'projects', component: ProjectsStepComponent, data: { sectionKey: 'projects', mode: 'settings' } },
       { path: 'payments-kyc', component: PaymentsKycStepComponent, data: { sectionKey: 'paymentsKyc', mode: 'settings' } },
-      { path: 'root-associates', component: RootAssociatesStepComponent, data: { sectionKey: 'rootAssociates', mode: 'settings' } },
       { path: 'associate-directory', component: AssociateDirectoryComponent, data: { sectionKey: 'associateDirectory' } },
       { path: 'tree-explorer', component: TreeExplorerComponent, data: { sectionKey: 'treeExplorer' } },
       { path: 'kyc-queue', component: KycQueueComponent, data: { sectionKey: 'kycQueue' } },

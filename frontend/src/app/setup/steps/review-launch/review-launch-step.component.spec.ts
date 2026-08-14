@@ -26,8 +26,7 @@ describe('ReviewLaunchStepComponent', () => {
         step({ number: 3, key: 'compensation', required: true, complete: canGoLive }),
         step({ number: 4, key: 'projects', required: false, complete: false }),
         step({ number: 5, key: 'paymentsKyc', required: true, complete: canGoLive }),
-        step({ number: 6, key: 'rootAssociates', required: false, complete: false }),
-        step({ number: 7, key: 'reviewLaunch', required: false, complete: false })
+        step({ number: 6, key: 'reviewLaunch', required: false, complete: false })
       ],
       canGoLive,
       launchedAt: null
@@ -55,7 +54,7 @@ describe('ReviewLaunchStepComponent', () => {
     await createAndFlush(stateWith(false));
 
     const rows = fixture.debugElement.queryAll(By.directive(ChecklistRowComponent));
-    expect(rows.length).toBe(6);
+    expect(rows.length).toBe(5);
     expect(rows.map(r => r.componentInstance.label)).not.toContain('reviewLaunch');
   });
 
@@ -136,7 +135,7 @@ describe('ReviewLaunchStepComponent', () => {
 
   it('resolves previousPath to the step before review-launch', async () => {
     await createAndFlush(stateWith(false));
-    expect(fixture.componentInstance.previousPath).toBe('root-associates');
+    expect(fixture.componentInstance.previousPath).toBe('payments-kyc');
   });
 
   it('registers its inspector panel template with SetupInspectorService after view init', async () => {

@@ -21,18 +21,17 @@ export interface AuditLogPage {
   totalElements: number;
 }
 
-// The filter dropdown's option list: SECTION_PATHS's camelCase keys (the same 6 sections used
+// The filter dropdown's option list: SECTION_PATHS's camelCase keys (the same 5 sections used
 // elsewhere in Settings) plus an "all" option meaning "no section filter".
 export const SECTION_FILTER_OPTIONS: string[] = ['all', ...Object.keys(SECTION_PATHS)];
 
 // One-time lookup from the camelCase section keys used across the frontend (SECTION_PATHS) to
 // the SCREAMING_SNAKE_CASE values the backend's `section` query param expects. Covers exactly
-// the 6 real sections -- there's no backend value for "auditLog"/"all", those never get sent.
+// the 5 real sections -- there's no backend value for "auditLog"/"all", those never get sent.
 export const AUDIT_LOG_SECTION_BACKEND_VALUES: Record<string, string> = {
   companyProfile: 'COMPANY_PROFILE',
   branding: 'BRANDING',
   compensation: 'COMPENSATION',
   projects: 'PROJECTS',
-  paymentsKyc: 'PAYMENTS_KYC',
-  rootAssociates: 'ROOT_ASSOCIATES'
+  paymentsKyc: 'PAYMENTS_KYC'
 };

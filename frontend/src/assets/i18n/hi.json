@@ -267,7 +267,6 @@
       "compensation": "मुआवज़ा योजना",
       "projects": "प्रोजेक्ट्स और प्लॉट्स",
       "paymentsKyc": "भुगतान और केवाईसी",
-      "rootAssociates": "रूट एसोसिएट(स)",
       "reviewLaunch": "समीक्षा और लॉन्च"
     },
     "optionalLabel": "वैकल्पिक",
@@ -433,44 +432,6 @@
         "csvGenericError": "इस फ़ाइल को संसाधित करने में कुछ गलत हो गया। कृपया पुनः प्रयास करें।"
       }
     },
-    "rootAssociates": {
-      "stepEyebrowLabel": "चरण {{number}} / {{count}}",
-      "subtitle": "अपने संगठन के मूल संरचनात्मक नोड्स तय करें। रूट स्तर पर प्लेसमेंट यह निर्धारित करता है कि रेफरल वॉल्यूम आपके नेटवर्क में कैसे प्रवाहित होगा।",
-      "formTitle": "रूट एसोसिएट(स)",
-      "nameLabel": "रूट एसोसिएट का नाम",
-      "phoneLabel": "फ़ोन नंबर",
-      "seedRightRootLabel": "एक राइट रूट भी जोड़ें",
-      "rightNameLabel": "राइट रूट का नाम",
-      "rightPhoneLabel": "राइट रूट फ़ोन नंबर",
-      "submitButtonLabel": "रूट एसोसिएट बनाएं",
-      "warningBannerBody": "जब तक कम से कम एक रूट एसोसिएट मौजूद न हो, रेफरल प्लेसमेंट काम नहीं करेगा।",
-      "treeTitle": "बाइनरी ट्री पूर्वावलोकन",
-      "rootNodeLabel": "रूट",
-      "leftSlotLabel": "लेफ्ट",
-      "rightSlotLabel": "राइट",
-      "emptySlotLabel": "खाली",
-      "vacantNodeLabel": "खाली नोड",
-      "assignLeftLabel": "लेफ्ट असाइन करें",
-      "assignRightLabel": "राइट असाइन करें",
-      "assignedLeftLabel": "लेफ्ट असाइन किया गया",
-      "assignedRightLabel": "राइट असाइन किया गया",
-      "drawerTitleLabel": "एसोसिएट असाइन करें",
-      "searchPlaceholderLabel": "नाम या आईडी से खोजें...",
-      "recommendedAssociatesLabel": "अनुशंसित एसोसिएट्स",
-      "insightCalloutLabel": "यह एसोसिएट खोज का पूर्वावलोकन है -- वास्तविक मिलान अभी सक्रिय नहीं है। रूट एसोसिएट बनाने के लिए नीचे दिए गए फ़ॉर्म का उपयोग करें।",
-      "bannerAssociateIdLabel": "एसोसिएट आईडी",
-      "bannerUserIdLabel": "उपयोगकर्ता आईडी",
-      "bannerTemporaryPasswordLabel": "अस्थायी पासवर्ड",
-      "bannerNoticeLabel": "यह पासवर्ड केवल एक बार दिखाया जाता है। इसे अभी नोट कर लें — यहाँ से जाने के बाद आपको नया खाता बनाना होगा।",
-      "doneButtonLabel": "पूर्ण",
-      "validation": {
-        "required": "यह फ़ील्ड आवश्यक है।",
-        "rightFieldsRequired": "राइट रूट जोड़ते समय नाम और फ़ोन नंबर आवश्यक हैं।",
-        "alreadyExists": "एक रूट एसोसिएट पहले से मौजूद है।",
-        "noRankTiersConfigured": "अभी तक कोई रैंक कॉन्फ़िगर नहीं की गई है। रूट एसोसिएट बनाने से पहले सहायता से संपर्क करें।",
-        "genericSaveError": "कुछ गलत हो गया। कृपया पुनः प्रयास करें।"
-      }
-    },
     "paymentsKyc": {
       "stepEyebrowLabel": "चरण {{number}} / {{count}}",
       "subtitle": "अपनी लेन-देन प्रणाली स्थापित करें। तय करें कि आप राजस्व कैसे एकत्र करेंगे और अपने एसोसिएट नेटवर्क को भुगतान कैसे वितरित करेंगे।",
@@ -578,7 +539,6 @@
       "compensation": "मुआवज़ा योजना",
       "projects": "प्रोजेक्ट्स और प्लॉट्स",
       "paymentsKyc": "भुगतान और केवाईसी",
-      "rootAssociates": "रूट एसोसिएट(स)",
       "associateDirectory": "Associate Directory",
       "treeExplorer": "Tree Explorer",
       "kycQueue": "KYC Review Queue",
@@ -602,9 +562,6 @@
       },
       "paymentsKyc": {
         "actionLabel": "संपादित करें"
-      },
-      "rootAssociates": {
-        "actionLabel": "प्रबंधित करें"
       }
     },
     "compensationCard": {

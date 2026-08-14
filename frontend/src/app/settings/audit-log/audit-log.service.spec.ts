@@ -66,14 +66,13 @@ describe('AuditLogService', () => {
     req.flush(page);
   });
 
-  it('maps every one of the 6 section keys to its expected backend value', () => {
+  it('maps every one of the 5 section keys to its expected backend value', () => {
     const expected: Record<string, string> = {
       companyProfile: 'COMPANY_PROFILE',
       branding: 'BRANDING',
       compensation: 'COMPENSATION',
       projects: 'PROJECTS',
-      paymentsKyc: 'PAYMENTS_KYC',
-      rootAssociates: 'ROOT_ASSOCIATES'
+      paymentsKyc: 'PAYMENTS_KYC'
     };
 
     Object.keys(expected).forEach(key => {
