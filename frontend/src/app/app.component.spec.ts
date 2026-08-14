@@ -82,7 +82,7 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('.app-header')).toBeFalsy();
   });
 
-  it('shows the Dashboard and Sales History nav links for a plain associate role', () => {
+  it('shows the Dashboard, My Tree, Sales History, and Plot Bookings nav links for a plain associate role', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const authService = TestBed.inject(AuthService);
     const translateService = TestBed.inject(TranslateService);
@@ -93,6 +93,7 @@ describe('AppComponent', () => {
         'nav.dashboard': 'Dashboard',
         'nav.myTree': 'My Tree',
         'nav.salesHistory': 'Sales History',
+        'nav.plotBookings': 'Plot Bookings',
         'nav.provisionAssociate': 'Provision Associate',
         'nav.settings': 'Settings',
         'auth.logout': 'Log Out'
@@ -103,7 +104,7 @@ describe('AppComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     const links = Array.from(compiled.querySelectorAll('.app-nav__link')).map(el => el.textContent?.trim());
-    expect(links).toEqual(['Dashboard', 'My Tree', 'Sales History']);
+    expect(links).toEqual(['Dashboard', 'My Tree', 'Sales History', 'Plot Bookings']);
   });
 
   it('shows Provision Associate and Settings but hides Dashboard for an admin-family role', () => {
