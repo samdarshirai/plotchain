@@ -146,6 +146,16 @@
     "tiersEmptyState": "No reward tiers configured yet.",
     "loadError": "Something went wrong loading your rewards progress. Please try again."
   },
+  "digitalIdCard": {
+    "title": "Digital ID Card",
+    "idNumberLabel": "ID Number",
+    "nameLabel": "Name",
+    "rankLabel": "Rank",
+    "photoPlaceholderLabel": "Profile photo not set",
+    "qrPayloadLabel": "Verification Code",
+    "qrPayloadHint": "Present this code to verify your identity as an Associate.",
+    "loadError": "Something went wrong loading your digital ID card. Please try again."
+  },
   "nav": {
     "dashboard": "डैशबोर्ड",
     "myTree": "मेरा ट्री",
@@ -153,6 +163,7 @@
     "plotBookings": "प्लॉट बुकिंग",
     "profileKyc": "प्रोफ़ाइल",
     "rewards": "रिवॉर्ड्स",
+    "digitalIdCard": "डिजिटल आईडी कार्ड",
     "provisionAssociate": "एसोसिएट पंजीकृत करें",
     "settings": "सेटिंग्स"
   },
