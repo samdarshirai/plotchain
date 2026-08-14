@@ -267,7 +267,6 @@
       "compensation": "Compensation Plan",
       "projects": "Projects & Plots",
       "paymentsKyc": "Payments & KYC",
-      "adminTeam": "Admin Team & Roles",
       "rootAssociates": "Root Associate(s)",
       "reviewLaunch": "Review & Launch"
     },
@@ -434,51 +433,6 @@
         "csvGenericError": "Something went wrong processing this file. Please try again."
       }
     },
-    "adminTeam": {
-      "title": "Admin Team & Roles",
-      "stepEyebrowLabel": "Step {{number}} of {{count}}",
-      "subtitle": "Configure centralized access control. Assign granular roles to your finance and operations teams to maintain security at scale.",
-      "totalAdminsLabel": "Total Admins",
-      "totalAdminsHint": "/ {{count}} slots",
-      "activeNowLabel": "Active Now",
-      "securityLevelLabel": "Security Level",
-      "securityLevelValue": "Tier 1",
-      "directoryLabel": "Admin Directory",
-      "moreActionsLabel": "More actions",
-      "addAdminButtonLabel": "Add New Admin",
-      "userIdColumnLabel": "User ID",
-      "fullNameColumnLabel": "Full Name",
-      "roleColumnLabel": "Role",
-      "lastLoginColumnLabel": "Last Login",
-      "statusColumnLabel": "Status",
-      "activeStatusLabel": "Active",
-      "neverLoggedInLabel": "—",
-      "panelTitle": "Add New Admin",
-      "userIdLabel": "User ID",
-      "userIdAvailableHint": "Available",
-      "userIdTakenHint": "This User ID is already taken",
-      "fullNameLabel": "Full Name",
-      "roleLabel": "Role",
-      "roleSuperAdminLabel": "Super Admin",
-      "roleFinanceLabel": "Finance",
-      "roleKycReviewerLabel": "KYC Reviewer",
-      "roleSupportLabel": "Support",
-      "roleAdminLabel": "Admin",
-      "temporaryPasswordLabel": "Temporary Password",
-      "generatePasswordButtonLabel": "Generate",
-      "permissionsPreviewTitle": "Permissions Preview",
-      "submitButtonLabel": "Create Admin",
-      "bannerUserIdLabel": "User ID",
-      "bannerTemporaryPasswordLabel": "Temporary Password",
-      "bannerNoticeLabel": "This password is shown only once. Copy it now — if you navigate away, you will need to create a new account.",
-      "doneButtonLabel": "Done",
-      "validation": {
-        "required": "This field is required.",
-        "userIdTaken": "This User ID is already registered.",
-        "invalidRole": "Please select a valid role.",
-        "genericSaveError": "Something went wrong. Please try again."
-      }
-    },
     "rootAssociates": {
       "stepEyebrowLabel": "Step {{number}} of {{count}}",
       "subtitle": "Define the core structural nodes of your organization. Placements at the root level determine how referral volume flows through your network.",
@@ -624,7 +578,6 @@
       "compensation": "Compensation Plan",
       "projects": "Projects & Plots",
       "paymentsKyc": "Payments & KYC",
-      "adminTeam": "Admin Team & Roles",
       "rootAssociates": "Root Associate(s)",
       "associateDirectory": "Associate Directory",
       "treeExplorer": "Tree Explorer",
@@ -649,9 +602,6 @@
       },
       "paymentsKyc": {
         "actionLabel": "Edit"
-      },
-      "adminTeam": {
-        "actionLabel": "Manage"
       },
       "rootAssociates": {
         "actionLabel": "Manage"
