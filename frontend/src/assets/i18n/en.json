@@ -88,11 +88,52 @@
     "legendPendingLabel": "Pending",
     "legendRejectedLabel": "Rejected"
   },
+  "profileKyc": {
+    "title": "Profile & Bank/KYC Details",
+    "profileLoadError": "Something went wrong loading your profile. Please try again.",
+    "userIdLabel": "Associate ID",
+    "joinedAtLabel": "Joined",
+    "nameLabel": "Full Name",
+    "phoneLabel": "Phone",
+    "emailLabel": "Email",
+    "saveAction": "Save Changes",
+    "saveSuccess": "Profile updated.",
+    "saveError": "Something went wrong saving your profile. Please try again.",
+    "validation": {
+      "nameRequired": "Name is required.",
+      "emailInvalid": "Enter a valid email address.",
+      "emailTaken": "This email is already registered to another account."
+    },
+    "bankDetails": {
+      "title": "Bank Details",
+      "comingSoon": "Bank account details aren't collectible yet — this is coming in a future update."
+    },
+    "kyc": {
+      "title": "KYC Documents",
+      "loadError": "Something went wrong loading your KYC status. Please try again.",
+      "statusLabel": "KYC status: {{status}}",
+      "status": {
+        "PENDING": "Pending review",
+        "VERIFIED": "Verified",
+        "REJECTED": "Rejected — please resubmit"
+      },
+      "noPreviewNote": "Previously submitted documents can't be previewed here yet — only their submission date is shown.",
+      "documentType": {
+        "AADHAAR": "Aadhaar Card",
+        "PAN": "PAN Card",
+        "BANK_PASSBOOK": "Bank Passbook"
+      },
+      "submittedOn": "Submitted on {{date}}",
+      "notSubmitted": "Not submitted",
+      "uploadError": "Something went wrong uploading this document. Please try again."
+    }
+  },
   "nav": {
     "dashboard": "Dashboard",
     "myTree": "My Tree",
     "salesHistory": "Sales History",
     "plotBookings": "Plot Bookings",
+    "profileKyc": "Profile",
     "provisionAssociate": "Provision Associate",
     "settings": "Settings"
   },

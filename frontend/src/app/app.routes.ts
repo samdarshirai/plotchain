@@ -30,6 +30,7 @@ import { PrivacyPolicyComponent } from './legal/privacy-policy.component';
 import { SalesHistoryComponent } from './sales-history/sales-history.component';
 import { MyTreeComponent } from './my-tree/my-tree.component';
 import { PlotBookingsComponent } from './plot-bookings/plot-bookings.component';
+import { ProfileKycComponent } from './profile-kyc/profile-kyc.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -39,6 +40,7 @@ export const routes: Routes = [
   { path: 'sales-history', component: SalesHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'my-tree', component: MyTreeComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'plot-bookings', component: PlotBookingsComponent, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'profile', component: ProfileKycComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
   { path: 'admin/associates/new', component: CreateAssociateComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/sales/new', component: RecordSaleComponent, canActivate: [authGuard, adminGuard] },
