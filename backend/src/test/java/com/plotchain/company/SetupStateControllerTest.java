@@ -51,7 +51,7 @@ class SetupStateControllerTest {
         mockMvc.perform(get("/api/company/setup-state")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.steps.length()").value(7))
+            .andExpect(jsonPath("$.steps.length()").value(6))
             .andExpect(jsonPath("$.canGoLive").value(false))
             .andExpect(jsonPath("$.launchedAt").doesNotExist());
     }
