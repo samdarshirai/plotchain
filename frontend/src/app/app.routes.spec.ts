@@ -138,6 +138,13 @@ describe('routes', () => {
       expect(cycleManagementChild).toBeTruthy();
       expect(cycleManagementChild!.data).toEqual({ sectionKey: 'cycleManagement' });
     });
+
+    it('has a ledger-register child stamped with sectionKey ledgerRegister', () => {
+      const settingsRoute = routes.find(r => r.path === 'settings');
+      const ledgerRegisterChild = settingsRoute!.children!.find(c => c.path === 'ledger-register');
+      expect(ledgerRegisterChild).toBeTruthy();
+      expect(ledgerRegisterChild!.data).toEqual({ sectionKey: 'ledgerRegister' });
+    });
   });
 
   describe('root route', () => {
