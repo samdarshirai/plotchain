@@ -11,7 +11,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. Th
 | 1 | backend | Admin views a paginated, filterable, cross-associate ledger register — `GET /api/admin/ledger` | none | merged | `2026-08-14-income-ledger-admin-register.md` | `1952762..35ada23` |
 | 2 | backend | Associate views own paginated, filterable ledger history across all cycles — `GET /api/associates/me/ledger` | 1 | merged | `2026-08-14-income-ledger-associate-history.md` | `85da82b..f89b939` |
 | 3 | screen | Admin "Ledger Register" screen — cross-associate raw ledger audit/reconciliation view | 1 | merged | `2026-08-14-income-ledger-unit-3-admin-ledger-register-screen.md` | `12f3073..edaea7e` |
-| 4 | screen | Associate "Income Statement" screen — itemized ledger history, tabs per income type, filter by cycle | 2 | pending | | |
+| 4 | screen | Associate "Income Statement" screen — itemized ledger history, tabs per income type, filter by cycle | 2 | planned | `2026-08-14-income-ledger-unit-4-associate-income-statement-screen.md` | |
 
 ## Unit detail
 
