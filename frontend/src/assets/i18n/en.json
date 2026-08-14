@@ -128,12 +128,31 @@
       "uploadError": "Something went wrong uploading this document. Please try again."
     }
   },
+  "rewards": {
+    "title": "Rewards & Perks",
+    "subtitle": "Your rank progress and reward tier achievement.",
+    "nextRank": "Next rank",
+    "maxRankReached": "You've reached the highest rank.",
+    "cumulativeVolumeLabel": "Cumulative matched volume",
+    "volumeToNextRankLabel": "Volume to next rank",
+    "tiersTitle": "Reward tiers",
+    "columnTierLevel": "Tier",
+    "columnVolumeThreshold": "Volume threshold",
+    "columnCashReward": "Cash reward",
+    "columnPerkDescription": "Perk",
+    "columnAchieved": "Status",
+    "achievedYes": "Achieved",
+    "achievedNo": "Not yet reached",
+    "tiersEmptyState": "No reward tiers configured yet.",
+    "loadError": "Something went wrong loading your rewards progress. Please try again."
+  },
   "nav": {
     "dashboard": "Dashboard",
     "myTree": "My Tree",
     "salesHistory": "Sales History",
     "plotBookings": "Plot Bookings",
     "profileKyc": "Profile",
+    "rewards": "Rewards",
     "provisionAssociate": "Provision Associate",
     "settings": "Settings"
   },
