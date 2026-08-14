@@ -16,6 +16,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -28,6 +31,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -276,5 +280,69 @@ class BookingServiceTest {
         assertThat(response.installmentCount()).isEqualTo(4);
         assertThat(response.bookedAt()).isNotNull();
         assertThat(response.installments()).hasSize(4);
+    }
+
+    @Test
+    void getMyBookingsFiltersByTheGivenAssociateIdOnly() {
+        PlotBooking booking = new PlotBooking();
+        booking.setId(UUID.randomUUID());
+        booking.setPlotId(PLOT_ID);
+        booking.setAssociateId(ASSOCIATE_ID);
+        booking.setTotalAmount(new BigDecimal("600000.00"));
+        booking.setInstallmentCount(1);
+        booking.setBookedAt(Instant.now());
+        when(plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(
+            eq(ASSOCIATE_ID), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
+        when(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId()))
+            .thenReturn(List.of());
+
+        AssociateBookingPageResponse response = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20);
+
+        verify(plotBookingRepository).findByAssociateIdOrderByBookedAtDesc(ASSOCIATE_ID, PageRequest.of(0, 20));
+        assertThat(response.totalElements()).isEqualTo(1);
+        assertThat(response.page()).isEqualTo(0);
+        assertThat(response.size()).isEqualTo(20);
+        assertThat(response.bookings()).hasSize(1);
+        assertThat(response.bookings().get(0).id()).isEqualTo(booking.getId());
+    }
+
+    @Test
+    void getMyBookingsAttachesEachBookingsEmiScheduleFromTheInstallmentRepository() {
+        PlotBooking booking = new PlotBooking();
+        booking.setId(UUID.randomUUID());
+        booking.setPlotId(PLOT_ID);
+        booking.setAssociateId(ASSOCIATE_ID);
+        booking.setTotalAmount(new BigDecimal("600000.00"));
+        booking.setInstallmentCount(2);
+        booking.setBookedAt(Instant.now());
+        EmiInstallment first = new EmiInstallment();
+        first.setInstallmentNumber(1);
+        first.setAmount(new BigDecimal("300000.00"));
+        first.setDueDate(LocalDate.now().plusMonths(1));
+        EmiInstallment second = new EmiInstallment();
+        second.setInstallmentNumber(2);
+        second.setAmount(new BigDecimal("300000.00"));
+        second.setDueDate(LocalDate.now().plusMonths(2));
+        when(plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(eq(ASSOCIATE_ID), any()))
+            .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
+        when(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId()))
+            .thenReturn(List.of(first, second));
+
+        AssociateBookingPageResponse response = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20);
+
+        assertThat(response.bookings().get(0).installments()).hasSize(2);
+        assertThat(response.bookings().get(0).installments().get(0).amount()).isEqualByComparingTo("300000.00");
+    }
+
+    @Test
+    void getMyBookingsReturnsAnEmptyPageWhenTheCallerHasNoBookings() {
+        when(plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(eq(ASSOCIATE_ID), any()))
+            .thenReturn(new PageImpl<>(List.of()));
+
+        AssociateBookingPageResponse response = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20);
+
+        assertThat(response.totalElements()).isEqualTo(0);
+        assertThat(response.bookings()).isEmpty();
     }
 }
