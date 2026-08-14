@@ -668,6 +668,19 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
     }
 
+    // Income/Ledger unit 1: GET /api/admin/ledger is ADMIN-only, the same target-role-model
+    // pattern as GET /api/admin/sales and GET /api/admin/cycles above. An ADMIN token reaches the
+    // real (H2, unmocked) LedgerEntryRepository and gets 200 with an empty page -- there's no
+    // not-found case for a list endpoint. Every other role, including the soon-to-be-deleted
+    // admin-family sub-roles, is blocked at the filter layer before the controller ever runs.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminLedgerListIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/admin/ledger")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+    }
+
     @Test
     void kycDecisionIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(post("/api/admin/kyc/" + UUID.randomUUID() + "/decision")
