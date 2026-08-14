@@ -22,6 +22,14 @@ describe('routes', () => {
     expect(route!.canActivate).toContain(associateOnlyGuard);
   });
 
+  it('guards the my-tree route with authGuard and associateOnlyGuard', () => {
+    const route = routes.find(r => r.path === 'my-tree');
+
+    expect(route).toBeTruthy();
+    expect(route!.canActivate).toContain(authGuard);
+    expect(route!.canActivate).toContain(associateOnlyGuard);
+  });
+
   it('exposes a change-password route behind the auth guard', () => {
     const route = routes.find(r => r.path === 'change-password');
     expect(route).toBeTruthy();
