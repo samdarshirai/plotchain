@@ -391,8 +391,8 @@ public class CycleService {
     // Guard is role == ASSOCIATE, not role != ADMIN: chk_associate_rank_required
     // (V4__user_id_login_and_admin_roles.sql) reads `role <> 'ASSOCIATE' OR rank_id IS NOT NULL`
     // -- rank_id is required ONLY for ASSOCIATE, nullable for ADMIN *and* the four staff roles
-    // (SUPER_ADMIN, FINANCE, KYC_REVIEWER, SUPPORT; AdminProvisioningService provisions all four
-    // with rankId = null, same as AdminBootstrapRunner does for ADMIN). Excluding only ADMIN
+    // (SUPER_ADMIN, FINANCE, KYC_REVIEWER, SUPPORT; provisioned with rankId = null, same as
+    // AdminBootstrapRunner does for ADMIN). Excluding only ADMIN
     // here would leave staff rows structurally eligible for a rank advancement that's exactly as
     // semantically meaningless for them as it is for Admin -- V4's own migration comment says it
     // plainly: "only associates have a rank."

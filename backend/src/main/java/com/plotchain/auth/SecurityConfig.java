@@ -200,8 +200,7 @@ public class SecurityConfig {
                 // covered by the blanket POST rule above for the admin-family baseline, then
                 // narrowed further per-role by @PreAuthorize on the controller methods
                 // themselves (AdminAssociateController, KycReviewController) -- the first use
-                // of real per-role narrowing in this codebase, per AdminRolePermissions' stated
-                // follow-up.
+                // of real per-role narrowing in this codebase.
                 .requestMatchers(HttpMethod.GET, "/api/admin/associates", "/api/admin/associates/*")
                     .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/admin/tree/*")
