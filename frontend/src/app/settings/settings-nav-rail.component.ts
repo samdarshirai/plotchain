@@ -39,6 +39,9 @@ import { SECTION_PATHS } from './models/settings-section.model';
         <li class="settings-nav-rail__item" [class.settings-nav-rail__item--active]="activeSectionKey === 'cycleManagement'">
           <a [routerLink]="['/settings', 'cycle-management']">{{ 'settings.sections.cycleManagement' | translate }}</a>
         </li>
+        <li class="settings-nav-rail__item" [class.settings-nav-rail__item--active]="activeSectionKey === 'ledgerRegister'">
+          <a [routerLink]="['/settings', 'ledger-register']">{{ 'settings.sections.ledgerRegister' | translate }}</a>
+        </li>
       </ol>
     </nav>
   `
