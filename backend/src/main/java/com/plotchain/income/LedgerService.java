@@ -52,6 +52,25 @@ public class LedgerService {
         return new AdminLedgerPageResponse(entries, page, size, result.getTotalElements());
     }
 
+    // Flow "Associate own ledger" (same spec doc, steps 1-6): associateId is always the caller's
+    // own id, supplied by AssociateLedgerController from @AuthenticationPrincipal -- never null,
+    // never taken from a request parameter (Decisions 3, 4). Reuses the same search() call and
+    // cyclesById() batch-load helper as adminList() above; no associate lookup is needed since
+    // every row belongs to the caller.
+    public AssociateLedgerPageResponse myList(
+            UUID associateId, IncomeType incomeType, UUID cycleId, LedgerEntryStatus status, int page, int size) {
+        Page<LedgerEntry> result = ledgerEntryRepository.search(
+            associateId, incomeType, cycleId, status, PageRequest.of(page, size));
+
+        List<LedgerEntry> content = result.getContent();
+        Map<UUID, Cycle> cyclesById = cyclesById(content);
+
+        List<AssociateLedgerEntryResponse> entries = content.stream()
+            .map(e -> toAssociateResponse(e, cyclesById.get(e.getCycleId())))
+            .toList();
+        return new AssociateLedgerPageResponse(entries, page, size, result.getTotalElements());
+    }
+
     // Shared with (a follow-up unit's) GET /api/associates/me/ledger: every ledger row needs its
     // cycle's period dates resolved the same way regardless of who's asking.
     private Map<UUID, Cycle> cyclesById(List<LedgerEntry> entries) {
@@ -75,6 +94,24 @@ public class LedgerService {
             entry.getAssociateId(),
             associate == null ? null : associate.getUserId(),
             associate == null ? null : associate.getName(),
+            entry.getIncomeType(),
+            entry.getCycleId(),
+            cycle == null ? null : cycle.getPeriodStart(),
+            cycle == null ? null : cycle.getPeriodEnd(),
+            entry.getGrossAmount(),
+            entry.getTdsDeduction(),
+            entry.getAdminDeduction(),
+            entry.getNetAmount(),
+            entry.getStatus(),
+            entry.getSourceRef(),
+            entry.getCreatedAt());
+    }
+
+    // Same "leave field null on a lookup miss" behavior as toAdminResponse above (Flow step 6)
+    // -- a read-only view, not a strict-consistency write path.
+    private AssociateLedgerEntryResponse toAssociateResponse(LedgerEntry entry, Cycle cycle) {
+        return new AssociateLedgerEntryResponse(
+            entry.getId(),
             entry.getIncomeType(),
             entry.getCycleId(),
             cycle == null ? null : cycle.getPeriodStart(),

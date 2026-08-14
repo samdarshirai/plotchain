@@ -168,4 +168,90 @@ class LedgerServiceTest {
         assertThat(response.entries()).isEmpty();
         assertThat(response.totalElements()).isZero();
     }
+
+    // Income/Ledger unit 2 (docs/superpowers/specs/role-capability/2026-08-03-income-ledger-domain-design.md,
+    // Decisions 3, 4, 11-13, Flow "Associate own ledger"): myList reuses the same search() call
+    // and cyclesById() batch-load helper as adminList(), but maps to AssociateLedgerEntryResponse
+    // (no associate-identity fields) and never resolves an associate lookup -- every row is
+    // always the caller's own.
+    @Test
+    void myListReturnsAPageMappedToResponsesWithResolvedCycleFieldsAndNoAssociateIdentityFields() {
+        UUID associateId = UUID.randomUUID();
+        UUID entryId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        UUID sourceRef = UUID.randomUUID();
+        LedgerEntry entry = newEntry(entryId, associateId, cycleId, sourceRef);
+        Cycle cycle = newCycle(cycleId, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 15));
+
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(entry), PageRequest.of(0, 20), 1));
+        when(cycleRepository.findAllById(List.of(cycleId))).thenReturn(List.of(cycle));
+
+        AssociateLedgerPageResponse response = service.myList(associateId, null, null, null, 0, 20);
+
+        assertThat(response.totalElements()).isEqualTo(1);
+        assertThat(response.page()).isEqualTo(0);
+        assertThat(response.size()).isEqualTo(20);
+        assertThat(response.entries()).hasSize(1);
+        AssociateLedgerEntryResponse row = response.entries().get(0);
+        assertThat(row.id()).isEqualTo(entryId);
+        assertThat(row.cycleId()).isEqualTo(cycleId);
+        assertThat(row.cyclePeriodStart()).isEqualTo(LocalDate.of(2026, 1, 1));
+        assertThat(row.cyclePeriodEnd()).isEqualTo(LocalDate.of(2026, 1, 15));
+        assertThat(row.incomeType()).isEqualTo(IncomeType.DIRECT);
+        assertThat(row.status()).isEqualTo(LedgerEntryStatus.PAID);
+        assertThat(row.sourceRef()).isEqualTo(sourceRef);
+        assertThat(row.grossAmount()).isEqualByComparingTo("100.00");
+        assertThat(row.netAmount()).isEqualByComparingTo("91.00");
+    }
+
+    // Proves associateId is always passed through non-null (the caller's own id) alongside the
+    // other three filters -- this is the "own entries only" guarantee at the service layer,
+    // matching Decision 3 (contrast with Sales' self+downline query, which this endpoint does
+    // NOT use).
+    @Test
+    void myListAlwaysPassesTheCallersAssociateIdAndTheOtherThreeFiltersThroughToSearchUnchanged() {
+        UUID associateId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        when(ledgerEntryRepository.search(
+            eq(associateId), eq(IncomeType.MATCHING), eq(cycleId), eq(LedgerEntryStatus.PENDING),
+            eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of()));
+
+        service.myList(associateId, IncomeType.MATCHING, cycleId, LedgerEntryStatus.PENDING, 0, 20);
+
+        verify(ledgerEntryRepository).search(
+            eq(associateId), eq(IncomeType.MATCHING), eq(cycleId), eq(LedgerEntryStatus.PENDING),
+            eq(PageRequest.of(0, 20)));
+    }
+
+    @Test
+    void myListLeavesCycleFieldsNullWhenTheBatchLookupMisses() {
+        UUID associateId = UUID.randomUUID();
+        UUID entryId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        LedgerEntry entry = newEntry(entryId, associateId, cycleId, null);
+
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(entry), PageRequest.of(0, 20), 1));
+        when(cycleRepository.findAllById(List.of(cycleId))).thenReturn(List.of());
+
+        AssociateLedgerEntryResponse row = service.myList(associateId, null, null, null, 0, 20).entries().get(0);
+
+        assertThat(row.cyclePeriodStart()).isNull();
+        assertThat(row.cyclePeriodEnd()).isNull();
+        assertThat(row.sourceRef()).isNull();
+    }
+
+    @Test
+    void myListReturnsAnEmptyPageWhenSearchFindsNothing() {
+        UUID associateId = UUID.randomUUID();
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of()));
+
+        AssociateLedgerPageResponse response = service.myList(associateId, null, null, null, 0, 20);
+
+        assertThat(response.entries()).isEmpty();
+        assertThat(response.totalElements()).isZero();
+    }
 }
