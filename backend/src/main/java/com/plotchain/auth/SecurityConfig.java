@@ -234,6 +234,17 @@ public class SecurityConfig {
                 // below and be reachable by any authenticated associate, not just ADMIN.
                 .requestMatchers(HttpMethod.GET, "/api/admin/cycles/*")
                     .hasAuthority("ADMIN")
+                // Admin ledger register: ADMIN-only, Income/Ledger unit 1
+                // (docs/superpowers/specs/role-capability/2026-08-03-income-ledger-domain-design.md,
+                // "Admin ledger register -- GET /api/admin/ledger, ADMIN-only" and the Testing
+                // section: "associate token gets 403"), same target-role-model pattern as GET
+                // /api/admin/cycles directly above and GET /api/admin/sales further up -- not the
+                // admin-family hasAnyAuthority(...) pattern most other admin GETs still use. A GET
+                // never collides with the POST/PUT/PATCH/DELETE blanket rules above, so there's
+                // no first-match-wins ordering requirement forcing this matcher to live in any
+                // one spot.
+                .requestMatchers(HttpMethod.GET, "/api/admin/ledger")
+                    .hasAuthority("ADMIN")
                 // Phase 5's genuinely public endpoints: the pre-login branding bootstrap, the
                 // raw logo bytes it and the login page render as <img> tags, and the favicon
                 // index.html links to -- all requested before any JWT exists. They only need to

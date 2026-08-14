@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
@@ -36,8 +38,16 @@ class LedgerEntryRepositoryTest {
     @Autowired
     TestEntityManager entityManager;
 
+    // Income/Ledger unit 1: rank_order carries a DB-level UNIQUE constraint (V1 migration), and
+    // this unit's search(...) tests are the first callers to need two associates seeded in the
+    // same test method -- a hardcoded rank_order of 1 on every call collides. Counting up per
+    // invocation keeps every pre-existing single-seedAssociate()-call test byte-for-byte
+    // unaffected (still gets rank_order = 1 as the first call in its own test method) while making
+    // repeat calls within one test method safe.
+    private int rankOrderCounter = 1;
+
     private Associate seedAssociate() {
-        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", rankOrderCounter++, BigDecimal.valueOf(10000));
         entityManager.persist(rank);
 
         Associate associate = new Associate();
@@ -201,5 +211,86 @@ class LedgerEntryRepositoryTest {
     @Test
     void findBySourceRefReturnsEmptyWhenNoEntryMatches() {
         assertThat(ledgerEntryRepository.findBySourceRef(UUID.randomUUID())).isEmpty();
+    }
+
+    // Income/Ledger unit 1 (docs/superpowers/specs/role-capability/2026-08-03-income-ledger-domain-design.md,
+    // Decision 4, Flow "Admin ledger register"): the shared search query both the admin and
+    // (a follow-up unit's) associate-self endpoints use. All four filters are optional; this
+    // test exercises each alone, in combination, and the unfiltered "everything" case.
+    @Test
+    void searchFiltersByAssociateIdIncomeTypeCycleIdAndStatusIndependentlyAndInCombination() {
+        Associate associateA = seedAssociate();
+        Associate associateB = seedAssociate();
+        Cycle cycleA = seedCycle();
+        Cycle cycleB = seedCycle();
+        LedgerEntry direct = ledgerEntryRepository.saveAndFlush(
+            newEntry(associateA.getId(), cycleA.getId(), IncomeType.DIRECT, UUID.randomUUID()));
+        direct.setStatus(LedgerEntryStatus.PAID);
+        ledgerEntryRepository.saveAndFlush(direct);
+        LedgerEntry matching = ledgerEntryRepository.saveAndFlush(
+            newEntry(associateA.getId(), cycleB.getId(), IncomeType.MATCHING, UUID.randomUUID()));
+        LedgerEntry otherAssociate = ledgerEntryRepository.saveAndFlush(
+            newEntry(associateB.getId(), cycleA.getId(), IncomeType.DIRECT, UUID.randomUUID()));
+
+        Page<LedgerEntry> byAssociate = ledgerEntryRepository.search(
+            associateA.getId(), null, null, null, PageRequest.of(0, 20));
+        assertThat(byAssociate.getContent()).extracting(LedgerEntry::getId)
+            .containsExactlyInAnyOrder(direct.getId(), matching.getId());
+
+        Page<LedgerEntry> byIncomeType = ledgerEntryRepository.search(
+            null, IncomeType.DIRECT, null, null, PageRequest.of(0, 20));
+        assertThat(byIncomeType.getContent()).extracting(LedgerEntry::getId)
+            .containsExactlyInAnyOrder(direct.getId(), otherAssociate.getId());
+
+        Page<LedgerEntry> byCycleId = ledgerEntryRepository.search(
+            null, null, cycleB.getId(), null, PageRequest.of(0, 20));
+        assertThat(byCycleId.getContent()).extracting(LedgerEntry::getId).containsExactly(matching.getId());
+
+        Page<LedgerEntry> byStatus = ledgerEntryRepository.search(
+            null, null, null, LedgerEntryStatus.PAID, PageRequest.of(0, 20));
+        assertThat(byStatus.getContent()).extracting(LedgerEntry::getId).containsExactly(direct.getId());
+
+        Page<LedgerEntry> combined = ledgerEntryRepository.search(
+            associateA.getId(), IncomeType.DIRECT, cycleA.getId(), LedgerEntryStatus.PAID, PageRequest.of(0, 20));
+        assertThat(combined.getContent()).extracting(LedgerEntry::getId).containsExactly(direct.getId());
+
+        Page<LedgerEntry> unfiltered = ledgerEntryRepository.search(
+            null, null, null, null, PageRequest.of(0, 20));
+        assertThat(unfiltered.getTotalElements()).isEqualTo(3);
+    }
+
+    @Test
+    void searchOrdersByCreatedAtDescendingAndPaginatesCorrectly() {
+        Associate associate = seedAssociate();
+        Cycle cycle = seedCycle();
+        LedgerEntry earlier = newEntry(associate.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID());
+        earlier.setCreatedAt(Instant.parse("2026-01-10T00:00:00Z"));
+        ledgerEntryRepository.saveAndFlush(earlier);
+        LedgerEntry later = newEntry(associate.getId(), cycle.getId(), IncomeType.MATCHING, UUID.randomUUID());
+        later.setCreatedAt(Instant.parse("2026-01-20T00:00:00Z"));
+        ledgerEntryRepository.saveAndFlush(later);
+        LedgerEntry latest = newEntry(associate.getId(), cycle.getId(), IncomeType.ROYALTY, UUID.randomUUID());
+        latest.setCreatedAt(Instant.parse("2026-01-30T00:00:00Z"));
+        ledgerEntryRepository.saveAndFlush(latest);
+
+        Page<LedgerEntry> firstPage = ledgerEntryRepository.search(null, null, null, null, PageRequest.of(0, 2));
+        assertThat(firstPage.getContent()).extracting(LedgerEntry::getId)
+            .containsExactly(latest.getId(), later.getId());
+        assertThat(firstPage.getTotalElements()).isEqualTo(3);
+
+        Page<LedgerEntry> secondPage = ledgerEntryRepository.search(null, null, null, null, PageRequest.of(1, 2));
+        assertThat(secondPage.getContent()).extracting(LedgerEntry::getId).containsExactly(earlier.getId());
+    }
+
+    @Test
+    void searchReturnsAnEmptyPageWhenNoEntryMatchesTheGivenFilters() {
+        seedAssociate();
+        seedCycle();
+
+        Page<LedgerEntry> result = ledgerEntryRepository.search(
+            UUID.randomUUID(), null, null, null, PageRequest.of(0, 20));
+
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isZero();
     }
 }
