@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ledger Register — Admin Operational Screen Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ============================================================
+     Tokens -- copied 1:1 from frontend/src/styles/_tokens.scss.
+     No new hex values are introduced anywhere below this block.
+     ============================================================ */
+  :root {
+    --brand-primary: #7C3AED;
+    --brand-secondary: #22D3EE;
+    --brand-gradient: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    --brand-primary-soft: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+    --brand-primary-hover: color-mix(in srgb, var(--brand-primary) 85%, white);
+    --brand-secondary-soft: color-mix(in srgb, var(--brand-secondary) 14%, transparent);
+    --brand-primary-contrast: #FFFFFF;
+
+    --surface-page: #f8f9ff;
+    --surface-card: #ffffff;
+    --surface-raised: #eff4ff;
+    --border-subtle: #c2c6d9;
+    --text-primary: #0b1c30;
+    --text-muted: #424656;
+    --status-success: #34D399;
+    --status-warning: #F59E0B;
+    --status-danger: #F87171;
+
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--surface-page);
+    color: var(--text-primary);
+    font-family: 'Inter', var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ============================================================
+     Generic primitives -- copied 1:1 from _cards.scss / _forms.scss /
+     _tables.scss / _shared-components.scss. Real classes the live app
+     renders today; ledger-register rules further down are additive,
+     scoped contextually (mirrors .sales-register precedent).
+     ============================================================ */
+  .card { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.5rem; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: 600; text-align: left; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
+  td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-subtle); }
+  tr:hover td { background: var(--surface-raised); }
+  .editable-table__empty { padding: 3rem 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.875rem; }
+
+  button { cursor: pointer; border-radius: 8px; padding: 0.625rem 1.25rem; border: none; background: none; font-family: inherit; }
+  button:disabled { cursor: not-allowed; opacity: 0.5; }
+  .brand-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background: var(--brand-gradient); color: var(--brand-primary-contrast); font-weight: 600; transition: opacity .15s ease, transform .15s ease; }
+  .brand-button:hover:not(:disabled) { opacity: .92; }
+  .brand-button--secondary { background: var(--surface-raised); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+
+  label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); }
+  select {
+    display: block; width: 100%; padding: 0.625rem 0.875rem; background: var(--surface-card);
+    border: 1px solid var(--border-subtle); border-radius: 8px; font-family: inherit; font-size: 0.875rem; color: var(--text-primary);
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  select:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px var(--brand-primary-soft); }
+
+  .inline-banner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.875rem 1.25rem; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-primary); font-size: 0.875rem; }
+  .inline-banner__content { flex: 1; }
+  .inline-banner__dismiss { background: transparent; border: none; color: inherit; font-size: 1.125rem; line-height: 1; padding: 0; cursor: pointer; opacity: .7; }
+  .inline-banner--danger { border-color: var(--status-danger); background: color-mix(in srgb, var(--status-danger) 14%, var(--surface-card)); color: var(--status-danger); }
+
+  /* ============================================================
+     Ledger Register -- new bespoke rules (mirrors .sales-register /
+     .cycle-management structurally: eyebrow/title/subtitle, a
+     surface-raised filter strip, a zero-padding ledger card, mono
+     ledger typography, and the shared pagination-footer idiom).
+     Class names below match LedgerRegisterComponent's own template
+     (docs/superpowers/plans/2026-08-14-income-ledger-unit-3-admin-
+     ledger-register-screen.md, Task 3), so this is exactly what will
+     ship once that plan is implemented.
+     ============================================================ */
+  .ledger-register { display: flex; flex-direction: column; gap: 1.5rem; max-width: 1180px; margin: 0 auto; padding: 1.5rem 2rem; font-family: 'Inter', var(--font-sans); }
+
+  .ledger-register__intro { display: flex; flex-direction: column; gap: 0.375rem; }
+  .ledger-register__eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; color: var(--brand-primary); }
+  .ledger-register__title { margin: 0; font-family: 'Geist', var(--font-sans); font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; color: var(--text-primary); }
+  .ledger-register__subtitle { margin: 0; max-width: 46rem; font-size: 0.9375rem; line-height: 1.6; color: var(--text-muted); }
+
+  .ledger-register__filters { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 1.25rem; padding: 1.25rem 1.5rem; background: var(--surface-raised); border-radius: 16px; }
+  .ledger-register__filter-field { display: flex; flex-direction: column; gap: 0.375rem; min-width: 200px; flex: 1 1 200px; }
+  .ledger-register__filter-field label { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  .ledger-register__filter-field select { background: var(--surface-card); }
+
+  .ledger-register__load-error { margin: 0; }
+
+  .ledger-register .card { border: none; border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); padding: 0; overflow: hidden; }
+  .ledger-register .editable-table { margin: 0; }
+  .ledger-register .editable-table thead th { font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; background: var(--surface-card); white-space: nowrap; }
+  .ledger-register .editable-table tbody td { font-size: 0.875rem; color: var(--text-primary); vertical-align: middle; }
+  .ledger-register .editable-table tbody tr:last-child td { border-bottom: none; }
+
+  /* Cycle Period column (2nd) -- tabular-nums, matches Sales Register's date-column treatment */
+  .ledger-register .editable-table td:nth-child(2) { font-variant-numeric: tabular-nums; color: var(--text-muted); font-size: 0.8125rem; white-space: nowrap; }
+  /* Income Type column (3rd) -- raw enum text, mono uppercase (see DESIGN.md "raw ledger" signature) */
+  .ledger-register .editable-table td:nth-child(3) { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  /* Status column (4th) -- same raw-enum, uniform treatment; no per-value color (see Implementation constraint) */
+  .ledger-register .editable-table td:nth-child(4) { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  /* Net Amount column (5th) -- ledger typography, right-aligned */
+  .ledger-register .editable-table td:nth-child(5) { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; color: var(--text-primary); }
+  /* Source Ref column (6th) -- muted, mono, dash for null */
+  .ledger-register .editable-table td:nth-child(6) { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; color: var(--text-muted); }
+  /* Created At column (7th) -- tabular-nums, muted */
+  .ledger-register .editable-table td:nth-child(7) { font-variant-numeric: tabular-nums; color: var(--text-muted); font-size: 0.8125rem; white-space: nowrap; }
+
+  .ledger-register .editable-table__empty { padding: 3rem 1.5rem; }
+
+  .ledger-register__pagination { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; padding: 0 0.25rem; }
+  .ledger-register__page-indicator { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; color: var(--text-muted); }
+  .ledger-register__pagination .brand-button--secondary { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+
+  /* ============================================================
+     Docs-page chrome (review harness only -- not part of the design)
+     ============================================================ */
+  .docs-index { position: sticky; top: 0; z-index: 10; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; padding: 0.875rem 2rem; background: var(--text-primary); color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+  .docs-index a { color: #cbd5ff; text-decoration: none; padding: 0.25rem 0.625rem; border-radius: 999px; }
+  .docs-index a:hover { background: rgba(255,255,255,0.12); color: #fff; }
+  .docs-index strong { color: #fff; font-weight: 700; margin-right: 0.5rem; }
+  .docs-frame { padding: 2.5rem 1.5rem; border-bottom: 1px dashed var(--border-subtle); }
+  .docs-frame__label { max-width: 1180px; margin: 0 auto 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--brand-primary); }
+  .docs-frame__stage { background: var(--surface-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding-bottom: 2rem; }
+
+  /* ============================================================
+     Responsive addendum (md=768px for the dense table, matching
+     Sales Register's and Cycle Management's stated breakpoint).
+     ============================================================ */
+  @media (max-width: 768px) {
+    .ledger-register__filters { flex-direction: column; align-items: stretch; }
+    .ledger-register__filter-field { min-width: 0; }
+
+    .ledger-register .editable-table { table-layout: fixed; width: 100%; }
+    .ledger-register .editable-table thead { display: none; }
+    .ledger-register .editable-table tbody tr { display: block; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); }
+    .ledger-register .editable-table tbody td { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 0.375rem 0; border-bottom: none; text-align: right; min-width: 0; }
+    .ledger-register .editable-table tbody td > * { min-width: 0; }
+    .ledger-register .editable-table tbody td::before { content: attr(data-label); flex: 0 0 auto; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    .ledger-register .editable-table tbody td { overflow-wrap: anywhere; word-break: break-word; }
+    .ledger-register .editable-table tbody td:first-child { font-family: 'Geist', var(--font-sans); font-size: 1rem; font-weight: 600; white-space: normal; }
+    .ledger-register .editable-table td:nth-child(2),
+    .ledger-register .editable-table td:nth-child(3),
+    .ledger-register .editable-table td:nth-child(4),
+    .ledger-register .editable-table td:nth-child(5),
+    .ledger-register .editable-table td:nth-child(6),
+    .ledger-register .editable-table td:nth-child(7) { text-align: right; white-space: normal; }
+    .ledger-register__pagination .brand-button--secondary { min-height: 44px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="docs-index">
+  <strong>Ledger Register — screen states</strong>
+  <a href="#state-1">1. Register / loaded</a>
+  <a href="#state-2">2. Empty state</a>
+  <a href="#state-3">3. Load error</a>
+</nav>
+
+<!-- ============================================================
+     STATE 1 -- Ledger Register, default/loaded
+     ============================================================ -->
+<section id="state-1" class="docs-frame">
+  <p class="docs-frame__label">State 1 — Ledger Register: default/loaded</p>
+  <div class="docs-frame__stage">
+    <div class="ledger-register">
+      <div class="ledger-register__intro">
+        <span class="ledger-register__eyebrow">Admin · Ledger Register</span>
+        <h1 class="ledger-register__title">Ledger Register</h1>
+        <p class="ledger-register__subtitle">Every posted ledger entry, across every associate and cycle — a raw, view-only audit trail. No entry here can be edited or removed.</p>
+      </div>
+
+      <div class="ledger-register__filters">
+        <div class="ledger-register__filter-field">
+          <label for="f-associate">Associate</label>
+          <select id="f-associate">
+            <option>All associates</option>
+            <option>PC-01042 — Ritu Sharma</option>
+            <option>PC-00981 — Arvind Rao</option>
+          </select>
+        </div>
+        <div class="ledger-register__filter-field">
+          <label for="f-income-type">Income Type</label>
+          <select id="f-income-type">
+            <option>All income types</option>
+            <option>Direct</option>
+            <option>Matching</option>
+            <option>Sponsor Matching</option>
+            <option>Royalty</option>
+            <option>Reward</option>
+            <option>Perk</option>
+          </select>
+        </div>
+        <div class="ledger-register__filter-field">
+          <label for="f-cycle">Cycle</label>
+          <select id="f-cycle">
+            <option>All cycles</option>
+            <option>1 Aug 2026 – 31 Aug 2026</option>
+            <option>1 Jul 2026 – 31 Jul 2026</option>
+          </select>
+        </div>
+        <div class="ledger-register__filter-field">
+          <label for="f-status">Status</label>
+          <select id="f-status">
+            <option>All statuses</option>
+            <option>Pending</option>
+            <option>Carried Forward</option>
+            <option>Paid</option>
+            <option>Reversed</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead>
+            <tr>
+              <th>Associate</th>
+              <th>Cycle Period</th>
+              <th>Income Type</th>
+              <th>Status</th>
+              <th>Net Amount</th>
+              <th>Source Ref</th>
+              <th>Created At</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Associate">PC-01042 — Ritu Sharma</td>
+              <td data-label="Cycle Period">1 Aug 2026 – 31 Aug 2026</td>
+              <td data-label="Income Type">DIRECT</td>
+              <td data-label="Status">PAID</td>
+              <td data-label="Net Amount">₹9,300</td>
+              <td data-label="Source Ref">SALE-88213</td>
+              <td data-label="Created At">11 Aug 2026, 9:12 am</td>
+            </tr>
+            <tr>
+              <td data-label="Associate">PC-00981 — Arvind Rao</td>
+              <td data-label="Cycle Period">1 Aug 2026 – 31 Aug 2026</td>
+              <td data-label="Income Type">MATCHING</td>
+              <td data-label="Status">PENDING</td>
+              <td data-label="Net Amount">₹2,150</td>
+              <td data-label="Source Ref">—</td>
+              <td data-label="Created At">11 Aug 2026, 9:12 am</td>
+            </tr>
+            <tr>
+              <td data-label="Associate">PC-00512 — Deepak Nair</td>
+              <td data-label="Cycle Period">1 Aug 2026 – 31 Aug 2026</td>
+              <td data-label="Income Type">SPONSOR_MATCHING</td>
+              <td data-label="Status">CARRIED_FORWARD</td>
+              <td data-label="Net Amount">₹640</td>
+              <td data-label="Source Ref">—</td>
+              <td data-label="Created At">10 Aug 2026, 6:40 pm</td>
+            </tr>
+            <tr>
+              <td data-label="Associate">PC-01187 — Farhan Sheikh</td>
+              <td data-label="Cycle Period">1 Jul 2026 – 31 Jul 2026</td>
+              <td data-label="Income Type">ROYALTY</td>
+              <td data-label="Status">PAID</td>
+              <td data-label="Net Amount">₹18,420</td>
+              <td data-label="Source Ref">CYCLE-0007</td>
+              <td data-label="Created At">31 Jul 2026, 11:59 pm</td>
+            </tr>
+            <tr>
+              <td data-label="Associate">PC-00733 — Neha Verma</td>
+              <td data-label="Cycle Period">1 Jul 2026 – 31 Jul 2026</td>
+              <td data-label="Income Type">REWARD</td>
+              <td data-label="Status">REVERSED</td>
+              <td data-label="Net Amount">₹6,400</td>
+              <td data-label="Source Ref">SALE-87510</td>
+              <td data-label="Created At">28 Jul 2026, 2:31 pm</td>
+            </tr>
+            <tr>
+              <td data-label="Associate">PC-01301 — Meera Iyer</td>
+              <td data-label="Cycle Period">1 Jul 2026 – 31 Jul 2026</td>
+              <td data-label="Income Type">PERK</td>
+              <td data-label="Status">PAID</td>
+              <td data-label="Net Amount">₹1,000</td>
+              <td data-label="Source Ref">PERK-Q3-TRIP</td>
+              <td data-label="Created At">25 Jul 2026, 10:03 am</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ledger-register__pagination">
+        <span class="ledger-register__page-indicator">Page 2 of 9</span>
+        <button type="button" class="brand-button brand-button--secondary">Previous</button>
+        <button type="button" class="brand-button brand-button--secondary">Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 2 -- Empty state
+     ============================================================ -->
+<section id="state-2" class="docs-frame">
+  <p class="docs-frame__label">State 2 — Ledger Register: empty state (no entries match current filters)</p>
+  <div class="docs-frame__stage">
+    <div class="ledger-register">
+      <div class="ledger-register__intro">
+        <span class="ledger-register__eyebrow">Admin · Ledger Register</span>
+        <h1 class="ledger-register__title">Ledger Register</h1>
+        <p class="ledger-register__subtitle">Every posted ledger entry, across every associate and cycle — a raw, view-only audit trail. No entry here can be edited or removed.</p>
+      </div>
+
+      <div class="ledger-register__filters">
+        <div class="ledger-register__filter-field"><label>Associate</label><select><option>PC-00512 — Deepak Nair</option></select></div>
+        <div class="ledger-register__filter-field"><label>Income Type</label><select><option>All income types</option></select></div>
+        <div class="ledger-register__filter-field"><label>Cycle</label><select><option>All cycles</option></select></div>
+        <div class="ledger-register__filter-field"><label>Status</label><select><option>Reversed</option></select></div>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead>
+            <tr><th>Associate</th><th>Cycle Period</th><th>Income Type</th><th>Status</th><th>Net Amount</th><th>Source Ref</th><th>Created At</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="editable-table__empty" colspan="7">No ledger entries match these filters.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 3 -- Load error
+     ============================================================ -->
+<section id="state-3" class="docs-frame">
+  <p class="docs-frame__label">State 3 — Ledger Register: load error (banner recommended in place of the plan's plain &lt;p&gt;, see DESIGN.md)</p>
+  <div class="docs-frame__stage">
+    <div class="ledger-register">
+      <div class="ledger-register__intro">
+        <span class="ledger-register__eyebrow">Admin · Ledger Register</span>
+        <h1 class="ledger-register__title">Ledger Register</h1>
+        <p class="ledger-register__subtitle">Every posted ledger entry, across every associate and cycle — a raw, view-only audit trail. No entry here can be edited or removed.</p>
+      </div>
+
+      <div class="ledger-register__filters">
+        <div class="ledger-register__filter-field"><label>Associate</label><select><option>All associates</option></select></div>
+        <div class="ledger-register__filter-field"><label>Income Type</label><select><option>All income types</option></select></div>
+        <div class="ledger-register__filter-field"><label>Cycle</label><select><option>All cycles</option></select></div>
+        <div class="ledger-register__filter-field"><label>Status</label><select><option>All statuses</option></select></div>
+      </div>
+
+      <div class="inline-banner inline-banner--danger ledger-register__load-error">
+        <div class="inline-banner__content">Something went wrong loading the ledger register. Please try again.</div>
+        <button type="button" class="inline-banner__dismiss">&times;</button>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead><tr><th>Associate</th><th>Cycle Period</th><th>Income Type</th><th>Status</th><th>Net Amount</th><th>Source Ref</th><th>Created At</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="editable-table__empty" colspan="7">No ledger entries match these filters.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
