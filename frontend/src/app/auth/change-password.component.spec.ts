@@ -72,22 +72,6 @@ describe('ChangePasswordComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/admin/associates/new']);
   });
 
-  it('navigates to /settings when a non-ADMIN admin-family role completes a forced password change once launched', () => {
-    localStorage.setItem('plotchain.auth.role', 'FINANCE');
-
-    fixture.componentInstance.form.setValue({ currentPassword: 'Temp1234!', newPassword: 'NewPassword123!' });
-    fixture.componentInstance.onSubmit();
-
-    httpMock.expectOne('/api/associates/me/password').flush(null);
-    httpMock.expectOne('/api/company/setup-state').flush({
-      steps: [],
-      canGoLive: true,
-      launchedAt: '2026-01-01T00:00:00Z'
-    });
-
-    expect(router.navigate).toHaveBeenCalledWith(['/settings']);
-  });
-
   it('shows an error on failed password change', () => {
     fixture.componentInstance.form.setValue({ currentPassword: 'wrong', newPassword: 'NewPassword123!' });
     fixture.componentInstance.onSubmit();

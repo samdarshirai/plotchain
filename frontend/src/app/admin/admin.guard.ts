@@ -2,11 +2,11 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 
-// Mirrors AssociateRole.isAdminFamily() on the backend: every role except ASSOCIATE may
-// reach admin routes. Kept as a literal set (not imported) since the frontend has no shared
-// enum with the backend; SecurityConfigTest is the source of truth this must stay in sync with.
-// Exported so login.component.ts can reuse it for post-login routing instead of duplicating it.
-export const ADMIN_FAMILY_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'FINANCE', 'KYC_REVIEWER', 'SUPPORT']);
+// Only one admin-family role exists now (ADMIN). Kept as a Set (not a direct string ===
+// comparison) so login.component.ts/post-auth-redirect.ts/associate-only.guard.ts, which all
+// import and check against this same set, don't each need their own follow-up edit if a second
+// admin-family role is ever reintroduced.
+export const ADMIN_FAMILY_ROLES = new Set(['ADMIN']);
 
 // UX convenience only, NOT a security boundary: this hides the admin route from a browser
 // tab whose stored role isn't admin-family. The real enforcement is server-side --

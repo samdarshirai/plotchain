@@ -7,7 +7,7 @@ describe('postAuthLandingPath', () => {
   const launchedState: SetupStateResponse = { steps: [], canGoLive: true, launchedAt: '2026-01-01T00:00:00Z' };
 
   it('covers exactly the admin-family set', () => {
-    expect([...ADMIN_FAMILY_ROLES].sort()).toEqual(['ADMIN', 'FINANCE', 'KYC_REVIEWER', 'SUPER_ADMIN', 'SUPPORT']);
+    expect([...ADMIN_FAMILY_ROLES].sort()).toEqual(['ADMIN']);
   });
 
   it('sends ASSOCIATE to /dashboard regardless of setup state', () => {
@@ -23,12 +23,6 @@ describe('postAuthLandingPath', () => {
 
   it('sends ADMIN to /admin/associates/new once launched', () => {
     expect(postAuthLandingPath('ADMIN', launchedState, () => 'company-profile')).toBe('/admin/associates/new');
-  });
-
-  it('sends every other admin-family role to /settings once launched', () => {
-    for (const role of [...ADMIN_FAMILY_ROLES].filter(r => r !== 'ADMIN')) {
-      expect(postAuthLandingPath(role, launchedState, () => 'company-profile')).toBe('/settings');
-    }
   });
 
   it('never invokes incompleteStepPath when launched', () => {

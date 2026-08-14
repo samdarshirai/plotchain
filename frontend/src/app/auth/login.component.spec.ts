@@ -73,22 +73,6 @@ describe('LoginComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/admin/associates/new']);
   });
 
-  it('navigates to /settings on a non-ADMIN admin-family login once launched', () => {
-    fixture.componentInstance.form.setValue({ userId: 'finance01', password: 'Password123!' });
-    fixture.componentInstance.onSubmit();
-
-    httpMock.expectOne('/api/auth/login')
-      .flush({ token: 'abc.def.ghi', associateId: 'finance-1', role: 'FINANCE', mustChangePassword: false });
-
-    httpMock.expectOne('/api/company/setup-state').flush({
-      steps: [],
-      canGoLive: true,
-      launchedAt: '2026-01-01T00:00:00Z'
-    });
-
-    expect(router.navigate).toHaveBeenCalledWith(['/settings']);
-  });
-
   it('redirects to /change-password before ever consulting setup state', () => {
     fixture.componentInstance.form.setValue({ userId: 'admin', password: 'Password123!' });
     fixture.componentInstance.onSubmit();

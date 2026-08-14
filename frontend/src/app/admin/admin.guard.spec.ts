@@ -15,7 +15,7 @@ describe('adminGuard', () => {
     });
   });
 
-  for (const role of ['ADMIN', 'SUPER_ADMIN', 'FINANCE', 'KYC_REVIEWER', 'SUPPORT']) {
+  for (const role of ['ADMIN']) {
     it(`allows navigation when the stored role is ${role}`, () => {
       authService.getRole.and.returnValue(role);
       const result = TestBed.runInInjectionContext(() => adminGuard({} as any, {} as any));
