@@ -187,13 +187,7 @@ public class SecurityConfig {
                         "/api/company/projects/*/thumbnail", "/api/company/projects/plots/csv-template")
                     .hasAuthority("ADMIN")
                 // Same reasoning as setup-state/profile/branding/compensation/payments/projects
-                // above: Phase 11's Root Associates GET stays admin-family-only. The POST that
-                // creates a root is a write and is already covered by the blanket POST rule
-                // above -- deliberately no separate matcher for it.
-                .requestMatchers(HttpMethod.GET, "/api/company/root-associates")
-                    .hasAuthority("ADMIN")
-                // Same reasoning as setup-state/profile/branding/compensation/payments/projects/
-                // root-associates above: the audit-log GET stays admin-family-only. There is no
+                // above: the audit-log GET stays admin-family-only. There is no
                 // mutating endpoint for this resource at all (append-only, written internally by
                 // SettingsAuditService) -- deliberately no write matcher.
                 .requestMatchers(HttpMethod.GET, "/api/company/audit-log")

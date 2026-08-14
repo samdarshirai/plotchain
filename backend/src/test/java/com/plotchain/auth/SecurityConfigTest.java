@@ -328,34 +328,16 @@ class SecurityConfigTest {
     }
 
     @Test
-    void rootAssociatesListIsForbiddenForAnAssociateToken() throws Exception {
-        mockMvc.perform(get("/api/company/root-associates")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
-            .andExpect(status().isForbidden());
-    }
-
-    // associateRepository is @MockBean'd at the class level above (unstubbed here), and
-    // Mockito's default answer returns an empty List rather than null for a List-returning
-    // method, so findByRoleAndParentIdIsNullAndSponsorIdIsNullOrderByJoinedAtAsc(...) resolves
-    // to an empty list and this is a plain 200.
-    @ParameterizedTest
-    @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
-    void rootAssociatesListIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
-        mockMvc.perform(get("/api/company/root-associates")
-                .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().isOk());
-    }
-
-    @Test
     void associatesListIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(get("/api/associates")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
             .andExpect(status().isForbidden());
     }
 
-    // Same unstubbed-default-empty-list reasoning as rootAssociatesListIsReachableForAnyAdminFamilyToken
-    // above: associateRepository is @MockBean'd unstubbed, so findAllByOrderByUserIdAsc()
-    // resolves to an empty list and this is a plain 200.
+    // Same unstubbed-default-empty-list reasoning as brandingLogoIsReachableWithoutAToken and
+    // brandingFaviconIsReachableWithoutAToken above: associateRepository is @MockBean'd
+    // unstubbed, so findAllByOrderByUserIdAsc() resolves to an empty list and this is a plain
+    // 200.
     @ParameterizedTest
     @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
     void associatesListIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
@@ -371,9 +353,8 @@ class SecurityConfigTest {
     // hasAnyAuthority list without hardcoding two role lists here.
     //
     // settingsAuditLogRepository is not @MockBean'd in this class, so it runs for real against
-    // the H2 test DB, which has no seeded rows -- same unstubbed-default-empty-result reasoning
-    // as rootAssociatesListIsReachableForAnyAdminFamilyToken above, hence isOk() rather than a
-    // populated body for the admin-family case.
+    // the H2 test DB, which has no seeded rows -- an unstubbed-default-empty-result, hence
+    // isOk() rather than a populated body for the admin-family case.
     @ParameterizedTest
     @EnumSource(AssociateRole.class)
     void auditLogIsReachableForEveryAdminFamilyTokenAndForbiddenForAssociate(AssociateRole role) throws Exception {

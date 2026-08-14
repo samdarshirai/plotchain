@@ -66,9 +66,8 @@ class AuthServiceTest {
             new CompanyBrandingService(companyBrandingRepository,
                 new CompanyProfileService(companyProfileRepository, settingsAuditService), settingsAuditService),
             // Never invoked here: these tests only exercise isLaunched(), which doesn't touch
-            // compensationPlanService/paymentConfigService/payoutBankAccountService/
-            // projectService/rootAssociateProvisioningService.
-            null, null, null, null, null);
+            // compensationPlanService/paymentConfigService/payoutBankAccountService/projectService.
+            null, null, null, null);
         authService = new AuthService(associateRepository, passwordEncoder, jwtService, setupStateService);
     }
 

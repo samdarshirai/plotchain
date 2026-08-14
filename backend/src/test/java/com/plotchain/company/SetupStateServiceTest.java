@@ -1,9 +1,7 @@
 package com.plotchain.company;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.plotchain.associate.AssociateIdGenerator;
 import com.plotchain.associate.AssociateRepository;
-import com.plotchain.associate.AssociateRole;
 import com.plotchain.compensation.CompensationPlanService;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
@@ -84,9 +82,7 @@ class SetupStateServiceTest {
             new PaymentConfigService(paymentConfigRepository,
                 new SecretsEncryptionService("test-secrets-key-at-least-32-bytes-long-for-aes"), settingsAuditService),
             new PayoutBankAccountService(payoutBankAccountRepository, settingsAuditService),
-            new ProjectService(projectRepository, plotRepository, settingsAuditService),
-            new RootAssociateProvisioningService(associateRepository, rankTierRepository, passwordEncoder,
-                new AssociateIdGenerator(associateRepository, "VP"), settingsAuditService));
+            new ProjectService(projectRepository, plotRepository, settingsAuditService));
 
         // getSetupState() calls isStepComplete("paymentsKyc") on every invocation, so every test
         // needs this stubbed even if it never asserts on paymentsKyc directly. lenient() because
@@ -97,11 +93,6 @@ class SetupStateServiceTest {
         // "projects" is non-required and defaults to no projects existing, matching the other
         // non-required steps' default-incomplete stubbing above.
         lenient().when(projectRepository.findAll()).thenReturn(List.of());
-        // "rootAssociates" is non-required and defaults to no root existing yet, matching the
-        // other non-required steps' default-incomplete stubbing above.
-        lenient()
-            .when(associateRepository.findByRoleAndParentIdIsNullAndSponsorIdIsNullOrderByJoinedAtAsc(AssociateRole.ASSOCIATE))
-            .thenReturn(List.of());
     }
 
     private void stubPaymentsKycComplete() {
@@ -197,7 +188,7 @@ class SetupStateServiceTest {
 
         SetupStateResponse response = setupStateService.getSetupState();
 
-        assertThat(response.steps()).hasSize(7);
+        assertThat(response.steps()).hasSize(6);
         assertThat(response.steps()).allMatch(s -> !s.complete() && s.percentComplete() == 0);
         assertThat(response.canGoLive()).isFalse();
         assertThat(response.launchedAt()).isNull();
@@ -395,44 +386,6 @@ class SetupStateServiceTest {
             .isTrue();
         // Projects is optional -- completing it must not affect the Go Live gate.
         assertThat(response.canGoLive()).isFalse();
-    }
-
-    @Test
-    void rootAssociatesStepIsIncompleteWithNoRoots() {
-        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
-        stubCompanyProfile(new CompanyProfile());
-        stubCompanyBranding(blankBranding());
-        stubCompensationIncomplete();
-
-        SetupStateResponse response = setupStateService.getSetupState();
-
-        assertThat(response.steps().stream()
-            .filter(s -> s.key().equals("rootAssociates")).findFirst().orElseThrow().complete())
-            .isFalse();
-        // rootAssociates is optional -- canGoLive is unaffected either way.
-        assertThat(response.canGoLive()).isFalse();
-    }
-
-    @Test
-    void rootAssociatesStepIsCompleteWithOneRoot() {
-        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
-        stubCompanyProfile(new CompanyProfile());
-        stubCompanyBranding(blankBranding());
-        stubCompensationIncomplete();
-        com.plotchain.associate.Associate root = new com.plotchain.associate.Associate();
-        when(associateRepository.findByRoleAndParentIdIsNullAndSponsorIdIsNullOrderByJoinedAtAsc(AssociateRole.ASSOCIATE))
-            .thenReturn(List.of(root));
-
-        SetupStateResponse response = setupStateService.getSetupState();
-
-        assertThat(response.steps().stream()
-            .filter(s -> s.key().equals("rootAssociates")).findFirst().orElseThrow().complete())
-            .isTrue();
-        // rootAssociates is optional -- completing it must not affect the Go Live gate.
-        assertThat(response.canGoLive()).isFalse();
-        assertThat(response.steps().stream()
-            .filter(s -> s.key().equals("rootAssociates")).findFirst().orElseThrow().required())
-            .isFalse();
     }
 
     @Test
