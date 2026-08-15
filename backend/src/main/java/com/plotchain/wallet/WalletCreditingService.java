@@ -1,5 +1,6 @@
 package com.plotchain.wallet;
 
+import com.plotchain.company.SettingsAuditService;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleNotFoundException;
 import com.plotchain.cycle.CyclePayoutStateException;
@@ -13,28 +14,34 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 // Wallet/withdrawal unit 1 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
 // Decision 1, Flow "Wallet crediting"): a separate admin-triggered step from Cycle Management's
 // settlement close, deliberately in the wallet package even though it's invoked from a
 // cycle-scoped URL (CycleController) -- the logic's job (read LedgerEntry, write Wallet.balance)
-// is a wallet-domain concern.
+// is a wallet-domain concern. Unit 4 (Decision 16) adds a second entry point,
+// reconcileCarriedForward, invoked from KycReviewService.decide() rather than an HTTP endpoint --
+// the same atomic creditBalance + per-entry status-flip mechanism, reused unmodified.
 @Service
 public class WalletCreditingService {
 
     private final CycleRepository cycleRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
     private final WalletRepository walletRepository;
+    private final SettingsAuditService settingsAuditService;
 
     public WalletCreditingService(
         CycleRepository cycleRepository,
         LedgerEntryRepository ledgerEntryRepository,
-        WalletRepository walletRepository
+        WalletRepository walletRepository,
+        SettingsAuditService settingsAuditService
     ) {
         this.cycleRepository = cycleRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.walletRepository = walletRepository;
+        this.settingsAuditService = settingsAuditService;
     }
 
     // Decision 2: row-lock the Cycle FIRST (findByIdForUpdate, the exact method Cycle
@@ -84,5 +91,47 @@ public class WalletCreditingService {
         cycleRepository.save(cycle);
 
         return new WalletCreditingResult(cycleId, entries.size(), totalCredited, cycle.getStatus());
+    }
+
+    // Wallet/withdrawal unit 4 (Decision 16, Flow "KYC-verification-triggered reconciliation
+    // sweep"): invoked from KycReviewService.decide()'s VERIFIED branch only -- no cycleId filter,
+    // deliberately unscoped, since withheld income can span any number of past cycles (including
+    // ones already PAID for every other associate). Cycle.status is never read or written here --
+    // no CycleRepository call at all, matching Decision 16's "never reopen a closed cycle"
+    // requirement. associateUserId/actorId are passed straight through by the caller
+    // (KycReviewService already has both in scope from its own lookup and its own actorId
+    // parameter) rather than adding an AssociateRepository dependency to this package just to
+    // resolve a display name for the audit message.
+    @Transactional
+    public ReconciliationResult reconcileCarriedForward(UUID associateId, String associateUserId, UUID actorId) {
+        List<LedgerEntry> entries = ledgerEntryRepository.findByAssociateIdAndStatus(associateId, LedgerEntryStatus.CARRIED_FORWARD);
+
+        BigDecimal totalCredited = BigDecimal.ZERO;
+        for (LedgerEntry entry : entries) {
+            // Same "create a Wallet row for a first-time associate" guard as creditWallets above
+            // -- an associate whose only income was ever CARRIED_FORWARD (never had a PENDING
+            // entry credited before now) may not have a Wallet row yet.
+            if (!walletRepository.existsById(associateId)) {
+                walletRepository.save(Wallet.zero(associateId));
+            }
+            walletRepository.creditBalance(associateId, entry.getNetAmount());
+
+            entry.setStatus(LedgerEntryStatus.PAID);
+            ledgerEntryRepository.save(entry);
+
+            totalCredited = totalCredited.add(entry.getNetAmount());
+        }
+
+        // Zero CARRIED_FORWARD entries is the common case -- most associates verify KYC before
+        // ever having withheld income. That's a true no-op: no wallet mutation, and (per this
+        // guard) no audit entry either, not an empty-detail audit row logged for nothing.
+        if (!entries.isEmpty()) {
+            settingsAuditService.record("wallet",
+                "Reconciled " + entries.size() + " carried-forward entries for " + associateUserId + " after KYC verification",
+                Map.of("entriesCredited", entries.size(), "totalAmount", totalCredited),
+                actorId);
+        }
+
+        return new ReconciliationResult(associateId, entries.size(), totalCredited);
     }
 }
