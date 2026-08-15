@@ -72,6 +72,13 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
     // query itself.
     List<LedgerEntry> findByCycleIdAndStatus(UUID cycleId, LedgerEntryStatus status);
 
+    // Wallet/withdrawal unit 4 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
+    // Decision 16, New repository methods section): the KYC-triggered reconciliation sweep's one
+    // read query -- every CARRIED_FORWARD entry for one associate, deliberately unscoped by
+    // cycleId (unlike findByCycleIdAndStatus above), since a sweep must catch withheld income from
+    // any past cycle, not just the associate's most recent one.
+    List<LedgerEntry> findByAssociateIdAndStatus(UUID associateId, LedgerEntryStatus status);
+
     // Income/Ledger unit 1 (docs/superpowers/specs/role-capability/2026-08-03-income-ledger-domain-design.md,
     // Decision 4, Flow "Admin ledger register"): shared by both the admin register endpoint and
     // (a follow-up unit's) associate-self endpoint -- the associate endpoint always passes its

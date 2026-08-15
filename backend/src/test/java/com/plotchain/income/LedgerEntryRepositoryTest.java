@@ -328,4 +328,47 @@ class LedgerEntryRepositoryTest {
 
         assertThat(ledgerEntryRepository.findByCycleIdAndStatus(cycle.getId(), LedgerEntryStatus.PENDING)).isEmpty();
     }
+
+    // Wallet/withdrawal unit 4 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
+    // Decision 16, New repository methods section): the KYC-triggered reconciliation sweep's one
+    // read query -- every CARRIED_FORWARD entry for one associate, deliberately unscoped by
+    // cycleId (unlike findByCycleIdAndStatus above). Proves entries in a DIFFERENT cycle for the
+    // SAME associate are still found (the sweep must catch withheld income from any past cycle),
+    // entries for a DIFFERENT associate are excluded even with a matching status, and a different
+    // status for the same associate/cycle is excluded too.
+    @Test
+    void findByAssociateIdAndStatusReturnsEveryMatchingEntryForThatAssociateAcrossAnyCycle() {
+        Associate targetAssociate = seedAssociate();
+        Associate otherAssociate = seedAssociate();
+        Cycle cycleOne = seedCycle();
+        Cycle cycleTwo = seedCycle();
+
+        LedgerEntry carriedForwardInCycleOne = newEntry(targetAssociate.getId(), cycleOne.getId(), IncomeType.DIRECT, UUID.randomUUID());
+        carriedForwardInCycleOne.setStatus(LedgerEntryStatus.CARRIED_FORWARD);
+        ledgerEntryRepository.saveAndFlush(carriedForwardInCycleOne);
+
+        LedgerEntry carriedForwardInCycleTwo = newEntry(targetAssociate.getId(), cycleTwo.getId(), IncomeType.MATCHING, UUID.randomUUID());
+        carriedForwardInCycleTwo.setStatus(LedgerEntryStatus.CARRIED_FORWARD);
+        ledgerEntryRepository.saveAndFlush(carriedForwardInCycleTwo);
+
+        LedgerEntry pendingForTargetAssociate = ledgerEntryRepository.saveAndFlush(
+            newEntry(targetAssociate.getId(), cycleOne.getId(), IncomeType.SPONSOR_MATCHING, UUID.randomUUID()));
+
+        LedgerEntry carriedForwardForOtherAssociate = newEntry(otherAssociate.getId(), cycleOne.getId(), IncomeType.DIRECT, UUID.randomUUID());
+        carriedForwardForOtherAssociate.setStatus(LedgerEntryStatus.CARRIED_FORWARD);
+        ledgerEntryRepository.saveAndFlush(carriedForwardForOtherAssociate);
+
+        List<LedgerEntry> found = ledgerEntryRepository.findByAssociateIdAndStatus(targetAssociate.getId(), LedgerEntryStatus.CARRIED_FORWARD);
+
+        assertThat(found).extracting(LedgerEntry::getId)
+            .containsExactlyInAnyOrder(carriedForwardInCycleOne.getId(), carriedForwardInCycleTwo.getId());
+        assertThat(pendingForTargetAssociate.getId()).isNotIn(found.stream().map(LedgerEntry::getId).toList());
+    }
+
+    @Test
+    void findByAssociateIdAndStatusReturnsAnEmptyListWhenNothingMatches() {
+        Associate associate = seedAssociate();
+
+        assertThat(ledgerEntryRepository.findByAssociateIdAndStatus(associate.getId(), LedgerEntryStatus.CARRIED_FORWARD)).isEmpty();
+    }
 }
