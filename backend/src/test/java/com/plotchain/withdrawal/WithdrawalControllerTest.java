@@ -375,4 +375,92 @@ class WithdrawalControllerTest {
                 .content(body))
             .andExpect(status().isForbidden());
     }
+
+    @Test
+    void disburseTransitionsAnApprovedRequestToDisbursedAndReturns200ForAnAdminToken() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestRowFor(requestId, TARGET_ASSOCIATE_ID, new BigDecimal("1500.00"), WithdrawalRequestStatus.APPROVED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(associateRepository.findById(TARGET_ASSOCIATE_ID)).thenReturn(Optional.of(verifiedActiveAssociate()));
+        when(withdrawalRequestRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        String body = new ObjectMapper().writeValueAsString(new DisburseWithdrawalRequest("BANK-REF-001"));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/disburse", requestId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("DISBURSED"))
+            .andExpect(jsonPath("$.bankReference").value("BANK-REF-001"));
+    }
+
+    @Test
+    void disburseReturns404ForAnUnknownRequestId() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.empty());
+
+        String body = new ObjectMapper().writeValueAsString(new DisburseWithdrawalRequest("BANK-REF-001"));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/disburse", requestId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void disburseReturns409ForARequestThatIsNotYetApproved() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestRowFor(requestId, TARGET_ASSOCIATE_ID, new BigDecimal("1500.00"), WithdrawalRequestStatus.REQUESTED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        String body = new ObjectMapper().writeValueAsString(new DisburseWithdrawalRequest("BANK-REF-001"));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/disburse", requestId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void disburseReturns409ForAnAlreadyDisbursedRequest() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestRowFor(requestId, TARGET_ASSOCIATE_ID, new BigDecimal("1500.00"), WithdrawalRequestStatus.DISBURSED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        String body = new ObjectMapper().writeValueAsString(new DisburseWithdrawalRequest("BANK-REF-001"));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/disburse", requestId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void disburseReturns400WhenBankReferenceIsBlank() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        String body = new ObjectMapper().writeValueAsString(new DisburseWithdrawalRequest("   "));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/disburse", requestId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.fields.bankReference").isNotEmpty());
+    }
+
+    @Test
+    void disburseIsForbiddenForAnAssociateToken() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        String body = new ObjectMapper().writeValueAsString(new DisburseWithdrawalRequest("BANK-REF-001"));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/disburse", requestId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isForbidden());
+    }
 }

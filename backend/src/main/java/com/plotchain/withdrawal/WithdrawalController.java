@@ -14,11 +14,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-// Wallet/withdrawal unit 5 added POST (submit). Unit 6 added GET (list). Unit 7
+// Wallet/withdrawal unit 5 added POST (submit). Unit 6 added GET (list). Unit 7 added
+// POST /{id}/decision (decide()). Unit 8
 // (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
-// "Decide -- POST /api/admin/withdrawals/{id}/decision, ADMIN-only") adds this decide() method.
-// Unit 8 adds the sibling /{id}/disburse POST. ADMIN-only enforcement is via SecurityConfig's
-// explicit matcher (see below) -- no @PreAuthorize needed on the method itself.
+// "Disburse -- POST /api/admin/withdrawals/{id}/disburse, ADMIN-only") adds this disburse()
+// method, the last of the four lifecycle endpoints on this controller. ADMIN-only enforcement is
+// via SecurityConfig's explicit matcher (see below) -- no @PreAuthorize needed on the method itself.
 @RestController
 @RequestMapping("/api/admin/withdrawals")
 public class WithdrawalController {
@@ -53,5 +54,13 @@ public class WithdrawalController {
             @Valid @RequestBody WithdrawalDecisionRequest request,
             @AuthenticationPrincipal UUID actorId) {
         return withdrawalService.decide(id, request, actorId);
+    }
+
+    @PostMapping("/{id}/disburse")
+    public AdminWithdrawalResponse disburse(
+            @PathVariable UUID id,
+            @Valid @RequestBody DisburseWithdrawalRequest request,
+            @AuthenticationPrincipal UUID actorId) {
+        return withdrawalService.disburse(id, request, actorId);
     }
 }
