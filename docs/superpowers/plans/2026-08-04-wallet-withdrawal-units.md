@@ -8,9 +8,9 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. Th
 
 | # | Type | Unit | Depends on | Status | Plan file | Merged as |
 |---|---|---|---|---|---|---|
-| 1 | backend | Wallet crediting batch step — `POST /api/admin/cycles/{id}/credit-wallets` | none | pending | | |
-| 2 | backend | Associate views own wallet balance — `GET /api/associates/me/wallet` | none | pending | | |
-| 3 | backend | `withdrawal_config` gains a minimum-withdrawal-amount field, required for Go-Live | none | pending | | |
+| 1 | backend | Wallet crediting batch step — `POST /api/admin/cycles/{id}/credit-wallets` | none | planned | `2026-08-14-wallet-withdrawal-credit-wallets.md` | |
+| 2 | backend | Associate views own wallet balance — `GET /api/associates/me/wallet` | none | planned | `2026-08-14-wallet-withdrawal-associate-balance.md` | |
+| 3 | backend | `withdrawal_config` gains a minimum-withdrawal-amount field, required for Go-Live | none | planned | `2026-08-14-wallet-withdrawal-config-minimum.md` | |
 | 4 | backend | KYC-verification-triggered reconciliation sweep credits `CARRIED_FORWARD` entries | 1 | pending | | |
 | 5 | backend | Admin submits a withdrawal request for an associate — `POST /api/admin/withdrawals` | 3 | pending | | |
 | 6 | backend | Admin views the approval queue — `GET /api/admin/withdrawals` | 5 | pending | | |
@@ -19,7 +19,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. Th
 | 9 | backend | Associate views own withdrawal history — `GET /api/associates/me/withdrawals` | 6 | pending | | |
 | 10 | screen | Admin "Ledger / Payout Approval" screen — withdrawal request lifecycle | 5, 6, 7, 8 | pending | | |
 | 11 | screen | Associate "Payout History" screen — wallet balance + own withdrawal history | 2, 9 | pending | | |
-| 12 | screen | Admin "Cycle Management" screen gains a "Credit Wallets" action for `CLOSED` cycles | 1 | pending | | |
+| 12 | screen | Admin "Cycle Management" screen gains a "Credit Wallets" action for `CLOSED` cycles | 1 | planned | `2026-08-14-wallet-withdrawal-unit-12-cycle-management-credit-wallets.md` | |
 
 ## Unit detail
 
