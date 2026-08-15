@@ -38,6 +38,7 @@ class CycleControllerTest {
 
     @MockBean AssociateRepository associateRepository;
     @MockBean CycleService cycleService;
+    @MockBean com.plotchain.wallet.WalletCreditingService walletCreditingService;
 
     private String tokenFor(AssociateRole role) {
         Associate associate = new Associate();
@@ -162,6 +163,51 @@ class CycleControllerTest {
         when(cycleService.close(cycleId)).thenThrow(new CycleAlreadyClosedException(cycleId));
 
         mockMvc.perform(post("/api/admin/cycles/{id}/close", cycleId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void creditWalletsReturnsTheResultForAnAdminToken() throws Exception {
+        UUID cycleId = UUID.randomUUID();
+        when(walletCreditingService.creditWallets(cycleId)).thenReturn(
+            new com.plotchain.wallet.WalletCreditingResult(cycleId, 2, java.math.BigDecimal.valueOf(150), CycleStatus.PAID));
+
+        mockMvc.perform(post("/api/admin/cycles/{id}/credit-wallets", cycleId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.cycleId").value(cycleId.toString()))
+            .andExpect(jsonPath("$.entriesCredited").value(2))
+            .andExpect(jsonPath("$.totalAmountCredited").value(150))
+            .andExpect(jsonPath("$.newCycleStatus").value("PAID"));
+    }
+
+    @Test
+    void creditWalletsReturns404WhenTheCycleDoesNotExist() throws Exception {
+        UUID cycleId = UUID.randomUUID();
+        when(walletCreditingService.creditWallets(cycleId)).thenThrow(new CycleNotFoundException(cycleId));
+
+        mockMvc.perform(post("/api/admin/cycles/{id}/credit-wallets", cycleId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void creditWalletsReturns409WhenTheCycleIsAlreadyPaid() throws Exception {
+        UUID cycleId = UUID.randomUUID();
+        when(walletCreditingService.creditWallets(cycleId)).thenThrow(CyclePayoutStateException.alreadyCredited(cycleId));
+
+        mockMvc.perform(post("/api/admin/cycles/{id}/credit-wallets", cycleId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void creditWalletsReturns409WhenSettlementIsNotClosedYet() throws Exception {
+        UUID cycleId = UUID.randomUUID();
+        when(walletCreditingService.creditWallets(cycleId)).thenThrow(CyclePayoutStateException.settlementNotClosed(cycleId));
+
+        mockMvc.perform(post("/api/admin/cycles/{id}/credit-wallets", cycleId)
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isConflict());
     }

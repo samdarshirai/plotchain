@@ -1,5 +1,7 @@
 package com.plotchain.cycle;
 
+import com.plotchain.wallet.WalletCreditingResult;
+import com.plotchain.wallet.WalletCreditingService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,9 +16,11 @@ import java.util.UUID;
 public class CycleController {
 
     private final CycleService cycleService;
+    private final WalletCreditingService walletCreditingService;
 
-    public CycleController(CycleService cycleService) {
+    public CycleController(CycleService cycleService, WalletCreditingService walletCreditingService) {
         this.cycleService = cycleService;
+        this.walletCreditingService = walletCreditingService;
     }
 
     @GetMapping
@@ -38,5 +42,14 @@ public class CycleController {
     @PostMapping("/{id}/close")
     public CycleCloseResponse close(@PathVariable UUID id) {
         return cycleService.close(id);
+    }
+
+    // Wallet/withdrawal unit 1 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
+    // Decision 1): cross-package addition to Cycle Management's own controller, same precedent
+    // Cycle Management itself set for SaleRepository.findByCycleIdAndStatus -- the URL is
+    // cycle-scoped even though the logic lives in the wallet package's WalletCreditingService.
+    @PostMapping("/{id}/credit-wallets")
+    public WalletCreditingResult creditWallets(@PathVariable UUID id) {
+        return walletCreditingService.creditWallets(id);
     }
 }
