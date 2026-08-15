@@ -49,7 +49,7 @@ class WithdrawalConfigServiceTest {
         when(withdrawalConfigRepository.findAll()).thenReturn(List.of(stored));
 
         WithdrawalConfigResponse response = withdrawalConfigService.updateConfig(
-            new WithdrawalConfigRequest("AUTO_UNDER_LIMIT", new BigDecimal("25000.00")), ACTOR_ID);
+            new WithdrawalConfigRequest("AUTO_UNDER_LIMIT", new BigDecimal("25000.00"), null), ACTOR_ID);
 
         ArgumentCaptor<WithdrawalConfig> captor = ArgumentCaptor.forClass(WithdrawalConfig.class);
         verify(withdrawalConfigRepository).save(captor.capture());
@@ -65,7 +65,7 @@ class WithdrawalConfigServiceTest {
         stored.setAutoApproveLimit(new BigDecimal("25000.00"));
         when(withdrawalConfigRepository.findAll()).thenReturn(List.of(stored));
 
-        withdrawalConfigService.updateConfig(new WithdrawalConfigRequest("ALWAYS_MANUAL", null), ACTOR_ID);
+        withdrawalConfigService.updateConfig(new WithdrawalConfigRequest("ALWAYS_MANUAL", null, null), ACTOR_ID);
 
         ArgumentCaptor<WithdrawalConfig> captor = ArgumentCaptor.forClass(WithdrawalConfig.class);
         verify(withdrawalConfigRepository).save(captor.capture());
@@ -76,14 +76,14 @@ class WithdrawalConfigServiceTest {
     void updateConfigRejectsAutoUnderLimitWithNoLimit() {
         // Validation runs before the repository is ever touched, so no stubbing is needed here.
         assertThatThrownBy(() -> withdrawalConfigService.updateConfig(
-            new WithdrawalConfigRequest("AUTO_UNDER_LIMIT", null), ACTOR_ID))
+            new WithdrawalConfigRequest("AUTO_UNDER_LIMIT", null, null), ACTOR_ID))
             .isInstanceOf(InvalidWithdrawalConfigException.class);
     }
 
     @Test
     void updateConfigRejectsAutoUnderLimitWithAZeroOrNegativeLimit() {
         assertThatThrownBy(() -> withdrawalConfigService.updateConfig(
-            new WithdrawalConfigRequest("AUTO_UNDER_LIMIT", BigDecimal.ZERO), ACTOR_ID))
+            new WithdrawalConfigRequest("AUTO_UNDER_LIMIT", BigDecimal.ZERO, null), ACTOR_ID))
             .isInstanceOf(InvalidWithdrawalConfigException.class);
     }
 
@@ -94,7 +94,7 @@ class WithdrawalConfigServiceTest {
         when(withdrawalConfigRepository.findAll()).thenReturn(List.of(stored));
 
         withdrawalConfigService.updateConfig(
-            new WithdrawalConfigRequest("AUTO_UNDER_LIMIT", new BigDecimal("25000.00")), ACTOR_ID);
+            new WithdrawalConfigRequest("AUTO_UNDER_LIMIT", new BigDecimal("25000.00"), null), ACTOR_ID);
 
         ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
         verify(settingsAuditLogRepository).save(captor.capture());
@@ -104,5 +104,19 @@ class WithdrawalConfigServiceTest {
         assertThat(saved.getChangedByAssociateId()).isEqualTo(ACTOR_ID);
         assertThat(saved.getDetail()).contains("\"before\":{\"approvalMode\":\"ALWAYS_MANUAL\"")
             .contains("\"after\":{\"approvalMode\":\"AUTO_UNDER_LIMIT\"");
+    }
+
+    @Test
+    void updateConfigSavesAndReturnsMinimumWithdrawalAmount() {
+        WithdrawalConfig stored = new WithdrawalConfig();
+        when(withdrawalConfigRepository.findAll()).thenReturn(List.of(stored));
+
+        WithdrawalConfigResponse response = withdrawalConfigService.updateConfig(
+            new WithdrawalConfigRequest("ALWAYS_MANUAL", null, new BigDecimal("500.00")), ACTOR_ID);
+
+        ArgumentCaptor<WithdrawalConfig> captor = ArgumentCaptor.forClass(WithdrawalConfig.class);
+        verify(withdrawalConfigRepository).save(captor.capture());
+        assertThat(captor.getValue().getMinimumWithdrawalAmount()).isEqualByComparingTo("500.00");
+        assertThat(response.minimumWithdrawalAmount()).isEqualByComparingTo("500.00");
     }
 }

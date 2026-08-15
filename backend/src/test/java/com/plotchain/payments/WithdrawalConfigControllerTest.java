@@ -94,4 +94,31 @@ class WithdrawalConfigControllerTest {
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.error").isNotEmpty());
     }
+
+    @Test
+    void getConfigIncludesMinimumWithdrawalAmountWhenSet() throws Exception {
+        WithdrawalConfig stored = new WithdrawalConfig();
+        stored.setApprovalMode("ALWAYS_MANUAL");
+        stored.setMinimumWithdrawalAmount(new java.math.BigDecimal("500.00"));
+        when(withdrawalConfigRepository.findAll()).thenReturn(List.of(stored));
+
+        mockMvc.perform(get("/api/company/withdrawal")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.minimumWithdrawalAmount").value(500.00));
+    }
+
+    @Test
+    void putConfigSavesAndReturnsTheUpdatedMinimumWithdrawalAmount() throws Exception {
+        WithdrawalConfig stored = new WithdrawalConfig();
+        when(withdrawalConfigRepository.findAll()).thenReturn(List.of(stored));
+        when(withdrawalConfigRepository.save(any())).thenReturn(stored);
+
+        mockMvc.perform(put("/api/company/withdrawal")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"approvalMode\":\"ALWAYS_MANUAL\",\"minimumWithdrawalAmount\":0}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.minimumWithdrawalAmount").value(0));
+    }
 }

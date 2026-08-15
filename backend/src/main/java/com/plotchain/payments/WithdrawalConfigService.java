@@ -32,6 +32,7 @@ public class WithdrawalConfigService {
         // ALWAYS_MANUAL ignores the limit entirely -- cleared rather than left stale, so a
         // later switch back to AUTO_UNDER_LIMIT can't silently resurrect an old value.
         config.setAutoApproveLimit("ALWAYS_MANUAL".equals(request.approvalMode()) ? null : request.autoApproveLimit());
+        config.setMinimumWithdrawalAmount(request.minimumWithdrawalAmount());
         config.setUpdatedAt(Instant.now());
         withdrawalConfigRepository.save(config);
         WithdrawalConfigResponse after = toResponse(config);
@@ -59,6 +60,7 @@ public class WithdrawalConfigService {
         return new WithdrawalConfigResponse(
             config.getApprovalMode(),
             config.getAutoApproveLimit(),
+            config.getMinimumWithdrawalAmount(),
             config.getUpdatedAt()
         );
     }
