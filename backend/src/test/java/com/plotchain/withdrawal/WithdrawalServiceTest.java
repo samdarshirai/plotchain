@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -480,5 +481,87 @@ class WithdrawalServiceTest {
             .isInstanceOf(InvalidWithdrawalStateException.class);
 
         verify(withdrawalRequestRepository, never()).save(any());
+    }
+
+    private DisburseWithdrawalRequest disburseWith(String bankReference) {
+        return new DisburseWithdrawalRequest(bankReference);
+    }
+
+    @Test
+    void disburseThrowsWhenTheRequestIsUnknown() {
+        UUID requestId = UUID.randomUUID();
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> withdrawalService.disburse(requestId, disburseWith("BANK-REF-001"), ADMIN_ACTOR_ID))
+            .isInstanceOf(WithdrawalRequestNotFoundException.class);
+
+        verify(withdrawalRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void disburseThrowsWhenTheRequestIsStillRequested() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("300.00"), WithdrawalRequestStatus.REQUESTED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        assertThatThrownBy(() -> withdrawalService.disburse(requestId, disburseWith("BANK-REF-001"), ADMIN_ACTOR_ID))
+            .isInstanceOf(InvalidWithdrawalStateException.class);
+
+        verify(withdrawalRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void disburseThrowsWhenTheRequestIsAlreadyRejected() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("300.00"), WithdrawalRequestStatus.REJECTED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        assertThatThrownBy(() -> withdrawalService.disburse(requestId, disburseWith("BANK-REF-001"), ADMIN_ACTOR_ID))
+            .isInstanceOf(InvalidWithdrawalStateException.class);
+
+        verify(withdrawalRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void disburseThrowsWhenTheRequestIsAlreadyDisbursed() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("300.00"), WithdrawalRequestStatus.DISBURSED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        assertThatThrownBy(() -> withdrawalService.disburse(requestId, disburseWith("BANK-REF-001"), ADMIN_ACTOR_ID))
+            .isInstanceOf(InvalidWithdrawalStateException.class);
+
+        verify(withdrawalRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void disburseTransitionsApprovedToDisbursedRecordsTheBankReferenceAndMakesNoBalanceChange() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("1500.00"), WithdrawalRequestStatus.APPROVED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(verifiedActiveAssociate()));
+        when(withdrawalRequestRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdminWithdrawalResponse response = withdrawalService.disburse(requestId, disburseWith("BANK-REF-001"), ADMIN_ACTOR_ID);
+
+        assertThat(response.status()).isEqualTo(WithdrawalRequestStatus.DISBURSED);
+        assertThat(response.bankReference()).isEqualTo("BANK-REF-001");
+        assertThat(response.disbursedAt()).isNotNull();
+        verifyNoInteractions(walletRepository);
+    }
+
+    @Test
+    void disburseRecordsASettingsAuditEntry() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("1500.00"), WithdrawalRequestStatus.APPROVED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(verifiedActiveAssociate()));
+        when(withdrawalRequestRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        withdrawalService.disburse(requestId, disburseWith("BANK-REF-001"), ADMIN_ACTOR_ID);
+
+        ArgumentCaptor<String> summaryCaptor = ArgumentCaptor.forClass(String.class);
+        verify(settingsAuditService).record(eq("withdrawal"), summaryCaptor.capture(), any(), eq(ADMIN_ACTOR_ID));
+        assertThat(summaryCaptor.getValue()).contains("VP00001");
     }
 }

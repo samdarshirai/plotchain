@@ -198,6 +198,43 @@ public class WithdrawalService {
         return toResponse(withdrawalRequest, associate);
     }
 
+    // Flow "Disburse" (Decision 10): the simplest of the four withdrawal-lifecycle transitions --
+    // exactly one valid prior state (APPROVED), no branching, no refund, and no wallet mutation
+    // at all -- the associate's balance was already debited at submission time (unit 5) and is
+    // never touched again by approve (unit 7) or here. This method only ever writes the three
+    // disbursement-record fields: status, bankReference, disbursedAt. bankReference's
+    // blank-check is handled entirely by @NotBlank on DisburseWithdrawalRequest (Bean
+    // Validation, before this method runs), the same division of labor CreateWithdrawalRequest's
+    // @Positive amount already establishes. Reuses WithdrawalRequestNotFoundException and
+    // InvalidWithdrawalStateException unmodified from unit 7 -- both already mapped by
+    // WithdrawalExceptionHandler, so no handler changes are needed here.
+    @Transactional
+    public AdminWithdrawalResponse disburse(UUID id, DisburseWithdrawalRequest request, UUID actorId) {
+        WithdrawalRequest withdrawalRequest = withdrawalRequestRepository.findById(id)
+            .orElseThrow(() -> new WithdrawalRequestNotFoundException(id));
+
+        if (withdrawalRequest.getStatus() != WithdrawalRequestStatus.APPROVED) {
+            throw new InvalidWithdrawalStateException(
+                "Withdrawal request " + id + " is " + withdrawalRequest.getStatus()
+                    + " and cannot be disbursed; only an APPROVED request can be disbursed");
+        }
+
+        Associate associate = associateRepository.findById(withdrawalRequest.getAssociateId())
+            .orElseThrow(() -> new AssociateNotFoundException(withdrawalRequest.getAssociateId()));
+
+        withdrawalRequest.setStatus(WithdrawalRequestStatus.DISBURSED);
+        withdrawalRequest.setBankReference(request.bankReference());
+        withdrawalRequest.setDisbursedAt(Instant.now());
+        withdrawalRequestRepository.save(withdrawalRequest);
+
+        settingsAuditService.record("withdrawal",
+            "Withdrawal disbursed for " + associate.getUserId(),
+            Map.of("bankReference", request.bankReference()),
+            actorId);
+
+        return toResponse(withdrawalRequest, associate);
+    }
+
     private Map<UUID, Associate> associatesById(List<WithdrawalRequest> requests) {
         List<UUID> distinctAssociateIds = requests.stream().map(WithdrawalRequest::getAssociateId).distinct().toList();
         return associateRepository.findAllById(distinctAssociateIds).stream()
