@@ -6,6 +6,7 @@ import { CycleManagementService } from './cycle-management.service';
 import { CycleStatus, CyclePage, CycleSummary } from '../models/cycle.model';
 import { CycleDetail } from '../models/cycle-detail.model';
 import { CycleCloseResponse } from '../models/cycle-close-response.model';
+import { WalletCreditingResult } from '../models/wallet-crediting-result.model';
 import { EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { SidePanelComponent } from '../../shared/components/side-panel/side-panel.component';
@@ -52,6 +53,15 @@ const PAGE_SIZE = 20;
       <app-inline-banner *ngIf="closeError === 'conflict'" tone="danger" [dismissible]="true" class="cycle-management__close-conflict-error" (dismissed)="closeError = null">{{ 'admin.cycleManagement.closeConflictError' | translate }}</app-inline-banner>
       <app-inline-banner *ngIf="closeError === 'generic'" tone="danger" [dismissible]="true" class="cycle-management__close-generic-error" (dismissed)="closeError = null">{{ 'admin.cycleManagement.closeGenericError' | translate }}</app-inline-banner>
 
+      <app-inline-banner *ngIf="creditResult as result" tone="success" [dismissible]="true" class="cycle-management__credit-success" (dismissed)="creditResult = null">
+        <p>{{ 'admin.cycleManagement.creditSuccessTitle' | translate }}</p>
+        <p>{{ 'admin.cycleManagement.creditSuccessCycleLabel' | translate }}: <strong>{{ result.cycleId }}</strong> ({{ result.newCycleStatus }})</p>
+        <p>{{ 'admin.cycleManagement.creditSuccessEntriesLabel' | translate }}: <strong>{{ result.entriesCredited }}</strong></p>
+        <p>{{ 'admin.cycleManagement.creditSuccessAmountLabel' | translate }}: <strong>{{ result.totalAmountCredited }}</strong></p>
+      </app-inline-banner>
+      <app-inline-banner *ngIf="creditError === 'conflict'" tone="danger" [dismissible]="true" class="cycle-management__credit-conflict-error" (dismissed)="creditError = null">{{ 'admin.cycleManagement.creditConflictError' | translate }}</app-inline-banner>
+      <app-inline-banner *ngIf="creditError === 'generic'" tone="danger" [dismissible]="true" class="cycle-management__credit-generic-error" (dismissed)="creditError = null">{{ 'admin.cycleManagement.creditGenericError' | translate }}</app-inline-banner>
+
       <app-inline-banner *ngIf="loadError" tone="danger" [dismissible]="true" class="cycle-management__load-error" (dismissed)="loadError = false">{{ 'admin.cycleManagement.loadError' | translate }}</app-inline-banner>
 
       <div class="cycle-management__filter">
@@ -77,9 +87,19 @@ const PAGE_SIZE = 20;
         ></app-editable-table>
       </div>
       <ng-template #actionsTpl let-i="index">
-        <button type="button" class="cycle-management__view-detail-action brand-button brand-button--secondary" (click)="viewDetail(page!.cycles[i].id)">
-          {{ 'admin.cycleManagement.viewDetailAction' | translate }}
-        </button>
+        <div class="cycle-management__row-actions">
+          <button type="button" class="cycle-management__view-detail-action brand-button brand-button--secondary" (click)="viewDetail(page!.cycles[i].id)">
+            {{ 'admin.cycleManagement.viewDetailAction' | translate }}
+          </button>
+          <button
+            type="button"
+            *ngIf="page!.cycles[i].status === 'CLOSED'"
+            class="cycle-management__credit-wallets-action brand-button brand-button--secondary"
+            (click)="creditWallets(page!.cycles[i].id)"
+          >
+            {{ 'admin.cycleManagement.creditWalletsAction' | translate }}
+          </button>
+        </div>
       </ng-template>
 
       <div class="cycle-management__pagination" *ngIf="page">
@@ -153,6 +173,8 @@ export class CycleManagementComponent implements OnInit {
   currentOpenCycle: CycleSummary | null = null;
   closeResult: CycleCloseResponse | null = null;
   closeError: 'conflict' | 'generic' | null = null;
+  creditResult: WalletCreditingResult | null = null;
+  creditError: 'conflict' | 'generic' | null = null;
   private status: CycleStatus | '' = '';
 
   get currentPage(): number {
@@ -267,6 +289,20 @@ export class CycleManagementComponent implements OnInit {
       error: (err: HttpErrorResponse) => {
         this.closeResult = null;
         this.closeError = err.status === 409 ? 'conflict' : 'generic';
+      }
+    });
+  }
+
+  creditWallets(id: string): void {
+    this.creditError = null;
+    this.cycleManagementService.creditWallets(id).subscribe({
+      next: result => {
+        this.creditResult = result;
+        this.loadPage(this.page?.page ?? 0);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.creditResult = null;
+        this.creditError = err.status === 409 ? 'conflict' : 'generic';
       }
     });
   }

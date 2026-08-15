@@ -423,7 +423,15 @@
       "closeSuccessLegVolumeRowsLabel": "Leg-volume rows written",
       "closeSuccessNewCycleLabel": "New cycle opened",
       "closeConflictError": "This cycle was already closed (possibly by a concurrent request). Refresh to see its current status.",
-      "closeGenericError": "Could not close this cycle. Please try again."
+      "closeGenericError": "Could not close this cycle. Please try again.",
+      "creditWalletsAction": "Credit Wallets",
+      "creditSuccessTitle": "Wallets credited",
+      "creditSuccessCycleLabel": "Cycle",
+      "creditSuccessEntriesLabel": "Entries credited",
+      "creditSuccessAmountLabel": "Total amount credited",
+      "creditSuccessStatusLabel": "New cycle status",
+      "creditConflictError": "This cycle could not be credited -- it may already be PAID, or settlement hasn't closed yet. Refresh to see its current status.",
+      "creditGenericError": "Could not credit wallets for this cycle. Please try again."
     },
     "ledgerRegister": {
       "eyebrow": "Admin · Ledger Register",

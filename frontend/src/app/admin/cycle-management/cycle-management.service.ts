@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { CycleStatus, CyclePage } from '../models/cycle.model';
 import { CycleDetail } from '../models/cycle-detail.model';
 import { CycleCloseResponse } from '../models/cycle-close-response.model';
+import { WalletCreditingResult } from '../models/wallet-crediting-result.model';
 
 @Injectable({ providedIn: 'root' })
 export class CycleManagementService {
@@ -23,5 +24,9 @@ export class CycleManagementService {
 
   close(id: string): Observable<CycleCloseResponse> {
     return this.http.post<CycleCloseResponse>(`/api/admin/cycles/${id}/close`, {});
+  }
+
+  creditWallets(id: string): Observable<WalletCreditingResult> {
+    return this.http.post<WalletCreditingResult>(`/api/admin/cycles/${id}/credit-wallets`, {});
   }
 }

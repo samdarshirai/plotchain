@@ -164,4 +164,53 @@ describe('CycleManagementComponent', () => {
 
     expect(fixture.componentInstance.closeError).toBe('generic');
   });
+
+  it('shows a Credit Wallets button only for the CLOSED row, not the OPEN row', () => {
+    fixture.detectChanges();
+    const buttons: NodeListOf<HTMLButtonElement> = fixture.nativeElement.querySelectorAll('.cycle-management__credit-wallets-action');
+    expect(buttons.length).toBe(1);
+  });
+
+  it('credits wallets for a CLOSED cycle and shows the success banner, then reloads the current page', () => {
+    fixture.detectChanges();
+    fixture.componentInstance.creditWallets('c1');
+
+    const req = httpMock.expectOne('/api/admin/cycles/c1/credit-wallets');
+    expect(req.request.method).toBe('POST');
+    req.flush({ cycleId: 'c1', entriesCredited: 12, totalAmountCredited: 4500, newCycleStatus: 'PAID' });
+
+    httpMock.expectOne('/api/admin/cycles?page=0&size=20').flush({
+      cycles: [
+        { id: 'c1', periodStart: '2026-08-01', periodEnd: '2026-08-15', status: 'PAID' },
+        { id: 'c2', periodStart: '2026-08-16', periodEnd: '2026-08-31', status: 'OPEN' }
+      ],
+      page: 0, size: 20, totalElements: 2
+    });
+
+    expect(fixture.componentInstance.creditResult?.entriesCredited).toBe(12);
+    expect(fixture.componentInstance.creditResult?.newCycleStatus).toBe('PAID');
+    expect(fixture.componentInstance.creditError).toBeNull();
+    expect(fixture.componentInstance.page?.cycles[0].status).toBe('PAID');
+  });
+
+  it('shows a conflict error on a 409 without crashing', () => {
+    fixture.detectChanges();
+    fixture.componentInstance.creditWallets('c1');
+
+    const req = httpMock.expectOne('/api/admin/cycles/c1/credit-wallets');
+    req.flush({ error: 'Cycle is not closed, cannot credit' }, { status: 409, statusText: 'Conflict' });
+
+    expect(fixture.componentInstance.creditError).toBe('conflict');
+    expect(fixture.componentInstance.creditResult).toBeNull();
+  });
+
+  it('shows a generic error on a non-409 credit-wallets failure', () => {
+    fixture.detectChanges();
+    fixture.componentInstance.creditWallets('c1');
+
+    const req = httpMock.expectOne('/api/admin/cycles/c1/credit-wallets');
+    req.flush({ error: 'boom' }, { status: 500, statusText: 'Server Error' });
+
+    expect(fixture.componentInstance.creditError).toBe('generic');
+  });
 });
