@@ -287,6 +287,60 @@ class WithdrawalServiceTest {
         assertThat(response.totalElements()).isZero();
     }
 
+    // Flow "Own withdrawal history" (Decision 14; unit 9's associate-self equivalent of
+    // adminListReturnsAPageMappedToResponsesWithBatchResolvedAssociateFields above): myList
+    // reuses the exact same search() call as adminList, but maps to AssociateWithdrawalResponse
+    // (no associate-identity fields) and does no associate batch-lookup at all -- every row is
+    // always the caller's own, so there's nothing to resolve.
+    @Test
+    void myListReturnsAPageMappedToResponsesWithNoAssociateIdentityFields() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("1000.00"), WithdrawalRequestStatus.REQUESTED);
+
+        when(withdrawalRequestRepository.search(eq(ASSOCIATE_ID), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(request), PageRequest.of(0, 20), 1));
+
+        AssociateWithdrawalPageResponse response = withdrawalService.myList(ASSOCIATE_ID, null, 0, 20);
+
+        assertThat(response.totalElements()).isEqualTo(1);
+        assertThat(response.page()).isEqualTo(0);
+        assertThat(response.size()).isEqualTo(20);
+        assertThat(response.requests()).hasSize(1);
+        AssociateWithdrawalResponse row = response.requests().get(0);
+        assertThat(row.id()).isEqualTo(requestId);
+        assertThat(row.status()).isEqualTo(WithdrawalRequestStatus.REQUESTED);
+        assertThat(row.amount()).isEqualByComparingTo("1000.00");
+        verifyNoInteractions(associateRepository);
+    }
+
+    // Proves associateId is always passed through non-null (the caller's own id) alongside the
+    // status filter -- this is the "own requests only" guarantee at the service layer. A
+    // different associateId is never accepted as a parameter here at all (the caller-scoping
+    // itself is Task 2's controller-layer guarantee); this test only proves the value that does
+    // arrive is threaded straight through to search() unchanged.
+    @Test
+    void myListAlwaysPassesTheCallersAssociateIdAndTheStatusFilterThroughToSearchUnchanged() {
+        when(withdrawalRequestRepository.search(
+            eq(ASSOCIATE_ID), eq(WithdrawalRequestStatus.DISBURSED), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of()));
+
+        withdrawalService.myList(ASSOCIATE_ID, WithdrawalRequestStatus.DISBURSED, 0, 20);
+
+        verify(withdrawalRequestRepository).search(
+            eq(ASSOCIATE_ID), eq(WithdrawalRequestStatus.DISBURSED), eq(PageRequest.of(0, 20)));
+    }
+
+    @Test
+    void myListReturnsAnEmptyPageWhenSearchFindsNothing() {
+        when(withdrawalRequestRepository.search(eq(ASSOCIATE_ID), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of()));
+
+        AssociateWithdrawalPageResponse response = withdrawalService.myList(ASSOCIATE_ID, null, 0, 20);
+
+        assertThat(response.requests()).isEmpty();
+        assertThat(response.totalElements()).isZero();
+    }
+
     private WithdrawalDecisionRequest decisionOf(WithdrawalRequestStatus decision, String reason) {
         return new WithdrawalDecisionRequest(decision, reason);
     }

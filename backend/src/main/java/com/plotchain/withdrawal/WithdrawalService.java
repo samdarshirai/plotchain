@@ -235,6 +235,24 @@ public class WithdrawalService {
         return toResponse(withdrawalRequest, associate);
     }
 
+    // Flow "Own withdrawal history" (Decision 14): associateId is always the caller's own id,
+    // supplied by AssociateWithdrawalController from @AuthenticationPrincipal -- never null,
+    // never taken from a request parameter. Reuses the exact same search() call as adminList()
+    // above, passing the caller's id where that method passes the admin-supplied filter -- no
+    // new repository method, per unit 6's forward-compatibility note on
+    // WithdrawalRequestRepository.search. No associate batch-lookup here at all: every row
+    // belongs to the caller, so there's nothing to resolve (unlike adminList, which needs
+    // associatesById() for cross-associate rows).
+    public AssociateWithdrawalPageResponse myList(UUID associateId, WithdrawalRequestStatus status, int page, int size) {
+        Page<WithdrawalRequest> result = withdrawalRequestRepository.search(
+            associateId, status, PageRequest.of(page, size));
+
+        List<AssociateWithdrawalResponse> rows = result.getContent().stream()
+            .map(this::toAssociateResponse)
+            .toList();
+        return new AssociateWithdrawalPageResponse(rows, page, size, result.getTotalElements());
+    }
+
     private Map<UUID, Associate> associatesById(List<WithdrawalRequest> requests) {
         List<UUID> distinctAssociateIds = requests.stream().map(WithdrawalRequest::getAssociateId).distinct().toList();
         return associateRepository.findAllById(distinctAssociateIds).stream()
@@ -247,6 +265,18 @@ public class WithdrawalService {
             withdrawalRequest.getAssociateId(),
             associate == null ? null : associate.getUserId(),
             associate == null ? null : associate.getName(),
+            withdrawalRequest.getAmount(),
+            withdrawalRequest.getStatus(),
+            withdrawalRequest.getReason(),
+            withdrawalRequest.getBankReference(),
+            withdrawalRequest.getRequestedAt(),
+            withdrawalRequest.getDecidedAt(),
+            withdrawalRequest.getDisbursedAt());
+    }
+
+    private AssociateWithdrawalResponse toAssociateResponse(WithdrawalRequest withdrawalRequest) {
+        return new AssociateWithdrawalResponse(
+            withdrawalRequest.getId(),
             withdrawalRequest.getAmount(),
             withdrawalRequest.getStatus(),
             withdrawalRequest.getReason(),
