@@ -19,7 +19,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. Th
 | 9 | backend | Associate views own withdrawal history — `GET /api/associates/me/withdrawals` | 6 | pending | | |
 | 10 | screen | Admin "Ledger / Payout Approval" screen — withdrawal request lifecycle | 5, 6, 7, 8 | pending | | |
 | 11 | screen | Associate "Payout History" screen — wallet balance + own withdrawal history | 2, 9 | pending | | |
-| 12 | screen | Admin "Cycle Management" screen gains a "Credit Wallets" action for `CLOSED` cycles | 1 | planned | `2026-08-14-wallet-withdrawal-unit-12-cycle-management-credit-wallets.md` | |
+| 12 | screen | Admin "Cycle Management" screen gains a "Credit Wallets" action for `CLOSED` cycles | 1 | merged | `2026-08-14-wallet-withdrawal-unit-12-cycle-management-credit-wallets.md` | `a222839..543562a` |
 
 ## Unit detail
 
