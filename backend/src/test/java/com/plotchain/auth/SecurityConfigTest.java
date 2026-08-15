@@ -470,6 +470,29 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
     }
 
+    // Wallet/withdrawal unit 5 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
+    // "POST /api/admin/withdrawals, ADMIN-only"): same target-role-model reasoning as
+    // /api/admin/cycles/*/credit-wallets directly above. A random, never-configured
+    // associateId reaches the real (H2, unmocked-in-this-class) AssociateRepository... no --
+    // AssociateRepository IS @MockBean'd class-wide here (see class-level @MockBean list), and
+    // findById on an unstubbed UUID returns Optional.empty() by default, so an ADMIN token 404s
+    // (AssociateNotFoundException) -- proof the request passed the security layer, not proof of
+    // any particular business outcome, same "assert not 403" reasoning as
+    // adminSalesRecordIsReachableOnlyForAdminAndForbiddenForEveryOtherRole above. Every other
+    // role is blocked at the filter layer before the controller/service ever runs.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminWithdrawalsSubmitIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        String body = new ObjectMapper().writeValueAsString(
+            new com.plotchain.withdrawal.CreateWithdrawalRequest(UUID.randomUUID(), new java.math.BigDecimal("1000.00")));
+
+        mockMvc.perform(post("/api/admin/withdrawals")
+                .header("Authorization", "Bearer " + tokenFor(role))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+    }
+
     // Sales unit 2: POST /api/admin/sales is ADMIN-only, the same target-role-model pattern as
     // /api/admin/cycles/*/close above (not the isAdminFamily() convention most other admin GETs
     // still use). A random, non-existent plotId reaches the real (H2, unmocked) PlotRepository
