@@ -15,6 +15,9 @@ import com.plotchain.payments.PayoutBankAccount;
 import com.plotchain.payments.PayoutBankAccountRepository;
 import com.plotchain.payments.PayoutBankAccountService;
 import com.plotchain.payments.SecretsEncryptionService;
+import com.plotchain.payments.WithdrawalConfig;
+import com.plotchain.payments.WithdrawalConfigRepository;
+import com.plotchain.payments.WithdrawalConfigService;
 import com.plotchain.projects.Project;
 import com.plotchain.projects.ProjectRepository;
 import com.plotchain.projects.ProjectService;
@@ -56,6 +59,7 @@ class SetupStateServiceTest {
     @Mock RankTierRepository rankTierRepository;
     @Mock PaymentConfigRepository paymentConfigRepository;
     @Mock PayoutBankAccountRepository payoutBankAccountRepository;
+    @Mock WithdrawalConfigRepository withdrawalConfigRepository;
     @Mock ProjectRepository projectRepository;
     @Mock PlotRepository plotRepository;
     // SettingsAuditService is a concrete class, same as CompanyProfileService/
@@ -82,6 +86,7 @@ class SetupStateServiceTest {
             new PaymentConfigService(paymentConfigRepository,
                 new SecretsEncryptionService("test-secrets-key-at-least-32-bytes-long-for-aes"), settingsAuditService),
             new PayoutBankAccountService(payoutBankAccountRepository, settingsAuditService),
+            new WithdrawalConfigService(withdrawalConfigRepository, settingsAuditService),
             new ProjectService(projectRepository, plotRepository, settingsAuditService));
 
         // getSetupState() calls isStepComplete("paymentsKyc") on every invocation, so every test
@@ -90,6 +95,9 @@ class SetupStateServiceTest {
         // otherwise trip strict-stubbing's unnecessary-stub check.
         lenient().when(paymentConfigRepository.findAll()).thenReturn(List.of(new PaymentConfig()));
         lenient().when(payoutBankAccountRepository.findAll()).thenReturn(List.of(new PayoutBankAccount()));
+        // withdrawal_config's fresh-seeded state is blank (null minimumWithdrawalAmount) --
+        // same "default incomplete" posture as the payment/bank-account stubs above.
+        lenient().when(withdrawalConfigRepository.findAll()).thenReturn(List.of(new WithdrawalConfig()));
         // "projects" is non-required and defaults to no projects existing, matching the other
         // non-required steps' default-incomplete stubbing above.
         lenient().when(projectRepository.findAll()).thenReturn(List.of());
@@ -108,6 +116,10 @@ class SetupStateServiceTest {
         account.setIfscCode("HDFC0001234");
         account.setAccountType("CURRENT");
         when(payoutBankAccountRepository.findAll()).thenReturn(List.of(account));
+
+        WithdrawalConfig withdrawalConfig = new WithdrawalConfig();
+        withdrawalConfig.setMinimumWithdrawalAmount(new BigDecimal("500.00"));
+        when(withdrawalConfigRepository.findAll()).thenReturn(List.of(withdrawalConfig));
     }
 
     private SetupState unlaunchedState() {
@@ -346,6 +358,56 @@ class SetupStateServiceTest {
             .isTrue();
         // companyProfile and compensation are still incomplete, so the overall gate stays closed.
         assertThat(response.canGoLive()).isFalse();
+    }
+
+    @Test
+    void paymentsKycStepStaysIncompleteWhenMinimumWithdrawalAmountIsNotSetEvenIfPaymentConfigAndBankAccountAreComplete() {
+        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
+        stubCompanyProfile(new CompanyProfile());
+        stubCompanyBranding(blankBranding());
+        stubCompensationIncomplete();
+
+        PaymentConfig payment = new PaymentConfig();
+        payment.setGateway("RAZORPAY");
+        payment.setCredentialsEncrypted("encrypted-value");
+        when(paymentConfigRepository.findAll()).thenReturn(List.of(payment));
+
+        PayoutBankAccount account = new PayoutBankAccount();
+        account.setBankName("HDFC Bank");
+        account.setAccountHolder("Plotchain Estates Pvt Ltd");
+        account.setAccountNumber("50100123456789");
+        account.setIfscCode("HDFC0001234");
+        account.setAccountType("CURRENT");
+        when(payoutBankAccountRepository.findAll()).thenReturn(List.of(account));
+        // withdrawalConfigRepository left at setUp()'s default -- blank WithdrawalConfig, null
+        // minimumWithdrawalAmount -- proving the third clause independently gates the step even
+        // when the other two are complete.
+
+        SetupStateResponse response = setupStateService.getSetupState();
+
+        assertThat(response.steps().stream()
+            .filter(s -> s.key().equals("paymentsKyc")).findFirst().orElseThrow().complete())
+            .isFalse();
+    }
+
+    @Test
+    void paymentsKycStepIsCompleteWhenMinimumWithdrawalAmountIsExplicitlySetToZero() {
+        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
+        stubCompanyProfile(new CompanyProfile());
+        stubCompanyBranding(blankBranding());
+        stubCompensationIncomplete();
+        stubPaymentsKycComplete();
+        // Override stubPaymentsKycComplete()'s non-zero minimum with an explicit zero -- proves
+        // isComplete() is a null-check, not a truthiness check.
+        WithdrawalConfig zeroMinimum = new WithdrawalConfig();
+        zeroMinimum.setMinimumWithdrawalAmount(BigDecimal.ZERO);
+        when(withdrawalConfigRepository.findAll()).thenReturn(List.of(zeroMinimum));
+
+        SetupStateResponse response = setupStateService.getSetupState();
+
+        assertThat(response.steps().stream()
+            .filter(s -> s.key().equals("paymentsKyc")).findFirst().orElseThrow().complete())
+            .isTrue();
     }
 
     @Test

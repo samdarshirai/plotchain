@@ -25,6 +25,9 @@ public class WithdrawalConfig {
     @Column(name = "auto_approve_limit")
     private BigDecimal autoApproveLimit;
 
+    @Column(name = "minimum_withdrawal_amount")
+    private BigDecimal minimumWithdrawalAmount;
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
@@ -35,6 +38,9 @@ public class WithdrawalConfig {
 
     public BigDecimal getAutoApproveLimit() { return autoApproveLimit; }
     public void setAutoApproveLimit(BigDecimal autoApproveLimit) { this.autoApproveLimit = autoApproveLimit; }
+
+    public BigDecimal getMinimumWithdrawalAmount() { return minimumWithdrawalAmount; }
+    public void setMinimumWithdrawalAmount(BigDecimal minimumWithdrawalAmount) { this.minimumWithdrawalAmount = minimumWithdrawalAmount; }
 
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
