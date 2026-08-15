@@ -262,6 +262,15 @@ public class SecurityConfig {
                 // one spot.
                 .requestMatchers(HttpMethod.GET, "/api/admin/ledger")
                     .hasAuthority("ADMIN")
+                // Admin withdrawal approval queue: ADMIN-only, Wallet/withdrawal unit 6
+                // (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
+                // "Approval queue -- GET /api/admin/withdrawals, ADMIN-only"), same
+                // target-role-model pattern as GET /api/admin/ledger directly above. A GET never
+                // collides with the POST/PUT/PATCH/DELETE blanket rules above, so there's no
+                // first-match-wins ordering requirement forcing this matcher to live in any one
+                // spot -- grouped here with the other admin-list GETs for readability.
+                .requestMatchers(HttpMethod.GET, "/api/admin/withdrawals")
+                    .hasAuthority("ADMIN")
                 // Phase 5's genuinely public endpoints: the pre-login branding bootstrap, the
                 // raw logo bytes it and the login page render as <img> tags, and the favicon
                 // index.html links to -- all requested before any JWT exists. They only need to

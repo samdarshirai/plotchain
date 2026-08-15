@@ -16,6 +16,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,7 +28,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -155,5 +161,79 @@ class WithdrawalControllerTest {
                 .contentType("application/json")
                 .content(body))
             .andExpect(status().isConflict());
+    }
+
+    @Test
+    void listReturns200WithFilters() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = new WithdrawalRequest();
+        request.setId(requestId);
+        request.setAssociateId(TARGET_ASSOCIATE_ID);
+        request.setAmount(new BigDecimal("1000.00"));
+        request.setStatus(WithdrawalRequestStatus.REQUESTED);
+        request.setRequestedAt(java.time.Instant.now());
+        Associate associate = verifiedActiveAssociate();
+
+        when(withdrawalRequestRepository.search(
+            eq(TARGET_ASSOCIATE_ID), eq(WithdrawalRequestStatus.REQUESTED), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(request), PageRequest.of(0, 20), 1));
+        when(associateRepository.findAllById(List.of(TARGET_ASSOCIATE_ID))).thenReturn(List.of(associate));
+
+        mockMvc.perform(get("/api/admin/withdrawals")
+                .param("associateId", TARGET_ASSOCIATE_ID.toString())
+                .param("status", "REQUESTED")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.requests[0].id").value(requestId.toString()))
+            .andExpect(jsonPath("$.requests[0].associateUserId").value("VP00001"))
+            .andExpect(jsonPath("$.requests[0].associateName").value("Jane Doe"))
+            .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    void listReturns200WithAnEmptyPageWhenUnfiltered() throws Exception {
+        when(withdrawalRequestRepository.search(isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/admin/withdrawals")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.requests").isEmpty())
+            .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    void listClampsAnOversizedPageSizeToTheServerSideMaximum() throws Exception {
+        when(withdrawalRequestRepository.search(isNull(), isNull(), eq(PageRequest.of(0, 100))))
+            .thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/admin/withdrawals").param("size", "999999")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.size").value(100));
+    }
+
+    @Test
+    void listClampsANegativePageToZeroInsteadOfThrowing() throws Exception {
+        when(withdrawalRequestRepository.search(isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/admin/withdrawals").param("page", "-5")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.page").value(0));
+    }
+
+    @Test
+    void listIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/admin/withdrawals")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void listIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/admin/withdrawals"))
+            .andExpect(status().isUnauthorized());
     }
 }
