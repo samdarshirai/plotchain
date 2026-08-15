@@ -787,6 +787,28 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
     }
 
+    // Wallet/withdrawal unit 7 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
+    // "Decide -- POST /api/admin/withdrawals/{id}/decision, ADMIN-only"): same target-role-model
+    // pattern as POST /api/admin/withdrawals above. A random, never-persisted request id reaches
+    // the real (H2, unmocked-here) WithdrawalRequestRepository and 404s for the ADMIN token
+    // (WithdrawalRequestNotFoundException) -- proof the request passed the security layer, not
+    // proof of any particular business outcome, same "assert not 403" reasoning as
+    // adminWithdrawalsSubmitIsReachableOnlyForAdminAndForbiddenForEveryOtherRole above. Every
+    // other role is blocked at the filter layer before the controller/service ever runs.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminWithdrawalsDecideIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        String body = new ObjectMapper().writeValueAsString(
+            new com.plotchain.withdrawal.WithdrawalDecisionRequest(
+                com.plotchain.withdrawal.WithdrawalRequestStatus.APPROVED, null));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/decision", UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(role))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+    }
+
     @Test
     void kycDecisionIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(post("/api/admin/kyc/" + UUID.randomUUID() + "/decision")

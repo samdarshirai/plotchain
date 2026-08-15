@@ -34,4 +34,19 @@ public class WithdrawalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleInsufficientWalletBalance(InsufficientWalletBalanceException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(WithdrawalRequestNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleWithdrawalRequestNotFound(WithdrawalRequestNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidWithdrawalStateException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidWithdrawalState(InvalidWithdrawalStateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidWithdrawalDecisionException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidWithdrawalDecision(InvalidWithdrawalDecisionException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
+    }
 }

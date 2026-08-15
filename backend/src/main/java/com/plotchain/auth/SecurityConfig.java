@@ -106,6 +106,15 @@ public class SecurityConfig {
                 // for the same readability/grouping reason that matcher documents.
                 .requestMatchers(HttpMethod.POST, "/api/admin/withdrawals")
                     .hasAuthority("ADMIN")
+                // Wallet/withdrawal unit 7
+                // (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
+                // "Decide -- POST /api/admin/withdrawals/{id}/decision, ADMIN-only"): same
+                // target-role-model reasoning and first-match-wins placement as the submit
+                // matcher directly above -- not load-bearing on its own (the blanket POST rule
+                // below already covers it), added for the same readability/grouping reason that
+                // matcher documents.
+                .requestMatchers(HttpMethod.POST, "/api/admin/withdrawals/*/decision")
+                    .hasAuthority("ADMIN")
                 // Record a sale: ADMIN-only, per Sales unit 2
                 // (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
                 // Decision 8 and the Testing section: "record/void/register are ADMIN-only"),

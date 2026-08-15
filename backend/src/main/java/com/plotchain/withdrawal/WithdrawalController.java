@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,13 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-// Wallet/withdrawal unit 5 added POST (submit). Unit 6
+// Wallet/withdrawal unit 5 added POST (submit). Unit 6 added GET (list). Unit 7
 // (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
-// "Approval queue -- GET /api/admin/withdrawals, ADMIN-only") adds this GET (list) method to
-// this same @RequestMapping("/api/admin/withdrawals") class. Units 7-8 add the
-// /{id}/decision, /{id}/disburse POSTs. ADMIN-only enforcement for GET is via SecurityConfig's
-// explicit matcher (same as GET /api/admin/ledger) -- no @PreAuthorize needed on the method
-// itself.
+// "Decide -- POST /api/admin/withdrawals/{id}/decision, ADMIN-only") adds this decide() method.
+// Unit 8 adds the sibling /{id}/disburse POST. ADMIN-only enforcement is via SecurityConfig's
+// explicit matcher (see below) -- no @PreAuthorize needed on the method itself.
 @RestController
 @RequestMapping("/api/admin/withdrawals")
 public class WithdrawalController {
@@ -46,5 +45,13 @@ public class WithdrawalController {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
         return withdrawalService.adminList(associateId, status, page, size);
+    }
+
+    @PostMapping("/{id}/decision")
+    public AdminWithdrawalResponse decide(
+            @PathVariable UUID id,
+            @Valid @RequestBody WithdrawalDecisionRequest request,
+            @AuthenticationPrincipal UUID actorId) {
+        return withdrawalService.decide(id, request, actorId);
     }
 }

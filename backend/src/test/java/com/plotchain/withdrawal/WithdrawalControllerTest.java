@@ -236,4 +236,143 @@ class WithdrawalControllerTest {
         mockMvc.perform(get("/api/admin/withdrawals"))
             .andExpect(status().isUnauthorized());
     }
+
+    private WithdrawalRequest requestRowFor(UUID id, UUID associateId, java.math.BigDecimal amount, WithdrawalRequestStatus status) {
+        WithdrawalRequest request = new WithdrawalRequest();
+        request.setId(id);
+        request.setAssociateId(associateId);
+        request.setAmount(amount);
+        request.setStatus(status);
+        request.setRequestedAt(java.time.Instant.now());
+        return request;
+    }
+
+    @Test
+    void decideApprovesARequestedRequestAndReturns200ForAnAdminToken() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestRowFor(requestId, TARGET_ASSOCIATE_ID, new BigDecimal("1000.00"), WithdrawalRequestStatus.REQUESTED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(associateRepository.findById(TARGET_ASSOCIATE_ID)).thenReturn(Optional.of(verifiedActiveAssociate()));
+        when(withdrawalRequestRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        String body = new ObjectMapper().writeValueAsString(new WithdrawalDecisionRequest(WithdrawalRequestStatus.APPROVED, null));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/decision", requestId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("APPROVED"));
+    }
+
+    @Test
+    void decideRejectsARequestedRequestAndReturns200ForAnAdminToken() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestRowFor(requestId, TARGET_ASSOCIATE_ID, new BigDecimal("1000.00"), WithdrawalRequestStatus.REQUESTED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(associateRepository.findById(TARGET_ASSOCIATE_ID)).thenReturn(Optional.of(verifiedActiveAssociate()));
+        when(withdrawalRequestRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        String body = new ObjectMapper().writeValueAsString(new WithdrawalDecisionRequest(WithdrawalRequestStatus.REJECTED, "Not eligible"));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/decision", requestId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("REJECTED"))
+            .andExpect(jsonPath("$.reason").value("Not eligible"));
+    }
+
+    @Test
+    void decideCancelsAnApprovedRequestAndReturns200ForAnAdminToken() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestRowFor(requestId, TARGET_ASSOCIATE_ID, new BigDecimal("1000.00"), WithdrawalRequestStatus.APPROVED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(associateRepository.findById(TARGET_ASSOCIATE_ID)).thenReturn(Optional.of(verifiedActiveAssociate()));
+        when(withdrawalRequestRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        String body = new ObjectMapper().writeValueAsString(new WithdrawalDecisionRequest(WithdrawalRequestStatus.REJECTED, "Duplicate"));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/decision", requestId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("REJECTED"));
+    }
+
+    @Test
+    void decideReturns404ForAnUnknownRequestId() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.empty());
+
+        String body = new ObjectMapper().writeValueAsString(new WithdrawalDecisionRequest(WithdrawalRequestStatus.APPROVED, null));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/decision", requestId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void decideReturns409ForAnAlreadyDisbursedRequest() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestRowFor(requestId, TARGET_ASSOCIATE_ID, new BigDecimal("1000.00"), WithdrawalRequestStatus.DISBURSED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        String body = new ObjectMapper().writeValueAsString(new WithdrawalDecisionRequest(WithdrawalRequestStatus.REJECTED, "Any reason"));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/decision", requestId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void decideReturns400WhenRejectingWithABlankReason() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestRowFor(requestId, TARGET_ASSOCIATE_ID, new BigDecimal("1000.00"), WithdrawalRequestStatus.REQUESTED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        String body = new ObjectMapper().writeValueAsString(new WithdrawalDecisionRequest(WithdrawalRequestStatus.REJECTED, "  "));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/decision", requestId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void decideReturns409WhenApprovalTimeKycHasRegressed() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestRowFor(requestId, TARGET_ASSOCIATE_ID, new BigDecimal("1000.00"), WithdrawalRequestStatus.REQUESTED);
+        Associate regressed = verifiedActiveAssociate();
+        regressed.setKycStatus(KycStatus.REJECTED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(associateRepository.findById(TARGET_ASSOCIATE_ID)).thenReturn(Optional.of(regressed));
+
+        String body = new ObjectMapper().writeValueAsString(new WithdrawalDecisionRequest(WithdrawalRequestStatus.APPROVED, null));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/decision", requestId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void decideIsForbiddenForAnAssociateToken() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        String body = new ObjectMapper().writeValueAsString(new WithdrawalDecisionRequest(WithdrawalRequestStatus.APPROVED, null));
+
+        mockMvc.perform(post("/api/admin/withdrawals/{id}/decision", requestId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isForbidden());
+    }
 }
