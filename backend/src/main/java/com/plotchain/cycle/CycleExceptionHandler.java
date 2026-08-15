@@ -19,4 +19,9 @@ public class CycleExceptionHandler {
     public ResponseEntity<Map<String, String>> handleCycleAlreadyClosed(CycleAlreadyClosedException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(CyclePayoutStateException.class)
+    public ResponseEntity<Map<String, String>> handleCyclePayoutState(CyclePayoutStateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
 }
