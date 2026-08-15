@@ -1,6 +1,7 @@
 package com.plotchain.associate;
 
 import com.plotchain.company.SettingsAuditService;
+import com.plotchain.wallet.WalletCreditingService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -15,10 +16,13 @@ public class KycReviewService {
 
     private final AssociateRepository associateRepository;
     private final SettingsAuditService settingsAuditService;
+    private final WalletCreditingService walletCreditingService;
 
-    public KycReviewService(AssociateRepository associateRepository, SettingsAuditService settingsAuditService) {
+    public KycReviewService(AssociateRepository associateRepository, SettingsAuditService settingsAuditService,
+                             WalletCreditingService walletCreditingService) {
         this.associateRepository = associateRepository;
         this.settingsAuditService = settingsAuditService;
+        this.walletCreditingService = walletCreditingService;
     }
 
     public KycPageResponse list(KycStatus status, int page, int size) {
@@ -51,6 +55,18 @@ public class KycReviewService {
             "KYC " + request.decision().name() + " for " + associate.getUserId(),
             Map.of("decision", request.decision().name(), "reason", request.reason() == null ? "" : request.reason()),
             actorId);
+
+        // Wallet/withdrawal unit 4 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
+        // Decision 16): a VERIFIED decision triggers the reconciliation sweep for any
+        // CARRIED_FORWARD entries this associate has withheld across any past cycle -- no sweep
+        // on REJECTED. Cross-package call from associate into wallet, the first one in this
+        // direction in the codebase, structurally no different from the many services that
+        // already call settingsAuditService. Does not affect this method's return value or
+        // transaction outcome beyond the sweep's own wallet/ledger-entry writes, which run inside
+        // this same @Transactional method.
+        if (request.decision() == KycStatus.VERIFIED) {
+            walletCreditingService.reconcileCarriedForward(associate.getId(), associate.getUserId(), actorId);
+        }
 
         return toEntry(associate);
     }

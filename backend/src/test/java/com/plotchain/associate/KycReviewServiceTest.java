@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plotchain.company.SettingsAuditLog;
 import com.plotchain.company.SettingsAuditLogRepository;
 import com.plotchain.company.SettingsAuditService;
+import com.plotchain.wallet.WalletCreditingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +21,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +31,7 @@ class KycReviewServiceTest {
 
     @Mock AssociateRepository associateRepository;
     @Mock SettingsAuditLogRepository settingsAuditLogRepository;
+    @Mock WalletCreditingService walletCreditingService;
 
     KycReviewService service;
     private static final UUID ACTOR_ID = UUID.randomUUID();
@@ -36,7 +40,7 @@ class KycReviewServiceTest {
     void setUp() {
         SettingsAuditService settingsAuditService = new SettingsAuditService(
             settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
-        service = new KycReviewService(associateRepository, settingsAuditService);
+        service = new KycReviewService(associateRepository, settingsAuditService, walletCreditingService);
     }
 
     private Associate newAssociate(UUID id, String userId, KycStatus kycStatus) {
@@ -148,5 +152,46 @@ class KycReviewServiceTest {
         assertThat(response.pending()).isEqualTo(3L);
         assertThat(response.verified()).isEqualTo(10L);
         assertThat(response.rejected()).isEqualTo(2L);
+    }
+
+    // --- Wallet/withdrawal unit 4 (Decision 16): reconciliation sweep triggered on VERIFIED ---
+
+    @Test
+    void decideVerifiedTriggersTheReconciliationSweepWithTheAssociatesIdentityAndTheKycActor() {
+        UUID id = UUID.randomUUID();
+        Associate associate = newAssociate(id, "VP00001", KycStatus.PENDING);
+        when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
+
+        service.decide(id, new KycDecisionRequest(KycStatus.VERIFIED, null), ACTOR_ID);
+
+        verify(walletCreditingService).reconcileCarriedForward(id, "VP00001", ACTOR_ID);
+    }
+
+    @Test
+    void decideRejectedNeverTriggersTheReconciliationSweep() {
+        UUID id = UUID.randomUUID();
+        Associate associate = newAssociate(id, "VP00001", KycStatus.PENDING);
+        when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
+
+        service.decide(id, new KycDecisionRequest(KycStatus.REJECTED, "Blurry PAN photo"), ACTOR_ID);
+
+        verify(walletCreditingService, never()).reconcileCarriedForward(any(), any(), any());
+    }
+
+    @Test
+    void decideStillSucceedsAndReturnsTheUnchangedResponseShapeWhenTheSweepIsANoOp() {
+        // walletCreditingService is a mock here -- its own no-op behavior for zero CARRIED_FORWARD
+        // entries is proven by WalletCreditingServiceTest, not re-proven here. This test locks in
+        // the KycReviewService side of the contract: calling the sweep must never change decide()'s
+        // own return shape or throw, regardless of what the sweep finds.
+        UUID id = UUID.randomUUID();
+        Associate associate = newAssociate(id, "VP00001", KycStatus.PENDING);
+        when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
+
+        KycQueueEntryResponse response = service.decide(id, new KycDecisionRequest(KycStatus.VERIFIED, null), ACTOR_ID);
+
+        assertThat(response.id()).isEqualTo(id);
+        assertThat(response.userId()).isEqualTo("VP00001");
+        assertThat(response.kycStatus()).isEqualTo(KycStatus.VERIFIED);
     }
 }
