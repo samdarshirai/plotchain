@@ -3,6 +3,7 @@ package com.plotchain.company;
 import com.plotchain.compensation.CompensationPlanService;
 import com.plotchain.payments.PaymentConfigService;
 import com.plotchain.payments.PayoutBankAccountService;
+import com.plotchain.payments.WithdrawalConfigService;
 import com.plotchain.projects.ProjectService;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +30,7 @@ public class SetupStateService {
     private final CompensationPlanService compensationPlanService;
     private final PaymentConfigService paymentConfigService;
     private final PayoutBankAccountService payoutBankAccountService;
+    private final WithdrawalConfigService withdrawalConfigService;
     private final ProjectService projectService;
 
     public SetupStateService(SetupStateRepository setupStateRepository,
@@ -37,6 +39,7 @@ public class SetupStateService {
                               CompensationPlanService compensationPlanService,
                               PaymentConfigService paymentConfigService,
                               PayoutBankAccountService payoutBankAccountService,
+                              WithdrawalConfigService withdrawalConfigService,
                               ProjectService projectService) {
         this.setupStateRepository = setupStateRepository;
         this.companyProfileService = companyProfileService;
@@ -44,6 +47,7 @@ public class SetupStateService {
         this.compensationPlanService = compensationPlanService;
         this.paymentConfigService = paymentConfigService;
         this.payoutBankAccountService = payoutBankAccountService;
+        this.withdrawalConfigService = withdrawalConfigService;
         this.projectService = projectService;
     }
 
@@ -88,7 +92,8 @@ public class SetupStateService {
             case "companyProfile" -> companyProfileService.isComplete();
             case "branding" -> companyBrandingService.isComplete();
             case "compensation" -> compensationPlanService.isComplete();
-            case "paymentsKyc" -> paymentConfigService.isComplete() && payoutBankAccountService.isComplete();
+            case "paymentsKyc" -> paymentConfigService.isComplete() && payoutBankAccountService.isComplete()
+                && withdrawalConfigService.isComplete();
             case "projects" -> projectService.isComplete();
             case "reviewLaunch" -> isLaunched();
             default -> false;
