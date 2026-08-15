@@ -664,6 +664,26 @@ class SecurityConfigTest {
             .andExpect(status().isOk());
     }
 
+    // Wallet/Withdrawal unit 9 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
+    // "Own withdrawal history -- GET /api/associates/me/withdrawals, any authenticated
+    // associate"): needs no explicit SecurityConfig matcher -- a bare GET never collides with the
+    // blanket POST/PUT/PATCH/DELETE write rules above, so it falls through to
+    // anyRequest().authenticated() below, the same way GET /api/associates/me/ledger and GET
+    // /api/associates/me/wallet already do with no matcher of their own. This test proves the
+    // route is reachable by an ordinary associate token, not accidentally blocked by 403.
+    //
+    // WithdrawalRequestRepository is not @MockBean'd in this class (same "GET /api/admin/withdrawals
+    // reaches the real, unmocked-here H2 DB" convention already established further up in this
+    // file), so search() runs for real against the empty H2 test DB and returns an empty page --
+    // the request reaches a clean 200 with no further stubbing needed, same reasoning as
+    // associateMeLedgerIsReachableByAnAssociateToken above.
+    @Test
+    void associateMeWithdrawalsIsReachableByAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/associates/me/withdrawals")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk());
+    }
+
     // role-capability unit 9 (docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
     // "Compensation rules" row -- Associate sees "View own rank progress / reward tiers
     // (read-only)"): needs no explicit SecurityConfig matcher -- a bare GET never collides with
