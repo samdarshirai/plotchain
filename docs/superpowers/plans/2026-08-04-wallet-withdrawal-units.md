@@ -11,8 +11,8 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. Th
 | 1 | backend | Wallet crediting batch step — `POST /api/admin/cycles/{id}/credit-wallets` | none | merged | `2026-08-14-wallet-withdrawal-credit-wallets.md` | `13d4e62..039e286` |
 | 2 | backend | Associate views own wallet balance — `GET /api/associates/me/wallet` | none | merged | `2026-08-14-wallet-withdrawal-associate-balance.md` | `1bc8ab6..f8f9b48` |
 | 3 | backend | `withdrawal_config` gains a minimum-withdrawal-amount field, required for Go-Live | none | merged | `2026-08-14-wallet-withdrawal-config-minimum.md` | `85d2367..d4286e8` |
-| 4 | backend | KYC-verification-triggered reconciliation sweep credits `CARRIED_FORWARD` entries | 1 | planned | `2026-08-15-wallet-withdrawal-kyc-reconciliation-sweep.md` | |
-| 5 | backend | Admin submits a withdrawal request for an associate — `POST /api/admin/withdrawals` | 3 | planned | `2026-08-15-wallet-withdrawal-submit-request.md` | |
+| 4 | backend | KYC-verification-triggered reconciliation sweep credits `CARRIED_FORWARD` entries | 1 | merged | `2026-08-15-wallet-withdrawal-kyc-reconciliation-sweep.md` | `deb1ade..d53ab25` |
+| 5 | backend | Admin submits a withdrawal request for an associate — `POST /api/admin/withdrawals` | 3 | merged | `2026-08-15-wallet-withdrawal-submit-request.md` | `3aa0eb4..2d60ac9` |
 | 6 | backend | Admin views the approval queue — `GET /api/admin/withdrawals` | 5 | pending | | |
 | 7 | backend | Admin approves, rejects, or cancels-after-approval a request — `POST /api/admin/withdrawals/{id}/decision` | 5 | pending | | |
 | 8 | backend | Admin disburses an approved request — `POST /api/admin/withdrawals/{id}/disburse` | 7 | pending | | |
