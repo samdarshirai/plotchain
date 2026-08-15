@@ -23,20 +23,16 @@ import java.util.UUID;
 @RestController
 public class WalletController {
 
-    private final WalletRepository walletRepository;
+    private final WalletService walletService;
 
-    public WalletController(WalletRepository walletRepository) {
-        this.walletRepository = walletRepository;
+    public WalletController(WalletService walletService) {
+        this.walletService = walletService;
     }
 
     // Self-scoped by construction: associateId comes from the verified JWT, never from the
-    // request -- there is no way to query another associate's balance through this route. Uses
-    // the exact same lazy-default pattern DashboardService.getDashboard() already uses: a wallet
-    // that has never been credited returns a balance of zero, not a 404.
+    // request -- there is no way to query another associate's balance through this route.
     @GetMapping("/api/associates/me/wallet")
     public WalletBalanceResponse getMyWallet(@AuthenticationPrincipal UUID associateId) {
-        Wallet wallet = walletRepository.findById(associateId)
-            .orElseGet(() -> Wallet.zero(associateId));
-        return new WalletBalanceResponse(wallet.getBalance());
+        return new WalletBalanceResponse(walletService.getBalance(associateId));
     }
 }
