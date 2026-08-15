@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -63,6 +64,13 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
     // a *different* associate/cycle, this query would need revisiting to disambiguate by
     // incomeType too, but that's out of scope for this unit.
     Optional<LedgerEntry> findBySourceRef(UUID sourceRef);
+
+    // Wallet/withdrawal unit 1 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
+    // New repository methods section): the crediting step's one read query -- every PENDING entry
+    // for a closed cycle, the exact set WalletCreditingService.creditWallets(...) processes.
+    // Entries in other cycles or with CARRIED_FORWARD/PAID/REVERSED status are excluded by the
+    // query itself.
+    List<LedgerEntry> findByCycleIdAndStatus(UUID cycleId, LedgerEntryStatus status);
 
     // Income/Ledger unit 1 (docs/superpowers/specs/role-capability/2026-08-03-income-ledger-domain-design.md,
     // Decision 4, Flow "Admin ledger register"): shared by both the admin register endpoint and

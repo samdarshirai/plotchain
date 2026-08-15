@@ -18,6 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -292,5 +293,39 @@ class LedgerEntryRepositoryTest {
 
         assertThat(result.getContent()).isEmpty();
         assertThat(result.getTotalElements()).isZero();
+    }
+
+    // Wallet/withdrawal unit 1 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
+    // New repository methods section): the crediting step's one read query -- proves entries in a
+    // DIFFERENT cycle, or with a different status (CARRIED_FORWARD/PAID/REVERSED), are excluded
+    // by the query itself -- not by any extra filtering a caller would otherwise need to do.
+    @Test
+    void findByCycleIdAndStatusReturnsOnlyMatchingEntriesForThatExactCycleAndStatus() {
+        Associate associate = seedAssociate();
+        Cycle targetCycle = seedCycle();
+        Cycle otherCycle = seedCycle();
+
+        LedgerEntry pendingInTarget = ledgerEntryRepository.saveAndFlush(
+            newEntry(associate.getId(), targetCycle.getId(), IncomeType.DIRECT, UUID.randomUUID()));
+        LedgerEntry carriedForwardInTarget = newEntry(associate.getId(), targetCycle.getId(), IncomeType.MATCHING, UUID.randomUUID());
+        carriedForwardInTarget.setStatus(LedgerEntryStatus.CARRIED_FORWARD);
+        ledgerEntryRepository.saveAndFlush(carriedForwardInTarget);
+        LedgerEntry reversedInTarget = newEntry(associate.getId(), targetCycle.getId(), IncomeType.ROYALTY, UUID.randomUUID());
+        reversedInTarget.setStatus(LedgerEntryStatus.REVERSED);
+        ledgerEntryRepository.saveAndFlush(reversedInTarget);
+        LedgerEntry pendingInOtherCycle = ledgerEntryRepository.saveAndFlush(
+            newEntry(associate.getId(), otherCycle.getId(), IncomeType.DIRECT, UUID.randomUUID()));
+
+        List<LedgerEntry> found = ledgerEntryRepository.findByCycleIdAndStatus(targetCycle.getId(), LedgerEntryStatus.PENDING);
+
+        assertThat(found).extracting(LedgerEntry::getId).containsExactly(pendingInTarget.getId());
+        assertThat(pendingInOtherCycle.getId()).isNotIn(found.stream().map(LedgerEntry::getId).toList());
+    }
+
+    @Test
+    void findByCycleIdAndStatusReturnsAnEmptyListWhenNothingMatches() {
+        Cycle cycle = seedCycle();
+
+        assertThat(ledgerEntryRepository.findByCycleIdAndStatus(cycle.getId(), LedgerEntryStatus.PENDING)).isEmpty();
     }
 }
