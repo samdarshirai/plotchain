@@ -67,22 +67,7 @@ public class WalletCreditingService {
         }
 
         List<LedgerEntry> entries = ledgerEntryRepository.findByCycleIdAndStatus(cycleId, LedgerEntryStatus.PENDING);
-
-        BigDecimal totalCredited = BigDecimal.ZERO;
-        for (LedgerEntry entry : entries) {
-            // A first-time associate with no prior Wallet row gets one created rather than
-            // erroring -- creditBalance alone would silently affect 0 rows against a
-            // non-existent row.
-            if (!walletRepository.existsById(entry.getAssociateId())) {
-                walletRepository.save(Wallet.zero(entry.getAssociateId()));
-            }
-            walletRepository.creditBalance(entry.getAssociateId(), entry.getNetAmount());
-
-            entry.setStatus(LedgerEntryStatus.PAID);
-            ledgerEntryRepository.save(entry);
-
-            totalCredited = totalCredited.add(entry.getNetAmount());
-        }
+        BigDecimal totalCredited = creditEntries(entries);
 
         // Decision 3: unconditional once the PENDING set above is fully processed, regardless of
         // any CARRIED_FORWARD entries still sitting in this cycle -- PAID means "this cycle's
@@ -105,22 +90,7 @@ public class WalletCreditingService {
     @Transactional
     public ReconciliationResult reconcileCarriedForward(UUID associateId, String associateUserId, UUID actorId) {
         List<LedgerEntry> entries = ledgerEntryRepository.findByAssociateIdAndStatus(associateId, LedgerEntryStatus.CARRIED_FORWARD);
-
-        BigDecimal totalCredited = BigDecimal.ZERO;
-        for (LedgerEntry entry : entries) {
-            // Same "create a Wallet row for a first-time associate" guard as creditWallets above
-            // -- an associate whose only income was ever CARRIED_FORWARD (never had a PENDING
-            // entry credited before now) may not have a Wallet row yet.
-            if (!walletRepository.existsById(associateId)) {
-                walletRepository.save(Wallet.zero(associateId));
-            }
-            walletRepository.creditBalance(associateId, entry.getNetAmount());
-
-            entry.setStatus(LedgerEntryStatus.PAID);
-            ledgerEntryRepository.save(entry);
-
-            totalCredited = totalCredited.add(entry.getNetAmount());
-        }
+        BigDecimal totalCredited = creditEntries(entries);
 
         // Zero CARRIED_FORWARD entries is the common case -- most associates verify KYC before
         // ever having withheld income. That's a true no-op: no wallet mutation, and (per this
@@ -133,5 +103,26 @@ public class WalletCreditingService {
         }
 
         return new ReconciliationResult(associateId, entries.size(), totalCredited);
+    }
+
+    // Shared by creditWallets and reconcileCarriedForward: credit each entry's associate,
+    // auto-creating a Wallet row on a first-time associate rather than erroring (creditBalance
+    // alone would silently affect 0 rows against a non-existent row), flip the entry to PAID, and
+    // return the total credited. Callers differ only in how they select `entries` and in what, if
+    // anything, they do after this loop (Cycle status flip vs. an audit log entry).
+    private BigDecimal creditEntries(List<LedgerEntry> entries) {
+        BigDecimal totalCredited = BigDecimal.ZERO;
+        for (LedgerEntry entry : entries) {
+            if (!walletRepository.existsById(entry.getAssociateId())) {
+                walletRepository.save(Wallet.zero(entry.getAssociateId()));
+            }
+            walletRepository.creditBalance(entry.getAssociateId(), entry.getNetAmount());
+
+            entry.setStatus(LedgerEntryStatus.PAID);
+            ledgerEntryRepository.save(entry);
+
+            totalCredited = totalCredited.add(entry.getNetAmount());
+        }
+        return totalCredited;
     }
 }
