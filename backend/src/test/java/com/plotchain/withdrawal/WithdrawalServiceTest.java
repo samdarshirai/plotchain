@@ -285,4 +285,182 @@ class WithdrawalServiceTest {
         assertThat(response.requests()).isEmpty();
         assertThat(response.totalElements()).isZero();
     }
+
+    private WithdrawalDecisionRequest decisionOf(WithdrawalRequestStatus decision, String reason) {
+        return new WithdrawalDecisionRequest(decision, reason);
+    }
+
+    @Test
+    void decideThrowsWhenTheRequestIsUnknown() {
+        UUID requestId = UUID.randomUUID();
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> withdrawalService.decide(
+                requestId, decisionOf(WithdrawalRequestStatus.APPROVED, null), ADMIN_ACTOR_ID))
+            .isInstanceOf(WithdrawalRequestNotFoundException.class);
+
+        verify(withdrawalRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void decideApprovesARequestedRequestWithNoBalanceChange() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("1000.00"), WithdrawalRequestStatus.REQUESTED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(verifiedActiveAssociate()));
+        when(withdrawalRequestRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdminWithdrawalResponse response = withdrawalService.decide(
+            requestId, decisionOf(WithdrawalRequestStatus.APPROVED, null), ADMIN_ACTOR_ID);
+
+        assertThat(response.status()).isEqualTo(WithdrawalRequestStatus.APPROVED);
+        assertThat(response.decidedAt()).isNotNull();
+        verify(walletRepository, never()).creditBalance(any(), any());
+    }
+
+    @Test
+    void decideThrowsWhenApprovingARequestWhoseAssociateKycHasRegressedSinceSubmission() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("1000.00"), WithdrawalRequestStatus.REQUESTED);
+        Associate regressed = verifiedActiveAssociate();
+        regressed.setKycStatus(KycStatus.REJECTED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(regressed));
+
+        assertThatThrownBy(() -> withdrawalService.decide(
+                requestId, decisionOf(WithdrawalRequestStatus.APPROVED, null), ADMIN_ACTOR_ID))
+            .isInstanceOf(KycNotVerifiedException.class);
+
+        verify(withdrawalRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void decideRejectsARequestedRequestRefundsTheWalletAndSetsTheReason() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("750.00"), WithdrawalRequestStatus.REQUESTED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(verifiedActiveAssociate()));
+        when(withdrawalRequestRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdminWithdrawalResponse response = withdrawalService.decide(
+            requestId, decisionOf(WithdrawalRequestStatus.REJECTED, "Bank details mismatch"), ADMIN_ACTOR_ID);
+
+        assertThat(response.status()).isEqualTo(WithdrawalRequestStatus.REJECTED);
+        assertThat(response.reason()).isEqualTo("Bank details mismatch");
+        assertThat(response.decidedAt()).isNotNull();
+        verify(walletRepository).creditBalance(ASSOCIATE_ID, new BigDecimal("750.00"));
+    }
+
+    @Test
+    void decideCancelsAnApprovedRequestRefundsTheWalletIdenticallyAndProducesTheCancelledAuditMessage() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("2000.00"), WithdrawalRequestStatus.APPROVED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(verifiedActiveAssociate()));
+        when(withdrawalRequestRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdminWithdrawalResponse response = withdrawalService.decide(
+            requestId, decisionOf(WithdrawalRequestStatus.REJECTED, "Duplicate request"), ADMIN_ACTOR_ID);
+
+        assertThat(response.status()).isEqualTo(WithdrawalRequestStatus.REJECTED);
+        verify(walletRepository).creditBalance(ASSOCIATE_ID, new BigDecimal("2000.00"));
+
+        ArgumentCaptor<String> summaryCaptor = ArgumentCaptor.forClass(String.class);
+        verify(settingsAuditService).record(eq("withdrawal"), summaryCaptor.capture(), any(), eq(ADMIN_ACTOR_ID));
+        assertThat(summaryCaptor.getValue()).contains("cancelled after approval");
+    }
+
+    @Test
+    void decideRejectingFromRequestedProducesTheRejectedNotCancelledAuditMessage() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("300.00"), WithdrawalRequestStatus.REQUESTED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(verifiedActiveAssociate()));
+        when(withdrawalRequestRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        withdrawalService.decide(requestId, decisionOf(WithdrawalRequestStatus.REJECTED, "Not eligible"), ADMIN_ACTOR_ID);
+
+        ArgumentCaptor<String> summaryCaptor = ArgumentCaptor.forClass(String.class);
+        verify(settingsAuditService).record(eq("withdrawal"), summaryCaptor.capture(), any(), eq(ADMIN_ACTOR_ID));
+        assertThat(summaryCaptor.getValue()).contains("rejected").doesNotContain("cancelled");
+    }
+
+    @Test
+    void decideThrowsWhenRejectingWithABlankReasonFromRequested() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("300.00"), WithdrawalRequestStatus.REQUESTED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        assertThatThrownBy(() -> withdrawalService.decide(
+                requestId, decisionOf(WithdrawalRequestStatus.REJECTED, "  "), ADMIN_ACTOR_ID))
+            .isInstanceOf(InvalidWithdrawalDecisionException.class);
+
+        verify(walletRepository, never()).creditBalance(any(), any());
+        verify(withdrawalRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void decideThrowsWhenCancellingWithABlankReasonFromApproved() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("300.00"), WithdrawalRequestStatus.APPROVED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        assertThatThrownBy(() -> withdrawalService.decide(
+                requestId, decisionOf(WithdrawalRequestStatus.REJECTED, null), ADMIN_ACTOR_ID))
+            .isInstanceOf(InvalidWithdrawalDecisionException.class);
+
+        verify(walletRepository, never()).creditBalance(any(), any());
+    }
+
+    @Test
+    void decideThrowsWhenTheDecisionValueIsNeitherApprovedNorRejected() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("300.00"), WithdrawalRequestStatus.REQUESTED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        assertThatThrownBy(() -> withdrawalService.decide(
+                requestId, decisionOf(WithdrawalRequestStatus.DISBURSED, null), ADMIN_ACTOR_ID))
+            .isInstanceOf(InvalidWithdrawalDecisionException.class);
+
+        verify(withdrawalRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void decideThrowsWhenReApprovingAnAlreadyApprovedRequest() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("300.00"), WithdrawalRequestStatus.APPROVED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        assertThatThrownBy(() -> withdrawalService.decide(
+                requestId, decisionOf(WithdrawalRequestStatus.APPROVED, null), ADMIN_ACTOR_ID))
+            .isInstanceOf(InvalidWithdrawalStateException.class);
+
+        verify(withdrawalRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void decideThrowsWhenDecidingAnAlreadyRejectedRequest() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("300.00"), WithdrawalRequestStatus.REJECTED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        assertThatThrownBy(() -> withdrawalService.decide(
+                requestId, decisionOf(WithdrawalRequestStatus.REJECTED, "Any reason"), ADMIN_ACTOR_ID))
+            .isInstanceOf(InvalidWithdrawalStateException.class);
+
+        verify(withdrawalRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void decideThrowsWhenDecidingAnAlreadyDisbursedRequest() {
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("300.00"), WithdrawalRequestStatus.DISBURSED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        assertThatThrownBy(() -> withdrawalService.decide(
+                requestId, decisionOf(WithdrawalRequestStatus.REJECTED, "Any reason"), ADMIN_ACTOR_ID))
+            .isInstanceOf(InvalidWithdrawalStateException.class);
+
+        verify(withdrawalRequestRepository, never()).save(any());
+    }
 }

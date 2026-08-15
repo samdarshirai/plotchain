@@ -124,6 +124,77 @@ public class WithdrawalService {
         return new AdminWithdrawalPageResponse(rows, page, size, result.getTotalElements());
     }
 
+    // Flow "Decide" (Decision 17, post-review broadening of the precondition from "must be
+    // REQUESTED"): approve/reject a REQUESTED request, or cancel (reject) an already-APPROVED
+    // one, through this single method -- no separate "cancel" endpoint or status value. Guard
+    // order mirrors the spec's Flow steps exactly: 404 (unknown id) -> 409 (state precondition,
+    // Decision 17) -> 400 (malformed decision body, InvalidWithdrawalDecisionException -- see
+    // this unit's plan for why this is split from InvalidWithdrawalStateException) -> 409 (KYC
+    // regression, only on the APPROVED path, Decision 9) -> mutate -> save -> audit.
+    @Transactional
+    public AdminWithdrawalResponse decide(UUID id, WithdrawalDecisionRequest request, UUID actorId) {
+        WithdrawalRequest withdrawalRequest = withdrawalRequestRepository.findById(id)
+            .orElseThrow(() -> new WithdrawalRequestNotFoundException(id));
+
+        WithdrawalRequestStatus priorStatus = withdrawalRequest.getStatus();
+
+        // Decision 17: REJECTED/DISBURSED never accept a decision. APPROVED accepts only
+        // REJECTED (a cancel) -- re-approving is meaningless. REQUESTED accepts both, checked
+        // generically by the decision-value guard just below.
+        if (priorStatus == WithdrawalRequestStatus.REJECTED || priorStatus == WithdrawalRequestStatus.DISBURSED) {
+            throw new InvalidWithdrawalStateException(
+                "Withdrawal request " + id + " is already " + priorStatus + " and cannot be decided again");
+        }
+        if (priorStatus == WithdrawalRequestStatus.APPROVED && request.decision() != WithdrawalRequestStatus.REJECTED) {
+            throw new InvalidWithdrawalStateException(
+                "An APPROVED withdrawal request can only be cancelled (rejected), not re-approved");
+        }
+
+        if (request.decision() != WithdrawalRequestStatus.APPROVED && request.decision() != WithdrawalRequestStatus.REJECTED) {
+            throw new InvalidWithdrawalDecisionException("decision must be APPROVED or REJECTED");
+        }
+        if (request.decision() == WithdrawalRequestStatus.REJECTED
+                && (request.reason() == null || request.reason().isBlank())) {
+            throw new InvalidWithdrawalDecisionException("reason is required when rejecting");
+        }
+
+        Associate associate = associateRepository.findById(withdrawalRequest.getAssociateId())
+            .orElseThrow(() -> new AssociateNotFoundException(withdrawalRequest.getAssociateId()));
+
+        Instant now = Instant.now();
+        String summary;
+        if (request.decision() == WithdrawalRequestStatus.APPROVED) {
+            // Only reachable when priorStatus == REQUESTED, per the guards above.
+            if (associate.getKycStatus() != KycStatus.VERIFIED) {
+                throw new KycNotVerifiedException(associate.getId());
+            }
+            withdrawalRequest.setStatus(WithdrawalRequestStatus.APPROVED);
+            withdrawalRequest.setDecidedAt(now);
+            summary = "Withdrawal approved for " + associate.getUserId();
+        } else {
+            // Reachable from REQUESTED (a plain reject) or APPROVED (a post-approval cancel) --
+            // same refund call either way (Decision 10), audit message text is what
+            // distinguishes them (Decision 17).
+            walletRepository.creditBalance(withdrawalRequest.getAssociateId(), withdrawalRequest.getAmount());
+            withdrawalRequest.setStatus(WithdrawalRequestStatus.REJECTED);
+            withdrawalRequest.setReason(request.reason());
+            withdrawalRequest.setDecidedAt(now);
+            summary = priorStatus == WithdrawalRequestStatus.APPROVED
+                ? "Withdrawal cancelled after approval for " + associate.getUserId()
+                : "Withdrawal rejected for " + associate.getUserId();
+        }
+
+        withdrawalRequestRepository.save(withdrawalRequest);
+
+        settingsAuditService.record("withdrawal", summary,
+            Map.of("decision", request.decision().name(),
+                   "reason", request.reason() == null ? "" : request.reason(),
+                   "priorStatus", priorStatus.name()),
+            actorId);
+
+        return toResponse(withdrawalRequest, associate);
+    }
+
     private Map<UUID, Associate> associatesById(List<WithdrawalRequest> requests) {
         List<UUID> distinctAssociateIds = requests.stream().map(WithdrawalRequest::getAssociateId).distinct().toList();
         return associateRepository.findAllById(distinctAssociateIds).stream()
