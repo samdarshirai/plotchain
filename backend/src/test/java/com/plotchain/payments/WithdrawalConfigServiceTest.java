@@ -119,4 +119,30 @@ class WithdrawalConfigServiceTest {
         assertThat(captor.getValue().getMinimumWithdrawalAmount()).isEqualByComparingTo("500.00");
         assertThat(response.minimumWithdrawalAmount()).isEqualByComparingTo("500.00");
     }
+
+    @Test
+    void isCompleteIsFalseWhenMinimumWithdrawalAmountHasNeverBeenSet() {
+        WithdrawalConfig stored = new WithdrawalConfig();
+        when(withdrawalConfigRepository.findAll()).thenReturn(List.of(stored));
+
+        assertThat(withdrawalConfigService.isComplete()).isFalse();
+    }
+
+    @Test
+    void isCompleteIsTrueWhenMinimumWithdrawalAmountIsSet() {
+        WithdrawalConfig stored = new WithdrawalConfig();
+        stored.setMinimumWithdrawalAmount(new BigDecimal("500.00"));
+        when(withdrawalConfigRepository.findAll()).thenReturn(List.of(stored));
+
+        assertThat(withdrawalConfigService.isComplete()).isTrue();
+    }
+
+    @Test
+    void isCompleteIsTrueWhenMinimumWithdrawalAmountIsExplicitlyZero() {
+        WithdrawalConfig stored = new WithdrawalConfig();
+        stored.setMinimumWithdrawalAmount(BigDecimal.ZERO);
+        when(withdrawalConfigRepository.findAll()).thenReturn(List.of(stored));
+
+        assertThat(withdrawalConfigService.isComplete()).isTrue();
+    }
 }

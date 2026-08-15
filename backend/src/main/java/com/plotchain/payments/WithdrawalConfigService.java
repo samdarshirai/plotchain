@@ -41,6 +41,15 @@ public class WithdrawalConfigService {
         return after;
     }
 
+    // Go-Live-gating field (Decisions 6 and 18, wallet-withdrawal spec) -- matches
+    // PayoutBankAccountService.isComplete()'s exact pattern, a null-check instead of a
+    // blank-string check since this field is numeric. false while never set (the fresh
+    // V9-seeded row's state); true once set, including to exactly 0 -- an explicit "no
+    // minimum" is still a completed configuration, distinct from never having been set.
+    public boolean isComplete() {
+        return currentConfig().getMinimumWithdrawalAmount() != null;
+    }
+
     // Cross-field rule, not expressible as a single-field Bean Validation annotation -- same
     // category as compensation's reward-tier contiguity check.
     private void validate(WithdrawalConfigRequest request) {
