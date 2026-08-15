@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Payout Approval — Admin Operational Screen Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ============================================================
+     Tokens -- copied 1:1 from frontend/src/styles/_tokens.scss,
+     same values as Sales Register / Ledger Register / Cycle Management.
+     No new hex values are introduced anywhere below this block.
+     ============================================================ */
+  :root {
+    --brand-primary: #7C3AED;
+    --brand-secondary: #22D3EE;
+    --brand-gradient: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    --brand-primary-soft: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+    --brand-primary-hover: color-mix(in srgb, var(--brand-primary) 85%, white);
+    --brand-secondary-soft: color-mix(in srgb, var(--brand-secondary) 14%, transparent);
+    --brand-primary-contrast: #FFFFFF;
+
+    --surface-page: #f8f9ff;
+    --surface-card: #ffffff;
+    --surface-raised: #eff4ff;
+    --border-subtle: #c2c6d9;
+    --text-primary: #0b1c30;
+    --text-muted: #424656;
+    --status-success: #34D399;
+    --status-warning: #F59E0B;
+    --status-danger: #F87171;
+
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--surface-page);
+    color: var(--text-primary);
+    font-family: 'Inter', var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ============================================================
+     Generic primitives -- copied 1:1 from _cards.scss / _buttons.scss /
+     _forms.scss / _tables.scss / _shared-components.scss. These are the
+     REAL classes the live app renders today; the payout-approval__* /
+     submit-withdrawal__* rules further down are additive, contextually
+     scoped, same technique Sales Register / Ledger Register use.
+     ============================================================ */
+  .card { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.5rem; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: 600; text-align: left; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
+  td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-subtle); }
+  tr:hover td { background: var(--surface-raised); }
+  .editable-table__empty { padding: 1.5rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.875rem; }
+
+  button { cursor: pointer; border-radius: 8px; padding: 0.625rem 1.25rem; border: none; background: none; font-family: inherit; }
+  button:disabled { cursor: not-allowed; opacity: 0.5; }
+  .brand-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background: var(--brand-gradient); color: var(--brand-primary-contrast); font-weight: 600; transition: opacity .15s ease, transform .15s ease; }
+  .brand-button:hover:not(:disabled) { opacity: .92; }
+  .brand-button--secondary { background: var(--surface-raised); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+  .brand-button--ghost { background: transparent; color: var(--text-primary); border: 1px solid var(--brand-primary-soft); }
+  .brand-button--danger { background: var(--status-danger); color: var(--brand-primary-contrast); }
+
+  label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); }
+  input[type='text'], input[type='number'], select {
+    display: block; width: 100%; padding: 0.625rem 0.875rem; background: var(--surface-raised);
+    border: 1px solid var(--border-subtle); border-radius: 8px; font-family: inherit; font-size: 0.875rem; color: var(--text-primary);
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px var(--brand-primary-soft); }
+  input:disabled, select:disabled { opacity: 0.55; cursor: not-allowed; }
+  ::placeholder { color: var(--text-muted); }
+
+  .field-error { margin-top: 0.375rem; font-size: 0.8125rem; color: var(--status-danger); }
+
+  .inline-banner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.875rem 1.25rem; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-primary); font-size: 0.875rem; }
+  .inline-banner__content { flex: 1; }
+  .inline-banner__content p { margin: 0 0 0.375rem; }
+  .inline-banner__content p:last-child { margin-bottom: 0; }
+  .inline-banner__dismiss { background: transparent; border: none; color: inherit; font-size: 1.125rem; line-height: 1; padding: 0; cursor: pointer; opacity: .7; }
+  .inline-banner--danger { border-color: var(--status-danger); background: color-mix(in srgb, var(--status-danger) 14%, var(--surface-card)); color: var(--status-danger); }
+  .inline-banner--success { border-color: var(--status-success); background: color-mix(in srgb, var(--status-success) 14%, var(--surface-card)); color: #146c43; }
+  .inline-banner--success strong { color: #0b1c30; }
+
+  /* ============================================================
+     Payout Approval -- new bespoke rules for a future styling task
+     (_admin.scss, appended after .ledger-register__*). Contextually
+     scoped to .payout-approval, same technique the three prior
+     operational screens use.
+     ============================================================ */
+  .payout-approval { display: flex; flex-direction: column; gap: 1.5rem; max-width: 1180px; margin: 0 auto; padding: 1.5rem 2rem; font-family: 'Inter', var(--font-sans); }
+
+  .payout-approval__intro { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
+  .payout-approval__intro-copy { display: flex; flex-direction: column; gap: 0.375rem; }
+  .payout-approval__eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; color: var(--brand-primary); }
+  .payout-approval__title { margin: 0; font-family: 'Geist', var(--font-sans); font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; color: var(--text-primary); }
+  .payout-approval__subtitle { margin: 0; max-width: 40rem; font-size: 0.9375rem; line-height: 1.6; color: var(--text-muted); }
+
+  .payout-approval__filters { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 1.25rem; padding: 1.25rem 1.5rem; background: var(--surface-raised); border-radius: 16px; }
+  .payout-approval__filter-field { display: flex; flex-direction: column; gap: 0.375rem; min-width: 220px; }
+  .payout-approval__filter-field label { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  .payout-approval__filter-field select { background: var(--surface-card); }
+
+  .payout-approval .card { border: none; border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); padding: 0; overflow: hidden; }
+  /* Fixed column widths, weighted so Actions (the widest possible cell content -- two
+     input+button groups) always has room to stay on one line at desktop widths, rather
+     than auto-layout starving it in favor of Reason/Associate prose. */
+  .payout-approval .editable-table { margin: 0; table-layout: fixed; }
+  .payout-approval .editable-table th:nth-child(1), .payout-approval .editable-table td:nth-child(1) { width: 14%; }
+  .payout-approval .editable-table th:nth-child(2), .payout-approval .editable-table td:nth-child(2) { width: 8%; }
+  .payout-approval .editable-table th:nth-child(3), .payout-approval .editable-table td:nth-child(3) { width: 9%; }
+  .payout-approval .editable-table th:nth-child(4), .payout-approval .editable-table td:nth-child(4) { width: 16%; }
+  .payout-approval .editable-table th:nth-child(5), .payout-approval .editable-table td:nth-child(5) { width: 11%; }
+  .payout-approval .editable-table th:nth-child(6), .payout-approval .editable-table td:nth-child(6) { width: 12%; }
+  .payout-approval .editable-table th:nth-child(7), .payout-approval .editable-table td:nth-child(7) { width: 30%; }
+  .payout-approval .editable-table thead th { font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; background: var(--surface-card); }
+  .payout-approval .editable-table tbody td { font-size: 0.875rem; color: var(--text-primary); vertical-align: middle; }
+  .payout-approval .editable-table tbody tr:last-child td { border-bottom: none; }
+
+  /* Amount (2nd) -- ledger typography, same idiom Sales Register/Ledger Register use for money */
+  .payout-approval .editable-table td:nth-child(2) { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  /* Status (3rd) -- can't be per-value colored (plain-text cell, see DESIGN.md's Implementation
+     constraint, same platform limitation the other three screens document); uniform ledger treatment */
+  .payout-approval .editable-table td:nth-child(3) { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
+  /* Reason (4th) -- plain prose when present, em-dash placeholder when null */
+  .payout-approval .editable-table td:nth-child(4) { font-size: 0.8125rem; color: var(--text-muted); max-width: 220px; }
+  .payout-approval .editable-table td:nth-child(4).is-empty { font-style: italic; }
+  /* Bank Reference (5th) -- treated as a code/reference value, mono */
+  .payout-approval .editable-table td:nth-child(5) { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; color: var(--text-muted); white-space: nowrap; }
+  /* Requested At (6th) */
+  .payout-approval .editable-table td:nth-child(6) { font-variant-numeric: tabular-nums; color: var(--text-muted); font-size: 0.8125rem; white-space: nowrap; }
+  /* Actions (7th) -- top-aligned so a two-group action stack doesn't center-sag against a
+     single-line static tag in a neighbouring row */
+  .payout-approval .editable-table td:nth-child(7) { vertical-align: top; padding-top: 0.875rem; }
+
+  /* -- The Action Stack: the signature element. Every row's Actions cell renders the SAME
+     fixed scaffold -- zero, one, or two vertically-stacked "action groups" -- so the column's
+     rhythm never changes shape as a request moves through its lifecycle. The forward-moving
+     action (the one that keeps a request alive) always occupies the TOP slot; the
+     stopping action (the one that ends it) always occupies the BOTTOM slot -- true for both
+     REQUESTED (Approve over Reject) and APPROVED (Disburse over Cancel) -- so an admin's eye
+     learns one fixed rule instead of re-parsing four different row shapes. Terminal rows
+     (REJECTED/DISBURSED) render neither slot, just a single quiet pill -- the column visibly
+     "quiets down" as a request reaches its end, reinforcing the state machine at a glance. */
+  .payout-approval__action-stack { display: flex; flex-direction: column; gap: 0.625rem; min-width: 240px; }
+  .payout-approval__action-group { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .payout-approval__action-group + .payout-approval__action-group { padding-top: 0.625rem; border-top: 1px dashed var(--border-subtle); }
+  .payout-approval__action-group input[type='text'] { width: 158px; padding: 0.5rem 0.625rem; font-size: 0.8125rem; }
+  .payout-approval__action-group .brand-button { padding: 0.5rem 0.875rem; font-size: 0.8125rem; border-radius: 8px; white-space: nowrap; }
+
+  .payout-approval__status-tag { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.3125rem 0.75rem; border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .payout-approval__status-tag--rejected { background: color-mix(in srgb, var(--status-danger) 16%, var(--surface-card)); color: #b42318; }
+  .payout-approval__status-tag--disbursed { background: color-mix(in srgb, var(--status-success) 18%, var(--surface-card)); color: #146c43; }
+
+  .payout-approval .editable-table__empty { padding: 3rem 1.5rem; }
+
+  .payout-approval__pagination { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; padding: 0 0.25rem; }
+  .payout-approval__page-indicator { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; color: var(--text-muted); }
+  .payout-approval__pagination .brand-button--secondary { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+
+  /* ============================================================
+     Submit Withdrawal -- mirrors Record Sale's structure (same
+     eyebrow/title/subtitle/row/field/hint idiom, _admin.scss's
+     .record-sale__* rules) but with the smaller two-field form this
+     unit's approved plan actually specifies (Associate, Amount only --
+     no dependent selects). Separate route/page, no modal, per plan.
+     ============================================================ */
+  .submit-withdrawal { display: flex; flex-direction: column; gap: 1.5rem; max-width: 640px; margin: 0 auto; padding: 1.5rem 2rem; font-family: 'Inter', var(--font-sans); }
+  .submit-withdrawal__intro { display: flex; flex-direction: column; gap: 0.375rem; }
+  .submit-withdrawal__eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; color: var(--brand-primary); }
+  .submit-withdrawal__title { margin: 0; font-family: 'Geist', var(--font-sans); font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; color: var(--text-primary); }
+  .submit-withdrawal__subtitle { margin: 0; max-width: 32rem; font-size: 0.9375rem; line-height: 1.6; color: var(--text-muted); }
+
+  .submit-withdrawal .card { border: none; border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); }
+  .submit-withdrawal__form { display: flex; flex-direction: column; gap: 1.5rem; padding: 2rem; }
+  .submit-withdrawal__row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .submit-withdrawal__field { display: flex; flex-direction: column; }
+  .submit-withdrawal__field label { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-muted); }
+  .submit-withdrawal__field input, .submit-withdrawal__field select { border-radius: 12px; padding: 0.75rem 1rem; margin-top: 0.5rem; }
+  .submit-withdrawal__hint { margin-top: 0.375rem; font-size: 0.8rem; color: var(--text-muted); }
+  .submit-withdrawal__actions { display: flex; justify-content: flex-end; padding-top: 0.5rem; }
+  .submit-withdrawal .field-error { margin-top: 0.375rem; }
+
+  /* Success banner detail rows -- Request ID / Associate / Amount / Status, the same four
+     fields SubmitWithdrawalComponent's approved plan reads off the created request */
+  .submit-withdrawal__success-grid { display: flex; flex-direction: column; gap: 0.25rem; }
+  .submit-withdrawal__success-row { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+  .submit-withdrawal__success-label { font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); min-width: 84px; }
+  .submit-withdrawal__success-value { font-weight: 600; }
+  .submit-withdrawal__status-chip { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.1875rem 0.625rem; border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; }
+  .submit-withdrawal__status-chip--requested { background: color-mix(in srgb, var(--text-muted) 14%, var(--surface-card)); color: var(--text-primary); }
+  .submit-withdrawal__status-chip--approved { background: var(--brand-primary-soft); color: var(--brand-primary); }
+  .submit-withdrawal__auto-approve-hint { margin: 0.375rem 0 0; font-size: 0.8125rem; font-style: italic; color: var(--text-muted); }
+
+  /* ============================================================
+     Docs-page chrome (review harness only -- not part of the design)
+     ============================================================ */
+  .docs-index { position: sticky; top: 0; z-index: 10; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; padding: 0.875rem 2rem; background: var(--text-primary); color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+  .docs-index a { color: #cbd5ff; text-decoration: none; padding: 0.25rem 0.625rem; border-radius: 999px; }
+  .docs-index a:hover { background: rgba(255,255,255,0.12); color: #fff; }
+  .docs-index strong { color: #fff; font-weight: 700; margin-right: 0.5rem; }
+  .docs-frame { padding: 2.5rem 1.5rem; border-bottom: 1px dashed var(--border-subtle); }
+  .docs-frame__label { max-width: 1180px; margin: 0 auto 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--brand-primary); }
+  .docs-frame__stage { background: var(--surface-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding-bottom: 2rem; }
+
+  /* ============================================================
+     Responsive addendum -- 768px for the dense queue table (identical
+     data-label stacked-card technique the other three screens ship),
+     720px for the two-column Submit Withdrawal form (matches
+     create-associate/record-sale's own live breakpoint).
+     ============================================================ */
+  @media (max-width: 768px) {
+    .payout-approval__filters { flex-direction: column; align-items: stretch; }
+    .payout-approval__filter-field { min-width: 0; }
+
+    .payout-approval .editable-table { table-layout: fixed; width: 100%; }
+    .payout-approval .editable-table thead { display: none; }
+    .payout-approval .editable-table tbody tr { display: block; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); }
+    .payout-approval .editable-table tbody td { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 0.375rem 0; border-bottom: none; text-align: right; min-width: 0; width: auto !important; }
+    .payout-approval .editable-table tbody td > * { min-width: 0; }
+    .payout-approval .editable-table tbody td::before { content: attr(data-label); flex: 0 0 auto; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    .payout-approval .editable-table tbody td, .payout-approval .editable-table td:nth-child(4) { overflow-wrap: anywhere; word-break: break-word; }
+    .payout-approval .editable-table tbody td:first-child { font-family: 'Geist', var(--font-sans); font-size: 1rem; font-weight: 600; }
+    .payout-approval .editable-table td:nth-child(2),
+    .payout-approval .editable-table td:nth-child(3),
+    .payout-approval .editable-table td:nth-child(4),
+    .payout-approval .editable-table td:nth-child(5),
+    .payout-approval .editable-table td:nth-child(6) { text-align: right; }
+    .payout-approval .editable-table td:last-child { display: block; text-align: left; padding-top: 0.75rem; }
+    .payout-approval .editable-table td:last-child::before { display: none; }
+    .payout-approval__action-stack { min-width: 0; }
+    .payout-approval__action-group input[type='text'] { width: 100%; }
+    .payout-approval__action-group .brand-button,
+    .payout-approval__pagination .brand-button--secondary,
+    .submit-withdrawal .brand-button { min-height: 44px; }
+  }
+
+  @media (max-width: 720px) {
+    .submit-withdrawal__row { grid-template-columns: 1fr; }
+    .payout-approval__intro { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="docs-index">
+  <strong>Payout Approval — screen states</strong>
+  <a href="#state-1">1. Queue / loaded, all four statuses</a>
+  <a href="#state-2">2. Queue empty state</a>
+  <a href="#state-3">3. Queue error banners</a>
+  <a href="#state-4">4. Submit Withdrawal</a>
+  <a href="#state-5">5. Submit success — queued</a>
+  <a href="#state-6">6. Submit success — auto-approved</a>
+  <a href="#state-7">7. Submit field errors</a>
+  <a href="#state-8">8. Submit 409 KYC-blocked</a>
+</nav>
+
+<!-- ============================================================
+     STATE 1 -- Payout Approval queue, default/loaded. One row per
+     status (REQUESTED/APPROVED/REJECTED/DISBURSED) so the Action
+     Stack's full scaffold -- 2 groups / 2 groups / tag / tag -- is
+     visible in a single realistic table, same combined-states
+     technique Sales Register's states 1&3 use.
+     ============================================================ -->
+<section id="state-1" class="docs-frame">
+  <p class="docs-frame__label">State 1 — Queue: default/loaded, all four row-action states (the Action Stack)</p>
+  <div class="docs-frame__stage">
+    <div class="payout-approval">
+      <div class="payout-approval__intro">
+        <div class="payout-approval__intro-copy">
+          <span class="payout-approval__eyebrow">Admin · Payout Approval</span>
+          <h1 class="payout-approval__title">Payout Approval</h1>
+          <p class="payout-approval__subtitle">Review, approve, reject, and disburse associate withdrawal requests.</p>
+        </div>
+        <button type="button" class="brand-button">+ Submit Withdrawal</button>
+      </div>
+
+      <div class="payout-approval__filters">
+        <div class="payout-approval__filter-field">
+          <label for="f-associate">Associate</label>
+          <select id="f-associate">
+            <option>All associates</option>
+            <option>VP00001 — Priya Nair</option>
+            <option>VP00214 — Karan Mehta</option>
+          </select>
+        </div>
+        <div class="payout-approval__filter-field">
+          <label for="f-status">Status</label>
+          <select id="f-status">
+            <option>All statuses</option>
+            <option>Requested</option>
+            <option>Approved</option>
+            <option>Rejected</option>
+            <option>Disbursed</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead>
+            <tr>
+              <th>Associate</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Reason</th>
+              <th>Bank Reference</th>
+              <th>Requested At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Associate">VP00001 — Priya Nair</td>
+              <td data-label="Amount">₹45,000</td>
+              <td data-label="Status">REQUESTED</td>
+              <td data-label="Reason" class="is-empty">—</td>
+              <td data-label="Bank Reference" class="is-empty">—</td>
+              <td data-label="Requested At">14 Aug 2026, 10:02 am</td>
+              <td data-label="Actions">
+                <div class="payout-approval__action-stack">
+                  <div class="payout-approval__action-group">
+                    <button type="button" class="brand-button">Approve</button>
+                  </div>
+                  <div class="payout-approval__action-group">
+                    <input type="text" placeholder="Reason for rejection" />
+                    <button type="button" class="brand-button brand-button--danger">Reject</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td data-label="Associate">VP00214 — Karan Mehta</td>
+              <td data-label="Amount">₹1,20,000</td>
+              <td data-label="Status">APPROVED</td>
+              <td data-label="Reason" class="is-empty">—</td>
+              <td data-label="Bank Reference" class="is-empty">—</td>
+              <td data-label="Requested At">13 Aug 2026, 3:40 pm</td>
+              <td data-label="Actions">
+                <div class="payout-approval__action-stack">
+                  <div class="payout-approval__action-group">
+                    <input type="text" placeholder="Bank reference" />
+                    <button type="button" class="brand-button">Disburse</button>
+                  </div>
+                  <div class="payout-approval__action-group">
+                    <input type="text" placeholder="Reason for cancellation" />
+                    <button type="button" class="brand-button brand-button--danger">Cancel</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td data-label="Associate">VP00097 — Farah Qureshi</td>
+              <td data-label="Amount">₹8,500</td>
+              <td data-label="Status">REJECTED</td>
+              <td data-label="Reason">Duplicate request submitted same day.</td>
+              <td data-label="Bank Reference" class="is-empty">—</td>
+              <td data-label="Requested At">12 Aug 2026, 9:18 am</td>
+              <td data-label="Actions">
+                <span class="payout-approval__status-tag payout-approval__status-tag--rejected">Rejected</span>
+              </td>
+            </tr>
+            <tr>
+              <td data-label="Associate">VP00332 — Devika Rao</td>
+              <td data-label="Amount">₹60,000</td>
+              <td data-label="Status">DISBURSED</td>
+              <td data-label="Reason" class="is-empty">—</td>
+              <td data-label="Bank Reference">NEFT-88213</td>
+              <td data-label="Requested At">10 Aug 2026, 11:55 am</td>
+              <td data-label="Actions">
+                <span class="payout-approval__status-tag payout-approval__status-tag--disbursed">Disbursed</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="payout-approval__pagination">
+        <span class="payout-approval__page-indicator">Page 1 of 4</span>
+        <button type="button" class="brand-button brand-button--secondary" disabled>Previous</button>
+        <button type="button" class="brand-button brand-button--secondary">Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 2 -- Queue empty state
+     ============================================================ -->
+<section id="state-2" class="docs-frame">
+  <p class="docs-frame__label">State 2 — Queue: empty state (no requests match current filters)</p>
+  <div class="docs-frame__stage">
+    <div class="payout-approval">
+      <div class="payout-approval__intro">
+        <div class="payout-approval__intro-copy">
+          <span class="payout-approval__eyebrow">Admin · Payout Approval</span>
+          <h1 class="payout-approval__title">Payout Approval</h1>
+          <p class="payout-approval__subtitle">Review, approve, reject, and disburse associate withdrawal requests.</p>
+        </div>
+        <button type="button" class="brand-button">+ Submit Withdrawal</button>
+      </div>
+
+      <div class="payout-approval__filters">
+        <div class="payout-approval__filter-field">
+          <label>Associate</label>
+          <select><option>VP00512 — Ashwin Deshmukh</option></select>
+        </div>
+        <div class="payout-approval__filter-field">
+          <label>Status</label>
+          <select><option>Rejected</option></select>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead>
+            <tr><th>Associate</th><th>Amount</th><th>Status</th><th>Reason</th><th>Bank Reference</th><th>Requested At</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="editable-table__empty" colspan="7">No withdrawal requests match these filters.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 3 -- Queue load error / action error banners
+     ============================================================ -->
+<section id="state-3" class="docs-frame">
+  <p class="docs-frame__label">State 3 — Queue: load error and action error banners</p>
+  <div class="docs-frame__stage">
+    <div class="payout-approval">
+      <div class="payout-approval__intro">
+        <div class="payout-approval__intro-copy">
+          <span class="payout-approval__eyebrow">Admin · Payout Approval</span>
+          <h1 class="payout-approval__title">Payout Approval</h1>
+          <p class="payout-approval__subtitle">Review, approve, reject, and disburse associate withdrawal requests.</p>
+        </div>
+        <button type="button" class="brand-button">+ Submit Withdrawal</button>
+      </div>
+
+      <div class="payout-approval__filters">
+        <div class="payout-approval__filter-field"><label>Associate</label><select><option>All associates</option></select></div>
+        <div class="payout-approval__filter-field"><label>Status</label><select><option>All statuses</option></select></div>
+      </div>
+
+      <div class="inline-banner inline-banner--danger">
+        <div class="inline-banner__content">Something went wrong loading the payout approval queue. Please try again.</div>
+        <button type="button" class="inline-banner__dismiss">&times;</button>
+      </div>
+      <div class="inline-banner inline-banner--danger">
+        <div class="inline-banner__content">Could not save that action. Please try again.</div>
+        <button type="button" class="inline-banner__dismiss">&times;</button>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead><tr><th>Associate</th><th>Amount</th><th>Status</th><th>Reason</th><th>Bank Reference</th><th>Requested At</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td class="editable-table__empty" colspan="7">No withdrawal requests match these filters.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 4 -- Submit Withdrawal, form default
+     ============================================================ -->
+<section id="state-4" class="docs-frame">
+  <p class="docs-frame__label">State 4 — Submit Withdrawal: form default</p>
+  <div class="docs-frame__stage">
+    <div class="submit-withdrawal">
+      <div class="submit-withdrawal__intro">
+        <span class="submit-withdrawal__eyebrow">Admin · Submit Withdrawal</span>
+        <h1 class="submit-withdrawal__title">Submit Withdrawal</h1>
+        <p class="submit-withdrawal__subtitle">Submit a withdrawal request on an associate's behalf.</p>
+      </div>
+
+      <form class="card submit-withdrawal__form">
+        <div class="submit-withdrawal__row">
+          <div class="submit-withdrawal__field">
+            <label>Associate</label>
+            <select>
+              <option>Select an associate…</option>
+              <option>VP00001 — Priya Nair</option>
+              <option>VP00214 — Karan Mehta</option>
+            </select>
+          </div>
+          <div class="submit-withdrawal__field">
+            <label>Amount</label>
+            <input type="number" placeholder="e.g. 45000" />
+          </div>
+        </div>
+
+        <div class="submit-withdrawal__actions">
+          <button type="button" class="brand-button">Submit Withdrawal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 5 -- Submit Withdrawal, success (queued as REQUESTED --
+     the ordinary case, sitting in the queue awaiting a decision)
+     ============================================================ -->
+<section id="state-5" class="docs-frame">
+  <p class="docs-frame__label">State 5 — Submit Withdrawal: success, queued (status REQUESTED)</p>
+  <div class="docs-frame__stage">
+    <div class="submit-withdrawal">
+      <div class="submit-withdrawal__intro">
+        <span class="submit-withdrawal__eyebrow">Admin · Submit Withdrawal</span>
+        <h1 class="submit-withdrawal__title">Submit Withdrawal</h1>
+        <p class="submit-withdrawal__subtitle">Submit a withdrawal request on an associate's behalf.</p>
+      </div>
+
+      <div class="inline-banner inline-banner--success">
+        <div class="inline-banner__content">
+          <div class="submit-withdrawal__success-grid">
+            <div class="submit-withdrawal__success-row"><span class="submit-withdrawal__success-label">Request ID</span><span class="submit-withdrawal__success-value">w-48213</span></div>
+            <div class="submit-withdrawal__success-row"><span class="submit-withdrawal__success-label">Associate</span><span class="submit-withdrawal__success-value">VP00001 — Priya Nair</span></div>
+            <div class="submit-withdrawal__success-row"><span class="submit-withdrawal__success-label">Amount</span><span class="submit-withdrawal__success-value">₹45,000</span></div>
+            <div class="submit-withdrawal__success-row"><span class="submit-withdrawal__success-label">Status</span><span class="submit-withdrawal__status-chip submit-withdrawal__status-chip--requested">Requested</span></div>
+          </div>
+        </div>
+        <button type="button" class="brand-button brand-button--secondary">Submit Another</button>
+      </div>
+
+      <form class="card submit-withdrawal__form">
+        <div class="submit-withdrawal__row">
+          <div class="submit-withdrawal__field"><label>Associate</label><select><option>Select an associate…</option></select></div>
+          <div class="submit-withdrawal__field"><label>Amount</label><input type="number" placeholder="e.g. 45000" /></div>
+        </div>
+        <div class="submit-withdrawal__actions"><button type="button" class="brand-button">Submit Withdrawal</button></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 6 -- Submit Withdrawal, success (auto-approved -- the
+     AUTO_UNDER_LIMIT case, status comes back APPROVED already)
+     ============================================================ -->
+<section id="state-6" class="docs-frame">
+  <p class="docs-frame__label">State 6 — Submit Withdrawal: success, auto-approved (status APPROVED)</p>
+  <div class="docs-frame__stage">
+    <div class="submit-withdrawal">
+      <div class="submit-withdrawal__intro">
+        <span class="submit-withdrawal__eyebrow">Admin · Submit Withdrawal</span>
+        <h1 class="submit-withdrawal__title">Submit Withdrawal</h1>
+        <p class="submit-withdrawal__subtitle">Submit a withdrawal request on an associate's behalf.</p>
+      </div>
+
+      <div class="inline-banner inline-banner--success">
+        <div class="inline-banner__content">
+          <div class="submit-withdrawal__success-grid">
+            <div class="submit-withdrawal__success-row"><span class="submit-withdrawal__success-label">Request ID</span><span class="submit-withdrawal__success-value">w-48219</span></div>
+            <div class="submit-withdrawal__success-row"><span class="submit-withdrawal__success-label">Associate</span><span class="submit-withdrawal__success-value">VP00214 — Karan Mehta</span></div>
+            <div class="submit-withdrawal__success-row"><span class="submit-withdrawal__success-label">Amount</span><span class="submit-withdrawal__success-value">₹1,200</span></div>
+            <div class="submit-withdrawal__success-row"><span class="submit-withdrawal__success-label">Status</span><span class="submit-withdrawal__status-chip submit-withdrawal__status-chip--approved">Approved</span></div>
+          </div>
+          <p class="submit-withdrawal__auto-approve-hint">Auto-approved — under the manual review threshold. No action needed in the queue; ready to disburse.</p>
+        </div>
+        <button type="button" class="brand-button brand-button--secondary">Submit Another</button>
+      </div>
+
+      <form class="card submit-withdrawal__form">
+        <div class="submit-withdrawal__row">
+          <div class="submit-withdrawal__field"><label>Associate</label><select><option>Select an associate…</option></select></div>
+          <div class="submit-withdrawal__field"><label>Amount</label><input type="number" placeholder="e.g. 45000" /></div>
+        </div>
+        <div class="submit-withdrawal__actions"><button type="button" class="brand-button">Submit Withdrawal</button></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 7 -- Submit Withdrawal, field validation errors (400)
+     ============================================================ -->
+<section id="state-7" class="docs-frame">
+  <p class="docs-frame__label">State 7 — Submit Withdrawal: field validation errors (400)</p>
+  <div class="docs-frame__stage">
+    <div class="submit-withdrawal">
+      <div class="submit-withdrawal__intro">
+        <span class="submit-withdrawal__eyebrow">Admin · Submit Withdrawal</span>
+        <h1 class="submit-withdrawal__title">Submit Withdrawal</h1>
+        <p class="submit-withdrawal__subtitle">Submit a withdrawal request on an associate's behalf.</p>
+      </div>
+
+      <form class="card submit-withdrawal__form">
+        <div class="submit-withdrawal__row">
+          <div class="submit-withdrawal__field">
+            <label>Associate</label>
+            <select><option>Select an associate…</option></select>
+            <div class="field-error">This field is required.</div>
+          </div>
+          <div class="submit-withdrawal__field">
+            <label>Amount</label>
+            <input type="number" placeholder="e.g. 45000" />
+            <div class="field-error">Amount must be positive.</div>
+          </div>
+        </div>
+        <div class="submit-withdrawal__actions"><button type="button" class="brand-button">Submit Withdrawal</button></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 8 -- Submit Withdrawal, 409 conflict -- this is the concrete
+     resolution of the plan's "KYC-blocked" open question: no separate
+     blocked-list screen, the backend's own message surfaces right here.
+     ============================================================ -->
+<section id="state-8" class="docs-frame">
+  <p class="docs-frame__label">State 8 — Submit Withdrawal: 409 conflict (KYC-blocked associate, shown in-place)</p>
+  <div class="docs-frame__stage">
+    <div class="submit-withdrawal">
+      <div class="submit-withdrawal__intro">
+        <span class="submit-withdrawal__eyebrow">Admin · Submit Withdrawal</span>
+        <h1 class="submit-withdrawal__title">Submit Withdrawal</h1>
+        <p class="submit-withdrawal__subtitle">Submit a withdrawal request on an associate's behalf.</p>
+      </div>
+
+      <div class="inline-banner inline-banner--danger">
+        <div class="inline-banner__content">Associate KYC is not verified: VP00097 — Farah Qureshi.</div>
+        <button type="button" class="inline-banner__dismiss">&times;</button>
+      </div>
+
+      <form class="card submit-withdrawal__form">
+        <div class="submit-withdrawal__row">
+          <div class="submit-withdrawal__field"><label>Associate</label><select><option selected>VP00097 — Farah Qureshi</option></select></div>
+          <div class="submit-withdrawal__field"><label>Amount</label><input type="number" value="15000" /></div>
+        </div>
+        <div class="submit-withdrawal__actions"><button type="button" class="brand-button">Submit Withdrawal</button></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
