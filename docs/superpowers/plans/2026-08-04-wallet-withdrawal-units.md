@@ -8,9 +8,9 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. Th
 
 | # | Type | Unit | Depends on | Status | Plan file | Merged as |
 |---|---|---|---|---|---|---|
-| 1 | backend | Wallet crediting batch step — `POST /api/admin/cycles/{id}/credit-wallets` | none | planned | `2026-08-14-wallet-withdrawal-credit-wallets.md` | |
-| 2 | backend | Associate views own wallet balance — `GET /api/associates/me/wallet` | none | planned | `2026-08-14-wallet-withdrawal-associate-balance.md` | |
-| 3 | backend | `withdrawal_config` gains a minimum-withdrawal-amount field, required for Go-Live | none | planned | `2026-08-14-wallet-withdrawal-config-minimum.md` | |
+| 1 | backend | Wallet crediting batch step — `POST /api/admin/cycles/{id}/credit-wallets` | none | merged | `2026-08-14-wallet-withdrawal-credit-wallets.md` | `13d4e62..039e286` |
+| 2 | backend | Associate views own wallet balance — `GET /api/associates/me/wallet` | none | merged | `2026-08-14-wallet-withdrawal-associate-balance.md` | `1bc8ab6..f8f9b48` |
+| 3 | backend | `withdrawal_config` gains a minimum-withdrawal-amount field, required for Go-Live | none | merged | `2026-08-14-wallet-withdrawal-config-minimum.md` | `85d2367..d4286e8` |
 | 4 | backend | KYC-verification-triggered reconciliation sweep credits `CARRIED_FORWARD` entries | 1 | pending | | |
 | 5 | backend | Admin submits a withdrawal request for an associate — `POST /api/admin/withdrawals` | 3 | pending | | |
 | 6 | backend | Admin views the approval queue — `GET /api/admin/withdrawals` | 5 | pending | | |
