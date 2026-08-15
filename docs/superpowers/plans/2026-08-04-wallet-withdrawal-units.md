@@ -16,8 +16,8 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. Th
 | 6 | backend | Admin views the approval queue — `GET /api/admin/withdrawals` | 5 | merged | `2026-08-15-wallet-withdrawal-approval-queue.md` | `4b5fc28..24d5713` |
 | 7 | backend | Admin approves, rejects, or cancels-after-approval a request — `POST /api/admin/withdrawals/{id}/decision` | 5 | merged | `2026-08-15-wallet-withdrawal-decision.md` | `61b0824..313e031` |
 | 8 | backend | Admin disburses an approved request — `POST /api/admin/withdrawals/{id}/disburse` | 7 | merged | `2026-08-15-wallet-withdrawal-disburse.md` | `8973dfa..c6545f8` |
-| 9 | backend | Associate views own withdrawal history — `GET /api/associates/me/withdrawals` | 6 | pending | | |
-| 10 | screen | Admin "Ledger / Payout Approval" screen — withdrawal request lifecycle | 5, 6, 7, 8 | pending | | |
+| 9 | backend | Associate views own withdrawal history — `GET /api/associates/me/withdrawals` | 6 | planned | `2026-08-15-wallet-withdrawal-associate-history.md` | |
+| 10 | screen | Admin "Ledger / Payout Approval" screen — withdrawal request lifecycle | 5, 6, 7, 8 | planned | `2026-08-15-wallet-withdrawal-unit-10-admin-payout-approval-screen.md` | |
 | 11 | screen | Associate "Payout History" screen — wallet balance + own withdrawal history | 2, 9 | pending | | |
 | 12 | screen | Admin "Cycle Management" screen gains a "Credit Wallets" action for `CLOSED` cycles | 1 | merged | `2026-08-14-wallet-withdrawal-unit-12-cycle-management-credit-wallets.md` | `a222839..543562a` |
 
