@@ -4,6 +4,7 @@ import { CycleManagementService } from './cycle-management.service';
 import { CyclePage } from '../models/cycle.model';
 import { CycleDetail } from '../models/cycle-detail.model';
 import { CycleCloseResponse } from '../models/cycle-close-response.model';
+import { WalletCreditingResult } from '../models/wallet-crediting-result.model';
 
 describe('CycleManagementService', () => {
   let service: CycleManagementService;
@@ -58,6 +59,18 @@ describe('CycleManagementService', () => {
     service.close('c1').subscribe(res => expect(res).toEqual(mockResponse));
 
     const req = httpMock.expectOne('/api/admin/cycles/c1/close');
+    expect(req.request.method).toBe('POST');
+    req.flush(mockResponse);
+  });
+
+  it('credits wallets for a cycle by id', () => {
+    const mockResponse: WalletCreditingResult = {
+      cycleId: 'c1', entriesCredited: 12, totalAmountCredited: 4500, newCycleStatus: 'PAID'
+    };
+
+    service.creditWallets('c1').subscribe(res => expect(res).toEqual(mockResponse));
+
+    const req = httpMock.expectOne('/api/admin/cycles/c1/credit-wallets');
     expect(req.request.method).toBe('POST');
     req.flush(mockResponse);
   });
