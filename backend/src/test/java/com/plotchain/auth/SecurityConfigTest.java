@@ -596,6 +596,25 @@ class SecurityConfigTest {
             .andExpect(status().isOk());
     }
 
+    // Wallet/Withdrawal unit 2 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
+    // "GET /api/associates/me/wallet, any authenticated associate"): needs no explicit
+    // SecurityConfig matcher -- a bare GET never collides with the blanket POST/PUT/PATCH/DELETE
+    // write rules above, so it falls through to anyRequest().authenticated() below, the same way
+    // GET /api/associates/me/dashboard and GET /api/associates/me/ledger already do with no
+    // matcher of their own. This test proves the route is reachable by an ordinary associate
+    // token, not accidentally blocked by 403.
+    //
+    // walletRepository is not @MockBean'd in this class, so findById runs for real against the
+    // empty H2 test DB, finds nothing, and WalletController's lazy-default (Wallet.zero) kicks
+    // in -- the request reaches a clean 200 with no further stubbing needed, same reasoning as
+    // associateMeLedgerIsReachableByAnAssociateToken above.
+    @Test
+    void associateMeWalletIsReachableByAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/associates/me/wallet")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk());
+    }
+
     // role-capability unit 9 (docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
     // "Compensation rules" row -- Associate sees "View own rank progress / reward tiers
     // (read-only)"): needs no explicit SecurityConfig matcher -- a bare GET never collides with
