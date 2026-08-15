@@ -426,6 +426,24 @@ class WithdrawalServiceTest {
     }
 
     @Test
+    void decideThrowsInvalidDecisionNotInvalidStateWhenTheDecisionValueIsGarbageOnAnApprovedRequest() {
+        // Regression for a guard-ordering bug: an invalid decision value must always be a 400
+        // InvalidWithdrawalDecisionException, even against an APPROVED request that would
+        // otherwise 409 for the state-precondition reason -- body validation runs before state
+        // checks now, precisely to avoid this request getting the misleading "cannot be
+        // re-approved" message when its real problem is the malformed decision value.
+        UUID requestId = UUID.randomUUID();
+        WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("300.00"), WithdrawalRequestStatus.APPROVED);
+        when(withdrawalRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        assertThatThrownBy(() -> withdrawalService.decide(
+                requestId, decisionOf(WithdrawalRequestStatus.DISBURSED, null), ADMIN_ACTOR_ID))
+            .isInstanceOf(InvalidWithdrawalDecisionException.class);
+
+        verify(withdrawalRequestRepository, never()).save(any());
+    }
+
+    @Test
     void decideThrowsWhenReApprovingAnAlreadyApprovedRequest() {
         UUID requestId = UUID.randomUUID();
         WithdrawalRequest request = requestFor(requestId, ASSOCIATE_ID, new BigDecimal("300.00"), WithdrawalRequestStatus.APPROVED);

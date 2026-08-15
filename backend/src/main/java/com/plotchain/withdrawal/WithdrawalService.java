@@ -127,10 +127,13 @@ public class WithdrawalService {
     // Flow "Decide" (Decision 17, post-review broadening of the precondition from "must be
     // REQUESTED"): approve/reject a REQUESTED request, or cancel (reject) an already-APPROVED
     // one, through this single method -- no separate "cancel" endpoint or status value. Guard
-    // order mirrors the spec's Flow steps exactly: 404 (unknown id) -> 409 (state precondition,
-    // Decision 17) -> 400 (malformed decision body, InvalidWithdrawalDecisionException -- see
-    // this unit's plan for why this is split from InvalidWithdrawalStateException) -> 409 (KYC
-    // regression, only on the APPROVED path, Decision 9) -> mutate -> save -> audit.
+    // order: 404 (unknown id) -> 400 (malformed decision body, InvalidWithdrawalDecisionException
+    // -- checked before the state guards below so a request with an invalid decision value always
+    // gets the body-validation error, regardless of the target's current status; the spec's Flow
+    // steps don't mandate state-before-body, and this ordering avoids a misleading 409 "cannot be
+    // re-approved" message on a request whose real problem is an invalid decision value) -> 409
+    // (state precondition, Decision 17) -> 409 (KYC regression, only on the APPROVED path,
+    // Decision 9) -> mutate -> save -> audit.
     @Transactional
     public AdminWithdrawalResponse decide(UUID id, WithdrawalDecisionRequest request, UUID actorId) {
         WithdrawalRequest withdrawalRequest = withdrawalRequestRepository.findById(id)
@@ -138,9 +141,17 @@ public class WithdrawalService {
 
         WithdrawalRequestStatus priorStatus = withdrawalRequest.getStatus();
 
+        if (request.decision() != WithdrawalRequestStatus.APPROVED && request.decision() != WithdrawalRequestStatus.REJECTED) {
+            throw new InvalidWithdrawalDecisionException("decision must be APPROVED or REJECTED");
+        }
+        if (request.decision() == WithdrawalRequestStatus.REJECTED
+                && (request.reason() == null || request.reason().isBlank())) {
+            throw new InvalidWithdrawalDecisionException("reason is required when rejecting");
+        }
+
         // Decision 17: REJECTED/DISBURSED never accept a decision. APPROVED accepts only
-        // REJECTED (a cancel) -- re-approving is meaningless. REQUESTED accepts both, checked
-        // generically by the decision-value guard just below.
+        // REJECTED (a cancel) -- re-approving is meaningless. REQUESTED accepts both, already
+        // confirmed valid by the decision-value guard above.
         if (priorStatus == WithdrawalRequestStatus.REJECTED || priorStatus == WithdrawalRequestStatus.DISBURSED) {
             throw new InvalidWithdrawalStateException(
                 "Withdrawal request " + id + " is already " + priorStatus + " and cannot be decided again");
@@ -148,14 +159,6 @@ public class WithdrawalService {
         if (priorStatus == WithdrawalRequestStatus.APPROVED && request.decision() != WithdrawalRequestStatus.REJECTED) {
             throw new InvalidWithdrawalStateException(
                 "An APPROVED withdrawal request can only be cancelled (rejected), not re-approved");
-        }
-
-        if (request.decision() != WithdrawalRequestStatus.APPROVED && request.decision() != WithdrawalRequestStatus.REJECTED) {
-            throw new InvalidWithdrawalDecisionException("decision must be APPROVED or REJECTED");
-        }
-        if (request.decision() == WithdrawalRequestStatus.REJECTED
-                && (request.reason() == null || request.reason().isBlank())) {
-            throw new InvalidWithdrawalDecisionException("reason is required when rejecting");
         }
 
         Associate associate = associateRepository.findById(withdrawalRequest.getAssociateId())
