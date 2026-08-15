@@ -444,6 +444,32 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
     }
 
+    // Wallet/withdrawal unit 1 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
+    // "POST /api/admin/cycles/{id}/credit-wallets, ADMIN-only"): same target-role-model reasoning
+    // and first-match-wins placement as /api/admin/cycles/*/close directly above it in
+    // SecurityConfig. cycleRepository.findByIdForUpdate is stubbed to return a CLOSED cycle so an
+    // ADMIN token reaches 200; ledgerEntryRepository/walletRepository are NOT @MockBean'd in this
+    // class, so the real WalletCreditingService runs against the empty H2 test DB, finds zero
+    // PENDING entries, and completes as a legitimate no-op credit (entriesCredited = 0). Every
+    // other role, including the soon-to-be-deleted admin-family sub-roles, is blocked at the
+    // filter layer before the controller/service ever runs.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminCyclesCreditWalletsIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        UUID cycleId = UUID.randomUUID();
+        Cycle cycle = new Cycle();
+        cycle.setId(cycleId);
+        cycle.setPeriodStart(java.time.LocalDate.of(2026, 7, 1));
+        cycle.setPeriodEnd(java.time.LocalDate.of(2026, 7, 15));
+        cycle.setStatus(CycleStatus.CLOSED);
+        when(cycleRepository.findByIdForUpdate(cycleId)).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(post("/api/admin/cycles/{id}/credit-wallets", cycleId)
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+    }
+
     // Sales unit 2: POST /api/admin/sales is ADMIN-only, the same target-role-model pattern as
     // /api/admin/cycles/*/close above (not the isAdminFamily() convention most other admin GETs
     // still use). A random, non-existent plotId reaches the real (H2, unmocked) PlotRepository

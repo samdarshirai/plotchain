@@ -89,6 +89,15 @@ public class SecurityConfig {
                 // the ADMIN-only access this route requires.
                 .requestMatchers(HttpMethod.POST, "/api/admin/cycles/*/close")
                     .hasAuthority("ADMIN")
+                // Wallet/withdrawal unit 1
+                // (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
+                // "POST /api/admin/cycles/{id}/credit-wallets, ADMIN-only"): same target-role-model
+                // reasoning and first-match-wins placement as the cycle-close matcher directly
+                // above -- not load-bearing on its own (the blanket POST rule below already
+                // covers it), added for the same readability/grouping reason that matcher
+                // documents.
+                .requestMatchers(HttpMethod.POST, "/api/admin/cycles/*/credit-wallets")
+                    .hasAuthority("ADMIN")
                 // Record a sale: ADMIN-only, per Sales unit 2
                 // (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
                 // Decision 8 and the Testing section: "record/void/register are ADMIN-only"),
