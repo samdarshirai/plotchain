@@ -87,4 +87,49 @@ class WalletRepositoryTest {
         assertThat(affected).isZero();
         assertThat(walletRepository.findById(neverCreditedAssociateId)).isEmpty();
     }
+
+    @Test
+    void debitIfSufficientDecrementsAnExistingWalletsBalanceAndReturnsOneAffectedRowWhenBalanceCovers() {
+        Associate associate = seedAssociate();
+        Wallet wallet = Wallet.zero(associate.getId());
+        entityManager.persist(wallet);
+        walletRepository.creditBalance(associate.getId(), new BigDecimal("100.00"));
+        entityManager.flush();
+        entityManager.clear();
+
+        int affected = walletRepository.debitIfSufficient(associate.getId(), new BigDecimal("40.00"));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(affected).isEqualTo(1);
+        Wallet reread = walletRepository.findById(associate.getId()).orElseThrow();
+        assertThat(reread.getBalance()).isEqualByComparingTo("60.00");
+    }
+
+    @Test
+    void debitIfSufficientReturnsZeroAndLeavesTheBalanceUnchangedWhenBalanceIsTooLow() {
+        Associate associate = seedAssociate();
+        entityManager.persist(Wallet.zero(associate.getId()));
+        walletRepository.creditBalance(associate.getId(), new BigDecimal("10.00"));
+        entityManager.flush();
+        entityManager.clear();
+
+        int affected = walletRepository.debitIfSufficient(associate.getId(), new BigDecimal("10.01"));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(affected).isZero();
+        Wallet reread = walletRepository.findById(associate.getId()).orElseThrow();
+        assertThat(reread.getBalance()).isEqualByComparingTo("10.00");
+    }
+
+    @Test
+    void debitIfSufficientReturnsZeroWhenNoWalletRowExistsAtAll() {
+        UUID neverCreditedAssociateId = UUID.randomUUID();
+
+        int affected = walletRepository.debitIfSufficient(neverCreditedAssociateId, new BigDecimal("0.01"));
+
+        assertThat(affected).isZero();
+        assertThat(walletRepository.findById(neverCreditedAssociateId)).isEmpty();
+    }
 }
