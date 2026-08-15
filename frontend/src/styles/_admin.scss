@@ -987,6 +987,15 @@ body.admin-associate-active {
   font-size: 0.8125rem;
 }
 
+// Action column now holds two buttons per CLOSED row (View Detail, Credit Wallets) --
+// a plain flex/gap wrapper, no new tokens.
+.cycle-management__row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 // Detail side panel -- signature host #2 for the Cycle Rail.
 .cycle-detail__meta {
   display: flex;
