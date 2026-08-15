@@ -9,13 +9,17 @@ import com.plotchain.company.SettingsAuditService;
 import com.plotchain.payments.WithdrawalConfigResponse;
 import com.plotchain.payments.WithdrawalConfigService;
 import com.plotchain.wallet.WalletRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 // Wallet/withdrawal unit 5 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
 // Flow "Submit a withdrawal request"): one service for the withdrawal-request lifecycle
@@ -102,12 +106,36 @@ public class WithdrawalService {
         return toResponse(withdrawalRequest, associate);
     }
 
+    // Flow "Approval queue" (Decision 14): full cross-associate visibility, batch-resolving
+    // associate identity once per page -- same pattern as LedgerService.adminList. Method name
+    // mirrors LedgerService.adminList deliberately, so a future WithdrawalService.myWithdrawals(...)
+    // (unit 9) reads as its obvious sibling and can reuse this same search() call, passing the
+    // caller's own id as associateId instead of the admin-supplied filter.
+    public AdminWithdrawalPageResponse adminList(UUID associateId, WithdrawalRequestStatus status, int page, int size) {
+        Page<WithdrawalRequest> result = withdrawalRequestRepository.search(
+            associateId, status, PageRequest.of(page, size));
+
+        List<WithdrawalRequest> content = result.getContent();
+        Map<UUID, Associate> associatesById = associatesById(content);
+
+        List<AdminWithdrawalResponse> rows = content.stream()
+            .map(r -> toResponse(r, associatesById.get(r.getAssociateId())))
+            .toList();
+        return new AdminWithdrawalPageResponse(rows, page, size, result.getTotalElements());
+    }
+
+    private Map<UUID, Associate> associatesById(List<WithdrawalRequest> requests) {
+        List<UUID> distinctAssociateIds = requests.stream().map(WithdrawalRequest::getAssociateId).distinct().toList();
+        return associateRepository.findAllById(distinctAssociateIds).stream()
+            .collect(Collectors.toMap(Associate::getId, a -> a));
+    }
+
     private AdminWithdrawalResponse toResponse(WithdrawalRequest withdrawalRequest, Associate associate) {
         return new AdminWithdrawalResponse(
             withdrawalRequest.getId(),
             withdrawalRequest.getAssociateId(),
-            associate.getUserId(),
-            associate.getName(),
+            associate == null ? null : associate.getUserId(),
+            associate == null ? null : associate.getName(),
             withdrawalRequest.getAmount(),
             withdrawalRequest.getStatus(),
             withdrawalRequest.getReason(),
