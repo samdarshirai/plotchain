@@ -44,7 +44,8 @@ function isCompleteRewardTierRow(row: Record<string, string | number>): boolean 
 }
 
 // The only form fields with a visible <app-field-error> in the template. A server-side
-// field error keyed on anything else (settlementCycle, royaltyBonusRates, rewardTiers, or an
+// field error keyed on anything else (settlementCycle, royaltyBonusRates, rewardTiers,
+// minWithdrawal -- hidden per B2, see the template comment where it used to render -- or an
 // unkeyed 500) would otherwise render nothing at all -- those get routed to submitError instead.
 const RENDERED_FIELD_ERROR_KEYS = [
   'directIncomePct',
@@ -53,8 +54,7 @@ const RENDERED_FIELD_ERROR_KEYS = [
   'tdsPct',
   'adminChargeWithPanPct',
   'adminChargeWithoutPanPct',
-  'activationFee',
-  'minWithdrawal'
+  'activationFee'
 ];
 
 @Component({
@@ -228,11 +228,15 @@ const RENDERED_FIELD_ERROR_KEYS = [
             <app-field-error [message]="fieldError('activationFee')"></app-field-error>
           </div>
 
-          <label>
-            {{ 'setup.compensation.minWithdrawalLabel' | translate }}
-            <input type="number" formControlName="minWithdrawal" (blur)="markTouched('minWithdrawal')" />
-          </label>
-          <app-field-error [message]="fieldError('minWithdrawal')"></app-field-error>
+          <!--
+            minWithdrawal is intentionally not rendered here: this control backs the legacy
+            compensation_plan_version.min_withdrawal column, a distinct setting from the real
+            Go-Live-gating field (withdrawal_config.minimum_withdrawal_amount, surfaced on the
+            Payments & KYC step's Withdrawal Approval card). Showing both under a near-identical
+            label was the source of QA finding B2. The control/validator stay registered on the
+            form below so the compensation PUT keeps sending its current/default value -- the
+            NOT NULL DB column still requires it on every save.
+          -->
         </section>
 
         <app-inline-banner *ngIf="submitError" tone="danger">{{ submitError }}</app-inline-banner>

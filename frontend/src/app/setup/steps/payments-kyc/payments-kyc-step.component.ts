@@ -240,6 +240,11 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
           <input type="number" [value]="autoApproveLimit" (input)="setAutoApproveLimit($event)" />
         </label>
 
+        <label>
+          {{ 'setup.paymentsKyc.minimumWithdrawalAmountLabel' | translate }}
+          <input type="number" [value]="minimumWithdrawalAmount" (input)="setMinimumWithdrawalAmount($event)" />
+        </label>
+
         <ol class="payments-kyc-step__withdrawal-flow">
           <li>{{ 'setup.paymentsKyc.flowRequestRaised' | translate }}</li>
           <li>{{ 'setup.paymentsKyc.flowAdminReview' | translate }}</li>
@@ -422,6 +427,10 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
   // --- Withdrawal Approval ---
   approvalMode: 'AUTO_UNDER_LIMIT' | 'ALWAYS_MANUAL' = 'ALWAYS_MANUAL';
   autoApproveLimit: number | null = null;
+  // The real Go-Live-gating field (WithdrawalConfigService.isComplete()) -- see the model comment
+  // on WithdrawalConfigResponse.minimumWithdrawalAmount for how it differs from compensation's
+  // legacy minWithdrawal control.
+  minimumWithdrawalAmount: number | null = null;
   withdrawalSavedJustNow = false;
   withdrawalSubmitError: string | null = null;
   private withdrawalLoadFailed = false;
@@ -582,6 +591,7 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
       next: res => {
         this.approvalMode = res.approvalMode;
         this.autoApproveLimit = res.autoApproveLimit;
+        this.minimumWithdrawalAmount = res.minimumWithdrawalAmount;
       },
       error: () => {
         this.withdrawalLoadFailed = true;
@@ -867,8 +877,18 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
     this.withdrawalChanged$.next();
   }
 
+  setMinimumWithdrawalAmount(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.minimumWithdrawalAmount = target.value === '' ? null : Number(target.value);
+    this.withdrawalChanged$.next();
+  }
+
   private saveWithdrawal(): void {
-    const request: WithdrawalConfigRequest = { approvalMode: this.approvalMode, autoApproveLimit: this.autoApproveLimit };
+    const request: WithdrawalConfigRequest = {
+      approvalMode: this.approvalMode,
+      autoApproveLimit: this.autoApproveLimit,
+      minimumWithdrawalAmount: this.minimumWithdrawalAmount
+    };
     this.paymentsKycService.updateWithdrawalConfig(request).subscribe({
       next: () => {
         this.withdrawalSavedJustNow = true;

@@ -787,6 +787,7 @@
       "autoApproveLabel": "सीमा के अंतर्गत स्वतः स्वीकृत",
       "alwaysManualLabel": "हमेशा मैन्युअल समीक्षा",
       "autoApproveLimitLabel": "स्वतः स्वीकृति सीमा",
+      "minimumWithdrawalAmountLabel": "न्यूनतम निकासी राशि",
       "flowRequestRaised": "अनुरोध किया गया",
       "flowAdminReview": "एडमिन समीक्षा",
       "flowApproved": "स्वीकृत",

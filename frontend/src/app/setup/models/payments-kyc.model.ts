@@ -33,6 +33,10 @@ export type KycConfigRequest = Omit<KycConfigResponse, 'updatedAt'>;
 export interface WithdrawalConfigResponse {
   approvalMode: 'AUTO_UNDER_LIMIT' | 'ALWAYS_MANUAL';
   autoApproveLimit: number | null;
+  // Go-Live-gating field (WithdrawalConfigService.isComplete()): null means "not yet set", a
+  // stored 0 is a deliberate "no minimum" policy. Distinct from compensation-plan-version's
+  // legacy min_withdrawal column -- see compensation-step.component.ts's minWithdrawal control.
+  minimumWithdrawalAmount: number | null;
   updatedAt: string | null;
 }
 

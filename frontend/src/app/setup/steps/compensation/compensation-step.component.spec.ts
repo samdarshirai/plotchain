@@ -96,6 +96,25 @@ describe('CompensationStepComponent', () => {
     httpMock.expectNone('/api/company/compensation');
   }));
 
+  it('hides the legacy minWithdrawal field from the visible form layout (B2: not the real Go-Live-gating setting)', () => {
+    expect(fixture.nativeElement.querySelector('input[formcontrolname="minWithdrawal"]')).toBeNull();
+  });
+
+  it('still submits the unchanged minWithdrawal control value in the PUT body, even though it is hidden', fakeAsync(() => {
+    const component = fixture.componentInstance;
+    // minWithdrawal keeps its loaded value (100 from emptyPlan) -- never touched by the user
+    // because it has no input in the template, but the NOT NULL DB column still needs it sent.
+    expect(component.form.getRawValue().minWithdrawal).toBe(100);
+
+    component.form.get('directIncomePct')?.setValue(50);
+    tick(400);
+
+    const req = httpMock.expectOne('/api/company/compensation');
+    expect(req.request.body.minWithdrawal).toBe(100);
+    req.flush({ ...emptyPlan, directIncomePct: 50 });
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+  }));
+
   it('recomputes the Earnings Simulator synchronously on a stat-tile edit, and separately autosaves after 400ms', fakeAsync(() => {
     const beforeValue = fixture.componentInstance.sampleEarnings?.finalEarnings;
 

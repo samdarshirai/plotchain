@@ -45,6 +45,7 @@ describe('PaymentsKycStepComponent', () => {
   const defaultWithdrawalConfig: WithdrawalConfigResponse = {
     approvalMode: 'ALWAYS_MANUAL',
     autoApproveLimit: null,
+    minimumWithdrawalAmount: null,
     updatedAt: null
   };
 
@@ -214,6 +215,53 @@ describe('PaymentsKycStepComponent', () => {
 
     expect(component.credentialsConfigured).toBe(true);
     expect(component.showCredentialsInput).toBe(false);
+  }));
+
+  it('loads minimumWithdrawalAmount from the withdrawal GET response', fakeAsync(() => {
+    flushInitialLoads(
+      emptyPaymentConfig,
+      emptyPayoutAccount,
+      defaultKycConfig,
+      { ...defaultWithdrawalConfig, minimumWithdrawalAmount: 500 },
+      defaultBookingEmiConfig
+    );
+    const component = fixture.componentInstance;
+
+    expect(component.minimumWithdrawalAmount).toBe(500);
+  }));
+
+  it('autosaves minimumWithdrawalAmount in the withdrawal PUT body, alongside approvalMode/autoApproveLimit', fakeAsync(() => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    component.setMinimumWithdrawalAmount({ target: { value: '500' } } as unknown as Event);
+    tick(400);
+
+    const req = httpMock.expectOne('/api/company/withdrawal');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ approvalMode: 'ALWAYS_MANUAL', autoApproveLimit: null, minimumWithdrawalAmount: 500 });
+    req.flush({ ...defaultWithdrawalConfig, minimumWithdrawalAmount: 500 });
+    flushSetupState();
+  }));
+
+  it('sends minimumWithdrawalAmount as null when the field is cleared', fakeAsync(() => {
+    flushInitialLoads(
+      emptyPaymentConfig,
+      emptyPayoutAccount,
+      defaultKycConfig,
+      { ...defaultWithdrawalConfig, minimumWithdrawalAmount: 500 },
+      defaultBookingEmiConfig
+    );
+    const component = fixture.componentInstance;
+    expect(component.minimumWithdrawalAmount).toBe(500);
+
+    component.setMinimumWithdrawalAmount({ target: { value: '' } } as unknown as Event);
+    tick(400);
+
+    const req = httpMock.expectOne('/api/company/withdrawal');
+    expect(req.request.body.minimumWithdrawalAmount).toBeNull();
+    req.flush({ ...defaultWithdrawalConfig, minimumWithdrawalAmount: null });
+    flushSetupState();
   }));
 
   it('surfaces the withdrawal cross-field 409 as a banner, not a field error', fakeAsync(() => {
