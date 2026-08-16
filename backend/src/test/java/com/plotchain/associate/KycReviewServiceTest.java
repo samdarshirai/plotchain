@@ -57,7 +57,7 @@ class KycReviewServiceTest {
     @Test
     void listReturnsAPageOfEntriesForTheGivenStatus() {
         Associate associate = newAssociate(UUID.randomUUID(), "VP00001", KycStatus.PENDING);
-        when(associateRepository.findByRoleAndKycStatusOrderByJoinedAtAsc(
+        when(associateRepository.findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAsc(
             AssociateRole.ASSOCIATE, KycStatus.PENDING, PageRequest.of(0, 20)))
             .thenReturn(new PageImpl<>(List.of(associate), PageRequest.of(0, 20), 1));
 
@@ -81,7 +81,7 @@ class KycReviewServiceTest {
 
         ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
         verify(settingsAuditLogRepository).save(captor.capture());
-        assertThat(captor.getValue().getSection()).isEqualTo("kyc");
+        assertThat(captor.getValue().getSection()).isEqualTo("KYC");
     }
 
     @Test

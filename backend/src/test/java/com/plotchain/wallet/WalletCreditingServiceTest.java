@@ -274,7 +274,7 @@ class WalletCreditingServiceTest {
         ArgumentCaptor<String> sectionCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> summaryCaptor = ArgumentCaptor.forClass(String.class);
         verify(settingsAuditService).record(sectionCaptor.capture(), summaryCaptor.capture(), any(), eq(actorId));
-        assertThat(sectionCaptor.getValue()).isEqualTo("wallet");
+        assertThat(sectionCaptor.getValue()).isEqualTo("WALLET");
         assertThat(summaryCaptor.getValue()).contains("VP00042");
     }
 }

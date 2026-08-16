@@ -83,7 +83,7 @@ public class AdminAssociateService {
         associate.setStatus(AssociateStatus.SUSPENDED);
         associateRepository.save(associate);
         evictStatusCacheAfterCommit(id);
-        settingsAuditService.record("associate", "Suspended " + associate.getUserId(),
+        settingsAuditService.record("ASSOCIATE", "Suspended " + associate.getUserId(),
             Map.of("associateId", id.toString()), actorId);
         return toDetail(associate);
     }
@@ -94,7 +94,7 @@ public class AdminAssociateService {
         associate.setStatus(AssociateStatus.ACTIVE);
         associateRepository.save(associate);
         evictStatusCacheAfterCommit(id);
-        settingsAuditService.record("associate", "Reactivated " + associate.getUserId(),
+        settingsAuditService.record("ASSOCIATE", "Reactivated " + associate.getUserId(),
             Map.of("associateId", id.toString()), actorId);
         return toDetail(associate);
     }
@@ -106,7 +106,7 @@ public class AdminAssociateService {
         associate.setPasswordHash(passwordEncoder.encode(temporaryPassword));
         associate.setMustChangePassword(true);
         associateRepository.save(associate);
-        settingsAuditService.record("associate", "Reset password for " + associate.getUserId(),
+        settingsAuditService.record("ASSOCIATE", "Reset password for " + associate.getUserId(),
             Map.of("associateId", id.toString()), actorId);
         return new ResetPasswordResponse(temporaryPassword);
     }

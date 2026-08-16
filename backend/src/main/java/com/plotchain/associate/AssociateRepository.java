@@ -84,7 +84,23 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
 
     Optional<Associate> findByIdAndRole(UUID id, AssociateRole role);
 
-    Page<Associate> findByRoleAndKycStatusOrderByJoinedAtAsc(AssociateRole role, KycStatus kycStatus, Pageable pageable);
+    // KYC-queue list query for KycReviewService.list(). AssociateProvisioningService sets
+    // kycStatus = PENDING at account-creation time, before any document upload, so a plain
+    // status filter alone (the old findByRoleAndKycStatusOrderByJoinedAtAsc) surfaced
+    // freshly-provisioned zero-document associates in the "Pending" review queue,
+    // indistinguishable from one actually awaiting review. The EXISTS subquery against
+    // AssociateKycDocument (no JPA relationship mapped between the two entities -- see
+    // AssociateKycDocument) excludes those. No relation to decide()'s own document-count
+    // handling: decide() intentionally has no document-count guard, this only filters what
+    // shows up in the queue.
+    @Query("""
+        SELECT a FROM Associate a
+        WHERE a.role = :role AND a.kycStatus = :kycStatus
+        AND EXISTS (SELECT 1 FROM AssociateKycDocument d WHERE d.associateId = a.id)
+        ORDER BY a.joinedAt ASC
+        """)
+    Page<Associate> findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAsc(
+        @Param("role") AssociateRole role, @Param("kycStatus") KycStatus kycStatus, Pageable pageable);
 
     long countByParentId(UUID parentId);
 

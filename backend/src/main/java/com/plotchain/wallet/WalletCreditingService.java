@@ -96,7 +96,7 @@ public class WalletCreditingService {
         // ever having withheld income. That's a true no-op: no wallet mutation, and (per this
         // guard) no audit entry either, not an empty-detail audit row logged for nothing.
         if (!entries.isEmpty()) {
-            settingsAuditService.record("wallet",
+            settingsAuditService.record("WALLET",
                 "Reconciled " + entries.size() + " carried-forward entries for " + associateUserId + " after KYC verification",
                 Map.of("entriesCredited", entries.size(), "totalAmount", totalCredited),
                 actorId);

@@ -26,7 +26,7 @@ public class KycReviewService {
     }
 
     public KycPageResponse list(KycStatus status, int page, int size) {
-        Page<Associate> result = associateRepository.findByRoleAndKycStatusOrderByJoinedAtAsc(
+        Page<Associate> result = associateRepository.findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAsc(
             AssociateRole.ASSOCIATE, status, PageRequest.of(page, size));
         List<KycQueueEntryResponse> entries = result.getContent().stream().map(KycReviewService::toEntry).toList();
         return new KycPageResponse(entries, page, size, result.getTotalElements());
@@ -51,7 +51,7 @@ public class KycReviewService {
         associate.setKycStatus(request.decision());
         associateRepository.save(associate);
 
-        settingsAuditService.record("kyc",
+        settingsAuditService.record("KYC",
             "KYC " + request.decision().name() + " for " + associate.getUserId(),
             Map.of("decision", request.decision().name(), "reason", request.reason() == null ? "" : request.reason()),
             actorId);

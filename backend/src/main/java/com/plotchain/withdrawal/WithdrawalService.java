@@ -98,7 +98,7 @@ public class WithdrawalService {
         withdrawalRequest.setDecidedAt(autoApproved ? now : null);
         withdrawalRequestRepository.save(withdrawalRequest);
 
-        settingsAuditService.record("withdrawal",
+        settingsAuditService.record("WITHDRAWAL",
             "Submitted withdrawal for " + associate.getUserId(),
             Map.of("amount", request.amount(), "status", withdrawalRequest.getStatus().name()),
             actorId);
@@ -189,7 +189,7 @@ public class WithdrawalService {
 
         withdrawalRequestRepository.save(withdrawalRequest);
 
-        settingsAuditService.record("withdrawal", summary,
+        settingsAuditService.record("WITHDRAWAL", summary,
             Map.of("decision", request.decision().name(),
                    "reason", request.reason() == null ? "" : request.reason(),
                    "priorStatus", priorStatus.name()),
@@ -227,7 +227,7 @@ public class WithdrawalService {
         withdrawalRequest.setDisbursedAt(Instant.now());
         withdrawalRequestRepository.save(withdrawalRequest);
 
-        settingsAuditService.record("withdrawal",
+        settingsAuditService.record("WITHDRAWAL",
             "Withdrawal disbursed for " + associate.getUserId(),
             Map.of("bankReference", request.bankReference()),
             actorId);
