@@ -20,10 +20,10 @@ const PAGE_SIZE = 20;
         <p class="payout-history__subtitle">{{ 'payoutHistory.subtitle' | translate }}</p>
       </div>
 
-      <div class="payout-history__wallet-balance card" [class.payout-history__wallet-balance--degraded]="walletBalance === null">
+      <div class="payout-history__wallet-balance card" [class.payout-history__wallet-balance--degraded]="walletLoadError">
         <span class="payout-history__balance-label">{{ 'payoutHistory.walletBalanceLabel' | translate }}</span>
         <span class="payout-history__balance-value">{{ formattedWalletBalance }}</span>
-        <span class="payout-history__balance-hint" *ngIf="walletBalance === null">
+        <span class="payout-history__balance-hint" *ngIf="walletLoadError">
           {{ 'payoutHistory.walletLoadErrorHint' | translate }}
         </span>
       </div>
@@ -78,14 +78,18 @@ export class PayoutHistoryComponent implements OnInit {
 
   page: AssociateWithdrawalPage | null = null;
   walletBalance: number | null = null;
+  walletLoadError = false;
   loadError = false;
   historyColumns: EditableTableColumn[] = [];
   historyRows: Record<string, string>[] = [];
   private status = '';
 
   get formattedWalletBalance(): string {
-    if (this.walletBalance === null) {
+    if (this.walletLoadError) {
       return this.translate.instant('payoutHistory.walletLoadError');
+    }
+    if (this.walletBalance === null) {
+      return '';
     }
     return this.formatCurrency(this.walletBalance);
   }
@@ -128,9 +132,10 @@ export class PayoutHistoryComponent implements OnInit {
   // loadError, since it doesn't block the withdrawal-history table (same independent-failure
   // pattern IncomeStatementComponent's cycle lookup uses).
   private loadWallet(): void {
+    this.walletLoadError = false;
     this.payoutHistoryService.getWallet().subscribe({
       next: res => (this.walletBalance = res.balance),
-      error: () => (this.walletBalance = null)
+      error: () => (this.walletLoadError = true)
     });
   }
 

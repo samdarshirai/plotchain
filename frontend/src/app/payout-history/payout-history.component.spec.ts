@@ -86,6 +86,18 @@ describe('PayoutHistoryComponent', () => {
     expect(balanceEl.textContent).toContain('12,500');
   });
 
+  it('does not show the degraded balance card or error hint while the wallet lookup is still in flight', () => {
+    const balanceCard: HTMLElement = fixture.nativeElement.querySelector('.payout-history__wallet-balance');
+    expect(balanceCard.classList).not.toContain('payout-history__wallet-balance--degraded');
+    const hintEl: HTMLElement | null = fixture.nativeElement.querySelector('.payout-history__balance-hint');
+    expect(hintEl).toBeNull();
+
+    httpMock.expectOne('/api/associates/me/wallet').flush({ balance: 12500 });
+    httpMock
+      .expectOne(r => r.url === '/api/associates/me/withdrawals' && r.params.get('page') === '0')
+      .flush({ requests: [sampleRequest], page: 0, size: 20, totalElements: 1 });
+  });
+
   it('degrades gracefully without blocking the table when the wallet lookup fails', () => {
     httpMock.expectOne('/api/associates/me/wallet').flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
     httpMock
