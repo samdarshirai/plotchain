@@ -401,7 +401,8 @@ describe('PaymentsKycStepComponent', () => {
       }
     });
 
-    // Withdrawal Approval is intentionally excluded -- its flush wiring is a separate task (B2).
+    // Withdrawal Approval is untouched in this test, so it stays clean -- see the dedicated
+    // withdrawal-flush test below for the dirty case.
     httpMock.expectNone('/api/company/withdrawal');
   });
 
@@ -420,16 +421,50 @@ describe('PaymentsKycStepComponent', () => {
     httpMock.expectNone('/api/company/booking-emi');
   });
 
-  it('flushPendingSave never saves the Withdrawal Approval card, even when it is dirty', () => {
+  it('flushPendingSave saves the Withdrawal Approval card immediately when dirty, bypassing its debounce', () => {
     flushInitialLoads();
     const component = fixture.componentInstance;
 
-    component.setApprovalMode('AUTO_UNDER_LIMIT');
-    expect(component.approvalMode).toBe('AUTO_UNDER_LIMIT');
+    component.setMinimumWithdrawalAmount({ target: { value: '500' } } as unknown as Event);
+    expect(component.minimumWithdrawalAmount).toBe(500);
 
     component.flushPendingSave();
 
+    const req = httpMock.expectOne('/api/company/withdrawal');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ approvalMode: 'ALWAYS_MANUAL', autoApproveLimit: null, minimumWithdrawalAmount: 500 });
+    req.flush({ ...defaultWithdrawalConfig, minimumWithdrawalAmount: 500 });
+    flushSetupState();
+  });
+
+  it('does not fire a duplicate withdrawal save when its debounce elapses after flushPendingSave already saved the same edit', fakeAsync(() => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    component.setMinimumWithdrawalAmount({ target: { value: '500' } } as unknown as Event);
+    component.flushPendingSave();
+    httpMock.expectOne('/api/company/withdrawal').flush({ ...defaultWithdrawalConfig, minimumWithdrawalAmount: 500 });
+    flushSetupState();
+    expect(component.minimumWithdrawalAmount).toBe(500);
+
+    tick(400);
     httpMock.expectNone('/api/company/withdrawal');
+  }));
+
+  it('re-marks withdrawalDirty when a flush-triggered withdrawal save fails, so the next flush retries it', () => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    component.setMinimumWithdrawalAmount({ target: { value: '500' } } as unknown as Event);
+    component.flushPendingSave();
+    httpMock.expectOne('/api/company/withdrawal').flush({ error: 'boom' }, { status: 500, statusText: 'Server Error' });
+
+    // withdrawalDirty is private; observe the re-dirty indirectly through a second flush retrying.
+    component.flushPendingSave();
+    const retry = httpMock.expectOne('/api/company/withdrawal');
+    expect(retry.request.body.minimumWithdrawalAmount).toBe(500);
+    retry.flush({ ...defaultWithdrawalConfig, minimumWithdrawalAmount: 500 });
+    flushSetupState();
   });
 
   it('isStepValid is false while the payment or payout card has an invalid required field', () => {
