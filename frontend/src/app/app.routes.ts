@@ -37,6 +37,7 @@ import { ProfileKycComponent } from './profile-kyc/profile-kyc.component';
 import { RewardsComponent } from './rewards/rewards.component';
 import { DigitalIdCardComponent } from './digital-id-card/digital-id-card.component';
 import { IncomeStatementComponent } from './income-statement/income-statement.component';
+import { PayoutHistoryComponent } from './payout-history/payout-history.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -50,6 +51,7 @@ export const routes: Routes = [
   { path: 'rewards', component: RewardsComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'digital-id-card', component: DigitalIdCardComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'income-statement', component: IncomeStatementComponent, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'payout-history', component: PayoutHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
   { path: 'admin/associates/new', component: CreateAssociateComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/sales/new', component: RecordSaleComponent, canActivate: [authGuard, adminGuard] },
