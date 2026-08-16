@@ -1,0 +1,604 @@
+<title>Viraj Acres</title>
+<style>
+  :root{
+    --ink:#0c0a0b;
+    --ink-raised:#17130f;
+    --gold:#c6a227;
+    --gold-bright:#ead07d;
+    --oxblood:#5c1a2a;
+    --oxblood-bright:#7a2438;
+    --parchment:#f7f2e7;
+    --card:#fcfaf5;
+    --card-raised:#f0e9d6;
+    --border:#d9cfbc;
+    --border-on-ink:#4a4038;
+    --ink-text:#201a15;
+    --ink-text-muted:#6b6153;
+    --parchment-text-on-ink:#efe6d6;
+    --parchment-text-muted-on-ink:#a89a86;
+    --success:#4b7a52;
+    --warning:#b4790e;
+    --danger:#b23b32;
+
+    --font-display: 'Fraunces', ui-serif, Charter, Georgia, serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', 'IBM Plex Mono', Menlo, monospace;
+
+    background: var(--parchment);
+    color: var(--ink-text);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--parchment);
+    color:var(--ink-text);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  a{ color:inherit; }
+
+  .wrap{
+    max-width:920px;
+    margin:0 auto;
+    padding:0 1.5rem 6rem;
+  }
+
+  /* ---------- hero / shell mock ---------- */
+
+  .hero{
+    background:
+      radial-gradient(120% 160% at 50% -20%, rgba(198,162,39,0.12), transparent 60%),
+      var(--ink);
+    color:var(--parchment-text-on-ink);
+    padding:5rem 1.5rem 4rem;
+    text-align:center;
+  }
+
+  .mark{
+    width:56px;
+    height:56px;
+    margin:0 auto 1.75rem;
+    display:block;
+  }
+
+  .rule-flank{
+    display:flex;
+    align-items:center;
+    gap:0.9rem;
+    justify-content:center;
+    margin:0 auto;
+  }
+  .rule-flank::before,
+  .rule-flank::after{
+    content:"";
+    height:1px;
+    width:clamp(24px, 8vw, 64px);
+    background:linear-gradient(90deg, transparent, var(--gold));
+  }
+  .rule-flank::after{ background:linear-gradient(90deg, var(--gold), transparent); }
+
+  .wordmark{
+    font-family:var(--font-display);
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.32em;
+    font-size:clamp(1.6rem, 4vw, 2.4rem);
+    margin:0;
+    color:var(--gold-bright);
+    background:linear-gradient(180deg, var(--gold-bright), var(--gold));
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+
+  .tagline{
+    font-family:var(--font-body);
+    text-transform:uppercase;
+    letter-spacing:0.4em;
+    font-size:0.7rem;
+    color:var(--parchment-text-muted-on-ink);
+    margin:0.9rem 0 0;
+  }
+
+  .hero p.lede{
+    max-width:34ch;
+    margin:2.5rem auto 0;
+    font-size:0.95rem;
+    line-height:1.7;
+    color:var(--parchment-text-muted-on-ink);
+  }
+
+  /* ---------- section scaffolding ---------- */
+
+  section{
+    padding:3.5rem 0;
+    border-bottom:1px solid var(--border);
+  }
+  section:last-of-type{ border-bottom:none; }
+
+  .eyebrow{
+    display:flex;
+    align-items:center;
+    gap:0.75rem;
+    text-transform:uppercase;
+    letter-spacing:0.22em;
+    font-size:0.7rem;
+    color:var(--oxblood);
+    font-weight:600;
+    margin:0 0 1.75rem;
+  }
+  .eyebrow::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--border);
+  }
+
+  h2{
+    font-family:var(--font-display);
+    font-size:1.7rem;
+    font-weight:600;
+    margin:0 0 0.5rem;
+    text-wrap:balance;
+  }
+  .section-note{
+    color:var(--ink-text-muted);
+    font-size:0.92rem;
+    max-width:60ch;
+    line-height:1.6;
+    margin:0 0 2rem;
+  }
+
+  /* ---------- palette ---------- */
+
+  .swatches{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+  }
+  .swatch{
+    background:var(--card);
+    padding:1.1rem;
+    display:flex;
+    flex-direction:column;
+    gap:2.5rem;
+  }
+  .swatch .chip{
+    height:44px;
+    border-radius:3px;
+    border:1px solid rgba(0,0,0,0.08);
+  }
+  .swatch .label{
+    font-size:0.78rem;
+    font-weight:600;
+  }
+  .swatch .hex{
+    font-family:var(--font-mono);
+    font-size:0.72rem;
+    color:var(--ink-text-muted);
+  }
+
+  /* ---------- type scale ---------- */
+
+  .type-row{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:1.5rem;
+    padding:1.1rem 0;
+    border-top:1px solid var(--border);
+  }
+  .type-row:last-child{ border-bottom:1px solid var(--border); }
+  .type-sample{
+    font-family:var(--font-display);
+  }
+  .type-meta{
+    font-family:var(--font-mono);
+    font-size:0.72rem;
+    color:var(--ink-text-muted);
+    white-space:nowrap;
+    text-align:right;
+  }
+  .type-row.body .type-sample{ font-family:var(--font-body); font-weight:400; }
+
+  /* ---------- components ---------- */
+
+  .component-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:2.5rem;
+  }
+  @media (max-width:640px){ .component-grid{ grid-template-columns:1fr; } }
+
+  .btn-row{ display:flex; flex-wrap:wrap; gap:0.75rem; }
+  button{
+    font-family:var(--font-body);
+    font-size:0.86rem;
+    font-weight:600;
+    padding:0.7rem 1.3rem;
+    border-radius:3px;
+    cursor:pointer;
+    border:1px solid transparent;
+  }
+  .btn-primary{
+    background:linear-gradient(180deg, var(--gold-bright), var(--gold));
+    color:#241a04;
+  }
+  .btn-secondary{
+    background:transparent;
+    border-color:var(--gold);
+    color:#8a6f16;
+  }
+  .btn-ghost{
+    background:transparent;
+    color:var(--ink-text-muted);
+  }
+  button:focus-visible{
+    outline:2px solid var(--oxblood);
+    outline-offset:2px;
+  }
+
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:0.4rem;
+    font-size:0.76rem;
+    font-weight:600;
+    padding:0.3rem 0.7rem;
+    border-radius:999px;
+  }
+  .pill::before{
+    content:"";
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:currentColor;
+  }
+  .pill.success{ background:rgba(75,122,82,0.12); color:var(--success); }
+  .pill.warning{ background:rgba(180,121,14,0.12); color:var(--warning); }
+  .pill.danger{ background:rgba(178,59,50,0.12); color:var(--danger); }
+
+  .rank-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:0.5rem;
+    background:var(--oxblood);
+    color:var(--gold-bright);
+    font-size:0.76rem;
+    font-weight:600;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    padding:0.35rem 0.8rem 0.35rem 0.6rem;
+    border-radius:3px;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:0.86rem;
+  }
+  caption{
+    text-align:left;
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.14em;
+    color:var(--ink-text-muted);
+    margin-bottom:0.6rem;
+  }
+  th, td{
+    text-align:left;
+    padding:0.6rem 0.7rem;
+    border-bottom:1px solid var(--border);
+  }
+  th{
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-text-muted);
+    font-weight:600;
+  }
+  td.num, th.num{
+    text-align:right;
+    font-family:var(--font-mono);
+    font-variant-numeric:tabular-nums;
+  }
+  .table-scroll{ overflow-x:auto; }
+
+  /* ---------- seal card ---------- */
+
+  .seal-frame{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:2.5rem;
+  }
+  @media (max-width:640px){ .seal-frame{ grid-template-columns:1fr; } }
+
+  .seal{
+    padding:5px;
+  }
+  .seal-outer{
+    border:1px solid var(--gold);
+    padding:4px;
+  }
+  .seal.on-ink .seal-outer{ border-color:var(--gold); }
+  .seal.on-parchment .seal-outer{ border-color:var(--oxblood); }
+
+  .seal-inner{
+    border:1px solid var(--gold);
+    padding:1.8rem 1.6rem;
+  }
+  .seal.on-parchment .seal-inner{ border-color:var(--oxblood); }
+
+  .seal.on-ink{
+    background:var(--ink);
+    color:var(--parchment-text-on-ink);
+  }
+  .seal.on-parchment{
+    background:var(--card);
+    color:var(--ink-text);
+  }
+
+  .seal-label{
+    text-align:center;
+    font-size:0.68rem;
+    text-transform:uppercase;
+    letter-spacing:0.22em;
+    margin-bottom:1.1rem;
+  }
+  .seal.on-ink .seal-label{ color:var(--gold-bright); }
+  .seal.on-parchment .seal-label{ color:var(--oxblood); }
+
+  .seal-label .rule-flank::before,
+  .seal-label .rule-flank::after{ width:20px; }
+  .seal.on-parchment .rule-flank::before{ background:linear-gradient(90deg, transparent, var(--oxblood)); }
+  .seal.on-parchment .rule-flank::after{ background:linear-gradient(90deg, var(--oxblood), transparent); }
+
+  .seal-figure{
+    font-family:var(--font-display);
+    font-size:2.1rem;
+    font-weight:600;
+    text-align:center;
+    font-variant-numeric:tabular-nums;
+    margin:0;
+  }
+  .seal.on-ink .seal-figure{ color:var(--gold-bright); }
+  .seal-sub{
+    text-align:center;
+    font-size:0.76rem;
+    color:var(--ink-text-muted);
+    margin-top:0.4rem;
+  }
+  .seal.on-ink .seal-sub{ color:var(--parchment-text-muted-on-ink); }
+
+  @media (prefers-reduced-motion: no-preference){
+    .seal-outer{
+      animation: draw-in 700ms ease-out both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 30%;
+    }
+  }
+  @keyframes draw-in{
+    from{ clip-path: inset(0 100% 0 0); }
+    to{ clip-path: inset(0 0 0 0); }
+  }
+
+  /* ---------- do / dont ---------- */
+
+  .dd-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+  }
+  @media (max-width:640px){ .dd-grid{ grid-template-columns:1fr; } }
+  .dd-col{
+    background:var(--card);
+    padding:1.5rem 1.6rem;
+  }
+  .dd-col h3{
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.16em;
+    margin:0 0 1rem;
+  }
+  .dd-col.do h3{ color:var(--success); }
+  .dd-col.dont h3{ color:var(--danger); }
+  .dd-col ul{
+    margin:0;
+    padding:0;
+    list-style:none;
+    display:flex;
+    flex-direction:column;
+    gap:0.7rem;
+  }
+  .dd-col li{
+    font-size:0.86rem;
+    line-height:1.5;
+    padding-left:1.1rem;
+    position:relative;
+  }
+  .dd-col li::before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:0.5em;
+    width:6px;
+    height:1px;
+  }
+  .dd-col.do li::before{ background:var(--success); }
+  .dd-col.dont li::before{ background:var(--danger); }
+
+  footer{
+    text-align:center;
+    padding:3rem 1.5rem 0;
+    font-size:0.76rem;
+    color:var(--ink-text-muted);
+  }
+</style>
+
+<div class="hero">
+  <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+    <path d="M18 20 L48 78 L36 78 L14 26 Z" fill="#5c1a2a" stroke="#c6a227" stroke-width="1"/>
+    <path d="M82 20 L52 78 L64 78 L86 26 Z" fill="#5c1a2a" stroke="#c6a227" stroke-width="1"/>
+    <path d="M50 16 L64 30 H56 V38 H44 V30 H36 Z" fill="none" stroke="#c6a227" stroke-width="2.5"/>
+    <text x="50" y="66" text-anchor="middle" font-family="Georgia, serif" font-size="46" fill="#ead07d">S</text>
+  </svg>
+  <p class="wordmark">Viraj Acres</p>
+  <p class="rule-flank"></p>
+  <p class="tagline">Legacy Living</p>
+  <p class="lede">A design system read off the company's own mark — ink, antique gold, oxblood — built for an associate platform people work in all day, not a page they scroll once.</p>
+</div>
+
+<div class="wrap">
+
+  <section>
+    <p class="eyebrow">Palette</p>
+    <p class="section-note">Six colors, all sourced from the logo itself, not a generator. Ink and Oxblood are chrome/identity colors — reserved for the app shell and single accent moments, never for whole content surfaces.</p>
+    <div class="swatches">
+      <div class="swatch" style="background:var(--ink); color:var(--parchment-text-on-ink);">
+        <div class="chip" style="background:var(--ink); border-color:var(--border-on-ink);"></div>
+        <div><div class="label">Ink</div><div class="hex" style="color:var(--parchment-text-muted-on-ink);">#0C0A0B</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:var(--gold);"></div>
+        <div><div class="label">Antique Gold</div><div class="hex">#C6A227</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:var(--gold-bright);"></div>
+        <div><div class="label">Bright Gold</div><div class="hex">#EAD07D</div></div>
+      </div>
+      <div class="swatch" style="background:var(--ink); color:var(--parchment-text-on-ink);">
+        <div class="chip" style="background:var(--oxblood); border-color:var(--border-on-ink);"></div>
+        <div><div class="label">Oxblood</div><div class="hex" style="color:var(--parchment-text-muted-on-ink);">#5C1A2A</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:var(--parchment);"></div>
+        <div><div class="label">Parchment</div><div class="hex">#F7F2E7</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:var(--ink-text);"></div>
+        <div><div class="label">Warm Charcoal</div><div class="hex">#201A15</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Type</p>
+    <h2>Fraunces for the voice, Inter for the work</h2>
+    <p class="section-note">Display serif is spent on titles and hero figures only — everything operational stays in a plain body face so tables and forms stay fast to read.</p>
+
+    <div class="type-row">
+      <div class="type-sample" style="font-size:2.6rem; font-weight:600;">Legacy Living</div>
+      <div class="type-meta">Fraunces · 600 · display</div>
+    </div>
+    <div class="type-row">
+      <div class="type-sample" style="font-size:1.5rem; font-weight:500;">₹ 2,84,600 this cycle</div>
+      <div class="type-meta">Fraunces · 500 · hero figure</div>
+    </div>
+    <div class="type-row body">
+      <div class="type-sample" style="font-size:1rem;">Associate dashboard, genealogy tree, plot booking</div>
+      <div class="type-meta">Inter · 400 · body</div>
+    </div>
+    <div class="type-row body">
+      <div class="type-sample" style="font-size:0.76rem; text-transform:uppercase; letter-spacing:0.1em; font-weight:600; color:var(--ink-text-muted);">Cycle closes 30 Aug</div>
+      <div class="type-meta">Inter · 600 · label</div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Components</p>
+    <h2>Actions, states, and a working table</h2>
+    <p class="section-note">Ordinary UI stays ordinary — gold marks the primary path, semantic color stays out of the brand palette so a danger state never reads as a brand accent.</p>
+
+    <div class="component-grid">
+      <div>
+        <p class="section-note" style="margin-bottom:0.75rem; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.1em;">Buttons</p>
+        <div class="btn-row">
+          <button class="btn-primary">Approve payout</button>
+          <button class="btn-secondary">Review KYC</button>
+          <button class="btn-ghost">Cancel</button>
+        </div>
+      </div>
+      <div>
+        <p class="section-note" style="margin-bottom:0.75rem; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.1em;">Status &amp; rank</p>
+        <div class="btn-row">
+          <span class="pill success">Active</span>
+          <span class="pill warning">Pending review</span>
+          <span class="pill danger">Overdue</span>
+          <span class="rank-badge">★ Gold Associate</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-scroll" style="margin-top:2.5rem;">
+      <table>
+        <caption>Income statement — current cycle</caption>
+        <thead>
+          <tr><th>Type</th><th>Source</th><th class="num">Left</th><th class="num">Right</th><th class="num">Amount</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Direct</td><td>Plot #A-114</td><td class="num">—</td><td class="num">—</td><td class="num">₹ 42,000</td></tr>
+          <tr><td>Matching</td><td>L/R carry-forward</td><td class="num">8</td><td class="num">6</td><td class="num">₹ 96,400</td></tr>
+          <tr><td>Sponsor</td><td>3 new associates</td><td class="num">—</td><td class="num">—</td><td class="num">₹ 18,000</td></tr>
+          <tr><td>Royalty</td><td>Rank: Gold</td><td class="num">—</td><td class="num">—</td><td class="num">₹ 1,28,200</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Signature — the Seal Card</p>
+    <h2>One frame per screen, never more</h2>
+    <p class="section-note">The double gold hairline echoes the wordmark's flanking rule. It's reserved for exactly one figure per screen — rank, cycle total, payout sum — so it keeps reading as a seal, not wallpaper.</p>
+
+    <div class="seal-frame">
+      <div class="seal on-ink">
+        <div class="seal-outer">
+          <div class="seal-inner">
+            <p class="seal-label"><span class="rule-flank">Current Cycle</span></p>
+            <p class="seal-figure">₹ 2,84,600</p>
+            <p class="seal-sub">up 12% from last cycle</p>
+          </div>
+        </div>
+      </div>
+      <div class="seal on-parchment">
+        <div class="seal-outer">
+          <div class="seal-inner">
+            <p class="seal-label"><span class="rule-flank">Rank</span></p>
+            <p class="seal-figure">Gold</p>
+            <p class="seal-sub">next: Platinum at ₹18L team volume</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Guardrails</p>
+    <div class="dd-grid">
+      <div class="dd-col do">
+        <h3>Do</h3>
+        <ul>
+          <li>Keep tables and forms on Parchment with Warm Charcoal text — legibility over branding, always.</li>
+          <li>Spend Fraunces on titles and hero figures only.</li>
+          <li>Limit the Seal Card to one per screen.</li>
+        </ul>
+      </div>
+      <div class="dd-col dont">
+        <h3>Don't</h3>
+        <ul>
+          <li>Use Oxblood for error states — that's <code>--status-danger</code>'s job.</li>
+          <li>Let Ink chrome spread into content areas; it kills table contrast.</li>
+          <li>Add scroll reveals or gradients beyond the ones defined here.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>Reference build for <strong>DESIGN.md</strong> — token names match <code>_tokens.scss</code> so this maps directly onto the Angular app.</footer>
+</div>
