@@ -230,8 +230,14 @@
     "settings": "सेटिंग्स"
   },
   "auth": {
+    "heading": "साइन इन करें",
+    "subheading": "अपने एसोसिएट खाते में आपका स्वागत है।",
     "userIdLabel": "एसोसिएट आईडी",
     "passwordLabel": "पासवर्ड",
+    "rememberMe": "मुझे याद रखें",
+    "forgotPassword": "पासवर्ड भूल गए?",
+    "newAssociatePrompt": "नए एसोसिएट?",
+    "requestAccess": "पहुंच का अनुरोध करें",
     "loginButton": "लॉग इन करें",
     "loginError": "आईडी या पासवर्ड गलत है। कृपया पुनः प्रयास करें।",
     "platformNotLiveError": "यह प्लेटफ़ॉर्म अभी लॉन्च नहीं हुआ है। कृपया अपने प्रशासक से संपर्क करें।",

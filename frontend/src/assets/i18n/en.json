@@ -230,8 +230,14 @@
     "settings": "Settings"
   },
   "auth": {
+    "heading": "Sign in",
+    "subheading": "Welcome back to your associate account.",
     "userIdLabel": "Associate ID",
     "passwordLabel": "Password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "newAssociatePrompt": "New associate?",
+    "requestAccess": "Request access",
     "loginButton": "Log In",
     "loginError": "Invalid ID or password. Please try again.",
     "platformNotLiveError": "This platform has not launched yet. Please contact your administrator.",

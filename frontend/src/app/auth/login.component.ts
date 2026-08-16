@@ -4,36 +4,79 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { take } from 'rxjs';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuthService } from './auth.service';
 import { SetupService } from '../setup/setup.service';
 import { ADMIN_FAMILY_ROLES } from '../admin/admin.guard';
 import { postAuthLandingPath } from './post-auth-redirect';
 import { BrandingBootstrapService } from '../core/theme/branding-bootstrap.service';
+import { BrandButtonComponent } from '../shared/components/brand-button/brand-button.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, BrandButtonComponent],
   template: `
-    <form class="login-form" [formGroup]="form" (ngSubmit)="onSubmit()">
-      <img *ngIf="showSquareLogo" class="login-logo" src="/api/company/branding/logo/square" alt="" />
-      <p *ngIf="showTagline" class="login-tagline">{{ resolvedTagline }}</p>
-      <label>
-        {{ 'auth.userIdLabel' | translate }}
-        <input type="text" autocomplete="username" formControlName="userId" />
-      </label>
-      <label>
-        {{ 'auth.passwordLabel' | translate }}
-        <input [type]="showPassword ? 'text' : 'password'" formControlName="password" />
-        <button type="button" class="login-password-toggle" (click)="showPassword = !showPassword">
-          {{ (showPassword ? 'auth.hidePassword' : 'auth.showPassword') | translate }}
-        </button>
-      </label>
-      <button type="submit" [disabled]="form.invalid">{{ 'auth.loginButton' | translate }}</button>
-      <div class="login-error" *ngIf="error">{{ 'auth.loginError' | translate }}</div>
-      <div class="login-error" *ngIf="platformNotLive">{{ 'auth.platformNotLiveError' | translate }}</div>
-    </form>
+    <div class="login-page" [class.login-page--preview]="previewMode">
+      <aside class="login-brand">
+        <img *ngIf="showSquareLogo" class="login-logo" src="/api/company/branding/logo/square" alt="" />
+        <p *ngIf="showTagline" class="login-tagline">{{ resolvedTagline }}</p>
+        <div class="login-wordmark">
+          <p class="login-wordmark__name">
+            <span class="login-wordmark__rule"></span>
+            VIRAJ ACRES
+            <span class="login-wordmark__rule"></span>
+          </p>
+          <p class="login-wordmark__caption">LEGACY LIVING</p>
+        </div>
+      </aside>
+
+      <div class="login-panel">
+        <div class="login-lang-row" *ngIf="!previewMode">
+          <select class="login-lang" [value]="currentLang" (change)="onLanguageChange($event)">
+            <option value="en">English</option>
+            <option value="hi">हिन्दी</option>
+          </select>
+        </div>
+
+        <form class="login-form" [formGroup]="form" (ngSubmit)="onSubmit()">
+          <h1 class="login-heading">{{ 'auth.heading' | translate }}</h1>
+          <p class="login-subheading">{{ 'auth.subheading' | translate }}</p>
+
+          <label>
+            {{ 'auth.userIdLabel' | translate }}
+            <input type="text" autocomplete="username" formControlName="userId" />
+          </label>
+          <label>
+            {{ 'auth.passwordLabel' | translate }}
+            <input [type]="showPassword ? 'text' : 'password'" formControlName="password" />
+            <button type="button" class="login-password-toggle" (click)="showPassword = !showPassword">
+              {{ (showPassword ? 'auth.hidePassword' : 'auth.showPassword') | translate }}
+            </button>
+          </label>
+
+          <div class="login-row-between">
+            <label class="login-remember">
+              <input type="checkbox" />
+              {{ 'auth.rememberMe' | translate }}
+            </label>
+            <a href="#" class="login-forgot" (click)="$event.preventDefault()">{{ 'auth.forgotPassword' | translate }}</a>
+          </div>
+
+          <app-brand-button type="submit" variant="primary" [fullWidth]="true" [disabled]="form.invalid">
+            {{ 'auth.loginButton' | translate }}
+          </app-brand-button>
+
+          <div class="login-error" *ngIf="error">{{ 'auth.loginError' | translate }}</div>
+          <div class="login-error" *ngIf="platformNotLive">{{ 'auth.platformNotLiveError' | translate }}</div>
+
+          <p class="login-request-access">
+            {{ 'auth.newAssociatePrompt' | translate }}
+            <a href="#" (click)="$event.preventDefault()">{{ 'auth.requestAccess' | translate }}</a>
+          </p>
+        </form>
+      </div>
+    </div>
   `
 })
 export class LoginComponent implements OnInit {
@@ -42,6 +85,7 @@ export class LoginComponent implements OnInit {
   private setupService = inject(SetupService);
   private router = inject(Router);
   private brandingBootstrap = inject(BrandingBootstrapService);
+  private translate = inject(TranslateService);
 
   // Non-functional render used by the Branding step's Live Login Preview, reusing this real
   // component instead of a hand-copied duplicate so preview and reality can never drift apart.
@@ -79,6 +123,14 @@ export class LoginComponent implements OnInit {
 
   get resolvedTagline(): string {
     return this.tagline ?? '';
+  }
+
+  get currentLang(): string {
+    return this.translate.currentLang || this.translate.getDefaultLang() || 'en';
+  }
+
+  onLanguageChange(event: Event): void {
+    this.translate.use((event.target as HTMLSelectElement).value);
   }
 
   onSubmit(): void {
