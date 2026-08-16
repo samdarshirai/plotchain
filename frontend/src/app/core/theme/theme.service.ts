@@ -46,22 +46,43 @@ export class ThemeService {
     const contrastWithInk = contrastRatio(INK, primary);
     const primaryContrast = contrastWithWhite >= contrastWithInk ? WHITE : INK;
 
+    // _tokens.scss's :root default pairs --brand-primary with a hand-picked "bright" companion
+    // (DESIGN.md's named Bright Gold) as the gradient's far stop -- not a formula. A
+    // company-picked custom primary has no such named companion (the branding form only
+    // captures primary/secondary), so one is derived here the same way _tokens.scss derives
+    // --brand-primary-hover, just lighter, so it reads as a highlight step rather than a
+    // hover-only nudge.
+    const primaryBright = `color-mix(in srgb, ${primary} 60%, white)`;
+
     target.style.setProperty('--brand-primary', primary);
     target.style.setProperty('--brand-secondary', secondary);
+    target.style.setProperty('--brand-primary-bright', primaryBright);
     target.style.setProperty('--brand-primary-contrast', primaryContrast);
 
     // `--brand-gradient`/`--brand-primary-soft`/`--brand-primary-hover`/`--brand-secondary-soft`
     // are declared once at :root in _tokens.scss, each referencing var(--brand-primary)/
-    // var(--brand-secondary) internally. A var() inside a custom-property declaration always
-    // resolves using the value visible at the element where THAT property is declared - so
-    // those :root-declared derived properties would keep resolving against :root's colors even
-    // when `target` is a descendant with its own local override (e.g. a live preview
-    // container). Re-declaring them directly on `target`, computed from the literal colors,
-    // makes the derived tokens scope correctly too. Keep these formulas byte-identical to
-    // _tokens.scss - that file is the source of truth; update both together.
-    target.style.setProperty('--brand-gradient', `linear-gradient(135deg, ${primary}, ${secondary})`);
+    // var(--brand-primary-bright)/var(--brand-secondary) internally. A var() inside a
+    // custom-property declaration always resolves using the value visible at the element where
+    // THAT property is declared - so those :root-declared derived properties would keep
+    // resolving against :root's colors even when `target` is a descendant with its own local
+    // override (e.g. a live preview container). Re-declaring them directly on `target`,
+    // computed from the literal/derived colors, makes the derived tokens scope correctly too.
+    // Keep the --brand-primary-soft/--brand-primary-hover/--brand-secondary-soft formulas
+    // byte-identical to _tokens.scss - that file is the source of truth; update both together.
+    target.style.setProperty('--brand-gradient', `linear-gradient(135deg, ${primary}, ${primaryBright})`);
     target.style.setProperty('--brand-primary-soft', `color-mix(in srgb, ${primary} 14%, transparent)`);
     target.style.setProperty('--brand-primary-hover', `color-mix(in srgb, ${primary} 85%, white)`);
     target.style.setProperty('--brand-secondary-soft', `color-mix(in srgb, ${secondary} 14%, transparent)`);
   }
+}
+
+// Reads the brand color tokens currently painted at :root (i.e. _tokens.scss's defaults, which
+// mirror DESIGN.md, until/unless ThemeService.apply() has overridden them with saved company
+// branding). Used wherever code needs a color value with no hardcoded hex fallback of its own.
+export function currentBrandPrimary(): string {
+  return getComputedStyle(document.documentElement).getPropertyValue('--brand-primary').trim();
+}
+
+export function currentBrandSecondary(): string {
+  return getComputedStyle(document.documentElement).getPropertyValue('--brand-secondary').trim();
 }

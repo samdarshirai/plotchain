@@ -11,7 +11,7 @@ import { LogoUploaderComponent } from '../../../shared/components/logo-uploader/
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { toFieldErrors } from '../../../core/api/field-errors.model';
-import { ThemeService, contrastRatio } from '../../../core/theme/theme.service';
+import { ThemeService, contrastRatio, currentBrandPrimary, currentBrandSecondary } from '../../../core/theme/theme.service';
 import { BrandingService } from './branding.service';
 import { SetupService } from '../../setup.service';
 import { SetupInspectorService } from '../../setup-inspector.service';
@@ -93,13 +93,13 @@ const MIN_CONTRAST = 4.5;
           <div class="branding-step__row">
             <app-color-field
               [label]="'setup.branding.primaryColorLabel' | translate"
-              [value]="form.value.primaryColor || '#7C3AED'"
+              [value]="form.value.primaryColor || defaultPrimaryColor"
               (valueChange)="setColor('primaryColor', $event)"
             ></app-color-field>
 
             <app-color-field
               [label]="'setup.branding.secondaryColorLabel' | translate"
-              [value]="form.value.secondaryColor || '#22D3EE'"
+              [value]="form.value.secondaryColor || defaultSecondaryColor"
               (valueChange)="setColor('secondaryColor', $event)"
             ></app-color-field>
           </div>
@@ -173,10 +173,15 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy {
   private sizeObserver?: ResizeObserver;
 
   readonly taglineMaxLength = TAGLINE_MAX_LENGTH;
+  // No hardcoded hex here -- read from the CSS custom properties _tokens.scss sets from
+  // DESIGN.md, so this form's pre-fetch default always tracks the documented brand default
+  // instead of a second, driftable copy of it.
+  readonly defaultPrimaryColor = currentBrandPrimary();
+  readonly defaultSecondaryColor = currentBrandSecondary();
 
   form = this.fb.group({
-    primaryColor: ['#7C3AED', [Validators.required, Validators.pattern(HEX_COLOR_PATTERN)]],
-    secondaryColor: ['#22D3EE', [Validators.required, Validators.pattern(HEX_COLOR_PATTERN)]],
+    primaryColor: [this.defaultPrimaryColor, [Validators.required, Validators.pattern(HEX_COLOR_PATTERN)]],
+    secondaryColor: [this.defaultSecondaryColor, [Validators.required, Validators.pattern(HEX_COLOR_PATTERN)]],
     tagline: ['', Validators.maxLength(TAGLINE_MAX_LENGTH)]
   });
 

@@ -32,6 +32,7 @@ describe('ThemeService', () => {
   afterEach(() => {
     document.documentElement.style.removeProperty('--brand-primary');
     document.documentElement.style.removeProperty('--brand-secondary');
+    document.documentElement.style.removeProperty('--brand-primary-bright');
     document.documentElement.style.removeProperty('--brand-primary-contrast');
   });
 
@@ -81,8 +82,12 @@ describe('ThemeService', () => {
 
     service.apply('#1A1A2E', '#FF00FF', target);
 
+    // The gradient's far stop is a derived "bright" tint of primary, not the (unrelated)
+    // secondary color -- see ThemeService.apply's comment on why there's no design-doc value
+    // to reuse for a company-picked custom color.
+    expect(target.style.getPropertyValue('--brand-primary-bright')).toBe('color-mix(in srgb, #1A1A2E 60%, white)');
     expect(target.style.getPropertyValue('--brand-gradient')).toContain('#1A1A2E');
-    expect(target.style.getPropertyValue('--brand-gradient')).toContain('#FF00FF');
+    expect(target.style.getPropertyValue('--brand-gradient')).toContain('color-mix(in srgb, #1A1A2E 60%, white)');
     expect(target.style.getPropertyValue('--brand-primary-soft')).toContain('#1A1A2E');
     expect(target.style.getPropertyValue('--brand-primary-hover')).toContain('#1A1A2E');
     expect(target.style.getPropertyValue('--brand-secondary-soft')).toContain('#FF00FF');
