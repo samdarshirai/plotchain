@@ -38,6 +38,14 @@ describe('SalesRegisterComponent', () => {
     expect(fixture.componentInstance.page?.sales.length).toBe(1);
   });
 
+  it('formats the amount column as currency with thousands separators, not a raw number', () => {
+    fixture.detectChanges();
+
+    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
+    expect(rowText).toContain('100,000');
+    expect(rowText).not.toContain('100000');
+  });
+
   it('reloads with the associateId filter when it changes', () => {
     fixture.componentInstance.onAssociateIdChange('a2');
 

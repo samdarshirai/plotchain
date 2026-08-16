@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -12,6 +12,7 @@ import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.comp
   selector: 'app-rewards',
   standalone: true,
   imports: [CommonModule, TranslateModule, EditableTableComponent, StatTileComponent],
+  providers: [CurrencyPipe],
   template: `
     <div class="rewards card" *ngIf="progress as p">
       <h1 class="card-title">{{ 'rewards.title' | translate }}</h1>
@@ -28,7 +29,7 @@ import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.comp
 
       <div class="rewards__stats">
         <app-stat-tile [label]="'rewards.cumulativeVolumeLabel' | translate" [value]="p.cumulativeMatchedVolume + ''"></app-stat-tile>
-        <app-stat-tile [label]="'rewards.volumeToNextRankLabel' | translate" [value]="p.volumeToNextRank + ''"></app-stat-tile>
+        <app-stat-tile [label]="'rewards.volumeToNextRankLabel' | translate" [value]="formatCurrency(p.volumeToNextRank)"></app-stat-tile>
       </div>
 
       <h2 class="rewards__tiers-title">{{ 'rewards.tiersTitle' | translate }}</h2>
@@ -45,6 +46,7 @@ import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.comp
 export class RewardsComponent implements OnInit, OnDestroy {
   private rewardsService = inject(RewardsService);
   private translate = inject(TranslateService);
+  private currencyPipe = inject(CurrencyPipe);
   private destroyed$ = new Subject<void>();
 
   progress: AssociateRankProgress | null = null;
@@ -97,10 +99,14 @@ export class RewardsComponent implements OnInit, OnDestroy {
   private updateTierRows(): void {
     this.tierRows = (this.progress?.rewardTiers ?? []).map(t => ({
       tierLevel: t.tierLevel,
-      volumeThreshold: t.volumeThreshold,
-      cashReward: t.cashReward,
+      volumeThreshold: this.formatCurrency(t.volumeThreshold),
+      cashReward: this.formatCurrency(t.cashReward),
       perkDescription: t.perkDescription,
       achieved: this.translate.instant(t.achieved ? 'rewards.achievedYes' : 'rewards.achievedNo')
     }));
+  }
+
+  formatCurrency(value: number): string {
+    return this.currencyPipe.transform(value, 'INR', 'symbol', '1.0-2') ?? String(value);
   }
 }

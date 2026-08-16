@@ -59,11 +59,21 @@ describe('AdminStatsComponent', () => {
     expect(text).toContain('3');
     expect(text).toContain('35');
     expect(text).toContain('4');
-    expect(text).toContain('1000');
     expect(text).toContain('500');
-    expect(text).toContain('1500');
     expect(text).toContain('5');
     expect(text).toContain('28');
+  });
+
+  it('formats cycle income figures as currency with thousands separators, not raw numbers', () => {
+    flushInitialLoad({
+      ...statsWithCycle,
+      currentCycle: { ...statsWithCycle.currentCycle!, directIncome: 1000, matchingIncome: 500, totalIncome: 91500 }
+    });
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('1,000');
+    expect(text).toContain('91,500');
+    expect(text).not.toContain('91500');
   });
 
   it('renders an empty state instead of cycle figures when currentCycle is null', () => {

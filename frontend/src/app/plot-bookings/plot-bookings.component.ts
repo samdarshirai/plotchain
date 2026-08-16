@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -17,7 +17,7 @@ const PAGE_SIZE = 20;
   selector: 'app-plot-bookings',
   standalone: true,
   imports: [CommonModule, TranslateModule, EditableTableComponent, TabBarComponent, SidePanelComponent, InlineBannerComponent],
-  providers: [DatePipe],
+  providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="plot-bookings card">
       <h1 class="card-title">{{ 'plotBookings.title' | translate }}</h1>
@@ -121,6 +121,7 @@ export class PlotBookingsComponent implements OnInit, OnDestroy {
   private plotBookingsService = inject(PlotBookingsService);
   private translate = inject(TranslateService);
   private datePipe = inject(DatePipe);
+  private currencyPipe = inject(CurrencyPipe);
   private destroyed$ = new Subject<void>();
 
   activeTab: 'availablePlots' | 'myBookings' = 'availablePlots';
@@ -260,7 +261,7 @@ export class PlotBookingsComponent implements OnInit, OnDestroy {
     this.selectedBooking = booking;
     this.emiRows = booking.installments.map(installment => ({
       installmentNumber: String(installment.installmentNumber),
-      amount: String(installment.amount),
+      amount: this.formatCurrency(installment.amount),
       dueDate: this.datePipe.transform(installment.dueDate, 'mediumDate') ?? installment.dueDate
     }));
     this.panelOpen = true;
@@ -268,6 +269,10 @@ export class PlotBookingsComponent implements OnInit, OnDestroy {
 
   closePanel(): void {
     this.panelOpen = false;
+  }
+
+  formatCurrency(value: number): string {
+    return this.currencyPipe.transform(value, 'INR', 'symbol', '1.0-2') ?? String(value);
   }
 
   private loadProjects(): void {
@@ -288,8 +293,8 @@ export class PlotBookingsComponent implements OnInit, OnDestroy {
           plotNo: plot.plotNo,
           plotType: plot.plotType,
           areaSqft: String(plot.areaSqft),
-          rate: String(plot.rate),
-          price: String(plot.price),
+          rate: this.formatCurrency(plot.rate),
+          price: this.formatCurrency(plot.price),
           status: plot.status
         }));
       },

@@ -213,7 +213,7 @@ const PAGE_SIZE = 20;
                 <td>{{ plotTypeLabel(plot.plotType) }}</td>
                 <td>{{ plot.areaSqft }}</td>
                 <td>{{ plot.rate }}</td>
-                <td>{{ plot.price }}</td>
+                <td>{{ plot.price | currency:'INR':'symbol':'1.0-2' }}</td>
                 <td>
                   <span class="projects-step__status-pill" [ngClass]="plotStatusClass(plot.status)">
                     {{ plotStatusLabel(plot.status) }}

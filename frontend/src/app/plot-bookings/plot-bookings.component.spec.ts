@@ -94,6 +94,20 @@ describe('PlotBookingsComponent', () => {
     expect(fixture.componentInstance.plotRows[0]['status']).toBe('AVAILABLE');
   });
 
+  it('formats plot rate and price as currency with thousands separators, not raw numbers', () => {
+    fixture.componentInstance.onProjectSelect('proj-1');
+    const req = httpMock.expectOne('/api/company/projects/proj-1/plots?page=0&size=20');
+    req.flush({
+      plots: [{ id: 'plot-1', plotNo: 'A-101', plotType: 'NORMAL', areaSqft: 1200, rate: 500, price: 600000, status: 'AVAILABLE' }],
+      page: 0, size: 20, totalElements: 1
+    });
+    fixture.detectChanges();
+
+    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
+    expect(rowText).toContain('600,000');
+    expect(rowText).not.toContain('600000');
+  });
+
   it('shows a plots load error scoped to the selected project, without silently doing nothing', () => {
     fixture.componentInstance.onProjectSelect('proj-1');
     httpMock.expectOne('/api/company/projects/proj-1/plots?page=0&size=20')
@@ -148,6 +162,27 @@ describe('PlotBookingsComponent', () => {
     expect(fixture.componentInstance.panelOpen).toBe(true);
     expect(fixture.componentInstance.emiRows.length).toBe(2);
     expect(fixture.componentInstance.emiRows[0]['installmentNumber']).toBe('1');
+  });
+
+  it('formats the installment amount as currency with thousands separators, not a raw number', () => {
+    fixture.componentInstance.onTabChange('myBookings');
+    httpMock.expectOne('/api/associates/me/bookings?page=0&size=20').flush({
+      bookings: [{
+        id: 'b1', plotId: 'plot-1', associateId: 'a1', totalAmount: 600000, installmentCount: 2,
+        bookedAt: '2026-01-01T00:00:00Z',
+        installments: [
+          { installmentNumber: 1, amount: 300000, dueDate: '2026-02-01' },
+          { installmentNumber: 2, amount: 300000, dueDate: '2026-03-01' }
+        ]
+      }],
+      page: 0, size: 20, totalElements: 1
+    });
+
+    fixture.componentInstance.selectBooking(fixture.componentInstance.bookingPage!.bookings[0]);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.emiRows[0]['amount']).toContain('300,000');
+    expect(fixture.componentInstance.emiRows[0]['amount']).not.toContain('300000');
   });
 
   it('closes the side panel via the close event', () => {
