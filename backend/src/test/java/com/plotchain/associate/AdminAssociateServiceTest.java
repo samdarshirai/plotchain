@@ -172,7 +172,7 @@ class AdminAssociateServiceTest {
 
         ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
         verify(settingsAuditLogRepository).save(captor.capture());
-        assertThat(captor.getValue().getSection()).isEqualTo("associate");
+        assertThat(captor.getValue().getSection()).isEqualTo("ASSOCIATE");
         assertThat(captor.getValue().getChangedByAssociateId()).isEqualTo(ACTOR_ID);
     }
 

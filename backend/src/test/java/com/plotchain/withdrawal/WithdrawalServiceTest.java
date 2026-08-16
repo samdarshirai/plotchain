@@ -202,7 +202,7 @@ class WithdrawalServiceTest {
         withdrawalService.submitRequest(requestFor(ASSOCIATE_ID, new BigDecimal("100.00")), ADMIN_ACTOR_ID);
 
         ArgumentCaptor<String> summaryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(settingsAuditService).record(eq("withdrawal"), summaryCaptor.capture(), any(), eq(ADMIN_ACTOR_ID));
+        verify(settingsAuditService).record(eq("WITHDRAWAL"), summaryCaptor.capture(), any(), eq(ADMIN_ACTOR_ID));
         assertThat(summaryCaptor.getValue()).contains("VP00001");
     }
 
@@ -421,7 +421,7 @@ class WithdrawalServiceTest {
         verify(walletRepository).creditBalance(ASSOCIATE_ID, new BigDecimal("2000.00"));
 
         ArgumentCaptor<String> summaryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(settingsAuditService).record(eq("withdrawal"), summaryCaptor.capture(), any(), eq(ADMIN_ACTOR_ID));
+        verify(settingsAuditService).record(eq("WITHDRAWAL"), summaryCaptor.capture(), any(), eq(ADMIN_ACTOR_ID));
         assertThat(summaryCaptor.getValue()).contains("cancelled after approval");
     }
 
@@ -436,7 +436,7 @@ class WithdrawalServiceTest {
         withdrawalService.decide(requestId, decisionOf(WithdrawalRequestStatus.REJECTED, "Not eligible"), ADMIN_ACTOR_ID);
 
         ArgumentCaptor<String> summaryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(settingsAuditService).record(eq("withdrawal"), summaryCaptor.capture(), any(), eq(ADMIN_ACTOR_ID));
+        verify(settingsAuditService).record(eq("WITHDRAWAL"), summaryCaptor.capture(), any(), eq(ADMIN_ACTOR_ID));
         assertThat(summaryCaptor.getValue()).contains("rejected").doesNotContain("cancelled");
     }
 
@@ -615,7 +615,7 @@ class WithdrawalServiceTest {
         withdrawalService.disburse(requestId, disburseWith("BANK-REF-001"), ADMIN_ACTOR_ID);
 
         ArgumentCaptor<String> summaryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(settingsAuditService).record(eq("withdrawal"), summaryCaptor.capture(), any(), eq(ADMIN_ACTOR_ID));
+        verify(settingsAuditService).record(eq("WITHDRAWAL"), summaryCaptor.capture(), any(), eq(ADMIN_ACTOR_ID));
         assertThat(summaryCaptor.getValue()).contains("VP00001");
     }
 }

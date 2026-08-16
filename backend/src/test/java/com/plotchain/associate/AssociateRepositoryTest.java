@@ -271,6 +271,29 @@ class AssociateRepositoryTest {
         assertThat(result.getContent()).extracting(Associate::getUserId).containsExactly("VP00001");
     }
 
+    // M2 fix: KycReviewService.list() used to query off kycStatus alone, so a freshly-provisioned
+    // zero-document associate (kycStatus = PENDING from account creation, before any upload)
+    // showed up in the "Pending" review queue indistinguishable from one actually awaiting
+    // review. findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAsc adds an EXISTS subquery
+    // against AssociateKycDocument to exclude those.
+    @Test
+    void findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAscExcludesAssociatesWithNoDocuments() {
+        RankTier rank = persistRank("Sales Associate", 1);
+        Associate withDocument = persistAssociate("VP00001", "Has Document", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        persistAssociate("VP00002", "No Document", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        persistKycDocument(withDocument.getId(), "PAN");
+        entityManager.flush();
+
+        Page<Associate> result = associateRepository.findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAsc(
+            AssociateRole.ASSOCIATE, KycStatus.PENDING, PageRequest.of(0, 20));
+
+        // VP00002 has the same PENDING status but zero documents -- containsExactly proves it's
+        // excluded, not merely that VP00001 is present.
+        assertThat(result.getContent()).extracting(Associate::getUserId).containsExactly("VP00001");
+    }
+
     @Test
     void findAncestorChainReturnsRootToTargetInclusiveInOrder() {
         RankTier rank = persistRank("Sales Associate", 1);
@@ -318,6 +341,18 @@ class AssociateRepositoryTest {
         // Excludes the sibling (same parent, not a descendant), the ancestor (root), and an
         // unrelated associate in a different branch entirely.
         assertThat(ids).doesNotContain(root.getId(), sibling.getId(), unrelated.getId());
+    }
+
+    private AssociateKycDocument persistKycDocument(UUID associateId, String documentType) {
+        AssociateKycDocument document = new AssociateKycDocument();
+        document.setId(UUID.randomUUID());
+        document.setAssociateId(associateId);
+        document.setDocumentType(documentType);
+        document.setContent(new byte[] {1, 2, 3});
+        document.setContentType("image/png");
+        document.setUploadedAt(Instant.now());
+        entityManager.persist(document);
+        return document;
     }
 
     private RankTier persistRank(String name, int order) {
