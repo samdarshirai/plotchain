@@ -117,6 +117,20 @@ describe('ProjectsStepComponent', () => {
     expect(component.activeTab).toBe('plotList');
   });
 
+  it('formats plot price as currency with thousands separators, not a raw number', () => {
+    flushProjectsList();
+    const component = fixture.componentInstance;
+    component.selectProject('p1');
+
+    const req = httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=20');
+    req.flush({ plots: [plot], page: 0, size: 20, totalElements: 1 });
+    fixture.detectChanges();
+
+    const rowText: string = fixture.nativeElement.querySelector('.projects-step__plot-table tbody tr').textContent;
+    expect(rowText).toContain('600,000');
+    expect(rowText).not.toContain('600000');
+  });
+
   it('switches to the Import CSV tab and back without reloading plots', () => {
     flushProjectsList();
     const component = fixture.componentInstance;

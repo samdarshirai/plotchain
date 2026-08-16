@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
@@ -16,7 +16,7 @@ const PAGE_SIZE = 20;
   selector: 'app-sales-register',
   standalone: true,
   imports: [CommonModule, FormsModule, TranslateModule, RouterLink, EditableTableComponent, InlineBannerComponent],
-  providers: [DatePipe],
+  providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="sales-register">
       <div class="sales-register__header">
@@ -104,6 +104,7 @@ export class SalesRegisterComponent implements OnInit {
   private adminService = inject(AdminService);
   private translate = inject(TranslateService);
   private datePipe = inject(DatePipe);
+  private currencyPipe = inject(CurrencyPipe);
 
   page: AdminSalePage | null = null;
   loadError = false;
@@ -197,7 +198,7 @@ export class SalesRegisterComponent implements OnInit {
     this.registerRows = (this.page?.sales ?? []).map(sale => ({
       buyerName: sale.buyerName,
       buyerPhone: sale.buyerPhone,
-      amount: String(sale.amount),
+      amount: this.currencyPipe.transform(sale.amount, 'INR', 'symbol', '1.0-2') ?? String(sale.amount),
       legCredited: sale.legCredited,
       status: sale.status,
       recordedAt: this.datePipe.transform(sale.recordedAt, 'medium') ?? sale.recordedAt

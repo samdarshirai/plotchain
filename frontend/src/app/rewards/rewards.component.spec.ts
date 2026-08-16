@@ -116,7 +116,22 @@ describe('RewardsComponent', () => {
       (el: any) => el.textContent.trim()
     );
     expect(values).toContain('4000');
-    expect(values).toContain('6000');
+    expect(values).toContain('₹6,000');
+  });
+
+  it('formats volumeThreshold and cashReward table columns as currency with thousands separators, not raw numbers', () => {
+    fixture.detectChanges();
+    flushProgress({
+      rewardTiers: [
+        { tierLevel: 1, volumeThreshold: 100000, cashReward: 25000, perkDescription: 'Tier 1', achieved: true }
+      ]
+    });
+    fixture.detectChanges();
+
+    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
+    expect(rowText).toContain('100,000');
+    expect(rowText).toContain('25,000');
+    expect(rowText).not.toContain('100000');
   });
 
   it('shows a load error when the request fails, without silently doing nothing', () => {

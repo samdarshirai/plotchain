@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { AdminStatsService } from './admin-stats.service';
 import { AdminStatsResponse } from './admin-stats.model';
@@ -9,6 +9,7 @@ import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.c
   selector: 'app-admin-stats',
   standalone: true,
   imports: [CommonModule, TranslateModule, StatTileComponent],
+  providers: [CurrencyPipe],
   template: `
     <div class="admin-stats card">
       <h1 class="card-title">{{ 'settings.sections.adminStats' | translate }}</h1>
@@ -59,15 +60,15 @@ import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.c
               ></app-stat-tile>
               <app-stat-tile
                 [label]="'settings.adminStats.directIncomeLabel' | translate"
-                [value]="cycle.directIncome.toString()"
+                [value]="formatCurrency(cycle.directIncome)"
               ></app-stat-tile>
               <app-stat-tile
                 [label]="'settings.adminStats.matchingIncomeLabel' | translate"
-                [value]="cycle.matchingIncome.toString()"
+                [value]="formatCurrency(cycle.matchingIncome)"
               ></app-stat-tile>
               <app-stat-tile
                 [label]="'settings.adminStats.totalIncomeLabel' | translate"
-                [value]="cycle.totalIncome.toString()"
+                [value]="formatCurrency(cycle.totalIncome)"
               ></app-stat-tile>
               <app-stat-tile
                 [label]="'settings.adminStats.newAssociatesLabel' | translate"
@@ -85,12 +86,17 @@ import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.c
 })
 export class AdminStatsComponent implements OnInit {
   private adminStatsService = inject(AdminStatsService);
+  private currencyPipe = inject(CurrencyPipe);
 
   stats: AdminStatsResponse | null = null;
   loadError = false;
 
   ngOnInit(): void {
     this.loadStats();
+  }
+
+  formatCurrency(value: number): string {
+    return this.currencyPipe.transform(value, 'INR', 'symbol', '1.0-2') ?? String(value);
   }
 
   private loadStats(): void {
