@@ -3,8 +3,10 @@ package com.plotchain.sales;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.KycStatus;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
+import com.plotchain.compensation.SelfPerformanceBonusConfigService;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleService;
 import com.plotchain.income.IncomeType;
@@ -37,6 +39,7 @@ public class SaleService {
     private final CompensationPlanVersionRepository compensationPlanVersionRepository;
     private final SaleRepository saleRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
+    private final SelfPerformanceBonusConfigService selfPerformanceBonusConfigService;
 
     public SaleService(
             PlotRepository plotRepository,
@@ -44,13 +47,15 @@ public class SaleService {
             CycleService cycleService,
             CompensationPlanVersionRepository compensationPlanVersionRepository,
             SaleRepository saleRepository,
-            LedgerEntryRepository ledgerEntryRepository) {
+            LedgerEntryRepository ledgerEntryRepository,
+            SelfPerformanceBonusConfigService selfPerformanceBonusConfigService) {
         this.plotRepository = plotRepository;
         this.associateRepository = associateRepository;
         this.cycleService = cycleService;
         this.compensationPlanVersionRepository = compensationPlanVersionRepository;
         this.saleRepository = saleRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
+        this.selfPerformanceBonusConfigService = selfPerformanceBonusConfigService;
     }
 
     // Sales unit 2 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
@@ -125,6 +130,47 @@ public class SaleService {
         ledgerEntry.setSourceRef(sale.getId());
         ledgerEntry.setCreatedAt(Instant.now());
         ledgerEntryRepository.save(ledgerEntry);
+
+        // Self-Performance Bonus: same shape as Direct Income above (self-only, sale-time,
+        // this sale's own amount), gated by SelfPerformanceBonusConfigService.isEnabled() and
+        // the plot's area crossing one of the two tier thresholds on this same planVersion.
+        // Highest qualifying tier wins; below the lower threshold, no entry (compensation-plan-
+        // reference.md's own Known Gap: no rate is documented below 2,000 sqft).
+        if (selfPerformanceBonusConfigService.isEnabled()) {
+            BigDecimal areaSqft = plot.getAreaSqft();
+            BigDecimal selfPerformancePct = null;
+            if (areaSqft.compareTo(planVersion.getSelfPerformanceTier2SqftThreshold()) >= 0) {
+                selfPerformancePct = planVersion.getSelfPerformanceTier2Pct();
+            } else if (areaSqft.compareTo(planVersion.getSelfPerformanceTier1SqftThreshold()) >= 0) {
+                selfPerformancePct = planVersion.getSelfPerformanceTier1Pct();
+            }
+
+            if (selfPerformancePct != null) {
+                BigDecimal spGrossAmount = sale.getAmount()
+                    .multiply(selfPerformancePct.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+                if (spGrossAmount.compareTo(BigDecimal.ZERO) > 0) {
+                    BigDecimal spTdsDeduction = spGrossAmount
+                        .multiply(planVersion.getTdsPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+                    BigDecimal spAdminDeduction = spGrossAmount
+                        .multiply(planVersion.getAdminChargeWithoutPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+                    BigDecimal spNetAmount = spGrossAmount.subtract(spTdsDeduction).subtract(spAdminDeduction);
+
+                    LedgerEntry selfPerformanceEntry = new LedgerEntry();
+                    selfPerformanceEntry.setId(UUID.randomUUID());
+                    selfPerformanceEntry.setIncomeType(IncomeType.SELF_PERFORMANCE);
+                    selfPerformanceEntry.setAssociateId(sale.getAssociateId());
+                    selfPerformanceEntry.setCycleId(sale.getCycleId());
+                    selfPerformanceEntry.setGrossAmount(spGrossAmount);
+                    selfPerformanceEntry.setTdsDeduction(spTdsDeduction);
+                    selfPerformanceEntry.setAdminDeduction(spAdminDeduction);
+                    selfPerformanceEntry.setNetAmount(spNetAmount);
+                    selfPerformanceEntry.setStatus(kycGatedStatus(associate));
+                    selfPerformanceEntry.setSourceRef(sale.getId());
+                    selfPerformanceEntry.setCreatedAt(Instant.now());
+                    ledgerEntryRepository.save(selfPerformanceEntry);
+                }
+            }
+        }
 
         // Flow step 9.
         return toResponse(sale);
@@ -222,5 +268,14 @@ public class SaleService {
             sale.getStatus().name(),
             sale.getVoidReason(),
             sale.getRecordedAt());
+    }
+
+    // Duplicates CycleService.kycGatedStatus()'s one-line logic rather than extracting a shared
+    // utility -- consistent with how the deduction math above is already duplicated between the
+    // two classes; no cross-class extraction is in scope here.
+    private LedgerEntryStatus kycGatedStatus(Associate associate) {
+        return associate.getKycStatus() == KycStatus.VERIFIED
+            ? LedgerEntryStatus.PENDING
+            : LedgerEntryStatus.CARRIED_FORWARD;
     }
 }

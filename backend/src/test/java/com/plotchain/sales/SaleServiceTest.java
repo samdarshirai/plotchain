@@ -3,8 +3,10 @@ package com.plotchain.sales;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.KycStatus;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
+import com.plotchain.compensation.SelfPerformanceBonusConfigService;
 import com.plotchain.compensation.SettlementCycle;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleService;
@@ -38,6 +40,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
@@ -53,6 +56,7 @@ class SaleServiceTest {
     @Mock CompensationPlanVersionRepository compensationPlanVersionRepository;
     @Mock SaleRepository saleRepository;
     @Mock LedgerEntryRepository ledgerEntryRepository;
+    @Mock SelfPerformanceBonusConfigService selfPerformanceBonusConfigService;
 
     SaleService saleService;
 
@@ -64,7 +68,8 @@ class SaleServiceTest {
     void setUp() {
         saleService = new SaleService(
             plotRepository, associateRepository, cycleService,
-            compensationPlanVersionRepository, saleRepository, ledgerEntryRepository);
+            compensationPlanVersionRepository, saleRepository, ledgerEntryRepository,
+            selfPerformanceBonusConfigService);
     }
 
     private Plot plotWithStatus(PlotStatus status) {
@@ -96,7 +101,7 @@ class SaleServiceTest {
             new BigDecimal("5.00"), BigDecimal.ZERO, new BigDecimal("4.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.MONTHLY,
             Instant.now(), null,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
+            new BigDecimal("1.00"), new BigDecimal("2000"), new BigDecimal("2.00"), new BigDecimal("3000"));
     }
 
     private void stubHappyPathGuardsAndDependencies() {
@@ -224,6 +229,108 @@ class SaleServiceTest {
         assertThat(entry.getStatus()).isEqualTo(LedgerEntryStatus.PENDING);
         assertThat(entry.getSourceRef()).isEqualTo(response.id());
         assertThat(entry.getCreatedAt()).isNotNull();
+    }
+
+    private Plot plotWithAreaSqft(BigDecimal areaSqft) {
+        return new Plot(PLOT_ID, UUID.randomUUID(), "A-101", PlotType.NORMAL,
+            areaSqft, new BigDecimal("500.00"), new BigDecimal("600000.00"), PlotStatus.AVAILABLE);
+    }
+
+    @Test
+    void recordSaleCreditsSelfPerformanceBonusAtTier1WhenEnabledAndAreaMeetsTheLowerThreshold() {
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithAreaSqft(new BigDecimal("2000"))));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(compensationPlanVersionRepository
+                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(compensationPlanVersion()));
+        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
+
+        SaleResponse response = saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        LedgerEntry selfPerformanceEntry = captor.getAllValues().stream()
+            .filter(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE).findFirst().orElseThrow();
+        // gross = 600000.00 * 1% = 6000
+        assertThat(selfPerformanceEntry.getGrossAmount()).isEqualByComparingTo("6000");
+        assertThat(selfPerformanceEntry.getSourceRef()).isEqualTo(response.id());
+    }
+
+    @Test
+    void recordSaleCreditsSelfPerformanceBonusAtTier2WhenAreaMeetsTheHigherThreshold() {
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithAreaSqft(new BigDecimal("3000"))));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(compensationPlanVersionRepository
+                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(compensationPlanVersion()));
+        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
+
+        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        LedgerEntry selfPerformanceEntry = captor.getAllValues().stream()
+            .filter(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE).findFirst().orElseThrow();
+        // gross = 600000.00 * 2% = 12000
+        assertThat(selfPerformanceEntry.getGrossAmount()).isEqualByComparingTo("12000");
+    }
+
+    @Test
+    void recordSaleWritesNoSelfPerformanceEntryWhenAreaIsBelowTheLowerThreshold() {
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithAreaSqft(new BigDecimal("1999"))));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(compensationPlanVersionRepository
+                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(compensationPlanVersion()));
+        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
+
+        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        verify(ledgerEntryRepository, never()).save(
+            argThat(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE));
+    }
+
+    @Test
+    void recordSaleWritesNoSelfPerformanceEntryWhenConfigIsDisabledRegardlessOfArea() {
+        stubHappyPathGuardsAndDependencies(); // plotWithStatus(AVAILABLE) has no explicit areaSqft set (null) -- irrelevant, since disabled short-circuits before reading it
+        // isEnabled() is NOT stubbed -- Mockito's boolean default (false) is exactly "disabled".
+
+        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        verify(ledgerEntryRepository, never()).save(
+            argThat(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE));
+    }
+
+    @Test
+    void recordSaleCreditsSelfPerformanceBonusAsCarriedForwardWhenAssociateKycIsNotVerified() {
+        Associate unverified = associateWithPosition("L");
+        unverified.setKycStatus(KycStatus.PENDING);
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithAreaSqft(new BigDecimal("2000"))));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(unverified));
+        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(compensationPlanVersionRepository
+                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(compensationPlanVersion()));
+        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
+
+        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        LedgerEntry selfPerformanceEntry = captor.getAllValues().stream()
+            .filter(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE).findFirst().orElseThrow();
+        assertThat(selfPerformanceEntry.getStatus()).isEqualTo(LedgerEntryStatus.CARRIED_FORWARD);
     }
 
     // compensation-plan-reference.md's real published rates (direct 6%, tds 2%, admin-without-pan
