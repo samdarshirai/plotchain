@@ -291,6 +291,12 @@ export class CompanyProfileStepComponent implements OnInit, AfterViewInit, OnDes
         this.setupService.refresh();
       },
       error: err => {
+        // Re-mark dirty: the optimistic markAsPristine() above assumed this save would
+        // succeed. A failed save (e.g. a duplicate GSTIN the client regex doesn't catch) still
+        // has an unsaved edit sitting in the form -- without this, a subsequent flush or
+        // debounce sees a pristine form and silently does nothing, so the failed edit gets lost
+        // on the very next Next click.
+        this.form.markAsDirty();
         this.serverFieldErrors = toFieldErrors(err);
         this.savedJustNow = false;
         this.inspectorService.setSaved(false);

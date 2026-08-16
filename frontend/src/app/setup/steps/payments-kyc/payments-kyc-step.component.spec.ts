@@ -426,4 +426,82 @@ describe('PaymentsKycStepComponent', () => {
     tick(400);
     httpMock.expectNone('/api/company/payments');
   }));
+
+  it('re-marks paymentForm dirty when a flush-triggered payment save fails, so the next flush retries it', () => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    component.paymentForm.get('gateway')?.setValue('RAZORPAY');
+    component.flushPendingSave();
+    httpMock.expectOne('/api/company/payments').flush(
+      { error: 'validation failed', fields: { gateway: 'unsupported gateway' } },
+      { status: 400, statusText: 'Bad Request' }
+    );
+    expect(component.paymentForm.dirty).toBeTrue();
+
+    component.flushPendingSave();
+    const retry = httpMock.expectOne('/api/company/payments');
+    expect(retry.request.body).toEqual({ gateway: 'RAZORPAY', modesEnabled: [] });
+    retry.flush({ ...emptyPaymentConfig, gateway: 'RAZORPAY' });
+    flushSetupState();
+  });
+
+  it('re-marks payoutForm dirty when a flush-triggered payout save fails, so the next flush retries it', () => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    component.payoutForm.patchValue({
+      bankName: 'HDFC Bank',
+      accountHolder: 'Plotchain Estates Pvt Ltd',
+      accountNumber: '50100123456789',
+      ifscCode: 'HDFC0001234'
+    });
+    component.flushPendingSave();
+    httpMock.expectOne('/api/company/payout-account').flush(
+      { error: 'validation failed', fields: { ifscCode: 'bank rejected this IFSC' } },
+      { status: 400, statusText: 'Bad Request' }
+    );
+    expect(component.payoutForm.dirty).toBeTrue();
+
+    component.flushPendingSave();
+    const retry = httpMock.expectOne('/api/company/payout-account');
+    expect(retry.request.body.ifscCode).toBe('HDFC0001234');
+    retry.flush({ ...emptyPayoutAccount, ifscCode: 'HDFC0001234' });
+    flushSetupState();
+  });
+
+  it('re-marks kycDirty when a flush-triggered KYC save fails, so the next flush retries it', () => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    component.toggleDocument('AADHAAR', false);
+    component.flushPendingSave();
+    httpMock.expectOne('/api/company/kyc').flush({ error: 'boom' }, { status: 500, statusText: 'Server Error' });
+
+    // kycDirty is private; observe the re-dirty indirectly through a second flush retrying.
+    component.flushPendingSave();
+    const retry = httpMock.expectOne('/api/company/kyc');
+    expect(retry.request.body).toEqual({ strictness: 'STRICT', requiredDocuments: ['PAN', 'BANK_PASSBOOK'] });
+    retry.flush({ ...defaultKycConfig, requiredDocuments: ['PAN', 'BANK_PASSBOOK'] });
+    flushSetupState();
+  });
+
+  it('re-marks bookingEmiDirty when a flush-triggered booking-EMI save fails, so the next flush retries it', () => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    component.setConfirmRule('KYC_GATED');
+    component.flushPendingSave();
+    httpMock.expectOne('/api/company/booking-emi').flush(
+      { error: 'confirm threshold percent must be a positive value' },
+      { status: 409, statusText: 'Conflict' }
+    );
+
+    // bookingEmiDirty is private; observe the re-dirty indirectly through a second flush retrying.
+    component.flushPendingSave();
+    const retry = httpMock.expectOne('/api/company/booking-emi');
+    expect(retry.request.body.confirmRule).toBe('KYC_GATED');
+    retry.flush({ ...defaultBookingEmiConfig, confirmRule: 'KYC_GATED' });
+    flushSetupState();
+  });
 });

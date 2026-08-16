@@ -748,6 +748,9 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
         this.setupService.refresh();
       },
       error: err => {
+        // Re-mark dirty: see the matching comment in company-profile-step.component.ts's save()
+        // error handler -- a failed save must not leave paymentForm looking pristine.
+        this.paymentForm.markAsDirty();
         this.paymentSavedJustNow = false;
         this.inspectorService.setSaved(this.anySavedJustNow);
         const fields = toFieldErrors(err);
@@ -802,6 +805,9 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
         this.setupService.refresh();
       },
       error: err => {
+        // Re-mark dirty: see the matching comment in company-profile-step.component.ts's save()
+        // error handler -- a failed save must not leave payoutForm looking pristine.
+        this.payoutForm.markAsDirty();
         this.payoutSavedJustNow = false;
         this.inspectorService.setSaved(this.anySavedJustNow);
         const fields = toFieldErrors(err);
@@ -838,6 +844,9 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
         this.setupService.refresh();
       },
       error: () => {
+        // Re-mark dirty: see the matching comment in company-profile-step.component.ts's save()
+        // error handler -- a failed save must not leave kycDirty looking cleared.
+        this.kycDirty = true;
         this.kycSavedJustNow = false;
         this.inspectorService.setSaved(this.anySavedJustNow);
       }
@@ -917,6 +926,9 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
         this.setupService.refresh();
       },
       error: err => {
+        // Re-mark dirty: see the matching comment in company-profile-step.component.ts's save()
+        // error handler -- a failed save must not leave bookingEmiDirty looking cleared.
+        this.bookingEmiDirty = true;
         this.bookingEmiSavedJustNow = false;
         this.inspectorService.setSaved(this.anySavedJustNow);
         this.bookingEmiSubmitError =

@@ -230,6 +230,25 @@ describe('CompanyProfileStepComponent', () => {
     httpMock.expectNone('/api/company/profile');
   }));
 
+  it('re-marks the form dirty when a flush-triggered save fails, so the next flush retries it', () => {
+    fixture.componentInstance.form.patchValue(filledProfile);
+
+    fixture.componentInstance.flushPendingSave();
+    httpMock.expectOne('/api/company/profile').flush(
+      { error: 'validation failed', fields: { registrationNumber: 'GSTIN already registered' } },
+      { status: 400, statusText: 'Bad Request' }
+    );
+    expect(fixture.componentInstance.form.dirty).toBeTrue();
+
+    // A second flush (e.g. the user clicks Next again with no further edits) must retry rather
+    // than silently doing nothing, since the previous attempt never actually persisted.
+    fixture.componentInstance.flushPendingSave();
+    const retry = httpMock.expectOne('/api/company/profile');
+    expect(retry.request.method).toBe('PUT');
+    retry.flush(filledProfile);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+  });
+
   it('isStepValid reflects the form validity', () => {
     fixture.componentInstance.form.patchValue({ ...filledProfile, contactEmail: 'not-an-email' });
     expect(fixture.componentInstance.isStepValid()).toBeFalse();

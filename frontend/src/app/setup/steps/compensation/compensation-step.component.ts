@@ -593,6 +593,10 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
         this.setupService.refresh();
       },
       error: err => {
+        // Re-mark dirty: see the matching comment in company-profile-step.component.ts's save()
+        // error handler -- a failed save must not leave the form looking pristine, regardless of
+        // which branch below runs.
+        this.form.markAsDirty();
         this.savedJustNow = false;
         this.inspectorService.setSaved(false);
         if (err.status === 409) {

@@ -363,6 +363,23 @@ describe('CompensationStepComponent', () => {
     httpMock.expectNone('/api/company/compensation');
   });
 
+  it('re-marks the form dirty when a flush-triggered save fails (409), so the next flush retries it', () => {
+    fixture.componentInstance.form.get('directIncomePct')?.setValue(50);
+
+    fixture.componentInstance.flushPendingSave();
+    httpMock.expectOne('/api/company/compensation').flush(
+      { error: 'A compensation plan version is already effective on 2026-07-30' },
+      { status: 409, statusText: 'Conflict' }
+    );
+    expect(fixture.componentInstance.form.dirty).toBeTrue();
+
+    fixture.componentInstance.flushPendingSave();
+    const retry = httpMock.expectOne('/api/company/compensation');
+    expect(retry.request.method).toBe('PUT');
+    retry.flush({ ...emptyPlan, directIncomePct: 50 });
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+  });
+
   it('flushPendingSave does nothing when the form is dirty but invalid', () => {
     fixture.componentInstance.form.get('directIncomePct')?.setValue(200);
     expect(fixture.componentInstance.form.dirty).toBeTrue();

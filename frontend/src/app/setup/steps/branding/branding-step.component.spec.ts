@@ -217,6 +217,23 @@ describe('BrandingStepComponent', () => {
     httpMock.expectOne('/api/company/setup-state').flush(setupState);
   });
 
+  it('re-marks the form dirty when a flush-triggered save fails, so the next flush retries it', () => {
+    fixture.componentInstance.setColor('primaryColor', '#E11D48');
+
+    fixture.componentInstance.flushPendingSave();
+    httpMock.expectOne('/api/company/branding').flush(
+      { error: 'validation failed', fields: { tagline: 'server-side rejection' } },
+      { status: 400, statusText: 'Bad Request' }
+    );
+    expect(fixture.componentInstance.form.dirty).toBeTrue();
+
+    fixture.componentInstance.flushPendingSave();
+    const retry = httpMock.expectOne('/api/company/branding');
+    expect(retry.request.method).toBe('PUT');
+    retry.flush({ ...emptyBranding, primaryColor: '#E11D48' });
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+  });
+
   it('flushPendingSave does nothing when the form is pristine', () => {
     expect(fixture.componentInstance.form.dirty).toBeFalse();
     fixture.componentInstance.flushPendingSave();

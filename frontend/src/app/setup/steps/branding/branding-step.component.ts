@@ -373,6 +373,9 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy, 
         this.setupService.refresh();
       },
       error: err => {
+        // Re-mark dirty: see the matching comment in company-profile-step.component.ts's save()
+        // error handler -- a failed save must not leave the form looking pristine.
+        this.form.markAsDirty();
         this.serverFieldErrors = toFieldErrors(err);
         this.savedJustNow = false;
         this.inspectorService.setSaved(false);
