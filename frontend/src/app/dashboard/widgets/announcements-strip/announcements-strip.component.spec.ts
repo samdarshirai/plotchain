@@ -18,4 +18,24 @@ describe('AnnouncementsStripComponent', () => {
     expect(items.length).toBe(1);
     expect(items[0].textContent).toContain('Green Valley');
   });
+
+  it('renders the wrapper when announcements are present', () => {
+    expect(fixture.nativeElement.querySelector('.announcements-strip')).not.toBeNull();
+  });
+});
+
+describe('AnnouncementsStripComponent with no announcements', () => {
+  let fixture: ComponentFixture<AnnouncementsStripComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [AnnouncementsStripComponent] }).compileComponents();
+    fixture = TestBed.createComponent(AnnouncementsStripComponent);
+    fixture.componentInstance.announcements = [];
+    fixture.detectChanges();
+  });
+
+  it('renders no wrapper and no empty box when there are no announcements', () => {
+    expect(fixture.nativeElement.querySelector('.announcements-strip')).toBeNull();
+    expect(fixture.nativeElement.textContent.trim()).toBe('');
+  });
 });

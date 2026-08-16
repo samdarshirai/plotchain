@@ -14,8 +14,15 @@ describe('QuickActionsComponent', () => {
     fixture.detectChanges();
   });
 
-  it('links Record Sale to /sales/new and Add Referral to /referrals/new', () => {
-    expect(fixture.nativeElement.querySelector('.record-sale').getAttribute('href')).toBe('/sales/new');
-    expect(fixture.nativeElement.querySelector('.add-referral').getAttribute('href')).toBe('/referrals/new');
+  it('does not render a Record Sale or Add Referral link (associates have no self-service route)', () => {
+    expect(fixture.nativeElement.querySelector('.record-sale')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.add-referral')).toBeNull();
+    expect(fixture.nativeElement.querySelector('a')).toBeNull();
+  });
+
+  it('renders informational copy directing associates to contact their admin', () => {
+    const info = fixture.nativeElement.querySelector('.quick-actions-empty');
+    expect(info).not.toBeNull();
+    expect(info.textContent.trim().length).toBeGreaterThan(0);
   });
 });
