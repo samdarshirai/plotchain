@@ -55,14 +55,13 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
     Optional<LedgerEntry> findByAssociateIdAndCycleIdAndIncomeType(UUID associateId, UUID cycleId, IncomeType incomeType);
 
     // Sales unit 5 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
-    // flow "Void a sale", step 5): looks up the DIRECT LedgerEntry a RECORDED sale created at
-    // record time (sourceRef = sale.id, set by SaleService.recordSale), so SaleService.voidSale
-    // can flip its status to REVERSED. Only DIRECT entries set sourceRef today (V16__sale.sql),
-    // and recordSale creates exactly one LedgerEntry per Sale in the same transaction as the
-    // Sale row, so a plain single-result derived query is safe. If a future income type
-    // (matching, sponsor, reward -- all still unbuilt) ever also sets sourceRef to a sale id for
-    // a *different* associate/cycle, this query would need revisiting to disambiguate by
-    // incomeType too, but that's out of scope for this unit.
+    // flow "Void a sale", step 5): originally the single-result lookup SaleService.voidSale used
+    // to find the DIRECT LedgerEntry a RECORDED sale created at record time (sourceRef = sale.id).
+    // No longer safe for that purpose: since Self-Performance Bonus (Task 4/5 of the
+    // 2026-08-16 self-performance-bonus plan), a sale can create a second LedgerEntry sharing the
+    // same sourceRef, which throws IncorrectResultSizeDataAccessException here. SaleService.voidSale
+    // now uses findAllBySourceRef below instead. Kept only for direct repository-level tests below;
+    // do not reintroduce a single-result sourceRef lookup into SaleService.
     Optional<LedgerEntry> findBySourceRef(UUID sourceRef);
 
     // Same source data as findBySourceRef above, but plural -- once a sale can create more than
