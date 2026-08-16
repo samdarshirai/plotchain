@@ -65,6 +65,13 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
     // incomeType too, but that's out of scope for this unit.
     Optional<LedgerEntry> findBySourceRef(UUID sourceRef);
 
+    // Same source data as findBySourceRef above, but plural -- once a sale can create more than
+    // one LedgerEntry sharing sourceRef = sale.id (Direct Income + Self-Performance Bonus, both
+    // set at sale time in SaleService.recordSale), the old single-result findBySourceRef throws
+    // IncorrectResultSizeDataAccessException at void time whenever both were credited.
+    // SaleService.voidSale uses this one instead, reversing every entry it finds.
+    List<LedgerEntry> findAllBySourceRef(UUID sourceRef);
+
     // Wallet/withdrawal unit 1 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
     // New repository methods section): the crediting step's one read query -- every PENDING entry
     // for a closed cycle, the exact set WalletCreditingService.creditWallets(...) processes.

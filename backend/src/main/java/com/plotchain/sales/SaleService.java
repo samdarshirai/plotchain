@@ -206,15 +206,21 @@ public class SaleService {
         plot.setStatus(PlotStatus.AVAILABLE);
         plotRepository.save(plot);
 
-        // Flow step 5: reverse the Direct Income ledger entry this sale created at record time
-        // (Decision 6). Same data-integrity reasoning as the missing-Plot case above --
-        // recordSale always creates exactly one LedgerEntry per Sale, in the same transaction.
-        LedgerEntry ledgerEntry = ledgerEntryRepository.findBySourceRef(sale.getId())
-            .orElseThrow(() -> new IllegalStateException(
+        // Flow step 5: reverse every ledger entry this sale created at record time (Direct
+        // Income always, Self-Performance Bonus when it was enabled and the area qualified) --
+        // Decision 6 (self-performance-bonus design). Same data-integrity reasoning as the
+        // missing-Plot case above -- recordSale always creates at least one LedgerEntry per Sale
+        // (Direct Income), in the same transaction.
+        List<LedgerEntry> ledgerEntries = ledgerEntryRepository.findAllBySourceRef(sale.getId());
+        if (ledgerEntries.isEmpty()) {
+            throw new IllegalStateException(
                 "ledger_entry row missing for sale " + sale.getId()
-                    + " - recordSale always creates one in the same transaction"));
-        ledgerEntry.setStatus(LedgerEntryStatus.REVERSED);
-        ledgerEntryRepository.save(ledgerEntry);
+                    + " - recordSale always creates one in the same transaction");
+        }
+        for (LedgerEntry ledgerEntry : ledgerEntries) {
+            ledgerEntry.setStatus(LedgerEntryStatus.REVERSED);
+            ledgerEntryRepository.save(ledgerEntry);
+        }
 
         // Flow step 6.
         return toResponse(sale);

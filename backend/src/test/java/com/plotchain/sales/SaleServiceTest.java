@@ -482,7 +482,7 @@ class SaleServiceTest {
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(plotRepository.findById(sale.getPlotId())).thenReturn(Optional.of(plotWithStatus(PlotStatus.SOLD)));
         when(plotRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(ledgerEntryRepository.findBySourceRef(sale.getId())).thenReturn(Optional.of(ledgerEntry));
+        when(ledgerEntryRepository.findAllBySourceRef(sale.getId())).thenReturn(List.of(ledgerEntry));
         when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
     }
 
@@ -521,7 +521,7 @@ class SaleServiceTest {
 
         saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out"));
 
-        verify(ledgerEntryRepository).findBySourceRef(saleId);
+        verify(ledgerEntryRepository).findAllBySourceRef(saleId);
         ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(LedgerEntryStatus.REVERSED);
@@ -540,6 +540,31 @@ class SaleServiceTest {
         assertThat(response.plotId()).isEqualTo(PLOT_ID);
         assertThat(response.status()).isEqualTo("VOIDED");
         assertThat(response.voidReason()).isEqualTo("Buyer backed out");
+    }
+
+    @Test
+    void voidSaleReversesEveryLedgerEntrySharingTheSaleAsSourceRef() {
+        UUID saleId = UUID.randomUUID();
+        Sale sale = recordedSale(saleId, PLOT_ID);
+        LedgerEntry directEntry = pendingLedgerEntry(saleId);
+        LedgerEntry selfPerformanceEntry = pendingLedgerEntry(saleId);
+        selfPerformanceEntry.setId(UUID.randomUUID());
+        selfPerformanceEntry.setIncomeType(IncomeType.SELF_PERFORMANCE);
+
+        when(saleRepository.findById(saleId)).thenReturn(Optional.of(sale));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(plotRepository.findById(sale.getPlotId())).thenReturn(Optional.of(plotWithStatus(PlotStatus.SOLD)));
+        when(plotRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(ledgerEntryRepository.findAllBySourceRef(saleId)).thenReturn(List.of(directEntry, selfPerformanceEntry));
+        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out"));
+
+        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        assertThat(captor.getAllValues()).allMatch(e -> e.getStatus() == LedgerEntryStatus.REVERSED);
+        assertThat(captor.getAllValues()).extracting(LedgerEntry::getId)
+            .containsExactlyInAnyOrder(directEntry.getId(), selfPerformanceEntry.getId());
     }
 
     @Test
@@ -564,7 +589,7 @@ class SaleServiceTest {
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(plotRepository.findById(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.SOLD)));
         when(plotRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(ledgerEntryRepository.findBySourceRef(saleId)).thenReturn(Optional.empty());
+        when(ledgerEntryRepository.findAllBySourceRef(saleId)).thenReturn(List.of());
 
         assertThatThrownBy(() -> saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out")))
             .isInstanceOf(IllegalStateException.class);
