@@ -41,6 +41,7 @@ describe('PaymentsKycService', () => {
   const withdrawalConfig: WithdrawalConfigResponse = {
     approvalMode: 'AUTO_UNDER_LIMIT',
     autoApproveLimit: 25000,
+    minimumWithdrawalAmount: 500,
     updatedAt: '2026-01-01T00:00:00Z'
   };
 
@@ -156,7 +157,8 @@ describe('PaymentsKycService', () => {
   it('saves the withdrawal config', () => {
     const request: WithdrawalConfigRequest = {
       approvalMode: withdrawalConfig.approvalMode,
-      autoApproveLimit: withdrawalConfig.autoApproveLimit
+      autoApproveLimit: withdrawalConfig.autoApproveLimit,
+      minimumWithdrawalAmount: withdrawalConfig.minimumWithdrawalAmount
     };
     let result: WithdrawalConfigResponse | undefined;
     service.updateWithdrawalConfig(request).subscribe(r => (result = r));

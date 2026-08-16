@@ -768,6 +768,7 @@
       "autoApproveLabel": "Auto-approve under limit",
       "alwaysManualLabel": "Always manual review",
       "autoApproveLimitLabel": "Auto-approve Limit",
+      "minimumWithdrawalAmountLabel": "Minimum Withdrawal Amount",
       "flowRequestRaised": "Request Raised",
       "flowAdminReview": "Admin Review",
       "flowApproved": "Approved",
