@@ -22,5 +22,9 @@ public record CompensationPlanRequest(
     @NotBlank @Pattern(regexp = "SEMI_MONTHLY|MONTHLY|CUSTOM") String settlementCycle,
     @Valid List<RoyaltyBonusRateInput> royaltyBonusRates,
     @Valid List<RewardTierInput> rewardTiers,
-    LocalDate effectiveFrom
+    LocalDate effectiveFrom,
+    @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal selfPerformanceTier1Pct,
+    @NotNull @DecimalMin("0.01") BigDecimal selfPerformanceTier1SqftThreshold,
+    @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal selfPerformanceTier2Pct,
+    @NotNull @DecimalMin("0.01") BigDecimal selfPerformanceTier2SqftThreshold
 ) {}

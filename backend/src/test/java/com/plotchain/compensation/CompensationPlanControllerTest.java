@@ -93,7 +93,11 @@ class CompensationPlanControllerTest {
           "rewardTiers": [
             {"tierLevel": 1, "volumeThreshold": 1000.00, "cashReward": 100.00, "perkDescription": "Tier 1"},
             {"tierLevel": 2, "volumeThreshold": 2000.00, "cashReward": 200.00, "perkDescription": "Tier 2"}
-          ]
+          ],
+          "selfPerformanceTier1Pct": 1.00,
+          "selfPerformanceTier1SqftThreshold": 2000,
+          "selfPerformanceTier2Pct": 2.00,
+          "selfPerformanceTier2SqftThreshold": 3000
         }
         """;
 
@@ -112,7 +116,11 @@ class CompensationPlanControllerTest {
           "rewardTiers": [
             {"tierLevel": 1, "volumeThreshold": 1000.00, "cashReward": 100.00, "perkDescription": "Tier 1"},
             {"tierLevel": 3, "volumeThreshold": 2000.00, "cashReward": 200.00, "perkDescription": "Tier 3"}
-          ]
+          ],
+          "selfPerformanceTier1Pct": 1.00,
+          "selfPerformanceTier1SqftThreshold": 2000,
+          "selfPerformanceTier2Pct": 2.00,
+          "selfPerformanceTier2SqftThreshold": 3000
         }
         """;
 

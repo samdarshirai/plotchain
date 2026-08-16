@@ -187,10 +187,10 @@ public class CompensationPlanService {
             SettlementCycle.valueOf(request.settlementCycle()),
             Instant.now(),
             adminId,
-            BigDecimal.ZERO,           // selfPerformanceTier1Pct (hardcoded; Task 6 will replace with request.selfPerformanceTier1Pct())
-            BigDecimal.ZERO,           // selfPerformanceTier1SqftThreshold (hardcoded; Task 6 will replace with request.selfPerformanceTier1SqftThreshold())
-            BigDecimal.ZERO,           // selfPerformanceTier2Pct (hardcoded; Task 6 will replace with request.selfPerformanceTier2Pct())
-            BigDecimal.ZERO            // selfPerformanceTier2SqftThreshold (hardcoded; Task 6 will replace with request.selfPerformanceTier2SqftThreshold())
+            request.selfPerformanceTier1Pct(),
+            request.selfPerformanceTier1SqftThreshold(),
+            request.selfPerformanceTier2Pct(),
+            request.selfPerformanceTier2SqftThreshold()
         );
         versionRepository.save(newVersion);
 
@@ -337,7 +337,11 @@ public class CompensationPlanService {
             royaltyDtos,
             tierDtos,
             availableRanks,
-            version.getCreatedAt()
+            version.getCreatedAt(),
+            version.getSelfPerformanceTier1Pct(),
+            version.getSelfPerformanceTier1SqftThreshold(),
+            version.getSelfPerformanceTier2Pct(),
+            version.getSelfPerformanceTier2SqftThreshold()
         );
     }
 }

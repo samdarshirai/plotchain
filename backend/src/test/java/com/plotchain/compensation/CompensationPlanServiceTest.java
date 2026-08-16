@@ -120,7 +120,9 @@ class CompensationPlanServiceTest {
             "SEMI_MONTHLY",
             List.of(new RoyaltyBonusRateInput(new BigDecimal("40"), new BigDecimal("3.00"))),
             tiers,
-            effectiveFrom
+            effectiveFrom,
+            new BigDecimal("1.00"), new BigDecimal("2000"),
+            new BigDecimal("2.00"), new BigDecimal("3000")
         );
     }
 
@@ -522,5 +524,28 @@ class CompensationPlanServiceTest {
         SettingsAuditLog saved = captor.getValue();
         assertThat(saved.getSection()).isEqualTo("COMPENSATION");
         assertThat(saved.getChangedByAssociateId()).isEqualTo(ADMIN_ID);
+    }
+
+    @Test
+    void updatePlanSavesTheSelfPerformanceBonusRatesAndThresholds() {
+        lenient().when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
+        when(versionRepository.findByEffectiveFrom(any())).thenReturn(Optional.empty());
+
+        CompensationPlanRequest request = new CompensationPlanRequest(
+            new BigDecimal("6.00"), new BigDecimal("7.00"), new BigDecimal("11.00"),
+            new BigDecimal("2.00"), new BigDecimal("5.00"), new BigDecimal("15.00"),
+            new BigDecimal("1100.00"), new BigDecimal("500.00"), "SEMI_MONTHLY",
+            List.of(), List.of(), null,
+            new BigDecimal("1.00"), new BigDecimal("2000"),
+            new BigDecimal("2.00"), new BigDecimal("3000"));
+
+        compensationPlanService.updatePlan(request, ADMIN_ID);
+
+        ArgumentCaptor<CompensationPlanVersion> captor = ArgumentCaptor.forClass(CompensationPlanVersion.class);
+        verify(versionRepository).save(captor.capture());
+        assertThat(captor.getValue().getSelfPerformanceTier1Pct()).isEqualByComparingTo("1.00");
+        assertThat(captor.getValue().getSelfPerformanceTier1SqftThreshold()).isEqualByComparingTo("2000");
+        assertThat(captor.getValue().getSelfPerformanceTier2Pct()).isEqualByComparingTo("2.00");
+        assertThat(captor.getValue().getSelfPerformanceTier2SqftThreshold()).isEqualByComparingTo("3000");
     }
 }
