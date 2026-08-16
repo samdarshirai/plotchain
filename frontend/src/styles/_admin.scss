@@ -2005,9 +2005,34 @@ body.admin-associate-active {
   margin: 0;
 }
 
+// The payslip-ladder table (9 nowrap columns, including a full-UUID Source Ref) is wider than
+// this card at desktop sizes and already scrolls within it via overflow-x: auto above -- but the
+// OS's default overlay scrollbar is invisible until hover/scroll, so content past the right edge
+// (Created At, and part of Source Ref) reads as silently clipped rather than "scroll for more".
+// Force a slim, always-visible scrollbar (not hidden, unlike .income-statement__tabs above --
+// this content isn't pill-shaped and DESIGN.md never calls for hiding it) so the cutoff is
+// legible as scrollable. This is the M6 QA finding's actual current cause (verified against a
+// live render at 1512px: the table already stays contained inside the card -- overflow-x: auto
+// correctly wins over %admin-screen-card's overflow: hidden for the x-axis -- so the page itself
+// never overflows; what's missing is purely the discoverability affordance).
 .income-statement .card {
   @extend %admin-screen-card;
   overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-subtle) transparent;
+
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 999px;
+  }
 }
 
 .income-statement .editable-table {
@@ -2131,8 +2156,14 @@ body.admin-associate-active {
   white-space: nowrap;
 }
 
+// Belt-and-suspenders for the empty-state row: it's a single colspan="9" cell (not subject to any
+// nth-child nowrap rule above, since it's the sole cell in its row), so it already wraps by
+// inheriting the base .editable-table__empty rule in _tables.scss -- state that explicitly so a
+// future nowrap addition to this scope can't silently clip it again.
 .income-statement .editable-table__empty {
   padding: 3rem 1.5rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .income-statement__pagination {
