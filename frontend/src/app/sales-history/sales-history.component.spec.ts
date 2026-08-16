@@ -1,11 +1,37 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SalesHistoryComponent } from './sales-history.component';
 
 describe('SalesHistoryComponent', () => {
   let fixture: ComponentFixture<SalesHistoryComponent>;
   let httpMock: HttpTestingController;
+  let translateService: TranslateService;
+
+  const enTranslations = {
+    salesHistory: {
+      columnBuyerName: 'Buyer',
+      columnBuyerPhone: 'Phone',
+      columnAmount: 'Amount',
+      columnAssociateId: 'Associate',
+      columnLegCredited: 'Leg',
+      columnStatus: 'Status',
+      columnRecordedAt: 'Recorded At',
+      loadError: 'Something went wrong loading your sales history. Please try again.',
+      emptyState: 'No sales to show yet.',
+      previousPageAction: 'Previous',
+      nextPageAction: 'Next',
+      pageIndicator: 'Page {{page}} of {{totalPages}}'
+    }
+  };
+
+  const frTranslations = {
+    salesHistory: {
+      ...enTranslations.salesHistory,
+      columnBuyerName: 'Acheteur',
+      columnBuyerPhone: 'Téléphone'
+    }
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -14,6 +40,16 @@ describe('SalesHistoryComponent', () => {
 
     fixture = TestBed.createComponent(SalesHistoryComponent);
     httpMock = TestBed.inject(HttpTestingController);
+
+    // Real translations registered explicitly (same pattern IncomeStatementComponent's spec
+    // uses) -- without this, translate.get() calls resolve to their raw key rather than actual
+    // copy, since TranslateModule.forRoot() loads no translation file in tests.
+    translateService = TestBed.inject(TranslateService);
+    translateService.setDefaultLang('en');
+    translateService.setTranslation('en', enTranslations);
+    translateService.setTranslation('fr', frTranslations);
+    translateService.use('en');
+
     fixture.detectChanges();
 
     httpMock.expectOne('/api/associates/me/sales?page=0&size=20').flush({
@@ -69,5 +105,23 @@ describe('SalesHistoryComponent', () => {
   it('renders no action column and no filter controls (view-only)', () => {
     expect(fixture.componentInstance.historyColumns.some(c => c.type === 'action')).toBeFalse();
     expect(fixture.nativeElement.querySelector('select')).toBeFalsy();
+  });
+
+  it('resolves real translated column header text, not raw i18n keys', () => {
+    expect(fixture.componentInstance.historyColumns.map(c => c.label)).toEqual([
+      'Buyer', 'Phone', 'Amount', 'Associate', 'Leg', 'Status', 'Recorded At'
+    ]);
+    const headerText: string = fixture.nativeElement.querySelector('.editable-table thead tr').textContent;
+    expect(headerText).toContain('Buyer');
+    expect(headerText).not.toContain('salesHistory.columnBuyerName');
+  });
+
+  it('rebuilds the column headers when the active language changes', () => {
+    translateService.use('fr');
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.historyColumns.map(c => c.label)).toEqual([
+      'Acheteur', 'Téléphone', 'Amount', 'Associate', 'Leg', 'Status', 'Recorded At'
+    ]);
   });
 });

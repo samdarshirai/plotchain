@@ -6,6 +6,19 @@ import { PayoutHistoryComponent } from './payout-history.component';
 describe('PayoutHistoryComponent', () => {
   let fixture: ComponentFixture<PayoutHistoryComponent>;
   let httpMock: HttpTestingController;
+  let translateService: TranslateService;
+
+  const frColumnTranslations = {
+    payoutHistory: {
+      columnAmount: 'Montant',
+      columnStatus: 'Statut',
+      columnReason: 'Motif',
+      columnBankReference: 'Réf. bancaire',
+      columnRequestedAt: 'Demandé le',
+      columnDecidedAt: 'Décidé le',
+      columnDisbursedAt: 'Versé le'
+    }
+  };
 
   const sampleRequest = {
     id: 'w1',
@@ -36,8 +49,9 @@ describe('PayoutHistoryComponent', () => {
     fixture = TestBed.createComponent(PayoutHistoryComponent);
     httpMock = TestBed.inject(HttpTestingController);
 
-    const translateService = TestBed.inject(TranslateService);
+    translateService = TestBed.inject(TranslateService);
     translateService.setDefaultLang('en');
+    translateService.setTranslation('fr', frColumnTranslations);
     translateService.setTranslation('en', {
       payoutHistory: {
         title: 'Payout History',
@@ -196,5 +210,26 @@ describe('PayoutHistoryComponent', () => {
     flushInitialRequests();
     expect(fixture.componentInstance.historyColumns.some(c => c.type === 'action')).toBeFalse();
     expect(fixture.nativeElement.querySelectorAll('input').length).toBe(0);
+  });
+
+  it('resolves real translated column header text, not raw i18n keys', () => {
+    flushInitialRequests();
+    expect(fixture.componentInstance.historyColumns.map(c => c.label)).toEqual([
+      'Amount', 'Status', 'Reason', 'Bank Reference', 'Requested At', 'Decided At', 'Disbursed At'
+    ]);
+    const headerText: string = fixture.nativeElement.querySelector('.editable-table thead tr').textContent;
+    expect(headerText).toContain('Bank Reference');
+    expect(headerText).not.toContain('payoutHistory.columnBankReference');
+  });
+
+  it('rebuilds the column headers when the active language changes', () => {
+    flushInitialRequests();
+
+    translateService.use('fr');
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.historyColumns.map(c => c.label)).toEqual([
+      'Montant', 'Statut', 'Motif', 'Réf. bancaire', 'Demandé le', 'Décidé le', 'Versé le'
+    ]);
   });
 });

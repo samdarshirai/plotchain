@@ -6,6 +6,21 @@ import { IncomeStatementComponent } from './income-statement.component';
 describe('IncomeStatementComponent', () => {
   let fixture: ComponentFixture<IncomeStatementComponent>;
   let httpMock: HttpTestingController;
+  let translateService: TranslateService;
+
+  const frColumnTranslations = {
+    incomeStatement: {
+      columnIncomeType: 'Type de revenu',
+      columnCyclePeriod: 'Période',
+      columnStatus: 'Statut',
+      columnGrossAmount: 'Montant brut',
+      columnTdsDeduction: 'Déduction TDS',
+      columnAdminDeduction: 'Déduction admin',
+      columnNetAmount: 'Montant net',
+      columnSourceRef: 'Réf. source',
+      columnCreatedAt: 'Créé le'
+    }
+  };
 
   const sampleEntry = {
     id: 'l1',
@@ -51,8 +66,9 @@ describe('IncomeStatementComponent', () => {
     // without this, translate.instant() calls (e.g. the noSourceRef fallback) resolve to their
     // raw key rather than actual copy, since TranslateModule.forRoot() loads no translation file
     // in tests.
-    const translateService = TestBed.inject(TranslateService);
+    translateService = TestBed.inject(TranslateService);
     translateService.setDefaultLang('en');
+    translateService.setTranslation('fr', frColumnTranslations);
     translateService.setTranslation('en', {
       incomeStatement: {
         title: 'Income Statement',
@@ -259,5 +275,28 @@ describe('IncomeStatementComponent', () => {
     expect(tdsCell.textContent).toContain('500');
     expect(adminCell.textContent).toContain('−');
     expect(adminCell.textContent).toContain('200');
+  });
+
+  it('resolves real translated column header text, not raw i18n keys', () => {
+    flushInitialRequests();
+    expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
+      'Income Type', 'Cycle Period', 'Status', 'Gross Amount', 'TDS Deduction',
+      'Admin Deduction', 'Net Amount', 'Source Ref', 'Created At'
+    ]);
+    const headerText: string = fixture.nativeElement.querySelector('.editable-table thead tr').textContent;
+    expect(headerText).toContain('Gross Amount');
+    expect(headerText).not.toContain('incomeStatement.columnGrossAmount');
+  });
+
+  it('rebuilds the column headers when the active language changes', () => {
+    flushInitialRequests();
+
+    translateService.use('fr');
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
+      'Type de revenu', 'Période', 'Statut', 'Montant brut', 'Déduction TDS',
+      'Déduction admin', 'Montant net', 'Réf. source', 'Créé le'
+    ]);
   });
 });

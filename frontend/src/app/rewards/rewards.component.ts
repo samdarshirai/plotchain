@@ -1,6 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { RewardsService } from './rewards.service';
 import { AssociateRankProgress } from './models/associate-rank-progress.model';
 import { EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
@@ -40,9 +42,10 @@ import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.comp
     <div class="rewards__load-error" *ngIf="error">{{ 'rewards.loadError' | translate }}</div>
   `
 })
-export class RewardsComponent implements OnInit {
+export class RewardsComponent implements OnInit, OnDestroy {
   private rewardsService = inject(RewardsService);
   private translate = inject(TranslateService);
+  private destroyed$ = new Subject<void>();
 
   progress: AssociateRankProgress | null = null;
   error = false;
@@ -50,13 +53,12 @@ export class RewardsComponent implements OnInit {
   tierRows: Record<string, string | number>[] = [];
 
   ngOnInit(): void {
-    this.tierColumns = [
-      { key: 'tierLevel', label: this.translate.instant('rewards.columnTierLevel'), type: 'text' },
-      { key: 'volumeThreshold', label: this.translate.instant('rewards.columnVolumeThreshold'), type: 'text' },
-      { key: 'cashReward', label: this.translate.instant('rewards.columnCashReward'), type: 'text' },
-      { key: 'perkDescription', label: this.translate.instant('rewards.columnPerkDescription'), type: 'text' },
-      { key: 'achieved', label: this.translate.instant('rewards.columnAchieved'), type: 'text' }
-    ];
+    // buildColumns() uses translate.get() (reactive) rather than instant() -- instant() only
+    // resolves once the async translation file fetch (TranslateHttpLoader) completes, so a
+    // synchronous instant() call here would bake in the raw i18n key. onLangChange keeps the
+    // columns in sync if the user switches languages after initial load.
+    this.buildColumns();
+    this.translate.onLangChange.pipe(takeUntil(this.destroyed$)).subscribe(() => this.buildColumns());
     this.rewardsService.getMyRankProgress().subscribe({
       next: p => {
         this.progress = p;
@@ -64,6 +66,32 @@ export class RewardsComponent implements OnInit {
       },
       error: () => (this.error = true)
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroyed$.next();
+    this.destroyed$.complete();
+  }
+
+  private buildColumns(): void {
+    this.translate
+      .get([
+        'rewards.columnTierLevel',
+        'rewards.columnVolumeThreshold',
+        'rewards.columnCashReward',
+        'rewards.columnPerkDescription',
+        'rewards.columnAchieved'
+      ])
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(t => {
+        this.tierColumns = [
+          { key: 'tierLevel', label: t['rewards.columnTierLevel'], type: 'text' },
+          { key: 'volumeThreshold', label: t['rewards.columnVolumeThreshold'], type: 'text' },
+          { key: 'cashReward', label: t['rewards.columnCashReward'], type: 'text' },
+          { key: 'perkDescription', label: t['rewards.columnPerkDescription'], type: 'text' },
+          { key: 'achieved', label: t['rewards.columnAchieved'], type: 'text' }
+        ];
+      });
   }
 
   private updateTierRows(): void {

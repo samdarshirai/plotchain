@@ -1,6 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { IncomeStatementService } from './income-statement.service';
 import { AssociateLedgerPage, AssociateLedgerFilters } from './models/associate-ledger-page.model';
 import { TabBarComponent, TabDefinition } from '../shared/components/tab-bar/tab-bar.component';
@@ -85,11 +87,12 @@ export interface CycleOption {
     </div>
   `
 })
-export class IncomeStatementComponent implements OnInit {
+export class IncomeStatementComponent implements OnInit, OnDestroy {
   private incomeStatementService = inject(IncomeStatementService);
   private translate = inject(TranslateService);
   private currencyPipe = inject(CurrencyPipe);
   protected datePipe = inject(DatePipe);
+  private destroyed$ = new Subject<void>();
 
   page: AssociateLedgerPage | null = null;
   loadError = false;
@@ -124,19 +127,48 @@ export class IncomeStatementComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.statementColumns = [
-      { key: 'incomeType', label: this.translate.instant('incomeStatement.columnIncomeType'), type: 'text' },
-      { key: 'cyclePeriod', label: this.translate.instant('incomeStatement.columnCyclePeriod'), type: 'text' },
-      { key: 'status', label: this.translate.instant('incomeStatement.columnStatus'), type: 'text' },
-      { key: 'grossAmount', label: this.translate.instant('incomeStatement.columnGrossAmount'), type: 'text' },
-      { key: 'tdsDeduction', label: this.translate.instant('incomeStatement.columnTdsDeduction'), type: 'text' },
-      { key: 'adminDeduction', label: this.translate.instant('incomeStatement.columnAdminDeduction'), type: 'text' },
-      { key: 'netAmount', label: this.translate.instant('incomeStatement.columnNetAmount'), type: 'text' },
-      { key: 'sourceRef', label: this.translate.instant('incomeStatement.columnSourceRef'), type: 'text' },
-      { key: 'createdAt', label: this.translate.instant('incomeStatement.columnCreatedAt'), type: 'text' }
-    ];
+    // buildColumns() uses translate.get() (reactive) rather than instant() -- instant() only
+    // resolves once the async translation file fetch (TranslateHttpLoader) completes, so a
+    // synchronous instant() call here would bake in the raw i18n key. onLangChange keeps the
+    // columns in sync if the user switches languages after initial load.
+    this.buildColumns();
+    this.translate.onLangChange.pipe(takeUntil(this.destroyed$)).subscribe(() => this.buildColumns());
     this.loadCycleOptions();
     this.loadPage(0);
+  }
+
+  ngOnDestroy(): void {
+    this.destroyed$.next();
+    this.destroyed$.complete();
+  }
+
+  private buildColumns(): void {
+    this.translate
+      .get([
+        'incomeStatement.columnIncomeType',
+        'incomeStatement.columnCyclePeriod',
+        'incomeStatement.columnStatus',
+        'incomeStatement.columnGrossAmount',
+        'incomeStatement.columnTdsDeduction',
+        'incomeStatement.columnAdminDeduction',
+        'incomeStatement.columnNetAmount',
+        'incomeStatement.columnSourceRef',
+        'incomeStatement.columnCreatedAt'
+      ])
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(t => {
+        this.statementColumns = [
+          { key: 'incomeType', label: t['incomeStatement.columnIncomeType'], type: 'text' },
+          { key: 'cyclePeriod', label: t['incomeStatement.columnCyclePeriod'], type: 'text' },
+          { key: 'status', label: t['incomeStatement.columnStatus'], type: 'text' },
+          { key: 'grossAmount', label: t['incomeStatement.columnGrossAmount'], type: 'text' },
+          { key: 'tdsDeduction', label: t['incomeStatement.columnTdsDeduction'], type: 'text' },
+          { key: 'adminDeduction', label: t['incomeStatement.columnAdminDeduction'], type: 'text' },
+          { key: 'netAmount', label: t['incomeStatement.columnNetAmount'], type: 'text' },
+          { key: 'sourceRef', label: t['incomeStatement.columnSourceRef'], type: 'text' },
+          { key: 'createdAt', label: t['incomeStatement.columnCreatedAt'], type: 'text' }
+        ];
+      });
   }
 
   onTabChange(id: string): void {
