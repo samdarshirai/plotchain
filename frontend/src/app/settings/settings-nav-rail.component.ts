@@ -42,6 +42,9 @@ import { SECTION_PATHS } from './models/settings-section.model';
         <li class="settings-nav-rail__item" [class.settings-nav-rail__item--active]="activeSectionKey === 'ledgerRegister'">
           <a [routerLink]="['/settings', 'ledger-register']">{{ 'settings.sections.ledgerRegister' | translate }}</a>
         </li>
+        <li class="settings-nav-rail__item" [class.settings-nav-rail__item--active]="activeSectionKey === 'payoutApproval'">
+          <a [routerLink]="['/settings', 'payout-approval']">{{ 'settings.sections.payoutApproval' | translate }}</a>
+        </li>
       </ol>
     </nav>
   `

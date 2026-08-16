@@ -468,6 +468,64 @@
       "nextPageAction": "Next",
       "pageIndicator": "Page {{page}} of {{totalPages}}",
       "emptyState": "No ledger entries match these filters."
+    },
+    "payoutApproval": {
+      "eyebrow": "Admin · Payout Approval",
+      "title": "Payout Approval",
+      "subtitle": "Review, approve, reject, and disburse associate withdrawal requests.",
+      "submitLink": "+ Submit Withdrawal",
+      "associateFilterLabel": "Associate",
+      "associateFilterAllOption": "All associates",
+      "statusFilterLabel": "Status",
+      "statusFilterAllOption": "All statuses",
+      "statusRequestedOption": "Requested",
+      "statusApprovedOption": "Approved",
+      "statusRejectedOption": "Rejected",
+      "statusDisbursedOption": "Disbursed",
+      "columnAssociate": "Associate",
+      "columnAmount": "Amount",
+      "columnStatus": "Status",
+      "columnReason": "Reason",
+      "columnBankReference": "Bank Reference",
+      "columnRequestedAt": "Requested At",
+      "columnActions": "Actions",
+      "noReason": "—",
+      "noBankReference": "—",
+      "loadError": "Something went wrong loading the payout approval queue. Please try again.",
+      "previousPageAction": "Previous",
+      "nextPageAction": "Next",
+      "pageIndicator": "Page {{page}} of {{totalPages}}",
+      "emptyState": "No withdrawal requests match these filters.",
+      "approveAction": "Approve",
+      "rejectAction": "Reject",
+      "cancelAction": "Cancel",
+      "disburseAction": "Disburse",
+      "rejectReasonPlaceholder": "Reason for rejection",
+      "cancelReasonPlaceholder": "Reason for cancellation",
+      "bankReferencePlaceholder": "Bank reference",
+      "rejectedTag": "Rejected",
+      "disbursedTag": "Disbursed",
+      "actionError": "Could not save that action. Please try again."
+    },
+    "submitWithdrawal": {
+      "title": "Submit Withdrawal",
+      "subtitle": "Submit a withdrawal request on an associate's behalf.",
+      "associateLabel": "Associate",
+      "associatePlaceholder": "Select an associate",
+      "amountLabel": "Amount",
+      "submitButton": "Submit Withdrawal",
+      "submitAnotherButton": "Submit Another",
+      "successIdLabel": "Request ID",
+      "successAssociateLabel": "Associate",
+      "successAmountLabel": "Amount",
+      "successStatusLabel": "Status",
+      "statusRequestedChip": "Requested",
+      "statusApprovedChip": "Approved",
+      "autoApprovedHint": "Auto-approved — under the manual review threshold. No action needed in the queue; ready to disburse.",
+      "validation": {
+        "required": "This field is required.",
+        "genericSubmitError": "Could not submit this withdrawal. Please try again."
+      }
     }
   },
   "setup": {
@@ -756,7 +814,8 @@
       "adminStats": "एडमिन आंकड़े",
       "salesRegister": "बिक्री रजिस्टर",
       "cycleManagement": "चक्र प्रबंधन",
-      "ledgerRegister": "Ledger Register"
+      "ledgerRegister": "Ledger Register",
+      "payoutApproval": "Payout Approval"
     },
     "cards": {
       "companyProfile": {
