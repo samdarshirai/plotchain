@@ -1,6 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { SalesHistoryService } from './sales-history.service';
 import { AssociateSalePage } from './models/associate-sale-page.model';
 import { EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
@@ -40,10 +42,11 @@ const PAGE_SIZE = 20;
     </div>
   `
 })
-export class SalesHistoryComponent implements OnInit {
+export class SalesHistoryComponent implements OnInit, OnDestroy {
   private salesHistoryService = inject(SalesHistoryService);
   private translate = inject(TranslateService);
   private datePipe = inject(DatePipe);
+  private destroyed$ = new Subject<void>();
 
   page: AssociateSalePage | null = null;
   loadError = false;
@@ -62,20 +65,47 @@ export class SalesHistoryComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.historyColumns = [
-      { key: 'buyerName', label: this.translate.instant('salesHistory.columnBuyerName'), type: 'text' },
-      { key: 'buyerPhone', label: this.translate.instant('salesHistory.columnBuyerPhone'), type: 'text' },
-      { key: 'amount', label: this.translate.instant('salesHistory.columnAmount'), type: 'text' },
-      { key: 'associateId', label: this.translate.instant('salesHistory.columnAssociateId'), type: 'text' },
-      { key: 'legCredited', label: this.translate.instant('salesHistory.columnLegCredited'), type: 'text' },
-      { key: 'status', label: this.translate.instant('salesHistory.columnStatus'), type: 'text' },
-      { key: 'recordedAt', label: this.translate.instant('salesHistory.columnRecordedAt'), type: 'text' }
-    ];
+    // buildColumns() uses translate.get() (reactive) rather than instant() -- instant() only
+    // resolves once the async translation file fetch (TranslateHttpLoader) completes, so a
+    // synchronous instant() call here would bake in the raw i18n key. onLangChange keeps the
+    // columns in sync if the user switches languages after initial load.
+    this.buildColumns();
+    this.translate.onLangChange.pipe(takeUntil(this.destroyed$)).subscribe(() => this.buildColumns());
     this.loadPage(0);
+  }
+
+  ngOnDestroy(): void {
+    this.destroyed$.next();
+    this.destroyed$.complete();
   }
 
   goToPage(page: number): void {
     this.loadPage(page);
+  }
+
+  private buildColumns(): void {
+    this.translate
+      .get([
+        'salesHistory.columnBuyerName',
+        'salesHistory.columnBuyerPhone',
+        'salesHistory.columnAmount',
+        'salesHistory.columnAssociateId',
+        'salesHistory.columnLegCredited',
+        'salesHistory.columnStatus',
+        'salesHistory.columnRecordedAt'
+      ])
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(t => {
+        this.historyColumns = [
+          { key: 'buyerName', label: t['salesHistory.columnBuyerName'], type: 'text' },
+          { key: 'buyerPhone', label: t['salesHistory.columnBuyerPhone'], type: 'text' },
+          { key: 'amount', label: t['salesHistory.columnAmount'], type: 'text' },
+          { key: 'associateId', label: t['salesHistory.columnAssociateId'], type: 'text' },
+          { key: 'legCredited', label: t['salesHistory.columnLegCredited'], type: 'text' },
+          { key: 'status', label: t['salesHistory.columnStatus'], type: 'text' },
+          { key: 'recordedAt', label: t['salesHistory.columnRecordedAt'], type: 'text' }
+        ];
+      });
   }
 
   private loadPage(page: number): void {

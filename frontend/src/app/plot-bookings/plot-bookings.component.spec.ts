@@ -1,11 +1,38 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { PlotBookingsComponent } from './plot-bookings.component';
 
 describe('PlotBookingsComponent', () => {
   let fixture: ComponentFixture<PlotBookingsComponent>;
   let httpMock: HttpTestingController;
+  let translateService: TranslateService;
+
+  const enTranslations = {
+    plotBookings: {
+      columnPlotNo: 'Plot No.',
+      columnPlotType: 'Type',
+      columnAreaSqft: 'Area (sqft)',
+      columnRate: 'Rate',
+      columnPrice: 'Price',
+      columnStatus: 'Status',
+      columnPlotId: 'Plot',
+      columnTotalAmount: 'Total Amount',
+      columnInstallmentCount: 'Installments',
+      columnBookedAt: 'Booked At',
+      columnInstallmentNumber: '#',
+      columnInstallmentAmount: 'Amount',
+      columnDueDate: 'Due Date'
+    }
+  };
+
+  const frTranslations = {
+    plotBookings: {
+      ...enTranslations.plotBookings,
+      columnPlotNo: 'N° de parcelle',
+      columnPlotId: 'Parcelle'
+    }
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -14,6 +41,16 @@ describe('PlotBookingsComponent', () => {
 
     fixture = TestBed.createComponent(PlotBookingsComponent);
     httpMock = TestBed.inject(HttpTestingController);
+
+    // Real translations registered explicitly (same pattern IncomeStatementComponent's spec
+    // uses) -- without this, translate.get() calls resolve to their raw key rather than actual
+    // copy, since TranslateModule.forRoot() loads no translation file in tests.
+    translateService = TestBed.inject(TranslateService);
+    translateService.setDefaultLang('en');
+    translateService.setTranslation('en', enTranslations);
+    translateService.setTranslation('fr', frTranslations);
+    translateService.use('en');
+
     fixture.detectChanges();
 
     httpMock.expectOne('/api/company/projects').flush([
@@ -126,5 +163,35 @@ describe('PlotBookingsComponent', () => {
     expect(fixture.nativeElement.querySelector('form')).toBeFalsy();
     expect(fixture.componentInstance.plotColumns.some(c => c.type === 'action')).toBeFalse();
     expect(fixture.componentInstance.bookingColumns.some(c => c.type === 'action')).toBeFalse();
+  });
+
+  it('resolves real translated column header text for all three tables (plots, bookings, EMI schedule), not raw i18n keys', () => {
+    expect(fixture.componentInstance.plotColumns.map(c => c.label)).toEqual([
+      'Plot No.', 'Type', 'Area (sqft)', 'Rate', 'Price', 'Status'
+    ]);
+    expect(fixture.componentInstance.bookingColumns.map(c => c.label)).toEqual([
+      'Plot', 'Total Amount', 'Installments', 'Booked At'
+    ]);
+    expect(fixture.componentInstance.emiColumns.map(c => c.label)).toEqual(['#', 'Amount', 'Due Date']);
+
+    fixture.componentInstance.onProjectSelect('proj-1');
+    httpMock.expectOne('/api/company/projects/proj-1/plots?page=0&size=20').flush({
+      plots: [{ id: 'plot-1', plotNo: 'A-101', plotType: 'NORMAL', areaSqft: 1200, rate: 500, price: 600000, status: 'AVAILABLE' }],
+      page: 0, size: 20, totalElements: 1
+    });
+    fixture.detectChanges();
+
+    const headerText: string = fixture.nativeElement.querySelector('.editable-table thead tr').textContent;
+    expect(headerText).toContain('Plot No.');
+    expect(headerText).not.toContain('plotBookings.columnPlotNo');
+  });
+
+  it('rebuilds all three column-header sets when the active language changes', () => {
+    translateService.use('fr');
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.plotColumns[0].label).toBe('N° de parcelle');
+    expect(fixture.componentInstance.bookingColumns[0].label).toBe('Parcelle');
+    expect(fixture.componentInstance.emiColumns[0].label).toBe('#');
   });
 });

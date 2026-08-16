@@ -1,6 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { PlotBookingsService } from './plot-bookings.service';
 import { Booking, AssociateBookingPage } from './models/associate-booking-page.model';
 import { Project, PlotPageResponse } from '../setup/models/project.model';
@@ -115,10 +117,11 @@ const PAGE_SIZE = 20;
     </app-side-panel>
   `
 })
-export class PlotBookingsComponent implements OnInit {
+export class PlotBookingsComponent implements OnInit, OnDestroy {
   private plotBookingsService = inject(PlotBookingsService);
   private translate = inject(TranslateService);
   private datePipe = inject(DatePipe);
+  private destroyed$ = new Subject<void>();
 
   activeTab: 'availablePlots' | 'myBookings' = 'availablePlots';
 
@@ -167,26 +170,59 @@ export class PlotBookingsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.plotColumns = [
-      { key: 'plotNo', label: this.translate.instant('plotBookings.columnPlotNo'), type: 'text' },
-      { key: 'plotType', label: this.translate.instant('plotBookings.columnPlotType'), type: 'text' },
-      { key: 'areaSqft', label: this.translate.instant('plotBookings.columnAreaSqft'), type: 'text' },
-      { key: 'rate', label: this.translate.instant('plotBookings.columnRate'), type: 'text' },
-      { key: 'price', label: this.translate.instant('plotBookings.columnPrice'), type: 'text' },
-      { key: 'status', label: this.translate.instant('plotBookings.columnStatus'), type: 'text' }
-    ];
-    this.bookingColumns = [
-      { key: 'plotId', label: this.translate.instant('plotBookings.columnPlotId'), type: 'text' },
-      { key: 'totalAmount', label: this.translate.instant('plotBookings.columnTotalAmount'), type: 'text' },
-      { key: 'installmentCount', label: this.translate.instant('plotBookings.columnInstallmentCount'), type: 'text' },
-      { key: 'bookedAt', label: this.translate.instant('plotBookings.columnBookedAt'), type: 'text' }
-    ];
-    this.emiColumns = [
-      { key: 'installmentNumber', label: this.translate.instant('plotBookings.columnInstallmentNumber'), type: 'text' },
-      { key: 'amount', label: this.translate.instant('plotBookings.columnInstallmentAmount'), type: 'text' },
-      { key: 'dueDate', label: this.translate.instant('plotBookings.columnDueDate'), type: 'text' }
-    ];
+    // buildColumns() uses translate.get() (reactive) rather than instant() -- instant() only
+    // resolves once the async translation file fetch (TranslateHttpLoader) completes, so a
+    // synchronous instant() call here would bake in the raw i18n key. onLangChange keeps the
+    // columns in sync if the user switches languages after initial load.
+    this.buildColumns();
+    this.translate.onLangChange.pipe(takeUntil(this.destroyed$)).subscribe(() => this.buildColumns());
     this.loadProjects();
+  }
+
+  ngOnDestroy(): void {
+    this.destroyed$.next();
+    this.destroyed$.complete();
+  }
+
+  private buildColumns(): void {
+    this.translate
+      .get([
+        'plotBookings.columnPlotNo',
+        'plotBookings.columnPlotType',
+        'plotBookings.columnAreaSqft',
+        'plotBookings.columnRate',
+        'plotBookings.columnPrice',
+        'plotBookings.columnStatus',
+        'plotBookings.columnPlotId',
+        'plotBookings.columnTotalAmount',
+        'plotBookings.columnInstallmentCount',
+        'plotBookings.columnBookedAt',
+        'plotBookings.columnInstallmentNumber',
+        'plotBookings.columnInstallmentAmount',
+        'plotBookings.columnDueDate'
+      ])
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(t => {
+        this.plotColumns = [
+          { key: 'plotNo', label: t['plotBookings.columnPlotNo'], type: 'text' },
+          { key: 'plotType', label: t['plotBookings.columnPlotType'], type: 'text' },
+          { key: 'areaSqft', label: t['plotBookings.columnAreaSqft'], type: 'text' },
+          { key: 'rate', label: t['plotBookings.columnRate'], type: 'text' },
+          { key: 'price', label: t['plotBookings.columnPrice'], type: 'text' },
+          { key: 'status', label: t['plotBookings.columnStatus'], type: 'text' }
+        ];
+        this.bookingColumns = [
+          { key: 'plotId', label: t['plotBookings.columnPlotId'], type: 'text' },
+          { key: 'totalAmount', label: t['plotBookings.columnTotalAmount'], type: 'text' },
+          { key: 'installmentCount', label: t['plotBookings.columnInstallmentCount'], type: 'text' },
+          { key: 'bookedAt', label: t['plotBookings.columnBookedAt'], type: 'text' }
+        ];
+        this.emiColumns = [
+          { key: 'installmentNumber', label: t['plotBookings.columnInstallmentNumber'], type: 'text' },
+          { key: 'amount', label: t['plotBookings.columnInstallmentAmount'], type: 'text' },
+          { key: 'dueDate', label: t['plotBookings.columnDueDate'], type: 'text' }
+        ];
+      });
   }
 
   onTabChange(tabId: string): void {

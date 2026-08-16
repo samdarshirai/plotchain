@@ -1,11 +1,33 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { RewardsComponent } from './rewards.component';
 
 describe('RewardsComponent', () => {
   let fixture: ComponentFixture<RewardsComponent>;
   let httpMock: HttpTestingController;
+  let translateService: TranslateService;
+
+  // Deliberately scoped to only the columnXxx keys this fix touches -- achievedYes/achievedNo/
+  // maxRankReached etc. are left unregistered so existing specs asserting the raw-key fallback
+  // for those (untouched, row-data/other) keys keep passing unchanged.
+  const enTranslations = {
+    rewards: {
+      columnTierLevel: 'Tier',
+      columnVolumeThreshold: 'Volume threshold',
+      columnCashReward: 'Cash reward',
+      columnPerkDescription: 'Perk',
+      columnAchieved: 'Status'
+    }
+  };
+
+  const frTranslations = {
+    rewards: {
+      ...enTranslations.rewards,
+      columnTierLevel: 'Niveau',
+      columnCashReward: 'Récompense'
+    }
+  };
 
   const flushProgress = (overrides: Partial<any> = {}) => {
     httpMock.expectOne('/api/associates/me/rank-progress').flush({
@@ -26,6 +48,15 @@ describe('RewardsComponent', () => {
 
     fixture = TestBed.createComponent(RewardsComponent);
     httpMock = TestBed.inject(HttpTestingController);
+
+    // Real translations registered explicitly (same pattern IncomeStatementComponent's spec
+    // uses) -- without this, translate.get() calls resolve to their raw key rather than actual
+    // copy, since TranslateModule.forRoot() loads no translation file in tests.
+    translateService = TestBed.inject(TranslateService);
+    translateService.setDefaultLang('en');
+    translateService.setTranslation('en', enTranslations);
+    translateService.setTranslation('fr', frTranslations);
+    translateService.use('en');
   });
 
   afterEach(() => httpMock.verify());
@@ -105,5 +136,31 @@ describe('RewardsComponent', () => {
 
     expect(fixture.componentInstance.tierColumns.some(c => c.type === 'action')).toBeFalse();
     expect(fixture.nativeElement.querySelector('select')).toBeFalsy();
+  });
+
+  it('resolves real translated column header text, not raw i18n keys', () => {
+    fixture.detectChanges();
+    flushProgress();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.tierColumns.map(c => c.label)).toEqual([
+      'Tier', 'Volume threshold', 'Cash reward', 'Perk', 'Status'
+    ]);
+    const headerText: string = fixture.nativeElement.querySelector('.editable-table thead tr').textContent;
+    expect(headerText).toContain('Tier');
+    expect(headerText).not.toContain('rewards.columnTierLevel');
+  });
+
+  it('rebuilds the column headers when the active language changes', () => {
+    fixture.detectChanges();
+    flushProgress();
+    fixture.detectChanges();
+
+    translateService.use('fr');
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.tierColumns.map(c => c.label)).toEqual([
+      'Niveau', 'Volume threshold', 'Récompense', 'Perk', 'Status'
+    ]);
   });
 });

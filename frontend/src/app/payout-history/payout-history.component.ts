@@ -1,6 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { PayoutHistoryService } from './payout-history.service';
 import { AssociateWithdrawalPage, AssociateWithdrawalFilters } from './models/associate-withdrawal-page.model';
 import { EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
@@ -70,11 +72,12 @@ const PAGE_SIZE = 20;
     </div>
   `
 })
-export class PayoutHistoryComponent implements OnInit {
+export class PayoutHistoryComponent implements OnInit, OnDestroy {
   private payoutHistoryService = inject(PayoutHistoryService);
   private translate = inject(TranslateService);
   private currencyPipe = inject(CurrencyPipe);
   private datePipe = inject(DatePipe);
+  private destroyed$ = new Subject<void>();
 
   page: AssociateWithdrawalPage | null = null;
   walletBalance: number | null = null;
@@ -106,17 +109,44 @@ export class PayoutHistoryComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.historyColumns = [
-      { key: 'amount', label: this.translate.instant('payoutHistory.columnAmount'), type: 'text' },
-      { key: 'status', label: this.translate.instant('payoutHistory.columnStatus'), type: 'text' },
-      { key: 'reason', label: this.translate.instant('payoutHistory.columnReason'), type: 'text' },
-      { key: 'bankReference', label: this.translate.instant('payoutHistory.columnBankReference'), type: 'text' },
-      { key: 'requestedAt', label: this.translate.instant('payoutHistory.columnRequestedAt'), type: 'text' },
-      { key: 'decidedAt', label: this.translate.instant('payoutHistory.columnDecidedAt'), type: 'text' },
-      { key: 'disbursedAt', label: this.translate.instant('payoutHistory.columnDisbursedAt'), type: 'text' }
-    ];
+    // buildColumns() uses translate.get() (reactive) rather than instant() -- instant() only
+    // resolves once the async translation file fetch (TranslateHttpLoader) completes, so a
+    // synchronous instant() call here would bake in the raw i18n key. onLangChange keeps the
+    // columns in sync if the user switches languages after initial load.
+    this.buildColumns();
+    this.translate.onLangChange.pipe(takeUntil(this.destroyed$)).subscribe(() => this.buildColumns());
     this.loadWallet();
     this.loadPage(0);
+  }
+
+  ngOnDestroy(): void {
+    this.destroyed$.next();
+    this.destroyed$.complete();
+  }
+
+  private buildColumns(): void {
+    this.translate
+      .get([
+        'payoutHistory.columnAmount',
+        'payoutHistory.columnStatus',
+        'payoutHistory.columnReason',
+        'payoutHistory.columnBankReference',
+        'payoutHistory.columnRequestedAt',
+        'payoutHistory.columnDecidedAt',
+        'payoutHistory.columnDisbursedAt'
+      ])
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(t => {
+        this.historyColumns = [
+          { key: 'amount', label: t['payoutHistory.columnAmount'], type: 'text' },
+          { key: 'status', label: t['payoutHistory.columnStatus'], type: 'text' },
+          { key: 'reason', label: t['payoutHistory.columnReason'], type: 'text' },
+          { key: 'bankReference', label: t['payoutHistory.columnBankReference'], type: 'text' },
+          { key: 'requestedAt', label: t['payoutHistory.columnRequestedAt'], type: 'text' },
+          { key: 'decidedAt', label: t['payoutHistory.columnDecidedAt'], type: 'text' },
+          { key: 'disbursedAt', label: t['payoutHistory.columnDisbursedAt'], type: 'text' }
+        ];
+      });
   }
 
   onStatusChange(value: string): void {
