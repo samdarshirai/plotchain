@@ -80,22 +80,11 @@
   color: var(--text-primary);
 }
 
-.dashboard .wallet-card .withdraw-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 1.25rem;
-  background: var(--brand-gradient);
-  color: var(--brand-primary-contrast);
-  font-weight: 600;
+.dashboard .wallet-card .withdraw-info {
+  margin: 0;
+  color: var(--text-muted);
   font-size: 0.875rem;
   white-space: nowrap;
-  border-radius: 999px;
-  transition: opacity 0.15s ease;
-}
-
-.dashboard .wallet-card .withdraw-action:hover {
-  opacity: 0.92;
 }
 
 .dashboard > app-kyc-banner {
@@ -282,38 +271,10 @@
   border-radius: 12px;
 }
 
-.dashboard .quick-actions .record-sale,
-.dashboard .quick-actions .add-referral {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.625rem 1.25rem;
-  border-radius: 8px;
-  font-weight: 600;
+.dashboard .quick-actions .quick-actions-empty {
+  margin: 0;
+  color: var(--text-muted);
   font-size: 0.875rem;
-  text-align: center;
-  transition: opacity 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-.dashboard .quick-actions .record-sale {
-  background: var(--brand-gradient);
-  color: var(--brand-primary-contrast);
-}
-
-.dashboard .quick-actions .record-sale:hover {
-  opacity: 0.92;
-}
-
-.dashboard .quick-actions .add-referral {
-  background: transparent;
-  color: var(--text-primary);
-  border: 1px solid var(--border-subtle);
-}
-
-.dashboard .quick-actions .add-referral:hover {
-  color: var(--brand-primary);
-  border-color: var(--brand-primary);
 }
 
 .dashboard .cycle-countdown {

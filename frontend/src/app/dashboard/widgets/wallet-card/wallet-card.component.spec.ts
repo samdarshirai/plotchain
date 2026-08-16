@@ -24,9 +24,15 @@ describe('WalletCardComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('2,500');
   });
 
-  it('the withdraw action links to /wallet/withdraw', () => {
-    const link = fixture.nativeElement.querySelector('.withdraw-action');
-    expect(link.getAttribute('href')).toBe('/wallet/withdraw');
+  it('does not render a Withdraw link (associates have no self-service withdrawal route)', () => {
+    expect(fixture.nativeElement.querySelector('.withdraw-action')).toBeNull();
+    expect(fixture.nativeElement.querySelector('a')).toBeNull();
+  });
+
+  it('renders informational copy directing associates to contact their admin', () => {
+    const info = fixture.nativeElement.querySelector('.withdraw-info');
+    expect(info).not.toBeNull();
+    expect(info.textContent.trim().length).toBeGreaterThan(0);
   });
 });
 
