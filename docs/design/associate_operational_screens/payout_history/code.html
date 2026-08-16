@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Payout History — Associate Operational Screen Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ============================================================
+     Tokens -- copied 1:1 from frontend/src/styles/_tokens.scss.
+     No new hex values are introduced anywhere below this block.
+     ============================================================ */
+  :root {
+    --brand-primary: #7C3AED;
+    --brand-secondary: #22D3EE;
+    --brand-gradient: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    --brand-primary-soft: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+    --brand-primary-hover: color-mix(in srgb, var(--brand-primary) 85%, white);
+    --brand-secondary-soft: color-mix(in srgb, var(--brand-secondary) 14%, transparent);
+    --brand-primary-contrast: #FFFFFF;
+
+    --surface-page: #f8f9ff;
+    --surface-card: #ffffff;
+    --surface-raised: #eff4ff;
+    --border-subtle: #c2c6d9;
+    --text-primary: #0b1c30;
+    --text-muted: #424656;
+    --status-success: #34D399;
+    --status-warning: #F59E0B;
+    --status-danger: #F87171;
+
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--surface-page);
+    color: var(--text-primary);
+    font-family: 'Inter', var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ============================================================
+     Generic primitives -- copied 1:1 from _cards.scss / _forms.scss /
+     _tables.scss / _shared-components.scss. Real classes the live app
+     renders today; payout-history rules further down are additive,
+     scoped contextually (mirrors .income-statement/.payout-approval
+     precedent).
+     ============================================================ */
+  .card { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.5rem; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: 600; text-align: left; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
+  td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-subtle); }
+  tr:hover td { background: var(--surface-raised); }
+  .editable-table__empty { padding: 3rem 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.875rem; }
+
+  button { cursor: pointer; border-radius: 8px; padding: 0.625rem 1.25rem; border: none; background: none; font-family: inherit; }
+  button:disabled { cursor: not-allowed; opacity: 0.5; }
+  .brand-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background: var(--brand-gradient); color: var(--brand-primary-contrast); font-weight: 600; transition: opacity .15s ease, transform .15s ease; }
+  .brand-button:hover:not(:disabled) { opacity: .92; }
+  .brand-button--secondary { background: var(--surface-raised); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+
+  label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); }
+  select {
+    display: block; width: 100%; padding: 0.625rem 0.875rem; background: var(--surface-card);
+    border: 1px solid var(--border-subtle); border-radius: 8px; font-family: inherit; font-size: 0.875rem; color: var(--text-primary);
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  select:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px var(--brand-primary-soft); }
+
+  .inline-banner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.875rem 1.25rem; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-primary); font-size: 0.875rem; }
+  .inline-banner__content { flex: 1; }
+  .inline-banner__dismiss { background: transparent; border: none; color: inherit; font-size: 1.125rem; line-height: 1; padding: 0; cursor: pointer; opacity: .7; }
+  .inline-banner--danger { border-color: var(--status-danger); background: color-mix(in srgb, var(--status-danger) 14%, var(--surface-card)); color: var(--status-danger); }
+
+  /* ============================================================
+     Payout History -- new bespoke rules. Class names below match
+     PayoutHistoryComponent's own approved-plan template
+     (docs/superpowers/plans/2026-08-15-wallet-withdrawal-unit-11-
+     associate-payout-history-screen.md, Task 3) verbatim --
+     .payout-history__intro/__title/__subtitle/__wallet-balance/
+     __balance-label/__balance-value/__filters/__filter-field/
+     __load-error/__pagination/__page-indicator all appear in the
+     plan's literal component code. Two purely-decorative additions
+     beyond the plan are flagged inline below (eyebrow span, degraded
+     balance modifier class + hint line) -- same "one-line addition"
+     idiom every prior DESIGN.md in this system already uses.
+     ============================================================ */
+  .payout-history { display: flex; flex-direction: column; gap: 1.5rem; max-width: 1040px; margin: 0 auto; padding: 1.5rem 2rem; font-family: 'Inter', var(--font-sans); }
+
+  .payout-history__intro { display: flex; flex-direction: column; gap: 0.375rem; }
+  /* Recommended addition: eyebrow span, same domain-marker every other bespoke screen in this
+     system opens with (Income Statement, Ledger Register, Payout Approval). Purely static text,
+     no new logic -- an implementer one-liner in Task 3's template, not covered by the plan verbatim. */
+  .payout-history__eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; color: var(--brand-primary); }
+  .payout-history__title { margin: 0; font-family: 'Geist', var(--font-sans); font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; color: var(--text-primary); }
+  .payout-history__subtitle { margin: 0; max-width: 46rem; font-size: 0.9375rem; line-height: 1.6; color: var(--text-muted); }
+
+  /* ---- Signature element: the Balance Ribbon ---- */
+  .payout-history__wallet-balance.card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 1.75rem 2rem 1.75rem 2.25rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--brand-primary-soft), var(--surface-card) 60%);
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+  .payout-history__wallet-balance.card::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 5px;
+    background: var(--brand-gradient);
+  }
+  .payout-history__balance-label { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .payout-history__balance-value { font-family: 'Geist', var(--font-sans); font-size: 2.5rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+
+  /* Recommended addition: a degraded modifier class + hint line for the independent wallet-lookup
+     failure case (implementer toggles via [class.payout-history__wallet-balance--degraded]="walletBalance === null",
+     alongside the plan's own formattedWalletBalance -> walletLoadError ("—") getter). The plan's literal
+     template already renders the "—" text; this design recommends dimming the whole card to read as
+     "unavailable" rather than "zero", plus one short hint line -- flagged for a new i18n key,
+     payoutHistory.walletLoadErrorHint, the same "one string addition" idiom Payout Approval's DESIGN.md
+     used for admin.submitWithdrawal.autoApprovedHint. */
+  .payout-history__wallet-balance--degraded.card { background: var(--surface-card); box-shadow: none; }
+  .payout-history__wallet-balance--degraded.card::before { background: var(--border-subtle); }
+  .payout-history__wallet-balance--degraded .payout-history__balance-value { font-size: 1.75rem; font-weight: 500; color: var(--text-muted); }
+  .payout-history__balance-hint { font-size: 0.8125rem; color: var(--text-muted); }
+  /* ---- end Balance Ribbon ---- */
+
+  .payout-history__filters { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 1.25rem; padding: 1.25rem 1.5rem; background: var(--surface-raised); border-radius: 16px; }
+  .payout-history__filter-field { display: flex; flex-direction: column; gap: 0.375rem; min-width: 220px; max-width: 280px; flex: 1 1 220px; }
+  .payout-history__filter-field label { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  .payout-history__filter-field select { background: var(--surface-card); }
+
+  .payout-history__load-error { margin: 0; }
+
+  .payout-history .card:not(.payout-history__wallet-balance) { border: none; border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); padding: 0; overflow: hidden; overflow-x: auto; }
+  .payout-history .editable-table { margin: 0; min-width: 760px; }
+  .payout-history .editable-table thead th { font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; background: var(--surface-card); white-space: nowrap; }
+  .payout-history .editable-table tbody td { font-size: 0.875rem; color: var(--text-primary); vertical-align: middle; }
+  .payout-history .editable-table tbody tr:last-child td { border-bottom: none; }
+
+  /* Column 1: Amount -- mono, tabular-nums, right-aligned. Same money treatment Sales Register /
+     Ledger Register / Payout Approval already use -- no payslip-ladder chip here (per the plan's
+     documented decision: there is no deduction breakdown to show at withdrawal time, so this column
+     is a plain figure, not an arithmetic sequence). */
+  .payout-history .editable-table td:nth-child(1) { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; color: var(--text-primary); white-space: nowrap; }
+  /* Column 2: Status -- raw enum text, mono uppercase, uniform weight. No per-value color hook:
+     EditableTableComponent's read-only cells render {{ row[column.key] }} as plain text with no
+     per-cell class hook (same constraint every prior screen in this domain documents), and this
+     screen has no actionTemplate at all (view-only) to carry a colored pill the way Payout
+     Approval's Actions column does for the admin side of this same lifecycle. */
+  .payout-history .editable-table td:nth-child(2) { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
+  /* Column 3: Reason -- prose, muted, italic dash when null */
+  .payout-history .editable-table td:nth-child(3) { font-size: 0.8125rem; color: var(--text-muted); max-width: 220px; }
+  .payout-history .editable-table td:nth-child(3).is-empty { font-style: italic; }
+  /* Column 4: Bank Reference -- mono, muted, code/reference face (same as Payout Approval's Bank
+     Reference column); dash until DISBURSED, per Global Constraints -- the frontend never
+     re-derives "is this DISBURSED" client-side, it just renders whatever the API returns. */
+  .payout-history .editable-table td:nth-child(4) { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; color: var(--text-muted); white-space: nowrap; }
+  /* Columns 5-7: Requested At / Decided At / Disbursed At -- tabular-nums, muted, dash when null.
+     Left plain/undecorated on purpose -- see "Why no timeline treatment" in DESIGN.md; this is the
+     screen's history, but the request-list itself (row order, one row per request) already carries
+     that meaning, so the three date columns don't need a second stepper/graphic on top. */
+  .payout-history .editable-table td:nth-child(5),
+  .payout-history .editable-table td:nth-child(6),
+  .payout-history .editable-table td:nth-child(7) { font-variant-numeric: tabular-nums; color: var(--text-muted); font-size: 0.8125rem; white-space: nowrap; }
+
+  .payout-history .editable-table__empty { padding: 3rem 1.5rem; }
+
+  .payout-history__pagination { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; padding: 0 0.25rem; }
+  .payout-history__page-indicator { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; color: var(--text-muted); }
+  .payout-history__pagination .brand-button--secondary { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+
+  /* ============================================================
+     Docs-page chrome (review harness only -- not part of the design)
+     ============================================================ */
+  .docs-index { position: sticky; top: 0; z-index: 10; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; padding: 0.875rem 2rem; background: var(--text-primary); color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+  .docs-index a { color: #cbd5ff; text-decoration: none; padding: 0.25rem 0.625rem; border-radius: 999px; }
+  .docs-index a:hover { background: rgba(255,255,255,0.12); color: #fff; }
+  .docs-index strong { color: #fff; font-weight: 700; margin-right: 0.5rem; }
+  .docs-frame { padding: 2.5rem 1.5rem; border-bottom: 1px dashed var(--border-subtle); }
+  .docs-frame__label { max-width: 1040px; margin: 0 auto 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--brand-primary); }
+  .docs-frame__stage { background: var(--surface-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding-bottom: 2rem; }
+
+  /* ============================================================
+     Responsive addendum (md=768px, matching every other screen's
+     stated breakpoint in this system).
+     ============================================================ */
+  @media (max-width: 768px) {
+    .payout-history__wallet-balance.card { padding: 1.5rem 1.5rem 1.5rem 1.75rem; }
+    .payout-history__balance-value { font-size: 2rem; }
+
+    .payout-history__filters { flex-direction: column; align-items: stretch; }
+    .payout-history__filter-field { min-width: 0; max-width: none; }
+
+    .payout-history .editable-table { table-layout: fixed; width: 100%; min-width: 0; }
+    .payout-history .editable-table thead { display: none; }
+    .payout-history .editable-table tbody tr { display: block; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); }
+    .payout-history .editable-table tbody td { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 0.375rem 0; border-bottom: none; text-align: right; min-width: 0; white-space: normal; }
+    .payout-history .editable-table tbody td > * { min-width: 0; }
+    .payout-history .editable-table tbody td::before { content: attr(data-label); flex: 0 0 auto; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); text-align: left; margin-right: 0; }
+    .payout-history .editable-table tbody td:nth-child(1) { font-family: 'Geist', var(--font-sans); font-size: 1.0625rem; font-weight: 600; text-align: right; }
+    .payout-history .editable-table tbody td:nth-child(1)::before { text-transform: uppercase; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--text-muted); }
+    .payout-history__pagination .brand-button--secondary { min-height: 44px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="docs-index">
+  <strong>Payout History — screen states</strong>
+  <a href="#state-1">1. Default / loaded</a>
+  <a href="#state-2">2. Status filter applied</a>
+  <a href="#state-3">3. Empty state</a>
+  <a href="#state-4">4. History load error</a>
+  <a href="#state-5">5. Wallet balance degraded</a>
+</nav>
+
+<!-- ============================================================
+     STATE 1 -- Default / loaded, all statuses
+     ============================================================ -->
+<section id="state-1" class="docs-frame">
+  <p class="docs-frame__label">State 1 — Payout History: default/loaded, all statuses, wallet balance loaded</p>
+  <div class="docs-frame__stage">
+    <div class="payout-history">
+      <div class="payout-history__intro">
+        <span class="payout-history__eyebrow">Associate · Payout History</span>
+        <h1 class="payout-history__title">Payout History</h1>
+        <p class="payout-history__subtitle">Your wallet balance and withdrawal request history.</p>
+      </div>
+
+      <div class="payout-history__wallet-balance card">
+        <span class="payout-history__balance-label">Wallet Balance</span>
+        <span class="payout-history__balance-value">₹12,500.00</span>
+      </div>
+
+      <div class="payout-history__filters">
+        <div class="payout-history__filter-field">
+          <label for="f-status">Status</label>
+          <select id="f-status">
+            <option>All statuses</option>
+            <option>Requested</option>
+            <option>Approved</option>
+            <option>Rejected</option>
+            <option>Disbursed</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead>
+            <tr>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Reason</th>
+              <th>Bank Reference</th>
+              <th>Requested At</th>
+              <th>Decided At</th>
+              <th>Disbursed At</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Amount">₹3,000.00</td>
+              <td data-label="Status">REQUESTED</td>
+              <td data-label="Reason">Diwali expenses</td>
+              <td data-label="Bank Reference">—</td>
+              <td data-label="Requested At">12 Aug 2026, 10:15 am</td>
+              <td data-label="Decided At">—</td>
+              <td data-label="Disbursed At">—</td>
+            </tr>
+            <tr>
+              <td data-label="Amount">₹7,500.00</td>
+              <td data-label="Status">APPROVED</td>
+              <td data-label="Reason">Medical emergency</td>
+              <td data-label="Bank Reference">—</td>
+              <td data-label="Requested At">8 Aug 2026, 4:02 pm</td>
+              <td data-label="Decided At">9 Aug 2026, 9:47 am</td>
+              <td data-label="Disbursed At">—</td>
+            </tr>
+            <tr>
+              <td data-label="Amount">₹2,000.00</td>
+              <td data-label="Status">REJECTED</td>
+              <td data-label="Reason">Below minimum withdrawal threshold</td>
+              <td data-label="Bank Reference">—</td>
+              <td data-label="Requested At">3 Aug 2026, 11:30 am</td>
+              <td data-label="Decided At">4 Aug 2026, 8:05 am</td>
+              <td data-label="Disbursed At">—</td>
+            </tr>
+            <tr>
+              <td data-label="Amount">₹12,500.00</td>
+              <td data-label="Status">DISBURSED</td>
+              <td data-label="Reason" class="is-empty">—</td>
+              <td data-label="Bank Reference">REF-88213</td>
+              <td data-label="Requested At">20 Jul 2026, 6:10 pm</td>
+              <td data-label="Decided At">21 Jul 2026, 9:00 am</td>
+              <td data-label="Disbursed At">22 Jul 2026, 3:41 pm</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="payout-history__pagination">
+        <span class="payout-history__page-indicator">Page 1 of 1</span>
+        <button type="button" class="brand-button brand-button--secondary" disabled>Previous</button>
+        <button type="button" class="brand-button brand-button--secondary" disabled>Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 2 -- Status filter applied (Disbursed)
+     ============================================================ -->
+<section id="state-2" class="docs-frame">
+  <p class="docs-frame__label">State 2 — Payout History: Status filter = Disbursed, resets to page 1</p>
+  <div class="docs-frame__stage">
+    <div class="payout-history">
+      <div class="payout-history__intro">
+        <span class="payout-history__eyebrow">Associate · Payout History</span>
+        <h1 class="payout-history__title">Payout History</h1>
+        <p class="payout-history__subtitle">Your wallet balance and withdrawal request history.</p>
+      </div>
+
+      <div class="payout-history__wallet-balance card">
+        <span class="payout-history__balance-label">Wallet Balance</span>
+        <span class="payout-history__balance-value">₹12,500.00</span>
+      </div>
+
+      <div class="payout-history__filters">
+        <div class="payout-history__filter-field">
+          <label for="f-status-2">Status</label>
+          <select id="f-status-2">
+            <option>Disbursed</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead>
+            <tr><th>Amount</th><th>Status</th><th>Reason</th><th>Bank Reference</th><th>Requested At</th><th>Decided At</th><th>Disbursed At</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Amount">₹12,500.00</td>
+              <td data-label="Status">DISBURSED</td>
+              <td data-label="Reason" class="is-empty">—</td>
+              <td data-label="Bank Reference">REF-88213</td>
+              <td data-label="Requested At">20 Jul 2026, 6:10 pm</td>
+              <td data-label="Decided At">21 Jul 2026, 9:00 am</td>
+              <td data-label="Disbursed At">22 Jul 2026, 3:41 pm</td>
+            </tr>
+            <tr>
+              <td data-label="Amount">₹5,000.00</td>
+              <td data-label="Status">DISBURSED</td>
+              <td data-label="Reason">Rent</td>
+              <td data-label="Bank Reference">REF-81190</td>
+              <td data-label="Requested At">2 Jun 2026, 1:20 pm</td>
+              <td data-label="Decided At">3 Jun 2026, 10:12 am</td>
+              <td data-label="Disbursed At">4 Jun 2026, 5:55 pm</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="payout-history__pagination">
+        <span class="payout-history__page-indicator">Page 1 of 1</span>
+        <button type="button" class="brand-button brand-button--secondary" disabled>Previous</button>
+        <button type="button" class="brand-button brand-button--secondary" disabled>Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 3 -- Empty state
+     ============================================================ -->
+<section id="state-3" class="docs-frame">
+  <p class="docs-frame__label">State 3 — Payout History: empty state (no requests match the current filter)</p>
+  <div class="docs-frame__stage">
+    <div class="payout-history">
+      <div class="payout-history__intro">
+        <span class="payout-history__eyebrow">Associate · Payout History</span>
+        <h1 class="payout-history__title">Payout History</h1>
+        <p class="payout-history__subtitle">Your wallet balance and withdrawal request history.</p>
+      </div>
+
+      <div class="payout-history__wallet-balance card">
+        <span class="payout-history__balance-label">Wallet Balance</span>
+        <span class="payout-history__balance-value">₹0.00</span>
+      </div>
+
+      <div class="payout-history__filters">
+        <div class="payout-history__filter-field">
+          <label for="f-status-3">Status</label>
+          <select id="f-status-3">
+            <option>Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead>
+            <tr><th>Amount</th><th>Status</th><th>Reason</th><th>Bank Reference</th><th>Requested At</th><th>Decided At</th><th>Disbursed At</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="editable-table__empty" colspan="7">No withdrawal requests to show yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 4 -- Withdrawal-history load error (wallet balance
+     unaffected -- the two lookups fail independently)
+     ============================================================ -->
+<section id="state-4" class="docs-frame">
+  <p class="docs-frame__label">State 4 — Payout History: history load error, wallet balance still shown (independent failure, direction 1)</p>
+  <div class="docs-frame__stage">
+    <div class="payout-history">
+      <div class="payout-history__intro">
+        <span class="payout-history__eyebrow">Associate · Payout History</span>
+        <h1 class="payout-history__title">Payout History</h1>
+        <p class="payout-history__subtitle">Your wallet balance and withdrawal request history.</p>
+      </div>
+
+      <div class="payout-history__wallet-balance card">
+        <span class="payout-history__balance-label">Wallet Balance</span>
+        <span class="payout-history__balance-value">₹12,500.00</span>
+      </div>
+
+      <div class="payout-history__filters">
+        <div class="payout-history__filter-field">
+          <label for="f-status-4">Status</label>
+          <select id="f-status-4">
+            <option>All statuses</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="inline-banner inline-banner--danger payout-history__load-error">
+        <div class="inline-banner__content">Something went wrong loading your payout history. Please try again.</div>
+        <button type="button" class="inline-banner__dismiss">&times;</button>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead><tr><th>Amount</th><th>Status</th><th>Reason</th><th>Bank Reference</th><th>Requested At</th><th>Decided At</th><th>Disbursed At</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="editable-table__empty" colspan="7">No withdrawal requests to show yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     STATE 5 -- Wallet-balance lookup fails independently (history
+     table loads and renders normally, unaffected)
+     ============================================================ -->
+<section id="state-5" class="docs-frame">
+  <p class="docs-frame__label">State 5 — Payout History: wallet balance degraded, history table loads normally (independent failure, direction 2)</p>
+  <div class="docs-frame__stage">
+    <div class="payout-history">
+      <div class="payout-history__intro">
+        <span class="payout-history__eyebrow">Associate · Payout History</span>
+        <h1 class="payout-history__title">Payout History</h1>
+        <p class="payout-history__subtitle">Your wallet balance and withdrawal request history.</p>
+      </div>
+
+      <div class="payout-history__wallet-balance payout-history__wallet-balance--degraded card">
+        <span class="payout-history__balance-label">Wallet Balance</span>
+        <span class="payout-history__balance-value">—</span>
+        <span class="payout-history__balance-hint">Couldn't load your balance right now. Your request history below is unaffected.</span>
+      </div>
+
+      <div class="payout-history__filters">
+        <div class="payout-history__filter-field">
+          <label for="f-status-5">Status</label>
+          <select id="f-status-5">
+            <option>All statuses</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="editable-table">
+          <thead>
+            <tr><th>Amount</th><th>Status</th><th>Reason</th><th>Bank Reference</th><th>Requested At</th><th>Decided At</th><th>Disbursed At</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Amount">₹3,000.00</td>
+              <td data-label="Status">REQUESTED</td>
+              <td data-label="Reason">Diwali expenses</td>
+              <td data-label="Bank Reference">—</td>
+              <td data-label="Requested At">12 Aug 2026, 10:15 am</td>
+              <td data-label="Decided At">—</td>
+              <td data-label="Disbursed At">—</td>
+            </tr>
+            <tr>
+              <td data-label="Amount">₹7,500.00</td>
+              <td data-label="Status">APPROVED</td>
+              <td data-label="Reason">Medical emergency</td>
+              <td data-label="Bank Reference">—</td>
+              <td data-label="Requested At">8 Aug 2026, 4:02 pm</td>
+              <td data-label="Decided At">9 Aug 2026, 9:47 am</td>
+              <td data-label="Disbursed At">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="payout-history__pagination">
+        <span class="payout-history__page-indicator">Page 1 of 1</span>
+        <button type="button" class="brand-button brand-button--secondary" disabled>Previous</button>
+        <button type="button" class="brand-button brand-button--secondary" disabled>Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
