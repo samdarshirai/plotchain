@@ -144,7 +144,9 @@ class CycleServiceTest {
             .thenReturn(BigDecimal.valueOf(5));
         when(ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), IncomeType.REWARD))
             .thenReturn(BigDecimal.valueOf(2));
-        when(ledgerEntryRepository.sumNetAmountByCycle(cycle.getId())).thenReturn(BigDecimal.valueOf(167));
+        when(ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), IncomeType.SELF_PERFORMANCE))
+            .thenReturn(BigDecimal.valueOf(3));
+        when(ledgerEntryRepository.sumNetAmountByCycle(cycle.getId())).thenReturn(BigDecimal.valueOf(170));
 
         CycleDetailResponse response = service.getDetail(cycle.getId());
 
@@ -152,13 +154,14 @@ class CycleServiceTest {
         assertThat(response.periodStart()).isEqualTo(cycle.getPeriodStart());
         assertThat(response.periodEnd()).isEqualTo(cycle.getPeriodEnd());
         assertThat(response.status()).isEqualTo(CycleStatus.CLOSED);
-        assertThat(response.totalNet()).isEqualByComparingTo(BigDecimal.valueOf(167));
+        assertThat(response.totalNet()).isEqualByComparingTo(BigDecimal.valueOf(170));
         assertThat(response.incomeTypeTotals()).containsExactly(
             new CycleIncomeTypeTotal(IncomeType.DIRECT, BigDecimal.valueOf(100)),
             new CycleIncomeTypeTotal(IncomeType.MATCHING, BigDecimal.valueOf(50)),
             new CycleIncomeTypeTotal(IncomeType.SPONSOR_MATCHING, BigDecimal.valueOf(10)),
             new CycleIncomeTypeTotal(IncomeType.ROYALTY, BigDecimal.valueOf(5)),
-            new CycleIncomeTypeTotal(IncomeType.REWARD, BigDecimal.valueOf(2)));
+            new CycleIncomeTypeTotal(IncomeType.REWARD, BigDecimal.valueOf(2)),
+            new CycleIncomeTypeTotal(IncomeType.SELF_PERFORMANCE, BigDecimal.valueOf(3)));
     }
 
     @Test

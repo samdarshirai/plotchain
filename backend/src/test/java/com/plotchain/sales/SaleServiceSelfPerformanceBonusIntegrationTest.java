@@ -12,6 +12,7 @@ import com.plotchain.compensation.SettlementCycle;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntry;
 import com.plotchain.income.LedgerEntryRepository;
+import com.plotchain.income.LedgerEntryStatus;
 import com.plotchain.projects.Plot;
 import com.plotchain.projects.PlotRepository;
 import com.plotchain.projects.PlotStatus;
@@ -133,5 +134,10 @@ class SaleServiceSelfPerformanceBonusIntegrationTest {
         // 3000 sqft meets the tier-2 threshold: gross = 1000000.00 * 2% = 20000
         assertThat(selfPerformanceEntry.getGrossAmount()).isEqualByComparingTo("20000");
         assertThat(selfPerformanceEntry.getSourceRef()).isEqualTo(saleId);
+        // The associate above is KYC VERIFIED, so SaleService's kycGatedStatus() helper must
+        // produce PENDING, not CARRIED_FORWARD -- without this assertion, a kycGatedStatus() that
+        // always returned CARRIED_FORWARD would pass this whole test suite even though the bonus
+        // would then never become payable.
+        assertThat(selfPerformanceEntry.getStatus()).isEqualTo(LedgerEntryStatus.PENDING);
     }
 }

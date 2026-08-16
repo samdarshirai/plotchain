@@ -52,14 +52,18 @@ public class CycleService {
     private final RewardTierRepository rewardTierRepository;
 
     // Cycle-management unit 2 (GET /api/admin/cycles/{id}, spec lines 95-97): fixed order
-    // matching the spec's literal "DIRECT/MATCHING/SPONSOR_MATCHING/ROYALTY/REWARD" listing,
-    // not IncomeType.values() filtered at call time -- explicit here so a future IncomeType
-    // constant added before PERK can't silently join this breakdown without a deliberate edit
-    // to this list. PERK itself is excluded: per Decision #8 of the domain-design spec, it's
-    // descriptive metadata attached to REWARD entries, never its own ledger line.
+    // matching the spec's literal "DIRECT/MATCHING/SPONSOR_MATCHING/ROYALTY/REWARD/SELF_PERFORMANCE"
+    // listing, not IncomeType.values() filtered at call time -- explicit here so a future
+    // IncomeType constant added before PERK can't silently join this breakdown without a
+    // deliberate edit to this list. PERK itself is excluded: per Decision #8 of the domain-design
+    // spec, it's descriptive metadata attached to REWARD entries, never its own ledger line.
+    // SELF_PERFORMANCE was not part of docs/superpowers/specs/role-capability/
+    // 2026-08-03-cycle-management-domain-design.md's original literal listing above (that spec
+    // predates the self-performance-bonus feature) -- it's added here so the admin breakdown
+    // doesn't silently omit real ledger money once self-performance bonuses start being credited.
     private static final List<IncomeType> BREAKDOWN_INCOME_TYPES = List.of(
         IncomeType.DIRECT, IncomeType.MATCHING, IncomeType.SPONSOR_MATCHING,
-        IncomeType.ROYALTY, IncomeType.REWARD);
+        IncomeType.ROYALTY, IncomeType.REWARD, IncomeType.SELF_PERFORMANCE);
 
     public CycleService(
         CycleRepository cycleRepository,

@@ -11,23 +11,30 @@
 -- portable DROP CONSTRAINT. Rebuild the table instead: identical schema to today's (V1 + V16's
 -- source_ref column + V17's NOT NULL/unique tightening) except the widened CHECK.
 --
--- The rebuilt table's own PK and CHECK get explicit names (pk_ledger_entry,
--- chk_ledger_entry_income_type) rather than staying implicit -- the same unnamed-constraint
--- problem this migration is fixing would otherwise just reappear for whoever next needs to
--- ALTER this table, since implicit names aren't just engine-specific but here also collide
--- with ledger_entry_old's still-live implicit names until the DROP TABLE below runs.
+-- The rebuilt table's own PK and CHECK/FK constraints get explicit names (pk_ledger_entry,
+-- chk_ledger_entry_income_type, chk_ledger_entry_status, fk_ledger_entry_associate,
+-- fk_ledger_entry_cycle) rather than staying implicit -- the same unnamed-constraint problem
+-- this migration is fixing would otherwise just reappear for whoever next needs to ALTER this
+-- table, since implicit names aren't just engine-specific but here also collide with
+-- ledger_entry_old's still-live implicit names until the DROP TABLE below runs.
+--
+-- This rename/create/copy/drop table-rebuild pattern is only safe because this project is
+-- pre-launch with no populated ledger_entry rows anywhere yet -- it holds an exclusive lock for
+-- the full copy and is not a pattern to reuse once real data exists; a future enum widening on a
+-- populated table should use Flyway's vendor-specific migration directories instead so each
+-- engine can drop its own auto-named constraint directly.
 ALTER TABLE ledger_entry RENAME TO ledger_entry_old;
 
 CREATE TABLE ledger_entry (
     id UUID CONSTRAINT pk_ledger_entry PRIMARY KEY,
-    associate_id UUID NOT NULL REFERENCES associate(id),
+    associate_id UUID NOT NULL CONSTRAINT fk_ledger_entry_associate REFERENCES associate(id),
     income_type VARCHAR(30) NOT NULL CONSTRAINT chk_ledger_entry_income_type CHECK (income_type IN ('DIRECT','MATCHING','SPONSOR_MATCHING','ROYALTY','REWARD','PERK','SELF_PERFORMANCE')),
-    cycle_id UUID NOT NULL REFERENCES cycle(id),
+    cycle_id UUID NOT NULL CONSTRAINT fk_ledger_entry_cycle REFERENCES cycle(id),
     gross_amount NUMERIC(14,2) NOT NULL,
     tds_deduction NUMERIC(14,2) NOT NULL,
     admin_deduction NUMERIC(14,2) NOT NULL,
     net_amount NUMERIC(14,2) NOT NULL,
-    status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING','CARRIED_FORWARD','PAID','REVERSED')),
+    status VARCHAR(20) NOT NULL CONSTRAINT chk_ledger_entry_status CHECK (status IN ('PENDING','CARRIED_FORWARD','PAID','REVERSED')),
     created_at TIMESTAMP NOT NULL,
     source_ref UUID NOT NULL
 );

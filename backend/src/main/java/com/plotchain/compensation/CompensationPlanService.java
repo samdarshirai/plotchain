@@ -187,10 +187,14 @@ public class CompensationPlanService {
             SettlementCycle.valueOf(request.settlementCycle()),
             Instant.now(),
             adminId,
-            request.selfPerformanceTier1Pct(),
-            request.selfPerformanceTier1SqftThreshold(),
-            request.selfPerformanceTier2Pct(),
-            request.selfPerformanceTier2SqftThreshold()
+            // The existing Angular admin UI doesn't send these 4 fields yet (out of scope for
+            // this backend-only branch), so request.selfPerformanceXxx() can be null here -- fall
+            // back to the same values V25__self_performance_bonus.sql uses as its migration-time
+            // column defaults, rather than 400ing on every pre-existing compensation-plan edit.
+            orDefault(request.selfPerformanceTier1Pct(), BigDecimal.ZERO),
+            orDefault(request.selfPerformanceTier1SqftThreshold(), new BigDecimal("2000")),
+            orDefault(request.selfPerformanceTier2Pct(), BigDecimal.ZERO),
+            orDefault(request.selfPerformanceTier2SqftThreshold(), new BigDecimal("3000"))
         );
         versionRepository.save(newVersion);
 
@@ -213,6 +217,12 @@ public class CompensationPlanService {
     // no blank-singleton state; every column is NOT NULL from the moment the migration runs.
     public boolean isComplete() {
         return currentVersion().getCreatedByAssociateId() != null;
+    }
+
+    // Backward-compatibility default for CompensationPlanRequest's 4 self-performance fields,
+    // which are not @NotNull -- see that record's field comment for why.
+    private static BigDecimal orDefault(BigDecimal value, BigDecimal fallback) {
+        return value != null ? value : fallback;
     }
 
     private CompensationPlanVersion currentVersion() {
