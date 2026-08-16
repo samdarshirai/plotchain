@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { TemplateRef } from '@angular/core';
-import { SetupInspectorService } from './setup-inspector.service';
+import { SetupInspectorService, SetupStepController } from './setup-inspector.service';
 
 describe('SetupInspectorService', () => {
   let service: SetupInspectorService;
@@ -49,5 +49,21 @@ describe('SetupInspectorService', () => {
     let saved = false;
     service.saved$.subscribe(value => (saved = value));
     expect(saved).toBeTrue();
+  });
+
+  it('starts with no registered active step', () => {
+    expect(service.activeStep).toBeNull();
+  });
+
+  it('exposes the most recently registered step as activeStep', () => {
+    const step: SetupStepController = { flushPendingSave: () => {}, isStepValid: () => true };
+    service.registerStep(step);
+    expect(service.activeStep).toBe(step);
+  });
+
+  it('clears the active step on clear()', () => {
+    service.registerStep({ flushPendingSave: () => {}, isStepValid: () => true });
+    service.clear();
+    expect(service.activeStep).toBeNull();
   });
 });

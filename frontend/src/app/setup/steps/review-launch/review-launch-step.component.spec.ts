@@ -157,4 +157,20 @@ describe('ReviewLaunchStepComponent', () => {
 
     expect(inspectorService.clear).toHaveBeenCalled();
   });
+
+  it('registers itself as the active step with SetupInspectorService', async () => {
+    await createAndFlush(stateWith(false));
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    expect(inspectorService.activeStep).toBe(fixture.componentInstance);
+  });
+
+  it('flushPendingSave is a no-op -- this step has no autosaved form', async () => {
+    await createAndFlush(stateWith(false));
+    expect(() => fixture.componentInstance.flushPendingSave()).not.toThrow();
+  });
+
+  it('isStepValid is always true -- Next is not form-gated on this step', async () => {
+    await createAndFlush(stateWith(false));
+    expect(fixture.componentInstance.isStepValid()).toBeTrue();
+  });
 });

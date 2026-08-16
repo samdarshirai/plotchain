@@ -14,6 +14,7 @@ import { LogoUploaderComponent } from '../../../shared/components/logo-uploader/
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { ProjectsService } from './projects.service';
 import { SetupService } from '../../setup.service';
+import { SetupInspectorService, SetupStepController } from '../../setup-inspector.service';
 import { CsvValidationResponse, PlotPageResponse, PlotStatus, PlotType, Project } from '../../models/project.model';
 
 const PAGE_SIZE = 20;
@@ -274,10 +275,11 @@ const PAGE_SIZE = 20;
     </div>
   `
 })
-export class ProjectsStepComponent implements OnInit, OnDestroy {
+export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepController {
   private fb = inject(FormBuilder);
   protected projectsService = inject(ProjectsService);
   private setupService = inject(SetupService);
+  private inspectorService = inject(SetupInspectorService);
   private translate = inject(TranslateService);
   private route = inject(ActivatedRoute);
   private destroyed$ = new Subject<void>();
@@ -349,6 +351,8 @@ export class ProjectsStepComponent implements OnInit, OnDestroy {
         this.stepNumber = step?.number ?? 1;
         this.stepCount = state.steps.length;
       });
+
+    this.inspectorService.registerStep(this);
   }
 
   ngOnDestroy(): void {
@@ -356,6 +360,18 @@ export class ProjectsStepComponent implements OnInit, OnDestroy {
     this.destroyed$.complete();
     this.clearPendingThumbnail();
     Object.values(this.thumbnailObjectUrls).forEach(url => URL.revokeObjectURL(url));
+    this.inspectorService.clear();
+  }
+
+  // SetupStepController: project/plot edits save immediately through their own explicit
+  // Add/Save buttons (submitAddProject(), submitAddPlot(), commitCsvFile()) rather than a
+  // debounced autosave, so there is nothing pending to flush before navigating away.
+  flushPendingSave(): void {}
+
+  // SetupStepController: no single form gates this step's Next -- required fields on the
+  // inline add-project/add-plot forms are already enforced by their own submit handlers.
+  isStepValid(): boolean {
+    return true;
   }
 
   soldRatio(project: Project): number {

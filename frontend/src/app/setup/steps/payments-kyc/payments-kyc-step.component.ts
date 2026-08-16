@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject, Subscription, merge } from 'rxjs';
-import { debounceTime, takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil, tap } from 'rxjs/operators';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { ToggleGroupComponent, ToggleOption } from '../../../shared/components/toggle-group/toggle-group.component';
@@ -12,7 +12,7 @@ import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav
 import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { PaymentsKycService } from './payments-kyc.service';
 import { SetupService } from '../../setup.service';
-import { SetupInspectorService } from '../../setup-inspector.service';
+import { SetupInspectorService, SetupStepController } from '../../setup-inspector.service';
 import {
   BookingEmiConfigRequest,
   KycConfigRequest,
@@ -358,7 +358,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
     </ng-template>
   `
 })
-export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestroy {
+export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestroy, SetupStepController {
   private fb = inject(FormBuilder);
   private paymentsKycService = inject(PaymentsKycService);
   private setupService = inject(SetupService);
@@ -413,6 +413,9 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
   requiredDocuments: string[] = [];
   kycSavedJustNow = false;
   private kycLoadFailed = false;
+  // Neither strictness nor requiredDocuments is a FormControl, so there's no built-in dirty
+  // tracking to lean on -- set on every edit, cleared once saveKyc() sends it.
+  private kycDirty = false;
   private kycChanged$ = new Subject<void>();
   private kycSub?: Subscription;
 
@@ -433,6 +436,9 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
   bookingEmiSavedJustNow = false;
   bookingEmiSubmitError: string | null = null;
   private bookingEmiLoadFailed = false;
+  // None of this section's fields are FormControls -- set on every edit, cleared once
+  // saveBookingEmi() sends it. Mirrors kycDirty above.
+  private bookingEmiDirty = false;
   private bookingEmiChanged$ = new Subject<void>();
   private bookingEmiSub?: Subscription;
 
@@ -499,11 +505,21 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
       }
     });
     merge(this.paymentForm.valueChanges, this.modesChanged$)
-      .pipe(takeUntil(this.destroyed$), debounceTime(400))
+      .pipe(
+        takeUntil(this.destroyed$),
+        // gateway is set programmatically via selectGateway() (a gateway-tile click), and
+        // modesEnabled isn't a form control at all -- neither marks paymentForm dirty on its own.
+        tap(() => this.paymentForm.markAsDirty()),
+        debounceTime(400)
+      )
       .subscribe(() => {
         this.paymentSavedJustNow = false;
         this.inspectorService.setSaved(this.anySavedJustNow);
-        if (!this.paymentLoadFailed && this.paymentForm.valid) {
+        // paymentForm.dirty is also checked: debounceTime flushes its last buffered value
+        // immediately when its source completes (e.g. destroyed$ on navigation), even if
+        // flushPendingSave() already saved this value and marked the form pristine moments
+        // earlier -- without this check that would fire a redundant duplicate PUT.
+        if (!this.paymentLoadFailed && this.paymentForm.dirty && this.paymentForm.valid) {
           this.savePayment();
         }
       });
@@ -525,13 +541,22 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
         this.payoutLoadFailed = true;
       }
     });
-    this.payoutForm.valueChanges.pipe(takeUntil(this.destroyed$), debounceTime(400)).subscribe(() => {
-      this.payoutSavedJustNow = false;
-      this.inspectorService.setSaved(this.anySavedJustNow);
-      if (!this.payoutLoadFailed && this.payoutForm.valid) {
-        this.savePayout();
-      }
-    });
+    this.payoutForm.valueChanges
+      .pipe(
+        takeUntil(this.destroyed$),
+        // accountType is set programmatically via setAccountType() (a toggle-group output), so
+        // it never marks payoutForm dirty on its own.
+        tap(() => this.payoutForm.markAsDirty()),
+        debounceTime(400)
+      )
+      .subscribe(() => {
+        this.payoutSavedJustNow = false;
+        this.inspectorService.setSaved(this.anySavedJustNow);
+        // payoutForm.dirty is also checked, for the same reason as paymentForm above.
+        if (!this.payoutLoadFailed && this.payoutForm.dirty && this.payoutForm.valid) {
+          this.savePayout();
+        }
+      });
 
     this.kycSub = this.paymentsKycService.getKycConfig().subscribe({
       next: res => {
@@ -542,13 +567,16 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
         this.kycLoadFailed = true;
       }
     });
-    this.kycChanged$.pipe(takeUntil(this.destroyed$), debounceTime(400)).subscribe(() => {
-      this.kycSavedJustNow = false;
-      this.inspectorService.setSaved(this.anySavedJustNow);
-      if (!this.kycLoadFailed && this.requiredDocuments.length > 0) {
-        this.saveKyc();
-      }
-    });
+    this.kycChanged$
+      .pipe(takeUntil(this.destroyed$), tap(() => (this.kycDirty = true)), debounceTime(400))
+      .subscribe(() => {
+        this.kycSavedJustNow = false;
+        this.inspectorService.setSaved(this.anySavedJustNow);
+        // kycDirty is also checked, for the same reason as paymentForm.dirty above.
+        if (!this.kycLoadFailed && this.kycDirty && this.requiredDocuments.length > 0) {
+          this.saveKyc();
+        }
+      });
 
     this.withdrawalSub = this.paymentsKycService.getWithdrawalConfig().subscribe({
       next: res => {
@@ -578,13 +606,18 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
         this.bookingEmiLoadFailed = true;
       }
     });
-    this.bookingEmiChanged$.pipe(takeUntil(this.destroyed$), debounceTime(400)).subscribe(() => {
-      this.bookingEmiSavedJustNow = false;
-      this.inspectorService.setSaved(this.anySavedJustNow);
-      if (!this.bookingEmiLoadFailed) {
-        this.saveBookingEmi();
-      }
-    });
+    this.bookingEmiChanged$
+      .pipe(takeUntil(this.destroyed$), tap(() => (this.bookingEmiDirty = true)), debounceTime(400))
+      .subscribe(() => {
+        this.bookingEmiSavedJustNow = false;
+        this.inspectorService.setSaved(this.anySavedJustNow);
+        // bookingEmiDirty is also checked, for the same reason as paymentForm.dirty above.
+        if (!this.bookingEmiLoadFailed && this.bookingEmiDirty) {
+          this.saveBookingEmi();
+        }
+      });
+
+    this.inspectorService.registerStep(this);
   }
 
   ngAfterViewInit(): void {
@@ -594,6 +627,31 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
       // Stitch mockup's shared bottom bar.
       this.inspectorService.register(this.inspectorTpl, { hideFooter: false });
     }
+  }
+
+  // SetupStepController: lets SetupStepNavComponent flush any of this step's cards that still
+  // have an edit sitting in their own 400ms autosave debounce before it navigates away. The
+  // Withdrawal Approval card is intentionally left out -- its flush wiring is a separate task
+  // (B2), which also touches WithdrawalConfigRequest/Response.
+  flushPendingSave(): void {
+    if (!this.paymentLoadFailed && this.paymentForm.dirty && this.paymentForm.valid) {
+      this.savePayment();
+    }
+    if (!this.payoutLoadFailed && this.payoutForm.dirty && this.payoutForm.valid) {
+      this.savePayout();
+    }
+    if (!this.kycLoadFailed && this.kycDirty && this.requiredDocuments.length > 0) {
+      this.saveKyc();
+    }
+    if (!this.bookingEmiLoadFailed && this.bookingEmiDirty) {
+      this.saveBookingEmi();
+    }
+  }
+
+  // SetupStepController: lets SetupStepNavComponent block Next on an invalid required field in
+  // either card that has Validators-backed required fields.
+  isStepValid(): boolean {
+    return this.paymentForm.valid && this.payoutForm.valid;
   }
 
   ngOnDestroy(): void {
@@ -673,6 +731,7 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   private savePayment(): void {
+    this.paymentForm.markAsPristine();
     // credentials is intentionally omitted here -- autosave never touches the secret, only the
     // explicit "Save credentials" action does. See PaymentConfigRequest.credentials.
     const request: PaymentConfigRequest = {
@@ -733,6 +792,7 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   private savePayout(): void {
+    this.payoutForm.markAsPristine();
     const request: PayoutBankAccountRequest = this.payoutForm.getRawValue();
     this.paymentsKycService.updatePayoutAccount(request).subscribe({
       next: () => {
@@ -769,6 +829,7 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   private saveKyc(): void {
+    this.kycDirty = false;
     const request: KycConfigRequest = { strictness: this.strictness, requiredDocuments: this.requiredDocuments };
     this.paymentsKycService.updateKycConfig(request).subscribe({
       next: () => {
@@ -841,6 +902,7 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   private saveBookingEmi(): void {
+    this.bookingEmiDirty = false;
     const request: BookingEmiConfigRequest = {
       emiEnabled: this.emiEnabled,
       defaultInstallmentCount: this.defaultInstallmentCount,

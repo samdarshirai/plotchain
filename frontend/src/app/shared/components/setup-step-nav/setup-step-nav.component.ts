@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { BrandButtonComponent } from '../brand-button/brand-button.component';
+import { SetupInspectorService } from '../../../setup/setup-inspector.service';
 
 @Component({
   selector: 'app-setup-step-nav',
@@ -42,6 +43,7 @@ import { BrandButtonComponent } from '../brand-button/brand-button.component';
 })
 export class SetupStepNavComponent {
   private router = inject(Router);
+  private inspectorService = inject(SetupInspectorService);
 
   @Input() previousPath: string | null = null;
   @Input() nextPath: string | null = null;
@@ -56,12 +58,21 @@ export class SetupStepNavComponent {
   }
 
   goNext(): void {
-    if (this.nextPath) {
-      this.router.navigate(['/setup', this.nextPath]);
+    if (!this.nextPath) {
+      return;
     }
+    const step = this.inspectorService.activeStep;
+    if (step && !step.isStepValid()) {
+      // Invalid required fields (e.g. a bad GSTIN/phone) block advancing instead of silently
+      // discarding them.
+      return;
+    }
+    step?.flushPendingSave();
+    this.router.navigate(['/setup', this.nextPath]);
   }
 
   goBackToSettings(): void {
+    this.inspectorService.activeStep?.flushPendingSave();
     this.router.navigate(['/settings']);
   }
 }

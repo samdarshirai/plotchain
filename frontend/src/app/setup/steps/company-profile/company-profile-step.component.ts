@@ -4,13 +4,13 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject, Subscription } from 'rxjs';
-import { debounceTime, takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil, tap } from 'rxjs/operators';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { CompanyProfileService } from './company-profile.service';
 import { SetupService } from '../../setup.service';
-import { SetupInspectorService } from '../../setup-inspector.service';
+import { SetupInspectorService, SetupStepController } from '../../setup-inspector.service';
 import { CompanyProfileRequest } from '../../models/company-profile.model';
 
 const PHONE_PATTERN = /^[+]?[0-9]{10,15}$/;
@@ -147,7 +147,7 @@ const GSTIN_PATTERN = /^[0-9A-Z]{15}$/;
     </ng-template>
   `
 })
-export class CompanyProfileStepComponent implements OnInit, AfterViewInit, OnDestroy {
+export class CompanyProfileStepComponent implements OnInit, AfterViewInit, OnDestroy, SetupStepController {
   private fb = inject(FormBuilder);
   private companyProfileService = inject(CompanyProfileService);
   private setupService = inject(SetupService);
@@ -204,19 +204,49 @@ export class CompanyProfileStepComponent implements OnInit, AfterViewInit, OnDes
       }
     });
 
-    this.form.valueChanges.pipe(takeUntil(this.destroyed$), debounceTime(400)).subscribe(() => {
-      this.savedJustNow = false;
-      this.inspectorService.setSaved(false);
-      if (this.form.valid) {
-        this.save();
-      }
-    });
+    this.form.valueChanges
+      .pipe(
+        takeUntil(this.destroyed$),
+        // Marked here (rather than relying solely on Angular's own dirty tracking) so a value
+        // set programmatically -- not just one typed into a native input -- still counts as a
+        // pending change flushPendingSave() needs to catch before navigation discards it.
+        tap(() => this.form.markAsDirty()),
+        debounceTime(400)
+      )
+      .subscribe(() => {
+        this.savedJustNow = false;
+        this.inspectorService.setSaved(false);
+        // form.dirty is also checked (not just .valid): debounceTime emits its last buffered
+        // value immediately when its source completes (e.g. destroyed$ firing on navigation),
+        // even if flushPendingSave() already saved this exact value moments earlier and marked
+        // the form pristine -- without this check that would fire a redundant duplicate PUT.
+        if (this.form.dirty && this.form.valid) {
+          this.save();
+        }
+      });
+
+    this.inspectorService.registerStep(this);
   }
 
   ngAfterViewInit(): void {
     if (this.mode === 'setup') {
       this.inspectorService.register(this.inspectorTpl);
     }
+  }
+
+  // SetupStepController: lets SetupStepNavComponent flush an edit still sitting in the 400ms
+  // autosave debounce before it navigates away (Next/Save otherwise race the debounce and can
+  // discard the change).
+  flushPendingSave(): void {
+    if (this.form.dirty && this.form.valid) {
+      this.save();
+    }
+  }
+
+  // SetupStepController: lets SetupStepNavComponent block Next instead of silently discarding
+  // an invalid required field (e.g. a bad GSTIN/phone).
+  isStepValid(): boolean {
+    return this.form.valid;
   }
 
   ngOnDestroy(): void {
@@ -251,6 +281,7 @@ export class CompanyProfileStepComponent implements OnInit, AfterViewInit, OnDes
   }
 
   private save(): void {
+    this.form.markAsPristine();
     const request = this.form.getRawValue() as CompanyProfileRequest;
     this.companyProfileService.updateProfile(request).subscribe({
       next: () => {

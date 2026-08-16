@@ -10,7 +10,7 @@ import { BrandButtonComponent } from '../../../shared/components/brand-button/br
 import { StatTileComponent } from '../../../shared/components/stat-tile/stat-tile.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SetupService } from '../../setup.service';
-import { SetupInspectorService } from '../../setup-inspector.service';
+import { SetupInspectorService, SetupStepController } from '../../setup-inspector.service';
 import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-state.model';
 
 @Component({
@@ -105,7 +105,7 @@ import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-s
     </ng-template>
   `
 })
-export class ReviewLaunchStepComponent implements OnInit, AfterViewInit, OnDestroy {
+export class ReviewLaunchStepComponent implements OnInit, AfterViewInit, OnDestroy, SetupStepController {
   private setupService = inject(SetupService);
   private inspectorService = inject(SetupInspectorService);
   private translate = inject(TranslateService);
@@ -134,6 +134,8 @@ export class ReviewLaunchStepComponent implements OnInit, AfterViewInit, OnDestr
         this.stepNumber = step?.number ?? 1;
         this.stepCount = state.steps.length;
       });
+
+    this.inspectorService.registerStep(this);
   }
 
   ngAfterViewInit(): void {
@@ -144,6 +146,16 @@ export class ReviewLaunchStepComponent implements OnInit, AfterViewInit, OnDestr
     this.destroyed$.next();
     this.destroyed$.complete();
     this.inspectorService.clear();
+  }
+
+  // SetupStepController: this step has no autosaved form -- goLive() is its own explicit,
+  // immediate action -- so there is nothing to flush.
+  flushPendingSave(): void {}
+
+  // SetupStepController: no form-gated required fields here (nextPath is always null; the Go
+  // Live gate is state.canGoLive/termsAccepted, handled by goLiveDisabled()).
+  isStepValid(): boolean {
+    return true;
   }
 
   summarySteps(state: SetupStateResponse): StepStatus[] {
