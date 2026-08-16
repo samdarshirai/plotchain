@@ -74,7 +74,8 @@ class CompensationPlanServiceTest {
             new BigDecimal("500.00"),
             SettlementCycle.SEMI_MONTHLY,
             Instant.parse("2020-01-01T00:00:00Z"),
-            null
+            null,
+            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000")
         );
     }
 
@@ -97,7 +98,8 @@ class CompensationPlanServiceTest {
             new BigDecimal("500.00"),
             SettlementCycle.SEMI_MONTHLY,
             Instant.now(),
-            createdBy
+            createdBy,
+            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000")
         );
     }
 

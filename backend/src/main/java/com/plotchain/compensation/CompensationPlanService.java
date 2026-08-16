@@ -186,7 +186,11 @@ public class CompensationPlanService {
             request.minWithdrawal(),
             SettlementCycle.valueOf(request.settlementCycle()),
             Instant.now(),
-            adminId
+            adminId,
+            BigDecimal.ZERO,           // selfPerformanceTier1Pct (hardcoded; Task 6 will replace with request.selfPerformanceTier1Pct())
+            BigDecimal.ZERO,           // selfPerformanceTier1SqftThreshold (hardcoded; Task 6 will replace with request.selfPerformanceTier1SqftThreshold())
+            BigDecimal.ZERO,           // selfPerformanceTier2Pct (hardcoded; Task 6 will replace with request.selfPerformanceTier2Pct())
+            BigDecimal.ZERO            // selfPerformanceTier2SqftThreshold (hardcoded; Task 6 will replace with request.selfPerformanceTier2SqftThreshold())
         );
         versionRepository.save(newVersion);
 

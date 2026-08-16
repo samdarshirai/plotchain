@@ -95,7 +95,8 @@ class SaleServiceTest {
             new BigDecimal("10.00"), BigDecimal.ZERO, BigDecimal.ZERO,
             new BigDecimal("5.00"), BigDecimal.ZERO, new BigDecimal("4.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.MONTHLY,
-            Instant.now(), null);
+            Instant.now(), null,
+            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
     }
 
     private void stubHappyPathGuardsAndDependencies() {
@@ -234,7 +235,8 @@ class SaleServiceTest {
             new BigDecimal("6.00"), BigDecimal.ZERO, BigDecimal.ZERO,
             new BigDecimal("2.00"), BigDecimal.ZERO, new BigDecimal("15.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.MONTHLY,
-            Instant.now(), null);
+            Instant.now(), null,
+            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
     }
 
     @Test

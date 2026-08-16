@@ -219,6 +219,7 @@ class DashboardServiceTest {
             BigDecimal.ZERO,
             SettlementCycle.MONTHLY,
             Instant.now(),
-            null);
+            null,
+            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
     }
 }

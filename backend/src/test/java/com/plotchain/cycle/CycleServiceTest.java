@@ -335,7 +335,8 @@ class CycleServiceTest {
             BigDecimal.ZERO, new BigDecimal("10.00"), new BigDecimal("11.00"),
             new BigDecimal("5.00"), BigDecimal.ZERO, new BigDecimal("4.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY,
-            Instant.now(), null);
+            Instant.now(), null,
+            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
     }
 
     // Doc-fixture-accuracy tests use compensation-plan-reference.md's real published rates
@@ -348,7 +349,8 @@ class CycleServiceTest {
             new BigDecimal("6.00"), new BigDecimal("7.00"), new BigDecimal("11.00"),
             new BigDecimal("2.00"), BigDecimal.ZERO, new BigDecimal("15.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY,
-            Instant.now(), null);
+            Instant.now(), null,
+            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
     }
 
     private LedgerEntry matchingEntryFixture(UUID associateId, UUID cycleId, BigDecimal grossAmount) {
@@ -505,7 +507,8 @@ class CycleServiceTest {
             BigDecimal.ZERO, new BigDecimal("10.00"), BigDecimal.ZERO,
             new BigDecimal("2.00"), new BigDecimal("5.00"), new BigDecimal("15.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY,
-            Instant.now(), null);
+            Instant.now(), null,
+            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
             .thenReturn(Optional.of(planVersion));
 
@@ -1347,7 +1350,8 @@ class CycleServiceTest {
             UUID.randomUUID(), "v1", LocalDate.of(2026, 1, 1),
             BigDecimal.ZERO, new BigDecimal("10.00"), BigDecimal.ZERO,
             new BigDecimal("5.00"), BigDecimal.ZERO, new BigDecimal("4.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null);
+            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null,
+            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
             .thenReturn(Optional.of(zeroSponsorMatchingPlanVersion));
 

@@ -55,7 +55,8 @@ class AssociateRankProgressControllerTest {
         return new CompensationPlanVersion(
             versionId, "v1", LocalDate.now().minusDays(1),
             BigDecimal.TEN, BigDecimal.TEN, BigDecimal.TEN, BigDecimal.TEN, BigDecimal.TEN, BigDecimal.TEN,
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.MONTHLY, Instant.now(), null);
+            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.MONTHLY, Instant.now(), null,
+            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
     }
 
     @Test
