@@ -6,6 +6,7 @@ import { CreateAssociateComponent } from './admin/create-associate.component';
 import { authGuard } from './auth/auth.guard';
 import { associateOnlyGuard } from './auth/associate-only.guard';
 import { rootRedirectGuard } from './auth/root-redirect.guard';
+import { loginRedirectGuard } from './auth/login-redirect.guard';
 import { adminGuard } from './admin/admin.guard';
 import { setupModeGuard, launchedModeGuard } from './setup/setup.guard';
 import { SetupShellComponent } from './setup/setup-shell.component';
@@ -40,7 +41,7 @@ import { IncomeStatementComponent } from './income-statement/income-statement.co
 import { PayoutHistoryComponent } from './payout-history/payout-history.component';
 
 export const routes: Routes = [
-  { path: 'login', component: LoginComponent },
+  { path: 'login', component: LoginComponent, canActivate: [loginRedirectGuard] },
   { path: 'terms', component: TermsOfServiceComponent },
   { path: 'privacy', component: PrivacyPolicyComponent },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard, associateOnlyGuard] },
