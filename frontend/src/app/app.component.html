@@ -1,19 +1,25 @@
 <header class="app-header" *ngIf="authService.isAuthenticated() && !isChromelessRoute">
-  <nav class="app-nav">
-    <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/dashboard" routerLinkActive="app-nav__link--active">{{ 'nav.dashboard' | translate }}</a>
-    <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/my-tree" routerLinkActive="app-nav__link--active">{{ 'nav.myTree' | translate }}</a>
-    <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/sales-history" routerLinkActive="app-nav__link--active">{{ 'nav.salesHistory' | translate }}</a>
-    <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/plot-bookings" routerLinkActive="app-nav__link--active">{{ 'nav.plotBookings' | translate }}</a>
-    <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/profile" routerLinkActive="app-nav__link--active">{{ 'nav.profileKyc' | translate }}</a>
-    <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/rewards" routerLinkActive="app-nav__link--active">{{ 'nav.rewards' | translate }}</a>
-    <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/digital-id-card" routerLinkActive="app-nav__link--active">{{ 'nav.digitalIdCard' | translate }}</a>
-    <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/income-statement" routerLinkActive="app-nav__link--active">{{ 'nav.incomeStatement' | translate }}</a>
-    <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/payout-history" routerLinkActive="app-nav__link--active">{{ 'nav.payoutHistory' | translate }}</a>
-    <ng-container *ngIf="isAdminFamily">
-      <a class="app-nav__link" routerLink="/admin/associates/new" routerLinkActive="app-nav__link--active">{{ 'nav.provisionAssociate' | translate }}</a>
-      <a class="app-nav__link" routerLink="/settings" routerLinkActive="app-nav__link--active">{{ 'nav.settings' | translate }}</a>
-    </ng-container>
-  </nav>
+  <div class="app-header__left">
+    <div class="app-header__brand">
+      <img *ngIf="showSquareLogo" class="app-header__logo" src="/api/company/branding/logo/square" alt="" />
+      <span class="app-header__wordmark">VIRAJ ACRES</span>
+    </div>
+    <nav class="app-nav">
+      <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/dashboard" routerLinkActive="app-nav__link--active">{{ 'nav.dashboard' | translate }}</a>
+      <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/my-tree" routerLinkActive="app-nav__link--active">{{ 'nav.myTree' | translate }}</a>
+      <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/sales-history" routerLinkActive="app-nav__link--active">{{ 'nav.salesHistory' | translate }}</a>
+      <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/plot-bookings" routerLinkActive="app-nav__link--active">{{ 'nav.plotBookings' | translate }}</a>
+      <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/profile" routerLinkActive="app-nav__link--active">{{ 'nav.profileKyc' | translate }}</a>
+      <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/rewards" routerLinkActive="app-nav__link--active">{{ 'nav.rewards' | translate }}</a>
+      <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/digital-id-card" routerLinkActive="app-nav__link--active">{{ 'nav.digitalIdCard' | translate }}</a>
+      <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/income-statement" routerLinkActive="app-nav__link--active">{{ 'nav.incomeStatement' | translate }}</a>
+      <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/payout-history" routerLinkActive="app-nav__link--active">{{ 'nav.payoutHistory' | translate }}</a>
+      <ng-container *ngIf="isAdminFamily">
+        <a class="app-nav__link" routerLink="/admin/associates/new" routerLinkActive="app-nav__link--active">{{ 'nav.provisionAssociate' | translate }}</a>
+        <a class="app-nav__link" routerLink="/settings" routerLinkActive="app-nav__link--active">{{ 'nav.settings' | translate }}</a>
+      </ng-container>
+    </nav>
+  </div>
   <button type="button" class="logout" (click)="onLogout()">{{ 'auth.logout' | translate }}</button>
 </header>
 <router-outlet></router-outlet>

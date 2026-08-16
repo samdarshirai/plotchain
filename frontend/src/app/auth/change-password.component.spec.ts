@@ -28,7 +28,7 @@ describe('ChangePasswordComponent', () => {
   });
 
   it('navigates to /dashboard on successful password change without consulting setup state', () => {
-    fixture.componentInstance.form.setValue({ currentPassword: 'Temp1234!', newPassword: 'NewPassword123!' });
+    fixture.componentInstance.form.setValue({ currentPassword: 'Temp1234!', newPassword: 'NewPassword123!', confirmPassword: 'NewPassword123!' });
     fixture.componentInstance.onSubmit();
 
     const req = httpMock.expectOne('/api/associates/me/password');
@@ -43,7 +43,7 @@ describe('ChangePasswordComponent', () => {
   it('navigates to the first incomplete setup step when an ADMIN completes a forced password change while unlaunched', () => {
     localStorage.setItem('plotchain.auth.role', 'ADMIN');
 
-    fixture.componentInstance.form.setValue({ currentPassword: 'Temp1234!', newPassword: 'NewPassword123!' });
+    fixture.componentInstance.form.setValue({ currentPassword: 'Temp1234!', newPassword: 'NewPassword123!', confirmPassword: 'NewPassword123!' });
     fixture.componentInstance.onSubmit();
 
     httpMock.expectOne('/api/associates/me/password').flush(null);
@@ -59,7 +59,7 @@ describe('ChangePasswordComponent', () => {
   it('navigates to the admin route when an ADMIN completes a forced password change once launched', () => {
     localStorage.setItem('plotchain.auth.role', 'ADMIN');
 
-    fixture.componentInstance.form.setValue({ currentPassword: 'Temp1234!', newPassword: 'NewPassword123!' });
+    fixture.componentInstance.form.setValue({ currentPassword: 'Temp1234!', newPassword: 'NewPassword123!', confirmPassword: 'NewPassword123!' });
     fixture.componentInstance.onSubmit();
 
     httpMock.expectOne('/api/associates/me/password').flush(null);
@@ -73,7 +73,7 @@ describe('ChangePasswordComponent', () => {
   });
 
   it('shows an error on failed password change', () => {
-    fixture.componentInstance.form.setValue({ currentPassword: 'wrong', newPassword: 'NewPassword123!' });
+    fixture.componentInstance.form.setValue({ currentPassword: 'wrong', newPassword: 'NewPassword123!', confirmPassword: 'NewPassword123!' });
     fixture.componentInstance.onSubmit();
 
     const req = httpMock.expectOne('/api/associates/me/password');

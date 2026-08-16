@@ -5,6 +5,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from './auth/auth.service';
 import { ADMIN_FAMILY_ROLES } from './admin/admin.guard';
+import { BrandingBootstrapService } from './core/theme/branding-bootstrap.service';
 
 // /setup is a guided, pre-launch-only wizard (setupModeGuard) with its own dedicated
 // step-nav -- it stays chromeless (no global header) so cross-navigation doesn't undercut the
@@ -23,6 +24,7 @@ export class AppComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);
   private router = inject(Router);
   private document = inject(DOCUMENT);
+  private brandingBootstrap = inject(BrandingBootstrapService);
   private navigationSubscription?: Subscription;
 
   isSetupRoute = false;
@@ -31,6 +33,12 @@ export class AppComponent implements OnInit, OnDestroy {
   get isAdminFamily(): boolean {
     const role = this.authService.getRole();
     return role !== null && ADMIN_FAMILY_ROLES.has(role);
+  }
+
+  // Same source Login reads (see LoginComponent.ngOnInit) so the header's brand mark and the
+  // login screen's brand aside never drift apart.
+  get showSquareLogo(): boolean {
+    return !!this.brandingBootstrap.getLast()?.hasSquareLogo;
   }
 
   ngOnInit(): void {
