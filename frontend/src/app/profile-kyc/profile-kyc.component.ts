@@ -81,7 +81,13 @@ import { toFieldErrors } from '../core/api/field-errors.model';
         <app-field-error [message]="kycUploadError"></app-field-error>
       </section>
     </div>
-  `
+  `,
+  styles: [`
+    .profile-kyc__identity {
+      display: flex;
+      gap: 1.5rem;
+    }
+  `]
 })
 export class ProfileKycComponent implements OnInit {
   private fb = inject(FormBuilder);
