@@ -1767,6 +1767,349 @@ body.admin-associate-active {
   }
 }
 
+// Payout History -- associate-facing wallet balance + own withdrawal-request history
+// (wallet/withdrawal unit 11). Reuses Income Statement's card/table/pagination shell wholesale;
+// the one new signature element is the Balance Ribbon (docs/design/associate_operational_screens/
+// payout_history/DESIGN.md) -- a brand-gradient-washed card with a 5px gradient rail and a large
+// Geist figure, standing in for Income Statement's payslip ladder since a withdrawal carries no
+// deduction breakdown to itemize.
+.payout-history {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  font-family: 'Inter', var(--font-sans);
+}
+
+.payout-history__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.payout-history__title {
+  margin: 0;
+  font-family: 'Geist', var(--font-sans);
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.payout-history__subtitle {
+  margin: 0;
+  max-width: 46rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+// ---- Signature element: the Balance Ribbon ----
+.payout-history__wallet-balance.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 1.75rem 2rem 1.75rem 2.25rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--brand-primary-soft), var(--surface-card) 60%);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 5px;
+    background: var(--brand-gradient);
+  }
+}
+
+.payout-history__balance-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.payout-history__balance-value {
+  font-family: 'Geist', var(--font-sans);
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+// Degraded state (DESIGN.md's recommended addition): a failed wallet-balance lookup dims the
+// ribbon to read as "unavailable" rather than "zero", without blocking the withdrawal-history
+// table below it (that load is an independent request -- see PayoutHistoryComponent.loadWallet()).
+.payout-history__wallet-balance--degraded.card {
+  background: var(--surface-card);
+  box-shadow: none;
+
+  &::before {
+    background: var(--border-subtle);
+  }
+}
+
+.payout-history__wallet-balance--degraded .payout-history__balance-value {
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.payout-history__balance-hint {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+// ---- end Balance Ribbon ----
+
+.payout-history__filters {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--surface-raised);
+  border-radius: 16px;
+}
+
+.payout-history__filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 220px;
+  max-width: 280px;
+  flex: 1 1 220px;
+
+  label {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  select {
+    background: var(--surface-card);
+  }
+}
+
+.payout-history__load-error {
+  margin: 0;
+}
+
+.payout-history .card:not(.payout-history__wallet-balance) {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+  padding: 0;
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+.payout-history .editable-table {
+  margin: 0;
+  min-width: 760px;
+}
+
+.payout-history .editable-table thead th {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--surface-card);
+  white-space: nowrap;
+}
+
+.payout-history .editable-table tbody td {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.payout-history .editable-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+// Amount column (1st) -- mono, tabular-nums, right-aligned. Plain figure, not a payslip-ladder
+// chip -- there is no deduction breakdown to show at withdrawal time (see the plan's Design
+// decision section).
+.payout-history .editable-table td:nth-child(1) {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+// Status column (2nd) -- raw enum text, mono uppercase, uniform weight (no per-value color hook,
+// same documented EditableTableComponent read-only-cell constraint every prior screen notes).
+.payout-history .editable-table td:nth-child(2) {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+// Reason column (3rd) -- prose, muted
+.payout-history .editable-table td:nth-child(3) {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  max-width: 220px;
+}
+
+// Bank Reference column (4th) -- mono, muted, code/reference face; dash until DISBURSED per
+// Global Constraints (the frontend renders whatever the API returns, never re-derives DISBURSED
+// client-side).
+.payout-history .editable-table td:nth-child(4) {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+// Requested At / Decided At / Disbursed At columns (5th-7th) -- tabular-nums, muted
+.payout-history .editable-table td:nth-child(5),
+.payout-history .editable-table td:nth-child(6),
+.payout-history .editable-table td:nth-child(7) {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.payout-history .editable-table__empty {
+  padding: 3rem 1.5rem;
+}
+
+.payout-history__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 0 0.25rem;
+}
+
+.payout-history__page-indicator {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.payout-history__pagination .brand-button--secondary {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 768px) {
+  .payout-history__wallet-balance.card {
+    padding: 1.5rem 1.5rem 1.5rem 1.75rem;
+  }
+
+  .payout-history__balance-value {
+    font-size: 2rem;
+  }
+
+  .payout-history__filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .payout-history__filter-field {
+    min-width: 0;
+    max-width: none;
+  }
+
+  .payout-history .editable-table {
+    table-layout: fixed;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .payout-history .editable-table thead {
+    display: none;
+  }
+
+  .payout-history .editable-table tbody tr {
+    display: block;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .payout-history .editable-table tbody td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.375rem 0;
+    border-bottom: none;
+    text-align: right;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+
+    > * {
+      min-width: 0;
+    }
+
+    &::before {
+      content: attr(data-label);
+      flex: 0 0 auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-align: left;
+    }
+  }
+
+  .payout-history .editable-table tbody td:first-child {
+    font-family: 'Geist', var(--font-sans);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+    white-space: normal;
+    color: var(--text-primary);
+  }
+
+  .payout-history .editable-table td:nth-child(2),
+  .payout-history .editable-table td:nth-child(3),
+  .payout-history .editable-table td:nth-child(4),
+  .payout-history .editable-table td:nth-child(5),
+  .payout-history .editable-table td:nth-child(6),
+  .payout-history .editable-table td:nth-child(7) {
+    text-align: right;
+    white-space: normal;
+  }
+
+  .payout-history__pagination .brand-button--secondary {
+    min-height: 44px;
+  }
+}
+
 // Tree Explorer -- visualizes the associate binary tree as a free-form, pannable/zoomable
 // org-chart canvas (dot-grid background, orthogonal SVG connectors, absolutely-positioned
 // cards), matching the tree-explorer.html design mockup while reusing this app's own tokens
