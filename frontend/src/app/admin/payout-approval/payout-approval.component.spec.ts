@@ -96,4 +96,156 @@ describe('PayoutApprovalComponent', () => {
   it('formats the associate column as "userId — name"', () => {
     expect(fixture.componentInstance.registerRows[0]['associate']).toBe('VP00001 — Jane Doe');
   });
+
+  it('shows Approve and Reject actions for a REQUESTED row', () => {
+    fixture.detectChanges();
+    const approveButton: HTMLButtonElement | null = fixture.nativeElement.querySelector('.payout-approval__approve-action');
+    const rejectButton: HTMLButtonElement | null = fixture.nativeElement.querySelector('.payout-approval__reject-action');
+    expect(approveButton).toBeTruthy();
+    expect(rejectButton).toBeTruthy();
+  });
+
+  it('approves a REQUESTED row with no reason and reloads the page', () => {
+    fixture.componentInstance.approve('w1');
+
+    const req = httpMock.expectOne('/api/admin/withdrawals/w1/decision');
+    expect(req.request.body).toEqual({ decision: 'APPROVED', reason: undefined });
+    req.flush({
+      id: 'w1', associateId: 'a1', associateUserId: 'VP00001', associateName: 'Jane Doe',
+      amount: 5000, status: 'APPROVED', reason: null, bankReference: null,
+      requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: null
+    });
+
+    const reload = httpMock.expectOne('/api/admin/withdrawals?page=0&size=20');
+    reload.flush({ requests: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('rejects a REQUESTED row with a reason', () => {
+    fixture.componentInstance.decisionReasons['w1'] = 'Duplicate request';
+    fixture.componentInstance.reject('w1');
+
+    const req = httpMock.expectOne('/api/admin/withdrawals/w1/decision');
+    expect(req.request.body).toEqual({ decision: 'REJECTED', reason: 'Duplicate request' });
+    req.flush({
+      id: 'w1', associateId: 'a1', associateUserId: 'VP00001', associateName: 'Jane Doe',
+      amount: 5000, status: 'REJECTED', reason: 'Duplicate request', bankReference: null,
+      requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: null
+    });
+
+    const reload = httpMock.expectOne('/api/admin/withdrawals?page=0&size=20');
+    reload.flush({ requests: [], page: 0, size: 20, totalElements: 0 });
+
+    expect(fixture.componentInstance.decisionReasons['w1']).toBeUndefined();
+  });
+
+  it('shows Cancel and Disburse actions for an APPROVED row', () => {
+    fixture.componentInstance.onStatusChange('APPROVED');
+    httpMock.expectOne(r => r.params.get('status') === 'APPROVED').flush({
+      requests: [{
+        id: 'w2', associateId: 'a1', associateUserId: 'VP00001', associateName: 'Jane Doe',
+        amount: 5000, status: 'APPROVED', reason: null, bankReference: null,
+        requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: null
+      }],
+      page: 0, size: 20, totalElements: 1
+    });
+    fixture.detectChanges();
+
+    const cancelButton: HTMLButtonElement | null = fixture.nativeElement.querySelector('.payout-approval__cancel-action');
+    const disburseButton: HTMLButtonElement | null = fixture.nativeElement.querySelector('.payout-approval__disburse-action');
+    expect(cancelButton).toBeTruthy();
+    expect(disburseButton).toBeTruthy();
+  });
+
+  it('cancels an APPROVED row with a reason using the same decide() call as reject', () => {
+    fixture.componentInstance.decisionReasons['w2'] = 'Associate requested cancellation';
+    fixture.componentInstance.reject('w2');
+
+    const req = httpMock.expectOne('/api/admin/withdrawals/w2/decision');
+    expect(req.request.body).toEqual({ decision: 'REJECTED', reason: 'Associate requested cancellation' });
+    req.flush({
+      id: 'w2', associateId: 'a1', associateUserId: 'VP00001', associateName: 'Jane Doe',
+      amount: 5000, status: 'REJECTED', reason: 'Associate requested cancellation', bankReference: null,
+      requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: null
+    });
+
+    httpMock.expectOne('/api/admin/withdrawals?page=0&size=20').flush({ requests: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('disburses an APPROVED row with a bank reference', () => {
+    fixture.componentInstance.bankReferences['w2'] = 'NEFT-99887';
+    fixture.componentInstance.disburse('w2');
+
+    const req = httpMock.expectOne('/api/admin/withdrawals/w2/disburse');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ bankReference: 'NEFT-99887' });
+    req.flush({
+      id: 'w2', associateId: 'a1', associateUserId: 'VP00001', associateName: 'Jane Doe',
+      amount: 5000, status: 'DISBURSED', reason: null, bankReference: 'NEFT-99887',
+      requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: '2026-08-15T02:00:00Z'
+    });
+
+    httpMock.expectOne('/api/admin/withdrawals?page=0&size=20').flush({ requests: [], page: 0, size: 20, totalElements: 0 });
+
+    expect(fixture.componentInstance.bankReferences['w2']).toBeUndefined();
+  });
+
+  it('shows no action buttons for a REJECTED or DISBURSED row', () => {
+    fixture.componentInstance.onStatusChange('REJECTED');
+    httpMock.expectOne(r => r.params.get('status') === 'REJECTED').flush({
+      requests: [{
+        id: 'w3', associateId: 'a1', associateUserId: 'VP00001', associateName: 'Jane Doe',
+        amount: 5000, status: 'REJECTED', reason: 'No longer needed', bankReference: null,
+        requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: null
+      }],
+      page: 0, size: 20, totalElements: 1
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.payout-approval__approve-action')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.payout-approval__reject-action')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.payout-approval__cancel-action')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.payout-approval__disburse-action')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.payout-approval__status-tag')?.textContent?.trim()).toBeTruthy();
+  });
+
+  it('shows an action error when a decision fails, without silently doing nothing', () => {
+    fixture.componentInstance.approve('w1');
+
+    const req = httpMock.expectOne('/api/admin/withdrawals/w1/decision');
+    req.flush({ error: 'boom' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.actionError).toBe(true);
+    const errorEl: HTMLElement | null = fixture.nativeElement.querySelector('.payout-approval__action-error');
+    expect(errorEl?.textContent?.trim()).toBeTruthy();
+  });
+
+  it('shows an action error when a disburse fails, without silently doing nothing', () => {
+    fixture.componentInstance.bankReferences['w2'] = 'NEFT-99887';
+    fixture.componentInstance.disburse('w2');
+
+    const req = httpMock.expectOne('/api/admin/withdrawals/w2/disburse');
+    req.flush({ error: 'boom' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.actionError).toBe(true);
+  });
+
+  it('keeps each row\'s reason/bank-reference state independent', () => {
+    fixture.componentInstance.decisionReasons['w1'] = 'Reason for w1';
+    fixture.componentInstance.decisionReasons['w2'] = 'Reason for w2';
+    fixture.componentInstance.bankReferences['w2'] = 'NEFT-1';
+
+    fixture.componentInstance.reject('w1');
+    httpMock.expectOne('/api/admin/withdrawals/w1/decision').flush({
+      id: 'w1', associateId: 'a1', associateUserId: 'VP00001', associateName: 'Jane Doe',
+      amount: 5000, status: 'REJECTED', reason: 'Reason for w1', bankReference: null,
+      requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: null
+    });
+    httpMock.expectOne('/api/admin/withdrawals?page=0&size=20').flush({ requests: [], page: 0, size: 20, totalElements: 0 });
+
+    expect(fixture.componentInstance.decisionReasons['w1']).toBeUndefined();
+    expect(fixture.componentInstance.decisionReasons['w2']).toBe('Reason for w2');
+    expect(fixture.componentInstance.bankReferences['w2']).toBe('NEFT-1');
+  });
 });

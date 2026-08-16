@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
 import { PayoutApprovalService } from './payout-approval.service';
@@ -14,7 +15,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-payout-approval',
   standalone: true,
-  imports: [CommonModule, TranslateModule, RouterLink, EditableTableComponent, InlineBannerComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, RouterLink, EditableTableComponent, InlineBannerComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="payout-approval">
@@ -52,15 +53,65 @@ const PAGE_SIZE = 20;
       </div>
 
       <app-inline-banner *ngIf="loadError" tone="danger" [dismissible]="true" class="payout-approval__load-error" (dismissed)="loadError = false">{{ 'admin.payoutApproval.loadError' | translate }}</app-inline-banner>
+      <app-inline-banner *ngIf="actionError" tone="danger" [dismissible]="true" class="payout-approval__action-error" (dismissed)="actionError = false">{{ 'admin.payoutApproval.actionError' | translate }}</app-inline-banner>
 
       <div class="card">
         <app-editable-table
           [readOnly]="true"
           [columns]="registerColumns"
           [rows]="registerRows"
+          [actionTemplate]="actionsTpl"
           [emptyStateLabel]="'admin.payoutApproval.emptyState' | translate"
         ></app-editable-table>
       </div>
+      <ng-template #actionsTpl let-i="index">
+        <ng-container [ngSwitch]="page!.requests[i].status">
+          <div class="payout-approval__action-stack" *ngSwitchCase="'REQUESTED'">
+            <div class="payout-approval__action-group">
+              <button type="button" class="payout-approval__approve-action brand-button" (click)="approve(page!.requests[i].id)">
+                {{ 'admin.payoutApproval.approveAction' | translate }}
+              </button>
+            </div>
+            <div class="payout-approval__action-group">
+              <input
+                type="text"
+                class="payout-approval__reason-input"
+                [(ngModel)]="decisionReasons[page!.requests[i].id]"
+                [placeholder]="'admin.payoutApproval.rejectReasonPlaceholder' | translate"
+              />
+              <button type="button" class="payout-approval__reject-action brand-button brand-button--danger" (click)="reject(page!.requests[i].id)">
+                {{ 'admin.payoutApproval.rejectAction' | translate }}
+              </button>
+            </div>
+          </div>
+          <div class="payout-approval__action-stack" *ngSwitchCase="'APPROVED'">
+            <div class="payout-approval__action-group">
+              <input
+                type="text"
+                class="payout-approval__bank-reference-input"
+                [(ngModel)]="bankReferences[page!.requests[i].id]"
+                [placeholder]="'admin.payoutApproval.bankReferencePlaceholder' | translate"
+              />
+              <button type="button" class="payout-approval__disburse-action brand-button" (click)="disburse(page!.requests[i].id)">
+                {{ 'admin.payoutApproval.disburseAction' | translate }}
+              </button>
+            </div>
+            <div class="payout-approval__action-group">
+              <input
+                type="text"
+                class="payout-approval__reason-input"
+                [(ngModel)]="decisionReasons[page!.requests[i].id]"
+                [placeholder]="'admin.payoutApproval.cancelReasonPlaceholder' | translate"
+              />
+              <button type="button" class="payout-approval__cancel-action brand-button brand-button--danger" (click)="reject(page!.requests[i].id)">
+                {{ 'admin.payoutApproval.cancelAction' | translate }}
+              </button>
+            </div>
+          </div>
+          <span *ngSwitchCase="'REJECTED'" class="payout-approval__status-tag payout-approval__status-tag--rejected">{{ 'admin.payoutApproval.rejectedTag' | translate }}</span>
+          <span *ngSwitchCase="'DISBURSED'" class="payout-approval__status-tag payout-approval__status-tag--disbursed">{{ 'admin.payoutApproval.disbursedTag' | translate }}</span>
+        </ng-container>
+      </ng-template>
 
       <div class="payout-approval__pagination" *ngIf="page">
         <button type="button" class="brand-button brand-button--secondary" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
@@ -85,9 +136,12 @@ export class PayoutApprovalComponent implements OnInit {
 
   page: AdminWithdrawalPage | null = null;
   loadError = false;
+  actionError = false;
   associates: AssociateSummary[] = [];
   registerColumns: EditableTableColumn[] = [];
   registerRows: Record<string, string>[] = [];
+  decisionReasons: Record<string, string> = {};
+  bankReferences: Record<string, string> = {};
   private associateId = '';
   private status = '';
 
@@ -109,7 +163,8 @@ export class PayoutApprovalComponent implements OnInit {
       { key: 'status', label: this.translate.instant('admin.payoutApproval.columnStatus'), type: 'text' },
       { key: 'reason', label: this.translate.instant('admin.payoutApproval.columnReason'), type: 'text' },
       { key: 'bankReference', label: this.translate.instant('admin.payoutApproval.columnBankReference'), type: 'text' },
-      { key: 'requestedAt', label: this.translate.instant('admin.payoutApproval.columnRequestedAt'), type: 'text' }
+      { key: 'requestedAt', label: this.translate.instant('admin.payoutApproval.columnRequestedAt'), type: 'text' },
+      { key: 'actions', label: this.translate.instant('admin.payoutApproval.columnActions'), type: 'action' }
     ];
     this.adminService.listAssociates().subscribe(associates => (this.associates = associates));
     this.loadPage(0);
@@ -127,6 +182,36 @@ export class PayoutApprovalComponent implements OnInit {
 
   goToPage(page: number): void {
     this.loadPage(page);
+  }
+
+  approve(id: string): void {
+    this.actionError = false;
+    this.payoutApprovalService.decide(id, 'APPROVED').subscribe({
+      next: () => this.loadPage(this.page?.page ?? 0),
+      error: () => (this.actionError = true)
+    });
+  }
+
+  reject(id: string): void {
+    this.actionError = false;
+    this.payoutApprovalService.decide(id, 'REJECTED', this.decisionReasons[id]).subscribe({
+      next: () => {
+        delete this.decisionReasons[id];
+        this.loadPage(this.page?.page ?? 0);
+      },
+      error: () => (this.actionError = true)
+    });
+  }
+
+  disburse(id: string): void {
+    this.actionError = false;
+    this.payoutApprovalService.disburse(id, this.bankReferences[id] ?? '').subscribe({
+      next: () => {
+        delete this.bankReferences[id];
+        this.loadPage(this.page?.page ?? 0);
+      },
+      error: () => (this.actionError = true)
+    });
   }
 
   protected loadPage(page: number): void {
