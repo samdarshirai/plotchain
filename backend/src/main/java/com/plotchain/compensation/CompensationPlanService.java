@@ -248,7 +248,7 @@ public class CompensationPlanService {
             return List.of();
         }
         List<RoyaltyBonusRate> entities = inputs.stream()
-            .map(input -> new RoyaltyBonusRate(UUID.randomUUID(), planVersionId, input.rankId(), input.royaltyPct()))
+            .map(input -> new RoyaltyBonusRate(UUID.randomUUID(), planVersionId, input.volumeThreshold(), input.royaltyPct()))
             .collect(Collectors.toList());
         entities.forEach(royaltyBonusRateRepository::save);
         return entities;
@@ -307,7 +307,7 @@ public class CompensationPlanService {
             .collect(Collectors.toMap(RankTier::getId, RankTier::getName));
 
         List<RoyaltyBonusRateDto> royaltyDtos = rates.stream()
-            .map(r -> new RoyaltyBonusRateDto(r.getRankId(), rankNamesById.get(r.getRankId()), r.getRoyaltyPct()))
+            .map(r -> new RoyaltyBonusRateDto(r.getVolumeThreshold(), r.getRoyaltyPct()))
             .collect(Collectors.toList());
 
         List<RewardTierDto> tierDtos = tiers.stream()

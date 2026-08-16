@@ -33,6 +33,7 @@ import org.springframework.data.domain.PageRequest;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -337,6 +338,19 @@ class CycleServiceTest {
             Instant.now(), null);
     }
 
+    // Doc-fixture-accuracy tests use compensation-plan-reference.md's real published rates
+    // (direct 6%, matching 7%, sponsor 11%, tds 2%, admin-without-pan 15%) instead of
+    // planVersionFixture()'s arbitrary round numbers, so expected amounts match the doc's own
+    // worked Round 1 / Round 2 examples exactly.
+    private CompensationPlanVersion referencePlanVersionFixture() {
+        return new CompensationPlanVersion(
+            UUID.randomUUID(), "reference", LocalDate.of(2026, 1, 1),
+            new BigDecimal("6.00"), new BigDecimal("7.00"), new BigDecimal("11.00"),
+            new BigDecimal("2.00"), BigDecimal.ZERO, new BigDecimal("15.00"),
+            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY,
+            Instant.now(), null);
+    }
+
     private LedgerEntry matchingEntryFixture(UUID associateId, UUID cycleId, BigDecimal grossAmount) {
         LedgerEntry entry = new LedgerEntry();
         entry.setId(UUID.randomUUID());
@@ -361,8 +375,8 @@ class CycleServiceTest {
         return sale;
     }
 
-    private RoyaltyBonusRate royaltyBonusRateFixture(UUID planVersionId, UUID rankId, BigDecimal royaltyPct) {
-        return new RoyaltyBonusRate(UUID.randomUUID(), planVersionId, rankId, royaltyPct);
+    private RoyaltyBonusRate royaltyBonusRateFixture(UUID planVersionId, BigDecimal volumeThreshold, BigDecimal royaltyPct) {
+        return new RoyaltyBonusRate(UUID.randomUUID(), planVersionId, volumeThreshold, royaltyPct);
     }
 
     private RewardTier rewardTierFixture(UUID planVersionId, int tierLevel, BigDecimal volumeThreshold, BigDecimal cashReward) {
@@ -420,6 +434,90 @@ class CycleServiceTest {
         assertThat(entry.getNetAmount()).isEqualByComparingTo("4.55");
         assertThat(entry.getStatus()).isEqualTo(LedgerEntryStatus.PENDING);
         assertThat(entry.getCreatedAt()).isNotNull();
+    }
+
+    @Test
+    void closeCreditsMatchingIncomeMatchingRound1DocFixture() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setKycStatus(KycStatus.VERIFIED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        // Round 1 doc fixture: A and B each close ₹10,00,000.
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("1000000")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("1000000"))
+        ));
+
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(referencePlanVersionFixture()));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository).save(entryCaptor.capture());
+        LedgerEntry entry = entryCaptor.getValue();
+
+        // min(10,00,000, 10,00,000) = 10,00,000 matched. gross = 10,00,000 * 7% = 70,000
+        assertThat(entry.getGrossAmount()).isEqualByComparingTo("70000.00");
+    }
+
+    // Documented gap, not a spec: Associate has no pan_number field, so applyDeductions always
+    // uses adminChargeWithoutPanPct regardless of what adminChargeWithPanPct is configured to
+    // (compensation-plan-reference.md §2's 5%-with-PAN / 15%-without-PAN distinction is not wired
+    // up anywhere). This pins that current behavior as a baseline, not an intended rule -- no
+    // production change accompanies it.
+    @Test
+    void applyDeductionsAlwaysUsesTheWithoutPanRateEvenWhenAWithPanRateIsConfigured() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setKycStatus(KycStatus.VERIFIED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
+        ));
+
+        // adminChargeWithPanPct (5%, doc's PAN-on-file rate) is clearly distinct from
+        // adminChargeWithoutPanPct (15%, doc's no-PAN rate) so a wrong pick is unmistakable.
+        CompensationPlanVersion planVersion = new CompensationPlanVersion(
+            UUID.randomUUID(), "pan-gap", LocalDate.of(2026, 1, 1),
+            BigDecimal.ZERO, new BigDecimal("10.00"), BigDecimal.ZERO,
+            new BigDecimal("2.00"), new BigDecimal("5.00"), new BigDecimal("15.00"),
+            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY,
+            Instant.now(), null);
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersion));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository).save(entryCaptor.capture());
+        LedgerEntry entry = entryCaptor.getValue();
+
+        // gross = min(100,50)=50 * 10% = 5.00; admin deduction always uses the 15% without-PAN
+        // rate = 0.75, never the 5% with-PAN rate (which would be 0.25).
+        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("0.75");
     }
 
     @Test
@@ -997,6 +1095,54 @@ class CycleServiceTest {
     }
 
     @Test
+    void closeCreditsSponsorMatchingMatchingRound2DocFixture() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository);
+
+        // "You" sponsors A and B directly. A's own Matching gross this cycle is ₹1,40,000
+        // (Round 2 doc fixture), B's is ₹1,19,000.
+        Associate you = associateFixture(null, null);
+        you.setKycStatus(KycStatus.VERIFIED);
+        Associate a = associateFixture(null, null);
+        a.setSponsorId(you.getId());
+        Associate b = associateFixture(null, null);
+        b.setSponsorId(you.getId());
+        when(associateRepository.findAll()).thenReturn(List.of(you, a, b));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(referencePlanVersionFixture()));
+
+        LedgerEntry aMatchingEntry = matchingEntryFixture(a.getId(), cycle.getId(), new BigDecimal("140000.00"));
+        LedgerEntry bMatchingEntry = matchingEntryFixture(b.getId(), cycle.getId(), new BigDecimal("119000.00"));
+        when(associateRepository.findBySponsorId(you.getId())).thenReturn(List.of(a, b));
+        when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(a.getId(), cycle.getId(), IncomeType.MATCHING))
+            .thenReturn(Optional.of(aMatchingEntry));
+        when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(b.getId(), cycle.getId(), IncomeType.MATCHING))
+            .thenReturn(Optional.of(bMatchingEntry));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(entryCaptor.capture());
+        List<LedgerEntry> sponsorEntries = entryCaptor.getAllValues();
+
+        BigDecimal fromA = sponsorEntries.stream()
+            .filter(e -> e.getSourceRef().equals(aMatchingEntry.getId())).findFirst().orElseThrow().getGrossAmount();
+        BigDecimal fromB = sponsorEntries.stream()
+            .filter(e -> e.getSourceRef().equals(bMatchingEntry.getId())).findFirst().orElseThrow().getGrossAmount();
+        // 1,40,000 * 11% = 15,400; 1,19,000 * 11% = 13,090; total = 28,490.
+        assertThat(fromA).isEqualByComparingTo("15400.00");
+        assertThat(fromB).isEqualByComparingTo("13090.00");
+        assertThat(fromA.add(fromB)).isEqualByComparingTo("28490.00");
+    }
+
+    @Test
     void closeWritesOneSponsorMatchingEntryPerDirectSponseeNotAggregated() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
@@ -1253,16 +1399,14 @@ class CycleServiceTest {
     }
 
     @Test
-    void closeCreditsRoyaltyForAnAssociateWithARoyaltyRateConfiguredForTheirRank() {
+    void closeCreditsRoyaltyUsingTheVolumeSlabRateForTheAssociatesMatchedVolume() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
             rewardTierRepository);
 
-        UUID bronzeId = UUID.randomUUID();
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
         root.setKycStatus(KycStatus.VERIFIED);
-        root.setRankId(bronzeId);
         Associate left = associateFixture(root.getId(), "L");
         Associate right = associateFixture(root.getId(), "R");
         when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
@@ -1278,10 +1422,14 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
 
+        CompensationPlanVersion planVersion = planVersionFixture();
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
-            .thenReturn(Optional.of(planVersionFixture()));
-        when(royaltyBonusRateRepository.findByPlanVersionIdAndRankId(any(UUID.class), eq(bronzeId)))
-            .thenReturn(Optional.of(royaltyBonusRateFixture(UUID.randomUUID(), bronzeId, new BigDecimal("3.00"))));
+            .thenReturn(Optional.of(planVersion));
+        // Volume-slab lookup: "highest threshold not exceeded" against the associate's own
+        // matched volume this cycle (50), not their rank.
+        when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+            planVersion.getId(), new BigDecimal("50")))
+            .thenReturn(Optional.of(royaltyBonusRateFixture(planVersion.getId(), new BigDecimal("40"), new BigDecimal("3.00"))));
 
         service.close(cycle.getId());
 
@@ -1312,7 +1460,7 @@ class CycleServiceTest {
     }
 
     @Test
-    void closeWritesNoRoyaltyEntryWhenNoRateIsConfiguredForTheAssociatesRank() {
+    void closeWritesNoRoyaltyEntryWhenNoRateIsConfiguredForTheAssociatesMatchedVolume() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
             rewardTierRepository);
@@ -1320,7 +1468,6 @@ class CycleServiceTest {
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
         root.setKycStatus(KycStatus.VERIFIED);
-        root.setRankId(UUID.randomUUID());
         Associate left = associateFixture(root.getId(), "L");
         Associate right = associateFixture(root.getId(), "R");
         when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
@@ -1336,68 +1483,12 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
             .thenReturn(Optional.of(planVersionFixture()));
         // Deliberately NOT stubbing royaltyBonusRateRepository -- Mockito's unstubbed default for
-        // an Optional-returning method is Optional.empty(), i.e. "no rate configured for this rank."
+        // an Optional-returning method is Optional.empty(), i.e. "no slab rate configured at or
+        // below this associate's matched volume."
 
         service.close(cycle.getId());
 
         verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.ROYALTY));
-    }
-
-    @Test
-    void closeUsesThePostAdvancementRankWhenLookingUpTheRoyaltyRate() {
-        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository);
-
-        UUID bronzeId = UUID.randomUUID();
-        UUID silverId = UUID.randomUUID();
-        UUID goldId = UUID.randomUUID();
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(rankTiersFixture(bronzeId, silverId, goldId));
-
-        // Starts at Bronze, 80 pre-existing cumulativeMatchedVolume (below Silver's 100
-        // threshold) -- identical setup to closeAdvancesRankWhenCumulativeMatchedVolumeCrossesOneThreshold
-        // (unit 6's own test), so this cycle's matched volume of 50 pushes cumulative to 130,
-        // crossing into Silver BEFORE Royalty's lookup runs.
-        Associate root = associateFixture(null, null);
-        root.setRole(AssociateRole.ASSOCIATE);
-        root.setKycStatus(KycStatus.VERIFIED);
-        root.setRankId(bronzeId);
-        root.setCumulativeMatchedVolume(new BigDecimal("80"));
-        Associate left = associateFixture(root.getId(), "L");
-        Associate right = associateFixture(root.getId(), "R");
-        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
-
-        Cycle cycle = newCycle(CycleStatus.OPEN);
-        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
-        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
-        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
-            saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
-            saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
-        ));
-
-        CompensationPlanVersion planVersion = planVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
-            .thenReturn(Optional.of(planVersion));
-        // A rate exists for Silver (the NEW, post-advancement rank) but deliberately NOT for
-        // Bronze (the OLD, pre-cycle rank) -- if creditRoyalty read associate.getRankId() before
-        // advanceRanks ran (or cached a stale value), this lookup would miss and no entry would
-        // be written, failing this test.
-        when(royaltyBonusRateRepository.findByPlanVersionIdAndRankId(planVersion.getId(), silverId))
-            .thenReturn(Optional.of(royaltyBonusRateFixture(planVersion.getId(), silverId, new BigDecimal("5.00"))));
-
-        service.close(cycle.getId());
-
-        assertThat(root.getRankId()).isEqualTo(silverId); // sanity: advancement itself happened
-        verify(royaltyBonusRateRepository).findByPlanVersionIdAndRankId(planVersion.getId(), silverId);
-        verify(royaltyBonusRateRepository, never()).findByPlanVersionIdAndRankId(planVersion.getId(), bronzeId);
-
-        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
-        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(entryCaptor.capture());
-        LedgerEntry royaltyEntry = entryCaptor.getAllValues().stream()
-            .filter(e -> e.getIncomeType() == IncomeType.ROYALTY).findFirst().orElseThrow();
-        // matched volume 50 * Silver's 5% = 2.500000
-        assertThat(royaltyEntry.getGrossAmount()).isEqualByComparingTo("2.50");
     }
 
     @Test
@@ -1472,11 +1563,9 @@ class CycleServiceTest {
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
             rewardTierRepository);
 
-        UUID bronzeId = UUID.randomUUID();
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
         root.setKycStatus(KycStatus.PENDING); // not verified
-        root.setRankId(bronzeId);
         Associate left = associateFixture(root.getId(), "L");
         Associate right = associateFixture(root.getId(), "R");
         when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
@@ -1489,10 +1578,12 @@ class CycleServiceTest {
             saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
+        CompensationPlanVersion planVersion = planVersionFixture();
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
-            .thenReturn(Optional.of(planVersionFixture()));
-        when(royaltyBonusRateRepository.findByPlanVersionIdAndRankId(any(UUID.class), eq(bronzeId)))
-            .thenReturn(Optional.of(royaltyBonusRateFixture(UUID.randomUUID(), bronzeId, new BigDecimal("3.00"))));
+            .thenReturn(Optional.of(planVersion));
+        when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+            planVersion.getId(), new BigDecimal("50")))
+            .thenReturn(Optional.of(royaltyBonusRateFixture(planVersion.getId(), new BigDecimal("40"), new BigDecimal("3.00"))));
 
         service.close(cycle.getId());
 
@@ -1509,11 +1600,9 @@ class CycleServiceTest {
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
             rewardTierRepository);
 
-        UUID bronzeId = UUID.randomUUID();
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
         root.setKycStatus(KycStatus.VERIFIED);
-        root.setRankId(bronzeId);
         Associate left = associateFixture(root.getId(), "L");
         Associate right = associateFixture(root.getId(), "R");
         when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
@@ -1526,10 +1615,12 @@ class CycleServiceTest {
             saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
+        CompensationPlanVersion planVersion = planVersionFixture();
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
-            .thenReturn(Optional.of(planVersionFixture()));
-        when(royaltyBonusRateRepository.findByPlanVersionIdAndRankId(any(UUID.class), eq(bronzeId)))
-            .thenReturn(Optional.of(royaltyBonusRateFixture(UUID.randomUUID(), bronzeId, new BigDecimal("3.00"))));
+            .thenReturn(Optional.of(planVersion));
+        when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+            planVersion.getId(), new BigDecimal("50")))
+            .thenReturn(Optional.of(royaltyBonusRateFixture(planVersion.getId(), new BigDecimal("40"), new BigDecimal("3.00"))));
         // The LegVolume row's id is only generated at runtime inside close(), so match on the
         // known associateId/cycleId/incomeType and accept any sourceRef -- same pattern unit 5's
         // own idempotency test uses. creditMatchingIncome's own existsBy check (MATCHING) is
@@ -1556,11 +1647,9 @@ class CycleServiceTest {
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
             rewardTierRepository);
 
-        UUID bronzeId = UUID.randomUUID();
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
         root.setKycStatus(KycStatus.VERIFIED);
-        root.setRankId(bronzeId);
         Associate left = associateFixture(root.getId(), "L");
         Associate right = associateFixture(root.getId(), "R");
         when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
@@ -1573,12 +1662,14 @@ class CycleServiceTest {
             saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
+        CompensationPlanVersion planVersion = planVersionFixture();
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
-            .thenReturn(Optional.of(planVersionFixture()));
+            .thenReturn(Optional.of(planVersion));
         // royaltyPct = 0 -- a valid admin configuration for a rate row, distinct from "no rate
         // configured at all" (the empty-Optional case tested above).
-        when(royaltyBonusRateRepository.findByPlanVersionIdAndRankId(any(UUID.class), eq(bronzeId)))
-            .thenReturn(Optional.of(royaltyBonusRateFixture(UUID.randomUUID(), bronzeId, BigDecimal.ZERO)));
+        when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+            planVersion.getId(), new BigDecimal("50")))
+            .thenReturn(Optional.of(royaltyBonusRateFixture(planVersion.getId(), new BigDecimal("40"), BigDecimal.ZERO)));
 
         service.close(cycle.getId());
 
@@ -1591,11 +1682,9 @@ class CycleServiceTest {
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
             rewardTierRepository);
 
-        UUID bronzeId = UUID.randomUUID();
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
         root.setKycStatus(KycStatus.VERIFIED);
-        root.setRankId(bronzeId);
         Associate left = associateFixture(root.getId(), "L");
         Associate right = associateFixture(root.getId(), "R");
         when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
@@ -1615,6 +1704,126 @@ class CycleServiceTest {
         service.close(cycle.getId());
 
         verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
+    }
+
+    @Test
+    void closeCreditsRoyaltyMatchingRound2DocFixtureFortyLakhSlab() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setRole(AssociateRole.ASSOCIATE);
+        root.setKycStatus(KycStatus.VERIFIED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        // Round 2 doc fixture: left leg ₹50,00,000, right leg ₹40,00,000 -> matched volume
+        // min(50L, 40L) = ₹40,00,000.
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("5000000")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("4000000"))
+        ));
+
+        CompensationPlanVersion planVersion = referencePlanVersionFixture();
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersion));
+        // ₹40L slab (1.5%) must win over the lower ₹20L slab (1%) -- "highest threshold not exceeded".
+        when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+            planVersion.getId(), new BigDecimal("4000000")))
+            .thenReturn(Optional.of(royaltyBonusRateFixture(planVersion.getId(), new BigDecimal("4000000"), new BigDecimal("1.5"))));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.atLeastOnce()).save(entryCaptor.capture());
+        LedgerEntry royaltyEntry = entryCaptor.getAllValues().stream()
+            .filter(e -> e.getIncomeType() == IncomeType.ROYALTY).findFirst().orElseThrow();
+        // 40,00,000 * 1.5% = 60,000
+        assertThat(royaltyEntry.getGrossAmount()).isEqualByComparingTo("60000.00");
+    }
+
+    @Test
+    void closeCreditsRoyaltyAtExactSlabBoundaryUsesThatSlabsRate() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setRole(AssociateRole.ASSOCIATE);
+        root.setKycStatus(KycStatus.VERIFIED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        // Matched volume lands EXACTLY on the ₹20,00,000 slab boundary -- pins the repository
+        // query's "LessThanEqual" (inclusive) semantics.
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("2000000")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("3000000"))
+        ));
+
+        CompensationPlanVersion planVersion = referencePlanVersionFixture();
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersion));
+        when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+            planVersion.getId(), new BigDecimal("2000000")))
+            .thenReturn(Optional.of(royaltyBonusRateFixture(planVersion.getId(), new BigDecimal("2000000"), new BigDecimal("1.0"))));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.atLeastOnce()).save(entryCaptor.capture());
+        LedgerEntry royaltyEntry = entryCaptor.getAllValues().stream()
+            .filter(e -> e.getIncomeType() == IncomeType.ROYALTY).findFirst().orElseThrow();
+        // 20,00,000 * 1% = 20,000
+        assertThat(royaltyEntry.getGrossAmount()).isEqualByComparingTo("20000.00");
+    }
+
+    @Test
+    void closeCreditsRoyaltyBelowLowestSlabWritesNoEntry() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setRole(AssociateRole.ASSOCIATE);
+        root.setKycStatus(KycStatus.VERIFIED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        // Matched volume ₹10,00,000 -- below the lowest (₹20,00,000) slab floor.
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("1000000")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("1500000"))
+        ));
+
+        CompensationPlanVersion planVersion = referencePlanVersionFixture();
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersion));
+        // Deliberately NOT stubbing royaltyBonusRateRepository -- no slab configured at or below
+        // ₹10,00,000, so Mockito's default empty Optional is exactly right.
+
+        service.close(cycle.getId());
+
+        verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.ROYALTY));
     }
 
     @Test
@@ -1939,5 +2148,337 @@ class CycleServiceTest {
         service.close(cycle.getId());
 
         verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.REWARD));
+    }
+
+    @Test
+    void closeCreditsRewardIncomeMatchingRound1DocFixtureAwardsOnlyLevelOne() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setRole(AssociateRole.ASSOCIATE);
+        root.setKycStatus(KycStatus.VERIFIED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        // Round 1 doc fixture: A and B each close ₹10,00,000 -> matched volume min(10L,10L) = ₹10,00,000
+        // in a single cycle, jumping straight past both the ₹5L and ₹10L tier thresholds.
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("1000000")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("1000000"))
+        ));
+
+        CompensationPlanVersion planVersion = referencePlanVersionFixture();
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersion));
+        when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(
+            rewardTierFixture(planVersion.getId(), 1, new BigDecimal("500000"), new BigDecimal("15000.00")),
+            rewardTierFixture(planVersion.getId(), 2, new BigDecimal("1000000"), new BigDecimal("20000.00"))
+        ));
+
+        service.close(cycle.getId());
+
+        // Per the source PDF's own worked example: reaching exactly ₹10,00,000 clears Level 1
+        // (needs to EXCEED ₹5,00,000) but does not clear Level 2 (needs to EXCEED ₹10,00,000,
+        // not merely reach it) -- only ₹5,00,000 of the ₹10,00,000 is consumed, and the remaining
+        // ₹5,00,000 carries forward toward Level 2's own threshold next cycle.
+        // Two saves this cycle: the MATCHING entry (unit 5) and the one REWARD entry (Level 1).
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(entryCaptor.capture());
+        List<LedgerEntry> rewardEntries = entryCaptor.getAllValues().stream()
+            .filter(e -> e.getIncomeType() == IncomeType.REWARD).toList();
+        assertThat(rewardEntries).hasSize(1);
+        assertThat(rewardEntries.get(0).getGrossAmount()).isEqualByComparingTo("15000.00");
+        assertThat(root.getRewardVolumeCarriedForward()).isEqualByComparingTo("500000");
+    }
+
+    @Test
+    void closeCreditsRewardIncomeMatchingRound2DocFixtureAwardsThreeTiers() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setRole(AssociateRole.ASSOCIATE);
+        root.setKycStatus(KycStatus.VERIFIED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        // Round 2 doc fixture: left leg ₹50,00,000, right leg ₹40,00,000 -> matched volume ₹40,00,000
+        // in a single cycle, jumping past three tier thresholds (₹5L, ₹10L, ₹20L) but not the fourth (₹40L).
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("5000000")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("4000000"))
+        ));
+
+        CompensationPlanVersion planVersion = referencePlanVersionFixture();
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersion));
+        when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(
+            rewardTierFixture(planVersion.getId(), 1, new BigDecimal("500000"), new BigDecimal("15000.00")),
+            rewardTierFixture(planVersion.getId(), 2, new BigDecimal("1000000"), new BigDecimal("20000.00")),
+            rewardTierFixture(planVersion.getId(), 3, new BigDecimal("2000000"), new BigDecimal("45000.00")),
+            rewardTierFixture(planVersion.getId(), 4, new BigDecimal("4000000"), new BigDecimal("90000.00"))
+        ));
+
+        service.close(cycle.getId());
+
+        // Four saves this cycle: the MATCHING entry (unit 5) and three REWARD entries (Levels 1-3).
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.times(4)).save(entryCaptor.capture());
+        List<LedgerEntry> rewardEntries = entryCaptor.getAllValues().stream()
+            .filter(e -> e.getIncomeType() == IncomeType.REWARD).toList();
+        assertThat(rewardEntries).hasSize(3);
+        BigDecimal rewardTotal = rewardEntries.stream().map(LedgerEntry::getGrossAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertThat(rewardTotal).isEqualByComparingTo("80000.00");
+        assertThat(rewardEntries).noneMatch(e -> e.getGrossAmount().compareTo(new BigDecimal("90000.00")) == 0);
+        // Exactly ₹20,00,000 remains, one short of exceeding Level 4's ₹40,00,000 mark (₹20,00,000
+        // consumed by Levels 1-3, ₹20,00,000 of the ₹40,00,000 matched left over).
+        assertThat(root.getRewardVolumeCarriedForward()).isEqualByComparingTo("2000000");
+    }
+
+    @Test
+    void closeCreditsRewardTierUsingCarriedForwardVolumeFromAPriorCycle() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setRole(AssociateRole.ASSOCIATE);
+        root.setKycStatus(KycStatus.VERIFIED);
+        // Simulates post-Round-1 state: Level 1 (₹5L) already awarded in a prior cycle, ₹2,00,000
+        // left over from that cycle's consumption, carried forward into this one.
+        root.setRewardVolumeCarriedForward(new BigDecimal("200000"));
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        // This cycle's own matched volume is ₹3,50,000 -- combined with the ₹2,00,000 carried
+        // forward, ₹5,50,000 available, enough to EXCEED Level 2's ₹5,00,000 increment (from the
+        // ₹5L anchor up to the ₹10L threshold).
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("350000")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("500000"))
+        ));
+
+        CompensationPlanVersion planVersion = referencePlanVersionFixture();
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersion));
+        RewardTier tier1 = rewardTierFixture(planVersion.getId(), 1, new BigDecimal("500000"), new BigDecimal("15000.00"));
+        RewardTier tier2 = rewardTierFixture(planVersion.getId(), 2, new BigDecimal("1000000"), new BigDecimal("20000.00"));
+        when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(tier1, tier2));
+        when(ledgerEntryRepository.existsByAssociateIdAndIncomeTypeAndSourceRef(root.getId(), IncomeType.REWARD, tier1.getId()))
+            .thenReturn(true);
+
+        service.close(cycle.getId());
+
+        // Two saves this cycle: the MATCHING entry (unit 5) and the one REWARD entry (Level 2 --
+        // Level 1's already-awarded, so it's skipped without a new save).
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(entryCaptor.capture());
+        List<LedgerEntry> rewardEntries = entryCaptor.getAllValues().stream()
+            .filter(e -> e.getIncomeType() == IncomeType.REWARD).toList();
+        assertThat(rewardEntries).hasSize(1);
+        assertThat(rewardEntries.get(0).getSourceRef()).isEqualTo(tier2.getId());
+        assertThat(rewardEntries.get(0).getGrossAmount()).isEqualByComparingTo("20000.00");
+        // ₹2,00,000(carried) + ₹3,50,000(this cycle, min(3.5L,5L)) - ₹5,00,000(Level 2's increment) = ₹50,000
+        assertThat(root.getRewardVolumeCarriedForward()).isEqualByComparingTo("50000");
+    }
+
+    // -- Scale tests: ~600-associate tree --------------------------------------------------
+
+    private record ScaleTreeFixture(List<Associate> associates, List<Sale> sales, UUID[] idsByIndex) {}
+
+    // Array-heap-indexed complete binary tree: node i's parent is (i-1)/2, left child is 2i+1,
+    // right child is 2i+2 -- every index in [0,size) is a real node, matching rollUpSubtree's own
+    // parentId/position-based tree it walks. Every node's own sale is the same fixed amount, so
+    // subtree volume is trivially ownSaleAmount * subtree node count, letting
+    // expectedBalancedTreeMatchedVolume below serve as an independent oracle (a plain node-count
+    // recursion, not a restatement of rollUpSubtree's own leg-volume logic).
+    private ScaleTreeFixture buildBalancedTree(int size, UUID cycleId, BigDecimal ownSaleAmount) {
+        UUID[] ids = new UUID[size];
+        for (int i = 0; i < size; i++) {
+            ids[i] = UUID.randomUUID();
+        }
+        List<Associate> associates = new ArrayList<>();
+        List<Sale> sales = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            UUID parentId = i == 0 ? null : ids[(i - 1) / 2];
+            String position = i == 0 ? null : (i % 2 == 1 ? "L" : "R");
+            Associate associate = associateFixture(parentId, position);
+            associate.setId(ids[i]);
+            associate.setRole(AssociateRole.ASSOCIATE);
+            associate.setKycStatus(KycStatus.VERIFIED);
+            associates.add(associate);
+            sales.add(saleFixture(ids[i], cycleId, ownSaleAmount));
+        }
+        return new ScaleTreeFixture(associates, sales, ids);
+    }
+
+    private int subtreeNodeCount(int index, int totalSize) {
+        if (index >= totalSize) {
+            return 0;
+        }
+        return 1 + subtreeNodeCount(2 * index + 1, totalSize) + subtreeNodeCount(2 * index + 2, totalSize);
+    }
+
+    private BigDecimal expectedBalancedTreeMatchedVolume(int index, int totalSize, BigDecimal ownSaleAmount) {
+        BigDecimal leftVolume = ownSaleAmount.multiply(BigDecimal.valueOf(subtreeNodeCount(2 * index + 1, totalSize)));
+        BigDecimal rightVolume = ownSaleAmount.multiply(BigDecimal.valueOf(subtreeNodeCount(2 * index + 2, totalSize)));
+        return leftVolume.min(rightVolume);
+    }
+
+    @Test
+    void closeCorrectlyComputesMatchingIncomeAcrossABalancedTreeOfSixHundredAssociates() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository);
+
+        int size = 600;
+        BigDecimal ownSaleAmount = new BigDecimal("100");
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        ScaleTreeFixture tree = buildBalancedTree(size, cycle.getId(), ownSaleAmount);
+        when(associateRepository.findAll()).thenReturn(tree.associates());
+
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(tree.sales());
+        CompensationPlanVersion planVersion = planVersionFixture();
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersion));
+
+        long start = System.nanoTime();
+        service.close(cycle.getId());
+        long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+        System.out.println("close() on balanced " + size + "-associate tree: " + elapsedMs + "ms");
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.atLeastOnce()).save(entryCaptor.capture());
+        java.util.Map<UUID, LedgerEntry> matchingEntryByAssociateId = entryCaptor.getAllValues().stream()
+            .filter(e -> e.getIncomeType() == IncomeType.MATCHING)
+            .collect(java.util.stream.Collectors.toMap(LedgerEntry::getAssociateId, e -> e));
+
+        // Checkpoints: root (depth 0), an internal node at depth 3 (index 7), an internal node at
+        // depth 6 (index 63), plus two leaves in different subtrees (511 under the root's left
+        // child, 383 under the root's right child) which must correctly earn NOTHING -- a leaf
+        // has no children, so its own leg volumes are always zero regardless of the tree's size.
+        int[] internalCheckpoints = {0, 7, 63};
+        for (int index : internalCheckpoints) {
+            BigDecimal expected = expectedBalancedTreeMatchedVolume(index, size, ownSaleAmount)
+                .multiply(planVersion.getMatchingIncomePct())
+                .divide(BigDecimal.valueOf(100));
+            UUID associateId = tree.idsByIndex()[index];
+            LedgerEntry entry = matchingEntryByAssociateId.get(associateId);
+            assertThat(entry).as("MATCHING entry at index %d", index).isNotNull();
+            assertThat(entry.getGrossAmount()).as("gross at index %d", index).isEqualByComparingTo(expected);
+        }
+
+        int[] leafCheckpoints = {511, 383};
+        for (int index : leafCheckpoints) {
+            UUID associateId = tree.idsByIndex()[index];
+            assertThat(matchingEntryByAssociateId).as("leaf at index %d must have no MATCHING entry", index)
+                .doesNotContainKey(associateId);
+        }
+    }
+
+    // Proves rollUpSubtree's plain recursive DFS (CycleService.java) handles 600 levels of depth
+    // without a StackOverflowError. Each chain node i (0..depth-2) has a LEFT child continuing the
+    // chain AND a RIGHT child leaf with a small fixed sale of its own -- this keeps every internal
+    // chain node's matched volume a simple, constant, by-construction value (the leaf's own sale,
+    // since the ever-growing left-chain subtree always dwarfs it), rather than needing a general
+    // oracle, while still driving the actual recursion 600 levels deep via the left chain.
+    private ScaleTreeFixture buildDeepChain(int depth, UUID cycleId, BigDecimal chainNodeSaleAmount, BigDecimal rightLeafSaleAmount) {
+        List<Associate> associates = new ArrayList<>();
+        List<Sale> sales = new ArrayList<>();
+        UUID[] chainIds = new UUID[depth];
+        for (int i = 0; i < depth; i++) {
+            chainIds[i] = UUID.randomUUID();
+        }
+        for (int i = 0; i < depth; i++) {
+            UUID parentId = i == 0 ? null : chainIds[i - 1];
+            String position = i == 0 ? null : "L";
+            Associate chainNode = associateFixture(parentId, position);
+            chainNode.setId(chainIds[i]);
+            chainNode.setRole(AssociateRole.ASSOCIATE);
+            chainNode.setKycStatus(KycStatus.VERIFIED);
+            associates.add(chainNode);
+            sales.add(saleFixture(chainIds[i], cycleId, chainNodeSaleAmount));
+
+            if (i < depth - 1) {
+                Associate rightLeaf = associateFixture(chainIds[i], "R");
+                associates.add(rightLeaf);
+                sales.add(saleFixture(rightLeaf.getId(), cycleId, rightLeafSaleAmount));
+            }
+        }
+        return new ScaleTreeFixture(associates, sales, chainIds);
+    }
+
+    @Test
+    void closeHandlesADeepChainOfSixHundredAssociatesWithoutStackOverflow() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository);
+
+        int depth = 600;
+        BigDecimal chainNodeSaleAmount = new BigDecimal("1000");
+        BigDecimal rightLeafSaleAmount = new BigDecimal("50");
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        ScaleTreeFixture chain = buildDeepChain(depth, cycle.getId(), chainNodeSaleAmount, rightLeafSaleAmount);
+        when(associateRepository.findAll()).thenReturn(chain.associates());
+
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(chain.sales());
+        CompensationPlanVersion planVersion = planVersionFixture();
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersion));
+
+        long start = System.nanoTime();
+        service.close(cycle.getId());
+        long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+        System.out.println("close() on deep " + depth + "-level chain: " + elapsedMs + "ms");
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.atLeastOnce()).save(entryCaptor.capture());
+        java.util.Map<UUID, LedgerEntry> matchingEntryByAssociateId = entryCaptor.getAllValues().stream()
+            .filter(e -> e.getIncomeType() == IncomeType.MATCHING)
+            .collect(java.util.stream.Collectors.toMap(LedgerEntry::getAssociateId, e -> e));
+
+        // Every internal chain node (all but the deepest, which is a childless leaf) has matched
+        // volume = min(ever-growing left-chain subtree, the fixed ₹50 right leaf) = ₹50 exactly.
+        BigDecimal expectedGross = rightLeafSaleAmount
+            .multiply(planVersion.getMatchingIncomePct())
+            .divide(BigDecimal.valueOf(100));
+        int[] checkpoints = {0, depth / 2, depth - 2};
+        for (int index : checkpoints) {
+            UUID associateId = chain.idsByIndex()[index];
+            LedgerEntry entry = matchingEntryByAssociateId.get(associateId);
+            assertThat(entry).as("MATCHING entry at chain depth %d", index).isNotNull();
+            assertThat(entry.getGrossAmount()).as("gross at chain depth %d", index).isEqualByComparingTo(expectedGross);
+        }
+
+        // The deepest chain node is a leaf (no children at all) -- correctly earns nothing.
+        UUID deepestLeafId = chain.idsByIndex()[depth - 1];
+        assertThat(matchingEntryByAssociateId).doesNotContainKey(deepestLeafId);
     }
 }

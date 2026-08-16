@@ -2,6 +2,7 @@ package com.plotchain.compensation;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -9,10 +10,11 @@ import java.util.UUID;
 public interface RoyaltyBonusRateRepository extends JpaRepository<RoyaltyBonusRate, UUID> {
     List<RoyaltyBonusRate> findAllByPlanVersionId(UUID planVersionId);
 
-    // Cycle-management unit 8 (docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md,
-    // Flow step 6): Royalty's single-rank lookup per associate, narrower than
-    // findAllByPlanVersionId above. Empty Optional means "no royalty rate configured for this
-    // rank" -- a legitimate no-op per Flow step 6's own text ("not an error -- some low ranks may
-    // have no royalty tier"), not a failure condition.
-    Optional<RoyaltyBonusRate> findByPlanVersionIdAndRankId(UUID planVersionId, UUID rankId);
+    // Volume-slab lookup: "highest threshold not exceeded" against the associate's own matched
+    // volume this cycle -- compensation-plan-reference.md §3 ("Royalty Bonus will Calculate on
+    // the Bonus of New Matching Business in a Single Closing"), not rank-keyed. Empty Optional
+    // means "no slab configured at or below this matched volume" -- a legitimate no-op, not a
+    // failure condition.
+    Optional<RoyaltyBonusRate> findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+        UUID planVersionId, BigDecimal matchedVolume);
 }

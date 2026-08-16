@@ -11,22 +11,22 @@ public class RoyaltyBonusRate {
     private UUID id;
     @Column(name = "plan_version_id")
     private UUID planVersionId;
-    @Column(name = "rank_id")
-    private UUID rankId;
+    @Column(name = "volume_threshold")
+    private BigDecimal volumeThreshold;
     @Column(name = "royalty_pct")
     private BigDecimal royaltyPct;
 
     protected RoyaltyBonusRate() {}
 
-    public RoyaltyBonusRate(UUID id, UUID planVersionId, UUID rankId, BigDecimal royaltyPct) {
+    public RoyaltyBonusRate(UUID id, UUID planVersionId, BigDecimal volumeThreshold, BigDecimal royaltyPct) {
         this.id = id;
         this.planVersionId = planVersionId;
-        this.rankId = rankId;
+        this.volumeThreshold = volumeThreshold;
         this.royaltyPct = royaltyPct;
     }
 
     public UUID getId() { return id; }
     public UUID getPlanVersionId() { return planVersionId; }
-    public UUID getRankId() { return rankId; }
+    public BigDecimal getVolumeThreshold() { return volumeThreshold; }
     public BigDecimal getRoyaltyPct() { return royaltyPct; }
 }

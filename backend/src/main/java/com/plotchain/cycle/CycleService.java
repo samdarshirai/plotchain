@@ -177,7 +177,15 @@ public class CycleService {
         // checked WITHOUT a cycleId (Decision #8: a tier is awarded once EVER, in whichever cycle
         // first crosses it). This is this unit's own insertion point; unit 10's atomicity/re-run
         // hardening depends on this step existing but is not expected to insert a new call here.
-        creditReward(cycle.getId(), associates, planVersion);
+        // matchedVolumeThisCycle mirrors the exact same min(left,right) predicate creditMatchingIncome
+        // (step 3) used, re-derived independently from legVolumes rather than threaded through
+        // creditMatchingIncome's own signature.
+        Map<UUID, BigDecimal> matchedVolumeThisCycle = new HashMap<>();
+        for (LegVolume legVolume : legVolumes) {
+            matchedVolumeThisCycle.put(legVolume.getAssociateId(),
+                legVolume.getLeftLegVolume().min(legVolume.getRightLegVolume()));
+        }
+        creditReward(cycle.getId(), associates, matchedVolumeThisCycle, planVersion);
 
         // Flow step 8. getOrOpenCurrent() is a plain (non-@Transactional) self-invocation here,
         // so it runs inside the transaction this @Transactional method's proxy already started
@@ -499,16 +507,16 @@ public class CycleService {
     // min(legVolume.leftLegVolume, legVolume.rightLegVolume), the exact same predicate
     // creditMatchingIncome (step 3) uses to decide whether it wrote a MATCHING entry, since
     // creditMatchingIncome never mutates leftLegVolume/rightLegVolume themselves (only
-    // carriedForwardLeft/Right) -- look up RoyaltyBonusRate for (planVersion, associate's
-    // POST-rank-advancement rankId). advanceRanks (step 4) and creditSponsorMatching (step 5)
-    // have both already run by the time this executes, so associate.getRankId() already reflects
-    // any advancement earned THIS cycle (Decision #7: "an achievement crossed this cycle earns
-    // this cycle's royalty rate immediately"). No rate configured -> no-op, not an error (some
-    // low ranks structurally have none). Guard is role == ASSOCIATE, not role != ADMIN -- same
-    // reasoning as advanceRanks' own guard: RoyaltyBonusRate is rank-keyed and rank_id is NULL
-    // for Admin AND the four staff roles (chk_associate_rank_required, V4). sourceRef =
-    // legVolume.id, the same row Matching used for this associate+cycle (Decision #12: "both
-    // derive from the same cycle-computed matched-pair volume").
+    // carriedForwardLeft/Right) -- look up the RoyaltyBonusRate slab whose volumeThreshold is the
+    // highest one not exceeding this matched volume (compensation-plan-reference.md §3:
+    // "Royalty Bonus will Calculate on the Bonus of New Matching Business in a Single Closing" --
+    // volume-keyed, not rank-keyed; rank was this method's original, since-corrected lookup key).
+    // No slab configured at or below this matched volume -> no-op, not an error. Guard is
+    // role == ASSOCIATE, same reasoning as advanceRanks' own guard (Admin and the four staff
+    // roles have no rank_id, chk_associate_rank_required, V4) -- Royalty stays associate-only even
+    // though its rate lookup no longer touches rank_id at all. sourceRef = legVolume.id, the same
+    // row Matching used for this associate+cycle (Decision #12: "both derive from the same
+    // cycle-computed matched-pair volume").
     private void creditRoyalty(
         UUID cycleId,
         List<Associate> associates,
@@ -532,7 +540,8 @@ public class CycleService {
             }
 
             Optional<RoyaltyBonusRate> rate = royaltyBonusRateRepository
-                .findByPlanVersionIdAndRankId(planVersion.getId(), associate.getRankId());
+                .findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+                    planVersion.getId(), matchedVolume);
             if (rate.isEmpty()) {
                 continue;
             }
@@ -568,23 +577,33 @@ public class CycleService {
         }
     }
 
-    // Flow step 7 (Decision #8): for EVERY associate (Admin included -- RewardTier has no FK to
-    // rank_tier, unlike Royalty, so nothing here excludes any role), walk RewardTiers in
-    // ascending tierLevel order (findAllByPlanVersionIdOrderByTierLevel, already ordered) and
-    // award any tier whose volumeThreshold is now met by the associate's cumulativeMatchedVolume
-    // (already updated by creditMatchingIncome, step 3, before this reads it -- Decision #6).
-    // Idempotency is checked WITHOUT a cycleId filter (existsByAssociateIdAndIncomeTypeAndSourceRef,
-    // deliberately narrower than the other four income types' cycle-scoped equivalent) -- a tier
-    // is awarded once EVER, and re-running the batch or running a later cycle must never re-award
-    // it even though cumulativeMatchedVolume stays above the threshold forever after (Decision
-    // #8's own words). Multiple tiers can be newly-crossed in a single cycle (a large one-off
-    // sale can jump an associate past several thresholds at once) -- each gets its own entry,
-    // sourceRef = tier.id. perkDescription is never written as its own ledger line: it's
-    // descriptive metadata reachable by looking up the RewardTier row this entry's sourceRef
-    // points to.
+    // Flow step 7: for EVERY associate (Admin included -- RewardTier has no FK to rank_tier,
+    // unlike Royalty, so nothing here excludes any role), walk RewardTiers in ascending
+    // tierLevel order (findAllByPlanVersionIdOrderByTierLevel, already ordered) and consume this
+    // cycle's matched volume (matchedVolumeThisCycle, the same min(left,right) value
+    // creditMatchingIncome used) plus any volume carried forward from a prior cycle
+    // (Associate.rewardVolumeCarriedForward) sequentially against each tier's INCREMENT over the
+    // previous tier's threshold -- not the tier's absolute threshold, and not a plain
+    // cumulativeMatchedVolume >= comparison. A tier is only cleared when the available pool
+    // STRICTLY EXCEEDS its increment (not merely reaches it): compensation-plan-reference.md §4's
+    // own worked examples ("Congrats! On 10 Lakh Pair of Sales & reaching Level 1, Remaining
+    // 5 Lakh will be carried forward for the next level target") show an associate landing exactly
+    // on a tier's absolute threshold clears only the tier below it, with the remainder carried
+    // forward -- the same leftover-carry-forward shape creditMatchingIncome already uses for leg
+    // volumes. Any amount left after the loop (because it wasn't enough to exceed the next
+    // not-yet-awarded tier's increment) is written back to rewardVolumeCarriedForward for next
+    // cycle's run to pick up. Idempotency is checked WITHOUT a cycleId filter
+    // (existsByAssociateIdAndIncomeTypeAndSourceRef, deliberately narrower than the other four
+    // income types' cycle-scoped equivalent) -- a tier is awarded once EVER; an already-awarded
+    // tier's increment is skipped without being re-consumed from the pool (it was already spent
+    // when it was first awarded). Multiple tiers can still be newly-crossed in a single cycle --
+    // each gets its own entry, sourceRef = tier.id. perkDescription is never written as its own
+    // ledger line: it's descriptive metadata reachable by looking up the RewardTier row this
+    // entry's sourceRef points to.
     private void creditReward(
         UUID cycleId,
         List<Associate> associates,
+        Map<UUID, BigDecimal> matchedVolumeThisCycle,
         CompensationPlanVersion planVersion
     ) {
         List<RewardTier> tiers = rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId());
@@ -593,15 +612,23 @@ public class CycleService {
         }
 
         for (Associate associate : associates) {
+            BigDecimal available = matchedVolumeThisCycle
+                .getOrDefault(associate.getId(), BigDecimal.ZERO)
+                .add(associate.getRewardVolumeCarriedForward());
+            BigDecimal previousThreshold = BigDecimal.ZERO;
+
             for (RewardTier tier : tiers) {
-                if (tier.getVolumeThreshold().compareTo(associate.getCumulativeMatchedVolume()) > 0) {
-                    continue;
-                }
+                BigDecimal increment = tier.getVolumeThreshold().subtract(previousThreshold);
 
                 boolean alreadyAwarded = ledgerEntryRepository.existsByAssociateIdAndIncomeTypeAndSourceRef(
                     associate.getId(), IncomeType.REWARD, tier.getId());
                 if (alreadyAwarded) {
+                    previousThreshold = tier.getVolumeThreshold();
                     continue;
+                }
+
+                if (available.compareTo(increment) <= 0) {
+                    break;
                 }
 
                 BigDecimal grossAmount = tier.getCashReward();
@@ -624,7 +651,13 @@ public class CycleService {
                 entry.setSourceRef(tier.getId());
                 entry.setCreatedAt(Instant.now());
                 ledgerEntryRepository.save(entry);
+
+                available = available.subtract(increment);
+                previousThreshold = tier.getVolumeThreshold();
             }
+
+            associate.setRewardVolumeCarriedForward(available);
+            associateRepository.save(associate);
         }
     }
 

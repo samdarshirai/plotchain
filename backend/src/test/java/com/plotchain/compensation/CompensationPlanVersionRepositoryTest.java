@@ -89,46 +89,66 @@ class CompensationPlanVersionRepositoryTest {
         assertThat(versions.get(1).getId()).isEqualTo(SEED_VERSION_ID);
     }
 
+    // The genesis plan version (SEED_VERSION_ID) is pre-seeded with 5 real royalty slabs by
+    // V23__royalty_bonus_rate_volume_slab.sql, so Royalty-specific tests below persist their own
+    // isolated plan version instead -- reusing SEED_VERSION_ID would collide with (or be
+    // ambiguously mixed in with) that seed data.
+    private CompensationPlanVersion persistPlanVersion(LocalDate effectiveFrom) {
+        CompensationPlanVersion version = new CompensationPlanVersion(
+            UUID.randomUUID(), "royalty-test", effectiveFrom,
+            BigDecimal.ZERO, new BigDecimal("7.00"), BigDecimal.ZERO,
+            new BigDecimal("2.00"), BigDecimal.ZERO, new BigDecimal("15.00"),
+            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null);
+        entityManager.persist(version);
+        return version;
+    }
+
     @Test
     void findAllByPlanVersionIdReturnsOnlyRatesForThatVersion() {
-        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
-        entityManager.persist(rank);
-
-        RoyaltyBonusRate rate = new RoyaltyBonusRate(UUID.randomUUID(), SEED_VERSION_ID, rank.getId(), new BigDecimal("3.00"));
+        CompensationPlanVersion version = persistPlanVersion(LocalDate.of(2027, 1, 1));
+        RoyaltyBonusRate rate = new RoyaltyBonusRate(UUID.randomUUID(), version.getId(), new BigDecimal("2000000.00"), new BigDecimal("3.00"));
         royaltyBonusRateRepository.save(rate);
         entityManager.flush();
 
-        List<RoyaltyBonusRate> rates = royaltyBonusRateRepository.findAllByPlanVersionId(SEED_VERSION_ID);
+        List<RoyaltyBonusRate> rates = royaltyBonusRateRepository.findAllByPlanVersionId(version.getId());
 
         assertThat(rates).extracting(RoyaltyBonusRate::getId).containsExactly(rate.getId());
     }
 
     @Test
-    void findByPlanVersionIdAndRankIdReturnsTheRateForThatExactRank() {
-        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Executive", 2, BigDecimal.valueOf(20000));
-        entityManager.persist(rank);
-
-        RoyaltyBonusRate rate = new RoyaltyBonusRate(UUID.randomUUID(), SEED_VERSION_ID, rank.getId(), new BigDecimal("3.00"));
-        royaltyBonusRateRepository.save(rate);
+    void findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDescReturnsTheHighestQualifyingSlab() {
+        CompensationPlanVersion version = persistPlanVersion(LocalDate.of(2027, 2, 1));
+        RoyaltyBonusRate twentyLakh = new RoyaltyBonusRate(UUID.randomUUID(), version.getId(), new BigDecimal("2000000.00"), new BigDecimal("1.00"));
+        RoyaltyBonusRate fortyLakh = new RoyaltyBonusRate(UUID.randomUUID(), version.getId(), new BigDecimal("4000000.00"), new BigDecimal("1.50"));
+        RoyaltyBonusRate eightyLakh = new RoyaltyBonusRate(UUID.randomUUID(), version.getId(), new BigDecimal("8000000.00"), new BigDecimal("2.00"));
+        royaltyBonusRateRepository.save(twentyLakh);
+        royaltyBonusRateRepository.save(fortyLakh);
+        royaltyBonusRateRepository.save(eightyLakh);
         entityManager.flush();
 
-        Optional<RoyaltyBonusRate> found = royaltyBonusRateRepository.findByPlanVersionIdAndRankId(SEED_VERSION_ID, rank.getId());
+        // Matched volume ₹40,00,000 lands exactly on the ₹40L slab, one below the ₹80L slab --
+        // "highest threshold not exceeded" must pick ₹40L, not ₹20L or ₹80L.
+        Optional<RoyaltyBonusRate> found = royaltyBonusRateRepository
+            .findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+                version.getId(), new BigDecimal("4000000.00"));
 
         assertThat(found).isPresent();
-        assertThat(found.get().getId()).isEqualTo(rate.getId());
-        assertThat(found.get().getRoyaltyPct()).isEqualByComparingTo("3.00");
+        assertThat(found.get().getId()).isEqualTo(fortyLakh.getId());
+        assertThat(found.get().getRoyaltyPct()).isEqualByComparingTo("1.50");
     }
 
     @Test
-    void findByPlanVersionIdAndRankIdReturnsEmptyWhenNoRateIsConfiguredForThatRank() {
-        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
-        entityManager.persist(rank);
+    void findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDescReturnsEmptyWhenMatchedVolumeIsBelowEveryConfiguredSlab() {
+        CompensationPlanVersion version = persistPlanVersion(LocalDate.of(2027, 3, 1));
+        RoyaltyBonusRate twentyLakh = new RoyaltyBonusRate(UUID.randomUUID(), version.getId(), new BigDecimal("2000000.00"), new BigDecimal("1.00"));
+        royaltyBonusRateRepository.save(twentyLakh);
         entityManager.flush();
-        // No RoyaltyBonusRate row exists for this rank at all -- the "no-op if no rate
-        // configured" case CycleService's Royalty step (unit 8) needs to distinguish from an
-        // error, per Flow step 6's own "not an error" text.
+        // Matched volume ₹10,00,000 is below the lowest configured slab -- the "no-op if no
+        // rate configured" case CycleService's Royalty step needs to distinguish from an error.
 
-        Optional<RoyaltyBonusRate> found = royaltyBonusRateRepository.findByPlanVersionIdAndRankId(SEED_VERSION_ID, rank.getId());
+        Optional<RoyaltyBonusRate> found = royaltyBonusRateRepository
+            .findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+                version.getId(), new BigDecimal("1000000.00"));
 
         assertThat(found).isEmpty();
     }

@@ -29,6 +29,8 @@ public class Associate {
     private Instant joinedAt;
     @Column(name = "cumulative_matched_volume", nullable = false)
     private BigDecimal cumulativeMatchedVolume = BigDecimal.ZERO;
+    @Column(name = "reward_volume_carried_forward", nullable = false)
+    private BigDecimal rewardVolumeCarriedForward = BigDecimal.ZERO;
     @Column(name = "last_active_at")
     private Instant lastActiveAt;
     @Column(name = "user_id", nullable = false)
@@ -64,6 +66,8 @@ public class Associate {
     public void setJoinedAt(Instant joinedAt) { this.joinedAt = joinedAt; }
     public BigDecimal getCumulativeMatchedVolume() { return cumulativeMatchedVolume; }
     public void setCumulativeMatchedVolume(BigDecimal v) { this.cumulativeMatchedVolume = v; }
+    public BigDecimal getRewardVolumeCarriedForward() { return rewardVolumeCarriedForward; }
+    public void setRewardVolumeCarriedForward(BigDecimal v) { this.rewardVolumeCarriedForward = v; }
     public Instant getLastActiveAt() { return lastActiveAt; }
     public void setLastActiveAt(Instant lastActiveAt) { this.lastActiveAt = lastActiveAt; }
     public String getUserId() { return userId; }

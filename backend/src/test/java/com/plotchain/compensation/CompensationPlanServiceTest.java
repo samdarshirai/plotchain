@@ -116,7 +116,7 @@ class CompensationPlanServiceTest {
             new BigDecimal("1100.00"),
             new BigDecimal("500.00"),
             "SEMI_MONTHLY",
-            List.of(new RoyaltyBonusRateInput(RANK_ID, new BigDecimal("3.00"))),
+            List.of(new RoyaltyBonusRateInput(new BigDecimal("40"), new BigDecimal("3.00"))),
             tiers,
             effectiveFrom
         );
@@ -405,7 +405,7 @@ class CompensationPlanServiceTest {
         when(versionRepository.findByEffectiveFrom(today)).thenReturn(Optional.of(todaysVersion));
 
         RoyaltyBonusRate staleRate =
-            new RoyaltyBonusRate(UUID.randomUUID(), todaysVersion.getId(), RANK_ID, new BigDecimal("9.00"));
+            new RoyaltyBonusRate(UUID.randomUUID(), todaysVersion.getId(), new BigDecimal("40"), new BigDecimal("9.00"));
         RewardTier staleTier = new RewardTier(
             UUID.randomUUID(), todaysVersion.getId(), 1, new BigDecimal("5"), new BigDecimal("5"), "stale");
         when(royaltyBonusRateRepository.findAllByPlanVersionId(todaysVersion.getId()))
@@ -479,23 +479,25 @@ class CompensationPlanServiceTest {
     // -- getCurrentPlan ----------------------------------------------------
 
     @Test
-    void getCurrentPlanResolvesRankNamesViaRankTierRepository() {
+    void getCurrentPlanReturnsVolumeSlabRoyaltyRatesAndAvailableRanks() {
         CompensationPlanVersion current = seedVersion();
         when(versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(current));
 
-        RoyaltyBonusRate rate = new RoyaltyBonusRate(UUID.randomUUID(), current.getId(), RANK_ID, new BigDecimal("3.00"));
+        RoyaltyBonusRate rate = new RoyaltyBonusRate(UUID.randomUUID(), current.getId(), new BigDecimal("40"), new BigDecimal("3.00"));
         when(royaltyBonusRateRepository.findAllByPlanVersionId(current.getId())).thenReturn(List.of(rate));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(current.getId())).thenReturn(List.of());
 
+        // availableRanks is populated independently of Royalty (Royalty is volume-keyed, not
+        // rank-keyed) -- this RankTier just proves rankTierRepository is still consulted for it.
         RankTier rankTier = new RankTier(RANK_ID, "Gold", 1, new BigDecimal("5000"));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rankTier));
 
         CompensationPlanResponse response = compensationPlanService.getCurrentPlan();
 
         assertThat(response.royaltyBonusRates()).hasSize(1);
-        assertThat(response.royaltyBonusRates().get(0).rankId()).isEqualTo(RANK_ID);
-        assertThat(response.royaltyBonusRates().get(0).rankName()).isEqualTo("Gold");
+        assertThat(response.royaltyBonusRates().get(0).volumeThreshold()).isEqualByComparingTo("40");
+        assertThat(response.royaltyBonusRates().get(0).royaltyPct()).isEqualByComparingTo("3.00");
         assertThat(response.availableRanks()).hasSize(1);
         assertThat(response.availableRanks().get(0).name()).isEqualTo("Gold");
     }

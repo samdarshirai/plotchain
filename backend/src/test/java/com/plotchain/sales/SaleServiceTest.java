@@ -225,6 +225,47 @@ class SaleServiceTest {
         assertThat(entry.getCreatedAt()).isNotNull();
     }
 
+    // compensation-plan-reference.md's real published rates (direct 6%, tds 2%, admin-without-pan
+    // 15%) instead of this file's arbitrary-round-number compensationPlanVersion() fixture, so
+    // this test's expected amounts match the doc's own Round 1 worked example exactly.
+    private CompensationPlanVersion referenceCompensationPlanVersion() {
+        return new CompensationPlanVersion(
+            UUID.randomUUID(), "reference", LocalDate.now().minusDays(1),
+            new BigDecimal("6.00"), BigDecimal.ZERO, BigDecimal.ZERO,
+            new BigDecimal("2.00"), BigDecimal.ZERO, new BigDecimal("15.00"),
+            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.MONTHLY,
+            Instant.now(), null);
+    }
+
+    @Test
+    void recordSaleSavesADirectIncomeLedgerEntryMatchingRound1DocFixture() {
+        // Round 1 doc fixture: plot price ₹10,00,000 (same amount A's own sale used).
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(
+            new Plot(PLOT_ID, UUID.randomUUID(), "A-101", PlotType.NORMAL,
+                new BigDecimal("1200.00"), new BigDecimal("833.33"), new BigDecimal("1000000.00"), PlotStatus.AVAILABLE)));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(compensationPlanVersionRepository
+                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(referenceCompensationPlanVersion()));
+
+        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository).save(captor.capture());
+        LedgerEntry entry = captor.getValue();
+        // gross = 10,00,000 * 6% = 60,000
+        assertThat(entry.getGrossAmount()).isEqualByComparingTo("60000");
+        // tds = 60,000 * 2% = 1,200
+        assertThat(entry.getTdsDeduction()).isEqualByComparingTo("1200");
+        // admin = 60,000 * 15% = 9,000
+        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("9000");
+        // net = 60,000 - 1,200 - 9,000 = 49,800
+        assertThat(entry.getNetAmount()).isEqualByComparingTo("49800");
+    }
+
     @Test
     void recordSaleReturnsAFullyPopulatedSaleResponse() {
         stubHappyPathGuardsAndDependencies();

@@ -224,9 +224,12 @@ class CycleCloseFullPipelineIntegrationTest {
         rankTierRepository.saveAndFlush(testGold);
         testGoldRankId = testGold.getId();
 
-        // --- RoyaltyBonusRate seeded ONLY for TestGold, deliberately NOT for Silver -- proves
-        // Royalty looks up the POST-advancement rank, not the pre-advancement one. ---
-        RoyaltyBonusRate royaltyRate = new RoyaltyBonusRate(UUID.randomUUID(), planVersionId, testGoldRankId, new BigDecimal("3.00"));
+        // --- RoyaltyBonusRate seeded as a volume slab (threshold 50, at or below b1's own
+        // matched volume this cycle -- see the leg-volume rollup below) -- volume-keyed per
+        // compensation-plan-reference.md §3, not rank-keyed. b2/c1/c2/c3/d never reach a nonzero
+        // matched volume this cycle so this slab only ever fires for b1; Admin is excluded by
+        // creditRoyalty's own role == ASSOCIATE guard regardless of matched volume. ---
+        RoyaltyBonusRate royaltyRate = new RoyaltyBonusRate(UUID.randomUUID(), planVersionId, new BigDecimal("50"), new BigDecimal("3.00"));
         royaltyBonusRateRepository.saveAndFlush(royaltyRate);
         royaltyRateId = royaltyRate.getId();
 
@@ -363,8 +366,8 @@ class CycleCloseFullPipelineIntegrationTest {
         // net = 0.30 - 0.015(tds) - 0.012(admin) = 0.273 unrounded -> DB rounds HALF_UP to 0.27.
         assertThat(sponsorFromAdmin.getNetAmount()).isEqualByComparingTo("0.27");
 
-        // --- Royalty: b1 only, at the POST-advancement (TestGold) rate -- no rate exists for
-        // Silver, so this entry existing at all proves the post-advancement lookup. Admin skipped. ---
+        // --- Royalty: b1 only -- matched volume 55 meets the seeded 50 slab threshold. Admin is
+        // excluded by the role guard regardless of its own matched volume (30). ---
         LedgerEntry b1Royalty = findEntry(b1Id, IncomeType.ROYALTY);
         assertThat(b1Royalty.getGrossAmount()).isEqualByComparingTo("1.65");
         // net = 1.65 - 0.0825(tds) - 0.066(admin) = 1.5015 unrounded -> DB rounds HALF_UP to 1.50.
