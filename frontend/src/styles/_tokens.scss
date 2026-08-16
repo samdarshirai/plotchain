@@ -1,8 +1,13 @@
 :root {
   --brand-primary: #C6A227;
   --brand-secondary: #5C1A2A;
+  --brand-primary-bright: #EAD07D; /* Bright Gold -- gradient/hover partner for Antique Gold, never used alone */
 
-  --brand-gradient: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+  // Antique Gold -> Bright Gold, per DESIGN.md SS8 -- NOT --brand-secondary (Oxblood), which is a
+  // separate sparing-use accent (chips/badges/selected states, see DESIGN.md SS2), not a gradient
+  // partner. ThemeService.apply() overrides this per-tenant with a literal primary->secondary
+  // interpolation instead; this default only governs the un-themed/Viraj-Acres-default case.
+  --brand-gradient: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-bright));
   --brand-primary-soft: color-mix(in srgb, var(--brand-primary) 14%, transparent);
   --brand-primary-hover: color-mix(in srgb, var(--brand-primary) 85%, white);
   --brand-secondary-soft: color-mix(in srgb, var(--brand-secondary) 14%, transparent);

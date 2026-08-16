@@ -425,7 +425,7 @@
 
 .login-wordmark__caption {
   margin: 0.5rem 0 0;
-  color: #EAD07D;
+  color: var(--brand-primary-bright);
   font-family: var(--font-sans);
   font-size: 0.6875rem;
   font-weight: 500;
@@ -530,7 +530,7 @@
 }
 
 .login-forgot:hover {
-  color: #EAD07D;
+  color: var(--brand-primary-bright);
 }
 
 .login-error {
@@ -556,7 +556,7 @@
 }
 
 .login-request-access a:hover {
-  color: #EAD07D;
+  color: var(--brand-primary-bright);
 }
 
 .login-form .login-password-toggle {
