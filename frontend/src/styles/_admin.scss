@@ -288,6 +288,84 @@ body.admin-associate-active {
 }
 
 // ============================================================
+// Shared placeholders for the admin/associate operational-screen family
+// (Sales Register, Cycle Management, Ledger Register, Payout Approval,
+// Income Statement, Payout History). Each screen below contextually
+// scopes these (.sales-register .card, etc.) rather than sharing a
+// single class, so the screen's own root class stays the specificity
+// anchor -- only the identical property lists are deduplicated here.
+// ============================================================
+
+%admin-screen-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--brand-primary);
+}
+
+%admin-screen-title {
+  margin: 0;
+  font-family: 'Geist', var(--font-sans);
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+// max-width varies per screen (see each screen's own __subtitle rule) -- extend and add it.
+%admin-screen-subtitle {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+%admin-screen-card {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+  padding: 0;
+  overflow: hidden;
+}
+
+%admin-screen-table-head {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--surface-card);
+}
+
+%admin-screen-table-cell {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+%admin-screen-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 0 0.25rem;
+}
+
+%admin-screen-page-indicator {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+%admin-screen-pagination-secondary-button {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
+// ============================================================
 // Sales Register / Record Sale -- bespoke rules for Sales unit 8,
 // applying docs/design/admin_operational_screens/sales_register.
 // Contextually scoped (.sales-register .card, etc.) the same way
@@ -316,13 +394,7 @@ body.admin-associate-active {
 }
 
 .sales-register .card-title {
-  margin: 0;
-  font-family: 'Geist', var(--font-sans);
-  font-size: 1.75rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
-  color: var(--text-primary);
+  @extend %admin-screen-title;
 }
 
 // .sales-register__record-link additionally carries the shared .brand-button class in the
@@ -362,11 +434,7 @@ body.admin-associate-active {
 }
 
 .sales-register .card {
-  border: none;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
-  padding: 0;
-  overflow: hidden;
+  @extend %admin-screen-card;
 }
 
 .sales-register .editable-table {
@@ -374,18 +442,11 @@ body.admin-associate-active {
 }
 
 .sales-register .editable-table thead th {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  background: var(--surface-card);
+  @extend %admin-screen-table-head;
 }
 
 .sales-register .editable-table tbody td {
-  font-size: 0.875rem;
-  color: var(--text-primary);
-  vertical-align: middle;
+  @extend %admin-screen-table-cell;
 }
 
 .sales-register .editable-table tbody tr:last-child td {
@@ -467,17 +528,11 @@ body.admin-associate-active {
 }
 
 .sales-register__pagination {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding: 0 0.25rem;
+  @extend %admin-screen-pagination;
 }
 
 .sales-register__page-indicator {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8125rem;
-  color: var(--text-muted);
+  @extend %admin-screen-page-indicator;
 }
 
 @media (max-width: 768px) {
@@ -721,30 +776,16 @@ body.admin-associate-active {
 }
 
 .cycle-management__eyebrow {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--brand-primary);
+  @extend %admin-screen-eyebrow;
 }
 
 .cycle-management__title {
-  margin: 0;
-  font-family: 'Geist', var(--font-sans);
-  font-size: 1.75rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
-  color: var(--text-primary);
+  @extend %admin-screen-title;
 }
 
 .cycle-management__subtitle {
-  margin: 0;
+  @extend %admin-screen-subtitle;
   max-width: 40rem;
-  font-size: 0.9375rem;
-  line-height: 1.6;
-  color: var(--text-muted);
 }
 
 // Current Cycle strip -- signature host #1 for the Cycle Rail.
@@ -916,11 +957,7 @@ body.admin-associate-active {
 }
 
 .cycle-management .card {
-  border: none;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
-  padding: 0;
-  overflow: hidden;
+  @extend %admin-screen-card;
 }
 
 .cycle-management .editable-table {
@@ -928,18 +965,11 @@ body.admin-associate-active {
 }
 
 .cycle-management .editable-table thead th {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  background: var(--surface-card);
+  @extend %admin-screen-table-head;
 }
 
 .cycle-management .editable-table tbody td {
-  font-size: 0.875rem;
-  color: var(--text-primary);
-  vertical-align: middle;
+  @extend %admin-screen-table-cell;
 }
 
 .cycle-management .editable-table tbody tr:last-child td {
@@ -969,22 +999,15 @@ body.admin-associate-active {
 }
 
 .cycle-management__pagination {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding: 0 0.25rem;
+  @extend %admin-screen-pagination;
 }
 
 .cycle-management__page-indicator {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8125rem;
-  color: var(--text-muted);
+  @extend %admin-screen-page-indicator;
 }
 
 .cycle-management__pagination .brand-button--secondary {
-  padding: 0.5rem 1rem;
-  font-size: 0.8125rem;
+  @extend %admin-screen-pagination-secondary-button;
 }
 
 // Action column now holds two buttons per CLOSED row (View Detail, Credit Wallets) --
@@ -1170,30 +1193,16 @@ body.admin-associate-active {
 }
 
 .ledger-register__eyebrow {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--brand-primary);
+  @extend %admin-screen-eyebrow;
 }
 
 .ledger-register__title {
-  margin: 0;
-  font-family: 'Geist', var(--font-sans);
-  font-size: 1.75rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
-  color: var(--text-primary);
+  @extend %admin-screen-title;
 }
 
 .ledger-register__subtitle {
-  margin: 0;
+  @extend %admin-screen-subtitle;
   max-width: 46rem;
-  font-size: 0.9375rem;
-  line-height: 1.6;
-  color: var(--text-muted);
 }
 
 .ledger-register__filters {
@@ -1236,11 +1245,7 @@ body.admin-associate-active {
 }
 
 .ledger-register .card {
-  border: none;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
-  padding: 0;
-  overflow: hidden;
+  @extend %admin-screen-card;
 }
 
 .ledger-register .editable-table {
@@ -1248,19 +1253,12 @@ body.admin-associate-active {
 }
 
 .ledger-register .editable-table thead th {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  background: var(--surface-card);
+  @extend %admin-screen-table-head;
   white-space: nowrap;
 }
 
 .ledger-register .editable-table tbody td {
-  font-size: 0.875rem;
-  color: var(--text-primary);
-  vertical-align: middle;
+  @extend %admin-screen-table-cell;
 }
 
 .ledger-register .editable-table tbody tr:last-child td {
@@ -1324,22 +1322,15 @@ body.admin-associate-active {
 }
 
 .ledger-register__pagination {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding: 0 0.25rem;
+  @extend %admin-screen-pagination;
 }
 
 .ledger-register__page-indicator {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8125rem;
-  color: var(--text-muted);
+  @extend %admin-screen-page-indicator;
 }
 
 .ledger-register__pagination .brand-button--secondary {
-  padding: 0.5rem 1rem;
-  font-size: 0.8125rem;
+  @extend %admin-screen-pagination-secondary-button;
 }
 
 @media (max-width: 768px) {
@@ -1457,30 +1448,16 @@ body.admin-associate-active {
 }
 
 .payout-approval__eyebrow {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--brand-primary);
+  @extend %admin-screen-eyebrow;
 }
 
 .payout-approval__title {
-  margin: 0;
-  font-family: 'Geist', var(--font-sans);
-  font-size: 1.75rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
-  color: var(--text-primary);
+  @extend %admin-screen-title;
 }
 
 .payout-approval__subtitle {
-  margin: 0;
+  @extend %admin-screen-subtitle;
   max-width: 40rem;
-  font-size: 0.9375rem;
-  line-height: 1.6;
-  color: var(--text-muted);
 }
 
 .payout-approval__filters {
@@ -1505,11 +1482,7 @@ body.admin-associate-active {
 }
 
 .payout-approval .card {
-  border: none;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
-  padding: 0;
-  overflow: hidden;
+  @extend %admin-screen-card;
 }
 
 // Fixed column widths, weighted so Actions (the widest possible cell content -- two
@@ -1558,18 +1531,11 @@ body.admin-associate-active {
 }
 
 .payout-approval .editable-table thead th {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  background: var(--surface-card);
+  @extend %admin-screen-table-head;
 }
 
 .payout-approval .editable-table tbody td {
-  font-size: 0.875rem;
-  color: var(--text-primary);
-  vertical-align: middle;
+  @extend %admin-screen-table-cell;
 }
 
 .payout-approval .editable-table tbody tr:last-child td {
@@ -1692,22 +1658,15 @@ body.admin-associate-active {
 }
 
 .payout-approval__pagination {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding: 0 0.25rem;
+  @extend %admin-screen-pagination;
 }
 
 .payout-approval__page-indicator {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8125rem;
-  color: var(--text-muted);
+  @extend %admin-screen-page-indicator;
 }
 
 .payout-approval__pagination .brand-button--secondary {
-  padding: 0.5rem 1rem;
-  font-size: 0.8125rem;
+  @extend %admin-screen-pagination-secondary-button;
 }
 
 @media (max-width: 768px) {
@@ -1983,21 +1942,12 @@ body.admin-associate-active {
 }
 
 .income-statement__title {
-  margin: 0;
-  font-family: 'Geist', var(--font-sans);
-  font-size: 1.75rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
-  color: var(--text-primary);
+  @extend %admin-screen-title;
 }
 
 .income-statement__subtitle {
-  margin: 0;
+  @extend %admin-screen-subtitle;
   max-width: 46rem;
-  font-size: 0.9375rem;
-  line-height: 1.6;
-  color: var(--text-muted);
 }
 
 // Tab bar wrapper -- horizontal scroll, hidden scrollbar, so the seven tabs never wrap or
@@ -2056,11 +2006,7 @@ body.admin-associate-active {
 }
 
 .income-statement .card {
-  border: none;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
-  padding: 0;
-  overflow: hidden;
+  @extend %admin-screen-card;
   overflow-x: auto;
 }
 
@@ -2070,19 +2016,12 @@ body.admin-associate-active {
 }
 
 .income-statement .editable-table thead th {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  background: var(--surface-card);
+  @extend %admin-screen-table-head;
   white-space: nowrap;
 }
 
 .income-statement .editable-table tbody td {
-  font-size: 0.875rem;
-  color: var(--text-primary);
-  vertical-align: middle;
+  @extend %admin-screen-table-cell;
 }
 
 .income-statement .editable-table tbody tr:last-child td {
@@ -2197,22 +2136,15 @@ body.admin-associate-active {
 }
 
 .income-statement__pagination {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding: 0 0.25rem;
+  @extend %admin-screen-pagination;
 }
 
 .income-statement__page-indicator {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8125rem;
-  color: var(--text-muted);
+  @extend %admin-screen-page-indicator;
 }
 
 .income-statement__pagination .brand-button--secondary {
-  padding: 0.5rem 1rem;
-  font-size: 0.8125rem;
+  @extend %admin-screen-pagination-secondary-button;
 }
 
 @media (max-width: 768px) {
@@ -2322,21 +2254,12 @@ body.admin-associate-active {
 }
 
 .payout-history__title {
-  margin: 0;
-  font-family: 'Geist', var(--font-sans);
-  font-size: 1.75rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
-  color: var(--text-primary);
+  @extend %admin-screen-title;
 }
 
 .payout-history__subtitle {
-  margin: 0;
+  @extend %admin-screen-subtitle;
   max-width: 46rem;
-  font-size: 0.9375rem;
-  line-height: 1.6;
-  color: var(--text-muted);
 }
 
 // ---- Signature element: the Balance Ribbon ----
@@ -2445,11 +2368,7 @@ body.admin-associate-active {
 }
 
 .payout-history .card:not(.payout-history__wallet-balance) {
-  border: none;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
-  padding: 0;
-  overflow: hidden;
+  @extend %admin-screen-card;
   overflow-x: auto;
 }
 
@@ -2459,19 +2378,12 @@ body.admin-associate-active {
 }
 
 .payout-history .editable-table thead th {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  background: var(--surface-card);
+  @extend %admin-screen-table-head;
   white-space: nowrap;
 }
 
 .payout-history .editable-table tbody td {
-  font-size: 0.875rem;
-  color: var(--text-primary);
-  vertical-align: middle;
+  @extend %admin-screen-table-cell;
 }
 
 .payout-history .editable-table tbody tr:last-child td {
@@ -2534,22 +2446,15 @@ body.admin-associate-active {
 }
 
 .payout-history__pagination {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding: 0 0.25rem;
+  @extend %admin-screen-pagination;
 }
 
 .payout-history__page-indicator {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8125rem;
-  color: var(--text-muted);
+  @extend %admin-screen-page-indicator;
 }
 
 .payout-history__pagination .brand-button--secondary {
-  padding: 0.5rem 1rem;
-  font-size: 0.8125rem;
+  @extend %admin-screen-pagination-secondary-button;
 }
 
 @media (max-width: 768px) {
