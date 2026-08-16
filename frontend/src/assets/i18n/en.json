@@ -506,6 +506,26 @@
       "rejectedTag": "Rejected",
       "disbursedTag": "Disbursed",
       "actionError": "Could not save that action. Please try again."
+    },
+    "submitWithdrawal": {
+      "title": "Submit Withdrawal",
+      "subtitle": "Submit a withdrawal request on an associate's behalf.",
+      "associateLabel": "Associate",
+      "associatePlaceholder": "Select an associate",
+      "amountLabel": "Amount",
+      "submitButton": "Submit Withdrawal",
+      "submitAnotherButton": "Submit Another",
+      "successIdLabel": "Request ID",
+      "successAssociateLabel": "Associate",
+      "successAmountLabel": "Amount",
+      "successStatusLabel": "Status",
+      "statusRequestedChip": "Requested",
+      "statusApprovedChip": "Approved",
+      "autoApprovedHint": "Auto-approved — under the manual review threshold. No action needed in the queue; ready to disburse.",
+      "validation": {
+        "required": "This field is required.",
+        "genericSubmitError": "Could not submit this withdrawal. Please try again."
+      }
     }
   },
   "setup": {
