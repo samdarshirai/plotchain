@@ -26,6 +26,8 @@ import { SalesRegisterComponent } from './admin/sales-register/sales-register.co
 import { RecordSaleComponent } from './admin/sales-register/record-sale.component';
 import { CycleManagementComponent } from './admin/cycle-management/cycle-management.component';
 import { LedgerRegisterComponent } from './admin/ledger-register/ledger-register.component';
+import { PayoutApprovalComponent } from './admin/payout-approval/payout-approval.component';
+import { SubmitWithdrawalComponent } from './admin/payout-approval/submit-withdrawal.component';
 import { TermsOfServiceComponent } from './legal/terms-of-service.component';
 import { PrivacyPolicyComponent } from './legal/privacy-policy.component';
 import { SalesHistoryComponent } from './sales-history/sales-history.component';
@@ -51,6 +53,7 @@ export const routes: Routes = [
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
   { path: 'admin/associates/new', component: CreateAssociateComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/sales/new', component: RecordSaleComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/withdrawals/new', component: SubmitWithdrawalComponent, canActivate: [authGuard, adminGuard] },
   {
     path: 'setup',
     component: SetupShellComponent,
@@ -82,6 +85,7 @@ export const routes: Routes = [
       { path: 'sales-register', component: SalesRegisterComponent, data: { sectionKey: 'salesRegister' } },
       { path: 'cycle-management', component: CycleManagementComponent, data: { sectionKey: 'cycleManagement' } },
       { path: 'ledger-register', component: LedgerRegisterComponent, data: { sectionKey: 'ledgerRegister' } },
+      { path: 'payout-approval', component: PayoutApprovalComponent, data: { sectionKey: 'payoutApproval' } },
       { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } },
       { path: 'admin-stats', component: AdminStatsComponent, data: { sectionKey: 'adminStats' } }
     ]

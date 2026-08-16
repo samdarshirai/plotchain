@@ -90,6 +90,13 @@ describe('routes', () => {
     expect(route!.canActivate).toContain(adminGuard);
   });
 
+  it('guards the admin submit-withdrawal route with both authGuard and adminGuard', () => {
+    const route = routes.find(r => r.path === 'admin/withdrawals/new');
+    expect(route).toBeTruthy();
+    expect(route!.canActivate).toContain(authGuard);
+    expect(route!.canActivate).toContain(adminGuard);
+  });
+
   describe('setup route', () => {
     const setupRoute = routes.find(r => r.path === 'setup');
 
@@ -152,6 +159,13 @@ describe('routes', () => {
       const ledgerRegisterChild = settingsRoute!.children!.find(c => c.path === 'ledger-register');
       expect(ledgerRegisterChild).toBeTruthy();
       expect(ledgerRegisterChild!.data).toEqual({ sectionKey: 'ledgerRegister' });
+    });
+
+    it('has a payout-approval child stamped with sectionKey payoutApproval', () => {
+      const settingsRoute = routes.find(r => r.path === 'settings');
+      const payoutApprovalChild = settingsRoute!.children!.find(c => c.path === 'payout-approval');
+      expect(payoutApprovalChild).toBeTruthy();
+      expect(payoutApprovalChild!.data).toEqual({ sectionKey: 'payoutApproval' });
     });
   });
 

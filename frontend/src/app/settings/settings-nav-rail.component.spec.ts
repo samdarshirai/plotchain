@@ -14,10 +14,10 @@ describe('SettingsNavRailComponent', () => {
     fixture = TestBed.createComponent(SettingsNavRailComponent);
   });
 
-  it('renders one row per section plus hardcoded associate directory, tree explorer, kyc queue, audit log, admin stats, sales register, cycle management, and ledger register rows', () => {
+  it('renders one row per section plus hardcoded associate directory, tree explorer, kyc queue, audit log, admin stats, sales register, cycle management, ledger register, and payout approval rows', () => {
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('.settings-nav-rail__item');
-    expect(items.length).toBe(Object.keys(SECTION_PATHS).length + 8);
+    expect(items.length).toBe(Object.keys(SECTION_PATHS).length + 9);
   });
 
   it('marks the active section', () => {
@@ -32,32 +32,39 @@ describe('SettingsNavRailComponent', () => {
     fixture.componentInstance.activeSectionKey = 'auditLog';
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('.settings-nav-rail__item');
-    expect(items[items.length - 5].classList).toContain('settings-nav-rail__item--active');
+    expect(items[items.length - 6].classList).toContain('settings-nav-rail__item--active');
   });
 
   it('marks the admin stats row active when the active section key is adminStats', () => {
     fixture.componentInstance.activeSectionKey = 'adminStats';
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('.settings-nav-rail__item');
-    expect(items[items.length - 4].classList).toContain('settings-nav-rail__item--active');
+    expect(items[items.length - 5].classList).toContain('settings-nav-rail__item--active');
   });
 
   it('marks the sales register row active when the active section key is salesRegister', () => {
     fixture.componentInstance.activeSectionKey = 'salesRegister';
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('.settings-nav-rail__item');
-    expect(items[items.length - 3].classList).toContain('settings-nav-rail__item--active');
+    expect(items[items.length - 4].classList).toContain('settings-nav-rail__item--active');
   });
 
   it('marks the cycle management row active when the active section key is cycleManagement', () => {
     fixture.componentInstance.activeSectionKey = 'cycleManagement';
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('.settings-nav-rail__item');
-    expect(items[items.length - 2].classList).toContain('settings-nav-rail__item--active');
+    expect(items[items.length - 3].classList).toContain('settings-nav-rail__item--active');
   });
 
   it('marks the ledger register row active when the active section key is ledgerRegister', () => {
     fixture.componentInstance.activeSectionKey = 'ledgerRegister';
+    fixture.detectChanges();
+    const items = fixture.nativeElement.querySelectorAll('.settings-nav-rail__item');
+    expect(items[items.length - 2].classList).toContain('settings-nav-rail__item--active');
+  });
+
+  it('marks the payout approval row active when the active section key is payoutApproval', () => {
+    fixture.componentInstance.activeSectionKey = 'payoutApproval';
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('.settings-nav-rail__item');
     expect(items[items.length - 1].classList).toContain('settings-nav-rail__item--active');
@@ -67,7 +74,7 @@ describe('SettingsNavRailComponent', () => {
     fixture.detectChanges();
     const links = fixture.nativeElement.querySelectorAll('.settings-nav-rail__item a');
     expect(links[0].getAttribute('href')).toBe('/settings/company-profile');
-    expect(links[links.length - 2].getAttribute('href')).toBe('/settings/cycle-management');
-    expect(links[links.length - 1].getAttribute('href')).toBe('/settings/ledger-register');
+    expect(links[links.length - 2].getAttribute('href')).toBe('/settings/ledger-register');
+    expect(links[links.length - 1].getAttribute('href')).toBe('/settings/payout-approval');
   });
 });

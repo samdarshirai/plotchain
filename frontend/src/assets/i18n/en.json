@@ -814,7 +814,8 @@
       "adminStats": "Admin Stats",
       "salesRegister": "Sales Register",
       "cycleManagement": "Cycle Management",
-      "ledgerRegister": "Ledger Register"
+      "ledgerRegister": "Ledger Register",
+      "payoutApproval": "Payout Approval"
     },
     "cards": {
       "companyProfile": {

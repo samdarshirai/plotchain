@@ -814,7 +814,8 @@
       "adminStats": "एडमिन आंकड़े",
       "salesRegister": "बिक्री रजिस्टर",
       "cycleManagement": "चक्र प्रबंधन",
-      "ledgerRegister": "Ledger Register"
+      "ledgerRegister": "Ledger Register",
+      "payoutApproval": "Payout Approval"
     },
     "cards": {
       "companyProfile": {
