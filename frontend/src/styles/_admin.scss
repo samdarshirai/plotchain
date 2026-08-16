@@ -2053,8 +2053,11 @@ body.admin-associate-active {
   border-bottom: none;
 }
 
-// Income Type column (1st) -- raw enum text, mono uppercase (same domain convention as Ledger Register)
-.income-statement .editable-table td:nth-child(1) {
+// Income Type column (1st) -- raw enum text, mono uppercase (same domain convention as Ledger Register).
+// :not(.editable-table__empty) excludes the empty-state row's single colspan cell, which is also
+// structurally its <tr>'s 1st (and only) child and would otherwise be matched and forced nowrap
+// by this same rule (nth-child selects by DOM position, not by populated-vs-empty semantics).
+.income-statement .editable-table td:nth-child(1):not(.editable-table__empty) {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.75rem;
   font-weight: 600;
@@ -2156,10 +2159,12 @@ body.admin-associate-active {
   white-space: nowrap;
 }
 
-// Belt-and-suspenders for the empty-state row: it's a single colspan="9" cell (not subject to any
-// nth-child nowrap rule above, since it's the sole cell in its row), so it already wraps by
-// inheriting the base .editable-table__empty rule in _tables.scss -- state that explicitly so a
-// future nowrap addition to this scope can't silently clip it again.
+// Belt-and-suspenders for the empty-state row: it's a single colspan="9" cell, but it's still
+// structurally the 1st child of its <tr> -- without the :not(.editable-table__empty) exclusion
+// added to the td:nth-child(1) rule above, that higher-specificity ((0,3,1) vs this rule's
+// (0,2,0)) selector would win and force white-space: nowrap regardless of what's declared here.
+// State the wrap behavior explicitly so a future nowrap addition to this scope can't silently
+// clip it again.
 .income-statement .editable-table__empty {
   padding: 3rem 1.5rem;
   white-space: normal;
