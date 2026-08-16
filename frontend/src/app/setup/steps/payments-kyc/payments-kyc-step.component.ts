@@ -434,6 +434,10 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
   withdrawalSavedJustNow = false;
   withdrawalSubmitError: string | null = null;
   private withdrawalLoadFailed = false;
+  // None of approvalMode/autoApproveLimit/minimumWithdrawalAmount is a FormControl, so there's no
+  // built-in dirty tracking to lean on -- set on every edit, cleared once saveWithdrawal() sends
+  // it. Mirrors kycDirty/bookingEmiDirty above.
+  private withdrawalDirty = false;
   private withdrawalChanged$ = new Subject<void>();
   private withdrawalSub?: Subscription;
 
@@ -597,13 +601,16 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
         this.withdrawalLoadFailed = true;
       }
     });
-    this.withdrawalChanged$.pipe(takeUntil(this.destroyed$), debounceTime(400)).subscribe(() => {
-      this.withdrawalSavedJustNow = false;
-      this.inspectorService.setSaved(this.anySavedJustNow);
-      if (!this.withdrawalLoadFailed) {
-        this.saveWithdrawal();
-      }
-    });
+    this.withdrawalChanged$
+      .pipe(takeUntil(this.destroyed$), tap(() => (this.withdrawalDirty = true)), debounceTime(400))
+      .subscribe(() => {
+        this.withdrawalSavedJustNow = false;
+        this.inspectorService.setSaved(this.anySavedJustNow);
+        // withdrawalDirty is also checked, for the same reason as paymentForm.dirty above.
+        if (!this.withdrawalLoadFailed && this.withdrawalDirty) {
+          this.saveWithdrawal();
+        }
+      });
 
     this.bookingEmiSub = this.paymentsKycService.getBookingEmiConfig().subscribe({
       next: res => {
@@ -640,9 +647,11 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   // SetupStepController: lets SetupStepNavComponent flush any of this step's cards that still
-  // have an edit sitting in their own 400ms autosave debounce before it navigates away. The
-  // Withdrawal Approval card is intentionally left out -- its flush wiring is a separate task
-  // (B2), which also touches WithdrawalConfigRequest/Response.
+  // have an edit sitting in their own 400ms autosave debounce before it navigates away. Withdrawal
+  // Approval is included (B2) -- minimumWithdrawalAmount is the real Go-Live-gating field, so an
+  // edit still sitting in its debounce when the user clicks Next must not be lost to
+  // destroyed$ cancelling the in-flight debounce on navigation (the same bug class B1 fixed for
+  // the other cards).
   flushPendingSave(): void {
     if (!this.paymentLoadFailed && this.paymentForm.dirty && this.paymentForm.valid) {
       this.savePayment();
@@ -653,13 +662,20 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
     if (!this.kycLoadFailed && this.kycDirty && this.requiredDocuments.length > 0) {
       this.saveKyc();
     }
+    if (!this.withdrawalLoadFailed && this.withdrawalDirty) {
+      this.saveWithdrawal();
+    }
     if (!this.bookingEmiLoadFailed && this.bookingEmiDirty) {
       this.saveBookingEmi();
     }
   }
 
   // SetupStepController: lets SetupStepNavComponent block Next on an invalid required field in
-  // either card that has Validators-backed required fields.
+  // either card that has Validators-backed required fields. Withdrawal Approval has no such gate:
+  // approvalMode/autoApproveLimit/minimumWithdrawalAmount are plain component properties, not
+  // FormControls -- their only validation is the server's cross-field check (autoApproveLimit
+  // required when approvalMode is AUTO_UNDER_LIMIT), surfaced as withdrawalSubmitError on save,
+  // same as KYC/Booking & EMI have no client-side gate here either.
   isStepValid(): boolean {
     return this.paymentForm.valid && this.payoutForm.valid;
   }
@@ -884,6 +900,7 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   private saveWithdrawal(): void {
+    this.withdrawalDirty = false;
     const request: WithdrawalConfigRequest = {
       approvalMode: this.approvalMode,
       autoApproveLimit: this.autoApproveLimit,
@@ -897,6 +914,9 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
         this.setupService.refresh();
       },
       error: err => {
+        // Re-mark dirty: see the matching comment in company-profile-step.component.ts's save()
+        // error handler -- a failed save must not leave withdrawalDirty looking cleared.
+        this.withdrawalDirty = true;
         this.withdrawalSavedJustNow = false;
         this.inspectorService.setSaved(this.anySavedJustNow);
         this.withdrawalSubmitError =
