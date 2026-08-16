@@ -209,7 +209,8 @@ public class SecurityConfig {
                 // matchers for them.
                 .requestMatchers(HttpMethod.GET,
                         "/api/company/payments", "/api/company/payout-account",
-                        "/api/company/kyc", "/api/company/withdrawal", "/api/company/booking-emi")
+                        "/api/company/kyc", "/api/company/withdrawal", "/api/company/booking-emi",
+                        "/api/company/self-performance-bonus")
                     .hasAuthority("ADMIN")
                 // Associate-reachable: the plot catalog is what the matrix calls "View available
                 // plots" for an Associate. Thumbnail and the CSV import template stay admin-only
