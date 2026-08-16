@@ -329,4 +329,70 @@ describe('CompensationStepComponent', () => {
     fixture.destroy();
     expect(inspectorService.clear).toHaveBeenCalled();
   });
+
+  it('registers itself as the active step with SetupInspectorService', () => {
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    expect(inspectorService.activeStep).toBe(fixture.componentInstance);
+  });
+
+  it('flushPendingSave saves immediately on a dirty scalar field, bypassing the debounce', () => {
+    fixture.componentInstance.form.get('directIncomePct')?.setValue(50);
+
+    fixture.componentInstance.flushPendingSave();
+
+    const req = httpMock.expectOne('/api/company/compensation');
+    expect(req.request.method).toBe('PUT');
+    req.flush({ ...emptyPlan, directIncomePct: 50 });
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+  });
+
+  it('flushPendingSave saves immediately on a table-only edit (rowsChanged$ marks the form dirty too)', () => {
+    fixture.componentInstance.onRoyaltyRowsChange([{ rankId: 'rank-2', royaltyPct: 3 }]);
+
+    fixture.componentInstance.flushPendingSave();
+
+    const req = httpMock.expectOne('/api/company/compensation');
+    expect(req.request.body.royaltyBonusRates).toEqual([{ rankId: 'rank-2', royaltyPct: 3 }]);
+    req.flush(emptyPlan);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+  });
+
+  it('flushPendingSave does nothing when the form is pristine', () => {
+    expect(fixture.componentInstance.form.dirty).toBeFalse();
+    fixture.componentInstance.flushPendingSave();
+    httpMock.expectNone('/api/company/compensation');
+  });
+
+  it('flushPendingSave does nothing when the form is dirty but invalid', () => {
+    fixture.componentInstance.form.get('directIncomePct')?.setValue(200);
+    expect(fixture.componentInstance.form.dirty).toBeTrue();
+
+    fixture.componentInstance.flushPendingSave();
+
+    httpMock.expectNone('/api/company/compensation');
+  });
+
+  it('isStepValid reflects the form validity', () => {
+    fixture.componentInstance.form.get('directIncomePct')?.setValue(200);
+    expect(fixture.componentInstance.isStepValid()).toBeFalse();
+
+    fixture.componentInstance.form.get('directIncomePct')?.setValue(50);
+    expect(fixture.componentInstance.isStepValid()).toBeTrue();
+
+    fixture.componentInstance.flushPendingSave();
+    httpMock.expectOne('/api/company/compensation').flush({ ...emptyPlan, directIncomePct: 50 });
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+  });
+
+  it('does not fire a duplicate save when the debounce elapses after flushPendingSave already saved the same edit', fakeAsync(() => {
+    fixture.componentInstance.form.get('directIncomePct')?.setValue(50);
+
+    fixture.componentInstance.flushPendingSave();
+    httpMock.expectOne('/api/company/compensation').flush({ ...emptyPlan, directIncomePct: 50 });
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+    expect(fixture.componentInstance.form.dirty).toBeFalse();
+
+    tick(400);
+    httpMock.expectNone('/api/company/compensation');
+  }));
 });

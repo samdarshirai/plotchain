@@ -6,6 +6,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { PaymentsKycStepComponent } from './payments-kyc-step.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SetupService } from '../../setup.service';
+import { SetupInspectorService } from '../../setup-inspector.service';
 import {
   BookingEmiConfigResponse,
   KycConfigResponse,
@@ -314,4 +315,115 @@ describe('PaymentsKycStepComponent', () => {
     expect(component.isModeEnabled('UPI')).toBe(true);
     expect(component.modesEnabled).toContain('UPI');
   });
+
+  it('registers itself as the active step with SetupInspectorService', () => {
+    flushInitialLoads();
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    expect(inspectorService.activeStep).toBe(fixture.componentInstance);
+  });
+
+  it('flushPendingSave saves every dirty card (payment/payout/kyc/booking-emi) immediately, bypassing their debounces', () => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    component.paymentForm.get('gateway')?.setValue('RAZORPAY');
+    component.payoutForm.patchValue({
+      bankName: 'HDFC Bank',
+      accountHolder: 'Plotchain Estates Pvt Ltd',
+      accountNumber: '50100123456789',
+      ifscCode: 'HDFC0001234'
+    });
+    component.toggleDocument('AADHAAR', false);
+    component.setConfirmRule('KYC_GATED');
+    expect(component.paymentForm.dirty).toBeTrue();
+    expect(component.payoutForm.dirty).toBeTrue();
+
+    component.flushPendingSave();
+
+    httpMock.expectOne('/api/company/payments').flush({ ...emptyPaymentConfig, gateway: 'RAZORPAY' });
+    httpMock.expectOne('/api/company/payout-account').flush({ ...emptyPayoutAccount, ifscCode: 'HDFC0001234' });
+    httpMock.expectOne('/api/company/kyc').flush({ ...defaultKycConfig, requiredDocuments: ['PAN', 'BANK_PASSBOOK'] });
+    httpMock.expectOne('/api/company/booking-emi').flush({ ...defaultBookingEmiConfig, confirmRule: 'KYC_GATED' });
+    // setup-state is re-fetched once per successful save above, via SetupService.refresh() ->
+    // switchMap -- each new refresh() cancels whichever of these GETs is still in flight, so
+    // only the most recent survives to be flushed; the rest are expected to already be cancelled.
+    httpMock.match('/api/company/setup-state').forEach(req => {
+      if (!req.cancelled) {
+        req.flush(setupState);
+      }
+    });
+
+    // Withdrawal Approval is intentionally excluded -- its flush wiring is a separate task (B2).
+    httpMock.expectNone('/api/company/withdrawal');
+  });
+
+  it('flushPendingSave does nothing when nothing has changed', () => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+    expect(component.paymentForm.dirty).toBeFalse();
+    expect(component.payoutForm.dirty).toBeFalse();
+
+    component.flushPendingSave();
+
+    httpMock.expectNone('/api/company/payments');
+    httpMock.expectNone('/api/company/payout-account');
+    httpMock.expectNone('/api/company/kyc');
+    httpMock.expectNone('/api/company/withdrawal');
+    httpMock.expectNone('/api/company/booking-emi');
+  });
+
+  it('flushPendingSave never saves the Withdrawal Approval card, even when it is dirty', () => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    component.setApprovalMode('AUTO_UNDER_LIMIT');
+    expect(component.approvalMode).toBe('AUTO_UNDER_LIMIT');
+
+    component.flushPendingSave();
+
+    httpMock.expectNone('/api/company/withdrawal');
+  });
+
+  it('isStepValid is false while the payment or payout card has an invalid required field', () => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    expect(component.isStepValid()).toBeFalse(); // gateway/payout fields all start required-but-blank
+
+    component.paymentForm.get('gateway')?.setValue('RAZORPAY');
+    expect(component.isStepValid()).toBeFalse(); // payout fields are still blank
+
+    component.payoutForm.patchValue({
+      bankName: 'HDFC Bank',
+      accountHolder: 'Plotchain Estates Pvt Ltd',
+      accountNumber: '50100123456789',
+      ifscCode: 'HDFC0001234'
+    });
+    expect(component.isStepValid()).toBeTrue();
+
+    component.flushPendingSave();
+    httpMock.expectOne('/api/company/payments').flush({ ...emptyPaymentConfig, gateway: 'RAZORPAY' });
+    httpMock.expectOne('/api/company/payout-account').flush({ ...emptyPayoutAccount, ifscCode: 'HDFC0001234' });
+    // See the comment in the flushPendingSave test above -- only the most recent setup-state
+    // refetch survives switchMap's cancellation of the earlier one.
+    httpMock.match('/api/company/setup-state').forEach(req => {
+      if (!req.cancelled) {
+        req.flush(setupState);
+      }
+    });
+  });
+
+  it('does not fire a duplicate payment save when its debounce elapses after flushPendingSave already saved the same edit', fakeAsync(() => {
+    flushInitialLoads();
+    const component = fixture.componentInstance;
+
+    component.paymentForm.get('gateway')?.setValue('RAZORPAY');
+    component.flushPendingSave();
+    httpMock.expectOne('/api/company/payments').flush({ ...emptyPaymentConfig, gateway: 'RAZORPAY' });
+    flushSetupState();
+    expect(component.paymentForm.dirty).toBeFalse();
+
+    tick(400);
+    httpMock.expectNone('/api/company/payments');
+  }));
 });

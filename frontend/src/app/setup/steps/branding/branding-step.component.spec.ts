@@ -200,4 +200,60 @@ describe('BrandingStepComponent', () => {
     fixture.destroy();
     expect(inspectorService.clear).toHaveBeenCalled();
   });
+
+  it('registers itself as the active step with SetupInspectorService', () => {
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    expect(inspectorService.activeStep).toBe(fixture.componentInstance);
+  });
+
+  it('flushPendingSave saves immediately after a color change (set via setColor(), not a native input), bypassing the debounce', () => {
+    fixture.componentInstance.setColor('primaryColor', '#E11D48');
+
+    fixture.componentInstance.flushPendingSave();
+
+    const req = httpMock.expectOne('/api/company/branding');
+    expect(req.request.method).toBe('PUT');
+    req.flush({ ...emptyBranding, primaryColor: '#E11D48' });
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+  });
+
+  it('flushPendingSave does nothing when the form is pristine', () => {
+    expect(fixture.componentInstance.form.dirty).toBeFalse();
+    fixture.componentInstance.flushPendingSave();
+    httpMock.expectNone('/api/company/branding');
+  });
+
+  it('flushPendingSave does nothing when the form is dirty but invalid', () => {
+    fixture.componentInstance.form.get('tagline')?.setValue('x'.repeat(61));
+    expect(fixture.componentInstance.form.dirty).toBeTrue();
+
+    fixture.componentInstance.flushPendingSave();
+
+    httpMock.expectNone('/api/company/branding');
+  });
+
+  it('isStepValid reflects the form validity', () => {
+    fixture.componentInstance.form.get('tagline')?.setValue('x'.repeat(61));
+    expect(fixture.componentInstance.isStepValid()).toBeFalse();
+
+    fixture.componentInstance.setColor('primaryColor', '#E11D48');
+    fixture.componentInstance.form.get('tagline')?.setValue('Land you can trust');
+    expect(fixture.componentInstance.isStepValid()).toBeTrue();
+
+    fixture.componentInstance.flushPendingSave();
+    httpMock.expectOne('/api/company/branding').flush({ ...emptyBranding, primaryColor: '#E11D48', tagline: 'Land you can trust' });
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+  });
+
+  it('does not fire a duplicate save when the debounce elapses after flushPendingSave already saved the same edit', fakeAsync(() => {
+    fixture.componentInstance.setColor('primaryColor', '#E11D48');
+
+    fixture.componentInstance.flushPendingSave();
+    httpMock.expectOne('/api/company/branding').flush({ ...emptyBranding, primaryColor: '#E11D48' });
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+    expect(fixture.componentInstance.form.dirty).toBeFalse();
+
+    tick(400);
+    httpMock.expectNone('/api/company/branding');
+  }));
 });

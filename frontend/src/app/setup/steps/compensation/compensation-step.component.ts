@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject, Subscription, merge } from 'rxjs';
-import { debounceTime, takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil, tap } from 'rxjs/operators';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { StatTileComponent } from '../../../shared/components/stat-tile/stat-tile.component';
@@ -15,7 +15,7 @@ import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { CompensationPlanService } from './compensation-plan.service';
 import { computeSampleEarnings, SampleEarningsResult } from './sample-earnings';
 import { SetupService } from '../../setup.service';
-import { SetupInspectorService } from '../../setup-inspector.service';
+import { SetupInspectorService, SetupStepController } from '../../setup-inspector.service';
 import { CompensationPlanRequest, RankOption, SettlementCycle } from '../../models/compensation-plan.model';
 
 const DEFAULT_SCENARIO_VOLUME = 1000000; // spec example: "sells ₹10L on each leg"
@@ -309,7 +309,7 @@ const RENDERED_FIELD_ERROR_KEYS = [
     </ng-template>
   `
 })
-export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestroy {
+export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestroy, SetupStepController {
   private fb = inject(FormBuilder);
   private compensationPlanService = inject(CompensationPlanService);
   private setupService = inject(SetupService);
@@ -395,14 +395,28 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     // Debounced: same cadence as the other steps' autosave. Also fed by rowsChanged$ so that
     // royalty/reward-tier table edits -- which never touch the form -- reach save() too.
     merge(this.form.valueChanges, this.rowsChanged$)
-      .pipe(takeUntil(this.destroyed$), debounceTime(400))
+      .pipe(
+        takeUntil(this.destroyed$),
+        // Marked here rather than relying solely on Angular's own dirty tracking -- settlementCycle
+        // is set programmatically via setSettlementCycle() (the toggle group's output), and the
+        // royalty/reward-tier rows aren't form controls at all, so neither marks the form dirty
+        // on its own.
+        tap(() => this.form.markAsDirty()),
+        debounceTime(400)
+      )
       .subscribe(() => {
         this.savedJustNow = false;
         this.inspectorService.setSaved(false);
-        if (this.form.valid) {
+        // form.dirty is also checked: debounceTime flushes its last buffered value immediately
+        // when its source completes (e.g. destroyed$ on navigation) even if flushPendingSave()
+        // already saved this value and marked the form pristine moments earlier -- without this
+        // check that would fire a redundant duplicate PUT.
+        if (this.form.dirty && this.form.valid) {
           this.save();
         }
       });
+
+    this.inspectorService.registerStep(this);
   }
 
   ngAfterViewInit(): void {
@@ -412,6 +426,19 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
       // Stitch mockup's shared bottom bar.
       this.inspectorService.register(this.inspectorTpl, { hideFooter: false });
     }
+  }
+
+  // SetupStepController: lets SetupStepNavComponent flush an edit (form field or royalty/reward
+  // row) still sitting in the 400ms autosave debounce before it navigates away.
+  flushPendingSave(): void {
+    if (this.form.dirty && this.form.valid) {
+      this.save();
+    }
+  }
+
+  // SetupStepController: lets SetupStepNavComponent block Next on an invalid required field.
+  isStepValid(): boolean {
+    return this.form.valid;
   }
 
   ngOnDestroy(): void {
@@ -533,6 +560,7 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     if (this.loadFailed) {
       return;
     }
+    this.form.markAsPristine();
     const formValue = this.form.getRawValue();
     // Typed at the declaration (no `as` cast) so the compiler actually checks this shape --
     // effectiveFrom is intentionally omitted and the backend defaults it to today.

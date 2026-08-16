@@ -184,6 +184,64 @@ describe('CompanyProfileStepComponent', () => {
     expect(fixture.debugElement.query(By.css('.setup-step-nav__save'))).not.toBeNull();
   });
 
+  it('registers itself as the active step with SetupInspectorService', () => {
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    expect(inspectorService.activeStep).toBe(fixture.componentInstance);
+  });
+
+  it('flushPendingSave saves immediately when the form is dirty, bypassing the debounce', () => {
+    fixture.componentInstance.form.patchValue(filledProfile);
+
+    fixture.componentInstance.flushPendingSave();
+
+    const req = httpMock.expectOne('/api/company/profile');
+    expect(req.request.method).toBe('PUT');
+    req.flush(filledProfile);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+  });
+
+  it('flushPendingSave does nothing when the form is pristine', () => {
+    expect(fixture.componentInstance.form.dirty).toBeFalse();
+    fixture.componentInstance.flushPendingSave();
+    httpMock.expectNone('/api/company/profile');
+  });
+
+  it('flushPendingSave does nothing when the form is dirty but invalid', () => {
+    fixture.componentInstance.form.patchValue({ ...filledProfile, contactEmail: 'not-an-email' });
+    expect(fixture.componentInstance.form.dirty).toBeTrue();
+
+    fixture.componentInstance.flushPendingSave();
+
+    httpMock.expectNone('/api/company/profile');
+  });
+
+  it('does not fire a duplicate save when the debounce elapses after flushPendingSave already saved the same edit', fakeAsync(() => {
+    fixture.componentInstance.form.patchValue(filledProfile);
+
+    fixture.componentInstance.flushPendingSave();
+    httpMock.expectOne('/api/company/profile').flush(filledProfile);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+    expect(fixture.componentInstance.form.dirty).toBeFalse();
+
+    // The 400ms debounce scheduled by the original patchValue is still pending underneath --
+    // it must not re-fire a second PUT for the same, already-saved value now that the form is
+    // pristine again.
+    tick(400);
+    httpMock.expectNone('/api/company/profile');
+  }));
+
+  it('isStepValid reflects the form validity', () => {
+    fixture.componentInstance.form.patchValue({ ...filledProfile, contactEmail: 'not-an-email' });
+    expect(fixture.componentInstance.isStepValid()).toBeFalse();
+
+    fixture.componentInstance.form.patchValue(filledProfile);
+    expect(fixture.componentInstance.isStepValid()).toBeTrue();
+
+    fixture.componentInstance.flushPendingSave();
+    httpMock.expectOne('/api/company/profile').flush(filledProfile);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
+  });
+
   it('surfaces server-side field errors from a failed autosave', fakeAsync(() => {
     fixture.componentInstance.form.patchValue(filledProfile);
     tick(400);

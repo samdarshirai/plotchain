@@ -6,6 +6,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { ProjectsStepComponent } from './projects-step.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SetupService } from '../../setup.service';
+import { SetupInspectorService } from '../../setup-inspector.service';
 import { CsvValidationResponse, Plot, PlotPageResponse, Project } from '../../models/project.model';
 import { SetupStateResponse } from '../../models/setup-state.model';
 
@@ -264,5 +265,31 @@ describe('ProjectsStepComponent', () => {
     fixture.detectChanges();
     const nav = fixture.debugElement.query(By.directive(SetupStepNavComponent));
     expect(nav.componentInstance.mode).toBe('settings');
+  });
+
+  it('registers itself as the active step with SetupInspectorService', () => {
+    flushProjectsList();
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    expect(inspectorService.activeStep).toBe(fixture.componentInstance);
+  });
+
+  it('clears the active step registration on destroy', () => {
+    flushProjectsList();
+    const inspectorService = TestBed.inject(SetupInspectorService);
+    spyOn(inspectorService, 'clear');
+
+    fixture.destroy();
+
+    expect(inspectorService.clear).toHaveBeenCalled();
+  });
+
+  it('flushPendingSave is a no-op -- project/plot edits save via their own explicit buttons, not a debounce', () => {
+    flushProjectsList();
+    expect(() => fixture.componentInstance.flushPendingSave()).not.toThrow();
+  });
+
+  it('isStepValid is always true -- Next is not form-gated on this step', () => {
+    flushProjectsList();
+    expect(fixture.componentInstance.isStepValid()).toBeTrue();
   });
 });

@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject, Subscription } from 'rxjs';
-import { debounceTime, takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil, tap } from 'rxjs/operators';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { ColorFieldComponent } from '../../../shared/components/color-field/color-field.component';
 import { LogoUploaderComponent } from '../../../shared/components/logo-uploader/logo-uploader.component';
@@ -14,7 +14,7 @@ import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { ThemeService, contrastRatio } from '../../../core/theme/theme.service';
 import { BrandingService } from './branding.service';
 import { SetupService } from '../../setup.service';
-import { SetupInspectorService } from '../../setup-inspector.service';
+import { SetupInspectorService, SetupStepController } from '../../setup-inspector.service';
 import { CompanyBrandingRequest, CompanyBrandingResponse, LogoVariant } from '../../models/branding.model';
 import { LoginComponent } from '../../../auth/login.component';
 
@@ -153,7 +153,7 @@ const MIN_CONTRAST = 4.5;
     </ng-template>
   `
 })
-export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy {
+export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy, SetupStepController {
   private fb = inject(FormBuilder);
   brandingService = inject(BrandingService);
   private setupService = inject(SetupService);
@@ -230,13 +230,28 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     // Debounced: same cadence as the company-profile step's autosave.
-    this.form.valueChanges.pipe(takeUntil(this.destroyed$), debounceTime(400)).subscribe(() => {
-      this.savedJustNow = false;
-      this.inspectorService.setSaved(false);
-      if (this.form.valid) {
-        this.save();
-      }
-    });
+    this.form.valueChanges
+      .pipe(
+        takeUntil(this.destroyed$),
+        // Marked here rather than relying solely on Angular's own dirty tracking -- primaryColor/
+        // secondaryColor are set programmatically via setColor() (the color picker's output), not
+        // typed into a native input, so they never mark the control dirty on their own.
+        tap(() => this.form.markAsDirty()),
+        debounceTime(400)
+      )
+      .subscribe(() => {
+        this.savedJustNow = false;
+        this.inspectorService.setSaved(false);
+        // form.dirty is also checked: debounceTime flushes its last buffered value immediately
+        // when its source completes (e.g. destroyed$ on navigation) even if flushPendingSave()
+        // already saved this value and marked the form pristine moments earlier -- without this
+        // check that would fire a redundant duplicate PUT.
+        if (this.form.dirty && this.form.valid) {
+          this.save();
+        }
+      });
+
+    this.inspectorService.registerStep(this);
   }
 
   ngAfterViewInit(): void {
@@ -246,6 +261,19 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy {
       // Stitch mockup's shared bottom bar instead of duplicating nav inside the narrow aside.
       this.inspectorService.register(this.inspectorTpl, { hideFooter: false });
     }
+  }
+
+  // SetupStepController: lets SetupStepNavComponent flush an edit still sitting in the 400ms
+  // autosave debounce before it navigates away.
+  flushPendingSave(): void {
+    if (this.form.dirty && this.form.valid) {
+      this.save();
+    }
+  }
+
+  // SetupStepController: lets SetupStepNavComponent block Next on an invalid required field.
+  isStepValid(): boolean {
+    return this.form.valid;
   }
 
   ngOnDestroy(): void {
@@ -329,6 +357,7 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private save(): void {
+    this.form.markAsPristine();
     const request = this.form.getRawValue() as CompanyBrandingRequest;
     this.brandingService.updateBranding(request).subscribe({
       next: () => {
