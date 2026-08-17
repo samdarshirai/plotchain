@@ -17,7 +17,7 @@ public record DashboardResponse(
     List<AnnouncementSummary> announcements
 ) {
     public record AssociateSummary(String associateId, String name, String rank, String phone, Instant joinedAt, Instant rankChangedAt) {}
-    public record CycleIncome(UUID cycleId, BigDecimal directIncome, BigDecimal matchingIncome, BigDecimal totalIncome) {}
+    public record CycleIncome(UUID cycleId, BigDecimal directIncome, BigDecimal matchingIncome, BigDecimal sponsorMatchingIncome, BigDecimal selfPerformanceBonus, BigDecimal totalIncome) {}
     public record WalletSummary(BigDecimal balance) {}
     public record LegVolumeSummary(BigDecimal leftVolume, BigDecimal rightVolume, BigDecimal carriedForwardLeft, BigDecimal carriedForwardRight, BigDecimal projectedMatchAmount) {}
     public record RankProgress(String currentRank, int currentRankOrder, String nextRank, int progressPercent, BigDecimal volumeToNextRank) {}

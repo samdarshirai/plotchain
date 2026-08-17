@@ -108,7 +108,9 @@ class DashboardControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.teamSnapshot.totalDownline").value(12))
             .andExpect(jsonPath("$.associate.name").value("Asha Kumar"))
-            .andExpect(jsonPath("$.associate.joinedAt").value(joinedAt.toString()));
+            .andExpect(jsonPath("$.associate.joinedAt").value(joinedAt.toString()))
+            .andExpect(jsonPath("$.cycleIncome.sponsorMatchingIncome").value(0))
+            .andExpect(jsonPath("$.cycleIncome.selfPerformanceBonus").value(0));
     }
 
     @Test

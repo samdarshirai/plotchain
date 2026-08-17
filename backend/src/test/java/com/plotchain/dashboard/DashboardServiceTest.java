@@ -98,6 +98,10 @@ class DashboardServiceTest {
             .thenReturn(BigDecimal.valueOf(1000));
         when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.MATCHING))
             .thenReturn(BigDecimal.valueOf(500));
+        when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.SPONSOR_MATCHING))
+            .thenReturn(BigDecimal.valueOf(300));
+        when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.SELF_PERFORMANCE))
+            .thenReturn(BigDecimal.valueOf(200));
         when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycleId))
             .thenReturn(BigDecimal.valueOf(1500));
         when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycleId))
@@ -124,6 +128,8 @@ class DashboardServiceTest {
         assertThat(response.associate().rankChangedAt()).isEqualTo(rankChangedAt);
         assertThat(response.cycleIncome().directIncome()).isEqualByComparingTo("1000");
         assertThat(response.cycleIncome().matchingIncome()).isEqualByComparingTo("500");
+        assertThat(response.cycleIncome().sponsorMatchingIncome()).isEqualByComparingTo("300");
+        assertThat(response.cycleIncome().selfPerformanceBonus()).isEqualByComparingTo("200");
         assertThat(response.cycleIncome().totalIncome()).isEqualByComparingTo("1500");
         assertThat(response.wallet().balance()).isEqualByComparingTo("0");
         assertThat(response.legVolume().leftVolume()).isEqualByComparingTo("0");
@@ -192,6 +198,8 @@ class DashboardServiceTest {
 
         // min(200000, 150000) * (7.00 / 100) = 150000 * 0.07 = 10500.00
         assertThat(response.legVolume().projectedMatchAmount()).isEqualByComparingTo("10500.00");
+        assertThat(response.cycleIncome().sponsorMatchingIncome()).isEqualByComparingTo("0");
+        assertThat(response.cycleIncome().selfPerformanceBonus()).isEqualByComparingTo("0");
         assertThat(response.associate().rankChangedAt()).isNull();
     }
 

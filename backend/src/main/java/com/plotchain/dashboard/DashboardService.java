@@ -75,6 +75,8 @@ public class DashboardService {
 
         BigDecimal direct = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.DIRECT);
         BigDecimal matching = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.MATCHING);
+        BigDecimal sponsorMatching = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.SPONSOR_MATCHING);
+        BigDecimal selfPerformance = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.SELF_PERFORMANCE);
         BigDecimal total = ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycle.getId());
 
         LegVolume legVolume = legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycle.getId())
@@ -129,7 +131,7 @@ public class DashboardService {
                 associate.getUserId(), associate.getName(), currentRank.getName(),
                 associate.getPhone(), associate.getJoinedAt(), associate.getRankChangedAt()),
             associate.getKycStatus() != KycStatus.VERIFIED,
-            new DashboardResponse.CycleIncome(cycle.getId(), direct, matching, total),
+            new DashboardResponse.CycleIncome(cycle.getId(), direct, matching, sponsorMatching, selfPerformance, total),
             new DashboardResponse.WalletSummary(wallet.getBalance()),
             new DashboardResponse.LegVolumeSummary(
                 legVolume.getLeftLegVolume(), legVolume.getRightLegVolume(),
