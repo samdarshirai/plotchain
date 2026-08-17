@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -18,6 +19,11 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
     // RECORDED sale volume for the in-memory leg-volume rollup. VOIDED sales are excluded by
     // the status filter; the batch never sees them.
     List<Sale> findByCycleIdAndStatus(UUID cycleId, SaleStatus status);
+
+    long countByCycleIdAndStatus(UUID cycleId, SaleStatus status);
+
+    @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Sale s WHERE s.cycleId = :cycleId AND s.status = :status")
+    BigDecimal sumAmountByCycleIdAndStatus(@Param("cycleId") UUID cycleId, @Param("status") SaleStatus status);
 
     // Sales unit 7 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
     // "Associate own view -- GET /api/associates/me/sales"): filters Sale rows down to the

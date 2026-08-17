@@ -7,7 +7,9 @@ import com.plotchain.auth.JwtService;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
 import com.plotchain.income.LedgerEntryRepository;
+import com.plotchain.sales.SaleRepository;
 import com.plotchain.wallet.WalletRepository;
+import com.plotchain.withdrawal.WithdrawalRequestRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -41,6 +43,8 @@ class AdminStatsControllerTest {
     @MockBean WalletRepository walletRepository;
     @MockBean LedgerEntryRepository ledgerEntryRepository;
     @MockBean CycleRepository cycleRepository;
+    @MockBean SaleRepository saleRepository;
+    @MockBean WithdrawalRequestRepository withdrawalRequestRepository;
 
     private String tokenFor(AssociateRole role) {
         Associate associate = new Associate();
@@ -60,6 +64,8 @@ class AdminStatsControllerTest {
         when(associateRepository.countByRoleAndKycStatus(AssociateRole.ASSOCIATE, com.plotchain.associate.KycStatus.VERIFIED)).thenReturn(48L);
         when(associateRepository.countByRoleAndKycStatus(AssociateRole.ASSOCIATE, com.plotchain.associate.KycStatus.REJECTED)).thenReturn(1L);
         when(walletRepository.sumAllBalances()).thenReturn(new BigDecimal("999.99"));
+        when(withdrawalRequestRepository.countByStatus(com.plotchain.withdrawal.WithdrawalRequestStatus.REQUESTED))
+            .thenReturn(2L);
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
             .thenReturn(Optional.empty());
 
@@ -68,6 +74,7 @@ class AdminStatsControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.totalAssociates").value(50))
             .andExpect(jsonPath("$.totalWalletBalance").value(999.99))
+            .andExpect(jsonPath("$.pendingWithdrawals").value(2))
             .andExpect(jsonPath("$.currentCycle").doesNotExist());
     }
 

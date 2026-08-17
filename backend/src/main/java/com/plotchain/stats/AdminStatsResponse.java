@@ -8,6 +8,7 @@ public record AdminStatsResponse(
     long totalAssociates,
     KycBreakdown kycBreakdown,
     BigDecimal totalWalletBalance,
+    long pendingWithdrawals,
     CurrentCycleStats currentCycle
 ) {
     public record KycBreakdown(long pending, long verified, long rejected) {}
@@ -20,6 +21,8 @@ public record AdminStatsResponse(
         BigDecimal directIncome,
         BigDecimal matchingIncome,
         BigDecimal totalIncome,
-        long newAssociatesThisCycle
+        long newAssociatesThisCycle,
+        long salesThisCycle,
+        BigDecimal revenueThisCycle
     ) {}
 }

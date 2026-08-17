@@ -30,4 +30,6 @@ public interface WithdrawalRequestRepository extends JpaRepository<WithdrawalReq
         @Param("associateId") UUID associateId,
         @Param("status") WithdrawalRequestStatus status,
         Pageable pageable);
+
+    long countByStatus(WithdrawalRequestStatus status);
 }

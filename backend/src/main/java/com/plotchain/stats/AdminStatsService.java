@@ -8,7 +8,11 @@ import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntryRepository;
+import com.plotchain.sales.SaleRepository;
+import com.plotchain.sales.SaleStatus;
 import com.plotchain.wallet.WalletRepository;
+import com.plotchain.withdrawal.WithdrawalRequestRepository;
+import com.plotchain.withdrawal.WithdrawalRequestStatus;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -24,22 +28,29 @@ public class AdminStatsService {
     private final WalletRepository walletRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
     private final CycleRepository cycleRepository;
+    private final SaleRepository saleRepository;
+    private final WithdrawalRequestRepository withdrawalRequestRepository;
 
     public AdminStatsService(
         AssociateRepository associateRepository,
         WalletRepository walletRepository,
         LedgerEntryRepository ledgerEntryRepository,
-        CycleRepository cycleRepository
+        CycleRepository cycleRepository,
+        SaleRepository saleRepository,
+        WithdrawalRequestRepository withdrawalRequestRepository
     ) {
         this.associateRepository = associateRepository;
         this.walletRepository = walletRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.cycleRepository = cycleRepository;
+        this.saleRepository = saleRepository;
+        this.withdrawalRequestRepository = withdrawalRequestRepository;
     }
 
     // Unlike DashboardService.getDashboard, this does NOT throw/409 when there's no OPEN cycle:
-    // an admin still wants total associates / wallet balance regardless of cycle state, so
-    // currentCycle simply comes back null and the rest of the stats still populate.
+    // an admin still wants total associates / wallet balance / pending withdrawals regardless of
+    // cycle state, so currentCycle simply comes back null and the rest of the stats still
+    // populate.
     public AdminStatsResponse getStats() {
         long totalAssociates = associateRepository.countByRole(AssociateRole.ASSOCIATE);
 
@@ -50,13 +61,14 @@ public class AdminStatsService {
         );
 
         BigDecimal totalWalletBalance = walletRepository.sumAllBalances();
+        long pendingWithdrawals = withdrawalRequestRepository.countByStatus(WithdrawalRequestStatus.REQUESTED);
 
         AdminStatsResponse.CurrentCycleStats currentCycle = cycleRepository
             .findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)
             .map(this::currentCycleStats)
             .orElse(null);
 
-        return new AdminStatsResponse(totalAssociates, kycBreakdown, totalWalletBalance, currentCycle);
+        return new AdminStatsResponse(totalAssociates, kycBreakdown, totalWalletBalance, pendingWithdrawals, currentCycle);
     }
 
     private AdminStatsResponse.CurrentCycleStats currentCycleStats(Cycle cycle) {
@@ -73,9 +85,12 @@ public class AdminStatsService {
         Instant endExclusive = cycle.getPeriodEnd().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
         long newAssociates = associateRepository.countByRoleAndJoinedBetween(AssociateRole.ASSOCIATE, start, endExclusive);
 
+        long salesThisCycle = saleRepository.countByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED);
+        BigDecimal revenueThisCycle = saleRepository.sumAmountByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED);
+
         return new AdminStatsResponse.CurrentCycleStats(
             cycle.getId(), cycle.getPeriodStart(), cycle.getPeriodEnd(), daysRemaining,
-            direct, matching, total, newAssociates
+            direct, matching, total, newAssociates, salesThisCycle, revenueThisCycle
         );
     }
 }
