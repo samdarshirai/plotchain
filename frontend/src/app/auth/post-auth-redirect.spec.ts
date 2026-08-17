@@ -21,8 +21,10 @@ describe('postAuthLandingPath', () => {
     }
   });
 
-  it('sends ADMIN to /admin/associates/new once launched', () => {
-    expect(postAuthLandingPath('ADMIN', launchedState, () => 'company-profile')).toBe('/admin/associates/new');
+  it('sends every admin-family role to /admin/dashboard once launched', () => {
+    for (const role of ADMIN_FAMILY_ROLES) {
+      expect(postAuthLandingPath(role, launchedState, () => 'company-profile')).toBe('/admin/dashboard');
+    }
   });
 
   it('never invokes incompleteStepPath when launched', () => {

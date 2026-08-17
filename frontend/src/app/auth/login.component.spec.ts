@@ -70,7 +70,7 @@ describe('LoginComponent', () => {
       launchedAt: '2026-01-01T00:00:00Z'
     });
 
-    expect(router.navigate).toHaveBeenCalledWith(['/admin/associates/new']);
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/dashboard']);
   });
 
   it('redirects to /change-password before ever consulting setup state', () => {

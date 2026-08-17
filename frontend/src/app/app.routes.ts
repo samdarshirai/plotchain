@@ -20,6 +20,7 @@ import { SettingsShellComponent } from './settings/settings-shell.component';
 import { SettingsOverviewComponent } from './settings/settings-overview.component';
 import { AuditLogComponent } from './settings/audit-log/audit-log.component';
 import { AdminStatsComponent } from './settings/admin-stats/admin-stats.component';
+import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.component';
 import { AssociateDirectoryComponent } from './admin/associate-directory/associate-directory.component';
 import { TreeExplorerComponent } from './admin/tree-explorer/tree-explorer.component';
 import { KycQueueComponent } from './admin/kyc-queue/kyc-queue.component';
@@ -57,6 +58,7 @@ export const routes: Routes = [
   { path: 'admin/associates/new', component: CreateAssociateComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/sales/new', component: RecordSaleComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/withdrawals/new', component: SubmitWithdrawalComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/dashboard', component: AdminDashboardComponent, canActivate: [authGuard, adminGuard, launchedModeGuard] },
   {
     path: 'setup',
     component: SetupShellComponent,

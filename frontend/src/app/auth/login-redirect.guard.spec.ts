@@ -61,14 +61,14 @@ describe('loginRedirectGuard', () => {
     });
   });
 
-  it('redirects an authenticated ADMIN to /admin/associates/new once launched', done => {
+  it('redirects an authenticated ADMIN to /admin/dashboard once launched', done => {
     authService.isAuthenticated.and.returnValue(true);
     authService.getRole.and.returnValue('ADMIN');
     setupService.getState.and.returnValue(of(launchedState));
 
     const result$ = TestBed.runInInjectionContext(() => loginRedirectGuard({} as any, {} as any)) as any;
     result$.subscribe((result: UrlTree) => {
-      expect(result.toString()).toBe(router.parseUrl('/admin/associates/new').toString());
+      expect(result.toString()).toBe(router.parseUrl('/admin/dashboard').toString());
       done();
     });
   });

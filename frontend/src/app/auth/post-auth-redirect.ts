@@ -11,5 +11,5 @@ export function postAuthLandingPath(role: string, state: SetupStateResponse, inc
   if (!state.launchedAt) {
     return `/setup/${incompleteStepPath()}`;
   }
-  return role === 'ADMIN' ? '/admin/associates/new' : '/settings';
+  return '/admin/dashboard';
 }
