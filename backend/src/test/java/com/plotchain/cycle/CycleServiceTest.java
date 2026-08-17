@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -228,6 +229,39 @@ class CycleServiceTest {
         assertThat(response.newCycleId()).isNotNull();
         assertThat(response.newCycleId()).isNotEqualTo(cycle.getId());
         verify(legVolumeRepository).saveAll(List.of());
+    }
+
+    // m9: closing early (before the just-closed cycle's own periodEnd) must not hand the new
+    // cycle the same bucket-for-today range as the one just closed. newCycle's fixed
+    // 2026-07-01..2026-07-15 window stands in for "whatever cycle happened to be open" --
+    // the assertion is against LocalDate.now(), the actual close moment, not that fixture.
+    @Test
+    void closeOpensTheNextCycleStartingTheDayAfterActualCloseNotTheBucketForToday() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository);
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<Cycle> savedCycles = ArgumentCaptor.forClass(Cycle.class);
+        verify(cycleRepository, atLeastOnce()).save(savedCycles.capture());
+        // The captor holds references, not snapshots -- the original `cycle` object ends up
+        // CLOSED after being mutated across its CALCULATING/CLOSED saves, so filtering by OPEN
+        // status at inspection time isolates only the genuinely new Cycle instance.
+        Cycle nextCycle = savedCycles.getAllValues().stream()
+            .filter(c -> c.getStatus() == CycleStatus.OPEN)
+            .reduce((first, second) -> second)
+            .orElseThrow();
+
+        LocalDate expectedStart = LocalDate.now().plusDays(1);
+        assertThat(nextCycle.getPeriodStart()).isEqualTo(expectedStart);
+        assertThat(nextCycle.getPeriodEnd()).isEqualTo(expectedPeriodEnd(expectedStart));
+        assertThat(nextCycle.getPeriodStart()).isNotEqualTo(cycle.getPeriodStart());
     }
 
     @Test

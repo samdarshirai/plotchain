@@ -191,12 +191,13 @@ public class CycleService {
         }
         creditReward(cycle.getId(), associates, matchedVolumeThisCycle, planVersion);
 
-        // Flow step 8. getOrOpenCurrent() is a plain (non-@Transactional) self-invocation here,
-        // so it runs inside the transaction this @Transactional method's proxy already started
-        // -- exactly what Decision #1/#8 require, with no separate commit.
+        // Flow step 8. Opens the next cycle starting the day after THIS close (m9 fix) rather
+        // than reusing getOrOpenCurrent()'s bucket-for-today logic, which would hand the new
+        // cycle the same date range as the one just closed when closing early (before the
+        // current bucket's natural end) -- see openCycleStartingAfterClose's comment.
         cycle.setStatus(CycleStatus.CLOSED);
         cycleRepository.save(cycle);
-        Cycle nextCycle = getOrOpenCurrent();
+        Cycle nextCycle = openCycleStartingAfterClose(LocalDate.now());
 
         return new CycleCloseResponse(cycle.getId(), cycle.getStatus(), legVolumes.size(), nextCycle.getId());
     }
@@ -685,10 +686,24 @@ public class CycleService {
     }
 
     private Cycle openNewCycle(LocalDate today) {
+        return createCycle(periodStartFor(today), periodEndFor(today));
+    }
+
+    // m9 fix: closing a cycle early must not hand the new cycle the same bucket-for-today range
+    // as the one just closed (periodStartFor(today) snaps back to the bucket start, which is
+    // still inside the just-closed period if closed before that bucket's natural end). The new
+    // cycle instead starts the day after the actual close date and runs to the natural end of
+    // whichever half-month that start falls into -- the two cycles' ranges can never collide.
+    private Cycle openCycleStartingAfterClose(LocalDate closeDate) {
+        LocalDate start = closeDate.plusDays(1);
+        return createCycle(start, periodEndFor(start));
+    }
+
+    private Cycle createCycle(LocalDate periodStart, LocalDate periodEnd) {
         Cycle cycle = new Cycle();
         cycle.setId(UUID.randomUUID());
-        cycle.setPeriodStart(periodStartFor(today));
-        cycle.setPeriodEnd(periodEndFor(today));
+        cycle.setPeriodStart(periodStart);
+        cycle.setPeriodEnd(periodEnd);
         cycle.setStatus(CycleStatus.OPEN);
         return cycleRepository.save(cycle);
     }
