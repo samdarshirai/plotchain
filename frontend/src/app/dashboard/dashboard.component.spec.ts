@@ -10,6 +10,10 @@ describe('DashboardComponent', () => {
   let httpMock: HttpTestingController;
 
   const mockResponse: DashboardResponse = {
+    associate: {
+      associateId: 'SDI384818', name: 'Asha Kumar', rank: 'Sales Associate',
+      phone: '9876543210', joinedAt: '2025-09-05T05:25:42Z', rankChangedAt: null
+    },
     kycPendingBannerVisible: true,
     cycleIncome: { cycleId: 'c1', directIncome: 1000, matchingIncome: 500, totalIncome: 1500 },
     wallet: { balance: 2500 },
@@ -40,6 +44,7 @@ describe('DashboardComponent', () => {
     const selectors = Array.from(fixture.nativeElement.querySelectorAll('.dashboard > *'))
       .map((el: any) => el.tagName.toLowerCase());
     expect(selectors).toEqual([
+      'app-associate-identity-header',
       'app-kyc-banner',
       'app-cycle-income-card',
       'app-wallet-card',

@@ -12,6 +12,10 @@
     "leftLeg": "बायाँ",
     "rightLeg": "दायाँ",
     "carriedForward": "कैरी फॉरवर्ड",
+    "associateIdLabel": "एसोसिएट आईडी",
+    "phoneLabel": "मोबाइल",
+    "joinedAtLabel": "शामिल होने की तिथि",
+    "rankChangedAtLabel": "रैंक अपग्रेड की तिथि",
     "loadError": "आपका डैशबोर्ड लोड करने में समस्या हुई। कृपया पुनः प्रयास करें।"
   },
   "adminDashboard": {

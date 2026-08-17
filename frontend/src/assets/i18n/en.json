@@ -12,6 +12,10 @@
     "leftLeg": "L",
     "rightLeg": "R",
     "carriedForward": "Carried Forward",
+    "associateIdLabel": "Associate ID",
+    "phoneLabel": "Mobile",
+    "joinedAtLabel": "Joined",
+    "rankChangedAtLabel": "Rank Upgraded",
     "loadError": "Something went wrong loading your dashboard. Please try again."
   },
   "adminDashboard": {

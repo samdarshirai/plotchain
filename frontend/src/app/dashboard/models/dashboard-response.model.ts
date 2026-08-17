@@ -1,3 +1,12 @@
+export interface AssociateSummary {
+  associateId: string;
+  name: string;
+  rank: string;
+  phone: string;
+  joinedAt: string;
+  rankChangedAt: string | null;
+}
+
 export interface CycleIncome {
   cycleId: string;
   directIncome: number;
@@ -43,6 +52,7 @@ export interface AnnouncementSummary {
 }
 
 export interface DashboardResponse {
+  associate: AssociateSummary;
   kycPendingBannerVisible: boolean;
   cycleIncome: CycleIncome;
   wallet: WalletSummary;
