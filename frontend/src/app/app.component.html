@@ -15,6 +15,7 @@
       <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/income-statement" routerLinkActive="app-nav__link--active">{{ 'nav.incomeStatement' | translate }}</a>
       <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/payout-history" routerLinkActive="app-nav__link--active">{{ 'nav.payoutHistory' | translate }}</a>
       <ng-container *ngIf="isAdminFamily">
+        <a class="app-nav__link" routerLink="/admin/dashboard" routerLinkActive="app-nav__link--active">{{ 'nav.dashboard' | translate }}</a>
         <a class="app-nav__link" routerLink="/admin/associates/new" routerLinkActive="app-nav__link--active">{{ 'nav.provisionAssociate' | translate }}</a>
         <a class="app-nav__link" routerLink="/settings" routerLinkActive="app-nav__link--active">{{ 'nav.settings' | translate }}</a>
       </ng-container>

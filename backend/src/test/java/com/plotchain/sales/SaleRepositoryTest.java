@@ -173,4 +173,30 @@ class SaleRepositoryTest {
         assertThat(result.getContent()).extracting(Sale::getId)
             .containsExactly(laterSale.getId(), earlierSale.getId());
     }
+
+    @Test
+    void sumAmountByCycleIdAndStatusReturnsZeroNotNullWhenNoSalesMatch() {
+        UUID cycleId = persistCycle();
+
+        BigDecimal sum = saleRepository.sumAmountByCycleIdAndStatus(cycleId, SaleStatus.RECORDED);
+
+        assertThat(sum).isNotNull().isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    void countAndSumByCycleIdAndStatusExcludeVoidedSales() {
+        UUID projectId = persistProject();
+        UUID plotId = persistPlot(projectId);
+        UUID cycleId = persistCycle();
+        UUID associateId = persistAssociate();
+        persistSale(associateId, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(associateId, plotId, cycleId, SaleStatus.VOIDED, Instant.now());
+        entityManager.flush();
+
+        long count = saleRepository.countByCycleIdAndStatus(cycleId, SaleStatus.RECORDED);
+        BigDecimal sum = saleRepository.sumAmountByCycleIdAndStatus(cycleId, SaleStatus.RECORDED);
+
+        assertThat(count).isEqualTo(1);
+        assertThat(sum).isEqualByComparingTo(new BigDecimal("600000.00"));
+    }
 }

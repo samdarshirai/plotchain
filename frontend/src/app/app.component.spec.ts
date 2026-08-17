@@ -114,7 +114,7 @@ describe('AppComponent', () => {
     ]);
   });
 
-  it('shows Provision Associate and Settings but hides Dashboard for an admin-family role', () => {
+  it('shows Dashboard, Provision Associate, and Settings for an admin-family role', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const authService = TestBed.inject(AuthService);
     const translateService = TestBed.inject(TranslateService);
@@ -133,7 +133,7 @@ describe('AppComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     const links = Array.from(compiled.querySelectorAll('.app-nav__link')).map(el => el.textContent?.trim());
-    expect(links).toEqual(['Provision Associate', 'Settings']);
+    expect(links).toEqual(['Dashboard', 'Provision Associate', 'Settings']);
   });
 
   it('hides the Dashboard nav link for every admin-family role', () => {

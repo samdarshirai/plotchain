@@ -74,7 +74,7 @@ describe('AdminDashboardComponent', () => {
 
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('adminDashboard.noCycleEmptyState');
-    expect(text).not.toContain('2400000');
+    expect(text).not.toContain('2,400,000');
   });
 
   it('sets loadError and renders the error message when the request fails', () => {
