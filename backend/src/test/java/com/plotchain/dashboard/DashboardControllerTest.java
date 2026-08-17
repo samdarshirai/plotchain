@@ -6,6 +6,7 @@ import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.associate.KycStatus;
 import com.plotchain.auth.JwtService;
+import com.plotchain.compensation.RoyaltyBonusRateRepository;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
@@ -56,6 +57,7 @@ class DashboardControllerTest {
     @MockBean LegVolumeRepository legVolumeRepository;
     @MockBean WalletRepository walletRepository;
     @MockBean AnnouncementRepository announcementRepository;
+    @MockBean RoyaltyBonusRateRepository royaltyBonusRateRepository;
 
     private String tokenFor(UUID associateId) {
         Associate associate = new Associate();
@@ -94,6 +96,8 @@ class DashboardControllerTest {
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(cycle));
         when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(any(), any(), any())).thenReturn(BigDecimal.ZERO);
         when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(any(), any()))
+            .thenReturn(Optional.empty());
         when(legVolumeRepository.findByAssociateIdAndCycleId(any(), any()))
             .thenReturn(Optional.of(LegVolume.empty(associateId, cycleId)));
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
@@ -110,7 +114,9 @@ class DashboardControllerTest {
             .andExpect(jsonPath("$.associate.name").value("Asha Kumar"))
             .andExpect(jsonPath("$.associate.joinedAt").value(joinedAt.toString()))
             .andExpect(jsonPath("$.cycleIncome.sponsorMatchingIncome").value(0))
-            .andExpect(jsonPath("$.cycleIncome.selfPerformanceBonus").value(0));
+            .andExpect(jsonPath("$.cycleIncome.selfPerformanceBonus").value(0))
+            .andExpect(jsonPath("$.cycleIncome.royaltyBonus").value(0))
+            .andExpect(jsonPath("$.cycleIncome.royaltyBonusPct").value(0));
     }
 
     @Test

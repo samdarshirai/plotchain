@@ -8,6 +8,8 @@ import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.KycStatus;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
+import com.plotchain.compensation.RoyaltyBonusRate;
+import com.plotchain.compensation.RoyaltyBonusRateRepository;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
@@ -41,6 +43,7 @@ public class DashboardService {
     private final WalletRepository walletRepository;
     private final AnnouncementRepository announcementRepository;
     private final CompensationPlanVersionRepository compensationPlanVersionRepository;
+    private final RoyaltyBonusRateRepository royaltyBonusRateRepository;
 
     public DashboardService(
         AssociateRepository associateRepository,
@@ -50,7 +53,8 @@ public class DashboardService {
         LegVolumeRepository legVolumeRepository,
         WalletRepository walletRepository,
         AnnouncementRepository announcementRepository,
-        CompensationPlanVersionRepository compensationPlanVersionRepository
+        CompensationPlanVersionRepository compensationPlanVersionRepository,
+        RoyaltyBonusRateRepository royaltyBonusRateRepository
     ) {
         this.associateRepository = associateRepository;
         this.rankTierRepository = rankTierRepository;
@@ -60,6 +64,7 @@ public class DashboardService {
         this.walletRepository = walletRepository;
         this.announcementRepository = announcementRepository;
         this.compensationPlanVersionRepository = compensationPlanVersionRepository;
+        this.royaltyBonusRateRepository = royaltyBonusRateRepository;
     }
 
     public DashboardResponse getDashboard(UUID associateId) {
@@ -78,16 +83,20 @@ public class DashboardService {
         BigDecimal sponsorMatching = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.SPONSOR_MATCHING);
         BigDecimal selfPerformance = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.SELF_PERFORMANCE);
         BigDecimal total = ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycle.getId());
+        BigDecimal royaltyBonus = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.ROYALTY);
 
         LegVolume legVolume = legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycle.getId())
             .orElseGet(() -> LegVolume.empty(associateId, cycle.getId()));
-        BigDecimal matchingIncomePct = compensationPlanVersionRepository
+        CompensationPlanVersion planVersion = compensationPlanVersionRepository
             .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
-            .map(CompensationPlanVersion::getMatchingIncomePct)
             .orElseThrow(() -> new IllegalStateException("compensation_plan_version row missing - V8 migration seeds it"));
-        BigDecimal projectedMatch = legVolume.getLeftLegVolume()
-            .min(legVolume.getRightLegVolume())
-            .multiply(matchingIncomePct.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+        BigDecimal matchingIncomePct = planVersion.getMatchingIncomePct();
+        BigDecimal matchedVolume = legVolume.getLeftLegVolume().min(legVolume.getRightLegVolume());
+        BigDecimal projectedMatch = matchedVolume.multiply(matchingIncomePct.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+        BigDecimal royaltyBonusPct = royaltyBonusRateRepository
+            .findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(planVersion.getId(), matchedVolume)
+            .map(RoyaltyBonusRate::getRoyaltyPct)
+            .orElse(BigDecimal.ZERO);
 
         Wallet wallet = walletRepository.findById(associateId)
             .orElseGet(() -> Wallet.zero(associateId));
@@ -131,7 +140,7 @@ public class DashboardService {
                 associate.getUserId(), associate.getName(), currentRank.getName(),
                 associate.getPhone(), associate.getJoinedAt(), associate.getRankChangedAt()),
             associate.getKycStatus() != KycStatus.VERIFIED,
-            new DashboardResponse.CycleIncome(cycle.getId(), direct, matching, sponsorMatching, selfPerformance, total),
+            new DashboardResponse.CycleIncome(cycle.getId(), direct, matching, sponsorMatching, selfPerformance, royaltyBonus, royaltyBonusPct, total),
             new DashboardResponse.WalletSummary(wallet.getBalance()),
             new DashboardResponse.LegVolumeSummary(
                 legVolume.getLeftLegVolume(), legVolume.getRightLegVolume(),

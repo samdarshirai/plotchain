@@ -7,6 +7,8 @@ import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.KycStatus;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
+import com.plotchain.compensation.RoyaltyBonusRate;
+import com.plotchain.compensation.RoyaltyBonusRateRepository;
 import com.plotchain.compensation.SettlementCycle;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
@@ -49,6 +51,7 @@ class DashboardServiceTest {
     @Mock WalletRepository walletRepository;
     @Mock AnnouncementRepository announcementRepository;
     @Mock CompensationPlanVersionRepository compensationPlanVersionRepository;
+    @Mock RoyaltyBonusRateRepository royaltyBonusRateRepository;
 
     DashboardService dashboardService;
 
@@ -57,7 +60,8 @@ class DashboardServiceTest {
         dashboardService = new DashboardService(
             associateRepository, rankTierRepository, cycleRepository,
             ledgerEntryRepository, legVolumeRepository, walletRepository,
-            announcementRepository, compensationPlanVersionRepository);
+            announcementRepository, compensationPlanVersionRepository,
+            royaltyBonusRateRepository);
     }
 
     @Test
@@ -103,12 +107,19 @@ class DashboardServiceTest {
         when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.SELF_PERFORMANCE))
             .thenReturn(BigDecimal.valueOf(200));
         when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycleId))
-            .thenReturn(BigDecimal.valueOf(2000));
+            .thenReturn(BigDecimal.valueOf(2400));
         when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycleId))
             .thenReturn(Optional.of(legVolume));
+        CompensationPlanVersion planVersion = compensationPlanVersion(new BigDecimal("7.00"));
         when(compensationPlanVersionRepository
                 .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
-            .thenReturn(Optional.of(compensationPlanVersion(new BigDecimal("7.00"))));
+            .thenReturn(Optional.of(planVersion));
+        when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.ROYALTY))
+            .thenReturn(BigDecimal.valueOf(400));
+        when(royaltyBonusRateRepository
+                .findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+                    planVersion.getId(), BigDecimal.ZERO))
+            .thenReturn(Optional.of(new RoyaltyBonusRate(UUID.randomUUID(), planVersion.getId(), BigDecimal.ZERO, new BigDecimal("3.00"))));
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
         when(rankTierRepository.findAllByOrderByRankOrder())
             .thenReturn(List.of(currentRank, nextRank));
@@ -130,7 +141,9 @@ class DashboardServiceTest {
         assertThat(response.cycleIncome().matchingIncome()).isEqualByComparingTo("500");
         assertThat(response.cycleIncome().sponsorMatchingIncome()).isEqualByComparingTo("300");
         assertThat(response.cycleIncome().selfPerformanceBonus()).isEqualByComparingTo("200");
-        assertThat(response.cycleIncome().totalIncome()).isEqualByComparingTo("2000");
+        assertThat(response.cycleIncome().royaltyBonus()).isEqualByComparingTo("400");
+        assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("3.00");
+        assertThat(response.cycleIncome().totalIncome()).isEqualByComparingTo("2400");
         assertThat(response.wallet().balance()).isEqualByComparingTo("0");
         assertThat(response.legVolume().leftVolume()).isEqualByComparingTo("0");
         assertThat(response.legVolume().rightVolume()).isEqualByComparingTo("0");
@@ -200,6 +213,8 @@ class DashboardServiceTest {
         assertThat(response.legVolume().projectedMatchAmount()).isEqualByComparingTo("10500.00");
         assertThat(response.cycleIncome().sponsorMatchingIncome()).isEqualByComparingTo("0");
         assertThat(response.cycleIncome().selfPerformanceBonus()).isEqualByComparingTo("0");
+        assertThat(response.cycleIncome().royaltyBonus()).isEqualByComparingTo("0");
+        assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("0");
         assertThat(response.associate().rankChangedAt()).isNull();
     }
 
