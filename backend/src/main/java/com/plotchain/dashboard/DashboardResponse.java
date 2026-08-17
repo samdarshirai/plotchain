@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record DashboardResponse(
+    AssociateSummary associate,
     boolean kycPendingBannerVisible,
     CycleIncome cycleIncome,
     WalletSummary wallet,
@@ -15,6 +16,7 @@ public record DashboardResponse(
     CycleCountdown cycleCountdown,
     List<AnnouncementSummary> announcements
 ) {
+    public record AssociateSummary(String associateId, String name, String rank, String phone, Instant joinedAt, Instant rankChangedAt) {}
     public record CycleIncome(UUID cycleId, BigDecimal directIncome, BigDecimal matchingIncome, BigDecimal totalIncome) {}
     public record WalletSummary(BigDecimal balance) {}
     public record LegVolumeSummary(BigDecimal leftVolume, BigDecimal rightVolume, BigDecimal carriedForwardLeft, BigDecimal carriedForwardRight, BigDecimal projectedMatchAmount) {}

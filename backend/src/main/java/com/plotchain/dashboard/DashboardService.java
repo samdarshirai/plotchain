@@ -125,6 +125,9 @@ public class DashboardService {
         List<Announcement> announcements = announcementRepository.findTop5ByOrderByPublishedAtDesc();
 
         return new DashboardResponse(
+            new DashboardResponse.AssociateSummary(
+                associate.getUserId(), associate.getName(), currentRank.getName(),
+                associate.getPhone(), associate.getJoinedAt(), associate.getRankChangedAt()),
             associate.getKycStatus() != KycStatus.VERIFIED,
             new DashboardResponse.CycleIncome(cycle.getId(), direct, matching, total),
             new DashboardResponse.WalletSummary(wallet.getBalance()),

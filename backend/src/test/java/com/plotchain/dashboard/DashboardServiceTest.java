@@ -72,6 +72,13 @@ class DashboardServiceTest {
         associate.setRankId(currentRankId);
         associate.setKycStatus(KycStatus.PENDING);
         associate.setCumulativeMatchedVolume(BigDecimal.valueOf(4000));
+        associate.setUserId("SDI384818");
+        associate.setName("Asha Kumar");
+        associate.setPhone("9876543210");
+        Instant joinedAt = Instant.parse("2025-09-05T05:25:42Z");
+        Instant rankChangedAt = Instant.parse("2026-01-10T09:00:00Z");
+        associate.setJoinedAt(joinedAt);
+        associate.setRankChangedAt(rankChangedAt);
 
         Cycle cycle = new Cycle();
         cycle.setId(cycleId);
@@ -109,6 +116,12 @@ class DashboardServiceTest {
         DashboardResponse response = dashboardService.getDashboard(associateId);
 
         assertThat(response.kycPendingBannerVisible()).isTrue();
+        assertThat(response.associate().associateId()).isEqualTo("SDI384818");
+        assertThat(response.associate().name()).isEqualTo("Asha Kumar");
+        assertThat(response.associate().rank()).isEqualTo("Sales Associate");
+        assertThat(response.associate().phone()).isEqualTo("9876543210");
+        assertThat(response.associate().joinedAt()).isEqualTo(joinedAt);
+        assertThat(response.associate().rankChangedAt()).isEqualTo(rankChangedAt);
         assertThat(response.cycleIncome().directIncome()).isEqualByComparingTo("1000");
         assertThat(response.cycleIncome().matchingIncome()).isEqualByComparingTo("500");
         assertThat(response.cycleIncome().totalIncome()).isEqualByComparingTo("1500");
@@ -179,6 +192,7 @@ class DashboardServiceTest {
 
         // min(200000, 150000) * (7.00 / 100) = 150000 * 0.07 = 10500.00
         assertThat(response.legVolume().projectedMatchAmount()).isEqualByComparingTo("10500.00");
+        assertThat(response.associate().rankChangedAt()).isNull();
     }
 
     @Test

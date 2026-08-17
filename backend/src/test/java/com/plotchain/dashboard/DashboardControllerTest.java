@@ -25,6 +25,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -74,6 +75,10 @@ class DashboardControllerTest {
         associate.setRankId(currentRankId);
         associate.setKycStatus(KycStatus.VERIFIED);
         associate.setCumulativeMatchedVolume(BigDecimal.ZERO);
+        associate.setUserId("SDI384818");
+        associate.setName("Asha Kumar");
+        associate.setPhone("9876543210");
+        associate.setJoinedAt(Instant.now());
 
         Cycle cycle = new Cycle();
         cycle.setId(cycleId);
@@ -100,7 +105,8 @@ class DashboardControllerTest {
         mockMvc.perform(get("/api/associates/me/dashboard")
                 .header("Authorization", "Bearer " + tokenFor(associateId)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.teamSnapshot.totalDownline").value(12));
+            .andExpect(jsonPath("$.teamSnapshot.totalDownline").value(12))
+            .andExpect(jsonPath("$.associate.name").value("Asha Kumar"));
     }
 
     @Test
