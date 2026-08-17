@@ -30,9 +30,6 @@ import { SECTION_PATHS } from './models/settings-section.model';
         <li class="settings-nav-rail__item" [class.settings-nav-rail__item--active]="activeSectionKey === 'auditLog'">
           <a [routerLink]="['/settings', 'audit-log']">{{ 'settings.sections.auditLog' | translate }}</a>
         </li>
-        <li class="settings-nav-rail__item" [class.settings-nav-rail__item--active]="activeSectionKey === 'adminStats'">
-          <a [routerLink]="['/settings', 'admin-stats']">{{ 'settings.sections.adminStats' | translate }}</a>
-        </li>
         <li class="settings-nav-rail__item" [class.settings-nav-rail__item--active]="activeSectionKey === 'salesRegister'">
           <a [routerLink]="['/settings', 'sales-register']">{{ 'settings.sections.salesRegister' | translate }}</a>
         </li>

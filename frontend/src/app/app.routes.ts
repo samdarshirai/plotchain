@@ -19,7 +19,6 @@ import { ReviewLaunchStepComponent } from './setup/steps/review-launch/review-la
 import { SettingsShellComponent } from './settings/settings-shell.component';
 import { SettingsOverviewComponent } from './settings/settings-overview.component';
 import { AuditLogComponent } from './settings/audit-log/audit-log.component';
-import { AdminStatsComponent } from './settings/admin-stats/admin-stats.component';
 import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.component';
 import { AssociateDirectoryComponent } from './admin/associate-directory/associate-directory.component';
 import { TreeExplorerComponent } from './admin/tree-explorer/tree-explorer.component';
@@ -91,8 +90,7 @@ export const routes: Routes = [
       { path: 'cycle-management', component: CycleManagementComponent, data: { sectionKey: 'cycleManagement' } },
       { path: 'ledger-register', component: LedgerRegisterComponent, data: { sectionKey: 'ledgerRegister' } },
       { path: 'payout-approval', component: PayoutApprovalComponent, data: { sectionKey: 'payoutApproval' } },
-      { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } },
-      { path: 'admin-stats', component: AdminStatsComponent, data: { sectionKey: 'adminStats' } }
+      { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } }
     ]
   },
   { path: '', pathMatch: 'full', canActivate: [authGuard, rootRedirectGuard], children: [] }

@@ -887,7 +887,6 @@
       "treeExplorer": "Tree Explorer",
       "kycQueue": "KYC Review Queue",
       "auditLog": "ऑडिट लॉग",
-      "adminStats": "एडमिन आंकड़े",
       "salesRegister": "बिक्री रजिस्टर",
       "cycleManagement": "चक्र प्रबंधन",
       "ledgerRegister": "Ledger Register",
@@ -929,23 +928,6 @@
       "nextPageAction": "अगला",
       "emptyState": "अभी तक कोई बदलाव दर्ज नहीं हुआ है।",
       "pageIndicator": "पृष्ठ {{page}} में से {{totalPages}}"
-    },
-    "adminStats": {
-      "totalAssociatesLabel": "कुल एसोसिएट्स",
-      "walletBalanceLabel": "कुल वॉलेट बैलेंस",
-      "kycBreakdownTitle": "केवाईसी विवरण",
-      "kycPendingLabel": "लंबित",
-      "kycVerifiedLabel": "सत्यापित",
-      "kycRejectedLabel": "अस्वीकृत",
-      "currentCycleTitle": "वर्तमान चक्र",
-      "periodLabel": "अवधि",
-      "daysRemainingLabel": "शेष दिन",
-      "directIncomeLabel": "प्रत्यक्ष आय",
-      "matchingIncomeLabel": "मैचिंग आय",
-      "totalIncomeLabel": "कुल आय",
-      "newAssociatesLabel": "इस चक्र में नए एसोसिएट्स",
-      "noCycleEmptyState": "अभी कोई खुला चक्र नहीं है।",
-      "loadError": "आंकड़े लोड नहीं हो सके। बाद में पुनः प्रयास करें।"
     }
   },
   "legal": {

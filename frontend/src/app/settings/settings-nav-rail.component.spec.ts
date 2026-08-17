@@ -14,10 +14,10 @@ describe('SettingsNavRailComponent', () => {
     fixture = TestBed.createComponent(SettingsNavRailComponent);
   });
 
-  it('renders one row per section plus hardcoded associate directory, tree explorer, kyc queue, audit log, admin stats, sales register, cycle management, ledger register, and payout approval rows', () => {
+  it('renders one row per section plus hardcoded associate directory, tree explorer, kyc queue, audit log, sales register, cycle management, ledger register, and payout approval rows', () => {
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('.settings-nav-rail__item');
-    expect(items.length).toBe(Object.keys(SECTION_PATHS).length + 9);
+    expect(items.length).toBe(Object.keys(SECTION_PATHS).length + 8);
   });
 
   it('marks the active section', () => {
@@ -32,14 +32,14 @@ describe('SettingsNavRailComponent', () => {
     fixture.componentInstance.activeSectionKey = 'auditLog';
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('.settings-nav-rail__item');
-    expect(items[items.length - 6].classList).toContain('settings-nav-rail__item--active');
+    expect(items[items.length - 5].classList).toContain('settings-nav-rail__item--active');
   });
 
-  it('marks the admin stats row active when the active section key is adminStats', () => {
-    fixture.componentInstance.activeSectionKey = 'adminStats';
+  it('no longer renders an admin stats nav row', () => {
     fixture.detectChanges();
-    const items = fixture.nativeElement.querySelectorAll('.settings-nav-rail__item');
-    expect(items[items.length - 5].classList).toContain('settings-nav-rail__item--active');
+    const links: HTMLAnchorElement[] = fixture.nativeElement.querySelectorAll('a');
+    const hrefs = Array.from(links).map(a => a.getAttribute('href'));
+    expect(hrefs).not.toContain('/settings/admin-stats');
   });
 
   it('marks the sales register row active when the active section key is salesRegister', () => {
