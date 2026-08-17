@@ -15,7 +15,7 @@ describe('DashboardComponent', () => {
       phone: '9876543210', joinedAt: '2025-09-05T05:25:42Z', rankChangedAt: null
     },
     kycPendingBannerVisible: true,
-    cycleIncome: { cycleId: 'c1', directIncome: 1000, matchingIncome: 500, sponsorMatchingIncome: 300, selfPerformanceBonus: 200, totalIncome: 2000 },
+    cycleIncome: { cycleId: 'c1', directIncome: 1000, matchingIncome: 500, sponsorMatchingIncome: 300, selfPerformanceBonus: 200, royaltyBonus: 400, royaltyBonusPct: 3, totalIncome: 2400 },
     wallet: { balance: 2500 },
     legVolume: { leftVolume: 3000, rightVolume: 2000, carriedForwardLeft: 0, carriedForwardRight: 1000, projectedMatchAmount: 140 },
     rankProgress: { currentRank: 'Sales Associate', currentRankOrder: 1, nextRank: 'Sales Executive', progressPercent: 40, volumeToNextRank: 6000 },

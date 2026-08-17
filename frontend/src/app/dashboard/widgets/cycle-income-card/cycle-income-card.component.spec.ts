@@ -17,7 +17,9 @@ describe('CycleIncomeCardComponent', () => {
       matchingIncome: 500,
       sponsorMatchingIncome: 300,
       selfPerformanceBonus: 200,
-      totalIncome: 2000
+      royaltyBonus: 400,
+      royaltyBonusPct: 3,
+      totalIncome: 2400
     };
     fixture.detectChanges();
   });
@@ -26,7 +28,7 @@ describe('CycleIncomeCardComponent', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('1,000');
     expect(text).toContain('500');
-    expect(text).toContain('2,000');
+    expect(text).toContain('2,400');
   });
 
   it('renders sponsor matching and self performance income in their own rows', () => {
@@ -34,6 +36,12 @@ describe('CycleIncomeCardComponent', () => {
     const selfPerformance = fixture.nativeElement.querySelector('.self-performance').textContent;
     expect(sponsorMatching).toContain('300');
     expect(selfPerformance).toContain('200');
+  });
+
+  it('renders royalty bonus with its percentage', () => {
+    const royalty = fixture.nativeElement.querySelector('.royalty').textContent;
+    expect(royalty).toContain('400');
+    expect(royalty).toContain('3');
   });
 
   it('links to the income statement screen', () => {
