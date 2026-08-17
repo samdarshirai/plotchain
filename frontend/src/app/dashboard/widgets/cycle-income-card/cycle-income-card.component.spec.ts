@@ -22,13 +22,18 @@ describe('CycleIncomeCardComponent', () => {
     fixture.detectChanges();
   });
 
-  it('renders direct, matching, sponsor matching, self performance, and total income', () => {
+  it('renders direct, matching, and total income', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('1,000');
     expect(text).toContain('500');
-    expect(text).toContain('300');
-    expect(text).toContain('200');
     expect(text).toContain('2,000');
+  });
+
+  it('renders sponsor matching and self performance income in their own rows', () => {
+    const sponsorMatching = fixture.nativeElement.querySelector('.sponsor-matching').textContent;
+    const selfPerformance = fixture.nativeElement.querySelector('.self-performance').textContent;
+    expect(sponsorMatching).toContain('300');
+    expect(selfPerformance).toContain('200');
   });
 
   it('links to the income statement screen', () => {

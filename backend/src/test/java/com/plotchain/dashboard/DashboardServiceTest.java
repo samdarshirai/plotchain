@@ -103,7 +103,7 @@ class DashboardServiceTest {
         when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.SELF_PERFORMANCE))
             .thenReturn(BigDecimal.valueOf(200));
         when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycleId))
-            .thenReturn(BigDecimal.valueOf(1500));
+            .thenReturn(BigDecimal.valueOf(2000));
         when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycleId))
             .thenReturn(Optional.of(legVolume));
         when(compensationPlanVersionRepository
@@ -130,7 +130,7 @@ class DashboardServiceTest {
         assertThat(response.cycleIncome().matchingIncome()).isEqualByComparingTo("500");
         assertThat(response.cycleIncome().sponsorMatchingIncome()).isEqualByComparingTo("300");
         assertThat(response.cycleIncome().selfPerformanceBonus()).isEqualByComparingTo("200");
-        assertThat(response.cycleIncome().totalIncome()).isEqualByComparingTo("1500");
+        assertThat(response.cycleIncome().totalIncome()).isEqualByComparingTo("2000");
         assertThat(response.wallet().balance()).isEqualByComparingTo("0");
         assertThat(response.legVolume().leftVolume()).isEqualByComparingTo("0");
         assertThat(response.legVolume().rightVolume()).isEqualByComparingTo("0");
