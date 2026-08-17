@@ -885,6 +885,12 @@
       "viewHistoryLabel": "इतिहास देखें",
       "historyPanelTitle": "मुआवज़ा योजना इतिहास"
     },
+    "companyProfileCard": {
+      "currentDisplayNameLabel": "{{displayName}}"
+    },
+    "brandingCard": {
+      "currentTaglineLabel": "{{tagline}}"
+    },
     "auditLog": {
       "sectionFilterLabel": "अनुभाग",
       "allSectionsOption": "सभी",

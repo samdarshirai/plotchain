@@ -5,6 +5,8 @@ import { TranslateModule } from '@ngx-translate/core';
 import { SettingsOverviewComponent } from './settings-overview.component';
 import { SECTION_PATHS } from './models/settings-section.model';
 import { CompensationPlanResponse, CompensationPlanSummary } from '../setup/models/compensation-plan.model';
+import { CompanyProfileResponse } from '../setup/models/company-profile.model';
+import { CompanyBrandingResponse } from '../setup/models/branding.model';
 
 describe('SettingsOverviewComponent', () => {
   let fixture: ComponentFixture<SettingsOverviewComponent>;
@@ -33,6 +35,26 @@ describe('SettingsOverviewComponent', () => {
     { versionLabel: 'v2', effectiveFrom: '2026-01-01', createdAt: '2026-01-01T00:00:00Z' }
   ];
 
+  const sampleProfile: CompanyProfileResponse = {
+    displayName: 'Viraj Acres',
+    legalName: 'Viraj Acres Pvt Ltd',
+    registrationNumber: 'REG123',
+    contactName: 'Jane Doe',
+    contactPhone: '9999999999',
+    contactEmail: 'jane@virajacres.test',
+    registeredAddress: 'Pune, MH',
+    updatedAt: '2026-04-01T00:00:00Z'
+  };
+
+  const sampleBranding: CompanyBrandingResponse = {
+    primaryColor: '#C6A227',
+    secondaryColor: '#0C0A0B',
+    tagline: 'Land you can trust',
+    hasSquareLogo: true,
+    hasWideLogo: true,
+    updatedAt: '2026-04-01T00:00:00Z'
+  };
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SettingsOverviewComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
@@ -46,9 +68,15 @@ describe('SettingsOverviewComponent', () => {
     httpMock.verify();
   });
 
+  function flushCompanyProfileAndBranding(): void {
+    httpMock.expectOne('/api/company/profile').flush(sampleProfile);
+    httpMock.expectOne('/api/company/branding').flush(sampleBranding);
+  }
+
   it('rendersFiveCardsWithTheirTranslatedLabelsAndLinks', () => {
     fixture.detectChanges();
     httpMock.expectOne('/api/company/compensation').flush(samplePlan);
+    flushCompanyProfileAndBranding();
     fixture.detectChanges();
 
     const sectionKeys = Object.keys(SECTION_PATHS);
@@ -74,21 +102,38 @@ describe('SettingsOverviewComponent', () => {
     fixture.detectChanges();
     const req = httpMock.expectOne('/api/company/compensation');
     req.flush(samplePlan);
+    flushCompanyProfileAndBranding();
     fixture.detectChanges();
 
     expect(fixture.componentInstance.compensationCurrent?.versionLabel).toBe('v3');
     expect(fixture.componentInstance.compensationCurrent?.effectiveFrom).toBe('2026-04-01');
 
-    const currentEl: HTMLElement = fixture.nativeElement.querySelector('.settings-overview__compensation-current');
+    const summaries: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.settings-overview__card-summary');
+    const currentEl = Array.from(summaries).find(el => el.textContent?.includes('compensationCard'));
     expect(currentEl).toBeTruthy();
     // Falls back to the translation key (no i18n files loaded in this suite), but the interpolation
     // params must have been supplied for the pipe to have rendered anything at all here.
-    expect(currentEl.textContent).toContain('settings.compensationCard.currentVersionLabel');
+    expect(currentEl!.textContent).toContain('settings.compensationCard.currentVersionLabel');
+  });
+
+  it('companyProfileAndBrandingCardsFetchAndDisplayASummary', () => {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/company/compensation').flush(samplePlan);
+    flushCompanyProfileAndBranding();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.companyProfileCurrent?.displayName).toBe('Viraj Acres');
+    expect(fixture.componentInstance.brandingCurrent?.tagline).toBe('Land you can trust');
+
+    const summaries: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.settings-overview__card-summary');
+    // Compensation, Company Profile, Branding -- the three cards with fetched summary content.
+    expect(summaries.length).toBe(3);
   });
 
   it('viewHistoryOpensTheSidePanelPopulatedFromGetHistory', () => {
     fixture.detectChanges();
     httpMock.expectOne('/api/company/compensation').flush(samplePlan);
+    flushCompanyProfileAndBranding();
     fixture.detectChanges();
 
     expect(fixture.componentInstance.historyPanelOpen).toBe(false);

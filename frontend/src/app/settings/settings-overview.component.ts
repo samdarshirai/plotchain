@@ -6,6 +6,10 @@ import { SidePanelComponent } from '../shared/components/side-panel/side-panel.c
 import { BrandButtonComponent } from '../shared/components/brand-button/brand-button.component';
 import { CompensationPlanService } from '../setup/steps/compensation/compensation-plan.service';
 import { CompensationPlanResponse, CompensationPlanSummary } from '../setup/models/compensation-plan.model';
+import { CompanyProfileService } from '../setup/steps/company-profile/company-profile.service';
+import { CompanyProfileResponse } from '../setup/models/company-profile.model';
+import { BrandingService } from '../setup/steps/branding/branding.service';
+import { CompanyBrandingResponse } from '../setup/models/branding.model';
 import { SECTION_PATHS } from './models/settings-section.model';
 
 interface SettingsOverviewCard {
@@ -26,13 +30,25 @@ interface SettingsOverviewCard {
         <h2 class="settings-overview__card-title">{{ 'settings.sections.' + card.key | translate }}</h2>
 
         <p
-          class="settings-overview__compensation-current"
+          class="settings-overview__card-summary"
           *ngIf="card.key === 'compensation' && compensationCurrent as current"
         >
           {{
             'settings.compensationCard.currentVersionLabel'
               | translate: { versionLabel: current.versionLabel, effectiveFrom: current.effectiveFrom }
           }}
+        </p>
+        <p
+          class="settings-overview__card-summary"
+          *ngIf="card.key === 'companyProfile' && companyProfileCurrent as profile"
+        >
+          {{ 'settings.companyProfileCard.currentDisplayNameLabel' | translate: { displayName: profile.displayName } }}
+        </p>
+        <p
+          class="settings-overview__card-summary"
+          *ngIf="card.key === 'branding' && brandingCurrent as branding"
+        >
+          {{ 'settings.brandingCard.currentTaglineLabel' | translate: { tagline: branding.tagline } }}
         </p>
 
         <div class="settings-overview__card-actions">
@@ -65,6 +81,8 @@ interface SettingsOverviewCard {
 })
 export class SettingsOverviewComponent implements OnInit {
   private compensationPlanService = inject(CompensationPlanService);
+  private companyProfileService = inject(CompanyProfileService);
+  private brandingService = inject(BrandingService);
 
   // Built from SECTION_PATHS's keys, per the plan's key-naming convention
   // ('settings.cards.<key>.actionLabel'), so a new section only needs an entry there.
@@ -76,11 +94,19 @@ export class SettingsOverviewComponent implements OnInit {
 
   compensationCurrent: CompensationPlanResponse | null = null;
   compensationHistory: CompensationPlanSummary[] = [];
+  companyProfileCurrent: CompanyProfileResponse | null = null;
+  brandingCurrent: CompanyBrandingResponse | null = null;
   historyPanelOpen = false;
 
   ngOnInit(): void {
     this.compensationPlanService.getCurrent().subscribe(current => {
       this.compensationCurrent = current;
+    });
+    this.companyProfileService.getProfile().subscribe(profile => {
+      this.companyProfileCurrent = profile;
+    });
+    this.brandingService.getBranding().subscribe(branding => {
+      this.brandingCurrent = branding;
     });
   }
 

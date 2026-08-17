@@ -885,6 +885,12 @@
       "viewHistoryLabel": "View History",
       "historyPanelTitle": "Compensation Plan History"
     },
+    "companyProfileCard": {
+      "currentDisplayNameLabel": "{{displayName}}"
+    },
+    "brandingCard": {
+      "currentTaglineLabel": "{{tagline}}"
+    },
     "auditLog": {
       "sectionFilterLabel": "Section",
       "allSectionsOption": "All",
