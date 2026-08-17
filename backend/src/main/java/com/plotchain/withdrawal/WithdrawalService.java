@@ -61,7 +61,7 @@ public class WithdrawalService {
             throw new AssociateSuspendedException(associate.getId());
         }
         if (associate.getKycStatus() != KycStatus.VERIFIED) {
-            throw new KycNotVerifiedException(associate.getId());
+            throw new KycNotVerifiedException(associate.getUserId());
         }
 
         WithdrawalConfigResponse config = withdrawalConfigService.getConfig();
@@ -169,7 +169,7 @@ public class WithdrawalService {
         if (request.decision() == WithdrawalRequestStatus.APPROVED) {
             // Only reachable when priorStatus == REQUESTED, per the guards above.
             if (associate.getKycStatus() != KycStatus.VERIFIED) {
-                throw new KycNotVerifiedException(associate.getId());
+                throw new KycNotVerifiedException(associate.getUserId());
             }
             withdrawalRequest.setStatus(WithdrawalRequestStatus.APPROVED);
             withdrawalRequest.setDecidedAt(now);
