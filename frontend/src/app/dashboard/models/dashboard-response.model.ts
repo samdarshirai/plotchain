@@ -11,6 +11,8 @@ export interface CycleIncome {
   cycleId: string;
   directIncome: number;
   matchingIncome: number;
+  sponsorMatchingIncome: number;
+  selfPerformanceBonus: number;
   totalIncome: number;
 }
 

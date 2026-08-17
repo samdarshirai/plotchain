@@ -3,6 +3,8 @@
     "kycBanner": "Complete your KYC verification to unlock payouts.",
     "direct": "Direct",
     "matching": "Matching",
+    "sponsorMatching": "Sponsor's Matching",
+    "selfPerformance": "Self Performance Bonus",
     "total": "Total",
     "projectedMatch": "Will match at cycle close",
     "nextRank": "Next rank",
