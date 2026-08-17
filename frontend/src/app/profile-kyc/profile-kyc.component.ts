@@ -9,6 +9,7 @@ import { AssociateProfileResponse } from './models/associate-profile.model';
 import { AssociateKycStatusResponse, KYC_DOCUMENT_TYPES } from './models/associate-kyc-status.model';
 import { FieldErrorComponent } from '../shared/components/field-error/field-error.component';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
+import { BrandButtonComponent } from '../shared/components/brand-button/brand-button.component';
 import { toFieldErrors } from '../core/api/field-errors.model';
 
 // The one editable Associate screen (role-capability spec's "Own profile" row, screen unit 14).
@@ -17,7 +18,7 @@ import { toFieldErrors } from '../core/api/field-errors.model';
 @Component({
   selector: 'app-profile-kyc',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, FieldErrorComponent, InlineBannerComponent],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, FieldErrorComponent, InlineBannerComponent, BrandButtonComponent],
   template: `
     <div class="profile-kyc card">
       <h1 class="card-title">{{ 'profileKyc.title' | translate }}</h1>
@@ -48,7 +49,9 @@ import { toFieldErrors } from '../core/api/field-errors.model';
         </label>
         <app-field-error [message]="fieldError('email') || emailConflictError"></app-field-error>
 
-        <button type="submit" [disabled]="form.invalid">{{ 'profileKyc.saveAction' | translate }}</button>
+        <app-brand-button type="submit" variant="primary" [disabled]="form.invalid">
+          {{ 'profileKyc.saveAction' | translate }}
+        </app-brand-button>
         <app-inline-banner *ngIf="saveSuccess" tone="success">{{ 'profileKyc.saveSuccess' | translate }}</app-inline-banner>
         <app-inline-banner *ngIf="saveError" tone="danger" class="profile-kyc__save-error">{{ saveError }}</app-inline-banner>
       </form>
