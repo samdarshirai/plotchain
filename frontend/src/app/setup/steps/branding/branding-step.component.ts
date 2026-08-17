@@ -43,7 +43,7 @@ const MIN_CONTRAST = 4.5;
   template: `
     <div class="branding-step">
       <div class="branding-step__intro" #introEl>
-        <span class="branding-step__eyebrow">
+        <span *ngIf="mode !== 'settings'" class="branding-step__eyebrow">
           {{ 'setup.branding.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
         </span>
         <h1 class="branding-step__title">{{ 'setup.steps.branding' | translate }}</h1>

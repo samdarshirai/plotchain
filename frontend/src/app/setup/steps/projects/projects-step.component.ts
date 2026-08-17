@@ -38,7 +38,7 @@ const PAGE_SIZE = 20;
     <div class="projects-step">
       <div class="projects-step__header">
         <div class="projects-step__intro">
-          <span class="projects-step__eyebrow">
+          <span *ngIf="mode !== 'settings'" class="projects-step__eyebrow">
             {{ 'setup.projects.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
           </span>
           <h1 class="projects-step__title">{{ 'setup.steps.projects' | translate }}</h1>

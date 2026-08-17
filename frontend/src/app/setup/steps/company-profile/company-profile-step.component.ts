@@ -23,7 +23,7 @@ const GSTIN_PATTERN = /^[0-9A-Z]{15}$/;
   template: `
     <div class="company-profile-step">
       <div class="company-profile-step__intro">
-        <span class="company-profile-step__eyebrow">
+        <span *ngIf="mode !== 'settings'" class="company-profile-step__eyebrow">
           {{ 'setup.companyProfile.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
         </span>
         <h1 class="company-profile-step__title">{{ 'setup.steps.companyProfile' | translate }}</h1>

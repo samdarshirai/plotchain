@@ -74,7 +74,7 @@ const RENDERED_FIELD_ERROR_KEYS = [
   template: `
     <div class="compensation-step">
       <div class="compensation-step__intro">
-        <span class="compensation-step__eyebrow">
+        <span *ngIf="mode !== 'settings'" class="compensation-step__eyebrow">
           {{ 'setup.compensation.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
         </span>
         <h1 class="compensation-step__title">{{ 'setup.steps.compensation' | translate }}</h1>
