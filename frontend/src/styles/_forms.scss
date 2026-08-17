@@ -43,3 +43,30 @@ textarea:focus {
 ::placeholder {
   color: var(--text-muted);
 }
+
+input[type='file'] {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+input[type='file']::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--brand-primary);
+  color: var(--brand-primary-contrast);
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+input[type='file']::file-selector-button:hover {
+  background: var(--brand-primary-hover);
+}
