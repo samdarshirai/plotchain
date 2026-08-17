@@ -11,6 +11,7 @@
     "cycleCloses": "Cycle closes in {{days}} days",
     "leftLeg": "L",
     "rightLeg": "R",
+    "carriedForward": "Carried Forward",
     "loadError": "Something went wrong loading your dashboard. Please try again."
   },
   "adminDashboard": {

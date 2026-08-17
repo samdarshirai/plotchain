@@ -12,7 +12,7 @@ describe('LegVolumeGaugeComponent', () => {
     fixture = TestBed.createComponent(LegVolumeGaugeComponent);
     fixture.componentInstance.data = {
       leftVolume: 3000, rightVolume: 2000,
-      carriedForwardLeft: 0, carriedForwardRight: 1000,
+      carriedForwardLeft: 500, carriedForwardRight: 1000,
       projectedMatchAmount: 140
     };
     fixture.detectChanges();
@@ -23,5 +23,11 @@ describe('LegVolumeGaugeComponent', () => {
     expect(text).toContain('3,000');
     expect(text).toContain('2,000');
     expect(text).toContain('140');
+  });
+
+  it('renders carried forward left and right business', () => {
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('500');
+    expect(text).toContain('1,000');
   });
 });
