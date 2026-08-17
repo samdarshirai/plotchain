@@ -26,8 +26,9 @@ describe('LegVolumeGaugeComponent', () => {
   });
 
   it('renders carried forward left and right business', () => {
-    const text = fixture.nativeElement.textContent;
-    expect(text).toContain('500');
-    expect(text).toContain('1,000');
+    const left = fixture.nativeElement.querySelector('.leg-carried-forward.left').textContent;
+    const right = fixture.nativeElement.querySelector('.leg-carried-forward.right').textContent;
+    expect(left).toContain('500');
+    expect(right).toContain('1,000');
   });
 });
