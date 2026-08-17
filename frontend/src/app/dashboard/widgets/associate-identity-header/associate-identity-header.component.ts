@@ -14,7 +14,7 @@ import { AssociateSummary } from '../../models/dashboard-response.model';
         <div class="associate-identity-header__id">{{ 'dashboard.associateIdLabel' | translate }}: {{ data.associateId }}</div>
         <div class="associate-identity-header__name">{{ data.name }}</div>
         <div class="associate-identity-header__rank">{{ data.rank }}</div>
-        <div class="associate-identity-header__phone">{{ 'dashboard.phoneLabel' | translate }}: {{ data.phone }}</div>
+        <div class="associate-identity-header__phone" *ngIf="data.phone">{{ 'dashboard.phoneLabel' | translate }}: {{ data.phone }}</div>
         <div class="associate-identity-header__joined">{{ 'dashboard.joinedAtLabel' | translate }}: {{ data.joinedAt | date: 'mediumDate' }}</div>
         <div class="associate-identity-header__rank-changed" *ngIf="data.rankChangedAt">{{ 'dashboard.rankChangedAtLabel' | translate }}: {{ data.rankChangedAt | date: 'mediumDate' }}</div>
       </div>

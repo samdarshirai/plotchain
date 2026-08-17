@@ -78,7 +78,8 @@ class DashboardControllerTest {
         associate.setUserId("SDI384818");
         associate.setName("Asha Kumar");
         associate.setPhone("9876543210");
-        associate.setJoinedAt(Instant.now());
+        Instant joinedAt = Instant.now();
+        associate.setJoinedAt(joinedAt);
 
         Cycle cycle = new Cycle();
         cycle.setId(cycleId);
@@ -106,7 +107,8 @@ class DashboardControllerTest {
                 .header("Authorization", "Bearer " + tokenFor(associateId)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.teamSnapshot.totalDownline").value(12))
-            .andExpect(jsonPath("$.associate.name").value("Asha Kumar"));
+            .andExpect(jsonPath("$.associate.name").value("Asha Kumar"))
+            .andExpect(jsonPath("$.associate.joinedAt").value(joinedAt.toString()));
     }
 
     @Test

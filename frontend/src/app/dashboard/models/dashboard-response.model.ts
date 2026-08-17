@@ -2,7 +2,7 @@ export interface AssociateSummary {
   associateId: string;
   name: string;
   rank: string;
-  phone: string;
+  phone: string | null;
   joinedAt: string;
   rankChangedAt: string | null;
 }

@@ -51,4 +51,22 @@ describe('AssociateIdentityHeaderComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.associate-identity-header__avatar').textContent.trim()).toBe('AK');
   });
+
+  it('omits the phone row when phone is not set', () => {
+    fixture.componentInstance.data = {
+      associateId: 'SDI384818', name: 'Asha Kumar', rank: 'Sales Associate',
+      phone: null, joinedAt: '2025-09-05T05:25:42Z', rankChangedAt: null
+    };
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.associate-identity-header__phone')).toBeFalsy();
+  });
+
+  it('renders a single initial when the name has only one word', () => {
+    fixture.componentInstance.data = {
+      associateId: 'SDI384818', name: 'Asha', rank: 'Sales Associate',
+      phone: '9876543210', joinedAt: '2025-09-05T05:25:42Z', rankChangedAt: null
+    };
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.associate-identity-header__avatar').textContent.trim()).toBe('A');
+  });
 });
