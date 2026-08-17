@@ -897,6 +897,7 @@ class CycleServiceTest {
         service.close(cycle.getId());
 
         assertThat(root.getRankId()).isEqualTo(silverId);
+        assertThat(root.getRankChangedAt()).isNotNull();
     }
 
     @Test
@@ -1085,6 +1086,7 @@ class CycleServiceTest {
 
         assertThat(root.getCumulativeMatchedVolume()).isEqualByComparingTo("200");
         assertThat(root.getRankId()).isEqualTo(silverId);
+        assertThat(root.getRankChangedAt()).isNull();
     }
 
     @Test

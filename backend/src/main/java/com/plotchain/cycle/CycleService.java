@@ -442,6 +442,7 @@ public class CycleService {
             int currentRankOrder = currentRank == null ? Integer.MIN_VALUE : currentRank.getRankOrder();
             if (highestQualified.getRankOrder() > currentRankOrder) {
                 associate.setRankId(highestQualified.getId());
+                associate.setRankChangedAt(Instant.now());
                 associateRepository.save(associate);
             }
         }

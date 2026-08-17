@@ -33,6 +33,8 @@ public class Associate {
     private BigDecimal rewardVolumeCarriedForward = BigDecimal.ZERO;
     @Column(name = "last_active_at")
     private Instant lastActiveAt;
+    @Column(name = "rank_changed_at")
+    private Instant rankChangedAt;
     @Column(name = "user_id", nullable = false)
     private String userId;
     private String email;
@@ -70,6 +72,8 @@ public class Associate {
     public void setRewardVolumeCarriedForward(BigDecimal v) { this.rewardVolumeCarriedForward = v; }
     public Instant getLastActiveAt() { return lastActiveAt; }
     public void setLastActiveAt(Instant lastActiveAt) { this.lastActiveAt = lastActiveAt; }
+    public Instant getRankChangedAt() { return rankChangedAt; }
+    public void setRankChangedAt(Instant rankChangedAt) { this.rankChangedAt = rankChangedAt; }
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }
     public String getEmail() { return email; }

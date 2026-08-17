@@ -67,6 +67,7 @@ class AssociateProvisioningServiceTest {
         assertThat(created.getKycStatus()).isEqualTo(KycStatus.PENDING);
         assertThat(created.isMustChangePassword()).isTrue();
         assertThat(created.getUserId()).isEqualTo("VP00001");
+        assertThat(created.getRankChangedAt()).isNull();
 
         assertThat(response.temporaryPassword()).isNotBlank();
         assertThat(response.associateId()).isEqualTo(created.getId());
