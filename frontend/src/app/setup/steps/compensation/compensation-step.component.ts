@@ -16,7 +16,7 @@ import { CompensationPlanService } from './compensation-plan.service';
 import { computeSampleEarnings, SampleEarningsResult } from './sample-earnings';
 import { SetupService } from '../../setup.service';
 import { SetupInspectorService, SetupStepController } from '../../setup-inspector.service';
-import { CompensationPlanRequest, RankOption, SettlementCycle } from '../../models/compensation-plan.model';
+import { CompensationPlanRequest, SettlementCycle } from '../../models/compensation-plan.model';
 
 const DEFAULT_SCENARIO_VOLUME = 1000000; // spec example: "sells ₹10L on each leg"
 
@@ -26,17 +26,18 @@ function isSettlementCycle(value: string): value is SettlementCycle {
   return SETTLEMENT_CYCLES.some(cycle => cycle === value);
 }
 
+type AccordionSection = 'incomeRules' | 'rewardTiers' | 'royalty' | 'fees';
+
 // A table row only reaches the save trigger once it is fully filled in. Clicking "+ Add" emits a
-// (rowsChange) with a blank row, which would otherwise autosave a rankId of '' (fails UUID
-// deserialization) or a volumeThreshold of 0 (fails the backend's @DecimalMin("0.01")) and show
-// an error banner for the ordinary act of adding a row.
+// (rowsChange) with a blank row, which would otherwise autosave a volumeThreshold of 0 (fails the
+// backend's @DecimalMin("0.01")) and show an error banner for the ordinary act of adding a row.
 function isFilledNumber(value: string | number | undefined): boolean {
   // 0 is legitimate for royaltyPct/cashReward, so only blank/non-numeric is incomplete.
   return value !== undefined && value !== null && String(value).trim() !== '' && !Number.isNaN(Number(value));
 }
 
 function isCompleteRoyaltyRow(row: Record<string, string | number>): boolean {
-  return String(row['rankId'] ?? '').trim() !== '' && isFilledNumber(row['royaltyPct']);
+  return isFilledNumber(row['volumeThreshold']) && Number(row['volumeThreshold']) > 0 && isFilledNumber(row['royaltyPct']);
 }
 
 function isCompleteRewardTierRow(row: Record<string, string | number>): boolean {
@@ -82,16 +83,36 @@ const RENDERED_FIELD_ERROR_KEYS = [
       </div>
 
       <form class="card compensation-step__card" [formGroup]="form">
-        <app-inline-banner tone="warning">
+        <app-inline-banner tone="info">
           {{ 'setup.compensation.versioningNotice' | translate }}
         </app-inline-banner>
 
-        <section class="compensation-step__section">
-          <h2 class="compensation-step__section-title">
+        <div class="compensation-step__accordion">
+        <div class="compensation-step__accordion-item">
+          <button
+            type="button"
+            class="compensation-step__accordion-header compensation-step__accordion-header--incomeRules"
+            [class.is-expanded]="isExpanded('incomeRules')"
+            [attr.aria-expanded]="isExpanded('incomeRules')"
+            aria-controls="compensation-accordion-income-rules"
+            (click)="toggleSection('incomeRules')"
+          >
             <span class="material-symbols-outlined">payments</span>
-            {{ 'setup.compensation.sections.incomeRules' | translate }}
-          </h2>
-
+            <span class="compensation-step__accordion-title">
+              {{ 'setup.compensation.sections.incomeRules' | translate }}
+            </span>
+            <span class="compensation-step__accordion-summary" *ngIf="!isExpanded('incomeRules')">
+              {{ incomeRulesSummary }}
+            </span>
+            <span class="material-symbols-outlined compensation-step__accordion-chevron">
+              {{ isExpanded('incomeRules') ? 'expand_less' : 'chevron_right' }}
+            </span>
+          </button>
+          <div
+            id="compensation-accordion-income-rules"
+            class="compensation-step__accordion-body"
+            [hidden]="!isExpanded('incomeRules')"
+          >
           <div class="compensation-step__row compensation-step__row--stats">
             <div class="compensation-step__stat">
               <app-stat-tile
@@ -126,6 +147,7 @@ const RENDERED_FIELD_ERROR_KEYS = [
 
             <div class="compensation-step__stat">
               <app-stat-tile
+                tone="success"
                 [label]="'setup.compensation.sponsorMatchingLabel' | translate"
                 [value]="(form.value.sponsorMatchingPct ?? 0) + '%'"
               >
@@ -139,15 +161,34 @@ const RENDERED_FIELD_ERROR_KEYS = [
               <app-field-error [message]="fieldError('sponsorMatchingPct')"></app-field-error>
             </div>
           </div>
-        </section>
+          </div>
+        </div>
 
-        <section class="compensation-step__section">
-          <div class="compensation-step__row compensation-step__row--split">
-            <div class="compensation-step__subcard">
-              <h3 class="compensation-step__section-title">
-                <span class="material-symbols-outlined">military_tech</span>
-                {{ 'setup.compensation.sections.rewardTiers' | translate }}
-              </h3>
+        <div class="compensation-step__accordion-item">
+          <button
+            type="button"
+            class="compensation-step__accordion-header compensation-step__accordion-header--rewardTiers"
+            [class.is-expanded]="isExpanded('rewardTiers')"
+            [attr.aria-expanded]="isExpanded('rewardTiers')"
+            aria-controls="compensation-accordion-reward-tiers"
+            (click)="toggleSection('rewardTiers')"
+          >
+            <span class="material-symbols-outlined">military_tech</span>
+            <span class="compensation-step__accordion-title">
+              {{ 'setup.compensation.sections.rewardTiers' | translate }}
+            </span>
+            <span class="compensation-step__accordion-summary" *ngIf="!isExpanded('rewardTiers')">
+              {{ rewardTiersSummary }}
+            </span>
+            <span class="material-symbols-outlined compensation-step__accordion-chevron">
+              {{ isExpanded('rewardTiers') ? 'expand_less' : 'chevron_right' }}
+            </span>
+          </button>
+          <div
+            id="compensation-accordion-reward-tiers"
+            class="compensation-step__accordion-body"
+            [hidden]="!isExpanded('rewardTiers')"
+          >
               <app-editable-table
                 [columns]="rewardTierColumns"
                 [rows]="rewardTierRows"
@@ -156,13 +197,34 @@ const RENDERED_FIELD_ERROR_KEYS = [
                 [emptyStateLabel]="'setup.compensation.rewardTiersEmptyLabel' | translate"
                 (rowsChange)="onRewardTierRowsChange($event)"
               ></app-editable-table>
-            </div>
+          </div>
+        </div>
 
-            <div class="compensation-step__subcard">
-              <h3 class="compensation-step__section-title">
-                <span class="material-symbols-outlined">workspace_premium</span>
-                {{ 'setup.compensation.sections.globalRoyalty' | translate }}
-              </h3>
+        <div class="compensation-step__accordion-item">
+          <button
+            type="button"
+            class="compensation-step__accordion-header compensation-step__accordion-header--royalty"
+            [class.is-expanded]="isExpanded('royalty')"
+            [attr.aria-expanded]="isExpanded('royalty')"
+            aria-controls="compensation-accordion-royalty"
+            (click)="toggleSection('royalty')"
+          >
+            <span class="material-symbols-outlined">workspace_premium</span>
+            <span class="compensation-step__accordion-title">
+              {{ 'setup.compensation.sections.globalRoyalty' | translate }}
+            </span>
+            <span class="compensation-step__accordion-summary" *ngIf="!isExpanded('royalty')">
+              {{ royaltySummary }}
+            </span>
+            <span class="material-symbols-outlined compensation-step__accordion-chevron">
+              {{ isExpanded('royalty') ? 'expand_less' : 'chevron_right' }}
+            </span>
+          </button>
+          <div
+            id="compensation-accordion-royalty"
+            class="compensation-step__accordion-body"
+            [hidden]="!isExpanded('royalty')"
+          >
               <app-editable-table
                 [columns]="royaltyColumns"
                 [rows]="royaltyRows"
@@ -171,16 +233,34 @@ const RENDERED_FIELD_ERROR_KEYS = [
                 [emptyStateLabel]="'setup.compensation.royaltyEmptyLabel' | translate"
                 (rowsChange)="onRoyaltyRowsChange($event)"
               ></app-editable-table>
-            </div>
           </div>
-        </section>
+        </div>
 
-        <section class="compensation-step__section">
-          <h2 class="compensation-step__section-title">
+        <div class="compensation-step__accordion-item">
+          <button
+            type="button"
+            class="compensation-step__accordion-header compensation-step__accordion-header--fees"
+            [class.is-expanded]="isExpanded('fees')"
+            [attr.aria-expanded]="isExpanded('fees')"
+            aria-controls="compensation-accordion-fees"
+            (click)="toggleSection('fees')"
+          >
             <span class="material-symbols-outlined">account_balance</span>
-            {{ 'setup.compensation.sections.feesSettlement' | translate }}
-          </h2>
-
+            <span class="compensation-step__accordion-title">
+              {{ 'setup.compensation.sections.feesSettlement' | translate }}
+            </span>
+            <span class="compensation-step__accordion-summary" *ngIf="!isExpanded('fees')">
+              {{ feesSummary }}
+            </span>
+            <span class="material-symbols-outlined compensation-step__accordion-chevron">
+              {{ isExpanded('fees') ? 'expand_less' : 'chevron_right' }}
+            </span>
+          </button>
+          <div
+            id="compensation-accordion-fees"
+            class="compensation-step__accordion-body"
+            [hidden]="!isExpanded('fees')"
+          >
           <label>
             {{ 'setup.compensation.settlementCycleLabel' | translate }}
             <app-toggle-group
@@ -237,7 +317,9 @@ const RENDERED_FIELD_ERROR_KEYS = [
             form below so the compensation PUT keeps sending its current/default value -- the
             NOT NULL DB column still requires it on every save.
           -->
-        </section>
+          </div>
+        </div>
+        </div>
 
         <app-inline-banner *ngIf="submitError" tone="danger">{{ submitError }}</app-inline-banner>
 
@@ -257,8 +339,9 @@ const RENDERED_FIELD_ERROR_KEYS = [
 
         <div class="compensation-step__simulator">
           <h4 class="compensation-step__simulator-title">
-            <span class="material-symbols-outlined">calculate</span>
-            {{ 'setup.compensation.sections.earningsSimulator' | translate }}
+            <span class="compensation-step__simulator-title-rule" aria-hidden="true"></span>
+            <span>{{ 'setup.compensation.sections.earningsSimulator' | translate }}</span>
+            <span class="compensation-step__simulator-title-rule" aria-hidden="true"></span>
           </h4>
 
           <label class="compensation-step__simulator-field">
@@ -292,11 +375,11 @@ const RENDERED_FIELD_ERROR_KEYS = [
               <dt>{{ 'setup.compensation.grossIncomeLineLabel' | translate }}</dt>
               <dd>{{ earnings.grossIncome | currency:'INR':'symbol':'1.0-2' }}</dd>
             </div>
-            <div class="compensation-step__simulator-line">
+            <div class="compensation-step__simulator-line compensation-step__simulator-line--deduction">
               <dt>{{ 'setup.compensation.adminChargeLineLabel' | translate }}</dt>
               <dd>{{ earnings.adminCharge | currency:'INR':'symbol':'1.0-2' }}</dd>
             </div>
-            <div class="compensation-step__simulator-line">
+            <div class="compensation-step__simulator-line compensation-step__simulator-line--deduction">
               <dt>{{ 'setup.compensation.tdsLineLabel' | translate }}</dt>
               <dd>{{ earnings.tds | currency:'INR':'symbol':'1.0-2' }}</dd>
             </div>
@@ -346,12 +429,16 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
   // emits full-array replacements via (rowsChange) instead.
   royaltyRows: Record<string, string | number>[] = [];
   rewardTierRows: Record<string, string | number>[] = [];
-  availableRanks: RankOption[] = [];
 
   // Local-only inputs for the Earnings Simulator -- never persisted/saved.
   scenarioVolume = DEFAULT_SCENARIO_VOLUME;
   hasPan = true;
   sampleEarnings: SampleEarningsResult | null = null;
+
+  // Accordion layout (mockup 1c): exactly one section expanded at a time. This is purely a
+  // display concern -- every control below stays mounted via [hidden], never *ngIf, so
+  // valueChanges/rowsChanged$/autosave/validation all keep working on a collapsed section.
+  expandedSection: AccordionSection = 'incomeRules';
 
   @Input() mode: 'setup' | 'settings' = 'setup';
 
@@ -368,9 +455,8 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     this.mode = (this.route.snapshot.data['mode'] as 'setup' | 'settings') ?? 'setup';
     this.planSubscription = this.compensationPlanService.getCurrent().subscribe({
       next: res => {
-        this.availableRanks = res.availableRanks;
         this.form.patchValue(res, { emitEvent: false });
-        this.royaltyRows = res.royaltyBonusRates.map(r => ({ rankId: r.rankId, royaltyPct: r.royaltyPct }));
+        this.royaltyRows = res.royaltyBonusRates.map(r => ({ volumeThreshold: r.volumeThreshold, royaltyPct: r.royaltyPct }));
         this.rewardTierRows = [...res.rewardTiers]
           .sort((a, b) => a.tierLevel - b.tierLevel)
           .map(t => ({ volumeThreshold: t.volumeThreshold, cashReward: t.cashReward, perkDescription: t.perkDescription }));
@@ -454,12 +540,7 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
 
   get royaltyColumns(): EditableTableColumn[] {
     return [
-      {
-        key: 'rankId',
-        label: this.translate.instant('setup.compensation.rankColumnLabel'),
-        type: 'select',
-        options: this.availableRanks.map(rank => ({ value: rank.id, label: rank.name }))
-      },
+      { key: 'volumeThreshold', label: this.translate.instant('setup.compensation.volumeThresholdColumnLabel'), type: 'number' },
       { key: 'royaltyPct', label: this.translate.instant('setup.compensation.royaltyPctColumnLabel'), type: 'number' }
     ];
   }
@@ -478,6 +559,46 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
       { value: 'MONTHLY', label: this.translate.instant('setup.compensation.settlementCycleMonthlyLabel') },
       { value: 'CUSTOM', label: this.translate.instant('setup.compensation.settlementCycleCustomLabel') }
     ];
+  }
+
+  isExpanded(section: AccordionSection): boolean {
+    return this.expandedSection === section;
+  }
+
+  toggleSection(section: AccordionSection): void {
+    this.expandedSection = section;
+  }
+
+  get incomeRulesSummary(): string {
+    const raw = this.form.value;
+    return this.translate.instant('setup.compensation.accordion.incomeRulesSummary', {
+      direct: raw.directIncomePct ?? 0,
+      matching: raw.matchingIncomePct ?? 0,
+      sponsor: raw.sponsorMatchingPct ?? 0
+    });
+  }
+
+  get rewardTiersSummary(): string {
+    return this.rewardTierRows.length === 0
+      ? this.translate.instant('setup.compensation.accordion.rewardTiersSummaryEmpty')
+      : this.translate.instant('setup.compensation.accordion.rewardTiersSummary', { count: this.rewardTierRows.length });
+  }
+
+  get royaltySummary(): string {
+    return this.royaltyRows.length === 0
+      ? this.translate.instant('setup.compensation.accordion.royaltySummaryEmpty')
+      : this.translate.instant('setup.compensation.accordion.royaltySummary', { count: this.royaltyRows.length });
+  }
+
+  get feesSummary(): string {
+    const raw = this.form.value;
+    const cycleLabel = this.settlementCycleOptions.find(option => option.value === raw.settlementCycle)?.label ?? '';
+    return this.translate.instant('setup.compensation.accordion.feesSummary', {
+      cycle: cycleLabel,
+      tds: raw.tdsPct ?? 0,
+      withPan: raw.adminChargeWithPanPct ?? 0,
+      withoutPan: raw.adminChargeWithoutPanPct ?? 0
+    });
   }
 
   onRoyaltyRowsChange(rows: Record<string, string | number>[]): void {
@@ -570,11 +691,11 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     // effectiveFrom is intentionally omitted and the backend defaults it to today.
     const request: CompensationPlanRequest = {
       ...formValue,
-      // royaltyRows carried through as-is (field names already match RoyaltyBonusRate minus
-      // rankName); only type coercion is needed since editable-table cell values round-trip
-      // through the DOM as strings for select columns.
+      // royaltyRows carried through as-is (field names already match RoyaltyBonusRate); only
+      // type coercion is needed since editable-table cell values round-trip through the DOM as
+      // strings.
       royaltyBonusRates: this.royaltyRows.map(row => ({
-        rankId: String(row['rankId']),
+        volumeThreshold: Number(row['volumeThreshold']),
         royaltyPct: Number(row['royaltyPct'])
       })),
       // tierLevel is derived purely from array index here -- it is never a user-editable

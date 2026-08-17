@@ -12,6 +12,7 @@
   --brand-primary-hover: color-mix(in srgb, var(--brand-primary) 85%, white);
   --brand-secondary-soft: color-mix(in srgb, var(--brand-secondary) 14%, transparent);
   --brand-primary-contrast: #0C0A0B; /* recomputed by ThemeService per chosen color */
+  --brand-secondary-contrast: #F7F2E7; /* Parchment -- Oxblood is a dark fill, needs light text unlike Gold */
 
   // Viraj Acres "Legacy Living" brand (see repo-root DESIGN.md) is this app's single default
   // theme -- Ink chrome, Antique Gold/Bright Gold accents, Oxblood secondary, Parchment content
@@ -30,4 +31,10 @@
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-display: 'Fraunces', Georgia, serif;
+
+  // Near-square, per the mockups' "engraved ledger" corners -- deliberately not the generic
+  // 8-12px SaaS radius the shared primitives (.card/.btn/inputs) used before this token existed.
+  // Scoped to those shared primitives only; unrelated shapes (pills, avatars, admin-console
+  // badges) keep their own radius and were not part of this brand review.
+  --radius-sm: 2px;
 }

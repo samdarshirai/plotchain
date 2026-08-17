@@ -1,6 +1,6 @@
 button {
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 0.625rem 1.25rem;
   border: none;
   background: none;
@@ -41,6 +41,13 @@ button:disabled {
 .brand-button--danger {
   background: var(--status-danger);
   color: var(--brand-primary-contrast);
+}
+
+// Setup wizard's forward-progress "Next" CTA -- an intentional exception to the app-wide
+// Gold primary-button rule, see DESIGN.md SS2.
+.brand-button--oxblood {
+  background: var(--brand-secondary);
+  color: var(--brand-secondary-contrast);
 }
 
 .brand-button--full {

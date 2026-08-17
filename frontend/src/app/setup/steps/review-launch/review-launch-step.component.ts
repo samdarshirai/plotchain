@@ -8,7 +8,6 @@ import { ChecklistRowComponent, ChecklistRowTone } from '../../../shared/compone
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { BrandButtonComponent } from '../../../shared/components/brand-button/brand-button.component';
 import { StatTileComponent } from '../../../shared/components/stat-tile/stat-tile.component';
-import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { SetupService } from '../../setup.service';
 import { SetupInspectorService, SetupStepController } from '../../setup-inspector.service';
 import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-state.model';
@@ -23,8 +22,7 @@ import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-s
     ChecklistRowComponent,
     InlineBannerComponent,
     BrandButtonComponent,
-    StatTileComponent,
-    SetupStepNavComponent
+    StatTileComponent
   ],
   template: `
     <div class="review-launch-step" *ngIf="(state$ | async) as state">
@@ -101,7 +99,6 @@ import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-s
         </ng-template>
       </div>
 
-      <app-setup-step-nav [previousPath]="previousPath" [nextPath]="null" mode="setup" layout="stacked"></app-setup-step-nav>
     </ng-template>
   `
 })
@@ -139,7 +136,7 @@ export class ReviewLaunchStepComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   ngAfterViewInit(): void {
-    this.inspectorService.register(this.inspectorTpl);
+    this.inspectorService.register(this.inspectorTpl, { hideFooter: false });
   }
 
   ngOnDestroy(): void {

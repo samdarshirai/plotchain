@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { SetupHeaderComponent } from './setup-header.component';
 
@@ -7,7 +8,7 @@ describe('SetupHeaderComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SetupHeaderComponent, TranslateModule.forRoot()]
+      imports: [SetupHeaderComponent, HttpClientTestingModule, TranslateModule.forRoot()]
     }).compileComponents();
     fixture = TestBed.createComponent(SetupHeaderComponent);
   });

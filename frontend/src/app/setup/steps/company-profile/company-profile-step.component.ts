@@ -23,8 +23,10 @@ const GSTIN_PATTERN = /^[0-9A-Z]{15}$/;
   template: `
     <div class="company-profile-step">
       <div class="company-profile-step__intro">
-        <span *ngIf="mode !== 'settings'" class="company-profile-step__eyebrow">
-          {{ 'setup.companyProfile.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
+        <span *ngIf="mode !== 'settings'" class="step-eyebrow">
+          <span class="step-eyebrow__rule"></span>
+          <span class="step-eyebrow__label">{{ 'setup.companyProfile.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}</span>
+          <span class="step-eyebrow__rule"></span>
         </span>
         <h1 class="company-profile-step__title">{{ 'setup.steps.companyProfile' | translate }}</h1>
         <p class="company-profile-step__subtitle">{{ 'setup.companyProfile.subtitle' | translate }}</p>
@@ -113,36 +115,45 @@ const GSTIN_PATTERN = /^[0-9A-Z]{15}$/;
     <ng-template #inspectorTpl>
       <div class="company-profile-step__aside-column">
         <div class="company-profile-step__intro company-profile-step__intro--spacer" aria-hidden="true">
-          <span class="company-profile-step__eyebrow">
-            {{ 'setup.companyProfile.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
+          <span class="step-eyebrow">
+            <span class="step-eyebrow__rule"></span>
+            <span class="step-eyebrow__label">{{ 'setup.companyProfile.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}</span>
+            <span class="step-eyebrow__rule"></span>
           </span>
           <h1 class="company-profile-step__title">{{ 'setup.steps.companyProfile' | translate }}</h1>
           <p class="company-profile-step__subtitle">{{ 'setup.companyProfile.subtitle' | translate }}</p>
         </div>
 
-        <div class="card company-profile-step__preview">
-          <p class="card-subtitle">{{ 'setup.companyProfile.previewTitle' | translate }}</p>
+        <div class="company-profile-step__preview">
+          <div class="seal-card">
+            <div class="seal-card__hairline seal-card__hairline--top"></div>
+            <div class="seal-card__body">
+              <div class="seal-card__header">
+                <span class="seal-card__header-rule"></span>
+                <span class="seal-card__header-label">{{ 'setup.companyProfile.previewTitle' | translate }}</span>
+                <span class="seal-card__header-rule"></span>
+              </div>
 
-          <div class="company-profile-step__preview-details">
-            <h2>{{ form.value.displayName || ('setup.companyProfile.previewPlaceholderName' | translate) }}</h2>
-            <p class="company-profile-step__preview-legal">{{ form.value.legalName }}</p>
-            <p>{{ form.value.contactPhone }}</p>
-            <p>{{ form.value.contactEmail }}</p>
-            <p>{{ form.value.registeredAddress }}</p>
-            <div class="company-profile-step__preview-gst" *ngIf="form.value.registrationNumber">
-              <span>{{ 'setup.companyProfile.gstBadgeLabel' | translate }}</span>
-              <strong>{{ form.value.registrationNumber }}</strong>
+              <h2 class="seal-card__figure">{{ form.value.displayName || ('setup.companyProfile.previewPlaceholderName' | translate) }}</h2>
+              <p class="seal-card__legal">{{ form.value.legalName }}</p>
+
+              <div class="seal-card__details">
+                <p>{{ form.value.contactPhone }}</p>
+                <p>{{ form.value.contactEmail }}</p>
+                <p>{{ form.value.registeredAddress }}</p>
+              </div>
+
+              <ng-container *ngIf="form.value.registrationNumber">
+                <div class="seal-card__divider"></div>
+                <div class="seal-card__footer">
+                  <p class="seal-card__footer-note">{{ 'setup.companyProfile.gstBadgeLabel' | translate }}</p>
+                  <span class="seal-card__footer-value">{{ form.value.registrationNumber }}</span>
+                </div>
+              </ng-container>
             </div>
+            <div class="seal-card__hairline seal-card__hairline--bottom"></div>
           </div>
         </div>
-
-        <app-setup-step-nav
-          [previousPath]="previousPath"
-          [nextPath]="nextPath"
-          [savedJustNow]="savedJustNow"
-          mode="setup"
-          layout="stacked"
-        ></app-setup-step-nav>
       </div>
     </ng-template>
   `
@@ -230,7 +241,7 @@ export class CompanyProfileStepComponent implements OnInit, AfterViewInit, OnDes
 
   ngAfterViewInit(): void {
     if (this.mode === 'setup') {
-      this.inspectorService.register(this.inspectorTpl);
+      this.inspectorService.register(this.inspectorTpl, { hideFooter: false });
     }
   }
 

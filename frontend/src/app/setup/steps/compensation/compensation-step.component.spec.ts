@@ -28,7 +28,7 @@ describe('CompensationStepComponent', () => {
     activationFee: 1100,
     minWithdrawal: 100,
     settlementCycle: 'SEMI_MONTHLY',
-    royaltyBonusRates: [{ rankId: 'rank-1', rankName: 'Bronze', royaltyPct: 1 }],
+    royaltyBonusRates: [{ volumeThreshold: 2000000, royaltyPct: 1 }],
     rewardTiers: [
       { tierLevel: 1, volumeThreshold: 100000, cashReward: 1000, perkDescription: 'Certificate' },
       { tierLevel: 2, volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy' }
@@ -86,7 +86,7 @@ describe('CompensationStepComponent', () => {
 
     expect(component.form.value.directIncomePct).toBe(10);
     expect(component.form.value.settlementCycle).toBe('SEMI_MONTHLY');
-    expect(component.royaltyRows).toEqual([{ rankId: 'rank-1', royaltyPct: 1 }]);
+    expect(component.royaltyRows).toEqual([{ volumeThreshold: 2000000, royaltyPct: 1 }]);
     expect(component.rewardTierRows).toEqual([
       { volumeThreshold: 100000, cashReward: 1000, perkDescription: 'Certificate' },
       { volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy' }
@@ -148,13 +148,13 @@ describe('CompensationStepComponent', () => {
     // and never flow through form.valueChanges.
     // Remove the first reward tier row -- the remaining row should shift from level 2 to 1.
     component.onRewardTierRowsChange([{ volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy' }]);
-    component.onRoyaltyRowsChange([{ rankId: 'rank-2', royaltyPct: 3 }]);
+    component.onRoyaltyRowsChange([{ volumeThreshold: 4000000, royaltyPct: 3 }]);
 
     httpMock.expectNone('/api/company/compensation');
     tick(400);
     const req = httpMock.expectOne('/api/company/compensation');
     expect(req.request.method).toBe('PUT');
-    expect(req.request.body.royaltyBonusRates).toEqual([{ rankId: 'rank-2', royaltyPct: 3 }]);
+    expect(req.request.body.royaltyBonusRates).toEqual([{ volumeThreshold: 4000000, royaltyPct: 3 }]);
     expect(req.request.body.rewardTiers).toEqual([
       { tierLevel: 1, volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy' }
     ]);
@@ -255,21 +255,22 @@ describe('CompensationStepComponent', () => {
     httpMock.expectOne('/api/company/setup-state').flush(setupState);
   }));
 
-  it('does not autosave a blank royalty row with no rank selected, but does once a rank is picked', fakeAsync(() => {
+  it('does not autosave a blank royalty row with no threshold entered, but does once one is filled in', fakeAsync(() => {
     const component = fixture.componentInstance;
 
-    // rankId '' would fail UUID deserialization server-side with a confusing generic error.
-    component.onRoyaltyRowsChange([...component.royaltyRows, { rankId: '', royaltyPct: 0 }]);
+    // volumeThreshold 0 fails the backend's @DecimalMin("0.01"), so saving now is guaranteed
+    // to error out on nothing more than the act of adding a row.
+    component.onRoyaltyRowsChange([...component.royaltyRows, { volumeThreshold: 0, royaltyPct: 0 }]);
     tick(400);
     httpMock.expectNone('/api/company/compensation');
 
-    // 0% is a legitimate royalty rate -- only the missing rank made the row incomplete.
-    component.onRoyaltyRowsChange([...component.royaltyRows.slice(0, 1), { rankId: 'rank-2', royaltyPct: 0 }]);
+    // 0% is a legitimate royalty rate -- only the missing threshold made the row incomplete.
+    component.onRoyaltyRowsChange([...component.royaltyRows.slice(0, 1), { volumeThreshold: 4000000, royaltyPct: 0 }]);
     tick(400);
     const req = httpMock.expectOne('/api/company/compensation');
     expect(req.request.body.royaltyBonusRates).toEqual([
-      { rankId: 'rank-1', royaltyPct: 1 },
-      { rankId: 'rank-2', royaltyPct: 0 }
+      { volumeThreshold: 2000000, royaltyPct: 1 },
+      { volumeThreshold: 4000000, royaltyPct: 0 }
     ]);
     req.flush(emptyPlan);
     httpMock.expectOne('/api/company/setup-state').flush(setupState);
@@ -366,12 +367,12 @@ describe('CompensationStepComponent', () => {
   });
 
   it('flushPendingSave saves immediately on a table-only edit (rowsChanged$ marks the form dirty too)', () => {
-    fixture.componentInstance.onRoyaltyRowsChange([{ rankId: 'rank-2', royaltyPct: 3 }]);
+    fixture.componentInstance.onRoyaltyRowsChange([{ volumeThreshold: 4000000, royaltyPct: 3 }]);
 
     fixture.componentInstance.flushPendingSave();
 
     const req = httpMock.expectOne('/api/company/compensation');
-    expect(req.request.body.royaltyBonusRates).toEqual([{ rankId: 'rank-2', royaltyPct: 3 }]);
+    expect(req.request.body.royaltyBonusRates).toEqual([{ volumeThreshold: 4000000, royaltyPct: 3 }]);
     req.flush(emptyPlan);
     httpMock.expectOne('/api/company/setup-state').flush(setupState);
   });
@@ -431,4 +432,62 @@ describe('CompensationStepComponent', () => {
     tick(400);
     httpMock.expectNone('/api/company/compensation');
   }));
+
+  describe('accordion layout', () => {
+    it('expands Income Rules by default', () => {
+      const component = fixture.componentInstance;
+      expect(component.expandedSection).toBe('incomeRules');
+      expect(component.isExpanded('incomeRules')).toBeTrue();
+      expect(component.isExpanded('rewardTiers')).toBeFalse();
+    });
+
+    it('toggleSection expands exactly the requested section', () => {
+      const component = fixture.componentInstance;
+
+      component.toggleSection('royalty');
+      fixture.detectChanges();
+
+      expect(component.isExpanded('royalty')).toBeTrue();
+      expect(component.isExpanded('incomeRules')).toBeFalse();
+
+      const incomeRulesBody = fixture.nativeElement.querySelector('#compensation-accordion-income-rules');
+      const royaltyBody = fixture.nativeElement.querySelector('#compensation-accordion-royalty');
+      expect(incomeRulesBody.hidden).toBeTrue();
+      expect(royaltyBody.hidden).toBeFalse();
+    });
+
+    it('renders collapsed-section summaries and updates them as data changes', () => {
+      // TranslateModule.forRoot() in this spec has no loaded translations, so translate.instant
+      // returns the key itself -- same convention as the submitError assertions above (e.g.
+      // 'setup.compensation.validation.genericSaveError'). Real translated copy is exercised by
+      // the .json translation files themselves, not this spec.
+      const component = fixture.componentInstance;
+
+      // Income Rules starts expanded, so its collapsed summary isn't asserted here; check the
+      // Royalty/Reward Tier summaries, which are collapsed by default from emptyPlan's seed data.
+      expect(component.royaltySummary).toBe('setup.compensation.accordion.royaltySummary');
+      expect(component.rewardTiersSummary).toBe('setup.compensation.accordion.rewardTiersSummary');
+
+      component.onRoyaltyRowsChange([]);
+      component.onRewardTierRowsChange([]);
+
+      expect(component.royaltySummary).toBe('setup.compensation.accordion.royaltySummaryEmpty');
+      expect(component.rewardTiersSummary).toBe('setup.compensation.accordion.rewardTiersSummaryEmpty');
+    });
+
+    it('keeps autosaving a scalar field edit while its section is collapsed', fakeAsync(() => {
+      const component = fixture.componentInstance;
+      component.toggleSection('royalty');
+      fixture.detectChanges();
+      expect(component.isExpanded('incomeRules')).toBeFalse();
+
+      component.form.get('directIncomePct')?.setValue(50);
+      tick(400);
+
+      const req = httpMock.expectOne('/api/company/compensation');
+      expect(req.request.body.directIncomePct).toBe(50);
+      req.flush({ ...emptyPlan, directIncomePct: 50 });
+      httpMock.expectOne('/api/company/setup-state').flush(setupState);
+    }));
+  });
 });

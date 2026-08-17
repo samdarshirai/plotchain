@@ -19,7 +19,6 @@ import { SetupInspectorService } from '../../../setup/setup-inspector.service';
           class="setup-step-nav__previous"
           variant="ghost"
           type="button"
-          [fullWidth]="layout === 'stacked'"
           (clicked)="goPrevious()"
         >
           {{ 'setup.actions.previous' | translate }}
@@ -27,9 +26,8 @@ import { SetupInspectorService } from '../../../setup/setup-inspector.service';
         <app-brand-button
           *ngIf="nextPath"
           class="setup-step-nav__next"
-          variant="primary"
+          variant="oxblood"
           type="button"
-          [fullWidth]="layout === 'stacked'"
           (clicked)="goNext()"
         >
           {{ 'setup.actions.next' | translate }}

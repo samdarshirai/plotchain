@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="stat-tile" [class.stat-tile--accent]="tone === 'accent'">
+    <div class="stat-tile" [class.stat-tile--accent]="tone === 'accent'" [class.stat-tile--success]="tone === 'success'">
       <span class="stat-tile__label">{{ label }}</span>
       <span class="stat-tile__value">{{ value }}</span>
       <span class="stat-tile__hint" *ngIf="hint">{{ hint }}</span>
@@ -18,5 +18,5 @@ export class StatTileComponent {
   @Input({ required: true }) label!: string;
   @Input({ required: true }) value!: string;
   @Input() hint?: string;
-  @Input() tone: 'default' | 'accent' = 'default';
+  @Input() tone: 'default' | 'accent' | 'success' = 'default';
 }

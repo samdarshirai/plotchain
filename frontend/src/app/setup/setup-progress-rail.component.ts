@@ -27,7 +27,7 @@ import { STEP_PATHS, StepStatus } from './models/setup-state.model';
             <span class="setup-progress-rail__step-number">{{ step.number }}</span>
             <span class="setup-progress-rail__step-label">{{ 'setup.steps.' + step.key | translate }}</span>
             <span class="setup-progress-rail__step-optional" *ngIf="!step.required">
-              ({{ 'setup.optionalLabel' | translate }})
+              {{ 'setup.optionalLabel' | translate }}
             </span>
             <span class="setup-progress-rail__step-check" *ngIf="step.complete">&#10003;</span>
           </a>

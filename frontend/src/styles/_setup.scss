@@ -18,10 +18,34 @@
   min-height: 0;
   overflow-y: auto;
   padding: 1.5rem 2rem;
+  // Extra clearance so scrolled-to-bottom content doesn't sit behind the now-floating
+  // .setup-shell__footer (position: fixed, no longer a flex sibling that reserves its own space).
+  padding-bottom: 5rem;
   max-width: 960px;
   margin: 0 auto;
 }
 
+// Company Profile and Branding hide their scrollbar chrome (scrolling itself still works) --
+// same technique as body.admin-associate-active in _admin.scss. Scoped via :has() to just these
+// two steps' root element so other steps (e.g. Payments & KYC's longer form) keep a visible
+// scrollbar.
+.setup-shell__content:has(.company-profile-step),
+.setup-shell__content:has(.branding-step),
+.setup-inspector-aside:has(.company-profile-step__aside-column),
+.setup-inspector-aside:has(.branding-step__aside-column) {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// The wizard shell (.setup-header/.setup-progress-rail) carries the same Ink "Legacy Living"
+// chrome as .app-header/.login-brand (DESIGN.md SS4) -- it's a chromeless route (see
+// app.component.ts isChromelessRoute), so this is the only top chrome an admin sees while
+// setting up. The hardcoded shades below (#9A907B, #3A342B, #C7BEAA) match the ones already
+// established at _app-shell.scss:1-6 for text/borders sitting on the Ink surface, for the same
+// reason: --text-muted/--border-subtle are tuned for Parchment content, not Ink.
 .setup-header {
   position: sticky;
   top: 0;
@@ -29,15 +53,59 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.625rem 2rem;
-  background: var(--surface-card);
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 1.25rem 2rem;
+  background: var(--ink);
+  border-bottom: 1px solid var(--brand-primary);
+}
+
+.setup-header__left {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-width: 0;
+}
+
+.setup-header__logo {
+  display: block;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.setup-header__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.setup-header__wordmark {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--brand-primary);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.setup-header__wordmark-rule {
+  width: 0.875rem;
+  height: 1px;
+  background: var(--brand-primary);
+  flex-shrink: 0;
 }
 
 .setup-header__title {
+  font-family: var(--font-display);
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--surface-page);
 }
 
 .setup-header__progress {
@@ -49,20 +117,23 @@
 }
 
 .setup-header__progress-label {
-  font-size: 0.75rem;
+  font-family: var(--font-display);
+  font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--surface-page);
 
   span {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
     font-weight: 500;
-    color: var(--text-muted);
+    color: #9A907B;
   }
 }
 
 .setup-header__progress-bar {
   width: 100%;
   height: 4px;
-  background: var(--surface-raised);
+  background: rgba(198, 162, 39, 0.2);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -87,10 +158,11 @@ app-setup-inspector-aside {
   flex: 0 0 440px;
   width: 440px;
   height: 100%;
-  // Top/bottom padding matches .setup-shell__content's (1.5rem) so aside content that mirrors
-  // the main column's intro block (e.g. branding's spacer-synced Live Login Preview) lines up
-  // exactly instead of sitting a few pixels lower.
-  padding: 1.5rem;
+  // Top padding matches .setup-shell__content's (1.5rem) so aside content that mirrors the main
+  // column's intro block (e.g. branding's spacer-synced Live Login Preview) lines up exactly
+  // instead of sitting a few pixels lower. Bottom padding is larger, matching
+  // .setup-shell__content's, for clearance under the floating .setup-shell__footer.
+  padding: 1.5rem 1.5rem 5rem;
   overflow-y: auto;
   min-height: 0;
 }
@@ -101,16 +173,17 @@ app-setup-inspector-aside {
   gap: 0.5rem;
 }
 
+// Detached from the page's layout flow (position: fixed, not a sticky flex sibling of
+// .setup-shell__body) so it's a genuine floating cluster sized to its own content -- a sticky
+// flex-row sibling still reserves a full-width band at the bottom even with no background/border.
 .setup-shell__footer {
-  position: sticky;
-  bottom: 0;
+  position: fixed;
+  right: 2rem;
+  bottom: 1.5rem;
   z-index: 10;
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.625rem 2rem;
-  background: var(--surface-card);
-  border-top: 1px solid var(--border-subtle);
 }
 
 .setup-shell__footer-saved {
@@ -118,36 +191,46 @@ app-setup-inspector-aside {
   color: var(--status-success);
 }
 
-.setup-shell__footer-spacer {
-  flex: 1;
+// app-setup-progress-rail is the actual flex item stretched by .setup-shell__body's
+// align-items: stretch; its own <nav> child won't auto-fill that stretched height (a block
+// child's height: auto never fills a parent's height), so both need an explicit height: 100%
+// chain -- same technique as app-setup-inspector-aside/.setup-inspector-aside above. Without
+// this the rail's Ink background only reaches its content's height, leaving a Parchment gap
+// below it down to the viewport bottom.
+app-setup-progress-rail {
+  display: block;
+  height: 100%;
 }
 
 .setup-progress-rail {
   flex: 0 0 280px;
   width: 280px;
+  height: 100%;
   padding: 2rem 1.5rem;
-  background: var(--surface-card);
-  border-right: 1px solid var(--border-subtle);
+  background: var(--ink);
+  border-right: 1px solid #3A342B;
   overflow-y: auto;
   min-height: 0;
 }
 
 .setup-progress-rail__percent {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--surface-page);
   margin-bottom: 0.75rem;
 
   span {
+    font-family: var(--font-sans);
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--text-muted);
+    color: #9A907B;
   }
 }
 
 .setup-progress-rail__bar {
   height: 6px;
-  background: var(--surface-raised);
+  background: rgba(198, 162, 39, 0.2);
   border-radius: 999px;
   overflow: hidden;
   margin-bottom: 2rem;
@@ -155,7 +238,10 @@ app-setup-inspector-aside {
 
 .setup-progress-rail__bar-fill {
   height: 100%;
-  background: var(--brand-gradient);
+  // Deliberately Oxblood, not the Gold gradient -- the header's own progress bar
+  // (.setup-header__progress-bar-fill) is already Gold, so this pairs the two bars as the
+  // mockup's two-tone gold/oxblood accent instead of one repeated gold bar.
+  background: var(--brand-secondary);
   border-radius: 999px;
   transition: width 0.2s ease;
 }
@@ -175,19 +261,19 @@ app-setup-inspector-aside {
   gap: 0.75rem;
   padding: 0.625rem 0.75rem;
   border-radius: 8px;
-  color: var(--text-muted);
+  color: #9A907B;
   text-decoration: none;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .setup-progress-rail__step-link:hover {
-  background: var(--surface-raised);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--brand-primary-bright);
 }
 
 .setup-progress-rail__step--active .setup-progress-rail__step-link {
   background: var(--brand-primary-soft);
-  color: var(--text-primary);
+  color: var(--surface-page);
   font-weight: 600;
 }
 
@@ -199,19 +285,22 @@ app-setup-inspector-aside {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--surface-raised);
-  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid #3A342B;
+  color: #9A907B;
   font-size: 0.75rem;
   font-weight: 700;
 }
 
 .setup-progress-rail__step--active .setup-progress-rail__step-number {
-  background: var(--brand-gradient);
-  color: var(--brand-primary-contrast);
+  background: var(--brand-secondary);
+  border: 2px solid var(--brand-primary);
+  color: var(--brand-secondary-contrast);
 }
 
 .setup-progress-rail__step--complete .setup-progress-rail__step-number {
   background: var(--status-success);
+  border-color: transparent;
   color: var(--surface-page);
 }
 
@@ -221,8 +310,12 @@ app-setup-inspector-aside {
 }
 
 .setup-progress-rail__step-optional {
-  font-size: 0.75rem;
-  color: var(--text-muted);
+  padding: 0.15rem 0.5rem;
+  border-radius: 9px;
+  border: 1px solid var(--brand-secondary);
+  color: var(--brand-secondary);
+  font-size: 0.7rem;
+  font-weight: 600;
 }
 
 .setup-progress-rail__step-check {
@@ -233,9 +326,9 @@ app-setup-inspector-aside {
 .setup-progress-rail__autosave {
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid #3A342B;
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: #9A907B;
 }
 
 // Two-column layout shared by the simple form-plus-preview steps (Company Profile, Branding,
@@ -286,10 +379,161 @@ app-setup-inspector-aside {
   }
 }
 
+// Flanking-hairline step counter ("Step 1 of 6"), matching the wordmark-rule motif used at
+// .login-wordmark__rule/.setup-header__wordmark-rule (DESIGN.md SS2's "-- SECTION --" pattern)
+// but sized for an inline step counter and colored Oxblood -- Antique Gold stays reserved for
+// primary accents/active states, never this secondary label. Only company-profile-step's intro
+// uses this so far; the other five steps keep their own plain __eyebrow classes for now.
+.step-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.375rem;
+}
+
+.step-eyebrow__rule {
+  width: 1.25rem;
+  height: 1px;
+  background: var(--brand-secondary);
+  flex-shrink: 0;
+}
+
+.step-eyebrow__label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-secondary);
+}
+
+// Seal Card -- DESIGN.md SS5's signature element: one per screen, Ink surface, a double gold
+// hairline (mitred, not rounded past 4px) that draws in left-to-right on first paint (SS6) then
+// settles; prefers-reduced-motion skips straight to the settled state. A shared class (not
+// scoped to company-profile-step) so future screens -- dashboard earnings, the profile rank
+// badge, a payout total -- can adopt it without new CSS; only company-profile-step's Company
+// Card Preview uses it today.
+.seal-card {
+  position: relative;
+  background: var(--ink);
+  border-radius: 4px;
+}
+
+.seal-card__hairline {
+  height: 2px;
+  background: var(--brand-gradient);
+  transform-origin: left;
+}
+
+.seal-card__hairline--top {
+  animation: sealDrawTop 500ms ease-out both;
+}
+
+.seal-card__hairline--bottom {
+  animation: sealDrawBottom 500ms ease-out 80ms both;
+}
+
+@keyframes sealDrawTop {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes sealDrawBottom {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seal-card__hairline--top,
+  .seal-card__hairline--bottom {
+    animation: none;
+  }
+}
+
+.seal-card__body {
+  padding: 1.125rem 1.25rem 1rem;
+}
+
+.seal-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.seal-card__header-rule {
+  width: 0.875rem;
+  height: 1px;
+  background: var(--brand-primary);
+  flex-shrink: 0;
+}
+
+.seal-card__header-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand-primary);
+}
+
+.seal-card__figure {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--brand-primary-bright);
+}
+
+.seal-card__legal {
+  margin: 0 0 0.625rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8C8271;
+}
+
+.seal-card__details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0 0 0.625rem;
+  font-size: 0.8rem;
+  color: #E8DFC9;
+
+  p {
+    margin: 0;
+  }
+}
+
+.seal-card__divider {
+  height: 1px;
+  background: rgba(198, 162, 39, 0.25);
+  margin-bottom: 0.625rem;
+}
+
+.seal-card__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.seal-card__footer-note {
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: #8C8271;
+}
+
+.seal-card__footer-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--brand-primary);
+}
+
 .company-profile-step {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.375rem;
   max-width: 760px;
 }
 
@@ -297,14 +541,6 @@ app-setup-inspector-aside {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-}
-
-.company-profile-step__eyebrow {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--brand-primary);
 }
 
 .company-profile-step__title {
@@ -324,14 +560,32 @@ app-setup-inspector-aside {
 .company-profile-step__card {
   display: flex;
   flex-direction: column;
-  gap: 1.125rem;
-  padding: 1.25rem 1.5rem;
+  gap: 0.625rem;
+  padding: 0.375rem 1.5rem;
+
+  // Denser field rhythm than the shared _forms.scss defaults (0.5rem label margin, 0.625rem
+  // input padding) -- this form packs 7 fields into one column on a 100vh-clamped shell with no
+  // scroll, so every field's vertical footprint is scoped down here rather than globally.
+  label {
+    margin-bottom: 0.25rem;
+  }
+
+  input[type='text'],
+  input[type='email'],
+  input[type='tel'],
+  textarea {
+    padding: 0.5rem 0.875rem;
+  }
+
+  textarea {
+    min-height: 2.75rem;
+  }
 }
 
 .company-profile-step__section {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .company-profile-step__section-title {
@@ -346,7 +600,7 @@ app-setup-inspector-aside {
   color: var(--text-muted);
 
   .material-symbols-outlined {
-    font-size: 20px;
+    font-size: 16px;
     color: var(--brand-primary);
   }
 }
@@ -410,38 +664,6 @@ app-setup-inspector-aside {
   gap: 0.75rem;
 }
 
-.company-profile-step__preview-details {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.875rem 1rem;
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-}
-
-.company-profile-step__preview-legal {
-  margin: 0;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.company-profile-step__preview-gst {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 0.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-subtle);
-  font-size: 0.8rem;
-  color: var(--text-muted);
-
-  strong {
-    color: var(--brand-primary);
-  }
-}
-
 @media (max-width: 700px) {
   .company-profile-step__row,
   .company-profile-step__field-errors {
@@ -452,7 +674,7 @@ app-setup-inspector-aside {
 .branding-step {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
   max-width: 760px;
 }
 
@@ -460,14 +682,6 @@ app-setup-inspector-aside {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-}
-
-.branding-step__eyebrow {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--brand-primary);
 }
 
 .branding-step__title {
@@ -487,14 +701,24 @@ app-setup-inspector-aside {
 .branding-step__card {
   display: flex;
   flex-direction: column;
-  gap: 1.125rem;
-  padding: 1.25rem 1.5rem;
+  // No gap here -- spacing between sections comes solely from
+  // .branding-step__section + .branding-step__section's padding-top below. A flex gap on top of
+  // that padding-top double-counts the same visual space (see git history for the two-value
+  // version this replaced).
+  padding: 0.625rem 1.5rem;
 }
 
 .branding-step__section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
+}
+
+// Mockup colors all three section headers Oxblood (not the muted-gray company-profile-step
+// still uses) -- DESIGN.md SS2 allows Oxblood for labels/eyebrows like this, just never body text.
+.branding-step__section + .branding-step__section {
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .branding-step__section-title {
@@ -503,21 +727,49 @@ app-setup-inspector-aside {
   gap: 0.5rem;
   margin: 0;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  color: var(--brand-secondary);
 
   .material-symbols-outlined {
     font-size: 20px;
-    color: var(--brand-primary);
+    color: var(--brand-secondary);
   }
 }
 
+// Single square-logo uploader now, not a 2-up grid. Tile shrink-wraps its content (the uploaded
+// logo, or the empty-state placeholder text) instead of stretching to the row's full width/a
+// fixed height -- the shared .logo-uploader__tile default (width:100%; height:6rem) left a mostly
+// -white/blank box around a small square logo image.
 .branding-step__logo-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  .logo-uploader {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  // Full-width flex-basis so these two break onto their own line instead of sharing the tile's
+  // row -- everything else (.logo-uploader__tile, .logo-uploader__action) sits side by side.
+  .logo-uploader > label,
+  app-field-error {
+    flex: 0 0 100%;
+  }
+
+  // Fixed (not min/max-clamped) -- a real uploaded logo image always fills to whatever ceiling
+  // is given it, so a min/max range renders identically to a fixed size in practice but reads
+  // as more complex. .logo-uploader__preview's base max-width/height:100% (_shared-components.scss)
+  // already contains the image to this box without a branding-specific override.
+  .logo-uploader__tile {
+    width: 5rem;
+    height: 5rem;
+    padding: 0.5rem;
+  }
+
+  .logo-uploader__action {
+    margin-top: 0;
+  }
 }
 
 .branding-step__row {
@@ -531,6 +783,9 @@ app-setup-inspector-aside {
 
   input {
     padding-right: 3.5rem;
+    // Standing Oxblood border, unlike every other field's --border-subtle -- an intentional
+    // "emphasized" treatment per the mockup, not a validation-error state.
+    border: 1.5px solid var(--brand-secondary);
   }
 }
 
@@ -578,12 +833,55 @@ app-setup-inspector-aside {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  overflow: hidden auto;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+// #previewScale (the sizer, resized in JS to the post-scale pixel dimensions) and
+// #previewScaleInner (the actual <app-login>, kept at its natural size and shrunk with
+// transform: scale()) -- see BrandingStepComponent.syncPreviewScale. Without the two-level
+// split a single scaled element keeps its pre-transform layout box, so align-items: center
+// above would center the wrong (unscaled) box instead of the visually shrunk card.
+.branding-step__login-preview-scale {
+  overflow: hidden;
+}
+
+.branding-step__login-preview-scale-inner {
+  transform-origin: top left;
+}
+
+// Gold double-hairline frame around the Live Login Preview, per the mockup's nested
+// border:1px/padding:3px -> border:1px/padding:2px treatment -- distinct from .seal-card (which
+// is an Ink-surface signature card with an animated draw-in), this one is a static Parchment
+// frame since the login preview itself already carries its own Ink chrome. Both layers share
+// .branding-step__preview's own --surface-card so only the two gold hairlines read visually --
+// the outer layer previously sat on --surface-page (a visibly different, deeper cream than its
+// .card parent), which painted a mismatched rectangle behind the border instead of a clean frame.
+.branding-step__preview-frame {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  border: 1px solid var(--brand-primary);
+  padding: 4px;
+  background: var(--surface-card);
+}
+
+.branding-step__preview-frame-inner {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--brand-primary);
+  padding: 1.25rem 1.25rem 1.5rem;
+  background: var(--surface-card);
+}
+
+.branding-step__preview-label {
+  justify-content: center;
+  margin-bottom: 1rem;
 }
 
 @media (max-width: 700px) {
-  .branding-step__logo-row,
   .branding-step__row {
     grid-template-columns: 1fr;
   }
@@ -603,24 +901,26 @@ app-setup-inspector-aside {
 }
 
 .compensation-step__eyebrow {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--brand-primary);
 }
 
 .compensation-step__title {
   margin: 0;
-  font-size: 1.375rem;
+  font-family: var(--font-display);
+  font-size: 1.625rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .compensation-step__subtitle {
   margin: 0;
-  max-width: 42rem;
-  font-size: 0.875rem;
+  max-width: 40rem;
+  font-size: 0.78125rem;
+  line-height: 1.5;
   color: var(--text-muted);
 }
 
@@ -665,16 +965,26 @@ app-setup-inspector-aside {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-// Reward Tiers + Global Royalty side by side.
-.compensation-step__row--split {
-  grid-template-columns: 1fr 1fr;
-  align-items: start;
-}
-
 .compensation-step__stat {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
+}
+
+// Mockup 1c renders the Income Rules stat row as three bare columns, not three cards -- this
+// overrides the shared .stat-tile's default card chrome only inside this row, leaving every
+// other .stat-tile consumer untouched.
+.compensation-step__row--stats .stat-tile {
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+}
+
+.compensation-step__row--stats .stat-tile__value {
+  font-family: var(--font-display);
+  font-size: 1.1875rem;
+  font-weight: 600;
 }
 
 .compensation-step__field-errors {
@@ -683,16 +993,158 @@ app-setup-inspector-aside {
   gap: 1rem;
 }
 
-// Nested card for each half of the Reward Tiers / Global Royalty split -- a tone step above the
-// main card so the two tables read as distinct sub-panels without a full border.
-.compensation-step__subcard {
+// Accordion layout (design mockup "1c"): one section expanded at a time, the rest collapsed to a
+// summary bar, so the step fits within the shell's fixed viewport (.setup-shell__content is the
+// only scrolling region) without every section fighting for vertical space at once.
+.compensation-step__accordion {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 1rem;
-  border-radius: 12px;
-  background: var(--surface-raised);
+}
+
+.compensation-step__accordion-item {
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.compensation-step__accordion-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1rem;
   border: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  .material-symbols-outlined {
+    font-size: 17px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  &.is-expanded {
+    border-bottom: none;
+    background: var(--surface-card);
+
+    // Mockup 1c: the expanded header's leading icon becomes a solid circular badge in the
+    // section color, with the glyph knocked out -- collapsed headers stay a flat glyph.
+    .material-symbols-outlined:first-child {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      font-size: 16px;
+    }
+  }
+}
+
+// Per-section accent (mockup 1c's category coding: Gold/Oxblood/Green/Bronze). Collapsed: a left
+// border identifies the section at a glance. Expanded: the accent moves to a top border and the
+// icon badge above takes the section color as its fill, per the mockup.
+.compensation-step__accordion-header--incomeRules {
+  border-left: 4px solid var(--brand-primary);
+
+  &.is-expanded {
+    border-left: none;
+    border-top: 4px solid var(--brand-primary);
+
+    .material-symbols-outlined:first-child {
+      background: var(--brand-primary);
+      color: var(--ink);
+    }
+  }
+}
+
+.compensation-step__accordion-header--rewardTiers {
+  border-left: 4px solid var(--brand-secondary);
+
+  &.is-expanded {
+    border-left: none;
+    border-top: 4px solid var(--brand-secondary);
+
+    .material-symbols-outlined:first-child {
+      background: var(--brand-secondary);
+      color: var(--brand-secondary-contrast);
+    }
+  }
+}
+
+.compensation-step__accordion-header--royalty {
+  border-left: 4px solid var(--status-success);
+
+  &.is-expanded {
+    border-left: none;
+    border-top: 4px solid var(--status-success);
+
+    .material-symbols-outlined:first-child {
+      background: var(--status-success);
+      color: var(--surface-page);
+    }
+  }
+}
+
+.compensation-step__accordion-header--fees {
+  border-left: 4px solid var(--status-warning);
+
+  &.is-expanded {
+    border-left: none;
+    border-top: 4px solid var(--status-warning);
+
+    .material-symbols-outlined:first-child {
+      background: var(--status-warning);
+      color: var(--surface-page);
+    }
+  }
+}
+
+.compensation-step__accordion-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: inherit;
+}
+
+.compensation-step__accordion-summary {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.71875rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+
+.compensation-step__accordion-chevron {
+  flex-shrink: 0;
+}
+
+.compensation-step__accordion-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-top: none;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  background: var(--surface-card);
+
+  // [hidden] loses to this rule's own `display: flex` above without this: same-specificity author
+  // CSS beats the UA stylesheet's `[hidden] { display: none }`, so a collapsed section's controls
+  // (still mounted, per the accordion's [hidden]-not-*ngIf contract) would stay visibly rendered.
+  &[hidden] {
+    display: none;
+  }
 }
 
 .compensation-step__aside-column {
@@ -709,33 +1161,41 @@ app-setup-inspector-aside {
   visibility: hidden;
 }
 
-// Elevated a tone above the surrounding aside (which sits directly on the page background) so it
-// reads as the mockup's dark "Earnings Simulator" panel, using the existing dark-theme tokens
-// rather than introducing new colors.
+// This step's Seal Card (DESIGN.md SS5): the mockup's double gold-hairline "── SIMULATOR ──"
+// panel. The outer 1px + 3px-inset second 1px mimics the mockup's nested border:1px/padding:3px
+// + border:1px divs without adding wrapper markup -- one box-shadow ring standing in for the
+// second border. Restricted to this one panel per DESIGN.md SS5/SS9 ("if everything gets a seal,
+// nothing reads as special").
 .compensation-step__simulator {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   padding: 1.25rem;
-  border-radius: 12px;
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-primary) 18%, transparent) inset;
+  border-radius: 4px;
+  background: var(--surface-card);
+  border: 1px solid var(--brand-primary);
+  box-shadow: 0 0 0 3px var(--surface-page), 0 0 0 4px var(--brand-primary);
 }
 
 .compensation-step__simulator-title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 0.625rem;
   margin: 0;
-  font-size: 0.95rem;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
   font-weight: 600;
-  color: var(--text-primary);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-secondary);
+}
 
-  .material-symbols-outlined {
-    font-size: 20px;
-    color: var(--brand-primary);
-  }
+.compensation-step__simulator-title-rule {
+  width: 1.25rem;
+  height: 1px;
+  background: var(--brand-secondary);
+  flex-shrink: 0;
 }
 
 .compensation-step__simulator-field,
@@ -753,6 +1213,10 @@ app-setup-inspector-aside {
 .compensation-step__simulator-checkbox {
   flex-direction: row;
   align-items: center;
+
+  input[type='checkbox'] {
+    accent-color: var(--brand-secondary);
+  }
 }
 
 .compensation-step__simulator-breakdown {
@@ -782,12 +1246,18 @@ app-setup-inspector-aside {
   }
 }
 
+// Admin Charge / TDS are deductions, not income lines -- the mockup reads them in the bronze
+// status-warning color so they visually separate from the income/bonus lines above them.
+.compensation-step__simulator-line--deduction dd {
+  color: var(--status-warning);
+}
+
 .compensation-step__simulator-total {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding-top: 1rem;
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--brand-primary);
 
   span {
     font-size: 0.7rem;
@@ -798,7 +1268,8 @@ app-setup-inspector-aside {
   }
 
   strong {
-    font-size: 1.5rem;
+    font-family: var(--font-display);
+    font-size: 1.625rem;
     font-weight: 700;
     color: var(--brand-primary);
   }
@@ -813,17 +1284,45 @@ app-setup-inspector-aside {
 @media (max-width: 700px) {
   .compensation-step__row,
   .compensation-step__row--stats,
-  .compensation-step__row--split,
   .compensation-step__field-errors {
     grid-template-columns: 1fr;
+  }
+
+  .compensation-step__accordion-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .compensation-step__accordion-summary {
+    flex-basis: 100%;
+    text-align: left;
+    order: 1;
   }
 }
 
 .payments-kyc-step {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.75rem;
   max-width: 900px;
+}
+
+// This step packs 5 cards into the same vertical budget siblings fill with one or two --
+// deliberately denser than the rest of the wizard so the whole screen fits without scrolling.
+.payments-kyc-step label {
+  margin-bottom: 0.2rem;
+  font-size: 0.72rem;
+}
+
+.payments-kyc-step input[type='text'],
+.payments-kyc-step input[type='number'],
+.payments-kyc-step input[type='password'] {
+  padding: 0.3rem 0.5rem;
+}
+
+.payments-kyc-step .toggle-group__option {
+  padding: 0.3rem 0.4rem;
+  font-size: 0.66rem;
 }
 
 .payments-kyc-step__intro {
@@ -857,48 +1356,81 @@ app-setup-inspector-aside {
 .payments-kyc-step__card {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding: 1.25rem 1.5rem;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
 }
 
 .payments-kyc-step__section-title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
 
   .material-symbols-outlined {
-    font-size: 20px;
+    font-size: 17px;
     color: var(--brand-primary);
   }
 }
 
-.payments-kyc-step__row--split {
+// Page-level layout: payment (spans 2 cols) + kyc on row 1, payout/withdrawal/booking on row 2 --
+// matches the "Payments KYC - One Screen" mockup's grid-template-areas.
+.payments-kyc-step__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    'payment payment kyc'
+    'payout withdrawal booking';
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.payments-kyc-step__card--payment {
+  grid-area: payment;
+}
+
+.payments-kyc-step__card--kyc {
+  grid-area: kyc;
+}
+
+.payments-kyc-step__card--payout {
+  grid-area: payout;
+}
+
+.payments-kyc-step__card--withdrawal {
+  grid-area: withdrawal;
+}
+
+.payments-kyc-step__card--booking {
+  grid-area: booking;
+}
+
+// Payout Account's Bank Name/Account Holder/Account Number/IFSC fields, 2-up -- same convention as
+// compensation-step__row / company-profile-step__row.
+.payments-kyc-step__row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  align-items: start;
+  gap: 0.5rem 0.75rem;
 }
 
 // Icon-tile gateway picker (Payment Collection card), matching the Stitch mockup's 2/4-up grid.
 .payments-kyc-step__gateway-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 0.625rem;
 }
 
 .payments-kyc-step__gateway-tile {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1.25rem 1rem;
-  border-radius: 12px;
+  gap: 0.2rem;
+  padding: 0.5rem 0.375rem;
+  border-radius: 8px;
   border: 2px solid transparent;
   background: var(--surface-raised);
   cursor: pointer;
@@ -919,20 +1451,20 @@ app-setup-inspector-aside {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   background: var(--surface-base, #fff);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 
   .material-symbols-outlined {
-    font-size: 26px;
+    font-size: 15px;
     color: var(--brand-primary);
   }
 }
 
 .payments-kyc-step__gateway-label {
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   font-weight: 500;
   color: var(--text-primary);
 }
@@ -952,21 +1484,21 @@ app-setup-inspector-aside {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
 }
 
 .payments-kyc-step__mode-chips-label {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   margin-right: 0.25rem;
 }
 
 .payments-kyc-step__mode-chip {
-  padding: 0.375rem 0.875rem;
+  padding: 0.2rem 0.5rem;
   border-radius: 999px;
   border: 1px solid var(--border-subtle);
   background: var(--surface-raised);
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   cursor: pointer;
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
@@ -982,17 +1514,12 @@ app-setup-inspector-aside {
 .payments-kyc-step__credentials {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-}
-
-.payments-kyc-step__credentials-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  gap: 0.3rem;
 }
 
 .payments-kyc-step__hint {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   color: var(--brand-primary);
 }
 
@@ -1000,7 +1527,8 @@ app-setup-inspector-aside {
 .payments-kyc-step__credentials-edit {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  font-size: 0.75rem;
 }
 
 .payments-kyc-step__credentials-link {
@@ -1029,10 +1557,10 @@ app-setup-inspector-aside {
 .payments-kyc-step__kyc-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
   border: none;
   background: var(--surface-raised);
   cursor: pointer;
@@ -1045,19 +1573,20 @@ app-setup-inspector-aside {
 }
 
 .payments-kyc-step__kyc-row-icon {
-  font-size: 20px;
+  font-size: 15px;
   color: var(--text-muted);
 }
 
 .payments-kyc-step__kyc-row-label {
   flex: 1;
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   font-weight: 500;
+  line-height: 1.2;
   color: var(--text-primary);
 }
 
 .payments-kyc-step__kyc-row-status {
-  font-size: 20px;
+  font-size: 15px;
   color: var(--border-subtle);
 }
 
@@ -1068,14 +1597,34 @@ app-setup-inspector-aside {
   }
 }
 
+// Single-row 4-step chip strip (1. Raised -> 2. Review -> 3. Approved -> 4. Payout), matching the
+// mockup. Numbered short labels keep each chip narrow enough to fit this card's real column width.
 .payments-kyc-step__withdrawal-flow {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin: 0;
-  padding-left: 1.25rem;
-  font-size: 0.85rem;
+  align-items: center;
+  gap: 0.1rem;
+  font-weight: 600;
   color: var(--text-muted);
+}
+
+.payments-kyc-step__withdrawal-flow-step {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface-raised);
+  border-radius: 5px;
+  padding: 0.3rem 0;
+  text-align: center;
+  font-size: 0.52rem;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.payments-kyc-step__withdrawal-flow-arrow {
+  flex: none;
+  font-size: 12px;
+  color: var(--border-subtle);
 }
 
 .payments-kyc-step__checkbox-field {
@@ -1083,6 +1632,108 @@ app-setup-inspector-aside {
   flex-direction: row;
   align-items: center;
   gap: 0.5rem;
+
+  // Custom rounded-square box (appearance: none + a checked-state glyph) matching the mockup's
+  // gold EMI checkbox, rather than the browser's native control.
+  input[type='checkbox'] {
+    appearance: none;
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    border-radius: 4px;
+    border: 1.5px solid var(--border-subtle);
+    background: var(--surface-card);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, border-color 0.15s ease;
+
+    &:checked {
+      background: var(--brand-primary);
+      border-color: var(--brand-primary);
+
+      &::after {
+        content: '\2713';
+        font-size: 12px;
+        line-height: 1;
+        color: var(--brand-primary-contrast);
+      }
+    }
+
+    &:focus-visible {
+      outline: 1.5px solid var(--brand-primary);
+      outline-offset: 1px;
+    }
+  }
+}
+
+// Booking Confirmation Rule's 3-option radio-row list (Auto-confirm/Manual/KYC-gated), matching
+// the mockup -- a vertical list of dot-indicator rows rather than the 2-option segmented
+// app-toggle-group used elsewhere in this file.
+.payments-kyc-step__confirm-rule {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.payments-kyc-step__confirm-rule-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.payments-kyc-step__confirm-rule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.payments-kyc-step__confirm-rule-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.4rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 0.72rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--surface-raised);
+  }
+}
+
+.payments-kyc-step__confirm-rule-row--active {
+  background: var(--surface-raised);
+  font-weight: 600;
+}
+
+.payments-kyc-step__confirm-rule-dot {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1.5px solid var(--brand-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &::after {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+}
+
+.payments-kyc-step__confirm-rule-dot--active::after {
+  background: var(--brand-primary);
 }
 
 .payments-kyc-step__saved {
@@ -1094,7 +1745,7 @@ app-setup-inspector-aside {
 .payments-kyc-step__aside-column {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
   height: 100%;
 }
 
@@ -1108,8 +1759,8 @@ app-setup-inspector-aside {
 .payments-kyc-step__flow-diagram {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1.25rem;
+  gap: 0.5rem;
+  padding: 0.875rem;
   border-radius: 12px;
   background: var(--surface-raised);
   border: 1px solid var(--border-subtle);
@@ -1118,35 +1769,35 @@ app-setup-inspector-aside {
 .payments-kyc-step__flow-title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-primary);
 
   .material-symbols-outlined {
-    font-size: 20px;
+    font-size: 18px;
     color: var(--brand-primary);
   }
 }
 
 .payments-kyc-step__flow-subtitle {
-  margin: 0 0 0.25rem;
-  font-size: 0.75rem;
+  margin: 0 0 0.125rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
 }
 
 .payments-kyc-step__flow-node {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 10px;
   background: var(--surface-base, #fff);
   border: 1px solid var(--border-subtle);
 
   .material-symbols-outlined {
-    font-size: 18px;
+    font-size: 16px;
     color: var(--brand-primary);
   }
 }
@@ -1182,7 +1833,7 @@ app-setup-inspector-aside {
 
 .payments-kyc-step__flow-connector {
   width: 1px;
-  height: 20px;
+  height: 12px;
   margin-left: 1.5rem;
   background: linear-gradient(to bottom, var(--brand-primary), var(--border-subtle));
 }
@@ -1190,23 +1841,23 @@ app-setup-inspector-aside {
 .payments-kyc-step__flow-split {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-top: 0.25rem;
+  gap: 0.5rem;
+  margin-top: 0.125rem;
 }
 
 .payments-kyc-step__flow-leaf {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.75rem;
+  gap: 0.2rem;
+  padding: 0.5rem;
   border-radius: 10px;
   background: var(--surface-base, #fff);
   border: 1px solid var(--border-subtle);
   text-align: center;
 
   .material-symbols-outlined {
-    font-size: 18px;
+    font-size: 16px;
     color: var(--brand-primary);
   }
 }
@@ -1214,22 +1865,22 @@ app-setup-inspector-aside {
 .payments-kyc-step__flow-secure-note {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-  padding-top: 0.75rem;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
   border-top: 1px solid var(--border-subtle);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
 
   .material-symbols-outlined {
-    font-size: 18px;
+    font-size: 16px;
     color: var(--brand-primary);
   }
 
   strong {
     display: block;
     color: var(--text-primary);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
 
   p {
@@ -1241,12 +1892,31 @@ app-setup-inspector-aside {
   .payments-kyc-step__gateway-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .payments-kyc-step__grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'payment payment'
+      'kyc kyc'
+      'payout withdrawal'
+      'booking booking';
+  }
 }
 
 @media (max-width: 700px) {
-  .payments-kyc-step__row--split,
+  .payments-kyc-step__row,
   .payments-kyc-step__flow-split {
     grid-template-columns: 1fr;
+  }
+
+  .payments-kyc-step__grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'payment'
+      'kyc'
+      'payout'
+      'withdrawal'
+      'booking';
   }
 }
 
@@ -1255,29 +1925,6 @@ app-setup-inspector-aside {
   align-items: center;
   gap: 1rem;
   margin-top: 1.5rem;
-}
-
-// Used when this component renders inside the narrow inspector aside (e.g. company-profile's
-// nav below its Company Card preview) instead of a full-width footer bar -- buttons stack full
-// width with Next visually first, since there's no room for the inline previous/spacer/next row.
-.setup-step-nav--stacked {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.75rem;
-  margin-top: 1rem;
-
-  .setup-step-nav__saved {
-    order: 0;
-    text-align: center;
-  }
-
-  .setup-step-nav__next {
-    order: 1;
-  }
-
-  .setup-step-nav__previous {
-    order: 2;
-  }
 }
 
 .review-launch-step {

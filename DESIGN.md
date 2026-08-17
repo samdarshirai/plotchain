@@ -43,6 +43,8 @@ Semantic colors are deliberately **not** built from Oxblood, so a red error stat
 
 **Rule:** Ink is a chrome color, not a content-background color. Data-dense screens (tables, ledgers, forms) stay on Parchment for read-all-day legibility; Ink is reserved for the app shell and for one "seal" card per screen (see §5). Don't paint a whole dashboard black — that's how a legacy-luxury identity becomes a legibility problem.
 
+**Exception:** the setup wizard's forward-progress "Next" CTA (`app-setup-shell-footer`) uses Oxblood, not Gold — a deliberate one-off distinguishing "advance the wizard" from every other primary button app-wide, which stays Gold per the rule above.
+
 ## 3. Typography
 
 | Role | Typeface | Used for |

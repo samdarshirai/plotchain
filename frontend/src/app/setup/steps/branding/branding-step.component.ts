@@ -43,8 +43,10 @@ const MIN_CONTRAST = 4.5;
   template: `
     <div class="branding-step">
       <div class="branding-step__intro" #introEl>
-        <span *ngIf="mode !== 'settings'" class="branding-step__eyebrow">
-          {{ 'setup.branding.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
+        <span *ngIf="mode !== 'settings'" class="step-eyebrow">
+          <span class="step-eyebrow__rule"></span>
+          <span class="step-eyebrow__label">{{ 'setup.branding.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}</span>
+          <span class="step-eyebrow__rule"></span>
         </span>
         <h1 class="branding-step__title">{{ 'setup.steps.branding' | translate }}</h1>
         <p class="branding-step__subtitle">{{ 'setup.branding.subtitle' | translate }}</p>
@@ -68,18 +70,6 @@ const MIN_CONTRAST = 4.5;
               [changeLabel]="'setup.branding.changeLabel' | translate"
               [error]="logoError('square')"
               (fileSelected)="onLogoSelected('square', $event)"
-            ></app-logo-uploader>
-
-            <app-logo-uploader
-              [label]="'setup.branding.wideLogoLabel' | translate"
-              variant="wide"
-              [hasLogo]="branding?.hasWideLogo || false"
-              [logoUrl]="brandingService.logoUrl('wide')"
-              [placeholderText]="'setup.branding.wideLogoLabel' | translate"
-              [uploadLabel]="'setup.branding.uploadLabel' | translate"
-              [changeLabel]="'setup.branding.changeLabel' | translate"
-              [error]="logoError('wide')"
-              (fileSelected)="onLogoSelected('wide', $event)"
             ></app-logo-uploader>
           </div>
         </section>
@@ -132,21 +122,35 @@ const MIN_CONTRAST = 4.5;
     <ng-template #inspectorTpl>
       <div class="branding-step__aside-column">
         <div class="branding-step__intro branding-step__intro--spacer" aria-hidden="true" #introSpacerEl>
-          <span class="branding-step__eyebrow">
-            {{ 'setup.branding.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}
+          <span class="step-eyebrow">
+            <span class="step-eyebrow__rule"></span>
+            <span class="step-eyebrow__label">{{ 'setup.branding.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}</span>
+            <span class="step-eyebrow__rule"></span>
           </span>
           <h1 class="branding-step__title">{{ 'setup.steps.branding' | translate }}</h1>
           <p class="branding-step__subtitle">{{ 'setup.branding.subtitle' | translate }}</p>
         </div>
 
         <div class="card branding-step__preview" #previewCard>
-          <p class="card-subtitle">{{ 'setup.branding.loginPreviewTitle' | translate }}</p>
-          <div #previewContainer class="branding-step__login-preview">
-            <app-login
-              [previewMode]="true"
-              [tagline]="form.value.tagline || null"
-              [hasSquareLogo]="branding?.hasSquareLogo || false"
-            ></app-login>
+          <div class="branding-step__preview-frame">
+            <div class="branding-step__preview-frame-inner">
+              <span class="step-eyebrow branding-step__preview-label">
+                <span class="step-eyebrow__rule"></span>
+                <span class="step-eyebrow__label">{{ 'setup.branding.loginPreviewTitle' | translate }}</span>
+                <span class="step-eyebrow__rule"></span>
+              </span>
+              <div #previewContainer class="branding-step__login-preview">
+                <div #previewScale class="branding-step__login-preview-scale">
+                  <div #previewScaleInner class="branding-step__login-preview-scale-inner">
+                    <app-login
+                      [previewMode]="true"
+                      [tagline]="form.value.tagline || null"
+                      [hasSquareLogo]="branding?.hasSquareLogo || false"
+                    ></app-login>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -165,12 +169,15 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy, 
   private brandingSubscription?: Subscription;
 
   @ViewChild('previewContainer') previewContainer!: ElementRef<HTMLElement>;
+  @ViewChild('previewScale') private previewScale!: ElementRef<HTMLElement>;
+  @ViewChild('previewScaleInner') private previewScaleInner!: ElementRef<HTMLElement>;
   @ViewChild('inspectorTpl') private inspectorTpl!: TemplateRef<unknown>;
   @ViewChild('introEl') private introEl!: ElementRef<HTMLElement>;
   @ViewChild('introSpacerEl') private introSpacerEl!: ElementRef<HTMLElement>;
   @ViewChild('formCard') private formCard!: ElementRef<HTMLElement>;
   @ViewChild('previewCard') private previewCard!: ElementRef<HTMLElement>;
   private sizeObserver?: ResizeObserver;
+  private previewScaleObserver?: ResizeObserver;
 
   readonly taglineMaxLength = TAGLINE_MAX_LENGTH;
   // No hardcoded hex here -- read from the CSS custom properties _tokens.scss sets from
@@ -287,6 +294,7 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy, 
     this.brandingSubscription?.unsubscribe();
     this.inspectorService.clear();
     this.sizeObserver?.disconnect();
+    this.previewScaleObserver?.disconnect();
   }
 
   // Keeps the aside's Live Login Preview card pixel-matched to the form card, and the invisible
@@ -303,11 +311,58 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy, 
         this.introSpacerEl.nativeElement.style.height = `${this.introEl.nativeElement.offsetHeight}px`;
       }
       if (this.previewCard) {
-        this.previewCard.nativeElement.style.height = `${this.formCard.nativeElement.offsetHeight}px`;
+        // Clamp to the aside column's own available height (already excludes the floating
+        // footer's clearance padding, see .setup-inspector-aside) -- matching formCard's height
+        // unconditionally let a tall form (e.g. a taller logo tile) push the preview card past
+        // the visible aside area and under the fixed Previous/Next buttons. The login preview's
+        // own scale-to-fit (syncPreviewScale) shrinks further to whatever height this leaves it.
+        const desired = this.formCard.nativeElement.offsetHeight;
+        const asideColumn = this.previewCard.nativeElement.parentElement;
+        const introSpacerHeight = this.introSpacerEl?.nativeElement.offsetHeight ?? 0;
+        const asideGap = 16; // .branding-step__aside-column's gap: 1rem
+        const available = asideColumn ? asideColumn.clientHeight - introSpacerHeight - asideGap : desired;
+        this.previewCard.nativeElement.style.height = `${Math.min(desired, Math.max(available, 0))}px`;
       }
     });
     this.sizeObserver.observe(this.formCard.nativeElement);
     this.sizeObserver.observe(this.introEl.nativeElement);
+
+    // The card above sets #previewContainer's own available height (via the flex chain rooted
+    // at #previewCard); re-scale the login preview whenever that available height itself
+    // changes, so a short branding form never forces the login card to scroll or crop -- it
+    // shrinks uniformly (never enlarges past 1:1) to always show the full card, brand header
+    // included.
+    if (this.previewContainer && this.previewScale && this.previewScaleInner) {
+      this.previewScaleObserver = new ResizeObserver(() => this.syncPreviewScale());
+      this.previewScaleObserver.observe(this.previewContainer.nativeElement);
+    }
+  }
+
+  private syncPreviewScale(): void {
+    const sizer = this.previewScale?.nativeElement;
+    const inner = this.previewScaleInner?.nativeElement;
+    const container = this.previewContainer?.nativeElement;
+    if (!sizer || !inner || !container) {
+      return;
+    }
+
+    inner.style.transform = 'none';
+    inner.style.width = '';
+    sizer.style.width = '';
+    sizer.style.height = '';
+
+    const naturalWidth = inner.offsetWidth;
+    const naturalHeight = inner.offsetHeight;
+    if (!naturalWidth || !naturalHeight) {
+      return;
+    }
+
+    const scale = Math.min(1, container.clientWidth / naturalWidth, container.clientHeight / naturalHeight);
+
+    inner.style.width = `${naturalWidth}px`;
+    inner.style.transform = `scale(${scale})`;
+    sizer.style.width = `${naturalWidth * scale}px`;
+    sizer.style.height = `${naturalHeight * scale}px`;
   }
 
   setColor(control: 'primaryColor' | 'secondaryColor', value: string): void {

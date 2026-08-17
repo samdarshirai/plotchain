@@ -1,6 +1,5 @@
 export interface RoyaltyBonusRate {
-  rankId: string;
-  rankName: string;
+  volumeThreshold: number;
   royaltyPct: number;
 }
 
@@ -38,9 +37,8 @@ export type SettlementCycle = CompensationPlanResponse['settlementCycle'];
 
 export type CompensationPlanRequest = Omit<
   CompensationPlanResponse,
-  'versionLabel' | 'createdAt' | 'availableRanks' | 'royaltyBonusRates' | 'effectiveFrom'
+  'versionLabel' | 'createdAt' | 'availableRanks' | 'effectiveFrom'
 > & {
-  royaltyBonusRates: Omit<RoyaltyBonusRate, 'rankName'>[];
   // Optional, matching the backend contract: CompensationPlanService defaults it to today when
   // absent. This step has no future-dating UI, so it is never sent.
   effectiveFrom?: string;

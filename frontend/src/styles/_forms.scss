@@ -19,9 +19,12 @@ textarea {
   display: block;
   width: 100%;
   padding: 0.625rem 0.875rem;
-  background: var(--surface-raised);
+  // Per DESIGN.md's mockups, fields sit on --surface-card (near-white), not the deeper tan
+  // --surface-raised -- that shade is reserved for raised/secondary chrome (buttons, tiles), not
+  // the fields themselves.
+  background: var(--surface-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -48,25 +51,28 @@ input[type='file'] {
   display: block;
   width: 100%;
   padding: 0.5rem;
-  background: var(--surface-raised);
+  background: var(--surface-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   color: var(--text-muted);
 }
 
+// Oxblood, not gold -- per the mockups this is the one primary-looking action that's deliberately
+// the secondary brand color, not --brand-primary (which stays reserved for the Next/Save-class
+// actions elsewhere, e.g. _buttons.scss's .btn-primary).
 input[type='file']::file-selector-button {
   margin-right: 0.75rem;
   padding: 0.5rem 1rem;
-  background: var(--brand-primary);
-  color: var(--brand-primary-contrast);
+  background: var(--brand-secondary);
+  color: var(--surface-page);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
 input[type='file']::file-selector-button:hover {
-  background: var(--brand-primary-hover);
+  background: color-mix(in srgb, var(--brand-secondary) 85%, white);
 }

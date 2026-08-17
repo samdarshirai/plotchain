@@ -65,7 +65,8 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
         <p class="payments-kyc-step__subtitle">{{ 'setup.paymentsKyc.subtitle' | translate }}</p>
       </div>
 
-      <form class="card payments-kyc-step__card" [formGroup]="paymentForm">
+      <div class="payments-kyc-step__grid">
+      <form class="card payments-kyc-step__card payments-kyc-step__card--payment" [formGroup]="paymentForm">
         <h2 class="payments-kyc-step__section-title">
           <span class="material-symbols-outlined">payments</span>
           {{ 'setup.paymentsKyc.paymentCollectionTitle' | translate }}
@@ -105,7 +106,6 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
         </div>
 
         <div class="payments-kyc-step__credentials">
-          <span class="payments-kyc-step__credentials-label">{{ 'setup.paymentsKyc.credentialsLabel' | translate }}</span>
           <p class="payments-kyc-step__hint" *ngIf="!credentialsConfigured">
             {{ 'setup.paymentsKyc.credentialsRequiredHint' | translate }}
           </p>
@@ -135,36 +135,45 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
         </div>
       </form>
 
-      <div class="payments-kyc-step__row--split">
-        <form class="card payments-kyc-step__card" [formGroup]="payoutForm">
+        <form class="card payments-kyc-step__card payments-kyc-step__card--payout" [formGroup]="payoutForm">
           <h2 class="payments-kyc-step__section-title">
             <span class="material-symbols-outlined">account_balance</span>
             {{ 'setup.paymentsKyc.payoutAccountTitle' | translate }}
           </h2>
 
-          <label>
-            {{ 'setup.paymentsKyc.bankNameLabel' | translate }}
-            <input type="text" formControlName="bankName" (blur)="markPayoutTouched('bankName')" />
-          </label>
-          <app-field-error [message]="payoutFieldError('bankName')"></app-field-error>
+          <div class="payments-kyc-step__row">
+            <div>
+              <label>
+                {{ 'setup.paymentsKyc.bankNameLabel' | translate }}
+                <input type="text" formControlName="bankName" (blur)="markPayoutTouched('bankName')" />
+              </label>
+              <app-field-error [message]="payoutFieldError('bankName')"></app-field-error>
+            </div>
 
-          <label>
-            {{ 'setup.paymentsKyc.accountHolderLabel' | translate }}
-            <input type="text" formControlName="accountHolder" (blur)="markPayoutTouched('accountHolder')" />
-          </label>
-          <app-field-error [message]="payoutFieldError('accountHolder')"></app-field-error>
+            <div>
+              <label>
+                {{ 'setup.paymentsKyc.accountHolderLabel' | translate }}
+                <input type="text" formControlName="accountHolder" (blur)="markPayoutTouched('accountHolder')" />
+              </label>
+              <app-field-error [message]="payoutFieldError('accountHolder')"></app-field-error>
+            </div>
 
-          <label>
-            {{ 'setup.paymentsKyc.accountNumberLabel' | translate }}
-            <input type="text" formControlName="accountNumber" (blur)="markPayoutTouched('accountNumber')" />
-          </label>
-          <app-field-error [message]="payoutFieldError('accountNumber')"></app-field-error>
+            <div>
+              <label>
+                {{ 'setup.paymentsKyc.accountNumberLabel' | translate }}
+                <input type="text" formControlName="accountNumber" (blur)="markPayoutTouched('accountNumber')" />
+              </label>
+              <app-field-error [message]="payoutFieldError('accountNumber')"></app-field-error>
+            </div>
 
-          <label>
-            {{ 'setup.paymentsKyc.ifscCodeLabel' | translate }}
-            <input type="text" formControlName="ifscCode" (blur)="markPayoutTouched('ifscCode')" />
-          </label>
-          <app-field-error [message]="payoutFieldError('ifscCode')"></app-field-error>
+            <div>
+              <label>
+                {{ 'setup.paymentsKyc.ifscCodeLabel' | translate }}
+                <input type="text" formControlName="ifscCode" (blur)="markPayoutTouched('ifscCode')" />
+              </label>
+              <app-field-error [message]="payoutFieldError('ifscCode')"></app-field-error>
+            </div>
+          </div>
 
           <label>
             {{ 'setup.paymentsKyc.accountTypeLabel' | translate }}
@@ -180,7 +189,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
           </div>
         </form>
 
-        <div class="card payments-kyc-step__card">
+        <div class="card payments-kyc-step__card payments-kyc-step__card--kyc">
           <h2 class="payments-kyc-step__section-title">
             <span class="material-symbols-outlined">verified_user</span>
             {{ 'setup.paymentsKyc.kycRequirementsTitle' | translate }}
@@ -218,9 +227,8 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
             {{ 'setup.paymentsKyc.savedIndicator' | translate }}
           </div>
         </div>
-      </div>
 
-      <div class="card payments-kyc-step__card">
+      <div class="card payments-kyc-step__card payments-kyc-step__card--withdrawal">
         <h2 class="payments-kyc-step__section-title">
           <span class="material-symbols-outlined">account_balance_wallet</span>
           {{ 'setup.paymentsKyc.withdrawalApprovalTitle' | translate }}
@@ -245,12 +253,15 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
           <input type="number" [value]="minimumWithdrawalAmount" (input)="setMinimumWithdrawalAmount($event)" />
         </label>
 
-        <ol class="payments-kyc-step__withdrawal-flow">
-          <li>{{ 'setup.paymentsKyc.flowRequestRaised' | translate }}</li>
-          <li>{{ 'setup.paymentsKyc.flowAdminReview' | translate }}</li>
-          <li>{{ 'setup.paymentsKyc.flowApproved' | translate }}</li>
-          <li>{{ 'setup.paymentsKyc.flowPayoutInitiated' | translate }}</li>
-        </ol>
+        <div class="payments-kyc-step__withdrawal-flow">
+          <span class="payments-kyc-step__withdrawal-flow-step">{{ 'setup.paymentsKyc.flowRequestRaised' | translate }}</span>
+          <span class="material-symbols-outlined payments-kyc-step__withdrawal-flow-arrow">arrow_forward</span>
+          <span class="payments-kyc-step__withdrawal-flow-step">{{ 'setup.paymentsKyc.flowAdminReview' | translate }}</span>
+          <span class="material-symbols-outlined payments-kyc-step__withdrawal-flow-arrow">arrow_forward</span>
+          <span class="payments-kyc-step__withdrawal-flow-step">{{ 'setup.paymentsKyc.flowApproved' | translate }}</span>
+          <span class="material-symbols-outlined payments-kyc-step__withdrawal-flow-arrow">arrow_forward</span>
+          <span class="payments-kyc-step__withdrawal-flow-step">{{ 'setup.paymentsKyc.flowPayoutInitiated' | translate }}</span>
+        </div>
 
         <app-inline-banner *ngIf="withdrawalSubmitError" tone="danger">{{ withdrawalSubmitError }}</app-inline-banner>
         <div class="payments-kyc-step__saved" *ngIf="withdrawalSavedJustNow">
@@ -258,7 +269,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
         </div>
       </div>
 
-      <div class="card payments-kyc-step__card payments-kyc-step__card--final">
+      <div class="card payments-kyc-step__card payments-kyc-step__card--booking payments-kyc-step__card--final">
         <h2 class="payments-kyc-step__section-title">
           <span class="material-symbols-outlined">event_repeat</span>
           {{ 'setup.paymentsKyc.bookingEmiPolicyTitle' | translate }}
@@ -274,14 +285,47 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
           <input type="number" min="1" [value]="defaultInstallmentCount" (input)="setDefaultInstallmentCount($event)" />
         </label>
 
-        <label>
-          {{ 'setup.paymentsKyc.confirmRuleLabel' | translate }}
-          <app-toggle-group
-            [options]="confirmRuleOptions"
-            [value]="confirmRule"
-            (valueChange)="setConfirmRule($event)"
-          ></app-toggle-group>
-        </label>
+        <div class="payments-kyc-step__confirm-rule">
+          <span class="payments-kyc-step__confirm-rule-label">{{ 'setup.paymentsKyc.confirmRuleLabel' | translate }}</span>
+          <div class="payments-kyc-step__confirm-rule-list">
+            <button
+              type="button"
+              class="payments-kyc-step__confirm-rule-row"
+              [class.payments-kyc-step__confirm-rule-row--active]="confirmRule === 'AUTO_THRESHOLD'"
+              (click)="setConfirmRule('AUTO_THRESHOLD')"
+            >
+              <span
+                class="payments-kyc-step__confirm-rule-dot"
+                [class.payments-kyc-step__confirm-rule-dot--active]="confirmRule === 'AUTO_THRESHOLD'"
+              ></span>
+              {{ 'setup.paymentsKyc.confirmRuleAutoThresholdLabel' | translate }}
+            </button>
+            <button
+              type="button"
+              class="payments-kyc-step__confirm-rule-row"
+              [class.payments-kyc-step__confirm-rule-row--active]="confirmRule === 'MANUAL'"
+              (click)="setConfirmRule('MANUAL')"
+            >
+              <span
+                class="payments-kyc-step__confirm-rule-dot"
+                [class.payments-kyc-step__confirm-rule-dot--active]="confirmRule === 'MANUAL'"
+              ></span>
+              {{ 'setup.paymentsKyc.confirmRuleManualLabel' | translate }}
+            </button>
+            <button
+              type="button"
+              class="payments-kyc-step__confirm-rule-row"
+              [class.payments-kyc-step__confirm-rule-row--active]="confirmRule === 'KYC_GATED'"
+              (click)="setConfirmRule('KYC_GATED')"
+            >
+              <span
+                class="payments-kyc-step__confirm-rule-dot"
+                [class.payments-kyc-step__confirm-rule-dot--active]="confirmRule === 'KYC_GATED'"
+              ></span>
+              {{ 'setup.paymentsKyc.confirmRuleKycGatedLabel' | translate }}
+            </button>
+          </div>
+        </div>
 
         <label *ngIf="confirmRule === 'AUTO_THRESHOLD'">
           {{ 'setup.paymentsKyc.confirmThresholdPercentLabel' | translate }}
@@ -294,6 +338,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
         </div>
 
         <app-setup-step-nav *ngIf="mode === 'settings'" [savedJustNow]="anySavedJustNow" [mode]="mode"></app-setup-step-nav>
+      </div>
       </div>
     </div>
 
@@ -483,14 +528,6 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
     return [
       { value: 'AUTO_UNDER_LIMIT', label: this.translate.instant('setup.paymentsKyc.autoApproveLabel') },
       { value: 'ALWAYS_MANUAL', label: this.translate.instant('setup.paymentsKyc.alwaysManualLabel') }
-    ];
-  }
-
-  get confirmRuleOptions(): ToggleOption[] {
-    return [
-      { value: 'AUTO_THRESHOLD', label: this.translate.instant('setup.paymentsKyc.confirmRuleAutoThresholdLabel') },
-      { value: 'MANUAL', label: this.translate.instant('setup.paymentsKyc.confirmRuleManualLabel') },
-      { value: 'KYC_GATED', label: this.translate.instant('setup.paymentsKyc.confirmRuleKycGatedLabel') }
     ];
   }
 

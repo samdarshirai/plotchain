@@ -12,10 +12,11 @@ import { SetupInspectorService } from './setup-inspector.service';
 //
 // Hidden when a step registers inspector-aside content AND wants to own navigation there instead
 // (SetupInspectorService.register(tpl, { hideFooter: true }), the default -- see
-// company-profile-step.component.ts, which renders its own <app-setup-step-nav> below the
-// Company Card preview so the shell bar would just duplicate it). A step can register aside
+// review-launch-step.component.ts, which renders its own <app-setup-step-nav> for its
+// Previous-only control so the shell bar would just duplicate it). A step can register aside
 // content while keeping this shared bar by passing { hideFooter: false } (see
-// branding-step.component.ts, whose aside only holds the Live Login Preview, no nav).
+// branding-step.component.ts, whose aside only holds the Live Login Preview, no nav; same for
+// company-profile/compensation/payments-kyc, whose asides hold a preview card/summary panel).
 @Component({
   selector: 'app-setup-shell-footer',
   standalone: true,
@@ -25,11 +26,10 @@ import { SetupInspectorService } from './setup-inspector.service';
       <span class="setup-shell__footer-saved" *ngIf="inspectorService.saved$ | async">
         {{ 'setup.savedIndicator' | translate }}
       </span>
-      <span class="setup-shell__footer-spacer"></span>
       <app-brand-button *ngIf="previousPath" variant="ghost" type="button" (clicked)="goPrevious()">
         {{ 'setup.actions.previous' | translate }}
       </app-brand-button>
-      <app-brand-button *ngIf="nextPath" variant="primary" type="button" (clicked)="goNext()">
+      <app-brand-button *ngIf="nextPath" variant="oxblood" type="button" (clicked)="goNext()">
         {{ 'setup.actions.next' | translate }}
       </app-brand-button>
     </div>

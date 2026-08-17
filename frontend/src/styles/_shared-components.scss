@@ -4,7 +4,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.875rem 1.25rem;
-  border-radius: 12px;
+  border-radius: 0;
   border: 1px solid var(--border-subtle);
   background: var(--surface-card);
   color: var(--text-primary);
@@ -93,7 +93,19 @@
   color: var(--brand-primary);
 }
 
-.toggle-group,
+.stat-tile--success .stat-tile__value {
+  color: var(--status-success);
+}
+
+.toggle-group {
+  display: inline-flex;
+  gap: 0;
+  padding: 0;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0;
+}
+
 .tab-bar {
   display: inline-flex;
   gap: 0.25rem;
@@ -103,7 +115,16 @@
   border-radius: 10px;
 }
 
-.toggle-group__option,
+.toggle-group__option {
+  border-radius: 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
 .tab-bar__tab {
   border-radius: 7px;
   padding: 0.5rem 1rem;
@@ -119,7 +140,11 @@
   color: var(--text-primary);
 }
 
-.toggle-group__option--active,
+.toggle-group__option--active {
+  background: var(--brand-primary);
+  color: var(--brand-primary-contrast);
+}
+
 .tab-bar__tab--active {
   background: var(--brand-gradient);
   color: var(--brand-primary-contrast);
@@ -264,9 +289,11 @@
 }
 
 .color-field__swatch {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 8px;
+  width: 2.5rem;
+  height: 2.5rem;
+  // Sharp, per the mockup's flat color square -- unlike the other shared-primitive radii here,
+  // this one isn't var(--radius-sm); the mockup swatch carries no radius at all.
+  border-radius: 0;
   border: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
@@ -276,7 +303,7 @@
   height: 2.5rem;
   padding: 0;
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--surface-raised);
   cursor: pointer;
 }
@@ -286,20 +313,23 @@
   font-family: monospace;
 }
 
+// Empty tile is deliberately Ink, not Parchment -- per the mockups it's a dark "asset slot"
+// (repeating diagonal stripe, gold monospace label), not a plain dashed-border form field. Once
+// filled with a real logo, .logo-uploader__tile--filled below swaps it back to a plain Parchment
+// frame so the uploaded image itself isn't fighting a dark background.
 .logo-uploader__tile {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 6rem;
-  border: 1px dashed var(--border-subtle);
-  border-radius: 12px;
-  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: repeating-linear-gradient(135deg, var(--ink), var(--ink) 10px, #1a1512 10px, #1a1512 20px);
   overflow: hidden;
 }
 
 .logo-uploader__tile--filled {
-  border-style: solid;
   background: var(--surface-card);
 }
 
@@ -310,14 +340,19 @@
 }
 
 .logo-uploader__placeholder {
-  color: var(--text-muted);
-  font-size: 0.8125rem;
+  color: var(--brand-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .logo-uploader__action {
   margin-top: 0.625rem;
   padding: 0.5rem 1rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
   background: var(--surface-raised);
   color: var(--text-primary);
@@ -326,6 +361,10 @@
   cursor: pointer;
 }
 
-.logo-uploader__input {
+// Compound selector, not just .logo-uploader__input -- needs to out-specificity _forms.scss's
+// global input[type='file'] rule (0,1,1), which otherwise wins the tie against a bare class
+// (0,1,0) and leaks the native file input's own "Choose File" widget in next to this component's
+// custom trigger button.
+input[type='file'].logo-uploader__input {
   display: none;
 }

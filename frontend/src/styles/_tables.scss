@@ -4,7 +4,7 @@ table {
 }
 
 th {
-  padding: 0.75rem 1rem;
+  padding: 0.375rem 0;
   font-size: 0.75rem;
   font-weight: 600;
   text-align: left;
@@ -13,7 +13,7 @@ th {
 }
 
 td {
-  padding: 0.75rem 1rem;
+  padding: 0.375rem 0;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -24,7 +24,7 @@ tr:hover td {
 .editable-table__add-row {
   margin-top: 0.75rem;
   padding: 0.5rem 1rem;
-  border-radius: 8px;
+  border-radius: 3px;
   border: 1px solid var(--border-subtle);
   background: var(--surface-raised);
   color: var(--text-primary);
@@ -33,13 +33,13 @@ tr:hover td {
 }
 
 .editable-table__remove-row {
-  padding: 0.375rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-subtle);
+  padding: 0;
+  border: none;
   background: transparent;
   color: var(--status-danger);
   font-size: 0.8125rem;
   font-weight: 500;
+  text-decoration: underline;
 }
 
 .editable-table__empty {
