@@ -16,12 +16,19 @@ describe('RecordSaleComponent', () => {
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
 
-    httpMock.expectOne(req => req.url === '/api/associates' && req.method === 'GET').flush([]);
+    httpMock.expectOne(req => req.url === '/api/associates' && req.method === 'GET').flush([
+      { id: 'admin-1', userId: 'ADMIN01', name: 'Root Admin', role: 'ADMIN' },
+      { id: 'assoc-1', userId: 'VP00001', name: 'Jane Doe', role: 'ASSOCIATE' }
+    ]);
     httpMock.expectOne(req => req.url === '/api/company/projects' && req.method === 'GET')
       .flush([{ id: 'proj-1', name: 'Green Meadows', location: 'Pune', hasThumbnail: false, totalPlots: 2, availablePlots: 1, soldPlots: 1, createdAt: '2026-01-01' }]);
   });
 
   afterEach(() => httpMock.verify());
+
+  it('excludes the root Admin account from the associate picker', () => {
+    expect(fixture.componentInstance.associates.map(a => a.userId)).toEqual(['VP00001']);
+  });
 
   it('loads available plots for the selected project, filtering out non-AVAILABLE plots', () => {
     fixture.componentInstance.onProjectChange('proj-1');

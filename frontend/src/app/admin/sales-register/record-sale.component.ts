@@ -126,7 +126,9 @@ export class RecordSaleComponent implements OnInit {
   private serverFieldErrors: Record<string, string> = {};
 
   ngOnInit(): void {
-    this.adminService.listAssociates().subscribe(associates => (this.associates = associates));
+    this.adminService.listAssociates().subscribe(
+      associates => (this.associates = associates.filter(a => a.role !== 'ADMIN'))
+    );
     this.projectsService.listProjects().subscribe(projects => (this.projects = projects));
   }
 

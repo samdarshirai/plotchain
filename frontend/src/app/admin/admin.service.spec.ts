@@ -55,7 +55,7 @@ describe('AdminService', () => {
   });
 
   it('lists associates for the parent picker', () => {
-    const mockResponse: AssociateSummary[] = [{ id: 'assoc-1', userId: 'VP00001', name: 'Root Left' }];
+    const mockResponse: AssociateSummary[] = [{ id: 'assoc-1', userId: 'VP00001', name: 'Root Left', role: 'ASSOCIATE' }];
 
     service.listAssociates().subscribe(res => {
       expect(res).toEqual(mockResponse);

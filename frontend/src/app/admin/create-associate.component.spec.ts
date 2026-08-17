@@ -64,7 +64,7 @@ describe('CreateAssociateComponent', () => {
   });
 
   it('submits the selected parent associate UUID from the dropdown', () => {
-    fixture.componentInstance.associates = [{ id: '22222222-2222-2222-2222-222222222222', userId: 'VP00001', name: 'Root Left' }];
+    fixture.componentInstance.associates = [{ id: '22222222-2222-2222-2222-222222222222', userId: 'VP00001', name: 'Root Left', role: 'ASSOCIATE' }];
     fixture.componentInstance.form.patchValue({
       name: 'Jane Doe',
       email: 'jane@plotchain.test',
