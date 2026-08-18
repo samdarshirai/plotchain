@@ -19,6 +19,8 @@ import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
+import com.plotchain.sales.SaleRepository;
+import com.plotchain.sales.SaleStatus;
 import com.plotchain.wallet.Wallet;
 import com.plotchain.wallet.WalletRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +55,7 @@ class DashboardServiceTest {
     @Mock AnnouncementRepository announcementRepository;
     @Mock CompensationPlanVersionRepository compensationPlanVersionRepository;
     @Mock RoyaltyBonusRateRepository royaltyBonusRateRepository;
+    @Mock SaleRepository saleRepository;
 
     DashboardService dashboardService;
 
@@ -62,7 +65,7 @@ class DashboardServiceTest {
             associateRepository, rankTierRepository, cycleRepository,
             ledgerEntryRepository, legVolumeRepository, walletRepository,
             announcementRepository, compensationPlanVersionRepository,
-            royaltyBonusRateRepository);
+            royaltyBonusRateRepository, saleRepository);
     }
 
     @Test
@@ -113,6 +116,8 @@ class DashboardServiceTest {
             .thenReturn(Optional.of(legVolume));
         when(legVolumeRepository.sumLeftLegVolumeByAssociateId(associateId)).thenReturn(BigDecimal.valueOf(300000));
         when(legVolumeRepository.sumRightLegVolumeByAssociateId(associateId)).thenReturn(BigDecimal.valueOf(200000));
+        when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED))
+            .thenReturn(BigDecimal.valueOf(1200));
         CompensationPlanVersion planVersion = compensationPlanVersion(new BigDecimal("7.00"));
         when(compensationPlanVersionRepository
                 .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
@@ -154,6 +159,7 @@ class DashboardServiceTest {
         assertThat(response.legVolume().projectedMatchAmount()).isEqualByComparingTo("0");
         assertThat(response.legVolume().totalLeftBusiness()).isEqualByComparingTo("300000");
         assertThat(response.legVolume().totalRightBusiness()).isEqualByComparingTo("200000");
+        assertThat(response.legVolume().newBookedAreaSqft()).isEqualByComparingTo("1200");
         assertThat(response.rankProgress().currentRank()).isEqualTo("Sales Associate");
         assertThat(response.rankProgress().currentRankOrder()).isEqualTo(1);
         assertThat(response.rankProgress().nextRank()).isEqualTo("Sales Executive");
@@ -202,6 +208,8 @@ class DashboardServiceTest {
             .thenReturn(Optional.of(legVolume));
         when(legVolumeRepository.sumLeftLegVolumeByAssociateId(associateId)).thenReturn(BigDecimal.ZERO);
         when(legVolumeRepository.sumRightLegVolumeByAssociateId(associateId)).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED))
+            .thenReturn(BigDecimal.ZERO);
         CompensationPlanVersion planVersion = compensationPlanVersion(new BigDecimal("7.00"));
         when(compensationPlanVersionRepository
                 .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
@@ -231,6 +239,7 @@ class DashboardServiceTest {
         assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("3.00");
         assertThat(response.legVolume().totalLeftBusiness()).isEqualByComparingTo("0");
         assertThat(response.legVolume().totalRightBusiness()).isEqualByComparingTo("0");
+        assertThat(response.legVolume().newBookedAreaSqft()).isEqualByComparingTo("0");
         assertThat(response.associate().rankChangedAt()).isNull();
     }
 

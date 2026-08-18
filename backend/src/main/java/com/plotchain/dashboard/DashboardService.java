@@ -20,6 +20,8 @@ import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
+import com.plotchain.sales.SaleRepository;
+import com.plotchain.sales.SaleStatus;
 import com.plotchain.wallet.Wallet;
 import com.plotchain.wallet.WalletRepository;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,7 @@ public class DashboardService {
     private final AnnouncementRepository announcementRepository;
     private final CompensationPlanVersionRepository compensationPlanVersionRepository;
     private final RoyaltyBonusRateRepository royaltyBonusRateRepository;
+    private final SaleRepository saleRepository;
 
     public DashboardService(
         AssociateRepository associateRepository,
@@ -54,7 +57,8 @@ public class DashboardService {
         WalletRepository walletRepository,
         AnnouncementRepository announcementRepository,
         CompensationPlanVersionRepository compensationPlanVersionRepository,
-        RoyaltyBonusRateRepository royaltyBonusRateRepository
+        RoyaltyBonusRateRepository royaltyBonusRateRepository,
+        SaleRepository saleRepository
     ) {
         this.associateRepository = associateRepository;
         this.rankTierRepository = rankTierRepository;
@@ -65,6 +69,7 @@ public class DashboardService {
         this.announcementRepository = announcementRepository;
         this.compensationPlanVersionRepository = compensationPlanVersionRepository;
         this.royaltyBonusRateRepository = royaltyBonusRateRepository;
+        this.saleRepository = saleRepository;
     }
 
     public DashboardResponse getDashboard(UUID associateId) {
@@ -89,6 +94,8 @@ public class DashboardService {
             .orElseGet(() -> LegVolume.empty(associateId, cycle.getId()));
         BigDecimal totalLeftBusiness = legVolumeRepository.sumLeftLegVolumeByAssociateId(associateId);
         BigDecimal totalRightBusiness = legVolumeRepository.sumRightLegVolumeByAssociateId(associateId);
+        BigDecimal newBookedAreaSqft = saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(
+            associateId, cycle.getId(), SaleStatus.RECORDED);
         CompensationPlanVersion planVersion = compensationPlanVersionRepository
             .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
             .orElseThrow(() -> new IllegalStateException("compensation_plan_version row missing - V8 migration seeds it"));
@@ -152,7 +159,7 @@ public class DashboardService {
             new DashboardResponse.LegVolumeSummary(
                 legVolume.getLeftLegVolume(), legVolume.getRightLegVolume(),
                 legVolume.getCarriedForwardLeft(), legVolume.getCarriedForwardRight(),
-                projectedMatch, totalLeftBusiness, totalRightBusiness),
+                projectedMatch, totalLeftBusiness, totalRightBusiness, newBookedAreaSqft),
             new DashboardResponse.RankProgress(
                 currentRank.getName(), currentRank.getRankOrder(),
                 nextRank.map(RankTier::getName).orElse(null),

@@ -15,6 +15,7 @@ import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
+import com.plotchain.sales.SaleRepository;
 import com.plotchain.wallet.Wallet;
 import com.plotchain.wallet.WalletRepository;
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,7 @@ class DashboardControllerTest {
     @MockBean WalletRepository walletRepository;
     @MockBean AnnouncementRepository announcementRepository;
     @MockBean RoyaltyBonusRateRepository royaltyBonusRateRepository;
+    @MockBean SaleRepository saleRepository;
 
     private String tokenFor(UUID associateId) {
         Associate associate = new Associate();
@@ -102,6 +104,7 @@ class DashboardControllerTest {
             .thenReturn(Optional.of(LegVolume.empty(associateId, cycleId)));
         when(legVolumeRepository.sumLeftLegVolumeByAssociateId(any())).thenReturn(BigDecimal.ZERO);
         when(legVolumeRepository.sumRightLegVolumeByAssociateId(any())).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
         when(associateRepository.countDownline(any())).thenReturn(12L);
@@ -120,7 +123,8 @@ class DashboardControllerTest {
             .andExpect(jsonPath("$.cycleIncome.royaltyBonus").value(0))
             .andExpect(jsonPath("$.cycleIncome.royaltyBonusPct").value(0))
             .andExpect(jsonPath("$.legVolume.totalLeftBusiness").value(0))
-            .andExpect(jsonPath("$.legVolume.totalRightBusiness").value(0));
+            .andExpect(jsonPath("$.legVolume.totalRightBusiness").value(0))
+            .andExpect(jsonPath("$.legVolume.newBookedAreaSqft").value(0));
     }
 
     @Test
