@@ -331,7 +331,12 @@ body.admin-associate-active {
   overflow: hidden;
 }
 
+// Horizontal padding matters here specifically because %admin-screen-card (above) zeroes the
+// card's own padding and clips to its 20px border-radius -- without it, header/cell text sits
+// flush against that rounded corner and the first column's text visibly clips (found in the
+// mockup-parity sweep, V1: confirmed on Sales Register's "BUYER" header rendering as "UYER").
 %admin-screen-table-head {
+  padding: 0.75rem 1rem;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -341,6 +346,7 @@ body.admin-associate-active {
 }
 
 %admin-screen-table-cell {
+  padding: 0.75rem 1rem;
   font-size: 0.875rem;
   color: var(--text-primary);
   vertical-align: middle;
@@ -431,6 +437,36 @@ body.admin-associate-active {
   input {
     background: var(--surface-card);
   }
+}
+
+// Associate Directory: title/subtitle/New-Associate-link, filters, and table each their own
+// visual block -- previously all three sat inside one shared .card, reading as a single flat box.
+.associate-directory {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.associate-directory__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.associate-directory__subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+// Provisioning itself still happens on the existing /admin/associates/new page (see
+// admin-nav-categories.model.ts's 'provisionAssociate' entry) -- this is a shortcut link into
+// that same flow, not a duplicate form/modal.
+.associate-directory__new-link {
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 // Same horizontal-grid pattern as .sales-register__filters above -- previously unstyled and
@@ -3137,5 +3173,89 @@ body.admin-associate-active {
 
   .tree-explorer__legend {
     display: none;
+  }
+}
+
+// KYC Review Queue: 3-up status card row, then a separate tab+table card -- previously the whole
+// page (stats, tabs, table) sat inside one shared .card, reading as a single flat box instead of
+// the mockup's layered composition.
+.kyc-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 1100px;
+}
+
+.kyc-queue__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.kyc-queue__tabs {
+  // Oxblood active tab, scoped to this page only -- the shared .tab-bar's default active state
+  // (brand-gradient gold) stays untouched for its other consumers (e.g. Projects & Plots' tabs).
+  .tab-bar__tab--active {
+    background: var(--brand-secondary);
+    color: var(--brand-secondary-contrast);
+  }
+}
+
+.kyc-queue__table-card {
+  overflow-x: auto;
+}
+
+@media (max-width: 700px) {
+  .kyc-queue__stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Admin Dashboard (mockup's "Admin Stats" screen) -- previously had no CSS at all: every tile
+// row stacked one-per-line full-width, section headings were bare <h2>s, and the Quick Actions
+// links ran together with no gap (mockup-parity sweep, V2).
+.admin-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+}
+
+.admin-dashboard__tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.admin-dashboard__section-title {
+  margin: 0 0 1rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.admin-dashboard__tile-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.admin-dashboard__empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.admin-dashboard__quick-actions-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 700px) {
+  .admin-dashboard__tiles {
+    grid-template-columns: 1fr;
   }
 }

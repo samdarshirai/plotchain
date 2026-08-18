@@ -2,19 +2,19 @@ import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
-import { SettingsNavRailComponent } from './settings-nav-rail.component';
 
+// The nav rail this shell used to render alongside router-outlet is gone -- section navigation
+// now lives in the global header's category/item pill rows (see app.component.html and
+// admin-nav-categories.model.ts). This shell's only remaining job is content layout: a centered
+// reading column by default, full-bleed for screens (Tree Explorer) that need the whole width.
 @Component({
   selector: 'app-settings-shell',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SettingsNavRailComponent],
+  imports: [CommonModule, RouterOutlet],
   template: `
-    <div class="settings-shell">
-      <app-settings-nav-rail [activeSectionKey]="activeSectionKey"></app-settings-nav-rail>
-      <main class="settings-shell__content" [class.settings-shell__content--full]="activeSectionKey === 'treeExplorer'">
-        <router-outlet></router-outlet>
-      </main>
-    </div>
+    <main class="settings-shell__content" [class.settings-shell__content--full]="activeSectionKey === 'treeExplorer'">
+      <router-outlet></router-outlet>
+    </main>
   `
 })
 export class SettingsShellComponent implements OnInit, OnDestroy {

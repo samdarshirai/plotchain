@@ -260,7 +260,12 @@
     "incomeStatement": "Income Statement",
     "payoutHistory": "Payout History",
     "provisionAssociate": "Provision Associate",
-    "settings": "Settings"
+    "categories": {
+      "setup": "Setup",
+      "network": "Network",
+      "finance": "Finance & Cycles",
+      "system": "System"
+    }
   },
   "auth": {
     "heading": "Sign in",
@@ -332,6 +337,8 @@
     },
     "associateDirectory": {
       "title": "Associate Directory",
+      "subtitle": "Manage and provision associates in one place.",
+      "newAssociateAction": "New Associate",
       "searchPlaceholder": "Search by name or ID",
       "columnUserId": "Associate ID",
       "columnName": "Name",

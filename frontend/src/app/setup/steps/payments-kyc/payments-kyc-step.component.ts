@@ -66,6 +66,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
       </div>
 
       <div class="payments-kyc-step__grid">
+      <div class="payments-kyc-step__grid-col payments-kyc-step__grid-col--primary">
       <form class="card payments-kyc-step__card payments-kyc-step__card--payment" [formGroup]="paymentForm">
         <h2 class="payments-kyc-step__section-title">
           <span class="material-symbols-outlined">payments</span>
@@ -135,6 +136,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
         </div>
       </form>
 
+      <div class="payments-kyc-step__row--split">
         <form class="card payments-kyc-step__card payments-kyc-step__card--payout" [formGroup]="payoutForm">
           <h2 class="payments-kyc-step__section-title">
             <span class="material-symbols-outlined">account_balance</span>
@@ -189,6 +191,50 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
           </div>
         </form>
 
+        <div class="card payments-kyc-step__card payments-kyc-step__card--withdrawal">
+          <h2 class="payments-kyc-step__section-title">
+            <span class="material-symbols-outlined">account_balance_wallet</span>
+            {{ 'setup.paymentsKyc.withdrawalApprovalTitle' | translate }}
+          </h2>
+
+          <label>
+            {{ 'setup.paymentsKyc.approvalModeLabel' | translate }}
+            <app-toggle-group
+              [options]="approvalModeOptions"
+              [value]="approvalMode"
+              (valueChange)="setApprovalMode($event)"
+            ></app-toggle-group>
+          </label>
+
+          <label *ngIf="approvalMode === 'AUTO_UNDER_LIMIT'">
+            {{ 'setup.paymentsKyc.autoApproveLimitLabel' | translate }}
+            <input type="number" [value]="autoApproveLimit" (input)="setAutoApproveLimit($event)" />
+          </label>
+
+          <label>
+            {{ 'setup.paymentsKyc.minimumWithdrawalAmountLabel' | translate }}
+            <input type="number" [value]="minimumWithdrawalAmount" (input)="setMinimumWithdrawalAmount($event)" />
+          </label>
+
+          <div class="payments-kyc-step__withdrawal-flow">
+            <span class="payments-kyc-step__withdrawal-flow-step">{{ 'setup.paymentsKyc.flowRequestRaised' | translate }}</span>
+            <span class="material-symbols-outlined payments-kyc-step__withdrawal-flow-arrow">arrow_forward</span>
+            <span class="payments-kyc-step__withdrawal-flow-step">{{ 'setup.paymentsKyc.flowAdminReview' | translate }}</span>
+            <span class="material-symbols-outlined payments-kyc-step__withdrawal-flow-arrow">arrow_forward</span>
+            <span class="payments-kyc-step__withdrawal-flow-step">{{ 'setup.paymentsKyc.flowApproved' | translate }}</span>
+            <span class="material-symbols-outlined payments-kyc-step__withdrawal-flow-arrow">arrow_forward</span>
+            <span class="payments-kyc-step__withdrawal-flow-step">{{ 'setup.paymentsKyc.flowPayoutInitiated' | translate }}</span>
+          </div>
+
+          <app-inline-banner *ngIf="withdrawalSubmitError" tone="danger">{{ withdrawalSubmitError }}</app-inline-banner>
+          <div class="payments-kyc-step__saved" *ngIf="withdrawalSavedJustNow">
+            {{ 'setup.paymentsKyc.savedIndicator' | translate }}
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <div class="payments-kyc-step__grid-col payments-kyc-step__grid-col--secondary">
         <div class="card payments-kyc-step__card payments-kyc-step__card--kyc">
           <h2 class="payments-kyc-step__section-title">
             <span class="material-symbols-outlined">verified_user</span>
@@ -228,116 +274,76 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
           </div>
         </div>
 
-      <div class="card payments-kyc-step__card payments-kyc-step__card--withdrawal">
-        <h2 class="payments-kyc-step__section-title">
-          <span class="material-symbols-outlined">account_balance_wallet</span>
-          {{ 'setup.paymentsKyc.withdrawalApprovalTitle' | translate }}
-        </h2>
+        <div class="card payments-kyc-step__card payments-kyc-step__card--booking payments-kyc-step__card--final">
+          <h2 class="payments-kyc-step__section-title">
+            <span class="material-symbols-outlined">event_repeat</span>
+            {{ 'setup.paymentsKyc.bookingEmiPolicyTitle' | translate }}
+          </h2>
 
-        <label>
-          {{ 'setup.paymentsKyc.approvalModeLabel' | translate }}
-          <app-toggle-group
-            [options]="approvalModeOptions"
-            [value]="approvalMode"
-            (valueChange)="setApprovalMode($event)"
-          ></app-toggle-group>
-        </label>
+          <label class="payments-kyc-step__checkbox-field">
+            <input type="checkbox" [checked]="emiEnabled" (change)="setEmiEnabled($any($event.target).checked)" />
+            {{ 'setup.paymentsKyc.emiEnabledLabel' | translate }}
+          </label>
 
-        <label *ngIf="approvalMode === 'AUTO_UNDER_LIMIT'">
-          {{ 'setup.paymentsKyc.autoApproveLimitLabel' | translate }}
-          <input type="number" [value]="autoApproveLimit" (input)="setAutoApproveLimit($event)" />
-        </label>
+          <label>
+            {{ 'setup.paymentsKyc.defaultInstallmentCountLabel' | translate }}
+            <input type="number" min="1" [value]="defaultInstallmentCount" (input)="setDefaultInstallmentCount($event)" />
+          </label>
 
-        <label>
-          {{ 'setup.paymentsKyc.minimumWithdrawalAmountLabel' | translate }}
-          <input type="number" [value]="minimumWithdrawalAmount" (input)="setMinimumWithdrawalAmount($event)" />
-        </label>
-
-        <div class="payments-kyc-step__withdrawal-flow">
-          <span class="payments-kyc-step__withdrawal-flow-step">{{ 'setup.paymentsKyc.flowRequestRaised' | translate }}</span>
-          <span class="material-symbols-outlined payments-kyc-step__withdrawal-flow-arrow">arrow_forward</span>
-          <span class="payments-kyc-step__withdrawal-flow-step">{{ 'setup.paymentsKyc.flowAdminReview' | translate }}</span>
-          <span class="material-symbols-outlined payments-kyc-step__withdrawal-flow-arrow">arrow_forward</span>
-          <span class="payments-kyc-step__withdrawal-flow-step">{{ 'setup.paymentsKyc.flowApproved' | translate }}</span>
-          <span class="material-symbols-outlined payments-kyc-step__withdrawal-flow-arrow">arrow_forward</span>
-          <span class="payments-kyc-step__withdrawal-flow-step">{{ 'setup.paymentsKyc.flowPayoutInitiated' | translate }}</span>
-        </div>
-
-        <app-inline-banner *ngIf="withdrawalSubmitError" tone="danger">{{ withdrawalSubmitError }}</app-inline-banner>
-        <div class="payments-kyc-step__saved" *ngIf="withdrawalSavedJustNow">
-          {{ 'setup.paymentsKyc.savedIndicator' | translate }}
-        </div>
-      </div>
-
-      <div class="card payments-kyc-step__card payments-kyc-step__card--booking payments-kyc-step__card--final">
-        <h2 class="payments-kyc-step__section-title">
-          <span class="material-symbols-outlined">event_repeat</span>
-          {{ 'setup.paymentsKyc.bookingEmiPolicyTitle' | translate }}
-        </h2>
-
-        <label class="payments-kyc-step__checkbox-field">
-          <input type="checkbox" [checked]="emiEnabled" (change)="setEmiEnabled($any($event.target).checked)" />
-          {{ 'setup.paymentsKyc.emiEnabledLabel' | translate }}
-        </label>
-
-        <label>
-          {{ 'setup.paymentsKyc.defaultInstallmentCountLabel' | translate }}
-          <input type="number" min="1" [value]="defaultInstallmentCount" (input)="setDefaultInstallmentCount($event)" />
-        </label>
-
-        <div class="payments-kyc-step__confirm-rule">
-          <span class="payments-kyc-step__confirm-rule-label">{{ 'setup.paymentsKyc.confirmRuleLabel' | translate }}</span>
-          <div class="payments-kyc-step__confirm-rule-list">
-            <button
-              type="button"
-              class="payments-kyc-step__confirm-rule-row"
-              [class.payments-kyc-step__confirm-rule-row--active]="confirmRule === 'AUTO_THRESHOLD'"
-              (click)="setConfirmRule('AUTO_THRESHOLD')"
-            >
-              <span
-                class="payments-kyc-step__confirm-rule-dot"
-                [class.payments-kyc-step__confirm-rule-dot--active]="confirmRule === 'AUTO_THRESHOLD'"
-              ></span>
-              {{ 'setup.paymentsKyc.confirmRuleAutoThresholdLabel' | translate }}
-            </button>
-            <button
-              type="button"
-              class="payments-kyc-step__confirm-rule-row"
-              [class.payments-kyc-step__confirm-rule-row--active]="confirmRule === 'MANUAL'"
-              (click)="setConfirmRule('MANUAL')"
-            >
-              <span
-                class="payments-kyc-step__confirm-rule-dot"
-                [class.payments-kyc-step__confirm-rule-dot--active]="confirmRule === 'MANUAL'"
-              ></span>
-              {{ 'setup.paymentsKyc.confirmRuleManualLabel' | translate }}
-            </button>
-            <button
-              type="button"
-              class="payments-kyc-step__confirm-rule-row"
-              [class.payments-kyc-step__confirm-rule-row--active]="confirmRule === 'KYC_GATED'"
-              (click)="setConfirmRule('KYC_GATED')"
-            >
-              <span
-                class="payments-kyc-step__confirm-rule-dot"
-                [class.payments-kyc-step__confirm-rule-dot--active]="confirmRule === 'KYC_GATED'"
-              ></span>
-              {{ 'setup.paymentsKyc.confirmRuleKycGatedLabel' | translate }}
-            </button>
+          <div class="payments-kyc-step__confirm-rule">
+            <span class="payments-kyc-step__confirm-rule-label">{{ 'setup.paymentsKyc.confirmRuleLabel' | translate }}</span>
+            <div class="payments-kyc-step__confirm-rule-list">
+              <button
+                type="button"
+                class="payments-kyc-step__confirm-rule-row"
+                [class.payments-kyc-step__confirm-rule-row--active]="confirmRule === 'AUTO_THRESHOLD'"
+                (click)="setConfirmRule('AUTO_THRESHOLD')"
+              >
+                <span
+                  class="payments-kyc-step__confirm-rule-dot"
+                  [class.payments-kyc-step__confirm-rule-dot--active]="confirmRule === 'AUTO_THRESHOLD'"
+                ></span>
+                {{ 'setup.paymentsKyc.confirmRuleAutoThresholdLabel' | translate }}
+              </button>
+              <button
+                type="button"
+                class="payments-kyc-step__confirm-rule-row"
+                [class.payments-kyc-step__confirm-rule-row--active]="confirmRule === 'MANUAL'"
+                (click)="setConfirmRule('MANUAL')"
+              >
+                <span
+                  class="payments-kyc-step__confirm-rule-dot"
+                  [class.payments-kyc-step__confirm-rule-dot--active]="confirmRule === 'MANUAL'"
+                ></span>
+                {{ 'setup.paymentsKyc.confirmRuleManualLabel' | translate }}
+              </button>
+              <button
+                type="button"
+                class="payments-kyc-step__confirm-rule-row"
+                [class.payments-kyc-step__confirm-rule-row--active]="confirmRule === 'KYC_GATED'"
+                (click)="setConfirmRule('KYC_GATED')"
+              >
+                <span
+                  class="payments-kyc-step__confirm-rule-dot"
+                  [class.payments-kyc-step__confirm-rule-dot--active]="confirmRule === 'KYC_GATED'"
+                ></span>
+                {{ 'setup.paymentsKyc.confirmRuleKycGatedLabel' | translate }}
+              </button>
+            </div>
           </div>
+
+          <label *ngIf="confirmRule === 'AUTO_THRESHOLD'">
+            {{ 'setup.paymentsKyc.confirmThresholdPercentLabel' | translate }}
+            <input type="number" min="1" max="100" [value]="confirmThresholdPercent" (input)="setConfirmThresholdPercent($event)" />
+          </label>
+
+          <app-inline-banner *ngIf="bookingEmiSubmitError" tone="danger">{{ bookingEmiSubmitError }}</app-inline-banner>
+          <div class="payments-kyc-step__saved" *ngIf="bookingEmiSavedJustNow">
+            {{ 'setup.paymentsKyc.savedIndicator' | translate }}
+          </div>
+
+          <app-setup-step-nav *ngIf="mode === 'settings'" [savedJustNow]="anySavedJustNow" [mode]="mode"></app-setup-step-nav>
         </div>
-
-        <label *ngIf="confirmRule === 'AUTO_THRESHOLD'">
-          {{ 'setup.paymentsKyc.confirmThresholdPercentLabel' | translate }}
-          <input type="number" min="1" max="100" [value]="confirmThresholdPercent" (input)="setConfirmThresholdPercent($event)" />
-        </label>
-
-        <app-inline-banner *ngIf="bookingEmiSubmitError" tone="danger">{{ bookingEmiSubmitError }}</app-inline-banner>
-        <div class="payments-kyc-step__saved" *ngIf="bookingEmiSavedJustNow">
-          {{ 'setup.paymentsKyc.savedIndicator' | translate }}
-        </div>
-
-        <app-setup-step-nav *ngIf="mode === 'settings'" [savedJustNow]="anySavedJustNow" [mode]="mode"></app-setup-step-nav>
       </div>
       </div>
     </div>

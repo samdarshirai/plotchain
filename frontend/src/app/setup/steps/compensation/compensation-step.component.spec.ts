@@ -433,27 +433,42 @@ describe('CompensationStepComponent', () => {
     httpMock.expectNone('/api/company/compensation');
   }));
 
-  describe('accordion layout', () => {
-    it('expands Income Rules by default', () => {
+  describe('collapsible sections', () => {
+    it('starts with Reward Tiers, Royalty and Fees all collapsed, Income Rules always visible', () => {
       const component = fixture.componentInstance;
-      expect(component.expandedSection).toBe('incomeRules');
-      expect(component.isExpanded('incomeRules')).toBeTrue();
       expect(component.isExpanded('rewardTiers')).toBeFalse();
+      expect(component.isExpanded('royalty')).toBeFalse();
+      expect(component.isExpanded('fees')).toBeFalse();
+
+      // Income Rules has no toggle at all -- it's a plain section heading, not an accordion item.
+      const incomeRulesHeading = fixture.nativeElement.querySelector('.compensation-step__section-title');
+      expect(incomeRulesHeading.textContent).toContain('setup.compensation.sections.incomeRules');
     });
 
-    it('toggleSection expands exactly the requested section', () => {
+    it('toggleSection expands each requested section independently, without closing the others', () => {
       const component = fixture.componentInstance;
 
       component.toggleSection('royalty');
       fixture.detectChanges();
-
       expect(component.isExpanded('royalty')).toBeTrue();
-      expect(component.isExpanded('incomeRules')).toBeFalse();
+      expect(component.isExpanded('rewardTiers')).toBeFalse();
 
-      const incomeRulesBody = fixture.nativeElement.querySelector('#compensation-accordion-income-rules');
+      component.toggleSection('fees');
+      fixture.detectChanges();
+      expect(component.isExpanded('royalty')).toBeTrue();
+      expect(component.isExpanded('fees')).toBeTrue();
+
       const royaltyBody = fixture.nativeElement.querySelector('#compensation-accordion-royalty');
-      expect(incomeRulesBody.hidden).toBeTrue();
+      const feesBody = fixture.nativeElement.querySelector('#compensation-accordion-fees');
+      const rewardTiersBody = fixture.nativeElement.querySelector('#compensation-accordion-reward-tiers');
       expect(royaltyBody.hidden).toBeFalse();
+      expect(feesBody.hidden).toBeFalse();
+      expect(rewardTiersBody.hidden).toBeTrue();
+
+      component.toggleSection('royalty');
+      fixture.detectChanges();
+      expect(component.isExpanded('royalty')).toBeFalse();
+      expect(component.isExpanded('fees')).toBeTrue();
     });
 
     it('renders collapsed-section summaries and updates them as data changes', () => {
@@ -463,8 +478,7 @@ describe('CompensationStepComponent', () => {
       // the .json translation files themselves, not this spec.
       const component = fixture.componentInstance;
 
-      // Income Rules starts expanded, so its collapsed summary isn't asserted here; check the
-      // Royalty/Reward Tier summaries, which are collapsed by default from emptyPlan's seed data.
+      // Royalty/Reward Tier both start collapsed, seeded from emptyPlan's data.
       expect(component.royaltySummary).toBe('setup.compensation.accordion.royaltySummary');
       expect(component.rewardTiersSummary).toBe('setup.compensation.accordion.rewardTiersSummary');
 
@@ -475,11 +489,11 @@ describe('CompensationStepComponent', () => {
       expect(component.rewardTiersSummary).toBe('setup.compensation.accordion.rewardTiersSummaryEmpty');
     });
 
-    it('keeps autosaving a scalar field edit while its section is collapsed', fakeAsync(() => {
+    it('keeps autosaving a scalar field edit regardless of which sections are collapsed', fakeAsync(() => {
       const component = fixture.componentInstance;
       component.toggleSection('royalty');
       fixture.detectChanges();
-      expect(component.isExpanded('incomeRules')).toBeFalse();
+      expect(component.isExpanded('rewardTiers')).toBeFalse();
 
       component.form.get('directIncomePct')?.setValue(50);
       tick(400);

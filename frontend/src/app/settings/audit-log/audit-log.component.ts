@@ -2,16 +2,26 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuditLogService } from './audit-log.service';
-import { AuditLogEntry, AuditLogPage, SECTION_FILTER_OPTIONS } from './audit-log.model';
+import { AUDIT_LOG_SECTION_BACKEND_VALUES, AuditLogEntry, AuditLogPage, SECTION_FILTER_OPTIONS } from './audit-log.model';
 
 const PAGE_SIZE = 20;
+
+// Reverse of AUDIT_LOG_SECTION_BACKEND_VALUES (SCREAMING_SNAKE_CASE -> the camelCase key
+// 'settings.sections.<key>' expects) -- covers the 5 real Settings sections, which is all that
+// map has. Backend section values outside those 5 (KYC, ASSOCIATE, WITHDRAWAL, WALLET,
+// ADMIN_TEAM, ROOT_ASSOCIATES -- see issues.md's M2 fix, which extended the audit log's allowed
+// section values beyond the original 5) fall through to sectionLabel()'s humanized-string path
+// below instead of a translated one.
+const SECTION_BACKEND_TO_KEY: Record<string, string> = Object.fromEntries(
+  Object.entries(AUDIT_LOG_SECTION_BACKEND_VALUES).map(([key, backendValue]) => [backendValue, key])
+);
 
 @Component({
   selector: 'app-audit-log',
   standalone: true,
   imports: [CommonModule, TranslateModule],
   template: `
-    <div class="audit-log card">
+    <div class="audit-log">
       <h1 class="card-title">{{ 'settings.sections.auditLog' | translate }}</h1>
 
       <label class="audit-log__filter">
@@ -23,19 +33,19 @@ const PAGE_SIZE = 20;
         </select>
       </label>
 
-      <ul class="audit-log__list">
-        <li class="audit-log__row" *ngFor="let entry of entries">
-          <span class="audit-log__avatar">{{ initials(entry) }}</span>
-          <div class="audit-log__row-body">
-            <span class="audit-log__actor">{{ actorLabel(entry) }}</span>
-            <span class="audit-log__summary">{{ entry.summary }}</span>
-            <span class="audit-log__timestamp">{{ entry.changedAt | date: 'medium' }}</span>
-          </div>
-        </li>
-        <li class="audit-log__empty" *ngIf="page && entries.length === 0">
-          {{ 'settings.auditLog.emptyState' | translate }}
-        </li>
-      </ul>
+      <div class="card audit-log__card">
+        <ul class="audit-log__list">
+          <li class="audit-log__row" *ngFor="let entry of entries">
+            <span class="audit-log__avatar">{{ initials(entry) }}</span>
+            <span class="audit-log__summary"><span class="audit-log__actor">{{ actorLabel(entry) }}</span> {{ entry.summary }}</span>
+            <span class="audit-log__section-tag">{{ sectionLabel(entry) }}</span>
+            <span class="audit-log__timestamp">{{ entry.changedAt | date: 'h:mm:ss a' }}</span>
+          </li>
+          <li class="audit-log__empty" *ngIf="page && entries.length === 0">
+            {{ 'settings.auditLog.emptyState' | translate }}
+          </li>
+        </ul>
+      </div>
 
       <div class="audit-log__pagination" *ngIf="page">
         <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
@@ -122,6 +132,22 @@ export class AuditLogComponent implements OnInit {
       .slice(0, 2)
       .map(part => part[0].toUpperCase())
       .join('');
+  }
+
+  // The mockup's per-row section pill. Translates through settings.sections for the 5 real
+  // Settings screens (via SECTION_BACKEND_TO_KEY); any other backend value (KYC, ASSOCIATE,
+  // WITHDRAWAL, WALLET, ...) is humanized directly rather than left as a raw SCREAMING_SNAKE_CASE
+  // string, since there's no settings.sections entry for those non-Settings admin actions.
+  sectionLabel(entry: AuditLogEntry): string {
+    const key = SECTION_BACKEND_TO_KEY[entry.section];
+    if (key) {
+      return this.translate.instant('settings.sections.' + key);
+    }
+    return entry.section
+      .toLowerCase()
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
 
   private loadPage(page: number): void {

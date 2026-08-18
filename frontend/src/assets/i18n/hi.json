@@ -260,7 +260,12 @@
     "incomeStatement": "आय विवरण",
     "payoutHistory": "भुगतान इतिहास",
     "provisionAssociate": "एसोसिएट पंजीकृत करें",
-    "settings": "सेटिंग्स"
+    "categories": {
+      "setup": "सेटअप",
+      "network": "नेटवर्क",
+      "finance": "वित्त और चक्र",
+      "system": "सिस्टम"
+    }
   },
   "auth": {
     "heading": "साइन इन करें",
@@ -332,6 +337,8 @@
     },
     "associateDirectory": {
       "title": "Associate Directory",
+      "subtitle": "Manage and provision associates in one place.",
+      "newAssociateAction": "New Associate",
       "searchPlaceholder": "Search by name or ID",
       "columnUserId": "Associate ID",
       "columnName": "Name",

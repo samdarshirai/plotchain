@@ -993,9 +993,10 @@ app-setup-progress-rail {
   gap: 1rem;
 }
 
-// Accordion layout (design mockup "1c"): one section expanded at a time, the rest collapsed to a
-// summary bar, so the step fits within the shell's fixed viewport (.setup-shell__content is the
-// only scrolling region) without every section fighting for vertical space at once.
+// Reward Tiers / Global Royalty / Fees & Settlement each expand/collapse independently (Settings
+// mockup: every row carries its own chevron, not a single-open accordion) -- any subset, including
+// none or all three, can be open at once. .setup-shell__content is its own scrolling region, so
+// several sections open together just grows that region rather than breaking layout.
 .compensation-step__accordion {
   display: flex;
   flex-direction: column;
@@ -1045,23 +1046,10 @@ app-setup-progress-rail {
   }
 }
 
-// Per-section accent (mockup 1c's category coding: Gold/Oxblood/Green/Bronze). Collapsed: a left
-// border identifies the section at a glance. Expanded: the accent moves to a top border and the
-// icon badge above takes the section color as its fill, per the mockup.
-.compensation-step__accordion-header--incomeRules {
-  border-left: 4px solid var(--brand-primary);
-
-  &.is-expanded {
-    border-left: none;
-    border-top: 4px solid var(--brand-primary);
-
-    .material-symbols-outlined:first-child {
-      background: var(--brand-primary);
-      color: var(--ink);
-    }
-  }
-}
-
+// Per-section accent (Settings mockup's category coding: Oxblood/Green/Bronze -- Income Rules is
+// no longer part of this collapsible group, see .compensation-step__section-title). Collapsed: a
+// left border identifies the section at a glance. Expanded: the accent moves to a top border and
+// the icon badge above takes the section color as its fill, per the mockup.
 .compensation-step__accordion-header--rewardTiers {
   border-left: 4px solid var(--brand-secondary);
 
@@ -1379,34 +1367,36 @@ app-setup-progress-rail {
 
 // Page-level layout: payment (spans 2 cols) + kyc on row 1, payout/withdrawal/booking on row 2 --
 // matches the "Payments KYC - One Screen" mockup's grid-template-areas.
+// Two independent flex columns (Settings mockup: left col stacks Payment Collection then a
+// Payout/Withdrawal row; right col stacks KYC then Booking & EMI) -- deliberately not CSS Grid.
+// A grid's row-tracks are shared across both columns, so e.g. the KYC card's row would be forced
+// to match Payment Collection's height (and vice versa) even though the two columns hold an
+// unrelated number/size of cards. Flex columns let each side size to its own content.
 .payments-kyc-step__grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-areas:
-    'payment payment kyc'
-    'payout withdrawal booking';
+  display: flex;
+  align-items: flex-start;
   gap: 0.75rem;
-  align-items: start;
 }
 
-.payments-kyc-step__card--payment {
-  grid-area: payment;
+.payments-kyc-step__grid-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
-.payments-kyc-step__card--kyc {
-  grid-area: kyc;
+.payments-kyc-step__grid-col--primary {
+  flex: 2;
 }
 
-.payments-kyc-step__card--payout {
-  grid-area: payout;
+.payments-kyc-step__grid-col--secondary {
+  flex: 1;
 }
 
-.payments-kyc-step__card--withdrawal {
-  grid-area: withdrawal;
-}
-
-.payments-kyc-step__card--booking {
-  grid-area: booking;
+.payments-kyc-step__row--split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
 }
 
 // Payout Account's Bank Name/Account Holder/Account Number/IFSC fields, 2-up -- same convention as
@@ -1894,29 +1884,15 @@ app-setup-progress-rail {
   }
 
   .payments-kyc-step__grid {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      'payment payment'
-      'kyc kyc'
-      'payout withdrawal'
-      'booking booking';
+    flex-direction: column;
   }
 }
 
 @media (max-width: 700px) {
   .payments-kyc-step__row,
+  .payments-kyc-step__row--split,
   .payments-kyc-step__flow-split {
     grid-template-columns: 1fr;
-  }
-
-  .payments-kyc-step__grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      'payment'
-      'kyc'
-      'payout'
-      'withdrawal'
-      'booking';
   }
 }
 

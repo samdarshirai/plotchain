@@ -87,6 +87,44 @@
   font-weight: 600;
 }
 
+.app-nav__link-icon {
+  font-size: 1rem;
+  margin-right: 0.375rem;
+  vertical-align: -3px;
+}
+
+// Second header row: the active category's items, folded up from the old settings-nav-rail
+// sidebar (DESIGN-import "Viraj Acres Nav Options" option 1c) onto Parchment-raised instead of
+// Ink, so it reads as a sub-level of the dark category row above it.
+.app-nav-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.app-nav-items__link {
+  padding: 0.4375rem 0.875rem;
+  border-radius: 14px;
+  font-size: 0.78125rem;
+  font-weight: 600;
+  color: var(--brand-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.app-nav-items__link:hover {
+  background: var(--brand-secondary-soft);
+}
+
+.app-nav-items__link--active {
+  background: var(--brand-secondary);
+  color: var(--brand-primary-bright);
+}
+
 .dashboard {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

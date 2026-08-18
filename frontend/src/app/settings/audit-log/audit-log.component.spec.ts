@@ -80,6 +80,26 @@ describe('AuditLogComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('System-applied default branding');
   });
 
+  it('renders a translated section pill for one of the 5 real Settings sections', () => {
+    flushInitialLoad();
+
+    // TranslateModule.forRoot() has no loaded translations, so translate.instant returns the key
+    // itself -- same convention as compensation-step.component.spec.ts's accordion summary
+    // assertions. Real translated copy ("Company Profile") is exercised by the .json files.
+    const tag = fixture.debugElement.query(By.css('.audit-log__section-tag'));
+    expect(tag.nativeElement.textContent.trim()).toBe('settings.sections.companyProfile');
+  });
+
+  it('humanizes a backend section value that has no settings.sections entry (e.g. KYC)', () => {
+    flushInitialLoad({
+      ...namedEntryPage,
+      entries: [{ ...namedEntryPage.entries[0], section: 'KYC' }]
+    });
+
+    const tag = fixture.debugElement.query(By.css('.audit-log__section-tag'));
+    expect(tag.nativeElement.textContent.trim()).toBe('Kyc');
+  });
+
   it('re-fetches page 0 with the mapped SCREAMING_SNAKE_CASE value when the section filter changes', () => {
     flushInitialLoad();
 

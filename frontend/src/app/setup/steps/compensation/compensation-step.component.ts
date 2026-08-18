@@ -26,7 +26,7 @@ function isSettlementCycle(value: string): value is SettlementCycle {
   return SETTLEMENT_CYCLES.some(cycle => cycle === value);
 }
 
-type AccordionSection = 'incomeRules' | 'rewardTiers' | 'royalty' | 'fees';
+type CollapsibleSection = 'rewardTiers' | 'royalty' | 'fees';
 
 // A table row only reaches the save trigger once it is fully filled in. Clicking "+ Add" emits a
 // (rowsChange) with a blank row, which would otherwise autosave a volumeThreshold of 0 (fails the
@@ -87,83 +87,60 @@ const RENDERED_FIELD_ERROR_KEYS = [
           {{ 'setup.compensation.versioningNotice' | translate }}
         </app-inline-banner>
 
-        <div class="compensation-step__accordion">
-        <div class="compensation-step__accordion-item">
-          <button
-            type="button"
-            class="compensation-step__accordion-header compensation-step__accordion-header--incomeRules"
-            [class.is-expanded]="isExpanded('incomeRules')"
-            [attr.aria-expanded]="isExpanded('incomeRules')"
-            aria-controls="compensation-accordion-income-rules"
-            (click)="toggleSection('incomeRules')"
-          >
-            <span class="material-symbols-outlined">payments</span>
-            <span class="compensation-step__accordion-title">
-              {{ 'setup.compensation.sections.incomeRules' | translate }}
-            </span>
-            <span class="compensation-step__accordion-summary" *ngIf="!isExpanded('incomeRules')">
-              {{ incomeRulesSummary }}
-            </span>
-            <span class="material-symbols-outlined compensation-step__accordion-chevron">
-              {{ isExpanded('incomeRules') ? 'expand_less' : 'chevron_right' }}
-            </span>
-          </button>
-          <div
-            id="compensation-accordion-income-rules"
-            class="compensation-step__accordion-body"
-            [hidden]="!isExpanded('incomeRules')"
-          >
-          <div class="compensation-step__row compensation-step__row--stats">
-            <div class="compensation-step__stat">
-              <app-stat-tile
-                [label]="'setup.compensation.directIncomeLabel' | translate"
-                [value]="(form.value.directIncomePct ?? 0) + '%'"
-              >
-                <input
-                  tile-editor
-                  type="number"
-                  formControlName="directIncomePct"
-                  (blur)="markTouched('directIncomePct')"
-                />
-              </app-stat-tile>
-              <app-field-error [message]="fieldError('directIncomePct')"></app-field-error>
-            </div>
-
-            <div class="compensation-step__stat">
-              <app-stat-tile
-                tone="accent"
-                [label]="'setup.compensation.matchingIncomeLabel' | translate"
-                [value]="(form.value.matchingIncomePct ?? 0) + '%'"
-              >
-                <input
-                  tile-editor
-                  type="number"
-                  formControlName="matchingIncomePct"
-                  (blur)="markTouched('matchingIncomePct')"
-                />
-              </app-stat-tile>
-              <app-field-error [message]="fieldError('matchingIncomePct')"></app-field-error>
-            </div>
-
-            <div class="compensation-step__stat">
-              <app-stat-tile
-                tone="success"
-                [label]="'setup.compensation.sponsorMatchingLabel' | translate"
-                [value]="(form.value.sponsorMatchingPct ?? 0) + '%'"
-              >
-                <input
-                  tile-editor
-                  type="number"
-                  formControlName="sponsorMatchingPct"
-                  (blur)="markTouched('sponsorMatchingPct')"
-                />
-              </app-stat-tile>
-              <app-field-error [message]="fieldError('sponsorMatchingPct')"></app-field-error>
-            </div>
+        <h2 class="compensation-step__section-title">
+          <span class="material-symbols-outlined">payments</span>
+          {{ 'setup.compensation.sections.incomeRules' | translate }}
+        </h2>
+        <div class="compensation-step__row compensation-step__row--stats">
+          <div class="compensation-step__stat">
+            <app-stat-tile
+              [label]="'setup.compensation.directIncomeLabel' | translate"
+              [value]="(form.value.directIncomePct ?? 0) + '%'"
+            >
+              <input
+                tile-editor
+                type="number"
+                formControlName="directIncomePct"
+                (blur)="markTouched('directIncomePct')"
+              />
+            </app-stat-tile>
+            <app-field-error [message]="fieldError('directIncomePct')"></app-field-error>
           </div>
+
+          <div class="compensation-step__stat">
+            <app-stat-tile
+              tone="accent"
+              [label]="'setup.compensation.matchingIncomeLabel' | translate"
+              [value]="(form.value.matchingIncomePct ?? 0) + '%'"
+            >
+              <input
+                tile-editor
+                type="number"
+                formControlName="matchingIncomePct"
+                (blur)="markTouched('matchingIncomePct')"
+              />
+            </app-stat-tile>
+            <app-field-error [message]="fieldError('matchingIncomePct')"></app-field-error>
+          </div>
+
+          <div class="compensation-step__stat">
+            <app-stat-tile
+              tone="success"
+              [label]="'setup.compensation.sponsorMatchingLabel' | translate"
+              [value]="(form.value.sponsorMatchingPct ?? 0) + '%'"
+            >
+              <input
+                tile-editor
+                type="number"
+                formControlName="sponsorMatchingPct"
+                (blur)="markTouched('sponsorMatchingPct')"
+              />
+            </app-stat-tile>
+            <app-field-error [message]="fieldError('sponsorMatchingPct')"></app-field-error>
           </div>
         </div>
 
+        <div class="compensation-step__accordion">
         <div class="compensation-step__accordion-item">
           <button
             type="button"
@@ -435,10 +412,12 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
   hasPan = true;
   sampleEarnings: SampleEarningsResult | null = null;
 
-  // Accordion layout (mockup 1c): exactly one section expanded at a time. This is purely a
-  // display concern -- every control below stays mounted via [hidden], never *ngIf, so
+  // Reward Tiers / Global Royalty / Fees & Settlement independently expand/collapse (Settings
+  // mockup: each row carries its own chevron, not a single-open accordion) -- Income Rules is no
+  // longer part of this mechanism at all, it's always visible (see the template). This is purely
+  // a display concern -- every control below stays mounted via [hidden], never *ngIf, so
   // valueChanges/rowsChanged$/autosave/validation all keep working on a collapsed section.
-  expandedSection: AccordionSection = 'incomeRules';
+  expandedSections = new Set<CollapsibleSection>();
 
   @Input() mode: 'setup' | 'settings' = 'setup';
 
@@ -561,12 +540,16 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     ];
   }
 
-  isExpanded(section: AccordionSection): boolean {
-    return this.expandedSection === section;
+  isExpanded(section: CollapsibleSection): boolean {
+    return this.expandedSections.has(section);
   }
 
-  toggleSection(section: AccordionSection): void {
-    this.expandedSection = section;
+  toggleSection(section: CollapsibleSection): void {
+    if (this.expandedSections.has(section)) {
+      this.expandedSections.delete(section);
+    } else {
+      this.expandedSections.add(section);
+    }
   }
 
   get incomeRulesSummary(): string {

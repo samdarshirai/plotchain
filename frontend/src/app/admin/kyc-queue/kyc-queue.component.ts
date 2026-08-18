@@ -17,55 +17,74 @@ const PAGE_SIZE = 20;
   imports: [CommonModule, FormsModule, TranslateModule, TabBarComponent, StatTileComponent, EditableTableComponent],
   providers: [DatePipe],
   template: `
-    <div class="kyc-queue card">
+    <div class="kyc-queue">
       <h1 class="card-title">{{ 'admin.kycQueue.title' | translate }}</h1>
 
-      <div class="kyc-queue__stat-tiles">
-        <app-stat-tile [label]="'admin.kycQueue.tabPending' | translate" [value]="(counts?.pending ?? 0).toString()"></app-stat-tile>
-        <app-stat-tile [label]="'admin.kycQueue.tabVerified' | translate" [value]="(counts?.verified ?? 0).toString()"></app-stat-tile>
-        <app-stat-tile [label]="'admin.kycQueue.tabRejected' | translate" [value]="(counts?.rejected ?? 0).toString()"></app-stat-tile>
+      <div class="kyc-queue__stats">
+        <app-stat-tile
+          icon="hourglass_top"
+          tone="warning"
+          [label]="'admin.kycQueue.tabPending' | translate"
+          [value]="(counts?.pending ?? 0).toString()"
+        ></app-stat-tile>
+        <app-stat-tile
+          icon="check_circle"
+          tone="success"
+          [label]="'admin.kycQueue.tabVerified' | translate"
+          [value]="(counts?.verified ?? 0).toString()"
+        ></app-stat-tile>
+        <app-stat-tile
+          icon="cancel"
+          tone="danger"
+          [label]="'admin.kycQueue.tabRejected' | translate"
+          [value]="(counts?.rejected ?? 0).toString()"
+        ></app-stat-tile>
       </div>
 
-      <app-tab-bar [tabs]="tabs" [activeTabId]="activeStatus" (tabChange)="onTabChange($event)"></app-tab-bar>
+      <div class="kyc-queue__tabs">
+        <app-tab-bar [tabs]="tabs" [activeTabId]="activeStatus" (tabChange)="onTabChange($event)"></app-tab-bar>
+      </div>
 
-      <p *ngIf="loadError" class="kyc-queue__load-error">{{ 'admin.kycQueue.loadError' | translate }}</p>
-      <p *ngIf="decisionError" class="kyc-queue__decision-error">{{ 'admin.kycQueue.decisionError' | translate }}</p>
+      <div class="card kyc-queue__table-card">
+        <p *ngIf="loadError" class="kyc-queue__load-error">{{ 'admin.kycQueue.loadError' | translate }}</p>
+        <p *ngIf="decisionError" class="kyc-queue__decision-error">{{ 'admin.kycQueue.decisionError' | translate }}</p>
 
-      <app-editable-table
-        [readOnly]="true"
-        [columns]="kycColumns"
-        [rows]="kycRows"
-        [actionTemplate]="actionsTpl"
-        [emptyStateLabel]="'admin.kycQueue.emptyState' | translate"
-      ></app-editable-table>
-      <ng-template #actionsTpl let-i="index">
-        <button type="button" class="kyc-queue__approve-action" (click)="approve(page!.entries[i].id)">
-          {{ 'admin.kycQueue.approveAction' | translate }}
-        </button>
-        <input
-          type="text"
-          [(ngModel)]="rejectReasons[page!.entries[i].id]"
-          [placeholder]="'admin.kycQueue.rejectReasonPlaceholder' | translate"
-        />
-        <button type="button" (click)="reject(page!.entries[i].id)">
-          {{ 'admin.kycQueue.rejectAction' | translate }}
-        </button>
-      </ng-template>
+        <app-editable-table
+          [readOnly]="true"
+          [columns]="kycColumns"
+          [rows]="kycRows"
+          [actionTemplate]="actionsTpl"
+          [emptyStateLabel]="'admin.kycQueue.emptyState' | translate"
+        ></app-editable-table>
+        <ng-template #actionsTpl let-i="index">
+          <button type="button" class="kyc-queue__approve-action" (click)="approve(page!.entries[i].id)">
+            {{ 'admin.kycQueue.approveAction' | translate }}
+          </button>
+          <input
+            type="text"
+            [(ngModel)]="rejectReasons[page!.entries[i].id]"
+            [placeholder]="'admin.kycQueue.rejectReasonPlaceholder' | translate"
+          />
+          <button type="button" (click)="reject(page!.entries[i].id)">
+            {{ 'admin.kycQueue.rejectAction' | translate }}
+          </button>
+        </ng-template>
 
-      <div class="kyc-queue__pagination" *ngIf="page">
-        <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
-          {{ 'admin.kycQueue.previousPageAction' | translate }}
-        </button>
-        <span class="kyc-queue__page-indicator">
-          {{ 'admin.kycQueue.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
-        </span>
-        <button
-          type="button"
-          [disabled]="(page.page + 1) * page.size >= page.totalElements"
-          (click)="goToPage(page.page + 1)"
-        >
-          {{ 'admin.kycQueue.nextPageAction' | translate }}
-        </button>
+        <div class="kyc-queue__pagination" *ngIf="page">
+          <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
+            {{ 'admin.kycQueue.previousPageAction' | translate }}
+          </button>
+          <span class="kyc-queue__page-indicator">
+            {{ 'admin.kycQueue.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
+          </span>
+          <button
+            type="button"
+            [disabled]="(page.page + 1) * page.size >= page.totalElements"
+            (click)="goToPage(page.page + 1)"
+          >
+            {{ 'admin.kycQueue.nextPageAction' | translate }}
+          </button>
+        </div>
       </div>
     </div>
   `

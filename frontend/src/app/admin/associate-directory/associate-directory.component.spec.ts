@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { AssociateDirectoryComponent } from './associate-directory.component';
 
@@ -8,8 +9,10 @@ describe('AssociateDirectoryComponent', () => {
   let httpMock: HttpTestingController;
 
   beforeEach(async () => {
+    // RouterTestingModule is required because the template uses [routerLink] (the "+ New
+    // Associate" link) -- omitting it makes TestBed.createComponent throw NG02801 (no Router provider).
     await TestBed.configureTestingModule({
-      imports: [AssociateDirectoryComponent, HttpClientTestingModule, TranslateModule.forRoot()]
+      imports: [AssociateDirectoryComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(AssociateDirectoryComponent);
@@ -160,7 +163,7 @@ describe('AssociateDirectoryComponent', () => {
   it('shows a rank load error when the ranks fetch fails, without silently doing nothing', async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
-      imports: [AssociateDirectoryComponent, HttpClientTestingModule, TranslateModule.forRoot()]
+      imports: [AssociateDirectoryComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
     }).compileComponents();
 
     const isolatedFixture = TestBed.createComponent(AssociateDirectoryComponent);

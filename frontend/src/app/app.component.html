@@ -16,11 +16,23 @@
       <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/payout-history" routerLinkActive="app-nav__link--active">{{ 'nav.payoutHistory' | translate }}</a>
       <ng-container *ngIf="isAdminFamily">
         <a class="app-nav__link" routerLink="/admin/dashboard" routerLinkActive="app-nav__link--active">{{ 'nav.dashboard' | translate }}</a>
-        <a class="app-nav__link" routerLink="/admin/associates/new" routerLinkActive="app-nav__link--active">{{ 'nav.provisionAssociate' | translate }}</a>
-        <a class="app-nav__link" routerLink="/settings" routerLinkActive="app-nav__link--active">{{ 'nav.settings' | translate }}</a>
+        <a
+          *ngFor="let category of navCategories"
+          class="app-nav__link"
+          [class.app-nav__link--active]="activeNavCategory?.key === category.key"
+          [routerLink]="category.items[0].path"
+        ><span class="material-symbols-outlined app-nav__link-icon">{{ category.icon }}</span><span class="app-nav__link-label">{{ category.labelKey | translate }}</span></a>
       </ng-container>
     </nav>
   </div>
   <button type="button" class="logout" (click)="onLogout()">{{ 'auth.logout' | translate }}</button>
 </header>
+<nav class="app-nav-items" *ngIf="authService.isAuthenticated() && !isChromelessRoute && activeNavCategory">
+  <a
+    *ngFor="let item of activeNavCategory.items"
+    class="app-nav-items__link"
+    [routerLink]="item.path"
+    routerLinkActive="app-nav-items__link--active"
+  >{{ item.labelKey | translate }}</a>
+</nav>
 <router-outlet></router-outlet>

@@ -6,7 +6,7 @@ import { StatTileComponent } from './stat-tile.component';
   standalone: true,
   imports: [StatTileComponent],
   template: `
-    <app-stat-tile [label]="label" [value]="value" [hint]="hint" [tone]="tone">
+    <app-stat-tile [label]="label" [value]="value" [hint]="hint" [tone]="tone" [icon]="icon">
       <button tile-editor>Edit</button>
     </app-stat-tile>
   `
@@ -15,7 +15,8 @@ class HostComponent {
   label = 'Wallet balance';
   value = '₹1,63,200';
   hint?: string;
-  tone: 'default' | 'accent' = 'default';
+  tone: 'default' | 'accent' | 'success' | 'warning' | 'danger' = 'default';
+  icon?: string;
 }
 
 describe('StatTileComponent', () => {
@@ -57,5 +58,31 @@ describe('StatTileComponent', () => {
     hostFixture.detectChanges();
     const editor = hostFixture.nativeElement.querySelector('.stat-tile__editor');
     expect(editor.querySelector('button').textContent).toContain('Edit');
+  });
+
+  it('renders no icon by default, and does not apply the with-icon layout', () => {
+    hostFixture.detectChanges();
+    const el = hostFixture.nativeElement;
+    expect(el.querySelector('.stat-tile__icon')).toBeFalsy();
+    expect(el.querySelector('.stat-tile').classList.contains('stat-tile--with-icon')).toBeFalse();
+  });
+
+  it('renders the icon and switches to the with-icon layout when [icon] is bound', () => {
+    hostFixture.componentInstance.icon = 'hourglass_top';
+    hostFixture.detectChanges();
+    const el = hostFixture.nativeElement;
+    const icon = el.querySelector('.stat-tile__icon');
+    expect(icon.textContent).toContain('hourglass_top');
+    expect(el.querySelector('.stat-tile').classList.contains('stat-tile--with-icon')).toBeTrue();
+  });
+
+  it('applies warning/danger tone classes', () => {
+    hostFixture.componentInstance.tone = 'warning';
+    hostFixture.detectChanges();
+    expect(hostFixture.nativeElement.querySelector('.stat-tile').classList.contains('stat-tile--warning')).toBeTrue();
+
+    hostFixture.componentInstance.tone = 'danger';
+    hostFixture.detectChanges();
+    expect(hostFixture.nativeElement.querySelector('.stat-tile').classList.contains('stat-tile--danger')).toBeTrue();
   });
 });

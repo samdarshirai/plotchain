@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AssociateDirectoryService } from './associate-directory.service';
 import { AdminAssociatePage, AdminAssociateFilters } from '../models/admin-associate-page.model';
@@ -14,10 +15,18 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-associate-directory',
   standalone: true,
-  imports: [CommonModule, TranslateModule, SidePanelComponent, EditableTableComponent],
+  imports: [CommonModule, TranslateModule, RouterLink, SidePanelComponent, EditableTableComponent],
   template: `
-    <div class="associate-directory card">
-      <h1 class="card-title">{{ 'admin.associateDirectory.title' | translate }}</h1>
+    <div class="associate-directory">
+      <div class="associate-directory__header">
+        <div>
+          <h1 class="card-title">{{ 'admin.associateDirectory.title' | translate }}</h1>
+          <p class="associate-directory__subtitle">{{ 'admin.associateDirectory.subtitle' | translate }}</p>
+        </div>
+        <a class="associate-directory__new-link brand-button" [routerLink]="['/admin/associates/new']">
+          {{ 'admin.associateDirectory.newAssociateAction' | translate }}
+        </a>
+      </div>
 
       <div class="associate-directory__filters">
         <input
@@ -63,21 +72,23 @@ const PAGE_SIZE = 20;
       <p *ngIf="actionError" class="associate-directory__action-error">{{ 'admin.associateDirectory.actionError' | translate }}</p>
       <p *ngIf="rankLoadError" class="associate-directory__rank-load-error">{{ 'admin.associateDirectory.rankLoadError' | translate }}</p>
 
-      <app-editable-table
-        [readOnly]="true"
-        [columns]="directoryColumns"
-        [rows]="directoryRows"
-        [emptyStateLabel]="'admin.associateDirectory.emptyState' | translate"
-        (rowClick)="selectAssociate(page!.associates[$event].id)"
-      ></app-editable-table>
+      <div class="card">
+        <app-editable-table
+          [readOnly]="true"
+          [columns]="directoryColumns"
+          [rows]="directoryRows"
+          [emptyStateLabel]="'admin.associateDirectory.emptyState' | translate"
+          (rowClick)="selectAssociate(page!.associates[$event].id)"
+        ></app-editable-table>
 
-      <div class="associate-directory__pagination" *ngIf="page">
-        <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
-          {{ 'admin.associateDirectory.previousPageAction' | translate }}
-        </button>
-        <button type="button" [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="goToPage(page.page + 1)">
-          {{ 'admin.associateDirectory.nextPageAction' | translate }}
-        </button>
+        <div class="associate-directory__pagination" *ngIf="page">
+          <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
+            {{ 'admin.associateDirectory.previousPageAction' | translate }}
+          </button>
+          <button type="button" [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="goToPage(page.page + 1)">
+            {{ 'admin.associateDirectory.nextPageAction' | translate }}
+          </button>
+        </div>
       </div>
     </div>
 
