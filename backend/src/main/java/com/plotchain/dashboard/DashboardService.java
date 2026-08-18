@@ -126,6 +126,15 @@ public class DashboardService {
             .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
             .orElseThrow(() -> new IllegalStateException("compensation_plan_version row missing - V8 migration seeds it"));
         BigDecimal matchingIncomePct = planVersion.getMatchingIncomePct();
+        // Known limitation (dashboard-leg-volume-fixes final review): matchedVolume is min(left,
+        // right) off the last CLOSED cycle's row -- volume CycleService#creditMatchingIncome
+        // already matched and paid out at that close, leaving only the unmatched excess (one side's
+        // carriedForward) still live. A genuine "projected next match" would need this OPEN cycle's
+        // new sales volume per leg, which is never computed until close -- building that live
+        // recompute is out of this fix's scope. min(carriedForwardLeft, carriedForwardRight) would
+        // be honest but always 0 by construction (only the excess side ever carries), so it doesn't
+        // improve on this. Treat projectedMatch/royaltyBonusPct below as "what was matched at the
+        // last closing," not a live projection, until that live-computation work exists.
         BigDecimal matchedVolume = legVolume.getLeftLegVolume().min(legVolume.getRightLegVolume());
         BigDecimal projectedMatch = matchedVolume.multiply(matchingIncomePct.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
         // Mirror CycleService#creditRoyalty's own guard (matchedVolume.compareTo(BigDecimal.ZERO) <= 0
