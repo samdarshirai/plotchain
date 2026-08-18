@@ -199,4 +199,40 @@ class SaleRepositoryTest {
         assertThat(count).isEqualTo(1);
         assertThat(sum).isEqualByComparingTo(new BigDecimal("600000.00"));
     }
+
+    @Test
+    void sumsPlotAreaSqftForAssociatesRecordedSalesInTheGivenCycle() {
+        UUID cycleId = persistCycle();
+        UUID otherCycleId = persistCycle();
+        UUID associateA = persistAssociate();
+        UUID associateB = persistAssociate();
+        UUID plotOneId = persistPlot(persistProject());
+        UUID plotTwoId = persistPlot(persistProject());
+        persistSale(associateA, plotOneId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(associateA, plotTwoId, cycleId, SaleStatus.RECORDED, Instant.now());
+        // Voided -- must be excluded.
+        persistSale(associateA, plotOneId, cycleId, SaleStatus.VOIDED, Instant.now());
+        // Recorded but in a different cycle -- must be excluded.
+        persistSale(associateA, plotOneId, otherCycleId, SaleStatus.RECORDED, Instant.now());
+        // Recorded, this cycle, but a different associate -- must be excluded.
+        persistSale(associateB, plotOneId, cycleId, SaleStatus.RECORDED, Instant.now());
+        entityManager.flush();
+
+        BigDecimal sum = saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(
+            associateA, cycleId, SaleStatus.RECORDED);
+
+        // Both plots persisted via persistPlot() are fixed at 1200.00 sqft -> 1200 + 1200 = 2400.00
+        assertThat(sum).isEqualByComparingTo("2400.00");
+    }
+
+    @Test
+    void sumPlotAreaSqftReturnsZeroNotNullWhenNoSalesMatch() {
+        UUID cycleId = persistCycle();
+        UUID associateId = persistAssociate();
+
+        BigDecimal sum = saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(
+            associateId, cycleId, SaleStatus.RECORDED);
+
+        assertThat(sum).isNotNull().isEqualByComparingTo(BigDecimal.ZERO);
+    }
 }
