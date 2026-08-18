@@ -38,6 +38,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -116,10 +117,6 @@ class DashboardServiceTest {
             .thenReturn(Optional.of(planVersion));
         when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.ROYALTY))
             .thenReturn(BigDecimal.valueOf(400));
-        when(royaltyBonusRateRepository
-                .findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
-                    planVersion.getId(), BigDecimal.ZERO))
-            .thenReturn(Optional.of(new RoyaltyBonusRate(UUID.randomUUID(), planVersion.getId(), BigDecimal.ZERO, new BigDecimal("3.00"))));
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
         when(rankTierRepository.findAllByOrderByRankOrder())
             .thenReturn(List.of(currentRank, nextRank));
@@ -142,7 +139,10 @@ class DashboardServiceTest {
         assertThat(response.cycleIncome().sponsorMatchingIncome()).isEqualByComparingTo("300");
         assertThat(response.cycleIncome().selfPerformanceBonus()).isEqualByComparingTo("200");
         assertThat(response.cycleIncome().royaltyBonus()).isEqualByComparingTo("400");
-        assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("3.00");
+        // matchedVolume is 0 here (LegVolume.empty()), so the royalty slab lookup must be
+        // short-circuited entirely -- mirrors CycleService#creditRoyalty's own guard.
+        assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("0");
+        verifyNoInteractions(royaltyBonusRateRepository);
         assertThat(response.cycleIncome().totalIncome()).isEqualByComparingTo("2400");
         assertThat(response.wallet().balance()).isEqualByComparingTo("0");
         assertThat(response.legVolume().leftVolume()).isEqualByComparingTo("0");
@@ -196,9 +196,17 @@ class DashboardServiceTest {
             .thenReturn(BigDecimal.ZERO);
         when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycleId))
             .thenReturn(Optional.of(legVolume));
+        CompensationPlanVersion planVersion = compensationPlanVersion(new BigDecimal("7.00"));
         when(compensationPlanVersionRepository
                 .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
-            .thenReturn(Optional.of(compensationPlanVersion(new BigDecimal("7.00"))));
+            .thenReturn(Optional.of(planVersion));
+        // matchedVolume = min(200000, 150000) = 150000, a positive matched volume -- exercises the
+        // real slab-lookup path (as opposed to the zero-matched-volume short-circuit case covered
+        // in aggregatesAllDashboardWidgetsForAnAssociate).
+        when(royaltyBonusRateRepository
+                .findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+                    planVersion.getId(), new BigDecimal("150000")))
+            .thenReturn(Optional.of(new RoyaltyBonusRate(UUID.randomUUID(), planVersion.getId(), BigDecimal.ZERO, new BigDecimal("3.00"))));
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
         when(rankTierRepository.findAllByOrderByRankOrder())
             .thenReturn(List.of(currentRank));
@@ -214,7 +222,7 @@ class DashboardServiceTest {
         assertThat(response.cycleIncome().sponsorMatchingIncome()).isEqualByComparingTo("0");
         assertThat(response.cycleIncome().selfPerformanceBonus()).isEqualByComparingTo("0");
         assertThat(response.cycleIncome().royaltyBonus()).isEqualByComparingTo("0");
-        assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("0");
+        assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("3.00");
         assertThat(response.associate().rankChangedAt()).isNull();
     }
 

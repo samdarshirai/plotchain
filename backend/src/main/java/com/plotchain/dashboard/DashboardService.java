@@ -93,10 +93,15 @@ public class DashboardService {
         BigDecimal matchingIncomePct = planVersion.getMatchingIncomePct();
         BigDecimal matchedVolume = legVolume.getLeftLegVolume().min(legVolume.getRightLegVolume());
         BigDecimal projectedMatch = matchedVolume.multiply(matchingIncomePct.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-        BigDecimal royaltyBonusPct = royaltyBonusRateRepository
-            .findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(planVersion.getId(), matchedVolume)
-            .map(RoyaltyBonusRate::getRoyaltyPct)
-            .orElse(BigDecimal.ZERO);
+        // Mirror CycleService#creditRoyalty's own guard (matchedVolume.compareTo(BigDecimal.ZERO) <= 0
+        // -> skip): a non-positive matched volume must never reach the slab lookup, so the
+        // dashboard can never advertise a percentage the cycle-close engine would not actually pay.
+        BigDecimal royaltyBonusPct = matchedVolume.compareTo(BigDecimal.ZERO) > 0
+            ? royaltyBonusRateRepository
+                .findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(planVersion.getId(), matchedVolume)
+                .map(RoyaltyBonusRate::getRoyaltyPct)
+                .orElse(BigDecimal.ZERO)
+            : BigDecimal.ZERO;
 
         Wallet wallet = walletRepository.findById(associateId)
             .orElseGet(() -> Wallet.zero(associateId));
