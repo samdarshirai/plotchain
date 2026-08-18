@@ -28,6 +28,8 @@ export interface LegVolumeSummary {
   carriedForwardLeft: number;
   carriedForwardRight: number;
   projectedMatchAmount: number;
+  totalLeftBusiness: number;
+  totalRightBusiness: number;
 }
 
 export interface RankProgress {

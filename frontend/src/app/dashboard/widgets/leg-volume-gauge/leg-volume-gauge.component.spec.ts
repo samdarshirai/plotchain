@@ -13,7 +13,8 @@ describe('LegVolumeGaugeComponent', () => {
     fixture.componentInstance.data = {
       leftVolume: 3000, rightVolume: 2000,
       carriedForwardLeft: 500, carriedForwardRight: 1000,
-      projectedMatchAmount: 140
+      projectedMatchAmount: 140,
+      totalLeftBusiness: 300000, totalRightBusiness: 200000
     };
     fixture.detectChanges();
   });
@@ -30,5 +31,12 @@ describe('LegVolumeGaugeComponent', () => {
     const right = fixture.nativeElement.querySelector('.leg-carried-forward.right').textContent;
     expect(left).toContain('500');
     expect(right).toContain('1,000');
+  });
+
+  it('renders lifetime total left and right business', () => {
+    const left = fixture.nativeElement.querySelector('.leg-total-business.left').textContent;
+    const right = fixture.nativeElement.querySelector('.leg-total-business.right').textContent;
+    expect(left).toContain('300,000');
+    expect(right).toContain('200,000');
   });
 });
