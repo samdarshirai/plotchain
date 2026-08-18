@@ -30,6 +30,7 @@ export interface LegVolumeSummary {
   projectedMatchAmount: number;
   totalLeftBusiness: number;
   totalRightBusiness: number;
+  newBookedAreaSqft: number;
 }
 
 export interface RankProgress {

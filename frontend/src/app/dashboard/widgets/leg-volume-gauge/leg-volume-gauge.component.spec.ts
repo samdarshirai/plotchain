@@ -14,7 +14,8 @@ describe('LegVolumeGaugeComponent', () => {
       leftVolume: 3000, rightVolume: 2000,
       carriedForwardLeft: 500, carriedForwardRight: 1000,
       projectedMatchAmount: 140,
-      totalLeftBusiness: 300000, totalRightBusiness: 200000
+      totalLeftBusiness: 300000, totalRightBusiness: 200000,
+      newBookedAreaSqft: 450
     };
     fixture.detectChanges();
   });
@@ -38,5 +39,10 @@ describe('LegVolumeGaugeComponent', () => {
     const right = fixture.nativeElement.querySelector('.leg-total-business.right').textContent;
     expect(left).toContain('300,000');
     expect(right).toContain('200,000');
+  });
+
+  it('renders new booked area', () => {
+    const area = fixture.nativeElement.querySelector('.new-booked-area').textContent;
+    expect(area).toContain('450');
   });
 });

@@ -15,6 +15,7 @@ import { LegVolumeSummary } from '../../models/dashboard-response.model';
       <div class="leg-carried-forward right">{{ 'dashboard.carriedForward' | translate }} ({{ 'dashboard.rightLeg' | translate }}): {{ data.carriedForwardRight | currency:'INR' }}</div>
       <div class="leg-total-business left">{{ 'dashboard.totalBusiness' | translate }} ({{ 'dashboard.leftLeg' | translate }}): {{ data.totalLeftBusiness | currency:'INR' }}</div>
       <div class="leg-total-business right">{{ 'dashboard.totalBusiness' | translate }} ({{ 'dashboard.rightLeg' | translate }}): {{ data.totalRightBusiness | currency:'INR' }}</div>
+      <div class="new-booked-area">{{ 'dashboard.newBookedArea' | translate }}: {{ data.newBookedAreaSqft | number }} sqft</div>
       <div class="projected-match">{{ 'dashboard.projectedMatch' | translate }}: {{ data.projectedMatchAmount | currency:'INR' }}</div>
     </div>
   `
