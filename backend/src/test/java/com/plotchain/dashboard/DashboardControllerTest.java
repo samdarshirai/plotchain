@@ -100,6 +100,8 @@ class DashboardControllerTest {
             .thenReturn(Optional.empty());
         when(legVolumeRepository.findByAssociateIdAndCycleId(any(), any()))
             .thenReturn(Optional.of(LegVolume.empty(associateId, cycleId)));
+        when(legVolumeRepository.sumLeftLegVolumeByAssociateId(any())).thenReturn(BigDecimal.ZERO);
+        when(legVolumeRepository.sumRightLegVolumeByAssociateId(any())).thenReturn(BigDecimal.ZERO);
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
         when(associateRepository.countDownline(any())).thenReturn(12L);
@@ -116,7 +118,9 @@ class DashboardControllerTest {
             .andExpect(jsonPath("$.cycleIncome.sponsorMatchingIncome").value(0))
             .andExpect(jsonPath("$.cycleIncome.selfPerformanceBonus").value(0))
             .andExpect(jsonPath("$.cycleIncome.royaltyBonus").value(0))
-            .andExpect(jsonPath("$.cycleIncome.royaltyBonusPct").value(0));
+            .andExpect(jsonPath("$.cycleIncome.royaltyBonusPct").value(0))
+            .andExpect(jsonPath("$.legVolume.totalLeftBusiness").value(0))
+            .andExpect(jsonPath("$.legVolume.totalRightBusiness").value(0));
     }
 
     @Test

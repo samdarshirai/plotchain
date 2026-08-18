@@ -111,6 +111,8 @@ class DashboardServiceTest {
             .thenReturn(BigDecimal.valueOf(2400));
         when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycleId))
             .thenReturn(Optional.of(legVolume));
+        when(legVolumeRepository.sumLeftLegVolumeByAssociateId(associateId)).thenReturn(BigDecimal.valueOf(300000));
+        when(legVolumeRepository.sumRightLegVolumeByAssociateId(associateId)).thenReturn(BigDecimal.valueOf(200000));
         CompensationPlanVersion planVersion = compensationPlanVersion(new BigDecimal("7.00"));
         when(compensationPlanVersionRepository
                 .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
@@ -150,6 +152,8 @@ class DashboardServiceTest {
         assertThat(response.legVolume().carriedForwardLeft()).isEqualByComparingTo("0");
         assertThat(response.legVolume().carriedForwardRight()).isEqualByComparingTo("0");
         assertThat(response.legVolume().projectedMatchAmount()).isEqualByComparingTo("0");
+        assertThat(response.legVolume().totalLeftBusiness()).isEqualByComparingTo("300000");
+        assertThat(response.legVolume().totalRightBusiness()).isEqualByComparingTo("200000");
         assertThat(response.rankProgress().currentRank()).isEqualTo("Sales Associate");
         assertThat(response.rankProgress().currentRankOrder()).isEqualTo(1);
         assertThat(response.rankProgress().nextRank()).isEqualTo("Sales Executive");
@@ -196,6 +200,8 @@ class DashboardServiceTest {
             .thenReturn(BigDecimal.ZERO);
         when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycleId))
             .thenReturn(Optional.of(legVolume));
+        when(legVolumeRepository.sumLeftLegVolumeByAssociateId(associateId)).thenReturn(BigDecimal.ZERO);
+        when(legVolumeRepository.sumRightLegVolumeByAssociateId(associateId)).thenReturn(BigDecimal.ZERO);
         CompensationPlanVersion planVersion = compensationPlanVersion(new BigDecimal("7.00"));
         when(compensationPlanVersionRepository
                 .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
@@ -223,6 +229,8 @@ class DashboardServiceTest {
         assertThat(response.cycleIncome().selfPerformanceBonus()).isEqualByComparingTo("0");
         assertThat(response.cycleIncome().royaltyBonus()).isEqualByComparingTo("0");
         assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("3.00");
+        assertThat(response.legVolume().totalLeftBusiness()).isEqualByComparingTo("0");
+        assertThat(response.legVolume().totalRightBusiness()).isEqualByComparingTo("0");
         assertThat(response.associate().rankChangedAt()).isNull();
     }
 

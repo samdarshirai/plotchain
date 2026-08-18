@@ -87,6 +87,8 @@ public class DashboardService {
 
         LegVolume legVolume = legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycle.getId())
             .orElseGet(() -> LegVolume.empty(associateId, cycle.getId()));
+        BigDecimal totalLeftBusiness = legVolumeRepository.sumLeftLegVolumeByAssociateId(associateId);
+        BigDecimal totalRightBusiness = legVolumeRepository.sumRightLegVolumeByAssociateId(associateId);
         CompensationPlanVersion planVersion = compensationPlanVersionRepository
             .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
             .orElseThrow(() -> new IllegalStateException("compensation_plan_version row missing - V8 migration seeds it"));
@@ -150,7 +152,7 @@ public class DashboardService {
             new DashboardResponse.LegVolumeSummary(
                 legVolume.getLeftLegVolume(), legVolume.getRightLegVolume(),
                 legVolume.getCarriedForwardLeft(), legVolume.getCarriedForwardRight(),
-                projectedMatch),
+                projectedMatch, totalLeftBusiness, totalRightBusiness),
             new DashboardResponse.RankProgress(
                 currentRank.getName(), currentRank.getRankOrder(),
                 nextRank.map(RankTier::getName).orElse(null),
