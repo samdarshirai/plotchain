@@ -40,7 +40,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -97,7 +96,26 @@ class DashboardServiceTest {
         RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, BigDecimal.valueOf(5000));
         RankTier nextRank = new RankTier(nextRankId, "Sales Executive", 2, BigDecimal.valueOf(10000));
 
-        LegVolume legVolume = LegVolume.empty(associateId, cycleId);
+        // Two closed cycles' worth of history. olderRow has no predecessor (incoming carry 0),
+        // so its own leftLegVolume (100000) IS that cycle's new left volume, and left > right
+        // carries 40000 forward. newerRow's leftLegVolume (300000) = its own new left volume
+        // (260000) PLUS that same 40000 carried in -- a naive SUM(leftLegVolume) would count the
+        // 40000 twice (100000 + 300000 = 400000); the correct lifetime total subtracts each row's
+        // incoming carry first (100000 + (300000 - 40000) = 360000). Right never carries in this
+        // fixture, so totalRightBusiness is unaffected by the bug (60000 + 200000 = 260000
+        // either way) -- proving the fix doesn't change a leg that was never broken.
+        UUID olderCycleId = UUID.randomUUID();
+        UUID newerCycleId = UUID.randomUUID();
+        Cycle newerClosedCycle = new Cycle();
+        newerClosedCycle.setId(newerCycleId);
+        newerClosedCycle.setStatus(CycleStatus.CLOSED);
+        newerClosedCycle.setPeriodStart(LocalDate.now().minusDays(20));
+        newerClosedCycle.setPeriodEnd(LocalDate.now().minusDays(6));
+
+        LegVolume olderRow = new LegVolume(UUID.randomUUID(), associateId, olderCycleId,
+            new BigDecimal("100000"), new BigDecimal("60000"), new BigDecimal("40000"), BigDecimal.ZERO);
+        LegVolume newerRow = new LegVolume(UUID.randomUUID(), associateId, newerCycleId,
+            new BigDecimal("300000"), new BigDecimal("200000"), new BigDecimal("100000"), BigDecimal.ZERO);
 
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
@@ -112,10 +130,12 @@ class DashboardServiceTest {
             .thenReturn(BigDecimal.valueOf(200));
         when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycleId))
             .thenReturn(BigDecimal.valueOf(2400));
-        when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycleId))
-            .thenReturn(Optional.of(legVolume));
-        when(legVolumeRepository.sumLeftLegVolumeByAssociateId(associateId)).thenReturn(BigDecimal.valueOf(300000));
-        when(legVolumeRepository.sumRightLegVolumeByAssociateId(associateId)).thenReturn(BigDecimal.valueOf(200000));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED))
+            .thenReturn(Optional.of(newerClosedCycle));
+        when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, newerCycleId))
+            .thenReturn(Optional.of(newerRow));
+        when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId))
+            .thenReturn(List.of(olderRow, newerRow));
         when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED))
             .thenReturn(BigDecimal.valueOf(1200));
         CompensationPlanVersion planVersion = compensationPlanVersion(new BigDecimal("7.00"));
@@ -146,19 +166,24 @@ class DashboardServiceTest {
         assertThat(response.cycleIncome().sponsorMatchingIncome()).isEqualByComparingTo("300");
         assertThat(response.cycleIncome().selfPerformanceBonus()).isEqualByComparingTo("200");
         assertThat(response.cycleIncome().royaltyBonus()).isEqualByComparingTo("400");
-        // matchedVolume is 0 here (LegVolume.empty()), so the royalty slab lookup must be
-        // short-circuited entirely -- mirrors CycleService#creditRoyalty's own guard.
+        // matchedVolume is now min(300000, 200000) = 200000 (from newerRow) > 0, so the slab
+        // lookup runs; it's left unstubbed here since exercising that path is
+        // projectsMatchAmountFromTheDbStoredMatchingIncomePercentNotAHardcodedFraction's job, and
+        // an unstubbed Optional-returning Mockito call defaults to Optional.empty() -> 0 pct.
         assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("0");
-        verifyNoInteractions(royaltyBonusRateRepository);
         assertThat(response.cycleIncome().totalIncome()).isEqualByComparingTo("2400");
         assertThat(response.wallet().balance()).isEqualByComparingTo("0");
-        assertThat(response.legVolume().leftVolume()).isEqualByComparingTo("0");
-        assertThat(response.legVolume().rightVolume()).isEqualByComparingTo("0");
-        assertThat(response.legVolume().carriedForwardLeft()).isEqualByComparingTo("0");
+        // "Current standing" now comes from the most recently CLOSED cycle (newerRow), not the
+        // open cycle's never-existing row.
+        assertThat(response.legVolume().leftVolume()).isEqualByComparingTo("300000");
+        assertThat(response.legVolume().rightVolume()).isEqualByComparingTo("200000");
+        assertThat(response.legVolume().carriedForwardLeft()).isEqualByComparingTo("100000");
         assertThat(response.legVolume().carriedForwardRight()).isEqualByComparingTo("0");
-        assertThat(response.legVolume().projectedMatchAmount()).isEqualByComparingTo("0");
-        assertThat(response.legVolume().totalLeftBusiness()).isEqualByComparingTo("300000");
-        assertThat(response.legVolume().totalRightBusiness()).isEqualByComparingTo("200000");
+        // min(300000, 200000) * (7.00 / 100) = 200000 * 0.07 = 14000.00
+        assertThat(response.legVolume().projectedMatchAmount()).isEqualByComparingTo("14000.00");
+        // De-duplicated lifetime totals -- see the fixture comment above.
+        assertThat(response.legVolume().totalLeftBusiness()).isEqualByComparingTo("360000");
+        assertThat(response.legVolume().totalRightBusiness()).isEqualByComparingTo("260000");
         assertThat(response.legVolume().newBookedAreaSqft()).isEqualByComparingTo("1200");
         assertThat(response.rankProgress().currentRank()).isEqualTo("Sales Associate");
         assertThat(response.rankProgress().currentRankOrder()).isEqualTo(1);
@@ -171,6 +196,61 @@ class DashboardServiceTest {
         assertThat(response.cycleCountdown().cycleId()).isEqualTo(cycleId);
         assertThat(response.cycleCountdown().daysRemaining()).isEqualTo(10L);
         assertThat(response.announcements()).isEmpty();
+    }
+
+    @Test
+    void currentLegVolumeDefaultsToZeroWhenTheAssociateHasNeverBeenThroughAClose() {
+        UUID associateId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        UUID currentRankId = UUID.randomUUID();
+
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRankId(currentRankId);
+        associate.setKycStatus(KycStatus.VERIFIED);
+        associate.setCumulativeMatchedVolume(BigDecimal.ZERO);
+
+        Cycle cycle = new Cycle();
+        cycle.setId(cycleId);
+        cycle.setStatus(CycleStatus.OPEN);
+        cycle.setPeriodStart(LocalDate.now().minusDays(5));
+        cycle.setPeriodEnd(LocalDate.now().plusDays(10));
+
+        RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, BigDecimal.valueOf(5000));
+
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
+            .thenReturn(Optional.of(cycle));
+        // No cycle has ever closed for this associate's org yet.
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED))
+            .thenReturn(Optional.empty());
+        when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(any(), any(), any()))
+            .thenReturn(BigDecimal.ZERO);
+        when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(any(), any()))
+            .thenReturn(BigDecimal.ZERO);
+        when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId))
+            .thenReturn(List.of());
+        when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(any(), any(), any()))
+            .thenReturn(BigDecimal.ZERO);
+        CompensationPlanVersion planVersion = compensationPlanVersion(new BigDecimal("7.00"));
+        when(compensationPlanVersionRepository
+                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(planVersion));
+        when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
+        when(associateRepository.countDownline(any())).thenReturn(0L);
+        when(associateRepository.countActiveToday(any(), any())).thenReturn(0L);
+        when(associateRepository.countJoinedBetween(any(), any(), any())).thenReturn(0L);
+        when(announcementRepository.findTop5ByOrderByPublishedAtDesc()).thenReturn(List.of());
+
+        DashboardResponse response = dashboardService.getDashboard(associateId);
+
+        assertThat(response.legVolume().leftVolume()).isEqualByComparingTo("0");
+        assertThat(response.legVolume().rightVolume()).isEqualByComparingTo("0");
+        assertThat(response.legVolume().carriedForwardLeft()).isEqualByComparingTo("0");
+        assertThat(response.legVolume().carriedForwardRight()).isEqualByComparingTo("0");
+        assertThat(response.legVolume().totalLeftBusiness()).isEqualByComparingTo("0");
+        assertThat(response.legVolume().totalRightBusiness()).isEqualByComparingTo("0");
     }
 
     @Test
@@ -193,7 +273,14 @@ class DashboardServiceTest {
 
         RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, BigDecimal.valueOf(5000));
 
-        LegVolume legVolume = LegVolume.empty(associateId, cycleId);
+        UUID closedCycleId = UUID.randomUUID();
+        Cycle closedCycle = new Cycle();
+        closedCycle.setId(closedCycleId);
+        closedCycle.setStatus(CycleStatus.CLOSED);
+        closedCycle.setPeriodStart(LocalDate.now().minusDays(20));
+        closedCycle.setPeriodEnd(LocalDate.now().minusDays(6));
+
+        LegVolume legVolume = LegVolume.empty(associateId, closedCycleId);
         ReflectionTestUtils.setField(legVolume, "leftLegVolume", new BigDecimal("200000"));
         ReflectionTestUtils.setField(legVolume, "rightLegVolume", new BigDecimal("150000"));
 
@@ -204,10 +291,12 @@ class DashboardServiceTest {
             .thenReturn(BigDecimal.ZERO);
         when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(any(), any()))
             .thenReturn(BigDecimal.ZERO);
-        when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycleId))
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED))
+            .thenReturn(Optional.of(closedCycle));
+        when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, closedCycleId))
             .thenReturn(Optional.of(legVolume));
-        when(legVolumeRepository.sumLeftLegVolumeByAssociateId(associateId)).thenReturn(BigDecimal.ZERO);
-        when(legVolumeRepository.sumRightLegVolumeByAssociateId(associateId)).thenReturn(BigDecimal.ZERO);
+        when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId))
+            .thenReturn(List.of());
         when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED))
             .thenReturn(BigDecimal.ZERO);
         CompensationPlanVersion planVersion = compensationPlanVersion(new BigDecimal("7.00"));

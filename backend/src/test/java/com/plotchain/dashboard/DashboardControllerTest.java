@@ -96,14 +96,15 @@ class DashboardControllerTest {
         // Set up mock for both filter and DashboardService
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(cycle));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(any(), any(), any())).thenReturn(BigDecimal.ZERO);
         when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(any(), any())).thenReturn(BigDecimal.ZERO);
         when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(any(), any()))
             .thenReturn(Optional.empty());
         when(legVolumeRepository.findByAssociateIdAndCycleId(any(), any()))
             .thenReturn(Optional.of(LegVolume.empty(associateId, cycleId)));
-        when(legVolumeRepository.sumLeftLegVolumeByAssociateId(any())).thenReturn(BigDecimal.ZERO);
-        when(legVolumeRepository.sumRightLegVolumeByAssociateId(any())).thenReturn(BigDecimal.ZERO);
+        when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(any()))
+            .thenReturn(List.of());
         when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));

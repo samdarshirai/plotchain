@@ -90,10 +90,36 @@ public class DashboardService {
         BigDecimal total = ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycle.getId());
         BigDecimal royaltyBonus = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.ROYALTY);
 
-        LegVolume legVolume = legVolumeRepository.findByAssociateIdAndCycleId(associateId, cycle.getId())
+        // leg_volume rows are written only at cycle CLOSE (CycleService#rollUpSubtree), keyed to
+        // the cycle being closed -- the currently OPEN cycle this dashboard is showing never has a
+        // row of its own, so findByAssociateIdAndCycleId(associateId, cycle.getId()) against it was
+        // a structural no-op that always fell through to LegVolume.empty(). Reading the associate's
+        // most-recently-CLOSED cycle instead is "current standing as of the last close" -- the
+        // freshest real figure available without a live in-cycle recompute.
+        Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
+        LegVolume legVolume = latestClosedCycle
+            .flatMap(closed -> legVolumeRepository.findByAssociateIdAndCycleId(associateId, closed.getId()))
             .orElseGet(() -> LegVolume.empty(associateId, cycle.getId()));
-        BigDecimal totalLeftBusiness = legVolumeRepository.sumLeftLegVolumeByAssociateId(associateId);
-        BigDecimal totalRightBusiness = legVolumeRepository.sumRightLegVolumeByAssociateId(associateId);
+
+        // Lifetime Total Left/Right Business: each row's leftLegVolume/rightLegVolume already has
+        // the PRIOR cycle's carriedForward baked in (rollUpSubtree: leftLegVolume =
+        // leftSubtreeVolume + carriedForwardLeft-from-last-close), and an unmatched carry keeps
+        // re-appearing in every subsequent row until it's finally matched down -- a naive
+        // SUM(leftLegVolume) across all rows counts that same still-unmatched volume once per
+        // cycle it survives, not once. Subtracting each row's own incoming carry (its
+        // predecessor's outgoing carriedForwardLeft/Right, 0 for the associate's first row)
+        // before summing leaves exactly the new subtree volume each cycle actually contributed.
+        List<LegVolume> legVolumeHistory = legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId);
+        BigDecimal totalLeftBusiness = BigDecimal.ZERO;
+        BigDecimal totalRightBusiness = BigDecimal.ZERO;
+        BigDecimal incomingCarryLeft = BigDecimal.ZERO;
+        BigDecimal incomingCarryRight = BigDecimal.ZERO;
+        for (LegVolume row : legVolumeHistory) {
+            totalLeftBusiness = totalLeftBusiness.add(row.getLeftLegVolume().subtract(incomingCarryLeft));
+            totalRightBusiness = totalRightBusiness.add(row.getRightLegVolume().subtract(incomingCarryRight));
+            incomingCarryLeft = row.getCarriedForwardLeft();
+            incomingCarryRight = row.getCarriedForwardRight();
+        }
         BigDecimal newBookedAreaSqft = saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(
             associateId, cycle.getId(), SaleStatus.RECORDED);
         CompensationPlanVersion planVersion = compensationPlanVersionRepository
