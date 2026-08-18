@@ -15,14 +15,16 @@ import org.springframework.test.context.ActiveProfiles;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// Dashboard unit 5 (docs/superpowers/specs/2026-08-17-associate-dashboard-parity-design.md §3.1,
-// "Total Left/Right Business"): proves the lifetime SUM aggregate genuinely spans multiple
-// leg_volume rows (one per cycle close, per CycleService.rollUpSubtree) rather than reading a
-// single cycle's row -- a property a mocked repository can't exercise.
+// Dashboard leg-volume fix plan (docs/superpowers/plans/2026-08-18-dashboard-leg-volume-fixes.md,
+// Task 1): DashboardService walks this list in chronological order to subtract each row's
+// incoming carry-forward before summing lifetime totals (Task 2) -- proving the ORDER BY actually
+// orders by when each cycle closed, not row-insertion order or id, is the whole point of this
+// test; a mocked repository can't exercise a real ORDER BY.
 @DataJpaTest
 @ActiveProfiles("test")
 class LegVolumeRepositoryTest {
@@ -54,37 +56,43 @@ class LegVolumeRepositoryTest {
         return associate;
     }
 
-    private Cycle seedCycle() {
+    private Cycle seedCycle(LocalDate periodStart) {
         Cycle cycle = new Cycle();
         cycle.setId(UUID.randomUUID());
-        cycle.setPeriodStart(LocalDate.of(2026, 7, 1));
-        cycle.setPeriodEnd(LocalDate.of(2026, 7, 15));
+        cycle.setPeriodStart(periodStart);
+        cycle.setPeriodEnd(periodStart.plusDays(14));
         cycle.setStatus(CycleStatus.CLOSED);
         entityManager.persist(cycle);
         return cycle;
     }
 
     @Test
-    void sumsLeftAndRightLegVolumeAcrossEveryCycleForThatAssociate() {
+    void ordersRowsByWhenTheirCycleActuallyClosedNotByInsertionOrder() {
         Associate associate = seedAssociate();
-        Cycle cycleOne = seedCycle();
-        Cycle cycleTwo = seedCycle();
+        Cycle newer = seedCycle(LocalDate.of(2026, 8, 1));
+        Cycle older = seedCycle(LocalDate.of(2026, 7, 1));
+        // Insert the newer cycle's row FIRST -- if the query ordered by insertion/id instead of
+        // c.periodStart, this row would come back first too, and the test would still pass by
+        // accident. Inserting out of chronological order is what makes the ORDER BY load-bearing.
         legVolumeRepository.saveAndFlush(new LegVolume(
-            UUID.randomUUID(), associate.getId(), cycleOne.getId(),
+            UUID.randomUUID(), associate.getId(), newer.getId(),
+            new BigDecimal("300000"), new BigDecimal("200000"), BigDecimal.ZERO, BigDecimal.ZERO));
+        legVolumeRepository.saveAndFlush(new LegVolume(
+            UUID.randomUUID(), associate.getId(), older.getId(),
             new BigDecimal("100000"), new BigDecimal("50000"), BigDecimal.ZERO, BigDecimal.ZERO));
-        legVolumeRepository.saveAndFlush(new LegVolume(
-            UUID.randomUUID(), associate.getId(), cycleTwo.getId(),
-            new BigDecimal("200000"), new BigDecimal("150000"), BigDecimal.ZERO, BigDecimal.ZERO));
 
-        assertThat(legVolumeRepository.sumLeftLegVolumeByAssociateId(associate.getId())).isEqualByComparingTo("300000");
-        assertThat(legVolumeRepository.sumRightLegVolumeByAssociateId(associate.getId())).isEqualByComparingTo("200000");
+        List<LegVolume> rows = legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associate.getId());
+
+        assertThat(rows).hasSize(2);
+        assertThat(rows.get(0).getCycleId()).isEqualTo(older.getId());
+        assertThat(rows.get(1).getCycleId()).isEqualTo(newer.getId());
     }
 
     @Test
     void excludesLegVolumeRowsForADifferentAssociate() {
         Associate target = seedAssociate();
         Associate other = seedAssociate();
-        Cycle cycle = seedCycle();
+        Cycle cycle = seedCycle(LocalDate.of(2026, 7, 1));
         legVolumeRepository.saveAndFlush(new LegVolume(
             UUID.randomUUID(), target.getId(), cycle.getId(),
             new BigDecimal("100000"), new BigDecimal("50000"), BigDecimal.ZERO, BigDecimal.ZERO));
@@ -92,15 +100,18 @@ class LegVolumeRepositoryTest {
             UUID.randomUUID(), other.getId(), cycle.getId(),
             new BigDecimal("999999"), new BigDecimal("999999"), BigDecimal.ZERO, BigDecimal.ZERO));
 
-        assertThat(legVolumeRepository.sumLeftLegVolumeByAssociateId(target.getId())).isEqualByComparingTo("100000");
-        assertThat(legVolumeRepository.sumRightLegVolumeByAssociateId(target.getId())).isEqualByComparingTo("50000");
+        List<LegVolume> rows = legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(target.getId());
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).getLeftLegVolume()).isEqualByComparingTo("100000");
     }
 
     @Test
-    void returnsZeroNotNullWhenTheAssociateHasNoLegVolumeRowsYet() {
+    void returnsEmptyListNotNullWhenTheAssociateHasNoLegVolumeRowsYet() {
         Associate associate = seedAssociate();
 
-        assertThat(legVolumeRepository.sumLeftLegVolumeByAssociateId(associate.getId())).isEqualByComparingTo("0");
-        assertThat(legVolumeRepository.sumRightLegVolumeByAssociateId(associate.getId())).isEqualByComparingTo("0");
+        List<LegVolume> rows = legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associate.getId());
+
+        assertThat(rows).isEmpty();
     }
 }
