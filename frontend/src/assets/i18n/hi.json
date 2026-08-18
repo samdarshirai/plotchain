@@ -14,6 +14,8 @@
     "cycleCloses": "साइकिल {{days}} दिनों में बंद होगी",
     "leftLeg": "बायाँ",
     "rightLeg": "दायाँ",
+    "leftLegAssociates": "बायें पैर के सहयोगी",
+    "rightLegAssociates": "दायें पैर के सहयोगी",
     "carriedForward": "कैरी फॉरवर्ड",
     "totalBusiness": "कुल व्यवसाय",
     "newBookedArea": "नया बुक्ड क्षेत्र",

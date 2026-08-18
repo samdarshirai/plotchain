@@ -19,7 +19,7 @@ describe('DashboardComponent', () => {
     wallet: { balance: 2500 },
     legVolume: { leftVolume: 3000, rightVolume: 2000, carriedForwardLeft: 0, carriedForwardRight: 1000, projectedMatchAmount: 140, totalLeftBusiness: 300000, totalRightBusiness: 200000, newBookedAreaSqft: 450 },
     rankProgress: { currentRank: 'Sales Associate', currentRankOrder: 1, nextRank: 'Sales Executive', progressPercent: 40, volumeToNextRank: 6000 },
-    teamSnapshot: { totalDownline: 12, activeToday: 3, newJoinsThisCycle: 2 },
+    teamSnapshot: { totalDownline: 12, activeToday: 3, newJoinsThisCycle: 2, leftAssociates: 7, rightAssociates: 5 },
     cycleCountdown: { cycleId: 'c1', daysRemaining: 10 },
     announcements: [{ id: 'a1', title: 'Green Valley launch', publishedAt: '2026-07-20T00:00:00Z' }]
   };

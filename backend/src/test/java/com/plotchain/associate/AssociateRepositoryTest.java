@@ -52,6 +52,35 @@ class AssociateRepositoryTest {
     }
 
     @Test
+    void countDownlineByPositionCountsOnlyTheGivenLegRegardlessOfDepth() {
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        entityManager.persist(rank);
+
+        Associate root = newAssociate(null, null, rank.getId());
+        Associate leftChild = newAssociate(root.getId(), "L", rank.getId());
+        Associate leftGrandchild = newAssociate(leftChild.getId(), "L", rank.getId());
+        Associate rightChild = newAssociate(root.getId(), "R", rank.getId());
+        associateRepository.saveAll(java.util.List.of(root, leftChild, leftGrandchild, rightChild));
+        entityManager.flush();
+
+        assertThat(associateRepository.countDownlineByPosition(root.getId(), "L")).isEqualTo(2);
+        assertThat(associateRepository.countDownlineByPosition(root.getId(), "R")).isEqualTo(1);
+    }
+
+    @Test
+    void countDownlineByPositionReturnsZeroWhenNoChildOccupiesThatPosition() {
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        entityManager.persist(rank);
+
+        Associate root = newAssociate(null, null, rank.getId());
+        Associate leftChild = newAssociate(root.getId(), "L", rank.getId());
+        associateRepository.saveAll(java.util.List.of(root, leftChild));
+        entityManager.flush();
+
+        assertThat(associateRepository.countDownlineByPosition(root.getId(), "R")).isEqualTo(0);
+    }
+
+    @Test
     void countJoinedBetweenIncludesAssociatesWhoJoinOnTheEndDate() {
         RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
         entityManager.persist(rank);

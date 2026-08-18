@@ -148,6 +148,8 @@ class DashboardServiceTest {
         when(rankTierRepository.findAllByOrderByRankOrder())
             .thenReturn(List.of(currentRank, nextRank));
         when(associateRepository.countDownline(associateId)).thenReturn(12L);
+        when(associateRepository.countDownlineByPosition(associateId, "L")).thenReturn(7L);
+        when(associateRepository.countDownlineByPosition(associateId, "R")).thenReturn(5L);
         when(associateRepository.countActiveToday(any(), any())).thenReturn(3L);
         when(associateRepository.countJoinedBetween(any(), any(), any())).thenReturn(2L);
         when(announcementRepository.findTop5ByOrderByPublishedAtDesc()).thenReturn(List.of());
@@ -193,6 +195,8 @@ class DashboardServiceTest {
         assertThat(response.teamSnapshot().totalDownline()).isEqualTo(12L);
         assertThat(response.teamSnapshot().activeToday()).isEqualTo(3L);
         assertThat(response.teamSnapshot().newJoinsThisCycle()).isEqualTo(2L);
+        assertThat(response.teamSnapshot().leftAssociates()).isEqualTo(7L);
+        assertThat(response.teamSnapshot().rightAssociates()).isEqualTo(5L);
         assertThat(response.cycleCountdown().cycleId()).isEqualTo(cycleId);
         assertThat(response.cycleCountdown().daysRemaining()).isEqualTo(10L);
         assertThat(response.announcements()).isEmpty();
@@ -239,6 +243,7 @@ class DashboardServiceTest {
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
         when(associateRepository.countDownline(any())).thenReturn(0L);
+        when(associateRepository.countDownlineByPosition(any(), any())).thenReturn(0L);
         when(associateRepository.countActiveToday(any(), any())).thenReturn(0L);
         when(associateRepository.countJoinedBetween(any(), any(), any())).thenReturn(0L);
         when(announcementRepository.findTop5ByOrderByPublishedAtDesc()).thenReturn(List.of());
@@ -314,6 +319,7 @@ class DashboardServiceTest {
         when(rankTierRepository.findAllByOrderByRankOrder())
             .thenReturn(List.of(currentRank));
         when(associateRepository.countDownline(associateId)).thenReturn(0L);
+        when(associateRepository.countDownlineByPosition(any(), any())).thenReturn(0L);
         when(associateRepository.countActiveToday(any(), any())).thenReturn(0L);
         when(associateRepository.countJoinedBetween(any(), any(), any())).thenReturn(0L);
         when(announcementRepository.findTop5ByOrderByPublishedAtDesc()).thenReturn(List.of());

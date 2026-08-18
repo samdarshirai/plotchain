@@ -24,6 +24,21 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         """, nativeQuery = true)
     long countDownline(@Param("associateId") UUID associateId);
 
+    // Team snapshot's per-leg associate counts (dashboard spec §3.1): identical shape to
+    // countDownline above, but the CTE's base case is seeded at the immediate LEFT or RIGHT
+    // child (position = :position) instead of every immediate child -- everything from there
+    // down is that child's own subtree, so this genuinely counts "how many associates are in my
+    // left leg" / "in my right leg", not a filtered slice of the combined downline.
+    @Query(value = """
+        WITH RECURSIVE downline(id) AS (
+            SELECT id FROM associate WHERE parent_id = :associateId AND position = :position
+            UNION ALL
+            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
+        )
+        SELECT count(*) FROM downline
+        """, nativeQuery = true)
+    long countDownlineByPosition(@Param("associateId") UUID associateId, @Param("position") String position);
+
     @Query(value = """
         WITH RECURSIVE downline(id) AS (
             SELECT id FROM associate WHERE parent_id = :associateId

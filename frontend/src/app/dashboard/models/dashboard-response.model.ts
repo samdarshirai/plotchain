@@ -45,6 +45,8 @@ export interface TeamSnapshot {
   totalDownline: number;
   activeToday: number;
   newJoinsThisCycle: number;
+  leftAssociates: number;
+  rightAssociates: number;
 }
 
 export interface CycleCountdown {
