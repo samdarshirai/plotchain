@@ -109,6 +109,7 @@ class DashboardControllerTest {
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
         when(associateRepository.countDownline(any())).thenReturn(12L);
+        when(associateRepository.countDownlineByPosition(any(), any())).thenReturn(0L);
         when(associateRepository.countActiveToday(any(), any())).thenReturn(3L);
         when(associateRepository.countJoinedBetween(any(), any(), any())).thenReturn(2L);
         when(announcementRepository.findTop5ByOrderByPublishedAtDesc()).thenReturn(List.of());
@@ -125,7 +126,9 @@ class DashboardControllerTest {
             .andExpect(jsonPath("$.cycleIncome.royaltyBonusPct").value(0))
             .andExpect(jsonPath("$.legVolume.totalLeftBusiness").value(0))
             .andExpect(jsonPath("$.legVolume.totalRightBusiness").value(0))
-            .andExpect(jsonPath("$.legVolume.newBookedAreaSqft").value(0));
+            .andExpect(jsonPath("$.legVolume.newBookedAreaSqft").value(0))
+            .andExpect(jsonPath("$.teamSnapshot.leftAssociates").value(0))
+            .andExpect(jsonPath("$.teamSnapshot.rightAssociates").value(0));
     }
 
     @Test

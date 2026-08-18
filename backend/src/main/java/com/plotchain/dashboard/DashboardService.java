@@ -179,6 +179,8 @@ public class DashboardService {
         // associates who joined on periodEnd itself (see AssociateRepository#countJoinedBetween).
         long newJoins = associateRepository.countJoinedBetween(
             associateId, cycle.getPeriodStart(), cycle.getPeriodEnd().plusDays(1));
+        long leftAssociates = associateRepository.countDownlineByPosition(associateId, "L");
+        long rightAssociates = associateRepository.countDownlineByPosition(associateId, "R");
 
         long daysRemaining = Math.max(0, ChronoUnit.DAYS.between(LocalDate.now(), cycle.getPeriodEnd()));
 
@@ -199,7 +201,7 @@ public class DashboardService {
                 currentRank.getName(), currentRank.getRankOrder(),
                 nextRank.map(RankTier::getName).orElse(null),
                 progressPercent, volumeToNextRank),
-            new DashboardResponse.TeamSnapshot(totalDownline, activeToday, newJoins),
+            new DashboardResponse.TeamSnapshot(totalDownline, activeToday, newJoins, leftAssociates, rightAssociates),
             new DashboardResponse.CycleCountdown(cycle.getId(), daysRemaining),
             announcements.stream()
                 .map(a -> new DashboardResponse.AnnouncementSummary(a.getId(), a.getTitle(), a.getPublishedAt()))
