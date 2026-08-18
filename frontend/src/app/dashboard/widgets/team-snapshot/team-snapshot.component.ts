@@ -12,8 +12,8 @@ import { TeamSnapshot } from '../../models/dashboard-response.model';
       <div class="total-downline">{{ data.totalDownline }}</div>
       <div class="active-today">{{ data.activeToday }}</div>
       <div class="new-joins">{{ data.newJoinsThisCycle }}</div>
-      <div class="left-associates">{{ 'dashboard.leftLeg' | translate }}: {{ data.leftAssociates }}</div>
-      <div class="right-associates">{{ 'dashboard.rightLeg' | translate }}: {{ data.rightAssociates }}</div>
+      <div class="left-associates">{{ 'dashboard.leftLegAssociates' | translate }}: {{ data.leftAssociates }}</div>
+      <div class="right-associates">{{ 'dashboard.rightLegAssociates' | translate }}: {{ data.rightAssociates }}</div>
     </div>
   `
 })
