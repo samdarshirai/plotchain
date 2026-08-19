@@ -1,0 +1,35 @@
+// Dashboard-scoped design language (docs/superpowers/specs/2026-08-17-associate-dashboard-parity-design.md
+// §2: "this spec's frontend work introduces one [design token set] scoped to dashboard/, reusing
+// shared/components/stat-tile where it already fits"). Not per-component styleUrls -- this app's
+// route-content convention is one global partial per route tree (see _admin.scss/_setup.scss/
+// _settings.scss), targeting the plain classes each widget's template already renders.
+
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+// Horizontal banners/strips span the full grid width; stat-card-shaped widgets (identity header
+// is itself banner-shaped, not tile-shaped, hence its inclusion here) auto-place into the grid's
+// columns below.
+.dashboard > app-associate-identity-header,
+.dashboard > app-kyc-banner,
+.dashboard > app-quick-actions,
+.dashboard > app-cycle-countdown,
+.dashboard > app-announcements-strip {
+  grid-column: 1 / -1;
+}
+
+.dashboard-error {
+  margin: 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--status-danger);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--status-danger) 10%, var(--surface-card));
+  color: var(--status-danger);
+  font-size: 0.875rem;
+}
