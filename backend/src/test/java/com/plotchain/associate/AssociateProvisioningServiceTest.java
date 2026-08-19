@@ -110,6 +110,17 @@ class AssociateProvisioningServiceTest {
     }
 
     @Test
+    void rejectsMissingPositionWhenAParentIsSpecified() {
+        UUID parentId = UUID.randomUUID();
+        when(associateRepository.existsByEmail("new@plotchain.test")).thenReturn(false);
+        when(associateRepository.findById(parentId)).thenReturn(Optional.of(new Associate()));
+
+        assertThatThrownBy(() -> service.create(
+            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, parentId, null)))
+            .isInstanceOf(PositionRequiredException.class);
+    }
+
+    @Test
     void failsClearlyWhenNoRankTiersAreConfigured() {
         when(associateRepository.existsByEmail("new@plotchain.test")).thenReturn(false);
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());

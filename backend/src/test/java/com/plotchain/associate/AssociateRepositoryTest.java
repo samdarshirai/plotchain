@@ -205,9 +205,11 @@ class AssociateRepositoryTest {
         Associate child = persistAssociate("VP00002", "Child", AssociateRole.ASSOCIATE, rank.getId(),
             KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
         child.setParentId(parent.getId());
+        child.setPosition("L");
         Associate grandchild = persistAssociate("VP00003", "Grandchild", AssociateRole.ASSOCIATE, rank.getId(),
             KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
         grandchild.setParentId(child.getId());
+        grandchild.setPosition("L");
         entityManager.flush();
 
         assertThat(associateRepository.countByParentId(parent.getId())).isEqualTo(1);
@@ -331,9 +333,11 @@ class AssociateRepositoryTest {
         Associate middle = persistAssociate("VP00002", "Middle", AssociateRole.ASSOCIATE, rank.getId(),
             KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
         middle.setParentId(root.getId());
+        middle.setPosition("L");
         Associate leaf = persistAssociate("VP00003", "Leaf", AssociateRole.ASSOCIATE, rank.getId(),
             KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
         leaf.setParentId(middle.getId());
+        leaf.setPosition("L");
         entityManager.flush();
 
         List<UUID> chain = associateRepository.findAncestorChain(leaf.getId());
@@ -349,15 +353,19 @@ class AssociateRepositoryTest {
         Associate caller = persistAssociate("VP00002", "Caller", AssociateRole.ASSOCIATE, rank.getId(),
             KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
         caller.setParentId(root.getId());
+        caller.setPosition("L");
         Associate sibling = persistAssociate("VP00003", "Sibling", AssociateRole.ASSOCIATE, rank.getId(),
             KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
         sibling.setParentId(root.getId());
+        sibling.setPosition("R");
         Associate child = persistAssociate("VP00004", "Child", AssociateRole.ASSOCIATE, rank.getId(),
             KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
         child.setParentId(caller.getId());
+        child.setPosition("L");
         Associate grandchild = persistAssociate("VP00005", "Grandchild", AssociateRole.ASSOCIATE, rank.getId(),
             KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
         grandchild.setParentId(child.getId());
+        grandchild.setPosition("L");
         Associate unrelated = persistAssociate("VP00006", "Unrelated", AssociateRole.ASSOCIATE, rank.getId(),
             KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
         entityManager.flush();

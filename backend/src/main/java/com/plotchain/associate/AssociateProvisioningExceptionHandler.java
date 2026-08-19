@@ -20,6 +20,11 @@ public class AssociateProvisioningExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(PositionRequiredException.class)
+    public ResponseEntity<Map<String, String>> handlePositionRequired(PositionRequiredException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(NoRankTiersConfiguredException.class)
     public ResponseEntity<Map<String, String>> handleNoRanks(NoRankTiersConfiguredException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
