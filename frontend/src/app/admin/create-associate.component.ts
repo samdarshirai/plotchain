@@ -217,7 +217,11 @@ export class CreateAssociateComponent implements OnInit {
   }
 
   get positionRequiredMessage(): string | undefined {
-    if (this.attemptedSubmit && this.form.hasError('positionRequired')) {
+    // Gated on parentId's own touched state (set by its existing (blur) handler), not just
+    // attemptedSubmit -- the submit button is [disabled]="form.invalid", so an admin who picks
+    // a parent and tabs away without ever reaching a clickable submit button would otherwise see
+    // this error message only via a path (onSubmit) the disabled button can never trigger.
+    if ((this.attemptedSubmit || this.form.get('parentId')?.touched) && this.form.hasError('positionRequired')) {
       return this.translate.instant('admin.validation.positionRequired');
     }
     return undefined;
