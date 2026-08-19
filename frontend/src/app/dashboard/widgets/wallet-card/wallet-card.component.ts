@@ -7,7 +7,7 @@ import { TranslateModule } from '@ngx-translate/core';
   standalone: true,
   imports: [CommonModule, TranslateModule],
   template: `
-    <div class="wallet-card">
+    <div class="wallet-card card">
       <span class="balance">{{ balance | currency:'INR' }}</span>
       <p class="withdraw-info">{{ 'dashboard.withdrawContactAdmin' | translate }}</p>
     </div>
