@@ -50,8 +50,13 @@ public class TreeExplorerService {
             .orElseThrow(() -> new AssociateNotFoundException(associateId));
         Map<UUID, RankTier> ranksById = rankTierRepository.findAllByOrderByRankOrder().stream()
             .collect(Collectors.toMap(RankTier::getId, r -> r));
-        Optional<Cycle> openCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN);
-        return buildNode(root, depth, ranksById, openCycle);
+        // leg_volume rows are written only at cycle CLOSE (CycleService#rollUpSubtree), keyed to
+        // the cycle being closed -- the currently OPEN cycle never has a row of its own, so this
+        // lookup was a structural no-op that always fell through to zero (same bug already fixed
+        // in DashboardService, see docs/superpowers/plans/2026-08-18-dashboard-leg-volume-fixes.md).
+        // Reading the last CLOSED cycle instead is "current standing as of the last close."
+        Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
+        return buildNode(root, depth, ranksById, latestClosedCycle);
     }
 
     public TreeSearchResponse search(String userId) {
@@ -70,12 +75,12 @@ public class TreeExplorerService {
     }
 
     private TreeNodeResponse buildNode(Associate a, int remainingDepth, Map<UUID, RankTier> ranksById,
-                                        Optional<Cycle> openCycle) {
-        BigDecimal[] legs = legVolumesFor(a.getId(), openCycle);
+                                        Optional<Cycle> latestClosedCycle) {
+        BigDecimal[] legs = legVolumesFor(a.getId(), latestClosedCycle);
         List<TreeNodeResponse> children = remainingDepth <= 0
             ? List.of()
             : associateRepository.findByParentId(a.getId()).stream()
-                .map(child -> buildNode(child, remainingDepth - 1, ranksById, openCycle))
+                .map(child -> buildNode(child, remainingDepth - 1, ranksById, latestClosedCycle))
                 .toList();
         // When remainingDepth > 0 the children were just fetched above via findByParentId, so
         // children.size() is already the direct-downline count -- no need to re-ask the
@@ -106,11 +111,11 @@ public class TreeExplorerService {
         return oldEnough && directDownlineCount == 0;
     }
 
-    private BigDecimal[] legVolumesFor(UUID associateId, Optional<Cycle> openCycle) {
-        if (openCycle.isEmpty()) {
+    private BigDecimal[] legVolumesFor(UUID associateId, Optional<Cycle> latestClosedCycle) {
+        if (latestClosedCycle.isEmpty()) {
             return new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO};
         }
-        return legVolumeRepository.findByAssociateIdAndCycleId(associateId, openCycle.get().getId())
+        return legVolumeRepository.findByAssociateIdAndCycleId(associateId, latestClosedCycle.get().getId())
             .map(lv -> new BigDecimal[]{lv.getLeftLegVolume(), lv.getRightLegVolume()})
             .orElse(new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
     }

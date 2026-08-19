@@ -68,7 +68,7 @@ class TreeExplorerControllerTest {
     void subtreeReturnsTheRootNodeForAnyAdminFamilyToken() throws Exception {
         when(associateRepository.findByIdAndRole(ROOT_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedRoot()));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(associateRepository.countByParentId(ROOT_ID)).thenReturn(0L);
 
         mockMvc.perform(get("/api/admin/tree/" + ROOT_ID)
@@ -103,7 +103,7 @@ class TreeExplorerControllerTest {
 
         when(associateRepository.findByIdAndRole(ROOT_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(root));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/admin/tree/" + ROOT_ID).param("depth", "999")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))

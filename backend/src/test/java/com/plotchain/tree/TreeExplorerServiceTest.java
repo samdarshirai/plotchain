@@ -74,7 +74,7 @@ class TreeExplorerServiceTest {
 
         when(associateRepository.findByIdAndRole(rootId, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(root));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(associateRepository.findByParentId(rootId)).thenReturn(List.of(child));
         // No findByParentId(childId) stub: depth 1 stops recursion at the child (remainingDepth
         // reaches 0 there), so buildNode never queries the child's own children.
@@ -101,7 +101,7 @@ class TreeExplorerServiceTest {
 
         when(associateRepository.findByIdAndRole(rootId, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(root));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(associateRepository.countByParentId(rootId)).thenReturn(0L);
 
         TreeNodeResponse response = service.subtree(rootId, 0);
@@ -122,7 +122,7 @@ class TreeExplorerServiceTest {
 
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(openCycle));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(openCycle));
         when(legVolumeRepository.findByAssociateIdAndCycleId(id, cycleId)).thenReturn(Optional.of(legVolume));
         when(associateRepository.countByParentId(id)).thenReturn(0L);
 
@@ -145,7 +145,7 @@ class TreeExplorerServiceTest {
 
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(openCycle));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(openCycle));
         when(legVolumeRepository.findByAssociateIdAndCycleId(id, cycleId)).thenReturn(Optional.of(skewed));
         when(associateRepository.countByParentId(id)).thenReturn(0L);
 
@@ -167,7 +167,7 @@ class TreeExplorerServiceTest {
 
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(openCycle));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(openCycle));
         when(legVolumeRepository.findByAssociateIdAndCycleId(id, cycleId)).thenReturn(Optional.of(balanced));
         when(associateRepository.countByParentId(id)).thenReturn(0L);
 
@@ -183,7 +183,7 @@ class TreeExplorerServiceTest {
 
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(associateRepository.countByParentId(id)).thenReturn(0L);
 
         TreeNodeResponse response = service.subtree(id, 0);

@@ -132,7 +132,7 @@ class AdminAssociateServiceTest {
         when(associateRepository.findById(sponsorId)).thenReturn(Optional.of(sponsor));
         when(associateRepository.findById(parentId)).thenReturn(Optional.of(parent));
         when(rankTierRepository.findById(rank.getId())).thenReturn(Optional.of(rank));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED))
             .thenReturn(Optional.of(openCycle));
         when(legVolumeRepository.findByAssociateIdAndCycleId(id, cycleId)).thenReturn(Optional.of(legVolume));
         when(associateRepository.countByParentId(id)).thenReturn(2L);
@@ -162,7 +162,7 @@ class AdminAssociateServiceTest {
         Associate associate = newAssociate(id, "VP00001");
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
         when(rankTierRepository.findById(rank.getId())).thenReturn(Optional.of(rank));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
         AdminAssociateDetailResponse response = service.suspend(id, ACTOR_ID);
 
@@ -182,7 +182,7 @@ class AdminAssociateServiceTest {
         Associate associate = newAssociate(id, "VP00001");
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
         when(rankTierRepository.findById(rank.getId())).thenReturn(Optional.of(rank));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
         service.suspend(id, ACTOR_ID);
 
@@ -196,7 +196,7 @@ class AdminAssociateServiceTest {
         associate.setStatus(AssociateStatus.SUSPENDED);
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
         when(rankTierRepository.findById(rank.getId())).thenReturn(Optional.of(rank));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
         AdminAssociateDetailResponse response = service.reactivate(id, ACTOR_ID);
 
@@ -211,7 +211,7 @@ class AdminAssociateServiceTest {
         associate.setStatus(AssociateStatus.SUSPENDED);
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
         when(rankTierRepository.findById(rank.getId())).thenReturn(Optional.of(rank));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
         service.reactivate(id, ACTOR_ID);
 

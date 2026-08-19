@@ -145,12 +145,15 @@ public class AdminAssociateService {
         Associate sponsor = a.getSponsorId() == null ? null : associateRepository.findById(a.getSponsorId()).orElse(null);
         Associate parent = a.getParentId() == null ? null : associateRepository.findById(a.getParentId()).orElse(null);
 
-        Optional<Cycle> openCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN);
+        // Same fix as DashboardService/TreeExplorerService: leg_volume rows are written only at
+        // cycle CLOSE, so reading the OPEN cycle here was a structural no-op that always fell
+        // through to zero. See docs/superpowers/plans/2026-08-18-dashboard-leg-volume-fixes.md.
+        Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
         BigDecimal leftLegVolume = BigDecimal.ZERO;
         BigDecimal rightLegVolume = BigDecimal.ZERO;
-        if (openCycle.isPresent()) {
+        if (latestClosedCycle.isPresent()) {
             Optional<LegVolume> legVolume =
-                legVolumeRepository.findByAssociateIdAndCycleId(a.getId(), openCycle.get().getId());
+                legVolumeRepository.findByAssociateIdAndCycleId(a.getId(), latestClosedCycle.get().getId());
             leftLegVolume = legVolume.map(LegVolume::getLeftLegVolume).orElse(BigDecimal.ZERO);
             rightLegVolume = legVolume.map(LegVolume::getRightLegVolume).orElse(BigDecimal.ZERO);
         }

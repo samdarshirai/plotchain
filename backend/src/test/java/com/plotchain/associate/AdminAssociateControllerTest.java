@@ -127,7 +127,7 @@ class AdminAssociateControllerTest {
         when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE))
             .thenReturn(Optional.of(seedAssociate()));
         when(rankTierRepository.findById(rank.getId())).thenReturn(Optional.of(rank));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/admin/associates/" + ASSOCIATE_ID + "/suspend")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
@@ -166,7 +166,7 @@ class AdminAssociateControllerTest {
         associate.setStatus(AssociateStatus.ACTIVE);
         when(associateRepository.findById(id)).thenReturn(Optional.of(associate));
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         String associateToken = jwtService.generateToken(associate);
 
         mockMvc.perform(post("/api/admin/associates/" + id + "/suspend")

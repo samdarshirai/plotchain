@@ -71,7 +71,7 @@ class AssociateTreeControllerTest {
         // stub in this test would satisfy it and the response would come back empty/error.
         when(associateRepository.findByIdAndRole(selfId, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(self));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(associateRepository.countByParentId(selfId)).thenReturn(0L);
 
         mockMvc.perform(get("/api/associates/me/tree")
@@ -108,7 +108,7 @@ class AssociateTreeControllerTest {
 
         when(associateRepository.findByIdAndRole(selfId, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(self));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/associates/me/tree").param("depth", "999")
                 .header("Authorization", "Bearer " + tokenForAssociate(self)))
