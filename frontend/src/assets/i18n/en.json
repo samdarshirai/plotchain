@@ -338,6 +338,7 @@
       "invalidEmail": "Enter a valid email address.",
       "emailTaken": "An associate with this email is already registered.",
       "placementUnavailable": "That placement is already occupied. Choose a different leg.",
+      "positionRequired": "Choose a left or right leg for the selected parent.",
       "noRankTiersConfigured": "No rank tiers are configured; an associate cannot be created without a rank.",
       "genericSaveError": "Could not create the associate. Check the details and try again."
     },

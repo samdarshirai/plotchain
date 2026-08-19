@@ -68,12 +68,32 @@ describe('CreateAssociateComponent', () => {
     fixture.componentInstance.form.patchValue({
       name: 'Jane Doe',
       email: 'jane@plotchain.test',
-      parentId: '22222222-2222-2222-2222-222222222222'
+      parentId: '22222222-2222-2222-2222-222222222222',
+      position: 'L'
     });
     fixture.componentInstance.onSubmit();
 
     const req = httpMock.expectOne('/api/associates');
     expect(req.request.body.parentId).toBe('22222222-2222-2222-2222-222222222222');
     req.flush({ associateId: 'assoc-1', userId: 'VP00002', temporaryPassword: 'Temp1234!' });
+  });
+
+  it('requires a placement position when a parent is selected, and blocks submit until one is chosen', () => {
+    fixture.componentInstance.associates = [{ id: '22222222-2222-2222-2222-222222222222', userId: 'VP00001', name: 'Root Left', role: 'ASSOCIATE' }];
+    fixture.componentInstance.form.patchValue({
+      name: 'Jane Doe',
+      email: 'jane@plotchain.test',
+      parentId: '22222222-2222-2222-2222-222222222222'
+    });
+
+    expect(fixture.componentInstance.form.invalid).toBe(true);
+    fixture.componentInstance.onSubmit();
+    httpMock.expectNone('/api/associates');
+
+    fixture.componentInstance.onPlacementSelect('L');
+
+    expect(fixture.componentInstance.form.invalid).toBe(false);
+    fixture.componentInstance.onSubmit();
+    httpMock.expectOne('/api/associates').flush({ associateId: 'assoc-1', userId: 'VP00002', temporaryPassword: 'Temp1234!' });
   });
 });

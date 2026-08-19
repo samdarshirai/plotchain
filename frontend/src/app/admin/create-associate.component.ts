@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { AbstractControl, ReactiveFormsModule, FormBuilder, ValidationErrors, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AdminService } from './admin.service';
@@ -11,6 +11,15 @@ import { FieldErrorComponent } from '../shared/components/field-error/field-erro
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { BrandButtonComponent } from '../shared/components/brand-button/brand-button.component';
 import { ToggleGroupComponent, ToggleOption } from '../shared/components/toggle-group/toggle-group.component';
+
+// A parent with no position is invisible to the per-leg associate counts the dashboard shows
+// (AssociateRepository.countDownlineByPosition filters on position = 'L'/'R') while still being
+// counted in totalDownline -- see AssociateProvisioningService's matching server-side guard.
+function positionRequiredWhenParentSelectedValidator(group: AbstractControl): ValidationErrors | null {
+  const parentId = group.get('parentId')?.value;
+  const position = group.get('position')?.value;
+  return parentId && !position ? { positionRequired: true } : null;
+}
 
 @Component({
   selector: 'app-create-associate',
@@ -104,6 +113,7 @@ import { ToggleGroupComponent, ToggleOption } from '../shared/components/toggle-
               (valueChange)="onPlacementSelect($event)"
             ></app-toggle-group>
           </div>
+          <app-field-error [message]="positionRequiredMessage"></app-field-error>
         </div>
 
         <div class="create-associate__actions">
@@ -162,11 +172,12 @@ export class CreateAssociateComponent implements OnInit {
     sponsorId: [''],
     parentId: [''],
     position: ['']
-  });
+  }, { validators: positionRequiredWhenParentSelectedValidator });
 
   created: CreateAssociateResponse | null = null;
   submitError: string | null = null;
   associates: AssociateSummary[] = [];
+  attemptedSubmit = false;
   private serverFieldErrors: Record<string, string> = {};
 
   ngOnInit(): void {
@@ -205,9 +216,17 @@ export class CreateAssociateComponent implements OnInit {
     return undefined;
   }
 
+  get positionRequiredMessage(): string | undefined {
+    if (this.attemptedSubmit && this.form.hasError('positionRequired')) {
+      return this.translate.instant('admin.validation.positionRequired');
+    }
+    return undefined;
+  }
+
   onSubmit(): void {
     this.serverFieldErrors = {};
     this.submitError = null;
+    this.attemptedSubmit = true;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -226,6 +245,7 @@ export class CreateAssociateComponent implements OnInit {
           this.created = response;
           this.serverFieldErrors = {};
           this.submitError = null;
+          this.attemptedSubmit = false;
           this.form.reset();
         },
         error: (err: HttpErrorResponse) => {
@@ -254,6 +274,9 @@ export class CreateAssociateComponent implements OnInit {
     }
     if (backendMessage?.startsWith('Placement already occupied')) {
       return this.translate.instant('admin.validation.placementUnavailable');
+    }
+    if (backendMessage?.startsWith('Position is required')) {
+      return this.translate.instant('admin.validation.positionRequired');
     }
     if (backendMessage === 'No rank tiers are configured; an associate cannot be created without a rank') {
       return this.translate.instant('admin.validation.noRankTiersConfigured');
