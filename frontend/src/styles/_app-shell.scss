@@ -306,20 +306,18 @@
 }
 
 .dashboard .team-snapshot {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  // team-snapshot grew from 3 fields to 5 (dashboard-parity spec units 7/8) after this rule's
+  // original flex/space-between layout was written -- a non-wrapping flex row squeezes 5 tiles
+  // below their label's content width no matter what min-width does. Grid lets each tile wrap
+  // onto its own line instead of truncating mid-word.
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 1rem;
   padding: 1.5rem;
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   text-align: center;
-}
-
-.dashboard .team-snapshot > div,
-.dashboard .team-snapshot > app-stat-tile {
-  flex: 1;
-  min-width: 0;
 }
 
 .dashboard .quick-actions {
