@@ -7,7 +7,7 @@ import { CycleCountdown } from '../../models/dashboard-response.model';
   selector: 'app-cycle-countdown',
   standalone: true,
   imports: [CommonModule, TranslateModule],
-  template: `<div class="cycle-countdown card">{{ 'dashboard.cycleCloses' | translate: { days: data.daysRemaining } }}</div>`
+  template: `<div class="cycle-countdown">{{ 'dashboard.cycleCloses' | translate: { days: data.daysRemaining } }}</div>`
 })
 export class CycleCountdownComponent {
   @Input({ required: true }) data!: CycleCountdown;

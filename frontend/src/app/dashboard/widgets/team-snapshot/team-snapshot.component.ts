@@ -9,7 +9,7 @@ import { TeamSnapshot } from '../../models/dashboard-response.model';
   standalone: true,
   imports: [CommonModule, TranslateModule, StatTileComponent],
   template: `
-    <div class="team-snapshot card">
+    <div class="team-snapshot">
       <app-stat-tile class="total-downline" [label]="'dashboard.totalDownlineLabel' | translate" [value]="data.totalDownline.toString()"></app-stat-tile>
       <app-stat-tile class="active-today" [label]="'dashboard.activeTodayLabel' | translate" [value]="data.activeToday.toString()"></app-stat-tile>
       <app-stat-tile class="new-joins" [label]="'dashboard.newJoinsLabel' | translate" [value]="data.newJoinsThisCycle.toString()"></app-stat-tile>

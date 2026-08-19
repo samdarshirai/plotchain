@@ -8,7 +8,7 @@ import { RankProgress } from '../../models/dashboard-response.model';
   standalone: true,
   imports: [CommonModule, TranslateModule],
   template: `
-    <div class="rank-progress card">
+    <div class="rank-progress">
       <div class="current-rank">{{ data.currentRank }}</div>
       <div class="progress-bar"><div class="progress-fill" [style.width.%]="data.progressPercent"></div></div>
       <div class="next-rank" *ngIf="data.nextRank">

@@ -6,7 +6,7 @@ import { TranslateModule } from '@ngx-translate/core';
   selector: 'app-kyc-banner',
   standalone: true,
   imports: [CommonModule, TranslateModule],
-  template: `<div class="kyc-banner inline-banner inline-banner--warning" *ngIf="visible">{{ 'dashboard.kycBanner' | translate }}</div>`
+  template: `<div class="kyc-banner" *ngIf="visible">{{ 'dashboard.kycBanner' | translate }}</div>`
 })
 export class KycBannerComponent {
   @Input() visible = false;

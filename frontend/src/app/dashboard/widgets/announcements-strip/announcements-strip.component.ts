@@ -7,7 +7,7 @@ import { AnnouncementSummary } from '../../models/dashboard-response.model';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="announcements-strip card" *ngIf="announcements.length">
+    <div class="announcements-strip" *ngIf="announcements.length">
       <div class="announcement" *ngFor="let a of announcements">{{ a.title }}</div>
     </div>
   `
