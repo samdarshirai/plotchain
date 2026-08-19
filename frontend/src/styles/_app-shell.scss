@@ -376,6 +376,15 @@
   grid-column: 1 / -1;
 }
 
+// leg-volume-gauge and team-snapshot each grew a second tile row (units 5-8, postdating the
+// original single-row layouts above) and now run 400-650px tall in a 280px grid column --
+// full-width collapses them to a single short row instead of leaving 1000+px of empty grid
+// cells beside their much shorter siblings (cycle-income-card, wallet-card, rank-progress).
+.dashboard > app-leg-volume-gauge,
+.dashboard > app-team-snapshot {
+  grid-column: 1 / -1;
+}
+
 .associate-identity-header {
   display: flex;
   align-items: center;
