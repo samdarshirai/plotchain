@@ -170,3 +170,38 @@
   font-size: 0.8125rem;
   color: var(--text-muted);
 }
+
+.leg-volume-gauge__bar {
+  display: flex;
+  gap: 2px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.leg {
+  padding: 0.75rem 1rem;
+  color: var(--brand-primary-contrast);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.leg.left {
+  background: var(--brand-primary);
+}
+
+.leg.right {
+  background: var(--brand-primary-hover);
+}
+
+.leg-volume-gauge__tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.team-snapshot {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+}

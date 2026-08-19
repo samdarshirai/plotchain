@@ -1,22 +1,27 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
+import { StatTileComponent } from '../../../shared/components/stat-tile/stat-tile.component';
 import { LegVolumeSummary } from '../../models/dashboard-response.model';
 
 @Component({
   selector: 'app-leg-volume-gauge',
   standalone: true,
-  imports: [CommonModule, TranslateModule],
+  imports: [CommonModule, TranslateModule, StatTileComponent],
   template: `
-    <div class="leg-volume-gauge">
-      <div class="leg left" [style.flex]="data.leftVolume || 1">{{ 'dashboard.leftLeg' | translate }}: {{ data.leftVolume | currency:'INR' }}</div>
-      <div class="leg right" [style.flex]="data.rightVolume || 1">{{ 'dashboard.rightLeg' | translate }}: {{ data.rightVolume | currency:'INR' }}</div>
-      <div class="leg-carried-forward left">{{ 'dashboard.carriedForward' | translate }} ({{ 'dashboard.leftLeg' | translate }}): {{ data.carriedForwardLeft | currency:'INR' }}</div>
-      <div class="leg-carried-forward right">{{ 'dashboard.carriedForward' | translate }} ({{ 'dashboard.rightLeg' | translate }}): {{ data.carriedForwardRight | currency:'INR' }}</div>
-      <div class="leg-total-business left">{{ 'dashboard.totalBusiness' | translate }} ({{ 'dashboard.leftLeg' | translate }}): {{ data.totalLeftBusiness | currency:'INR' }}</div>
-      <div class="leg-total-business right">{{ 'dashboard.totalBusiness' | translate }} ({{ 'dashboard.rightLeg' | translate }}): {{ data.totalRightBusiness | currency:'INR' }}</div>
-      <div class="new-booked-area">{{ 'dashboard.newBookedArea' | translate }}: {{ data.newBookedAreaSqft | number }} sqft</div>
-      <div class="projected-match">{{ 'dashboard.projectedMatch' | translate }}: {{ data.projectedMatchAmount | currency:'INR' }}</div>
+    <div class="leg-volume-gauge card">
+      <div class="leg-volume-gauge__bar">
+        <div class="leg left" [style.flex]="data.leftVolume || 1">{{ 'dashboard.leftLeg' | translate }}: {{ data.leftVolume | currency:'INR' }}</div>
+        <div class="leg right" [style.flex]="data.rightVolume || 1">{{ 'dashboard.rightLeg' | translate }}: {{ data.rightVolume | currency:'INR' }}</div>
+      </div>
+      <div class="leg-volume-gauge__tiles">
+        <app-stat-tile class="leg-carried-forward left" [label]="('dashboard.carriedForward' | translate) + ' (' + ('dashboard.leftLeg' | translate) + ')'" [value]="data.carriedForwardLeft | currency:'INR'"></app-stat-tile>
+        <app-stat-tile class="leg-carried-forward right" [label]="('dashboard.carriedForward' | translate) + ' (' + ('dashboard.rightLeg' | translate) + ')'" [value]="data.carriedForwardRight | currency:'INR'"></app-stat-tile>
+        <app-stat-tile class="leg-total-business left" [label]="('dashboard.totalBusiness' | translate) + ' (' + ('dashboard.leftLeg' | translate) + ')'" [value]="data.totalLeftBusiness | currency:'INR'"></app-stat-tile>
+        <app-stat-tile class="leg-total-business right" [label]="('dashboard.totalBusiness' | translate) + ' (' + ('dashboard.rightLeg' | translate) + ')'" [value]="data.totalRightBusiness | currency:'INR'"></app-stat-tile>
+        <app-stat-tile class="new-booked-area" [label]="'dashboard.newBookedArea' | translate" [value]="(data.newBookedAreaSqft | number) + ' sqft'"></app-stat-tile>
+        <app-stat-tile class="projected-match" [label]="'dashboard.projectedMatch' | translate" [value]="data.projectedMatchAmount | currency:'INR'"></app-stat-tile>
+      </div>
     </div>
   `
 })
