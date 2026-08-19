@@ -414,6 +414,7 @@ app-setup-progress-rail {
 // Card Preview uses it today.
 .seal-card {
   position: relative;
+  display: block;
   background: var(--ink);
   border-radius: 4px;
 }

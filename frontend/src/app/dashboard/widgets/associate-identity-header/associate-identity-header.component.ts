@@ -8,7 +8,7 @@ import { AssociateSummary } from '../../models/dashboard-response.model';
   standalone: true,
   imports: [CommonModule, TranslateModule],
   template: `
-    <div class="associate-identity-header card">
+    <div class="associate-identity-header">
       <span class="associate-identity-header__avatar">{{ initials }}</span>
       <div class="associate-identity-header__details">
         <div class="associate-identity-header__id">{{ 'dashboard.associateIdLabel' | translate }}: {{ data.associateId }}</div>

@@ -319,6 +319,7 @@
 .dashboard .team-snapshot > div,
 .dashboard .team-snapshot > app-stat-tile {
   flex: 1;
+  min-width: 0;
 }
 
 .dashboard .quick-actions {
@@ -444,8 +445,14 @@
 
 .leg-volume-gauge__tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 0.75rem;
+}
+
+// Lifetime totals here run to 6+ figures (e.g. ₹300,000.00) -- .stat-tile__value's global
+// 1.5rem is sized for admin-dashboard's shorter figures and clips in this narrower grid.
+.leg-volume-gauge__tiles .stat-tile__value {
+  font-size: 1.125rem;
 }
 
 // /login carries the Viraj Acres "Legacy Living" split-screen identity (see repo-root
