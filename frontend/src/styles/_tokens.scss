@@ -29,6 +29,14 @@
   --status-warning: #B4790E;
   --status-danger: #B23B32;
 
+  // Global-header chrome that sits on the Ink surface (see _app-shell.scss). These are custom
+  // properties rather than literals in that file so a tenant can adjust the nav's active-pill fill
+  // and muted label shades the same way ThemeService.apply() adjusts --brand-primary/--brand-secondary
+  // -- the Parchment-tuned --text-muted/--border-subtle would under-contrast against black here.
+  --nav-active-fill: #241c16;
+  --nav-inactive-muted: #a89878;
+  --nav-tagline-muted: #8a7a56;
+
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-display: 'Fraunces', Georgia, serif;
   --font-mono: 'IBM Plex Mono', 'Courier New', monospace;

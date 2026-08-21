@@ -164,12 +164,22 @@ describe('AppComponent', () => {
   it('renders the VS fallback brand mark when no square logo has been uploaded', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const authService = TestBed.inject(AuthService);
+    const translateService = TestBed.inject(TranslateService);
     spyOn(authService, 'isAuthenticated').and.returnValue(true);
+    spyOn(translateService, 'get').and.callFake((key: string) => {
+      const translations: { [key: string]: string } = {
+        'brand.fallbackMark': 'VS',
+        'brand.wordmark': 'VIRAJ ACRES',
+        'brand.caption': 'LEGACY LIVING'
+      };
+      return of(translations[key] || key);
+    });
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.app-header__logo')).toBeFalsy();
     expect(compiled.querySelector('.app-header__logo-fallback')?.textContent?.trim()).toBe('VS');
+    expect(compiled.querySelector('.app-header__wordmark-name')?.textContent?.trim()).toBe('VIRAJ ACRES');
     expect(compiled.querySelector('.app-header__wordmark-tagline')?.textContent?.trim()).toBe('LEGACY LIVING');
   });
 

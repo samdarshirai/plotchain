@@ -1,10 +1,12 @@
 // The global header carries the same Ink "Legacy Living" chrome as the /login brand aside
 // (DESIGN.md §4: "Ink sidebar/header ... gold VS mark, small, top-left ... nav items, Inter,
 // gold on hover"), on every authenticated, non-chromeless route. Every value below is transcribed
-// from docs/design/viraj_acres_settings_mockup/Viraj_Acres_Settings.dc.html. The one-off shades
-// (#8a7a56, #241c16, #a89878, #4a4038, #e8e0d0) aren't in _tokens.scss because they only ever apply
-// to text/borders/fills sitting on the Ink surface -- the token set's --text-muted/--border-subtle
-// are tuned for Parchment content instead, so reusing them here would under-contrast against black.
+// from docs/design/viraj_acres_settings_mockup/Viraj_Acres_Settings.dc.html. The nav's own shades
+// are --nav-active-fill/--nav-inactive-muted/--nav-tagline-muted in _tokens.scss, so a tenant can
+// retheme them alongside --brand-primary/--brand-secondary; they're separate tokens rather than
+// --text-muted/--border-subtle because those are tuned for Parchment content and would
+// under-contrast against black. The Log Out button's #4a4038/#e8e0d0 stay literal here: they're
+// this one control's border/label, not a shade any other rule reads.
 //
 // For admin-family roles the nav is just two items, Dashboard and Settings; the settings screens
 // themselves are listed in the Settings sidebar (see .settings-shell__sidebar in _settings.scss),
@@ -76,7 +78,7 @@
 .app-header__wordmark-tagline {
   font-size: 8px;
   letter-spacing: 0.2em;
-  color: #8a7a56;
+  color: var(--nav-tagline-muted);
 }
 
 .app-header .logout {
@@ -108,7 +110,7 @@
   border-radius: 4px;
   font-size: 14px;
   font-weight: 600;
-  color: #a89878;
+  color: var(--nav-inactive-muted);
   text-decoration: none;
   white-space: nowrap;
   transition: background 0.15s ease, color 0.15s ease;
@@ -120,7 +122,7 @@
 }
 
 .app-nav__link--active {
-  background: #241c16;
+  background: var(--nav-active-fill);
   color: var(--brand-primary-bright);
 }
 

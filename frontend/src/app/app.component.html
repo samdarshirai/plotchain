@@ -3,11 +3,13 @@
     <div class="app-header__brand">
       <img *ngIf="showSquareLogo; else brandFallbackMark" class="app-header__logo" src="/api/company/branding/logo/square" alt="" />
       <ng-template #brandFallbackMark>
-        <span class="app-header__logo-fallback" aria-hidden="true">VS</span>
+        <span class="app-header__logo-fallback" aria-hidden="true">{{ 'brand.fallbackMark' | translate }}</span>
       </ng-template>
+      <!-- Fixed brand caption, not the per-tenant BrandingPublic.tagline: the login brand aside
+           renders both side by side (see login.component.ts), so they are separate strings. -->
       <span class="app-header__wordmark">
-        <span class="app-header__wordmark-name">VIRAJ ACRES</span>
-        <span class="app-header__wordmark-tagline">LEGACY LIVING</span>
+        <span class="app-header__wordmark-name">{{ 'brand.wordmark' | translate }}</span>
+        <span class="app-header__wordmark-tagline">{{ 'brand.caption' | translate }}</span>
       </span>
     </div>
     <nav class="app-nav">

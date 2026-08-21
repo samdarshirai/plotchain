@@ -255,6 +255,11 @@
     "nextPageAction": "Next",
     "pageIndicator": "Page {{page}} of {{totalPages}}"
   },
+  "brand": {
+    "fallbackMark": "VS",
+    "wordmark": "VIRAJ ACRES",
+    "caption": "LEGACY LIVING"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "myTree": "My Tree",
