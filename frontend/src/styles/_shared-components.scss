@@ -172,8 +172,7 @@
 }
 
 // Oxblood/Bright-Gold, not Gold -- matches the mockup's selected-pill color everywhere it appears
-// (Approval Mode, Account Type, KYC Strictness), same as .app-nav-items__link--active and every
-// primary button.
+// (Approval Mode, Account Type, KYC Strictness), same as every primary button.
 .toggle-group__option--active {
   background: var(--brand-secondary);
   color: var(--brand-primary-bright);

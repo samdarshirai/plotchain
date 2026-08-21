@@ -7,11 +7,21 @@ import { of } from 'rxjs';
 import { AppComponent } from './app.component';
 import { AuthService } from './auth/auth.service';
 import { ADMIN_FAMILY_ROLES } from './admin/admin.guard';
+import { BrandingBootstrapService } from './core/theme/branding-bootstrap.service';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()],
+      imports: [
+        AppComponent,
+        HttpClientTestingModule,
+        // Stub targets for the two header nav items, so routerLinkActive can be exercised.
+        RouterTestingModule.withRoutes([
+          { path: 'admin/dashboard', children: [] },
+          { path: 'settings/branding', children: [] }
+        ]),
+        TranslateModule.forRoot()
+      ],
     }).compileComponents();
   });
 
@@ -99,7 +109,6 @@ describe('AppComponent', () => {
         'nav.digitalIdCard': 'Digital ID Card',
         'nav.incomeStatement': 'Income Statement',
         'nav.payoutHistory': 'Payout History',
-        'nav.provisionAssociate': 'Provision Associate',
         'nav.settings': 'Settings',
         'auth.logout': 'Log Out'
       };
@@ -114,7 +123,7 @@ describe('AppComponent', () => {
     ]);
   });
 
-  it('shows Dashboard plus the Setup/Network/Finance & Cycles/System category pills for an admin-family role', () => {
+  it('shows exactly two top-level nav items, Dashboard and Settings, for an admin-family role', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const authService = TestBed.inject(AuthService);
     const translateService = TestBed.inject(TranslateService);
@@ -123,10 +132,7 @@ describe('AppComponent', () => {
     spyOn(translateService, 'get').and.callFake((key: string) => {
       const translations: { [key: string]: string } = {
         'nav.dashboard': 'Dashboard',
-        'nav.categories.setup': 'Setup',
-        'nav.categories.network': 'Network',
-        'nav.categories.finance': 'Finance & Cycles',
-        'nav.categories.system': 'System',
+        'nav.settings': 'Settings',
         'auth.logout': 'Log Out'
       };
       return of(translations[key] || key);
@@ -134,53 +140,57 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const dashboardLink = compiled.querySelector('.app-nav__link')?.textContent?.trim();
-    const categoryLabels = Array.from(compiled.querySelectorAll('.app-nav__link-label')).map(el => el.textContent?.trim());
-    expect(dashboardLink).toBe('Dashboard');
-    expect(categoryLabels).toEqual(['Setup', 'Network', 'Finance & Cycles', 'System']);
+    const links = Array.from(compiled.querySelectorAll('.app-nav__link'));
+    expect(links.map(el => el.textContent?.trim())).toEqual(['Dashboard', 'Settings']);
+    expect(links.map(el => el.getAttribute('href'))).toEqual(['/admin/dashboard', '/settings']);
   });
 
-  it('shows the active category\'s items as a second pill row once its route is active', () => {
+  it('keeps the Settings nav item active while a settings screen is open', async () => {
     const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
+    const router = TestBed.inject(Router);
     const authService = TestBed.inject(AuthService);
-    const translateService = TestBed.inject(TranslateService);
     spyOn(authService, 'isAuthenticated').and.returnValue(true);
     spyOn(authService, 'getRole').and.returnValue('ADMIN');
-    spyOn(translateService, 'get').and.callFake((key: string) => {
-      const translations: { [key: string]: string } = {
-        'settings.sections.companyProfile': 'Company Profile',
-        'settings.sections.branding': 'Branding',
-        'settings.sections.compensation': 'Compensation Plan',
-        'settings.sections.projects': 'Projects & Plots',
-        'settings.sections.paymentsKyc': 'Payments & KYC',
-        'nav.provisionAssociate': 'Provision Associate',
-        'auth.logout': 'Log Out'
-      };
-      return of(translations[key] || key);
+    fixture.detectChanges();
+
+    await router.navigateByUrl('/settings/branding');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const settingsLink = compiled.querySelector('a[href="/settings"]');
+    expect(settingsLink?.classList).toContain('app-nav__link--active');
+  });
+
+  it('renders the VS fallback brand mark when no square logo has been uploaded', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const authService = TestBed.inject(AuthService);
+    spyOn(authService, 'isAuthenticated').and.returnValue(true);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.app-header__logo')).toBeFalsy();
+    expect(compiled.querySelector('.app-header__logo-fallback')?.textContent?.trim()).toBe('VS');
+    expect(compiled.querySelector('.app-header__wordmark-tagline')?.textContent?.trim()).toBe('LEGACY LIVING');
+  });
+
+  it('renders the uploaded square logo instead of the fallback mark when one exists', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const authService = TestBed.inject(AuthService);
+    const branding = TestBed.inject(BrandingBootstrapService);
+    spyOn(authService, 'isAuthenticated').and.returnValue(true);
+    spyOn(branding, 'getLast').and.returnValue({
+      displayName: 'Viraj Acres',
+      tagline: 'Legacy Living',
+      primaryColor: '#C6A227',
+      secondaryColor: '#5C1A2A',
+      hasSquareLogo: true,
+      hasWideLogo: false
     });
     fixture.detectChanges();
 
-    (app as unknown as { updateSetupRouteState(url: string): void }).updateSetupRouteState('/settings/branding');
-    app.activeNavCategory = app.navCategories.find(c => c.key === 'setup');
-    fixture.detectChanges();
-
     const compiled = fixture.nativeElement as HTMLElement;
-    const links = Array.from(compiled.querySelectorAll('.app-nav-items__link')).map(el => el.textContent?.trim());
-    expect(links).toEqual([
-      'Company Profile', 'Branding', 'Compensation Plan', 'Projects & Plots', 'Payments & KYC', 'Provision Associate'
-    ]);
-  });
-
-  it('hides the second pill row when no category is active (e.g. on the admin dashboard)', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const authService = TestBed.inject(AuthService);
-    spyOn(authService, 'isAuthenticated').and.returnValue(true);
-    spyOn(authService, 'getRole').and.returnValue('ADMIN');
-    fixture.detectChanges();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.app-nav-items')).toBeFalsy();
+    expect(compiled.querySelector('.app-header__logo')).toBeTruthy();
+    expect(compiled.querySelector('.app-header__logo-fallback')).toBeFalsy();
   });
 
   it('hides the Dashboard nav link for every admin-family role', () => {

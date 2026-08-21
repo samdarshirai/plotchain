@@ -1,30 +1,60 @@
-// Settings area content layout. Section navigation lives in the global header's category/item
-// pill rows now (see _app-shell.scss's .app-nav-items), not a sidebar here -- this is just the
-// reading column.
-.settings-shell__content {
-  min-width: 0;
-  padding: 2rem;
-  max-width: 960px;
-  margin: 0 auto;
+// Settings area layout: a flat 230px rail beside the content column, per
+// docs/design/viraj_acres_settings_mockup/Viraj_Acres_Settings.dc.html. The rail replaces the
+// category-pill + item-tab header rows the app used to carry, and renders only here, so the
+// Dashboard keeps the full viewport width. 68px is the global header's height (_app-shell.scss),
+// so the rail runs from under it to the bottom of the viewport.
+.settings-shell {
+  display: flex;
+  align-items: stretch;
+  min-height: calc(100vh - 68px);
 }
 
-// Full-bleed variant for screens (e.g. Tree Explorer) that need the entire content
-// column's width/height rather than the default centered 960px reading column. Padding
-// dropped to 0 (card supplies its own inner spacing) so the card sits flush against the
-// viewport edges instead of floating with a gap around it.
+.settings-shell__sidebar {
+  flex-shrink: 0;
+  width: 230px;
+  padding: 22px 0;
+  background: var(--surface-page);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.settings-shell__nav-link {
+  display: block;
+  padding: 11px 24px;
+  margin: 0 10px 2px;
+  border-radius: 4px;
+  font-size: 14.5px;
+  font-weight: 400;
+  color: #4a3f33;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.settings-shell__nav-link:hover {
+  background: color-mix(in srgb, var(--brand-secondary) 5%, transparent);
+}
+
+.settings-shell__nav-link--active {
+  background: color-mix(in srgb, var(--brand-secondary) 8%, transparent);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.settings-shell__content {
+  flex: 1;
+  min-width: 0;
+  padding: 40px 44px 80px;
+  max-width: 1240px;
+}
+
+// Full-bleed variant for screens (e.g. Tree Explorer) that need the entire content column's
+// width rather than the default 1240px reading column. Padding dropped to 0 (card supplies its
+// own inner spacing) so the card sits flush against the column's edges instead of floating with a
+// gap around it; the flex column lets that card stretch to the shell's full height.
 .settings-shell__content--full {
   max-width: none;
   padding: 0;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-}
-
-// Payments & KYC's 2fr/1fr card grid needs more than the 960px reading column (mockup uses
-// max-width:1200px for this exact screen) -- unlike --full, this keeps the standard page padding,
-// it just widens the column.
-.settings-shell__content--wide {
-  max-width: 1280px;
 }
 
 // --- Settings overview ---

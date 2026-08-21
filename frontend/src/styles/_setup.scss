@@ -1297,8 +1297,8 @@ app-setup-progress-rail {
 }
 
 // Settings mode has no side inspector aside eating into the width (unlike the setup wizard, which
-// keeps 900px so the Money Flow Engine diagram column still fits) -- matches the
-// .settings-shell__content--wide column this renders inside.
+// keeps 900px so the Money Flow Engine diagram column still fits) -- it can use the full
+// .settings-shell__content column it renders inside.
 .payments-kyc-step--wide {
   max-width: 1200px;
 }

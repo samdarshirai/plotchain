@@ -1,55 +1,93 @@
-// The global header/nav carries the same Ink "Legacy Living" chrome as the /login brand aside
+// The global header carries the same Ink "Legacy Living" chrome as the /login brand aside
 // (DESIGN.md §4: "Ink sidebar/header ... gold VS mark, small, top-left ... nav items, Inter,
-// gold on hover"), on every authenticated, non-chromeless route. The muted/border shades below
-// (#9A907B, #3A342B, #C7BEAA) aren't in _tokens.scss because they only ever apply to text/borders
-// sitting on the Ink surface -- the token set's --text-muted/--border-subtle are tuned for
-// Parchment content instead, so reusing them here would under-contrast against black.
+// gold on hover"), on every authenticated, non-chromeless route. Every value below is transcribed
+// from docs/design/viraj_acres_settings_mockup/Viraj_Acres_Settings.dc.html. The one-off shades
+// (#8a7a56, #241c16, #a89878, #4a4038, #e8e0d0) aren't in _tokens.scss because they only ever apply
+// to text/borders/fills sitting on the Ink surface -- the token set's --text-muted/--border-subtle
+// are tuned for Parchment content instead, so reusing them here would under-contrast against black.
+//
+// For admin-family roles the nav is just two items, Dashboard and Settings; the settings screens
+// themselves are listed in the Settings sidebar (see .settings-shell__sidebar in _settings.scss),
+// replacing the category-pill + item-tab rows this header used to carry.
 .app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: 0 1.5rem;
-  height: 64px;
+  padding: 0 28px;
+  height: 68px;
   background: var(--ink);
 }
 
 .app-header__left {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 36px;
   min-width: 0;
 }
 
 .app-header__brand {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 12px;
   flex-shrink: 0;
+}
+
+.app-header__logo,
+.app-header__logo-fallback {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 4px;
 }
 
 .app-header__logo {
   display: block;
-  width: 26px;
-  height: 26px;
   object-fit: contain;
-  border-radius: 2px;
+}
+
+// Shown whenever the tenant hasn't uploaded a square logo, so the brand corner is never empty.
+.app-header__logo-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--brand-secondary), var(--ink));
+  border: 1px solid var(--brand-primary);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--brand-primary-bright);
 }
 
 .app-header__wordmark {
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  color: var(--brand-primary-bright);
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
   white-space: nowrap;
+}
+
+.app-header__wordmark-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--brand-primary-bright);
+}
+
+.app-header__wordmark-tagline {
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  color: #8a7a56;
 }
 
 .app-header .logout {
   flex-shrink: 0;
+  padding: 9px 18px;
+  border-radius: 3px;
   background: transparent;
-  color: #C7BEAA;
-  border: 1px solid #3A342B;
+  color: #e8e0d0;
+  border: 1px solid #4a4038;
+  font-size: 13px;
+  font-weight: 600;
   transition: color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -61,16 +99,16 @@
 .app-nav {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 6px;
   overflow-x: auto;
 }
 
 .app-nav__link {
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: #9A907B;
+  padding: 9px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #a89878;
   text-decoration: none;
   white-space: nowrap;
   transition: background 0.15s ease, color 0.15s ease;
@@ -82,46 +120,7 @@
 }
 
 .app-nav__link--active {
-  background: rgba(198, 162, 39, 0.12);
-  color: var(--brand-primary-bright);
-  font-weight: 600;
-}
-
-.app-nav__link-icon {
-  font-size: 1rem;
-  margin-right: 0.375rem;
-  vertical-align: -3px;
-}
-
-// Second header row: the active category's items, folded up from the old settings-nav-rail
-// sidebar (DESIGN-import "Viraj Acres Nav Options" option 1c) onto Parchment-raised instead of
-// Ink, so it reads as a sub-level of the dark category row above it.
-.app-nav-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.625rem 1.5rem;
-  background: var(--surface-raised);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.app-nav-items__link {
-  padding: 0.4375rem 0.875rem;
-  border-radius: 14px;
-  font-size: 0.78125rem;
-  font-weight: 600;
-  color: var(--brand-secondary);
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.app-nav-items__link:hover {
-  background: var(--brand-secondary-soft);
-}
-
-.app-nav-items__link--active {
-  background: var(--brand-secondary);
+  background: #241c16;
   color: var(--brand-primary-bright);
 }
 

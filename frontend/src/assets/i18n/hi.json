@@ -265,13 +265,7 @@
     "digitalIdCard": "डिजिटल आईडी कार्ड",
     "incomeStatement": "आय विवरण",
     "payoutHistory": "भुगतान इतिहास",
-    "provisionAssociate": "एसोसिएट पंजीकृत करें",
-    "categories": {
-      "setup": "सेटअप",
-      "network": "नेटवर्क",
-      "finance": "वित्त और चक्र",
-      "system": "सिस्टम"
-    }
+    "settings": "सेटिंग्स"
   },
   "auth": {
     "heading": "साइन इन करें",

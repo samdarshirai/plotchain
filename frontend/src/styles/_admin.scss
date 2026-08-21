@@ -461,9 +461,9 @@ body.admin-associate-active {
   color: var(--text-muted);
 }
 
-// Provisioning itself still happens on the existing /admin/associates/new page (see
-// admin-nav-categories.model.ts's 'provisionAssociate' entry) -- this is a shortcut link into
-// that same flow, not a duplicate form/modal.
+// Provisioning itself still happens on the existing /admin/associates/new page -- this is a
+// shortcut link into that same flow, not a duplicate form/modal. Since the Settings sidebar lists
+// settings screens only, it is also the app's sole entry point into provisioning.
 .associate-directory__new-link {
   text-decoration: none;
   white-space: nowrap;

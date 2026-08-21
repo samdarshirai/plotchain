@@ -4,6 +4,7 @@ import { associateOnlyGuard } from './auth/associate-only.guard';
 import { rootRedirectGuard } from './auth/root-redirect.guard';
 import { adminGuard } from './admin/admin.guard';
 import { setupModeGuard, launchedModeGuard } from './setup/setup.guard';
+import { SETTINGS_NAV_ITEMS } from './settings/models/settings-nav.model';
 
 describe('routes', () => {
   it('guards the dashboard route with authGuard and associateOnlyGuard', () => {
@@ -146,6 +147,23 @@ describe('routes', () => {
       expect(settingsRoute!.canActivate).toContain(authGuard);
       expect(settingsRoute!.canActivate).toContain(adminGuard);
       expect(settingsRoute!.canActivate).toContain(launchedModeGuard);
+    });
+
+    it('lands the header\'s Settings item on the overview hub, not the first sidebar screen', () => {
+      const settingsRoute = routes.find(r => r.path === 'settings');
+      const hubChild = settingsRoute!.children!.find(c => c.path === '');
+      expect(hubChild).toBeTruthy();
+      expect(hubChild!.redirectTo).toBeUndefined();
+      expect(hubChild!.component).toBeTruthy();
+    });
+
+    it('has a child route behind every sidebar nav item', () => {
+      const settingsRoute = routes.find(r => r.path === 'settings');
+      const childPaths = settingsRoute!.children!.map(c => c.path);
+
+      for (const item of SETTINGS_NAV_ITEMS) {
+        expect(childPaths).toContain(item.path.replace('/settings/', ''));
+      }
     });
 
     it('has a sales-register child stamped with sectionKey salesRegister', () => {

@@ -265,13 +265,7 @@
     "digitalIdCard": "Digital ID Card",
     "incomeStatement": "Income Statement",
     "payoutHistory": "Payout History",
-    "provisionAssociate": "Provision Associate",
-    "categories": {
-      "setup": "Setup",
-      "network": "Network",
-      "finance": "Finance & Cycles",
-      "system": "System"
-    }
+    "settings": "Settings"
   },
   "auth": {
     "heading": "Sign in",
