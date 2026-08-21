@@ -897,6 +897,8 @@
   },
   "settings": {
     "overviewLabel": "Company Settings",
+    "overviewSubtitle": "The five areas that define how your organization runs. Everything below is configured.",
+    "overviewProgressLabel": "{{done}} of {{total}} complete",
     "actions": {
       "save": "Save"
     },
@@ -943,6 +945,17 @@
     },
     "brandingCard": {
       "currentTaglineLabel": "{{tagline}}"
+    },
+    "projectsCard": {
+      "summaryLabel": "{{projectCount}} project(s) · {{plotCount}} plots listed"
+    },
+    "paymentsKycCard": {
+      "summaryLabel": "{{gateway}} connected · {{strictness}} KYC"
+    },
+    "completionBanner": {
+      "title": "Setup complete",
+      "description": "Your organization is ready. Head to the Associate Directory to provision your first associate.",
+      "cta": "Go to Directory"
     },
     "auditLog": {
       "sectionFilterLabel": "Section",

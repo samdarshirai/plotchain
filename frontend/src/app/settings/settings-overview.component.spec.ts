@@ -7,6 +7,8 @@ import { SECTION_PATHS } from './models/settings-section.model';
 import { CompensationPlanResponse, CompensationPlanSummary } from '../setup/models/compensation-plan.model';
 import { CompanyProfileResponse } from '../setup/models/company-profile.model';
 import { CompanyBrandingResponse } from '../setup/models/branding.model';
+import { Project } from '../setup/models/project.model';
+import { SetupStateResponse } from '../setup/models/setup-state.model';
 
 describe('SettingsOverviewComponent', () => {
   let fixture: ComponentFixture<SettingsOverviewComponent>;
@@ -55,6 +57,37 @@ describe('SettingsOverviewComponent', () => {
     updatedAt: '2026-04-01T00:00:00Z'
   };
 
+  const sampleProjects: Project[] = [
+    { id: 'p1', name: 'Viraj Acres Phase 1', location: 'Pune', hasThumbnail: false, totalPlots: 30, availablePlots: 20, soldPlots: 10, createdAt: '2026-04-01T00:00:00Z' },
+    { id: 'p2', name: 'Viraj Acres Phase 2', location: 'Pune', hasThumbnail: false, totalPlots: 18, availablePlots: 18, soldPlots: 0, createdAt: '2026-04-02T00:00:00Z' }
+  ];
+
+  const allCompleteSetupState: SetupStateResponse = {
+    steps: [
+      { number: 1, key: 'companyProfile', complete: true, required: true, percentComplete: 100 },
+      { number: 2, key: 'branding', complete: true, required: false, percentComplete: 100 },
+      { number: 3, key: 'compensation', complete: true, required: true, percentComplete: 100 },
+      { number: 4, key: 'projects', complete: true, required: false, percentComplete: 100 },
+      { number: 5, key: 'paymentsKyc', complete: true, required: true, percentComplete: 100 },
+      { number: 6, key: 'reviewLaunch', complete: false, required: false, percentComplete: 0 }
+    ],
+    canGoLive: true,
+    launchedAt: null
+  };
+
+  const partialSetupState: SetupStateResponse = {
+    steps: [
+      { number: 1, key: 'companyProfile', complete: true, required: true, percentComplete: 100 },
+      { number: 2, key: 'branding', complete: false, required: false, percentComplete: 0 },
+      { number: 3, key: 'compensation', complete: true, required: true, percentComplete: 100 },
+      { number: 4, key: 'projects', complete: false, required: false, percentComplete: 0 },
+      { number: 5, key: 'paymentsKyc', complete: false, required: true, percentComplete: 0 },
+      { number: 6, key: 'reviewLaunch', complete: false, required: false, percentComplete: 0 }
+    ],
+    canGoLive: false,
+    launchedAt: null
+  };
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SettingsOverviewComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
@@ -68,15 +101,25 @@ describe('SettingsOverviewComponent', () => {
     httpMock.verify();
   });
 
-  function flushCompanyProfileAndBranding(): void {
+  // Flushes every ngOnInit HTTP call except setup-state, which each test flushes itself with
+  // whichever completion fixture (allCompleteSetupState/partialSetupState) it needs.
+  function flushDataRequests(): void {
+    httpMock.expectOne('/api/company/compensation').flush(samplePlan);
     httpMock.expectOne('/api/company/profile').flush(sampleProfile);
     httpMock.expectOne('/api/company/branding').flush(sampleBranding);
+    httpMock.expectOne('/api/company/projects').flush(sampleProjects);
+    httpMock.expectOne('/api/company/payments').flush({ gateway: 'RAZORPAY', credentialsConfigured: true, modesEnabled: ['UPI'], updatedAt: null });
+    httpMock.expectOne('/api/company/kyc').flush({ strictness: 'RELAXED', requiredDocuments: ['AADHAAR'], updatedAt: null });
+  }
+
+  function flushSetupState(state: SetupStateResponse): void {
+    httpMock.expectOne('/api/company/setup-state').flush(state);
   }
 
   it('rendersFiveCardsWithTheirTranslatedLabelsAndLinks', () => {
     fixture.detectChanges();
-    httpMock.expectOne('/api/company/compensation').flush(samplePlan);
-    flushCompanyProfileAndBranding();
+    flushSetupState(allCompleteSetupState);
+    flushDataRequests();
     fixture.detectChanges();
 
     const sectionKeys = Object.keys(SECTION_PATHS);
@@ -98,42 +141,156 @@ describe('SettingsOverviewComponent', () => {
     });
   });
 
+  it('rendersTheStepNumberAndIconOnEachCardHeader', () => {
+    fixture.detectChanges();
+    flushSetupState(allCompleteSetupState);
+    flushDataRequests();
+    fixture.detectChanges();
+
+    const steps: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.settings-overview__card-step');
+    const icons: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.settings-overview__card-icon');
+    expect(Array.from(steps).map(el => el.textContent?.trim())).toEqual(['1', '2', '3', '4', '5']);
+    expect(Array.from(icons).map(el => el.textContent?.trim())).toEqual([
+      'domain',
+      'palette',
+      'payments',
+      'apartment',
+      'account_balance'
+    ]);
+  });
+
+  it('showsACheckmarkOnlyOnCardsTheSetupStateMarksComplete', () => {
+    fixture.detectChanges();
+    flushSetupState(partialSetupState);
+    flushDataRequests();
+    fixture.detectChanges();
+
+    const cards: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.settings-overview__card');
+    // partialSetupState: companyProfile and compensation complete, branding/projects/paymentsKyc not.
+    const hasCheck = Array.from(cards).map(card => !!card.querySelector('.settings-overview__card-check'));
+    expect(hasCheck).toEqual([true, false, true, false, false]);
+  });
+
+  it('computesTheDoneCountAndProgressBarWidthFromSetupState', () => {
+    fixture.detectChanges();
+    flushSetupState(partialSetupState);
+    flushDataRequests();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.doneCount).toBe(2);
+    expect(fixture.componentInstance.progressPercent).toBe(40);
+
+    const progressLabel: HTMLElement = fixture.nativeElement.querySelector('.settings-overview__progress-label');
+    expect(progressLabel.textContent).toContain('settings.overviewProgressLabel');
+
+    const fill: HTMLElement = fixture.nativeElement.querySelector('.settings-overview__progress-fill');
+    expect(fill.style.width).toBe('40%');
+  });
+
+  it('hidesTheCompletionBannerUntilAllFiveCardsAreDone', () => {
+    fixture.detectChanges();
+    flushSetupState(partialSetupState);
+    flushDataRequests();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.allDone).toBe(false);
+    expect(fixture.nativeElement.querySelector('.settings-overview__banner')).toBeNull();
+  });
+
+  it('showsTheCompletionBannerWithAGoToDirectoryLinkWhenAllFiveAreDone', () => {
+    fixture.detectChanges();
+    flushSetupState(allCompleteSetupState);
+    flushDataRequests();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.doneCount).toBe(5);
+    expect(fixture.componentInstance.allDone).toBe(true);
+
+    const banner: HTMLElement = fixture.nativeElement.querySelector('.settings-overview__banner');
+    expect(banner).toBeTruthy();
+    expect(banner.querySelector('.settings-overview__banner-title')?.textContent).toContain('settings.completionBanner.title');
+    expect(banner.querySelector('.settings-overview__banner-description')?.textContent).toContain(
+      'settings.completionBanner.description'
+    );
+
+    const cta: HTMLAnchorElement = banner.querySelector('.settings-overview__banner-cta')!;
+    expect(cta.textContent).toContain('settings.completionBanner.cta');
+    expect(cta.getAttribute('href')).toBe('/settings/associate-directory');
+  });
+
   it('compensationCardFetchesAndDisplaysTheCurrentVersionLabel', () => {
     fixture.detectChanges();
-    const req = httpMock.expectOne('/api/company/compensation');
-    req.flush(samplePlan);
-    flushCompanyProfileAndBranding();
+    flushSetupState(allCompleteSetupState);
+    flushDataRequests();
     fixture.detectChanges();
 
     expect(fixture.componentInstance.compensationCurrent?.versionLabel).toBe('v3');
     expect(fixture.componentInstance.compensationCurrent?.effectiveFrom).toBe('2026-04-01');
 
-    const summaries: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.settings-overview__card-summary');
-    const currentEl = Array.from(summaries).find(el => el.textContent?.includes('compensationCard'));
+    const subtitles: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.settings-overview__card-subtitle');
+    const currentEl = Array.from(subtitles).find(el => el.textContent?.includes('compensationCard'));
     expect(currentEl).toBeTruthy();
     // Falls back to the translation key (no i18n files loaded in this suite), but the interpolation
     // params must have been supplied for the pipe to have rendered anything at all here.
     expect(currentEl!.textContent).toContain('settings.compensationCard.currentVersionLabel');
   });
 
-  it('companyProfileAndBrandingCardsFetchAndDisplayASummary', () => {
+  it('companyProfileAndBrandingCardsFetchAndDisplayASubtitle', () => {
     fixture.detectChanges();
-    httpMock.expectOne('/api/company/compensation').flush(samplePlan);
-    flushCompanyProfileAndBranding();
+    flushSetupState(allCompleteSetupState);
+    flushDataRequests();
     fixture.detectChanges();
 
     expect(fixture.componentInstance.companyProfileCurrent?.displayName).toBe('Viraj Acres');
     expect(fixture.componentInstance.brandingCurrent?.tagline).toBe('Land you can trust');
 
-    const summaries: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.settings-overview__card-summary');
-    // Compensation, Company Profile, Branding -- the three cards with fetched summary content.
-    expect(summaries.length).toBe(3);
+    const subtitles: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.settings-overview__card-subtitle');
+    // One per card -- all 5 render a subtitle once their backing data has resolved.
+    expect(subtitles.length).toBe(5);
+    expect(Array.from(subtitles).some(el => el.textContent?.includes('companyProfileCard'))).toBe(true);
+    expect(Array.from(subtitles).some(el => el.textContent?.includes('brandingCard'))).toBe(true);
+  });
+
+  it('projectsCardSummarizesTheProjectAndPlotCountFromProjectsService', () => {
+    fixture.detectChanges();
+    flushSetupState(allCompleteSetupState);
+    flushDataRequests();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.projectsSummary).toEqual({ projectCount: 2, plotCount: 48 });
+
+    const subtitles: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.settings-overview__card-subtitle');
+    const projectsSubtitle = Array.from(subtitles).find(el => el.textContent?.includes('projectsCard'));
+    expect(projectsSubtitle).toBeTruthy();
+  });
+
+  it('paymentsKycCardOnlySummarizesOnceBothGatewayAndKycStrictnessHaveResolved', () => {
+    fixture.detectChanges();
+    flushSetupState(allCompleteSetupState);
+
+    httpMock.expectOne('/api/company/compensation').flush(samplePlan);
+    httpMock.expectOne('/api/company/profile').flush(sampleProfile);
+    httpMock.expectOne('/api/company/branding').flush(sampleBranding);
+    httpMock.expectOne('/api/company/projects').flush(sampleProjects);
+    const paymentReq = httpMock.expectOne('/api/company/payments');
+    const kycReq = httpMock.expectOne('/api/company/kyc');
+
+    paymentReq.flush({ gateway: 'RAZORPAY', credentialsConfigured: true, modesEnabled: ['UPI'], updatedAt: null });
+    fixture.detectChanges();
+    expect(fixture.componentInstance.paymentsKycSummary).toBeNull();
+
+    kycReq.flush({ strictness: 'RELAXED', requiredDocuments: ['AADHAAR'], updatedAt: null });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.paymentsKycSummary).toEqual({ gatewayLabel: 'Razorpay', strictnessLabel: 'Relaxed' });
+    const subtitles: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.settings-overview__card-subtitle');
+    expect(Array.from(subtitles).some(el => el.textContent?.includes('paymentsKycCard'))).toBe(true);
   });
 
   it('viewHistoryOpensTheSidePanelPopulatedFromGetHistory', () => {
     fixture.detectChanges();
-    httpMock.expectOne('/api/company/compensation').flush(samplePlan);
-    flushCompanyProfileAndBranding();
+    flushSetupState(allCompleteSetupState);
+    flushDataRequests();
     fixture.detectChanges();
 
     expect(fixture.componentInstance.historyPanelOpen).toBe(false);

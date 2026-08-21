@@ -897,6 +897,8 @@
   },
   "settings": {
     "overviewLabel": "कंपनी सेटिंग्स",
+    "overviewSubtitle": "पाँच क्षेत्र जो तय करते हैं कि आपका संगठन कैसे चलता है। नीचे सब कुछ कॉन्फ़िगर किया गया है।",
+    "overviewProgressLabel": "{{total}} में से {{done}} पूर्ण",
     "actions": {
       "save": "सहेजें"
     },
@@ -943,6 +945,17 @@
     },
     "brandingCard": {
       "currentTaglineLabel": "{{tagline}}"
+    },
+    "projectsCard": {
+      "summaryLabel": "{{projectCount}} प्रोजेक्ट · {{plotCount}} प्लॉट सूचीबद्ध"
+    },
+    "paymentsKycCard": {
+      "summaryLabel": "{{gateway}} कनेक्टेड · {{strictness}} केवाईसी"
+    },
+    "completionBanner": {
+      "title": "सेटअप पूर्ण",
+      "description": "आपका संगठन तैयार है। अपने पहले एसोसिएट को जोड़ने के लिए एसोसिएट डायरेक्टरी पर जाएँ।",
+      "cta": "डायरेक्टरी पर जाएँ"
     },
     "auditLog": {
       "sectionFilterLabel": "अनुभाग",

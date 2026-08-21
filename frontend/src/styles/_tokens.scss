@@ -37,6 +37,12 @@
   --nav-inactive-muted: #a89878;
   --nav-tagline-muted: #8a7a56;
 
+  // Muted text on any other Ink-background surface outside the global header (e.g. the Company
+  // Settings overview's "Setup complete" banner) -- --nav-inactive-muted above is commented as
+  // header-chrome-scoped, so this is a separate token rather than a reuse, even though it shares
+  // the same literal value by mockup coincidence today.
+  --ink-surface-muted: #a89878;
+
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-display: 'Fraunces', Georgia, serif;
   --font-mono: 'IBM Plex Mono', 'Courier New', monospace;

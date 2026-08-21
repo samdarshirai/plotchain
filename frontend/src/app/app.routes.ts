@@ -79,10 +79,9 @@ export const routes: Routes = [
     canActivate: [authGuard, adminGuard, launchedModeGuard],
     children: [
       // The header's "Settings" item lands here (app.component.html), rather than jumping into the
-      // first sidebar screen the way the old category pills did.
-      // TODO(Task 2): swap SettingsOverviewComponent for the new Company Settings overview/hub
-      // page. This route is the only place that needs to change -- the header already points at
-      // /settings, and no sidebar item claims this path.
+      // first sidebar screen the way the old category pills did. SettingsOverviewComponent is the
+      // "Company Settings" hub (Task 2): 5 section cards with step/icon/done state, a completion
+      // progress bar, and a "Setup complete" banner once all 5 sections are done.
       { path: '', component: SettingsOverviewComponent, pathMatch: 'full' },
       { path: 'company-profile', component: CompanyProfileStepComponent, data: { sectionKey: 'companyProfile', mode: 'settings' } },
       { path: 'branding', component: BrandingStepComponent, data: { sectionKey: 'branding', mode: 'settings' } },
