@@ -9,7 +9,6 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
       [class.brand-button--secondary]="variant === 'secondary'"
       [class.brand-button--ghost]="variant === 'ghost'"
       [class.brand-button--danger]="variant === 'danger'"
-      [class.brand-button--oxblood]="variant === 'oxblood'"
       [class.brand-button--full]="fullWidth"
       [type]="type"
       [disabled]="disabled"
@@ -20,7 +19,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   `
 })
 export class BrandButtonComponent {
-  @Input() variant: 'primary' | 'secondary' | 'ghost' | 'danger' | 'oxblood' = 'primary';
+  @Input() variant: 'primary' | 'secondary' | 'ghost' | 'danger' = 'primary';
   @Input() type: 'button' | 'submit' = 'button';
   @Input() disabled = false;
   @Input() fullWidth = false;

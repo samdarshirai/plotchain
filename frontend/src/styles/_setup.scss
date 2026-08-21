@@ -525,7 +525,7 @@ app-setup-progress-rail {
 }
 
 .seal-card__footer-value {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--brand-primary);
@@ -1292,26 +1292,15 @@ app-setup-progress-rail {
 .payments-kyc-step {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1.25rem;
   max-width: 900px;
 }
 
-// This step packs 5 cards into the same vertical budget siblings fill with one or two --
-// deliberately denser than the rest of the wizard so the whole screen fits without scrolling.
-.payments-kyc-step label {
-  margin-bottom: 0.2rem;
-  font-size: 0.72rem;
-}
-
-.payments-kyc-step input[type='text'],
-.payments-kyc-step input[type='number'],
-.payments-kyc-step input[type='password'] {
-  padding: 0.3rem 0.5rem;
-}
-
-.payments-kyc-step .toggle-group__option {
-  padding: 0.3rem 0.4rem;
-  font-size: 0.66rem;
+// Settings mode has no side inspector aside eating into the width (unlike the setup wizard, which
+// keeps 900px so the Money Flow Engine diagram column still fits) -- matches the
+// .settings-shell__content--wide column this renders inside.
+.payments-kyc-step--wide {
+  max-width: 1200px;
 }
 
 .payments-kyc-step__intro {
@@ -1345,8 +1334,8 @@ app-setup-progress-rail {
 .payments-kyc-step__card {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.625rem 0.875rem;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
 }
 
 .payments-kyc-step__section-title {
@@ -1376,13 +1365,13 @@ app-setup-progress-rail {
 .payments-kyc-step__grid {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: 1.25rem;
 }
 
 .payments-kyc-step__grid-col {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1.25rem;
   min-width: 0;
 }
 
@@ -1394,10 +1383,20 @@ app-setup-progress-rail {
   flex: 1;
 }
 
+// .setup-step-nav's own margin-top (1.5rem, meant for the wizard-footer context it was designed
+// for) was stacking on top of this card's own gap: 1.25rem flex spacing, double-spacing the Save
+// button away from Booking & EMI Policy's last field and leaving a dead ~44px gap with nothing in
+// it -- the mockup has no per-card Save button at all, so there was no reference gap to match here;
+// the card's own gap already provides consistent spacing for every other child, so this cancels
+// the redundant margin rather than stacking on top of it.
+.payments-kyc-step__card .setup-step-nav {
+  margin-top: 0;
+}
+
 .payments-kyc-step__row--split {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: 1.25rem;
 }
 
 // Payout Account's Bank Name/Account Holder/Account Number/IFSC fields, 2-up -- same convention as
@@ -1405,7 +1404,7 @@ app-setup-progress-rail {
 .payments-kyc-step__row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem 0.75rem;
+  gap: 1rem;
 }
 
 // Icon-tile gateway picker (Payment Collection card), matching the Stitch mockup's 2/4-up grid.
@@ -1433,9 +1432,11 @@ app-setup-progress-rail {
   }
 }
 
+// Oxblood, not Gold -- matches the mockup's active-gateway-tile border/tint/icon color (the
+// mockup's inactive-tile icon color is --text-muted, only the selected tile's icon goes Oxblood).
 .payments-kyc-step__gateway-tile--active {
-  border-color: var(--brand-primary);
-  background: color-mix(in srgb, var(--brand-primary) 8%, var(--surface-raised));
+  border-color: var(--brand-secondary);
+  background: color-mix(in srgb, var(--brand-secondary) 8%, var(--surface-raised));
 }
 
 .payments-kyc-step__gateway-icon {
@@ -1450,8 +1451,12 @@ app-setup-progress-rail {
 
   .material-symbols-outlined {
     font-size: 15px;
-    color: var(--brand-primary);
+    color: var(--text-muted);
   }
+}
+
+.payments-kyc-step__gateway-tile--active .payments-kyc-step__gateway-icon .material-symbols-outlined {
+  color: var(--brand-secondary);
 }
 
 .payments-kyc-step__gateway-label {
@@ -1468,7 +1473,7 @@ app-setup-progress-rail {
 }
 
 .payments-kyc-step__gateway-status-dot--active {
-  background: var(--brand-primary);
+  background: var(--brand-secondary);
 }
 
 .payments-kyc-step__mode-chips {
@@ -1496,9 +1501,9 @@ app-setup-progress-rail {
 }
 
 .payments-kyc-step__mode-chip--active {
-  border-color: var(--brand-primary);
-  color: var(--brand-primary);
-  background: color-mix(in srgb, var(--brand-primary) 10%, var(--surface-raised));
+  border-color: var(--brand-secondary);
+  color: var(--brand-secondary);
+  background: color-mix(in srgb, var(--brand-secondary) 10%, var(--surface-raised));
   font-weight: 600;
 }
 
@@ -1526,7 +1531,7 @@ app-setup-progress-rail {
   background: none;
   border: none;
   padding: 0;
-  color: var(--brand-primary);
+  color: var(--brand-secondary);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -1581,18 +1586,26 @@ app-setup-progress-rail {
   color: var(--border-subtle);
 }
 
+// Oxblood doc-icon, status-success (green) checkmark -- matches the mockup's required-documents
+// row exactly (it never shows the unchecked state, only ever the Oxblood icon + green
+// check_circle every row renders once required).
 .payments-kyc-step__kyc-row--active {
-  .payments-kyc-step__kyc-row-icon,
+  .payments-kyc-step__kyc-row-icon {
+    color: var(--brand-secondary);
+  }
+
   .payments-kyc-step__kyc-row-status {
-    color: var(--brand-primary);
+    color: var(--status-success);
   }
 }
 
 // Single-row 4-step chip strip (1. Raised -> 2. Review -> 3. Approved -> 4. Payout), matching the
 // mockup. Numbered short labels keep each chip narrow enough to fit this card's real column width.
+// No align-items: center -- that let a 2-line-wrapped "Approved" chip grow taller than its 3
+// single-line siblings while they stayed short, so the row read as 4 differently-sized,
+// misaligned boxes. Default (stretch) makes every chip match the tallest one's height instead.
 .payments-kyc-step__withdrawal-flow {
   display: flex;
-  align-items: center;
   gap: 0.1rem;
   font-weight: 600;
   color: var(--text-muted);
@@ -1601,19 +1614,21 @@ app-setup-progress-rail {
 .payments-kyc-step__withdrawal-flow-step {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--surface-raised);
-  border-radius: 5px;
-  padding: 0.3rem 0;
+  border-radius: 12px;
+  padding: 0.375rem 0.5rem;
   text-align: center;
-  font-size: 0.52rem;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 0.75rem;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .payments-kyc-step__withdrawal-flow-arrow {
   flex: none;
+  align-self: center;
   font-size: 12px;
   color: var(--border-subtle);
 }
@@ -1625,7 +1640,7 @@ app-setup-progress-rail {
   gap: 0.5rem;
 
   // Custom rounded-square box (appearance: none + a checked-state glyph) matching the mockup's
-  // gold EMI checkbox, rather than the browser's native control.
+  // Oxblood EMI checkbox (accent-color:#5C1A2A), rather than the browser's native control.
   input[type='checkbox'] {
     appearance: none;
     flex: none;
@@ -1642,19 +1657,19 @@ app-setup-progress-rail {
     transition: background 0.15s ease, border-color 0.15s ease;
 
     &:checked {
-      background: var(--brand-primary);
-      border-color: var(--brand-primary);
+      background: var(--brand-secondary);
+      border-color: var(--brand-secondary);
 
       &::after {
         content: '\2713';
         font-size: 12px;
         line-height: 1;
-        color: var(--brand-primary-contrast);
+        color: var(--brand-secondary-contrast);
       }
     }
 
     &:focus-visible {
-      outline: 1.5px solid var(--brand-primary);
+      outline: 1.5px solid var(--brand-secondary);
       outline-offset: 1px;
     }
   }
@@ -1705,12 +1720,14 @@ app-setup-progress-rail {
   font-weight: 600;
 }
 
+// Oxblood ring/fill -- matches the mockup's radio accent-color:#5C1A2A for Booking Confirmation
+// Rule.
 .payments-kyc-step__confirm-rule-dot {
   flex: none;
   width: 11px;
   height: 11px;
   border-radius: 50%;
-  border: 1.5px solid var(--brand-primary);
+  border: 1.5px solid var(--brand-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1724,7 +1741,7 @@ app-setup-progress-rail {
 }
 
 .payments-kyc-step__confirm-rule-dot--active::after {
-  background: var(--brand-primary);
+  background: var(--brand-secondary);
 }
 
 .payments-kyc-step__saved {

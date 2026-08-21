@@ -9,7 +9,10 @@ public record AdminStatsResponse(
     KycBreakdown kycBreakdown,
     BigDecimal totalWalletBalance,
     long pendingWithdrawals,
-    CurrentCycleStats currentCycle
+    CurrentCycleStats currentCycle,
+    long activePlots,
+    long totalSalesRecorded,
+    long cyclesCompleted
 ) {
     public record KycBreakdown(long pending, long verified, long rejected) {}
 

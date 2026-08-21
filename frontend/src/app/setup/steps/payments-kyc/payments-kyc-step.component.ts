@@ -56,7 +56,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
     SetupStepNavComponent
   ],
   template: `
-    <div class="payments-kyc-step">
+    <div class="payments-kyc-step" [class.payments-kyc-step--wide]="mode === 'settings'">
       <div class="payments-kyc-step__intro">
         <span *ngIf="mode !== 'settings'" class="payments-kyc-step__eyebrow">
           {{ 'setup.paymentsKyc.stepEyebrowLabel' | translate: { number: stepNumber, count: stepCount } }}

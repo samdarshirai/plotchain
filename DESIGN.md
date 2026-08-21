@@ -25,9 +25,9 @@ Six named colors, drawn from the mark, not a palette generator:
 | Name | Hex | Role |
 |---|---|---|
 | **Ink** | `#0C0A0B` | Deep brand ground — app header, sidebar, footers, the "plaque" chrome |
-| **Antique Gold** | `#C6A227` | Primary accent — primary buttons, active states, key figures, links |
-| **Bright Gold** | `#EAD07D` | Gold's highlight step — hover/gradient partner for Antique Gold, never used alone |
-| **Oxblood** | `#5C1A2A` | Secondary brand color — used sparingly for emphasis chips, selected states, the associate rank badge, never for body text |
+| **Antique Gold** | `#C6A227` | Primary accent — active states, key figures, links (not button backgrounds — see Oxblood) |
+| **Bright Gold** | `#EAD07D` | Gold's highlight step — hover/gradient partner for Antique Gold; also the text color on every primary button (Oxblood background) |
+| **Oxblood** | `#5C1A2A` | Secondary brand color, but the primary-button color — every Save/+Record Sale/+Submit Withdrawal/etc CTA app-wide is Oxblood background with Bright Gold text. Otherwise used sparingly for emphasis chips, selected states, the associate rank badge, never for body text |
 | **Parchment** | `#F7F2E7` | Light operational surface (replaces the current cold `#f8f9ff`) — warm off-white, not sterile white |
 | **Warm Charcoal** | `#201A15` | Primary text on Parchment — warm near-black, not pure `#000` |
 
@@ -43,7 +43,7 @@ Semantic colors are deliberately **not** built from Oxblood, so a red error stat
 
 **Rule:** Ink is a chrome color, not a content-background color. Data-dense screens (tables, ledgers, forms) stay on Parchment for read-all-day legibility; Ink is reserved for the app shell and for one "seal" card per screen (see §5). Don't paint a whole dashboard black — that's how a legacy-luxury identity becomes a legibility problem.
 
-**Exception:** the setup wizard's forward-progress "Next" CTA (`app-setup-shell-footer`) uses Oxblood, not Gold — a deliberate one-off distinguishing "advance the wizard" from every other primary button app-wide, which stays Gold per the rule above.
+Every primary button app-wide (`.brand-button`'s default/`primary` variant) is Oxblood background with Bright Gold text — no exceptions; the setup wizard's "Next" CTA used to be a deliberate one-off carve-out from an all-Gold rule, but that rule has since been reversed to match the mockup, so Next is now just the same default primary button as everywhere else.
 
 ## 3. Typography
 

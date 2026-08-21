@@ -20,6 +20,13 @@
   min-height: 100vh;
 }
 
+// Payments & KYC's 2fr/1fr card grid needs more than the 960px reading column (mockup uses
+// max-width:1200px for this exact screen) -- unlike --full, this keeps the standard page padding,
+// it just widens the column.
+.settings-shell__content--wide {
+  max-width: 1280px;
+}
+
 // --- Settings overview ---
 
 .settings-overview {
@@ -213,5 +220,27 @@
     grid-column: 2;
     justify-self: start;
     text-align: left;
+  }
+}
+
+// --- Admin Stats (Settings > System) ---
+// Same 3-column tile grid as admin-dashboard/'s .admin-dashboard__tiles, duplicated under its own
+// name rather than shared since these are two separately-routed screens.
+
+.admin-stats__tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.admin-stats__load-error {
+  margin: 0 0 1.5rem;
+  font-size: 0.875rem;
+  color: var(--status-danger);
+}
+
+@media (max-width: 700px) {
+  .admin-stats__tiles {
+    grid-template-columns: 1fr;
   }
 }

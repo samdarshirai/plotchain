@@ -27,6 +27,10 @@ public interface PlotRepository extends JpaRepository<Plot, UUID> {
 
     long countByProjectIdAndStatus(UUID projectId, PlotStatus status);
 
+    // Admin Stats "Active Plots" tile: company-wide count of plots not yet SOLD (AVAILABLE +
+    // BOOKED), unscoped by project.
+    long countByStatusNot(PlotStatus status);
+
     // Row-lock acquisition for POST /api/admin/sales (code-review finding, pre-merge review of
     // sales unit 3: SaleService.recordSale read Plot via a plain unlocked findById before
     // checking status == AVAILABLE and flipping it to SOLD, so two concurrent requests against

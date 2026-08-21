@@ -29,7 +29,7 @@ import { SetupInspectorService } from './setup-inspector.service';
       <app-brand-button *ngIf="previousPath" variant="ghost" type="button" (clicked)="goPrevious()">
         {{ 'setup.actions.previous' | translate }}
       </app-brand-button>
-      <app-brand-button *ngIf="nextPath" variant="oxblood" type="button" (clicked)="goNext()">
+      <app-brand-button *ngIf="nextPath" type="button" (clicked)="goNext()">
         {{ 'setup.actions.next' | translate }}
       </app-brand-button>
     </div>

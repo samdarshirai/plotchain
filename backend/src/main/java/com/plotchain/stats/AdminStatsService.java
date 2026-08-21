@@ -8,6 +8,8 @@ import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntryRepository;
+import com.plotchain.projects.PlotRepository;
+import com.plotchain.projects.PlotStatus;
 import com.plotchain.sales.SaleRepository;
 import com.plotchain.sales.SaleStatus;
 import com.plotchain.wallet.WalletRepository;
@@ -20,6 +22,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 public class AdminStatsService {
@@ -30,6 +33,7 @@ public class AdminStatsService {
     private final CycleRepository cycleRepository;
     private final SaleRepository saleRepository;
     private final WithdrawalRequestRepository withdrawalRequestRepository;
+    private final PlotRepository plotRepository;
 
     public AdminStatsService(
         AssociateRepository associateRepository,
@@ -37,7 +41,8 @@ public class AdminStatsService {
         LedgerEntryRepository ledgerEntryRepository,
         CycleRepository cycleRepository,
         SaleRepository saleRepository,
-        WithdrawalRequestRepository withdrawalRequestRepository
+        WithdrawalRequestRepository withdrawalRequestRepository,
+        PlotRepository plotRepository
     ) {
         this.associateRepository = associateRepository;
         this.walletRepository = walletRepository;
@@ -45,6 +50,7 @@ public class AdminStatsService {
         this.cycleRepository = cycleRepository;
         this.saleRepository = saleRepository;
         this.withdrawalRequestRepository = withdrawalRequestRepository;
+        this.plotRepository = plotRepository;
     }
 
     // Unlike DashboardService.getDashboard, this does NOT throw/409 when there's no OPEN cycle:
@@ -68,7 +74,13 @@ public class AdminStatsService {
             .map(this::currentCycleStats)
             .orElse(null);
 
-        return new AdminStatsResponse(totalAssociates, kycBreakdown, totalWalletBalance, pendingWithdrawals, currentCycle);
+        long activePlots = plotRepository.countByStatusNot(PlotStatus.SOLD);
+        long totalSalesRecorded = saleRepository.countByStatus(SaleStatus.RECORDED);
+        long cyclesCompleted = cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED, CycleStatus.PAID));
+
+        return new AdminStatsResponse(
+            totalAssociates, kycBreakdown, totalWalletBalance, pendingWithdrawals, currentCycle,
+            activePlots, totalSalesRecorded, cyclesCompleted);
     }
 
     private AdminStatsResponse.CurrentCycleStats currentCycleStats(Cycle cycle) {

@@ -911,6 +911,7 @@
       "treeExplorer": "Tree Explorer",
       "kycQueue": "KYC Review Queue",
       "auditLog": "ऑडिट लॉग",
+      "adminStats": "एडमिन आँकड़े",
       "salesRegister": "बिक्री रजिस्टर",
       "cycleManagement": "चक्र प्रबंधन",
       "ledgerRegister": "Ledger Register",
@@ -952,6 +953,15 @@
       "nextPageAction": "अगला",
       "emptyState": "अभी तक कोई बदलाव दर्ज नहीं हुआ है।",
       "pageIndicator": "पृष्ठ {{page}} में से {{totalPages}}"
+    },
+    "adminStats": {
+      "totalAssociatesLabel": "कुल एसोसिएट्स",
+      "activePlotsLabel": "सक्रिय प्लॉट्स",
+      "salesRecordedLabel": "दर्ज बिक्री",
+      "pendingKycLabel": "लंबित केवाईसी समीक्षाएँ",
+      "pendingPayoutsLabel": "लंबित भुगतान",
+      "cyclesCompletedLabel": "पूर्ण चक्र",
+      "loadError": "एडमिन आँकड़े लोड नहीं हो सके। बाद में पुनः प्रयास करें।"
     }
   },
   "legal": {

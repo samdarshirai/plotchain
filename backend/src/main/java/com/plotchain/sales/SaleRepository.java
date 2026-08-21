@@ -23,6 +23,9 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
 
     long countByCycleIdAndStatus(UUID cycleId, SaleStatus status);
 
+    // Admin Stats "Sales Recorded" tile: all-time count, unscoped by cycle.
+    long countByStatus(SaleStatus status);
+
     @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Sale s WHERE s.cycleId = :cycleId AND s.status = :status")
     BigDecimal sumAmountByCycleIdAndStatus(@Param("cycleId") UUID cycleId, @Param("status") SaleStatus status);
 

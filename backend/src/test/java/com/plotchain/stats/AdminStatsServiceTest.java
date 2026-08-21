@@ -8,6 +8,8 @@ import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntryRepository;
+import com.plotchain.projects.PlotRepository;
+import com.plotchain.projects.PlotStatus;
 import com.plotchain.sales.SaleRepository;
 import com.plotchain.sales.SaleStatus;
 import com.plotchain.wallet.WalletRepository;
@@ -21,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -37,6 +40,7 @@ class AdminStatsServiceTest {
     @Mock CycleRepository cycleRepository;
     @Mock SaleRepository saleRepository;
     @Mock WithdrawalRequestRepository withdrawalRequestRepository;
+    @Mock PlotRepository plotRepository;
 
     AdminStatsService adminStatsService;
 
@@ -44,7 +48,7 @@ class AdminStatsServiceTest {
     void setUp() {
         adminStatsService = new AdminStatsService(
             associateRepository, walletRepository, ledgerEntryRepository, cycleRepository,
-            saleRepository, withdrawalRequestRepository);
+            saleRepository, withdrawalRequestRepository, plotRepository);
     }
 
     @Test
@@ -74,6 +78,9 @@ class AdminStatsServiceTest {
         when(saleRepository.countByCycleIdAndStatus(cycleId, SaleStatus.RECORDED)).thenReturn(12L);
         when(saleRepository.sumAmountByCycleIdAndStatus(cycleId, SaleStatus.RECORDED))
             .thenReturn(new BigDecimal("2400000"));
+        when(plotRepository.countByStatusNot(PlotStatus.SOLD)).thenReturn(21L);
+        when(saleRepository.countByStatus(SaleStatus.RECORDED)).thenReturn(63L);
+        when(cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED, CycleStatus.PAID))).thenReturn(11L);
 
         AdminStatsResponse response = adminStatsService.getStats();
 
@@ -94,6 +101,9 @@ class AdminStatsServiceTest {
         assertThat(response.currentCycle().newAssociatesThisCycle()).isEqualTo(3L);
         assertThat(response.currentCycle().salesThisCycle()).isEqualTo(12L);
         assertThat(response.currentCycle().revenueThisCycle()).isEqualByComparingTo("2400000");
+        assertThat(response.activePlots()).isEqualTo(21L);
+        assertThat(response.totalSalesRecorded()).isEqualTo(63L);
+        assertThat(response.cyclesCompleted()).isEqualTo(11L);
     }
 
     @Test
@@ -104,11 +114,17 @@ class AdminStatsServiceTest {
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
             .thenReturn(Optional.empty());
         when(withdrawalRequestRepository.countByStatus(WithdrawalRequestStatus.REQUESTED)).thenReturn(0L);
+        when(plotRepository.countByStatusNot(PlotStatus.SOLD)).thenReturn(0L);
+        when(saleRepository.countByStatus(SaleStatus.RECORDED)).thenReturn(0L);
+        when(cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED, CycleStatus.PAID))).thenReturn(0L);
 
         AdminStatsResponse response = adminStatsService.getStats();
 
         assertThat(response.totalAssociates()).isEqualTo(10L);
         assertThat(response.pendingWithdrawals()).isEqualTo(0L);
         assertThat(response.currentCycle()).isNull();
+        assertThat(response.activePlots()).isEqualTo(0L);
+        assertThat(response.totalSalesRecorded()).isEqualTo(0L);
+        assertThat(response.cyclesCompleted()).isEqualTo(0L);
     }
 }

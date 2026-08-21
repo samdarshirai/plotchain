@@ -25,7 +25,10 @@ describe('AdminDashboardComponent', () => {
       newAssociatesThisCycle: 5,
       salesThisCycle: 12,
       revenueThisCycle: 2400000
-    }
+    },
+    activePlots: 21,
+    totalSalesRecorded: 63,
+    cyclesCompleted: 11
   };
 
   const statsWithoutCycle: AdminStatsResponse = {
@@ -33,7 +36,10 @@ describe('AdminDashboardComponent', () => {
     kycBreakdown: { pending: 3, verified: 35, rejected: 4 },
     totalWalletBalance: 12345.67,
     pendingWithdrawals: 0,
-    currentCycle: null
+    currentCycle: null,
+    activePlots: 0,
+    totalSalesRecorded: 0,
+    cyclesCompleted: 0
   };
 
   function flushInitialLoad(response: AdminStatsResponse = statsWithCycle): void {

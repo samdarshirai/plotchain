@@ -6,13 +6,21 @@ import { filter, Subscription } from 'rxjs';
 // The nav rail this shell used to render alongside router-outlet is gone -- section navigation
 // now lives in the global header's category/item pill rows (see app.component.html and
 // admin-nav-categories.model.ts). This shell's only remaining job is content layout: a centered
-// reading column by default, full-bleed for screens (Tree Explorer) that need the whole width.
+// reading column by default, full-bleed (no padding, no max-width) for Tree Explorer's edge-to-edge
+// canvas, or a wider-but-still-padded column for Payments & KYC's 2fr/1fr card grid, which needs
+// more than the 960px reading column gives every other Settings screen (mockup-parity fix: at
+// normal type scale -- see payments-kyc-step.component.ts's mode==='settings' width toggle -- the
+// 960px column truncated Payout Account/Withdrawal Approval field values).
 @Component({
   selector: 'app-settings-shell',
   standalone: true,
   imports: [CommonModule, RouterOutlet],
   template: `
-    <main class="settings-shell__content" [class.settings-shell__content--full]="activeSectionKey === 'treeExplorer'">
+    <main
+      class="settings-shell__content"
+      [class.settings-shell__content--full]="activeSectionKey === 'treeExplorer'"
+      [class.settings-shell__content--wide]="activeSectionKey === 'paymentsKyc'"
+    >
       <router-outlet></router-outlet>
     </main>
   `

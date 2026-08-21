@@ -26,7 +26,6 @@ import { SetupInspectorService } from '../../../setup/setup-inspector.service';
         <app-brand-button
           *ngIf="nextPath"
           class="setup-step-nav__next"
-          variant="oxblood"
           type="button"
           (clicked)="goNext()"
         >

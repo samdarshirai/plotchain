@@ -25,4 +25,7 @@ export interface AdminStatsResponse {
   totalWalletBalance: number;
   pendingWithdrawals: number;
   currentCycle: CurrentCycleStats | null;
+  activePlots: number;
+  totalSalesRecorded: number;
+  cyclesCompleted: number;
 }

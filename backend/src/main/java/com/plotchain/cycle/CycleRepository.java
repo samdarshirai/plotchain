@@ -8,11 +8,16 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface CycleRepository extends JpaRepository<Cycle, UUID> {
     Optional<Cycle> findFirstByStatusOrderByPeriodStartDesc(CycleStatus status);
+
+    // Admin Stats "Cycles Completed" tile: count of cycles in any of the given statuses
+    // (CLOSED + PAID, i.e. finished their lifecycle -- not OPEN/CALCULATING).
+    long countByStatusIn(Collection<CycleStatus> statuses);
 
     // Admin cycle-history list, unfiltered: most recent period first.
     Page<Cycle> findAllByOrderByPeriodStartDesc(Pageable pageable);

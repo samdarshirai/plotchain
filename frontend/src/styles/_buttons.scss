@@ -16,9 +16,23 @@ button:disabled {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: var(--brand-gradient);
-  color: var(--brand-primary-contrast);
+  // Duplicates the bare `button` selector's padding/border-radius/cursor above -- needed here too
+  // because ~16 call sites apply this class to a routerLink `<a>` (app-brand-button's own template
+  // is the only place `.brand-button` sits on a real `<button>`), and `<a>` never picks up an
+  // element-selector rule scoped to `button`. Without this, every nav-link "button" in the app
+  // rendered with square corners and no padding.
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  // Oxblood bg / Bright Gold text -- matches the mockup's primary-button color for every Save/
+  // +Record Sale/+Submit Withdrawal/etc CTA app-wide (mockup-parity fix: DESIGN.md previously
+  // documented Gold as the primary-button color with Oxblood as a one-off wizard-Next exception;
+  // that's now reversed to match the mockup exactly, so Oxblood/Bright-Gold is every primary
+  // button's color and there's no exception left).
+  background: var(--brand-secondary);
+  color: var(--brand-primary-bright);
   font-weight: 600;
+  text-decoration: none;
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
@@ -41,13 +55,6 @@ button:disabled {
 .brand-button--danger {
   background: var(--status-danger);
   color: var(--brand-primary-contrast);
-}
-
-// Setup wizard's forward-progress "Next" CTA -- an intentional exception to the app-wide
-// Gold primary-button rule, see DESIGN.md SS2.
-.brand-button--oxblood {
-  background: var(--brand-secondary);
-  color: var(--brand-secondary-contrast);
 }
 
 .brand-button--full {

@@ -171,9 +171,12 @@
   color: var(--text-primary);
 }
 
+// Oxblood/Bright-Gold, not Gold -- matches the mockup's selected-pill color everywhere it appears
+// (Approval Mode, Account Type, KYC Strictness), same as .app-nav-items__link--active and every
+// primary button.
 .toggle-group__option--active {
-  background: var(--brand-primary);
-  color: var(--brand-primary-contrast);
+  background: var(--brand-secondary);
+  color: var(--brand-primary-bright);
 }
 
 .tab-bar__tab--active {
@@ -372,7 +375,7 @@
 
 .logo-uploader__placeholder {
   color: var(--brand-primary);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   font-weight: 600;
   text-align: center;

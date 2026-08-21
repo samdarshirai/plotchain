@@ -23,7 +23,10 @@ describe('AdminDashboardService', () => {
       newAssociatesThisCycle: 5,
       salesThisCycle: 12,
       revenueThisCycle: 2400000
-    }
+    },
+    activePlots: 21,
+    totalSalesRecorded: 63,
+    cyclesCompleted: 11
   };
 
   beforeEach(() => {
