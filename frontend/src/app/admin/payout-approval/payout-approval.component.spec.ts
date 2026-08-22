@@ -33,12 +33,30 @@ describe('PayoutApprovalComponent', () => {
       ],
       page: 0, size: 20, totalElements: 1
     });
+    httpMock.expectOne('/api/admin/stats').flush({
+      totalAssociates: 0,
+      kycBreakdown: { pending: 0, verified: 0, rejected: 0 },
+      totalWalletBalance: 0,
+      pendingWithdrawals: 7,
+      currentCycle: null,
+      activePlots: 0,
+      totalSalesRecorded: 0,
+      cyclesCompleted: 0
+    });
   });
 
   afterEach(() => httpMock.verify());
 
   it('loads the first page of the queue on init', () => {
     expect(fixture.componentInstance.page?.requests.length).toBe(1);
+  });
+
+  it('loads and shows the pending withdrawals count relocated from the dashboard', () => {
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.pendingWithdrawals).toBe(7);
+    const stat: HTMLElement = fixture.nativeElement.querySelector('.payout-approval__stats .stat-tile__value');
+    expect(stat.textContent).toContain('7');
   });
 
   it('reloads with the associate filter when it changes', () => {

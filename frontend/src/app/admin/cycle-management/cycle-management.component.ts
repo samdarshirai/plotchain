@@ -11,13 +11,24 @@ import { EditableTableColumn, EditableTableComponent } from '../../shared/compon
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { SidePanelComponent } from '../../shared/components/side-panel/side-panel.component';
 import { BrandButtonComponent } from '../../shared/components/brand-button/brand-button.component';
+import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.component';
+import { AdminDashboardService } from '../../admin-dashboard/admin-dashboard.service';
+import { CurrentCycleStats } from '../../admin-dashboard/admin-dashboard.model';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-cycle-management',
   standalone: true,
-  imports: [CommonModule, TranslateModule, EditableTableComponent, InlineBannerComponent, SidePanelComponent, BrandButtonComponent],
+  imports: [
+    CommonModule,
+    TranslateModule,
+    EditableTableComponent,
+    InlineBannerComponent,
+    SidePanelComponent,
+    BrandButtonComponent,
+    StatTileComponent
+  ],
   template: `
     <div class="cycle-management">
       <div class="cycle-management__header cycle-management__intro">
@@ -36,6 +47,28 @@ const PAGE_SIZE = 20;
           <app-brand-button variant="danger" class="cycle-management__close-cycle-action" (clicked)="closeCycle()">
             {{ 'admin.cycleManagement.closeCycleAction' | translate }}
           </app-brand-button>
+        </div>
+        <div class="cycle-management__current-stats" *ngIf="currentCycleStats as stats">
+          <app-stat-tile
+            [label]="'admin.cycleManagement.daysRemainingLabel' | translate"
+            [value]="stats.daysRemaining.toString()"
+          ></app-stat-tile>
+          <app-stat-tile
+            [label]="'admin.cycleManagement.directIncomeLabel' | translate"
+            [value]="stats.directIncome | currency:'INR':'symbol':'1.0-2'"
+          ></app-stat-tile>
+          <app-stat-tile
+            [label]="'admin.cycleManagement.matchingIncomeLabel' | translate"
+            [value]="stats.matchingIncome | currency:'INR':'symbol':'1.0-2'"
+          ></app-stat-tile>
+          <app-stat-tile
+            [label]="'admin.cycleManagement.totalIncomeLabel' | translate"
+            [value]="stats.totalIncome | currency:'INR':'symbol':'1.0-2'"
+          ></app-stat-tile>
+          <app-stat-tile
+            [label]="'admin.cycleManagement.newAssociatesLabel' | translate"
+            [value]="stats.newAssociatesThisCycle.toString()"
+          ></app-stat-tile>
         </div>
       </div>
 
@@ -158,6 +191,7 @@ const PAGE_SIZE = 20;
 export class CycleManagementComponent implements OnInit {
   private cycleManagementService = inject(CycleManagementService);
   private translate = inject(TranslateService);
+  private adminDashboardService = inject(AdminDashboardService);
 
   // The Cycle Rail's fixed, one-directional sequence (see docs/design/admin_operational_screens/
   // cycle_management/DESIGN.md's "signature element" section) -- mirrors CycleStatus.java exactly.
@@ -171,6 +205,10 @@ export class CycleManagementComponent implements OnInit {
   detailPanelOpen = false;
   detailError = false;
   currentOpenCycle: CycleSummary | null = null;
+  // The 6 cycle-income fields relocated here from admin-dashboard.component.ts (Task 3): sourced
+  // from the same /api/admin/stats endpoint's currentCycle, which is null exactly when there's no
+  // OPEN cycle -- same condition as currentOpenCycle above, so the two never disagree in practice.
+  currentCycleStats: CurrentCycleStats | null = null;
   closeResult: CycleCloseResponse | null = null;
   closeError: 'conflict' | 'generic' | null = null;
   creditResult: WalletCreditingResult | null = null;
@@ -196,6 +234,11 @@ export class CycleManagementComponent implements OnInit {
       { key: 'actions', label: this.translate.instant('admin.cycleManagement.columnActions'), type: 'action' }
     ];
     this.loadPage(0);
+    this.loadCurrentCycleStats();
+  }
+
+  private loadCurrentCycleStats(): void {
+    this.adminDashboardService.getStats().subscribe(res => (this.currentCycleStats = res.currentCycle));
   }
 
   onStatusChange(value: string): void {

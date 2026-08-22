@@ -3,6 +3,28 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { TranslateModule } from '@ngx-translate/core';
 import { CycleManagementComponent } from './cycle-management.component';
 
+const STATS_RESPONSE = {
+  totalAssociates: 6,
+  kycBreakdown: { pending: 0, verified: 0, rejected: 0 },
+  totalWalletBalance: 0,
+  pendingWithdrawals: 0,
+  currentCycle: {
+    cycleId: 'c2',
+    periodStart: '2026-08-16',
+    periodEnd: '2026-08-31',
+    daysRemaining: 12,
+    directIncome: 1000,
+    matchingIncome: 500,
+    totalIncome: 1500,
+    newAssociatesThisCycle: 3,
+    salesThisCycle: 4,
+    revenueThisCycle: 200000
+  },
+  activePlots: 0,
+  totalSalesRecorded: 0,
+  cyclesCompleted: 0
+};
+
 describe('CycleManagementComponent', () => {
   let fixture: ComponentFixture<CycleManagementComponent>;
   let httpMock: HttpTestingController;
@@ -23,6 +45,7 @@ describe('CycleManagementComponent', () => {
       ],
       page: 0, size: 20, totalElements: 2
     });
+    httpMock.expectOne('/api/admin/stats').flush(STATS_RESPONSE);
   });
 
   afterEach(() => httpMock.verify());
@@ -109,6 +132,16 @@ describe('CycleManagementComponent', () => {
     expect(fixture.componentInstance.currentOpenCycle?.id).toBe('c2');
     const button: HTMLButtonElement | null = fixture.nativeElement.querySelector('.cycle-management__close-cycle-action');
     expect(button).toBeTruthy();
+  });
+
+  it('loads and shows the current cycle\'s income stats relocated from the dashboard', () => {
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.currentCycleStats?.totalIncome).toBe(1500);
+    const stats: HTMLElement = fixture.nativeElement.querySelector('.cycle-management__current-stats');
+    expect(stats).toBeTruthy();
+    expect(stats.textContent).toContain('12'); // daysRemaining
+    expect(stats.textContent).toContain('3'); // newAssociatesThisCycle
   });
 
   it('does not show a Close Cycle button when no OPEN cycle is present', () => {

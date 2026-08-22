@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { TranslateModule } from '@ngx-translate/core';
-import { RouterTestingModule } from '@angular/router/testing';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AdminDashboardComponent } from './admin-dashboard.component';
 import { AdminStatsResponse } from './admin-dashboard.model';
 
@@ -10,7 +9,7 @@ describe('AdminDashboardComponent', () => {
   let httpMock: HttpTestingController;
 
   const statsWithCycle: AdminStatsResponse = {
-    totalAssociates: 42,
+    totalAssociates: 6,
     kycBreakdown: { pending: 3, verified: 35, rejected: 4 },
     totalWalletBalance: 12345.67,
     pendingWithdrawals: 2,
@@ -21,7 +20,7 @@ describe('AdminDashboardComponent', () => {
       daysRemaining: 28,
       directIncome: 1000,
       matchingIncome: 500,
-      totalIncome: 1500,
+      totalIncome: 482600,
       newAssociatesThisCycle: 5,
       salesThisCycle: 12,
       revenueThisCycle: 2400000
@@ -49,7 +48,7 @@ describe('AdminDashboardComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AdminDashboardComponent, HttpClientTestingModule, TranslateModule.forRoot(), RouterTestingModule]
+      imports: [AdminDashboardComponent, HttpClientTestingModule, TranslateModule.forRoot()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(AdminDashboardComponent);
@@ -61,26 +60,38 @@ describe('AdminDashboardComponent', () => {
     httpMock.verify();
   });
 
-  it('renders tiles for total associates, wallet balance, sales/revenue this cycle, KYC breakdown, and pending withdrawals', () => {
+  it('renders the heading and subtitle', () => {
     flushInitialLoad();
 
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('42');
-    expect(text).toContain('12,345.67');
-    expect(text).toContain('12');
-    expect(text).toContain('2,400,000');
-    expect(text).toContain('3');
-    expect(text).toContain('35');
-    expect(text).toContain('4');
-    expect(text).toContain('2');
+    expect(text).toContain('adminDashboard.heading');
+    expect(text).toContain('adminDashboard.subtitle');
   });
 
-  it('renders an empty state instead of cycle figures when currentCycle is null', () => {
+  it('renders one Seal Card with this cycle\'s total income as the figure', () => {
+    flushInitialLoad();
+
+    const figure: HTMLElement = fixture.nativeElement.querySelector('.seal-card-panel__figure');
+    expect(figure.textContent).toContain('482,600');
+  });
+
+  it('renders the caption with the real associate count', () => {
+    const translate = TestBed.inject(TranslateService);
+    translate.setDefaultLang('en');
+    translate.setTranslation('en', { adminDashboard: { currentCycleCaption: 'Across {{count}} associates this cycle.' } });
+
+    flushInitialLoad();
+
+    const caption: HTMLElement = fixture.nativeElement.querySelector('.seal-card-panel__caption');
+    expect(caption.textContent?.trim()).toBe('Across 6 associates this cycle.');
+  });
+
+  it('renders an empty state instead of the Seal Card when currentCycle is null', () => {
     flushInitialLoad(statsWithoutCycle);
 
+    expect(fixture.nativeElement.querySelector('.seal-card-panel')).toBeFalsy();
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('adminDashboard.noCycleEmptyState');
-    expect(text).not.toContain('2,400,000');
   });
 
   it('sets loadError and renders the error message when the request fails', () => {
@@ -90,26 +101,5 @@ describe('AdminDashboardComponent', () => {
     expect(fixture.componentInstance.loadError).toBe(true);
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('adminDashboard.loadError');
-  });
-
-  it('links the pending withdrawals tile to the payout approval queue', () => {
-    flushInitialLoad();
-
-    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[href="/settings/payout-approval"]');
-    expect(link).toBeTruthy();
-  });
-
-  it('links the KYC pending tile to the KYC review queue', () => {
-    flushInitialLoad();
-
-    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[href="/settings/kyc-queue"]');
-    expect(link).toBeTruthy();
-  });
-
-  it('renders quick action links to Record Sale and Provision Associate', () => {
-    flushInitialLoad();
-
-    expect(fixture.nativeElement.querySelector('a[href="/admin/sales/new"]')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('a[href="/admin/associates/new"]')).toBeTruthy();
   });
 });

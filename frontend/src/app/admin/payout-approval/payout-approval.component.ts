@@ -9,13 +9,15 @@ import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
+import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.component';
+import { AdminDashboardService } from '../../admin-dashboard/admin-dashboard.service';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-payout-approval',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, RouterLink, EditableTableComponent, InlineBannerComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, RouterLink, EditableTableComponent, InlineBannerComponent, StatTileComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="payout-approval">
@@ -28,6 +30,15 @@ const PAGE_SIZE = 20;
         <a class="payout-approval__submit-link brand-button" [routerLink]="['/admin/withdrawals/new']">
           {{ 'admin.payoutApproval.submitLink' | translate }}
         </a>
+      </div>
+
+      <div class="payout-approval__stats" *ngIf="pendingWithdrawals !== null">
+        <app-stat-tile
+          icon="account_balance_wallet"
+          tone="accent"
+          [label]="'admin.payoutApproval.pendingWithdrawalsLabel' | translate"
+          [value]="pendingWithdrawals.toString()"
+        ></app-stat-tile>
       </div>
 
       <div class="payout-approval__filters">
@@ -130,6 +141,7 @@ const PAGE_SIZE = 20;
 export class PayoutApprovalComponent implements OnInit {
   private payoutApprovalService = inject(PayoutApprovalService);
   private adminService = inject(AdminService);
+  private adminDashboardService = inject(AdminDashboardService);
   private translate = inject(TranslateService);
   private currencyPipe = inject(CurrencyPipe);
   protected datePipe = inject(DatePipe);
@@ -138,6 +150,9 @@ export class PayoutApprovalComponent implements OnInit {
   loadError = false;
   actionError = false;
   associates: AssociateSummary[] = [];
+  // Relocated from admin-dashboard.component.ts (Task 3) -- this screen previously had no stat
+  // display at all.
+  pendingWithdrawals: number | null = null;
   registerColumns: EditableTableColumn[] = [];
   registerRows: Record<string, string>[] = [];
   decisionReasons: Record<string, string> = {};
@@ -168,6 +183,7 @@ export class PayoutApprovalComponent implements OnInit {
     ];
     this.adminService.listAssociates().subscribe(associates => (this.associates = associates));
     this.loadPage(0);
+    this.adminDashboardService.getStats().subscribe(res => (this.pendingWithdrawals = res.pendingWithdrawals));
   }
 
   onAssociateIdChange(value: string): void {

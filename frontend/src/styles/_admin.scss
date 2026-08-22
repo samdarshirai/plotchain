@@ -902,6 +902,16 @@ body.admin-associate-active {
   gap: 0.5rem;
 }
 
+// The 6 cycle-income fields relocated from admin-dashboard.component.ts (Task 3) -- forces its own
+// row below the meta/actions pair via flex-basis: 100%, since .cycle-management__current is a
+// wrapping flex row and this block is always wider than what's left beside them.
+.cycle-management__current-stats {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
 // Cycle Rail -- the signature element. A four-node track rendering CycleStatus's real, fixed,
 // one-directional sequence: OPEN -> CALCULATING -> CLOSED -> PAID. Appears in exactly two
 // places (Current Cycle strip, Detail side panel) so it stays the one unmistakable thing this
@@ -1530,6 +1540,13 @@ body.admin-associate-active {
 .payout-approval__subtitle {
   @extend %admin-screen-subtitle;
   max-width: 40rem;
+}
+
+// Pending Withdrawals stat, relocated from admin-dashboard.component.ts (Task 3) -- this screen
+// previously had no stat display at all. A single tile, so it's capped rather than stretched
+// across the full content width the way a multi-tile grid would be.
+.payout-approval__stats {
+  max-width: 260px;
 }
 
 .payout-approval__filters {
@@ -3220,51 +3237,32 @@ body.admin-associate-active {
   }
 }
 
-// Admin Dashboard (mockup's "Admin Stats" screen) -- previously had no CSS at all: every tile
-// row stacked one-per-line full-width, section headings were bare <h2>s, and the Quick Actions
-// links ran together with no gap (mockup-parity sweep, V2).
+// Admin Dashboard -- the mockup's `isDashboard` block (Viraj_Acres_Settings.dc.html lines 49-59):
+// a heading, a subtitle, and one Seal Card (styles in _shared-components.scss). Everything the
+// console used to show beyond that lives on cycle-management/payout-approval/kyc-queue now (Task
+// 3's relocation), so this screen no longer needs a tile grid.
 .admin-dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 1.5rem 2rem;
+  padding: 40px 44px 80px;
+  max-width: 1240px;
 }
 
-.admin-dashboard__tiles {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.admin-dashboard__section-title {
-  margin: 0 0 1rem;
-  font-size: 1.0625rem;
+.admin-dashboard__title {
+  margin: 0 0 0.375rem; // 6px
+  font-family: var(--font-display);
+  font-size: 1.75rem; // 28px
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.admin-dashboard__tile-link {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-}
-
-.admin-dashboard__empty {
-  margin: 0;
-  font-size: 0.875rem;
+.admin-dashboard__subtitle {
+  margin: 0 0 1.75rem; // 28px
+  font-size: 0.875rem; // 14px
   color: var(--text-muted);
 }
 
-.admin-dashboard__quick-actions-row {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-@media (max-width: 700px) {
-  .admin-dashboard__tiles {
-    grid-template-columns: 1fr;
-  }
+.admin-dashboard__empty,
+.admin-dashboard__load-error {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
 }
