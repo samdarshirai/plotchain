@@ -14,7 +14,7 @@ spring:
       max-request-size: 4MB
 
 server:
-  port: 8081
+  port: ${PORT:8081}
 
 jwt:
   secret: ${JWT_SECRET:dev-only-change-me-this-needs-to-be-at-least-32-bytes-long}
@@ -23,3 +23,5 @@ jwt:
 plotchain:
   associate-id-prefix: ${PLOTCHAIN_ASSOCIATE_ID_PREFIX:VP}
   secrets-key: ${PLOTCHAIN_SECRETS_KEY:dev-only-change-me-this-encryption-key-needs-32-bytes-too}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
