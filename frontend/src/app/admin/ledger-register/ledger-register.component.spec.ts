@@ -139,4 +139,25 @@ describe('LedgerRegisterComponent', () => {
     expect(rowText).toContain('9,300');
     expect(rowText).not.toContain('9300');
   });
+
+  it('renders CARRIED_FORWARD status as "Carried Forward" (space, not underscore) with warning tone', () => {
+    fixture.componentInstance.onStatusChange('CARRIED_FORWARD');
+    httpMock.expectOne(r => r.params.get('status') === 'CARRIED_FORWARD').flush({
+      entries: [{ ...sampleEntry, id: 'l3', status: 'CARRIED_FORWARD' }],
+      page: 0,
+      size: 20,
+      totalElements: 1
+    });
+    fixture.detectChanges();
+
+    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
+    expect(rowText).toContain('Carried Forward');
+    expect(rowText).not.toContain('Carried_forward');
+
+    // The status column is the 4th column (index 3); get its badge element
+    const statusColumnCells = fixture.nativeElement.querySelectorAll('.editable-table tbody tr td');
+    const statusCell = statusColumnCells[3];
+    const badgeElement = statusCell.querySelector('.editable-table__badge');
+    expect(badgeElement?.classList.contains('editable-table__badge--warning')).toBeTrue();
+  });
 });

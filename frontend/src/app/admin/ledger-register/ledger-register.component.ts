@@ -13,14 +13,19 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
 const PAGE_SIZE = 20;
 const CYCLE_LOOKUP_SIZE = 100;
 
-// The backend's LedgerEntryStatus enum is shouty-uppercase (PENDING/CARRIED_FORWARD/PAID/REVERSED);
-// the mockup renders per-value colored status text (Viraj_Acres_Settings.dc.html, isLedger section,
+// The backend's LedgerEntryStatus enum is shouty-uppercase (PENDING/CARRIED_FORWARD/PAID/REVERSED).
+// titleCase() converts to Title Case with spaces replacing underscores:
+// PENDING → Pending, CARRIED_FORWARD → Carried Forward, PAID → Paid, REVERSED → Reversed.
+// The mockup renders per-value colored status text (Viraj_Acres_Settings.dc.html, isLedger section,
 // `l.statusColor`). Since the editable-table badge cell renders the row's raw value verbatim, the
 // row-building step below title-cases it before it ever reaches the table, and statusBadgeTone
-// matches on that title-cased string -- same convention as AssociateDirectoryComponent's
-// titleCase/badgeTone pair.
+// matches on that title-cased string.
 function titleCase(value: string): string {
-  return value.length === 0 ? value : value.charAt(0) + value.slice(1).toLowerCase();
+  if (value.length === 0) return value;
+  return value
+    .split('_')
+    .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(' ');
 }
 
 @Component({
@@ -221,7 +226,7 @@ export class LedgerRegisterComponent implements OnInit {
       case 'Paid':
         return 'success';
       case 'Pending':
-      case 'Carried forward':
+      case 'Carried Forward':
         return 'warning';
       case 'Reversed':
         return 'danger';
