@@ -17,7 +17,6 @@ import { PaymentsKycStepComponent } from './setup/steps/payments-kyc/payments-ky
 import { ProjectsStepComponent } from './setup/steps/projects/projects-step.component';
 import { ReviewLaunchStepComponent } from './setup/steps/review-launch/review-launch-step.component';
 import { SettingsShellComponent } from './settings/settings-shell.component';
-import { SettingsOverviewComponent } from './settings/settings-overview.component';
 import { AuditLogComponent } from './settings/audit-log/audit-log.component';
 import { AdminStatsComponent } from './settings/admin-stats/admin-stats.component';
 import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.component';
@@ -78,11 +77,6 @@ export const routes: Routes = [
     component: SettingsShellComponent,
     canActivate: [authGuard, adminGuard, launchedModeGuard],
     children: [
-      // The header's "Settings" item lands here (app.component.html), rather than jumping into the
-      // first sidebar screen the way the old category pills did. SettingsOverviewComponent is the
-      // "Company Settings" hub (Task 2): 5 section cards with step/icon/done state, a completion
-      // progress bar, and a "Setup complete" banner once all 5 sections are done.
-      { path: '', component: SettingsOverviewComponent, pathMatch: 'full' },
       { path: 'company-profile', component: CompanyProfileStepComponent, data: { sectionKey: 'companyProfile', mode: 'settings' } },
       { path: 'branding', component: BrandingStepComponent, data: { sectionKey: 'branding', mode: 'settings' } },
       { path: 'compensation', component: CompensationStepComponent, data: { sectionKey: 'compensation', mode: 'settings' } },
@@ -96,7 +90,11 @@ export const routes: Routes = [
       { path: 'ledger-register', component: LedgerRegisterComponent, data: { sectionKey: 'ledgerRegister' } },
       { path: 'payout-approval', component: PayoutApprovalComponent, data: { sectionKey: 'payoutApproval' } },
       { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } },
-      { path: 'admin-stats', component: AdminStatsComponent, data: { sectionKey: 'adminStats' } }
+      { path: 'admin-stats', component: AdminStatsComponent, data: { sectionKey: 'adminStats' } },
+      // There is no settings hub screen any more -- every entry point (a header category tab, an
+      // item pill) targets a specific screen. Bare /settings is only reachable from an old
+      // bookmark, so it lands on the first category's first item, the same shape /setup uses.
+      { path: '', redirectTo: 'company-profile', pathMatch: 'full' }
     ]
   },
   { path: '', pathMatch: 'full', canActivate: [authGuard, rootRedirectGuard], children: [] }

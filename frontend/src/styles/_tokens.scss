@@ -37,8 +37,14 @@
   --nav-inactive-muted: #a89878;
   --nav-tagline-muted: #8a7a56;
 
-  // Muted text on any other Ink-background surface outside the global header (e.g. the Company
-  // Settings overview's "Setup complete" banner) -- --nav-inactive-muted above is commented as
+  // Heights of the two global chrome rows (.app-header and, on settings routes, .app-nav-items),
+  // named so the settings content column can subtract them from the viewport instead of repeating
+  // magic numbers -- see .settings-shell in _settings.scss.
+  --app-header-height: 68px;
+  --app-nav-items-height: 57px;
+
+  // Muted text on any other Ink-background surface outside the global header (e.g. the Seal Card
+  // panel's caption) -- --nav-inactive-muted above is commented as
   // header-chrome-scoped, so this is a separate token rather than a reuse, even though it shares
   // the same literal value by mockup coincidence today.
   --ink-surface-muted: #a89878;

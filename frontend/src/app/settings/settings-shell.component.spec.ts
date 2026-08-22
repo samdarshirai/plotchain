@@ -1,8 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { of } from 'rxjs';
 import { SettingsShellComponent } from './settings-shell.component';
 
 describe('SettingsShellComponent', () => {
@@ -15,11 +13,7 @@ describe('SettingsShellComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [
-        SettingsShellComponent,
-        RouterTestingModule.withRoutes([{ path: 'settings/branding', children: [] }]),
-        TranslateModule.forRoot()
-      ],
+      imports: [SettingsShellComponent, RouterTestingModule.withRoutes([])],
       providers: [{ provide: ActivatedRoute, useValue: activatedRoute }]
     }).compileComponents();
 
@@ -31,57 +25,10 @@ describe('SettingsShellComponent', () => {
     expect(fixture.nativeElement.querySelector('router-outlet')).toBeTruthy();
   });
 
-  it('listsAllFourteenSettingsScreensFlatInSidebarOrder', () => {
-    const translateService = TestBed.inject(TranslateService);
-    spyOn(translateService, 'get').and.callFake((key: string) => of(key.replace('settings.sections.', '')));
+  it('rendersNoNavigationOfItsOwnNowThatTheHeaderCarriesIt', () => {
     fixture.detectChanges();
-
-    const labels = Array.from(
-      fixture.nativeElement.querySelectorAll('.settings-shell__nav-link') as NodeListOf<HTMLElement>
-    ).map(el => el.textContent?.trim());
-
-    expect(labels).toEqual([
-      'companyProfile',
-      'branding',
-      'compensation',
-      'projects',
-      'paymentsKyc',
-      'associateDirectory',
-      'treeExplorer',
-      'kycQueue',
-      'auditLog',
-      'adminStats',
-      'salesRegister',
-      'cycleManagement',
-      'ledgerRegister',
-      'payoutApproval'
-    ]);
-  });
-
-  it('pointsEverySidebarLinkAtItsSettingsRoute', () => {
-    fixture.detectChanges();
-
-    const hrefs = Array.from(
-      fixture.nativeElement.querySelectorAll('.settings-shell__nav-link') as NodeListOf<HTMLAnchorElement>
-    ).map(el => el.getAttribute('href'));
-
-    expect(hrefs.every(href => href!.startsWith('/settings/'))).toBe(true);
-    expect(hrefs).toContain('/settings/company-profile');
-    expect(hrefs).toContain('/settings/payout-approval');
-  });
-
-  it('marksOnlyTheOpenScreensSidebarLinkActive', async () => {
-    const router = TestBed.inject(Router);
-    fixture.detectChanges();
-
-    await router.navigateByUrl('/settings/branding');
-    fixture.detectChanges();
-
-    const active = Array.from(
-      fixture.nativeElement.querySelectorAll('.settings-shell__nav-link--active') as NodeListOf<HTMLAnchorElement>
-    ).map(el => el.getAttribute('href'));
-
-    expect(active).toEqual(['/settings/branding']);
+    expect(fixture.nativeElement.querySelector('nav')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('a')).toBeFalsy();
   });
 
   it('usesTheStandardContentColumnByDefault', () => {

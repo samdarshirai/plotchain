@@ -4,7 +4,7 @@ import { associateOnlyGuard } from './auth/associate-only.guard';
 import { rootRedirectGuard } from './auth/root-redirect.guard';
 import { adminGuard } from './admin/admin.guard';
 import { setupModeGuard, launchedModeGuard } from './setup/setup.guard';
-import { SETTINGS_NAV_ITEMS } from './settings/models/settings-nav.model';
+import { ADMIN_NAV_CATEGORIES } from './admin-nav-categories.model';
 
 describe('routes', () => {
   it('guards the dashboard route with authGuard and associateOnlyGuard', () => {
@@ -149,20 +149,23 @@ describe('routes', () => {
       expect(settingsRoute!.canActivate).toContain(launchedModeGuard);
     });
 
-    it('lands the header\'s Settings item on the overview hub, not the first sidebar screen', () => {
+    it('redirects bare /settings to the first category\'s first item, with no hub screen left', () => {
       const settingsRoute = routes.find(r => r.path === 'settings');
-      const hubChild = settingsRoute!.children!.find(c => c.path === '');
-      expect(hubChild).toBeTruthy();
-      expect(hubChild!.redirectTo).toBeUndefined();
-      expect(hubChild!.component).toBeTruthy();
+      const emptyChild = settingsRoute!.children!.find(c => c.path === '');
+      expect(emptyChild).toBeTruthy();
+      expect(emptyChild!.component).toBeUndefined();
+      expect(emptyChild!.redirectTo).toBe('company-profile');
+      expect(emptyChild!.redirectTo).toBe(ADMIN_NAV_CATEGORIES[0].items[0].path.replace('/settings/', ''));
     });
 
-    it('has a child route behind every sidebar nav item', () => {
+    it('has a child route behind every nav item in every category', () => {
       const settingsRoute = routes.find(r => r.path === 'settings');
       const childPaths = settingsRoute!.children!.map(c => c.path);
 
-      for (const item of SETTINGS_NAV_ITEMS) {
-        expect(childPaths).toContain(item.path.replace('/settings/', ''));
+      for (const category of ADMIN_NAV_CATEGORIES) {
+        for (const item of category.items) {
+          expect(childPaths).toContain(item.path.replace('/settings/', ''));
+        }
       }
     });
 

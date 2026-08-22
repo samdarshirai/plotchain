@@ -254,7 +254,12 @@
     "digitalIdCard": "डिजिटल आईडी कार्ड",
     "incomeStatement": "आय विवरण",
     "payoutHistory": "भुगतान इतिहास",
-    "settings": "सेटिंग्स"
+    "categories": {
+      "setup": "सेटअप",
+      "network": "नेटवर्क",
+      "finance": "वित्त और चक्र",
+      "system": "सिस्टम"
+    }
   },
   "auth": {
     "heading": "साइन इन करें",
@@ -886,9 +891,6 @@
     }
   },
   "settings": {
-    "overviewLabel": "कंपनी सेटिंग्स",
-    "overviewSubtitle": "पाँच क्षेत्र जो तय करते हैं कि आपका संगठन कैसे चलता है। नीचे सब कुछ कॉन्फ़िगर किया गया है।",
-    "overviewProgressLabel": "{{total}} में से {{done}} पूर्ण",
     "actions": {
       "save": "सहेजें"
     },
@@ -907,45 +909,6 @@
       "cycleManagement": "चक्र प्रबंधन",
       "ledgerRegister": "Ledger Register",
       "payoutApproval": "Payout Approval"
-    },
-    "cards": {
-      "companyProfile": {
-        "actionLabel": "संपादित करें"
-      },
-      "branding": {
-        "actionLabel": "संपादित करें"
-      },
-      "compensation": {
-        "actionLabel": "संपादित करें"
-      },
-      "projects": {
-        "actionLabel": "प्रबंधित करें"
-      },
-      "paymentsKyc": {
-        "actionLabel": "संपादित करें"
-      }
-    },
-    "compensationCard": {
-      "currentVersionLabel": "वर्तमान संस्करण {{versionLabel}} (प्रभावी {{effectiveFrom}})",
-      "viewHistoryLabel": "इतिहास देखें",
-      "historyPanelTitle": "मुआवज़ा योजना इतिहास"
-    },
-    "companyProfileCard": {
-      "currentDisplayNameLabel": "{{displayName}}"
-    },
-    "brandingCard": {
-      "currentTaglineLabel": "{{tagline}}"
-    },
-    "projectsCard": {
-      "summaryLabel": "{{projectCount}} प्रोजेक्ट · {{plotCount}} प्लॉट सूचीबद्ध"
-    },
-    "paymentsKycCard": {
-      "summaryLabel": "{{gateway}} कनेक्टेड · {{strictness}} केवाईसी"
-    },
-    "completionBanner": {
-      "title": "सेटअप पूर्ण",
-      "description": "आपका संगठन तैयार है। अपने पहले एसोसिएट को जोड़ने के लिए एसोसिएट डायरेक्टरी पर जाएँ।",
-      "cta": "डायरेक्टरी पर जाएँ"
     },
     "auditLog": {
       "sectionFilterLabel": "अनुभाग",

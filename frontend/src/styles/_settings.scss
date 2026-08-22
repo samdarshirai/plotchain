@@ -1,250 +1,29 @@
-// Settings area layout: a flat 230px rail beside the content column, per
-// docs/design/viraj_acres_settings_mockup/Viraj_Acres_Settings.dc.html. The rail replaces the
-// category-pill + item-tab header rows the app used to carry, and renders only here, so the
-// Dashboard keeps the full viewport width. 68px is the global header's height (_app-shell.scss),
-// so the rail runs from under it to the bottom of the viewport.
+// Settings area layout: no chrome of its own -- the header's category tabs and the .app-nav-items
+// pill row (see _app-shell.scss) are the whole navigation, per
+// docs/design/viraj_acres_settings_mockup/Viraj_Acres_Settings.dc.html. All that is left here is
+// the content column. The min-height subtracts both global chrome rows, which is exact on settings
+// routes because a settings route always has an active category and therefore always shows the
+// pill row.
 .settings-shell {
   display: flex;
-  align-items: stretch;
-  min-height: calc(100vh - 68px);
-}
-
-.settings-shell__sidebar {
-  flex-shrink: 0;
-  width: 230px;
-  padding: 22px 0;
-  background: var(--surface-page);
-  border-right: 1px solid var(--border-subtle);
-}
-
-.settings-shell__nav-link {
-  display: block;
-  padding: 11px 24px;
-  margin: 0 10px 2px;
-  border-radius: 4px;
-  font-size: 14.5px;
-  font-weight: 400;
-  color: #4a3f33;
-  text-decoration: none;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.settings-shell__nav-link:hover {
-  background: color-mix(in srgb, var(--brand-secondary) 5%, transparent);
-}
-
-.settings-shell__nav-link--active {
-  background: color-mix(in srgb, var(--brand-secondary) 8%, transparent);
-  color: var(--ink);
-  font-weight: 700;
+  flex-direction: column;
+  min-height: calc(100vh - var(--app-header-height) - var(--app-nav-items-height));
 }
 
 .settings-shell__content {
   flex: 1;
   min-width: 0;
-  padding: 40px 44px 80px;
-  max-width: 1240px;
+  padding: 40px 48px 80px;
 }
 
 // Full-bleed variant for screens (e.g. Tree Explorer) that need the entire content column's
-// width rather than the default 1240px reading column. Padding dropped to 0 (card supplies its
-// own inner spacing) so the card sits flush against the column's edges instead of floating with a
-// gap around it; the flex column lets that card stretch to the shell's full height.
+// width. Padding dropped to 0 (card supplies its own inner spacing) so the card sits flush against
+// the column's edges instead of floating with a gap around it; the flex column lets that card
+// stretch to the shell's full height.
 .settings-shell__content--full {
-  max-width: none;
   padding: 0;
   display: flex;
   flex-direction: column;
-}
-
-// --- Settings overview (hub screen, Viraj_Acres_Settings.dc.html lines 61-102) ---
-
-.settings-overview__header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1.5rem;
-  margin-bottom: 1.25rem;
-  max-width: 68.75rem; // 1100px, matches the mockup's content column cap on this screen
-}
-
-.settings-overview__title {
-  margin: 0 0 0.375rem;
-  font-family: var(--font-display);
-  font-size: 1.75rem; // 28px
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.settings-overview__subtitle {
-  margin: 0;
-  font-size: 0.875rem; // 14px
-  color: var(--text-muted);
-}
-
-.settings-overview__progress-label {
-  flex-shrink: 0;
-  font-size: 0.84375rem; // 13.5px
-  font-weight: 700;
-  color: var(--status-success);
-  text-align: right;
-}
-
-.settings-overview__progress-track {
-  height: 6px;
-  // #EFE9DA -- a pale parchment-tinted track color unique to this progress bar; no existing token
-  // matches it and it isn't reused elsewhere, so it's kept as a literal rather than tokenized.
-  background: #EFE9DA;
-  border-radius: 3px;
-  overflow: hidden;
-  max-width: 68.75rem;
-  margin-bottom: 1.5rem;
-}
-
-.settings-overview__progress-fill {
-  height: 100%;
-  background: var(--status-success);
-  transition: width 0.2s ease;
-}
-
-.settings-overview__grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem; // 20px
-  max-width: 68.75rem;
-}
-
-.settings-overview__card {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 10rem; // 160px
-  // 4px, not the shared --radius-sm (2px) primitives use -- this screen's cards match the
-  // mockup's own explicit 4px, distinct from the "engraved ledger" 2px convention.
-  border-radius: 4px;
-}
-
-.settings-overview__card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.75rem; // 12px
-}
-
-.settings-overview__card-header-left {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem; // 10px
-}
-
-.settings-overview__card-step {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 1.625rem; // 26px
-  height: 1.625rem;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--brand-secondary) 8%, transparent);
-  color: var(--brand-secondary);
-  font-size: 0.78125rem; // 12.5px
-  font-weight: 700;
-}
-
-.settings-overview__card-icon {
-  font-size: 1.1875rem; // 19px
-  color: var(--brand-secondary);
-}
-
-.settings-overview__card-check {
-  font-size: 1.1875rem; // 19px
-  color: var(--status-success);
-}
-
-.settings-overview__card-title {
-  margin: 0 0 0.375rem; // 6px
-  font-size: 1.125rem; // 18px
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.settings-overview__card-subtitle {
-  margin: 0;
-  min-height: 1.2em; // holds the row's height steady while the backing summary is still loading
-  font-size: 0.84375rem; // 13.5px
-  color: var(--text-muted);
-}
-
-.settings-overview__card-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem; // 10px
-  margin-top: 1rem;
-}
-
-.settings-overview__banner {
-  max-width: 68.75rem;
-  margin-top: 1.25rem; // 20px
-  background: var(--ink);
-  border: 1px solid var(--brand-primary);
-  border-radius: 4px;
-  padding: 1.375rem 1.75rem; // 22px 28px
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.25rem;
-}
-
-.settings-overview__banner-title {
-  margin: 0 0 0.25rem;
-  color: var(--brand-primary-bright);
-  font-weight: 700;
-  font-size: 0.9375rem; // 15px
-}
-
-.settings-overview__banner-description {
-  margin: 0;
-  color: var(--ink-surface-muted);
-  font-size: 0.84375rem; // 13.5px
-}
-
-.settings-overview__banner-cta {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  background: var(--brand-primary-bright);
-  color: var(--ink);
-  font-weight: 700;
-  font-size: 0.875rem; // 14px
-  padding: 0.6875rem 1.375rem; // 11px 22px
-  border-radius: 2px;
-  white-space: nowrap;
-  text-decoration: none;
-  transition: opacity 0.15s ease;
-}
-
-.settings-overview__banner-cta:hover {
-  opacity: 0.92;
-}
-
-.settings-overview__history-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.settings-overview__history-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.625rem 0;
-  border-bottom: 1px solid var(--border-subtle);
-  color: var(--text-primary);
-  font-size: 0.875rem;
 }
 
 // --- Audit log ---

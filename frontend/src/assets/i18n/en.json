@@ -254,7 +254,12 @@
     "digitalIdCard": "Digital ID Card",
     "incomeStatement": "Income Statement",
     "payoutHistory": "Payout History",
-    "settings": "Settings"
+    "categories": {
+      "setup": "Setup",
+      "network": "Network",
+      "finance": "Finance & Cycles",
+      "system": "System"
+    }
   },
   "auth": {
     "heading": "Sign in",
@@ -886,9 +891,6 @@
     }
   },
   "settings": {
-    "overviewLabel": "Company Settings",
-    "overviewSubtitle": "The five areas that define how your organization runs. Everything below is configured.",
-    "overviewProgressLabel": "{{done}} of {{total}} complete",
     "actions": {
       "save": "Save"
     },
@@ -907,45 +909,6 @@
       "cycleManagement": "Cycle Management",
       "ledgerRegister": "Ledger Register",
       "payoutApproval": "Payout Approval"
-    },
-    "cards": {
-      "companyProfile": {
-        "actionLabel": "Edit"
-      },
-      "branding": {
-        "actionLabel": "Edit"
-      },
-      "compensation": {
-        "actionLabel": "Edit"
-      },
-      "projects": {
-        "actionLabel": "Manage"
-      },
-      "paymentsKyc": {
-        "actionLabel": "Edit"
-      }
-    },
-    "compensationCard": {
-      "currentVersionLabel": "Current Version {{versionLabel}} (Effective {{effectiveFrom}})",
-      "viewHistoryLabel": "View History",
-      "historyPanelTitle": "Compensation Plan History"
-    },
-    "companyProfileCard": {
-      "currentDisplayNameLabel": "{{displayName}}"
-    },
-    "brandingCard": {
-      "currentTaglineLabel": "{{tagline}}"
-    },
-    "projectsCard": {
-      "summaryLabel": "{{projectCount}} project(s) · {{plotCount}} plots listed"
-    },
-    "paymentsKycCard": {
-      "summaryLabel": "{{gateway}} connected · {{strictness}} KYC"
-    },
-    "completionBanner": {
-      "title": "Setup complete",
-      "description": "Your organization is ready. Head to the Associate Directory to provision your first associate.",
-      "cta": "Go to Directory"
     },
     "auditLog": {
       "sectionFilterLabel": "Section",

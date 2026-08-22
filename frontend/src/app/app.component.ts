@@ -6,6 +6,7 @@ import { filter, Subscription } from 'rxjs';
 import { AuthService } from './auth/auth.service';
 import { ADMIN_FAMILY_ROLES } from './admin/admin.guard';
 import { BrandingBootstrapService } from './core/theme/branding-bootstrap.service';
+import { ADMIN_NAV_CATEGORIES, AdminNavCategory, findNavCategoryForUrl } from './admin-nav-categories.model';
 
 // /setup is a guided, pre-launch-only wizard (setupModeGuard) with its own dedicated
 // step-nav -- it stays chromeless (no global header) so cross-navigation doesn't undercut the
@@ -30,6 +31,12 @@ export class AppComponent implements OnInit, OnDestroy {
   isSetupRoute = false;
   isChromelessRoute = false;
 
+  // Header category tabs (admin-family only) and the item-tab row they expand into. Both read the
+  // same ADMIN_NAV_CATEGORIES data; activeNavCategory is recomputed from the URL on every
+  // navigation and is the single thing that decides which tab is lit and which items are listed.
+  readonly navCategories = ADMIN_NAV_CATEGORIES;
+  activeNavCategory?: AdminNavCategory;
+
   get isAdminFamily(): boolean {
     const role = this.authService.getRole();
     return role !== null && ADMIN_FAMILY_ROLES.has(role);
@@ -43,10 +50,14 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.updateSetupRouteState(this.router.url);
+    this.activeNavCategory = findNavCategoryForUrl(this.router.url);
     this.navigationSubscription = this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(event => {
         this.updateSetupRouteState(event.urlAfterRedirects);
+        // urlAfterRedirects, not url: /settings redirects to /settings/company-profile, and it's
+        // the destination that owns a category.
+        this.activeNavCategory = findNavCategoryForUrl(event.urlAfterRedirects);
       });
   }
 

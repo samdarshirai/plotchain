@@ -24,12 +24,31 @@
       <a *ngIf="!isAdminFamily" class="app-nav__link" routerLink="/payout-history" routerLinkActive="app-nav__link--active">{{ 'nav.payoutHistory' | translate }}</a>
       <ng-container *ngIf="isAdminFamily">
         <a class="app-nav__link" routerLink="/admin/dashboard" routerLinkActive="app-nav__link--active">{{ 'nav.dashboard' | translate }}</a>
-        <!-- Non-exact routerLinkActive on purpose: Settings stays lit while a sidebar screen
-             (/settings/branding, ...) is open, exactly as the mockup shows it. -->
-        <a class="app-nav__link" routerLink="/settings" routerLinkActive="app-nav__link--active">{{ 'nav.settings' | translate }}</a>
+        <!-- Category tabs. Active state comes from activeNavCategory (URL-derived) rather than
+             routerLinkActive, because a tab links to its FIRST item but must stay lit for any of
+             them. Clicking one lands on that first item; the row below then lists the rest. -->
+        <a
+          *ngFor="let category of navCategories"
+          class="app-nav__link"
+          [class.app-nav__link--active]="activeNavCategory?.key === category.key"
+          [routerLink]="category.items[0].path"
+        ><span class="material-symbols-outlined app-nav__link-icon" aria-hidden="true">{{ category.icon }}</span>{{ category.labelKey | translate }}</a>
       </ng-container>
     </nav>
   </div>
   <button type="button" class="logout" (click)="onLogout()">{{ 'auth.logout' | translate }}</button>
 </header>
+<!-- Second nav row: the active category's items as pills. Absent on the Dashboard (and every
+     non-settings route), where no category is active. -->
+<nav
+  class="app-nav-items"
+  *ngIf="authService.isAuthenticated() && !isChromelessRoute && isAdminFamily && activeNavCategory"
+>
+  <a
+    *ngFor="let item of activeNavCategory.items"
+    class="app-nav-items__link"
+    [routerLink]="item.path"
+    routerLinkActive="app-nav-items__link--active"
+  >{{ item.labelKey | translate }}</a>
+</nav>
 <router-outlet></router-outlet>

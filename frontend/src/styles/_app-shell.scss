@@ -8,16 +8,16 @@
 // under-contrast against black. The Log Out button's #4a4038/#e8e0d0 stay literal here: they're
 // this one control's border/label, not a shade any other rule reads.
 //
-// For admin-family roles the nav is just two items, Dashboard and Settings; the settings screens
-// themselves are listed in the Settings sidebar (see .settings-shell__sidebar in _settings.scss),
-// replacing the category-pill + item-tab rows this header used to carry.
+// For admin-family roles the nav is Dashboard plus the four category tabs
+// (admin-nav-categories.model.ts); the active category's screens are listed in the .app-nav-items
+// row directly below this header. Settings has no sidebar and no hub screen.
 .app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
   padding: 0 28px;
-  height: 68px;
+  height: var(--app-header-height);
   background: var(--ink);
 }
 
@@ -101,19 +101,27 @@
 .app-nav {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   overflow-x: auto;
 }
 
 .app-nav__link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
   padding: 9px 16px;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--nav-inactive-muted);
   text-decoration: none;
   white-space: nowrap;
   transition: background 0.15s ease, color 0.15s ease;
+}
+
+.app-nav__link-icon {
+  font-size: 16px;
 }
 
 .app-nav__link:hover {
@@ -123,6 +131,46 @@
 
 .app-nav__link--active {
   background: var(--nav-active-fill);
+  color: var(--brand-primary-bright);
+}
+
+// The header's second row: the active category's screens as Wine pills on the Raised parchment
+// band. Rendered only while a category is active (i.e. on a /settings route), so the Dashboard
+// keeps the full viewport below the header. min-height keeps the band a known height so
+// .settings-shell can subtract it from the viewport (see _settings.scss); it grows past that only
+// when the pills wrap on a narrow viewport.
+.app-nav-items {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: var(--app-nav-items-height);
+  padding: 12px 32px;
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.app-nav-items__link {
+  padding: 8px 16px;
+  border-radius: 14px;
+  font-size: 13px;
+  // Tighter than the app's 1.5 body leading, matching the mockup's default-leading pills; also
+  // what keeps a single unwrapped row inside --app-nav-items-height exactly.
+  line-height: 1.2;
+  font-weight: 600;
+  color: var(--brand-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.app-nav-items__link:hover {
+  background: color-mix(in srgb, var(--brand-secondary) 8%, transparent);
+}
+
+.app-nav-items__link--active,
+.app-nav-items__link--active:hover {
+  background: var(--brand-secondary);
   color: var(--brand-primary-bright);
 }
 
