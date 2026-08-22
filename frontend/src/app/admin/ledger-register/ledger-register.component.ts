@@ -7,11 +7,21 @@ import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { CycleManagementService } from '../cycle-management/cycle-management.service';
 import { CycleSummary } from '../models/cycle.model';
-import { EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
+import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 
 const PAGE_SIZE = 20;
 const CYCLE_LOOKUP_SIZE = 100;
+
+// The backend's LedgerEntryStatus enum is shouty-uppercase (PENDING/CARRIED_FORWARD/PAID/REVERSED);
+// the mockup renders per-value colored status text (Viraj_Acres_Settings.dc.html, isLedger section,
+// `l.statusColor`). Since the editable-table badge cell renders the row's raw value verbatim, the
+// row-building step below title-cases it before it ever reaches the table, and statusBadgeTone
+// matches on that title-cased string -- same convention as AssociateDirectoryComponent's
+// titleCase/badgeTone pair.
+function titleCase(value: string): string {
+  return value.length === 0 ? value : value.charAt(0) + value.slice(1).toLowerCase();
+}
 
 @Component({
   selector: 'app-ledger-register',
@@ -139,7 +149,12 @@ export class LedgerRegisterComponent implements OnInit {
       { key: 'associate', label: this.translate.instant('admin.ledgerRegister.columnAssociate'), type: 'text' },
       { key: 'cyclePeriod', label: this.translate.instant('admin.ledgerRegister.columnCyclePeriod'), type: 'text' },
       { key: 'incomeType', label: this.translate.instant('admin.ledgerRegister.columnIncomeType'), type: 'text' },
-      { key: 'status', label: this.translate.instant('admin.ledgerRegister.columnStatus'), type: 'text' },
+      {
+        key: 'status',
+        label: this.translate.instant('admin.ledgerRegister.columnStatus'),
+        type: 'badge',
+        badgeTone: value => this.statusBadgeTone(value)
+      },
       { key: 'netAmount', label: this.translate.instant('admin.ledgerRegister.columnNetAmount'), type: 'text' },
       { key: 'sourceRef', label: this.translate.instant('admin.ledgerRegister.columnSourceRef'), type: 'text' },
       { key: 'createdAt', label: this.translate.instant('admin.ledgerRegister.columnCreatedAt'), type: 'text' }
@@ -194,10 +209,24 @@ export class LedgerRegisterComponent implements OnInit {
       associate: `${entry.associateUserId} — ${entry.associateName}`,
       cyclePeriod: `${this.datePipe.transform(entry.cyclePeriodStart, 'mediumDate')} – ${this.datePipe.transform(entry.cyclePeriodEnd, 'mediumDate')}`,
       incomeType: entry.incomeType,
-      status: entry.status,
+      status: titleCase(entry.status),
       netAmount: this.currencyPipe.transform(entry.netAmount, 'INR', 'symbol', '1.0-2') ?? String(entry.netAmount),
       sourceRef: entry.sourceRef ?? this.translate.instant('admin.ledgerRegister.noSourceRef'),
       createdAt: this.datePipe.transform(entry.createdAt, 'medium') ?? entry.createdAt
     }));
+  }
+
+  statusBadgeTone(value: string | number): BadgeTone {
+    switch (value) {
+      case 'Paid':
+        return 'success';
+      case 'Pending':
+      case 'Carried forward':
+        return 'warning';
+      case 'Reversed':
+        return 'danger';
+      default:
+        return 'default';
+    }
   }
 }
