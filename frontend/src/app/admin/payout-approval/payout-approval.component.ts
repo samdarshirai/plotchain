@@ -7,12 +7,22 @@ import { PayoutApprovalService } from './payout-approval.service';
 import { AdminWithdrawalPage, AdminWithdrawalFilters } from '../models/admin-withdrawal-page.model';
 import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
-import { EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
+import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.component';
 import { AdminDashboardService } from '../../admin-dashboard/admin-dashboard.service';
 
 const PAGE_SIZE = 20;
+
+// Convert SHOUTED_CASE or SNAKE_CASE to Title Case:
+// REQUESTED → Requested, APPROVED → Approved, REJECTED → Rejected, DISBURSED → Disbursed.
+function titleCase(value: string): string {
+  if (value.length === 0) return value;
+  return value
+    .split('_')
+    .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(' ');
+}
 
 @Component({
   selector: 'app-payout-approval',
@@ -175,7 +185,12 @@ export class PayoutApprovalComponent implements OnInit {
     this.registerColumns = [
       { key: 'associate', label: this.translate.instant('admin.payoutApproval.columnAssociate'), type: 'text' },
       { key: 'amount', label: this.translate.instant('admin.payoutApproval.columnAmount'), type: 'text' },
-      { key: 'status', label: this.translate.instant('admin.payoutApproval.columnStatus'), type: 'text' },
+      {
+        key: 'status',
+        label: this.translate.instant('admin.payoutApproval.columnStatus'),
+        type: 'badge',
+        badgeTone: value => this.statusBadgeTone(value)
+      },
       { key: 'reason', label: this.translate.instant('admin.payoutApproval.columnReason'), type: 'text' },
       { key: 'bankReference', label: this.translate.instant('admin.payoutApproval.columnBankReference'), type: 'text' },
       { key: 'requestedAt', label: this.translate.instant('admin.payoutApproval.columnRequestedAt'), type: 'text' },
@@ -248,10 +263,24 @@ export class PayoutApprovalComponent implements OnInit {
     this.registerRows = (this.page?.requests ?? []).map(request => ({
       associate: `${request.associateUserId} — ${request.associateName}`,
       amount: this.currencyPipe.transform(request.amount, 'INR', 'symbol', '1.0-2') ?? String(request.amount),
-      status: request.status,
+      status: titleCase(request.status),
       reason: request.reason ?? this.translate.instant('admin.payoutApproval.noReason'),
       bankReference: request.bankReference ?? this.translate.instant('admin.payoutApproval.noBankReference'),
       requestedAt: this.datePipe.transform(request.requestedAt, 'medium') ?? request.requestedAt
     }));
+  }
+
+  statusBadgeTone(value: string | number): BadgeTone {
+    switch (value) {
+      case 'Requested':
+        return 'warning';
+      case 'Approved':
+      case 'Disbursed':
+        return 'success';
+      case 'Rejected':
+        return 'danger';
+      default:
+        return 'default';
+    }
   }
 }
