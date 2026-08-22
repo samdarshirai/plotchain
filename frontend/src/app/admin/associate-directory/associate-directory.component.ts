@@ -111,20 +111,22 @@ const PAGE_SIZE = 20;
         ></app-editable-table>
 
         <div class="associate-directory__pagination" *ngIf="page">
-          <span
+          <button
+            type="button"
             class="associate-directory__pagination-action"
-            [class.associate-directory__pagination-action--disabled]="page.page === 0"
-            (click)="page.page > 0 && goToPage(page.page - 1)"
+            [disabled]="page.page === 0"
+            (click)="goToPage(page.page - 1)"
           >
             {{ 'admin.associateDirectory.previousPageAction' | translate }}
-          </span>
-          <span
+          </button>
+          <button
+            type="button"
             class="associate-directory__pagination-action"
-            [class.associate-directory__pagination-action--disabled]="(page.page + 1) * page.size >= page.totalElements"
-            (click)="(page.page + 1) * page.size < page.totalElements && goToPage(page.page + 1)"
+            [disabled]="(page.page + 1) * page.size >= page.totalElements"
+            (click)="goToPage(page.page + 1)"
           >
             {{ 'admin.associateDirectory.nextPageAction' | translate }}
-          </span>
+          </button>
         </div>
       </div>
       </div>
@@ -218,6 +220,7 @@ const PAGE_SIZE = 20;
                 <datalist id="associate-directory-sponsor-options">
                   <option *ngFor="let sponsor of sponsorOptions" [value]="sponsorLabel(sponsor)"></option>
                 </datalist>
+                <app-field-error [message]="sponsorFieldError()"></app-field-error>
               </div>
             </div>
 
@@ -281,6 +284,7 @@ export class AssociateDirectoryComponent implements OnInit {
   provisionSubmitError: string | null = null;
   sponsorOptions: AssociateSummary[] = [];
   selectedSponsorId: string | null = null;
+  sponsorUnresolved = false;
   private provisionServerFieldErrors: Record<string, string> = {};
 
   ngOnInit(): void {
@@ -428,11 +432,26 @@ export class AssociateDirectoryComponent implements OnInit {
   onSponsorSearchInput(value: string): void {
     const match = this.sponsorOptions.find(associate => this.sponsorLabel(associate) === value);
     this.selectedSponsorId = match ? match.id : null;
+    // Editing the field clears a stale "unknown sponsor" message; onProvisionSubmit re-checks.
+    this.sponsorUnresolved = false;
+  }
+
+  // Sponsor is optional -- an empty field legitimately means "no sponsor". But typed text that
+  // matches no datalist option leaves selectedSponsorId null, which previously submitted
+  // sponsorId: undefined and created a sponsor-less associate with no warning. Typed-but-unresolved
+  // is therefore an error, blank is not.
+  sponsorFieldError(): string | undefined {
+    return this.sponsorUnresolved ? this.translate.instant('admin.validation.unknownSponsor') : undefined;
+  }
+
+  private hasUnresolvedSponsorText(): boolean {
+    return this.provisionForm.getRawValue().sponsorSearch.trim().length > 0 && !this.selectedSponsorId;
   }
 
   openProvisionModal(): void {
     this.provisionForm.reset({ name: '', email: '', phone: '', sponsorSearch: '' });
     this.selectedSponsorId = null;
+    this.sponsorUnresolved = false;
     this.provisioned = null;
     this.provisionSubmitError = null;
     this.provisionServerFieldErrors = {};
@@ -467,8 +486,13 @@ export class AssociateDirectoryComponent implements OnInit {
   onProvisionSubmit(): void {
     this.provisionServerFieldErrors = {};
     this.provisionSubmitError = null;
+    this.sponsorUnresolved = false;
     if (this.provisionForm.invalid) {
       this.provisionForm.markAllAsTouched();
+      return;
+    }
+    if (this.hasUnresolvedSponsorText()) {
+      this.sponsorUnresolved = true;
       return;
     }
     const { name, email, phone } = this.provisionForm.getRawValue();

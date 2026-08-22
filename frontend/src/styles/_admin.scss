@@ -621,14 +621,21 @@ body.admin-associate-active {
   font-size: 14px;
 }
 
+// Real <button>s (focusable, keyboard-activatable, natively disable-able) wearing the mockup's
+// plain-text look -- the mockup drops the bordered chrome the other registers' pagination has,
+// not the control itself.
 .associate-directory__pagination-action {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
 }
 
-.associate-directory__pagination-action--disabled {
+.associate-directory__pagination-action:disabled {
   cursor: default;
   opacity: 0.5;
-  pointer-events: none;
 }
 
 // "Provision New Associate" modal -- Viraj_Acres_Settings.dc.html lines 529-554. A centered

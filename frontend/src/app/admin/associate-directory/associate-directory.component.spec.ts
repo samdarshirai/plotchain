@@ -299,5 +299,81 @@ describe('AssociateDirectoryComponent', () => {
       expect(fixture.componentInstance.provisionSubmitError).toBeTruthy();
       expect(fixture.componentInstance.provisioned).toBeNull();
     });
+
+    it('blocks submit and flags the field when the sponsor text matches no associate', () => {
+      fixture.componentInstance.openProvisionModal();
+      fixture.componentInstance.provisionForm.setValue({
+        name: 'Aditya Kumar',
+        email: 'aditya@example.com',
+        phone: '',
+        sponsorSearch: 'Sunil Spons'
+      });
+      fixture.componentInstance.onSponsorSearchInput('Sunil Spons');
+      expect(fixture.componentInstance.selectedSponsorId).toBeNull();
+
+      fixture.componentInstance.onProvisionSubmit();
+
+      httpMock.expectNone('/api/associates');
+      expect(fixture.componentInstance.sponsorUnresolved).toBeTrue();
+      expect(fixture.componentInstance.sponsorFieldError()).toBeTruthy();
+    });
+
+    it('still allows submit with a blank sponsor field (sponsor is optional)', () => {
+      fixture.componentInstance.openProvisionModal();
+      fixture.componentInstance.provisionForm.setValue({
+        name: 'Aditya Kumar',
+        email: 'aditya@example.com',
+        phone: '',
+        sponsorSearch: '   '
+      });
+
+      fixture.componentInstance.onProvisionSubmit();
+
+      const req = httpMock.expectOne('/api/associates');
+      expect(req.request.body.sponsorId).toBeUndefined();
+      expect(fixture.componentInstance.sponsorUnresolved).toBeFalse();
+      req.flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!' });
+    });
+
+    it('clears the unresolved-sponsor error once the field is edited again', () => {
+      fixture.componentInstance.openProvisionModal();
+      fixture.componentInstance.sponsorUnresolved = true;
+
+      fixture.componentInstance.onSponsorSearchInput('VP00002 — Sunil Sponsor');
+
+      expect(fixture.componentInstance.sponsorUnresolved).toBeFalse();
+      expect(fixture.componentInstance.sponsorFieldError()).toBeUndefined();
+    });
+  });
+
+  describe('pagination controls', () => {
+    it('renders Previous/Next as real, natively-disable-able buttons', () => {
+      fixture.detectChanges();
+
+      const actions: HTMLButtonElement[] = Array.from(
+        fixture.nativeElement.querySelectorAll('.associate-directory__pagination-action')
+      );
+      expect(actions.length).toBe(2);
+      actions.forEach(action => expect(action.tagName).toBe('BUTTON'));
+      // Single page of results: both ends are at their bound, so both are natively disabled
+      // (not merely dimmed by a CSS-only modifier class the way they used to be).
+      expect(actions[0].disabled).toBeTrue();
+      expect(actions[1].disabled).toBeTrue();
+    });
+
+    it('advances a page when Next is clicked', () => {
+      fixture.componentInstance.page = { associates: [], page: 0, size: 20, totalElements: 45 } as any;
+      fixture.detectChanges();
+
+      const actions: HTMLButtonElement[] = Array.from(
+        fixture.nativeElement.querySelectorAll('.associate-directory__pagination-action')
+      );
+      expect(actions[1].disabled).toBeFalse();
+      actions[1].click();
+
+      httpMock.expectOne('/api/admin/associates?page=1&size=20')
+        .flush({ associates: [], page: 1, size: 20, totalElements: 45 });
+      expect(fixture.componentInstance.page?.page).toBe(1);
+    });
   });
 });
