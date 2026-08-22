@@ -102,7 +102,7 @@ A second, much quieter echo of the same idea shows up in the close-success banne
 |---|---|---|
 | History table + pagination | `EditableTableComponent` (`readOnly`) | Columns: Period Start, Period End, Status, Actions. Same usage shape as `SalesRegisterComponent`. |
 | Row's "View Detail" action | `EditableTableComponent`'s single `actionTemplate` | One `<app-brand-button variant="secondary">` per row, scoped by `row.id` — mirrors Sales Register's per-row `actionTemplate` usage. |
-| Detail drill-down | `SidePanelComponent` | Same component `SettingsOverviewComponent`'s compensation-history panel already uses (`[open]`, `[title]`, `(closed)`, body via `<ng-content>`). Title: "Cycle Detail". |
+| Detail drill-down | `SidePanelComponent` | Same component (`[open]`, `[title]`, `(closed)`, body via `<ng-content>`) that the deleted `SettingsOverviewComponent`'s compensation-history panel used — that Company Settings Overview hub screen no longer exists (a mockup revision made it obsolete), but `SidePanelComponent` itself is unchanged and still in use. Title: "Cycle Detail". |
 | Close result / errors | `InlineBannerComponent` tone="success" / tone="danger" | Success shows the four real `CycleCloseResponse` fields plus the chip transition. Two distinct danger banners: close-conflict (409) and history-load-error, placed exactly where Sales Register places `sales-register__load-error` — above the table. |
 | "Close Cycle" | `BrandButtonComponent` `variant="danger"` | The screen's one consequential, effectively one-directional action — same reasoning Sales Register applied to "Void". |
 | Status filter | Plain `<select>` inside a `surface-raised` strip | One field, not a toolbar — see Layout concept for why a full multi-field toolbar doesn't fit this screen's content. |
@@ -110,6 +110,8 @@ A second, much quieter echo of the same idea shows up in the close-success banne
 ### Implementation constraint worth flagging (same one Sales Register's DESIGN.md flags)
 
 `EditableTableComponent`'s read-only data cells render `{{ row[column.key] }}` as plain text — there's no per-cell class hook. That means the history table's **Status** column can be styled uniformly (mono, uppercase, muted — matching the `field-label` treatment) but **cannot** show the Cycle Rail or a per-value colored pill without extending the shared component, which this brief rules out. The Cycle Rail therefore only ever appears in markup the design *does* have full control over: the Current Cycle strip and the side panel body, both outside `EditableTableComponent`'s cell templates.
+
+> **Stale rationale corrected (design-parity plan, final review).** The *conclusion* still describes shipped code — Cycle Management's history Status column is still `type: 'text'`, styled uniformly, and the Cycle Rail still lives only in the Current Cycle strip and the side panel. But the reason given is no longer accurate: `EditableTableComponent` has since gained a `type: 'badge'` column (a `badgeTone` value→tone mapper), which Sales Register, Ledger Register and Payout Approval all use to color their Status columns per value. So a per-value colored Status here is *available*, merely not taken; the Cycle Rail specifically remains out of reach because `badge` renders a value→color mapping, not arbitrary markup.
 
 ## Screen states
 
