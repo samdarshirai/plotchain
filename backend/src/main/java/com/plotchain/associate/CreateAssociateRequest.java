@@ -11,5 +11,6 @@ public record CreateAssociateRequest(
     @NotBlank @Email String email,
     UUID sponsorId,
     UUID parentId,
-    @Pattern(regexp = "L|R", message = "position must be L or R") String position
+    @Pattern(regexp = "L|R", message = "position must be L or R") String position,
+    String phone
 ) {}

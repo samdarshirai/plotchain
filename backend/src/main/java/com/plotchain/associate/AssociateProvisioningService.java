@@ -62,6 +62,7 @@ public class AssociateProvisioningService {
         associate.setUserId(userId);
         associate.setName(request.name());
         associate.setEmail(request.email());
+        associate.setPhone(request.phone());
         associate.setPasswordHash(passwordEncoder.encode(temporaryPassword));
         associate.setRole(AssociateRole.ASSOCIATE);
         associate.setSponsorId(request.sponsorId());

@@ -54,7 +54,7 @@ class AssociateProvisioningServiceTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(lowestRank));
 
         CreateAssociateResponse response = service.create(
-            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, null, null));
+            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, null, null, null));
 
         ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
         org.mockito.Mockito.verify(associateRepository).save(saved.capture());
@@ -82,7 +82,7 @@ class AssociateProvisioningServiceTest {
         when(associateRepository.existsByEmail("taken@plotchain.test")).thenReturn(true);
 
         assertThatThrownBy(() -> service.create(
-            new CreateAssociateRequest("Jane Doe", "taken@plotchain.test", null, null, null)))
+            new CreateAssociateRequest("Jane Doe", "taken@plotchain.test", null, null, null, null)))
             .isInstanceOf(EmailAlreadyRegisteredException.class);
     }
 
@@ -94,7 +94,7 @@ class AssociateProvisioningServiceTest {
         when(associateRepository.existsByParentIdAndPosition(parentId, "L")).thenReturn(true);
 
         assertThatThrownBy(() -> service.create(
-            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, parentId, "L")))
+            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, parentId, "L", null)))
             .isInstanceOf(PlacementUnavailableException.class);
     }
 
@@ -105,7 +105,7 @@ class AssociateProvisioningServiceTest {
         when(associateRepository.findById(parentId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.create(
-            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, parentId, "L")))
+            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, parentId, "L", null)))
             .isInstanceOf(AssociateNotFoundException.class);
     }
 
@@ -116,7 +116,7 @@ class AssociateProvisioningServiceTest {
         when(associateRepository.findById(parentId)).thenReturn(Optional.of(new Associate()));
 
         assertThatThrownBy(() -> service.create(
-            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, parentId, null)))
+            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, parentId, null, null)))
             .isInstanceOf(PositionRequiredException.class);
     }
 
@@ -126,7 +126,22 @@ class AssociateProvisioningServiceTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
 
         assertThatThrownBy(() -> service.create(
-            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, null, null)))
+            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, null, null, null)))
             .isInstanceOf(NoRankTiersConfiguredException.class);
+    }
+
+    @Test
+    void persistsPhoneFromRequest() {
+        when(associateRepository.existsByEmail("new@plotchain.test")).thenReturn(false);
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(lowestRank));
+
+        service.create(
+            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, null, null, "+1234567890"));
+
+        ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
+        org.mockito.Mockito.verify(associateRepository).save(saved.capture());
+        Associate created = saved.getValue();
+
+        assertThat(created.getPhone()).isEqualTo("+1234567890");
     }
 }
