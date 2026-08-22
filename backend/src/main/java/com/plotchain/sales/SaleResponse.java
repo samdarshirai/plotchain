@@ -16,5 +16,7 @@ public record SaleResponse(
     String legCredited,
     String status,
     String voidReason,
-    Instant recordedAt
+    Instant recordedAt,
+    String plotNo,
+    String projectName
 ) {}

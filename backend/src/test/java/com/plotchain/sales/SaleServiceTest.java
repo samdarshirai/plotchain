@@ -57,6 +57,7 @@ class SaleServiceTest {
     @Mock SaleRepository saleRepository;
     @Mock LedgerEntryRepository ledgerEntryRepository;
     @Mock SelfPerformanceBonusConfigService selfPerformanceBonusConfigService;
+    @Mock com.plotchain.projects.ProjectRepository projectRepository;
 
     SaleService saleService;
 
@@ -69,7 +70,7 @@ class SaleServiceTest {
         saleService = new SaleService(
             plotRepository, associateRepository, cycleService,
             compensationPlanVersionRepository, saleRepository, ledgerEntryRepository,
-            selfPerformanceBonusConfigService);
+            selfPerformanceBonusConfigService, projectRepository);
     }
 
     private Plot plotWithStatus(PlotStatus status) {
@@ -678,5 +679,67 @@ class SaleServiceTest {
 
         assertThat(response.totalElements()).isEqualTo(0);
         assertThat(response.sales()).isEmpty();
+    }
+
+    @Test
+    void getMySalesPopulatesPlotNoAndProjectNameFromABatchLookupNotPerRowQueries() {
+        UUID plotId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sale sale = new Sale();
+        sale.setId(UUID.randomUUID());
+        sale.setPlotId(plotId);
+        sale.setAssociateId(ASSOCIATE_ID);
+        sale.setBuyerName("Jane Buyer");
+        sale.setBuyerPhone("9999999999");
+        sale.setAmount(new BigDecimal("600000.00"));
+        sale.setCycleId(CYCLE_ID);
+        sale.setLegCredited("L");
+        sale.setStatus(SaleStatus.RECORDED);
+        sale.setRecordedAt(Instant.now());
+
+        com.plotchain.projects.Plot plot = new com.plotchain.projects.Plot(
+            plotId, projectId, "VG2-118", com.plotchain.projects.PlotType.NORMAL,
+            new BigDecimal("1200.00"), new BigDecimal("500.00"), new BigDecimal("600000.00"),
+            com.plotchain.projects.PlotStatus.SOLD);
+        com.plotchain.projects.Project project = new com.plotchain.projects.Project(
+            projectId, "Viraj Greens Ph II", "Patna", null, null, Instant.now());
+
+        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
+        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(Pageable.class)))
+            .thenReturn(new PageImpl<>(List.of(sale)));
+        when(plotRepository.findAllById(List.of(plotId))).thenReturn(List.of(plot));
+        when(projectRepository.findAllById(List.of(projectId))).thenReturn(List.of(project));
+
+        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, 0, 20);
+
+        assertThat(response.sales()).hasSize(1);
+        assertThat(response.sales().get(0).plotNo()).isEqualTo("VG2-118");
+        assertThat(response.sales().get(0).projectName()).isEqualTo("Viraj Greens Ph II");
+    }
+
+    @Test
+    void getMySalesLeavesPlotNoAndProjectNameNullWhenThePlotCannotBeFound() {
+        UUID plotId = UUID.randomUUID();
+        Sale sale = new Sale();
+        sale.setId(UUID.randomUUID());
+        sale.setPlotId(plotId);
+        sale.setAssociateId(ASSOCIATE_ID);
+        sale.setBuyerName("Jane Buyer");
+        sale.setBuyerPhone("9999999999");
+        sale.setAmount(new BigDecimal("600000.00"));
+        sale.setCycleId(CYCLE_ID);
+        sale.setLegCredited("L");
+        sale.setStatus(SaleStatus.RECORDED);
+        sale.setRecordedAt(Instant.now());
+
+        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
+        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(Pageable.class)))
+            .thenReturn(new PageImpl<>(List.of(sale)));
+        when(plotRepository.findAllById(List.of(plotId))).thenReturn(List.of());
+
+        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, 0, 20);
+
+        assertThat(response.sales().get(0).plotNo()).isNull();
+        assertThat(response.sales().get(0).projectName()).isNull();
     }
 }

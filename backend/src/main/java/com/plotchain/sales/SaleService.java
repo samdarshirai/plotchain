@@ -17,6 +17,8 @@ import com.plotchain.projects.Plot;
 import com.plotchain.projects.PlotNotFoundException;
 import com.plotchain.projects.PlotRepository;
 import com.plotchain.projects.PlotStatus;
+import com.plotchain.projects.Project;
+import com.plotchain.projects.ProjectRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -28,7 +30,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class SaleService {
@@ -40,6 +44,7 @@ public class SaleService {
     private final SaleRepository saleRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
     private final SelfPerformanceBonusConfigService selfPerformanceBonusConfigService;
+    private final ProjectRepository projectRepository;
 
     public SaleService(
             PlotRepository plotRepository,
@@ -48,7 +53,8 @@ public class SaleService {
             CompensationPlanVersionRepository compensationPlanVersionRepository,
             SaleRepository saleRepository,
             LedgerEntryRepository ledgerEntryRepository,
-            SelfPerformanceBonusConfigService selfPerformanceBonusConfigService) {
+            SelfPerformanceBonusConfigService selfPerformanceBonusConfigService,
+            ProjectRepository projectRepository) {
         this.plotRepository = plotRepository;
         this.associateRepository = associateRepository;
         this.cycleService = cycleService;
@@ -56,6 +62,7 @@ public class SaleService {
         this.saleRepository = saleRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.selfPerformanceBonusConfigService = selfPerformanceBonusConfigService;
+        this.projectRepository = projectRepository;
     }
 
     // Sales unit 2 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
@@ -173,7 +180,7 @@ public class SaleService {
         }
 
         // Flow step 9.
-        return toResponse(sale);
+        return toResponses(List.of(sale)).get(0);
     }
 
     // Sales unit 4 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
@@ -223,7 +230,7 @@ public class SaleService {
         }
 
         // Flow step 6.
-        return toResponse(sale);
+        return toResponses(List.of(sale)).get(0);
     }
 
     // Sales unit 6 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
@@ -241,7 +248,7 @@ public class SaleService {
         Page<Sale> result = saleRepository.searchRegister(
             associateId, status, recordedFromInstant, recordedToExclusive, PageRequest.of(page, size));
 
-        List<SaleResponse> sales = result.getContent().stream().map(this::toResponse).toList();
+        List<SaleResponse> sales = toResponses(result.getContent());
         return new AdminSalePageResponse(sales, page, size, result.getTotalElements());
     }
 
@@ -256,24 +263,33 @@ public class SaleService {
         Page<Sale> result = saleRepository.findByAssociateIdInOrderByRecordedAtDesc(
             selfAndDownlineIds, PageRequest.of(page, size));
 
-        List<SaleResponse> sales = result.getContent().stream().map(this::toResponse).toList();
+        List<SaleResponse> sales = toResponses(result.getContent());
         return new AssociateSalePageResponse(sales, page, size, result.getTotalElements());
     }
 
-    private SaleResponse toResponse(Sale sale) {
-        return new SaleResponse(
-            sale.getId(),
-            sale.getPlotId(),
-            sale.getAssociateId(),
-            sale.getBuyerName(),
-            sale.getBuyerPhone(),
-            sale.getBuyerEmail(),
-            sale.getAmount(),
-            sale.getCycleId(),
-            sale.getLegCredited(),
-            sale.getStatus().name(),
-            sale.getVoidReason(),
-            sale.getRecordedAt());
+    // dashboard-mockup spec §3.1: plotNo/projectName resolved here via a batch Plot/Project
+    // lookup (two IN-queries total, regardless of how many sales are being mapped) rather than
+    // a per-row join or per-row repository call -- recordSale/voidSale route a single-element
+    // list through the same path so there is exactly one mapping implementation, not two.
+    private List<SaleResponse> toResponses(List<Sale> sales) {
+        List<UUID> plotIds = sales.stream().map(Sale::getPlotId).distinct().toList();
+        Map<UUID, Plot> plotsById = plotRepository.findAllById(plotIds).stream()
+            .collect(Collectors.toMap(Plot::getId, p -> p));
+        List<UUID> projectIds = plotsById.values().stream().map(Plot::getProjectId).distinct().toList();
+        Map<UUID, String> projectNamesByProjectId = projectRepository.findAllById(projectIds).stream()
+            .collect(Collectors.toMap(Project::getId, Project::getName));
+
+        return sales.stream().map(sale -> {
+            Plot plot = plotsById.get(sale.getPlotId());
+            String plotNo = plot != null ? plot.getPlotNo() : null;
+            String projectName = plot != null ? projectNamesByProjectId.get(plot.getProjectId()) : null;
+            return new SaleResponse(
+                sale.getId(), sale.getPlotId(), sale.getAssociateId(),
+                sale.getBuyerName(), sale.getBuyerPhone(), sale.getBuyerEmail(),
+                sale.getAmount(), sale.getCycleId(), sale.getLegCredited(),
+                sale.getStatus().name(), sale.getVoidReason(), sale.getRecordedAt(),
+                plotNo, projectName);
+        }).toList();
     }
 
     // Duplicates CycleService.kycGatedStatus()'s one-line logic rather than extracting a shared
