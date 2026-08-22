@@ -69,7 +69,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
       <div class="payments-kyc-step__grid-col payments-kyc-step__grid-col--primary">
       <form class="card payments-kyc-step__card payments-kyc-step__card--payment" [formGroup]="paymentForm">
         <h2 class="payments-kyc-step__section-title">
-          <span class="material-symbols-outlined">payments</span>
+          <span class="material-symbols-outlined">credit_card</span>
           {{ 'setup.paymentsKyc.paymentCollectionTitle' | translate }}
         </h2>
 
@@ -193,7 +193,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
 
         <div class="card payments-kyc-step__card payments-kyc-step__card--withdrawal">
           <h2 class="payments-kyc-step__section-title">
-            <span class="material-symbols-outlined">account_balance_wallet</span>
+            <span class="material-symbols-outlined">rule</span>
             {{ 'setup.paymentsKyc.withdrawalApprovalTitle' | translate }}
           </h2>
 
@@ -237,7 +237,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
       <div class="payments-kyc-step__grid-col payments-kyc-step__grid-col--secondary">
         <div class="card payments-kyc-step__card payments-kyc-step__card--kyc">
           <h2 class="payments-kyc-step__section-title">
-            <span class="material-symbols-outlined">verified_user</span>
+            <span class="material-symbols-outlined">shield</span>
             {{ 'setup.paymentsKyc.kycRequirementsTitle' | translate }}
           </h2>
 
@@ -276,7 +276,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
 
         <div class="card payments-kyc-step__card payments-kyc-step__card--booking payments-kyc-step__card--final">
           <h2 class="payments-kyc-step__section-title">
-            <span class="material-symbols-outlined">event_repeat</span>
+            <span class="material-symbols-outlined">calendar_month</span>
             {{ 'setup.paymentsKyc.bookingEmiPolicyTitle' | translate }}
           </h2>
 
