@@ -29,6 +29,19 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
     @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Sale s WHERE s.cycleId = :cycleId AND s.status = :status")
     BigDecimal sumAmountByCycleIdAndStatus(@Param("cycleId") UUID cycleId, @Param("status") SaleStatus status);
 
+    // Dashboard mockup's Sales This Cycle KPI tile (dashboard-mockup spec §3.1): a plain derived
+    // query, same shape as the existing countByCycleIdAndStatus but scoped to one associate too.
+    long countByAssociateIdAndCycleIdAndStatus(UUID associateId, UUID cycleId, SaleStatus status);
+
+    // Dashboard mockup's Revenue Booked KPI tile (dashboard-mockup spec §3.1): COALESCE mirrors
+    // sumAmountByCycleIdAndStatus above -- an associate/cycle with no matching sales must sum to
+    // 0, not null.
+    @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Sale s WHERE s.associateId = :associateId AND s.cycleId = :cycleId AND s.status = :status")
+    BigDecimal sumAmountByAssociateIdAndCycleIdAndStatus(
+        @Param("associateId") UUID associateId,
+        @Param("cycleId") UUID cycleId,
+        @Param("status") SaleStatus status);
+
     // Dashboard's "New Booked Area" (docs/superpowers/specs/2026-08-17-associate-dashboard-parity-design.md
     // §3.1): SUM of plot.area_sqft for the associate's RECORDED sales in one cycle. Sale has no
     // JPA relationship to Plot (plot_id is a bare UUID column), so this is an ad-hoc JPQL join on

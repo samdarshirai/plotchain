@@ -235,4 +235,54 @@ class SaleRepositoryTest {
 
         assertThat(sum).isNotNull().isEqualByComparingTo(BigDecimal.ZERO);
     }
+
+    @Test
+    void countByAssociateIdAndCycleIdAndStatusCountsOnlyThatAssociateCycleAndStatus() {
+        UUID projectId = persistProject();
+        UUID plotId = persistPlot(projectId);
+        UUID cycleId = persistCycle();
+        UUID otherCycleId = persistCycle();
+        UUID associateA = persistAssociate();
+        UUID associateB = persistAssociate();
+        persistSale(associateA, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(associateA, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(associateA, plotId, cycleId, SaleStatus.VOIDED, Instant.now());
+        persistSale(associateA, plotId, otherCycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(associateB, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        entityManager.flush();
+
+        long count = saleRepository.countByAssociateIdAndCycleIdAndStatus(associateA, cycleId, SaleStatus.RECORDED);
+
+        assertThat(count).isEqualTo(2);
+    }
+
+    @Test
+    void sumAmountByAssociateIdAndCycleIdAndStatusSumsOnlyMatchingRows() {
+        UUID projectId = persistProject();
+        UUID plotId = persistPlot(projectId);
+        UUID cycleId = persistCycle();
+        UUID associateId = persistAssociate();
+        persistSale(associateId, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(associateId, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(associateId, plotId, cycleId, SaleStatus.VOIDED, Instant.now());
+        entityManager.flush();
+
+        BigDecimal sum = saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED);
+
+        // Two RECORDED sales at persistSale's fixed amount, 600000.00 each.
+        assertThat(sum).isEqualByComparingTo("1200000.00");
+    }
+
+    @Test
+    void sumAmountByAssociateIdAndCycleIdAndStatusReturnsZeroNotNullWhenNoRowsMatch() {
+        UUID projectId = persistProject();
+        UUID plotId = persistPlot(projectId);
+        UUID cycleId = persistCycle();
+        UUID associateId = persistAssociate();
+        entityManager.flush();
+
+        BigDecimal sum = saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED);
+
+        assertThat(sum).isEqualByComparingTo("0");
+    }
 }
