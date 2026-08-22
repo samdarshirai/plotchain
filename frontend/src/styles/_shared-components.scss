@@ -397,21 +397,20 @@
 }
 
 .color-field__swatch {
-  width: 2.5rem;
-  height: 2.5rem;
-  // Sharp, per the mockup's flat color square -- unlike the other shared-primitive radii here,
-  // this one isn't var(--radius-sm); the mockup swatch carries no radius at all.
-  border-radius: 0;
+  // 44px/3px radius per the mockup's theme-color swatch (Company Profile + Branding task).
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 3px;
   border: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
 
 .color-field__picker {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   padding: 0;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  border-radius: 3px;
   background: var(--surface-raised);
   cursor: pointer;
 }

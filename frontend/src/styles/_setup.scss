@@ -535,7 +535,10 @@ app-setup-progress-rail {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
-  max-width: 760px;
+  // 920px per the mockup's card row (Branding's own max-width is untouched -- its card size is
+  // synced to the Live Login Preview via BrandingStepComponent's ResizeObserver, so widening it
+  // independently here would desync the two).
+  max-width: 920px;
 }
 
 .company-profile-step__intro {
@@ -546,7 +549,8 @@ app-setup-progress-rail {
 
 .company-profile-step__title {
   margin: 0;
-  font-size: 1.375rem;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -562,7 +566,10 @@ app-setup-progress-rail {
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
-  padding: 0.375rem 1.5rem;
+  // 4px/32px uniform, per the mockup card treatment (matches .branding-step__card's own override
+  // below) -- overrides .card's shared --radius-sm (2px) and 1.5rem padding.
+  border-radius: 4px;
+  padding: 2rem;
 
   // Denser field rhythm than the shared _forms.scss defaults (0.5rem label margin, 0.625rem
   // input padding) -- this form packs 7 fields into one column on a 100vh-clamped shell with no
@@ -589,20 +596,22 @@ app-setup-progress-rail {
   gap: 0.25rem;
 }
 
+// Same eyebrow treatment as .branding-step__section-title (Oxblood, bold, wide tracking) --
+// this step previously used a muted-gray/lighter-weight variant that didn't match the mockup.
 .company-profile-step__section-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin: 0;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  color: var(--brand-secondary);
 
   .material-symbols-outlined {
-    font-size: 16px;
-    color: var(--brand-primary);
+    font-size: 20px;
+    color: var(--brand-secondary);
   }
 }
 
@@ -636,7 +645,9 @@ app-setup-progress-rail {
   right: 0.75rem;
   transform: translateY(-50%);
   font-size: 18px;
-  color: var(--brand-primary);
+  // Oxblood per the mockup -- Antique Gold (the old value) is reserved for primary accents, not
+  // a form-field status icon.
+  color: var(--brand-secondary);
   pointer-events: none;
 }
 
@@ -687,7 +698,8 @@ app-setup-progress-rail {
 
 .branding-step__title {
   margin: 0;
-  font-size: 1.375rem;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -706,7 +718,10 @@ app-setup-progress-rail {
   // .branding-step__section + .branding-step__section's padding-top below. A flex gap on top of
   // that padding-top double-counts the same visual space (see git history for the two-value
   // version this replaced).
-  padding: 0.625rem 1.5rem;
+  // 4px/32px uniform, per the mockup card treatment -- overrides .card's shared --radius-sm (2px)
+  // and 1.5rem padding.
+  border-radius: 4px;
+  padding: 2rem;
 }
 
 .branding-step__section {
@@ -762,10 +777,30 @@ app-setup-progress-rail {
   // is given it, so a min/max range renders identically to a fixed size in practice but reads
   // as more complex. .logo-uploader__preview's base max-width/height:100% (_shared-components.scss)
   // already contains the image to this box without a branding-specific override.
+  // 76px, 4px radius per the mockup (overrides the shared component's 6rem/--radius-sm default).
   .logo-uploader__tile {
-    width: 5rem;
-    height: 5rem;
+    width: 4.75rem;
+    height: 4.75rem;
     padding: 0.5rem;
+    border-radius: 4px;
+  }
+
+  // Empty-state tile reuses the exact same gradient/border/Fraunces mark treatment as
+  // .app-header__logo-fallback (_app-shell.scss) -- same "no logo uploaded yet" brand mark, just
+  // larger (24px vs the header's 15px). Once a real logo is uploaded, .logo-uploader__tile--filled
+  // (shared default) swaps this back to a plain Parchment frame.
+  .logo-uploader__tile:not(.logo-uploader__tile--filled) {
+    background: linear-gradient(135deg, var(--brand-secondary), var(--ink));
+    border: 1px solid var(--brand-primary);
+  }
+
+  .logo-uploader__placeholder {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: normal;
+    text-transform: none;
+    color: var(--brand-primary-bright);
   }
 
   .logo-uploader__action {
@@ -786,7 +821,7 @@ app-setup-progress-rail {
     padding-right: 3.5rem;
     // Standing Oxblood border, unlike every other field's --border-subtle -- an intentional
     // "emphasized" treatment per the mockup, not a validation-error state.
-    border: 1.5px solid var(--brand-secondary);
+    border: 1px solid var(--brand-secondary);
   }
 }
 
@@ -795,7 +830,7 @@ app-setup-progress-rail {
   top: 50%;
   right: 0.75rem;
   transform: translateY(-50%);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   pointer-events: none;
 }
