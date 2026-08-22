@@ -109,7 +109,7 @@ const RENDERED_FIELD_ERROR_KEYS = [
 
           <div class="compensation-step__stat">
             <app-stat-tile
-              tone="accent"
+              tone="brand"
               [label]="'setup.compensation.matchingIncomeLabel' | translate"
               [value]="(form.value.matchingIncomePct ?? 0) + '%'"
             >

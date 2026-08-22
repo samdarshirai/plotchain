@@ -940,7 +940,12 @@ app-setup-progress-rail {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-width: 900px;
+  // 1100px per the mockup's banner/card/Save-row width (Viraj_Acres_Settings.dc.html isComp
+  // block) -- wider than the other setup steps' 900/920px because this screen's card genuinely
+  // spans 1100px in the mockup, not a shared convention. Harmless in the setup wizard too:
+  // .setup-shell__content already caps the whole column at 960px, so this only fills that
+  // existing ceiling rather than overflowing it.
+  max-width: 1100px;
 }
 
 .compensation-step__intro {
@@ -977,7 +982,33 @@ app-setup-progress-rail {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  padding: 1.25rem 1.5rem;
+  // 4px radius (overrides .card's shared --radius-sm/2px) -- same "wider brand radius" override
+  // branding-step__card/company-profile-step__card already use. overflow:hidden clips the flush
+  // accordion rows' edge-to-edge horizontal bleed (see .compensation-step__accordion's negative
+  // margin below) to this radius, so they don't square off the card's rounded left/right corners.
+  border-radius: 4px;
+  overflow: hidden;
+  // 3px solid Oxblood top accent strip, per the mockup's separate `height:3px;background:#5C1A2A`
+  // div -- a border-top achieves the identical pixel result without an extra element, and only
+  // overrides the top edge: the other 3 sides keep .card's shared 1px solid --border-subtle.
+  border-top: 3px solid var(--brand-secondary);
+  padding: 22px 28px 28px 28px;
+}
+
+// Mockup's versioning-notice banner (Viraj_Acres_Settings.dc.html isComp line 128): cream/Oxblood,
+// not the shared gold-tinted `.inline-banner--info` tone -- compensation-step is the only
+// tone="info" consumer in the app, so this override is safely scoped here rather than touching
+// the shared component. margin-bottom: 4px (not the mockup's literal 24px) because this banner
+// sits inside .compensation-step__card's own 1.25rem (20px) flex gap, which stacks on top of an
+// item's own margin-bottom rather than collapsing into it -- 4px + 20px = the mockup's 24px.
+.compensation-step__card .inline-banner--info {
+  margin-bottom: 4px;
+  padding: 16px 20px;
+  border-radius: 4px;
+  border-color: var(--border-subtle);
+  background: var(--surface-raised);
+  color: var(--brand-secondary);
+  font-weight: 600;
 }
 
 .compensation-step__section {
@@ -986,20 +1017,31 @@ app-setup-progress-rail {
   gap: 0.75rem;
 }
 
+// "Income Rules" header (mockup isComp line 132-134): a 32px Oxblood circle badge holding an
+// 18px Bright-Gold icon, next to plain (non-uppercase) 17px/600 text -- not the small-caps muted
+// eyebrow style this used before. margin-bottom: 4px (not the mockup's literal 24px) for the same
+// reason as the banner override above -- it stacks on .compensation-step__card's own 1.25rem
+// (20px) flex gap to the stat grid below, so 4px + 20px = the mockup's 24px.
 .compensation-step__section-title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin: 0;
-  font-size: 0.8rem;
+  gap: 0.75rem;
+  margin: 0 0 4px;
+  font-size: 17px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
+  color: var(--text-primary);
 
   .material-symbols-outlined {
-    font-size: 20px;
-    color: var(--brand-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--brand-secondary);
+    color: var(--brand-primary-bright);
+    font-size: 18px;
   }
 }
 
@@ -1012,6 +1054,7 @@ app-setup-progress-rail {
 // The three Income Rules stat tiles (Direct/Matching/Sponsor), matching the mockup's 3-up layout.
 .compensation-step__row--stats {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
 }
 
 .compensation-step__stat {
@@ -1030,10 +1073,22 @@ app-setup-progress-rail {
   border-radius: 0;
 }
 
+.compensation-step__row--stats .stat-tile__label {
+  font-size: 13.5px;
+}
+
 .compensation-step__row--stats .stat-tile__value {
   font-family: var(--font-display);
-  font-size: 1.1875rem;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+// The editable input under each value was rendering at a plain body-text size, well below the
+// 26px Fraunces value above it -- the mockup's own inputs are a plain 14px, but this app shows
+// the value and its editor stacked simultaneously (the mockup's static inputs don't), so bumping
+// the editor to match the value's size keeps the two from reading as mismatched.
+.compensation-step__row--stats .stat-tile__editor input {
+  font-size: 26px;
 }
 
 .compensation-step__field-errors {
@@ -1046,10 +1101,20 @@ app-setup-progress-rail {
 // mockup: every row carries its own chevron, not a single-open accordion) -- any subset, including
 // none or all three, can be open at once. .setup-shell__content is its own scrolling region, so
 // several sections open together just grows that region rather than breaking layout.
+// Zero gap + negative horizontal margin: the mockup's 3 accordion rows are flush against each
+// other (separated only by their own border-top) and flush against the card's left/right edges
+// (Viraj_Acres_Settings.dc.html isComp lines 142-147 nest them as direct siblings of the card div,
+// outside its padded inner wrapper) -- but this component's rows are nested one level deeper,
+// still inside .compensation-step__card's own 28px side padding. The negative margin cancels
+// exactly that so each row's own padding can start flush from the card's true left/right edge.
+// Not applied to the bottom: unlike the mockup, this card's last flex child in Settings mode is
+// <app-setup-step-nav> (a Save/status footer the mockup doesn't have), not the accordion itself --
+// a matching negative bottom margin would pull that footer up into the last accordion row.
 .compensation-step__accordion {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0;
+  margin: 0 -28px;
 }
 
 .compensation-step__accordion-item {
@@ -1057,28 +1122,33 @@ app-setup-progress-rail {
   overflow: hidden;
 }
 
+// Row chrome per mockup isComp line 143: border-left accent + border-top hairline + padding
+// 18px/28px + background #F7F2E7cc (--surface-page at 80% opacity -- no token for the alpha
+// variant itself, color-mix derives it from the existing --surface-page token instead of a new
+// hardcoded hex).
 .compensation-step__accordion-header {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid var(--border-subtle);
+  gap: 12px;
+  padding: 18px 28px;
+  border: none;
+  border-top: 1px solid var(--border-subtle);
   border-radius: 0;
-  background: var(--surface-raised);
+  background: color-mix(in srgb, var(--surface-page) 80%, transparent);
   color: var(--text-primary);
   font: inherit;
   text-align: left;
   cursor: pointer;
 
-  .material-symbols-outlined {
-    font-size: 17px;
-    color: var(--text-muted);
+  // The leading icon only -- the trailing chevron (also a .material-symbols-outlined, via
+  // .compensation-step__accordion-chevron below) is sized/colored separately.
+  .material-symbols-outlined:first-child {
+    font-size: 20px;
     flex-shrink: 0;
   }
 
   &.is-expanded {
-    border-bottom: none;
     background: var(--surface-card);
 
     // Mockup 1c: the expanded header's leading icon becomes a solid circular badge in the
@@ -1100,11 +1170,18 @@ app-setup-progress-rail {
 // left border identifies the section at a glance. Expanded: the accent moves to a top border and
 // the icon badge above takes the section color as its fill, per the mockup.
 .compensation-step__accordion-header--rewardTiers {
-  border-left: 4px solid var(--brand-secondary);
+  border-left: 3px solid var(--brand-secondary);
+
+  // Mockup isComp line 144: the leading icon glyph itself is colored with the row's accent,
+  // collapsed or not -- only the expanded state below additionally knocks it out onto a filled
+  // circle.
+  .material-symbols-outlined:first-child {
+    color: var(--brand-secondary);
+  }
 
   &.is-expanded {
     border-left: none;
-    border-top: 4px solid var(--brand-secondary);
+    border-top: 3px solid var(--brand-secondary);
 
     .material-symbols-outlined:first-child {
       background: var(--brand-secondary);
@@ -1114,11 +1191,15 @@ app-setup-progress-rail {
 }
 
 .compensation-step__accordion-header--royalty {
-  border-left: 4px solid var(--status-success);
+  border-left: 3px solid var(--status-success);
+
+  .material-symbols-outlined:first-child {
+    color: var(--status-success);
+  }
 
   &.is-expanded {
     border-left: none;
-    border-top: 4px solid var(--status-success);
+    border-top: 3px solid var(--status-success);
 
     .material-symbols-outlined:first-child {
       background: var(--status-success);
@@ -1128,11 +1209,15 @@ app-setup-progress-rail {
 }
 
 .compensation-step__accordion-header--fees {
-  border-left: 4px solid var(--status-warning);
+  border-left: 3px solid var(--status-warning);
+
+  .material-symbols-outlined:first-child {
+    color: var(--status-warning);
+  }
 
   &.is-expanded {
     border-left: none;
-    border-top: 4px solid var(--status-warning);
+    border-top: 3px solid var(--status-warning);
 
     .material-symbols-outlined:first-child {
       background: var(--status-warning);
@@ -1142,7 +1227,7 @@ app-setup-progress-rail {
 }
 
 .compensation-step__accordion-title {
-  font-size: 0.8rem;
+  font-size: 15px;
   font-weight: 600;
   color: inherit;
 }
@@ -1150,7 +1235,7 @@ app-setup-progress-rail {
 .compensation-step__accordion-summary {
   flex: 1;
   min-width: 0;
-  font-size: 0.71875rem;
+  font-size: 13.5px;
   font-weight: 400;
   text-transform: none;
   letter-spacing: normal;
@@ -1163,6 +1248,8 @@ app-setup-progress-rail {
 
 .compensation-step__accordion-chevron {
   flex-shrink: 0;
+  font-size: 18px;
+  color: var(--text-muted);
 }
 
 .compensation-step__accordion-body {
