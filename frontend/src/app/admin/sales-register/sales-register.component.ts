@@ -7,10 +7,20 @@ import { SalesRegisterService } from './sales-register.service';
 import { AdminSalePage, AdminSaleFilters } from '../models/admin-sale-page.model';
 import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
-import { EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
+import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 
 const PAGE_SIZE = 20;
+
+// The backend's SaleStatus enum is shouty-uppercase (RECORDED/VOIDED); the mockup renders
+// per-value colored status text Title Case (Viraj_Acres_Settings.dc.html, isSales section,
+// `s.status`/`s.statusColor`). Since the editable-table badge cell renders the row's raw value
+// verbatim, the row-building step below title-cases it before it ever reaches the table, and
+// statusBadgeTone matches on that title-cased string -- same convention as
+// AssociateDirectoryComponent's titleCase/badgeTone pair.
+function titleCase(value: string): string {
+  return value.length === 0 ? value : value.charAt(0) + value.slice(1).toLowerCase();
+}
 
 @Component({
   selector: 'app-sales-register',
@@ -135,7 +145,12 @@ export class SalesRegisterComponent implements OnInit {
       { key: 'buyerPhone', label: this.translate.instant('admin.salesRegister.columnBuyerPhone'), type: 'text' },
       { key: 'amount', label: this.translate.instant('admin.salesRegister.columnAmount'), type: 'text' },
       { key: 'legCredited', label: this.translate.instant('admin.salesRegister.columnLegCredited'), type: 'text' },
-      { key: 'status', label: this.translate.instant('admin.salesRegister.columnStatus'), type: 'text' },
+      {
+        key: 'status',
+        label: this.translate.instant('admin.salesRegister.columnStatus'),
+        type: 'badge',
+        badgeTone: value => this.statusBadgeTone(value)
+      },
       { key: 'recordedAt', label: this.translate.instant('admin.salesRegister.columnRecordedAt'), type: 'text' },
       { key: 'actions', label: this.translate.instant('admin.salesRegister.columnActions'), type: 'action' }
     ];
@@ -200,8 +215,19 @@ export class SalesRegisterComponent implements OnInit {
       buyerPhone: sale.buyerPhone,
       amount: this.currencyPipe.transform(sale.amount, 'INR', 'symbol', '1.0-2') ?? String(sale.amount),
       legCredited: sale.legCredited,
-      status: sale.status,
+      status: titleCase(sale.status),
       recordedAt: this.datePipe.transform(sale.recordedAt, 'medium') ?? sale.recordedAt
     }));
+  }
+
+  statusBadgeTone(value: string | number): BadgeTone {
+    switch (value) {
+      case 'Recorded':
+        return 'success';
+      case 'Voided':
+        return 'danger';
+      default:
+        return 'default';
+    }
   }
 }

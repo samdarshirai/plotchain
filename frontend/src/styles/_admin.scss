@@ -752,7 +752,15 @@ body.admin-associate-active {
   border-bottom: none;
 }
 
-// Amount column (3rd) -- ledger typography
+// Buyer Phone column (2nd) -- ledger typography (mockup: color #6B6153/--text-muted, IBM Plex
+// Mono, 12.5px -- Viraj_Acres_Settings.dc.html isSales section, `s.phone`)
+.sales-register .editable-table td:nth-child(2) {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+// Amount column (3rd) -- ledger typography (mockup: weight 600, IBM Plex Mono)
 .sales-register .editable-table td:nth-child(3) {
   font-family: var(--font-mono);
   font-weight: 600;
@@ -760,23 +768,20 @@ body.admin-associate-active {
   text-align: right;
 }
 
-// Leg Credited column (4th) -- directional glyphs baked into the row's string value
+// Leg Credited column (4th) -- directional glyphs baked into the row's string value. Renders in
+// the normal body font per the mockup (`s.leg` carries no font-family override), not mono.
 .sales-register .editable-table td:nth-child(4) {
-  font-family: var(--font-mono);
   font-size: 0.8125rem;
   letter-spacing: 0.02em;
   color: var(--text-muted);
   text-align: center;
 }
 
-// Status column (5th) -- can't be per-value colored (plain-text cell, see DESIGN.md); uniform ledger treatment
+// Status column (5th) -- colored per value via EditableTableComponent's `type: 'badge'` (see
+// SalesRegisterComponent.statusBadgeTone); renders in the normal body font per the mockup
+// (`s.status` carries no font-family override, only `color`/`font-weight`), not mono.
 .sales-register .editable-table td:nth-child(5) {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  font-size: 0.8125rem;
 }
 
 // Recorded At column (6th)
@@ -891,8 +896,14 @@ body.admin-associate-active {
     word-break: break-word;
   }
 
+  // Buyer Name is the mobile card's title. It's a ledger data value promoted to card-title
+  // position, not a hero/heading figure -- the desktop table's equivalent field (`s.buyer`,
+  // Viraj_Acres_Settings.dc.html isSales section) is set weight 600 with no font-family override,
+  // and DESIGN.md's own responsive section (sales_register/DESIGN.md line 128) already calls this
+  // "ledger-data mono weight" -- so it takes --font-mono, matching the rest of this screen's
+  // ledger typography, not --font-display.
   .sales-register .editable-table tbody td:first-child {
-    font-family: 'Geist', var(--font-sans);
+    font-family: var(--font-mono);
     font-size: 1rem;
     font-weight: 600;
   }

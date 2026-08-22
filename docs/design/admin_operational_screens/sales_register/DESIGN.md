@@ -69,7 +69,7 @@ Why not the wizard's three-column shell: this screen already lives inside the re
 
 ## Signature elements (the two things this screen is meant to be remembered by)
 
-1. **Ledger typography on data columns.** Amount, Leg Credited, Status, and Recorded At all set in `'JetBrains Mono'` with `font-variant-numeric: tabular-nums` where numeric — this is the same utility face `_admin.scss` already reserves for "IDs, code snippets, precision," applied here to actual transaction data instead of labels. It's not decoration: a ledger of money and dates is exactly the content JetBrains Mono was chosen for system-wide, and lining up digits in a monospace face is what makes a column of amounts scannable at a glance.
+1. **Ledger typography on data columns.** Buyer Phone and Amount are set in `'JetBrains Mono'` (`font-variant-numeric: tabular-nums` on Amount) — this is the same utility face `_admin.scss` already reserves for "IDs, code snippets, precision," applied here to actual transaction data instead of labels. Leg Credited, Status, and Recorded At render in the normal body font (mockup: `Viraj_Acres_Settings.dc.html` isSales section carries no `font-family` override on `s.leg`/`s.status`/`s.at`) — mono is reserved for the columns the mockup actually mono-styles, not applied uniformly across every data column.
 2. **Directional Leg Credited values.** The "Leg Credited" column doesn't just say `LEFT`/`RIGHT` — the value string itself carries a glyph: `◂ LEFT` / `RIGHT ▸`. This ties the screen back into PlotChain's actual domain (binary compensation legs — the same L/R concept `create-associate`'s placement toggle uses) rather than reading as a generic status column. It's formatted at the data layer (`SalesRegisterComponent` mapping `Sale.legCredited` to the row string), not a new visual primitive.
 
 ## Component mapping (no new primitives)
@@ -80,7 +80,7 @@ Every interactive/feedback surface below maps onto one of the four allowed share
 |---|---|---|
 | Register table + pagination shell | `EditableTableComponent` (`readOnly`) | Same usage shape as `AssociateDirectoryComponent`/`KycQueueComponent`. |
 | RECORDED row inline void reason + Void button | `EditableTableComponent`'s single `actionTemplate` | Mirrors `KycQueueComponent`'s reject-reason `<ng-template>` exactly — text `<input>` plus a button, scoped per-row via `row.id`. |
-| VOIDED row static tag + reason | Same `actionTemplate`, branched with `*ngIf="row.status === 'VOIDED'"` | See "Implementation constraint" below — this is the *only* place per-status color-coding is achievable. |
+| VOIDED row static tag + reason | Same `actionTemplate`, branched with `*ngIf="row.status === 'VOIDED'"` | See "Implementation constraint" below — the Status *data column* also carries per-value color now (`type: 'badge'`), so this tag is a second, independent treatment of the same state, not the only one. |
 | Load error / void-action error banners | `InlineBannerComponent` tone="danger" | Upgrades `associate-directory__load-error`'s plain `<p>` to a real banner — this screen's bespoke pass includes fixing that predecessor's flat treatment, establishing the banner convention for future re-passes. |
 | Record Sale submit / Record Another / Void | `BrandButtonComponent` (`primary`/`secondary`/`danger`) | `variant="danger"` for Void, matching the button's own danger token wiring to `--status-danger`. |
 | Record Sale field errors | `FieldErrorComponent` | Same per-field pattern as `create-associate.component.ts`. |
@@ -89,7 +89,7 @@ Every interactive/feedback surface below maps onto one of the four allowed share
 ### Implementation constraint worth flagging
 
 `EditableTableComponent`'s read-only data cells render `{{ row[column.key] }}` as plain text inside a `<span>` — there's no per-cell class hook, and its single `actionTemplate` input has no way to know *which* column invoked it, so only one column can realistically be `type: 'action'`. That means:
-- The **Status** column (plain text, `type: 'text'`) can be styled uniformly (monospace, uppercase, muted) but **cannot** be colored per value (no green "Recorded" / red "Voided" pill) without extending the shared component — out of scope per this brief's "no new primitives" rule. The load-bearing visual distinction between RECORDED and VOIDED instead lives entirely in the **Actions** column, which does have full template control.
+- **Superseded:** the Status column originally shipped as plain text (`type: 'text'`), uncolored, per this doc's earlier "no new primitives" ruling. A later user-level decision explicitly overrode that ruling for this screen's Status column specifically — the mockup requires per-value colored status text (`s.statusColor`), and `EditableTableComponent` gained a `type: 'badge'` column (a `badgeTone` value→tone mapper, rendering plain colored text via `--status-success`/`--status-warning`/`--status-danger`, no pill background) precisely to serve it without a bespoke one-off primitive. `SalesRegisterComponent` now declares its `status` column as `type: 'badge'` with `statusBadgeTone` (Recorded → success, Voided → danger). The Actions column's Voided tag (below) remains a second, independent treatment for the same state, not the *only* place color-coding is achievable.
 - The VOIDED "static tag" *can* be a real colored pill (`.sales-register__voided-tag`, `color-mix(in srgb, var(--status-danger) 16%, var(--surface-card))` background) because it's rendered inside the `actionTemplate`, not a plain data cell — same idiom `_shared-components.scss`'s `.checklist-row__badge` already uses.
 
 ### Mobile stacked-table prerequisite
@@ -115,7 +115,7 @@ The wizard system's Responsive Behavior section mandates that dense tables (nami
 Reuses the exact stack `_admin.scss`'s `.create-associate__*` rules already establish live:
 - **Geist** — headings. This screen's H1 is set smaller than `create-associate__title` (1.75rem vs. 2rem) — a deliberate, not default, choice: `create-associate` is a hero "provision something new" moment that earns a bigger title; Sales Register is a list screen an admin scans dozens of times a day, so the title yields vertical space to the table.
 - **Inter** — body copy, table cell values, form inputs.
-- **JetBrains Mono** — eyebrow, field labels (unchanged from `create-associate`), *plus* an extension into ledger data columns (Amount/Leg/Status/Recorded At) and the Voided tag — the "signature" decision above.
+- **JetBrains Mono** — eyebrow, field labels (unchanged from `create-associate`), *plus* an extension into two ledger data columns (Buyer Phone/Amount) and the Voided tag — the "signature" decision above. Leg Credited, Status, and Recorded At stay in the body font (Inter); Status is additionally colored per value via `EditableTableComponent`'s `type: 'badge'` (see "Implementation constraint" above).
 
 ## Shape, elevation, spacing
 
