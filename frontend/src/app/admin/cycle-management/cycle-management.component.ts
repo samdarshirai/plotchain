@@ -55,15 +55,15 @@ const PAGE_SIZE = 20;
           ></app-stat-tile>
           <app-stat-tile
             [label]="'admin.cycleManagement.directIncomeLabel' | translate"
-            [value]="stats.directIncome | currency:'INR':'symbol':'1.0-2'"
+            [value]="(stats.directIncome | currency:'INR':'symbol':'1.0-2') || ''"
           ></app-stat-tile>
           <app-stat-tile
             [label]="'admin.cycleManagement.matchingIncomeLabel' | translate"
-            [value]="stats.matchingIncome | currency:'INR':'symbol':'1.0-2'"
+            [value]="(stats.matchingIncome | currency:'INR':'symbol':'1.0-2') || ''"
           ></app-stat-tile>
           <app-stat-tile
             [label]="'admin.cycleManagement.totalIncomeLabel' | translate"
-            [value]="stats.totalIncome | currency:'INR':'symbol':'1.0-2'"
+            [value]="(stats.totalIncome | currency:'INR':'symbol':'1.0-2') || ''"
           ></app-stat-tile>
           <app-stat-tile
             [label]="'admin.cycleManagement.newAssociatesLabel' | translate"
