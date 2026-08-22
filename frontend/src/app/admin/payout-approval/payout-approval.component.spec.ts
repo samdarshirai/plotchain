@@ -266,4 +266,83 @@ describe('PayoutApprovalComponent', () => {
     expect(fixture.componentInstance.decisionReasons['w2']).toBe('Reason for w2');
     expect(fixture.componentInstance.bankReferences['w2']).toBe('NEFT-1');
   });
+
+  it('renders REQUESTED status as "Requested" with warning tone', () => {
+    fixture.detectChanges();
+    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
+    expect(rowText).toContain('Requested');
+    expect(rowText).not.toContain('REQUESTED');
+
+    // The status column is the 3rd column (index 2); get its badge element
+    const statusColumnCells = fixture.nativeElement.querySelectorAll('.editable-table tbody tr td');
+    const statusCell = statusColumnCells[2];
+    const badgeElement = statusCell.querySelector('.editable-table__badge');
+    expect(badgeElement?.classList.contains('editable-table__badge--warning')).toBeTrue();
+  });
+
+  it('renders APPROVED status as "Approved" with success tone', () => {
+    fixture.componentInstance.onStatusChange('APPROVED');
+    httpMock.expectOne(r => r.params.get('status') === 'APPROVED').flush({
+      requests: [{
+        id: 'w2', associateId: 'a1', associateUserId: 'VP00001', associateName: 'Jane Doe',
+        amount: 5000, status: 'APPROVED', reason: null, bankReference: null,
+        requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: null
+      }],
+      page: 0, size: 20, totalElements: 1
+    });
+    fixture.detectChanges();
+
+    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
+    expect(rowText).toContain('Approved');
+    expect(rowText).not.toContain('APPROVED');
+
+    const statusColumnCells = fixture.nativeElement.querySelectorAll('.editable-table tbody tr td');
+    const statusCell = statusColumnCells[2];
+    const badgeElement = statusCell.querySelector('.editable-table__badge');
+    expect(badgeElement?.classList.contains('editable-table__badge--success')).toBeTrue();
+  });
+
+  it('renders REJECTED status as "Rejected" with danger tone', () => {
+    fixture.componentInstance.onStatusChange('REJECTED');
+    httpMock.expectOne(r => r.params.get('status') === 'REJECTED').flush({
+      requests: [{
+        id: 'w3', associateId: 'a1', associateUserId: 'VP00001', associateName: 'Jane Doe',
+        amount: 5000, status: 'REJECTED', reason: 'No longer needed', bankReference: null,
+        requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: null
+      }],
+      page: 0, size: 20, totalElements: 1
+    });
+    fixture.detectChanges();
+
+    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
+    expect(rowText).toContain('Rejected');
+    expect(rowText).not.toContain('REJECTED');
+
+    const statusColumnCells = fixture.nativeElement.querySelectorAll('.editable-table tbody tr td');
+    const statusCell = statusColumnCells[2];
+    const badgeElement = statusCell.querySelector('.editable-table__badge');
+    expect(badgeElement?.classList.contains('editable-table__badge--danger')).toBeTrue();
+  });
+
+  it('renders DISBURSED status as "Disbursed" with success tone', () => {
+    fixture.componentInstance.onStatusChange('DISBURSED');
+    httpMock.expectOne(r => r.params.get('status') === 'DISBURSED').flush({
+      requests: [{
+        id: 'w4', associateId: 'a1', associateUserId: 'VP00001', associateName: 'Jane Doe',
+        amount: 5000, status: 'DISBURSED', reason: null, bankReference: 'NEFT-99887',
+        requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: '2026-08-15T02:00:00Z'
+      }],
+      page: 0, size: 20, totalElements: 1
+    });
+    fixture.detectChanges();
+
+    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
+    expect(rowText).toContain('Disbursed');
+    expect(rowText).not.toContain('DISBURSED');
+
+    const statusColumnCells = fixture.nativeElement.querySelectorAll('.editable-table tbody tr td');
+    const statusCell = statusColumnCells[2];
+    const badgeElement = statusCell.querySelector('.editable-table__badge');
+    expect(badgeElement?.classList.contains('editable-table__badge--success')).toBeTrue();
+  });
 });
