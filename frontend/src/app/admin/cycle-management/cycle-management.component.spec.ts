@@ -144,6 +144,17 @@ describe('CycleManagementComponent', () => {
     expect(stats.textContent).toContain('3'); // newAssociatesThisCycle
   });
 
+  it('also shows salesThisCycle and revenueThisCycle on the current-cycle card', () => {
+    fixture.detectChanges();
+
+    const stats: HTMLElement = fixture.nativeElement.querySelector('.cycle-management__current-stats');
+    expect(stats.querySelectorAll('app-stat-tile').length).toBe(7);
+    expect(stats.textContent).toContain('admin.cycleManagement.salesThisCycleLabel');
+    expect(stats.textContent).toContain('admin.cycleManagement.revenueThisCycleLabel');
+    expect(stats.textContent).toContain('4'); // salesThisCycle
+    expect(stats.textContent).toContain('₹200,000'); // revenueThisCycle, currency-formatted
+  });
+
   it('does not show a Close Cycle button when no OPEN cycle is present', () => {
     fixture.componentInstance.onStatusChange('CLOSED');
     httpMock.expectOne(r => r.params.get('status') === 'CLOSED').flush({

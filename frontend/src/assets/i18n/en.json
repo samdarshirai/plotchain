@@ -514,6 +514,8 @@
       "matchingIncomeLabel": "Matching Income",
       "totalIncomeLabel": "Total Income",
       "newAssociatesLabel": "New Associates This Cycle",
+      "salesThisCycleLabel": "Sales This Cycle",
+      "revenueThisCycleLabel": "Revenue This Cycle",
       "closeCycleAction": "Close Cycle",
       "closeSuccessTitle": "Cycle closed",
       "closeSuccessClosedCycleLabel": "Closed cycle",
@@ -936,6 +938,7 @@
       "salesRecordedLabel": "Sales Recorded",
       "pendingKycLabel": "Pending KYC Reviews",
       "pendingPayoutsLabel": "Pending Payouts",
+      "totalWalletBalanceLabel": "Total Wallet Balance",
       "cyclesCompletedLabel": "Cycles Completed",
       "loadError": "Couldn't load admin stats. Try again later."
     }

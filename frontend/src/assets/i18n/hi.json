@@ -514,6 +514,8 @@
       "matchingIncomeLabel": "Matching Income",
       "totalIncomeLabel": "Total Income",
       "newAssociatesLabel": "New Associates This Cycle",
+      "salesThisCycleLabel": "Sales This Cycle",
+      "revenueThisCycleLabel": "Revenue This Cycle",
       "closeCycleAction": "Close Cycle",
       "closeSuccessTitle": "Cycle closed",
       "closeSuccessClosedCycleLabel": "Closed cycle",
@@ -936,6 +938,7 @@
       "salesRecordedLabel": "दर्ज बिक्री",
       "pendingKycLabel": "लंबित केवाईसी समीक्षाएँ",
       "pendingPayoutsLabel": "लंबित भुगतान",
+      "totalWalletBalanceLabel": "कुल वॉलेट शेष",
       "cyclesCompletedLabel": "पूर्ण चक्र",
       "loadError": "एडमिन आँकड़े लोड नहीं हो सके। बाद में पुनः प्रयास करें।"
     }

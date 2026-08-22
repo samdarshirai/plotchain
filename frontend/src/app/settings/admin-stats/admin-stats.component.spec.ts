@@ -50,6 +50,25 @@ describe('AdminStatsComponent', () => {
     expect(text).toContain('11');
   });
 
+  it('renders a total-wallet-balance tile as formatted currency', () => {
+    flushInitialLoad({ ...stats, totalWalletBalance: 1234567.5 });
+
+    const tiles: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.admin-stats__tiles app-stat-tile'));
+    expect(tiles.length).toBe(7);
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('settings.adminStats.totalWalletBalanceLabel');
+    expect(text).toContain('₹1,234,567.5');
+  });
+
+  it('gives every tile the same vertical layout as the other six', () => {
+    flushInitialLoad();
+
+    const tiles: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.admin-stats__tiles .stat-tile'));
+    expect(tiles.length).toBe(7);
+    tiles.forEach(tile => expect(tile.classList.contains('stat-tile--vertical')).toBeTrue());
+  });
+
   it('sets loadError and renders the error message when the request fails', () => {
     httpMock.expectOne('/api/admin/stats').flush('boom', { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();

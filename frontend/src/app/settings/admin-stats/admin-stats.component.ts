@@ -57,6 +57,17 @@ import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.c
           [label]="'settings.adminStats.cyclesCompletedLabel' | translate"
           [value]="s.cyclesCompleted.toString()"
         ></app-stat-tile>
+        <!--
+          Total wallet liability across every associate. An admin-level, all-time figure with no
+          natural per-cycle home, so it lives here rather than on Cycle Management's current-cycle
+          card (which took the cycle-scoped fields the old dashboard used to show).
+        -->
+        <app-stat-tile
+          icon="account_balance_wallet"
+          layout="vertical"
+          [label]="'settings.adminStats.totalWalletBalanceLabel' | translate"
+          [value]="(s.totalWalletBalance | currency:'INR':'symbol':'1.0-2') || ''"
+        ></app-stat-tile>
       </div>
     </div>
   `

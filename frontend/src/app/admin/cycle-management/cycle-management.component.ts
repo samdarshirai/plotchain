@@ -69,6 +69,14 @@ const PAGE_SIZE = 20;
             [label]="'admin.cycleManagement.newAssociatesLabel' | translate"
             [value]="stats.newAssociatesThisCycle.toString()"
           ></app-stat-tile>
+          <app-stat-tile
+            [label]="'admin.cycleManagement.salesThisCycleLabel' | translate"
+            [value]="stats.salesThisCycle.toString()"
+          ></app-stat-tile>
+          <app-stat-tile
+            [label]="'admin.cycleManagement.revenueThisCycleLabel' | translate"
+            [value]="(stats.revenueThisCycle | currency:'INR':'symbol':'1.0-2') || ''"
+          ></app-stat-tile>
         </div>
       </div>
 

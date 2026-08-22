@@ -1149,7 +1149,8 @@ body.admin-associate-active {
   gap: 0.5rem;
 }
 
-// The 6 cycle-income fields relocated from admin-dashboard.component.ts (Task 3) -- forces its own
+// The cycle-scoped fields relocated from admin-dashboard.component.ts (Task 3, plus salesThisCycle
+// and revenueThisCycle restored in the final-review fix round) -- forces its own
 // row below the meta/actions pair via flex-basis: 100%, since .cycle-management__current is a
 // wrapping flex row and this block is always wider than what's left beside them.
 .cycle-management__current-stats {
