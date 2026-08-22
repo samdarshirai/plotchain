@@ -1,7 +1,7 @@
 button {
   cursor: pointer;
   border-radius: var(--radius-sm);
-  padding: 0.625rem 1.25rem;
+  padding: 0.6875rem 1.5rem; // 11px 24px, matching Viraj_Acres_Settings.dc.html's button padding
   border: none;
   background: none;
 }
@@ -21,7 +21,7 @@ button:disabled {
   // is the only place `.brand-button` sits on a real `<button>`), and `<a>` never picks up an
   // element-selector rule scoped to `button`. Without this, every nav-link "button" in the app
   // rendered with square corners and no padding.
-  padding: 0.625rem 1.25rem;
+  padding: 0.6875rem 1.5rem; // 11px 24px, matching Viraj_Acres_Settings.dc.html's button padding
   border-radius: var(--radius-sm);
   cursor: pointer;
   // Oxblood bg / Bright Gold text -- matches the mockup's primary-button color for every Save/

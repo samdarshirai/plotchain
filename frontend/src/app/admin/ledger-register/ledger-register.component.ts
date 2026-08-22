@@ -211,7 +211,12 @@ export class LedgerRegisterComponent implements OnInit {
       incomeType: titleCase(entry.incomeType),
       status: titleCase(entry.status),
       netAmount: this.currencyPipe.transform(entry.netAmount, 'INR', 'symbol', '1.0-2') ?? String(entry.netAmount),
-      sourceRef: entry.sourceRef ?? this.translate.instant('admin.ledgerRegister.noSourceRef'),
+      // Full UUID wraps 3-4 lines in this column's grid width (mockup-parity fix, D4: shows a
+      // short, still-copyable reference instead -- first 8 hex chars, matching how the mockup's
+      // own SALE-1042-style refs read at a glance without needing the whole id).
+      sourceRef: entry.sourceRef
+        ? entry.sourceRef.slice(0, 8)
+        : this.translate.instant('admin.ledgerRegister.noSourceRef'),
       createdAt: this.datePipe.transform(entry.createdAt, 'medium') ?? entry.createdAt
     }));
   }

@@ -133,7 +133,7 @@ const FIT_ANIMATE_MS = 460;
                   </span>
                 </div>
 
-                <span class="tree-explorer__rank-pill" [class.tree-explorer__rank-pill--gold]="isGoldRank(entry.data.rankName)">
+                <span class="tree-explorer__rank-pill">
                   {{ entry.data.rankName ?? ('admin.treeExplorer.noRankLabel' | translate) }}
                 </span>
 

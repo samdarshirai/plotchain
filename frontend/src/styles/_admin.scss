@@ -3291,20 +3291,20 @@ body.admin-associate-active {
   color: var(--status-danger);
 }
 
+// Same fixed-style oxblood-bg/gold-text pill as .editable-table__rank-badge (_tables.scss) --
+// every rank value gets the same treatment here too, no color-by-rank-name (was previously a
+// plain gray pill, with a --gold amber variant for the "Gold" rank tier specifically -- both
+// predate this mockup-parity pass and neither matches Viraj_Acres_Settings.dc.html's uniform
+// oxblood rank pill).
 .tree-explorer__rank-pill {
   display: inline-block;
   margin: 0.55rem 0 0.5rem;
   padding: 0.15rem 0.55rem;
   border-radius: 999px;
-  background: var(--surface-raised);
-  color: var(--text-muted);
+  background: var(--brand-secondary);
+  color: var(--brand-primary-bright);
   font-size: 0.65rem;
   font-weight: 700;
-}
-
-.tree-explorer__rank-pill--gold {
-  background: color-mix(in srgb, var(--status-warning) 18%, var(--surface-card));
-  color: color-mix(in srgb, var(--status-warning) 65%, black);
 }
 
 .tree-explorer__vol-bar {

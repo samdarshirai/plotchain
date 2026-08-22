@@ -2496,20 +2496,24 @@ app-setup-progress-rail {
   padding: 1.25rem 1.5rem;
 }
 
+// Same eyebrow treatment as .company-profile-step__section-title/.branding-step__section-title/
+// .payments-kyc-step__section-title (Oxblood, 700 weight, 0.08em tracking, 18px same-color icon)
+// -- this step was the one screen still on the old muted-gray/lighter-weight/Gold-icon variant
+// that never matched the mockup.
 .projects-step__section-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin: 0;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  color: var(--brand-secondary);
 
   .material-symbols-outlined {
-    font-size: 20px;
-    color: var(--brand-primary);
+    font-size: 18px;
+    color: var(--brand-secondary);
   }
 }
 
