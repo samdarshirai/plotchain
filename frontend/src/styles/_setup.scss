@@ -2160,6 +2160,20 @@ app-setup-progress-rail {
     flex: 0 0 auto;
     white-space: nowrap;
   }
+
+  // "Add New Project" per the mockup: weight 700/14px/11px-22px padding, none of which the
+  // shared .brand-button provides (600/unset~16px/0.625rem-1.25rem) -- scoped to this button only
+  // since .brand-button backs ~16 other call sites app-wide that must keep their existing sizing.
+  // Background/color/gap/radius already match the shared class, so those are left alone.
+  app-brand-button .brand-button {
+    padding: 11px 22px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  app-brand-button .material-symbols-outlined {
+    font-size: 18px;
+  }
 }
 
 .projects-step__intro {
