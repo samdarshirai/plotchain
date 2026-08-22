@@ -3471,7 +3471,7 @@ body.admin-associate-active {
   // Rounded top corners only (sits flush against the table card directly below it).
   .tab-bar__tab--active {
     background: var(--brand-secondary);
-    color: var(--brand-secondary-contrast);
+    color: var(--brand-primary-bright);
     font-weight: 700;
     border-radius: 4px 4px 0 0;
   }
