@@ -23,33 +23,37 @@ import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.c
       <div class="admin-stats__tiles" *ngIf="stats as s">
         <app-stat-tile
           icon="group"
+          layout="vertical"
           [label]="'settings.adminStats.totalAssociatesLabel' | translate"
           [value]="s.totalAssociates.toString()"
         ></app-stat-tile>
         <app-stat-tile
           icon="apartment"
+          layout="vertical"
           [label]="'settings.adminStats.activePlotsLabel' | translate"
           [value]="s.activePlots.toString()"
         ></app-stat-tile>
         <app-stat-tile
           icon="point_of_sale"
+          layout="vertical"
           [label]="'settings.adminStats.salesRecordedLabel' | translate"
           [value]="s.totalSalesRecorded.toString()"
         ></app-stat-tile>
         <app-stat-tile
           icon="shield"
-          tone="warning"
+          layout="vertical"
           [label]="'settings.adminStats.pendingKycLabel' | translate"
           [value]="s.kycBreakdown.pending.toString()"
         ></app-stat-tile>
         <app-stat-tile
           icon="payments"
-          tone="accent"
+          layout="vertical"
           [label]="'settings.adminStats.pendingPayoutsLabel' | translate"
           [value]="s.pendingWithdrawals.toString()"
         ></app-stat-tile>
         <app-stat-tile
           icon="sync"
+          layout="vertical"
           [label]="'settings.adminStats.cyclesCompletedLabel' | translate"
           [value]="s.cyclesCompleted.toString()"
         ></app-stat-tile>

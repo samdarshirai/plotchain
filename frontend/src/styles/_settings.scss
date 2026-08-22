@@ -176,7 +176,28 @@
 .admin-stats__tiles {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.25rem; // 20px
+}
+
+// 4px radius / 22px padding, per the mockup (Viraj_Acres_Settings.dc.html lines 381-385) --
+// overrides the shared .stat-tile's default 12px radius / 1.25rem padding only inside this
+// screen (same scoping pattern as .compensation-step__row--stats .stat-tile / .projects-step__counts
+// .stat-tile in _setup.scss).
+.admin-stats__tiles .stat-tile {
+  padding: 22px;
+  border-radius: 4px;
+}
+
+// Every tile's icon is a uniform Oxblood, regardless of which metric it represents -- the mockup
+// doesn't vary icon color per tile (unlike the KYC Review Queue's warning/danger status cards),
+// so this overrides the shared .stat-tile__icon default and any tone-driven recolor.
+.admin-stats__tiles .stat-tile__icon {
+  font-size: 22px;
+  color: var(--brand-secondary);
+}
+
+.admin-stats__tiles .stat-tile__label {
+  font-size: 13.5px;
 }
 
 .admin-stats__load-error {
