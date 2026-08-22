@@ -70,7 +70,7 @@
   width: 32px;
   height: 32px;
   object-fit: contain;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
 

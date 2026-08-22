@@ -44,7 +44,7 @@ body.admin-associate-active {
 
 .create-associate__title {
   margin: 0;
-  font-family: 'Geist', var(--font-sans);
+  font-family: var(--font-display);
   font-size: 2rem;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -153,7 +153,7 @@ body.admin-associate-active {
 .create-associate__placement-copy {
   h2 {
     margin: 0 0 0.25rem;
-    font-family: 'Geist', var(--font-sans);
+    font-family: var(--font-display);
     font-size: 1.125rem;
     font-weight: 600;
     color: var(--text-primary);
@@ -250,7 +250,7 @@ body.admin-associate-active {
 
   h2 {
     margin: 0;
-    font-family: 'Geist', var(--font-sans);
+    font-family: var(--font-display);
     font-size: 1.125rem;
     font-weight: 600;
     color: var(--text-primary);
@@ -307,7 +307,7 @@ body.admin-associate-active {
 
 %admin-screen-title {
   margin: 0;
-  font-family: 'Geist', var(--font-sans);
+  font-family: var(--font-display);
   font-size: 1.75rem;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -717,7 +717,7 @@ body.admin-associate-active {
   font-weight: 600;
   font-size: 14px;
   padding: 10px 18px;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -728,7 +728,7 @@ body.admin-associate-active {
   font-weight: 700;
   font-size: 14px;
   padding: 10px 18px;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -959,7 +959,7 @@ body.admin-associate-active {
 
 .record-sale__title {
   margin: 0;
-  font-family: 'Geist', var(--font-sans);
+  font-family: var(--font-display);
   font-size: 1.75rem;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -1127,7 +1127,7 @@ body.admin-associate-active {
 }
 
 .cycle-management__current-period {
-  font-family: 'Geist', var(--font-sans);
+  font-family: var(--font-display);
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -1350,7 +1350,7 @@ body.admin-associate-active {
 }
 
 .cycle-detail__period {
-  font-family: 'Geist', var(--font-sans);
+  font-family: var(--font-display);
   font-size: 1.0625rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -1456,7 +1456,7 @@ body.admin-associate-active {
     }
 
     &:first-child {
-      font-family: 'Geist', var(--font-sans);
+      font-family: var(--font-display);
       font-size: 1rem;
       font-weight: 600;
     }
@@ -1711,7 +1711,7 @@ body.admin-associate-active {
   }
 
   .ledger-register .editable-table tbody td:first-child {
-    font-family: 'Geist', var(--font-sans);
+    font-family: var(--font-display);
     font-size: 1rem;
     font-weight: 600;
     white-space: normal;
@@ -2061,7 +2061,7 @@ body.admin-associate-active {
   }
 
   .payout-approval .editable-table tbody td:first-child {
-    font-family: 'Geist', var(--font-sans);
+    font-family: var(--font-display);
     font-size: 1rem;
     font-weight: 600;
   }
@@ -2121,7 +2121,7 @@ body.admin-associate-active {
 
 .submit-withdrawal__title {
   margin: 0;
-  font-family: 'Geist', var(--font-sans);
+  font-family: var(--font-display);
   font-size: 1.75rem;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -2576,7 +2576,7 @@ body.admin-associate-active {
   }
 
   .income-statement .editable-table tbody td:first-child {
-    font-family: 'Geist', var(--font-sans);
+    font-family: var(--font-display);
     font-size: 1rem;
     font-weight: 600;
     text-transform: none;
@@ -2666,7 +2666,7 @@ body.admin-associate-active {
 }
 
 .payout-history__balance-value {
-  font-family: 'Geist', var(--font-sans);
+  font-family: var(--font-display);
   font-size: 2.5rem;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -2895,7 +2895,7 @@ body.admin-associate-active {
   }
 
   .payout-history .editable-table tbody td:first-child {
-    font-family: 'Geist', var(--font-sans);
+    font-family: var(--font-display);
     font-size: 1.0625rem;
     font-weight: 600;
     text-transform: none;
@@ -2976,7 +2976,7 @@ body.admin-associate-active {
 
   button {
     padding: 0 28px;
-    border-radius: 2px;
+    border-radius: var(--radius-sm);
     border: none;
     background: var(--brand-secondary);
     color: var(--brand-primary-bright);

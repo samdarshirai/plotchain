@@ -849,7 +849,7 @@
 .change-password-strength-bar {
   height: 3.5px;
   flex: 1;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   transition: background 150ms;
 }
 
