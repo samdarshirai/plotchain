@@ -439,8 +439,11 @@ body.admin-associate-active {
   }
 }
 
-// Associate Directory: title/subtitle/New-Associate-link, filters, and table each their own
+// Associate Directory: title/subtitle/New-Associate-button, filters, and table each their own
 // visual block -- previously all three sat inside one shared .card, reading as a single flat box.
+// Task 9 (Viraj_Acres_Settings.dc.html isDirectory/modalOpen sections) restyled the filters/table
+// to the mockup's exact grid and swapped the New-Associate entry point from a route link to the
+// in-page provisioning modal below.
 .associate-directory {
   display: flex;
   flex-direction: column;
@@ -461,48 +464,272 @@ body.admin-associate-active {
   color: var(--text-muted);
 }
 
-// Provisioning itself still happens on the existing /admin/associates/new page -- this is a
-// shortcut link into that same flow, not a duplicate form/modal. Since the Settings sidebar lists
-// settings screens only, it is also the app's sole entry point into provisioning.
+// Opens the provisioning modal (see .associate-directory__modal-overlay below) instead of
+// navigating -- previously a routerLink to /admin/associates/new, now a plain button. That full
+// page still exists for the parentId/position tree-placement case the modal deliberately omits;
+// it's reached via the modal's own "full associate form" link-out, since no nav item currently
+// points at it (see task-9-report.md).
 .associate-directory__new-link {
+  border: none;
   text-decoration: none;
   white-space: nowrap;
 }
 
-// Same horizontal-grid pattern as .sales-register__filters above -- previously unstyled and
-// stacking full-width vertically even at desktop widths.
-.associate-directory__filters {
+// Groups the filter panel and the table so they sit flush (0 gap) against each other --
+// .associate-directory's own `gap: 1.5rem` (for header/error spacing) would otherwise land here
+// too, since flex `gap` applies uniformly between every direct child.
+.associate-directory__list {
   display: flex;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: 1.25rem;
-  padding: 1.25rem 1.5rem;
-  margin-bottom: 1.5rem;
+  flex-direction: column;
+}
+
+// Filter panel chrome + 4-column grid (Rank/KYC Status/Status/Joined From) with a 5th
+// (Joined To) filter on its own row at 25% width -- Viraj_Acres_Settings.dc.html lines 280-288.
+.associate-directory__filters {
   background: var(--surface-raised);
-  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 24px;
+}
+
+.associate-directory__search {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  font-size: 14px;
+  background: var(--surface-card);
+  margin-bottom: 20px;
+}
+
+.associate-directory__filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.associate-directory__filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 
   label {
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-    min-width: 168px;
-    margin-bottom: 0;
-    font-family: var(--font-mono);
-    font-size: 0.6875rem;
-    font-weight: 500;
-    letter-spacing: 0.04em;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--text-muted);
   }
 
-  > input[type='text'] {
-    min-width: 200px;
-  }
-
   select,
   input {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    font-size: 13.5px;
     background: var(--surface-card);
   }
+}
+
+// The 5th (Joined To) filter sits on its own row below the 4-column grid, at 25% width --
+// Viraj_Acres_Settings.dc.html line 288's `width:calc(25% - 12px)`.
+.associate-directory__filter-secondary-row {
+  width: calc(25% - 12px);
+  margin-bottom: 0;
+}
+
+// Table sits flush under the filter panel, sharing its side/bottom border and rounding only the
+// bottom corners -- Viraj_Acres_Settings.dc.html line 290.
+.associate-directory__table-wrap {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  overflow: hidden;
+
+  .editable-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  // Table-to-grid: the shared editable-table component renders a real <table>, but the mockup's
+  // column proportions (1.3fr 1.8fr 1fr 1.2fr 1fr) aren't expressible as table-layout widths, so
+  // thead/tbody rows are put in CSS grid mode here, scoped to this screen only.
+  thead tr,
+  tbody tr {
+    display: grid;
+    grid-template-columns: 1.3fr 1.8fr 1fr 1.2fr 1fr;
+    column-gap: 12px;
+    align-items: center;
+  }
+
+  thead th {
+    padding: 16px 24px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  tbody td {
+    padding: 16px 24px;
+    font-size: 14px;
+    border-bottom: 1px solid #EFE9DA;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  // Associate ID (1st column) -- mono, muted, smaller than the rest of the row.
+  td:nth-child(1) {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+
+  // Name (2nd column).
+  td:nth-child(2) {
+    font-weight: 600;
+  }
+}
+
+// Plain centered "Previous"/"Next" text -- deliberately simpler than the bordered-button
+// pagination other admin screens use; no page count, per Viraj_Acres_Settings.dc.html line 303-305.
+.associate-directory__pagination {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 20px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.associate-directory__pagination-action {
+  cursor: pointer;
+}
+
+.associate-directory__pagination-action--disabled {
+  cursor: default;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+// "Provision New Associate" modal -- Viraj_Acres_Settings.dc.html lines 529-554. A centered
+// scrim-backed panel, not a route; only the fields the modal actually exposes (name/email/phone/
+// sponsor search) live here, deliberately excluding parentId/position (see the link-out below).
+.associate-directory__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 10, 11, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.associate-directory__modal {
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  padding: 32px;
+}
+
+.associate-directory__modal-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.associate-directory__modal-subtitle {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin: 0 0 24px 0;
+}
+
+.associate-directory__modal-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.associate-directory__modal-field {
+  label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    background: var(--surface-card);
+  }
+}
+
+// Points at the full /admin/associates/new page for the parentId/position tree-placement case
+// this modal doesn't expose -- the modal's only reachability path back to that page, since no nav
+// item currently links to it either (see task-9-report.md).
+.associate-directory__modal-link {
+  margin: 16px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+
+  a {
+    color: var(--brand-secondary);
+    font-weight: 600;
+  }
+}
+
+.associate-directory__modal-banner-notice {
+  font-size: 12.5px;
+}
+
+.associate-directory__modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.associate-directory__modal-cancel {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.associate-directory__modal-submit {
+  background: var(--brand-secondary);
+  border: none;
+  color: var(--brand-primary-bright);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: 2px;
+  cursor: pointer;
 }
 
 .sales-register .card {

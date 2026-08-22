@@ -21,6 +21,8 @@ describe('AssociateDirectoryComponent', () => {
 
     httpMock.expectOne('/api/company/compensation')
       .flush({ availableRanks: [{ id: 'r1', name: 'Sales Associate' }] });
+    httpMock.expectOne('/api/associates')
+      .flush([{ id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE' }]);
     httpMock.expectOne('/api/admin/associates?page=0&size=20')
       .flush({ associates: [{ id: 'a1', userId: 'VP00001', name: 'Jane', rankName: 'Sales Associate', kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', lastActiveAt: null }], page: 0, size: 20, totalElements: 1 });
   });
@@ -172,6 +174,8 @@ describe('AssociateDirectoryComponent', () => {
 
     isolatedHttpMock.expectOne('/api/company/compensation')
       .flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+    isolatedHttpMock.expectOne('/api/associates')
+      .flush([]);
     isolatedHttpMock.expectOne('/api/admin/associates?page=0&size=20')
       .flush({ associates: [], page: 0, size: 20, totalElements: 0 });
     isolatedFixture.detectChanges();
@@ -209,5 +213,91 @@ describe('AssociateDirectoryComponent', () => {
 
     expect(fixture.componentInstance.selected?.userId).toBe('VP00001');
     expect(fixture.componentInstance.panelOpen).toBeTrue();
+  });
+
+  describe('New Associate provisioning modal', () => {
+    it('opens the modal instead of navigating, via the New Associate button', () => {
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.associate-directory__modal-overlay')).toBeNull();
+
+      const newAssociateButton: HTMLButtonElement = fixture.nativeElement.querySelector('.associate-directory__new-link');
+      expect(newAssociateButton.tagName).toBe('BUTTON');
+      newAssociateButton.click();
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.modalOpen).toBeTrue();
+      expect(fixture.nativeElement.querySelector('.associate-directory__modal-overlay')).not.toBeNull();
+    });
+
+    it('does not submit when required fields are blank', () => {
+      fixture.componentInstance.openProvisionModal();
+
+      fixture.componentInstance.onProvisionSubmit();
+
+      httpMock.expectNone('/api/associates');
+      expect(fixture.componentInstance.provisionForm.invalid).toBeTrue();
+    });
+
+    it('resolves the typed sponsor search text to the matching associate id', () => {
+      fixture.componentInstance.openProvisionModal();
+      fixture.componentInstance.sponsorOptions = [
+        { id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE' }
+      ];
+
+      fixture.componentInstance.onSponsorSearchInput('VP00002 — Sunil Sponsor');
+      expect(fixture.componentInstance.selectedSponsorId).toBe('sponsor-1');
+
+      fixture.componentInstance.onSponsorSearchInput('not a real match');
+      expect(fixture.componentInstance.selectedSponsorId).toBeNull();
+    });
+
+    it('submits name/email/phone/sponsorId and shows the temporary password on success, without exposing parentId/position fields', () => {
+      fixture.componentInstance.openProvisionModal();
+      fixture.componentInstance.provisionForm.setValue({
+        name: 'Aditya Kumar',
+        email: 'aditya@example.com',
+        phone: '+919876500000',
+        sponsorSearch: 'VP00002 — Sunil Sponsor'
+      });
+      fixture.componentInstance.selectedSponsorId = 'sponsor-1';
+
+      fixture.componentInstance.onProvisionSubmit();
+
+      const req = httpMock.expectOne('/api/associates');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({
+        name: 'Aditya Kumar',
+        email: 'aditya@example.com',
+        phone: '+919876500000',
+        sponsorId: 'sponsor-1'
+      });
+      req.flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!' });
+
+      expect(fixture.componentInstance.provisioned?.temporaryPassword).toBe('Temp1234!');
+
+      fixture.componentInstance.finishProvisioning();
+
+      expect(fixture.componentInstance.modalOpen).toBeFalse();
+      const reloadReq = httpMock.expectOne('/api/admin/associates?page=0&size=20');
+      reloadReq.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+    });
+
+    it('shows a taken-email message on a 409 conflict instead of silently doing nothing', () => {
+      fixture.componentInstance.openProvisionModal();
+      fixture.componentInstance.provisionForm.setValue({
+        name: 'Aditya Kumar',
+        email: 'aditya@example.com',
+        phone: '',
+        sponsorSearch: ''
+      });
+
+      fixture.componentInstance.onProvisionSubmit();
+
+      const req = httpMock.expectOne('/api/associates');
+      req.flush({ error: 'Email already registered' }, { status: 409, statusText: 'Conflict' });
+
+      expect(fixture.componentInstance.provisionSubmitError).toBeTruthy();
+      expect(fixture.componentInstance.provisioned).toBeNull();
+    });
   });
 });

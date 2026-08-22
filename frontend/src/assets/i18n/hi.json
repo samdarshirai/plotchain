@@ -360,7 +360,18 @@
       "statusFilterAllOption": "All statuses",
       "joinedFromLabel": "Joined from",
       "joinedToLabel": "Joined to",
-      "emptyState": "No associates match these filters."
+      "emptyState": "No associates match these filters.",
+      "provisionModalTitle": "Provision New Associate",
+      "provisionModalSubtitle": "Creates a login and places them in the genealogy tree.",
+      "fullNamePlaceholder": "e.g. Aditya Kumar",
+      "phoneLabel": "Phone Number",
+      "phonePlaceholder": "+91",
+      "sponsorSearchLabel": "Sponsor (Upline)",
+      "sponsorSearchPlaceholder": "Search associate…",
+      "fullFormLinkPrefix": "Need to place them in a specific tree position?",
+      "fullFormLinkAction": "Use the full associate form.",
+      "cancelAction": "Cancel",
+      "provisionSubmitAction": "Provision Associate"
     },
     "treeExplorer": {
       "title": "Tree Explorer",
