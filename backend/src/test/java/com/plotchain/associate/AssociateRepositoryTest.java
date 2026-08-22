@@ -81,6 +81,60 @@ class AssociateRepositoryTest {
     }
 
     @Test
+    void countDownlineJoinedBeforeCountsOnlyAssociatesWhoHadJoinedByTheCutoff() {
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        entityManager.persist(rank);
+
+        Associate root = newAssociate(null, null, rank.getId());
+        Associate early = newAssociate(root.getId(), "L", rank.getId());
+        early.setJoinedAt(Instant.parse("2026-01-01T00:00:00Z"));
+        Associate late = newAssociate(root.getId(), "R", rank.getId());
+        late.setJoinedAt(Instant.parse("2026-03-01T00:00:00Z"));
+        associateRepository.saveAll(java.util.List.of(root, early, late));
+        entityManager.flush();
+
+        long count = associateRepository.countDownlineJoinedBefore(
+            root.getId(), Instant.parse("2026-02-01T00:00:00Z"));
+
+        assertThat(count).isEqualTo(1);
+    }
+
+    @Test
+    void countDownlineJoinedBeforeExcludesAnAssociateWhoJoinsExactlyAtTheCutoff() {
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        entityManager.persist(rank);
+
+        Associate root = newAssociate(null, null, rank.getId());
+        Associate exact = newAssociate(root.getId(), "L", rank.getId());
+        Instant cutoff = Instant.parse("2026-02-01T00:00:00Z");
+        exact.setJoinedAt(cutoff);
+        associateRepository.saveAll(java.util.List.of(root, exact));
+        entityManager.flush();
+
+        assertThat(associateRepository.countDownlineJoinedBefore(root.getId(), cutoff)).isEqualTo(0);
+    }
+
+    @Test
+    void countDownlineByKycStatusCountsOnlyDownlineMatchingThatStatus() {
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        entityManager.persist(rank);
+
+        Associate root = newAssociate(null, null, rank.getId());
+        Associate verified = newAssociate(root.getId(), "L", rank.getId());
+        verified.setKycStatus(KycStatus.VERIFIED);
+        Associate pending = newAssociate(root.getId(), "R", rank.getId());
+        pending.setKycStatus(KycStatus.PENDING);
+        Associate rejectedGrandchild = newAssociate(pending.getId(), "L", rank.getId());
+        rejectedGrandchild.setKycStatus(KycStatus.REJECTED);
+        associateRepository.saveAll(java.util.List.of(root, verified, pending, rejectedGrandchild));
+        entityManager.flush();
+
+        assertThat(associateRepository.countDownlineByKycStatus(root.getId(), "VERIFIED")).isEqualTo(1);
+        assertThat(associateRepository.countDownlineByKycStatus(root.getId(), "PENDING")).isEqualTo(1);
+        assertThat(associateRepository.countDownlineByKycStatus(root.getId(), "REJECTED")).isEqualTo(1);
+    }
+
+    @Test
     void countJoinedBetweenIncludesAssociatesWhoJoinOnTheEndDate() {
         RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
         entityManager.persist(rank);

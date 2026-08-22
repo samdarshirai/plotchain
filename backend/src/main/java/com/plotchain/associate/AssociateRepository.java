@@ -39,6 +39,38 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         """, nativeQuery = true)
     long countDownlineByPosition(@Param("associateId") UUID associateId, @Param("position") String position);
 
+    // Network Growth chart's per-cycle cumulative downline size (dashboard-mockup spec §3.1):
+    // same recursive-CTE shape as countDownline, with an exclusive upper bound on joined_at so
+    // a cycle's point reflects "who was already in the downline by that cycle's close".
+    // cutoffExclusive is the day AFTER that cycle's periodEnd, same convention as
+    // countJoinedBetween above.
+    @Query(value = """
+        WITH RECURSIVE downline(id) AS (
+            SELECT id FROM associate WHERE parent_id = :associateId
+            UNION ALL
+            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
+        )
+        SELECT count(*) FROM downline dl JOIN associate a2 ON a2.id = dl.id
+        WHERE a2.joined_at < :cutoffExclusive
+        """, nativeQuery = true)
+    long countDownlineJoinedBefore(@Param("associateId") UUID associateId, @Param("cutoffExclusive") Instant cutoffExclusive);
+
+    // KYC network summary bar (dashboard-mockup spec §3.1): downline-scoped KYC status counts,
+    // same CTE shape as countDownlineByPosition but filtered on kyc_status instead of position.
+    // kycStatus is passed as its enum .name() (String), not the enum itself -- nativeQuery=true
+    // bypasses Hibernate's enum-to-JDBC-type resolution, the same reason findAncestorChainIds
+    // above casts its UUID column to VARCHAR rather than trusting driver-specific type mapping.
+    @Query(value = """
+        WITH RECURSIVE downline(id) AS (
+            SELECT id FROM associate WHERE parent_id = :associateId
+            UNION ALL
+            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
+        )
+        SELECT count(*) FROM downline dl JOIN associate a2 ON a2.id = dl.id
+        WHERE a2.kyc_status = :kycStatus
+        """, nativeQuery = true)
+    long countDownlineByKycStatus(@Param("associateId") UUID associateId, @Param("kycStatus") String kycStatus);
+
     @Query(value = """
         WITH RECURSIVE downline(id) AS (
             SELECT id FROM associate WHERE parent_id = :associateId
