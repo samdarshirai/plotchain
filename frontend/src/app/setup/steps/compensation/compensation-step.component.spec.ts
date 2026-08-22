@@ -368,12 +368,10 @@ describe('CompensationStepComponent', () => {
 
   it('flushPendingSave saves immediately on a table-only edit (rowsChanged$ marks the form dirty too)', () => {
     fixture.componentInstance.onRoyaltyRowsChange([{ volumeThreshold: 4000000, royaltyPct: 3 }]);
-
     fixture.componentInstance.flushPendingSave();
 
     const req = httpMock.expectOne('/api/company/compensation');
-    expect(req.request.body.royaltyBonusRates).toEqual([{ volumeThreshold: 4000000, royaltyPct: 3 }]);
-    req.flush(emptyPlan);
+    expect(req.request.body.royaltyBonusRates).toEqual([{ volumeThreshold: 4000000, royaltyPct: 3 }]);    req.flush(emptyPlan);
     httpMock.expectOne('/api/company/setup-state').flush(setupState);
   });
 
