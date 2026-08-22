@@ -296,13 +296,15 @@ body.admin-associate-active {
 // anchor -- only the identical property lists are deduplicated here.
 // ============================================================
 
+// Matches the mockup's eyebrow literal verbatim -- Viraj_Acres_Settings.dc.html lines 427/455/490
+// (`font-size:12px;font-weight:700;letter-spacing:0.1em;color:#5C1A2A;text-transform:uppercase`).
+// Body sans, not mono; oxblood (--brand-secondary), not gold.
 %admin-screen-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--brand-primary);
+  color: var(--brand-secondary);
 }
 
 %admin-screen-title {
@@ -448,6 +450,13 @@ body.admin-associate-active {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+// The mockup gives every screen the same h1 (Fraunces 28px/600 -- Viraj_Acres_Settings.dc.html
+// line 275), so this screen's page heading opts out of the shared .card-title (18px Inter, which
+// stays as-is for the in-card headings that use it elsewhere) via a scoped override.
+.associate-directory .card-title {
+  @extend %admin-screen-title;
 }
 
 .associate-directory__header {
@@ -2926,6 +2935,12 @@ body.admin-associate-active {
 // dropping the mockup's standalone dark topbar since it's redundant with the real
 // SettingsShellComponent chrome this screen already renders inside.
 
+// Uniform page heading, per the mockup's own h1 on this screen (Viraj_Acres_Settings.dc.html
+// line 310) -- scoped so the shared .card-title keeps its in-card size everywhere else.
+.tree-explorer .card-title {
+  @extend %admin-screen-title;
+}
+
 .tree-explorer__intro {
   display: flex;
   flex-direction: column;
@@ -3448,6 +3463,12 @@ body.admin-associate-active {
   flex-direction: column;
   gap: 1.25rem;
   max-width: 1100px;
+}
+
+// Uniform page heading, per the mockup's own h1 on this screen (Viraj_Acres_Settings.dc.html
+// line 324) -- scoped so the shared .card-title keeps its in-card size everywhere else.
+.kyc-queue .card-title {
+  @extend %admin-screen-title;
 }
 
 .kyc-queue__stats {
