@@ -16,37 +16,12 @@ export interface CycleIncome {
   royaltyBonus: number;
   royaltyBonusPct: number;
   totalIncome: number;
+  previousCycleTotalIncome: number;
+  incomeTrend: number[];
 }
 
 export interface WalletSummary {
   balance: number;
-}
-
-export interface LegVolumeSummary {
-  leftVolume: number;
-  rightVolume: number;
-  carriedForwardLeft: number;
-  carriedForwardRight: number;
-  projectedMatchAmount: number;
-  totalLeftBusiness: number;
-  totalRightBusiness: number;
-  newBookedAreaSqft: number;
-}
-
-export interface RankProgress {
-  currentRank: string;
-  currentRankOrder: number;
-  nextRank: string | null;
-  progressPercent: number;
-  volumeToNextRank: number;
-}
-
-export interface TeamSnapshot {
-  totalDownline: number;
-  activeToday: number;
-  newJoinsThisCycle: number;
-  leftAssociates: number;
-  rightAssociates: number;
 }
 
 export interface CycleCountdown {
@@ -54,10 +29,26 @@ export interface CycleCountdown {
   daysRemaining: number;
 }
 
-export interface AnnouncementSummary {
-  id: string;
-  title: string;
-  publishedAt: string;
+export interface SalesSummary {
+  salesThisCycle: number;
+  revenueBookedThisCycle: number;
+  revenueBookedChangePct: number;
+}
+
+export interface NetworkSummary {
+  totalDownline: number;
+  directCount: number;
+}
+
+export interface NetworkGrowthPoint {
+  cycleLabel: string;
+  downlineCount: number;
+}
+
+export interface KycBreakdown {
+  verified: number;
+  pending: number;
+  rejected: number;
 }
 
 export interface DashboardResponse {
@@ -65,9 +56,9 @@ export interface DashboardResponse {
   kycPendingBannerVisible: boolean;
   cycleIncome: CycleIncome;
   wallet: WalletSummary;
-  legVolume: LegVolumeSummary;
-  rankProgress: RankProgress;
-  teamSnapshot: TeamSnapshot;
   cycleCountdown: CycleCountdown;
-  announcements: AnnouncementSummary[];
+  salesSummary: SalesSummary;
+  networkSummary: NetworkSummary;
+  networkGrowth: NetworkGrowthPoint[];
+  kycBreakdown: KycBreakdown;
 }

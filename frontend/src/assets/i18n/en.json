@@ -8,6 +8,8 @@
     "royalty": "Royalty Bonus",
     "total": "Total",
     "cycleIncomeEyebrow": "This Cycle's Earnings",
+    "deltaUp": "+{{amount}} vs last cycle",
+    "deltaDown": "-{{amount}} vs last cycle",
     "projectedMatch": "Will match at cycle close",
     "nextRank": "Next rank",
     "quickActionsContactAdmin": "Contact your admin to record a sale or add a referral.",

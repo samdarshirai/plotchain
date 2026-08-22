@@ -15,13 +15,13 @@ describe('DashboardComponent', () => {
       phone: '9876543210', joinedAt: '2025-09-05T05:25:42Z', rankChangedAt: null
     },
     kycPendingBannerVisible: true,
-    cycleIncome: { cycleId: 'c1', directIncome: 1000, matchingIncome: 500, sponsorMatchingIncome: 300, selfPerformanceBonus: 200, royaltyBonus: 400, royaltyBonusPct: 3, totalIncome: 2400 },
+    cycleIncome: { cycleId: 'c1', directIncome: 1000, matchingIncome: 500, sponsorMatchingIncome: 300, selfPerformanceBonus: 200, royaltyBonus: 400, royaltyBonusPct: 3, totalIncome: 2400, previousCycleTotalIncome: 1800, incomeTrend: [1200, 1800, 2400] },
     wallet: { balance: 2500 },
-    legVolume: { leftVolume: 3000, rightVolume: 2000, carriedForwardLeft: 0, carriedForwardRight: 1000, projectedMatchAmount: 140, totalLeftBusiness: 300000, totalRightBusiness: 200000, newBookedAreaSqft: 450 },
-    rankProgress: { currentRank: 'Sales Associate', currentRankOrder: 1, nextRank: 'Sales Executive', progressPercent: 40, volumeToNextRank: 6000 },
-    teamSnapshot: { totalDownline: 12, activeToday: 3, newJoinsThisCycle: 2, leftAssociates: 7, rightAssociates: 5 },
     cycleCountdown: { cycleId: 'c1', daysRemaining: 10 },
-    announcements: [{ id: 'a1', title: 'Green Valley launch', publishedAt: '2026-07-20T00:00:00Z' }]
+    salesSummary: { salesThisCycle: 5, revenueBookedThisCycle: 2500000, revenueBookedChangePct: 12.5 },
+    networkSummary: { totalDownline: 12, directCount: 3 },
+    networkGrowth: [{ cycleLabel: 'C1', downlineCount: 8 }, { cycleLabel: 'C2', downlineCount: 10 }, { cycleLabel: 'C3', downlineCount: 12 }],
+    kycBreakdown: { verified: 8, pending: 2, rejected: 1 }
   };
 
   beforeEach(async () => {
