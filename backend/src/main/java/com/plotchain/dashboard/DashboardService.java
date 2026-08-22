@@ -1,7 +1,5 @@
 package com.plotchain.dashboard;
 
-import com.plotchain.announcement.Announcement;
-import com.plotchain.announcement.AnnouncementRepository;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
@@ -16,7 +14,6 @@ import com.plotchain.cycle.CycleStatus;
 import com.plotchain.cycle.NoOpenCycleException;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntryRepository;
-import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
@@ -24,12 +21,17 @@ import com.plotchain.sales.SaleRepository;
 import com.plotchain.sales.SaleStatus;
 import com.plotchain.wallet.Wallet;
 import com.plotchain.wallet.WalletRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,7 +45,6 @@ public class DashboardService {
     private final LedgerEntryRepository ledgerEntryRepository;
     private final LegVolumeRepository legVolumeRepository;
     private final WalletRepository walletRepository;
-    private final AnnouncementRepository announcementRepository;
     private final CompensationPlanVersionRepository compensationPlanVersionRepository;
     private final RoyaltyBonusRateRepository royaltyBonusRateRepository;
     private final SaleRepository saleRepository;
@@ -55,7 +56,6 @@ public class DashboardService {
         LedgerEntryRepository ledgerEntryRepository,
         LegVolumeRepository legVolumeRepository,
         WalletRepository walletRepository,
-        AnnouncementRepository announcementRepository,
         CompensationPlanVersionRepository compensationPlanVersionRepository,
         RoyaltyBonusRateRepository royaltyBonusRateRepository,
         SaleRepository saleRepository
@@ -66,7 +66,6 @@ public class DashboardService {
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.legVolumeRepository = legVolumeRepository;
         this.walletRepository = walletRepository;
-        this.announcementRepository = announcementRepository;
         this.compensationPlanVersionRepository = compensationPlanVersionRepository;
         this.royaltyBonusRateRepository = royaltyBonusRateRepository;
         this.saleRepository = saleRepository;
@@ -90,61 +89,64 @@ public class DashboardService {
         BigDecimal total = ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycle.getId());
         BigDecimal royaltyBonus = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.ROYALTY);
 
-        // leg_volume rows are written only at cycle CLOSE (CycleService#rollUpSubtree), keyed to
-        // the cycle being closed -- the currently OPEN cycle this dashboard is showing never has a
-        // row of its own, so findByAssociateIdAndCycleId(associateId, cycle.getId()) against it was
-        // a structural no-op that always fell through to LegVolume.empty(). Reading the associate's
-        // most-recently-CLOSED cycle instead is "current standing as of the last close" -- the
-        // freshest real figure available without a live in-cycle recompute.
+        // Royalty slab lookup needs matched volume from the associate's most-recently-CLOSED
+        // cycle -- the currently OPEN cycle never has a leg_volume row of its own (rows are only
+        // written at cycle close, CycleService#rollUpSubtree). This is the one LegVolume read
+        // this dashboard still needs after dashboard-mockup spec §3.1 dropped the rest of
+        // LegVolumeSummary; latestClosedCycle is also reused below for the income/revenue deltas.
         Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
-        LegVolume legVolume = latestClosedCycle
+        BigDecimal matchedVolume = latestClosedCycle
             .flatMap(closed -> legVolumeRepository.findByAssociateIdAndCycleId(associateId, closed.getId()))
-            .orElseGet(() -> LegVolume.empty(associateId, cycle.getId()));
+            .map(lv -> lv.getLeftLegVolume().min(lv.getRightLegVolume()))
+            .orElse(BigDecimal.ZERO);
 
-        // Lifetime Total Left/Right Business: each row's leftLegVolume/rightLegVolume already has
-        // the PRIOR cycle's carriedForward baked in (rollUpSubtree: leftLegVolume =
-        // leftSubtreeVolume + carriedForwardLeft-from-last-close), and an unmatched carry keeps
-        // re-appearing in every subsequent row until it's finally matched down -- a naive
-        // SUM(leftLegVolume) across all rows counts that same still-unmatched volume once per
-        // cycle it survives, not once. Subtracting each row's own incoming carry (its
-        // predecessor's outgoing carriedForwardLeft/Right, 0 for the associate's first row)
-        // before summing leaves exactly the new subtree volume each cycle actually contributed.
-        List<LegVolume> legVolumeHistory = legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId);
-        BigDecimal totalLeftBusiness = BigDecimal.ZERO;
-        BigDecimal totalRightBusiness = BigDecimal.ZERO;
-        BigDecimal incomingCarryLeft = BigDecimal.ZERO;
-        BigDecimal incomingCarryRight = BigDecimal.ZERO;
-        for (LegVolume row : legVolumeHistory) {
-            totalLeftBusiness = totalLeftBusiness.add(row.getLeftLegVolume().subtract(incomingCarryLeft));
-            totalRightBusiness = totalRightBusiness.add(row.getRightLegVolume().subtract(incomingCarryRight));
-            incomingCarryLeft = row.getCarriedForwardLeft();
-            incomingCarryRight = row.getCarriedForwardRight();
-        }
-        BigDecimal newBookedAreaSqft = saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(
-            associateId, cycle.getId(), SaleStatus.RECORDED);
         CompensationPlanVersion planVersion = compensationPlanVersionRepository
             .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
             .orElseThrow(() -> new IllegalStateException("compensation_plan_version row missing - V8 migration seeds it"));
-        BigDecimal matchingIncomePct = planVersion.getMatchingIncomePct();
-        // Known limitation (dashboard-leg-volume-fixes final review): matchedVolume is min(left,
-        // right) off the last CLOSED cycle's row -- volume CycleService#creditMatchingIncome
-        // already matched and paid out at that close, leaving only the unmatched excess (one side's
-        // carriedForward) still live. A genuine "projected next match" would need this OPEN cycle's
-        // new sales volume per leg, which is never computed until close -- building that live
-        // recompute is out of this fix's scope. min(carriedForwardLeft, carriedForwardRight) would
-        // be honest but always 0 by construction (only the excess side ever carries), so it doesn't
-        // improve on this. Treat projectedMatch/royaltyBonusPct below as "what was matched at the
-        // last closing," not a live projection, until that live-computation work exists.
-        BigDecimal matchedVolume = legVolume.getLeftLegVolume().min(legVolume.getRightLegVolume());
-        BigDecimal projectedMatch = matchedVolume.multiply(matchingIncomePct.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-        // Mirror CycleService#creditRoyalty's own guard (matchedVolume.compareTo(BigDecimal.ZERO) <= 0
-        // -> skip): a non-positive matched volume must never reach the slab lookup, so the
-        // dashboard can never advertise a percentage the cycle-close engine would not actually pay.
+        // Mirrors CycleService#creditRoyalty's own guard (matchedVolume <= 0 -> skip): a
+        // non-positive matched volume must never reach the slab lookup.
         BigDecimal royaltyBonusPct = matchedVolume.compareTo(BigDecimal.ZERO) > 0
             ? royaltyBonusRateRepository
                 .findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(planVersion.getId(), matchedVolume)
                 .map(RoyaltyBonusRate::getRoyaltyPct)
                 .orElse(BigDecimal.ZERO)
+            : BigDecimal.ZERO;
+
+        BigDecimal previousCycleTotalIncome = latestClosedCycle
+            .map(closed -> ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, closed.getId()))
+            .orElse(BigDecimal.ZERO);
+
+        // Seal Card sparkline and Network Growth chart both plot the last 8 cycles, oldest first
+        // -- findAllByOrderByPeriodStartDesc comes back newest-first, so it's reversed once here
+        // and shared by both loops below.
+        List<Cycle> lastCycles = new ArrayList<>(
+            cycleRepository.findAllByOrderByPeriodStartDesc(PageRequest.of(0, 8)).getContent());
+        Collections.reverse(lastCycles);
+
+        List<BigDecimal> incomeTrend = lastCycles.stream()
+            .map(c -> ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, c.getId()))
+            .toList();
+
+        List<DashboardResponse.NetworkGrowthPoint> networkGrowth = new ArrayList<>();
+        for (int i = 0; i < lastCycles.size(); i++) {
+            Cycle c = lastCycles.get(i);
+            // Exclusive upper bound, same convention as AssociateRepository#countJoinedBetween:
+            // the day AFTER this cycle's periodEnd, so a join on the close date itself counts.
+            Instant cutoffExclusive = c.getPeriodEnd().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+            networkGrowth.add(new DashboardResponse.NetworkGrowthPoint(
+                String.format("%02d", i + 1),
+                associateRepository.countDownlineJoinedBefore(associateId, cutoffExclusive)));
+        }
+
+        int salesThisCycle = (int) saleRepository.countByAssociateIdAndCycleIdAndStatus(associateId, cycle.getId(), SaleStatus.RECORDED);
+        BigDecimal revenueBookedThisCycle = saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, cycle.getId(), SaleStatus.RECORDED);
+        BigDecimal revenueBookedPreviousCycle = latestClosedCycle
+            .map(closed -> saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, closed.getId(), SaleStatus.RECORDED))
+            .orElse(BigDecimal.ZERO);
+        BigDecimal revenueBookedChangePct = revenueBookedPreviousCycle.compareTo(BigDecimal.ZERO) > 0
+            ? revenueBookedThisCycle.subtract(revenueBookedPreviousCycle)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(revenueBookedPreviousCycle, 0, RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
 
         Wallet wallet = walletRepository.findById(associateId)
@@ -155,57 +157,30 @@ public class DashboardService {
             .filter(r -> r.getId().equals(associate.getRankId()))
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("Associate's rank not found in rank table: " + associate.getRankId()));
-        // ranks is ordered ascending by rankOrder, and rankOrder values are not necessarily
-        // consecutive (e.g. seeded as 10/20/30/40) -- the next rank is the first one strictly
-        // above the current, not "current + 1".
-        Optional<RankTier> nextRank = ranks.stream()
-            .filter(r -> r.getRankOrder() > currentRank.getRankOrder())
-            .findFirst();
-
-        int progressPercent = nextRank
-            .map(nr -> associate.getCumulativeMatchedVolume()
-                .multiply(BigDecimal.valueOf(100))
-                .divide(nr.getVolumeThreshold(), 0, RoundingMode.DOWN)
-                .min(BigDecimal.valueOf(100))
-                .intValue())
-            .orElse(100);
-        BigDecimal volumeToNextRank = nextRank
-            .map(nr -> nr.getVolumeThreshold().subtract(associate.getCumulativeMatchedVolume()).max(BigDecimal.ZERO))
-            .orElse(BigDecimal.ZERO);
 
         long totalDownline = associateRepository.countDownline(associateId);
-        long activeToday = associateRepository.countActiveToday(associateId, LocalDate.now());
-        // Upper bound is exclusive, so pass the day *after* the cycle's last day to include
-        // associates who joined on periodEnd itself (see AssociateRepository#countJoinedBetween).
-        long newJoins = associateRepository.countJoinedBetween(
-            associateId, cycle.getPeriodStart(), cycle.getPeriodEnd().plusDays(1));
-        long leftAssociates = associateRepository.countDownlineByPosition(associateId, "L");
-        long rightAssociates = associateRepository.countDownlineByPosition(associateId, "R");
+        long directCount = associateRepository.countByParentId(associateId);
+
+        long verified = associateRepository.countDownlineByKycStatus(associateId, KycStatus.VERIFIED.name());
+        long pending = associateRepository.countDownlineByKycStatus(associateId, KycStatus.PENDING.name());
+        long rejected = associateRepository.countDownlineByKycStatus(associateId, KycStatus.REJECTED.name());
 
         long daysRemaining = Math.max(0, ChronoUnit.DAYS.between(LocalDate.now(), cycle.getPeriodEnd()));
-
-        List<Announcement> announcements = announcementRepository.findTop5ByOrderByPublishedAtDesc();
 
         return new DashboardResponse(
             new DashboardResponse.AssociateSummary(
                 associate.getUserId(), associate.getName(), currentRank.getName(),
                 associate.getPhone(), associate.getJoinedAt(), associate.getRankChangedAt()),
             associate.getKycStatus() != KycStatus.VERIFIED,
-            new DashboardResponse.CycleIncome(cycle.getId(), direct, matching, sponsorMatching, selfPerformance, royaltyBonus, royaltyBonusPct, total),
+            new DashboardResponse.CycleIncome(
+                cycle.getId(), direct, matching, sponsorMatching, selfPerformance, royaltyBonus, royaltyBonusPct, total,
+                previousCycleTotalIncome, incomeTrend),
             new DashboardResponse.WalletSummary(wallet.getBalance()),
-            new DashboardResponse.LegVolumeSummary(
-                legVolume.getLeftLegVolume(), legVolume.getRightLegVolume(),
-                legVolume.getCarriedForwardLeft(), legVolume.getCarriedForwardRight(),
-                projectedMatch, totalLeftBusiness, totalRightBusiness, newBookedAreaSqft),
-            new DashboardResponse.RankProgress(
-                currentRank.getName(), currentRank.getRankOrder(),
-                nextRank.map(RankTier::getName).orElse(null),
-                progressPercent, volumeToNextRank),
-            new DashboardResponse.TeamSnapshot(totalDownline, activeToday, newJoins, leftAssociates, rightAssociates),
             new DashboardResponse.CycleCountdown(cycle.getId(), daysRemaining),
-            announcements.stream()
-                .map(a -> new DashboardResponse.AnnouncementSummary(a.getId(), a.getTitle(), a.getPublishedAt()))
-                .toList()
+            new DashboardResponse.SalesSummary(salesThisCycle, revenueBookedThisCycle, revenueBookedChangePct),
+            new DashboardResponse.NetworkSummary(totalDownline, directCount),
+            networkGrowth,
+            new DashboardResponse.KycBreakdown(verified, pending, rejected)
         );
     }
 }

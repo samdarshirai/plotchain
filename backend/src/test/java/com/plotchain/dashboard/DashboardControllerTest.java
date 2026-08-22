@@ -1,6 +1,5 @@
 package com.plotchain.dashboard;
 
-import com.plotchain.announcement.AnnouncementRepository;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
@@ -11,7 +10,6 @@ import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
 import com.plotchain.income.LedgerEntryRepository;
-import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
@@ -57,7 +55,6 @@ class DashboardControllerTest {
     @MockBean LedgerEntryRepository ledgerEntryRepository;
     @MockBean LegVolumeRepository legVolumeRepository;
     @MockBean WalletRepository walletRepository;
-    @MockBean AnnouncementRepository announcementRepository;
     @MockBean RoyaltyBonusRateRepository royaltyBonusRateRepository;
     @MockBean SaleRepository saleRepository;
 
@@ -78,7 +75,6 @@ class DashboardControllerTest {
         associate.setId(associateId);
         associate.setRankId(currentRankId);
         associate.setKycStatus(KycStatus.VERIFIED);
-        associate.setCumulativeMatchedVolume(BigDecimal.ZERO);
         associate.setUserId("SDI384818");
         associate.setName("Asha Kumar");
         associate.setPhone("9876543210");
@@ -97,38 +93,31 @@ class DashboardControllerTest {
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(cycle));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(cycleRepository.findAllByOrderByPeriodStartDesc(any(org.springframework.data.domain.PageRequest.class)))
+            .thenReturn(org.springframework.data.domain.Page.empty());
         when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(any(), any(), any())).thenReturn(BigDecimal.ZERO);
         when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(any(), any())).thenReturn(BigDecimal.ZERO);
         when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(any(), any()))
             .thenReturn(Optional.empty());
-        when(legVolumeRepository.findByAssociateIdAndCycleId(any(), any()))
-            .thenReturn(Optional.of(LegVolume.empty(associateId, cycleId)));
-        when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(any()))
-            .thenReturn(List.of());
-        when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
         when(associateRepository.countDownline(any())).thenReturn(12L);
-        when(associateRepository.countDownlineByPosition(any(), any())).thenReturn(0L);
-        when(associateRepository.countActiveToday(any(), any())).thenReturn(3L);
-        when(associateRepository.countJoinedBetween(any(), any(), any())).thenReturn(2L);
-        when(announcementRepository.findTop5ByOrderByPublishedAtDesc()).thenReturn(List.of());
+        when(associateRepository.countByParentId(any())).thenReturn(8L);
+        when(associateRepository.countDownlineByKycStatus(any(), any())).thenReturn(0L);
+        when(saleRepository.countByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(0L);
+        when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
 
         mockMvc.perform(get("/api/associates/me/dashboard")
                 .header("Authorization", "Bearer " + tokenFor(associateId)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.teamSnapshot.totalDownline").value(12))
+            .andExpect(jsonPath("$.networkSummary.totalDownline").value(12))
+            .andExpect(jsonPath("$.networkSummary.directCount").value(8))
             .andExpect(jsonPath("$.associate.name").value("Asha Kumar"))
             .andExpect(jsonPath("$.associate.joinedAt").value(joinedAt.toString()))
             .andExpect(jsonPath("$.cycleIncome.sponsorMatchingIncome").value(0))
-            .andExpect(jsonPath("$.cycleIncome.selfPerformanceBonus").value(0))
-            .andExpect(jsonPath("$.cycleIncome.royaltyBonus").value(0))
             .andExpect(jsonPath("$.cycleIncome.royaltyBonusPct").value(0))
-            .andExpect(jsonPath("$.legVolume.totalLeftBusiness").value(0))
-            .andExpect(jsonPath("$.legVolume.totalRightBusiness").value(0))
-            .andExpect(jsonPath("$.legVolume.newBookedAreaSqft").value(0))
-            .andExpect(jsonPath("$.teamSnapshot.leftAssociates").value(0))
-            .andExpect(jsonPath("$.teamSnapshot.rightAssociates").value(0));
+            .andExpect(jsonPath("$.salesSummary.salesThisCycle").value(0))
+            .andExpect(jsonPath("$.kycBreakdown.verified").value(0));
     }
 
     @Test
