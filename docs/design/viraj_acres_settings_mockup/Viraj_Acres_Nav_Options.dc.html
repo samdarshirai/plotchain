@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#eee8db;font-family:'Inter',system-ui,sans-serif}
+  .dv-turn{padding:40px 44px 48px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+  .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+  .dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+  .dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+  .dv-opts{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+  .dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+  .dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+  .dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 12px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.6)}
+  .dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow:hidden}
+  .dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+  .dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+  .msym{font-family:'Material Symbols Outlined';font-weight:normal;font-style:normal;line-height:1}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Navigation — Dashboard + category tabs folded into header, item row below</span></div>
+<div class="dv-opts">
+
+  <div class="dv-opt" id="1c">
+    <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Category tabs folded into header, item row below, no sidebar, full-width content</div>
+    <div class="dv-card" style="width:1180px;height:740px;display:flex;flex-direction:column;font-family:Inter,sans-serif;color:#201A15">
+      <div style="height:60px;background:#0C0A0B;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:28px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:28px;height:28px;border-radius:4px;background:linear-gradient(135deg,#5C1A2A,#0C0A0B);border:1px solid #C6A227;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;color:#EAD07D;font-size:12px;font-weight:600">VS</div>
+            <span style="font-size:13px;font-weight:600;letter-spacing:0.1em;color:#EAD07D">VIRAJ ACRES</span>
+          </div>
+          <div style="display:flex;gap:4px">
+            <div style="padding:8px 14px;border-radius:4px;font-size:13px;font-weight:600;color:#a89878">Dashboard</div>
+            <sc-for list="{{ cHeaderTabs }}" as="cat" hint-placeholder-count="4">
+              <div onClick="{{ cat.onClick }}" style="padding:8px 14px;border-radius:4px;font-size:13px;font-weight:600;color:{{ cat.color }};background:{{ cat.bg }};display:flex;align-items:center;gap:6px;cursor:pointer">
+                <span class="msym" style="font-size:15px">{{ cat.icon }}</span>{{ cat.label }}
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="background:#F0E9D6;border-bottom:1px solid #D9CFBC;padding:10px 32px;display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap">
+        <sc-for list="{{ cItemTabs }}" as="item" hint-placeholder-count="5">
+          <div onClick="{{ item.onClick }}" style="padding:7px 14px;border-radius:14px;font-size:12.5px;font-weight:600;cursor:pointer;color:{{ item.color }};background:{{ item.bg }}">{{ item.label }}</div>
+        </sc-for>
+      </div>
+      <div style="flex:1;background:#F7F2E7;padding:28px 32px;overflow-y:auto">
+        <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:600;margin-bottom:6px">{{ cActiveLabel }}</div>
+        <div style="font-size:13px;color:#6B6153;margin-bottom:20px">Category tabs now live in the header itself, so only one extra row — item tabs — sits below it. No sidebar means full content width too, which helps wide tables and forms.</div>
+        <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;padding:22px;max-width:700px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+            <div><label style="font-size:11.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:5px">Field One</label><input style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px"/></div>
+            <div><label style="font-size:11.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:5px">Field Two</label><input style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px"/></div>
+            <div><label style="font-size:11.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:5px">Field Three</label><input style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px"/></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:18px"><button style="background:#5C1A2A;border:none;color:#EAD07D;font-weight:700;font-size:13px;padding:9px 18px;border-radius:2px">Save</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<p class="dv-next">Try next: "build out all 14 screens on <a class="dv-oid" href="#1c">1c</a>"</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { aActive: 'profile', bOpen: 'setup', bActive: 'profile', cCat: 'setup', cActive: 'profile', topActive: 'setup', topItemActive: 'profile' };
+
+  categories() {
+    return [
+      { key: 'setup', label: 'Setup', icon: 'tune', items: [
+        { key: 'profile', label: 'Company Profile' },
+        { key: 'branding', label: 'Branding' },
+        { key: 'comp', label: 'Compensation Plan' },
+        { key: 'projects', label: 'Projects & Plots' },
+        { key: 'payments', label: 'Payments & KYC' },
+      ]},
+      { key: 'network', label: 'Network', icon: 'group', items: [
+        { key: 'directory', label: 'Associate Directory' },
+        { key: 'tree', label: 'Tree Explorer' },
+        { key: 'kyc', label: 'KYC Review Queue' },
+      ]},
+      { key: 'finance', label: 'Finance & Cycles', icon: 'point_of_sale', items: [
+        { key: 'sales', label: 'Sales Register' },
+        { key: 'cycle', label: 'Cycle Management' },
+        { key: 'ledger', label: 'Ledger Register' },
+        { key: 'payout', label: 'Payout Approval' },
+      ]},
+      { key: 'system', label: 'System', icon: 'admin_panel_settings', items: [
+        { key: 'audit', label: 'Audit Log' },
+        { key: 'stats', label: 'Admin Stats' },
+      ]},
+    ];
+  }
+
+  renderVals() {
+    const cats = this.categories();
+    const allItems = cats.flatMap(c => c.items);
+    const findLabel = key => (allItems.find(i => i.key === key) || {}).label || '';
+
+    // Option A: grouped flat sidebar
+    const aGroups = cats.map(c => ({
+      label: c.label,
+      items: c.items.map(item => {
+        const active = this.state.aActive === item.key;
+        return { label: item.label, onClick: () => this.setState({ aActive: item.key }), weight: active ? 700 : 400, color: active ? '#0C0A0B' : '#4a3f33', bg: active ? 'rgba(92,26,42,0.08)' : 'transparent' };
+      }),
+    }));
+
+    // Option B: hub + drill-down
+    const bShowHub = !this.state.bOpen;
+    const bShowCategory = !!this.state.bOpen;
+    const openCat = cats.find(c => c.key === this.state.bOpen);
+    const bCategoryCards = cats.map(c => ({ label: c.label, icon: c.icon, count: c.items.length, onClick: () => this.setState({ bOpen: c.key, bActive: c.items[0].key }) }));
+    const bItems = openCat ? openCat.items.map(item => {
+      const active = this.state.bActive === item.key;
+      return { label: item.label, onClick: () => this.setState({ bActive: item.key }), color: active ? '#EAD07D' : '#5C1A2A', bg: active ? '#5C1A2A' : 'rgba(92,26,42,0.08)' };
+    }) : [];
+
+    // Option C: category tabs folded into header as pills
+    const cHeaderTabs = cats.map(c => {
+      const active = this.state.cCat === c.key;
+      return { label: c.label, icon: c.icon, onClick: () => this.setState({ cCat: c.key, cActive: c.items[0].key }), color: active ? '#EAD07D' : '#a89878', bg: active ? '#241c16' : 'transparent' };
+    });
+    const activeCat = cats.find(c => c.key === this.state.cCat);
+    const cItemTabs = activeCat ? activeCat.items.map(item => {
+      const active = this.state.cActive === item.key;
+      return { label: item.label, onClick: () => this.setState({ cActive: item.key }), color: active ? '#EAD07D' : '#5C1A2A', bg: active ? '#5C1A2A' : 'transparent' };
+    }) : [];
+
+    // Option 2a: category tabs promoted to top-level nav, Dashboard alongside them
+    const topDefs = [{ key: 'dashboard', label: 'Dashboard', icon: 'space_dashboard' }, ...cats.map(c => ({ key: c.key, label: c.label, icon: c.icon }))];
+    const topTabs = topDefs.map(d => {
+      const active = this.state.topActive === d.key;
+      return {
+        label: d.label, icon: d.icon,
+        onClick: () => {
+          const cat = cats.find(c => c.key === d.key);
+          this.setState({ topActive: d.key, topItemActive: cat ? cat.items[0].key : null });
+        },
+        color: active ? '#5C1A2A' : '#6B6153', borderColor: active ? '#5C1A2A' : 'transparent',
+      };
+    });
+    const topShowItems = this.state.topActive !== 'dashboard';
+    const topCat = cats.find(c => c.key === this.state.topActive);
+    const topItems = topCat ? topCat.items.map(item => {
+      const active = this.state.topItemActive === item.key;
+      return { label: item.label, onClick: () => this.setState({ topItemActive: item.key }), color: active ? '#EAD07D' : '#5C1A2A', bg: active ? '#5C1A2A' : 'transparent' };
+    }) : [];
+    const topContentLabel = this.state.topActive === 'dashboard' ? 'Dashboard' : findLabel(this.state.topItemActive);
+
+    return {
+      topTabs, topShowItems, topItems, topContentLabel, topIsDashboard: this.state.topActive === 'dashboard',
+      aGroups, aActiveLabel: findLabel(this.state.aActive),
+      bShowHub, bShowCategory, bCategoryCards, bItems,
+      bOpenLabel: openCat ? openCat.label : '', bActiveLabel: findLabel(this.state.bActive),
+      bBackHandler: () => this.setState({ bOpen: null }),
+      cHeaderTabs, cItemTabs, cActiveLabel: findLabel(this.state.cActive),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=Material+Symbols+Outlined&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; }
+  * { box-sizing: border-box; }
+  .msym { font-family: 'Material Symbols Outlined'; font-weight: normal; font-style: normal; line-height: 1; -webkit-font-smoothing: antialiased; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#F7F2E7;font-family:'Inter',sans-serif;color:#201A15;display:flex;flex-direction:column">
+
+  <div style="height:68px;background:#0C0A0B;display:flex;align-items:center;justify-content:space-between;padding:0 28px;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:36px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:34px;height:34px;border-radius:4px;background:linear-gradient(135deg,#5C1A2A,#0C0A0B);border:1px solid #C6A227;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;color:#EAD07D;font-size:15px;font-weight:600">VS</div>
+        <div style="display:flex;flex-direction:column;line-height:1.1">
+          <span style="font-size:15px;font-weight:600;letter-spacing:0.12em;color:#EAD07D">VIRAJ ACRES</span>
+          <span style="font-size:8px;letter-spacing:0.2em;color:#8a7a56">LEGACY LIVING</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <div onClick="{{ goDashboard }}" style="padding:9px 16px;border-radius:4px;font-size:13.5px;font-weight:600;cursor:pointer;color:{{ dashboardColor }};background:{{ dashboardBg }}">Dashboard</div>
+        <sc-for list="{{ headerTabs }}" as="cat" hint-placeholder-count="4">
+          <div onClick="{{ cat.onClick }}" style="padding:9px 16px;border-radius:4px;font-size:13.5px;font-weight:600;color:{{ cat.color }};background:{{ cat.bg }};display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;flex-shrink:0">
+            <span class="msym" style="font-size:16px">{{ cat.icon }}</span>{{ cat.label }}
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <button style="background:transparent;border:1px solid #4a4038;color:#e8e0d0;font-family:Inter;font-size:13px;font-weight:600;padding:9px 18px;border-radius:3px;cursor:pointer">Log Out</button>
+  </div>
+
+  <sc-if value="{{ showItemTabs }}">
+    <div style="background:#F0E9D6;border-bottom:1px solid #D9CFBC;padding:12px 32px;display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap">
+      <sc-for list="{{ itemTabs }}" as="item" hint-placeholder-count="5">
+        <div onClick="{{ item.onClick }}" style="padding:8px 16px;border-radius:14px;font-size:13px;font-weight:600;cursor:pointer;color:{{ item.color }};background:{{ item.bg }}">{{ item.label }}</div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <div style="flex:1;padding:40px 48px 80px 48px">
+
+      <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ false }}">
+        <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 6px 0">Dashboard</h1>
+        <div style="font-size:14px;color:#6B6153;margin-bottom:28px">Welcome back. Here's how your network is performing this cycle.</div>
+        <div style="background:#0C0A0B;border:1px solid #C6A227;border-radius:4px;padding:36px 40px;max-width:520px;position:relative">
+          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#C6A227,#EAD07D,#C6A227)"></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#C6A227,#EAD07D,#C6A227)"></div>
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.14em;color:#C6A227;text-align:center;margin-bottom:18px">── CURRENT CYCLE ──</div>
+          <div style="font-family:'Fraunces',serif;font-size:52px;font-weight:600;color:#EAD07D;text-align:center;line-height:1">₹4,82,600</div>
+          <div style="font-size:13px;color:#a89878;text-align:center;margin-top:10px">Across 6 associates this cycle.</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isProfile }}">
+        <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 6px 0">Company Profile</h1>
+        <div style="font-size:14px;color:#6B6153;line-height:1.5;margin:0 0 24px 0;max-width:720px">Define your organization's core identity. This information is used for legal documentation and system-wide branding.</div>
+        <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;padding:32px;max-width:920px">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#5C1A2A;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:18px"><span class="msym" style="font-size:18px">info</span>GENERAL INFORMATION</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+            <div><label style="font-size:12.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:6px">Display Name</label><input defaultValue="Viraj Acres" style="width:100%;padding:10px 12px;border:1px solid #D9CFBC;border-radius:3px;font-size:14px;background:#fff"/></div>
+            <div><label style="font-size:12.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:6px">Legal Name</label><input defaultValue="Viraj Acres" style="width:100%;padding:10px 12px;border:1px solid #D9CFBC;border-radius:3px;font-size:14px;background:#fff"/></div>
+          </div>
+          <div style="margin-bottom:28px">
+            <label style="font-size:12.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:6px">Registration Number (optional)</label>
+            <div style="position:relative"><input placeholder="" style="width:100%;padding:10px 40px 10px 12px;border:1px solid #D9CFBC;border-radius:3px;font-size:14px;background:#fff"/><span class="msym" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#5C1A2A;font-size:18px">verified</span></div>
+          </div>
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#5C1A2A;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:18px"><span class="msym" style="font-size:18px">badge</span>POINT OF CONTACT</div>
+          <div style="margin-bottom:20px"><label style="font-size:12.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:6px">Contact Person Name</label><input defaultValue="Rahul Sharma" style="width:100%;padding:10px 12px;border:1px solid #D9CFBC;border-radius:3px;font-size:14px;background:#fff"/></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px">
+            <div><label style="font-size:12.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:6px">Contact Email</label><input defaultValue="rahul@plotchain.com" style="width:100%;padding:10px 12px;border:1px solid #D9CFBC;border-radius:3px;font-size:14px;background:#fff"/></div>
+            <div><label style="font-size:12.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:6px">Contact Phone</label><input defaultValue="09744459872" style="width:100%;padding:10px 12px;border:1px solid #D9CFBC;border-radius:3px;font-size:14px;background:#fff"/></div>
+          </div>
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#5C1A2A;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:18px"><span class="msym" style="font-size:18px">location_on</span>REGISTERED ADDRESS</div>
+          <label style="font-size:12.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:6px">Registered Address</label>
+          <textarea defaultValue="House No 17, Boring Road, Patna, 456907" rows="3" style="width:100%;padding:12px;border:1px solid #D9CFBC;border-radius:3px;font-size:14px;font-family:Inter;background:#fff;resize:vertical"></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:24px">
+            <button style="background:#5C1A2A;border:none;color:#EAD07D;font-weight:700;font-size:14px;padding:11px 24px;border-radius:2px;cursor:pointer">Save</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isBranding }}">
+        <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 6px 0">Branding</h1>
+        <div style="font-size:14px;color:#6B6153;line-height:1.5;margin:0 0 24px 0;max-width:720px">Define your organization's visual identity. These colors, logos, and tagline appear across the login screen and associate-facing portals.</div>
+        <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;padding:32px;max-width:920px">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#5C1A2A;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:18px"><span class="msym" style="font-size:18px">image</span>BRAND ASSETS / LOGO</div>
+          <label style="font-size:12.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:10px">Square Logo</label>
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px">
+            <div style="width:76px;height:76px;border-radius:4px;background:linear-gradient(135deg,#5C1A2A,#0C0A0B);border:1px solid #C6A227;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;color:#EAD07D;font-size:24px;font-weight:600">VS</div>
+            <button style="background:transparent;border:1px solid #5C1A2A;color:#5C1A2A;font-weight:600;font-size:13.5px;padding:9px 18px;border-radius:2px;cursor:pointer">Change</button>
+          </div>
+          <div style="height:1px;background:#D9CFBC;margin-bottom:28px"></div>
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#5C1A2A;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:18px"><span class="msym" style="font-size:18px">palette</span>THEME COLORS</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px">
+            <div>
+              <label style="font-size:12.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:6px">Primary Color</label>
+              <div style="display:flex;gap:10px"><div style="width:44px;height:44px;border-radius:3px;background:#5C1A2A;border:1px solid #D9CFBC;flex-shrink:0"></div><input defaultValue="#5c1a2a" style="flex:1;padding:10px 12px;border:1px solid #D9CFBC;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:14px;background:#fff"/></div>
+            </div>
+            <div>
+              <label style="font-size:12.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:6px">Secondary Color</label>
+              <div style="display:flex;gap:10px"><div style="width:44px;height:44px;border-radius:3px;background:#C6A227;border:1px solid #D9CFBC;flex-shrink:0"></div><input defaultValue="#c6a227" style="flex:1;padding:10px 12px;border:1px solid #D9CFBC;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:14px;background:#fff"/></div>
+            </div>
+          </div>
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#5C1A2A;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:18px"><span class="msym" style="font-size:18px">format_quote</span>COPY / BRAND TAGLINE</div>
+          <label style="font-size:12.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:6px">Tagline</label>
+          <div style="position:relative"><input defaultValue="Building Dreams" style="width:100%;padding:10px 60px 10px 12px;border:1px solid #5C1A2A;border-radius:3px;font-size:14px;background:#fff"/><span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:#6B6153">15/60</span></div>
+          <div style="display:flex;justify-content:flex-end;margin-top:24px">
+            <button style="background:#5C1A2A;border:none;color:#EAD07D;font-weight:700;font-size:14px;padding:11px 24px;border-radius:2px;cursor:pointer">Save</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isComp }}">
+        <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 6px 0">Compensation Plan</h1>
+        <div style="font-size:14px;color:#6B6153;line-height:1.5;margin:0 0 24px 0;max-width:800px">Configure multi-tier income rules, royalty distributions, and performance-based rewards. Changes are simulated in the right-hand panel for real-time validation.</div>
+        <div style="background:#F0E9D6;border:1px solid #D9CFBC;border-radius:4px;padding:16px 20px;font-size:14px;color:#5C1A2A;font-weight:600;margin-bottom:24px;max-width:1100px">Changes here apply to future cycles only. Past payouts are never recalculated.</div>
+        <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;overflow:hidden;max-width:1100px">
+          <div style="height:3px;background:#5C1A2A"></div>
+          <div style="padding:22px 28px 28px 28px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+              <div style="width:32px;height:32px;border-radius:50%;background:#5C1A2A;display:flex;align-items:center;justify-content:center"><span class="msym" style="font-size:18px;color:#EAD07D">payments</span></div>
+              <div style="font-size:17px;font-weight:600">Income Rules</div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
+              <div><div style="font-size:13.5px;color:#6B6153;margin-bottom:6px">Direct Income %</div><div style="font-family:'Fraunces',serif;font-size:26px;font-weight:700;margin-bottom:10px">10%</div><input defaultValue="10" style="width:100%;padding:10px 12px;border:1px solid #D9CFBC;border-radius:3px;font-size:14px;background:#fff"/></div>
+              <div><div style="font-size:13.5px;color:#6B6153;margin-bottom:6px">Matching Income %</div><div style="font-family:'Fraunces',serif;font-size:26px;font-weight:700;margin-bottom:10px;color:#5C1A2A">7%</div><input defaultValue="7" style="width:100%;padding:10px 12px;border:1px solid #D9CFBC;border-radius:3px;font-size:14px;background:#fff"/></div>
+              <div><div style="font-size:13.5px;color:#6B6153;margin-bottom:6px">Sponsor Matching Bonus %</div><div style="font-family:'Fraunces',serif;font-size:26px;font-weight:700;margin-bottom:10px;color:#4B7A52">6%</div><input defaultValue="6" style="width:100%;padding:10px 12px;border:1px solid #D9CFBC;border-radius:3px;font-size:14px;background:#fff"/></div>
+            </div>
+          </div>
+          <sc-for list="{{ compRows }}" as="row" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 28px;border-top:1px solid #D9CFBC;border-left:3px solid {{ row.accent }};background:#F7F2E7cc">
+              <div style="display:flex;align-items:center;gap:12px"><span class="msym" style="font-size:20px;color:{{ row.accent }}">{{ row.icon }}</span><div style="font-size:15px;font-weight:600">{{ row.label }}</div></div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:#6B6153"><span>{{ row.detail }}</span><span class="msym" style="font-size:18px">chevron_right</span></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;justify-content:flex-end;max-width:1100px;margin-top:24px">
+          <button style="background:#5C1A2A;border:none;color:#EAD07D;font-weight:700;font-size:14px;padding:11px 24px;border-radius:2px;cursor:pointer">Save</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isProjects }}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;max-width:1100px">
+          <div>
+            <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 6px 0">Projects & Plots</h1>
+            <div style="font-size:14px;color:#6B6153;line-height:1.5;max-width:640px">Track your active developments and manage plot inventory. Changes here are saved automatically as you go.</div>
+          </div>
+          <button style="background:#5C1A2A;border:none;color:#EAD07D;font-weight:700;font-size:14px;padding:11px 22px;border-radius:2px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:8px"><span class="msym" style="font-size:18px">add_circle</span>Add New Project</button>
+        </div>
+        <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;padding:28px;margin-top:28px;max-width:1100px;display:flex;gap:24px">
+          <div style="width:140px;height:140px;border-radius:4px;background:#F0E9D6;flex-shrink:0;display:flex;align-items:center;justify-content:center"><span class="msym" style="font-size:44px;color:#5C1A2A">apartment</span></div>
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <div style="font-size:20px;font-weight:600">Dream Homes</div>
+                <div style="display:flex;align-items:center;gap:6px;color:#6B6153;font-size:13.5px;margin-top:4px"><span class="msym" style="font-size:16px">location_on</span>Gulzarbagh</div>
+              </div>
+              <span class="msym" style="font-size:20px;color:#5C1A2A;cursor:pointer">delete</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px">
+              <div style="border:1px solid #D9CFBC;border-radius:3px;padding:14px"><div style="font-size:13px;color:#6B6153;margin-bottom:4px">Total</div><div style="font-size:22px;font-weight:700">48</div></div>
+              <div style="border:1px solid #5C1A2A33;background:#5C1A2A0d;border-radius:3px;padding:14px"><div style="font-size:13px;color:#6B6153;margin-bottom:4px">Available</div><div style="font-size:22px;font-weight:700;color:#5C1A2A">21</div></div>
+              <div style="border:1px solid #D9CFBC;border-radius:3px;padding:14px"><div style="font-size:13px;color:#6B6153;margin-bottom:4px">Sold</div><div style="font-size:22px;font-weight:700">27</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px;margin-top:18px">
+              <div style="flex:1;height:6px;background:#EFE9DA;border-radius:3px;overflow:hidden"><div style="width:56%;height:100%;background:#5C1A2A"></div></div>
+              <div style="color:#5C1A2A;font-weight:600;font-size:14px;white-space:nowrap;display:flex;align-items:center;gap:4px;cursor:pointer">View Project <span class="msym" style="font-size:16px">arrow_forward</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;max-width:1100px;margin-top:24px">
+          <button style="background:#5C1A2A;border:none;color:#EAD07D;font-weight:700;font-size:14px;padding:11px 24px;border-radius:2px;cursor:pointer">Save</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isPayments }}">
+        <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 6px 0">Payments & KYC</h1>
+        <div style="font-size:14px;color:#6B6153;line-height:1.5;margin:0 0 24px 0;max-width:800px">Establish your transaction pipelines. Define how you collect revenue and distribute payouts to your network of associates.</div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;max-width:1200px">
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;padding:24px">
+              <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#5C1A2A;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:18px"><span class="msym" style="font-size:18px">credit_card</span>PAYMENT COLLECTION</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px">
+                <sc-for list="{{ gateways }}" as="gw" hint-placeholder-count="3">
+                  <div style="border:2px solid {{ gw.borderColor }};background:{{ gw.bg }};border-radius:4px;padding:18px;text-align:center">
+                    <span class="msym" style="font-size:22px;color:{{ gw.iconColor }}">{{ gw.icon }}</span>
+                    <div style="font-weight:700;font-size:13.5px;margin-top:8px;letter-spacing:0.03em">{{ gw.name }}</div>
+                    <div style="width:8px;height:8px;border-radius:50%;background:{{ gw.dotColor }};margin:8px auto 0 auto"></div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font-size:13px;color:#6B6153;margin-bottom:8px">Accepted Payment Modes</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+                <sc-for list="{{ paymentModes }}" as="mode" hint-placeholder-count="4">
+                  <span style="border:1px solid #5C1A2A;color:#5C1A2A;font-size:12px;font-weight:700;padding:6px 14px;border-radius:14px">{{ mode }}</span>
+                </sc-for>
+              </div>
+              <div style="font-size:13.5px;color:#201A15">Configured <span style="color:#5C1A2A;font-weight:600;cursor:pointer">Change credentials</span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+              <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;padding:22px">
+                <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#5C1A2A;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:16px"><span class="msym" style="font-size:18px">account_balance</span>PAYOUT ACCOUNT</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+                  <div><label style="font-size:12px;color:#6B6153;display:block;margin-bottom:5px">Bank Name</label><input defaultValue="ICICI Bank" style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"/></div>
+                  <div><label style="font-size:12px;color:#6B6153;display:block;margin-bottom:5px">Account Holder Name</label><input defaultValue="Rahul Sharma" style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"/></div>
+                  <div><label style="font-size:12px;color:#6B6153;display:block;margin-bottom:5px">Account Number</label><input defaultValue="055801629864" style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"/></div>
+                  <div><label style="font-size:12px;color:#6B6153;display:block;margin-bottom:5px">IFSC Code</label><input defaultValue="ICIC0001947" style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"/></div>
+                </div>
+                <label style="font-size:12px;color:#6B6153;display:block;margin-bottom:6px">Account Type</label>
+                <div style="display:flex;gap:8px"><div style="background:#5C1A2A;color:#EAD07D;font-weight:600;font-size:13px;padding:7px 16px;border-radius:3px">Current</div><div style="border:1px solid #D9CFBC;color:#6B6153;font-weight:600;font-size:13px;padding:7px 16px;border-radius:3px">Savings</div></div>
+              </div>
+              <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;padding:22px">
+                <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#5C1A2A;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:16px"><span class="msym" style="font-size:18px">rule</span>WITHDRAWAL APPROVAL</div>
+                <label style="font-size:12px;color:#6B6153;display:block;margin-bottom:6px">Approval Mode</label>
+                <div style="display:flex;gap:8px;margin-bottom:16px"><div style="border:1px solid #D9CFBC;color:#6B6153;font-weight:600;font-size:12.5px;padding:7px 14px;border-radius:3px">Auto-approve</div><div style="background:#5C1A2A;color:#EAD07D;font-weight:600;font-size:12.5px;padding:7px 14px;border-radius:3px">Manual review</div></div>
+                <label style="font-size:12px;color:#6B6153;display:block;margin-bottom:6px">Minimum Withdrawal Amount</label>
+                <input defaultValue="500000" style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff;margin-bottom:18px"/>
+                <div style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:#6B6153;flex-wrap:wrap">
+                  <span style="border:1px solid #D9CFBC;padding:5px 10px;border-radius:12px">Raised</span><span class="msym" style="font-size:14px">arrow_forward</span>
+                  <span style="border:1px solid #D9CFBC;padding:5px 10px;border-radius:12px">Review</span><span class="msym" style="font-size:14px">arrow_forward</span>
+                  <span style="border:1px solid #D9CFBC;padding:5px 10px;border-radius:12px">Approved</span><span class="msym" style="font-size:14px">arrow_forward</span>
+                  <span style="border:1px solid #D9CFBC;padding:5px 10px;border-radius:12px">Payout</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;padding:22px">
+              <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#5C1A2A;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:16px"><span class="msym" style="font-size:18px">shield</span>KYC REQUIREMENTS</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><span style="font-size:13.5px;color:#6B6153">KYC Strictness</span><div style="display:flex;gap:6px"><div style="border:1px solid #D9CFBC;color:#6B6153;font-weight:600;font-size:12px;padding:6px 12px;border-radius:3px">Strict</div><div style="background:#5C1A2A;color:#EAD07D;font-weight:600;font-size:12px;padding:6px 12px;border-radius:3px">Relaxed</div></div></div>
+              <div style="font-size:13px;color:#6B6153;margin-bottom:10px">Required Documents</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ requiredDocs }}" as="doc" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;justify-content:space-between;border:1px solid #D9CFBC;border-radius:3px;padding:10px 12px">
+                    <div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600"><span class="msym" style="font-size:18px;color:#5C1A2A">{{ doc.icon }}</span>{{ doc.label }}</div>
+                    <span class="msym" style="font-size:18px;color:#4B7A52">check_circle</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;padding:22px">
+              <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#5C1A2A;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:16px"><span class="msym" style="font-size:18px">calendar_month</span>BOOKING & EMI POLICY</div>
+              <label style="display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:600;margin-bottom:16px"><input type="checkbox" defaultChecked style="accent-color:#5C1A2A;width:16px;height:16px"/>Allow EMI (installment) plot bookings</label>
+              <label style="font-size:12px;color:#6B6153;display:block;margin-bottom:6px">Default Installment Count</label>
+              <input defaultValue="1" style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff;margin-bottom:18px"/>
+              <div style="font-size:13px;color:#6B6153;margin-bottom:10px">Booking Confirmation Rule</div>
+              <div style="display:flex;flex-direction:column;gap:10px;font-size:13.5px">
+                <label style="display:flex;align-items:center;gap:8px"><input type="radio" name="bcr" style="accent-color:#5C1A2A"/>Auto-confirm at threshold</label>
+                <label style="display:flex;align-items:center;gap:8px;font-weight:700"><input type="radio" name="bcr" defaultChecked style="accent-color:#5C1A2A"/>Manual confirmation</label>
+                <label style="display:flex;align-items:center;gap:8px"><input type="radio" name="bcr" style="accent-color:#5C1A2A"/>KYC-gated confirmation</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;max-width:1200px;margin-top:24px">
+          <button style="background:#5C1A2A;border:none;color:#EAD07D;font-weight:700;font-size:14px;padding:11px 24px;border-radius:2px;cursor:pointer">Save</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isDirectory }}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between">
+          <div>
+            <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 6px 0">Associate Directory</h1>
+            <div style="font-size:14px;color:#6B6153">Manage and provision associates in one place.</div>
+          </div>
+          <button onClick="{{ openModal }}" style="background:#5C1A2A;border:none;color:#EAD07D;font-weight:700;font-size:14px;padding:11px 20px;border-radius:2px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:8px"><span class="msym" style="font-size:18px">person_add</span>New Associate</button>
+        </div>
+        <div style="background:#F0E9D6;border:1px solid #D9CFBC;border-radius:4px;padding:24px;margin-top:24px">
+          <input placeholder="Search by name or ID" style="width:100%;padding:12px 14px;border:1px solid #D9CFBC;border-radius:3px;font-size:14px;background:#fff;margin-bottom:20px"/>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px">
+            <div><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Rank</label><select style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"><option>All ranks</option></select></div>
+            <div><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">KYC Status</label><select style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"><option>All KYC statuses</option></select></div>
+            <div><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Status</label><select style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"><option>All statuses</option></select></div>
+            <div><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Joined From</label><input type="date" style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"/></div>
+          </div>
+          <div style="width:calc(25% - 12px)"><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Joined To</label><input type="date" style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"/></div>
+        </div>
+        <div style="margin-top:0;background:#FCFAF5;border:1px solid #D9CFBC;border-top:none;border-radius:0 0 4px 4px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:1.3fr 1.8fr 1fr 1.2fr 1fr;gap:12px;padding:16px 24px;font-size:11.5px;font-weight:700;letter-spacing:0.06em;color:#6B6153;text-transform:uppercase;border-bottom:1px solid #D9CFBC">
+            <div>Associate ID</div><div>Name</div><div>Rank</div><div>KYC Status</div><div>Status</div>
+          </div>
+          <sc-for list="{{ associates }}" as="a" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:1.3fr 1.8fr 1fr 1.2fr 1fr;gap:12px;padding:16px 24px;font-size:14px;align-items:center;border-bottom:1px solid #EFE9DA">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#6B6153">{{ a.id }}</div>
+              <div style="font-weight:600">{{ a.name }}</div>
+              <div><span style="background:#5C1A2A;color:#EAD07D;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:10px">{{ a.rank }}</span></div>
+              <div style="color:{{ a.kycColor }};font-weight:600;white-space:nowrap">{{ a.kyc }}</div>
+              <div style="color:{{ a.statusColor }};font-weight:600;white-space:nowrap">{{ a.status }}</div>
+            </div>
+          </sc-for>
+          <div style="display:flex;justify-content:center;gap:24px;padding:20px;border-top:1px solid #D9CFBC;color:#6B6153;font-weight:600;font-size:14px">
+            <span style="cursor:pointer">Previous</span><span style="cursor:pointer">Next</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isTree }}">
+        <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 6px 0">Tree Explorer</h1>
+        <div style="font-size:14px;color:#6B6153;margin-bottom:24px">Search an associate to inspect their binary-tree placement, downline, and leg-volume balance.</div>
+        <div style="display:flex;gap:12px;margin-bottom:24px">
+          <div style="flex:1;position:relative"><span class="msym" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#6B6153;font-size:18px">search</span><input placeholder="Enter Associate ID" style="width:100%;padding:13px 14px 13px 42px;border:1px solid #D9CFBC;border-radius:3px;font-size:14px;background:#F0E9D6"/></div>
+          <button style="background:#5C1A2A;border:none;color:#EAD07D;font-weight:700;font-size:14px;padding:0 28px;border-radius:2px;cursor:pointer">Search</button>
+        </div>
+        <div style="border:1px dashed #D9CFBC;border-radius:4px;padding:80px 20px;text-align:center">
+          <span class="msym" style="font-size:44px;color:#5C1A2A">account_tree</span>
+          <div style="font-size:19px;font-weight:700;margin-top:16px">No tree loaded yet</div>
+          <div style="font-size:14px;color:#6B6153;margin-top:8px;max-width:420px;margin-left:auto;margin-right:auto">Enter an associate ID above to see their placement, downline, and left/right leg balance.</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isKyc }}">
+        <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 20px 0">KYC Review Queue</h1>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:1100px;margin-bottom:24px">
+          <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;padding:20px 24px;display:flex;align-items:center;gap:14px"><span class="msym" style="font-size:24px;color:#B4790E">hourglass_top</span><div><div style="font-size:13.5px;color:#6B6153;margin-bottom:2px">Pending</div><div style="font-family:'Fraunces',serif;font-size:28px;font-weight:700">4</div></div></div>
+          <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;padding:20px 24px;display:flex;align-items:center;gap:14px"><span class="msym" style="font-size:24px;color:#4B7A52">check_circle</span><div><div style="font-size:13.5px;color:#6B6153;margin-bottom:2px">Verified</div><div style="font-family:'Fraunces',serif;font-size:28px;font-weight:700">52</div></div></div>
+          <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;padding:20px 24px;display:flex;align-items:center;gap:14px"><span class="msym" style="font-size:24px;color:#B23B32">cancel</span><div><div style="font-size:13.5px;color:#6B6153;margin-bottom:2px">Rejected</div><div style="font-family:'Fraunces',serif;font-size:28px;font-weight:700">3</div></div></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:0;max-width:1100px">
+          <div style="background:#5C1A2A;color:#EAD07D;font-weight:700;font-size:14px;padding:10px 20px;border-radius:4px 4px 0 0">Pending</div>
+          <div style="color:#6B6153;font-weight:600;font-size:14px;padding:10px 20px">Verified</div>
+          <div style="color:#6B6153;font-weight:600;font-size:14px;padding:10px 20px">Rejected</div>
+        </div>
+        <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:0 4px 4px 4px;overflow:hidden;max-width:1100px">
+          <div style="display:grid;grid-template-columns:1.5fr 2fr 1.5fr 1fr;gap:12px;padding:16px 24px;font-size:11.5px;font-weight:700;letter-spacing:0.06em;color:#6B6153;text-transform:uppercase;border-bottom:1px solid #D9CFBC">
+            <div>Associate ID</div><div>Name</div><div>Joined</div><div>Actions</div>
+          </div>
+          <sc-for list="{{ kycQueueRows }}" as="k" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:1.5fr 2fr 1.5fr 1fr;gap:12px;padding:16px 24px;font-size:14px;align-items:center;border-bottom:1px solid #EFE9DA">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#6B6153">{{ k.id }}</div>
+              <div style="font-weight:600">{{ k.name }}</div>
+              <div style="color:#6B6153;font-size:13.5px">{{ k.joined }}</div>
+              <div style="color:#5C1A2A;font-weight:700;cursor:pointer">Review</div>
+            </div>
+          </sc-for>
+          <div style="display:flex;justify-content:center;gap:24px;padding:20px;border-top:1px solid #D9CFBC;color:#6B6153;font-weight:600;font-size:14px">
+            <span style="cursor:pointer">Previous</span><span style="color:#201A15">Page 1 of 1</span><span style="cursor:pointer">Next</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isAudit }}">
+        <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 24px 0">Audit Log</h1>
+        <div style="max-width:1120px;display:flex;align-items:flex-end;gap:16px;margin-bottom:20px">
+          <div style="width:280px">
+            <label style="font-size:13px;font-weight:600;color:#6B6153;display:block;margin-bottom:8px">Section</label>
+            <select style="width:100%;padding:11px 12px;border:1px solid #D9CFBC;border-radius:3px;font-size:14px;background:#fff"><option>All</option></select>
+          </div>
+          <div style="font-size:13px;color:#6B6153;padding-bottom:11px">{{ auditEntries.length }} events</div>
+        </div>
+        <div style="max-width:1120px;background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;overflow:hidden">
+          <sc-for list="{{ auditEntries }}" as="entry" hint-placeholder-count="7">
+            <div style="display:grid;grid-template-columns:38px minmax(340px,1fr) 128px 92px;gap:14px;align-items:center;padding:16px 24px;border-bottom:1px solid #EFE9DA">
+              <div style="width:38px;height:38px;border-radius:50%;background:#5C1A2A;color:#EAD07D;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">A</div>
+              <div style="min-width:0">
+                <div style="font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="font-weight:700">{{ entry.who }}</span> {{ entry.action }}</div>
+              </div>
+              <div style="font-size:11.5px;font-weight:600;letter-spacing:0.02em;color:#5C1A2A;background:rgba(92,26,42,0.08);padding:4px 8px;border-radius:10px;white-space:nowrap;text-align:center">{{ entry.section }}</div>
+              <div style="font-size:12px;color:#6B6153;white-space:nowrap;text-align:right">{{ entry.shortTime }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isAdminStats }}">
+        <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 6px 0">Admin Stats</h1>
+        <div style="font-size:14px;color:#6B6153;margin-bottom:28px">Key operational metrics across the platform.</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:1100px">
+          <sc-for list="{{ adminStats }}" as="s" hint-placeholder-count="6">
+            <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;padding:22px;display:flex;flex-direction:column;gap:12px">
+              <span class="msym" style="font-size:22px;color:#5C1A2A">{{ s.icon }}</span>
+              <div style="font-size:13.5px;color:#6B6153">{{ s.label }}</div>
+              <div style="font-family:'Fraunces',serif;font-size:32px;font-weight:700">{{ s.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSales }}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between">
+          <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0">Sales Register</h1>
+          <button style="background:#5C1A2A;border:none;color:#EAD07D;font-weight:700;font-size:14px;padding:11px 20px;border-radius:2px;cursor:pointer">+ Record Sale</button>
+        </div>
+        <div style="background:#F0E9D6;border:1px solid #D9CFBC;border-radius:4px;padding:22px;margin-top:24px">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+            <div><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Associate</label><select style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"><option>All associates</option></select></div>
+            <div><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Status</label><select style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"><option>All statuses</option></select></div>
+            <div><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Recorded From</label><input type="date" style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"/></div>
+            <div><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Recorded To</label><input type="date" style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"/></div>
+          </div>
+        </div>
+        <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;overflow:hidden;margin-top:0">
+          <div style="display:grid;grid-template-columns:1.4fr 1.2fr 1fr 0.8fr 1fr 1.4fr 1fr;gap:12px;padding:16px 24px;font-size:11.5px;font-weight:700;letter-spacing:0.06em;color:#6B6153;text-transform:uppercase;border-bottom:1px solid #D9CFBC">
+            <div>Buyer</div><div>Phone</div><div>Amount</div><div>Leg</div><div>Status</div><div>Recorded At</div><div>Actions</div>
+          </div>
+          <sc-for list="{{ salesRows }}" as="s" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:1.4fr 1.2fr 1fr 0.8fr 1fr 1.4fr 1fr;gap:12px;padding:16px 24px;font-size:13.5px;align-items:center;border-bottom:1px solid #EFE9DA">
+              <div style="font-weight:600">{{ s.buyer }}</div>
+              <div style="color:#6B6153;font-family:'IBM Plex Mono',monospace;font-size:12.5px">{{ s.phone }}</div>
+              <div style="font-weight:600;font-family:'IBM Plex Mono',monospace">{{ s.amount }}</div>
+              <div style="color:#6B6153">{{ s.leg }}</div>
+              <div style="color:{{ s.statusColor }};font-weight:600;white-space:nowrap">{{ s.status }}</div>
+              <div style="color:#6B6153">{{ s.at }}</div>
+              <div style="color:#5C1A2A;font-weight:700;cursor:pointer">View</div>
+            </div>
+          </sc-for>
+          <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid #D9CFBC">
+            <span style="border:1px solid #D9CFBC;color:#6B6153;font-weight:600;font-size:13.5px;padding:8px 16px;border-radius:3px">Previous</span>
+            <span style="color:#201A15;font-weight:600;font-size:13.5px;padding:8px 4px">Page 1 of 1</span>
+            <span style="border:1px solid #D9CFBC;color:#6B6153;font-weight:600;font-size:13.5px;padding:8px 16px;border-radius:3px">Next</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isCycle }}">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.1em;color:#5C1A2A;text-transform:uppercase;margin-bottom:10px">ADMIN · CYCLE MANAGEMENT</div>
+        <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 6px 0">Cycle Management</h1>
+        <div style="font-size:14px;color:#6B6153;margin-bottom:24px">Review past settlement cycles and trigger the close for the current one.</div>
+        <div style="background:#F0E9D6;border:1px solid #D9CFBC;border-radius:4px;padding:22px;max-width:400px">
+          <label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Status</label>
+          <select style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"><option>All statuses</option></select>
+        </div>
+        <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;overflow:hidden;margin-top:0">
+          <div style="display:grid;grid-template-columns:1.5fr 1.5fr 1fr 1fr;gap:12px;padding:16px 24px;font-size:11.5px;font-weight:700;letter-spacing:0.06em;color:#6B6153;text-transform:uppercase;border-bottom:1px solid #D9CFBC">
+            <div>Period Start</div><div>Period End</div><div>Status</div><div>Actions</div>
+          </div>
+          <sc-for list="{{ cycleRows }}" as="c" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:1.5fr 1.5fr 1fr 1fr;gap:12px;padding:16px 24px;font-size:13.5px;align-items:center;border-bottom:1px solid #EFE9DA">
+              <div style="color:#6B6153">{{ c.start }}</div>
+              <div style="color:#6B6153">{{ c.end }}</div>
+              <div style="color:{{ c.statusColor }};font-weight:600;white-space:nowrap">{{ c.status }}</div>
+              <div style="color:#5C1A2A;font-weight:700;cursor:pointer">View</div>
+            </div>
+          </sc-for>
+          <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid #D9CFBC">
+            <span style="border:1px solid #D9CFBC;color:#6B6153;font-weight:600;font-size:13.5px;padding:8px 16px;border-radius:3px">Previous</span>
+            <span style="color:#201A15;font-weight:600;font-size:13.5px;padding:8px 4px">Page 1 of 1</span>
+            <span style="border:1px solid #D9CFBC;color:#6B6153;font-weight:600;font-size:13.5px;padding:8px 16px;border-radius:3px">Next</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isLedger }}">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.1em;color:#5C1A2A;text-transform:uppercase;margin-bottom:10px">ADMIN · LEDGER REGISTER</div>
+        <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 6px 0">Ledger Register</h1>
+        <div style="font-size:14px;color:#6B6153;line-height:1.5;margin-bottom:24px;max-width:800px">Every posted ledger entry, across every associate and cycle — a raw, view-only audit trail. No entry here can be edited or removed.</div>
+        <div style="background:#F0E9D6;border:1px solid #D9CFBC;border-radius:4px;padding:22px">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px">
+            <div><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Associate</label><select style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"><option>All associates</option></select></div>
+            <div><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Income Type</label><select style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"><option>All income types</option></select></div>
+            <div><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Cycle</label><select style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"><option>All cycles</option></select></div>
+          </div>
+          <div style="width:calc(33.33% - 11px)"><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Status</label><select style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"><option>All statuses</option></select></div>
+        </div>
+        <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;overflow-x:auto;margin-top:0">
+          <div style="display:grid;grid-template-columns:1.2fr 1.2fr 1.2fr 1fr 1fr 1.2fr 1.2fr;gap:12px;padding:16px 24px;font-size:11.5px;font-weight:700;letter-spacing:0.06em;color:#6B6153;text-transform:uppercase;border-bottom:1px solid #D9CFBC;min-width:900px">
+            <div>Associate</div><div>Cycle Period</div><div>Income Type</div><div>Status</div><div>Net Amount</div><div>Source Ref</div><div>Created At</div>
+          </div>
+          <sc-for list="{{ ledgerRows }}" as="l" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:1.2fr 1.2fr 1.2fr 1fr 1fr 1.2fr 1.2fr;gap:12px;padding:16px 24px;font-size:13.5px;align-items:center;border-bottom:1px solid #EFE9DA;min-width:900px">
+              <div style="font-weight:600">{{ l.assoc }}</div>
+              <div style="color:#6B6153">{{ l.period }}</div>
+              <div style="color:#6B6153">{{ l.type }}</div>
+              <div style="color:{{ l.statusColor }};font-weight:600;white-space:nowrap">{{ l.status }}</div>
+              <div style="font-weight:600;font-family:'IBM Plex Mono',monospace">{{ l.amount }}</div>
+              <div style="color:#6B6153;font-family:'IBM Plex Mono',monospace;font-size:12px">{{ l.ref }}</div>
+              <div style="color:#6B6153">{{ l.created }}</div>
+            </div>
+          </sc-for>
+          <div style="display:flex;justify-content:flex-end;align-items:center;gap:16px;padding:16px 24px;border-top:1px solid #D9CFBC">
+            <span style="color:#201A15;font-weight:600;font-size:13.5px">Page 1 of 1</span>
+            <span style="border:1px solid #D9CFBC;color:#6B6153;font-weight:600;font-size:13.5px;padding:8px 16px;border-radius:3px">Previous</span>
+            <span style="border:1px solid #D9CFBC;color:#6B6153;font-weight:600;font-size:13.5px;padding:8px 16px;border-radius:3px">Next</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isPayout }}">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.1em;color:#5C1A2A;text-transform:uppercase;margin-bottom:10px">ADMIN · PAYOUT APPROVAL</div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between">
+          <div>
+            <h1 style="font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0 0 6px 0">Payout Approval</h1>
+            <div style="font-size:14px;color:#6B6153">Review, approve, reject, and disburse associate withdrawal requests.</div>
+          </div>
+          <button style="background:#5C1A2A;border:none;color:#EAD07D;font-weight:700;font-size:14px;padding:11px 20px;border-radius:2px;cursor:pointer;white-space:nowrap">+ Submit Withdrawal</button>
+        </div>
+        <div style="background:#F0E9D6;border:1px solid #D9CFBC;border-radius:4px;padding:22px;margin-top:24px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:600px">
+            <div><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Associate</label><select style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"><option>All associates</option></select></div>
+            <div><label style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;color:#6B6153;text-transform:uppercase;display:block;margin-bottom:6px">Status</label><select style="width:100%;padding:9px 10px;border:1px solid #D9CFBC;border-radius:3px;font-size:13.5px;background:#fff"><option>All statuses</option></select></div>
+          </div>
+        </div>
+        <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:4px;overflow-x:auto;margin-top:0">
+          <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr 1.4fr 1.3fr 1.3fr 1fr;gap:12px;padding:16px 24px;font-size:11.5px;font-weight:700;letter-spacing:0.06em;color:#6B6153;text-transform:uppercase;border-bottom:1px solid #D9CFBC;min-width:900px">
+            <div>Associate</div><div>Amount</div><div>Status</div><div>Reason</div><div>Bank Reference</div><div>Requested At</div><div>Actions</div>
+          </div>
+          <sc-for list="{{ payoutRows }}" as="p" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr 1.4fr 1.3fr 1.3fr 1fr;gap:12px;padding:16px 24px;font-size:13.5px;align-items:center;border-bottom:1px solid #EFE9DA;min-width:900px">
+              <div style="font-weight:600">{{ p.assoc }}</div>
+              <div style="font-weight:600;font-family:'IBM Plex Mono',monospace">{{ p.amount }}</div>
+              <div style="color:{{ p.statusColor }};font-weight:600;white-space:nowrap">{{ p.status }}</div>
+              <div style="color:#6B6153">{{ p.reason }}</div>
+              <div style="color:#6B6153;font-family:'IBM Plex Mono',monospace;font-size:12px">{{ p.bank }}</div>
+              <div style="color:#6B6153">{{ p.requested }}</div>
+              <div style="color:#5C1A2A;font-weight:700;cursor:pointer">Review</div>
+            </div>
+          </sc-for>
+          <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid #D9CFBC">
+            <span style="border:1px solid #D9CFBC;color:#6B6153;font-weight:600;font-size:13.5px;padding:8px 16px;border-radius:3px">Previous</span>
+            <span style="color:#201A15;font-weight:600;font-size:13.5px;padding:8px 4px">Page 1 of 1</span>
+            <span style="border:1px solid #D9CFBC;color:#6B6153;font-weight:600;font-size:13.5px;padding:8px 16px;border-radius:3px">Next</span>
+          </div>
+        </div>
+      </sc-if>
+
+  </div>
+
+  <sc-if value="{{ modalOpen }}">
+    <div style="position:fixed;inset:0;background:rgba(12,10,11,0.55);display:flex;align-items:center;justify-content:center;z-index:50">
+      <div style="background:#FCFAF5;width:480px;border-radius:5px;border:1px solid #D9CFBC;padding:32px">
+        <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:600;margin-bottom:4px">Provision New Associate</div>
+        <div style="font-size:13.5px;color:#6B6153;margin-bottom:24px">Creates a login and places them in the genealogy tree.</div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div>
+            <label style="font-size:12.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:6px">Full Name</label>
+            <input placeholder="e.g. Aditya Kumar" style="width:100%;padding:10px 12px;border:1px solid #D9CFBC;border-radius:3px;font-family:Inter;font-size:14px;background:#fff"/>
+          </div>
+          <div>
+            <label style="font-size:12.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:6px">Phone Number</label>
+            <input placeholder="+91" style="width:100%;padding:10px 12px;border:1px solid #D9CFBC;border-radius:3px;font-family:Inter;font-size:14px;background:#fff"/>
+          </div>
+          <div>
+            <label style="font-size:12.5px;font-weight:600;color:#6B6153;display:block;margin-bottom:6px">Sponsor (Upline)</label>
+            <input placeholder="Search associate…" style="width:100%;padding:10px 12px;border:1px solid #D9CFBC;border-radius:3px;font-family:Inter;font-size:14px;background:#fff"/>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:28px">
+          <button onClick="{{ closeModal }}" style="background:transparent;border:1px solid #D9CFBC;color:#201A15;font-weight:600;font-size:14px;padding:10px 18px;border-radius:2px;cursor:pointer">Cancel</button>
+          <button onClick="{{ closeModal }}" style="background:#5C1A2A;border:none;color:#EAD07D;font-weight:700;font-size:14px;padding:10px 18px;border-radius:2px;cursor:pointer">Provision Associate</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tab: 'dashboard', modalOpen: false };
+  setTab(t) { this.setState({ tab: t }); }
+
+  categories() {
+    return [
+      { key: 'setup', label: 'Setup', icon: 'tune', items: [
+        { key: 'profile', label: 'Company Profile' },
+        { key: 'branding', label: 'Branding' },
+        { key: 'comp', label: 'Compensation Plan' },
+        { key: 'projects', label: 'Projects & Plots' },
+        { key: 'payments', label: 'Payments & KYC' },
+      ]},
+      { key: 'network', label: 'Network', icon: 'group', items: [
+        { key: 'directory', label: 'Associate Directory' },
+        { key: 'tree', label: 'Tree Explorer' },
+        { key: 'kyc', label: 'KYC Review Queue' },
+      ]},
+      { key: 'finance', label: 'Finance & Cycles', icon: 'point_of_sale', items: [
+        { key: 'sales', label: 'Sales Register' },
+        { key: 'cycle', label: 'Cycle Management' },
+        { key: 'ledger', label: 'Ledger Register' },
+        { key: 'payout', label: 'Payout Approval' },
+      ]},
+      { key: 'system', label: 'System', icon: 'admin_panel_settings', items: [
+        { key: 'audit', label: 'Audit Log' },
+        { key: 'adminstats', label: 'Admin Stats' },
+      ]},
+    ];
+  }
+
+  renderVals() {
+    const cats = this.categories();
+    const t = this.state.tab;
+    const activeCat = cats.find(c => c.items.some(i => i.key === t));
+
+    const headerTabs = cats.map(c => {
+      const active = activeCat && activeCat.key === c.key;
+      return { label: c.label, icon: c.icon, onClick: () => this.setTab(c.items[0].key), color: active ? '#EAD07D' : '#a89878', bg: active ? '#241c16' : 'transparent' };
+    });
+
+    const itemTabs = activeCat ? activeCat.items.map(item => {
+      const active = t === item.key;
+      return { label: item.label, onClick: () => this.setTab(item.key), color: active ? '#EAD07D' : '#5C1A2A', bg: active ? '#5C1A2A' : 'transparent' };
+    }) : [];
+
+    const compRows = [
+      { icon: 'military_tech', label: 'Reward Tiers', detail: 'No tiers configured', accent: '#5C1A2A' },
+      { icon: 'public', label: 'Global Royalty', detail: '5 slabs configured', accent: '#4B7A52' },
+      { icon: 'receipt_long', label: 'Fees & Settlement', detail: 'Monthly · TDS 2% · Admin 5% / 15%', accent: '#B4790E' },
+    ];
+
+    const requiredDocs = [
+      { icon: 'badge', label: 'Aadhaar Card / Government ID' },
+      { icon: 'credit_card', label: 'PAN Card / Tax ID' },
+      { icon: 'account_balance', label: 'Bank Passbook / Cancelled Cheque' },
+    ];
+
+    const gateways = [
+      { name: 'RAZORPAY', icon: 'credit_card', borderColor: '#5C1A2A', bg: 'rgba(92,26,42,0.06)', iconColor: '#5C1A2A', dotColor: '#5C1A2A' },
+      { name: 'PAYU', icon: 'account_balance_wallet', borderColor: '#D9CFBC', bg: '#fff', iconColor: '#6B6153', dotColor: '#D9CFBC' },
+      { name: 'CASHFREE', icon: 'credit_score', borderColor: '#D9CFBC', bg: '#fff', iconColor: '#6B6153', dotColor: '#D9CFBC' },
+    ];
+
+    const paymentModes = ['CARDS', 'UPI', 'NETBANKING', 'WALLET'];
+
+    const auditEntries = [
+      { who: 'Administrator', action: 'Updated payment gateway configuration', section: 'Payments & KYC', shortTime: '8:23:51 pm' },
+      { who: 'Administrator', action: 'Verified Sanjay Rao\u2019s KYC documents', section: 'KYC Review', shortTime: '8:23:44 pm' },
+      { who: 'Administrator', action: 'Updated compensation plan to v2', section: 'Compensation Plan', shortTime: '8:23:32 pm' },
+      { who: 'Administrator', action: 'Updated branding theme colors', section: 'Branding', shortTime: '8:23:29 pm' },
+      { who: 'Administrator', action: 'Approved withdrawal for Priya Verma', section: 'Payout Approval', shortTime: '8:23:10 pm' },
+      { who: 'Administrator', action: 'Added project Dream Homes', section: 'Projects & Plots', shortTime: '8:22:58 pm' },
+      { who: 'Administrator', action: 'Created company profile', section: 'Company Profile', shortTime: '8:22:41 pm' },
+    ];
+
+    const adminStats = [
+      { icon: 'group', label: 'Total Associates', value: '128' },
+      { icon: 'apartment', label: 'Active Plots', value: '4' },
+      { icon: 'point_of_sale', label: 'Sales Recorded', value: '63' },
+      { icon: 'shield', label: 'Pending KYC Reviews', value: '7' },
+      { icon: 'payments', label: 'Pending Payouts', value: '3' },
+      { icon: 'sync', label: 'Cycles Completed', value: '11' },
+    ];
+
+    const associates = [
+      { id: 'VA-1042', name: 'Aditya Kumar', rank: 'Diamond', kyc: 'Verified', kycColor: '#4B7A52', status: 'Active', statusColor: '#4B7A52' },
+      { id: 'VA-1043', name: 'Priya Verma', rank: 'Gold', kyc: 'Verified', kycColor: '#4B7A52', status: 'Active', statusColor: '#4B7A52' },
+      { id: 'VA-1058', name: 'Sanjay Rao', rank: 'Silver', kyc: 'Pending', kycColor: '#B4790E', status: 'Active', statusColor: '#4B7A52' },
+      { id: 'VA-1071', name: 'Meena Iyer', rank: 'Bronze', kyc: 'Verified', kycColor: '#4B7A52', status: 'Active', statusColor: '#4B7A52' },
+      { id: 'VA-1084', name: 'Kunal Shah', rank: 'Silver', kyc: 'Rejected', kycColor: '#B23B32', status: 'Suspended', statusColor: '#B23B32' },
+    ];
+
+    const kycQueueRows = [
+      { id: 'VA-1058', name: 'Sanjay Rao', joined: '19 Jan 2026' },
+      { id: 'VA-1097', name: 'Divya Nair', joined: '14 Feb 2026' },
+      { id: 'VA-1103', name: 'Rakesh Yadav', joined: '02 Mar 2026' },
+      { id: 'VA-1119', name: 'Neha Kapoor', joined: '21 Mar 2026' },
+    ];
+
+    const salesRows = [
+      { buyer: 'Ramesh Gupta', phone: '98765xxxxx', amount: '₹9,20,000', leg: 'Left', status: 'Confirmed', statusColor: '#4B7A52', at: '12 Jul 2026' },
+      { buyer: 'Sunita Devi', phone: '91234xxxxx', amount: '₹6,50,000', leg: 'Right', status: 'Confirmed', statusColor: '#4B7A52', at: '18 Jul 2026' },
+      { buyer: 'Anil Kumar', phone: '99887xxxxx', amount: '₹4,10,000', leg: 'Left', status: 'Pending', statusColor: '#B4790E', at: '02 Aug 2026' },
+    ];
+
+    const cycleRows = [
+      { start: '01 Jun 2026', end: '30 Jun 2026', status: 'Closed', statusColor: '#4B7A52' },
+      { start: '01 Jul 2026', end: '31 Jul 2026', status: 'Closed', statusColor: '#4B7A52' },
+      { start: '01 Aug 2026', end: '31 Aug 2026', status: 'Open', statusColor: '#B4790E' },
+    ];
+
+    const ledgerRows = [
+      { assoc: 'Aditya Kumar', period: 'Jul 2026', type: 'Direct Income', status: 'Posted', statusColor: '#4B7A52', amount: '₹42,000', ref: 'SALE-1042', created: '02 Aug 2026' },
+      { assoc: 'Priya Verma', period: 'Jul 2026', type: 'Matching Income', status: 'Posted', statusColor: '#4B7A52', amount: '₹18,600', ref: 'SALE-1043', created: '02 Aug 2026' },
+      { assoc: 'Sanjay Rao', period: 'Jul 2026', type: 'Sponsor Bonus', status: 'Held', statusColor: '#B4790E', amount: '₹5,200', ref: 'SALE-1058', created: '02 Aug 2026' },
+    ];
+
+    const payoutRows = [
+      { assoc: 'Aditya Kumar', amount: '₹38,000', status: 'Pending', statusColor: '#B4790E', reason: 'Monthly withdrawal', bank: 'ICIC0001947', requested: '05 Aug 2026' },
+      { assoc: 'Priya Verma', amount: '₹15,400', status: 'Approved', statusColor: '#4B7A52', reason: 'Monthly withdrawal', bank: 'HDFC0002310', requested: '03 Aug 2026' },
+      { assoc: 'Kunal Shah', amount: '₹9,000', status: 'Rejected', statusColor: '#B23B32', reason: 'KYC mismatch', bank: 'SBIN0000456', requested: '01 Aug 2026' },
+    ];
+
+    return {
+      headerTabs, itemTabs, showItemTabs: !!activeCat,
+      goDashboard: () => this.setTab('dashboard'),
+      dashboardColor: t === 'dashboard' ? '#EAD07D' : '#a89878',
+      dashboardBg: t === 'dashboard' ? '#241c16' : 'transparent',
+      compRows, requiredDocs, gateways, paymentModes, auditEntries, adminStats,
+      associates, kycQueueRows, salesRows, cycleRows, ledgerRows, payoutRows,
+      isDashboard: t === 'dashboard',
+      isProfile: t === 'profile',
+      isBranding: t === 'branding',
+      isComp: t === 'comp',
+      isProjects: t === 'projects',
+      isPayments: t === 'payments',
+      isDirectory: t === 'directory',
+      isTree: t === 'tree',
+      isKyc: t === 'kyc',
+      isAudit: t === 'audit',
+      isAdminStats: t === 'adminstats',
+      isSales: t === 'sales',
+      isCycle: t === 'cycle',
+      isLedger: t === 'ledger',
+      isPayout: t === 'payout',
+      modalOpen: this.state.modalOpen,
+      openModal: () => this.setState({ modalOpen: true }),
+      closeModal: () => this.setState({ modalOpen: false }),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
