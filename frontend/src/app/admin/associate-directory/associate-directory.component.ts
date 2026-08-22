@@ -17,18 +17,13 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
 import { CompensationPlanService } from '../../setup/steps/compensation/compensation-plan.service';
 import { RankOption } from '../../setup/models/compensation-plan.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
+import { titleCase } from '../../shared/utils/title-case';
 
 const PAGE_SIZE = 20;
 
 // Enum values the backend returns for kycStatus/status are shouty-uppercase (PENDING/VERIFIED/...);
-// the mockup renders them Title Case (Viraj_Acres_Settings.dc.html lines 646-650). Since the
-// editable-table badge cell renders the row's raw value verbatim, the row-building step below
-// title-cases it before it ever reaches the table, and the badgeTone functions match on that
-// title-cased string, not the wire enum.
-function titleCase(value: string): string {
-  return value.length === 0 ? value : value.charAt(0) + value.slice(1).toLowerCase();
-}
-
+// the mockup renders them Title Case (Viraj_Acres_Settings.dc.html lines 646-650) -- see the shared
+// titleCase() helper for why the row-building step converts before the value reaches the table.
 @Component({
   selector: 'app-associate-directory',
   standalone: true,

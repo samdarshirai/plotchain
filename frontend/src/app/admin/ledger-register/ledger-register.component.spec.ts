@@ -160,4 +160,20 @@ describe('LedgerRegisterComponent', () => {
     const badgeElement = statusCell.querySelector('.editable-table__badge');
     expect(badgeElement?.classList.contains('editable-table__badge--warning')).toBeTrue();
   });
+
+  it('renders the Income Type enum in Title Case, matching the mockup ledger rows', () => {
+    fixture.componentInstance.onIncomeTypeChange('SPONSOR_MATCHING');
+    httpMock.expectOne(r => r.params.get('incomeType') === 'SPONSOR_MATCHING').flush({
+      entries: [{ ...sampleEntry, id: 'l4', incomeType: 'SPONSOR_MATCHING' }],
+      page: 0,
+      size: 20,
+      totalElements: 1
+    });
+    fixture.detectChanges();
+
+    // Income Type is the 3rd column (index 2).
+    const cells = fixture.nativeElement.querySelectorAll('.editable-table tbody tr td');
+    expect(cells[2].textContent.trim()).toBe('Sponsor Matching');
+    expect(cells[2].textContent).not.toContain('SPONSOR_MATCHING');
+  });
 });

@@ -9,24 +9,19 @@ import { CycleManagementService } from '../cycle-management/cycle-management.ser
 import { CycleSummary } from '../models/cycle.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
+import { titleCase } from '../../shared/utils/title-case';
 
 const PAGE_SIZE = 20;
 const CYCLE_LOOKUP_SIZE = 100;
 
-// The backend's LedgerEntryStatus enum is shouty-uppercase (PENDING/CARRIED_FORWARD/PAID/REVERSED).
-// titleCase() converts to Title Case with spaces replacing underscores:
-// PENDING → Pending, CARRIED_FORWARD → Carried Forward, PAID → Paid, REVERSED → Reversed.
-// The mockup renders per-value colored status text (Viraj_Acres_Settings.dc.html, isLedger section,
-// `l.statusColor`). Since the editable-table badge cell renders the row's raw value verbatim, the
-// row-building step below title-cases it before it ever reaches the table, and statusBadgeTone
-// matches on that title-cased string.
-function titleCase(value: string): string {
-  if (value.length === 0) return value;
-  return value
-    .split('_')
-    .map(word => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(' ');
-}
+// The backend's LedgerEntryStatus and IncomeType enums are both shouty-uppercase
+// (PENDING/CARRIED_FORWARD/PAID/REVERSED; DIRECT_INCOME/MATCHING_INCOME/SPONSOR_BONUS/...).
+// The shared titleCase() converts to Title Case with spaces replacing underscores, matching the
+// mockup's own ledger data (Viraj_Acres_Settings.dc.html `ledgerRows`: `Direct Income`,
+// `Matching Income`, `Sponsor Bonus`; `l.statusColor` for the per-value colored status).
+// Since the editable-table badge cell renders the row's raw value verbatim, the row-building step
+// below title-cases before the value ever reaches the table, and statusBadgeTone matches on that
+// title-cased string.
 
 @Component({
   selector: 'app-ledger-register',
@@ -213,7 +208,7 @@ export class LedgerRegisterComponent implements OnInit {
     this.registerRows = (this.page?.entries ?? []).map(entry => ({
       associate: `${entry.associateUserId} — ${entry.associateName}`,
       cyclePeriod: `${this.datePipe.transform(entry.cyclePeriodStart, 'mediumDate')} – ${this.datePipe.transform(entry.cyclePeriodEnd, 'mediumDate')}`,
-      incomeType: entry.incomeType,
+      incomeType: titleCase(entry.incomeType),
       status: titleCase(entry.status),
       netAmount: this.currencyPipe.transform(entry.netAmount, 'INR', 'symbol', '1.0-2') ?? String(entry.netAmount),
       sourceRef: entry.sourceRef ?? this.translate.instant('admin.ledgerRegister.noSourceRef'),

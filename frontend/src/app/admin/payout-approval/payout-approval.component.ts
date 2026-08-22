@@ -11,18 +11,12 @@ import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../sh
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.component';
 import { AdminDashboardService } from '../../admin-dashboard/admin-dashboard.service';
+import { titleCase } from '../../shared/utils/title-case';
 
 const PAGE_SIZE = 20;
 
-// Convert SHOUTED_CASE or SNAKE_CASE to Title Case:
+// The shared titleCase() converts SHOUTED_CASE / SNAKE_CASE to Title Case:
 // REQUESTED → Requested, APPROVED → Approved, REJECTED → Rejected, DISBURSED → Disbursed.
-function titleCase(value: string): string {
-  if (value.length === 0) return value;
-  return value
-    .split('_')
-    .map(word => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(' ');
-}
 
 @Component({
   selector: 'app-payout-approval',

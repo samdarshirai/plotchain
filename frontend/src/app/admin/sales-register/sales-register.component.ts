@@ -9,6 +9,7 @@ import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
+import { titleCase } from '../../shared/utils/title-case';
 
 const PAGE_SIZE = 20;
 
@@ -17,10 +18,7 @@ const PAGE_SIZE = 20;
 // `s.status`/`s.statusColor`). Since the editable-table badge cell renders the row's raw value
 // verbatim, the row-building step below title-cases it before it ever reaches the table, and
 // statusBadgeTone matches on that title-cased string -- same convention as
-// AssociateDirectoryComponent's titleCase/badgeTone pair.
-function titleCase(value: string): string {
-  return value.length === 0 ? value : value.charAt(0) + value.slice(1).toLowerCase();
-}
+// the other admin registers' titleCase/badgeTone pairing (shared/utils/title-case.ts).
 
 @Component({
   selector: 'app-sales-register',
