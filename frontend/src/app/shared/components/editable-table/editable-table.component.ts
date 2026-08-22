@@ -6,11 +6,20 @@ export interface ActionCellContext {
   index: number;
 }
 
+export type BadgeTone = 'success' | 'warning' | 'danger' | 'default';
+
 export interface EditableTableColumn {
   key: string;
   label: string;
-  type: 'text' | 'number' | 'select' | 'action';
+  // 'badge': read-only value colored via `badgeTone` (--status-success/warning/danger tokens) --
+  // e.g. Associate Directory's KYC Status/Status, Sales Register's Status.
+  // 'rank-badge': read-only fixed-style oxblood/gold pill, same for every value, no mapping
+  // needed -- e.g. Associate Directory's Rank.
+  type: 'text' | 'number' | 'select' | 'action' | 'badge' | 'rank-badge';
   options?: { value: string; label: string }[];
+  // Required when type is 'badge'. Maps a cell's raw value to a tone; return 'default' for any
+  // value that isn't one of the colored states.
+  badgeTone?: (value: string | number) => BadgeTone;
 }
 
 @Component({
@@ -33,7 +42,18 @@ export interface EditableTableColumn {
               ></ng-container>
             </ng-container>
             <ng-template #dataCell>
-              <span *ngIf="readOnly">{{ row[column.key] }}</span>
+              <ng-container *ngIf="readOnly" [ngSwitch]="column.type">
+                <span
+                  *ngSwitchCase="'badge'"
+                  class="editable-table__badge"
+                  [ngClass]="'editable-table__badge--' + badgeTone(column, row[column.key])"
+                  >{{ row[column.key] }}</span
+                >
+                <span *ngSwitchCase="'rank-badge'" class="editable-table__rank-badge">{{
+                  row[column.key]
+                }}</span>
+                <span *ngSwitchDefault>{{ row[column.key] }}</span>
+              </ng-container>
               <ng-container *ngIf="!readOnly">
                 <select
                   *ngIf="column.type === 'select'; else textOrNumberCell"
@@ -46,7 +66,7 @@ export interface EditableTableColumn {
                 </select>
                 <ng-template #textOrNumberCell>
                   <input
-                    [type]="column.type"
+                    [type]="column.type === 'number' ? 'number' : 'text'"
                     [value]="row[column.key]"
                     (input)="onCellInput($event, i, column.key)"
                   />
@@ -89,6 +109,10 @@ export class EditableTableComponent {
 
   trackByIndex(index: number): number {
     return index;
+  }
+
+  badgeTone(column: EditableTableColumn, value: string | number): BadgeTone {
+    return column.badgeTone ? column.badgeTone(value) : 'default';
   }
 
   onRowClick(index: number): void {

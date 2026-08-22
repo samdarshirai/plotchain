@@ -208,3 +208,82 @@ describe('EditableTableComponent action column', () => {
     expect(buttons[1].getAttribute('data-index')).toBe('1');
   });
 });
+
+@Component({
+  standalone: true,
+  imports: [EditableTableComponent],
+  template: `
+    <app-editable-table [readOnly]="true" [columns]="columns" [rows]="rows"></app-editable-table>
+  `
+})
+class BadgeColumnHostComponent {
+  columns: EditableTableColumn[] = [
+    { key: 'name', label: 'Name', type: 'text' },
+    { key: 'rank', label: 'Rank', type: 'rank-badge' },
+    {
+      key: 'kyc',
+      label: 'KYC Status',
+      type: 'badge',
+      badgeTone: (value) => {
+        switch (value) {
+          case 'Verified':
+            return 'success';
+          case 'Pending':
+            return 'warning';
+          case 'Rejected':
+            return 'danger';
+          default:
+            return 'default';
+        }
+      }
+    }
+  ];
+  rows: Record<string, string | number>[] = [
+    { name: 'Aarav Sharma', rank: 'Gold', kyc: 'Verified' },
+    { name: 'Diya Rao', rank: 'Diamond', kyc: 'Pending' },
+    { name: 'Kabir Singh', rank: 'Silver', kyc: 'Rejected' },
+    { name: 'Meera Iyer', rank: 'Bronze', kyc: 'Not Submitted' }
+  ];
+}
+
+describe('EditableTableComponent badge column', () => {
+  let fixture: ComponentFixture<BadgeColumnHostComponent>;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ imports: [BadgeColumnHostComponent] });
+    fixture = TestBed.createComponent(BadgeColumnHostComponent);
+    fixture.detectChanges();
+  });
+
+  it('maps each row value to the tone its badgeTone function returns', () => {
+    const kycBadges: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll(
+      'tbody tr td[data-label="KYC Status"] .editable-table__badge'
+    );
+    expect(kycBadges.length).toBe(4);
+    expect(kycBadges[0].classList.contains('editable-table__badge--success')).toBeTrue();
+    expect(kycBadges[0].textContent).toContain('Verified');
+    expect(kycBadges[1].classList.contains('editable-table__badge--warning')).toBeTrue();
+    expect(kycBadges[2].classList.contains('editable-table__badge--danger')).toBeTrue();
+    expect(kycBadges[3].classList.contains('editable-table__badge--default')).toBeTrue();
+  });
+
+  it('renders every rank value with the same fixed rank-badge style, not color-mapped', () => {
+    const rankBadges: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll(
+      'tbody tr td[data-label="Rank"] .editable-table__rank-badge'
+    );
+    expect(rankBadges.length).toBe(4);
+    const values = Array.from(rankBadges).map((el) => el.textContent?.trim());
+    expect(values).toEqual(['Gold', 'Diamond', 'Silver', 'Bronze']);
+    // Same single class on every row regardless of rank value -- no per-rank color class exists.
+    rankBadges.forEach((el) => {
+      expect(el.className.trim()).toBe('editable-table__rank-badge');
+    });
+  });
+
+  it('does not render a badge span for non-badge columns', () => {
+    const nameCell = fixture.nativeElement.querySelector('tbody tr td[data-label="Name"]');
+    expect(nameCell.querySelector('.editable-table__badge')).toBeNull();
+    expect(nameCell.querySelector('.editable-table__rank-badge')).toBeNull();
+    expect(nameCell.textContent).toContain('Aarav Sharma');
+  });
+});

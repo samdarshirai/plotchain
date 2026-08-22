@@ -6,7 +6,14 @@ import { StatTileComponent } from './stat-tile.component';
   standalone: true,
   imports: [StatTileComponent],
   template: `
-    <app-stat-tile [label]="label" [value]="value" [hint]="hint" [tone]="tone" [icon]="icon">
+    <app-stat-tile
+      [label]="label"
+      [value]="value"
+      [hint]="hint"
+      [tone]="tone"
+      [icon]="icon"
+      [layout]="layout"
+    >
       <button tile-editor>Edit</button>
     </app-stat-tile>
   `
@@ -15,8 +22,9 @@ class HostComponent {
   label = 'Wallet balance';
   value = '₹1,63,200';
   hint?: string;
-  tone: 'default' | 'accent' | 'success' | 'warning' | 'danger' = 'default';
+  tone: 'default' | 'accent' | 'success' | 'warning' | 'danger' | 'brand' = 'default';
   icon?: string;
+  layout: 'horizontal' | 'vertical' = 'horizontal';
 }
 
 describe('StatTileComponent', () => {
@@ -84,5 +92,30 @@ describe('StatTileComponent', () => {
     hostFixture.componentInstance.tone = 'danger';
     hostFixture.detectChanges();
     expect(hostFixture.nativeElement.querySelector('.stat-tile').classList.contains('stat-tile--danger')).toBeTrue();
+  });
+
+  it('applies the brand tone class', () => {
+    hostFixture.componentInstance.tone = 'brand';
+    hostFixture.detectChanges();
+    expect(hostFixture.nativeElement.querySelector('.stat-tile').classList.contains('stat-tile--brand')).toBeTrue();
+  });
+
+  it('defaults to the horizontal layout, leaving with-icon behavior unchanged when an icon is bound', () => {
+    hostFixture.componentInstance.icon = 'hourglass_top';
+    hostFixture.detectChanges();
+    const tile = hostFixture.nativeElement.querySelector('.stat-tile');
+    expect(tile.classList.contains('stat-tile--with-icon')).toBeTrue();
+    expect(tile.classList.contains('stat-tile--vertical')).toBeFalse();
+  });
+
+  it('layout="vertical" applies the vertical class and suppresses the icon-left with-icon layout even when an icon is bound', () => {
+    hostFixture.componentInstance.icon = 'insights';
+    hostFixture.componentInstance.layout = 'vertical';
+    hostFixture.detectChanges();
+    const tile = hostFixture.nativeElement.querySelector('.stat-tile');
+    expect(tile.classList.contains('stat-tile--vertical')).toBeTrue();
+    expect(tile.classList.contains('stat-tile--with-icon')).toBeFalse();
+    // Icon itself still renders in the vertical layout.
+    expect(tile.querySelector('.stat-tile__icon').textContent).toContain('insights');
   });
 });

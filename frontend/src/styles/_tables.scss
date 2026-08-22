@@ -48,3 +48,42 @@ tr:hover td {
   color: var(--text-muted);
   font-size: 0.875rem;
 }
+
+// Generic value-colored badge for `type: 'badge'` columns (Associate Directory's KYC
+// Status/Status, Sales Register's Status -- Viraj_Acres_Settings.dc.html lines 327-328, 449:
+// the mockup renders these as bold colored text, not a filled pill, so this stays text-only.
+// Tone comes from the column's `badgeTone(value)` mapping; `--default` is the fallback for a
+// value the mapping doesn't recognize.
+.editable-table__badge {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.editable-table__badge--success {
+  color: var(--status-success);
+}
+
+.editable-table__badge--warning {
+  color: var(--status-warning);
+}
+
+.editable-table__badge--danger {
+  color: var(--status-danger);
+}
+
+.editable-table__badge--default {
+  color: var(--text-primary);
+}
+
+// Fixed-style rank badge for `type: 'rank-badge'` columns (Associate Directory's Rank --
+// Viraj_Acres_Settings.dc.html line 326). Per the plan's ruling, this is NOT color-by-rank: every
+// rank value gets the same oxblood-bg/gold-text pill.
+.editable-table__rank-badge {
+  display: inline-block;
+  background: var(--brand-secondary);
+  color: var(--brand-primary-bright);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 10px;
+}
