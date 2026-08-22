@@ -3527,13 +3527,18 @@ body.admin-associate-active {
   }
 }
 
-// Admin Dashboard -- the mockup's `isDashboard` block (Viraj_Acres_Settings.dc.html lines 49-59):
-// a heading, a subtitle, and one Seal Card (styles in _shared-components.scss). Everything the
-// console used to show beyond that lives on cycle-management/payout-approval/kyc-queue now (Task
-// 3's relocation), so this screen no longer needs a tile grid.
+// Admin Dashboard -- the mockup's `isDashboard` block (Viraj_Acres_Settings.dc.html lines 49-59)
+// for the heading/subtitle, plus the full business-stats console per admin-dashboard-design.md
+// and design-parity spec D6: exactly one Seal Card for current-cycle total income (styles in
+// _shared-components.scss) sitting inside the Current Cycle section, everything else as ordinary
+// tiles/sections around it.
 .admin-dashboard {
-  padding: 40px 44px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
   max-width: 1240px;
+  margin: 0 auto;
+  padding: 40px 44px 80px;
 }
 
 .admin-dashboard__title {
@@ -3550,9 +3555,46 @@ body.admin-associate-active {
   color: var(--text-muted);
 }
 
+.admin-dashboard__tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.admin-dashboard__cycle {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-dashboard__section-title {
+  margin: 0 0 1rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.admin-dashboard__tile-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
 .admin-dashboard__empty,
 .admin-dashboard__load-error {
   margin: 0;
   font-size: 0.875rem;
   color: var(--text-muted);
+}
+
+.admin-dashboard__quick-actions-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 700px) {
+  .admin-dashboard__tiles {
+    grid-template-columns: 1fr;
+  }
 }

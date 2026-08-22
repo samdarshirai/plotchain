@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { RouterTestingModule } from '@angular/router/testing';
 import { AdminDashboardComponent } from './admin-dashboard.component';
 import { AdminStatsResponse } from './admin-dashboard.model';
 
@@ -48,7 +49,7 @@ describe('AdminDashboardComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AdminDashboardComponent, HttpClientTestingModule, TranslateModule.forRoot()]
+      imports: [AdminDashboardComponent, HttpClientTestingModule, TranslateModule.forRoot(), RouterTestingModule]
     }).compileComponents();
 
     fixture = TestBed.createComponent(AdminDashboardComponent);
@@ -101,5 +102,56 @@ describe('AdminDashboardComponent', () => {
     expect(fixture.componentInstance.loadError).toBe(true);
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('adminDashboard.loadError');
+  });
+
+  it('renders tiles for total associates, wallet balance, sales/revenue this cycle', () => {
+    flushInitialLoad();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('6');
+    expect(text).toContain('12,345.67');
+    expect(text).toContain('12');
+    expect(text).toContain('2,400,000');
+  });
+
+  it('renders the rest of the Current Cycle tiles alongside the Seal Card', () => {
+    flushInitialLoad();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('2026-08-01');
+    expect(text).toContain('28');
+    expect(text).toContain('₹1,000');
+    expect(text).toContain('₹500');
+    expect(text).toContain('5');
+  });
+
+  it('renders the KYC breakdown tiles', () => {
+    flushInitialLoad();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('3');
+    expect(text).toContain('35');
+    expect(text).toContain('4');
+  });
+
+  it('links the KYC pending tile to the KYC review queue', () => {
+    flushInitialLoad();
+
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[href="/settings/kyc-queue"]');
+    expect(link).toBeTruthy();
+  });
+
+  it('links the pending withdrawals tile to the payout approval queue', () => {
+    flushInitialLoad();
+
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[href="/settings/payout-approval"]');
+    expect(link).toBeTruthy();
+  });
+
+  it('renders quick action links to Record Sale and Provision Associate', () => {
+    flushInitialLoad();
+
+    expect(fixture.nativeElement.querySelector('a[href="/admin/sales/new"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('a[href="/admin/associates/new"]')).toBeTruthy();
   });
 });
