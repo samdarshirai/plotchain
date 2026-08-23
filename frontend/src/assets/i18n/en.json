@@ -40,7 +40,13 @@
     "recentSalesColumnStatus": "Status",
     "saleStatusRecorded": "Recorded",
     "saleStatusVoided": "Voided",
-    "networkGrowthEyebrow": "Network Growth"
+    "networkGrowthEyebrow": "Network Growth",
+    "kycNetworkLabel": "KYC in Network",
+    "kycVerifiedCount": "{{count}} verified",
+    "kycPendingCount": "{{count}} pending",
+    "kycRejectedCount": "{{count}} rejected",
+    "recordSaleAction": "+ Record Sale",
+    "provisionAssociateAction": "+ Provision Associate"
   },
   "adminDashboard": {
     "heading": "Dashboard",

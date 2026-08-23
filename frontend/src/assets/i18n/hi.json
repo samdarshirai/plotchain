@@ -40,7 +40,13 @@
     "recentSalesColumnStatus": "स्थिति",
     "saleStatusRecorded": "दर्ज",
     "saleStatusVoided": "रद्द",
-    "networkGrowthEyebrow": "नेटवर्क वृद्धि"
+    "networkGrowthEyebrow": "नेटवर्क वृद्धि",
+    "kycNetworkLabel": "नेटवर्क में केवाईसी",
+    "kycVerifiedCount": "{{count}} सत्यापित",
+    "kycPendingCount": "{{count}} लंबित",
+    "kycRejectedCount": "{{count}} अस्वीकृत",
+    "recordSaleAction": "+ बिक्री दर्ज करें",
+    "provisionAssociateAction": "+ एसोसिएट जोड़ें"
   },
   "adminDashboard": {
     "heading": "डैशबोर्ड",
