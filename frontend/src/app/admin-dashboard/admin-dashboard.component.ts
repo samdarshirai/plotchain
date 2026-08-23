@@ -129,10 +129,10 @@ export class AdminDashboardComponent implements OnInit {
     return this.cycleDelta(cycle) >= 0 ? 'adminDashboard.deltaUp' : 'adminDashboard.deltaDown';
   }
 
-  cycleTrendPoints(cycle: CurrentCycleStats): string | null {
+  cycleTrendPoints(cycle: CurrentCycleStats): string | undefined {
     const trend = cycle.incomeTrend;
     if (!trend || trend.length < 2) {
-      return null;
+      return undefined;
     }
     const max = Math.max(...trend);
     const min = Math.min(...trend, 0);
