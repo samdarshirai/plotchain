@@ -39,7 +39,8 @@
     "recentSalesColumnDate": "Date",
     "recentSalesColumnStatus": "Status",
     "saleStatusRecorded": "Recorded",
-    "saleStatusVoided": "Voided"
+    "saleStatusVoided": "Voided",
+    "networkGrowthEyebrow": "Network Growth"
   },
   "adminDashboard": {
     "heading": "Dashboard",

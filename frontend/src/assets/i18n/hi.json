@@ -39,7 +39,8 @@
     "recentSalesColumnDate": "तिथि",
     "recentSalesColumnStatus": "स्थिति",
     "saleStatusRecorded": "दर्ज",
-    "saleStatusVoided": "रद्द"
+    "saleStatusVoided": "रद्द",
+    "networkGrowthEyebrow": "नेटवर्क वृद्धि"
   },
   "adminDashboard": {
     "heading": "डैशबोर्ड",
