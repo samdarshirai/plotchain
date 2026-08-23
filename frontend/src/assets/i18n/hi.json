@@ -29,7 +29,17 @@
     "phoneLabel": "मोबाइल",
     "joinedAtLabel": "शामिल होने की तिथि",
     "rankChangedAtLabel": "रैंक अपग्रेड की तिथि",
-    "loadError": "आपका डैशबोर्ड लोड करने में समस्या हुई। कृपया पुनः प्रयास करें।"
+    "loadError": "आपका डैशबोर्ड लोड करने में समस्या हुई। कृपया पुनः प्रयास करें।",
+    "recentSalesEyebrow": "हाल की बिक्री",
+    "recentSalesLoadError": "हाल की बिक्री लोड नहीं हो सकी।",
+    "recentSalesEmpty": "अभी तक कोई बिक्री दर्ज नहीं हुई।",
+    "recentSalesColumnPlot": "प्लॉट",
+    "recentSalesColumnProject": "प्रोजेक्ट",
+    "recentSalesColumnValue": "मूल्य",
+    "recentSalesColumnDate": "तिथि",
+    "recentSalesColumnStatus": "स्थिति",
+    "saleStatusRecorded": "दर्ज",
+    "saleStatusVoided": "रद्द"
   },
   "adminDashboard": {
     "heading": "डैशबोर्ड",

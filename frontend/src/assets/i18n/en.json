@@ -29,7 +29,17 @@
     "phoneLabel": "Mobile",
     "joinedAtLabel": "Joined",
     "rankChangedAtLabel": "Rank Upgraded",
-    "loadError": "Something went wrong loading your dashboard. Please try again."
+    "loadError": "Something went wrong loading your dashboard. Please try again.",
+    "recentSalesEyebrow": "Recent Sales",
+    "recentSalesLoadError": "Couldn't load your recent sales.",
+    "recentSalesEmpty": "No sales recorded yet.",
+    "recentSalesColumnPlot": "Plot",
+    "recentSalesColumnProject": "Project",
+    "recentSalesColumnValue": "Value",
+    "recentSalesColumnDate": "Date",
+    "recentSalesColumnStatus": "Status",
+    "saleStatusRecorded": "Recorded",
+    "saleStatusVoided": "Voided"
   },
   "adminDashboard": {
     "heading": "Dashboard",
