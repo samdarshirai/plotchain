@@ -6,7 +6,33 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  max-width: 1200px;
+  margin: 0 auto;
   padding: 1.5rem 1.75rem 2rem;
+}
+
+// Shared "rule -- label -- rule" panel-header eyebrow (recent-sales-table and network-growth-chart
+// both use it) -- one definition, extended by both, instead of two copies of the same 3 rules.
+%panel-header-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.75rem;
+}
+
+%panel-header-eyebrow-rule {
+  flex: 1;
+  height: 1px;
+  background: rgba(92, 26, 42, 0.22);
+}
+
+%panel-header-eyebrow-label {
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brand-secondary);
+  white-space: nowrap;
 }
 
 .dashboard__header {
@@ -123,25 +149,15 @@
 }
 
 .recent-sales-table__header {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  margin-bottom: 0.75rem;
+  @extend %panel-header-eyebrow;
 }
 
 .recent-sales-table__rule {
-  flex: 1;
-  height: 1px;
-  background: rgba(92, 26, 42, 0.22);
+  @extend %panel-header-eyebrow-rule;
 }
 
 .recent-sales-table__label {
-  font-size: 0.625rem;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--brand-secondary);
-  white-space: nowrap;
+  @extend %panel-header-eyebrow-label;
 }
 
 .recent-sales-table__table {
@@ -187,6 +203,7 @@
   color: var(--status-danger);
 }
 
+.recent-sales-table__loading,
 .recent-sales-table__empty,
 .recent-sales-table__error {
   margin: 0;
@@ -203,25 +220,15 @@
 }
 
 .network-growth-chart__header {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  margin-bottom: 0.75rem;
+  @extend %panel-header-eyebrow;
 }
 
 .network-growth-chart__rule {
-  flex: 1;
-  height: 1px;
-  background: rgba(92, 26, 42, 0.22);
+  @extend %panel-header-eyebrow-rule;
 }
 
 .network-growth-chart__label {
-  font-size: 0.625rem;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--brand-secondary);
-  white-space: nowrap;
+  @extend %panel-header-eyebrow-label;
 }
 
 .network-growth-chart__bars {

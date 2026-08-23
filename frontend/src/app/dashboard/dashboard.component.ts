@@ -25,7 +25,7 @@ import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.comp
       <div class="dashboard__header">
         <div class="dashboard__header-left">
           <h1 class="dashboard__title">{{ 'dashboard.title' | translate }}</h1>
-          <p class="dashboard__subtitle">{{ 'dashboard.cycleCloses' | translate: { days: d.cycleCountdown.daysRemaining } }}</p>
+          <p class="dashboard__subtitle">{{ cycleClosesKey(d.cycleCountdown.daysRemaining) | translate: { days: d.cycleCountdown.daysRemaining } }}</p>
         </div>
         <div class="dashboard__header-right">
           <span class="dashboard__name">{{ d.associate.name }}</span>
@@ -60,7 +60,7 @@ import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.comp
           icon="trending_up"
           [label]="'dashboard.revenueBookedLabel' | translate"
           [value]="formatCurrency(d.salesSummary.revenueBookedThisCycle)"
-          [hint]="revenueHint(d.salesSummary.revenueBookedChangePct)"
+          [hint]="revenueHintKey(d.salesSummary.revenueBookedChangePct) | translate: { pct: revenueDeltaAbs(d.salesSummary.revenueBookedChangePct) }"
         ></app-stat-tile>
       </div>
 
@@ -94,8 +94,15 @@ export class DashboardComponent implements OnInit {
     return this.currencyPipe.transform(value, 'INR', 'symbol', '1.0-0') ?? String(value);
   }
 
-  revenueHint(changePct: number): string {
-    const sign = changePct >= 0 ? '+' : '';
-    return `${sign}${changePct}%`;
+  revenueHintKey(changePct: number): string {
+    return changePct >= 0 ? 'dashboard.revenueUp' : 'dashboard.revenueDown';
+  }
+
+  revenueDeltaAbs(changePct: number): number {
+    return Math.abs(changePct);
+  }
+
+  cycleClosesKey(days: number): string {
+    return days === 1 ? 'dashboard.cycleClosesSingular' : 'dashboard.cycleCloses';
   }
 }

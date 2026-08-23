@@ -34,7 +34,9 @@ import org.springframework.data.domain.PageRequest;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -184,8 +186,9 @@ class DashboardServiceTest {
         assertThat(response.networkSummary().totalDownline()).isEqualTo(12L);
         assertThat(response.networkSummary().directCount()).isEqualTo(8L);
         assertThat(response.networkGrowth()).hasSize(2);
-        assertThat(response.networkGrowth().get(0).cycleLabel()).isEqualTo("01");
-        assertThat(response.networkGrowth().get(1).cycleLabel()).isEqualTo("02");
+        DateTimeFormatter cycleLabelFormat = DateTimeFormatter.ofPattern("MMM", Locale.ENGLISH);
+        assertThat(response.networkGrowth().get(0).cycleLabel()).isEqualTo(cycleLabelFormat.format(closedCycle.getPeriodStart()));
+        assertThat(response.networkGrowth().get(1).cycleLabel()).isEqualTo(cycleLabelFormat.format(cycle.getPeriodStart()));
         assertThat(response.kycBreakdown().verified()).isEqualTo(9L);
         assertThat(response.kycBreakdown().pending()).isEqualTo(2L);
         assertThat(response.kycBreakdown().rejected()).isEqualTo(1L);

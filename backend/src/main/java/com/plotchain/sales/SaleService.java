@@ -179,8 +179,9 @@ public class SaleService {
             }
         }
 
-        // Flow step 9.
-        return toResponses(List.of(sale)).get(0);
+        // Flow step 9. plot is already loaded above (findByIdForUpdate) -- toResponse(sale, plot)
+        // reuses it instead of re-fetching via toResponses' batch Plot lookup.
+        return toResponse(sale, plot);
     }
 
     // Sales unit 4 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
@@ -229,8 +230,9 @@ public class SaleService {
             ledgerEntryRepository.save(ledgerEntry);
         }
 
-        // Flow step 6.
-        return toResponses(List.of(sale)).get(0);
+        // Flow step 6. plot is already loaded above -- toResponse(sale, plot) reuses it instead
+        // of re-fetching via toResponses' batch Plot lookup.
+        return toResponse(sale, plot);
     }
 
     // Sales unit 6 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
@@ -269,8 +271,9 @@ public class SaleService {
 
     // dashboard-mockup spec §3.1: plotNo/projectName resolved here via a batch Plot/Project
     // lookup (two IN-queries total, regardless of how many sales are being mapped) rather than
-    // a per-row join or per-row repository call -- recordSale/voidSale route a single-element
-    // list through the same path so there is exactly one mapping implementation, not two.
+    // a per-row join or per-row repository call. recordSale/voidSale don't route through this --
+    // they already hold their own Plot from the row-lock/status-flip above, so they call
+    // toResponse(sale, plot) directly instead of re-fetching it here.
     private List<SaleResponse> toResponses(List<Sale> sales) {
         List<UUID> plotIds = sales.stream().map(Sale::getPlotId).distinct().toList();
         Map<UUID, Plot> plotsById = plotRepository.findAllById(plotIds).stream()
@@ -283,13 +286,29 @@ public class SaleService {
             Plot plot = plotsById.get(sale.getPlotId());
             String plotNo = plot != null ? plot.getPlotNo() : null;
             String projectName = plot != null ? projectNamesByProjectId.get(plot.getProjectId()) : null;
-            return new SaleResponse(
-                sale.getId(), sale.getPlotId(), sale.getAssociateId(),
-                sale.getBuyerName(), sale.getBuyerPhone(), sale.getBuyerEmail(),
-                sale.getAmount(), sale.getCycleId(), sale.getLegCredited(),
-                sale.getStatus().name(), sale.getVoidReason(), sale.getRecordedAt(),
-                plotNo, projectName);
+            return buildResponse(sale, plotNo, projectName);
         }).toList();
+    }
+
+    // recordSale/voidSale's single-sale path: both already hold the Plot they need (loaded for
+    // the row lock / status flip earlier in the same transaction), so this resolves projectName
+    // with one findById instead of routing through toResponses' batch findAllById, which would
+    // silently re-fetch a row already in memory.
+    private SaleResponse toResponse(Sale sale, Plot plot) {
+        String plotNo = plot != null ? plot.getPlotNo() : null;
+        String projectName = plot != null
+            ? projectRepository.findById(plot.getProjectId()).map(Project::getName).orElse(null)
+            : null;
+        return buildResponse(sale, plotNo, projectName);
+    }
+
+    private SaleResponse buildResponse(Sale sale, String plotNo, String projectName) {
+        return new SaleResponse(
+            sale.getId(), sale.getPlotId(), sale.getAssociateId(),
+            sale.getBuyerName(), sale.getBuyerPhone(), sale.getBuyerEmail(),
+            sale.getAmount(), sale.getCycleId(), sale.getLegCredited(),
+            sale.getStatus().name(), sale.getVoidReason(), sale.getRecordedAt(),
+            plotNo, projectName);
     }
 
     // Duplicates CycleService.kycGatedStatus()'s one-line logic rather than extracting a shared

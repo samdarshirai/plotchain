@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DashboardComponent } from './dashboard.component';
 import { DashboardResponse } from './models/dashboard-response.model';
 
@@ -38,8 +38,24 @@ describe('DashboardComponent', () => {
       imports: [DashboardComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(DashboardComponent);
     httpMock = TestBed.inject(HttpTestingController);
+
+    const translate = TestBed.inject(TranslateService);
+    translate.setDefaultLang('en');
+    translate.use('en');
+    translate.setTranslation('en', {
+      dashboard: {
+        networkHint: '{{direct}} direct · {{downline}} downline',
+        revenueUp: '+{{pct}}% vs last cycle',
+        revenueDown: '-{{pct}}% vs last cycle'
+      }
+    });
+  });
+
+  afterEach(() => httpMock.verify());
+
+  function loadDashboard(): void {
+    fixture = TestBed.createComponent(DashboardComponent);
     fixture.detectChanges();
 
     const dashboardReq = httpMock.expectOne('/api/associates/me/dashboard');
@@ -50,11 +66,10 @@ describe('DashboardComponent', () => {
     const salesReq = httpMock.expectOne(r => r.url === '/api/associates/me/sales');
     salesReq.flush({ page: 0, size: 5, totalElements: 0, sales: [] });
     fixture.detectChanges();
-  });
-
-  afterEach(() => httpMock.verify());
+  }
 
   it('renders the page header with the associate name, rank badge, and cycle subtitle', () => {
+    loadDashboard();
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('Asha Kumar');
     expect(text).toContain('Sales Associate');
@@ -62,15 +77,47 @@ describe('DashboardComponent', () => {
   });
 
   it('renders the Seal Card, KYC banner, and all four KPI tiles', () => {
+    loadDashboard();
     expect(fixture.nativeElement.querySelector('app-cycle-income-card')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('app-kyc-banner')).toBeTruthy();
     expect(fixture.nativeElement.querySelectorAll('app-stat-tile').length).toBe(4);
   });
 
   it('renders the two-column panel row: recent sales, network growth, KYC summary, quick actions', () => {
+    loadDashboard();
     expect(fixture.nativeElement.querySelector('app-recent-sales-table')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('app-network-growth-chart')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('app-kyc-network-summary')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('app-quick-actions')).toBeTruthy();
+  });
+
+  it('formats each KPI tile value and hint from the response data', () => {
+    loadDashboard();
+    const values: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.stat-tile__value');
+    const hints: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.stat-tile__hint');
+
+    // Tiles in order: Wallet Balance, Network, Sales This Cycle (no hint), Revenue Booked.
+    expect(values[0].textContent).toContain('2,500');
+    expect(values[1].textContent?.trim()).toBe('42');
+    expect(values[2].textContent?.trim()).toBe('6');
+    expect(values[3].textContent).toContain('3,850,000');
+
+    expect(hints).toHaveSize(3);
+    // networkSummary: totalDownline 42, directCount 8 -> 42 - 8 = 34 downline.
+    expect(hints[1].textContent?.trim()).toBe('8 direct · 34 downline');
+    // salesSummary.revenueBookedChangePct: 18 -> positive, "+18%".
+    expect(hints[2].textContent).toContain('+18%');
+  });
+
+  it('shows the top-level error state when the dashboard request fails, and never renders the dashboard body', () => {
+    fixture = TestBed.createComponent(DashboardComponent);
+    fixture.detectChanges();
+
+    const dashboardReq = httpMock.expectOne('/api/associates/me/dashboard');
+    dashboardReq.flush('boom', { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.dashboard-error')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.dashboard')).toBeFalsy();
   });
 });

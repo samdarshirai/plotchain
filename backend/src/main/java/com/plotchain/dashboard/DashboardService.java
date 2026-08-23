@@ -29,15 +29,21 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class DashboardService {
+
+    // Network Growth chart x-axis: short month name of each cycle's periodStart, not a bare
+    // positional index -- "01".."08" read as arbitrary ticks, a month name reads as a timeline.
+    private static final DateTimeFormatter CYCLE_LABEL_FORMAT = DateTimeFormatter.ofPattern("MMM", Locale.ENGLISH);
 
     private final AssociateRepository associateRepository;
     private final RankTierRepository rankTierRepository;
@@ -134,7 +140,7 @@ public class DashboardService {
             // close date itself counts.
             Instant cutoffExclusive = c.getPeriodEnd().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
             networkGrowth.add(new DashboardResponse.NetworkGrowthPoint(
-                String.format("%02d", i + 1),
+                CYCLE_LABEL_FORMAT.format(c.getPeriodStart()),
                 associateRepository.countDownlineJoinedBefore(associateId, cutoffExclusive)));
         }
 

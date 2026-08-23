@@ -40,6 +40,28 @@ describe('RecentSalesTableComponent', () => {
     expect(statusPill.classList).not.toContain('recent-sales-table__status-pill--voided');
   });
 
+  it('renders the sale value and recorded date in their own cells', () => {
+    fixture.detectChanges();
+    const req = httpMock.expectOne(r => r.url === '/api/associates/me/sales');
+    req.flush(page);
+    fixture.detectChanges();
+
+    const cells: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('td');
+    expect(cells[2].textContent).toContain('840,000');
+    expect(cells[3].textContent).toContain('Aug');
+  });
+
+  it('shows a loading state before the sales response arrives', () => {
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.recent-sales-table__loading')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.recent-sales-table__empty')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.recent-sales-table__error')).toBeFalsy();
+
+    const req = httpMock.expectOne(r => r.url === '/api/associates/me/sales');
+    req.flush(page);
+  });
+
   it('marks a VOIDED sale with the voided pill class', () => {
     fixture.detectChanges();
     const req = httpMock.expectOne(r => r.url === '/api/associates/me/sales');

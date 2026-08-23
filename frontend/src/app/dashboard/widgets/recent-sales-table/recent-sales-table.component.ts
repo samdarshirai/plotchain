@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { SalesHistoryService } from '../../../sales-history/sales-history.service';
 import { Sale } from '../../../admin/models/sale.model';
@@ -10,7 +10,6 @@ const RECENT_SALES_COUNT = 5;
   selector: 'app-recent-sales-table',
   standalone: true,
   imports: [CommonModule, TranslateModule],
-  providers: [DatePipe],
   template: `
     <div class="recent-sales-table">
       <div class="recent-sales-table__header">
@@ -18,6 +17,7 @@ const RECENT_SALES_COUNT = 5;
         <span class="recent-sales-table__label">{{ 'dashboard.recentSalesEyebrow' | translate }}</span>
         <span class="recent-sales-table__rule"></span>
       </div>
+      <p *ngIf="!loaded" class="recent-sales-table__loading">{{ 'dashboard.recentSalesLoading' | translate }}</p>
       <p *ngIf="loadError" class="recent-sales-table__error">{{ 'dashboard.recentSalesLoadError' | translate }}</p>
       <p *ngIf="!loadError && loaded && sales.length === 0" class="recent-sales-table__empty">{{ 'dashboard.recentSalesEmpty' | translate }}</p>
       <table class="recent-sales-table__table" *ngIf="sales.length">
