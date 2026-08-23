@@ -303,6 +303,36 @@ class AssociateRepositoryTest {
         assertThat(result.getContent()).extracting(Associate::getUserId).containsExactly("VP00001");
     }
 
+    @Test
+    void countByRoleAndJoinedBeforeCountsAllMatchingAssociatesRegardlessOfParent() {
+        RankTier rank = persistRank("Sales Associate", 1);
+        persistAssociate("VP00001", "Early", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.parse("2026-01-01T00:00:00Z"));
+        persistAssociate("VP00002", "Late", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.parse("2026-03-01T00:00:00Z"));
+        persistAssociate("testadmin", "Admin", AssociateRole.ADMIN, null,
+            KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.parse("2026-01-01T00:00:00Z"));
+        entityManager.flush();
+
+        long count = associateRepository.countByRoleAndJoinedBefore(
+            AssociateRole.ASSOCIATE, Instant.parse("2026-02-01T00:00:00Z"));
+
+        // "Early" counts. "Late" (joined after the cutoff) and the ADMIN-role row (wrong role,
+        // despite joining before the cutoff) are both excluded.
+        assertThat(count).isEqualTo(1);
+    }
+
+    @Test
+    void countByRoleAndJoinedBeforeExcludesAnAssociateWhoJoinsExactlyAtTheCutoff() {
+        RankTier rank = persistRank("Sales Associate", 1);
+        Instant cutoff = Instant.parse("2026-02-01T00:00:00Z");
+        persistAssociate("VP00001", "Exact", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, cutoff);
+        entityManager.flush();
+
+        assertThat(associateRepository.countByRoleAndJoinedBefore(AssociateRole.ASSOCIATE, cutoff)).isEqualTo(0);
+    }
+
     // M2 fix: KycReviewService.list() used to query off kycStatus alone, so a freshly-provisioned
     // zero-document associate (kycStatus = PENDING from account creation, before any upload)
     // showed up in the "Pending" review queue indistinguishable from one actually awaiting

@@ -86,6 +86,18 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         """)
     long countByRoleAndJoinedBetween(@Param("role") AssociateRole role, @Param("start") Instant start, @Param("end") Instant end);
 
+    // Admin Dashboard rebuild's Network Growth chart (2026-08-23-admin-dashboard-mockup-design.md
+    // §3.1): the org-wide sibling of countByRoleAndJoinedBetween above, unscoped by parent/sponsor
+    // -- the admin dashboard has no single caller's downline to chart, unlike
+    // AssociateRepository#countDownlineJoinedBefore on the associate side. cutoffExclusive is the
+    // day AFTER a cycle's periodEnd, same exclusive-upper-bound convention as every other
+    // cutoff in this repository.
+    @Query("""
+        SELECT COUNT(a) FROM Associate a
+        WHERE a.role = :role AND a.joinedAt < :cutoffExclusive
+        """)
+    long countByRoleAndJoinedBefore(@Param("role") AssociateRole role, @Param("cutoffExclusive") Instant cutoffExclusive);
+
     Optional<Associate> findByIdAndRole(UUID id, AssociateRole role);
 
     // KYC-queue list query for KycReviewService.list(). AssociateProvisioningService sets
