@@ -88,8 +88,8 @@ public class AdminStatsService {
         // cycle is OPEN) and Network Growth chart (top-level, populated regardless) both plot the
         // same last 8 cycles, oldest first -- computed once here and shared, same reasoning as
         // DashboardService's own lastCycles list.
-        var cyclePageResult = cycleRepository.findAllByOrderByPeriodStartDesc(PageRequest.of(0, 8));
-        List<Cycle> lastCycles = new ArrayList<>(cyclePageResult != null ? cyclePageResult.getContent() : List.of());
+        List<Cycle> lastCycles = new ArrayList<>(
+            cycleRepository.findAllByOrderByPeriodStartDesc(PageRequest.of(0, 8)).getContent());
         Collections.reverse(lastCycles);
 
         List<AdminStatsResponse.NetworkGrowthPoint> networkGrowth = new ArrayList<>();

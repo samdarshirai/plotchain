@@ -370,6 +370,7 @@ class SecurityConfigTest {
     @ParameterizedTest
     @EnumSource(AssociateRole.class)
     void adminStatsIsReachableForEveryAdminFamilyTokenAndForbiddenForAssociate(AssociateRole role) throws Exception {
+        when(cycleRepository.findAllByOrderByPeriodStartDesc(any())).thenReturn(new org.springframework.data.domain.PageImpl<>(java.util.List.of()));
         mockMvc.perform(get("/api/admin/stats")
                 .header("Authorization", "Bearer " + tokenFor(role)))
             .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
