@@ -24,11 +24,15 @@ describe('AdminDashboardComponent', () => {
       totalIncome: 482600,
       newAssociatesThisCycle: 5,
       salesThisCycle: 12,
-      revenueThisCycle: 2400000
+      revenueThisCycle: 2400000,
+      previousCycleTotalIncome: 400000,
+      incomeTrend: [300000, 350000, 400000, 482600]
     },
     activePlots: 21,
     totalSalesRecorded: 63,
-    cyclesCompleted: 11
+    cyclesCompleted: 11,
+    networkGrowth: [],
+    recentSales: []
   };
 
   const statsWithoutCycle: AdminStatsResponse = {
@@ -39,7 +43,9 @@ describe('AdminDashboardComponent', () => {
     currentCycle: null,
     activePlots: 0,
     totalSalesRecorded: 0,
-    cyclesCompleted: 0
+    cyclesCompleted: 0,
+    networkGrowth: [],
+    recentSales: []
   };
 
   function flushInitialLoad(response: AdminStatsResponse = statsWithCycle): void {

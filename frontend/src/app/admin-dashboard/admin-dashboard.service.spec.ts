@@ -22,11 +22,15 @@ describe('AdminDashboardService', () => {
       totalIncome: 1500,
       newAssociatesThisCycle: 5,
       salesThisCycle: 12,
-      revenueThisCycle: 2400000
+      revenueThisCycle: 2400000,
+      previousCycleTotalIncome: 1200,
+      incomeTrend: [1000, 1100, 1300, 1500]
     },
     activePlots: 21,
     totalSalesRecorded: 63,
-    cyclesCompleted: 11
+    cyclesCompleted: 11,
+    networkGrowth: [],
+    recentSales: []
   };
 
   beforeEach(() => {
