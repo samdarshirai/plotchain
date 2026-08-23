@@ -3,21 +3,25 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { AdminDashboardService } from './admin-dashboard.service';
-import { AdminStatsResponse } from './admin-dashboard.model';
+import { AdminStatsResponse, CurrentCycleStats } from './admin-dashboard.model';
 import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.component';
 import { SealCardComponent } from '../shared/components/seal-card/seal-card.component';
+import { AdminRecentSalesTableComponent } from './widgets/recent-sales-table/recent-sales-table.component';
+import { AdminNetworkGrowthChartComponent } from './widgets/network-growth-chart/network-growth-chart.component';
+import { KycNetworkSummaryComponent } from '../dashboard/widgets/kyc-network-summary/kyc-network-summary.component';
 
-// Post-login landing page for admin-family roles. Per docs/superpowers/specs/2026-08-22-settings-
-// design-parity.md D6: DESIGN.md §5 names current-cycle earnings as one of exactly three system-
-// wide Seal Card usages -- a positive requirement to add one, not permission to replace the rest
-// of the console with it. So the Current Cycle section's Total Income figure is a Seal Card;
-// everything else (KPI tile row, the rest of the Current Cycle tiles, KYC breakdown, pending
-// withdrawals, quick actions) stays exactly as the original admin-dashboard-design.md spec laid
-// it out.
+// Post-login landing page for admin-family roles. Rebuilt per docs/superpowers/specs/2026-08-23-
+// admin-dashboard-mockup-design.md to the same two-column mockup layout the associate dashboard
+// already got -- this supersedes 2026-08-22-settings-design-parity.md's D6, which had deliberately
+// kept the old section-by-section structure (D6's actual substance -- exactly one Seal Card for
+// current-cycle income -- still holds; only the surrounding layout changed).
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, TranslateModule, StatTileComponent, SealCardComponent],
+  imports: [
+    CommonModule, RouterLink, TranslateModule, StatTileComponent, SealCardComponent,
+    AdminRecentSalesTableComponent, AdminNetworkGrowthChartComponent, KycNetworkSummaryComponent
+  ],
   providers: [CurrencyPipe],
   template: `
     <div class="admin-dashboard">
@@ -27,11 +31,26 @@ import { SealCardComponent } from '../shared/components/seal-card/seal-card.comp
       <p *ngIf="loadError" class="admin-dashboard__load-error">{{ 'adminDashboard.loadError' | translate }}</p>
 
       <ng-container *ngIf="stats as s">
+        <ng-container *ngIf="s.currentCycle as cycle; else noCycle">
+          <app-seal-card
+            [label]="'adminDashboard.currentCycleLabel' | translate"
+            [value]="formatCurrency(cycle.totalIncome)"
+            [caption]="cycleClosesKey(cycle.daysRemaining) | translate: { days: cycle.daysRemaining }"
+            [deltaCaption]="cycleDeltaKey(cycle) | translate: { amount: formatCurrency(cycleDeltaAbs(cycle)) }"
+            [deltaDown]="cycleDelta(cycle) < 0"
+            [trendPoints]="cycleTrendPoints(cycle)"
+          ></app-seal-card>
+        </ng-container>
+        <ng-template #noCycle>
+          <p class="admin-dashboard__empty">{{ 'adminDashboard.noCycleEmptyState' | translate }}</p>
+        </ng-template>
+
         <div class="admin-dashboard__tiles">
           <app-stat-tile
             icon="group"
             [label]="'adminDashboard.totalAssociatesLabel' | translate"
             [value]="s.totalAssociates.toString()"
+            [hint]="'adminDashboard.cyclesCompletedHint' | translate: { count: s.cyclesCompleted }"
           ></app-stat-tile>
           <app-stat-tile
             icon="payments"
@@ -42,98 +61,39 @@ import { SealCardComponent } from '../shared/components/seal-card/seal-card.comp
             icon="point_of_sale"
             [label]="'adminDashboard.salesThisCycleLabel' | translate"
             [value]="(s.currentCycle?.salesThisCycle ?? 0).toString()"
+            [hint]="'adminDashboard.totalSalesRecordedHint' | translate: { count: s.totalSalesRecorded }"
           ></app-stat-tile>
           <app-stat-tile
             icon="trending_up"
             [label]="'adminDashboard.revenueThisCycleLabel' | translate"
             [value]="formatCurrency(s.currentCycle?.revenueThisCycle ?? 0)"
+            [hint]="'adminDashboard.activePlotsHint' | translate: { count: s.activePlots }"
           ></app-stat-tile>
         </div>
 
-        <section class="admin-dashboard__cycle">
-          <h2 class="admin-dashboard__section-title">{{ 'adminDashboard.currentCycleTitle' | translate }}</h2>
-          <ng-container *ngIf="s.currentCycle as cycle; else noCycle">
-            <app-seal-card
-              [label]="'adminDashboard.currentCycleLabel' | translate"
-              [value]="formatCurrency(cycle.totalIncome)"
-              [caption]="'adminDashboard.currentCycleCaption' | translate: { count: s.totalAssociates }"
-            ></app-seal-card>
-            <div class="admin-dashboard__tiles">
-              <app-stat-tile
-                [label]="'adminDashboard.periodLabel' | translate"
-                [value]="cycle.periodStart + ' – ' + cycle.periodEnd"
-              ></app-stat-tile>
-              <app-stat-tile
-                [label]="'adminDashboard.daysRemainingLabel' | translate"
-                [value]="cycle.daysRemaining.toString()"
-              ></app-stat-tile>
-              <app-stat-tile
-                [label]="'adminDashboard.directIncomeLabel' | translate"
-                [value]="formatCurrency(cycle.directIncome)"
-              ></app-stat-tile>
-              <app-stat-tile
-                [label]="'adminDashboard.matchingIncomeLabel' | translate"
-                [value]="formatCurrency(cycle.matchingIncome)"
-              ></app-stat-tile>
-              <app-stat-tile
-                [label]="'adminDashboard.newAssociatesLabel' | translate"
-                [value]="cycle.newAssociatesThisCycle.toString()"
-              ></app-stat-tile>
+        <div class="admin-dashboard__panels">
+          <app-admin-recent-sales-table [sales]="s.recentSales"></app-admin-recent-sales-table>
+          <div class="admin-dashboard__panels-right">
+            <app-admin-network-growth-chart [data]="s.networkGrowth"></app-admin-network-growth-chart>
+            <app-kyc-network-summary [data]="s.kycBreakdown"></app-kyc-network-summary>
+            <div class="admin-dashboard__quick-actions">
+              <a [routerLink]="['/settings', 'payout-approval']" class="admin-dashboard__tile-link">
+                <app-stat-tile
+                  icon="account_balance_wallet"
+                  [label]="'adminDashboard.pendingWithdrawalsLabel' | translate"
+                  [value]="s.pendingWithdrawals.toString()"
+                  tone="accent"
+                ></app-stat-tile>
+              </a>
+              <a [routerLink]="['/admin', 'sales', 'new']" class="admin-dashboard__quick-action admin-dashboard__quick-action--primary">
+                {{ 'adminDashboard.recordSaleAction' | translate }}
+              </a>
+              <a [routerLink]="['/admin', 'associates', 'new']" class="admin-dashboard__quick-action admin-dashboard__quick-action--secondary">
+                {{ 'adminDashboard.provisionAssociateAction' | translate }}
+              </a>
             </div>
-          </ng-container>
-          <ng-template #noCycle>
-            <p class="admin-dashboard__empty">{{ 'adminDashboard.noCycleEmptyState' | translate }}</p>
-          </ng-template>
-        </section>
-
-        <section class="admin-dashboard__kyc">
-          <h2 class="admin-dashboard__section-title">{{ 'adminDashboard.kycBreakdownTitle' | translate }}</h2>
-          <div class="admin-dashboard__tiles">
-            <a [routerLink]="['/settings', 'kyc-queue']" class="admin-dashboard__tile-link">
-              <app-stat-tile
-                icon="hourglass_top"
-                tone="warning"
-                [label]="'adminDashboard.kycPendingLabel' | translate"
-                [value]="s.kycBreakdown.pending.toString()"
-              ></app-stat-tile>
-            </a>
-            <app-stat-tile
-              icon="check_circle"
-              tone="success"
-              [label]="'adminDashboard.kycVerifiedLabel' | translate"
-              [value]="s.kycBreakdown.verified.toString()"
-            ></app-stat-tile>
-            <app-stat-tile
-              icon="cancel"
-              tone="danger"
-              [label]="'adminDashboard.kycRejectedLabel' | translate"
-              [value]="s.kycBreakdown.rejected.toString()"
-            ></app-stat-tile>
           </div>
-        </section>
-
-        <section class="admin-dashboard__withdrawals">
-          <a [routerLink]="['/settings', 'payout-approval']" class="admin-dashboard__tile-link">
-            <app-stat-tile
-              icon="account_balance_wallet"
-              [label]="'adminDashboard.pendingWithdrawalsLabel' | translate"
-              [value]="s.pendingWithdrawals.toString()"
-              tone="accent"
-            ></app-stat-tile>
-          </a>
-        </section>
-
-        <section class="admin-dashboard__quick-actions">
-          <h2 class="admin-dashboard__section-title">{{ 'adminDashboard.quickActionsTitle' | translate }}</h2>
-          <div class="admin-dashboard__quick-actions-row">
-            <a [routerLink]="['/admin', 'sales', 'new']" class="brand-button brand-button--secondary">
-              {{ 'adminDashboard.recordSaleAction' | translate }}
-            </a>
-            <a [routerLink]="['/admin', 'associates', 'new']" class="brand-button brand-button--secondary">
-              {{ 'adminDashboard.provisionAssociateAction' | translate }}
-            </a>
-          </div>
-        </section>
+        </div>
       </ng-container>
     </div>
   `
@@ -151,6 +111,36 @@ export class AdminDashboardComponent implements OnInit {
 
   formatCurrency(value: number): string {
     return this.currencyPipe.transform(value, 'INR', 'symbol', '1.0-2') ?? String(value);
+  }
+
+  cycleClosesKey(days: number): string {
+    return days === 1 ? 'adminDashboard.cycleClosesSingular' : 'adminDashboard.cycleCloses';
+  }
+
+  cycleDelta(cycle: CurrentCycleStats): number {
+    return cycle.totalIncome - cycle.previousCycleTotalIncome;
+  }
+
+  cycleDeltaAbs(cycle: CurrentCycleStats): number {
+    return Math.abs(this.cycleDelta(cycle));
+  }
+
+  cycleDeltaKey(cycle: CurrentCycleStats): string {
+    return this.cycleDelta(cycle) >= 0 ? 'adminDashboard.deltaUp' : 'adminDashboard.deltaDown';
+  }
+
+  cycleTrendPoints(cycle: CurrentCycleStats): string | null {
+    const trend = cycle.incomeTrend;
+    if (!trend || trend.length < 2) {
+      return null;
+    }
+    const max = Math.max(...trend);
+    const min = Math.min(...trend, 0);
+    const range = max - min || 1;
+    const stepX = 100 / (trend.length - 1);
+    return trend
+      .map((value, i) => `${(i * stepX).toFixed(1)},${(28 - ((value - min) / range) * 28).toFixed(1)}`)
+      .join(' ');
   }
 
   private loadStats(): void {
