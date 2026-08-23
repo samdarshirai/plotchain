@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -363,14 +364,16 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
     }
 
-    // Same reasoning as auditLogIsReachableForEveryAdminFamilyTokenAndForbiddenForAssociate above:
-    // walletRepository/cycleRepository are not @MockBean'd in this class, so they run for real
-    // against the empty H2 test DB -- sumAllBalances() coalesces to 0 and there's no OPEN cycle,
-    // both handled without error by AdminStatsService, hence isOk() for every admin-family role.
+    // walletRepository is not @MockBean'd in this class, so it runs for real against the empty H2
+    // test DB -- sumAllBalances() coalesces to 0, handled without error by AdminStatsService.
+    // cycleRepository IS @MockBean'd class-wide (see the field above) -- Mockito's default answer for
+    // an unstubbed Page-returning method is null (Page isn't one of Mockito's auto-emptied JDK
+    // collection types), so this test stubs findAllByOrderByPeriodStartDesc to return an empty Page,
+    // avoiding an NPE in AdminStatsService's now-unconditional call to that method.
     @ParameterizedTest
     @EnumSource(AssociateRole.class)
     void adminStatsIsReachableForEveryAdminFamilyTokenAndForbiddenForAssociate(AssociateRole role) throws Exception {
-        when(cycleRepository.findAllByOrderByPeriodStartDesc(any())).thenReturn(new org.springframework.data.domain.PageImpl<>(java.util.List.of()));
+        when(cycleRepository.findAllByOrderByPeriodStartDesc(any())).thenReturn(new PageImpl<>(List.of()));
         mockMvc.perform(get("/api/admin/stats")
                 .header("Authorization", "Bearer " + tokenFor(role)))
             .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
