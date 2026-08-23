@@ -53,7 +53,8 @@ class AssociateSaleControllerTest {
         UUID saleId = UUID.randomUUID();
         SaleResponse sale = new SaleResponse(
             saleId, UUID.randomUUID(), associateId, "Jane Buyer", "9999999999", null,
-            new BigDecimal("600000.00"), UUID.randomUUID(), "L", "RECORDED", null, Instant.now(), null, null);
+            new BigDecimal("600000.00"), UUID.randomUUID(), "L", "RECORDED", null, Instant.now(), null, null,
+            null, null);
         AssociateSalePageResponse page = new AssociateSalePageResponse(List.of(sale), 0, 20, 1);
         when(saleService.getMySales(eq(associateId), eq(0), eq(20))).thenReturn(page);
 

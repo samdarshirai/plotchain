@@ -86,6 +86,8 @@ class SaleServiceTest {
         Associate associate = new Associate();
         associate.setId(ASSOCIATE_ID);
         associate.setPosition(position);
+        associate.setUserId("VP00001");
+        associate.setName("Jane Associate");
         return associate;
     }
 
@@ -397,6 +399,21 @@ class SaleServiceTest {
     }
 
     @Test
+    void recordSaleReturnsTheAssociateDisplayFieldsFromTheAlreadyLoadedAssociateNoNewQuery() {
+        stubHappyPathGuardsAndDependencies();
+
+        SaleResponse response = saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        assertThat(response.associateUserId()).isEqualTo("VP00001");
+        assertThat(response.associateName()).isEqualTo("Jane Associate");
+        // associateRepository.findById is the guard lookup itself (see
+        // recordSaleThrowsAssociateNotFoundExceptionWhenTheAssociateDoesNotExist) -- proving it's
+        // called exactly once here proves the response fields came from that same call, not a
+        // second, redundant lookup.
+        verify(associateRepository, org.mockito.Mockito.times(1)).findById(ASSOCIATE_ID);
+    }
+
+    @Test
     void recordSaleThrowsIllegalStateExceptionWhenNoCompensationPlanVersionIsConfigured() {
         when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
@@ -485,6 +502,7 @@ class SaleServiceTest {
         when(plotRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(ledgerEntryRepository.findAllBySourceRef(sale.getId())).thenReturn(List.of(ledgerEntry));
         when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
     }
 
     @Test
@@ -544,6 +562,18 @@ class SaleServiceTest {
     }
 
     @Test
+    void voidSaleResolvesAssociateDisplayFieldsViaANewLookup() {
+        UUID saleId = UUID.randomUUID();
+        Sale sale = recordedSale(saleId, PLOT_ID);
+        stubVoidHappyPath(sale, pendingLedgerEntry(saleId));
+
+        SaleResponse response = saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out"));
+
+        assertThat(response.associateUserId()).isEqualTo("VP00001");
+        assertThat(response.associateName()).isEqualTo("Jane Associate");
+    }
+
+    @Test
     void voidSaleReversesEveryLedgerEntrySharingTheSaleAsSourceRef() {
         UUID saleId = UUID.randomUUID();
         Sale sale = recordedSale(saleId, PLOT_ID);
@@ -558,6 +588,7 @@ class SaleServiceTest {
         when(plotRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(ledgerEntryRepository.findAllBySourceRef(saleId)).thenReturn(List.of(directEntry, selfPerformanceEntry));
         when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
 
         saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out"));
 
@@ -715,6 +746,33 @@ class SaleServiceTest {
         assertThat(response.sales()).hasSize(1);
         assertThat(response.sales().get(0).plotNo()).isEqualTo("VG2-118");
         assertThat(response.sales().get(0).projectName()).isEqualTo("Viraj Greens Ph II");
+    }
+
+    @Test
+    void getMySalesPopulatesAssociateUserIdAndNameFromABatchLookupNotPerRowQueries() {
+        UUID plotId = UUID.randomUUID();
+        Sale sale = new Sale();
+        sale.setId(UUID.randomUUID());
+        sale.setPlotId(plotId);
+        sale.setAssociateId(ASSOCIATE_ID);
+        sale.setBuyerName("Jane Buyer");
+        sale.setBuyerPhone("9999999999");
+        sale.setAmount(new BigDecimal("600000.00"));
+        sale.setCycleId(CYCLE_ID);
+        sale.setLegCredited("L");
+        sale.setStatus(SaleStatus.RECORDED);
+        sale.setRecordedAt(Instant.now());
+
+        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
+        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(Pageable.class)))
+            .thenReturn(new PageImpl<>(List.of(sale)));
+        when(plotRepository.findAllById(List.of(plotId))).thenReturn(List.of());
+        when(associateRepository.findAllById(List.of(ASSOCIATE_ID))).thenReturn(List.of(associateWithPosition("L")));
+
+        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, 0, 20);
+
+        assertThat(response.sales().get(0).associateUserId()).isEqualTo("VP00001");
+        assertThat(response.sales().get(0).associateName()).isEqualTo("Jane Associate");
     }
 
     @Test

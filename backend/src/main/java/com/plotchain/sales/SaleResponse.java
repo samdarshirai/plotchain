@@ -18,5 +18,7 @@ public record SaleResponse(
     String voidReason,
     Instant recordedAt,
     String plotNo,
-    String projectName
+    String projectName,
+    String associateUserId,
+    String associateName
 ) {}

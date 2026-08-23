@@ -107,7 +107,8 @@ class SaleControllerTest {
         UUID cycleId = UUID.randomUUID();
         SaleResponse response = new SaleResponse(
             saleId, plotId, associateId, "Jane Buyer", "9999999999", null,
-            new BigDecimal("600000.00"), cycleId, "L", "RECORDED", null, Instant.now(), null, null);
+            new BigDecimal("600000.00"), cycleId, "L", "RECORDED", null, Instant.now(), null, null,
+            null, null);
         when(saleService.recordSale(any(CreateSaleRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/admin/sales")
@@ -155,7 +156,8 @@ class SaleControllerTest {
         UUID cycleId = UUID.randomUUID();
         SaleResponse response = new SaleResponse(
             saleId, plotId, associateId, "Jane Buyer", "9999999999", null,
-            new BigDecimal("600000.00"), cycleId, "L", "VOIDED", "Buyer backed out", Instant.now(), null, null);
+            new BigDecimal("600000.00"), cycleId, "L", "VOIDED", "Buyer backed out", Instant.now(), null, null,
+            null, null);
         when(saleService.voidSale(eq(saleId), any(VoidSaleRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/admin/sales/{id}/void", saleId)
@@ -183,7 +185,8 @@ class SaleControllerTest {
         UUID associateId = UUID.randomUUID();
         SaleResponse sale = new SaleResponse(
             saleId, UUID.randomUUID(), associateId, "Jane Buyer", "9999999999", null,
-            new BigDecimal("600000.00"), UUID.randomUUID(), "L", "RECORDED", null, Instant.now(), null, null);
+            new BigDecimal("600000.00"), UUID.randomUUID(), "L", "RECORDED", null, Instant.now(), null, null,
+            null, null);
         AdminSalePageResponse page = new AdminSalePageResponse(List.of(sale), 0, 20, 1);
         when(saleService.list(eq(associateId), eq(SaleStatus.RECORDED), any(), any(), eq(0), eq(20)))
             .thenReturn(page);

@@ -179,9 +179,9 @@ public class SaleService {
             }
         }
 
-        // Flow step 9. plot is already loaded above (findByIdForUpdate) -- toResponse(sale, plot)
+        // Flow step 9. plot is already loaded above (findByIdForUpdate) -- toResponse(sale, plot, associate)
         // reuses it instead of re-fetching via toResponses' batch Plot lookup.
-        return toResponse(sale, plot);
+        return toResponse(sale, plot, associate);
     }
 
     // Sales unit 4 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
@@ -230,9 +230,14 @@ public class SaleService {
             ledgerEntryRepository.save(ledgerEntry);
         }
 
-        // Flow step 6. plot is already loaded above -- toResponse(sale, plot) reuses it instead
-        // of re-fetching via toResponses' batch Plot lookup.
-        return toResponse(sale, plot);
+        // Flow step 6. plot is already loaded above -- toResponse(sale, plot, associate) reuses
+        // it instead of re-fetching via toResponses' batch Plot lookup. associate is a fresh,
+        // single lookup (never loaded elsewhere in this method) resolved null-safely, same as the
+        // plot/project resolution in toResponse above -- not the missing-Plot case's strict
+        // IllegalStateException a few lines up, since a missing associate here is a display-field
+        // gap, not a broken data invariant blocking the write.
+        Associate associate = associateRepository.findById(sale.getAssociateId()).orElse(null);
+        return toResponse(sale, plot, associate);
     }
 
     // Sales unit 6 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
@@ -269,11 +274,12 @@ public class SaleService {
         return new AssociateSalePageResponse(sales, page, size, result.getTotalElements());
     }
 
-    // dashboard-mockup spec §3.1: plotNo/projectName resolved here via a batch Plot/Project
-    // lookup (two IN-queries total, regardless of how many sales are being mapped) rather than
-    // a per-row join or per-row repository call. recordSale/voidSale don't route through this --
-    // they already hold their own Plot from the row-lock/status-flip above, so they call
-    // toResponse(sale, plot) directly instead of re-fetching it here.
+    // dashboard-mockup spec §3.1 and 2026-08-23-admin-dashboard-mockup-design.md §3.1:
+    // plotNo/projectName/associateUserId/associateName are all resolved here via batch lookups
+    // (three IN-queries total, regardless of how many sales are being mapped) rather than a
+    // per-row join or per-row repository call. recordSale/voidSale don't route through this --
+    // they already hold their own Plot/Associate from earlier in their own flow, so they call
+    // toResponse(sale, plot, associate) directly instead of re-fetching here.
     private List<SaleResponse> toResponses(List<Sale> sales) {
         List<UUID> plotIds = sales.stream().map(Sale::getPlotId).distinct().toList();
         Map<UUID, Plot> plotsById = plotRepository.findAllById(plotIds).stream()
@@ -281,34 +287,44 @@ public class SaleService {
         List<UUID> projectIds = plotsById.values().stream().map(Plot::getProjectId).distinct().toList();
         Map<UUID, String> projectNamesByProjectId = projectRepository.findAllById(projectIds).stream()
             .collect(Collectors.toMap(Project::getId, Project::getName));
+        List<UUID> associateIds = sales.stream().map(Sale::getAssociateId).distinct().toList();
+        Map<UUID, Associate> associatesById = associateRepository.findAllById(associateIds).stream()
+            .collect(Collectors.toMap(Associate::getId, a -> a));
 
         return sales.stream().map(sale -> {
             Plot plot = plotsById.get(sale.getPlotId());
             String plotNo = plot != null ? plot.getPlotNo() : null;
             String projectName = plot != null ? projectNamesByProjectId.get(plot.getProjectId()) : null;
-            return buildResponse(sale, plotNo, projectName);
+            Associate associate = associatesById.get(sale.getAssociateId());
+            String associateUserId = associate != null ? associate.getUserId() : null;
+            String associateName = associate != null ? associate.getName() : null;
+            return buildResponse(sale, plotNo, projectName, associateUserId, associateName);
         }).toList();
     }
 
-    // recordSale/voidSale's single-sale path: both already hold the Plot they need (loaded for
-    // the row lock / status flip earlier in the same transaction), so this resolves projectName
-    // with one findById instead of routing through toResponses' batch findAllById, which would
-    // silently re-fetch a row already in memory.
-    private SaleResponse toResponse(Sale sale, Plot plot) {
+    // recordSale/voidSale's single-sale path: both already hold the Plot and Associate they need
+    // (recordSale from its own guard-loading earlier in the same transaction; voidSale via a
+    // fresh single findById, see below), so this resolves projectName with one findById instead
+    // of routing through toResponses' batch findAllById, which would silently re-fetch rows
+    // already in memory.
+    private SaleResponse toResponse(Sale sale, Plot plot, Associate associate) {
         String plotNo = plot != null ? plot.getPlotNo() : null;
         String projectName = plot != null
             ? projectRepository.findById(plot.getProjectId()).map(Project::getName).orElse(null)
             : null;
-        return buildResponse(sale, plotNo, projectName);
+        String associateUserId = associate != null ? associate.getUserId() : null;
+        String associateName = associate != null ? associate.getName() : null;
+        return buildResponse(sale, plotNo, projectName, associateUserId, associateName);
     }
 
-    private SaleResponse buildResponse(Sale sale, String plotNo, String projectName) {
+    private SaleResponse buildResponse(
+            Sale sale, String plotNo, String projectName, String associateUserId, String associateName) {
         return new SaleResponse(
             sale.getId(), sale.getPlotId(), sale.getAssociateId(),
             sale.getBuyerName(), sale.getBuyerPhone(), sale.getBuyerEmail(),
             sale.getAmount(), sale.getCycleId(), sale.getLegCredited(),
             sale.getStatus().name(), sale.getVoidReason(), sale.getRecordedAt(),
-            plotNo, projectName);
+            plotNo, projectName, associateUserId, associateName);
     }
 
     // Duplicates CycleService.kycGatedStatus()'s one-line logic rather than extracting a shared
