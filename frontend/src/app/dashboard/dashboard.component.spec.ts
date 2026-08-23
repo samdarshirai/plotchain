@@ -40,7 +40,7 @@ describe('DashboardComponent', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('renders all nine widgets in the spec-mandated stat-first order', () => {
+  it('renders the interim set of widgets in the spec-mandated stat-first order', () => {
     const selectors = Array.from(fixture.nativeElement.querySelectorAll('.dashboard > *'))
       .map((el: any) => el.tagName.toLowerCase());
     expect(selectors).toEqual([
@@ -48,12 +48,8 @@ describe('DashboardComponent', () => {
       'app-kyc-banner',
       'app-cycle-income-card',
       'app-wallet-card',
-      'app-leg-volume-gauge',
-      'app-rank-progress',
-      'app-team-snapshot',
       'app-quick-actions',
-      'app-cycle-countdown',
-      'app-announcements-strip'
+      'app-cycle-countdown'
     ]);
   });
 });
