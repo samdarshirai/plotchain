@@ -1,6 +1,5 @@
 package com.plotchain.sales;
 
-import com.plotchain.projects.Plot;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -38,18 +37,6 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
     // 0, not null.
     @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Sale s WHERE s.associateId = :associateId AND s.cycleId = :cycleId AND s.status = :status")
     BigDecimal sumAmountByAssociateIdAndCycleIdAndStatus(
-        @Param("associateId") UUID associateId,
-        @Param("cycleId") UUID cycleId,
-        @Param("status") SaleStatus status);
-
-    // Dashboard's "New Booked Area" (docs/superpowers/specs/2026-08-17-associate-dashboard-parity-design.md
-    // §3.1): SUM of plot.area_sqft for the associate's RECORDED sales in one cycle. Sale has no
-    // JPA relationship to Plot (plot_id is a bare UUID column), so this is an ad-hoc JPQL join on
-    // the FK equality -- Hibernate 6 supports "JOIN Plot p ON p.id = s.plotId" between unrelated
-    // entities. COALESCE avoids returning null for an associate/cycle with no matching sales.
-    @Query("SELECT COALESCE(SUM(p.areaSqft), 0) FROM Sale s JOIN Plot p ON p.id = s.plotId " +
-        "WHERE s.associateId = :associateId AND s.cycleId = :cycleId AND s.status = :status")
-    BigDecimal sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(
         @Param("associateId") UUID associateId,
         @Param("cycleId") UUID cycleId,
         @Param("status") SaleStatus status);

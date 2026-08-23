@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,26 +23,11 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         """, nativeQuery = true)
     long countDownline(@Param("associateId") UUID associateId);
 
-    // Team snapshot's per-leg associate counts (dashboard spec §3.1): identical shape to
-    // countDownline above, but the CTE's base case is seeded at the immediate LEFT or RIGHT
-    // child (position = :position) instead of every immediate child -- everything from there
-    // down is that child's own subtree, so this genuinely counts "how many associates are in my
-    // left leg" / "in my right leg", not a filtered slice of the combined downline.
-    @Query(value = """
-        WITH RECURSIVE downline(id) AS (
-            SELECT id FROM associate WHERE parent_id = :associateId AND position = :position
-            UNION ALL
-            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
-        )
-        SELECT count(*) FROM downline
-        """, nativeQuery = true)
-    long countDownlineByPosition(@Param("associateId") UUID associateId, @Param("position") String position);
-
     // Network Growth chart's per-cycle cumulative downline size (dashboard-mockup spec §3.1):
     // same recursive-CTE shape as countDownline, with an exclusive upper bound on joined_at so
     // a cycle's point reflects "who was already in the downline by that cycle's close".
-    // cutoffExclusive is the day AFTER that cycle's periodEnd, same convention as
-    // countJoinedBetween above.
+    // cutoffExclusive is the day AFTER that cycle's periodEnd (see DashboardService, which
+    // computes it as cycle.getPeriodEnd().plusDays(1)).
     @Query(value = """
         WITH RECURSIVE downline(id) AS (
             SELECT id FROM associate WHERE parent_id = :associateId
@@ -56,7 +40,7 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     long countDownlineJoinedBefore(@Param("associateId") UUID associateId, @Param("cutoffExclusive") Instant cutoffExclusive);
 
     // KYC network summary bar (dashboard-mockup spec §3.1): downline-scoped KYC status counts,
-    // same CTE shape as countDownlineByPosition but filtered on kyc_status instead of position.
+    // same recursive-CTE shape as countDownline above but filtered on kyc_status instead.
     // kycStatus is passed as its enum .name() (String), not the enum itself -- nativeQuery=true
     // bypasses Hibernate's enum-to-JDBC-type resolution, the same reason findAncestorChainIds
     // above casts its UUID column to VARCHAR rather than trusting driver-specific type mapping.
@@ -70,32 +54,6 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         WHERE a2.kyc_status = :kycStatus
         """, nativeQuery = true)
     long countDownlineByKycStatus(@Param("associateId") UUID associateId, @Param("kycStatus") String kycStatus);
-
-    @Query(value = """
-        WITH RECURSIVE downline(id) AS (
-            SELECT id FROM associate WHERE parent_id = :associateId
-            UNION ALL
-            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
-        )
-        SELECT count(*) FROM downline dl JOIN associate a2 ON a2.id = dl.id
-        WHERE a2.last_active_at >= :sinceDate
-        """, nativeQuery = true)
-    long countActiveToday(@Param("associateId") UUID associateId, @Param("sinceDate") LocalDate sinceDate);
-
-    // :end is treated as an EXCLUSIVE upper bound (the day after the last day to include).
-    // joined_at is a TIMESTAMP; a BETWEEN against a LocalDate coerces the upper bound to
-    // midnight and silently drops same-day joins on the period's last day. Callers must pass
-    // the day *after* the last day to include (e.g. cycle.getPeriodEnd().plusDays(1)).
-    @Query(value = """
-        WITH RECURSIVE downline(id) AS (
-            SELECT id FROM associate WHERE parent_id = :associateId
-            UNION ALL
-            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
-        )
-        SELECT count(*) FROM downline dl JOIN associate a2 ON a2.id = dl.id
-        WHERE a2.joined_at >= :start AND a2.joined_at < :end
-        """, nativeQuery = true)
-    long countJoinedBetween(@Param("associateId") UUID associateId, @Param("start") LocalDate start, @Param("end") LocalDate end);
 
     Optional<Associate> findByEmail(String email);
 
@@ -119,10 +77,9 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
 
     long countByRole(AssociateRole role);
 
-    // Company-wide sibling of countJoinedBetween above, for AdminStatsService: not scoped to a
-    // single associate's downline, and takes Instant (not LocalDate) to mirror searchDirectory's
-    // exclusive-upper-bound convention (see that method's comment) rather than the native-query
-    // LocalDate coercion countJoinedBetween relies on.
+    // Company-wide join-count for AdminStatsService: not scoped to a single associate's
+    // downline, and takes Instant to mirror searchDirectory's exclusive-upper-bound convention
+    // (see that method's comment below).
     @Query("""
         SELECT COUNT(a) FROM Associate a
         WHERE a.role = :role AND a.joinedAt >= :start AND a.joinedAt < :end
@@ -220,8 +177,8 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
 
     // All five filters are optional (null = "don't filter on this"). Scoped to role = ASSOCIATE
     // only -- this is the associate network directory, not the Admin Team staff roster.
-    // joinedToExclusive is an EXCLUSIVE upper bound, same convention as countJoinedBetween above:
-    // callers pass the day *after* the last day to include.
+    // joinedToExclusive is an EXCLUSIVE upper bound: callers pass the day *after* the last day
+    // to include.
     // Postgres prepares this statement once and must assign every bind parameter a static type
     // up front, before it knows whether the value is actually null at runtime. Left untyped:
     // :search (String) inside CONCAT resolves to bytea, and LOWER(bytea) has no overload

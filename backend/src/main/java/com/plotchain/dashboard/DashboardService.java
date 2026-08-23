@@ -130,8 +130,8 @@ public class DashboardService {
         List<DashboardResponse.NetworkGrowthPoint> networkGrowth = new ArrayList<>();
         for (int i = 0; i < lastCycles.size(); i++) {
             Cycle c = lastCycles.get(i);
-            // Exclusive upper bound, same convention as AssociateRepository#countJoinedBetween:
-            // the day AFTER this cycle's periodEnd, so a join on the close date itself counts.
+            // Exclusive upper bound: the day AFTER this cycle's periodEnd, so a join on the
+            // close date itself counts.
             Instant cutoffExclusive = c.getPeriodEnd().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
             networkGrowth.add(new DashboardResponse.NetworkGrowthPoint(
                 String.format("%02d", i + 1),

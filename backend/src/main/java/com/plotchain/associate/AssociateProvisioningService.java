@@ -37,11 +37,11 @@ public class AssociateProvisioningService {
         if (request.parentId() != null) {
             associateRepository.findById(request.parentId())
                 .orElseThrow(() -> new AssociateNotFoundException(request.parentId()));
-            // A parent with no position would be invisible to the per-leg associate counts
-            // (AssociateRepository.countDownlineByPosition filters on position = 'L'/'R') while
-            // still being counted in totalDownline and credited to a leg by CycleService's
-            // matching-income rollup ("R".equals(position) ? right : left treats null as left) --
-            // silently correct for volume, silently wrong for the leg headcount shown on screen.
+            // A parent with no position would be invisible to any per-leg associate count
+            // (filtered on position = 'L'/'R') while still being counted in totalDownline and
+            // credited to a leg by CycleService's matching-income rollup ("R".equals(position) ?
+            // right : left treats null as left) -- silently correct for volume, silently wrong
+            // for a leg headcount shown on screen.
             if (request.position() == null) {
                 throw new PositionRequiredException(request.parentId());
             }

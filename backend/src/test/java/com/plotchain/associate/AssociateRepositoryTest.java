@@ -11,9 +11,6 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,35 +46,6 @@ class AssociateRepositoryTest {
         long count = associateRepository.countDownline(root.getId());
 
         assertThat(count).isEqualTo(2);
-    }
-
-    @Test
-    void countDownlineByPositionCountsOnlyTheGivenLegRegardlessOfDepth() {
-        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
-        entityManager.persist(rank);
-
-        Associate root = newAssociate(null, null, rank.getId());
-        Associate leftChild = newAssociate(root.getId(), "L", rank.getId());
-        Associate leftGrandchild = newAssociate(leftChild.getId(), "L", rank.getId());
-        Associate rightChild = newAssociate(root.getId(), "R", rank.getId());
-        associateRepository.saveAll(java.util.List.of(root, leftChild, leftGrandchild, rightChild));
-        entityManager.flush();
-
-        assertThat(associateRepository.countDownlineByPosition(root.getId(), "L")).isEqualTo(2);
-        assertThat(associateRepository.countDownlineByPosition(root.getId(), "R")).isEqualTo(1);
-    }
-
-    @Test
-    void countDownlineByPositionReturnsZeroWhenNoChildOccupiesThatPosition() {
-        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
-        entityManager.persist(rank);
-
-        Associate root = newAssociate(null, null, rank.getId());
-        Associate leftChild = newAssociate(root.getId(), "L", rank.getId());
-        associateRepository.saveAll(java.util.List.of(root, leftChild));
-        entityManager.flush();
-
-        assertThat(associateRepository.countDownlineByPosition(root.getId(), "R")).isEqualTo(0);
     }
 
     @Test
@@ -132,27 +100,6 @@ class AssociateRepositoryTest {
         assertThat(associateRepository.countDownlineByKycStatus(root.getId(), "VERIFIED")).isEqualTo(1);
         assertThat(associateRepository.countDownlineByKycStatus(root.getId(), "PENDING")).isEqualTo(1);
         assertThat(associateRepository.countDownlineByKycStatus(root.getId(), "REJECTED")).isEqualTo(1);
-    }
-
-    @Test
-    void countJoinedBetweenIncludesAssociatesWhoJoinOnTheEndDate() {
-        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
-        entityManager.persist(rank);
-
-        LocalDate start = LocalDate.now().minusDays(5);
-        LocalDate end = LocalDate.now();
-
-        Associate root = newAssociate(null, null, rank.getId());
-        Associate lastDayJoiner = newAssociate(root.getId(), "L", rank.getId());
-        lastDayJoiner.setJoinedAt(instantAt(end, LocalTime.of(23, 59, 59)));
-        associateRepository.saveAll(java.util.List.of(root, lastDayJoiner));
-        entityManager.flush();
-
-        // Upper bound is exclusive by contract: callers pass the day AFTER the last day to
-        // include (mirrors what DashboardService does with cycle.getPeriodEnd().plusDays(1)).
-        long count = associateRepository.countJoinedBetween(root.getId(), start, end.plusDays(1));
-
-        assertThat(count).isEqualTo(1);
     }
 
     @Test
@@ -468,12 +415,6 @@ class AssociateRepositoryTest {
         a.setMustChangePassword(false);
         entityManager.persist(a);
         return a;
-    }
-
-    // Uses the JVM default zone (matching how the DATE query params below are interpreted
-    // against the TIMESTAMP-without-timezone joined_at column) so the boundary lines up.
-    private static Instant instantAt(LocalDate date, LocalTime time) {
-        return date.atTime(time).atZone(ZoneId.systemDefault()).toInstant();
     }
 
     private Associate newAssociate(UUID parentId, String position, UUID rankId) {
