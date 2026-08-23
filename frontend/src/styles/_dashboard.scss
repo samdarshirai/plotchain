@@ -1,0 +1,328 @@
+// Associate Dashboard (dashboard-mockup spec, Viraj Acres Dashboard.dc.html option 1a):
+// page-header row, the existing Seal Card hero (see _setup.scss's .seal-card, extended here
+// with .seal-card__delta/.seal-card__trend), a 4-tile KPI row, and a two-column panel row.
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem 1.75rem 2rem;
+}
+
+.dashboard__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dashboard__title {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-display);
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dashboard__subtitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.dashboard__header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.dashboard__name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dashboard__rank-badge {
+  padding: 0.375rem 0.6875rem;
+  border: 1px solid var(--brand-secondary);
+  border-radius: var(--radius-sm);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand-secondary);
+}
+
+.dashboard__id-caption {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.kyc-banner {
+  padding: 0.75rem 1rem;
+  background: var(--status-warning);
+  border-radius: var(--radius-sm);
+  color: var(--brand-secondary-contrast);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+// Seal Card additions (base .seal-card/.seal-card__* rules live in _setup.scss).
+.seal-card__delta {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--status-success);
+}
+
+.seal-card__delta--down {
+  color: var(--status-danger);
+}
+
+.seal-card__trend {
+  width: 100%;
+  height: 40px;
+  margin: 0 0 0.75rem;
+  color: var(--brand-primary);
+
+  polyline {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+  }
+}
+
+.dashboard__tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.dashboard__panels {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.dashboard__panels-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+// Recent Sales table.
+.recent-sales-table {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.125rem;
+}
+
+.recent-sales-table__header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.75rem;
+}
+
+.recent-sales-table__rule {
+  flex: 1;
+  height: 1px;
+  background: rgba(92, 26, 42, 0.22);
+}
+
+.recent-sales-table__label {
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brand-secondary);
+  white-space: nowrap;
+}
+
+.recent-sales-table__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+
+  th {
+    text-align: left;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 0.5938rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  td {
+    padding: 0.625rem 0.375rem 0.625rem 0;
+    border-bottom: 1px solid rgba(217, 207, 188, 0.6);
+    color: var(--text-primary);
+  }
+}
+
+.recent-sales-table__plot-no {
+  font-family: var(--font-mono);
+}
+
+.recent-sales-table__status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5625rem;
+  border-radius: 999px;
+  background: rgba(75, 122, 82, 0.12);
+  font-size: 0.6563rem;
+  font-weight: 500;
+  color: var(--status-success);
+}
+
+.recent-sales-table__status-pill--voided {
+  background: rgba(178, 59, 50, 0.12);
+  color: var(--status-danger);
+}
+
+.recent-sales-table__empty,
+.recent-sales-table__error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+// Network Growth chart.
+.network-growth-chart {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.125rem;
+}
+
+.network-growth-chart__header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.75rem;
+}
+
+.network-growth-chart__rule {
+  flex: 1;
+  height: 1px;
+  background: rgba(92, 26, 42, 0.22);
+}
+
+.network-growth-chart__label {
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brand-secondary);
+  white-space: nowrap;
+}
+
+.network-growth-chart__bars {
+  width: 100%;
+  height: 60px;
+  display: block;
+
+  rect {
+    fill: var(--brand-secondary);
+    opacity: 0.35;
+  }
+}
+
+.network-growth-chart__axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 0.5938rem;
+  color: var(--text-muted);
+}
+
+// KYC network summary.
+.kyc-network-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.8125rem 1.125rem;
+}
+
+.kyc-network-summary__label {
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.kyc-network-summary__counts {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.kyc-network-summary__count--verified {
+  color: var(--status-success);
+}
+
+.kyc-network-summary__count--pending {
+  color: var(--status-warning);
+}
+
+.kyc-network-summary__count--rejected {
+  color: var(--status-danger);
+}
+
+// Quick actions (inert -- see quick-actions.component.ts's own comment for why these are spans).
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.quick-actions__button {
+  display: block;
+  border-radius: var(--radius-sm);
+  padding: 0.8125rem 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: default;
+}
+
+.quick-actions__button--primary {
+  background: var(--brand-secondary);
+  color: var(--brand-secondary-contrast);
+}
+
+.quick-actions__button--secondary {
+  border: 1px solid var(--brand-secondary);
+  color: var(--brand-secondary);
+}
+
+.quick-actions__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 960px) {
+  .dashboard__tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard__panels {
+    grid-template-columns: 1fr;
+  }
+}
