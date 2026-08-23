@@ -15,4 +15,6 @@ export interface Sale {
   recordedAt: string;
   plotNo: string | null;
   projectName: string | null;
+  associateUserId: string | null;
+  associateName: string | null;
 }
