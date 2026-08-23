@@ -196,6 +196,31 @@
   color: var(--brand-primary-bright);
 }
 
+.seal-card-panel__delta {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem; // 13px
+  font-weight: 500;
+  text-align: center;
+  color: var(--status-success);
+}
+
+.seal-card-panel__delta--down {
+  color: var(--status-danger);
+}
+
+.seal-card-panel__trend {
+  width: 100%;
+  height: 44px;
+  margin-top: 0.75rem;
+  color: var(--brand-primary-bright);
+
+  polyline {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+  }
+}
+
 .seal-card-panel__caption {
   margin-top: 0.625rem; // 10px
   font-size: 0.8125rem; // 13px

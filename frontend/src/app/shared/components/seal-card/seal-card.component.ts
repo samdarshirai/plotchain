@@ -9,6 +9,12 @@ import { CommonModule } from '@angular/common';
 // structure and settles in on first paint; this component is the simpler three-part card the
 // mockup actually draws for the Dashboard, so it gets its own class names to avoid colliding with
 // that unrelated pattern.
+//
+// deltaCaption/deltaDown/trendPoints (2026-08-23-admin-dashboard-mockup-design.md §3.2): optional
+// delta-vs-last-cycle text and an SVG sparkline, both pre-computed and pre-formatted by the
+// caller (mirroring how CycleIncomeCardComponent computes its own delta/trendPoints from raw
+// data) -- this component stays presentational and string-based, same as its existing
+// label/value/caption inputs.
 @Component({
   selector: 'app-seal-card',
   standalone: true,
@@ -18,6 +24,10 @@ import { CommonModule } from '@angular/common';
       <div class="seal-card-panel__hairline seal-card-panel__hairline--top"></div>
       <div class="seal-card-panel__label">── {{ label }} ──</div>
       <div class="seal-card-panel__figure">{{ value }}</div>
+      <p class="seal-card-panel__delta" *ngIf="deltaCaption" [class.seal-card-panel__delta--down]="deltaDown">{{ deltaCaption }}</p>
+      <svg class="seal-card-panel__trend" *ngIf="trendPoints" viewBox="0 0 100 28" preserveAspectRatio="none">
+        <polyline [attr.points]="trendPoints"></polyline>
+      </svg>
       <div class="seal-card-panel__caption" *ngIf="caption">{{ caption }}</div>
       <div class="seal-card-panel__hairline seal-card-panel__hairline--bottom"></div>
     </div>
@@ -27,4 +37,7 @@ export class SealCardComponent {
   @Input({ required: true }) label!: string;
   @Input({ required: true }) value!: string;
   @Input() caption?: string;
+  @Input() deltaCaption?: string;
+  @Input() deltaDown = false;
+  @Input() trendPoints?: string;
 }
