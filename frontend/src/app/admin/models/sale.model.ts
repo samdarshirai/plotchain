@@ -13,4 +13,6 @@ export interface Sale {
   status: SaleStatus;
   voidReason: string | null;
   recordedAt: string;
+  plotNo: string | null;
+  projectName: string | null;
 }
