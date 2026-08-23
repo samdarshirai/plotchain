@@ -9,7 +9,9 @@ import com.plotchain.cycle.CycleStatus;
 import com.plotchain.income.LedgerEntryRepository;
 import com.plotchain.projects.PlotRepository;
 import com.plotchain.projects.PlotStatus;
+import com.plotchain.sales.AdminSalePageResponse;
 import com.plotchain.sales.SaleRepository;
+import com.plotchain.sales.SaleService;
 import com.plotchain.sales.SaleStatus;
 import com.plotchain.wallet.WalletRepository;
 import com.plotchain.withdrawal.WithdrawalRequestRepository;
@@ -26,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -50,6 +53,7 @@ class AdminStatsControllerTest {
     @MockBean SaleRepository saleRepository;
     @MockBean WithdrawalRequestRepository withdrawalRequestRepository;
     @MockBean PlotRepository plotRepository;
+    @MockBean SaleService saleService;
 
     private String tokenFor(AssociateRole role) {
         Associate associate = new Associate();
@@ -76,6 +80,9 @@ class AdminStatsControllerTest {
         when(plotRepository.countByStatusNot(PlotStatus.SOLD)).thenReturn(21L);
         when(saleRepository.countByStatus(SaleStatus.RECORDED)).thenReturn(63L);
         when(cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED, CycleStatus.PAID))).thenReturn(11L);
+        when(cycleRepository.findAllByOrderByPeriodStartDesc(any())).thenReturn(org.springframework.data.domain.Page.empty());
+        when(saleService.list(null, null, null, null, 0, 5))
+            .thenReturn(new AdminSalePageResponse(List.of(), 0, 5, 0));
 
         mockMvc.perform(get("/api/admin/stats")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
@@ -86,7 +93,9 @@ class AdminStatsControllerTest {
             .andExpect(jsonPath("$.currentCycle").doesNotExist())
             .andExpect(jsonPath("$.activePlots").value(21))
             .andExpect(jsonPath("$.totalSalesRecorded").value(63))
-            .andExpect(jsonPath("$.cyclesCompleted").value(11));
+            .andExpect(jsonPath("$.cyclesCompleted").value(11))
+            .andExpect(jsonPath("$.networkGrowth").isEmpty())
+            .andExpect(jsonPath("$.recentSales").isEmpty());
     }
 
     @Test
