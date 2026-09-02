@@ -333,27 +333,25 @@ class AssociateRepositoryTest {
         assertThat(associateRepository.countByRoleAndJoinedBefore(AssociateRole.ASSOCIATE, cutoff)).isEqualTo(0);
     }
 
-    // M2 fix: KycReviewService.list() used to query off kycStatus alone, so a freshly-provisioned
-    // zero-document associate (kycStatus = PENDING from account creation, before any upload)
-    // showed up in the "Pending" review queue indistinguishable from one actually awaiting
-    // review. findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAsc adds an EXISTS subquery
-    // against AssociateKycDocument to exclude those.
+    // The KYC review queue lists every PENDING associate, oldest join first -- including a
+    // freshly-provisioned one who has not uploaded a document yet (kycStatus = PENDING from
+    // account creation). They are a real work item for the admin, not noise to hide.
     @Test
-    void findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAscExcludesAssociatesWithNoDocuments() {
+    void findByRoleAndKycStatusOrderByJoinedAtAscReturnsEveryPendingAssociateOldestFirst() {
         RankTier rank = persistRank("Sales Associate", 1);
         Associate withDocument = persistAssociate("VP00001", "Has Document", AssociateRole.ASSOCIATE, rank.getId(),
-            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.parse("2026-01-01T00:00:00Z"));
         persistAssociate("VP00002", "No Document", AssociateRole.ASSOCIATE, rank.getId(),
-            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.parse("2026-01-02T00:00:00Z"));
         persistKycDocument(withDocument.getId(), "PAN");
         entityManager.flush();
 
-        Page<Associate> result = associateRepository.findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAsc(
+        Page<Associate> result = associateRepository.findByRoleAndKycStatusOrderByJoinedAtAsc(
             AssociateRole.ASSOCIATE, KycStatus.PENDING, PageRequest.of(0, 20));
 
-        // VP00002 has the same PENDING status but zero documents -- containsExactly proves it's
-        // excluded, not merely that VP00001 is present.
-        assertThat(result.getContent()).extracting(Associate::getUserId).containsExactly("VP00001");
+        // VP00002 has zero documents but the same PENDING status -- it still appears, after the
+        // earlier-joined VP00001.
+        assertThat(result.getContent()).extracting(Associate::getUserId).containsExactly("VP00001", "VP00002");
     }
 
     @Test

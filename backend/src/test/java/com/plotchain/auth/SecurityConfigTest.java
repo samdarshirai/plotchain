@@ -751,6 +751,16 @@ class SecurityConfigTest {
             .andExpect(status().isForbidden());
     }
 
+    // GET /api/admin/kyc/counts is a sub-path of the exact "/api/admin/kyc" matcher, which
+    // AntPathMatcher does not treat as a prefix -- without the "/api/admin/kyc/*" pattern it
+    // would fall through to anyRequest().authenticated() and be reachable by any associate.
+    @Test
+    void adminKycCountsIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/admin/kyc/counts")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
     // Sales unit 4: POST /api/admin/sales/{id}/void is ADMIN-only, the same target-role-model
     // pattern as POST /api/admin/sales directly above and /api/admin/cycles/*/close further up.
     // A random, non-existent saleId reaches the real (H2, unmocked) SaleRepository and 404s for

@@ -57,7 +57,7 @@ class KycReviewServiceTest {
     @Test
     void listReturnsAPageOfEntriesForTheGivenStatus() {
         Associate associate = newAssociate(UUID.randomUUID(), "VP00001", KycStatus.PENDING);
-        when(associateRepository.findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAsc(
+        when(associateRepository.findByRoleAndKycStatusOrderByJoinedAtAsc(
             AssociateRole.ASSOCIATE, KycStatus.PENDING, PageRequest.of(0, 20)))
             .thenReturn(new PageImpl<>(List.of(associate), PageRequest.of(0, 20), 1));
 

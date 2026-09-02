@@ -275,7 +275,11 @@ public class SecurityConfig {
                     .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/admin/tree/*")
                     .hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/admin/kyc")
+                // "/api/admin/kyc" is an exact match in AntPathMatcher and does NOT cover
+                // "/api/admin/kyc/counts" as a prefix -- without the "/*" pattern that GET
+                // would fall through to anyRequest().authenticated() and be reachable by any
+                // authenticated associate (same reasoning as "/api/admin/cycles/*" below).
+                .requestMatchers(HttpMethod.GET, "/api/admin/kyc", "/api/admin/kyc/*")
                     .hasAuthority("ADMIN")
                 // Company-wide admin stats: same admin-family-only reasoning as every other
                 // admin-aggregate GET above. Read-only, no corresponding write endpoint.

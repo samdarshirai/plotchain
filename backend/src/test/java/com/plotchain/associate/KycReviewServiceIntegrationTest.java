@@ -138,7 +138,7 @@ class KycReviewServiceIntegrationTest {
     }
 
     @Test
-    void listExcludesAZeroDocumentAssociateAndIncludesOneWithADocument() {
+    void listIncludesEveryPendingAssociateWhetherOrNotTheyHaveUploadedDocuments() {
         associateId = seedAssociateWithDocument("VP90003", KycStatus.PENDING);
         UUID zeroDocumentAssociateId = UUID.randomUUID();
         Associate zeroDocumentAssociate = new Associate();
@@ -157,9 +157,10 @@ class KycReviewServiceIntegrationTest {
         try {
             KycPageResponse page = kycReviewService.list(KycStatus.PENDING, 0, 200);
 
+            // Both belong in the review queue -- the zero-document associate is a real work
+            // item (provisioned, still needs verifying), not noise to hide.
             List<String> userIds = page.entries().stream().map(KycQueueEntryResponse::userId).toList();
-            assertThat(userIds).contains("VP90003");
-            assertThat(userIds).doesNotContain("VP90004");
+            assertThat(userIds).contains("VP90003", "VP90004");
         } finally {
             associateRepository.deleteById(zeroDocumentAssociateId);
         }

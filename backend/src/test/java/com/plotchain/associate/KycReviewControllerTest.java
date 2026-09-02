@@ -64,7 +64,7 @@ class KycReviewControllerTest {
 
     @Test
     void listDefaultsToPendingAndAllowsAnyAdminFamilyToken() throws Exception {
-        when(associateRepository.findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAsc(
+        when(associateRepository.findByRoleAndKycStatusOrderByJoinedAtAsc(
             eq(AssociateRole.ASSOCIATE), eq(KycStatus.PENDING), any()))
             .thenReturn(new PageImpl<>(List.of(seedAssociate()), PageRequest.of(0, 20), 1));
 
@@ -76,7 +76,7 @@ class KycReviewControllerTest {
 
     @Test
     void listClampsAnOversizedPageSizeToTheServerSideMaximum() throws Exception {
-        when(associateRepository.findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAsc(eq(AssociateRole.ASSOCIATE), eq(KycStatus.PENDING), any()))
+        when(associateRepository.findByRoleAndKycStatusOrderByJoinedAtAsc(eq(AssociateRole.ASSOCIATE), eq(KycStatus.PENDING), any()))
             .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 100), 0));
 
         mockMvc.perform(get("/api/admin/kyc").param("size", "999999")
@@ -84,14 +84,14 @@ class KycReviewControllerTest {
             .andExpect(status().isOk());
 
         ArgumentCaptor<PageRequest> pageableCaptor = ArgumentCaptor.forClass(PageRequest.class);
-        verify(associateRepository).findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAsc(
+        verify(associateRepository).findByRoleAndKycStatusOrderByJoinedAtAsc(
             eq(AssociateRole.ASSOCIATE), eq(KycStatus.PENDING), pageableCaptor.capture());
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(100);
     }
 
     @Test
     void listClampsANegativePageToZeroInsteadOfThrowing() throws Exception {
-        when(associateRepository.findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAsc(eq(AssociateRole.ASSOCIATE), eq(KycStatus.PENDING), any()))
+        when(associateRepository.findByRoleAndKycStatusOrderByJoinedAtAsc(eq(AssociateRole.ASSOCIATE), eq(KycStatus.PENDING), any()))
             .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
         mockMvc.perform(get("/api/admin/kyc").param("page", "-5")
@@ -99,7 +99,7 @@ class KycReviewControllerTest {
             .andExpect(status().isOk());
 
         ArgumentCaptor<PageRequest> pageableCaptor = ArgumentCaptor.forClass(PageRequest.class);
-        verify(associateRepository).findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAsc(
+        verify(associateRepository).findByRoleAndKycStatusOrderByJoinedAtAsc(
             eq(AssociateRole.ASSOCIATE), eq(KycStatus.PENDING), pageableCaptor.capture());
         assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(0);
     }

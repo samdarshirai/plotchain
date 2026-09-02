@@ -26,7 +26,7 @@ public class KycReviewService {
     }
 
     public KycPageResponse list(KycStatus status, int page, int size) {
-        Page<Associate> result = associateRepository.findByRoleAndKycStatusWithDocumentsOrderByJoinedAtAsc(
+        Page<Associate> result = associateRepository.findByRoleAndKycStatusOrderByJoinedAtAsc(
             AssociateRole.ASSOCIATE, status, PageRequest.of(page, size));
         List<KycQueueEntryResponse> entries = result.getContent().stream().map(KycReviewService::toEntry).toList();
         return new KycPageResponse(entries, page, size, result.getTotalElements());
