@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { CommonModule, DOCUMENT } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { filter, Subscription } from 'rxjs';
@@ -10,10 +10,7 @@ import { ADMIN_NAV_CATEGORIES, AdminNavCategory, findNavCategoryForUrl } from '.
 
 // /setup is a guided, pre-launch-only wizard (setupModeGuard) with its own dedicated
 // step-nav -- it stays chromeless (no global header) so cross-navigation doesn't undercut the
-// focused wizard UX. /admin/associates/new used to be chromeless too, back when the app's
-// default theme was dark and this route's light theme would have clashed with a dark header;
-// now that light is the app's single global theme (see _tokens.scss), that clash no longer
-// exists, so this route renders the real global header like every other authenticated route.
+// focused wizard UX. Every other authenticated route renders the real global header.
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -24,7 +21,6 @@ import { ADMIN_NAV_CATEGORIES, AdminNavCategory, findNavCategoryForUrl } from '.
 export class AppComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);
   private router = inject(Router);
-  private document = inject(DOCUMENT);
   private brandingBootstrap = inject(BrandingBootstrapService);
   private navigationSubscription?: Subscription;
 
@@ -72,9 +68,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private updateSetupRouteState(url: string): void {
     this.isSetupRoute = url.startsWith('/setup');
-    // Still toggled for _admin.scss's hidden-scrollbar rule, even though this route is no
-    // longer chromeless.
-    this.document.body.classList.toggle('admin-associate-active', url.startsWith('/admin/associates/new'));
     this.isChromelessRoute = this.isSetupRoute;
   }
 }

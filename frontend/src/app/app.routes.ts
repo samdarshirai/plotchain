@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { LoginComponent } from './auth/login.component';
 import { ChangePasswordComponent } from './auth/change-password.component';
-import { CreateAssociateComponent } from './admin/create-associate.component';
 import { authGuard } from './auth/auth.guard';
 import { associateOnlyGuard } from './auth/associate-only.guard';
 import { rootRedirectGuard } from './auth/root-redirect.guard';
@@ -54,7 +53,6 @@ export const routes: Routes = [
   { path: 'income-statement', component: IncomeStatementComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'payout-history', component: PayoutHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
-  { path: 'admin/associates/new', component: CreateAssociateComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/sales/new', component: RecordSaleComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/withdrawals/new', component: SubmitWithdrawalComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/dashboard', component: AdminDashboardComponent, canActivate: [authGuard, adminGuard, launchedModeGuard] },

@@ -168,6 +168,8 @@ describe('AdminDashboardComponent', () => {
     flushInitialLoad();
 
     expect(fixture.nativeElement.querySelector('a[href="/admin/sales/new"]')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('a[href="/admin/associates/new"]')).toBeTruthy();
+    expect(
+      fixture.nativeElement.querySelector('a[href="/settings/associate-directory?provision=1"]')
+    ).toBeTruthy();
   });
 });

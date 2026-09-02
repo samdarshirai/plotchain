@@ -50,6 +50,6 @@ describe('findNavCategoryForUrl', () => {
   it('returnsUndefinedOutsideASettingsScreenSoTheItemTabRowCollapses', () => {
     expect(findNavCategoryForUrl('/admin/dashboard')).toBeUndefined();
     expect(findNavCategoryForUrl('/settings')).toBeUndefined();
-    expect(findNavCategoryForUrl('/admin/associates/new')).toBeUndefined();
+    expect(findNavCategoryForUrl('/admin/sales/new')).toBeUndefined();
   });
 });

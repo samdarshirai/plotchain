@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AssociateDirectoryService } from './associate-directory.service';
@@ -14,12 +14,22 @@ import { toFieldErrors } from '../../core/api/field-errors.model';
 import { SidePanelComponent } from '../../shared/components/side-panel/side-panel.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { ToggleGroupComponent, ToggleOption } from '../../shared/components/toggle-group/toggle-group.component';
 import { CompensationPlanService } from '../../setup/steps/compensation/compensation-plan.service';
 import { RankOption } from '../../setup/models/compensation-plan.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { titleCase } from '../../shared/utils/title-case';
 
 const PAGE_SIZE = 20;
+
+// Parent is mandatory once the tree has anyone to hang off of, but the very first associate is
+// necessarily parentless -- so the parentId Validators.required is added only when sponsorOptions
+// is non-empty (see ngOnInit). Position pairs with parent: required exactly when a parent is set.
+function positionRequiredWhenParentSelectedValidator(group: AbstractControl): ValidationErrors | null {
+  const parentId = group.get('parentId')?.value;
+  const position = group.get('position')?.value;
+  return parentId && !position ? { positionRequired: true } : null;
+}
 
 // Enum values the backend returns for kycStatus/status are shouty-uppercase (PENDING/VERIFIED/...);
 // the mockup renders them Title Case (Viraj_Acres_Settings.dc.html lines 646-650) -- see the shared
@@ -31,10 +41,10 @@ const PAGE_SIZE = 20;
     CommonModule,
     ReactiveFormsModule,
     TranslateModule,
-    RouterLink,
     SidePanelComponent,
     InlineBannerComponent,
     FieldErrorComponent,
+    ToggleGroupComponent,
     EditableTableComponent
   ],
   template: `
@@ -222,14 +232,28 @@ const PAGE_SIZE = 20;
                 </datalist>
                 <app-field-error [message]="sponsorFieldError()"></app-field-error>
               </div>
+              <ng-container *ngIf="sponsorOptions.length">
+                <div class="associate-directory__modal-field">
+                  <label>{{ 'admin.parentIdLabel' | translate }}</label>
+                  <select formControlName="parentId" (blur)="markProvisionTouched('parentId')">
+                    <option value="">{{ 'admin.parentIdPlaceholder' | translate }}</option>
+                    <option *ngFor="let associate of sponsorOptions" [value]="associate.id">
+                      {{ sponsorLabel(associate) }}
+                    </option>
+                  </select>
+                  <app-field-error [message]="provisionFieldError('parentId')"></app-field-error>
+                </div>
+                <div class="associate-directory__modal-field">
+                  <label>{{ 'admin.placementTitle' | translate }}</label>
+                  <app-toggle-group
+                    [options]="placementOptions"
+                    [value]="provisionForm.value.position || null"
+                    (valueChange)="onPlacementSelect($event)"
+                  ></app-toggle-group>
+                  <app-field-error [message]="provisionPositionError"></app-field-error>
+                </div>
+              </ng-container>
             </div>
-
-            <p class="associate-directory__modal-link">
-              {{ 'admin.associateDirectory.fullFormLinkPrefix' | translate }}
-              <a [routerLink]="['/admin/associates/new']" (click)="closeProvisionModal()">
-                {{ 'admin.associateDirectory.fullFormLinkAction' | translate }}
-              </a>
-            </p>
 
             <div class="associate-directory__modal-footer">
               <button type="button" class="associate-directory__modal-cancel" (click)="closeProvisionModal()">
@@ -251,6 +275,8 @@ export class AssociateDirectoryComponent implements OnInit {
   private adminService = inject(AdminService);
   private translate = inject(TranslateService);
   private fb = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   page: AdminAssociatePage | null = null;
   selected: AdminAssociateDetail | null = null;
@@ -269,17 +295,22 @@ export class AssociateDirectoryComponent implements OnInit {
   private joinedFrom = '';
   private joinedTo = '';
 
-  // "New Associate" modal state -- Task 9: a lightweight provisioning modal (name/email/phone/
-  // sponsor only) replaces this button's old routerLink to /admin/associates/new. That full page
-  // still exists for the parentId/position tree-placement case and is reached via the modal's
-  // own link-out, not from any nav item (none currently links to it -- see task-9-report.md).
+  // "New Associate" modal state -- the sole associate-provisioning UI. Captures name/email/phone,
+  // an optional sponsor, and a parent node + Left/Right binary-tree placement (both mandatory once
+  // the tree is non-empty; the first associate is parentless). Opened by the header button or by
+  // the admin-dashboard quick-action via the ?provision=1 query param.
   modalOpen = false;
-  provisionForm = this.fb.nonNullable.group({
-    name: ['', Validators.required],
-    email: ['', [Validators.required, Validators.email]],
-    phone: [''],
-    sponsorSearch: ['']
-  });
+  provisionForm = this.fb.nonNullable.group(
+    {
+      name: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      phone: [''],
+      sponsorSearch: [''],
+      parentId: [''],
+      position: ['']
+    },
+    { validators: positionRequiredWhenParentSelectedValidator }
+  );
   provisioned: CreateAssociateResponse | null = null;
   provisionSubmitError: string | null = null;
   sponsorOptions: AssociateSummary[] = [];
@@ -310,13 +341,25 @@ export class AssociateDirectoryComponent implements OnInit {
       error: () => (this.rankLoadError = true)
     });
     this.adminService.listAssociates().subscribe({
-      next: associates => (this.sponsorOptions = associates),
+      next: associates => {
+        this.sponsorOptions = associates;
+        if (associates.length > 0) {
+          const parent = this.provisionForm.get('parentId')!;
+          parent.addValidators(Validators.required);
+          parent.updateValueAndValidity();
+        }
+      },
       error: () => {
         // Sponsor autocomplete degrading to a plain text field (no suggestions) is an acceptable
         // fallback -- unlike ranks/associates-page, it isn't required to render this screen.
       }
     });
     this.loadPage(0);
+    if (this.route.snapshot.queryParamMap.has('provision')) {
+      this.openProvisionModal();
+      // Strip the param so closing the modal then refreshing/going back doesn't reopen it.
+      this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+    }
   }
 
   onSearchInput(value: string): void {
@@ -448,8 +491,27 @@ export class AssociateDirectoryComponent implements OnInit {
     return this.provisionForm.getRawValue().sponsorSearch.trim().length > 0 && !this.selectedSponsorId;
   }
 
+  get placementOptions(): ToggleOption[] {
+    return [
+      { value: 'L', label: this.translate.instant('admin.leftLabel') },
+      { value: 'R', label: this.translate.instant('admin.rightLabel') }
+    ];
+  }
+
+  onPlacementSelect(value: string): void {
+    this.provisionForm.patchValue({ position: value });
+  }
+
+  get provisionPositionError(): string | undefined {
+    // The toggle group has no blur event, so gate on parentId's touched state (its <select> does)
+    // plus the post-submit markAllAsTouched -- same pattern the old full-page form used.
+    return this.provisionForm.get('parentId')?.touched && this.provisionForm.hasError('positionRequired')
+      ? this.translate.instant('admin.validation.positionRequired')
+      : undefined;
+  }
+
   openProvisionModal(): void {
-    this.provisionForm.reset({ name: '', email: '', phone: '', sponsorSearch: '' });
+    this.provisionForm.reset({ name: '', email: '', phone: '', sponsorSearch: '', parentId: '', position: '' });
     this.selectedSponsorId = null;
     this.sponsorUnresolved = false;
     this.provisioned = null;
@@ -495,13 +557,15 @@ export class AssociateDirectoryComponent implements OnInit {
       this.sponsorUnresolved = true;
       return;
     }
-    const { name, email, phone } = this.provisionForm.getRawValue();
+    const { name, email, phone, parentId, position } = this.provisionForm.getRawValue();
     this.adminService
       .createAssociate({
         name,
         email,
         phone: phone || undefined,
-        sponsorId: this.selectedSponsorId || undefined
+        sponsorId: this.selectedSponsorId || undefined,
+        parentId: parentId || undefined,
+        position: position || undefined
       })
       .subscribe({
         next: response => (this.provisioned = response),
@@ -511,13 +575,28 @@ export class AssociateDirectoryComponent implements OnInit {
             this.provisionServerFieldErrors = fields;
             return;
           }
-          if (err.status === 409 && typeof err.error?.error === 'string' && err.error.error.startsWith('Email already registered')) {
-            this.provisionSubmitError = this.translate.instant('admin.validation.emailTaken');
-          } else {
-            this.provisionSubmitError = this.translate.instant('admin.validation.genericSaveError');
-          }
+          this.provisionSubmitError =
+            err.status === 409
+              ? this.messageForConflict(err.error?.error)
+              : this.translate.instant('admin.validation.genericSaveError');
         }
       });
+  }
+
+  private messageForConflict(backendMessage: string | undefined): string {
+    if (backendMessage?.startsWith('Email already registered')) {
+      return this.translate.instant('admin.validation.emailTaken');
+    }
+    if (backendMessage?.startsWith('Placement already occupied')) {
+      return this.translate.instant('admin.validation.placementUnavailable');
+    }
+    if (backendMessage?.startsWith('Position is required')) {
+      return this.translate.instant('admin.validation.positionRequired');
+    }
+    if (backendMessage === 'No rank tiers are configured; an associate cannot be created without a rank') {
+      return this.translate.instant('admin.validation.noRankTiersConfigured');
+    }
+    return this.translate.instant('admin.validation.genericSaveError');
   }
 
   finishProvisioning(): void {

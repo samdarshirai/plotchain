@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
+import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { AssociateDirectoryComponent } from './associate-directory.component';
 
@@ -9,8 +10,8 @@ describe('AssociateDirectoryComponent', () => {
   let httpMock: HttpTestingController;
 
   beforeEach(async () => {
-    // RouterTestingModule is required because the template uses [routerLink] (the "+ New
-    // Associate" link) -- omitting it makes TestBed.createComponent throw NG02801 (no Router provider).
+    // RouterTestingModule provides the Router / ActivatedRoute the component injects (the ?provision=1
+    // auto-open path) -- omitting it makes TestBed.createComponent throw NG02801 (no Router provider).
     await TestBed.configureTestingModule({
       imports: [AssociateDirectoryComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
     }).compileComponents();
@@ -251,13 +252,15 @@ describe('AssociateDirectoryComponent', () => {
       expect(fixture.componentInstance.selectedSponsorId).toBeNull();
     });
 
-    it('submits name/email/phone/sponsorId and shows the temporary password on success, without exposing parentId/position fields', () => {
+    it('submits name/email/phone/sponsorId plus the mandatory parent and placement, and shows the temporary password on success', () => {
       fixture.componentInstance.openProvisionModal();
       fixture.componentInstance.provisionForm.setValue({
         name: 'Aditya Kumar',
         email: 'aditya@example.com',
         phone: '+919876500000',
-        sponsorSearch: 'VP00002 — Sunil Sponsor'
+        sponsorSearch: 'VP00002 — Sunil Sponsor',
+        parentId: 'a1',
+        position: 'L'
       });
       fixture.componentInstance.selectedSponsorId = 'sponsor-1';
 
@@ -269,7 +272,9 @@ describe('AssociateDirectoryComponent', () => {
         name: 'Aditya Kumar',
         email: 'aditya@example.com',
         phone: '+919876500000',
-        sponsorId: 'sponsor-1'
+        sponsorId: 'sponsor-1',
+        parentId: 'a1',
+        position: 'L'
       });
       req.flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!' });
 
@@ -288,7 +293,9 @@ describe('AssociateDirectoryComponent', () => {
         name: 'Aditya Kumar',
         email: 'aditya@example.com',
         phone: '',
-        sponsorSearch: ''
+        sponsorSearch: '',
+        parentId: 'a1',
+        position: 'L'
       });
 
       fixture.componentInstance.onProvisionSubmit();
@@ -300,13 +307,56 @@ describe('AssociateDirectoryComponent', () => {
       expect(fixture.componentInstance.provisioned).toBeNull();
     });
 
+    it('does not submit until a parent node and a placement position are chosen', () => {
+      fixture.componentInstance.openProvisionModal();
+      fixture.componentInstance.provisionForm.patchValue({
+        name: 'Aditya Kumar',
+        email: 'aditya@example.com'
+      });
+
+      expect(fixture.componentInstance.provisionForm.invalid).toBeTrue();
+      fixture.componentInstance.onProvisionSubmit();
+      httpMock.expectNone('/api/associates');
+
+      fixture.componentInstance.provisionForm.patchValue({ parentId: 'a1' });
+      fixture.componentInstance.onPlacementSelect('R');
+
+      expect(fixture.componentInstance.provisionForm.invalid).toBeFalse();
+      fixture.componentInstance.onProvisionSubmit();
+      httpMock
+        .expectOne('/api/associates')
+        .flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!' });
+    });
+
+    it('maps a 409 "Placement already occupied" conflict to an error message', () => {
+      fixture.componentInstance.openProvisionModal();
+      fixture.componentInstance.provisionForm.setValue({
+        name: 'Aditya Kumar',
+        email: 'aditya@example.com',
+        phone: '',
+        sponsorSearch: '',
+        parentId: 'a1',
+        position: 'L'
+      });
+
+      fixture.componentInstance.onProvisionSubmit();
+
+      httpMock
+        .expectOne('/api/associates')
+        .flush({ error: 'Placement already occupied' }, { status: 409, statusText: 'Conflict' });
+
+      expect(fixture.componentInstance.provisionSubmitError).toBeTruthy();
+    });
+
     it('blocks submit and flags the field when the sponsor text matches no associate', () => {
       fixture.componentInstance.openProvisionModal();
       fixture.componentInstance.provisionForm.setValue({
         name: 'Aditya Kumar',
         email: 'aditya@example.com',
         phone: '',
-        sponsorSearch: 'Sunil Spons'
+        sponsorSearch: 'Sunil Spons',
+        parentId: 'a1',
+        position: 'L'
       });
       fixture.componentInstance.onSponsorSearchInput('Sunil Spons');
       expect(fixture.componentInstance.selectedSponsorId).toBeNull();
@@ -324,7 +374,9 @@ describe('AssociateDirectoryComponent', () => {
         name: 'Aditya Kumar',
         email: 'aditya@example.com',
         phone: '',
-        sponsorSearch: '   '
+        sponsorSearch: '   ',
+        parentId: 'a1',
+        position: 'L'
       });
 
       fixture.componentInstance.onProvisionSubmit();
@@ -375,5 +427,33 @@ describe('AssociateDirectoryComponent', () => {
         .flush({ associates: [], page: 1, size: 20, totalElements: 45 });
       expect(fixture.componentInstance.page?.page).toBe(1);
     });
+  });
+});
+
+describe('AssociateDirectoryComponent with ?provision=1', () => {
+  it('auto-opens the provisioning modal and strips the query param', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AssociateDirectoryComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: convertToParamMap({ provision: '1' }) } }
+        }
+      ]
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AssociateDirectoryComponent);
+    const httpMock = TestBed.inject(HttpTestingController);
+    const navigateSpy = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    fixture.detectChanges();
+
+    httpMock.expectOne('/api/company/compensation').flush({ availableRanks: [] });
+    httpMock.expectOne('/api/associates').flush([]);
+    httpMock.expectOne('/api/admin/associates?page=0&size=20')
+      .flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+
+    expect(fixture.componentInstance.modalOpen).toBeTrue();
+    expect(navigateSpy).toHaveBeenCalled();
+    httpMock.verify();
   });
 });

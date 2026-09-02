@@ -30,10 +30,9 @@
   margin: 0 auto;
 }
 
-// Company Profile and Branding hide their scrollbar chrome (scrolling itself still works) --
-// same technique as body.admin-associate-active in _admin.scss. Scoped via :has() to just these
-// two steps' root element so other steps (e.g. Payments & KYC's longer form) keep a visible
-// scrollbar.
+// Company Profile and Branding hide their scrollbar chrome (scrolling itself still works),
+// scoped via :has() to just these two steps' root element so other steps (e.g. Payments &
+// KYC's longer form) keep a visible scrollbar.
 .setup-shell__content:has(.company-profile-step),
 .setup-shell__content:has(.branding-step),
 .setup-inspector-aside:has(.company-profile-step__aside-column),

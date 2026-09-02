@@ -70,14 +70,14 @@ describe('AppComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
 
-  it('shows the header on /admin/associates/new now that it is no longer chromeless', () => {
+  it('shows the header on a non-setup authenticated route', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
     const authService = TestBed.inject(AuthService);
     spyOn(authService, 'isAuthenticated').and.returnValue(true);
     fixture.detectChanges();
 
-    (app as unknown as { updateSetupRouteState(url: string): void }).updateSetupRouteState('/admin/associates/new');
+    (app as unknown as { updateSetupRouteState(url: string): void }).updateSetupRouteState('/admin/dashboard');
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;

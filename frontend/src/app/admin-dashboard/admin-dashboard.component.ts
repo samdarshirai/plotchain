@@ -88,7 +88,11 @@ import { KycNetworkSummaryComponent } from '../dashboard/widgets/kyc-network-sum
               <a [routerLink]="['/admin', 'sales', 'new']" class="admin-dashboard__quick-action admin-dashboard__quick-action--primary">
                 {{ 'adminDashboard.recordSaleAction' | translate }}
               </a>
-              <a [routerLink]="['/admin', 'associates', 'new']" class="admin-dashboard__quick-action admin-dashboard__quick-action--secondary">
+              <a
+                [routerLink]="['/settings', 'associate-directory']"
+                [queryParams]="{ provision: 1 }"
+                class="admin-dashboard__quick-action admin-dashboard__quick-action--secondary"
+              >
                 {{ 'adminDashboard.provisionAssociateAction' | translate }}
               </a>
             </div>
