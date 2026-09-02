@@ -3,4 +3,5 @@ export interface AssociateSummary {
   userId: string;
   name: string;
   role: 'ADMIN' | 'ASSOCIATE';
+  hasFreeSlot: boolean;
 }

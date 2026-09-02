@@ -23,7 +23,7 @@ describe('AssociateDirectoryComponent', () => {
     httpMock.expectOne('/api/company/compensation')
       .flush({ availableRanks: [{ id: 'r1', name: 'Sales Associate' }] });
     httpMock.expectOne('/api/associates')
-      .flush([{ id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE' }]);
+      .flush([{ id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE', hasFreeSlot: true }]);
     httpMock.expectOne('/api/admin/associates?page=0&size=20')
       .flush({ associates: [{ id: 'a1', userId: 'VP00001', name: 'Jane', rankName: 'Sales Associate', kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', lastActiveAt: null }], page: 0, size: 20, totalElements: 1 });
   });
@@ -239,10 +239,27 @@ describe('AssociateDirectoryComponent', () => {
       expect(fixture.componentInstance.provisionForm.invalid).toBeTrue();
     });
 
+    it('only offers associates with a free slot in the Parent Node dropdown', () => {
+      fixture.componentInstance.openProvisionModal();
+      fixture.componentInstance.sponsorOptions = [
+        { id: 'free-1', userId: 'VP00010', name: 'Has Room', role: 'ASSOCIATE', hasFreeSlot: true },
+        { id: 'full-1', userId: 'VP00011', name: 'Fully Placed', role: 'ASSOCIATE', hasFreeSlot: false }
+      ];
+      fixture.detectChanges();
+
+      const options: string[] = Array.from(
+        fixture.nativeElement.querySelectorAll('select[formControlName="parentId"] option')
+      )
+        .map((el: any) => el.value)
+        .filter((v: string) => v);
+
+      expect(options).toEqual(['free-1']);
+    });
+
     it('resolves the typed sponsor search text to the matching associate id', () => {
       fixture.componentInstance.openProvisionModal();
       fixture.componentInstance.sponsorOptions = [
-        { id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE' }
+        { id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE', hasFreeSlot: true }
       ];
 
       fixture.componentInstance.onSponsorSearchInput('VP00002 — Sunil Sponsor');

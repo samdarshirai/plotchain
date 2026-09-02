@@ -237,7 +237,7 @@ function positionRequiredWhenParentSelectedValidator(group: AbstractControl): Va
                   <label>{{ 'admin.parentIdLabel' | translate }}</label>
                   <select formControlName="parentId" (blur)="markProvisionTouched('parentId')">
                     <option value="">{{ 'admin.parentIdPlaceholder' | translate }}</option>
-                    <option *ngFor="let associate of sponsorOptions" [value]="associate.id">
+                    <option *ngFor="let associate of parentOptions" [value]="associate.id">
                       {{ sponsorLabel(associate) }}
                     </option>
                   </select>
@@ -489,6 +489,12 @@ export class AssociateDirectoryComponent implements OnInit {
 
   private hasUnresolvedSponsorText(): boolean {
     return this.provisionForm.getRawValue().sponsorSearch.trim().length > 0 && !this.selectedSponsorId;
+  }
+
+  // Parent Node picker offers only associates with an open Left or Right leg -- the sponsor
+  // datalist above stays unfiltered since sponsor is independent of tree placement.
+  get parentOptions(): AssociateSummary[] {
+    return this.sponsorOptions.filter(a => a.hasFreeSlot);
   }
 
   get placementOptions(): ToggleOption[] {
