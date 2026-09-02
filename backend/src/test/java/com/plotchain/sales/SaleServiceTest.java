@@ -19,6 +19,8 @@ import com.plotchain.projects.PlotNotFoundException;
 import com.plotchain.projects.PlotRepository;
 import com.plotchain.projects.PlotStatus;
 import com.plotchain.projects.PlotType;
+import com.plotchain.projects.Project;
+import com.plotchain.projects.ProjectNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,6 +64,7 @@ class SaleServiceTest {
     SaleService saleService;
 
     private static final UUID PLOT_ID = UUID.randomUUID();
+    private static final UUID PROJECT_ID = UUID.randomUUID();
     private static final UUID ASSOCIATE_ID = UUID.randomUUID();
     private static final UUID CYCLE_ID = UUID.randomUUID();
 
@@ -79,7 +82,15 @@ class SaleServiceTest {
     }
 
     private CreateSaleRequest requestFor(UUID plotId, UUID associateId) {
-        return new CreateSaleRequest(plotId, associateId, "Jane Buyer", "9999999999", null);
+        // price defaults to plotWithStatus()/plotWithAreaSqft()'s own fixed price (600000.00) so
+        // every existing amount-based assertion below keeps working unchanged now that amount
+        // comes from request.price() instead of a Plot.price snapshot.
+        return new CreateSaleRequest(plotId, associateId, "Jane Buyer", "9999999999", null,
+            PROJECT_ID, new BigDecimal("600000.00"), "Sold to Jane Buyer");
+    }
+
+    private Project projectFixture() {
+        return new Project(PROJECT_ID, "Green Valley", "Hyderabad", null, null, Instant.now());
     }
 
     private Associate associateWithPosition(String position) {
@@ -110,6 +121,7 @@ class SaleServiceTest {
     private void stubHappyPathGuardsAndDependencies() {
         when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
         when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -167,6 +179,69 @@ class SaleServiceTest {
         verify(plotRepository, never()).save(any());
     }
 
+    // Mandatory-fields change: projectId is now a required, first-class field on
+    // CreateSaleRequest -- guarded after Plot/Associate (same ordering as the pre-existing
+    // guards above), before the Plot->SOLD flip.
+    @Test
+    void recordSaleThrowsProjectNotFoundExceptionWhenTheProjectDoesNotExist() {
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID)))
+            .isInstanceOf(ProjectNotFoundException.class);
+
+        verify(plotRepository, never()).save(any());
+        verify(saleRepository, never()).save(any());
+    }
+
+    // Mandatory-fields change: plotId is now optional -- a sale need not be tied to a specific
+    // inventory Plot. No plot lookup, no SOLD flip, amount still comes from request.price().
+    @Test
+    void recordSaleAllowsANullPlotIdAndSkipsThePlotLookupAndFlip() {
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
+        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(compensationPlanVersionRepository
+                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(compensationPlanVersion()));
+
+        SaleResponse response = saleService.recordSale(requestFor(null, ASSOCIATE_ID));
+
+        verify(plotRepository, never()).findByIdForUpdate(any());
+        verify(plotRepository, never()).save(any());
+        assertThat(response.plotId()).isNull();
+        assertThat(response.amount()).isEqualByComparingTo("600000.00");
+        ArgumentCaptor<Sale> captor = ArgumentCaptor.forClass(Sale.class);
+        verify(saleRepository).save(captor.capture());
+        assertThat(captor.getValue().getPlotId()).isNull();
+        assertThat(captor.getValue().getProjectId()).isEqualTo(PROJECT_ID);
+        assertThat(captor.getValue().getNote()).isEqualTo("Sold to Jane Buyer");
+    }
+
+    // Self-Performance Bonus needs Plot.areaSqft for its tier lookup -- a plotless sale has no
+    // Plot to read that from, so SPB is skipped for it even when enabled, a documented gap from
+    // the mandatory-fields change, not a bug.
+    @Test
+    void recordSaleSkipsSelfPerformanceBonusWhenNoPlotIsLinkedEvenWhenEnabled() {
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
+        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(compensationPlanVersionRepository
+                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(compensationPlanVersion()));
+        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
+
+        saleService.recordSale(requestFor(null, ASSOCIATE_ID));
+
+        verify(ledgerEntryRepository, never()).save(
+            argThat(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE));
+    }
+
     @Test
     void recordSaleFlipsThePlotToSold() {
         stubHappyPathGuardsAndDependencies();
@@ -200,6 +275,7 @@ class SaleServiceTest {
         verify(saleRepository).save(captor.capture());
         Sale saved = captor.getValue();
         assertThat(saved.getPlotId()).isEqualTo(PLOT_ID);
+        assertThat(saved.getProjectId()).isEqualTo(PROJECT_ID);
         assertThat(saved.getAssociateId()).isEqualTo(ASSOCIATE_ID);
         assertThat(saved.getAmount()).isEqualByComparingTo("600000.00");
         assertThat(saved.getLegCredited()).isEqualTo("L");
@@ -207,6 +283,7 @@ class SaleServiceTest {
         assertThat(saved.getRecordedAt()).isNotNull();
         assertThat(saved.getBuyerName()).isEqualTo("Jane Buyer");
         assertThat(saved.getBuyerPhone()).isEqualTo("9999999999");
+        assertThat(saved.getNote()).isEqualTo("Sold to Jane Buyer");
     }
 
     @Test
@@ -243,6 +320,7 @@ class SaleServiceTest {
     void recordSaleCreditsSelfPerformanceBonusAtTier1WhenEnabledAndAreaMeetsTheLowerThreshold() {
         when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithAreaSqft(new BigDecimal("2000"))));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
         when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -266,6 +344,7 @@ class SaleServiceTest {
     void recordSaleCreditsSelfPerformanceBonusAtTier2WhenAreaMeetsTheHigherThreshold() {
         when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithAreaSqft(new BigDecimal("3000"))));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
         when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -288,6 +367,7 @@ class SaleServiceTest {
     void recordSaleWritesNoSelfPerformanceEntryWhenAreaIsBelowTheLowerThreshold() {
         when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithAreaSqft(new BigDecimal("1999"))));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
         when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -319,6 +399,7 @@ class SaleServiceTest {
         unverified.setKycStatus(KycStatus.PENDING);
         when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithAreaSqft(new BigDecimal("2000"))));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(unverified));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
         when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -356,6 +437,7 @@ class SaleServiceTest {
             new Plot(PLOT_ID, UUID.randomUUID(), "A-101", PlotType.NORMAL,
                 new BigDecimal("1200.00"), new BigDecimal("833.33"), new BigDecimal("1000000.00"), PlotStatus.AVAILABLE)));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
         when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -363,7 +445,11 @@ class SaleServiceTest {
                 .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
             .thenReturn(Optional.of(referenceCompensationPlanVersion()));
 
-        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+        // price must match this test's own 1,000,000.00 fixture -- requestFor()'s default
+        // (600000.00) is for the other, plot-fixture-matched tests only.
+        CreateSaleRequest request = new CreateSaleRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "9999999999", null,
+            PROJECT_ID, new BigDecimal("1000000.00"), "Sold to Jane Buyer");
+        saleService.recordSale(request);
 
         ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository).save(captor.capture());
@@ -396,6 +482,8 @@ class SaleServiceTest {
         assertThat(response.status()).isEqualTo("RECORDED");
         assertThat(response.voidReason()).isNull();
         assertThat(response.recordedAt()).isNotNull();
+        assertThat(response.note()).isEqualTo("Sold to Jane Buyer");
+        assertThat(response.projectName()).isEqualTo("Green Valley");
     }
 
     @Test
@@ -417,6 +505,7 @@ class SaleServiceTest {
     void recordSaleThrowsIllegalStateExceptionWhenNoCompensationPlanVersionIsConfigured() {
         when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
         when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(compensationPlanVersionRepository
@@ -468,9 +557,11 @@ class SaleServiceTest {
         Sale sale = new Sale();
         sale.setId(saleId);
         sale.setPlotId(plotId);
+        sale.setProjectId(PROJECT_ID);
         sale.setAssociateId(ASSOCIATE_ID);
         sale.setBuyerName("Jane Buyer");
         sale.setBuyerPhone("9999999999");
+        sale.setNote("Sold to Jane Buyer");
         sale.setAmount(new BigDecimal("600000.00"));
         sale.setCycleId(CYCLE_ID);
         sale.setLegCredited("L");
@@ -503,6 +594,7 @@ class SaleServiceTest {
         when(ledgerEntryRepository.findAllBySourceRef(sale.getId())).thenReturn(List.of(ledgerEntry));
         when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
     }
 
     @Test
@@ -559,6 +651,33 @@ class SaleServiceTest {
         assertThat(response.plotId()).isEqualTo(PLOT_ID);
         assertThat(response.status()).isEqualTo("VOIDED");
         assertThat(response.voidReason()).isEqualTo("Buyer backed out");
+        assertThat(response.note()).isEqualTo("Sold to Jane Buyer");
+        assertThat(response.projectName()).isEqualTo("Green Valley");
+    }
+
+    // Mandatory-fields change: plotId is optional, so a voided sale may have no Plot to flip
+    // back to AVAILABLE. voidSale must skip that step entirely rather than treating a null
+    // plot_id as the missing-Plot data-integrity case below.
+    @Test
+    void voidSaleSkipsThePlotLookupAndFlipWhenTheSaleHasNoLinkedPlot() {
+        UUID saleId = UUID.randomUUID();
+        Sale sale = recordedSale(saleId, null);
+        // Not stubVoidHappyPath: that helper stubs plotRepository.findById(sale.getPlotId()),
+        // which would be an unused (null-argument) stub here under MockitoExtension's strict
+        // stubbing, since a plotless sale never calls it.
+        when(saleRepository.findById(saleId)).thenReturn(Optional.of(sale));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(ledgerEntryRepository.findAllBySourceRef(saleId)).thenReturn(List.of(pendingLedgerEntry(saleId)));
+        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
+
+        SaleResponse response = saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out"));
+
+        verify(plotRepository, never()).findById(any());
+        verify(plotRepository, never()).save(any());
+        assertThat(response.plotId()).isNull();
+        assertThat(response.status()).isEqualTo("VOIDED");
     }
 
     @Test
@@ -719,6 +838,7 @@ class SaleServiceTest {
         Sale sale = new Sale();
         sale.setId(UUID.randomUUID());
         sale.setPlotId(plotId);
+        sale.setProjectId(projectId);
         sale.setAssociateId(ASSOCIATE_ID);
         sale.setBuyerName("Jane Buyer");
         sale.setBuyerPhone("9999999999");
@@ -776,11 +896,12 @@ class SaleServiceTest {
     }
 
     @Test
-    void getMySalesLeavesPlotNoAndProjectNameNullWhenThePlotCannotBeFound() {
+    void getMySalesLeavesPlotNoNullWhenThePlotCannotBeFound() {
         UUID plotId = UUID.randomUUID();
         Sale sale = new Sale();
         sale.setId(UUID.randomUUID());
         sale.setPlotId(plotId);
+        sale.setProjectId(PROJECT_ID);
         sale.setAssociateId(ASSOCIATE_ID);
         sale.setBuyerName("Jane Buyer");
         sale.setBuyerPhone("9999999999");
@@ -794,10 +915,42 @@ class SaleServiceTest {
         when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(Pageable.class)))
             .thenReturn(new PageImpl<>(List.of(sale)));
         when(plotRepository.findAllById(List.of(plotId))).thenReturn(List.of());
+        when(projectRepository.findAllById(List.of(PROJECT_ID))).thenReturn(List.of(projectFixture()));
 
         AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, 0, 20);
 
         assertThat(response.sales().get(0).plotNo()).isNull();
-        assertThat(response.sales().get(0).projectName()).isNull();
+    }
+
+    // Mandatory-fields change: projectName now resolves from Sale.projectId directly, not by
+    // joining through Plot -- it must stay populated even when the linked Plot can't be found
+    // (or there's no linked Plot at all), unlike plotNo above.
+    @Test
+    void getMySalesResolvesProjectNameFromSaleProjectIdIndependentlyOfThePlotLookup() {
+        UUID plotId = UUID.randomUUID();
+        Sale sale = new Sale();
+        sale.setId(UUID.randomUUID());
+        sale.setPlotId(plotId);
+        sale.setProjectId(PROJECT_ID);
+        sale.setAssociateId(ASSOCIATE_ID);
+        sale.setBuyerName("Jane Buyer");
+        sale.setBuyerPhone("9999999999");
+        sale.setAmount(new BigDecimal("600000.00"));
+        sale.setCycleId(CYCLE_ID);
+        sale.setLegCredited("L");
+        sale.setStatus(SaleStatus.RECORDED);
+        sale.setRecordedAt(Instant.now());
+
+        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
+        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(Pageable.class)))
+            .thenReturn(new PageImpl<>(List.of(sale)));
+        // Plot lookup comes back empty (as if the Plot were deleted) -- projectName must still resolve.
+        when(plotRepository.findAllById(List.of(plotId))).thenReturn(List.of());
+        when(projectRepository.findAllById(List.of(PROJECT_ID))).thenReturn(List.of(projectFixture()));
+
+        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, 0, 20);
+
+        assertThat(response.sales().get(0).plotNo()).isNull();
+        assertThat(response.sales().get(0).projectName()).isEqualTo("Green Valley");
     }
 }

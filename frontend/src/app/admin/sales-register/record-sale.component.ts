@@ -42,18 +42,21 @@ const PLOT_PAGE_SIZE = 100;
         <div class="record-sale__row">
           <div class="record-sale__field">
             <label>{{ 'admin.recordSale.projectLabel' | translate }}</label>
-            <select (change)="onProjectChange($any($event.target).value)">
+            <select formControlName="projectId" (change)="onProjectChange($any($event.target).value)" (blur)="markTouched('projectId')">
               <option value="">{{ 'admin.recordSale.projectPlaceholder' | translate }}</option>
               <option *ngFor="let project of projects" [value]="project.id">{{ project.name }}</option>
             </select>
+            <app-field-error [message]="fieldError('projectId')"></app-field-error>
           </div>
           <div class="record-sale__field">
-            <label>{{ 'admin.recordSale.plotLabel' | translate }}</label>
-            <select formControlName="plotId" (blur)="markTouched('plotId')">
+            <div class="record-sale__field-header">
+              <label>{{ 'admin.recordSale.plotLabel' | translate }}</label>
+              <span class="record-sale__optional-tag">{{ 'admin.recordSale.optionalTagLabel' | translate }}</span>
+            </div>
+            <select formControlName="plotId">
               <option value="">{{ 'admin.recordSale.plotPlaceholder' | translate }}</option>
               <option *ngFor="let plot of availablePlots" [value]="plot.id">{{ plot.plotNo }} — {{ plot.price }}</option>
             </select>
-            <app-field-error [message]="fieldError('plotId')"></app-field-error>
           </div>
         </div>
 
@@ -77,9 +80,11 @@ const PLOT_PAGE_SIZE = 100;
             <app-field-error [message]="fieldError('buyerName')"></app-field-error>
           </div>
           <div class="record-sale__field">
-            <label>{{ 'admin.recordSale.buyerPhoneLabel' | translate }}</label>
-            <input type="text" formControlName="buyerPhone" (blur)="markTouched('buyerPhone')" />
-            <app-field-error [message]="fieldError('buyerPhone')"></app-field-error>
+            <div class="record-sale__field-header">
+              <label>{{ 'admin.recordSale.buyerPhoneLabel' | translate }}</label>
+              <span class="record-sale__optional-tag">{{ 'admin.recordSale.optionalTagLabel' | translate }}</span>
+            </div>
+            <input type="text" formControlName="buyerPhone" />
           </div>
         </div>
 
@@ -90,6 +95,19 @@ const PLOT_PAGE_SIZE = 100;
               <span class="record-sale__optional-tag">{{ 'admin.recordSale.optionalTagLabel' | translate }}</span>
             </div>
             <input type="email" formControlName="buyerEmail" />
+          </div>
+          <div class="record-sale__field">
+            <label>{{ 'admin.recordSale.priceLabel' | translate }}</label>
+            <input type="number" step="0.01" min="0.01" formControlName="price" (blur)="markTouched('price')" />
+            <app-field-error [message]="fieldError('price')"></app-field-error>
+          </div>
+        </div>
+
+        <div class="record-sale__row">
+          <div class="record-sale__field">
+            <label>{{ 'admin.recordSale.noteLabel' | translate }}</label>
+            <textarea formControlName="note" (blur)="markTouched('note')"></textarea>
+            <app-field-error [message]="fieldError('note')"></app-field-error>
           </div>
         </div>
 
@@ -110,11 +128,14 @@ export class RecordSaleComponent implements OnInit {
   private translate = inject(TranslateService);
 
   form = this.fb.nonNullable.group({
-    plotId: ['', Validators.required],
+    projectId: ['', Validators.required],
+    plotId: [''],
     associateId: ['', Validators.required],
     buyerName: ['', Validators.required],
-    buyerPhone: ['', Validators.required],
-    buyerEmail: ['']
+    buyerPhone: [''],
+    buyerEmail: [''],
+    price: ['', [Validators.required, Validators.min(0.01)]],
+    note: ['', Validators.required]
   });
 
   recorded: Sale | null = null;
@@ -159,6 +180,9 @@ export class RecordSaleComponent implements OnInit {
     if (control.errors['required']) {
       return this.translate.instant('admin.recordSale.validation.required');
     }
+    if (control.errors['min']) {
+      return this.translate.instant('admin.recordSale.validation.priceInvalid');
+    }
     return undefined;
   }
 
@@ -169,15 +193,28 @@ export class RecordSaleComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-    const { plotId, associateId, buyerName, buyerPhone, buyerEmail } = this.form.getRawValue();
+    const { projectId, plotId, associateId, buyerName, buyerPhone, buyerEmail, price, note } = this.form.getRawValue();
     this.salesRegisterService
-      .record({ plotId, associateId, buyerName, buyerPhone, buyerEmail: buyerEmail || undefined })
+      .record({
+        projectId,
+        plotId: plotId || undefined,
+        associateId,
+        buyerName,
+        buyerPhone: buyerPhone || undefined,
+        buyerEmail: buyerEmail || undefined,
+        price: Number(price),
+        note
+      })
       .subscribe({
         next: sale => {
           this.recorded = sale;
           this.serverFieldErrors = {};
           this.submitError = null;
           this.form.reset();
+          // projectId is a bound control now, so reset() blanks it like every other field --
+          // re-patch it back to keep the project selection sticky across "record another", same
+          // UX as before projectId was a real formControlName.
+          this.form.patchValue({ projectId: this.selectedProjectId });
           this.onProjectChange(this.selectedProjectId);
         },
         error: (err: HttpErrorResponse) => {

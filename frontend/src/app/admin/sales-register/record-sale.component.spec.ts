@@ -46,21 +46,26 @@ describe('RecordSaleComponent', () => {
     expect(fixture.componentInstance.availablePlots[0].id).toBe('plot-1');
   });
 
+  // Mandatory-fields change: buyerName, projectId, price, and note are now required alongside
+  // associateId (unchanged); plotId and buyerPhone became optional.
   it('submits the form and shows a success banner with the recorded sale', () => {
     fixture.componentInstance.form.patchValue({
-      plotId: 'plot-1', associateId: 'a1', buyerName: 'Jane Doe', buyerPhone: '9999999999'
+      projectId: 'proj-1', plotId: 'plot-1', associateId: 'a1', buyerName: 'Jane Doe',
+      buyerPhone: '9999999999', price: '120000', note: 'Sold to Jane Doe'
     });
     fixture.componentInstance.onSubmit();
 
     const req = httpMock.expectOne('/api/admin/sales');
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({
-      plotId: 'plot-1', associateId: 'a1', buyerName: 'Jane Doe', buyerPhone: '9999999999', buyerEmail: undefined
+      projectId: 'proj-1', plotId: 'plot-1', associateId: 'a1', buyerName: 'Jane Doe',
+      buyerPhone: '9999999999', buyerEmail: undefined, price: 120000, note: 'Sold to Jane Doe'
     });
     req.flush({
       id: 'sale-1', plotId: 'plot-1', associateId: 'a1', buyerName: 'Jane Doe', buyerPhone: '9999999999',
       buyerEmail: null, amount: 120000, cycleId: 'c1', legCredited: 'L', status: 'RECORDED',
-      voidReason: null, recordedAt: '2026-01-01T00:00:00Z'
+      voidReason: null, recordedAt: '2026-01-01T00:00:00Z', plotNo: 'A1', projectName: 'Green Meadows',
+      associateUserId: 'VP00001', associateName: 'Jane Associate', note: 'Sold to Jane Doe'
     });
 
     expect(fixture.componentInstance.recorded?.id).toBe('sale-1');
@@ -68,8 +73,41 @@ describe('RecordSaleComponent', () => {
     expect(fixture.componentInstance.form.get('buyerName')!.value).toBeFalsy();
   });
 
+  // plotId and buyerPhone are optional -- a request with only the mandatory fields must still
+  // pass validation and submit them as undefined, not empty strings.
+  it('submits without plotId or buyerPhone when they are left blank', () => {
+    fixture.componentInstance.form.patchValue({
+      projectId: 'proj-1', associateId: 'a1', buyerName: 'Jane Doe', price: '120000', note: 'Sold to Jane Doe'
+    });
+    fixture.componentInstance.onSubmit();
+
+    const req = httpMock.expectOne('/api/admin/sales');
+    expect(req.request.body).toEqual({
+      projectId: 'proj-1', plotId: undefined, associateId: 'a1', buyerName: 'Jane Doe',
+      buyerPhone: undefined, buyerEmail: undefined, price: 120000, note: 'Sold to Jane Doe'
+    });
+    req.flush({
+      id: 'sale-1', plotId: null, associateId: 'a1', buyerName: 'Jane Doe', buyerPhone: null,
+      buyerEmail: null, amount: 120000, cycleId: 'c1', legCredited: 'L', status: 'RECORDED',
+      voidReason: null, recordedAt: '2026-01-01T00:00:00Z', plotNo: null, projectName: 'Green Meadows',
+      associateUserId: 'VP00001', associateName: 'Jane Associate', note: 'Sold to Jane Doe'
+    });
+
+    expect(fixture.componentInstance.recorded?.id).toBe('sale-1');
+  });
+
+  it('does not submit when a mandatory field (projectId, price, or note) is missing', () => {
+    fixture.componentInstance.form.patchValue({
+      projectId: '', associateId: 'a1', buyerName: 'Jane Doe', price: '', note: ''
+    });
+    fixture.componentInstance.onSubmit();
+
+    httpMock.expectNone('/api/admin/sales');
+    expect(fixture.componentInstance.recorded).toBeNull();
+  });
+
   it('does not submit when the form is invalid', () => {
-    fixture.componentInstance.form.patchValue({ plotId: '', associateId: '', buyerName: '', buyerPhone: '' });
+    fixture.componentInstance.form.patchValue({ projectId: '', associateId: '', buyerName: '', price: '', note: '' });
     fixture.componentInstance.onSubmit();
 
     httpMock.expectNone('/api/admin/sales');
@@ -78,7 +116,8 @@ describe('RecordSaleComponent', () => {
 
   it('sets a submit error on a 409 plot-unavailable conflict', () => {
     fixture.componentInstance.form.patchValue({
-      plotId: 'plot-1', associateId: 'a1', buyerName: 'Jane Doe', buyerPhone: '9999999999'
+      projectId: 'proj-1', plotId: 'plot-1', associateId: 'a1', buyerName: 'Jane Doe',
+      buyerPhone: '9999999999', price: '120000', note: 'Sold to Jane Doe'
     });
     fixture.componentInstance.onSubmit();
 

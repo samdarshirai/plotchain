@@ -509,7 +509,8 @@ class SecurityConfigTest {
     @EnumSource(AssociateRole.class)
     void adminSalesRecordIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
         String body = new ObjectMapper().writeValueAsString(
-            new com.plotchain.sales.CreateSaleRequest(UUID.randomUUID(), UUID.randomUUID(), "Jane Buyer", "9999999999", null));
+            new com.plotchain.sales.CreateSaleRequest(UUID.randomUUID(), UUID.randomUUID(), "Jane Buyer", "9999999999", null,
+                UUID.randomUUID(), new java.math.BigDecimal("600000.00"), "Sold to Jane Buyer"));
 
         mockMvc.perform(post("/api/admin/sales")
                 .header("Authorization", "Bearer " + tokenFor(role))

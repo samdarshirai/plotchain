@@ -2,10 +2,10 @@ export type SaleStatus = 'RECORDED' | 'VOIDED';
 
 export interface Sale {
   id: string;
-  plotId: string;
+  plotId: string | null;
   associateId: string;
   buyerName: string;
-  buyerPhone: string;
+  buyerPhone: string | null;
   buyerEmail: string | null;
   amount: number;
   cycleId: string;
@@ -17,4 +17,5 @@ export interface Sale {
   projectName: string | null;
   associateUserId: string | null;
   associateName: string | null;
+  note: string;
 }

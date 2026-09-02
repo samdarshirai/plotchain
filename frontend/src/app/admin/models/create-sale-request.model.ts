@@ -1,7 +1,10 @@
 export interface CreateSaleRequest {
-  plotId: string;
+  plotId?: string;
   associateId: string;
   buyerName: string;
-  buyerPhone: string;
+  buyerPhone?: string;
   buyerEmail?: string;
+  projectId: string;
+  price: number;
+  note: string;
 }

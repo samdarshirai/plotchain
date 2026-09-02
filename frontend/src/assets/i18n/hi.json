@@ -471,10 +471,12 @@
       "recordedFromLabel": "Recorded from",
       "recordedToLabel": "Recorded to",
       "recordSaleLink": "+ Record Sale",
+      "columnProjectName": "Project",
       "columnBuyerName": "Buyer",
       "columnBuyerPhone": "Phone",
       "columnAmount": "Amount",
       "columnLegCredited": "Leg",
+      "columnNote": "Note",
       "columnStatus": "Status",
       "columnRecordedAt": "Recorded At",
       "columnActions": "Actions",
@@ -501,6 +503,8 @@
       "buyerNameLabel": "Buyer Name",
       "buyerPhoneLabel": "Buyer Phone",
       "buyerEmailLabel": "Buyer Email",
+      "priceLabel": "Price of Sale",
+      "noteLabel": "Note",
       "optionalTagLabel": "Optional",
       "submitButton": "Record Sale",
       "recordAnotherButton": "Record Another",
@@ -509,6 +513,7 @@
       "successSaleIdLabel": "Sale ID",
       "validation": {
         "required": "This field is required.",
+        "priceInvalid": "Enter a price greater than zero.",
         "plotUnavailable": "That plot is no longer available. Choose a different plot.",
         "genericSaveError": "Could not record the sale. Check the details and try again."
       }

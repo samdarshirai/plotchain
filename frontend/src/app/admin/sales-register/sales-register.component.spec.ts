@@ -25,7 +25,8 @@ describe('SalesRegisterComponent', () => {
         {
           id: 's1', plotId: 'p1', associateId: 'a1', buyerName: 'Jane', buyerPhone: '9999999999',
           buyerEmail: null, amount: 100000, cycleId: 'c1', legCredited: 'L', status: 'RECORDED',
-          voidReason: null, recordedAt: '2026-01-01T00:00:00Z'
+          voidReason: null, recordedAt: '2026-01-01T00:00:00Z', plotNo: 'A1', projectName: 'Green Meadows',
+          associateUserId: 'VP00001', associateName: 'Jane Associate', note: 'Sold to Jane'
         }
       ],
       page: 0, size: 20, totalElements: 1
@@ -44,6 +45,16 @@ describe('SalesRegisterComponent', () => {
     const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
     expect(rowText).toContain('100,000');
     expect(rowText).not.toContain('100000');
+  });
+
+  it('renders projectName and note columns', () => {
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.registerColumns.some(c => c.key === 'projectName')).toBeTrue();
+    expect(fixture.componentInstance.registerColumns.some(c => c.key === 'note')).toBeTrue();
+    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
+    expect(rowText).toContain('Green Meadows');
+    expect(rowText).toContain('Sold to Jane');
   });
 
   it('reloads with the associateId filter when it changes', () => {

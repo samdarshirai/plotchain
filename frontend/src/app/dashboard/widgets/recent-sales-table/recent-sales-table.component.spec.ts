@@ -14,7 +14,7 @@ describe('RecentSalesTableComponent', () => {
       id: 's1', plotId: 'p1', associateId: 'a1', buyerName: 'Jane Buyer', buyerPhone: '9999999999',
       buyerEmail: null, amount: 840000, cycleId: 'c1', legCredited: 'L', status: 'RECORDED',
       voidReason: null, recordedAt: '2026-08-18T00:00:00Z', plotNo: 'VG2-118', projectName: 'Viraj Greens Ph II',
-      associateUserId: null, associateName: null
+      associateUserId: null, associateName: null, note: 'Sold to Jane Buyer'
     }]
   };
 

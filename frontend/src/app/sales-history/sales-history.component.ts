@@ -122,7 +122,7 @@ export class SalesHistoryComponent implements OnInit, OnDestroy {
   private updateTableRows(): void {
     this.historyRows = (this.page?.sales ?? []).map(sale => ({
       buyerName: sale.buyerName,
-      buyerPhone: sale.buyerPhone,
+      buyerPhone: sale.buyerPhone ?? '',
       amount: String(sale.amount),
       associateId: sale.associateId,
       legCredited: sale.legCredited,

@@ -169,7 +169,7 @@ class AdminStatsServiceTest {
         SaleResponse recentSale = new SaleResponse(
             UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Jane Buyer", "9999999999", null,
             new BigDecimal("600000"), cycleId, "L", "RECORDED", null, Instant.now(), "A-101", "Viraj Greens",
-            "VP00001", "Jane Associate");
+            "VP00001", "Jane Associate", "Sold to Jane Buyer");
         when(saleService.list(null, null, null, null, 0, 5))
             .thenReturn(new AdminSalePageResponse(List.of(recentSale), 0, 5, 1));
 

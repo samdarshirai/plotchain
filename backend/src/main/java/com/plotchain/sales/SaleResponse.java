@@ -20,5 +20,6 @@ public record SaleResponse(
     String plotNo,
     String projectName,
     String associateUserId,
-    String associateName
+    String associateName,
+    String note
 ) {}

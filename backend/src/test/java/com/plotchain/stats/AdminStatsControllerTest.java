@@ -141,7 +141,7 @@ class AdminStatsControllerTest {
             UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
             "Buyer Name", "9999999999", "buyer@example.com",
             new BigDecimal("1000.00"), cycle.getId(), "LEFT", "RECORDED", null,
-            java.time.Instant.now(), "P-1", "Green Acres", "VP00001", "Jane Associate");
+            java.time.Instant.now(), "P-1", "Green Acres", "VP00001", "Jane Associate", "Sold to Buyer Name");
         when(saleService.list(null, null, null, null, 0, 5))
             .thenReturn(new AdminSalePageResponse(List.of(sale), 0, 5, 1));
 

@@ -11,16 +11,20 @@ import java.util.UUID;
 public class Sale {
     @Id
     private UUID id;
-    @Column(name = "plot_id", nullable = false)
+    @Column(name = "plot_id")
     private UUID plotId;
+    @Column(name = "project_id", nullable = false)
+    private UUID projectId;
     @Column(name = "associate_id", nullable = false)
     private UUID associateId;
     @Column(name = "buyer_name", nullable = false)
     private String buyerName;
-    @Column(name = "buyer_phone", nullable = false)
+    @Column(name = "buyer_phone")
     private String buyerPhone;
     @Column(name = "buyer_email")
     private String buyerEmail;
+    @Column(nullable = false)
+    private String note;
     @Column(nullable = false)
     private BigDecimal amount;
     @Column(name = "cycle_id", nullable = false)
@@ -39,6 +43,8 @@ public class Sale {
     public void setId(UUID id) { this.id = id; }
     public UUID getPlotId() { return plotId; }
     public void setPlotId(UUID plotId) { this.plotId = plotId; }
+    public UUID getProjectId() { return projectId; }
+    public void setProjectId(UUID projectId) { this.projectId = projectId; }
     public UUID getAssociateId() { return associateId; }
     public void setAssociateId(UUID associateId) { this.associateId = associateId; }
     public String getBuyerName() { return buyerName; }
@@ -47,6 +53,8 @@ public class Sale {
     public void setBuyerPhone(String buyerPhone) { this.buyerPhone = buyerPhone; }
     public String getBuyerEmail() { return buyerEmail; }
     public void setBuyerEmail(String buyerEmail) { this.buyerEmail = buyerEmail; }
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public UUID getCycleId() { return cycleId; }

@@ -130,7 +130,8 @@ class SaleRecordConcurrencyTest {
     }
 
     private CreateSaleRequest saleRequestFor(UUID plotId, UUID associateId) {
-        return new CreateSaleRequest(plotId, associateId, "Jane Buyer", "9999999999", null);
+        return new CreateSaleRequest(plotId, associateId, "Jane Buyer", "9999999999", null,
+            projectId, new BigDecimal("600000.00"), "Sold to Jane Buyer");
     }
 
     private void awaitQuietly(CountDownLatch latch) {

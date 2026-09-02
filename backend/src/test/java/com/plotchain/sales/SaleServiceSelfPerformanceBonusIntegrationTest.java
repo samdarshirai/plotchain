@@ -117,7 +117,8 @@ class SaleServiceSelfPerformanceBonusIntegrationTest {
         plotRepository.saveAndFlush(plot);
         plotId = plot.getId();
 
-        CreateSaleRequest request = new CreateSaleRequest(plotId, associateId, "Jane Buyer", "9999999999", null);
+        CreateSaleRequest request = new CreateSaleRequest(plotId, associateId, "Jane Buyer", "9999999999", null,
+            projectId, new BigDecimal("1000000.00"), "Sold to Jane Buyer");
         SaleResponse response = saleService.recordSale(request);
         saleId = response.id();
 

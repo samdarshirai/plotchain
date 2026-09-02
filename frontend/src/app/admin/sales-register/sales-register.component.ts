@@ -139,10 +139,12 @@ export class SalesRegisterComponent implements OnInit {
 
   ngOnInit(): void {
     this.registerColumns = [
+      { key: 'projectName', label: this.translate.instant('admin.salesRegister.columnProjectName'), type: 'text' },
       { key: 'buyerName', label: this.translate.instant('admin.salesRegister.columnBuyerName'), type: 'text' },
       { key: 'buyerPhone', label: this.translate.instant('admin.salesRegister.columnBuyerPhone'), type: 'text' },
       { key: 'amount', label: this.translate.instant('admin.salesRegister.columnAmount'), type: 'text' },
       { key: 'legCredited', label: this.translate.instant('admin.salesRegister.columnLegCredited'), type: 'text' },
+      { key: 'note', label: this.translate.instant('admin.salesRegister.columnNote'), type: 'text' },
       {
         key: 'status',
         label: this.translate.instant('admin.salesRegister.columnStatus'),
@@ -209,10 +211,12 @@ export class SalesRegisterComponent implements OnInit {
 
   private updateTableRows(): void {
     this.registerRows = (this.page?.sales ?? []).map(sale => ({
+      projectName: sale.projectName ?? '',
       buyerName: sale.buyerName,
-      buyerPhone: sale.buyerPhone,
+      buyerPhone: sale.buyerPhone ?? '',
       amount: this.currencyPipe.transform(sale.amount, 'INR', 'symbol', '1.0-2') ?? String(sale.amount),
       legCredited: sale.legCredited,
+      note: sale.note,
       status: titleCase(sale.status),
       recordedAt: this.datePipe.transform(sale.recordedAt, 'medium') ?? sale.recordedAt
     }));

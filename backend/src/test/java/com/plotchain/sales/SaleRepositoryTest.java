@@ -71,13 +71,15 @@ class SaleRepositoryTest {
         return entityManager.persist(cycle).getId();
     }
 
-    private Sale persistSale(UUID associateId, UUID plotId, UUID cycleId, SaleStatus status, Instant recordedAt) {
+    private Sale persistSale(UUID projectId, UUID associateId, UUID plotId, UUID cycleId, SaleStatus status, Instant recordedAt) {
         Sale sale = new Sale();
         sale.setId(UUID.randomUUID());
         sale.setPlotId(plotId);
+        sale.setProjectId(projectId);
         sale.setAssociateId(associateId);
         sale.setBuyerName("Jane Buyer");
         sale.setBuyerPhone("9999999999");
+        sale.setNote("Sold to Jane Buyer");
         sale.setAmount(new BigDecimal("600000.00"));
         sale.setCycleId(cycleId);
         sale.setLegCredited("L");
@@ -93,9 +95,9 @@ class SaleRepositoryTest {
         UUID cycleId = persistCycle();
         UUID associateA = persistAssociate();
         UUID associateB = persistAssociate();
-        Sale recordedForA = persistSale(associateA, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
-        persistSale(associateA, plotId, cycleId, SaleStatus.VOIDED, Instant.now());
-        Sale recordedForB = persistSale(associateB, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        Sale recordedForA = persistSale(projectId, associateA, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(projectId, associateA, plotId, cycleId, SaleStatus.VOIDED, Instant.now());
+        Sale recordedForB = persistSale(projectId, associateB, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
         entityManager.flush();
 
         Page<Sale> byAssociate = saleRepository.searchRegister(associateA, null, null, null, PageRequest.of(0, 20));
@@ -121,8 +123,8 @@ class SaleRepositoryTest {
         UUID associateId = persistAssociate();
         Instant inRange = Instant.parse("2026-01-15T00:00:00Z");
         Instant outOfRange = Instant.parse("2026-02-15T00:00:00Z");
-        Sale inRangeSale = persistSale(associateId, plotId, cycleId, SaleStatus.RECORDED, inRange);
-        persistSale(associateId, plotId, cycleId, SaleStatus.RECORDED, outOfRange);
+        Sale inRangeSale = persistSale(projectId, associateId, plotId, cycleId, SaleStatus.RECORDED, inRange);
+        persistSale(projectId, associateId, plotId, cycleId, SaleStatus.RECORDED, outOfRange);
         entityManager.flush();
 
         Page<Sale> result = saleRepository.searchRegister(
@@ -141,8 +143,8 @@ class SaleRepositoryTest {
         UUID associateId = persistAssociate();
         Instant earlier = Instant.parse("2026-01-10T00:00:00Z");
         Instant later = Instant.parse("2026-01-20T00:00:00Z");
-        Sale earlierSale = persistSale(associateId, plotId, cycleId, SaleStatus.RECORDED, earlier);
-        Sale laterSale = persistSale(associateId, plotId, cycleId, SaleStatus.RECORDED, later);
+        Sale earlierSale = persistSale(projectId, associateId, plotId, cycleId, SaleStatus.RECORDED, earlier);
+        Sale laterSale = persistSale(projectId, associateId, plotId, cycleId, SaleStatus.RECORDED, later);
         entityManager.flush();
 
         Page<Sale> result = saleRepository.searchRegister(null, null, null, null, PageRequest.of(0, 20));
@@ -161,10 +163,10 @@ class SaleRepositoryTest {
         UUID associateC = persistAssociate();
         Instant earlier = Instant.parse("2026-01-10T00:00:00Z");
         Instant later = Instant.parse("2026-01-20T00:00:00Z");
-        Sale earlierSale = persistSale(associateA, plotId, cycleId, SaleStatus.RECORDED, earlier);
-        Sale laterSale = persistSale(associateB, plotId, cycleId, SaleStatus.RECORDED, later);
+        Sale earlierSale = persistSale(projectId, associateA, plotId, cycleId, SaleStatus.RECORDED, earlier);
+        Sale laterSale = persistSale(projectId, associateB, plotId, cycleId, SaleStatus.RECORDED, later);
         // Not in the IN-list below -- must be excluded even though it's a real, persisted sale.
-        persistSale(associateC, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(projectId, associateC, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
         entityManager.flush();
 
         Page<Sale> result = saleRepository.findByAssociateIdInOrderByRecordedAtDesc(
@@ -189,8 +191,8 @@ class SaleRepositoryTest {
         UUID plotId = persistPlot(projectId);
         UUID cycleId = persistCycle();
         UUID associateId = persistAssociate();
-        persistSale(associateId, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
-        persistSale(associateId, plotId, cycleId, SaleStatus.VOIDED, Instant.now());
+        persistSale(projectId, associateId, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(projectId, associateId, plotId, cycleId, SaleStatus.VOIDED, Instant.now());
         entityManager.flush();
 
         long count = saleRepository.countByCycleIdAndStatus(cycleId, SaleStatus.RECORDED);
@@ -208,11 +210,11 @@ class SaleRepositoryTest {
         UUID otherCycleId = persistCycle();
         UUID associateA = persistAssociate();
         UUID associateB = persistAssociate();
-        persistSale(associateA, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
-        persistSale(associateA, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
-        persistSale(associateA, plotId, cycleId, SaleStatus.VOIDED, Instant.now());
-        persistSale(associateA, plotId, otherCycleId, SaleStatus.RECORDED, Instant.now());
-        persistSale(associateB, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(projectId, associateA, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(projectId, associateA, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(projectId, associateA, plotId, cycleId, SaleStatus.VOIDED, Instant.now());
+        persistSale(projectId, associateA, plotId, otherCycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(projectId, associateB, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
         entityManager.flush();
 
         long count = saleRepository.countByAssociateIdAndCycleIdAndStatus(associateA, cycleId, SaleStatus.RECORDED);
@@ -226,9 +228,9 @@ class SaleRepositoryTest {
         UUID plotId = persistPlot(projectId);
         UUID cycleId = persistCycle();
         UUID associateId = persistAssociate();
-        persistSale(associateId, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
-        persistSale(associateId, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
-        persistSale(associateId, plotId, cycleId, SaleStatus.VOIDED, Instant.now());
+        persistSale(projectId, associateId, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(projectId, associateId, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(projectId, associateId, plotId, cycleId, SaleStatus.VOIDED, Instant.now());
         entityManager.flush();
 
         BigDecimal sum = saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED);
