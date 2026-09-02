@@ -447,19 +447,35 @@
   color: var(--brand-primary-bright);
 }
 
+.login-form .login-password-field {
+  position: relative;
+  display: block;
+}
+
+.login-form .login-password-field input {
+  padding-right: 2.75rem;
+}
+
 .login-form .login-password-toggle {
-  margin-top: 0.375rem;
-  background: transparent;
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  padding: 0.375rem;
+  background: none;
   border: none;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 500;
+  border-radius: 3px;
   cursor: pointer;
-  padding: 0;
+  color: var(--text-muted);
 }
 
 .login-form .login-password-toggle:hover {
   color: var(--text-primary);
+}
+
+.login-form .login-password-toggle .material-symbols-outlined {
+  font-size: 1.1875rem;
 }
 
 // /change-password carries the Viraj Acres "Legacy Living" identity onto a plain authenticated

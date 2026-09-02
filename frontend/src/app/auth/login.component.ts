@@ -49,10 +49,17 @@ import { BrandButtonComponent } from '../shared/components/brand-button/brand-bu
           </label>
           <label>
             {{ 'auth.passwordLabel' | translate }}
-            <input [type]="showPassword ? 'text' : 'password'" formControlName="password" />
-            <button type="button" class="login-password-toggle" (click)="showPassword = !showPassword">
-              {{ (showPassword ? 'auth.hidePassword' : 'auth.showPassword') | translate }}
-            </button>
+            <span class="login-password-field">
+              <input [type]="showPassword ? 'text' : 'password'" formControlName="password" />
+              <button
+                type="button"
+                class="login-password-toggle"
+                [attr.aria-label]="(showPassword ? 'auth.hidePassword' : 'auth.showPassword') | translate"
+                (click)="showPassword = !showPassword"
+              >
+                <span class="material-symbols-outlined">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+              </button>
+            </span>
           </label>
 
           <div class="login-row-between">
