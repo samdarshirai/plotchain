@@ -270,9 +270,9 @@ describe('KycQueueComponent', () => {
     expect(emptyCell?.textContent?.trim()).toBeTruthy();
   });
 
-  it('swaps the actions column for a status badge column off the PENDING tab', () => {
+  it('drops the actions column off the PENDING tab and carries the status pill inline on Name', () => {
     expect(fixture.componentInstance.kycColumns.some(c => c.key === 'actions')).toBeTrue();
-    expect(fixture.componentInstance.kycColumns.some(c => c.key === 'status')).toBeFalse();
+    expect(fixture.componentInstance.kycColumns.find(c => c.key === 'name')?.badgeKey).toBeUndefined();
 
     fixture.componentInstance.onTabChange('VERIFIED');
     httpMock.expectOne('/api/admin/kyc?status=VERIFIED&page=0&size=20')
@@ -282,8 +282,10 @@ describe('KycQueueComponent', () => {
       });
 
     expect(fixture.componentInstance.kycColumns.some(c => c.key === 'actions')).toBeFalse();
-    const statusCol = fixture.componentInstance.kycColumns.find(c => c.key === 'status');
-    expect(statusCol?.type).toBe('badge');
+    expect(fixture.componentInstance.kycColumns.some(c => c.key === 'status')).toBeFalse();
+    const nameCol = fixture.componentInstance.kycColumns.find(c => c.key === 'name');
+    expect(nameCol?.badgeKey).toBe('status');
+    expect(nameCol?.badgeTone?.('Verified')).toBe('success');
     expect(fixture.componentInstance.kycRows[0]['status']).toBe('Verified');
   });
 

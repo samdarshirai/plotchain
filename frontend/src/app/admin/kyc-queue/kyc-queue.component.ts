@@ -20,7 +20,7 @@ const MS_PER_DAY = 86_400_000;
   imports: [CommonModule, FormsModule, TranslateModule, TabBarComponent, StatTileComponent, EditableTableComponent],
   providers: [DatePipe],
   template: `
-    <div class="kyc-queue">
+    <div class="kyc-queue" [class.kyc-queue--compact-table]="activeStatus !== 'PENDING'">
       <div class="kyc-queue__header">
         <div>
           <p class="kyc-queue__eyebrow">{{ 'admin.kycQueue.eyebrow' | translate }}</p>
@@ -51,11 +51,13 @@ const MS_PER_DAY = 86_400_000;
           tone="success"
           [label]="'admin.kycQueue.tabVerified' | translate"
           [value]="(counts?.verified ?? 0).toString()"
+          [hint]="'admin.kycQueue.statCaptionAllTime' | translate"
         ></app-stat-tile>
         <app-stat-tile
           tone="danger"
           [label]="'admin.kycQueue.tabRejected' | translate"
           [value]="(counts?.rejected ?? 0).toString()"
+          [hint]="'admin.kycQueue.statCaptionAllTime' | translate"
         ></app-stat-tile>
       </div>
 
@@ -296,23 +298,22 @@ export class KycQueueComponent implements OnInit {
   }
 
   private updateTableData(): void {
+    const isPending = this.activeStatus === 'PENDING';
     const columns: EditableTableColumn[] = [
       { key: 'userId', label: this.translate.instant('admin.kycQueue.columnUserId'), type: 'text' },
-      { key: 'name', label: this.translate.instant('admin.kycQueue.columnName'), type: 'text' },
+      {
+        key: 'name',
+        label: this.translate.instant('admin.kycQueue.columnName'),
+        type: 'text',
+        // Verified / Rejected tabs carry the status pill inline right after the name instead of
+        // a dedicated trailing Status column (KYC Review Queue.dc.html -- badge sits next to the
+        // associate, not in its own column).
+        ...(isPending ? {} : { badgeKey: 'status', badgeTone: value => this.kycStatusBadgeTone(value) })
+      },
       { key: 'joinedAt', label: this.translate.instant('admin.kycQueue.columnJoinedAt'), type: 'text' }
     ];
-    if (this.activeStatus === 'PENDING') {
+    if (isPending) {
       columns.push({ key: 'actions', label: this.translate.instant('admin.kycQueue.columnActions'), type: 'action' });
-    } else {
-      // Verified / Rejected tabs have no per-row action, so the trailing column becomes a
-      // status badge (green / brick) -- keeps those views on the same ledger grid as PENDING
-      // rather than trailing off into empty space.
-      columns.push({
-        key: 'status',
-        label: this.translate.instant('admin.kycQueue.columnStatus'),
-        type: 'badge',
-        badgeTone: value => this.kycStatusBadgeTone(value)
-      });
     }
     this.kycColumns = columns;
 

@@ -3219,6 +3219,21 @@
     font-size: 1.875rem; // 30px, mockup
     font-weight: 600;
   }
+
+  // Mockup sets the tile's caption inline right after the value, not stacked below it. The
+  // shared stat-tile__body is a column flexbox (label/value/hint/editor); wrapping it and
+  // pinning the label to its own full-width row lets value + hint share the next row.
+  .stat-tile__body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.375rem;
+    row-gap: 0.375rem;
+  }
+
+  .stat-tile__label {
+    flex-basis: 100%;
+  }
 }
 
 // Seal Card -- Parchment variant (DESIGN.md SS5): the double gold hairline is drawn with an
@@ -3340,7 +3355,9 @@
 // Table-to-grid, same technique as .associate-directory__table-wrap: the shared
 // editable-table renders a real <table>, but the mockup's column proportions aren't
 // expressible as table-layout widths, so thead/tbody rows go into CSS grid mode here,
-// scoped to this screen. Four columns on every tab (Actions on PENDING, Status elsewhere).
+// scoped to this screen. Four columns on PENDING (trailing Actions); Verified/Rejected
+// drop that trailing column -- their status pill rides inline in the Name cell instead
+// (see .kyc-queue--compact-table below).
 .kyc-queue .editable-table {
   width: 100%;
   border-collapse: collapse;
@@ -3393,8 +3410,10 @@
     color: var(--text-primary);
   }
 
-  // Trailing column (Actions on PENDING, Status pill elsewhere) sits right.
-  th:last-child,
+  // Trailing Actions column (PENDING only) sits right. Positional, not :last-child --
+  // Verified/Rejected's 3-column row has no 4th column, and its actual last column
+  // (Joined) must stay left-aligned like every other data column.
+  th:nth-child(4),
   td:nth-child(4) {
     text-align: right;
   }
@@ -3406,11 +3425,13 @@
     padding: 1.5rem;
   }
 
-  // Status column: a bordered tinted pill here only. The shared .editable-table__badge is
-  // deliberately text-only (_tables.scss) for Associate Directory / Sales Register; this
-  // scoped override gives it the mockup's pill without touching those.
+  // Status pill (Verified/Rejected, inline right after the Name): a bordered tinted pill
+  // here only. The shared .editable-table__badge is deliberately text-only (_tables.scss)
+  // for Associate Directory / Sales Register; this scoped override gives it the mockup's
+  // pill without touching those.
   .editable-table__badge {
     display: inline-block;
+    margin-left: 0.5rem;
     padding: 3px 8px;
     font-size: 0.65rem;
     font-weight: 500;
@@ -3427,6 +3448,14 @@
     border-color: color-mix(in srgb, var(--status-danger) 40%, transparent);
     background: color-mix(in srgb, var(--status-danger) 7%, transparent);
   }
+}
+
+// Verified/Rejected: 3-column row (no trailing Actions/Status column -- the pill now rides
+// inline in Name, see kyc-queue.component.ts). Joined keeps growing to fill the row instead
+// of stopping at its PENDING-tab fixed width.
+.kyc-queue--compact-table .editable-table thead tr,
+.kyc-queue--compact-table .editable-table tbody tr {
+  grid-template-columns: 160px minmax(0, 1.6fr) minmax(200px, 1fr);
 }
 
 // Per-row action stack (KYC Review Queue.dc.html -- View/Reject/Approve, right-aligned).
@@ -3487,7 +3516,7 @@
   color: var(--text-primary);
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  border-radius: 0; // sharp corners, mockup -- every other kyc-queue control uses --radius-sm, this one doesn't
   cursor: pointer;
 }
 

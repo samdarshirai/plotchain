@@ -20,6 +20,10 @@ export interface EditableTableColumn {
   // Required when type is 'badge'. Maps a cell's raw value to a tone; return 'default' for any
   // value that isn't one of the colored states.
   badgeTone?: (value: string | number) => BadgeTone;
+  // Optional, 'text'/'number' columns only: renders a small badge inline right after the cell's
+  // own value, sourced from `row[badgeKey]` and toned via the same `badgeTone` fn above -- e.g.
+  // KYC Review Queue's Name column carrying the status pill instead of a dedicated Status column.
+  badgeKey?: string;
 }
 
 @Component({
@@ -52,7 +56,15 @@ export interface EditableTableColumn {
                 <span *ngSwitchCase="'rank-badge'" class="editable-table__rank-badge">{{
                   row[column.key]
                 }}</span>
-                <span *ngSwitchDefault>{{ row[column.key] }}</span>
+                <ng-container *ngSwitchDefault>
+                  <span>{{ row[column.key] }}</span>
+                  <span
+                    *ngIf="column.badgeKey"
+                    class="editable-table__badge"
+                    [ngClass]="'editable-table__badge--' + badgeTone(column, row[column.badgeKey!])"
+                    >{{ row[column.badgeKey] }}</span
+                  >
+                </ng-container>
               </ng-container>
               <ng-container *ngIf="!readOnly">
                 <select

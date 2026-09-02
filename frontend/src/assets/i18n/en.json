@@ -433,6 +433,7 @@
       "lastSynced": "Last synced {{time}}",
       "sealLabel": "Awaiting review",
       "sealOldestHint": "oldest pending {{days}} days",
+      "statCaptionAllTime": "all time",
       "tabPending": "Pending",
       "tabVerified": "Verified",
       "tabRejected": "Rejected",
