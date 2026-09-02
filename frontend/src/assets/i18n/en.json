@@ -774,6 +774,8 @@
       "settlementCycleLabel": "Settlement Cycle",
       "settlementCycleSemiMonthlyLabel": "Semi-Monthly (15th/30th)",
       "settlementCycleMonthlyLabel": "Monthly",
+      "settlementCycleHalfYearlyLabel": "Half Yearly",
+      "settlementCycleYearlyLabel": "Yearly",
       "settlementCycleCustomLabel": "Custom",
       "tdsLabel": "TDS %",
       "adminChargeWithPanLabel": "Admin Charge % (with PAN)",

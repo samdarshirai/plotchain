@@ -26,7 +26,7 @@ export interface CompensationPlanResponse {
   adminChargeWithoutPanPct: number;
   activationFee: number;
   minWithdrawal: number;
-  settlementCycle: 'SEMI_MONTHLY' | 'MONTHLY' | 'CUSTOM';
+  settlementCycle: 'SEMI_MONTHLY' | 'MONTHLY' | 'HALF_YEARLY' | 'YEARLY' | 'CUSTOM';
   royaltyBonusRates: RoyaltyBonusRate[];
   rewardTiers: RewardTier[];
   availableRanks: RankOption[];

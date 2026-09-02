@@ -19,7 +19,7 @@ public record CompensationPlanRequest(
     @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal adminChargeWithoutPanPct,
     @NotNull @DecimalMin("0") BigDecimal activationFee,
     @NotNull @DecimalMin("0") BigDecimal minWithdrawal,
-    @NotBlank @Pattern(regexp = "SEMI_MONTHLY|MONTHLY|CUSTOM") String settlementCycle,
+    @NotBlank @Pattern(regexp = "SEMI_MONTHLY|MONTHLY|HALF_YEARLY|YEARLY|CUSTOM") String settlementCycle,
     @Valid List<RoyaltyBonusRateInput> royaltyBonusRates,
     @Valid List<RewardTierInput> rewardTiers,
     LocalDate effectiveFrom,

@@ -167,7 +167,28 @@ class CompensationPlanVersionRepositoryTest {
         assertThat(tiers).extracting(RewardTier::getTierLevel).containsExactly(1, 2);
     }
 
+    @Test
+    void persistsAVersionWithHalfYearlyOrYearlySettlementCycle() {
+        // Exercises the real chk_settlement_cycle DB CHECK constraint (not mocked) -- per the
+        // V25/V26 lesson, a Java-enum-only widening would pass every mocked-repository test while
+        // still blowing up here.
+        CompensationPlanVersion halfYearly = newVersion("half-yearly", LocalDate.of(2028, 1, 1), SettlementCycle.HALF_YEARLY);
+        CompensationPlanVersion yearly = newVersion("yearly", LocalDate.of(2028, 2, 1), SettlementCycle.YEARLY);
+
+        entityManager.persist(halfYearly);
+        entityManager.persist(yearly);
+        entityManager.flush();
+
+        assertThat(compensationPlanVersionRepository.findAllByOrderByEffectiveFromDesc())
+            .extracting(CompensationPlanVersion::getSettlementCycle)
+            .contains(SettlementCycle.HALF_YEARLY, SettlementCycle.YEARLY);
+    }
+
     private CompensationPlanVersion newVersion(String label, LocalDate effectiveFrom) {
+        return newVersion(label, effectiveFrom, SettlementCycle.SEMI_MONTHLY);
+    }
+
+    private CompensationPlanVersion newVersion(String label, LocalDate effectiveFrom, SettlementCycle settlementCycle) {
         return new CompensationPlanVersion(
                 UUID.randomUUID(),
                 label,
@@ -180,7 +201,7 @@ class CompensationPlanVersionRepositoryTest {
                 new BigDecimal("15.00"),
                 new BigDecimal("1100.00"),
                 new BigDecimal("500.00"),
-                SettlementCycle.SEMI_MONTHLY,
+                settlementCycle,
                 Instant.now(),
                 null,
                 BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));

@@ -20,7 +20,7 @@ import { CompensationPlanRequest, SettlementCycle } from '../../models/compensat
 
 const DEFAULT_SCENARIO_VOLUME = 1000000; // spec example: "sells ₹10L on each leg"
 
-const SETTLEMENT_CYCLES: SettlementCycle[] = ['SEMI_MONTHLY', 'MONTHLY', 'CUSTOM'];
+const SETTLEMENT_CYCLES: SettlementCycle[] = ['SEMI_MONTHLY', 'MONTHLY', 'HALF_YEARLY', 'YEARLY', 'CUSTOM'];
 
 function isSettlementCycle(value: string): value is SettlementCycle {
   return SETTLEMENT_CYCLES.some(cycle => cycle === value);
@@ -536,6 +536,8 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     return [
       { value: 'SEMI_MONTHLY', label: this.translate.instant('setup.compensation.settlementCycleSemiMonthlyLabel') },
       { value: 'MONTHLY', label: this.translate.instant('setup.compensation.settlementCycleMonthlyLabel') },
+      { value: 'HALF_YEARLY', label: this.translate.instant('setup.compensation.settlementCycleHalfYearlyLabel') },
+      { value: 'YEARLY', label: this.translate.instant('setup.compensation.settlementCycleYearlyLabel') },
       { value: 'CUSTOM', label: this.translate.instant('setup.compensation.settlementCycleCustomLabel') }
     ];
   }

@@ -96,6 +96,19 @@ describe('CompensationStepComponent', () => {
     httpMock.expectNone('/api/company/compensation');
   }));
 
+  it('offers Half Yearly and Yearly as Settlement Cycle toggle options, selectable via setSettlementCycle', () => {
+    const component = fixture.componentInstance;
+    const values = component.settlementCycleOptions.map(option => option.value);
+
+    expect(values).toEqual(['SEMI_MONTHLY', 'MONTHLY', 'HALF_YEARLY', 'YEARLY', 'CUSTOM']);
+
+    component.setSettlementCycle('HALF_YEARLY');
+    expect(component.form.value.settlementCycle).toBe('HALF_YEARLY');
+
+    component.setSettlementCycle('YEARLY');
+    expect(component.form.value.settlementCycle).toBe('YEARLY');
+  });
+
   it('hides the legacy minWithdrawal field from the visible form layout (B2: not the real Go-Live-gating setting)', () => {
     expect(fixture.nativeElement.querySelector('input[formcontrolname="minWithdrawal"]')).toBeNull();
   });

@@ -124,6 +124,26 @@ class CompensationPlanControllerTest {
         }
         """;
 
+    private static final String HALF_YEARLY_PUT_JSON = """
+        {
+          "directIncomePct": 10.00,
+          "matchingIncomePct": 8.00,
+          "sponsorMatchingPct": 5.00,
+          "tdsPct": 2.00,
+          "adminChargeWithPanPct": 5.00,
+          "adminChargeWithoutPanPct": 15.00,
+          "activationFee": 1100.00,
+          "minWithdrawal": 500.00,
+          "settlementCycle": "HALF_YEARLY",
+          "royaltyBonusRates": [],
+          "rewardTiers": [],
+          "selfPerformanceTier1Pct": 1.00,
+          "selfPerformanceTier1SqftThreshold": 2000,
+          "selfPerformanceTier2Pct": 2.00,
+          "selfPerformanceTier2SqftThreshold": 3000
+        }
+        """;
+
     private static final String BLANK_SETTLEMENT_CYCLE_PUT_JSON = """
         {
           "directIncomePct": 10.00,
@@ -183,6 +203,19 @@ class CompensationPlanControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.versionLabel").value("v2"))
             .andExpect(jsonPath("$.matchingIncomePct").value(8.00));
+    }
+
+    @Test
+    void putCompensationWithHalfYearlySettlementCycleSucceeds() throws Exception {
+        when(versionRepository.findFirstByOrderByCreatedAtDesc()).thenReturn(Optional.of(seedVersion()));
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
+
+        mockMvc.perform(put("/api/company/compensation")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(HALF_YEARLY_PUT_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.settlementCycle").value("HALF_YEARLY"));
     }
 
     @Test

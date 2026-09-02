@@ -774,6 +774,8 @@
       "settlementCycleLabel": "निपटान चक्र",
       "settlementCycleSemiMonthlyLabel": "अर्ध-मासिक (15वीं/30वीं)",
       "settlementCycleMonthlyLabel": "मासिक",
+      "settlementCycleHalfYearlyLabel": "अर्ध-वार्षिक",
+      "settlementCycleYearlyLabel": "वार्षिक",
       "settlementCycleCustomLabel": "कस्टम",
       "tdsLabel": "टीडीएस %",
       "adminChargeWithPanLabel": "एडमिन शुल्क % (पैन सहित)",
