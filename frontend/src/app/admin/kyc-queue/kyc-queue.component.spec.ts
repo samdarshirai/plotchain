@@ -215,6 +215,13 @@ describe('KycQueueComponent', () => {
     expect(summary?.textContent?.trim()).toBe('Showing 1 of 1 pending');
   });
 
+  it('puts the summary and pagination in one footer row', () => {
+    fixture.detectChanges();
+    const footer: HTMLElement | null = fixture.nativeElement.querySelector('.kyc-queue__footer');
+    expect(footer?.querySelector('.kyc-queue__summary')).toBeTruthy();
+    expect(footer?.querySelector('.kyc-queue__pagination')).toBeTruthy();
+  });
+
   it('reloads counts after an approval decision', () => {
     fixture.componentInstance.approve('a1');
 
@@ -283,6 +290,13 @@ describe('KycQueueComponent', () => {
   it('maps kyc status to a badge tone', () => {
     expect(fixture.componentInstance.kycStatusBadgeTone('Verified')).toBe('success');
     expect(fixture.componentInstance.kycStatusBadgeTone('Rejected')).toBe('danger');
+  });
+
+  it('renders Reject/Approve inside the right-aligned row-actions stack', () => {
+    fixture.detectChanges();
+    const stack: HTMLElement | null = fixture.nativeElement.querySelector('.kyc-queue__row-actions');
+    expect(stack?.querySelector('.kyc-queue__reject-action')).toBeTruthy();
+    expect(stack?.querySelector('.kyc-queue__approve-action')).toBeTruthy();
   });
 
   it('approve button in the rendered action cell calls approve with the row entry id', () => {

@@ -63,7 +63,7 @@ const MS_PER_DAY = 86_400_000;
         <app-tab-bar [tabs]="tabs" [activeTabId]="activeStatus" (tabChange)="onTabChange($event)"></app-tab-bar>
       </div>
 
-      <div class="card kyc-queue__table-card">
+      <div class="kyc-queue__table-card">
         <p *ngIf="loadError" class="kyc-queue__load-error">{{ 'admin.kycQueue.loadError' | translate }}</p>
         <p *ngIf="decisionError" class="kyc-queue__decision-error">{{ 'admin.kycQueue.decisionError' | translate }}</p>
 
@@ -75,12 +75,14 @@ const MS_PER_DAY = 86_400_000;
           [emptyStateLabel]="'admin.kycQueue.emptyState' | translate"
         ></app-editable-table>
         <ng-template #actionsTpl let-i="index">
-          <button type="button" (click)="openReject(page!.entries[i].id)">
-            {{ 'admin.kycQueue.rejectAction' | translate }}
-          </button>
-          <button type="button" class="kyc-queue__approve-action" (click)="approve(page!.entries[i].id)">
-            {{ 'admin.kycQueue.approveAction' | translate }}
-          </button>
+          <div class="kyc-queue__row-actions">
+            <button type="button" class="kyc-queue__reject-action" (click)="openReject(page!.entries[i].id)">
+              {{ 'admin.kycQueue.rejectAction' | translate }}
+            </button>
+            <button type="button" class="kyc-queue__approve-action" (click)="approve(page!.entries[i].id)">
+              {{ 'admin.kycQueue.approveAction' | translate }}
+            </button>
+          </div>
         </ng-template>
 
         <div class="kyc-queue__reject-drawer" *ngIf="rejectingEntry as entry">
@@ -120,24 +122,26 @@ const MS_PER_DAY = 86_400_000;
           </div>
         </div>
 
-        <div class="kyc-queue__summary" *ngIf="page">
-          {{ 'admin.kycQueue.showingSummary' | translate: { shown: page.entries.length, total: page.totalElements, status: statusWord } }}
-        </div>
-
-        <div class="kyc-queue__pagination" *ngIf="page">
-          <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
-            {{ 'admin.kycQueue.previousPageAction' | translate }}
-          </button>
-          <span class="kyc-queue__page-indicator">
-            {{ 'admin.kycQueue.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
+        <div class="kyc-queue__footer" *ngIf="page">
+          <span class="kyc-queue__summary">
+            {{ 'admin.kycQueue.showingSummary' | translate: { shown: page.entries.length, total: page.totalElements, status: statusWord } }}
           </span>
-          <button
-            type="button"
-            [disabled]="(page.page + 1) * page.size >= page.totalElements"
-            (click)="goToPage(page.page + 1)"
-          >
-            {{ 'admin.kycQueue.nextPageAction' | translate }}
-          </button>
+
+          <div class="kyc-queue__pagination">
+            <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
+              {{ 'admin.kycQueue.previousPageAction' | translate }}
+            </button>
+            <span class="kyc-queue__page-indicator">
+              {{ 'admin.kycQueue.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
+            </span>
+            <button
+              type="button"
+              [disabled]="(page.page + 1) * page.size >= page.totalElements"
+              (click)="goToPage(page.page + 1)"
+            >
+              {{ 'admin.kycQueue.nextPageAction' | translate }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -315,7 +319,7 @@ export class KycQueueComponent implements OnInit {
     this.kycRows = (this.page?.entries ?? []).map(entry => ({
       userId: entry.userId,
       name: entry.name,
-      joinedAt: this.datePipe.transform(entry.joinedAt, 'medium') ?? entry.joinedAt,
+      joinedAt: this.datePipe.transform(entry.joinedAt, 'dd-MMM-yyyy HH:mm') ?? entry.joinedAt,
       status: titleCase(entry.kycStatus)
     }));
   }
