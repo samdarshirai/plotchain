@@ -32,6 +32,19 @@ describe('TreeExplorerService', () => {
     req.flush(mockNode);
   });
 
+  it('fetches the whole company tree at the given depth', () => {
+    const mockNode: TreeNode = {
+      id: 'admin', userId: 'admin', name: 'Administrator', rankName: null, kycStatus: 'VERIFIED', position: null,
+      leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
+    };
+
+    service.companyTree(5).subscribe(res => expect(res).toEqual(mockNode));
+
+    const req = httpMock.expectOne('/api/admin/tree?depth=5');
+    expect(req.request.method).toBe('GET');
+    req.flush(mockNode);
+  });
+
   it('searches by exact userId', () => {
     const mockResult: TreeSearchResult = { ancestorPath: [{ id: 'a1', userId: 'VP00001', name: 'Root' }] };
 

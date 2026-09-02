@@ -2964,8 +2964,12 @@ body.admin-associate-active {
 }
 
 .tree-explorer__controls-row {
+  // Single source of truth for the height of every control on this row (search input,
+  // search button, stats pill) so they line up exactly regardless of their own padding.
+  --te-control-h: 44px;
+
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
   gap: 0.875rem;
   margin-bottom: 0.75rem;
@@ -2983,6 +2987,8 @@ body.admin-associate-active {
   .material-symbols-outlined {
     position: absolute;
     left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
     color: var(--text-muted);
     font-size: 18px;
     pointer-events: none;
@@ -2990,15 +2996,17 @@ body.admin-associate-active {
 
   input {
     flex: 1;
-    padding: 13px 14px 13px 42px;
-    border-radius: 3px;
+    height: var(--te-control-h);
+    padding: 0 14px 0 42px;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--border-subtle);
     background: var(--surface-raised);
     color: var(--text-primary);
   }
 
   button {
-    padding: 0 28px;
+    height: var(--te-control-h);
+    padding: 0 24px;
     border-radius: var(--radius-sm);
     border: none;
     background: var(--brand-secondary);
@@ -3016,9 +3024,9 @@ body.admin-associate-active {
   display: flex;
   align-items: center;
   gap: 1rem;
-  height: 46px;
+  height: var(--te-control-h);
   padding: 0 1.125rem;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
   background: var(--surface-card);
   font-size: 0.78rem;

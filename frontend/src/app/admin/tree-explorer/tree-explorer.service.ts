@@ -8,6 +8,10 @@ import { TreeSearchResult } from '../models/tree-search.model';
 export class TreeExplorerService {
   private http = inject(HttpClient);
 
+  companyTree(depth: number): Observable<TreeNode> {
+    return this.http.get<TreeNode>('/api/admin/tree', { params: new HttpParams().set('depth', depth) });
+  }
+
   subtree(associateId: string, depth: number): Observable<TreeNode> {
     return this.http.get<TreeNode>(`/api/admin/tree/${associateId}`, { params: new HttpParams().set('depth', depth) });
   }

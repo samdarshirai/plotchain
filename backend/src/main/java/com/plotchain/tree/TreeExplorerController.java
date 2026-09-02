@@ -18,6 +18,12 @@ public class TreeExplorerController {
         this.treeExplorerService = treeExplorerService;
     }
 
+    @GetMapping
+    public TreeNodeResponse companyTree(@RequestParam(defaultValue = "3") int depth) {
+        depth = Math.max(0, Math.min(depth, 5));
+        return treeExplorerService.companyTree(depth);
+    }
+
     @GetMapping("/{associateId}")
     public TreeNodeResponse subtree(@PathVariable UUID associateId, @RequestParam(defaultValue = "3") int depth) {
         depth = Math.max(0, Math.min(depth, 5));

@@ -273,7 +273,12 @@ public class SecurityConfig {
                 // of real per-role narrowing in this codebase.
                 .requestMatchers(HttpMethod.GET, "/api/admin/associates", "/api/admin/associates/*")
                     .hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/admin/tree/*")
+                // "/api/admin/tree" (no segment) is the whole-company tree rooted at the
+                // founding admin; "/api/admin/tree/*" covers /{associateId} and /search.
+                // AntPathMatcher's "/*" does NOT match the segment-less path, so both patterns
+                // are needed -- otherwise the bare GET falls through to
+                // anyRequest().authenticated() and any associate could pull the full downline.
+                .requestMatchers(HttpMethod.GET, "/api/admin/tree", "/api/admin/tree/*")
                     .hasAuthority("ADMIN")
                 // "/api/admin/kyc" is an exact match in AntPathMatcher and does NOT cover
                 // "/api/admin/kyc/counts" as a prefix -- without the "/*" pattern that GET

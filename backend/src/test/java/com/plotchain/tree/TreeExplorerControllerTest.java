@@ -64,6 +64,35 @@ class TreeExplorerControllerTest {
         return a;
     }
 
+    private static final UUID FOUNDING_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+    @Test
+    void companyTreeReturnsTheFoundingAdminRootForAnAdminToken() throws Exception {
+        Associate foundingAdmin = new Associate();
+        foundingAdmin.setId(FOUNDING_ADMIN_ID);
+        foundingAdmin.setUserId("admin");
+        foundingAdmin.setName("Administrator");
+        foundingAdmin.setRole(AssociateRole.ADMIN);
+        foundingAdmin.setKycStatus(KycStatus.VERIFIED);
+        foundingAdmin.setJoinedAt(Instant.now());
+        when(associateRepository.findById(FOUNDING_ADMIN_ID)).thenReturn(Optional.of(foundingAdmin));
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(associateRepository.countByParentId(FOUNDING_ADMIN_ID)).thenReturn(0L);
+
+        mockMvc.perform(get("/api/admin/tree")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.userId").value("admin"));
+    }
+
+    @Test
+    void companyTreeIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/admin/tree")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
     @Test
     void subtreeReturnsTheRootNodeForAnyAdminFamilyToken() throws Exception {
         when(associateRepository.findByIdAndRole(ROOT_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedRoot()));

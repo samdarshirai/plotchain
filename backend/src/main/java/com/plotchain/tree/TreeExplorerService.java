@@ -28,6 +28,11 @@ public class TreeExplorerService {
     private static final int MAX_LEG_SKEW_RATIO = 10;
     private static final long STAGNANT_THRESHOLD_DAYS = 90;
 
+    // The founding admin seeded by V18__seed_founding_admin.sql: parent_id IS NULL, so it is
+    // the root of the binary placement tree by construction. Role is ADMIN (not ASSOCIATE),
+    // which is why companyTree() cannot go through subtree()'s findByIdAndRole guard.
+    private static final UUID FOUNDING_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
     private final AssociateRepository associateRepository;
     private final RankTierRepository rankTierRepository;
     private final CycleRepository cycleRepository;
@@ -48,6 +53,21 @@ public class TreeExplorerService {
     public TreeNodeResponse subtree(UUID associateId, int depth) {
         Associate root = associateRepository.findByIdAndRole(associateId, AssociateRole.ASSOCIATE)
             .orElseThrow(() -> new AssociateNotFoundException(associateId));
+        return buildFrom(root, depth);
+    }
+
+    /**
+     * The whole placement tree, rooted at the founding admin (V18). Powers the admin Tree
+     * Explorer's default view -- no search term needed. Bounded, like subtree(), only by the
+     * caller's depth clamp.
+     */
+    public TreeNodeResponse companyTree(int depth) {
+        Associate root = associateRepository.findById(FOUNDING_ADMIN_ID)
+            .orElseThrow(() -> new AssociateNotFoundException(FOUNDING_ADMIN_ID));
+        return buildFrom(root, depth);
+    }
+
+    private TreeNodeResponse buildFrom(Associate root, int depth) {
         Map<UUID, RankTier> ranksById = rankTierRepository.findAllByOrderByRankOrder().stream()
             .collect(Collectors.toMap(RankTier::getId, r -> r));
         // leg_volume rows are written only at cycle CLOSE (CycleService#rollUpSubtree), keyed to

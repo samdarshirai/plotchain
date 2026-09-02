@@ -65,6 +65,53 @@ class TreeExplorerServiceTest {
         assertThatThrownBy(() -> service.subtree(id, 3)).isInstanceOf(AssociateNotFoundException.class);
     }
 
+    private static final UUID FOUNDING_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+    @Test
+    void companyTreeRootsAtTheFoundingAdminAndExpandsItsDownline() {
+        UUID childId = UUID.randomUUID();
+        Associate foundingAdmin = newAssociate(FOUNDING_ADMIN_ID, "admin", Instant.now());
+        foundingAdmin.setRole(AssociateRole.ADMIN);
+        foundingAdmin.setRankId(null);
+        Associate child = newAssociate(childId, "VP00001", Instant.now());
+
+        when(associateRepository.findById(FOUNDING_ADMIN_ID)).thenReturn(Optional.of(foundingAdmin));
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(associateRepository.findByParentId(FOUNDING_ADMIN_ID)).thenReturn(List.of(child));
+        when(associateRepository.countByParentId(childId)).thenReturn(0L);
+
+        TreeNodeResponse response = service.companyTree(1);
+
+        assertThat(response.userId()).isEqualTo("admin");
+        assertThat(response.rankName()).isNull();
+        assertThat(response.children()).hasSize(1);
+        assertThat(response.children().get(0).userId()).isEqualTo("VP00001");
+    }
+
+    @Test
+    void companyTreeStopsAtTheRequestedDepth() {
+        Associate foundingAdmin = newAssociate(FOUNDING_ADMIN_ID, "admin", Instant.now());
+        foundingAdmin.setRole(AssociateRole.ADMIN);
+
+        when(associateRepository.findById(FOUNDING_ADMIN_ID)).thenReturn(Optional.of(foundingAdmin));
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(associateRepository.countByParentId(FOUNDING_ADMIN_ID)).thenReturn(0L);
+
+        TreeNodeResponse response = service.companyTree(0);
+
+        assertThat(response.children()).isEmpty();
+        org.mockito.Mockito.verify(associateRepository, org.mockito.Mockito.never()).findByParentId(FOUNDING_ADMIN_ID);
+    }
+
+    @Test
+    void companyTreeThrowsWhenTheFoundingAdminIsMissing() {
+        when(associateRepository.findById(FOUNDING_ADMIN_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.companyTree(3)).isInstanceOf(AssociateNotFoundException.class);
+    }
+
     @Test
     void subtreeBuildsNestedChildrenUpToDepth() {
         UUID rootId = UUID.randomUUID();

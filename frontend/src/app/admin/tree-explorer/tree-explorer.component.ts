@@ -9,6 +9,10 @@ import { LAYOUT, LayoutEntry, LayoutLink, TreeLayout, buildTreeLayout, linkPathD
 import { PanZoomState, computeFitTransform, panBy, pinchZoom, zoomAround } from './tree-explorer-pan-zoom';
 
 const DEFAULT_DEPTH = 3;
+// The default whole-tree view requests the backend's hard maximum (also 5) so the admin
+// sees as much of the company as the server will render in one shot; deeper nodes are
+// reached by searching, which re-roots at DEFAULT_DEPTH.
+const FULL_TREE_DEPTH = 5;
 const HINT_TIMEOUT_MS = 3500;
 const FIT_ANIMATE_MS = 460;
 
@@ -223,6 +227,21 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
     this.ngZone.runOutsideAngular(() => {
       window.addEventListener('resize', this.resizeListener, { passive: true });
       this.hintTimeoutId = setTimeout(() => this.dismissHint(), HINT_TIMEOUT_MS);
+    });
+
+    // Default view: the whole company tree rooted at the founding admin, no search needed.
+    this.treeExplorerService.companyTree(FULL_TREE_DEPTH).subscribe({
+      next: node => {
+        this.root = node;
+        // The root setter marks node.id as the highlighted node, which paints the
+        // "search result" tag. That tag is meaningless for the default root -- clear it.
+        this.highlightedNodeId = null;
+        this.scheduleFit(false);
+      },
+      error: () => {
+        this.root = null;
+        this.loadError = true;
+      }
     });
   }
 

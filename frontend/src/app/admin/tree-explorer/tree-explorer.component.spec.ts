@@ -13,6 +13,11 @@ describe('TreeExplorerComponent', () => {
     leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
   };
 
+  const companyRoot: TreeNode = {
+    id: 'admin', userId: 'admin', name: 'Administrator', rankName: null, kycStatus: 'VERIFIED', position: null,
+    leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
+  };
+
   const nestedTree: TreeNode = {
     id: 'a1', userId: 'VP00001', name: 'Root', rankName: null, kycStatus: 'PENDING', position: null,
     leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false,
@@ -37,20 +42,40 @@ describe('TreeExplorerComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(TreeExplorerComponent);
+    httpMock = TestBed.inject(HttpTestingController);
   });
 
   afterEach(() => httpMock.verify());
 
-  it('does nothing on init until a root is searched', () => {
-    httpMock = TestBed.inject(HttpTestingController);
+  // The component auto-loads the whole company tree on init. Every test that calls
+  // detectChanges() must resolve that request first; this helper does it.
+  function initWithCompanyTree(node: TreeNode | null = companyRoot): void {
     fixture.detectChanges();
-    httpMock.expectNone(() => true);
+    const req = httpMock.expectOne('/api/admin/tree?depth=5');
+    if (node) {
+      req.flush(node);
+    } else {
+      req.flush(null, { status: 500, statusText: 'Server Error' });
+    }
+  }
+
+  it('auto-loads the whole company tree on init, rooted at the founding admin', () => {
+    initWithCompanyTree();
+
+    expect(fixture.componentInstance.root?.userId).toBe('admin');
+    // The default root is not a search result -- it must not carry the highlight/tag.
+    expect(fixture.componentInstance.highlightedNodeId).toBeNull();
+  });
+
+  it('shows a load error when the initial company-tree fetch fails', () => {
+    initWithCompanyTree(null);
+
+    expect(fixture.componentInstance.loadError).toBe(true);
     expect(fixture.componentInstance.root).toBeNull();
   });
 
-  it('loads a subtree when searching by exact userId', () => {
-    httpMock = TestBed.inject(HttpTestingController);
-    fixture.detectChanges();
+  it('loads a subtree when searching by exact userId, and tags it as the result', () => {
+    initWithCompanyTree();
 
     fixture.componentInstance.searchQuery = 'VP00001';
     fixture.componentInstance.onSearch();
@@ -62,11 +87,11 @@ describe('TreeExplorerComponent', () => {
     subtreeReq.flush(rootNode);
 
     expect(fixture.componentInstance.root?.userId).toBe('VP00001');
+    expect(fixture.componentInstance.highlightedNodeId).toBe('a1');
   });
 
   it('renders every level of a nested tree via the recursive node template', () => {
-    httpMock = TestBed.inject(HttpTestingController);
-    fixture.detectChanges();
+    initWithCompanyTree();
 
     fixture.componentInstance.root = nestedTree;
     fixture.detectChanges();
@@ -77,8 +102,7 @@ describe('TreeExplorerComponent', () => {
   });
 
   it('shows stats-pill counts scoped to the loaded subtree, not a whole-downline total', () => {
-    httpMock = TestBed.inject(HttpTestingController);
-    fixture.detectChanges();
+    initWithCompanyTree();
 
     fixture.componentInstance.root = nestedTree;
     fixture.detectChanges();
@@ -92,8 +116,7 @@ describe('TreeExplorerComponent', () => {
   });
 
   it('renders one vacant-card per vacant slot in the loaded subtree', () => {
-    httpMock = TestBed.inject(HttpTestingController);
-    fixture.detectChanges();
+    initWithCompanyTree();
 
     fixture.componentInstance.root = nestedTree;
     fixture.detectChanges();
@@ -104,8 +127,7 @@ describe('TreeExplorerComponent', () => {
   });
 
   it('shows a load error when the search succeeds but the subtree fetch fails', () => {
-    httpMock = TestBed.inject(HttpTestingController);
-    fixture.detectChanges();
+    initWithCompanyTree();
 
     fixture.componentInstance.searchQuery = 'VP00001';
     fixture.componentInstance.onSearch();
