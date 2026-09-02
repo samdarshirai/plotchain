@@ -54,6 +54,52 @@ class AssociateControllerTest {
     }
 
     @Test
+    void listFlagsHasFreeSlotByHowManyLegsAreOccupied() throws Exception {
+        Associate oneLegFree = new Associate();
+        oneLegFree.setId(UUID.randomUUID());
+        oneLegFree.setUserId("VP00001");
+        oneLegFree.setName("Root");
+
+        Associate childOfOneLegFree = new Associate();
+        childOfOneLegFree.setId(UUID.randomUUID());
+        childOfOneLegFree.setUserId("VP00002");
+        childOfOneLegFree.setName("Left Child");
+        childOfOneLegFree.setParentId(oneLegFree.getId());
+        childOfOneLegFree.setPosition("L");
+
+        Associate bothLegsFull = new Associate();
+        bothLegsFull.setId(UUID.randomUUID());
+        bothLegsFull.setUserId("VP00003");
+        bothLegsFull.setName("Fully Placed");
+
+        Associate leftOfFull = new Associate();
+        leftOfFull.setId(UUID.randomUUID());
+        leftOfFull.setUserId("VP00004");
+        leftOfFull.setName("Full's Left");
+        leftOfFull.setParentId(bothLegsFull.getId());
+        leftOfFull.setPosition("L");
+
+        Associate rightOfFull = new Associate();
+        rightOfFull.setId(UUID.randomUUID());
+        rightOfFull.setUserId("VP00005");
+        rightOfFull.setName("Full's Right");
+        rightOfFull.setParentId(bothLegsFull.getId());
+        rightOfFull.setPosition("R");
+
+        when(associateRepository.findAllByOrderByUserIdAsc())
+            .thenReturn(List.of(oneLegFree, childOfOneLegFree, bothLegsFull, leftOfFull, rightOfFull));
+
+        mockMvc.perform(get("/api/associates")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].hasFreeSlot").value(true))
+            .andExpect(jsonPath("$[1].hasFreeSlot").value(true))
+            .andExpect(jsonPath("$[2].hasFreeSlot").value(false))
+            .andExpect(jsonPath("$[3].hasFreeSlot").value(true))
+            .andExpect(jsonPath("$[4].hasFreeSlot").value(true));
+    }
+
+    @Test
     void listIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(get("/api/associates")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
