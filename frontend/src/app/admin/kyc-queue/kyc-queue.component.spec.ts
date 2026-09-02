@@ -21,6 +21,10 @@ describe('KycQueueComponent', () => {
       admin: {
         kycQueue: {
           title: 'KYC Review Queue',
+          eyebrow: 'Network / Compliance',
+          lastSynced: 'Last synced {{time}}',
+          sealLabel: 'Awaiting review',
+          sealOldestHint: 'oldest pending {{days}} days',
           tabPending: 'Pending',
           tabVerified: 'Verified',
           tabRejected: 'Rejected',
@@ -28,9 +32,18 @@ describe('KycQueueComponent', () => {
           columnName: 'Name',
           columnJoinedAt: 'Joined',
           columnActions: 'Actions',
+          columnStatus: 'Status',
           approveAction: 'Approve',
           rejectAction: 'Reject',
           rejectReasonPlaceholder: 'Reason for rejection',
+          rejectDrawerTitle: 'Rejecting {{id}} — {{name}}',
+          reasonChipUnreadable: 'Document unreadable',
+          reasonChipNameMismatch: 'Name mismatch',
+          reasonChipExpiredId: 'Expired ID',
+          reasonChipDuplicate: 'Duplicate associate',
+          rejectConfirmAction: 'Confirm rejection',
+          rejectCancelAction: 'Cancel',
+          showingSummary: 'Showing {{shown}} of {{total}} {{status}}',
           loadError: 'Something went wrong loading the KYC queue. Try again.',
           decisionError: 'Could not save that decision. Please try again.',
           previousPageAction: 'Previous',
@@ -90,9 +103,15 @@ describe('KycQueueComponent', () => {
     httpMock.expectOne('/api/admin/kyc/counts').flush({ pending: 0, verified: 0, rejected: 0 });
   });
 
-  it('rejects an entry with a reason', () => {
-    fixture.componentInstance.rejectReasons['a1'] = 'Blurry PAN photo';
-    fixture.componentInstance.reject('a1');
+  it('rejects an entry with a free-text reason from the drawer', () => {
+    fixture.componentInstance.openReject('a1');
+    fixture.detectChanges();
+
+    const drawer: HTMLElement | null = fixture.nativeElement.querySelector('.kyc-queue__reject-drawer');
+    expect(drawer?.textContent).toContain('VP00001');
+
+    fixture.componentInstance.rejectDraft = 'Blurry PAN photo';
+    fixture.componentInstance.confirmReject();
 
     const req = httpMock.expectOne('/api/admin/kyc/a1/decision');
     expect(req.request.body).toEqual({ decision: 'REJECTED', reason: 'Blurry PAN photo' });
@@ -100,25 +119,41 @@ describe('KycQueueComponent', () => {
 
     const reload = httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20');
     reload.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne('/api/admin/kyc/counts').flush({ pending: 0, verified: 0, rejected: 0 });
+
+    expect(fixture.componentInstance.rejectingId).toBeNull();
+  });
+
+  it('rejects with the selected reason chip when no free text is entered', () => {
+    fixture.componentInstance.openReject('a1');
+    fixture.componentInstance.selectChip('Name mismatch');
+    fixture.componentInstance.confirmReject();
+
+    const req = httpMock.expectOne('/api/admin/kyc/a1/decision');
+    expect(req.request.body).toEqual({ decision: 'REJECTED', reason: 'Name mismatch' });
+    req.flush({ id: 'a1', userId: 'VP00001', name: 'Jane', kycStatus: 'REJECTED', joinedAt: '2026-01-01T00:00:00Z' });
+
+    httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20')
+      .flush({ entries: [], page: 0, size: 20, totalElements: 0 });
     httpMock.expectOne('/api/admin/kyc/counts').flush({ pending: 0, verified: 0, rejected: 0 });
   });
 
-  it('keeps each row\'s reject reason independent, so rejecting one leaves the other untouched', () => {
-    fixture.componentInstance.rejectReasons['a1'] = 'Blurry PAN photo';
-    fixture.componentInstance.rejectReasons['a2'] = 'Name mismatch';
+  it('does not submit a rejection with neither a chip nor free text', () => {
+    fixture.componentInstance.openReject('a1');
+    fixture.componentInstance.confirmReject();
 
-    fixture.componentInstance.reject('a1');
+    httpMock.expectNone('/api/admin/kyc/a1/decision');
+    expect(fixture.componentInstance.rejectingId).toBe('a1');
+  });
 
-    const req = httpMock.expectOne('/api/admin/kyc/a1/decision');
-    expect(req.request.body).toEqual({ decision: 'REJECTED', reason: 'Blurry PAN photo' });
-    req.flush({ id: 'a1', userId: 'VP00001', name: 'Jane', kycStatus: 'REJECTED', joinedAt: '2026-01-01T00:00:00Z' });
+  it('cancelling the drawer discards the draft without a request', () => {
+    fixture.componentInstance.openReject('a1');
+    fixture.componentInstance.rejectDraft = 'typed something';
+    fixture.componentInstance.cancelReject();
 
-    const reload = httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20');
-    reload.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
-    httpMock.expectOne('/api/admin/kyc/counts').flush({ pending: 0, verified: 0, rejected: 0 });
-
-    expect(fixture.componentInstance.rejectReasons['a1']).toBeUndefined();
-    expect(fixture.componentInstance.rejectReasons['a2']).toBe('Name mismatch');
+    httpMock.expectNone('/api/admin/kyc/a1/decision');
+    expect(fixture.componentInstance.rejectingId).toBeNull();
+    expect(fixture.componentInstance.rejectDraft).toBe('');
   });
 
   it('shows a decision error when approve fails, without silently doing nothing', () => {
@@ -134,8 +169,9 @@ describe('KycQueueComponent', () => {
   });
 
   it('shows a decision error when reject fails, without silently doing nothing', () => {
-    fixture.componentInstance.rejectReasons['a1'] = 'Blurry PAN photo';
-    fixture.componentInstance.reject('a1');
+    fixture.componentInstance.openReject('a1');
+    fixture.componentInstance.rejectDraft = 'Blurry PAN photo';
+    fixture.componentInstance.confirmReject();
 
     const req = httpMock.expectOne('/api/admin/kyc/a1/decision');
     req.flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
@@ -160,6 +196,23 @@ describe('KycQueueComponent', () => {
 
   it('loads and displays queue counts on init', () => {
     expect(fixture.componentInstance.counts).toEqual({ pending: 1, verified: 4, rejected: 2 });
+  });
+
+  it('folds the queue counts into the tab labels', () => {
+    const labels = fixture.componentInstance.tabs.map(t => t.label);
+    expect(labels).toEqual(['Pending 1', 'Verified 4', 'Rejected 2']);
+  });
+
+  it('shows the awaiting-review count in the seal card', () => {
+    fixture.detectChanges();
+    const seal: HTMLElement | null = fixture.nativeElement.querySelector('.kyc-queue__seal-figure');
+    expect(seal?.textContent?.trim()).toBe('1');
+  });
+
+  it('renders a "showing X of Y" summary for the loaded page', () => {
+    fixture.detectChanges();
+    const summary: HTMLElement | null = fixture.nativeElement.querySelector('.kyc-queue__summary');
+    expect(summary?.textContent?.trim()).toBe('Showing 1 of 1 pending');
   });
 
   it('reloads counts after an approval decision', () => {
@@ -210,14 +263,26 @@ describe('KycQueueComponent', () => {
     expect(emptyCell?.textContent?.trim()).toBeTruthy();
   });
 
-  it('only includes the actions column on the PENDING tab', () => {
+  it('swaps the actions column for a status badge column off the PENDING tab', () => {
     expect(fixture.componentInstance.kycColumns.some(c => c.key === 'actions')).toBeTrue();
+    expect(fixture.componentInstance.kycColumns.some(c => c.key === 'status')).toBeFalse();
 
     fixture.componentInstance.onTabChange('VERIFIED');
     httpMock.expectOne('/api/admin/kyc?status=VERIFIED&page=0&size=20')
-      .flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+      .flush({
+        entries: [{ id: 'v1', userId: 'VP00002', name: 'Sam', kycStatus: 'VERIFIED', joinedAt: '2026-01-01T00:00:00Z' }],
+        page: 0, size: 20, totalElements: 1
+      });
 
     expect(fixture.componentInstance.kycColumns.some(c => c.key === 'actions')).toBeFalse();
+    const statusCol = fixture.componentInstance.kycColumns.find(c => c.key === 'status');
+    expect(statusCol?.type).toBe('badge');
+    expect(fixture.componentInstance.kycRows[0]['status']).toBe('Verified');
+  });
+
+  it('maps kyc status to a badge tone', () => {
+    expect(fixture.componentInstance.kycStatusBadgeTone('Verified')).toBe('success');
+    expect(fixture.componentInstance.kycStatusBadgeTone('Rejected')).toBe('danger');
   });
 
   it('approve button in the rendered action cell calls approve with the row entry id', () => {
@@ -230,21 +295,11 @@ describe('KycQueueComponent', () => {
     expect(spy).toHaveBeenCalledWith('a1');
   });
 
-  it('accumulates sequential keystrokes in the reject-reason input instead of resetting on every change-detection cycle (regression)', () => {
-    // Before the fix, kycRows/kycColumns were getters that produced brand-new
-    // array/object identities on every CD tick. With no trackBy on the editable-table's
-    // *ngFor, that meant every ngModel-driven CD run (triggered automatically by zone.js
-    // right after the `input` event) tore down and rebuilt the row, including this same
-    // <input>. The net effect: an admin could type exactly one character before focus
-    // (and the DOM node) was destroyed out from under them. This test grabs the input
-    // element ONCE, dispatches two real `input` events against that same reference with a
-    // detectChanges() in between (forcing the CD cycle the bug depends on), and asserts
-    // the model ends up with the full accumulated string. If the row were torn down
-    // between events, the second dispatch would land on a detached, delistened node and
-    // the second keystroke would be silently lost.
+  it('accumulates sequential keystrokes in the drawer reject-reason input', () => {
+    fixture.componentInstance.openReject('a1');
     fixture.detectChanges();
 
-    const input: HTMLInputElement = fixture.nativeElement.querySelector('input[type="text"]');
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('.kyc-queue__reject-controls input[type="text"]');
     expect(input).toBeTruthy();
 
     input.value = 'B';
@@ -255,6 +310,6 @@ describe('KycQueueComponent', () => {
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.rejectReasons['a1']).toBe('Bl');
+    expect(fixture.componentInstance.rejectDraft).toBe('Bl');
   });
 });
