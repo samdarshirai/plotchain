@@ -62,6 +62,16 @@ import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.comp
           [value]="formatCurrency(d.salesSummary.revenueBookedThisCycle)"
           [hint]="revenueHintKey(d.salesSummary.revenueBookedChangePct) | translate: { pct: revenueDeltaAbs(d.salesSummary.revenueBookedChangePct) }"
         ></app-stat-tile>
+        <app-stat-tile
+          icon="arrow_back"
+          [label]="'dashboard.leftLegVolumeLabel' | translate"
+          [value]="formatCurrency(d.legVolumeSummary.leftLegVolume)"
+        ></app-stat-tile>
+        <app-stat-tile
+          icon="arrow_forward"
+          [label]="'dashboard.rightLegVolumeLabel' | translate"
+          [value]="formatCurrency(d.legVolumeSummary.rightLegVolume)"
+        ></app-stat-tile>
       </div>
 
       <div class="dashboard__panels">

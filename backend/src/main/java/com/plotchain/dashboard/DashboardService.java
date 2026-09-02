@@ -14,6 +14,7 @@ import com.plotchain.cycle.CycleStatus;
 import com.plotchain.cycle.NoOpenCycleException;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntryRepository;
+import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
@@ -95,16 +96,18 @@ public class DashboardService {
         BigDecimal total = ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycle.getId());
         BigDecimal royaltyBonus = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.ROYALTY);
 
-        // Royalty slab lookup needs matched volume from the associate's most-recently-CLOSED
-        // cycle -- the currently OPEN cycle never has a leg_volume row of its own (rows are only
-        // written at cycle close, CycleService#rollUpSubtree). This is the one LegVolume read
-        // this dashboard still needs after dashboard-mockup spec §3.1 dropped the rest of
-        // LegVolumeSummary; latestClosedCycle is also reused below for the income/revenue deltas.
+        // Royalty slab lookup (and the left/right leg volume panel) needs the associate's
+        // most-recently-CLOSED cycle -- the currently OPEN cycle never has a leg_volume row of
+        // its own (rows are only written at cycle close, CycleService#rollUpSubtree).
+        // latestClosedCycle is also reused below for the income/revenue deltas.
         Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
-        BigDecimal matchedVolume = latestClosedCycle
-            .flatMap(closed -> legVolumeRepository.findByAssociateIdAndCycleId(associateId, closed.getId()))
+        Optional<LegVolume> latestLegVolume = latestClosedCycle
+            .flatMap(closed -> legVolumeRepository.findByAssociateIdAndCycleId(associateId, closed.getId()));
+        BigDecimal matchedVolume = latestLegVolume
             .map(lv -> lv.getLeftLegVolume().min(lv.getRightLegVolume()))
             .orElse(BigDecimal.ZERO);
+        BigDecimal leftLegVolume = latestLegVolume.map(LegVolume::getLeftLegVolume).orElse(BigDecimal.ZERO);
+        BigDecimal rightLegVolume = latestLegVolume.map(LegVolume::getRightLegVolume).orElse(BigDecimal.ZERO);
 
         CompensationPlanVersion planVersion = compensationPlanVersionRepository
             .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
@@ -186,7 +189,8 @@ public class DashboardService {
             new DashboardResponse.SalesSummary(salesThisCycle, revenueBookedThisCycle, revenueBookedChangePct),
             new DashboardResponse.NetworkSummary(totalDownline, directCount),
             networkGrowth,
-            new DashboardResponse.KycBreakdown(verified, pending, rejected)
+            new DashboardResponse.KycBreakdown(verified, pending, rejected),
+            new DashboardResponse.LegVolumeSummary(leftLegVolume, rightLegVolume)
         );
     }
 }

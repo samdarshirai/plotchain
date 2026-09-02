@@ -14,7 +14,8 @@ public record DashboardResponse(
     SalesSummary salesSummary,
     NetworkSummary networkSummary,
     List<NetworkGrowthPoint> networkGrowth,
-    KycBreakdown kycBreakdown
+    KycBreakdown kycBreakdown,
+    LegVolumeSummary legVolumeSummary
 ) {
     public record AssociateSummary(String associateId, String name, String rank, String phone, Instant joinedAt, Instant rankChangedAt) {}
     public record CycleIncome(
@@ -27,4 +28,5 @@ public record DashboardResponse(
     public record NetworkSummary(long totalDownline, long directCount) {}
     public record NetworkGrowthPoint(String cycleLabel, long downlineCount) {}
     public record KycBreakdown(long verified, long pending, long rejected) {}
+    public record LegVolumeSummary(BigDecimal leftLegVolume, BigDecimal rightLegVolume) {}
 }

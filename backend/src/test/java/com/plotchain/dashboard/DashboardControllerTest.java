@@ -117,7 +117,9 @@ class DashboardControllerTest {
             .andExpect(jsonPath("$.cycleIncome.sponsorMatchingIncome").value(0))
             .andExpect(jsonPath("$.cycleIncome.royaltyBonusPct").value(0))
             .andExpect(jsonPath("$.salesSummary.salesThisCycle").value(0))
-            .andExpect(jsonPath("$.kycBreakdown.verified").value(0));
+            .andExpect(jsonPath("$.kycBreakdown.verified").value(0))
+            .andExpect(jsonPath("$.legVolumeSummary.leftLegVolume").value(0))
+            .andExpect(jsonPath("$.legVolumeSummary.rightLegVolume").value(0));
     }
 
     @Test

@@ -192,6 +192,8 @@ class DashboardServiceTest {
         assertThat(response.kycBreakdown().verified()).isEqualTo(9L);
         assertThat(response.kycBreakdown().pending()).isEqualTo(2L);
         assertThat(response.kycBreakdown().rejected()).isEqualTo(1L);
+        assertThat(response.legVolumeSummary().leftLegVolume()).isEqualByComparingTo("300000");
+        assertThat(response.legVolumeSummary().rightLegVolume()).isEqualByComparingTo("200000");
     }
 
     @Test
@@ -233,6 +235,8 @@ class DashboardServiceTest {
         assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("0");
         assertThat(response.cycleIncome().previousCycleTotalIncome()).isEqualByComparingTo("0");
         assertThat(response.salesSummary().revenueBookedChangePct()).isEqualByComparingTo("0");
+        assertThat(response.legVolumeSummary().leftLegVolume()).isEqualByComparingTo("0");
+        assertThat(response.legVolumeSummary().rightLegVolume()).isEqualByComparingTo("0");
     }
 
     @Test

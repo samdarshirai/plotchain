@@ -18,6 +18,8 @@
     "networkHint": "{{direct}} direct · {{downline}} downline",
     "salesThisCycleLabel": "Sales This Cycle",
     "revenueBookedLabel": "Revenue Booked",
+    "leftLegVolumeLabel": "Left Leg Volume",
+    "rightLegVolumeLabel": "Right Leg Volume",
     "revenueUp": "+{{pct}}% vs last cycle",
     "revenueDown": "-{{pct}}% vs last cycle",
     "cycleCloses": "Cycle closes in {{days}} days",

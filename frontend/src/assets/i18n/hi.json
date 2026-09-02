@@ -18,6 +18,8 @@
     "networkHint": "{{direct}} प्रत्यक्ष · {{downline}} डाउनलाइन",
     "salesThisCycleLabel": "इस साइकिल में बिक्री",
     "revenueBookedLabel": "बुक्ड राजस्व",
+    "leftLegVolumeLabel": "बायां लेग वॉल्यूम",
+    "rightLegVolumeLabel": "दायां लेग वॉल्यूम",
     "revenueUp": "पिछले साइकिल से +{{pct}}%",
     "revenueDown": "पिछले साइकिल से -{{pct}}%",
     "cycleCloses": "साइकिल {{days}} दिनों में बंद होगी",

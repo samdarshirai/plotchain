@@ -30,7 +30,8 @@ describe('DashboardComponent', () => {
       { cycleLabel: '05', downlineCount: 34 }, { cycleLabel: '06', downlineCount: 37 },
       { cycleLabel: '07', downlineCount: 40 }, { cycleLabel: '08', downlineCount: 42 }
     ],
-    kycBreakdown: { verified: 38, pending: 1, rejected: 3 }
+    kycBreakdown: { verified: 38, pending: 1, rejected: 3 },
+    legVolumeSummary: { leftLegVolume: 300000, rightLegVolume: 200000 }
   };
 
   beforeEach(async () => {
@@ -76,11 +77,11 @@ describe('DashboardComponent', () => {
     expect(text).toContain('SDI384818');
   });
 
-  it('renders the Seal Card, KYC banner, and all four KPI tiles', () => {
+  it('renders the Seal Card, KYC banner, and all six KPI tiles', () => {
     loadDashboard();
     expect(fixture.nativeElement.querySelector('app-cycle-income-card')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('app-kyc-banner')).toBeTruthy();
-    expect(fixture.nativeElement.querySelectorAll('app-stat-tile').length).toBe(4);
+    expect(fixture.nativeElement.querySelectorAll('app-stat-tile').length).toBe(6);
   });
 
   it('renders the two-column panel row: recent sales, network growth, KYC summary, quick actions', () => {
@@ -96,11 +97,14 @@ describe('DashboardComponent', () => {
     const values: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.stat-tile__value');
     const hints: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.stat-tile__hint');
 
-    // Tiles in order: Wallet Balance, Network, Sales This Cycle (no hint), Revenue Booked.
+    // Tiles in order: Wallet Balance, Network, Sales This Cycle (no hint), Revenue Booked,
+    // Left Leg Volume, Right Leg Volume.
     expect(values[0].textContent).toContain('2,500');
     expect(values[1].textContent?.trim()).toBe('42');
     expect(values[2].textContent?.trim()).toBe('6');
     expect(values[3].textContent).toContain('3,850,000');
+    expect(values[4].textContent).toContain('300,000');
+    expect(values[5].textContent).toContain('200,000');
 
     expect(hints).toHaveSize(3);
     // networkSummary: totalDownline 42, directCount 8 -> 42 - 8 = 34 downline.

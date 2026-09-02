@@ -51,6 +51,11 @@ export interface KycBreakdown {
   rejected: number;
 }
 
+export interface LegVolumeSummary {
+  leftLegVolume: number;
+  rightLegVolume: number;
+}
+
 export interface DashboardResponse {
   associate: AssociateSummary;
   kycPendingBannerVisible: boolean;
@@ -61,4 +66,5 @@ export interface DashboardResponse {
   networkSummary: NetworkSummary;
   networkGrowth: NetworkGrowthPoint[];
   kycBreakdown: KycBreakdown;
+  legVolumeSummary: LegVolumeSummary;
 }
