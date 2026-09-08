@@ -463,48 +463,66 @@
   border-bottom: none;
 }
 
-// Buyer Phone column (2nd) -- ledger typography (mockup: color #6B6153/--text-muted, IBM Plex
-// Mono, 12.5px -- Viraj_Acres_Settings.dc.html isSales section, `s.phone`)
+// Buyer Name column (2nd) -- mockup's `s.buyer` is set weight 600 with no font-family override
+// (Viraj_Acres_Settings.dc.html isSales section); Project Name (1st) stays unstyled/default,
+// matching how the mockup's own leading column carries no override either.
 .sales-register .editable-table td:nth-child(2) {
+  font-weight: 600;
+}
+
+// Buyer Phone column (3rd) -- ledger typography (mockup: color #6B6153/--text-muted, IBM Plex
+// Mono, 12.5px -- Viraj_Acres_Settings.dc.html isSales section, `s.phone`)
+.sales-register .editable-table td:nth-child(3) {
   font-family: var(--font-mono);
   font-size: 12.5px;
   color: var(--text-muted);
 }
 
-// Amount column (3rd) -- ledger typography (mockup: weight 600, IBM Plex Mono)
-.sales-register .editable-table td:nth-child(3) {
+// Amount column (4th) -- ledger typography (mockup: weight 600, IBM Plex Mono)
+.sales-register .editable-table td:nth-child(4) {
   font-family: var(--font-mono);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
-// Leg Credited column (4th) -- directional glyphs baked into the row's string value. Renders in
+// Leg Credited column (5th) -- directional glyphs baked into the row's string value. Renders in
 // the normal body font per the mockup (`s.leg` carries no font-family override), not mono.
-.sales-register .editable-table td:nth-child(4) {
+.sales-register .editable-table td:nth-child(5) {
   font-size: 0.8125rem;
   letter-spacing: 0.02em;
   color: var(--text-muted);
   text-align: center;
 }
 
-// Status column (5th) -- colored per value via EditableTableComponent's `type: 'badge'` (see
+// Note column (6th) -- free-text, not part of the mockup's original 7-column set. Muted and
+// clipped so a long note can't blow out the row height or push the ledger columns around.
+.sales-register .editable-table td:nth-child(6) {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+// Status column (7th) -- colored per value via EditableTableComponent's `type: 'badge'` (see
 // SalesRegisterComponent.statusBadgeTone); renders in the normal body font per the mockup
 // (`s.status` carries no font-family override, only `color`/`font-weight`), not mono.
-.sales-register .editable-table td:nth-child(5) {
+.sales-register .editable-table td:nth-child(7) {
   font-size: 0.8125rem;
 }
 
-// Recorded At column (6th)
-.sales-register .editable-table td:nth-child(6) {
+// Recorded At column (8th)
+.sales-register .editable-table td:nth-child(8) {
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
   font-size: 0.8125rem;
 }
 
-// Actions column (7th) -- lays out the inline void-reason input + Void button (or the
+// Actions column (9th) -- lays out the inline void-reason input + Void button (or the
 // Voided tag) in a row without needing to restructure the component's markup.
-.sales-register .editable-table td:nth-child(7) {
+.sales-register .editable-table td:nth-child(9) {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -607,22 +625,22 @@
     word-break: break-word;
   }
 
-  // Buyer Name is the mobile card's title. It's a ledger data value promoted to card-title
-  // position, not a hero/heading figure -- the desktop table's equivalent field (`s.buyer`,
-  // Viraj_Acres_Settings.dc.html isSales section) is set weight 600 with no font-family override,
-  // and DESIGN.md's own responsive section (sales_register/DESIGN.md line 128) already calls this
-  // "ledger-data mono weight" -- so it takes --font-mono, matching the rest of this screen's
-  // ledger typography, not --font-display.
-  .sales-register .editable-table tbody td:first-child {
+  // Buyer Name (2nd column -- 1st is Project Name) is the mobile card's title. It's a ledger data
+  // value promoted to card-title position, not a hero/heading figure -- the desktop table's
+  // equivalent field (`s.buyer`, Viraj_Acres_Settings.dc.html isSales section) is set weight 600
+  // with no font-family override, and DESIGN.md's own responsive section (sales_register/
+  // DESIGN.md line 128) already calls this "ledger-data mono weight" -- so it takes --font-mono,
+  // matching the rest of this screen's ledger typography, not --font-display.
+  .sales-register .editable-table tbody td:nth-child(2) {
     font-family: var(--font-mono);
     font-size: 1rem;
     font-weight: 600;
   }
 
-  .sales-register .editable-table td:nth-child(3),
   .sales-register .editable-table td:nth-child(4),
   .sales-register .editable-table td:nth-child(5),
-  .sales-register .editable-table td:nth-child(6) {
+  .sales-register .editable-table td:nth-child(7),
+  .sales-register .editable-table td:nth-child(8) {
     text-align: right;
   }
 
@@ -702,6 +720,12 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
+}
+
+// Rows that hold a single field (Associate, Note) span the full card width instead of sitting
+// alone in a half-width column with a blank gap beside them.
+.record-sale__row--single {
+  grid-template-columns: 1fr;
 }
 
 .record-sale__field {
