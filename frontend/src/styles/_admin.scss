@@ -346,6 +346,77 @@
   opacity: 0.5;
 }
 
+// Detail side panel content (app-side-panel host, associate-directory.component.ts) -- no mockup
+// ever covered this panel, so it borrows its row idiom directly from .cycle-detail__row* (same
+// classes, not a clone -- _admin.scss:1078-1144) and its badges from the shared editable-table
+// badge/rank-badge classes already used for these same values in this screen's table.
+.associate-detail__identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.associate-detail__name {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  width: 100%;
+}
+
+// KYC Status / Status as tonal pills, not loose colored text -- same tinted-background idiom as
+// .payout-approval__status-tag (_admin.scss:1741-1762), sized to sit next to .editable-table__rank-badge.
+.associate-detail__status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.associate-detail__status-badge--success {
+  background: color-mix(in srgb, var(--status-success) 18%, var(--surface-card));
+  color: #146c43;
+}
+
+.associate-detail__status-badge--warning {
+  background: color-mix(in srgb, var(--status-warning) 22%, var(--surface-card));
+  color: #8a5a0a;
+}
+
+.associate-detail__status-badge--danger {
+  background: color-mix(in srgb, var(--status-danger) 16%, var(--surface-card));
+  color: #b42318;
+}
+
+.associate-detail__status-badge--default {
+  background: var(--surface-raised);
+  color: var(--text-muted);
+}
+
+.associate-detail__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 1.25rem;
+}
+
+.associate-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
 // "Provision New Associate" modal -- Viraj_Acres_Settings.dc.html lines 529-554. A centered
 // scrim-backed panel, not a route; only the fields the modal actually exposes (name/email/phone/
 // sponsor search) live here, deliberately excluding parentId/position (see the link-out below).

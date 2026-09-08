@@ -144,24 +144,78 @@ function positionRequiredWhenParentSelectedValidator(group: AbstractControl): Va
 
     <app-side-panel [open]="panelOpen" [title]="selected?.userId ?? ''" (closed)="closePanel()">
       <div *ngIf="selected" class="associate-directory__detail">
-        <p>{{ selected.name }} — {{ selected.rankName }}</p>
-        <p>{{ 'admin.associateDirectory.sponsorLabel' | translate }}: {{ selected.sponsorUserId }}</p>
-        <p>{{ 'admin.associateDirectory.placementLabel' | translate }}: {{ selected.parentUserId }} ({{ selected.position }})</p>
-        <p>{{ 'admin.associateDirectory.downlineLabel' | translate }}: {{ selected.directDownlineCount }} / {{ selected.totalDownlineCount }}</p>
-
-        <div *ngIf="temporaryPassword" class="associate-directory__temp-password">
-          {{ 'admin.associateDirectory.temporaryPasswordNotice' | translate }}: <strong>{{ temporaryPassword }}</strong>
+        <div class="associate-detail__identity">
+          <span class="associate-detail__name">{{ selected.name }}</span>
+          <span class="editable-table__rank-badge" *ngIf="selected.rankName">{{ selected.rankName }}</span>
+          <span class="associate-detail__status-badge" [ngClass]="'associate-detail__status-badge--' + kycStatusBadgeTone(titleCase(selected.kycStatus))">
+            {{ titleCase(selected.kycStatus) }}
+          </span>
+          <span class="associate-detail__status-badge" [ngClass]="'associate-detail__status-badge--' + statusBadgeTone(titleCase(selected.status))">
+            {{ titleCase(selected.status) }}
+          </span>
         </div>
 
-        <button type="button" *ngIf="selected.status === 'ACTIVE'" (click)="suspendSelected()">
-          {{ 'admin.associateDirectory.suspendAction' | translate }}
-        </button>
-        <button type="button" *ngIf="selected.status === 'SUSPENDED'" (click)="reactivateSelected()">
-          {{ 'admin.associateDirectory.reactivateAction' | translate }}
-        </button>
-        <button type="button" (click)="resetPasswordForSelected()">
-          {{ 'admin.associateDirectory.resetPasswordAction' | translate }}
-        </button>
+        <div class="associate-detail__meta">
+          <div class="cycle-detail__row">
+            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.columnUserId' | translate }}</span>
+            <span class="cycle-detail__row-value">{{ selected.userId }}</span>
+          </div>
+          <div class="cycle-detail__row">
+            <span class="cycle-detail__row-label">{{ 'admin.emailLabel' | translate }}</span>
+            <span class="cycle-detail__row-value">{{ selected.email ?? '—' }}</span>
+          </div>
+          <div class="cycle-detail__row">
+            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.phoneLabel' | translate }}</span>
+            <span class="cycle-detail__row-value">{{ selected.phone ?? '—' }}</span>
+          </div>
+          <div class="cycle-detail__row">
+            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.joinedLabel' | translate }}</span>
+            <span class="cycle-detail__row-value">{{ selected.joinedAt | date }}</span>
+          </div>
+          <div class="cycle-detail__row">
+            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.lastActiveLabel' | translate }}</span>
+            <span class="cycle-detail__row-value">{{ selected.lastActiveAt ? (selected.lastActiveAt | date) : '—' }}</span>
+          </div>
+        </div>
+
+        <div class="associate-detail__meta">
+          <div class="cycle-detail__row">
+            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.sponsorLabel' | translate }}</span>
+            <span class="cycle-detail__row-value">{{ selected.sponsorUserId ?? '—' }}</span>
+          </div>
+          <div class="cycle-detail__row">
+            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.placementLabel' | translate }}</span>
+            <span class="cycle-detail__row-value">{{ selected.parentUserId ?? '—' }} ({{ selected.position ?? '—' }})</span>
+          </div>
+          <div class="cycle-detail__row">
+            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.downlineLabel' | translate }}</span>
+            <span class="cycle-detail__row-value">{{ selected.directDownlineCount }} / {{ selected.totalDownlineCount }}</span>
+          </div>
+          <div class="cycle-detail__row">
+            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.leftLegVolumeLabel' | translate }}</span>
+            <span class="cycle-detail__row-value">₹{{ selected.leftLegVolume | number }}</span>
+          </div>
+          <div class="cycle-detail__row">
+            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.rightLegVolumeLabel' | translate }}</span>
+            <span class="cycle-detail__row-value">₹{{ selected.rightLegVolume | number }}</span>
+          </div>
+        </div>
+
+        <app-inline-banner *ngIf="temporaryPassword" tone="success">
+          {{ 'admin.associateDirectory.temporaryPasswordNotice' | translate }}: <strong>{{ temporaryPassword }}</strong>
+        </app-inline-banner>
+
+        <div class="associate-detail__actions">
+          <button type="button" class="brand-button brand-button--danger" *ngIf="selected.status === 'ACTIVE'" (click)="suspendSelected()">
+            {{ 'admin.associateDirectory.suspendAction' | translate }}
+          </button>
+          <button type="button" class="brand-button" *ngIf="selected.status === 'SUSPENDED'" (click)="reactivateSelected()">
+            {{ 'admin.associateDirectory.reactivateAction' | translate }}
+          </button>
+          <button type="button" class="brand-button brand-button--secondary" (click)="resetPasswordForSelected()">
+            {{ 'admin.associateDirectory.resetPasswordAction' | translate }}
+          </button>
+        </div>
       </div>
     </app-side-panel>
 
@@ -270,6 +324,10 @@ function positionRequiredWhenParentSelectedValidator(group: AbstractControl): Va
   `
 })
 export class AssociateDirectoryComponent implements OnInit {
+  // Exposed so the detail-panel template can Title Case selected.kycStatus/status the same way
+  // loadPage() already does for the table rows (both feed the same badge-tone methods below).
+  readonly titleCase = titleCase;
+
   private associateDirectoryService = inject(AssociateDirectoryService);
   private compensationPlanService = inject(CompensationPlanService);
   private adminService = inject(AdminService);
