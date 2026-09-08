@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { AdminWithdrawalFilters, AdminWithdrawalPage } from '../models/admin-withdrawal-page.model';
 import { AdminWithdrawalRequest } from '../models/withdrawal-request.model';
 import { CreateWithdrawalRequest } from '../models/create-withdrawal-request.model';
+import { EligibleWithdrawalAssociate } from '../models/eligible-withdrawal-associate.model';
 
 @Injectable({ providedIn: 'root' })
 export class PayoutApprovalService {
@@ -21,6 +22,10 @@ export class PayoutApprovalService {
 
   submit(request: CreateWithdrawalRequest): Observable<AdminWithdrawalRequest> {
     return this.http.post<AdminWithdrawalRequest>('/api/admin/withdrawals', request);
+  }
+
+  listEligibleAssociates(): Observable<EligibleWithdrawalAssociate[]> {
+    return this.http.get<EligibleWithdrawalAssociate[]>('/api/admin/withdrawals/eligible-associates');
   }
 
   decide(id: string, decision: 'APPROVED' | 'REJECTED', reason?: string): Observable<AdminWithdrawalRequest> {

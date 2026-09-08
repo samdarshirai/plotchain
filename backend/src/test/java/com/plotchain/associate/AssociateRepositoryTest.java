@@ -425,6 +425,43 @@ class AssociateRepositoryTest {
         assertThat(ids).doesNotContain(root.getId(), sibling.getId(), unrelated.getId());
     }
 
+    // Withdrawal-eligibility dropdown (payout-approval "Submit Withdrawal" modal): only
+    // ACTIVE + KYC VERIFIED associates, scoped to role = ASSOCIATE (the ADMIN-role row must
+    // never appear, same role-scoping convention as searchDirectory above).
+    @Test
+    void findByRoleAndStatusAndKycStatusOrderByUserIdAscReturnsOnlyActiveVerifiedAssociates() {
+        RankTier rank = persistRank("Sales Associate", 1);
+        Associate eligible = persistAssociate("VP00002", "Eligible", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
+        persistAssociate("VP00001", "Suspended", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.VERIFIED, AssociateStatus.SUSPENDED, Instant.now());
+        persistAssociate("VP00003", "Unverified", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.now());
+        persistAssociate("testadmin", "Admin", AssociateRole.ADMIN, null,
+            KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
+        entityManager.flush();
+
+        List<Associate> result = associateRepository.findByRoleAndStatusAndKycStatusOrderByUserIdAsc(
+            AssociateRole.ASSOCIATE, AssociateStatus.ACTIVE, KycStatus.VERIFIED);
+
+        assertThat(result).extracting(Associate::getId).containsExactly(eligible.getId());
+    }
+
+    @Test
+    void findByRoleAndStatusAndKycStatusOrderByUserIdAscOrdersByUserId() {
+        RankTier rank = persistRank("Sales Associate", 1);
+        persistAssociate("VP00002", "Second", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
+        persistAssociate("VP00001", "First", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.VERIFIED, AssociateStatus.ACTIVE, Instant.now());
+        entityManager.flush();
+
+        List<Associate> result = associateRepository.findByRoleAndStatusAndKycStatusOrderByUserIdAsc(
+            AssociateRole.ASSOCIATE, AssociateStatus.ACTIVE, KycStatus.VERIFIED);
+
+        assertThat(result).extracting(Associate::getUserId).containsExactly("VP00001", "VP00002");
+    }
+
     private AssociateKycDocument persistKycDocument(UUID associateId, String documentType) {
         AssociateKycDocument document = new AssociateKycDocument();
         document.setId(UUID.randomUUID());

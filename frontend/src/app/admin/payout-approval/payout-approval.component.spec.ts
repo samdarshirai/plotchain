@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { RouterTestingModule } from '@angular/router/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { PayoutApprovalComponent } from './payout-approval.component';
 
@@ -9,11 +8,8 @@ describe('PayoutApprovalComponent', () => {
   let httpMock: HttpTestingController;
 
   beforeEach(async () => {
-    // RouterTestingModule is required because the template uses [routerLink] (the "+ Submit
-    // Withdrawal" link) -- omitting it makes TestBed.createComponent throw NG02801 (no Router
-    // provider), same as sales-register.component.spec.ts's own precedent.
     await TestBed.configureTestingModule({
-      imports: [PayoutApprovalComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
+      imports: [PayoutApprovalComponent, HttpClientTestingModule, TranslateModule.forRoot()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PayoutApprovalComponent);
@@ -344,5 +340,91 @@ describe('PayoutApprovalComponent', () => {
     const statusCell = statusColumnCells[2];
     const badgeElement = statusCell.querySelector('.editable-table__badge');
     expect(badgeElement?.classList.contains('editable-table__badge--success')).toBeTrue();
+  });
+
+  describe('Submit Withdrawal modal', () => {
+    const eligibleAssociates = [
+      { associateId: 'e1', associateUserId: 'VP00002', associateName: 'Amit Shah', maxAmount: 3000 }
+    ];
+
+    it('opens the modal and fetches eligible associates instead of navigating away', () => {
+      expect(fixture.componentInstance.modalOpen).toBe(false);
+
+      fixture.componentInstance.openSubmitModal();
+
+      expect(fixture.componentInstance.modalOpen).toBe(true);
+      httpMock.expectOne('/api/admin/withdrawals/eligible-associates').flush(eligibleAssociates);
+      expect(fixture.componentInstance.eligibleAssociates).toEqual(eligibleAssociates);
+    });
+
+    it('closes the modal without submitting', () => {
+      fixture.componentInstance.openSubmitModal();
+      httpMock.expectOne('/api/admin/withdrawals/eligible-associates').flush(eligibleAssociates);
+
+      fixture.componentInstance.closeSubmitModal();
+
+      expect(fixture.componentInstance.modalOpen).toBe(false);
+    });
+
+    it('tracks the selected associate\'s max amount', () => {
+      fixture.componentInstance.openSubmitModal();
+      httpMock.expectOne('/api/admin/withdrawals/eligible-associates').flush(eligibleAssociates);
+
+      fixture.componentInstance.onAssociateSelected('e1');
+
+      expect(fixture.componentInstance.selectedMaxAmount).toBe(3000);
+    });
+
+    it('rejects an amount above the selected associate\'s max amount', () => {
+      fixture.componentInstance.openSubmitModal();
+      httpMock.expectOne('/api/admin/withdrawals/eligible-associates').flush(eligibleAssociates);
+      fixture.componentInstance.onAssociateSelected('e1');
+
+      fixture.componentInstance.submitForm.setValue({ associateId: 'e1', amount: 3000.01 });
+
+      expect(fixture.componentInstance.submitForm.get('amount')?.hasError('exceedsMax')).toBe(true);
+    });
+
+    it('submits the withdrawal, closes the modal, and refreshes the queue and stat tile', () => {
+      fixture.componentInstance.openSubmitModal();
+      httpMock.expectOne('/api/admin/withdrawals/eligible-associates').flush(eligibleAssociates);
+      fixture.componentInstance.onAssociateSelected('e1');
+      fixture.componentInstance.submitForm.setValue({ associateId: 'e1', amount: 2000 });
+
+      fixture.componentInstance.onSubmitWithdrawal();
+
+      const req = httpMock.expectOne('/api/admin/withdrawals');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ associateId: 'e1', amount: 2000 });
+      req.flush({
+        id: 'w9', associateId: 'e1', associateUserId: 'VP00002', associateName: 'Amit Shah',
+        amount: 2000, status: 'REQUESTED', reason: null, bankReference: null,
+        requestedAt: '2026-09-08T00:00:00Z', decidedAt: null, disbursedAt: null
+      });
+
+      expect(fixture.componentInstance.modalOpen).toBe(false);
+      httpMock.expectOne('/api/admin/withdrawals?page=0&size=20').flush({ requests: [], page: 0, size: 20, totalElements: 0 });
+      httpMock.expectOne('/api/admin/stats').flush({
+        totalAssociates: 0, kycBreakdown: { pending: 0, verified: 0, rejected: 0 }, totalWalletBalance: 0,
+        pendingWithdrawals: 8, currentCycle: null, activePlots: 0, totalSalesRecorded: 0, cyclesCompleted: 0
+      });
+      expect(fixture.componentInstance.pendingWithdrawals).toBe(8);
+    });
+
+    it('shows the backend\'s message on a 409 without closing the modal', () => {
+      fixture.componentInstance.openSubmitModal();
+      httpMock.expectOne('/api/admin/withdrawals/eligible-associates').flush(eligibleAssociates);
+      fixture.componentInstance.onAssociateSelected('e1');
+      fixture.componentInstance.submitForm.setValue({ associateId: 'e1', amount: 2000 });
+
+      fixture.componentInstance.onSubmitWithdrawal();
+
+      httpMock.expectOne('/api/admin/withdrawals').flush(
+        { error: 'Associate is suspended' }, { status: 409, statusText: 'Conflict' }
+      );
+
+      expect(fixture.componentInstance.modalOpen).toBe(true);
+      expect(fixture.componentInstance.submitError).toBe('Associate is suspended');
+    });
   });
 });

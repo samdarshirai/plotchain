@@ -3,11 +3,13 @@ package com.plotchain.withdrawal;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateRole;
 import com.plotchain.associate.AssociateStatus;
 import com.plotchain.associate.KycStatus;
 import com.plotchain.company.SettingsAuditService;
 import com.plotchain.payments.WithdrawalConfigResponse;
 import com.plotchain.payments.WithdrawalConfigService;
+import com.plotchain.wallet.Wallet;
 import com.plotchain.wallet.WalletRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -251,6 +253,25 @@ public class WithdrawalService {
             .map(this::toAssociateResponse)
             .toList();
         return new AssociateWithdrawalPageResponse(rows, page, size, result.getTotalElements());
+    }
+
+    // "Submit Withdrawal" modal's associate picker (payout-approval screen): reuses the exact
+    // ACTIVE/VERIFIED eligibility rule submitRequest already enforces (lines 60-65), rather than
+    // duplicating it into the associate package. Balance lookup batches via findAllById, same
+    // shape as associatesById() below -- no new WalletRepository method needed.
+    public List<EligibleWithdrawalAssociateResponse> eligibleAssociates() {
+        List<Associate> eligible = associateRepository.findByRoleAndStatusAndKycStatusOrderByUserIdAsc(
+            AssociateRole.ASSOCIATE, AssociateStatus.ACTIVE, KycStatus.VERIFIED);
+        if (eligible.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> ids = eligible.stream().map(Associate::getId).toList();
+        Map<UUID, BigDecimal> balanceById = walletRepository.findAllById(ids).stream()
+            .collect(Collectors.toMap(Wallet::getAssociateId, Wallet::getBalance));
+        return eligible.stream()
+            .filter(a -> balanceById.getOrDefault(a.getId(), BigDecimal.ZERO).compareTo(BigDecimal.ZERO) > 0)
+            .map(a -> new EligibleWithdrawalAssociateResponse(a.getId(), a.getUserId(), a.getName(), balanceById.get(a.getId())))
+            .toList();
     }
 
     private Map<UUID, Associate> associatesById(List<WithdrawalRequest> requests) {

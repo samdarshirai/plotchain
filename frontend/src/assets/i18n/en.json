@@ -685,17 +685,13 @@
       "associateLabel": "Associate",
       "associatePlaceholder": "Select an associate",
       "amountLabel": "Amount",
+      "maxAmountLabel": "Available balance",
+      "noEligibleAssociatesOption": "No eligible associates",
       "submitButton": "Submit Withdrawal",
-      "submitAnotherButton": "Submit Another",
-      "successIdLabel": "Request ID",
-      "successAssociateLabel": "Associate",
-      "successAmountLabel": "Amount",
-      "successStatusLabel": "Status",
-      "statusRequestedChip": "Requested",
-      "statusApprovedChip": "Approved",
-      "autoApprovedHint": "Auto-approved — under the manual review threshold. No action needed in the queue; ready to disburse.",
+      "cancelAction": "Cancel",
       "validation": {
         "required": "This field is required.",
+        "exceedsMax": "Amount exceeds this associate's available balance.",
         "genericSubmitError": "Could not submit this withdrawal. Please try again."
       }
     }

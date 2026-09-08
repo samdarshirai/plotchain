@@ -330,6 +330,13 @@ public class SecurityConfig {
                 // spot -- grouped here with the other admin-list GETs for readability.
                 .requestMatchers(HttpMethod.GET, "/api/admin/withdrawals")
                     .hasAuthority("ADMIN")
+                // "Submit Withdrawal" modal's associate picker: exact-path AntPathMatcher rules
+                // don't cover sub-paths as a prefix (same gotcha as /api/admin/kyc vs
+                // /api/admin/kyc/*), so this needs its own matcher alongside the one above --
+                // without it, this GET falls through to anyRequest().authenticated() and any
+                // logged-in associate could call it.
+                .requestMatchers(HttpMethod.GET, "/api/admin/withdrawals/eligible-associates")
+                    .hasAuthority("ADMIN")
                 // Phase 5's genuinely public endpoints: the pre-login branding bootstrap, the
                 // raw logo bytes it and the login page render as <img> tags, and the favicon
                 // index.html links to -- all requested before any JWT exists. They only need to

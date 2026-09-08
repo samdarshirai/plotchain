@@ -3,6 +3,7 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { PayoutApprovalService } from './payout-approval.service';
 import { AdminWithdrawalPage } from '../models/admin-withdrawal-page.model';
 import { AdminWithdrawalRequest } from '../models/withdrawal-request.model';
+import { EligibleWithdrawalAssociate } from '../models/eligible-withdrawal-associate.model';
 
 describe('PayoutApprovalService', () => {
   let service: PayoutApprovalService;
@@ -70,6 +71,18 @@ describe('PayoutApprovalService', () => {
     const req = httpMock.expectOne('/api/admin/withdrawals/w1/decision');
     expect(req.request.body).toEqual({ decision: 'REJECTED', reason: 'Duplicate request' });
     req.flush(mockRequest);
+  });
+
+  it('lists withdraw-eligible associates with their max amount', () => {
+    const mockResponse: EligibleWithdrawalAssociate[] = [
+      { associateId: 'a1', associateUserId: 'VP00001', associateName: 'Jane Doe', maxAmount: 2500 }
+    ];
+
+    service.listEligibleAssociates().subscribe(res => expect(res).toEqual(mockResponse));
+
+    const req = httpMock.expectOne('/api/admin/withdrawals/eligible-associates');
+    expect(req.request.method).toBe('GET');
+    req.flush(mockResponse);
   });
 
   it('disburses an approved withdrawal request with a bank reference', () => {
