@@ -168,16 +168,11 @@ describe('AdminDashboardComponent', () => {
     expect(rows.every(r => r.classList.contains('admin-dashboard__decision-row--empty'))).toBeTrue();
   });
 
-  it('renders the recent sales table, network health, and inventory panels', () => {
+  it('renders the recent sales table and network health panel', () => {
     flushInitialLoad();
 
     expect(fixture.nativeElement.querySelector('app-admin-recent-sales-table')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.admin-dashboard__network')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.admin-dashboard__inventory')).toBeTruthy();
-
-    // 119/140 sold -> round(119/140*24) = 20 of the 24 grid cells filled.
-    const soldCells = fixture.nativeElement.querySelectorAll('.admin-dashboard__cell--sold');
-    expect(soldCells.length).toBe(20);
   });
 
   it('renders quick action links to Provision Associate and Record Sale', () => {

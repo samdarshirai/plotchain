@@ -99,12 +99,7 @@
     "networkDeepestLeg": "Deepest leg",
     "networkLevels": "{{count}} levels",
     "networkLegendActive": "Active",
-    "networkLegendIdle": "Idle",
-    "inventoryEyebrow": "INVENTORY",
-    "inventoryUnsold": "plots unsold",
-    "inventoryBookingGrid": "Booking grid →",
-    "inventorySold": "{{count}} sold",
-    "inventoryTotal": "{{count}} total"
+    "networkLegendIdle": "Idle"
   },
   "salesHistory": {
     "title": "Sales History",

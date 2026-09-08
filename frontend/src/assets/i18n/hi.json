@@ -99,12 +99,7 @@
     "networkDeepestLeg": "सबसे गहरी शाखा",
     "networkLevels": "{{count}} स्तर",
     "networkLegendActive": "सक्रिय",
-    "networkLegendIdle": "निष्क्रिय",
-    "inventoryEyebrow": "इन्वेंटरी",
-    "inventoryUnsold": "प्लॉट अनबिके",
-    "inventoryBookingGrid": "बुकिंग ग्रिड →",
-    "inventorySold": "{{count}} बिके",
-    "inventoryTotal": "{{count}} कुल"
+    "networkLegendIdle": "निष्क्रिय"
   },
   "salesHistory": {
     "title": "Sales History",

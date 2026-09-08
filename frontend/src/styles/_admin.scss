@@ -3947,12 +3947,6 @@
   }
 }
 
-.admin-dashboard__bottom-right {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
 .admin-dashboard__panel {
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
@@ -4072,50 +4066,6 @@
 
 .admin-dashboard__swatch--idle {
   background: #c3b79f;
-}
-
-.admin-dashboard__inventory-top {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-}
-
-.admin-dashboard__inventory-figure {
-  font-family: var(--font-display);
-  font-size: 1.625rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
-}
-
-.admin-dashboard__inventory-caption {
-  margin-top: 0.3125rem;
-  font-size: 0.6875rem;
-  color: var(--text-muted);
-}
-
-.admin-dashboard__inventory-grid {
-  display: grid;
-  grid-template-columns: repeat(24, 1fr);
-  gap: 2px;
-  margin-top: 0.875rem;
-
-  span {
-    height: 9px;
-    background: #e3d9c2;
-  }
-}
-
-.admin-dashboard__cell--sold {
-  background: var(--brand-secondary) !important;
-}
-
-.admin-dashboard__inventory-foot {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 0.4375rem;
-  font-size: 0.625rem;
-  color: var(--text-muted);
 }
 
 // Admin Recent Sales table (admin-dashboard/widgets/recent-sales-table) -- same visual pattern as
@@ -4276,9 +4226,5 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
-  }
-
-  .admin-dashboard__inventory-grid {
-    grid-template-columns: repeat(12, 1fr);
   }
 }

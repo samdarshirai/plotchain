@@ -10,9 +10,10 @@ import { AdminRecentSalesTableComponent } from './widgets/recent-sales-table/rec
 // Post-login landing page for admin-family roles. Rebuilt per docs/superpowers/specs/2026-09-08-
 // admin-dashboard-redesign-1a-design.md to direction 1a ("The Ledger") of the Admin Dashboard
 // Redesign canvas: the payout-liability Seal Card with an inline metrics strip (folding in the
-// four loose stat tiles), a consolidated "NEEDS A DECISION" queue, and Network Health / Inventory
-// cards replacing the growth-chart + KYC-summary + quick-actions column. This supersedes the
-// 2026-08-23 mockup layout. Content region only -- the global app shell is untouched.
+// four loose stat tiles), a consolidated "NEEDS A DECISION" queue, and a Network Health card
+// replacing the growth-chart + KYC-summary + quick-actions column. (1a's Inventory card was
+// dropped post-launch -- not requested for this screen.) This supersedes the 2026-08-23 mockup
+// layout. Content region only -- the global app shell is untouched.
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
@@ -130,51 +131,27 @@ import { AdminRecentSalesTableComponent } from './widgets/recent-sales-table/rec
         <div class="admin-dashboard__row admin-dashboard__row--bottom">
           <app-admin-recent-sales-table [sales]="s.recentSales"></app-admin-recent-sales-table>
 
-          <div class="admin-dashboard__bottom-right">
-            <section class="admin-dashboard__panel admin-dashboard__network">
-              <div class="admin-dashboard__panel-head">
-                <span class="admin-dashboard__panel-rule"></span>
-                <span class="admin-dashboard__panel-eyebrow">{{ 'adminDashboard.networkHealthEyebrow' | translate }}</span>
-                <span class="admin-dashboard__panel-rule"></span>
-              </div>
-              <dl class="admin-dashboard__leaders">
-                <div><dt>{{ 'adminDashboard.networkActive' | translate }}</dt><dd>{{ s.networkHealth.activeThisCycle }}</dd></div>
-                <div><dt>{{ 'adminDashboard.networkInactive' | translate }}</dt><dd class="admin-dashboard__leader--warn">{{ inactiveThisCycle(s) }}</dd></div>
-                <div><dt>{{ 'adminDashboard.networkJoined' | translate }}</dt><dd class="admin-dashboard__leader--good">+{{ s.networkHealth.joinedThisCycle }}</dd></div>
-                <div><dt>{{ 'adminDashboard.networkDeepestLeg' | translate }}</dt><dd>{{ 'adminDashboard.networkLevels' | translate: { count: s.networkHealth.deepestLeg } }}</dd></div>
-              </dl>
-              <div class="admin-dashboard__split-bar">
-                <span class="admin-dashboard__split-bar-active" [style.width.%]="activeSharePercent(s)"></span>
-                <span class="admin-dashboard__split-bar-idle" [style.width.%]="100 - activeSharePercent(s)"></span>
-              </div>
-              <div class="admin-dashboard__split-legend">
-                <span><i class="admin-dashboard__swatch admin-dashboard__swatch--active"></i>{{ 'adminDashboard.networkLegendActive' | translate }}</span>
-                <span><i class="admin-dashboard__swatch admin-dashboard__swatch--idle"></i>{{ 'adminDashboard.networkLegendIdle' | translate }}</span>
-              </div>
-            </section>
-
-            <section class="admin-dashboard__panel admin-dashboard__inventory">
-              <div class="admin-dashboard__panel-head">
-                <span class="admin-dashboard__panel-rule"></span>
-                <span class="admin-dashboard__panel-eyebrow">{{ 'adminDashboard.inventoryEyebrow' | translate }}</span>
-                <span class="admin-dashboard__panel-rule"></span>
-              </div>
-              <div class="admin-dashboard__inventory-top">
-                <div>
-                  <div class="admin-dashboard__inventory-figure">{{ s.activePlots }}</div>
-                  <div class="admin-dashboard__inventory-caption">{{ 'adminDashboard.inventoryUnsold' | translate }}</div>
-                </div>
-                <a [routerLink]="['/settings', 'projects']" class="admin-dashboard__panel-link">{{ 'adminDashboard.inventoryBookingGrid' | translate }}</a>
-              </div>
-              <div class="admin-dashboard__inventory-grid">
-                <span *ngFor="let sold of inventoryCells(s)" [class.admin-dashboard__cell--sold]="sold"></span>
-              </div>
-              <div class="admin-dashboard__inventory-foot">
-                <span>{{ 'adminDashboard.inventorySold' | translate: { count: s.plotsSold } }}</span>
-                <span>{{ 'adminDashboard.inventoryTotal' | translate: { count: s.plotsTotal } }}</span>
-              </div>
-            </section>
-          </div>
+          <section class="admin-dashboard__panel admin-dashboard__network">
+            <div class="admin-dashboard__panel-head">
+              <span class="admin-dashboard__panel-rule"></span>
+              <span class="admin-dashboard__panel-eyebrow">{{ 'adminDashboard.networkHealthEyebrow' | translate }}</span>
+              <span class="admin-dashboard__panel-rule"></span>
+            </div>
+            <dl class="admin-dashboard__leaders">
+              <div><dt>{{ 'adminDashboard.networkActive' | translate }}</dt><dd>{{ s.networkHealth.activeThisCycle }}</dd></div>
+              <div><dt>{{ 'adminDashboard.networkInactive' | translate }}</dt><dd class="admin-dashboard__leader--warn">{{ inactiveThisCycle(s) }}</dd></div>
+              <div><dt>{{ 'adminDashboard.networkJoined' | translate }}</dt><dd class="admin-dashboard__leader--good">+{{ s.networkHealth.joinedThisCycle }}</dd></div>
+              <div><dt>{{ 'adminDashboard.networkDeepestLeg' | translate }}</dt><dd>{{ 'adminDashboard.networkLevels' | translate: { count: s.networkHealth.deepestLeg } }}</dd></div>
+            </dl>
+            <div class="admin-dashboard__split-bar">
+              <span class="admin-dashboard__split-bar-active" [style.width.%]="activeSharePercent(s)"></span>
+              <span class="admin-dashboard__split-bar-idle" [style.width.%]="100 - activeSharePercent(s)"></span>
+            </div>
+            <div class="admin-dashboard__split-legend">
+              <span><i class="admin-dashboard__swatch admin-dashboard__swatch--active"></i>{{ 'adminDashboard.networkLegendActive' | translate }}</span>
+              <span><i class="admin-dashboard__swatch admin-dashboard__swatch--idle"></i>{{ 'adminDashboard.networkLegendIdle' | translate }}</span>
+            </div>
+          </section>
         </div>
       </ng-container>
     </div>
@@ -237,12 +214,6 @@ export class AdminDashboardComponent implements OnInit {
     return s.totalAssociates > 0
       ? Math.round((s.networkHealth.activeThisCycle / s.totalAssociates) * 100)
       : 0;
-  }
-
-  // 24-cell inventory grid, filled proportionally to plots sold (mirrors 1a's fixed 24-column row).
-  inventoryCells(s: AdminStatsResponse): boolean[] {
-    const filled = s.plotsTotal > 0 ? Math.round((s.plotsSold / s.plotsTotal) * 24) : 0;
-    return Array.from({ length: 24 }, (_, i) => i < filled);
   }
 
   private loadStats(): void {
