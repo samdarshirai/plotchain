@@ -98,6 +98,21 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         """)
     long countByRoleAndJoinedBefore(@Param("role") AssociateRole role, @Param("cutoffExclusive") Instant cutoffExclusive);
 
+    // Admin Dashboard redesign 1a's Network Health "deepest leg" figure: the longest root-to-leaf
+    // chain in the whole placement tree, counted in levels (a lone root = 1). Whole-tree walk from
+    // every root (parent_id IS NULL), same recursive-CTE style as countDownline above. Returns a
+    // numeric scalar, so it is exempt from the CAST(... AS VARCHAR) uuid-column workaround the
+    // ancestor-chain queries need.
+    @Query(value = """
+        WITH RECURSIVE tree(id, depth) AS (
+            SELECT id, 1 FROM associate WHERE parent_id IS NULL
+            UNION ALL
+            SELECT a.id, t.depth + 1 FROM associate a JOIN tree t ON a.parent_id = t.id
+        )
+        SELECT COALESCE(MAX(depth), 0) FROM tree
+        """, nativeQuery = true)
+    long findDeepestLegDepth();
+
     Optional<Associate> findByIdAndRole(UUID id, AssociateRole role);
 
     // KYC-queue list query for KycReviewService.list(). Every PENDING associate belongs in the

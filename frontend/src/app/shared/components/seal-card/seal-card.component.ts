@@ -29,6 +29,10 @@ import { CommonModule } from '@angular/common';
         <polyline [attr.points]="trendPoints"></polyline>
       </svg>
       <div class="seal-card-panel__caption" *ngIf="caption">{{ caption }}</div>
+      <!-- Redesign 1a: optional hairline metrics strip inside the Ink panel (Admin Dashboard's
+           Revenue booked / Sales / Active associates). Kept as a projected slot so this component
+           stays presentational and every other Seal Card usage is unaffected. -->
+      <div class="seal-card-panel__strip"><ng-content select="[seal-card-strip]"></ng-content></div>
       <div class="seal-card-panel__hairline seal-card-panel__hairline--bottom"></div>
     </div>
   `

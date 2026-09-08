@@ -30,7 +30,12 @@ describe('AdminDashboardService', () => {
     totalSalesRecorded: 63,
     cyclesCompleted: 11,
     networkGrowth: [],
-    recentSales: []
+    recentSales: [],
+    pendingWithdrawalsValue: 218400,
+    oldestPendingWithdrawalAgeDays: 4,
+    plotsSold: 119,
+    plotsTotal: 140,
+    networkHealth: { activeThisCycle: 18, joinedThisCycle: 5, deepestLeg: 7 }
   };
 
   beforeEach(() => {

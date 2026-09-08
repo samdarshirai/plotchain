@@ -49,6 +49,22 @@ class AssociateRepositoryTest {
     }
 
     @Test
+    void findDeepestLegDepthCountsLevelsInTheLongestRootToLeafChain() {
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        entityManager.persist(rank);
+
+        // Tree: root -> child -> grandchild (3 levels), plus a shallower sibling leg.
+        Associate root = newAssociate(null, null, rank.getId());
+        Associate child = newAssociate(root.getId(), "L", rank.getId());
+        Associate grandchild = newAssociate(child.getId(), "L", rank.getId());
+        Associate shallowSibling = newAssociate(root.getId(), "R", rank.getId());
+        associateRepository.saveAll(List.of(root, child, grandchild, shallowSibling));
+        entityManager.flush();
+
+        assertThat(associateRepository.findDeepestLegDepth()).isEqualTo(3L);
+    }
+
+    @Test
     void countDownlineJoinedBeforeCountsOnlyAssociatesWhoHadJoinedByTheCutoff() {
         RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
         entityManager.persist(rank);

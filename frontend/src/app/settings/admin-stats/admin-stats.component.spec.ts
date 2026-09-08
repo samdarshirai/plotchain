@@ -18,7 +18,12 @@ describe('AdminStatsComponent', () => {
     totalSalesRecorded: 63,
     cyclesCompleted: 11,
     networkGrowth: [],
-    recentSales: []
+    recentSales: [],
+    pendingWithdrawalsValue: 0,
+    oldestPendingWithdrawalAgeDays: null,
+    plotsSold: 0,
+    plotsTotal: 4,
+    networkHealth: { activeThisCycle: 0, joinedThisCycle: 0, deepestLeg: 0 }
   };
 
   function flushInitialLoad(response: AdminStatsResponse = stats): void {

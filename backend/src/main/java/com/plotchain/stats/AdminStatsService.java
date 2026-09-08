@@ -102,8 +102,8 @@ public class AdminStatsService {
 
         List<SaleResponse> recentSales = saleService.list(null, null, null, null, 0, 5).sales();
 
-        AdminStatsResponse.CurrentCycleStats currentCycle = cycleRepository
-            .findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)
+        Optional<Cycle> openCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN);
+        AdminStatsResponse.CurrentCycleStats currentCycle = openCycle
             .map(cycle -> currentCycleStats(cycle, lastCycles))
             .orElse(null);
 
@@ -111,9 +111,28 @@ public class AdminStatsService {
         long totalSalesRecorded = saleRepository.countByStatus(SaleStatus.RECORDED);
         long cyclesCompleted = cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED, CycleStatus.PAID));
 
+        // Redesign 1a additions (2026-09-08-admin-dashboard-redesign-1a-design.md).
+        BigDecimal pendingWithdrawalsValue =
+            withdrawalRequestRepository.sumAmountByStatus(WithdrawalRequestStatus.REQUESTED);
+        Long oldestPendingWithdrawalAgeDays = withdrawalRequestRepository
+            .findFirstByStatusOrderByRequestedAtAsc(WithdrawalRequestStatus.REQUESTED)
+            .map(w -> ChronoUnit.DAYS.between(w.getRequestedAt(), Instant.now()))
+            .orElse(null);
+
+        long plotsTotal = plotRepository.count();
+        long plotsSold = plotRepository.countByStatus(PlotStatus.SOLD);
+
+        long activeThisCycle = openCycle
+            .map(c -> ledgerEntryRepository.countDistinctAssociatesByCycle(c.getId()))
+            .orElse(0L);
+        long joinedThisCycle = currentCycle != null ? currentCycle.newAssociatesThisCycle() : 0L;
+        AdminStatsResponse.NetworkHealth networkHealth = new AdminStatsResponse.NetworkHealth(
+            activeThisCycle, joinedThisCycle, associateRepository.findDeepestLegDepth());
+
         return new AdminStatsResponse(
             totalAssociates, kycBreakdown, totalWalletBalance, pendingWithdrawals, currentCycle,
-            activePlots, totalSalesRecorded, cyclesCompleted, networkGrowth, recentSales);
+            activePlots, totalSalesRecorded, cyclesCompleted, networkGrowth, recentSales,
+            pendingWithdrawalsValue, oldestPendingWithdrawalAgeDays, plotsSold, plotsTotal, networkHealth);
     }
 
     private AdminStatsResponse.CurrentCycleStats currentCycleStats(Cycle cycle, List<Cycle> lastCycles) {

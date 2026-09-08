@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.UUID;
 
 // Wallet/withdrawal unit 5: this unit only needed save()/findById(), both inherited from
@@ -32,4 +34,12 @@ public interface WithdrawalRequestRepository extends JpaRepository<WithdrawalReq
         Pageable pageable);
 
     long countByStatus(WithdrawalRequestStatus status);
+
+    // Admin Dashboard redesign 1a's decision-queue Withdrawals row: rupee total of all requests
+    // in a given status, and the oldest such request (for its "oldest N days" caption). Same
+    // COALESCE(SUM(...), 0) shape as SaleRepository.sumAmountByCycleIdAndStatus.
+    @Query("SELECT COALESCE(SUM(w.amount), 0) FROM WithdrawalRequest w WHERE w.status = :status")
+    BigDecimal sumAmountByStatus(@Param("status") WithdrawalRequestStatus status);
+
+    Optional<WithdrawalRequest> findFirstByStatusOrderByRequestedAtAsc(WithdrawalRequestStatus status);
 }

@@ -31,6 +31,13 @@ export interface NetworkGrowthPoint {
   associateCount: number;
 }
 
+// Admin Dashboard redesign 1a's Network Health card (2026-09-08-admin-dashboard-redesign-1a-design.md).
+export interface NetworkHealth {
+  activeThisCycle: number;
+  joinedThisCycle: number;
+  deepestLeg: number;
+}
+
 export interface AdminStatsResponse {
   totalAssociates: number;
   kycBreakdown: KycBreakdown;
@@ -42,4 +49,12 @@ export interface AdminStatsResponse {
   cyclesCompleted: number;
   networkGrowth: NetworkGrowthPoint[];
   recentSales: Sale[];
+  // Redesign 1a additions. pendingWithdrawalsValue / oldestPendingWithdrawalAgeDays feed the
+  // decision-queue Withdrawals row (count rides pendingWithdrawals, KYC rides kycBreakdown.pending);
+  // plotsSold / plotsTotal feed the Inventory card grid (activePlots is the unsold count).
+  pendingWithdrawalsValue: number;
+  oldestPendingWithdrawalAgeDays: number | null;
+  plotsSold: number;
+  plotsTotal: number;
+  networkHealth: NetworkHealth;
 }

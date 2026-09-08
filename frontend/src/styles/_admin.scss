@@ -3687,85 +3687,435 @@
 // parity spec D6's "keep the console as-is" instruction -- D6's actual substance (exactly one
 // Seal Card for current-cycle income, styled via _shared-components.scss's .seal-card-panel*)
 // still holds, only the surrounding layout changed.
+// Redesign 1a ("The Ledger"), transcribed from Admin Dashboard Redesign.dc.html option 1a's
+// content column (2026-09-08-admin-dashboard-redesign-1a-design.md). Content region only -- the
+// mockup's Ink sidebar is deliberately not built; the global app shell carries navigation.
 .admin-dashboard {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem; // 20px
   max-width: 1240px;
   margin: 0 auto;
-  padding: 40px 44px 80px;
+  padding: 24px 28px 30px;
 }
 
-.admin-dashboard__title {
-  margin: 0 0 0.375rem; // 6px
-  font-family: var(--font-display);
-  font-size: 1.75rem; // 28px
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.admin-dashboard__subtitle {
-  margin: 0 0 0.5rem;
-  font-size: 0.875rem; // 14px
-  color: var(--text-muted);
-}
-
-.admin-dashboard__tiles {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.admin-dashboard__tile-link {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-}
-
-.admin-dashboard__empty,
-.admin-dashboard__load-error {
+.admin-dashboard__load-error,
+.admin-dashboard__empty {
   margin: 0;
   font-size: 0.875rem;
   color: var(--text-muted);
 }
 
-.admin-dashboard__panels {
+.admin-dashboard__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-bottom: 1.125rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.admin-dashboard__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.6875rem; // 27px
+  font-weight: 400;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+.admin-dashboard__cycle-caption {
+  margin: 0.375rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.admin-dashboard__cycle-closes {
+  color: var(--status-warning);
+  font-weight: 500;
+}
+
+.admin-dashboard__actions {
+  display: flex;
+  gap: 0.625rem;
+  flex: none;
+}
+
+.admin-dashboard__action {
+  border-radius: 3px;
+  padding: 0.625rem 0.9375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.admin-dashboard__action--primary {
+  background: var(--brand-secondary);
+  border: 1px solid var(--brand-secondary);
+  color: var(--brand-primary-bright);
+}
+
+.admin-dashboard__action--secondary {
+  background: transparent;
+  border: 1px solid var(--brand-secondary);
+  color: var(--brand-secondary);
+}
+
+.admin-dashboard__row {
   display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  gap: 1rem;
+  grid-template-columns: 1.45fr 1fr;
+  gap: 1.25rem;
+}
+
+.admin-dashboard__row--top {
+  align-items: stretch;
+}
+
+.admin-dashboard__row--bottom {
   align-items: start;
 }
 
-.admin-dashboard__panels-right {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+// Ink Seal Card override: 1a drops the all-round gold border + radius for a gold top/bottom rule
+// plus an inset gold glow, full column width, and adds the metrics strip.
+.admin-dashboard__seal .seal-card-panel {
+  max-width: none;
+  border: 0;
+  border-top: 1px solid var(--brand-primary);
+  border-bottom: 1px solid var(--brand-primary);
+  border-radius: 0;
+  padding: 1.375rem 1.625rem;
+  box-shadow:
+    inset 0 3px 0 -1px rgba(198, 162, 39, 0.35),
+    inset 0 -3px 0 -1px rgba(198, 162, 39, 0.35);
 }
 
-.admin-dashboard__quick-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
+.admin-dashboard__seal .seal-card-panel__hairline {
+  display: none;
 }
 
-.admin-dashboard__quick-action {
-  display: block;
-  border-radius: var(--radius-sm);
-  padding: 0.8125rem 0;
-  text-align: center;
-  font-size: 0.8125rem;
+.admin-dashboard__seal .seal-card-panel__label {
+  margin-bottom: 0.75rem;
+  font-size: 0.625rem;
   font-weight: 600;
-  text-decoration: none;
+  letter-spacing: 0.16em;
 }
 
-.admin-dashboard__quick-action--primary {
-  background: var(--brand-secondary);
-  color: var(--brand-secondary-contrast);
+.admin-dashboard__seal-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0 -1.625rem;
+  padding: 0 1.625rem;
+  border-top: 1px solid rgba(198, 162, 39, 0.22);
+
+  > div {
+    padding: 0.9375rem 0;
+
+    &:not(:first-child) {
+      padding-left: 1.25rem;
+      border-left: 1px solid rgba(198, 162, 39, 0.22);
+    }
+  }
 }
 
-.admin-dashboard__quick-action--secondary {
-  border: 1px solid var(--brand-secondary);
+.admin-dashboard__seal-strip-label {
+  display: block;
+  font-size: 0.5938rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-surface-muted);
+}
+
+.admin-dashboard__seal-strip-value {
+  display: block;
+  margin-top: 0.4375rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--surface-page);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-dashboard__seal-strip-sub {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--ink-surface-muted);
+}
+
+// "NEEDS A DECISION" queue
+.admin-dashboard__decision {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+}
+
+.admin-dashboard__decision-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.125rem 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.admin-dashboard__decision-eyebrow {
+  font-size: 0.6563rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--brand-secondary);
+}
+
+.admin-dashboard__decision-total {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--surface-card);
+  background: var(--status-danger);
+  padding: 0.1875rem 0.375rem;
+  border-radius: 2px;
+}
+
+.admin-dashboard__decision-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8125rem;
+  padding: 0.875rem 1.125rem;
+  border-bottom: 1px solid #efe7d6;
+  text-decoration: none;
+  color: inherit;
+
+  &:hover {
+    background: var(--surface-raised);
+  }
+
+  .material-symbols-outlined {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+  }
+}
+
+.admin-dashboard__decision-row--empty {
+  opacity: 0.55;
+
+  .admin-dashboard__decision-count {
+    color: var(--text-muted);
+  }
+}
+
+.admin-dashboard__decision-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-dashboard__decision-title {
+  display: block;
+  font-size: 0.78125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.admin-dashboard__decision-sub {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-dashboard__decision-count {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--brand-secondary);
+}
+
+.admin-dashboard__decision-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding: 0.8125rem 1.125rem;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+
+  a {
+    font-weight: 600;
+    color: var(--brand-secondary);
+    text-decoration: none;
+  }
+}
+
+.admin-dashboard__bottom-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.admin-dashboard__panel {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 1.125rem 1.25rem;
+}
+
+.admin-dashboard__panel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+.admin-dashboard__panel-rule {
+  flex: 1;
+  height: 1px;
+  background: rgba(92, 26, 42, 0.35);
+}
+
+.admin-dashboard__panel-eyebrow {
+  font-size: 0.6563rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-secondary);
+  white-space: nowrap;
+}
+
+.admin-dashboard__panel-link {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--brand-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.admin-dashboard__leaders {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6875rem;
+
+  > div {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+
+    &::after {
+      content: '';
+      flex: 1;
+      order: 2;
+      border-bottom: 1px dotted #c9bea8;
+      transform: translateY(-3px);
+    }
+  }
+
+  dt {
+    margin: 0;
+    order: 1;
+    font-size: 0.71875rem;
+    color: var(--text-primary);
+  }
+
+  dd {
+    margin: 0;
+    order: 3;
+    font-size: 0.71875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.admin-dashboard__leader--warn {
+  color: var(--status-warning) !important;
+}
+
+.admin-dashboard__leader--good {
+  color: var(--status-success) !important;
+}
+
+.admin-dashboard__split-bar {
+  display: flex;
+  height: 7px;
+  margin-top: 1rem;
+  border: 1px solid var(--border-subtle);
+}
+
+.admin-dashboard__split-bar-active {
+  background: var(--brand-secondary);
+}
+
+.admin-dashboard__split-bar-idle {
+  background: #e3d9c2;
+}
+
+.admin-dashboard__split-legend {
+  display: flex;
+  gap: 0.875rem;
+  margin-top: 0.5rem;
+  font-size: 0.625rem;
+  color: var(--text-muted);
+}
+
+.admin-dashboard__swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+  vertical-align: baseline;
+}
+
+.admin-dashboard__swatch--active {
+  background: var(--brand-secondary);
+}
+
+.admin-dashboard__swatch--idle {
+  background: #c3b79f;
+}
+
+.admin-dashboard__inventory-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.admin-dashboard__inventory-figure {
+  font-family: var(--font-display);
+  font-size: 1.625rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-dashboard__inventory-caption {
+  margin-top: 0.3125rem;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.admin-dashboard__inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 2px;
+  margin-top: 0.875rem;
+
+  span {
+    height: 9px;
+    background: #e3d9c2;
+  }
+}
+
+.admin-dashboard__cell--sold {
+  background: var(--brand-secondary) !important;
+}
+
+.admin-dashboard__inventory-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.4375rem;
+  font-size: 0.625rem;
+  color: var(--text-muted);
 }
 
 // Admin Recent Sales table (admin-dashboard/widgets/recent-sales-table) -- same visual pattern as
@@ -3829,19 +4179,21 @@
   font-family: var(--font-mono);
 }
 
+// 1a's outlined pill treatment (mitred corners, not the pill-radius the mockup-rebuild originally
+// used): border + transparent fill, colored by status, radius matches the rest of 1a's chrome.
 .admin-recent-sales-table__status-pill {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.5625rem;
-  border-radius: 999px;
-  background: rgba(75, 122, 82, 0.12);
+  padding: 0.25rem 0.4375rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(75, 122, 82, 0.4);
   font-size: 0.6563rem;
   font-weight: 500;
   color: var(--status-success);
 }
 
 .admin-recent-sales-table__status-pill--voided {
-  background: rgba(178, 59, 50, 0.12);
+  border-color: rgba(178, 59, 50, 0.45);
   color: var(--status-danger);
 }
 
@@ -3904,17 +4256,29 @@
 }
 
 @media (max-width: 960px) {
-  .admin-dashboard__tiles {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .admin-dashboard__row {
+    grid-template-columns: 1fr;
   }
 
-  .admin-dashboard__panels {
+  .admin-dashboard__seal-strip {
     grid-template-columns: 1fr;
+
+    > div:not(:first-child) {
+      padding-left: 0;
+      border-left: 0;
+      border-top: 1px solid rgba(198, 162, 39, 0.22);
+    }
   }
 }
 
 @media (max-width: 700px) {
-  .admin-dashboard__tiles {
-    grid-template-columns: 1fr;
+  .admin-dashboard__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .admin-dashboard__inventory-grid {
+    grid-template-columns: repeat(12, 1fr);
   }
 }

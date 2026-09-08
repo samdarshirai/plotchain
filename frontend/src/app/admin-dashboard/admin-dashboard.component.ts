@@ -1,101 +1,179 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule, CurrencyPipe } from '@angular/common';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminStatsResponse, CurrentCycleStats } from './admin-dashboard.model';
-import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.component';
 import { SealCardComponent } from '../shared/components/seal-card/seal-card.component';
 import { AdminRecentSalesTableComponent } from './widgets/recent-sales-table/recent-sales-table.component';
-import { AdminNetworkGrowthChartComponent } from './widgets/network-growth-chart/network-growth-chart.component';
-import { KycNetworkSummaryComponent } from '../dashboard/widgets/kyc-network-summary/kyc-network-summary.component';
 
-// Post-login landing page for admin-family roles. Rebuilt per docs/superpowers/specs/2026-08-23-
-// admin-dashboard-mockup-design.md to the same two-column mockup layout the associate dashboard
-// already got -- this supersedes 2026-08-22-settings-design-parity.md's D6, which had deliberately
-// kept the old section-by-section structure (D6's actual substance -- exactly one Seal Card for
-// current-cycle income -- still holds; only the surrounding layout changed).
+// Post-login landing page for admin-family roles. Rebuilt per docs/superpowers/specs/2026-09-08-
+// admin-dashboard-redesign-1a-design.md to direction 1a ("The Ledger") of the Admin Dashboard
+// Redesign canvas: the payout-liability Seal Card with an inline metrics strip (folding in the
+// four loose stat tiles), a consolidated "NEEDS A DECISION" queue, and Network Health / Inventory
+// cards replacing the growth-chart + KYC-summary + quick-actions column. This supersedes the
+// 2026-08-23 mockup layout. Content region only -- the global app shell is untouched.
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
   imports: [
-    CommonModule, RouterLink, TranslateModule, StatTileComponent, SealCardComponent,
-    AdminRecentSalesTableComponent, AdminNetworkGrowthChartComponent, KycNetworkSummaryComponent
+    CommonModule, RouterLink, TranslateModule, SealCardComponent, AdminRecentSalesTableComponent
   ],
-  providers: [CurrencyPipe],
+  providers: [CurrencyPipe, DatePipe],
   template: `
     <div class="admin-dashboard">
-      <h1 class="admin-dashboard__title">{{ 'adminDashboard.heading' | translate }}</h1>
-      <p class="admin-dashboard__subtitle">{{ 'adminDashboard.subtitle' | translate }}</p>
-
       <p *ngIf="loadError" class="admin-dashboard__load-error">{{ 'adminDashboard.loadError' | translate }}</p>
 
       <ng-container *ngIf="stats as s">
-        <ng-container *ngIf="s.currentCycle as cycle; else noCycle">
-          <app-seal-card
-            [label]="'adminDashboard.currentCycleLabel' | translate"
-            [value]="formatCurrency(cycle.totalIncome)"
-            [caption]="cycleClosesKey(cycle.daysRemaining) | translate: { days: cycle.daysRemaining }"
-            [deltaCaption]="cycleDeltaKey(cycle) | translate: { amount: formatCurrency(cycleDeltaAbs(cycle)) }"
-            [deltaDown]="cycleDelta(cycle) < 0"
-            [trendPoints]="cycleTrendPoints(cycle)"
-          ></app-seal-card>
-        </ng-container>
-        <ng-template #noCycle>
-          <p class="admin-dashboard__empty">{{ 'adminDashboard.noCycleEmptyState' | translate }}</p>
-        </ng-template>
+        <header class="admin-dashboard__header">
+          <div>
+            <h1 class="admin-dashboard__title">{{ 'adminDashboard.operationsTitle' | translate }}</h1>
+            <p class="admin-dashboard__cycle-caption">
+              <ng-container *ngIf="s.currentCycle as cycle; else noCycleCaption">
+                {{ 'adminDashboard.cyclePeriod' | translate: {
+                  start: (cycle.periodStart | date: 'd'),
+                  end: (cycle.periodEnd | date: 'd MMM')
+                } }}
+                &middot;
+                <span class="admin-dashboard__cycle-closes">{{ cycleClosesKey(cycle.daysRemaining) | translate: { days: cycle.daysRemaining } }}</span>
+              </ng-container>
+              <ng-template #noCycleCaption>{{ 'adminDashboard.noCycleEmptyState' | translate }}</ng-template>
+            </p>
+          </div>
+          <div class="admin-dashboard__actions">
+            <a
+              [routerLink]="['/settings', 'associate-directory']"
+              [queryParams]="{ provision: 1 }"
+              class="admin-dashboard__action admin-dashboard__action--secondary"
+            >{{ 'adminDashboard.provisionAssociateAction' | translate }}</a>
+            <a [routerLink]="['/admin', 'sales', 'new']" class="admin-dashboard__action admin-dashboard__action--primary">
+              {{ 'adminDashboard.recordSaleAction' | translate }}
+            </a>
+          </div>
+        </header>
 
-        <div class="admin-dashboard__tiles">
-          <app-stat-tile
-            icon="group"
-            [label]="'adminDashboard.totalAssociatesLabel' | translate"
-            [value]="s.totalAssociates.toString()"
-            [hint]="'adminDashboard.cyclesCompletedHint' | translate: { count: s.cyclesCompleted }"
-          ></app-stat-tile>
-          <app-stat-tile
-            icon="payments"
-            [label]="'adminDashboard.walletBalanceLabel' | translate"
-            [value]="formatCurrency(s.totalWalletBalance)"
-          ></app-stat-tile>
-          <app-stat-tile
-            icon="point_of_sale"
-            [label]="'adminDashboard.salesThisCycleLabel' | translate"
-            [value]="(s.currentCycle?.salesThisCycle ?? 0).toString()"
-            [hint]="'adminDashboard.totalSalesRecordedHint' | translate: { count: s.totalSalesRecorded }"
-          ></app-stat-tile>
-          <app-stat-tile
-            icon="trending_up"
-            [label]="'adminDashboard.revenueThisCycleLabel' | translate"
-            [value]="formatCurrency(s.currentCycle?.revenueThisCycle ?? 0)"
-            [hint]="'adminDashboard.activePlotsHint' | translate: { count: s.activePlots }"
-          ></app-stat-tile>
-        </div>
+        <div class="admin-dashboard__row admin-dashboard__row--top">
+          <ng-container *ngIf="s.currentCycle as cycle; else noCycle">
+            <app-seal-card
+              class="admin-dashboard__seal"
+              [label]="'adminDashboard.payoutLiabilityLabel' | translate"
+              [value]="formatCurrency(cycle.totalIncome)"
+              [deltaCaption]="cycleDeltaKey(cycle) | translate: { amount: formatCurrency(cycleDeltaAbs(cycle)) }"
+              [deltaDown]="cycleDelta(cycle) < 0"
+              [trendPoints]="cycleTrendPoints(cycle)"
+            >
+              <div seal-card-strip class="admin-dashboard__seal-strip">
+                <div>
+                  <span class="admin-dashboard__seal-strip-label">{{ 'adminDashboard.stripRevenueLabel' | translate }}</span>
+                  <span class="admin-dashboard__seal-strip-value">{{ formatCurrency(cycle.revenueThisCycle) }}</span>
+                </div>
+                <div>
+                  <span class="admin-dashboard__seal-strip-label">{{ 'adminDashboard.stripSalesLabel' | translate }}</span>
+                  <span class="admin-dashboard__seal-strip-value">{{ cycle.salesThisCycle }}</span>
+                </div>
+                <div>
+                  <span class="admin-dashboard__seal-strip-label">{{ 'adminDashboard.stripActiveLabel' | translate }}</span>
+                  <span class="admin-dashboard__seal-strip-value">
+                    {{ s.networkHealth.activeThisCycle }}<span class="admin-dashboard__seal-strip-sub"> / {{ s.totalAssociates }}</span>
+                  </span>
+                </div>
+              </div>
+            </app-seal-card>
+          </ng-container>
+          <ng-template #noCycle>
+            <p class="admin-dashboard__empty">{{ 'adminDashboard.noCycleEmptyState' | translate }}</p>
+          </ng-template>
 
-        <div class="admin-dashboard__panels">
-          <app-admin-recent-sales-table [sales]="s.recentSales"></app-admin-recent-sales-table>
-          <div class="admin-dashboard__panels-right">
-            <app-admin-network-growth-chart [data]="s.networkGrowth"></app-admin-network-growth-chart>
-            <app-kyc-network-summary [data]="s.kycBreakdown"></app-kyc-network-summary>
-            <div class="admin-dashboard__quick-actions">
-              <a [routerLink]="['/settings', 'payout-approval']" class="admin-dashboard__tile-link">
-                <app-stat-tile
-                  icon="account_balance_wallet"
-                  [label]="'adminDashboard.pendingWithdrawalsLabel' | translate"
-                  [value]="s.pendingWithdrawals.toString()"
-                  tone="accent"
-                ></app-stat-tile>
+          <section class="admin-dashboard__decision">
+            <div class="admin-dashboard__decision-head">
+              <span class="admin-dashboard__decision-eyebrow">{{ 'adminDashboard.decisionQueueHeading' | translate }}</span>
+              <span class="admin-dashboard__decision-total" *ngIf="decisionTotal(s) > 0">{{ decisionTotal(s) }}</span>
+            </div>
+            <div class="admin-dashboard__decision-rows">
+              <a [routerLink]="['/settings', 'payout-approval']" class="admin-dashboard__decision-row" [class.admin-dashboard__decision-row--empty]="!s.pendingWithdrawals">
+                <span class="material-symbols-outlined" aria-hidden="true">payments</span>
+                <span class="admin-dashboard__decision-body">
+                  <span class="admin-dashboard__decision-title">{{ 'adminDashboard.decisionWithdrawalsTitle' | translate }}</span>
+                  <span class="admin-dashboard__decision-sub" *ngIf="s.pendingWithdrawals; else noWithdrawals">
+                    {{ formatCurrency(s.pendingWithdrawalsValue) }}
+                    <ng-container *ngIf="s.oldestPendingWithdrawalAgeDays != null">
+                      &middot; {{ 'adminDashboard.decisionOldest' | translate: { days: s.oldestPendingWithdrawalAgeDays } }}
+                    </ng-container>
+                  </span>
+                  <ng-template #noWithdrawals>
+                    <span class="admin-dashboard__decision-sub">{{ 'adminDashboard.decisionNothingWaiting' | translate }}</span>
+                  </ng-template>
+                </span>
+                <span class="admin-dashboard__decision-count">{{ s.pendingWithdrawals }}</span>
               </a>
-              <a [routerLink]="['/admin', 'sales', 'new']" class="admin-dashboard__quick-action admin-dashboard__quick-action--primary">
-                {{ 'adminDashboard.recordSaleAction' | translate }}
-              </a>
-              <a
-                [routerLink]="['/settings', 'associate-directory']"
-                [queryParams]="{ provision: 1 }"
-                class="admin-dashboard__quick-action admin-dashboard__quick-action--secondary"
-              >
-                {{ 'adminDashboard.provisionAssociateAction' | translate }}
+              <a [routerLink]="['/settings', 'kyc-queue']" class="admin-dashboard__decision-row" [class.admin-dashboard__decision-row--empty]="!s.kycBreakdown.pending">
+                <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+                <span class="admin-dashboard__decision-body">
+                  <span class="admin-dashboard__decision-title">{{ 'adminDashboard.decisionKycTitle' | translate }}</span>
+                  <span class="admin-dashboard__decision-sub" *ngIf="s.kycBreakdown.pending; else noKyc">
+                    {{ 'adminDashboard.decisionKycRejected' | translate: { count: s.kycBreakdown.rejected } }}
+                  </span>
+                  <ng-template #noKyc>
+                    <span class="admin-dashboard__decision-sub">{{ 'adminDashboard.decisionNothingWaiting' | translate }}</span>
+                  </ng-template>
+                </span>
+                <span class="admin-dashboard__decision-count">{{ s.kycBreakdown.pending }}</span>
               </a>
             </div>
+            <div class="admin-dashboard__decision-foot">
+              <span>{{ 'adminDashboard.decisionFooter' | translate }}</span>
+              <a [routerLink]="['/settings', 'payout-approval']">{{ 'adminDashboard.decisionReviewAll' | translate }}</a>
+            </div>
+          </section>
+        </div>
+
+        <div class="admin-dashboard__row admin-dashboard__row--bottom">
+          <app-admin-recent-sales-table [sales]="s.recentSales"></app-admin-recent-sales-table>
+
+          <div class="admin-dashboard__bottom-right">
+            <section class="admin-dashboard__panel admin-dashboard__network">
+              <div class="admin-dashboard__panel-head">
+                <span class="admin-dashboard__panel-rule"></span>
+                <span class="admin-dashboard__panel-eyebrow">{{ 'adminDashboard.networkHealthEyebrow' | translate }}</span>
+                <span class="admin-dashboard__panel-rule"></span>
+              </div>
+              <dl class="admin-dashboard__leaders">
+                <div><dt>{{ 'adminDashboard.networkActive' | translate }}</dt><dd>{{ s.networkHealth.activeThisCycle }}</dd></div>
+                <div><dt>{{ 'adminDashboard.networkInactive' | translate }}</dt><dd class="admin-dashboard__leader--warn">{{ inactiveThisCycle(s) }}</dd></div>
+                <div><dt>{{ 'adminDashboard.networkJoined' | translate }}</dt><dd class="admin-dashboard__leader--good">+{{ s.networkHealth.joinedThisCycle }}</dd></div>
+                <div><dt>{{ 'adminDashboard.networkDeepestLeg' | translate }}</dt><dd>{{ 'adminDashboard.networkLevels' | translate: { count: s.networkHealth.deepestLeg } }}</dd></div>
+              </dl>
+              <div class="admin-dashboard__split-bar">
+                <span class="admin-dashboard__split-bar-active" [style.width.%]="activeSharePercent(s)"></span>
+                <span class="admin-dashboard__split-bar-idle" [style.width.%]="100 - activeSharePercent(s)"></span>
+              </div>
+              <div class="admin-dashboard__split-legend">
+                <span><i class="admin-dashboard__swatch admin-dashboard__swatch--active"></i>{{ 'adminDashboard.networkLegendActive' | translate }}</span>
+                <span><i class="admin-dashboard__swatch admin-dashboard__swatch--idle"></i>{{ 'adminDashboard.networkLegendIdle' | translate }}</span>
+              </div>
+            </section>
+
+            <section class="admin-dashboard__panel admin-dashboard__inventory">
+              <div class="admin-dashboard__panel-head">
+                <span class="admin-dashboard__panel-rule"></span>
+                <span class="admin-dashboard__panel-eyebrow">{{ 'adminDashboard.inventoryEyebrow' | translate }}</span>
+                <span class="admin-dashboard__panel-rule"></span>
+              </div>
+              <div class="admin-dashboard__inventory-top">
+                <div>
+                  <div class="admin-dashboard__inventory-figure">{{ s.activePlots }}</div>
+                  <div class="admin-dashboard__inventory-caption">{{ 'adminDashboard.inventoryUnsold' | translate }}</div>
+                </div>
+                <a [routerLink]="['/settings', 'projects']" class="admin-dashboard__panel-link">{{ 'adminDashboard.inventoryBookingGrid' | translate }}</a>
+              </div>
+              <div class="admin-dashboard__inventory-grid">
+                <span *ngFor="let sold of inventoryCells(s)" [class.admin-dashboard__cell--sold]="sold"></span>
+              </div>
+              <div class="admin-dashboard__inventory-foot">
+                <span>{{ 'adminDashboard.inventorySold' | translate: { count: s.plotsSold } }}</span>
+                <span>{{ 'adminDashboard.inventoryTotal' | translate: { count: s.plotsTotal } }}</span>
+              </div>
+            </section>
           </div>
         </div>
       </ng-container>
@@ -118,7 +196,7 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   cycleClosesKey(days: number): string {
-    return days === 1 ? 'adminDashboard.cycleClosesSingular' : 'adminDashboard.cycleCloses';
+    return days === 1 ? 'adminDashboard.cycleClosesShortSingular' : 'adminDashboard.cycleClosesShort';
   }
 
   cycleDelta(cycle: CurrentCycleStats): number {
@@ -145,6 +223,26 @@ export class AdminDashboardComponent implements OnInit {
     return trend
       .map((value, i) => `${(i * stepX).toFixed(1)},${(28 - ((value - min) / range) * 28).toFixed(1)}`)
       .join(' ');
+  }
+
+  decisionTotal(s: AdminStatsResponse): number {
+    return s.pendingWithdrawals + s.kycBreakdown.pending;
+  }
+
+  inactiveThisCycle(s: AdminStatsResponse): number {
+    return Math.max(0, s.totalAssociates - s.networkHealth.activeThisCycle);
+  }
+
+  activeSharePercent(s: AdminStatsResponse): number {
+    return s.totalAssociates > 0
+      ? Math.round((s.networkHealth.activeThisCycle / s.totalAssociates) * 100)
+      : 0;
+  }
+
+  // 24-cell inventory grid, filled proportionally to plots sold (mirrors 1a's fixed 24-column row).
+  inventoryCells(s: AdminStatsResponse): boolean[] {
+    const filled = s.plotsTotal > 0 ? Math.round((s.plotsSold / s.plotsTotal) * 24) : 0;
+    return Array.from({ length: 24 }, (_, i) => i < filled);
   }
 
   private loadStats(): void {

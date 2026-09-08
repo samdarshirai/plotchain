@@ -16,6 +16,7 @@ import com.plotchain.sales.SaleResponse;
 import com.plotchain.sales.SaleService;
 import com.plotchain.sales.SaleStatus;
 import com.plotchain.wallet.WalletRepository;
+import com.plotchain.withdrawal.WithdrawalRequest;
 import com.plotchain.withdrawal.WithdrawalRequestRepository;
 import com.plotchain.withdrawal.WithdrawalRequestStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,8 +95,18 @@ class AdminStatsServiceTest {
         when(saleRepository.sumAmountByCycleIdAndStatus(cycleId, SaleStatus.RECORDED))
             .thenReturn(new BigDecimal("2400000"));
         when(plotRepository.countByStatusNot(PlotStatus.SOLD)).thenReturn(21L);
+        when(plotRepository.count()).thenReturn(140L);
+        when(plotRepository.countByStatus(PlotStatus.SOLD)).thenReturn(119L);
         when(saleRepository.countByStatus(SaleStatus.RECORDED)).thenReturn(63L);
         when(cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED, CycleStatus.PAID))).thenReturn(11L);
+        when(withdrawalRequestRepository.sumAmountByStatus(WithdrawalRequestStatus.REQUESTED))
+            .thenReturn(new BigDecimal("218400"));
+        WithdrawalRequest oldestWithdrawal = new WithdrawalRequest();
+        oldestWithdrawal.setRequestedAt(Instant.now().minus(4, java.time.temporal.ChronoUnit.DAYS));
+        when(withdrawalRequestRepository.findFirstByStatusOrderByRequestedAtAsc(WithdrawalRequestStatus.REQUESTED))
+            .thenReturn(Optional.of(oldestWithdrawal));
+        when(ledgerEntryRepository.countDistinctAssociatesByCycle(cycleId)).thenReturn(18L);
+        when(associateRepository.findDeepestLegDepth()).thenReturn(7L);
         when(saleService.list(null, null, null, null, 0, 5))
             .thenReturn(new AdminSalePageResponse(List.of(), 0, 5, 0));
 
@@ -128,6 +139,15 @@ class AdminStatsServiceTest {
         assertThat(response.networkGrowth().get(0).cycleLabel()).isEqualTo(CYCLE_LABEL_FORMAT.format(cycle.getPeriodStart()));
         assertThat(response.networkGrowth().get(0).associateCount()).isEqualTo(2L);
         assertThat(response.recentSales()).isEmpty();
+
+        // Redesign 1a fields.
+        assertThat(response.pendingWithdrawalsValue()).isEqualByComparingTo("218400");
+        assertThat(response.oldestPendingWithdrawalAgeDays()).isEqualTo(4L);
+        assertThat(response.plotsSold()).isEqualTo(119L);
+        assertThat(response.plotsTotal()).isEqualTo(140L);
+        assertThat(response.networkHealth().activeThisCycle()).isEqualTo(18L);
+        assertThat(response.networkHealth().joinedThisCycle()).isEqualTo(3L);
+        assertThat(response.networkHealth().deepestLeg()).isEqualTo(7L);
     }
 
     @Test
@@ -211,5 +231,11 @@ class AdminStatsServiceTest {
         // is currently OPEN -- both degrade to empty here since there are no cycles/sales at all.
         assertThat(response.networkGrowth()).isEmpty();
         assertThat(response.recentSales()).isEmpty();
+
+        // Redesign 1a fields degrade to zero/null with no cycle and no pending withdrawals.
+        assertThat(response.oldestPendingWithdrawalAgeDays()).isNull();
+        assertThat(response.networkHealth().activeThisCycle()).isZero();
+        assertThat(response.networkHealth().joinedThisCycle()).isZero();
+        assertThat(response.networkHealth().deepestLeg()).isZero();
     }
 }

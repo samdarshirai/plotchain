@@ -10,10 +10,10 @@ describe('AdminDashboardComponent', () => {
   let httpMock: HttpTestingController;
 
   const statsWithCycle: AdminStatsResponse = {
-    totalAssociates: 6,
-    kycBreakdown: { pending: 3, verified: 35, rejected: 4 },
+    totalAssociates: 214,
+    kycBreakdown: { pending: 11, verified: 35, rejected: 4 },
     totalWalletBalance: 12345.67,
-    pendingWithdrawals: 2,
+    pendingWithdrawals: 7,
     currentCycle: {
       cycleId: 'c1',
       periodStart: '2026-08-01',
@@ -41,12 +41,17 @@ describe('AdminDashboardComponent', () => {
       buyerEmail: null, amount: 840000, cycleId: 'c1', legCredited: 'L', status: 'RECORDED',
       voidReason: null, recordedAt: '2026-08-18T00:00:00Z', plotNo: 'VG2-118', projectName: 'Viraj Greens Ph II',
       associateUserId: 'VP00001', associateName: 'Jane Associate', note: 'Sold to Jane Buyer'
-    }]
+    }],
+    pendingWithdrawalsValue: 218400,
+    oldestPendingWithdrawalAgeDays: 4,
+    plotsSold: 119,
+    plotsTotal: 140,
+    networkHealth: { activeThisCycle: 168, joinedThisCycle: 19, deepestLeg: 7 }
   };
 
   const statsWithoutCycle: AdminStatsResponse = {
     totalAssociates: 42,
-    kycBreakdown: { pending: 3, verified: 35, rejected: 4 },
+    kycBreakdown: { pending: 0, verified: 35, rejected: 4 },
     totalWalletBalance: 12345.67,
     pendingWithdrawals: 0,
     currentCycle: null,
@@ -54,7 +59,12 @@ describe('AdminDashboardComponent', () => {
     totalSalesRecorded: 0,
     cyclesCompleted: 0,
     networkGrowth: [],
-    recentSales: []
+    recentSales: [],
+    pendingWithdrawalsValue: 0,
+    oldestPendingWithdrawalAgeDays: null,
+    plotsSold: 0,
+    plotsTotal: 0,
+    networkHealth: { activeThisCycle: 0, joinedThisCycle: 0, deepestLeg: 0 }
   };
 
   function flushInitialLoad(response: AdminStatsResponse = statsWithCycle): void {
@@ -75,8 +85,9 @@ describe('AdminDashboardComponent', () => {
     translate.use('en');
     translate.setTranslation('en', {
       adminDashboard: {
-        cycleCloses: '{{days}} days left', cycleClosesSingular: '1 day left',
-        deltaUp: '+{{amount}} vs last cycle', deltaDown: '-{{amount}} vs last cycle'
+        cycleClosesShort: '{{days}} days left', cycleClosesShortSingular: '1 day left',
+        deltaUp: '+{{amount}} vs last cycle', deltaDown: '-{{amount}} vs last cycle',
+        decisionOldest: 'oldest {{days}} days'
       }
     });
 
@@ -87,15 +98,14 @@ describe('AdminDashboardComponent', () => {
     httpMock.verify();
   });
 
-  it('renders the heading and subtitle', () => {
+  it('renders the operations title', () => {
     flushInitialLoad();
 
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('adminDashboard.heading');
-    expect(text).toContain('adminDashboard.subtitle');
+    expect(text).toContain('adminDashboard.operationsTitle');
   });
 
-  it('renders one Seal Card with this cycle\'s total income as the figure', () => {
+  it('renders one Seal Card with the payout liability figure', () => {
     flushInitialLoad();
 
     const figure: HTMLElement = fixture.nativeElement.querySelector('.seal-card-panel__figure');
@@ -112,11 +122,13 @@ describe('AdminDashboardComponent', () => {
     expect(fixture.nativeElement.querySelector('.seal-card-panel__trend polyline')).toBeTruthy();
   });
 
-  it('renders the caption with the days remaining in the cycle', () => {
+  it('renders the seal strip with revenue, sales, and active-of-total associates', () => {
     flushInitialLoad();
 
-    const caption: HTMLElement = fixture.nativeElement.querySelector('.seal-card-panel__caption');
-    expect(caption.textContent?.trim()).toBe('28 days left');
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('2,400,000'); // revenueThisCycle formatted currency
+    expect(text).toContain('168');
+    expect(text).toContain('214');
   });
 
   it('renders an empty state instead of the Seal Card when currentCycle is null', () => {
@@ -136,35 +148,39 @@ describe('AdminDashboardComponent', () => {
     expect(text).toContain('adminDashboard.loadError');
   });
 
-  it('renders 4 KPI tiles with the previously-dead fields folded in as hints', () => {
+  it('renders the decision queue with withdrawals and KYC rows linking to their queues', () => {
     flushInitialLoad();
 
-    const text = fixture.nativeElement.textContent;
-    expect(text).toContain('6');
-    expect(text).toContain('12,345.67');
-    expect(text).toContain('12');
-    expect(text).toContain('2,400,000');
-    const hints: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.stat-tile__hint');
-    // Total Associates, Sales This Cycle, Revenue This Cycle each get a hint; Wallet Balance does not.
-    expect(hints).toHaveSize(3);
+    const rows: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll('.admin-dashboard__decision-row'));
+    expect(rows.length).toBe(2);
+    expect(rows[0].getAttribute('href')).toBe('/settings/payout-approval');
+    expect(rows[1].getAttribute('href')).toBe('/settings/kyc-queue');
+
+    const counts = fixture.nativeElement.querySelectorAll('.admin-dashboard__decision-count');
+    expect(counts[0].textContent.trim()).toBe('7');
+    expect(counts[1].textContent.trim()).toBe('11');
   });
 
-  it('renders the two-column panel row: recent sales, network growth, KYC summary', () => {
+  it('marks a decision row empty when its count is zero', () => {
+    flushInitialLoad(statsWithoutCycle);
+
+    const rows: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.admin-dashboard__decision-row'));
+    expect(rows.every(r => r.classList.contains('admin-dashboard__decision-row--empty'))).toBeTrue();
+  });
+
+  it('renders the recent sales table, network health, and inventory panels', () => {
     flushInitialLoad();
 
     expect(fixture.nativeElement.querySelector('app-admin-recent-sales-table')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('app-admin-network-growth-chart')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('app-kyc-network-summary')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.admin-dashboard__network')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.admin-dashboard__inventory')).toBeTruthy();
+
+    // 119/140 sold -> round(119/140*24) = 20 of the 24 grid cells filled.
+    const soldCells = fixture.nativeElement.querySelectorAll('.admin-dashboard__cell--sold');
+    expect(soldCells.length).toBe(20);
   });
 
-  it('links the pending withdrawals tile to the payout approval queue', () => {
-    flushInitialLoad();
-
-    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[href="/settings/payout-approval"]');
-    expect(link).toBeTruthy();
-  });
-
-  it('renders quick action links to Record Sale and Provision Associate', () => {
+  it('renders quick action links to Provision Associate and Record Sale', () => {
     flushInitialLoad();
 
     expect(fixture.nativeElement.querySelector('a[href="/admin/sales/new"]')).toBeTruthy();

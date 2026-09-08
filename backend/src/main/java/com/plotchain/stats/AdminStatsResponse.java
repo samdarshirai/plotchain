@@ -17,9 +17,29 @@ public record AdminStatsResponse(
     long totalSalesRecorded,
     long cyclesCompleted,
     List<NetworkGrowthPoint> networkGrowth,
-    List<SaleResponse> recentSales
+    List<SaleResponse> recentSales,
+    // Admin Dashboard redesign 1a (docs/superpowers/specs/2026-09-08-admin-dashboard-redesign-1a-design.md):
+    // the "NEEDS A DECISION" queue's Withdrawals row needs the rupee total and the age of the
+    // oldest still-REQUESTED request on top of the count already carried by pendingWithdrawals
+    // (the KYC row rides kycBreakdown.pending). oldestPendingWithdrawalAgeDays is null when the
+    // queue is empty.
+    BigDecimal pendingWithdrawalsValue,
+    Long oldestPendingWithdrawalAgeDays,
+    // Inventory card: plotsSold + plotsTotal drive the sold/unsold grid; activePlots above already
+    // carries the unsold count (countByStatusNot(SOLD)).
+    long plotsSold,
+    long plotsTotal,
+    NetworkHealth networkHealth
 ) {
     public record KycBreakdown(long pending, long verified, long rejected) {}
+
+    // Admin Dashboard redesign 1a's Network Health card. activeThisCycle = distinct associates
+    // with a ledger entry in the open cycle; joinedThisCycle mirrors currentCycle.newAssociatesThisCycle
+    // but stays populated (as 0) when no cycle is open; deepestLeg = the longest root-to-leaf chain
+    // in the whole placement tree. The mockup's 3-way selling/recruiting/dormant split is not a
+    // tracked concept here, so the card's bar is a 2-way active/inactive split derived from
+    // activeThisCycle vs totalAssociates on the frontend.
+    public record NetworkHealth(long activeThisCycle, long joinedThisCycle, long deepestLeg) {}
 
     public record CurrentCycleStats(
         UUID cycleId,
