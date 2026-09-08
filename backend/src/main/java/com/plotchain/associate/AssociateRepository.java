@@ -122,6 +122,11 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     // real work items, so it was removed.)
     Page<Associate> findByRoleAndKycStatusOrderByJoinedAtAsc(AssociateRole role, KycStatus kycStatus, Pageable pageable);
 
+    // Withdrawal-eligibility dropdown (WithdrawalService.eligibleAssociates()): ACTIVE + KYC
+    // VERIFIED associates only, scoped to role = ASSOCIATE like searchDirectory above (the
+    // associate table also holds ADMIN rows).
+    List<Associate> findByRoleAndStatusAndKycStatusOrderByUserIdAsc(AssociateRole role, AssociateStatus status, KycStatus kycStatus);
+
     long countByParentId(UUID parentId);
 
     List<Associate> findByParentId(UUID parentId);

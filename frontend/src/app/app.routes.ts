@@ -27,7 +27,6 @@ import { RecordSaleComponent } from './admin/sales-register/record-sale.componen
 import { CycleManagementComponent } from './admin/cycle-management/cycle-management.component';
 import { LedgerRegisterComponent } from './admin/ledger-register/ledger-register.component';
 import { PayoutApprovalComponent } from './admin/payout-approval/payout-approval.component';
-import { SubmitWithdrawalComponent } from './admin/payout-approval/submit-withdrawal.component';
 import { TermsOfServiceComponent } from './legal/terms-of-service.component';
 import { PrivacyPolicyComponent } from './legal/privacy-policy.component';
 import { SalesHistoryComponent } from './sales-history/sales-history.component';
@@ -54,7 +53,6 @@ export const routes: Routes = [
   { path: 'payout-history', component: PayoutHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
   { path: 'admin/sales/new', component: RecordSaleComponent, canActivate: [authGuard, adminGuard] },
-  { path: 'admin/withdrawals/new', component: SubmitWithdrawalComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/dashboard', component: AdminDashboardComponent, canActivate: [authGuard, adminGuard, launchedModeGuard] },
   {
     path: 'setup',

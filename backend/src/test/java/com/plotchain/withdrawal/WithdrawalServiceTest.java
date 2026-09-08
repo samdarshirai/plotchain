@@ -9,6 +9,7 @@ import com.plotchain.associate.KycStatus;
 import com.plotchain.company.SettingsAuditService;
 import com.plotchain.payments.WithdrawalConfigResponse;
 import com.plotchain.payments.WithdrawalConfigService;
+import com.plotchain.wallet.Wallet;
 import com.plotchain.wallet.WalletRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -204,6 +206,68 @@ class WithdrawalServiceTest {
         ArgumentCaptor<String> summaryCaptor = ArgumentCaptor.forClass(String.class);
         verify(settingsAuditService).record(eq("WITHDRAWAL"), summaryCaptor.capture(), any(), eq(ADMIN_ACTOR_ID));
         assertThat(summaryCaptor.getValue()).contains("VP00001");
+    }
+
+    private Wallet walletWithBalance(UUID associateId, BigDecimal balance) {
+        Wallet wallet = mock(Wallet.class);
+        when(wallet.getAssociateId()).thenReturn(associateId);
+        when(wallet.getBalance()).thenReturn(balance);
+        return wallet;
+    }
+
+    // "Submit Withdrawal" modal's associate picker (payout-approval screen): only ACTIVE +
+    // KYC VERIFIED associates with a positive wallet balance are eligible, each reported with
+    // maxAmount = their current balance.
+    @Test
+    void eligibleAssociatesReturnsActiveVerifiedAssociatesWithAPositiveBalanceAndTheirBalanceAsMaxAmount() {
+        Associate associate = verifiedActiveAssociate();
+        when(associateRepository.findByRoleAndStatusAndKycStatusOrderByUserIdAsc(
+            AssociateRole.ASSOCIATE, AssociateStatus.ACTIVE, KycStatus.VERIFIED))
+            .thenReturn(List.of(associate));
+        Wallet wallet = walletWithBalance(ASSOCIATE_ID, new BigDecimal("2500.00"));
+        when(walletRepository.findAllById(List.of(ASSOCIATE_ID))).thenReturn(List.of(wallet));
+
+        List<EligibleWithdrawalAssociateResponse> result = withdrawalService.eligibleAssociates();
+
+        assertThat(result).hasSize(1);
+        EligibleWithdrawalAssociateResponse row = result.get(0);
+        assertThat(row.associateId()).isEqualTo(ASSOCIATE_ID);
+        assertThat(row.associateUserId()).isEqualTo("VP00001");
+        assertThat(row.associateName()).isEqualTo("Jane Doe");
+        assertThat(row.maxAmount()).isEqualByComparingTo("2500.00");
+    }
+
+    @Test
+    void eligibleAssociatesExcludesAnAssociateWithAZeroBalance() {
+        Associate associate = verifiedActiveAssociate();
+        when(associateRepository.findByRoleAndStatusAndKycStatusOrderByUserIdAsc(
+            AssociateRole.ASSOCIATE, AssociateStatus.ACTIVE, KycStatus.VERIFIED))
+            .thenReturn(List.of(associate));
+        Wallet wallet = walletWithBalance(ASSOCIATE_ID, BigDecimal.ZERO);
+        when(walletRepository.findAllById(List.of(ASSOCIATE_ID))).thenReturn(List.of(wallet));
+
+        assertThat(withdrawalService.eligibleAssociates()).isEmpty();
+    }
+
+    @Test
+    void eligibleAssociatesExcludesAnAssociateWithNoWalletRowAtAll() {
+        Associate associate = verifiedActiveAssociate();
+        when(associateRepository.findByRoleAndStatusAndKycStatusOrderByUserIdAsc(
+            AssociateRole.ASSOCIATE, AssociateStatus.ACTIVE, KycStatus.VERIFIED))
+            .thenReturn(List.of(associate));
+        when(walletRepository.findAllById(List.of(ASSOCIATE_ID))).thenReturn(List.of());
+
+        assertThat(withdrawalService.eligibleAssociates()).isEmpty();
+    }
+
+    @Test
+    void eligibleAssociatesReturnsAnEmptyListWhenNoAssociatesAreEligible() {
+        when(associateRepository.findByRoleAndStatusAndKycStatusOrderByUserIdAsc(
+            AssociateRole.ASSOCIATE, AssociateStatus.ACTIVE, KycStatus.VERIFIED))
+            .thenReturn(List.of());
+
+        assertThat(withdrawalService.eligibleAssociates()).isEmpty();
+        verifyNoInteractions(walletRepository);
     }
 
     private WithdrawalRequest requestFor(UUID id, UUID associateId, BigDecimal amount, WithdrawalRequestStatus status) {

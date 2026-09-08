@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 // Wallet/withdrawal unit 5 added POST (submit). Unit 6 added GET (list). Unit 7 added
@@ -35,6 +36,14 @@ public class WithdrawalController {
             @Valid @RequestBody CreateWithdrawalRequest request,
             @AuthenticationPrincipal UUID actorId) {
         return ResponseEntity.status(HttpStatus.CREATED).body(withdrawalService.submitRequest(request, actorId));
+    }
+
+    // "Submit Withdrawal" modal's associate picker (payout-approval screen). Mapped before the
+    // paged list() below only for readability; Spring MVC dispatches by exact path regardless of
+    // declaration order.
+    @GetMapping("/eligible-associates")
+    public List<EligibleWithdrawalAssociateResponse> eligibleAssociates() {
+        return withdrawalService.eligibleAssociates();
     }
 
     @GetMapping

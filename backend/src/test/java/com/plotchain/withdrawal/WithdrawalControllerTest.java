@@ -10,6 +10,7 @@ import com.plotchain.auth.JwtService;
 import com.plotchain.company.SettingsAuditLogRepository;
 import com.plotchain.payments.WithdrawalConfig;
 import com.plotchain.payments.WithdrawalConfigRepository;
+import com.plotchain.wallet.Wallet;
 import com.plotchain.wallet.WalletRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -222,6 +224,38 @@ class WithdrawalControllerTest {
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.page").value(0));
+    }
+
+    @Test
+    void eligibleAssociatesReturns200WithEligibleAssociatesAndTheirMaxAmountForAnAdminToken() throws Exception {
+        Associate associate = verifiedActiveAssociate();
+        when(associateRepository.findByRoleAndStatusAndKycStatusOrderByUserIdAsc(
+            AssociateRole.ASSOCIATE, AssociateStatus.ACTIVE, KycStatus.VERIFIED))
+            .thenReturn(List.of(associate));
+        Wallet wallet = mock(Wallet.class);
+        when(wallet.getAssociateId()).thenReturn(TARGET_ASSOCIATE_ID);
+        when(wallet.getBalance()).thenReturn(new BigDecimal("2500.00"));
+        when(walletRepository.findAllById(List.of(TARGET_ASSOCIATE_ID))).thenReturn(List.of(wallet));
+
+        mockMvc.perform(get("/api/admin/withdrawals/eligible-associates")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].associateId").value(TARGET_ASSOCIATE_ID.toString()))
+            .andExpect(jsonPath("$[0].associateUserId").value("VP00001"))
+            .andExpect(jsonPath("$[0].maxAmount").value(2500.00));
+    }
+
+    @Test
+    void eligibleAssociatesIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/admin/withdrawals/eligible-associates")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void eligibleAssociatesIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/admin/withdrawals/eligible-associates"))
+            .andExpect(status().isUnauthorized());
     }
 
     @Test

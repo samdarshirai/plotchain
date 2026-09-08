@@ -92,13 +92,6 @@ describe('routes', () => {
     expect(route!.canActivate).toContain(adminGuard);
   });
 
-  it('guards the admin submit-withdrawal route with both authGuard and adminGuard', () => {
-    const route = routes.find(r => r.path === 'admin/withdrawals/new');
-    expect(route).toBeTruthy();
-    expect(route!.canActivate).toContain(authGuard);
-    expect(route!.canActivate).toContain(adminGuard);
-  });
-
   describe('setup route', () => {
     const setupRoute = routes.find(r => r.path === 'setup');
 
