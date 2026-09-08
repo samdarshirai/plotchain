@@ -7,7 +7,7 @@ import { CycleStatus, CyclePage, CycleSummary } from '../models/cycle.model';
 import { CycleDetail } from '../models/cycle-detail.model';
 import { CycleCloseResponse } from '../models/cycle-close-response.model';
 import { WalletCreditingResult } from '../models/wallet-crediting-result.model';
-import { EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
+import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { SidePanelComponent } from '../../shared/components/side-panel/side-panel.component';
 import { BrandButtonComponent } from '../../shared/components/brand-button/brand-button.component';
@@ -31,7 +31,7 @@ const PAGE_SIZE = 20;
   ],
   template: `
     <div class="cycle-management">
-      <div class="cycle-management__header cycle-management__intro">
+      <div class="cycle-management__intro">
         <span class="cycle-management__eyebrow">{{ 'admin.cycleManagement.eyebrow' | translate }}</span>
         <h1 class="cycle-management__title">{{ 'admin.cycleManagement.title' | translate }}</h1>
         <p class="cycle-management__subtitle">{{ 'admin.cycleManagement.subtitle' | translate }}</p>
@@ -48,36 +48,54 @@ const PAGE_SIZE = 20;
             {{ 'admin.cycleManagement.closeCycleAction' | translate }}
           </app-brand-button>
         </div>
-        <div class="cycle-management__current-stats" *ngIf="currentCycleStats as stats">
-          <app-stat-tile
-            [label]="'admin.cycleManagement.daysRemainingLabel' | translate"
-            [value]="stats.daysRemaining.toString()"
-          ></app-stat-tile>
-          <app-stat-tile
-            [label]="'admin.cycleManagement.directIncomeLabel' | translate"
-            [value]="(stats.directIncome | currency:'INR':'symbol':'1.0-2') || ''"
-          ></app-stat-tile>
-          <app-stat-tile
-            [label]="'admin.cycleManagement.matchingIncomeLabel' | translate"
-            [value]="(stats.matchingIncome | currency:'INR':'symbol':'1.0-2') || ''"
-          ></app-stat-tile>
-          <app-stat-tile
-            [label]="'admin.cycleManagement.totalIncomeLabel' | translate"
-            [value]="(stats.totalIncome | currency:'INR':'symbol':'1.0-2') || ''"
-          ></app-stat-tile>
-          <app-stat-tile
-            [label]="'admin.cycleManagement.newAssociatesLabel' | translate"
-            [value]="stats.newAssociatesThisCycle.toString()"
-          ></app-stat-tile>
-          <app-stat-tile
-            [label]="'admin.cycleManagement.salesThisCycleLabel' | translate"
-            [value]="stats.salesThisCycle.toString()"
-          ></app-stat-tile>
-          <app-stat-tile
-            [label]="'admin.cycleManagement.revenueThisCycleLabel' | translate"
-            [value]="(stats.revenueThisCycle | currency:'INR':'symbol':'1.0-2') || ''"
-          ></app-stat-tile>
-        </div>
+      </div>
+
+      <!-- Cycle-scoped stats (relocated from admin-dashboard.component.ts, Task 3): a standalone
+           tile grid below the hero strip, styled like Admin Stats' metric cards rather than fused
+           into the Current Cycle card, which is scoped to the open/close action alone. -->
+      <div class="cycle-management__stats" *ngIf="currentCycleStats as stats">
+        <app-stat-tile
+          icon="hourglass_top"
+          layout="vertical"
+          [label]="'admin.cycleManagement.daysRemainingLabel' | translate"
+          [value]="stats.daysRemaining.toString()"
+        ></app-stat-tile>
+        <app-stat-tile
+          icon="payments"
+          layout="vertical"
+          [label]="'admin.cycleManagement.directIncomeLabel' | translate"
+          [value]="(stats.directIncome | currency:'INR':'symbol':'1.0-2') || ''"
+        ></app-stat-tile>
+        <app-stat-tile
+          icon="sync_alt"
+          layout="vertical"
+          [label]="'admin.cycleManagement.matchingIncomeLabel' | translate"
+          [value]="(stats.matchingIncome | currency:'INR':'symbol':'1.0-2') || ''"
+        ></app-stat-tile>
+        <app-stat-tile
+          icon="account_balance_wallet"
+          layout="vertical"
+          [label]="'admin.cycleManagement.totalIncomeLabel' | translate"
+          [value]="(stats.totalIncome | currency:'INR':'symbol':'1.0-2') || ''"
+        ></app-stat-tile>
+        <app-stat-tile
+          icon="person_add"
+          layout="vertical"
+          [label]="'admin.cycleManagement.newAssociatesLabel' | translate"
+          [value]="stats.newAssociatesThisCycle.toString()"
+        ></app-stat-tile>
+        <app-stat-tile
+          icon="point_of_sale"
+          layout="vertical"
+          [label]="'admin.cycleManagement.salesThisCycleLabel' | translate"
+          [value]="stats.salesThisCycle.toString()"
+        ></app-stat-tile>
+        <app-stat-tile
+          icon="trending_up"
+          layout="vertical"
+          [label]="'admin.cycleManagement.revenueThisCycleLabel' | translate"
+          [value]="(stats.revenueThisCycle | currency:'INR':'symbol':'1.0-2') || ''"
+        ></app-stat-tile>
       </div>
 
       <app-inline-banner *ngIf="closeResult as result" tone="success" [dismissible]="true" class="cycle-management__close-success" (dismissed)="closeResult = null">
@@ -238,7 +256,12 @@ export class CycleManagementComponent implements OnInit {
     this.historyColumns = [
       { key: 'periodStart', label: this.translate.instant('admin.cycleManagement.columnPeriodStart'), type: 'text' },
       { key: 'periodEnd', label: this.translate.instant('admin.cycleManagement.columnPeriodEnd'), type: 'text' },
-      { key: 'status', label: this.translate.instant('admin.cycleManagement.columnStatus'), type: 'text' },
+      {
+        key: 'status',
+        label: this.translate.instant('admin.cycleManagement.columnStatus'),
+        type: 'badge',
+        badgeTone: value => this.statusBadgeTone(value)
+      },
       { key: 'actions', label: this.translate.instant('admin.cycleManagement.columnActions'), type: 'action' }
     ];
     this.loadPage(0);
@@ -315,6 +338,23 @@ export class CycleManagementComponent implements OnInit {
       return 'reached';
     }
     return stageIndex === currentIndex ? 'current' : 'upcoming';
+  }
+
+  // Amber for the two not-yet-settled states, gray once volume is rolled up but unpaid, green
+  // only once actually disbursed -- same "share a tone across related statuses" idiom Ledger
+  // Register/Payout Approval already use (their Pending/Carried-Forward and Requested groupings).
+  statusBadgeTone(value: string | number): BadgeTone {
+    switch (value) {
+      case 'OPEN':
+      case 'CALCULATING':
+        return 'warning';
+      case 'CLOSED':
+        return 'default';
+      case 'PAID':
+        return 'success';
+      default:
+        return 'default';
+    }
   }
 
   railStageLabelKey(stage: CycleStatus): string {

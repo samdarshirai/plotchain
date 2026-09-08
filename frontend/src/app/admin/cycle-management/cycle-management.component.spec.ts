@@ -138,7 +138,7 @@ describe('CycleManagementComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.currentCycleStats?.totalIncome).toBe(1500);
-    const stats: HTMLElement = fixture.nativeElement.querySelector('.cycle-management__current-stats');
+    const stats: HTMLElement = fixture.nativeElement.querySelector('.cycle-management__stats');
     expect(stats).toBeTruthy();
     expect(stats.textContent).toContain('12'); // daysRemaining
     expect(stats.textContent).toContain('3'); // newAssociatesThisCycle
@@ -147,7 +147,7 @@ describe('CycleManagementComponent', () => {
   it('also shows salesThisCycle and revenueThisCycle on the current-cycle card', () => {
     fixture.detectChanges();
 
-    const stats: HTMLElement = fixture.nativeElement.querySelector('.cycle-management__current-stats');
+    const stats: HTMLElement = fixture.nativeElement.querySelector('.cycle-management__stats');
     expect(stats.querySelectorAll('app-stat-tile').length).toBe(7);
     expect(stats.textContent).toContain('admin.cycleManagement.salesThisCycleLabel');
     expect(stats.textContent).toContain('admin.cycleManagement.revenueThisCycleLabel');

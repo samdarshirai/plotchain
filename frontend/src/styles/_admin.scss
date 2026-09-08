@@ -161,6 +161,8 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 // The mockup gives every screen the same h1 (Fraunces 28px/600 -- Viraj_Acres_Settings.dc.html
@@ -882,6 +884,8 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .cycle-management__intro {
@@ -945,15 +949,20 @@
   gap: 0.5rem;
 }
 
-// The cycle-scoped fields relocated from admin-dashboard.component.ts (Task 3, plus salesThisCycle
-// and revenueThisCycle restored in the final-review fix round) -- forces its own
-// row below the meta/actions pair via flex-basis: 100%, since .cycle-management__current is a
-// wrapping flex row and this block is always wider than what's left beside them.
-.cycle-management__current-stats {
-  flex-basis: 100%;
+// Cycle-scoped stats, standalone below the Current Cycle strip -- same 3-column vertical-tile
+// grid Admin Stats uses (frontend/src/styles/_settings.scss's .admin-stats__tiles) rather than a
+// bespoke shape, since these are the same kind of metric card, just cycle-scoped instead of
+// all-time.
+.cycle-management__stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+@media (max-width: 700px) {
+  .cycle-management__stats {
+    grid-template-columns: 1fr;
+  }
 }
 
 // Cycle Rail -- the signature element. A four-node track rendering CycleStatus's real, fixed,
@@ -1057,7 +1066,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 1rem 1.25rem;
+  padding: 1.25rem 1.5rem;
   background: var(--surface-raised);
   border-radius: 16px;
 
@@ -1107,17 +1116,6 @@
 .cycle-management .editable-table td:nth-child(1),
 .cycle-management .editable-table td:nth-child(2) {
   font-variant-numeric: tabular-nums;
-}
-
-// Status -- can't be per-value colored (EditableTableComponent's data cells are plain text),
-// so it gets the same uniform ledger treatment Sales Register's Status column already uses.
-.cycle-management .editable-table td:nth-child(3) {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
 }
 
 .cycle-management .editable-table__empty {
@@ -3268,6 +3266,7 @@
   flex-direction: column;
   gap: 1.25rem;
   max-width: 1100px;
+  margin: 0 auto;
 }
 
 // Uniform page heading, per the mockup's own h1 on this screen (Viraj_Acres_Settings.dc.html

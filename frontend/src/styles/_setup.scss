@@ -541,6 +541,7 @@ app-setup-progress-rail {
   gap: 0.375rem;
   // 920px per the mockup's card row -- matches .branding-step's own max-width.
   max-width: 920px;
+  margin: 0 auto;
 }
 
 .company-profile-step__intro {
@@ -700,6 +701,7 @@ app-setup-progress-rail {
   // ResizeObserver (BrandingStepComponent.setupSizeSync/syncPreviewScale) tracks the form card's
   // rendered *height* reactively regardless.
   max-width: 920px;
+  margin: 0 auto;
 }
 
 .branding-step__intro {
@@ -950,6 +952,7 @@ app-setup-progress-rail {
   // .setup-shell__content already caps the whole column at 960px, so this only fills that
   // existing ceiling rather than overflowing it.
   max-width: 1100px;
+  margin: 0 auto;
 }
 
 .compensation-step__intro {
@@ -1432,6 +1435,7 @@ app-setup-progress-rail {
   flex-direction: column;
   gap: 1.25rem;
   max-width: 900px;
+  margin: 0 auto;
 }
 
 // Settings mode has no side inspector aside eating into the width (unlike the setup wizard, which
@@ -2223,6 +2227,7 @@ app-setup-progress-rail {
   flex-direction: column;
   gap: 1.5rem;
   max-width: 900px;
+  margin: 0 auto;
 }
 
 .projects-step__header {
