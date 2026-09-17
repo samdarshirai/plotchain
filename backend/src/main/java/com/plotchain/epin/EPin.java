@@ -10,12 +10,16 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-// epin-domain unit 1 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
-// Data model section): only the generation-time columns are mapped here. redeemed_to/
-// redeemed_by/redeemed_at/redemption_type/linked_entity_id already exist on the epin table
-// (migration V33) so a later redeem unit needs no schema change, but they stay unmapped in this
-// entity until that unit's service logic actually reads/writes them -- Hibernate's
-// ddl-auto=validate only checks mapped columns, so an unmapped extra DB column is not an error.
+// epin-domain unit 1 mapped only the generation-time columns (id/code/batchId/status/
+// generatedBy/generatedAt). Unit 2 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
+// Data model section) adds the five redemption-time columns that migration V33 already created
+// as nullable: redeemedTo is needed for the admin register's redeemedTo filter, and the other
+// four (redeemedBy/redeemedAt/redemptionType/linkedEntityId) are mapped alongside it so the
+// register's row shape (EPinResponse, this unit) is already correct once unit 4's redeem happy
+// path starts populating them -- unit 4's own acceptance criteria assume these entity setters
+// already exist and it has no chartered scope to add entity mapping itself. No redeem write
+// logic lands here (units 3/4); this unit only reads/returns whatever is in these columns
+// (currently always null, since every row today is UNUSED).
 @Entity
 @Table(name = "epin")
 public class EPin {
@@ -39,6 +43,22 @@ public class EPin {
     @Column(name = "generated_at", nullable = false)
     private Instant generatedAt;
 
+    @Column(name = "redeemed_to")
+    private UUID redeemedTo;
+
+    @Column(name = "redeemed_by")
+    private UUID redeemedBy;
+
+    @Column(name = "redeemed_at")
+    private Instant redeemedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "redemption_type")
+    private RedemptionType redemptionType;
+
+    @Column(name = "linked_entity_id")
+    private UUID linkedEntityId;
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
     public String getCode() { return code; }
@@ -51,4 +71,14 @@ public class EPin {
     public void setGeneratedBy(UUID generatedBy) { this.generatedBy = generatedBy; }
     public Instant getGeneratedAt() { return generatedAt; }
     public void setGeneratedAt(Instant generatedAt) { this.generatedAt = generatedAt; }
+    public UUID getRedeemedTo() { return redeemedTo; }
+    public void setRedeemedTo(UUID redeemedTo) { this.redeemedTo = redeemedTo; }
+    public UUID getRedeemedBy() { return redeemedBy; }
+    public void setRedeemedBy(UUID redeemedBy) { this.redeemedBy = redeemedBy; }
+    public Instant getRedeemedAt() { return redeemedAt; }
+    public void setRedeemedAt(Instant redeemedAt) { this.redeemedAt = redeemedAt; }
+    public RedemptionType getRedemptionType() { return redemptionType; }
+    public void setRedemptionType(RedemptionType redemptionType) { this.redemptionType = redemptionType; }
+    public UUID getLinkedEntityId() { return linkedEntityId; }
+    public void setLinkedEntityId(UUID linkedEntityId) { this.linkedEntityId = linkedEntityId; }
 }

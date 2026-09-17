@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
@@ -61,5 +62,29 @@ class EPinRepositoryTest {
 
         assertThatThrownBy(() -> epinRepository.saveAndFlush(newEPin(code, UUID.randomUUID(), adminId)))
             .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void redemptionFieldsRoundTripThroughFindById() {
+        UUID adminId = persistAdmin();
+        UUID redeemedToId = persistAdmin();
+        UUID linkedEntityId = UUID.randomUUID();
+        EPin epin = newEPin("code-for-roundtrip", UUID.randomUUID(), adminId);
+        epin.setStatus(EPinStatus.USED);
+        epin.setRedeemedTo(redeemedToId);
+        epin.setRedeemedBy(adminId);
+        epin.setRedeemedAt(Instant.now());
+        epin.setRedemptionType(RedemptionType.ACTIVATION);
+        epin.setLinkedEntityId(linkedEntityId);
+        UUID id = epinRepository.saveAndFlush(epin).getId();
+        entityManager.clear();
+
+        EPin reloaded = epinRepository.findById(id).orElseThrow();
+
+        assertThat(reloaded.getRedeemedTo()).isEqualTo(redeemedToId);
+        assertThat(reloaded.getRedeemedBy()).isEqualTo(adminId);
+        assertThat(reloaded.getRedeemedAt()).isNotNull();
+        assertThat(reloaded.getRedemptionType()).isEqualTo(RedemptionType.ACTIVATION);
+        assertThat(reloaded.getLinkedEntityId()).isEqualTo(linkedEntityId);
     }
 }
