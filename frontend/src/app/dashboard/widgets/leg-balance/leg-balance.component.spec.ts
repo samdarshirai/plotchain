@@ -34,11 +34,26 @@ describe('LegBalanceComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('matching pays on the weaker leg');
   });
 
-  it('renders left and right leg figures as currency', () => {
+  it('renders left and right leg figures as whole-rupee currency (no decimals)', () => {
     createComponent({ leftLegVolume: 300000, rightLegVolume: 200000 });
-    const text = fixture.nativeElement.textContent;
-    expect(text).toContain('300,000');
-    expect(text).toContain('200,000');
+    const values = fixture.nativeElement.querySelectorAll('.leg-balance__figure-value');
+    expect(values[0].textContent.trim()).toBe('₹300,000');
+    expect(values[1].textContent.trim()).toBe('₹200,000');
+  });
+
+  it('renders a zero figure with no decimals', () => {
+    createComponent({ leftLegVolume: 0, rightLegVolume: 0 });
+    const values = fixture.nativeElement.querySelectorAll('.leg-balance__figure-value');
+    expect(values[0].textContent.trim()).toBe('₹0');
+  });
+
+  it('renders the eyebrow label flush left, followed by a single fill rule, with the caption flush right (matches mockup, not the recent-sales double-rule style)', () => {
+    createComponent({ leftLegVolume: 0, rightLegVolume: 0 });
+    const header = fixture.nativeElement.querySelector('.leg-balance__header');
+    const children = Array.from(header.children) as HTMLElement[];
+    expect(children.map(el => el.className)).toEqual([
+      'leg-balance__label', 'leg-balance__rule', 'leg-balance__caption'
+    ]);
   });
 
   it('shows the empty-state sentence when both legs have zero volume', () => {
