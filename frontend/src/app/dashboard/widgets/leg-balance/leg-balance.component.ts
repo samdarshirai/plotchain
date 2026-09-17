@@ -19,6 +19,7 @@ import { LegVolumeSummary } from '../../models/dashboard-response.model';
           <span class="leg-balance__figure-label">{{ 'dashboard.leftLegLabel' | translate }}</span>
           <span class="leg-balance__figure-value">{{ data.leftLegVolume | currency:'INR':'symbol':'1.0-0' }}</span>
         </div>
+        <div class="leg-balance__divider"></div>
         <div class="leg-balance__figure">
           <span class="leg-balance__figure-label">{{ 'dashboard.rightLegLabel' | translate }}</span>
           <span class="leg-balance__figure-value">{{ data.rightLegVolume | currency:'INR':'symbol':'1.0-0' }}</span>

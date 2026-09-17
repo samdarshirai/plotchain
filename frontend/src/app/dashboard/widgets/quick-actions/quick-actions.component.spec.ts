@@ -27,4 +27,8 @@ describe('QuickActionsComponent', () => {
   it('shows only the contact-admin hint text', () => {
     expect(fixture.nativeElement.textContent.trim()).toBe('To record a sale or add a referral, contact your admin.');
   });
+
+  it('wraps the hint in a bordered card (matches the mockup, not unstyled inline text)', () => {
+    expect(fixture.nativeElement.querySelector('.quick-actions')).toBeTruthy();
+  });
 });

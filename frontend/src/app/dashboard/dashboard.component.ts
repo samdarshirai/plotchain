@@ -29,9 +29,8 @@ import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.comp
           </div>
         </div>
         <div class="dashboard__header-right">
-          <span class="dashboard__name">{{ d.associate.name }}</span>
           <span class="dashboard__rank-badge">{{ d.associate.rank }}</span>
-          <span class="dashboard__id-caption">{{ 'dashboard.associateIdLabel' | translate }} {{ d.associate.associateId }}</span>
+          <span class="dashboard__id-caption">{{ d.associate.associateId }}</span>
         </div>
       </div>
 
@@ -42,6 +41,7 @@ import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.comp
       <div class="dashboard__tiles">
         <app-stat-tile
           icon="account_balance_wallet"
+          tone="accent"
           [label]="'dashboard.walletBalanceLabel' | translate"
           [value]="formatCurrency(d.wallet.balance)"
           [hint]="'dashboard.withdrawContactAdmin' | translate"

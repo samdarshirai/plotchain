@@ -63,12 +63,13 @@ describe('DashboardComponent', () => {
     fixture.detectChanges();
   }
 
-  it('renders the page header with the associate name, rank badge, and cycle subtitle', () => {
+  it('renders the page header with the rank badge and bare associate ID, but not the associate name or an "Associate ID" label (mockup shows just the ID)', () => {
     loadDashboard();
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Asha Kumar');
+    expect(text).not.toContain('Asha Kumar');
     expect(text).toContain('Sales Associate');
-    expect(text).toContain('SDI384818');
+    const idCaption = fixture.nativeElement.querySelector('.dashboard__id-caption');
+    expect(idCaption.textContent.trim()).toBe('SDI384818');
   });
 
   it('renders the Seal Card, KYC banner, and all four KPI tiles', () => {

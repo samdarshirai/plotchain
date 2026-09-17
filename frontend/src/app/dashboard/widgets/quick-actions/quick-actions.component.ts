@@ -10,7 +10,9 @@ import { TranslateModule } from '@ngx-translate/core';
   standalone: true,
   imports: [CommonModule, TranslateModule],
   template: `
-    <p class="quick-actions__hint">{{ 'dashboard.quickActionsContactAdmin' | translate }}</p>
+    <div class="quick-actions">
+      <p class="quick-actions__hint">{{ 'dashboard.quickActionsContactAdmin' | translate }}</p>
+    </div>
   `
 })
 export class QuickActionsComponent {}

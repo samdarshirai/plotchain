@@ -31,7 +31,6 @@
     "revenueDown": "पिछले साइकिल से -{{pct}}%",
     "cycleCloses": "साइकिल {{days}} दिनों में बंद होगी",
     "cycleClosesSingular": "साइकिल 1 दिन में बंद होगी",
-    "associateIdLabel": "एसोसिएट आईडी",
     "loadError": "आपका डैशबोर्ड लोड करने में समस्या हुई। कृपया पुनः प्रयास करें।",
     "recentSalesEyebrow": "हाल की बिक्री",
     "recentSalesLoading": "हाल की बिक्री लोड हो रही है…",

@@ -31,7 +31,6 @@
     "revenueDown": "-{{pct}}% vs last cycle",
     "cycleCloses": "Cycle closes in {{days}} days",
     "cycleClosesSingular": "Cycle closes in 1 day",
-    "associateIdLabel": "Associate ID",
     "loadError": "Something went wrong loading your dashboard. Please try again.",
     "recentSalesEyebrow": "Recent Sales",
     "recentSalesLoading": "Loading recent sales…",

@@ -56,6 +56,15 @@ describe('LegBalanceComponent', () => {
     ]);
   });
 
+  it('renders a vertical divider between the two figures, centered as a group (matches mockup, not a left-aligned list)', () => {
+    createComponent({ leftLegVolume: 0, rightLegVolume: 0 });
+    const figures = fixture.nativeElement.querySelector('.leg-balance__figures');
+    const children = Array.from(figures.children) as HTMLElement[];
+    expect(children.map(el => el.className)).toEqual([
+      'leg-balance__figure', 'leg-balance__divider', 'leg-balance__figure'
+    ]);
+  });
+
   it('shows the empty-state sentence when both legs have zero volume', () => {
     createComponent({ leftLegVolume: 0, rightLegVolume: 0 });
     expect(fixture.nativeElement.textContent).toContain('No volume on either leg yet');
