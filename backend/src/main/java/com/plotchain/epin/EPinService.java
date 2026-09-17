@@ -70,6 +70,7 @@ public class EPinService {
     // write to the Associate row for either RedemptionType (Decision 8) -- activation_fee_paid
     // does not exist on the entity and nothing here adds it. toResponse(...) below is the same
     // helper list(...) already uses.
+    @Transactional
     public EPinResponse redeem(UUID id, RedeemEPinRequest request, UUID actorId) {
         EPin epin = epinRepository.findById(id)
             .orElseThrow(() -> new EPinNotFoundException(id));
