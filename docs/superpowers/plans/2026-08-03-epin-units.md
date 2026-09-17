@@ -8,7 +8,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. Th
 
 | Unit # | Title | Type | Depends on | Status | Plan file path | Merged commit range |
 |---|---|---|---|---|---|---|
-| 1 | Admin generates a batch of e-PIN codes — `POST /api/admin/epins` | backend | none | pending | | |
+| 1 | Admin generates a batch of e-PIN codes — `POST /api/admin/epins` | backend | none | planned | `2026-08-03-epin-unit-1-generate-batch.md` | |
 | 2 | Admin views a paginated, filterable e-PIN issuance/redemption register — `GET /api/admin/epins` | backend | 1 | pending | | |
 | 3 | Redeeming a nonexistent/already-redeemed e-PIN, or for an unknown associate, is rejected with no side effects | backend | 1 | pending | | |
 | 4 | Redeeming a valid, unused e-PIN on an associate's behalf marks it used and records redemption details | backend | 1, 3 | pending | | |
