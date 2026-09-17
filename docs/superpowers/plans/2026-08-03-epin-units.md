@@ -11,7 +11,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. Th
 | 1 | Admin generates a batch of e-PIN codes — `POST /api/admin/epins` | backend | none | merged | `2026-08-03-epin-unit-1-generate-batch.md` | `8b9563f..7e16add` |
 | 2 | Admin views a paginated, filterable e-PIN issuance/redemption register — `GET /api/admin/epins` | backend | 1 | merged | `2026-08-03-epin-unit-2-admin-register.md` | `3c9f4d3..e19e2c9` |
 | 3 | Redeeming a nonexistent/already-redeemed e-PIN, or for an unknown associate, is rejected with no side effects | backend | 1 | merged | `2026-08-03-epin-unit-3-redeem-guards.md` | `7e59309..fb3d784` |
-| 4 | Redeeming a valid, unused e-PIN on an associate's behalf marks it used and records redemption details | backend | 1, 3 | pending | | |
+| 4 | Redeeming a valid, unused e-PIN on an associate's behalf marks it used and records redemption details | backend | 1, 3 | planned | `2026-08-03-epin-unit-4-redeem-happy-path.md` | |
 | 5 | Associate views their own e-PIN/redemption history, read-only — `GET /api/associates/me/epins` | backend | 1, 4 | pending | | |
 | 6 | Admin "e-PIN Generation & Allocation" screen — generate batch (1), register list/filter (2), redeem on an associate's behalf (3, 4) | screen | 1, 2, 3, 4 | pending | | |
 | 7 | Associate "My e-PINs" screen — own PIN/redemption history, view-only | screen | 5 | pending | | |
