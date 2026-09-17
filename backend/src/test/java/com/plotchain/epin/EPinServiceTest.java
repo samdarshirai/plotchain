@@ -198,20 +198,70 @@ class EPinServiceTest {
         verify(epinRepository, never()).save(any());
     }
 
+    // epin-domain unit 4 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
+    // Flows "Redeem", steps 4-5; Decisions 5, 6, 7, 8): the happy-path write, once all three
+    // guards (unit 3) pass. redeemedTo/redeemedBy/redeemedAt/redemptionType/linkedEntityId are
+    // all asserted on both the saved entity and the returned response; the Associate row is
+    // never written to, for either RedemptionType (Decision 8).
     @Test
-    void redeemReachesThePlaceholderWhenAllGuardsPass() {
+    void redeemSetsStatusUsedAndAllRedemptionFieldsAndSavesForAnActivationRedemption() {
         UUID epinId = UUID.randomUUID();
         UUID associateId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
         EPin unusedEPin = new EPin();
         unusedEPin.setId(epinId);
         unusedEPin.setStatus(EPinStatus.UNUSED);
         when(epinRepository.findById(epinId)).thenReturn(Optional.of(unusedEPin));
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(new Associate()));
+        when(epinRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThatThrownBy(() -> epinService.redeem(epinId,
-                new RedeemEPinRequest(associateId, RedemptionType.ACTIVATION, null), UUID.randomUUID()))
-            .isInstanceOf(UnsupportedOperationException.class);
+        EPinResponse response = epinService.redeem(epinId,
+            new RedeemEPinRequest(associateId, RedemptionType.ACTIVATION, null), actorId);
 
-        verify(epinRepository, never()).save(any());
+        ArgumentCaptor<EPin> captor = ArgumentCaptor.forClass(EPin.class);
+        verify(epinRepository).save(captor.capture());
+        EPin saved = captor.getValue();
+        assertThat(saved.getStatus()).isEqualTo(EPinStatus.USED);
+        assertThat(saved.getRedeemedTo()).isEqualTo(associateId);
+        assertThat(saved.getRedeemedBy()).isEqualTo(actorId);
+        assertThat(saved.getRedeemedAt()).isNotNull();
+        assertThat(saved.getRedemptionType()).isEqualTo(RedemptionType.ACTIVATION);
+        assertThat(saved.getLinkedEntityId()).isNull();
+
+        assertThat(response.status()).isEqualTo(EPinStatus.USED);
+        assertThat(response.redeemedTo()).isEqualTo(associateId);
+        assertThat(response.redeemedBy()).isEqualTo(actorId);
+        assertThat(response.redeemedAt()).isNotNull();
+        assertThat(response.redemptionType()).isEqualTo(RedemptionType.ACTIVATION);
+        assertThat(response.linkedEntityId()).isNull();
+
+        verify(associateRepository, never()).save(any());
+    }
+
+    @Test
+    void redeemSetsLinkedEntityIdForATopupRedemptionAndNeverWritesTheAssociateRow() {
+        UUID epinId = UUID.randomUUID();
+        UUID associateId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
+        UUID linkedEntityId = UUID.randomUUID();
+        EPin unusedEPin = new EPin();
+        unusedEPin.setId(epinId);
+        unusedEPin.setStatus(EPinStatus.UNUSED);
+        when(epinRepository.findById(epinId)).thenReturn(Optional.of(unusedEPin));
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(new Associate()));
+        when(epinRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        EPinResponse response = epinService.redeem(epinId,
+            new RedeemEPinRequest(associateId, RedemptionType.TOPUP, linkedEntityId), actorId);
+
+        ArgumentCaptor<EPin> captor = ArgumentCaptor.forClass(EPin.class);
+        verify(epinRepository).save(captor.capture());
+        assertThat(captor.getValue().getRedemptionType()).isEqualTo(RedemptionType.TOPUP);
+        assertThat(captor.getValue().getLinkedEntityId()).isEqualTo(linkedEntityId);
+
+        assertThat(response.redemptionType()).isEqualTo(RedemptionType.TOPUP);
+        assertThat(response.linkedEntityId()).isEqualTo(linkedEntityId);
+
+        verify(associateRepository, never()).save(any());
     }
 }

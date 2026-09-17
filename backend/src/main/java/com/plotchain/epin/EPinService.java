@@ -63,13 +63,13 @@ public class EPinService {
         return new EPinPageResponse(epins, page, size, result.getTotalElements());
     }
 
-    // epin-domain unit 3 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
-    // Flows "Redeem", steps 1-3): guards only. epin-domain unit 4 inserts the happy-path
-    // status/redeemedTo/redeemedBy/redeemedAt/redemptionType/linkedEntityId writes and
-    // epinRepository.save between the associate-lookup guard below and the placeholder throw --
-    // sequentially, without changing this method's signature -- following the same guard-only
-    // convention SaleService.voidSale's Sales unit 4 established
-    // (docs/superpowers/plans/2026-08-10-sales-void-guards.md).
+    // epin-domain unit 4 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
+    // Flows "Redeem", steps 4-5; Decisions 5, 6, 7, 8): once all three guards (unit 3) pass, this
+    // is the only write in the redeem flow -- generation and redemption remain the sole two
+    // lifecycle events (Decision 5), so there's no separate "allocate" step to also perform. No
+    // write to the Associate row for either RedemptionType (Decision 8) -- activation_fee_paid
+    // does not exist on the entity and nothing here adds it. toResponse(...) below is the same
+    // helper list(...) already uses.
     public EPinResponse redeem(UUID id, RedeemEPinRequest request, UUID actorId) {
         EPin epin = epinRepository.findById(id)
             .orElseThrow(() -> new EPinNotFoundException(id));
@@ -81,11 +81,15 @@ public class EPinService {
         associateRepository.findById(request.associateId())
             .orElseThrow(() -> new AssociateNotFoundException(request.associateId()));
 
-        // Placeholder: epin-domain unit 4 replaces this line with the status/redeemedTo/
-        // redeemedBy/redeemedAt/redemptionType/linkedEntityId writes and epinRepository.save
-        // (spec flow steps 4-5).
-        throw new UnsupportedOperationException(
-            "e-PIN redeem happy path is not yet implemented (epin-domain unit 4)");
+        epin.setStatus(EPinStatus.USED);
+        epin.setRedeemedTo(request.associateId());
+        epin.setRedeemedBy(actorId);
+        epin.setRedeemedAt(Instant.now());
+        epin.setRedemptionType(request.redemptionType());
+        epin.setLinkedEntityId(request.linkedEntityId());
+        epinRepository.save(epin);
+
+        return toResponse(epin);
     }
 
     private EPinResponse toResponse(EPin epin) {
