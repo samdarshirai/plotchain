@@ -4,9 +4,11 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -26,5 +28,23 @@ public class EPinController {
             @Valid @RequestBody CreateEPinBatchRequest request,
             @AuthenticationPrincipal UUID actorId) {
         return ResponseEntity.status(HttpStatus.CREATED).body(epinService.generateBatch(request, actorId));
+    }
+
+    // epin-domain unit 2 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
+    // Flows "Admin register", Decision 13): same page/size clamp convention as
+    // AdminAssociateController.list/LedgerController.list -- clamped here, not left to
+    // EPinService, so every caller of EPinService.list (there is only this one today) still has
+    // to pass an already-clamped page/size, same division of responsibility as those two
+    // controllers.
+    @GetMapping
+    public EPinPageResponse list(
+            @RequestParam(required = false) EPinStatus status,
+            @RequestParam(required = false) UUID redeemedTo,
+            @RequestParam(required = false) UUID batchId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        page = Math.max(page, 0);
+        size = Math.min(size, 100);
+        return epinService.list(status, redeemedTo, batchId, page, size);
     }
 }
