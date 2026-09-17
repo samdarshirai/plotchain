@@ -1,5 +1,7 @@
 package com.plotchain.epin;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,5 +47,23 @@ public class EPinService {
         }
 
         return new EPinBatchResponse(batchId, request.count(), codes, generatedAt);
+    }
+
+    // epin-domain unit 2 (Flows "Admin register"): three independently-optional filters, same
+    // null-safe pattern as LedgerService.adminList -- passed straight through to
+    // EPinRepository.search unchanged. No batch-resolved associate enrichment (see
+    // EPinResponse's own comment for why).
+    public EPinPageResponse list(EPinStatus status, UUID redeemedTo, UUID batchId, int page, int size) {
+        Page<EPin> result = epinRepository.search(status, redeemedTo, batchId, PageRequest.of(page, size));
+        List<EPinResponse> epins = result.getContent().stream().map(this::toResponse).toList();
+        return new EPinPageResponse(epins, page, size, result.getTotalElements());
+    }
+
+    private EPinResponse toResponse(EPin epin) {
+        return new EPinResponse(
+            epin.getId(), epin.getCode(), epin.getBatchId(), epin.getStatus(),
+            epin.getGeneratedBy(), epin.getGeneratedAt(),
+            epin.getRedeemedTo(), epin.getRedeemedBy(), epin.getRedeemedAt(),
+            epin.getRedemptionType(), epin.getLinkedEntityId());
     }
 }

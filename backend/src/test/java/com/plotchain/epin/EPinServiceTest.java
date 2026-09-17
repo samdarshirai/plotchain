@@ -6,7 +6,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -68,5 +71,72 @@ class EPinServiceTest {
         assertThat(response.codes()).hasSize(1);
         verify(epinRepository, times(2)).existsByCode(any());
         verify(epinRepository, times(1)).save(any());
+    }
+
+    @Test
+    void listReturnsAPageMappedToResponsesWithAllEPinFields() {
+        UUID id = UUID.randomUUID();
+        UUID batchId = UUID.randomUUID();
+        UUID generatedBy = UUID.randomUUID();
+        UUID redeemedTo = UUID.randomUUID();
+        UUID redeemedBy = UUID.randomUUID();
+        UUID linkedEntityId = UUID.randomUUID();
+        Instant generatedAt = Instant.now();
+        Instant redeemedAt = Instant.now();
+
+        EPin epin = new EPin();
+        epin.setId(id);
+        epin.setCode("some-code");
+        epin.setBatchId(batchId);
+        epin.setStatus(EPinStatus.USED);
+        epin.setGeneratedBy(generatedBy);
+        epin.setGeneratedAt(generatedAt);
+        epin.setRedeemedTo(redeemedTo);
+        epin.setRedeemedBy(redeemedBy);
+        epin.setRedeemedAt(redeemedAt);
+        epin.setRedemptionType(RedemptionType.ACTIVATION);
+        epin.setLinkedEntityId(linkedEntityId);
+
+        when(epinRepository.search(any(), any(), any(), any()))
+            .thenReturn(new PageImpl<>(List.of(epin), PageRequest.of(0, 20), 1));
+
+        EPinPageResponse response = epinService.list(EPinStatus.USED, redeemedTo, batchId, 0, 20);
+
+        assertThat(response.page()).isEqualTo(0);
+        assertThat(response.size()).isEqualTo(20);
+        assertThat(response.totalElements()).isEqualTo(1);
+        EPinResponse row = response.epins().get(0);
+        assertThat(row.id()).isEqualTo(id);
+        assertThat(row.code()).isEqualTo("some-code");
+        assertThat(row.batchId()).isEqualTo(batchId);
+        assertThat(row.status()).isEqualTo(EPinStatus.USED);
+        assertThat(row.generatedBy()).isEqualTo(generatedBy);
+        assertThat(row.generatedAt()).isEqualTo(generatedAt);
+        assertThat(row.redeemedTo()).isEqualTo(redeemedTo);
+        assertThat(row.redeemedBy()).isEqualTo(redeemedBy);
+        assertThat(row.redeemedAt()).isEqualTo(redeemedAt);
+        assertThat(row.redemptionType()).isEqualTo(RedemptionType.ACTIVATION);
+        assertThat(row.linkedEntityId()).isEqualTo(linkedEntityId);
+    }
+
+    @Test
+    void listPassesAllThreeFiltersAndThePageRequestThroughToSearchUnchanged() {
+        UUID redeemedTo = UUID.randomUUID();
+        UUID batchId = UUID.randomUUID();
+        when(epinRepository.search(any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
+
+        epinService.list(EPinStatus.UNUSED, redeemedTo, batchId, 2, 10);
+
+        verify(epinRepository).search(EPinStatus.UNUSED, redeemedTo, batchId, PageRequest.of(2, 10));
+    }
+
+    @Test
+    void listReturnsAnEmptyPageWhenSearchFindsNothing() {
+        when(epinRepository.search(any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
+
+        EPinPageResponse response = epinService.list(null, null, null, 0, 20);
+
+        assertThat(response.epins()).isEmpty();
+        assertThat(response.totalElements()).isZero();
     }
 }
