@@ -300,4 +300,40 @@ class EPinControllerTest {
                 .content("{\"associateId\":\"" + UUID.randomUUID() + "\",\"redemptionType\":\"ACTIVATION\"}"))
             .andExpect(status().isForbidden());
     }
+
+    // epin-domain unit 4 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
+    // Flows "Redeem", steps 4-5): the happy path, now that EPinService.redeem no longer ends in
+    // a placeholder throw (Task 1 of this unit's plan).
+    @Test
+    void redeemReturns200WithThePopulatedResponseForAnAdminToken() throws Exception {
+        UUID epinId = UUID.randomUUID();
+        UUID associateId = UUID.randomUUID();
+        UUID linkedEntityId = UUID.randomUUID();
+        EPin unusedEPin = new EPin();
+        unusedEPin.setId(epinId);
+        unusedEPin.setCode("some-code");
+        unusedEPin.setBatchId(UUID.randomUUID());
+        unusedEPin.setStatus(EPinStatus.UNUSED);
+        unusedEPin.setGeneratedBy(UUID.randomUUID());
+        unusedEPin.setGeneratedAt(Instant.now());
+        when(epinRepository.findById(epinId)).thenReturn(Optional.of(unusedEPin));
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(new Associate()));
+        when(epinRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(post("/api/admin/epins/{id}/redeem", epinId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"associateId\":\"" + associateId + "\",\"redemptionType\":\"TOPUP\",\"linkedEntityId\":\""
+                    + linkedEntityId + "\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(epinId.toString()))
+            .andExpect(jsonPath("$.status").value("USED"))
+            .andExpect(jsonPath("$.redeemedTo").value(associateId.toString()))
+            .andExpect(jsonPath("$.redeemedBy").isNotEmpty())
+            .andExpect(jsonPath("$.redeemedAt").isNotEmpty())
+            .andExpect(jsonPath("$.redemptionType").value("TOPUP"))
+            .andExpect(jsonPath("$.linkedEntityId").value(linkedEntityId.toString()));
+
+        verify(epinRepository).save(any());
+    }
 }
