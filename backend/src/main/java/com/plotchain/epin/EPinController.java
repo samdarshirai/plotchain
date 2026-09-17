@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,5 +47,16 @@ public class EPinController {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
         return epinService.list(status, redeemedTo, batchId, page, size);
+    }
+
+    // epin-domain unit 3 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
+    // Decision 10: the path parameter is the EPin's id, not its code): guard-only wiring --
+    // EPinService.redeem still ends in a placeholder throw until epin-domain unit 4 lands.
+    @PostMapping("/{id}/redeem")
+    public ResponseEntity<EPinResponse> redeem(
+            @PathVariable UUID id,
+            @Valid @RequestBody RedeemEPinRequest request,
+            @AuthenticationPrincipal UUID actorId) {
+        return ResponseEntity.ok(epinService.redeem(id, request, actorId));
     }
 }

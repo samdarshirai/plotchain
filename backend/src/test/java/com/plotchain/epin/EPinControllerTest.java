@@ -214,4 +214,90 @@ class EPinControllerTest {
         mockMvc.perform(get("/api/admin/epins"))
             .andExpect(status().isUnauthorized());
     }
+
+    // epin-domain unit 3 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
+    // Flows "Redeem", steps 1-3): guard-only controller tests. The happy path (200 with a
+    // fully-populated EPinResponse) is epin-domain unit 4's job.
+    @Test
+    void redeemReturns404WhenTheEPinDoesNotExist() throws Exception {
+        UUID epinId = UUID.randomUUID();
+        UUID associateId = UUID.randomUUID();
+        when(epinRepository.findById(epinId)).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/admin/epins/{id}/redeem", epinId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"associateId\":\"" + associateId + "\",\"redemptionType\":\"ACTIVATION\"}"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void redeemReturns409WhenTheEPinIsAlreadyRedeemed() throws Exception {
+        UUID epinId = UUID.randomUUID();
+        UUID associateId = UUID.randomUUID();
+        EPin usedEPin = new EPin();
+        usedEPin.setId(epinId);
+        usedEPin.setStatus(EPinStatus.USED);
+        when(epinRepository.findById(epinId)).thenReturn(Optional.of(usedEPin));
+
+        mockMvc.perform(post("/api/admin/epins/{id}/redeem", epinId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"associateId\":\"" + associateId + "\",\"redemptionType\":\"ACTIVATION\"}"))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void redeemReturns404WhenTheAssociateIdDoesNotResolve() throws Exception {
+        UUID epinId = UUID.randomUUID();
+        UUID associateId = UUID.randomUUID();
+        EPin unusedEPin = new EPin();
+        unusedEPin.setId(epinId);
+        unusedEPin.setStatus(EPinStatus.UNUSED);
+        when(epinRepository.findById(epinId)).thenReturn(Optional.of(unusedEPin));
+        when(associateRepository.findById(associateId)).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/admin/epins/{id}/redeem", epinId)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"associateId\":\"" + associateId + "\",\"redemptionType\":\"ACTIVATION\"}"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void redeemReturns400WhenAssociateIdIsMissing() throws Exception {
+        mockMvc.perform(post("/api/admin/epins/{id}/redeem", UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"redemptionType\":\"ACTIVATION\"}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.fields.associateId").isNotEmpty());
+    }
+
+    @Test
+    void redeemReturns400WhenRedemptionTypeIsMissing() throws Exception {
+        mockMvc.perform(post("/api/admin/epins/{id}/redeem", UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"associateId\":\"" + UUID.randomUUID() + "\"}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.fields.redemptionType").isNotEmpty());
+    }
+
+    @Test
+    void redeemIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(post("/api/admin/epins/{id}/redeem", UUID.randomUUID())
+                .contentType("application/json")
+                .content("{\"associateId\":\"" + UUID.randomUUID() + "\",\"redemptionType\":\"ACTIVATION\"}"))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void redeemIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(post("/api/admin/epins/{id}/redeem", UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
+                .contentType("application/json")
+                .content("{\"associateId\":\"" + UUID.randomUUID() + "\",\"redemptionType\":\"ACTIVATION\"}"))
+            .andExpect(status().isForbidden());
+    }
 }
