@@ -202,6 +202,16 @@ public class SecurityConfig {
                 // reason those Sales matchers document.
                 .requestMatchers(HttpMethod.POST, "/api/admin/bookings")
                     .hasAuthority("ADMIN")
+                // Generate a batch of e-PINs: ADMIN-only, per epin-domain unit 1
+                // (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
+                // Decision 12: "POST/GET /api/admin/epins* require hasAuthority("ADMIN")...
+                // via the blanket write rule (for the POSTs)"), same target-role-model
+                // reasoning and first-match-wins placement as the Sales/Bookings matchers
+                // directly above -- not load-bearing on its own (the blanket POST rule below
+                // already covers it), added for the same readability/grouping reason those
+                // matchers document.
+                .requestMatchers(HttpMethod.POST, "/api/admin/epins")
+                    .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/**")
                     .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/**")

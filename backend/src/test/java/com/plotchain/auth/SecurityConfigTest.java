@@ -540,6 +540,30 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
     }
 
+    // epin-domain unit 1 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
+    // "POST /api/admin/epins, ADMIN-only", Decision 12): same target-role-model pattern as
+    // adminSalesRecordIsReachableOnlyForAdminAndForbiddenForEveryOtherRole and
+    // adminBookingsCreateIsReachableOnlyForAdminAndForbiddenForEveryOtherRole above. EPinRepository
+    // is NOT @MockBean'd in this class, so an ADMIN token reaches the real (H2, unmocked)
+    // EPinRepository -- but tokenFor(role) never persists a real Associate row (only a mocked
+    // AssociateRepository.findById stub), so the epin table's generated_by FK constraint (V33)
+    // rejects the very first insert as a DataIntegrityViolationException, mapped to 409 by
+    // ApiExceptionHandler. 409 (not 403) is what proves the request passed the security layer for
+    // ADMIN, same "assert not 403" reasoning as adminWithdrawalsSubmitIsReachableOnlyFor... above.
+    // Every other role, including the soon-to-be-deleted admin-family sub-roles, is blocked at the
+    // filter layer before the controller/service ever runs.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminEpinsGenerateBatchIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        String body = new ObjectMapper().writeValueAsString(new com.plotchain.epin.CreateEPinBatchRequest(5));
+
+        mockMvc.perform(post("/api/admin/epins")
+                .header("Authorization", "Bearer " + tokenFor(role))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 409 : 403));
+    }
+
     // Role-capability unit 7: GET /api/associates/me/bookings needs no explicit SecurityConfig
     // matcher -- a bare GET never collides with the blanket POST/PUT/PATCH/DELETE write rules
     // above, so it falls through to anyRequest().authenticated() below, the same way GET
