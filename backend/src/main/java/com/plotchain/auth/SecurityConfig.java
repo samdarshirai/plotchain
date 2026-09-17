@@ -223,6 +223,18 @@ public class SecurityConfig {
                 // ordering requirement forcing it to live in any one spot.
                 .requestMatchers(HttpMethod.GET, "/api/admin/epins")
                     .hasAuthority("ADMIN")
+                // Redeem an e-PIN: ADMIN-only, per epin-domain unit 3
+                // (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
+                // Decision 12), same target-role-model reasoning and first-match-wins placement
+                // as the void-a-sale matcher above -- not load-bearing on its own (the blanket
+                // POST rule below already covers it, since this codebase's write rule is a
+                // plain hasAuthority("ADMIN"), not a multi-role list), added for the same
+                // readability/grouping reason those matchers document. This unit's own scope is
+                // guards only (unknown/already-redeemed EPin or unknown associate rejected with
+                // no side effects); epin-domain unit 4's actual write reuses this same matcher,
+                // no security change needed when that unit lands.
+                .requestMatchers(HttpMethod.POST, "/api/admin/epins/*/redeem")
+                    .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/**")
                     .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/**")

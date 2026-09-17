@@ -579,6 +579,25 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
     }
 
+    // epin-domain unit 3 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
+    // "POST /api/admin/epins/{id}/redeem, ADMIN-only", Decision 12): same target-role-model
+    // pattern as adminSalesVoidIsReachableOnlyForAdminAndForbiddenForEveryOtherRole above.
+    // EPinRepository is NOT @MockBean'd in this class, so an ADMIN token reaches the real (H2,
+    // unmocked) EPinRepository -- a random, non-existent epinId 404s via EPinNotFoundException
+    // (mapped by EPinExceptionHandler), proof the request passed the security layer, not proof
+    // of any particular business outcome, same "assert not 403" reasoning as that void test.
+    // Every other role, including the soon-to-be-deleted admin-family sub-roles, is blocked at
+    // the filter layer before the controller ever runs.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminEpinsRedeemIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(post("/api/admin/epins/{id}/redeem", UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(role))
+                .contentType("application/json")
+                .content("{\"associateId\":\"" + UUID.randomUUID() + "\",\"redemptionType\":\"ACTIVATION\"}"))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+    }
+
     // Role-capability unit 7: GET /api/associates/me/bookings needs no explicit SecurityConfig
     // matcher -- a bare GET never collides with the blanket POST/PUT/PATCH/DELETE write rules
     // above, so it falls through to anyRequest().authenticated() below, the same way GET
