@@ -1,5 +1,8 @@
 package com.plotchain.epin;
 
+import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateNotFoundException;
+import com.plotchain.associate.AssociateRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,10 +14,13 @@ import org.springframework.data.domain.PageRequest;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,6 +29,7 @@ import static org.mockito.Mockito.when;
 class EPinServiceTest {
 
     @Mock EPinRepository epinRepository;
+    @Mock AssociateRepository associateRepository;
 
     // Field-initializer order note (same reasoning as SaleServiceTest's setUp()): a
     // `= new EPinService(epinRepository)` initializer here would run during instance
@@ -32,7 +39,7 @@ class EPinServiceTest {
 
     @BeforeEach
     void setUp() {
-        epinService = new EPinService(epinRepository);
+        epinService = new EPinService(epinRepository, associateRepository);
     }
 
     @Test
@@ -138,5 +145,73 @@ class EPinServiceTest {
 
         assertThat(response.epins()).isEmpty();
         assertThat(response.totalElements()).isZero();
+    }
+
+    // epin-domain unit 3 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
+    // Flows "Redeem", steps 1-3): guard-only tests. The happy-path write (step 4-5) is
+    // epin-domain unit 4's job -- redeemReachesThePlaceholderWhenAllGuardsPass below only
+    // proves the guards let an UNUSED EPin with a resolvable associateId through, not that
+    // anything gets written.
+    @Test
+    void redeemThrowsEPinNotFoundExceptionWhenTheEPinDoesNotExist() {
+        UUID epinId = UUID.randomUUID();
+        when(epinRepository.findById(epinId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> epinService.redeem(epinId,
+                new RedeemEPinRequest(UUID.randomUUID(), RedemptionType.ACTIVATION, null), UUID.randomUUID()))
+            .isInstanceOf(EPinNotFoundException.class);
+
+        verify(epinRepository, never()).save(any());
+        verify(associateRepository, never()).findById(any());
+    }
+
+    @Test
+    void redeemThrowsEPinAlreadyRedeemedExceptionWhenTheEPinIsAlreadyUsed() {
+        UUID epinId = UUID.randomUUID();
+        EPin usedEPin = new EPin();
+        usedEPin.setId(epinId);
+        usedEPin.setStatus(EPinStatus.USED);
+        when(epinRepository.findById(epinId)).thenReturn(Optional.of(usedEPin));
+
+        assertThatThrownBy(() -> epinService.redeem(epinId,
+                new RedeemEPinRequest(UUID.randomUUID(), RedemptionType.ACTIVATION, null), UUID.randomUUID()))
+            .isInstanceOf(EPinAlreadyRedeemedException.class);
+
+        verify(epinRepository, never()).save(any());
+        verify(associateRepository, never()).findById(any());
+    }
+
+    @Test
+    void redeemThrowsAssociateNotFoundExceptionWhenTheAssociateIdDoesNotResolve() {
+        UUID epinId = UUID.randomUUID();
+        UUID associateId = UUID.randomUUID();
+        EPin unusedEPin = new EPin();
+        unusedEPin.setId(epinId);
+        unusedEPin.setStatus(EPinStatus.UNUSED);
+        when(epinRepository.findById(epinId)).thenReturn(Optional.of(unusedEPin));
+        when(associateRepository.findById(associateId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> epinService.redeem(epinId,
+                new RedeemEPinRequest(associateId, RedemptionType.ACTIVATION, null), UUID.randomUUID()))
+            .isInstanceOf(AssociateNotFoundException.class);
+
+        verify(epinRepository, never()).save(any());
+    }
+
+    @Test
+    void redeemReachesThePlaceholderWhenAllGuardsPass() {
+        UUID epinId = UUID.randomUUID();
+        UUID associateId = UUID.randomUUID();
+        EPin unusedEPin = new EPin();
+        unusedEPin.setId(epinId);
+        unusedEPin.setStatus(EPinStatus.UNUSED);
+        when(epinRepository.findById(epinId)).thenReturn(Optional.of(unusedEPin));
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(new Associate()));
+
+        assertThatThrownBy(() -> epinService.redeem(epinId,
+                new RedeemEPinRequest(associateId, RedemptionType.ACTIVATION, null), UUID.randomUUID()))
+            .isInstanceOf(UnsupportedOperationException.class);
+
+        verify(epinRepository, never()).save(any());
     }
 }
