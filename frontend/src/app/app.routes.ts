@@ -32,9 +32,7 @@ import { PrivacyPolicyComponent } from './legal/privacy-policy.component';
 import { SalesHistoryComponent } from './sales-history/sales-history.component';
 import { MyTreeComponent } from './my-tree/my-tree.component';
 import { PlotBookingsComponent } from './plot-bookings/plot-bookings.component';
-import { ProfileKycComponent } from './profile-kyc/profile-kyc.component';
-import { RewardsComponent } from './rewards/rewards.component';
-import { DigitalIdCardComponent } from './digital-id-card/digital-id-card.component';
+import { MyAccountComponent } from './my-account/my-account.component';
 import { IncomeStatementComponent } from './income-statement/income-statement.component';
 import { PayoutHistoryComponent } from './payout-history/payout-history.component';
 
@@ -46,9 +44,11 @@ export const routes: Routes = [
   { path: 'sales-history', component: SalesHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'my-tree', component: MyTreeComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'plot-bookings', component: PlotBookingsComponent, canActivate: [authGuard, associateOnlyGuard] },
-  { path: 'profile', component: ProfileKycComponent, canActivate: [authGuard, associateOnlyGuard] },
-  { path: 'rewards', component: RewardsComponent, canActivate: [authGuard, associateOnlyGuard] },
-  { path: 'digital-id-card', component: DigitalIdCardComponent, canActivate: [authGuard, associateOnlyGuard] },
+  // Merged into one "My Account" screen (Account Consolidation.dc.html) -- /rewards and
+  // /digital-id-card redirect here so old bookmarks/links keep working.
+  { path: 'profile', component: MyAccountComponent, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'rewards', redirectTo: 'profile' },
+  { path: 'digital-id-card', redirectTo: 'profile' },
   { path: 'income-statement', component: IncomeStatementComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'payout-history', component: PayoutHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },

@@ -1,0 +1,480 @@
+// My Account (Account Consolidation.dc.html): merges the old /profile, /rewards, and
+// /digital-id-card screens. Reuses .seal-card (_setup.scss) for the one Ink card per screen
+// (Verification) and the %panel-header-eyebrow placeholders (_dashboard.scss) for every
+// Oxblood-on-Parchment card header. The Rank card's double gold hairline border is a new
+// pattern the mockup introduces -- not a Seal Card (that's Ink-only, one per screen).
+
+.my-account {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.75rem 2rem 2.5rem;
+}
+
+.my-account__load-error {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--status-danger);
+}
+
+.my-account__header {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.125rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 1.125rem;
+  flex-wrap: wrap;
+}
+
+.my-account__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  background: var(--brand-primary-bright);
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--brand-secondary);
+}
+
+.my-account__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+}
+
+.my-account__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.6875rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+.my-account__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78125rem;
+  color: var(--text-muted);
+}
+
+.my-account__status {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.my-account__status--verified {
+  color: var(--status-success);
+}
+
+.my-account__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-left: auto;
+}
+
+.my-account__rank-chip {
+  padding: 0.4375rem 0.875rem;
+  background: var(--brand-secondary);
+  color: var(--brand-secondary-contrast);
+  font-size: 0.65625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.my-account__print-button {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  padding: 0.4375rem 0.875rem;
+  cursor: pointer;
+}
+
+.my-account__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+// -- Rank card: double gold hairline border, Parchment surface (not a Seal Card -- see header note).
+.rank-card {
+  grid-column: span 2;
+  border: 1px solid var(--brand-primary);
+  padding: 3px;
+}
+
+.rank-card__header,
+.rank-card__body {
+  border: 1px solid var(--brand-primary);
+  background: var(--surface-card);
+  padding: 1.375rem 1.5rem 0;
+}
+
+.rank-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: none;
+  padding-bottom: 1rem;
+}
+
+.rank-card__label {
+  font-size: 0.59375rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-secondary);
+}
+
+.rank-card__rule {
+  flex: 1;
+  height: 1px;
+  background: var(--brand-secondary);
+  opacity: 0.5;
+}
+
+.rank-card__body {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  gap: 1.5rem;
+  align-items: end;
+  border-top: none;
+  padding-top: 0;
+  padding-bottom: 1.125rem;
+}
+
+.rank-card__current {
+  display: flex;
+  flex-direction: column;
+}
+
+.rank-card__figure {
+  font-family: var(--font-display);
+  font-size: 2.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rank-card__next {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.rank-card__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+}
+
+.rank-card__stat-label {
+  font-size: 0.71875rem;
+  color: var(--text-muted);
+}
+
+.rank-card__stat-value {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rank-card__stat-value--accent {
+  color: var(--brand-secondary);
+}
+
+.rank-card__bar {
+  height: 10px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-left: none;
+  border-right: none;
+  margin: 0 1.5rem;
+}
+
+.rank-card__bar-fill {
+  height: 100%;
+  background: var(--brand-primary);
+}
+
+.rank-card__bar-labels {
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid var(--brand-primary);
+  border-top: none;
+  background: var(--surface-card);
+  padding: 0.4375rem 1.5rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.65625rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+// -- Verification card: the one Seal Card on this screen (base .seal-card/.seal-card__* rules
+// live in _setup.scss).
+.verification-card {
+  grid-column: span 1;
+}
+
+.verification-card__code {
+  font-family: var(--font-mono);
+  font-size: 1.625rem;
+  letter-spacing: 0.08em;
+  color: var(--brand-primary-bright);
+}
+
+.verification-card__hint {
+  margin: 0.625rem 0 0;
+  font-size: 0.71875rem;
+  line-height: 1.5;
+  color: rgba(247, 242, 231, 0.65);
+}
+
+.verification-card__copy-button {
+  margin-top: 1rem;
+  width: 100%;
+  border: 1px solid rgba(198, 162, 39, 0.5);
+  background: transparent;
+  color: var(--brand-primary-bright);
+  font-size: 0.71875rem;
+  font-weight: 500;
+  padding: 0.5rem 0;
+  cursor: pointer;
+}
+
+// -- Contact details card.
+.contact-card {
+  grid-column: span 2;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+}
+
+.contact-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.contact-card__title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.contact-card__missing-chip {
+  font-size: 0.71875rem;
+  color: var(--status-warning);
+}
+
+.contact-card__save {
+  margin-left: auto;
+}
+
+.contact-card__save-error {
+  margin: 0 1.5rem;
+}
+
+.contact-card__fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.25rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.contact-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  font-size: 0.71875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+
+  input {
+    border: 1px solid var(--border-subtle);
+    background: #fff;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.84375rem;
+    color: var(--text-primary);
+  }
+}
+
+.contact-card__bank-placeholder {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  padding: 0.625rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
+// -- KYC documents card.
+.kyc-card {
+  grid-column: span 1;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+}
+
+.kyc-card__header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.kyc-card__title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.kyc-card__count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.71875rem;
+  font-weight: 500;
+  color: var(--status-warning);
+}
+
+.kyc-card__row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.8125rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+
+  &:last-of-type {
+    border-bottom: none;
+  }
+}
+
+.kyc-card__row-label {
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+}
+
+.kyc-card__row-meta {
+  font-size: 0.71875rem;
+  color: var(--text-muted);
+}
+
+.kyc-card__upload {
+  position: relative;
+  margin-left: auto;
+  font-size: 0.71875rem;
+  font-weight: 500;
+  color: var(--brand-secondary);
+  cursor: pointer;
+}
+
+.kyc-card__upload-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.kyc-card__status-banner {
+  display: block;
+  border-top: 1px solid var(--border-subtle);
+}
+
+// -- Reward tiers strip.
+.tiers-card {
+  grid-column: span 3;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  padding: 1.125rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  flex-wrap: wrap;
+}
+
+.tiers-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.tiers-card__label {
+  font-size: 0.59375rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-secondary);
+  white-space: nowrap;
+}
+
+.tiers-card__rule {
+  width: 2.5rem;
+  height: 1px;
+  background: var(--brand-secondary);
+  opacity: 0.5;
+}
+
+.tiers-card__empty {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.tiers-card app-editable-table {
+  flex: 1 1 100%;
+}
+
+// -- Print-only ID card (DigitalIdCardComponent embedded unmodified).
+.my-account__print-card {
+  display: none;
+}
+
+@media print {
+  .app-header,
+  .app-nav-items,
+  .my-account__header,
+  .my-account__grid {
+    display: none !important;
+  }
+
+  .my-account__print-card {
+    display: block;
+  }
+}
+
+@media (max-width: 960px) {
+  .my-account__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rank-card,
+  .verification-card,
+  .contact-card,
+  .kyc-card,
+  .tiers-card {
+    grid-column: span 1;
+  }
+
+  .rank-card__body {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .contact-card__fields {
+    grid-template-columns: 1fr;
+  }
+}

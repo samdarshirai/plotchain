@@ -47,20 +47,18 @@ describe('routes', () => {
     expect(route!.canActivate).toContain(associateOnlyGuard);
   });
 
-  it('guards the rewards route with authGuard and associateOnlyGuard', () => {
+  it('redirects the old rewards route to profile (merged into My Account)', () => {
     const route = routes.find(r => r.path === 'rewards');
 
     expect(route).toBeTruthy();
-    expect(route!.canActivate).toContain(authGuard);
-    expect(route!.canActivate).toContain(associateOnlyGuard);
+    expect(route!.redirectTo).toBe('profile');
   });
 
-  it('guards the digital-id-card route with authGuard and associateOnlyGuard', () => {
+  it('redirects the old digital-id-card route to profile (merged into My Account)', () => {
     const route = routes.find(r => r.path === 'digital-id-card');
 
     expect(route).toBeTruthy();
-    expect(route!.canActivate).toContain(authGuard);
-    expect(route!.canActivate).toContain(associateOnlyGuard);
+    expect(route!.redirectTo).toBe('profile');
   });
 
   it('guards the income-statement route with authGuard and associateOnlyGuard', () => {

@@ -110,9 +110,7 @@ describe('AppComponent', () => {
         'nav.myTree': 'My Tree',
         'nav.salesHistory': 'Sales History',
         'nav.plotBookings': 'Plot Bookings',
-        'nav.profileKyc': 'Profile',
-        'nav.rewards': 'Rewards',
-        'nav.digitalIdCard': 'Digital ID Card',
+        'nav.myAccount': 'My Account',
         'nav.incomeStatement': 'Income Statement',
         'nav.payoutHistory': 'Payout History',
         'auth.logout': 'Log Out'
@@ -124,7 +122,7 @@ describe('AppComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     const links = Array.from(compiled.querySelectorAll('.app-nav__link')).map(el => el.textContent?.trim());
     expect(links).toEqual([
-      'Dashboard', 'My Tree', 'Sales History', 'Plot Bookings', 'Profile', 'Rewards', 'Digital ID Card', 'Income Statement', 'Payout History'
+      'Dashboard', 'My Tree', 'Sales History', 'Plot Bookings', 'My Account', 'Income Statement', 'Payout History'
     ]);
   });
 
