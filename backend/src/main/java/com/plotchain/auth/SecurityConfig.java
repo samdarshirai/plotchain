@@ -212,6 +212,17 @@ public class SecurityConfig {
                 // matchers document.
                 .requestMatchers(HttpMethod.POST, "/api/admin/epins")
                     .hasAuthority("ADMIN")
+                // Admin e-PIN register: ADMIN-only, per epin-domain unit 2
+                // (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
+                // Decision 12: "...and an explicit SecurityConfig GET matcher (for the register
+                // list)"), same target-role-model pattern as GET /api/admin/sales and GET
+                // /api/admin/ledger above -- not the admin-family hasAnyAuthority(...) pattern
+                // most other admin GETs still use. Grouped here with the POST
+                // /api/admin/epins matcher directly above for readability; a GET never collides
+                // with the POST/PUT/PATCH/DELETE blanket rules, so there's no first-match-wins
+                // ordering requirement forcing it to live in any one spot.
+                .requestMatchers(HttpMethod.GET, "/api/admin/epins")
+                    .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/**")
                     .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/**")

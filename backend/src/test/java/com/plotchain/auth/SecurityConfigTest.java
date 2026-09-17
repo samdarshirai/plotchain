@@ -564,6 +564,21 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 409 : 403));
     }
 
+    // epin-domain unit 2 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
+    // "Admin register -- GET /api/admin/epins, ADMIN-only", Decision 12): same target-role-model
+    // pattern as adminSalesListIsReachableOnlyForAdminAndForbiddenForEveryOtherRole and
+    // adminLedgerListIsReachableOnlyForAdminAndForbiddenForEveryOtherRole above. An ADMIN token
+    // reaches the real (H2, unmocked) EPinRepository and gets 200 with an empty page -- there's
+    // no not-found case for a list endpoint. Every other role, including the soon-to-be-deleted
+    // admin-family sub-roles, is blocked at the filter layer before the controller ever runs.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminEpinsListIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/admin/epins")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+    }
+
     // Role-capability unit 7: GET /api/associates/me/bookings needs no explicit SecurityConfig
     // matcher -- a bare GET never collides with the blanket POST/PUT/PATCH/DELETE write rules
     // above, so it falls through to anyRequest().authenticated() below, the same way GET
