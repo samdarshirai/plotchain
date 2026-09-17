@@ -103,7 +103,7 @@ class DashboardControllerTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
         when(associateRepository.countDownline(any())).thenReturn(12L);
         when(associateRepository.countByParentId(any())).thenReturn(8L);
-        when(associateRepository.countDownlineByKycStatus(any(), any())).thenReturn(0L);
+        when(cycleRepository.countByPeriodStartLessThanEqual(any())).thenReturn(1L);
         when(saleRepository.countByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(0L);
         when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
 
@@ -117,7 +117,7 @@ class DashboardControllerTest {
             .andExpect(jsonPath("$.cycleIncome.sponsorMatchingIncome").value(0))
             .andExpect(jsonPath("$.cycleIncome.royaltyBonusPct").value(0))
             .andExpect(jsonPath("$.salesSummary.salesThisCycle").value(0))
-            .andExpect(jsonPath("$.kycBreakdown.verified").value(0))
+            .andExpect(jsonPath("$.cycleCountdown.cycleNumber").value(1))
             .andExpect(jsonPath("$.legVolumeSummary.leftLegVolume").value(0))
             .andExpect(jsonPath("$.legVolumeSummary.rightLegVolume").value(0));
     }

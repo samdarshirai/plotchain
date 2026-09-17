@@ -31,7 +31,8 @@ describe('CycleIncomeCardComponent', () => {
     translate.setTranslation('en', {
       dashboard: {
         deltaUp: '+{{amount}} vs last cycle',
-        deltaDown: '-{{amount}} vs last cycle'
+        deltaDown: '-{{amount}} vs last cycle',
+        componentsAtZero: '{{count}} of {{total}} components at zero'
       }
     });
   });
@@ -67,7 +68,7 @@ describe('CycleIncomeCardComponent', () => {
 
   it('links to the income statement screen', () => {
     createComponent(baseData);
-    const link = fixture.nativeElement.querySelector('.cycle-income-card');
+    const link = fixture.nativeElement.querySelector('.seal-card__link');
     expect(link.getAttribute('href')).toContain('/income-statement');
   });
 
@@ -84,13 +85,38 @@ describe('CycleIncomeCardComponent', () => {
     expect(delta.classList).toContain('seal-card__delta--down');
   });
 
-  it('renders a trend sparkline only when at least two points exist', () => {
+  it('does not render a trend sparkline (dropped from the redesigned card)', () => {
     createComponent(baseData);
-    expect(fixture.nativeElement.querySelector('.seal-card__trend')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.seal-card__trend')).toBeFalsy();
   });
 
-  it('omits the sparkline for a single-point trend', () => {
-    createComponent({ ...baseData, incomeTrend: [2400] });
-    expect(fixture.nativeElement.querySelector('.seal-card__trend')).toBeFalsy();
+  it('counts how many of the five income components are zero', () => {
+    // direct=1000, matching=500, sponsorMatching=300, selfPerformance=200, royalty=400 -> none zero.
+    createComponent(baseData);
+    expect(fixture.componentInstance.zeroCount).toBe(0);
+    expect(fixture.nativeElement.textContent).toContain('0 of 5 components at zero');
+  });
+
+  it('counts zero components correctly when most components have no income yet', () => {
+    createComponent({
+      ...baseData, matchingIncome: 0, sponsorMatchingIncome: 0, selfPerformanceBonus: 0, royaltyBonus: 0
+    });
+    expect(fixture.componentInstance.zeroCount).toBe(4);
+    expect(fixture.nativeElement.textContent).toContain('4 of 5 components at zero');
+  });
+
+  it('sizes each breakdown bar proportionally to the largest component', () => {
+    createComponent(baseData);
+    // Largest component is directIncome (1000) -> its bar is 100% width.
+    expect(fixture.componentInstance.barPct(baseData.directIncome)).toBe(100);
+    // sponsorMatchingIncome (300) of directIncome (1000) -> 30%.
+    expect(fixture.componentInstance.barPct(baseData.sponsorMatchingIncome)).toBe(30);
+  });
+
+  it('reports a zero bar without dividing by zero when every component is zero', () => {
+    createComponent({
+      ...baseData, directIncome: 0, matchingIncome: 0, sponsorMatchingIncome: 0, selfPerformanceBonus: 0, royaltyBonus: 0
+    });
+    expect(fixture.componentInstance.barPct(0)).toBe(0);
   });
 });

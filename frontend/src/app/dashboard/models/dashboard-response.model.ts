@@ -27,6 +27,9 @@ export interface WalletSummary {
 export interface CycleCountdown {
   cycleId: string;
   daysRemaining: number;
+  cycleNumber: number;
+  periodStart: string;
+  periodEnd: string;
 }
 
 export interface SalesSummary {
@@ -38,17 +41,6 @@ export interface SalesSummary {
 export interface NetworkSummary {
   totalDownline: number;
   directCount: number;
-}
-
-export interface NetworkGrowthPoint {
-  cycleLabel: string;
-  downlineCount: number;
-}
-
-export interface KycBreakdown {
-  verified: number;
-  pending: number;
-  rejected: number;
 }
 
 export interface LegVolumeSummary {
@@ -64,7 +56,5 @@ export interface DashboardResponse {
   cycleCountdown: CycleCountdown;
   salesSummary: SalesSummary;
   networkSummary: NetworkSummary;
-  networkGrowth: NetworkGrowthPoint[];
-  kycBreakdown: KycBreakdown;
   legVolumeSummary: LegVolumeSummary;
 }

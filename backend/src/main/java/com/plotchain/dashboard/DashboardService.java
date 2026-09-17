@@ -27,24 +27,16 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class DashboardService {
-
-    // Network Growth chart x-axis: short month name of each cycle's periodStart, not a bare
-    // positional index -- "01".."08" read as arbitrary ticks, a month name reads as a timeline.
-    private static final DateTimeFormatter CYCLE_LABEL_FORMAT = DateTimeFormatter.ofPattern("MMM", Locale.ENGLISH);
 
     private final AssociateRepository associateRepository;
     private final RankTierRepository rankTierRepository;
@@ -125,9 +117,8 @@ public class DashboardService {
             .map(closed -> ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, closed.getId()))
             .orElse(BigDecimal.ZERO);
 
-        // Seal Card sparkline and Network Growth chart both plot the last 8 cycles, oldest first
-        // -- findAllByOrderByPeriodStartDesc comes back newest-first, so it's reversed once here
-        // and shared by both loops below.
+        // Seal Card sparkline plots the last 8 cycles, oldest first -- findAllByOrderByPeriodStartDesc
+        // comes back newest-first, so it's reversed here.
         List<Cycle> lastCycles = new ArrayList<>(
             cycleRepository.findAllByOrderByPeriodStartDesc(PageRequest.of(0, 8)).getContent());
         Collections.reverse(lastCycles);
@@ -135,17 +126,6 @@ public class DashboardService {
         List<BigDecimal> incomeTrend = lastCycles.stream()
             .map(c -> ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, c.getId()))
             .toList();
-
-        List<DashboardResponse.NetworkGrowthPoint> networkGrowth = new ArrayList<>();
-        for (int i = 0; i < lastCycles.size(); i++) {
-            Cycle c = lastCycles.get(i);
-            // Exclusive upper bound: the day AFTER this cycle's periodEnd, so a join on the
-            // close date itself counts.
-            Instant cutoffExclusive = c.getPeriodEnd().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
-            networkGrowth.add(new DashboardResponse.NetworkGrowthPoint(
-                CYCLE_LABEL_FORMAT.format(c.getPeriodStart()),
-                associateRepository.countDownlineJoinedBefore(associateId, cutoffExclusive)));
-        }
 
         int salesThisCycle = (int) saleRepository.countByAssociateIdAndCycleIdAndStatus(associateId, cycle.getId(), SaleStatus.RECORDED);
         BigDecimal revenueBookedThisCycle = saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, cycle.getId(), SaleStatus.RECORDED);
@@ -170,11 +150,8 @@ public class DashboardService {
         long totalDownline = associateRepository.countDownline(associateId);
         long directCount = associateRepository.countByParentId(associateId);
 
-        long verified = associateRepository.countDownlineByKycStatus(associateId, KycStatus.VERIFIED.name());
-        long pending = associateRepository.countDownlineByKycStatus(associateId, KycStatus.PENDING.name());
-        long rejected = associateRepository.countDownlineByKycStatus(associateId, KycStatus.REJECTED.name());
-
         long daysRemaining = Math.max(0, ChronoUnit.DAYS.between(LocalDate.now(), cycle.getPeriodEnd()));
+        int cycleNumber = (int) cycleRepository.countByPeriodStartLessThanEqual(cycle.getPeriodStart());
 
         return new DashboardResponse(
             new DashboardResponse.AssociateSummary(
@@ -185,11 +162,9 @@ public class DashboardService {
                 cycle.getId(), direct, matching, sponsorMatching, selfPerformance, royaltyBonus, royaltyBonusPct, total,
                 previousCycleTotalIncome, incomeTrend),
             new DashboardResponse.WalletSummary(wallet.getBalance()),
-            new DashboardResponse.CycleCountdown(cycle.getId(), daysRemaining),
+            new DashboardResponse.CycleCountdown(cycle.getId(), daysRemaining, cycleNumber, cycle.getPeriodStart(), cycle.getPeriodEnd()),
             new DashboardResponse.SalesSummary(salesThisCycle, revenueBookedThisCycle, revenueBookedChangePct),
             new DashboardResponse.NetworkSummary(totalDownline, directCount),
-            networkGrowth,
-            new DashboardResponse.KycBreakdown(verified, pending, rejected),
             new DashboardResponse.LegVolumeSummary(leftLegVolume, rightLegVolume)
         );
     }

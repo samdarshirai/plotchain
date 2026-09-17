@@ -34,9 +34,7 @@ import org.springframework.data.domain.PageRequest;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -79,16 +77,15 @@ class DashboardServiceTest {
     }
 
     // Stubs every call this method makes unconditionally regardless of fixture specifics: the
-    // last-8-cycles lookup (incomeTrend/networkGrowth) and the three downline-count/KYC-breakdown
-    // reads. Individual tests override any of these with their own when(...) after calling this.
-    // lenient() because these are defaults that some callers (e.g.
-    // aggregatesTheDashboardForAnAssociate) immediately override with a more specific stub,
-    // which would otherwise trip Mockito's strict-stubbing "unnecessary stubbing" check.
+    // last-8-cycles lookup (incomeTrend) and the downline-count reads. Individual tests override
+    // any of these with their own when(...) after calling this. lenient() because these are
+    // defaults that some callers (e.g. aggregatesTheDashboardForAnAssociate) immediately override
+    // with a more specific stub, which would otherwise trip Mockito's strict-stubbing
+    // "unnecessary stubbing" check.
     private void stubUnconditionalCalls(UUID associateId) {
         lenient().when(cycleRepository.findAllByOrderByPeriodStartDesc(any(PageRequest.class))).thenReturn(Page.empty());
         lenient().when(associateRepository.countDownline(associateId)).thenReturn(0L);
         lenient().when(associateRepository.countByParentId(associateId)).thenReturn(0L);
-        lenient().when(associateRepository.countDownlineByKycStatus(any(), any())).thenReturn(0L);
     }
 
     @Test
@@ -151,12 +148,9 @@ class DashboardServiceTest {
 
         stubUnconditionalCalls(associateId);
         when(cycleRepository.findAllByOrderByPeriodStartDesc(any(PageRequest.class))).thenReturn(new PageImpl<>(List.of(cycle, closedCycle)));
-        when(associateRepository.countDownlineJoinedBefore(any(), any())).thenReturn(3L);
+        when(cycleRepository.countByPeriodStartLessThanEqual(cycle.getPeriodStart())).thenReturn(9L);
         when(associateRepository.countDownline(associateId)).thenReturn(12L);
         when(associateRepository.countByParentId(associateId)).thenReturn(8L);
-        when(associateRepository.countDownlineByKycStatus(associateId, "VERIFIED")).thenReturn(9L);
-        when(associateRepository.countDownlineByKycStatus(associateId, "PENDING")).thenReturn(2L);
-        when(associateRepository.countDownlineByKycStatus(associateId, "REJECTED")).thenReturn(1L);
 
         when(saleRepository.countByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED)).thenReturn(6L);
         when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED)).thenReturn(new BigDecimal("3850000"));
@@ -179,19 +173,15 @@ class DashboardServiceTest {
         assertThat(response.cycleIncome().incomeTrend()).hasSize(2);
         assertThat(response.wallet().balance()).isEqualByComparingTo("0");
         assertThat(response.cycleCountdown().daysRemaining()).isEqualTo(10L);
+        assertThat(response.cycleCountdown().cycleNumber()).isEqualTo(9);
+        assertThat(response.cycleCountdown().periodStart()).isEqualTo(cycle.getPeriodStart());
+        assertThat(response.cycleCountdown().periodEnd()).isEqualTo(cycle.getPeriodEnd());
         assertThat(response.salesSummary().salesThisCycle()).isEqualTo(6);
         assertThat(response.salesSummary().revenueBookedThisCycle()).isEqualByComparingTo("3850000");
         // (3850000 - 3260000) / 3260000 * 100 = 18.09... -> rounds to 18.
         assertThat(response.salesSummary().revenueBookedChangePct()).isEqualByComparingTo("18");
         assertThat(response.networkSummary().totalDownline()).isEqualTo(12L);
         assertThat(response.networkSummary().directCount()).isEqualTo(8L);
-        assertThat(response.networkGrowth()).hasSize(2);
-        DateTimeFormatter cycleLabelFormat = DateTimeFormatter.ofPattern("MMM", Locale.ENGLISH);
-        assertThat(response.networkGrowth().get(0).cycleLabel()).isEqualTo(cycleLabelFormat.format(closedCycle.getPeriodStart()));
-        assertThat(response.networkGrowth().get(1).cycleLabel()).isEqualTo(cycleLabelFormat.format(cycle.getPeriodStart()));
-        assertThat(response.kycBreakdown().verified()).isEqualTo(9L);
-        assertThat(response.kycBreakdown().pending()).isEqualTo(2L);
-        assertThat(response.kycBreakdown().rejected()).isEqualTo(1L);
         assertThat(response.legVolumeSummary().leftLegVolume()).isEqualByComparingTo("300000");
         assertThat(response.legVolumeSummary().rightLegVolume()).isEqualByComparingTo("200000");
     }
@@ -227,6 +217,7 @@ class DashboardServiceTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
         when(saleRepository.countByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(0L);
         when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
+        when(cycleRepository.countByPeriodStartLessThanEqual(cycle.getPeriodStart())).thenReturn(1L);
 
         stubUnconditionalCalls(associateId);
 
@@ -237,6 +228,7 @@ class DashboardServiceTest {
         assertThat(response.salesSummary().revenueBookedChangePct()).isEqualByComparingTo("0");
         assertThat(response.legVolumeSummary().leftLegVolume()).isEqualByComparingTo("0");
         assertThat(response.legVolumeSummary().rightLegVolume()).isEqualByComparingTo("0");
+        assertThat(response.cycleCountdown().cycleNumber()).isEqualTo(1);
     }
 
     @Test

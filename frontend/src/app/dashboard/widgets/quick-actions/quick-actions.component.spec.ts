@@ -15,20 +15,16 @@ describe('QuickActionsComponent', () => {
     translateService.setDefaultLang('en');
     translateService.use('en');
     translateService.setTranslation('en', {
-      'dashboard.recordSaleAction': '+ Record Sale',
-      'dashboard.provisionAssociateAction': '+ Provision Associate',
-      'dashboard.quickActionsContactAdmin': 'Contact your admin to record a sale or add a referral.'
+      'dashboard.quickActionsContactAdmin': 'To record a sale or add a referral, contact your admin.'
     });
     fixture.detectChanges();
   });
 
-  it('renders both action buttons as inert (no button/link elements)', () => {
-    expect(fixture.nativeElement.querySelectorAll('button, a').length).toBe(0);
-    const buttons = fixture.nativeElement.querySelectorAll('.quick-actions__button');
-    expect(buttons.length).toBe(2);
+  it('renders no buttons or links (record-sale/provision-associate actions removed)', () => {
+    expect(fixture.nativeElement.querySelectorAll('button, a, .quick-actions__button').length).toBe(0);
   });
 
-  it('still shows the contact-admin hint', () => {
-    expect(fixture.nativeElement.textContent).toContain('admin');
+  it('shows only the contact-admin hint text', () => {
+    expect(fixture.nativeElement.textContent.trim()).toBe('To record a sale or add a referral, contact your admin.');
   });
 });

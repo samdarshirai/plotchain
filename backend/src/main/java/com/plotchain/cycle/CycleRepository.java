@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +25,10 @@ public interface CycleRepository extends JpaRepository<Cycle, UUID> {
 
     // Admin cycle-history list, narrowed by the optional ?status= filter.
     Page<Cycle> findByStatusOrderByPeriodStartDesc(CycleStatus status, Pageable pageable);
+
+    // Associate dashboard header's "Cycle 09" ordinal: how many cycles have started on or
+    // before this one's periodStart (1-indexed, so the very first cycle ever is "Cycle 1").
+    long countByPeriodStartLessThanEqual(LocalDate periodStart);
 
     // Row-lock acquisition for POST /close (cycle-management unit 3, Decision #2 of
     // docs/superpowers/specs/role-capability/2026-08-03-cycle-management-domain-design.md):

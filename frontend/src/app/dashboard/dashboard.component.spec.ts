@@ -21,16 +21,9 @@ describe('DashboardComponent', () => {
       previousCycleTotalIncome: 1800, incomeTrend: [1200, 1800, 2400]
     },
     wallet: { balance: 2500 },
-    cycleCountdown: { cycleId: 'c1', daysRemaining: 9 },
+    cycleCountdown: { cycleId: 'c1', daysRemaining: 9, cycleNumber: 9, periodStart: '2026-09-01', periodEnd: '2026-09-17' },
     salesSummary: { salesThisCycle: 6, revenueBookedThisCycle: 3850000, revenueBookedChangePct: 18 },
     networkSummary: { totalDownline: 42, directCount: 8 },
-    networkGrowth: [
-      { cycleLabel: '01', downlineCount: 12 }, { cycleLabel: '02', downlineCount: 18 },
-      { cycleLabel: '03', downlineCount: 25 }, { cycleLabel: '04', downlineCount: 30 },
-      { cycleLabel: '05', downlineCount: 34 }, { cycleLabel: '06', downlineCount: 37 },
-      { cycleLabel: '07', downlineCount: 40 }, { cycleLabel: '08', downlineCount: 42 }
-    ],
-    kycBreakdown: { verified: 38, pending: 1, rejected: 3 },
     legVolumeSummary: { leftLegVolume: 300000, rightLegVolume: 200000 }
   };
 
@@ -48,7 +41,8 @@ describe('DashboardComponent', () => {
       dashboard: {
         networkHint: '{{direct}} direct · {{downline}} downline',
         revenueUp: '+{{pct}}% vs last cycle',
-        revenueDown: '-{{pct}}% vs last cycle'
+        revenueDown: '-{{pct}}% vs last cycle',
+        cycleRange: 'Cycle {{number}} · {{start}}–{{end}}'
       }
     });
   });
@@ -77,19 +71,24 @@ describe('DashboardComponent', () => {
     expect(text).toContain('SDI384818');
   });
 
-  it('renders the Seal Card, KYC banner, and all six KPI tiles', () => {
+  it('renders the Seal Card, KYC banner, and all four KPI tiles', () => {
     loadDashboard();
     expect(fixture.nativeElement.querySelector('app-cycle-income-card')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('app-kyc-banner')).toBeTruthy();
-    expect(fixture.nativeElement.querySelectorAll('app-stat-tile').length).toBe(6);
+    expect(fixture.nativeElement.querySelectorAll('app-stat-tile').length).toBe(4);
   });
 
-  it('renders the two-column panel row: recent sales, network growth, KYC summary, quick actions', () => {
+  it('renders the two-column panel row: leg balance, recent sales, quick actions', () => {
     loadDashboard();
+    expect(fixture.nativeElement.querySelector('app-leg-balance')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('app-recent-sales-table')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('app-network-growth-chart')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('app-kyc-network-summary')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('app-quick-actions')).toBeTruthy();
+  });
+
+  it('renders the cycle number and date-range text in the header', () => {
+    loadDashboard();
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Cycle 9');
   });
 
   it('formats each KPI tile value and hint from the response data', () => {
@@ -97,14 +96,11 @@ describe('DashboardComponent', () => {
     const values: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.stat-tile__value');
     const hints: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.stat-tile__hint');
 
-    // Tiles in order: Wallet Balance, Network, Sales This Cycle (no hint), Revenue Booked,
-    // Left Leg Volume, Right Leg Volume.
+    // Tiles in order: Wallet Balance, Network, Sales This Cycle (no hint), Revenue Booked.
     expect(values[0].textContent).toContain('2,500');
     expect(values[1].textContent?.trim()).toBe('42');
     expect(values[2].textContent?.trim()).toBe('6');
     expect(values[3].textContent).toContain('3,850,000');
-    expect(values[4].textContent).toContain('300,000');
-    expect(values[5].textContent).toContain('200,000');
 
     expect(hints).toHaveSize(3);
     // networkSummary: totalDownline 42, directCount 8 -> 42 - 8 = 34 downline.

@@ -1,6 +1,7 @@
-// Associate Dashboard (dashboard-mockup spec, Viraj Acres Dashboard.dc.html option 1a):
+// Associate Dashboard (dashboard-mockup spec, Viraj Acres Dashboard Mockups.dc.html):
 // page-header row, the existing Seal Card hero (see _setup.scss's .seal-card, extended here
-// with .seal-card__delta/.seal-card__trend), a 4-tile KPI row, and a two-column panel row.
+// into a two-column split with an income breakdown panel), a 4-tile KPI row, and a two-column
+// panel row (Leg Balance; Recent Sales + a plain contact-admin note).
 
 .dashboard {
   display: flex;
@@ -11,8 +12,8 @@
   padding: 1.5rem 1.75rem 2rem;
 }
 
-// Shared "rule -- label -- rule" panel-header eyebrow (recent-sales-table and network-growth-chart
-// both use it) -- one definition, extended by both, instead of two copies of the same 3 rules.
+// Shared "rule -- label -- rule" panel-header eyebrow (recent-sales-table and leg-balance both
+// use it) -- one definition, extended by both, instead of two copies of the same 3 rules.
 %panel-header-eyebrow {
   display: flex;
   align-items: center;
@@ -44,15 +45,32 @@
 }
 
 .dashboard__title {
-  margin: 0 0 0.3rem;
+  margin: 0 0 0.5rem;
   font-family: var(--font-display);
   font-size: 1.875rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.dashboard__subtitle {
-  margin: 0;
+.dashboard__header-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+.dashboard__cycle-pill {
+  padding: 0.3125rem 0.625rem;
+  border-radius: var(--radius-sm);
+  background: rgba(198, 142, 39, 0.16);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--status-warning);
+}
+
+.dashboard__cycle-range {
   font-size: 0.8125rem;
   color: var(--text-muted);
 }
@@ -96,7 +114,18 @@
   font-weight: 500;
 }
 
-// Seal Card additions (base .seal-card/.seal-card__* rules live in _setup.scss).
+// Seal Card additions (base .seal-card/.seal-card__* rules live in _setup.scss). The dashboard's
+// cycle-income-card splits the body into a figure/delta column and an income-breakdown column.
+.seal-card__split {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 1.5rem;
+}
+
+.cycle-income-card .seal-card__figure {
+  font-size: 2.25rem;
+}
+
 .seal-card__delta {
   margin: 0 0 0.75rem;
   font-size: 0.75rem;
@@ -108,16 +137,47 @@
   color: var(--status-danger);
 }
 
-.seal-card__trend {
-  width: 100%;
-  height: 40px;
-  margin: 0 0 0.75rem;
+.seal-card__link {
+  font-size: 0.75rem;
+  font-weight: 600;
   color: var(--brand-primary);
+  text-decoration: none;
+}
 
-  polyline {
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.5;
+.seal-card__breakdown-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.seal-card__breakdown-hint {
+  font-size: 0.6875rem;
+  color: #8C8271;
+}
+
+.seal-card__breakdown-row {
+  margin-bottom: 0.625rem;
+}
+
+.seal-card__breakdown-line {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  font-size: 0.8125rem;
+  color: #E8DFC9;
+}
+
+.seal-card__breakdown-bar {
+  height: 3px;
+  background: rgba(232, 223, 201, 0.15);
+  border-radius: 999px;
+
+  span {
+    display: block;
+    height: 100%;
+    background: var(--brand-primary);
+    border-radius: 999px;
   }
 }
 
@@ -211,113 +271,86 @@
   color: var(--text-muted);
 }
 
-// Network Growth chart.
-.network-growth-chart {
+// Leg Balance panel.
+.leg-balance {
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 1rem 1.125rem;
 }
 
-.network-growth-chart__header {
+.leg-balance__header {
   @extend %panel-header-eyebrow;
 }
 
-.network-growth-chart__rule {
+.leg-balance__rule {
   @extend %panel-header-eyebrow-rule;
 }
 
-.network-growth-chart__label {
+.leg-balance__label {
   @extend %panel-header-eyebrow-label;
 }
 
-.network-growth-chart__bars {
-  width: 100%;
-  height: 60px;
-  display: block;
-
-  rect {
-    fill: var(--brand-secondary);
-    opacity: 0.35;
-  }
-}
-
-.network-growth-chart__axis {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 0.375rem;
-  font-family: var(--font-mono);
-  font-size: 0.5938rem;
+.leg-balance__caption {
+  font-size: 0.6875rem;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
-// KYC network summary.
-.kyc-network-summary {
+.leg-balance__figures {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 0.8125rem 1.125rem;
+  gap: 2rem;
+  margin-bottom: 0.75rem;
 }
 
-.kyc-network-summary__label {
+.leg-balance__figure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.leg-balance__figure-label {
   font-size: 0.625rem;
   font-weight: 500;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
-.kyc-network-summary__counts {
-  display: flex;
-  gap: 1rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.kyc-network-summary__count--verified {
-  color: var(--status-success);
-}
-
-.kyc-network-summary__count--pending {
-  color: var(--status-warning);
-}
-
-.kyc-network-summary__count--rejected {
-  color: var(--status-danger);
-}
-
-// Quick actions (inert -- see quick-actions.component.ts's own comment for why these are spans).
-.quick-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-}
-
-.quick-actions__button {
-  display: block;
-  border-radius: var(--radius-sm);
-  padding: 0.8125rem 0;
-  text-align: center;
-  font-size: 0.8125rem;
+.leg-balance__figure-value {
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
   font-weight: 600;
-  cursor: default;
+  color: var(--text-primary);
 }
 
-.quick-actions__button--primary {
+.leg-balance__bar {
+  display: flex;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: repeating-linear-gradient(135deg, rgba(92, 26, 42, 0.12), rgba(92, 26, 42, 0.12) 4px, transparent 4px, transparent 8px);
+}
+
+.leg-balance__bar-fill {
+  height: 100%;
+}
+
+.leg-balance__bar-fill--left {
   background: var(--brand-secondary);
-  color: var(--brand-secondary-contrast);
 }
 
-.quick-actions__button--secondary {
-  border: 1px solid var(--brand-secondary);
-  color: var(--brand-secondary);
+.leg-balance__bar-fill--right {
+  background: var(--brand-primary);
 }
 
+.leg-balance__empty {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+// Quick actions -- inert plain hint (dashboard-mockup: no record-sale/provision-associate buttons).
 .quick-actions__hint {
   margin: 0;
   font-size: 0.75rem;

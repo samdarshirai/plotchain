@@ -7,8 +7,7 @@ import { KycBannerComponent } from './widgets/kyc-banner/kyc-banner.component';
 import { CycleIncomeCardComponent } from './widgets/cycle-income-card/cycle-income-card.component';
 import { QuickActionsComponent } from './widgets/quick-actions/quick-actions.component';
 import { RecentSalesTableComponent } from './widgets/recent-sales-table/recent-sales-table.component';
-import { NetworkGrowthChartComponent } from './widgets/network-growth-chart/network-growth-chart.component';
-import { KycNetworkSummaryComponent } from './widgets/kyc-network-summary/kyc-network-summary.component';
+import { LegBalanceComponent } from './widgets/leg-balance/leg-balance.component';
 import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.component';
 
 @Component({
@@ -16,8 +15,7 @@ import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.comp
   standalone: true,
   imports: [
     CommonModule, TranslateModule, KycBannerComponent, CycleIncomeCardComponent,
-    QuickActionsComponent, RecentSalesTableComponent, NetworkGrowthChartComponent,
-    KycNetworkSummaryComponent, StatTileComponent
+    QuickActionsComponent, RecentSalesTableComponent, LegBalanceComponent, StatTileComponent
   ],
   providers: [CurrencyPipe],
   template: `
@@ -25,7 +23,10 @@ import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.comp
       <div class="dashboard__header">
         <div class="dashboard__header-left">
           <h1 class="dashboard__title">{{ 'dashboard.title' | translate }}</h1>
-          <p class="dashboard__subtitle">{{ cycleClosesKey(d.cycleCountdown.daysRemaining) | translate: { days: d.cycleCountdown.daysRemaining } }}</p>
+          <div class="dashboard__header-meta">
+            <span class="dashboard__cycle-pill">{{ cycleClosesKey(d.cycleCountdown.daysRemaining) | translate: { days: d.cycleCountdown.daysRemaining } }}</span>
+            <span class="dashboard__cycle-range">{{ 'dashboard.cycleRange' | translate: { number: d.cycleCountdown.cycleNumber, start: (d.cycleCountdown.periodStart | date:'d MMM'), end: (d.cycleCountdown.periodEnd | date:'d MMM') } }}</span>
+          </div>
         </div>
         <div class="dashboard__header-right">
           <span class="dashboard__name">{{ d.associate.name }}</span>
@@ -62,23 +63,12 @@ import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.comp
           [value]="formatCurrency(d.salesSummary.revenueBookedThisCycle)"
           [hint]="revenueHintKey(d.salesSummary.revenueBookedChangePct) | translate: { pct: revenueDeltaAbs(d.salesSummary.revenueBookedChangePct) }"
         ></app-stat-tile>
-        <app-stat-tile
-          icon="arrow_back"
-          [label]="'dashboard.leftLegVolumeLabel' | translate"
-          [value]="formatCurrency(d.legVolumeSummary.leftLegVolume)"
-        ></app-stat-tile>
-        <app-stat-tile
-          icon="arrow_forward"
-          [label]="'dashboard.rightLegVolumeLabel' | translate"
-          [value]="formatCurrency(d.legVolumeSummary.rightLegVolume)"
-        ></app-stat-tile>
       </div>
 
       <div class="dashboard__panels">
-        <app-recent-sales-table></app-recent-sales-table>
+        <app-leg-balance [data]="d.legVolumeSummary"></app-leg-balance>
         <div class="dashboard__panels-right">
-          <app-network-growth-chart [data]="d.networkGrowth"></app-network-growth-chart>
-          <app-kyc-network-summary [data]="d.kycBreakdown"></app-kyc-network-summary>
+          <app-recent-sales-table></app-recent-sales-table>
           <app-quick-actions></app-quick-actions>
         </div>
       </div>

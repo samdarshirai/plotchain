@@ -68,4 +68,24 @@ class CycleRepositoryTest {
 
         assertThat(result).isEmpty();
     }
+
+    @Test
+    void countByPeriodStartLessThanEqualCountsCyclesUpToAndIncludingThatStart() {
+        newCycle(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 15), CycleStatus.CLOSED);
+        Cycle middle = newCycle(LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 15), CycleStatus.CLOSED);
+        newCycle(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 15), CycleStatus.OPEN);
+
+        long count = cycleRepository.countByPeriodStartLessThanEqual(middle.getPeriodStart());
+
+        assertThat(count).isEqualTo(2);
+    }
+
+    @Test
+    void countByPeriodStartLessThanEqualIsOneForTheFirstCycleEver() {
+        Cycle only = newCycle(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 15), CycleStatus.OPEN);
+
+        long count = cycleRepository.countByPeriodStartLessThanEqual(only.getPeriodStart());
+
+        assertThat(count).isEqualTo(1);
+    }
 }
