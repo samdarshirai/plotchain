@@ -20,6 +20,9 @@ export interface VacantEntry {
   leg: 'L' | 'R' | null;
   x: number;
   id: string;
+  parentId: string;
+  parentUserId: string;
+  parentName: string;
 }
 
 export interface FilledEntry {
@@ -63,12 +66,23 @@ export function buildTreeLayout(root: TreeNode | null, maxDepth: number): TreeLa
   let filledCount = 0;
   let vacantCount = 0;
 
-  function layout(node: TreeNode | null, depth: number, leg: 'L' | 'R' | null): LayoutEntry {
+  function layout(node: TreeNode | null, depth: number, leg: 'L' | 'R' | null, parent: TreeNode | null): LayoutEntry {
     maxSeenDepth = Math.max(maxSeenDepth, depth);
 
     if (node === null) {
       vacantCount++;
-      const entry: VacantEntry = { vacant: true, depth, leg, x: leafCounter++, id: `vacant-${depth}-${leafCounter}` };
+      // Vacant entries are only ever synthesized as a child of a real node, so parent is
+      // always set here (the root itself is never null going into layout()).
+      const entry: VacantEntry = {
+        vacant: true,
+        depth,
+        leg,
+        x: leafCounter++,
+        id: `vacant-${depth}-${leafCounter}`,
+        parentId: parent!.id,
+        parentUserId: parent!.userId,
+        parentName: parent!.name
+      };
       nodes.push(entry);
       return entry;
     }
@@ -84,15 +98,15 @@ export function buildTreeLayout(root: TreeNode | null, maxDepth: number): TreeLa
       return entry;
     }
 
-    const leftEntry = layout(childAt(node, 'L'), depth + 1, 'L');
-    const rightEntry = layout(childAt(node, 'R'), depth + 1, 'R');
+    const leftEntry = layout(childAt(node, 'L'), depth + 1, 'L', node);
+    const rightEntry = layout(childAt(node, 'R'), depth + 1, 'R', node);
     const entry: FilledEntry = { vacant: false, depth, leg, x: (leftEntry.x + rightEntry.x) / 2, id: node.id, data: node };
     nodes.push(entry);
     links.push({ parent: entry, left: leftEntry, right: rightEntry });
     return entry;
   }
 
-  const rootEntry = layout(root, 0, null) as FilledEntry;
+  const rootEntry = layout(root, 0, null, null) as FilledEntry;
 
   // layout() pushes each entry in post-order (children resolved, hence pushed,
   // before their parent, since a parent's x depends on its children's x). Sort

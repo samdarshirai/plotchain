@@ -1,20 +1,13 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AssociateDirectoryService } from './associate-directory.service';
 import { AdminAssociatePage, AdminAssociateFilters } from '../models/admin-associate-page.model';
 import { AdminAssociateDetail } from '../models/admin-associate-detail.model';
-import { AdminService } from '../admin.service';
-import { AssociateSummary } from '../models/associate-summary.model';
-import { CreateAssociateResponse } from '../models/create-associate-response.model';
-import { toFieldErrors } from '../../core/api/field-errors.model';
+import { NewAssociatePanelComponent } from '../new-associate-panel/new-associate-panel.component';
 import { SidePanelComponent } from '../../shared/components/side-panel/side-panel.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
-import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
-import { ToggleGroupComponent, ToggleOption } from '../../shared/components/toggle-group/toggle-group.component';
 import { CompensationPlanService } from '../../setup/steps/compensation/compensation-plan.service';
 import { RankOption } from '../../setup/models/compensation-plan.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
@@ -22,31 +15,13 @@ import { titleCase } from '../../shared/utils/title-case';
 
 const PAGE_SIZE = 20;
 
-// Parent is mandatory once the tree has anyone to hang off of, but the very first associate is
-// necessarily parentless -- so the parentId Validators.required is added only when sponsorOptions
-// is non-empty (see ngOnInit). Position pairs with parent: required exactly when a parent is set.
-function positionRequiredWhenParentSelectedValidator(group: AbstractControl): ValidationErrors | null {
-  const parentId = group.get('parentId')?.value;
-  const position = group.get('position')?.value;
-  return parentId && !position ? { positionRequired: true } : null;
-}
-
 // Enum values the backend returns for kycStatus/status are shouty-uppercase (PENDING/VERIFIED/...);
 // the mockup renders them Title Case (Viraj_Acres_Settings.dc.html lines 646-650) -- see the shared
 // titleCase() helper for why the row-building step converts before the value reaches the table.
 @Component({
   selector: 'app-associate-directory',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    TranslateModule,
-    SidePanelComponent,
-    InlineBannerComponent,
-    FieldErrorComponent,
-    ToggleGroupComponent,
-    EditableTableComponent
-  ],
+  imports: [CommonModule, TranslateModule, SidePanelComponent, InlineBannerComponent, NewAssociatePanelComponent, EditableTableComponent],
   template: `
     <div class="associate-directory">
       <div class="associate-directory__header">
@@ -219,108 +194,11 @@ function positionRequiredWhenParentSelectedValidator(group: AbstractControl): Va
       </div>
     </app-side-panel>
 
-    <div class="associate-directory__modal-overlay" *ngIf="modalOpen">
-      <div class="associate-directory__modal">
-        <ng-container *ngIf="provisioned as result; else provisionFormTemplate">
-          <div class="associate-directory__modal-title">{{ 'admin.associateDirectory.provisionModalTitle' | translate }}</div>
-          <app-inline-banner tone="success">
-            <p>
-              {{ 'admin.assignedUserIdLabel' | translate }}:
-              <strong>{{ result.userId }}</strong>
-            </p>
-            <p>
-              {{ 'admin.temporaryPasswordLabel' | translate }}:
-              <strong>{{ result.temporaryPassword }}</strong>
-            </p>
-            <p class="associate-directory__modal-banner-notice">{{ 'admin.temporaryPasswordNotice' | translate }}</p>
-          </app-inline-banner>
-          <div class="associate-directory__modal-footer">
-            <button type="button" class="associate-directory__modal-submit" (click)="finishProvisioning()">
-              {{ 'admin.doneButtonLabel' | translate }}
-            </button>
-          </div>
-        </ng-container>
-
-        <ng-template #provisionFormTemplate>
-          <div class="associate-directory__modal-title">{{ 'admin.associateDirectory.provisionModalTitle' | translate }}</div>
-          <p class="associate-directory__modal-subtitle">{{ 'admin.associateDirectory.provisionModalSubtitle' | translate }}</p>
-
-          <app-inline-banner *ngIf="provisionSubmitError" tone="danger">{{ provisionSubmitError }}</app-inline-banner>
-
-          <form [formGroup]="provisionForm" (ngSubmit)="onProvisionSubmit()">
-            <div class="associate-directory__modal-fields">
-              <div class="associate-directory__modal-field">
-                <label>{{ 'admin.nameLabel' | translate }}</label>
-                <input
-                  type="text"
-                  formControlName="name"
-                  [placeholder]="'admin.associateDirectory.fullNamePlaceholder' | translate"
-                  (blur)="markProvisionTouched('name')"
-                />
-                <app-field-error [message]="provisionFieldError('name')"></app-field-error>
-              </div>
-              <div class="associate-directory__modal-field">
-                <label>{{ 'admin.emailLabel' | translate }}</label>
-                <input type="email" formControlName="email" (blur)="markProvisionTouched('email')" />
-                <app-field-error [message]="provisionFieldError('email')"></app-field-error>
-              </div>
-              <div class="associate-directory__modal-field">
-                <label>{{ 'admin.associateDirectory.phoneLabel' | translate }}</label>
-                <input
-                  type="tel"
-                  formControlName="phone"
-                  [placeholder]="'admin.associateDirectory.phonePlaceholder' | translate"
-                />
-              </div>
-              <div class="associate-directory__modal-field">
-                <label>{{ 'admin.associateDirectory.sponsorSearchLabel' | translate }}</label>
-                <input
-                  type="text"
-                  formControlName="sponsorSearch"
-                  [placeholder]="'admin.associateDirectory.sponsorSearchPlaceholder' | translate"
-                  list="associate-directory-sponsor-options"
-                  (input)="onSponsorSearchInput($any($event.target).value)"
-                />
-                <datalist id="associate-directory-sponsor-options">
-                  <option *ngFor="let sponsor of sponsorOptions" [value]="sponsorLabel(sponsor)"></option>
-                </datalist>
-                <app-field-error [message]="sponsorFieldError()"></app-field-error>
-              </div>
-              <ng-container *ngIf="sponsorOptions.length">
-                <div class="associate-directory__modal-field">
-                  <label>{{ 'admin.parentIdLabel' | translate }}</label>
-                  <select formControlName="parentId" (blur)="markProvisionTouched('parentId')">
-                    <option value="">{{ 'admin.parentIdPlaceholder' | translate }}</option>
-                    <option *ngFor="let associate of parentOptions" [value]="associate.id">
-                      {{ sponsorLabel(associate) }}
-                    </option>
-                  </select>
-                  <app-field-error [message]="provisionFieldError('parentId')"></app-field-error>
-                </div>
-                <div class="associate-directory__modal-field">
-                  <label>{{ 'admin.placementTitle' | translate }}</label>
-                  <app-toggle-group
-                    [options]="placementOptions"
-                    [value]="provisionForm.value.position || null"
-                    (valueChange)="onPlacementSelect($event)"
-                  ></app-toggle-group>
-                  <app-field-error [message]="provisionPositionError"></app-field-error>
-                </div>
-              </ng-container>
-            </div>
-
-            <div class="associate-directory__modal-footer">
-              <button type="button" class="associate-directory__modal-cancel" (click)="closeProvisionModal()">
-                {{ 'admin.associateDirectory.cancelAction' | translate }}
-              </button>
-              <button type="submit" class="associate-directory__modal-submit">
-                {{ 'admin.associateDirectory.provisionSubmitAction' | translate }}
-              </button>
-            </div>
-          </form>
-        </ng-template>
-      </div>
-    </div>
+    <app-new-associate-panel
+      [open]="modalOpen"
+      (closed)="closeProvisionModal()"
+      (created)="loadPage(page?.page ?? 0)"
+    ></app-new-associate-panel>
   `
 })
 export class AssociateDirectoryComponent implements OnInit {
@@ -330,9 +208,7 @@ export class AssociateDirectoryComponent implements OnInit {
 
   private associateDirectoryService = inject(AssociateDirectoryService);
   private compensationPlanService = inject(CompensationPlanService);
-  private adminService = inject(AdminService);
   private translate = inject(TranslateService);
-  private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
@@ -353,28 +229,10 @@ export class AssociateDirectoryComponent implements OnInit {
   private joinedFrom = '';
   private joinedTo = '';
 
-  // "New Associate" modal state -- the sole associate-provisioning UI. Captures name/email/phone,
-  // an optional sponsor, and a parent node + Left/Right binary-tree placement (both mandatory once
-  // the tree is non-empty; the first associate is parentless). Opened by the header button or by
-  // the admin-dashboard quick-action via the ?provision=1 query param.
+  // "New Associate" panel state -- opened by the header button or by the admin-dashboard
+  // quick-action via the ?provision=1 query param. The panel (app-new-associate-panel) owns the
+  // provisioning form and sponsor/parent data itself.
   modalOpen = false;
-  provisionForm = this.fb.nonNullable.group(
-    {
-      name: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
-      phone: [''],
-      sponsorSearch: [''],
-      parentId: [''],
-      position: ['']
-    },
-    { validators: positionRequiredWhenParentSelectedValidator }
-  );
-  provisioned: CreateAssociateResponse | null = null;
-  provisionSubmitError: string | null = null;
-  sponsorOptions: AssociateSummary[] = [];
-  selectedSponsorId: string | null = null;
-  sponsorUnresolved = false;
-  private provisionServerFieldErrors: Record<string, string> = {};
 
   ngOnInit(): void {
     this.directoryColumns = [
@@ -397,20 +255,6 @@ export class AssociateDirectoryComponent implements OnInit {
     this.compensationPlanService.getCurrent().subscribe({
       next: res => (this.availableRanks = res.availableRanks),
       error: () => (this.rankLoadError = true)
-    });
-    this.adminService.listAssociates().subscribe({
-      next: associates => {
-        this.sponsorOptions = associates;
-        if (associates.length > 0) {
-          const parent = this.provisionForm.get('parentId')!;
-          parent.addValidators(Validators.required);
-          parent.updateValueAndValidity();
-        }
-      },
-      error: () => {
-        // Sponsor autocomplete degrading to a plain text field (no suggestions) is an acceptable
-        // fallback -- unlike ranks/associates-page, it isn't required to render this screen.
-      }
     });
     this.loadPage(0);
     if (this.route.snapshot.queryParamMap.has('provision')) {
@@ -526,61 +370,7 @@ export class AssociateDirectoryComponent implements OnInit {
     }
   }
 
-  sponsorLabel(associate: AssociateSummary): string {
-    return `${associate.userId} — ${associate.name}`;
-  }
-
-  onSponsorSearchInput(value: string): void {
-    const match = this.sponsorOptions.find(associate => this.sponsorLabel(associate) === value);
-    this.selectedSponsorId = match ? match.id : null;
-    // Editing the field clears a stale "unknown sponsor" message; onProvisionSubmit re-checks.
-    this.sponsorUnresolved = false;
-  }
-
-  // Sponsor is optional -- an empty field legitimately means "no sponsor". But typed text that
-  // matches no datalist option leaves selectedSponsorId null, which previously submitted
-  // sponsorId: undefined and created a sponsor-less associate with no warning. Typed-but-unresolved
-  // is therefore an error, blank is not.
-  sponsorFieldError(): string | undefined {
-    return this.sponsorUnresolved ? this.translate.instant('admin.validation.unknownSponsor') : undefined;
-  }
-
-  private hasUnresolvedSponsorText(): boolean {
-    return this.provisionForm.getRawValue().sponsorSearch.trim().length > 0 && !this.selectedSponsorId;
-  }
-
-  // Parent Node picker offers only associates with an open Left or Right leg -- the sponsor
-  // datalist above stays unfiltered since sponsor is independent of tree placement.
-  get parentOptions(): AssociateSummary[] {
-    return this.sponsorOptions.filter(a => a.hasFreeSlot);
-  }
-
-  get placementOptions(): ToggleOption[] {
-    return [
-      { value: 'L', label: this.translate.instant('admin.leftLabel') },
-      { value: 'R', label: this.translate.instant('admin.rightLabel') }
-    ];
-  }
-
-  onPlacementSelect(value: string): void {
-    this.provisionForm.patchValue({ position: value });
-  }
-
-  get provisionPositionError(): string | undefined {
-    // The toggle group has no blur event, so gate on parentId's touched state (its <select> does)
-    // plus the post-submit markAllAsTouched -- same pattern the old full-page form used.
-    return this.provisionForm.get('parentId')?.touched && this.provisionForm.hasError('positionRequired')
-      ? this.translate.instant('admin.validation.positionRequired')
-      : undefined;
-  }
-
   openProvisionModal(): void {
-    this.provisionForm.reset({ name: '', email: '', phone: '', sponsorSearch: '', parentId: '', position: '' });
-    this.selectedSponsorId = null;
-    this.sponsorUnresolved = false;
-    this.provisioned = null;
-    this.provisionSubmitError = null;
-    this.provisionServerFieldErrors = {};
     this.modalOpen = true;
   }
 
@@ -588,88 +378,7 @@ export class AssociateDirectoryComponent implements OnInit {
     this.modalOpen = false;
   }
 
-  markProvisionTouched(name: string): void {
-    this.provisionForm.get(name)?.markAsTouched();
-  }
-
-  provisionFieldError(name: string): string | undefined {
-    if (this.provisionServerFieldErrors[name]) {
-      return this.provisionServerFieldErrors[name];
-    }
-    const control = this.provisionForm.get(name);
-    if (!control || !control.touched || !control.errors) {
-      return undefined;
-    }
-    if (control.errors['required']) {
-      return this.translate.instant('admin.validation.required');
-    }
-    if (control.errors['email']) {
-      return this.translate.instant('admin.validation.invalidEmail');
-    }
-    return undefined;
-  }
-
-  onProvisionSubmit(): void {
-    this.provisionServerFieldErrors = {};
-    this.provisionSubmitError = null;
-    this.sponsorUnresolved = false;
-    if (this.provisionForm.invalid) {
-      this.provisionForm.markAllAsTouched();
-      return;
-    }
-    if (this.hasUnresolvedSponsorText()) {
-      this.sponsorUnresolved = true;
-      return;
-    }
-    const { name, email, phone, parentId, position } = this.provisionForm.getRawValue();
-    this.adminService
-      .createAssociate({
-        name,
-        email,
-        phone: phone || undefined,
-        sponsorId: this.selectedSponsorId || undefined,
-        parentId: parentId || undefined,
-        position: position || undefined
-      })
-      .subscribe({
-        next: response => (this.provisioned = response),
-        error: (err: HttpErrorResponse) => {
-          const fields = toFieldErrors(err);
-          if (Object.keys(fields).length > 0) {
-            this.provisionServerFieldErrors = fields;
-            return;
-          }
-          this.provisionSubmitError =
-            err.status === 409
-              ? this.messageForConflict(err.error?.error)
-              : this.translate.instant('admin.validation.genericSaveError');
-        }
-      });
-  }
-
-  private messageForConflict(backendMessage: string | undefined): string {
-    if (backendMessage?.startsWith('Email already registered')) {
-      return this.translate.instant('admin.validation.emailTaken');
-    }
-    if (backendMessage?.startsWith('Placement already occupied')) {
-      return this.translate.instant('admin.validation.placementUnavailable');
-    }
-    if (backendMessage?.startsWith('Position is required')) {
-      return this.translate.instant('admin.validation.positionRequired');
-    }
-    if (backendMessage === 'No rank tiers are configured; an associate cannot be created without a rank') {
-      return this.translate.instant('admin.validation.noRankTiersConfigured');
-    }
-    return this.translate.instant('admin.validation.genericSaveError');
-  }
-
-  finishProvisioning(): void {
-    this.modalOpen = false;
-    this.provisioned = null;
-    this.loadPage(this.page?.page ?? 0);
-  }
-
-  private loadPage(page: number): void {
+  loadPage(page: number): void {
     this.loadError = false;
     const filters: AdminAssociateFilters = {};
     if (this.search) filters.search = this.search;

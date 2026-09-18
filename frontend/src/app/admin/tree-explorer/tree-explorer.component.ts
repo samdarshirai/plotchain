@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
+import { NewAssociatePanelComponent, PresetParent } from '../new-associate-panel/new-associate-panel.component';
 import { TreeExplorerService } from './tree-explorer.service';
 import { TreeNode } from '../models/tree-node.model';
-import { LAYOUT, LayoutEntry, LayoutLink, TreeLayout, buildTreeLayout, linkPathD, px, py } from './tree-explorer-layout';
+import { LAYOUT, LayoutEntry, LayoutLink, TreeLayout, VacantEntry, buildTreeLayout, linkPathD, px, py } from './tree-explorer-layout';
 import { PanZoomState, computeFitTransform, panBy, zoomAround } from './tree-explorer-pan-zoom';
 
 const DEFAULT_DEPTH = 3;
@@ -19,7 +20,7 @@ const FIT_ANIMATE_MS = 460;
 @Component({
   selector: 'app-tree-explorer',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, NewAssociatePanelComponent],
   template: `
     <div class="tree-explorer card">
       <div class="tree-explorer__intro">
@@ -77,15 +78,17 @@ const FIT_ANIMATE_MS = 460;
 
           <div class="tree-explorer__node-layer">
             <ng-container *ngFor="let entry of l.nodes; trackBy: trackNode">
-              <div
+              <button
+                type="button"
                 class="tree-explorer__vacant-card"
                 *ngIf="entry.vacant"
                 [style.left.px]="cardLeft(entry)"
                 [style.top.px]="cardTop(entry)"
+                (click)="openNewAssociatePanel(entry)"
               >
                 <span class="material-symbols-outlined">add</span>
                 <span>{{ 'admin.treeExplorer.vacantSlotLabel' | translate }}</span>
-              </div>
+              </button>
 
               <div
                 class="tree-explorer__node-card"
@@ -175,6 +178,13 @@ const FIT_ANIMATE_MS = 460;
         </div>
       </div>
     </div>
+
+    <app-new-associate-panel
+      [open]="panelOpen"
+      [presetParent]="presetParent"
+      (closed)="closeNewAssociatePanel()"
+      (created)="onAssociateCreated()"
+    ></app-new-associate-panel>
   `
 })
 export class TreeExplorerComponent implements OnInit, OnDestroy {
@@ -191,6 +201,13 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
   highlightedNodeId: string | null = null;
   isPanning = false;
   hintDismissed = false;
+  panelOpen = false;
+  presetParent: PresetParent | null = null;
+
+  // Re-runs whichever load produced the currently visible tree (default company-tree load or a
+  // search-derived subtree), so a fresh associate created from a vacant slot reliably replaces
+  // that slot without guessing which endpoint/depth is "current".
+  private reload: (() => void) | null = null;
 
   private _root: TreeNode | null = null;
   get root(): TreeNode | null {
@@ -228,7 +245,12 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
       this.hintTimeoutId = setTimeout(() => this.dismissHint(), HINT_TIMEOUT_MS);
     });
 
-    // Default view: the whole company tree rooted at the founding admin, no search needed.
+    this.reload = () => this.loadCompanyTree();
+    this.loadCompanyTree();
+  }
+
+  // Default view: the whole company tree rooted at the founding admin, no search needed.
+  private loadCompanyTree(): void {
     this.treeExplorerService.companyTree(FULL_TREE_DEPTH).subscribe({
       next: node => {
         this.root = node;
@@ -257,22 +279,43 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
     this.treeExplorerService.search(this.searchQuery).subscribe({
       next: result => {
         const target = result.ancestorPath[result.ancestorPath.length - 1];
-        this.treeExplorerService.subtree(target.id, DEFAULT_DEPTH).subscribe({
-          next: node => {
-            this.root = node;
-            this.scheduleFit(true);
-          },
-          error: () => {
-            this.root = null;
-            this.loadError = true;
-          }
-        });
+        this.reload = () => this.loadSubtree(target.id);
+        this.loadSubtree(target.id);
       },
       error: () => {
         this.root = null;
         this.notFound = true;
       }
     });
+  }
+
+  private loadSubtree(associateId: string): void {
+    this.treeExplorerService.subtree(associateId, DEFAULT_DEPTH).subscribe({
+      next: node => {
+        this.root = node;
+        this.scheduleFit(true);
+      },
+      error: () => {
+        this.root = null;
+        this.loadError = true;
+      }
+    });
+  }
+
+  openNewAssociatePanel(entry: VacantEntry): void {
+    this.presetParent = { parentId: entry.parentId, leg: entry.leg!, parentUserId: entry.parentUserId, parentName: entry.parentName };
+    this.panelOpen = true;
+  }
+
+  closeNewAssociatePanel(): void {
+    this.panelOpen = false;
+  }
+
+  onAssociateCreated(): void {
+    // Reload the tree in the background so the vacant slot becomes filled once the admin
+    // dismisses the panel -- don't close it here, or the temporary-password success screen
+    // (shown inside the panel until "Done") would never be seen.
+    this.reload?.();
   }
 
   legLeftPercent(node: TreeNode): number {

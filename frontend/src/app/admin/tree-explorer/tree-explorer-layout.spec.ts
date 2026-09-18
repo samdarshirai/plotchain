@@ -39,6 +39,20 @@ describe('buildTreeLayout', () => {
     expect(link.right.vacant).toBe(true);
   });
 
+  it('tags each vacant slot with the id/userId/name of the parent it hangs off', () => {
+    const root = node({ id: 'root', userId: 'VP00001', name: 'Root Person' });
+
+    const layout = buildTreeLayout(root, 3)!;
+    const vacant = layout.nodes.filter(n => n.vacant) as any[];
+
+    expect(vacant.length).toBe(2);
+    for (const entry of vacant) {
+      expect(entry.parentId).toBe('root');
+      expect(entry.parentUserId).toBe('VP00001');
+      expect(entry.parentName).toBe('Root Person');
+    }
+  });
+
   it('does not synthesize vacant children beneath a node at the max fetch depth', () => {
     // depth 0 (root) -> depth 1 -> depth 2 -> depth 3, with the depth-3 node
     // returning children: [] because the API stopped fetching, not because

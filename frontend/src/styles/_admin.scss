@@ -186,7 +186,7 @@
   color: var(--text-muted);
 }
 
-// Opens the provisioning modal (see .associate-directory__modal-overlay below) instead of
+// Opens the provisioning modal (see .new-associate-panel__modal-overlay below) instead of
 // navigating -- previously a routerLink to /admin/associates/new, now a plain button.
 .associate-directory__new-link {
   border: none;
@@ -419,10 +419,10 @@
   border-top: 1px solid var(--border-subtle);
 }
 
-// "Provision New Associate" modal -- Viraj_Acres_Settings.dc.html lines 529-554. A centered
-// scrim-backed panel, not a route; only the fields the modal actually exposes (name/email/phone/
-// sponsor search) live here, deliberately excluding parentId/position (see the link-out below).
-.associate-directory__modal-overlay {
+// "Provision New Associate" modal (app-new-associate-panel) -- Viraj_Acres_Settings.dc.html lines
+// 529-554. A centered scrim-backed panel, not a route. Shared by the Associate Directory's "New
+// Associate" button and Tree Explorer's click-a-vacant-slot flow -- one component, one CSS block.
+.new-associate-panel__modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(12, 10, 11, 0.55);
@@ -432,7 +432,7 @@
   z-index: 50;
 }
 
-.associate-directory__modal {
+.new-associate-panel__modal {
   width: 480px;
   max-width: calc(100vw - 32px);
   max-height: calc(100vh - 32px);
@@ -443,26 +443,26 @@
   padding: 32px;
 }
 
-.associate-directory__modal-title {
+.new-associate-panel__modal-title {
   font-family: var(--font-display);
   font-size: 22px;
   font-weight: 600;
   margin: 0 0 4px 0;
 }
 
-.associate-directory__modal-subtitle {
+.new-associate-panel__modal-subtitle {
   font-size: 13.5px;
   color: var(--text-muted);
   margin: 0 0 24px 0;
 }
 
-.associate-directory__modal-fields {
+.new-associate-panel__modal-fields {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.associate-directory__modal-field {
+.new-associate-panel__modal-field {
   label {
     font-size: 12.5px;
     font-weight: 600;
@@ -483,18 +483,29 @@
   }
 }
 
-.associate-directory__modal-banner-notice {
+.new-associate-panel__modal-banner-notice {
   font-size: 12.5px;
 }
 
-.associate-directory__modal-footer {
+// Read-only summary shown instead of the parent dropdown + L/R toggle when the panel opens
+// pre-filled from a Tree Explorer vacant-slot click.
+.new-associate-panel__preset-summary {
+  font-size: 13.5px;
+  color: var(--text-muted);
+
+  strong {
+    color: var(--text-primary);
+  }
+}
+
+.new-associate-panel__modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   margin-top: 28px;
 }
 
-.associate-directory__modal-cancel {
+.new-associate-panel__modal-cancel {
   background: transparent;
   border: 1px solid var(--border-subtle);
   color: var(--text-primary);
@@ -505,7 +516,7 @@
   cursor: pointer;
 }
 
-.associate-directory__modal-submit {
+.new-associate-panel__modal-submit {
   background: var(--brand-secondary);
   border: none;
   color: var(--brand-primary-bright);
@@ -1810,7 +1821,7 @@
 }
 
 // "Submit Withdrawal" modal, replacing the old /admin/withdrawals/new route -- same centered
-// scrim-backed panel as .associate-directory__modal-overlay above, renamed prefix only.
+// scrim-backed panel as .new-associate-panel__modal-overlay above, renamed prefix only.
 .payout-approval__modal-overlay {
   position: fixed;
   inset: 0;
@@ -3085,6 +3096,16 @@
   .material-symbols-outlined {
     font-size: 19px;
   }
+}
+
+// Tree Explorer's own vacant slot is a real <button> (clicking opens the New Associate Panel);
+// My Tree's identical-looking slot (shares this class) stays a plain, non-interactive <div> --
+// so the button-chrome reset is scoped to the element, not the class, to avoid a false "clickable"
+// affordance (pointer cursor) on My Tree.
+button.tree-explorer__vacant-card {
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
 }
 
 .tree-explorer__hint {

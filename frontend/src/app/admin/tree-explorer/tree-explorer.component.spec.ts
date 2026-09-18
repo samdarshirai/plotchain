@@ -47,10 +47,12 @@ describe('TreeExplorerComponent', () => {
 
   afterEach(() => httpMock.verify());
 
-  // The component auto-loads the whole company tree on init. Every test that calls
-  // detectChanges() must resolve that request first; this helper does it.
+  // The component auto-loads the whole company tree on init, and always mounts the (always-
+  // present, not *ngIf-gated) New Associate panel which fetches its own sponsor list. Every test
+  // that calls detectChanges() must resolve both requests first; this helper does it.
   function initWithCompanyTree(node: TreeNode | null = companyRoot): void {
     fixture.detectChanges();
+    httpMock.expectOne('/api/associates').flush([]);
     const req = httpMock.expectOne('/api/admin/tree?depth=5');
     if (node) {
       req.flush(node);
@@ -140,5 +142,40 @@ describe('TreeExplorerComponent', () => {
 
     expect(fixture.componentInstance.loadError).toBe(true);
     expect(fixture.componentInstance.root).toBeNull();
+  });
+
+  it('renders vacant cards as real buttons that open the New Associate panel preset to their parent', () => {
+    initWithCompanyTree();
+
+    fixture.componentInstance.root = nestedTree;
+    fixture.detectChanges();
+
+    const vacantButton: HTMLButtonElement = fixture.nativeElement.querySelector('.tree-explorer__vacant-card');
+    expect(vacantButton.tagName).toBe('BUTTON');
+    vacantButton.click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.panelOpen).toBeTrue();
+    expect(fixture.componentInstance.presetParent).not.toBeNull();
+    expect(['a1', 'a2', 'a3']).toContain(fixture.componentInstance.presetParent!.parentId);
+    expect(['L', 'R']).toContain(fixture.componentInstance.presetParent!.leg);
+  });
+
+  it('reloads the current root in the background when the panel emits created, without closing it early', () => {
+    initWithCompanyTree();
+
+    fixture.componentInstance.openNewAssociatePanel({
+      vacant: true, depth: 1, leg: 'L', x: 0, id: 'vacant-1-1',
+      parentId: 'admin', parentUserId: 'admin', parentName: 'Administrator'
+    });
+    fixture.componentInstance.onAssociateCreated();
+
+    // The panel stays open so the admin can see the success/temporary-password screen; it
+    // closes only when they click "Done" (which emits `closed` -> closeNewAssociatePanel()).
+    expect(fixture.componentInstance.panelOpen).toBeTrue();
+    httpMock.expectOne('/api/admin/tree?depth=5').flush(companyRoot);
+
+    fixture.componentInstance.closeNewAssociatePanel();
+    expect(fixture.componentInstance.panelOpen).toBeFalse();
   });
 });
