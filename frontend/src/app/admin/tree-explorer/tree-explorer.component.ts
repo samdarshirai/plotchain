@@ -6,7 +6,7 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
 import { TreeExplorerService } from './tree-explorer.service';
 import { TreeNode } from '../models/tree-node.model';
 import { LAYOUT, LayoutEntry, LayoutLink, TreeLayout, buildTreeLayout, linkPathD, px, py } from './tree-explorer-layout';
-import { PanZoomState, computeFitTransform, panBy, pinchZoom, zoomAround } from './tree-explorer-pan-zoom';
+import { PanZoomState, computeFitTransform, panBy, zoomAround } from './tree-explorer-pan-zoom';
 
 const DEFAULT_DEPTH = 3;
 // The default whole-tree view requests the backend's hard maximum (also 5) so the admin
@@ -207,7 +207,6 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
   private wrapCleanupFns: Array<() => void> = [];
   private activePointers = new Map<number, { x: number; y: number }>();
   private panFrom: { px: number; py: number; sx: number; sy: number } | null = null;
-  private pinch: { dist: number; scale: number; mid: { x: number; y: number } } | null = null;
   private hintTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private resizeListener = () => this.fitToScreen(false);
 
@@ -374,16 +373,6 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
         if (this.activePointers.size === 1) {
           this.panFrom = { px: e.clientX, py: e.clientY, sx: this.panZoom.x, sy: this.panZoom.y };
           this.ngZone.run(() => (this.isPanning = true));
-        } else if (this.activePointers.size === 2) {
-          this.panFrom = null;
-          const pts = Array.from(this.activePointers.values());
-          const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-          const rect = wrap.getBoundingClientRect();
-          this.pinch = {
-            dist,
-            scale: this.panZoom.scale,
-            mid: { x: (pts[0].x + pts[1].x) / 2 - rect.left, y: (pts[0].y + pts[1].y) / 2 - rect.top }
-          };
         }
       };
 
@@ -398,23 +387,11 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
             e.clientY - this.panFrom.py
           );
           this.applyTransform(next, false);
-        } else if (this.activePointers.size === 2 && this.pinch) {
-          const pts = Array.from(this.activePointers.values());
-          const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-          const next = pinchZoom(
-            { x: this.panZoom.x, y: this.panZoom.y, scale: this.pinch.scale },
-            this.pinch.dist,
-            dist,
-            this.pinch.mid.x,
-            this.pinch.mid.y
-          );
-          this.applyTransform(next, false);
         }
       };
 
       const releasePointer = (e: PointerEvent) => {
         this.activePointers.delete(e.pointerId);
-        if (this.activePointers.size < 2) this.pinch = null;
         if (this.activePointers.size === 1) {
           const p = Array.from(this.activePointers.values())[0];
           this.panFrom = { px: p.x, py: p.y, sx: this.panZoom.x, sy: this.panZoom.y };
@@ -428,27 +405,18 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
         if (this.activePointers.size <= 1) releasePointer(e);
       };
 
-      const onWheel = (e: WheelEvent) => {
-        e.preventDefault();
-        const rect = wrap.getBoundingClientRect();
-        const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-        this.applyTransform(zoomAround(this.panZoom, e.clientX - rect.left, e.clientY - rect.top, factor), false);
-      };
-
       wrap.addEventListener('pointerdown', onPointerDown, { passive: false });
       wrap.addEventListener('pointermove', onPointerMove, { passive: true });
       wrap.addEventListener('pointerup', releasePointer, { passive: true });
       wrap.addEventListener('pointercancel', releasePointer, { passive: true });
       wrap.addEventListener('pointerleave', onPointerLeave, { passive: true });
-      wrap.addEventListener('wheel', onWheel, { passive: false });
 
       this.wrapCleanupFns = [
         () => wrap.removeEventListener('pointerdown', onPointerDown),
         () => wrap.removeEventListener('pointermove', onPointerMove),
         () => wrap.removeEventListener('pointerup', releasePointer),
         () => wrap.removeEventListener('pointercancel', releasePointer),
-        () => wrap.removeEventListener('pointerleave', onPointerLeave),
-        () => wrap.removeEventListener('wheel', onWheel)
+        () => wrap.removeEventListener('pointerleave', onPointerLeave)
       ];
     });
   }
@@ -459,6 +427,5 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
     this.attachedWrap = null;
     this.activePointers.clear();
     this.panFrom = null;
-    this.pinch = null;
   }
 }
