@@ -19,6 +19,8 @@ interface DashboardTile {
   noteParams?: Record<string, string | number>;
 }
 
+type CollapsibleSection = 'businessVolume' | 'networkIncome';
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -51,12 +53,19 @@ interface DashboardTile {
       </div>
 
       <div class="dashboard__section">
-        <div class="dashboard__section-header">
+        <button
+          type="button"
+          class="dashboard__section-header"
+          [attr.aria-expanded]="isExpanded('businessVolume')"
+          aria-controls="dashboard-section-business-volume"
+          (click)="toggleSection('businessVolume')"
+        >
           <span class="dashboard__section-rule"></span>
           <span class="dashboard__section-label">{{ 'dashboard.businessVolumeEyebrow' | translate }}</span>
           <span class="dashboard__section-rule dashboard__section-rule--fill"></span>
-        </div>
-        <div class="dashboard__tiles">
+          <span class="material-symbols-outlined dashboard__section-chevron">{{ isExpanded('businessVolume') ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+        <div id="dashboard-section-business-volume" class="dashboard__tiles" *ngIf="isExpanded('businessVolume')">
           <app-stat-tile *ngFor="let tile of businessVolumeTiles(d)"
             [icon]="tile.icon"
             [label]="tile.labelKey | translate"
@@ -67,12 +76,19 @@ interface DashboardTile {
       </div>
 
       <div class="dashboard__section">
-        <div class="dashboard__section-header">
+        <button
+          type="button"
+          class="dashboard__section-header"
+          [attr.aria-expanded]="isExpanded('networkIncome')"
+          aria-controls="dashboard-section-network-income"
+          (click)="toggleSection('networkIncome')"
+        >
           <span class="dashboard__section-rule"></span>
           <span class="dashboard__section-label">{{ 'dashboard.networkIncomeEyebrow' | translate }}</span>
           <span class="dashboard__section-rule dashboard__section-rule--fill"></span>
-        </div>
-        <div class="dashboard__tiles">
+          <span class="material-symbols-outlined dashboard__section-chevron">{{ isExpanded('networkIncome') ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+        <div id="dashboard-section-network-income" class="dashboard__tiles" *ngIf="isExpanded('networkIncome')">
           <app-stat-tile *ngFor="let tile of networkIncomeTiles(d)"
             [icon]="tile.icon"
             [label]="tile.labelKey | translate"
@@ -99,6 +115,23 @@ export class DashboardComponent implements OnInit {
 
   dashboard: DashboardResponse | null = null;
   error = false;
+
+  // Both sections start expanded (unlike the collapsed-by-default accordion pattern this mirrors
+  // in compensation-step.component.ts) -- this is primary dashboard content, not a form the
+  // associate fills in section by section.
+  private expandedSections = new Set<CollapsibleSection>(['businessVolume', 'networkIncome']);
+
+  isExpanded(section: CollapsibleSection): boolean {
+    return this.expandedSections.has(section);
+  }
+
+  toggleSection(section: CollapsibleSection): void {
+    if (this.expandedSections.has(section)) {
+      this.expandedSections.delete(section);
+    } else {
+      this.expandedSections.add(section);
+    }
+  }
 
   ngOnInit(): void {
     this.dashboardService.getDashboard().subscribe({

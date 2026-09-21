@@ -217,8 +217,18 @@
   gap: 0.5625rem;
 }
 
+// A <button> (collapsible), not a plain div -- reset the button chrome and keep the same
+// flex-row eyebrow layout the placeholder gives every other panel header.
 .dashboard__section-header {
   @extend %panel-header-eyebrow;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
 }
 
 .dashboard__section-rule {
@@ -232,6 +242,12 @@
 
 .dashboard__section-label {
   @extend %panel-header-eyebrow-label;
+}
+
+.dashboard__section-chevron {
+  font-size: 18px;
+  color: var(--text-muted);
+  flex: 0 0 auto;
 }
 
 // Seal Card additions (base .seal-card/.seal-card__* rules live in _setup.scss). The dashboard's

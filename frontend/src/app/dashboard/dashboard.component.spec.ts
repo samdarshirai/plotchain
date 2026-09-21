@@ -122,6 +122,39 @@ describe('DashboardComponent', () => {
     expect(sections[1].querySelectorAll('app-stat-tile').length).toBe(10);
   });
 
+  it('both tile sections start expanded', () => {
+    loadDashboard();
+    const sections = fixture.nativeElement.querySelectorAll('.dashboard__section');
+    expect(sections[0].querySelector('.dashboard__section-header').getAttribute('aria-expanded')).toBe('true');
+    expect(sections[0].querySelector('.dashboard__tiles')).toBeTruthy();
+    expect(sections[1].querySelector('.dashboard__section-header').getAttribute('aria-expanded')).toBe('true');
+    expect(sections[1].querySelector('.dashboard__tiles')).toBeTruthy();
+  });
+
+  it('collapses a section on header click, independently of the other section', () => {
+    loadDashboard();
+    const sections = fixture.nativeElement.querySelectorAll('.dashboard__section');
+    sections[0].querySelector('.dashboard__section-header').click();
+    fixture.detectChanges();
+
+    expect(sections[0].querySelector('.dashboard__section-header').getAttribute('aria-expanded')).toBe('false');
+    expect(sections[0].querySelector('.dashboard__tiles')).toBeFalsy();
+    expect(sections[1].querySelector('.dashboard__section-header').getAttribute('aria-expanded')).toBe('true');
+    expect(sections[1].querySelector('.dashboard__tiles')).toBeTruthy();
+  });
+
+  it('re-expands a collapsed section on a second header click', () => {
+    loadDashboard();
+    const header = fixture.nativeElement.querySelectorAll('.dashboard__section')[0].querySelector('.dashboard__section-header');
+    header.click();
+    fixture.detectChanges();
+    header.click();
+    fixture.detectChanges();
+
+    expect(header.getAttribute('aria-expanded')).toBe('true');
+    expect(header.parentElement.querySelector('.dashboard__tiles')).toBeTruthy();
+  });
+
   it('renders the two-column panel row: leg balance, recent sales, quick actions', () => {
     loadDashboard();
     expect(fixture.nativeElement.querySelector('app-leg-balance')).toBeTruthy();
