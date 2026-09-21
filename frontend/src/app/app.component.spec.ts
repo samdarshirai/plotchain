@@ -49,13 +49,15 @@ describe('AppComponent', () => {
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.logout')).toBeFalsy();
+    expect(compiled.querySelector('.associate-sidebar__logout')).toBeFalsy();
   });
 
-  it('shows the logout control and logs out when authenticated', () => {
+  it('shows the logout control and logs out when authenticated as admin-family', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const authService = TestBed.inject(AuthService);
     const router = TestBed.inject(Router);
     spyOn(authService, 'isAuthenticated').and.returnValue(true);
+    spyOn(authService, 'getRole').and.returnValue('ADMIN');
     spyOn(authService, 'logout');
     spyOn(router, 'navigate');
     fixture.detectChanges();
@@ -70,11 +72,32 @@ describe('AppComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
 
-  it('shows the header on a non-setup authenticated route', () => {
+  it('shows the sidebar logout control and logs out when authenticated as an associate', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const authService = TestBed.inject(AuthService);
+    const router = TestBed.inject(Router);
+    spyOn(authService, 'isAuthenticated').and.returnValue(true);
+    spyOn(authService, 'getRole').and.returnValue('ASSOCIATE');
+    spyOn(authService, 'logout');
+    spyOn(router, 'navigate');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const logoutButton = compiled.querySelector('.associate-sidebar__logout') as HTMLButtonElement;
+    expect(logoutButton).toBeTruthy();
+
+    logoutButton.click();
+
+    expect(authService.logout).toHaveBeenCalled();
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('shows the header on a non-setup authenticated admin-family route', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
     const authService = TestBed.inject(AuthService);
     spyOn(authService, 'isAuthenticated').and.returnValue(true);
+    spyOn(authService, 'getRole').and.returnValue('ADMIN');
     fixture.detectChanges();
 
     (app as unknown as { updateSetupRouteState(url: string): void }).updateSetupRouteState('/admin/dashboard');
@@ -89,6 +112,7 @@ describe('AppComponent', () => {
     const app = fixture.componentInstance;
     const authService = TestBed.inject(AuthService);
     spyOn(authService, 'isAuthenticated').and.returnValue(true);
+    spyOn(authService, 'getRole').and.returnValue('ADMIN');
     fixture.detectChanges();
 
     (app as unknown as { updateSetupRouteState(url: string): void }).updateSetupRouteState('/setup/company-profile');
@@ -96,9 +120,10 @@ describe('AppComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.app-header')).toBeFalsy();
+    expect(compiled.querySelector('app-associate-sidebar')).toBeFalsy();
   });
 
-  it('shows all associate nav links including Income Statement for a plain associate role', () => {
+  it('renders the sidebar (not the horizontal header) for a plain associate role, with all nav links', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const authService = TestBed.inject(AuthService);
     const translateService = TestBed.inject(TranslateService);
@@ -120,10 +145,30 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const links = Array.from(compiled.querySelectorAll('.app-nav__link')).map(el => el.textContent?.trim());
+    expect(compiled.querySelector('.app-header')).toBeFalsy();
+    const links = Array.from(compiled.querySelectorAll('.associate-sidebar__link-label')).map(el => el.textContent?.trim());
     expect(links).toEqual([
       'Dashboard', 'My Tree', 'Sales History', 'Plot Bookings', 'My Account', 'Income Statement', 'Payout History'
     ]);
+  });
+
+  it('shifts the content column by the sidebar width for an associate, none for admin-family', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const authService = TestBed.inject(AuthService);
+    spyOn(authService, 'isAuthenticated').and.returnValue(true);
+    spyOn(authService, 'getRole').and.returnValue('ASSOCIATE');
+    fixture.detectChanges();
+
+    let compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.app-content--sidebar-rail')).toBeTruthy();
+    expect(compiled.querySelector('.app-content--sidebar-expanded')).toBeTruthy();
+
+    (authService.getRole as jasmine.Spy).and.returnValue('ADMIN');
+    fixture.detectChanges();
+
+    compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.app-content--sidebar-rail')).toBeFalsy();
+    expect(compiled.querySelector('.app-content--sidebar-expanded')).toBeFalsy();
   });
 
   it('shows Dashboard plus the four category tabs for an admin-family role', () => {
@@ -263,6 +308,7 @@ describe('AppComponent', () => {
     const authService = TestBed.inject(AuthService);
     const translateService = TestBed.inject(TranslateService);
     spyOn(authService, 'isAuthenticated').and.returnValue(true);
+    spyOn(authService, 'getRole').and.returnValue('ADMIN');
     spyOn(translateService, 'get').and.callFake((key: string) => {
       const translations: { [key: string]: string } = {
         'brand.fallbackMark': 'VS',
@@ -285,6 +331,7 @@ describe('AppComponent', () => {
     const authService = TestBed.inject(AuthService);
     const branding = TestBed.inject(BrandingBootstrapService);
     spyOn(authService, 'isAuthenticated').and.returnValue(true);
+    spyOn(authService, 'getRole').and.returnValue('ADMIN');
     spyOn(branding, 'getLast').and.returnValue({
       displayName: 'Viraj Acres',
       tagline: 'Legacy Living',

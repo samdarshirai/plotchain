@@ -7,6 +7,7 @@ import { AuthService } from './auth/auth.service';
 import { ADMIN_FAMILY_ROLES } from './admin/admin.guard';
 import { BrandingBootstrapService } from './core/theme/branding-bootstrap.service';
 import { ADMIN_NAV_CATEGORIES, AdminNavCategory, findNavCategoryForUrl } from './admin-nav-categories.model';
+import { AssociateSidebarComponent } from './shared/components/associate-sidebar/associate-sidebar.component';
 
 // /setup is a guided, pre-launch-only wizard (setupModeGuard) with its own dedicated
 // step-nav -- it stays chromeless (no global header) so cross-navigation doesn't undercut the
@@ -14,7 +15,7 @@ import { ADMIN_NAV_CATEGORIES, AdminNavCategory, findNavCategoryForUrl } from '.
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, TranslateModule],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, TranslateModule, AssociateSidebarComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -26,6 +27,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
   isSetupRoute = false;
   isChromelessRoute = false;
+
+  // Associate sidebar's pin state, owned here (not the sidebar) because .app-content's
+  // margin-left needs it too -- see app.component.html's [(pinned)] binding.
+  associateSidebarPinned = true;
 
   // Header category tabs (admin-family only) and the item-tab row they expand into. Both read the
   // same ADMIN_NAV_CATEGORIES data; activeNavCategory is recomputed from the URL on every

@@ -174,6 +174,184 @@
   color: var(--brand-primary-bright);
 }
 
+// Associate role's left nav (DESIGN.md SS4; mockup: "Header to sidebar conversion" ->
+// Dashboard Sidebar.dc.html). Admin-family roles keep .app-header/.app-nav above instead -- this
+// never renders for them. Fixed full-height, above .app-header's own stacking (z-index 20 there
+// vs 10), width driven by --sidebar-rail-width/--sidebar-expanded-width so .app-content's
+// margin-left (below) can share the same tokens.
+.associate-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-rail-width);
+  background: var(--ink);
+  border-right: 1px solid rgba(198, 162, 39, 0.22);
+  overflow: hidden;
+  transition: width 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.associate-sidebar--expanded {
+  width: var(--sidebar-expanded-width);
+}
+
+.associate-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 16px 18px;
+  min-height: 88px;
+  flex-shrink: 0;
+}
+
+.associate-sidebar__brand-mark {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  object-fit: contain;
+}
+
+.associate-sidebar__brand-mark--fallback {
+  border: 1px solid var(--brand-primary);
+  background: var(--brand-secondary);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--brand-primary-bright);
+  letter-spacing: 0.02em;
+}
+
+.associate-sidebar__wordmark {
+  min-width: 0;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+}
+
+.associate-sidebar__wordmark-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--brand-primary-bright);
+}
+
+.associate-sidebar__wordmark-tagline {
+  font-size: 8.5px;
+  letter-spacing: 0.24em;
+  color: var(--ink-surface-muted);
+  margin-top: 3px;
+}
+
+.associate-sidebar__divider {
+  height: 1px;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, rgba(198, 162, 39, 0.35), rgba(198, 162, 39, 0));
+  margin: 0 0 10px;
+}
+
+.associate-sidebar__divider--tight {
+  background: rgba(198, 162, 39, 0.18);
+  margin: 0 4px 10px;
+}
+
+.associate-sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px;
+  overflow-y: auto;
+}
+
+.associate-sidebar__spacer {
+  flex: 1;
+}
+
+.associate-sidebar__link,
+.associate-sidebar__pin,
+.associate-sidebar__logout {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 12px;
+  border-radius: 2px;
+  white-space: nowrap;
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--nav-inactive-muted);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.associate-sidebar__link:hover,
+.associate-sidebar__pin:hover,
+.associate-sidebar__logout:hover {
+  background: rgba(198, 162, 39, 0.09);
+  color: var(--brand-primary-bright);
+}
+
+.associate-sidebar__link--active {
+  background: var(--nav-active-fill);
+  color: var(--brand-primary-bright);
+}
+
+.associate-sidebar__logout:hover {
+  color: var(--brand-primary-bright);
+}
+
+.associate-sidebar__link-icon,
+.associate-sidebar__pin-icon {
+  flex: none;
+  font-size: 21px;
+  width: 21px;
+}
+
+.associate-sidebar__pin-icon {
+  transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.associate-sidebar__pin--pinned {
+  color: var(--brand-primary);
+}
+
+.associate-sidebar__pin--pinned .associate-sidebar__pin-icon {
+  transform: rotate(0deg);
+}
+
+.associate-sidebar__pin:not(.associate-sidebar__pin--pinned) .associate-sidebar__pin-icon {
+  transform: rotate(40deg);
+}
+
+.associate-sidebar__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px 14px;
+  flex-shrink: 0;
+}
+
+// Content column for Associate routes only (admin routes never get this class -- see
+// app.component.html -- so margin-left stays 0 for them, unaffected by the sidebar tokens).
+.app-content {
+  transition: margin-left 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-content--sidebar-rail {
+  margin-left: var(--sidebar-rail-width);
+}
+
+.app-content--sidebar-expanded {
+  margin-left: var(--sidebar-expanded-width);
+}
+
 .dashboard-error {
   margin: 1.5rem;
   padding: 1.5rem;
