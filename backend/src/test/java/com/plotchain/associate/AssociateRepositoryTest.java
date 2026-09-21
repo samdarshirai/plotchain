@@ -49,6 +49,23 @@ class AssociateRepositoryTest {
     }
 
     @Test
+    void countDownlineByPositionCountsOnlyThatLegsSubtreeNotTheWholeDownline() {
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        entityManager.persist(rank);
+
+        // root's left leg has 2 associates (child + grandchild), right leg has 1.
+        Associate root = newAssociate(null, null, rank.getId());
+        Associate leftChild = newAssociate(root.getId(), "L", rank.getId());
+        Associate leftGrandchild = newAssociate(leftChild.getId(), "L", rank.getId());
+        Associate rightChild = newAssociate(root.getId(), "R", rank.getId());
+        associateRepository.saveAll(List.of(root, leftChild, leftGrandchild, rightChild));
+        entityManager.flush();
+
+        assertThat(associateRepository.countDownlineByPosition(root.getId(), "L")).isEqualTo(2L);
+        assertThat(associateRepository.countDownlineByPosition(root.getId(), "R")).isEqualTo(1L);
+    }
+
+    @Test
     void findDeepestLegDepthCountsLevelsInTheLongestRootToLeafChain() {
         RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
         entityManager.persist(rank);

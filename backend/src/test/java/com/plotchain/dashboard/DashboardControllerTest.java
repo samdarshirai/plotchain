@@ -106,6 +106,11 @@ class DashboardControllerTest {
         when(cycleRepository.countByPeriodStartLessThanEqual(any())).thenReturn(1L);
         when(saleRepository.countByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(0L);
         when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumAmountByAssociateIdAndStatus(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
+        when(associateRepository.countDownlineByPosition(any(), any())).thenReturn(0L);
+        when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(any())).thenReturn(List.of());
+        when(ledgerEntryRepository.sumNetAmountByAssociateAndType(any(), any())).thenReturn(BigDecimal.ZERO);
 
         mockMvc.perform(get("/api/associates/me/dashboard")
                 .header("Authorization", "Bearer " + tokenFor(associateId)))
@@ -119,7 +124,12 @@ class DashboardControllerTest {
             .andExpect(jsonPath("$.salesSummary.salesThisCycle").value(0))
             .andExpect(jsonPath("$.cycleCountdown.cycleNumber").value(1))
             .andExpect(jsonPath("$.legVolumeSummary.leftLegVolume").value(0))
-            .andExpect(jsonPath("$.legVolumeSummary.rightLegVolume").value(0));
+            .andExpect(jsonPath("$.legVolumeSummary.rightLegVolume").value(0))
+            .andExpect(jsonPath("$.networkSummary.leftAssociateCount").value(0))
+            .andExpect(jsonPath("$.networkSummary.rightAssociateCount").value(0))
+            .andExpect(jsonPath("$.associate.sponsorAssociateId").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.legVolumeSummary.totalLeftBusiness").value(0))
+            .andExpect(jsonPath("$.legVolumeSummary.newBookedAreaSqft").value(0));
     }
 
     @Test

@@ -18,11 +18,13 @@ import { LegVolumeSummary } from '../../models/dashboard-response.model';
         <div class="leg-balance__figure">
           <span class="leg-balance__figure-label">{{ 'dashboard.leftLegLabel' | translate }}</span>
           <span class="leg-balance__figure-value">{{ data.leftLegVolume | currency:'INR':'symbol':'1.0-0' }}</span>
+          <span class="leg-balance__figure-caption" *ngIf="leftAssociateCount != null">{{ 'dashboard.legAssociatesCaption' | translate: { count: leftAssociateCount } }}</span>
         </div>
         <div class="leg-balance__divider"></div>
         <div class="leg-balance__figure">
           <span class="leg-balance__figure-label">{{ 'dashboard.rightLegLabel' | translate }}</span>
           <span class="leg-balance__figure-value">{{ data.rightLegVolume | currency:'INR':'symbol':'1.0-0' }}</span>
+          <span class="leg-balance__figure-caption" *ngIf="rightAssociateCount != null">{{ 'dashboard.legAssociatesCaption' | translate: { count: rightAssociateCount } }}</span>
         </div>
       </div>
       <div class="leg-balance__bar">
@@ -30,11 +32,14 @@ import { LegVolumeSummary } from '../../models/dashboard-response.model';
         <span class="leg-balance__bar-fill leg-balance__bar-fill--right" [style.width.%]="rightPct"></span>
       </div>
       <p class="leg-balance__empty" *ngIf="isEmpty">{{ 'dashboard.legBalanceEmpty' | translate }}</p>
+      <p class="leg-balance__note" *ngIf="!isEmpty">{{ 'dashboard.legNote' | translate }}</p>
     </div>
   `
 })
 export class LegBalanceComponent {
   @Input({ required: true }) data!: LegVolumeSummary;
+  @Input() leftAssociateCount?: number;
+  @Input() rightAssociateCount?: number;
 
   private get total(): number {
     return this.data.leftLegVolume + this.data.rightLegVolume;

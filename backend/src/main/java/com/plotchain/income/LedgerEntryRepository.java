@@ -19,6 +19,11 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
     @Query("SELECT COALESCE(SUM(l.netAmount), 0) FROM LedgerEntry l WHERE l.associateId = :associateId AND l.cycleId = :cycleId")
     BigDecimal sumNetAmountByAssociateAndCycle(@Param("associateId") UUID associateId, @Param("cycleId") UUID cycleId);
 
+    // Dashboard's Network & Income lifetime tiles (Matching Income, Sponsor's Matching): same
+    // shape as sumNetAmountByAssociateCycleAndType above, minus the cycle filter.
+    @Query("SELECT COALESCE(SUM(l.netAmount), 0) FROM LedgerEntry l WHERE l.associateId = :associateId AND l.incomeType = :type")
+    BigDecimal sumNetAmountByAssociateAndType(@Param("associateId") UUID associateId, @Param("type") IncomeType type);
+
     // Company-wide siblings of the per-associate sums above, for AdminStatsService: same JPQL
     // shape minus the associateId filter.
     @Query("SELECT COALESCE(SUM(l.netAmount), 0) FROM LedgerEntry l WHERE l.cycleId = :cycleId AND l.incomeType = :type")

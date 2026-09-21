@@ -251,4 +251,52 @@ class SaleRepositoryTest {
 
         assertThat(sum).isEqualByComparingTo("0");
     }
+
+    @Test
+    void sumAmountByAssociateIdAndStatusSumsAcrossAllCyclesNotJustOne() {
+        UUID projectId = persistProject();
+        UUID plotId = persistPlot(projectId);
+        UUID cycleId = persistCycle();
+        UUID otherCycleId = persistCycle();
+        UUID associateId = persistAssociate();
+        persistSale(projectId, associateId, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(projectId, associateId, plotId, otherCycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(projectId, associateId, plotId, cycleId, SaleStatus.VOIDED, Instant.now());
+        entityManager.flush();
+
+        BigDecimal sum = saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED);
+
+        // Two RECORDED sales across two different cycles at persistSale's fixed amount, 600000.00 each.
+        assertThat(sum).isEqualByComparingTo("1200000.00");
+    }
+
+    @Test
+    void sumPlotAreaSqftByAssociateIdAndCycleIdAndStatusSumsTheJoinedPlotsArea() {
+        UUID projectId = persistProject();
+        UUID plotId = persistPlot(projectId);
+        UUID cycleId = persistCycle();
+        UUID associateId = persistAssociate();
+        persistSale(projectId, associateId, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(projectId, associateId, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        persistSale(projectId, associateId, plotId, cycleId, SaleStatus.VOIDED, Instant.now());
+        entityManager.flush();
+
+        BigDecimal sqft = saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED);
+
+        // Two RECORDED sales of the same plot, persistPlot's fixed areaSqft (1200.00) each.
+        assertThat(sqft).isEqualByComparingTo("2400.00");
+    }
+
+    @Test
+    void sumPlotAreaSqftByAssociateIdAndCycleIdAndStatusReturnsZeroNotNullWhenNoRowsMatch() {
+        UUID projectId = persistProject();
+        persistPlot(projectId);
+        UUID cycleId = persistCycle();
+        UUID associateId = persistAssociate();
+        entityManager.flush();
+
+        BigDecimal sqft = saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED);
+
+        assertThat(sqft).isEqualByComparingTo("0");
+    }
 }

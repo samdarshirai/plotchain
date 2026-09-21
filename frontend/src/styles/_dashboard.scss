@@ -108,6 +108,123 @@
   font-weight: 500;
 }
 
+// Hero row: profile card beside the cycle-income Seal Card (dashboard-mockup spec).
+.dashboard__hero {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.95fr) minmax(360px, 1.25fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.profile-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1.125rem 1.25rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.profile-card__identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 88px;
+}
+
+.profile-card__avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 1px solid var(--brand-primary);
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.profile-card__name {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.profile-card__designation {
+  font-size: 0.5938rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.profile-card__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.profile-card__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.375rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.profile-card__row-icon {
+  font-size: 15px;
+  color: var(--brand-primary);
+}
+
+.profile-card__row-label {
+  font-size: 0.5938rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  min-width: 92px;
+}
+
+.profile-card__row-value {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+// Business Volume / Network & Income tile sections (dashboard-mockup spec): reuse the
+// panel-header-eyebrow placeholder that leg-balance/recent-sales already extend.
+.dashboard__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5625rem;
+}
+
+.dashboard__section-header {
+  @extend %panel-header-eyebrow;
+}
+
+.dashboard__section-rule {
+  @extend %panel-header-eyebrow-rule;
+  flex: 0 0 16px;
+}
+
+.dashboard__section-rule--fill {
+  flex: 1;
+}
+
+.dashboard__section-label {
+  @extend %panel-header-eyebrow-label;
+}
+
 // Seal Card additions (base .seal-card/.seal-card__* rules live in _setup.scss). The dashboard's
 // cycle-income-card splits the body into a figure/delta column and an income-breakdown column.
 .seal-card__split {
@@ -357,6 +474,17 @@
   color: var(--text-primary);
 }
 
+.leg-balance__figure-caption {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.leg-balance__note {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 .leg-balance__bar {
   display: flex;
   height: 10px;
@@ -399,6 +527,10 @@
 }
 
 @media (max-width: 960px) {
+  .dashboard__hero {
+    grid-template-columns: 1fr;
+  }
+
   .dashboard__tiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

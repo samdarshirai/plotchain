@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+<style>
+  body { margin: 0; background: #F7F2E7; }
+  a { color: #5C1A2A; text-decoration: none; }
+  a:hover { color: #C6A227; }
+  .ms { font-family: 'Material Symbols Outlined'; font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; direction: ltr; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; }
+  @keyframes sealDraw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @media (prefers-reduced-motion: reduce) { .seal-rule { animation: none !important; } }
+</style>
+</helmet>
+<div style="display:flex;min-height:100vh;font-family:Inter,system-ui,sans-serif;color:#201A15;background:#F7F2E7">
+
+  <aside style="width:212px;flex:0 0 212px;background:#0C0A0B;display:flex;flex-direction:column;color:#F7F2E7">
+    <div style="display:flex;align-items:center;gap:10px;padding:16px 16px 14px">
+      <div style="width:32px;height:32px;border:1px solid #C6A227;border-radius:2px;display:flex;align-items:center;justify-content:center;font-family:Fraunces,Georgia,serif;font-weight:700;font-size:13px;color:#C6A227">VS</div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div style="font-size:12px;font-weight:600;letter-spacing:.15em;color:#EAD07D">VIRAJ ACRES</div>
+        <div style="font-size:8px;letter-spacing:.2em;color:#6B6153">LEGACY LIVING</div>
+      </div>
+    </div>
+    <div style="height:1px;background:linear-gradient(90deg,#C6A227,rgba(198,162,39,0))"></div>
+
+    <nav style="display:flex;flex-direction:column;padding:10px 9px;gap:1px">
+      <sc-for list="{{ nav }}" as="item" hint-placeholder-count="9">
+        <a href="#" style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:2px;font-size:12.5px;font-weight:500;color:{{ item.color }};background:{{ item.bg }};border-left:2px solid {{ item.mark }}" style-hover="color:#EAD07D">
+          <span class="ms" style="font-size:17px">{{ item.icon }}</span>
+          <span>{{ item.label }}</span>
+        </a>
+      </sc-for>
+    </nav>
+
+    <div style="margin-top:auto;padding:10px 9px 16px;display:flex;flex-direction:column;gap:1px">
+      <div style="height:1px;background:#2A2320;margin:0 10px 9px"></div>
+      <a href="#" style="display:flex;align-items:center;gap:10px;padding:7px 10px;font-size:12.5px;color:#9A9083" style-hover="color:#EAD07D">
+        <span class="ms" style="font-size:17px">keep</span><span>Unpin sidebar</span>
+      </a>
+      <a href="#" style="display:flex;align-items:center;gap:10px;padding:7px 10px;font-size:12.5px;color:#9A9083" style-hover="color:#EAD07D">
+        <span class="ms" style="font-size:17px">logout</span><span>Log Out</span>
+      </a>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:0;padding:18px 24px 22px;display:flex;flex-direction:column;gap:14px">
+
+    <header style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+      <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap">
+        <h1 style="margin:0;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:27px;line-height:1;color:#201A15">Dashboard</h1>
+        <span style="background:#F0E9D6;border:1px solid #D9CFBC;border-radius:2px;padding:4px 8px;font-size:10px;font-weight:600;letter-spacing:.11em;color:#5C1A2A">CYCLE CLOSES IN {{ daysLeft }} DAYS</span>
+        <span style="font-size:12.5px;color:#6B6153">{{ cycleLabel }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="border:1px solid #5C1A2A;color:#5C1A2A;border-radius:2px;padding:5px 11px;font-size:10.5px;font-weight:600;letter-spacing:.14em">{{ rank }}</span>
+        <span style="font-size:12px;color:#6B6153;font-variant-numeric:tabular-nums">{{ associateId }}</span>
+      </div>
+    </header>
+
+    <section style="display:grid;grid-template-columns:minmax(300px,0.95fr) minmax(360px,1.25fr);gap:14px;align-items:stretch">
+
+      <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:3px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:7px;width:96px">
+          <div style="width:82px;height:82px;border-radius:50%;border:1px solid #C6A227;background:repeating-linear-gradient(135deg,#F0E9D6 0 6px,#F7F2E7 6px 12px);display:flex;align-items:center;justify-content:center;text-align:center;padding:8px;box-sizing:border-box">
+            <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;letter-spacing:.05em;color:#6B6153">associate photo</span>
+          </div>
+          <div style="text-align:center;display:flex;flex-direction:column;gap:2px">
+            <div style="font-family:Fraunces,Georgia,serif;font-size:14px;font-weight:600;color:#201A15">{{ associateName }}</div>
+            <div style="font-size:9px;letter-spacing:.13em;color:#6B6153;text-transform:uppercase">{{ designation }}</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;min-width:0">
+          <sc-for list="{{ profileRows }}" as="row" hint-placeholder-count="6">
+            <div style="display:flex;align-items:center;gap:8px;padding-bottom:5px;border-bottom:1px solid #EAE2D1">
+              <span class="ms" style="font-size:15px;color:#C6A227">{{ row.icon }}</span>
+              <span style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#6B6153;min-width:92px">{{ row.label }}</span>
+              <span style="font-size:12px;font-weight:500;color:#201A15;font-variant-numeric:tabular-nums">{{ row.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background:#0C0A0B;border-top:2px solid #C6A227;border-bottom:2px solid #C6A227;padding:16px 20px;display:grid;grid-template-columns:minmax(180px,0.85fr) minmax(0,1.15fr);gap:24px;position:relative;overflow:hidden">
+        <div class="seal-rule" style="position:absolute;left:0;top:0;height:1px;width:100%;background:#EAD07D;transform-origin:left;animation:sealDraw 420ms ease-out both"></div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="height:1px;width:16px;background:#C6A227"></span>
+            <span style="font-size:9.5px;font-weight:600;letter-spacing:.13em;color:#C6A227">THIS CYCLE'S EARNINGS</span>
+          </div>
+          <div style="font-family:Fraunces,Georgia,serif;font-size:36px;line-height:1;font-weight:600;color:#EAD07D;font-variant-numeric:tabular-nums">{{ cycleEarnings }}</div>
+          <div style="font-size:11.5px;color:#4B7A52">{{ earningsDelta }}</div>
+          <a href="#" style="font-size:12px;font-weight:600;color:#C6A227;margin-top:auto" style-hover="color:#EAD07D">View income statement →</a>
+        </div>
+        <div style="display:flex;flex-direction:column;min-width:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:5px">
+            <span style="font-size:9.5px;font-weight:600;letter-spacing:.13em;color:#C6A227;white-space:nowrap">BREAKDOWN</span>
+            <span style="font-size:10.5px;color:#9A9083;white-space:nowrap">{{ zeroNote }}</span>
+          </div>
+          <sc-for list="{{ breakdown }}" as="b" hint-placeholder-count="5">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:5.5px 0;border-bottom:1px solid #2A2320">
+              <span style="font-size:12.5px;color:#F7F2E7">{{ b.label }}</span>
+              <span style="font-size:12.5px;font-weight:600;color:{{ b.tone }};font-variant-numeric:tabular-nums">{{ b.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="height:1px;width:16px;background:#5C1A2A"></span>
+        <span style="font-size:9.5px;font-weight:600;letter-spacing:.13em;color:#5C1A2A">BUSINESS VOLUME</span>
+        <span style="height:1px;flex:1;background:#D9CFBC"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
+        <sc-for list="{{ volumeTiles }}" as="t" hint-placeholder-count="6">
+          <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:3px;padding:10px 12px;display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <span style="font-size:9.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#6B6153">{{ t.label }}</span>
+              <span class="ms" style="font-size:15px;color:#C6A227">{{ t.icon }}</span>
+            </div>
+            <div style="font-size:19px;font-weight:600;color:{{ t.tone }};font-variant-numeric:tabular-nums;line-height:1.1">{{ t.value }}</div>
+            <div style="font-size:10.5px;color:#6B6153">{{ t.note }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="height:1px;width:16px;background:#5C1A2A"></span>
+        <span style="font-size:9.5px;font-weight:600;letter-spacing:.13em;color:#5C1A2A">NETWORK &amp; INCOME</span>
+        <span style="height:1px;flex:1;background:#D9CFBC"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
+        <sc-for list="{{ networkTiles }}" as="t" hint-placeholder-count="10">
+          <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:3px;padding:10px 12px;display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <span style="font-size:9.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#6B6153">{{ t.label }}</span>
+              <span class="ms" style="font-size:15px;color:#C6A227">{{ t.icon }}</span>
+            </div>
+            <div style="font-size:19px;font-weight:600;color:{{ t.tone }};font-variant-numeric:tabular-nums;line-height:1.1">{{ t.value }}</div>
+            <div style="font-size:10.5px;color:#6B6153">{{ t.note }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px">
+      <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:3px;padding:13px 16px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:9.5px;font-weight:600;letter-spacing:.13em;color:#5C1A2A">LEG BALANCE</span>
+          <span style="height:1px;flex:1;background:#D9CFBC"></span>
+          <span style="font-size:10.5px;color:#6B6153">matching pays on the weaker leg</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1px 1fr;align-items:center">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+            <div style="font-size:9.5px;letter-spacing:.13em;color:#6B6153">LEFT LEG</div>
+            <div style="font-family:Fraunces,Georgia,serif;font-size:24px;font-weight:600;color:#201A15;font-variant-numeric:tabular-nums">{{ leftLeg }}</div>
+            <div style="font-size:10.5px;color:#6B6153">{{ leftLegNote }}</div>
+          </div>
+          <div style="height:46px;background:#D9CFBC"></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+            <div style="font-size:9.5px;letter-spacing:.13em;color:#6B6153">RIGHT LEG</div>
+            <div style="font-family:Fraunces,Georgia,serif;font-size:24px;font-weight:600;color:#201A15;font-variant-numeric:tabular-nums">{{ rightLeg }}</div>
+            <div style="font-size:10.5px;color:#6B6153">{{ rightLegNote }}</div>
+          </div>
+        </div>
+        <div style="height:7px;border:1px solid #D9CFBC;background:repeating-linear-gradient(135deg,#F0E9D6 0 5px,#FCFAF5 5px 10px)"></div>
+        <p style="margin:0;font-size:11.5px;line-height:1.45;color:#6B6153">{{ legNote }}</p>
+      </div>
+
+      <div style="background:#FCFAF5;border:1px solid #D9CFBC;border-radius:3px;padding:13px 16px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:9.5px;font-weight:600;letter-spacing:.13em;color:#5C1A2A">RECENT SALES</span>
+          <span style="height:1px;flex:1;background:#D9CFBC"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:1.2fr 1fr .7fr .8fr;gap:6px 10px;font-size:9.5px;letter-spacing:.09em;color:#6B6153;padding-bottom:6px;border-bottom:1px solid #D9CFBC">
+          <span>PROJECT</span><span style="text-align:right">VALUE</span><span style="text-align:right">DATE</span><span style="text-align:right">STATUS</span>
+        </div>
+        <sc-for list="{{ sales }}" as="s" hint-placeholder-count="3">
+          <div style="display:grid;grid-template-columns:1.2fr 1fr .7fr .8fr;gap:6px 10px;align-items:center;padding:6px 0;border-bottom:1px solid #EAE2D1;font-size:12px">
+            <span style="font-weight:500;color:#201A15">{{ s.project }}</span>
+            <span style="text-align:right;font-variant-numeric:tabular-nums;color:#201A15">{{ s.value }}</span>
+            <span style="text-align:right;color:#6B6153">{{ s.date }}</span>
+            <span style="text-align:right;color:#4B7A52;font-size:10.5px;font-weight:600;letter-spacing:.05em">{{ s.status }}</span>
+          </div>
+        </sc-for>
+        <p style="margin:auto 0 0;font-size:11.5px;color:#6B6153">To record a sale or add a referral, contact your admin.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;hideZeroTiles&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;rank&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;SILVER&quot;,&quot;options&quot;:[&quot;SILVER&quot;,&quot;GOLD&quot;,&quot;PLATINUM&quot;,&quot;DIAMOND&quot;],&quot;tsType&quot;:&quot;string&quot;}}">
+const INR = n => '₹' + n.toLocaleString('en-IN');
+
+class Component extends DCLogic {
+  renderVals() {
+    const hideZeros = this.props.hideZeroTiles ?? false;
+    const ink = '#201A15', muted = '#6B6153';
+    const tile = (label, value, note, icon, zero, tone) => ({ label, value, note, icon, zero, tone: tone || (zero ? muted : ink) });
+    const filter = list => list.filter(t => !(hideZeros && t.zero));
+
+    const nav = [
+      ['Dashboard', 'grid_view', true], ['My Tree', 'account_tree'], ['Sales History', 'receipt_long'],
+      ['Plot Bookings', 'dashboard'], ['My Account', 'person'], ['Income Statement', 'description'],
+      ['Payout History', 'payments'], ['Reports', 'lab_profile'], ['Messages', 'chat_bubble']
+    ].map(([label, icon, active]) => ({
+      label, icon,
+      color: active ? '#EAD07D' : '#C9C0B2',
+      bg: active ? '#17120F' : 'transparent',
+      mark: active ? '#C6A227' : 'transparent'
+    }));
+
+    return {
+      nav,
+      rank: this.props.rank ?? 'SILVER',
+      associateId: 'VP00001',
+      associateName: 'Rakesh Kumar',
+      designation: 'Sales Executive',
+      daysLeft: 0,
+      cycleLabel: 'Cycle 1 · 1–15 Sept 2026',
+      profileRows: [
+        { icon: 'badge', label: 'Associate ID', value: 'VP00001' },
+        { icon: 'verified', label: 'Designation', value: 'Sales Executive' },
+        { icon: 'call', label: 'Mobile', value: '76777 08820' },
+        { icon: 'account_balance', label: 'Sponsor', value: 'VP00000 · Head Office' },
+        { icon: 'calendar_month', label: 'Registered', value: '5 Sep 2025, 5:25 PM' },
+        { icon: 'upgrade', label: 'Latest Upgrade', value: '5 Sep 2025, 5:34 PM' }
+      ],
+      cycleEarnings: '₹49,800.00',
+      earningsDelta: '+₹49,800 vs last cycle',
+      zeroNote: '4 of 5 components at zero',
+      breakdown: [
+        { label: 'Direct', value: '₹49,800.00', tone: '#EAD07D' },
+        { label: 'Matching', value: '₹0.00', tone: '#9A9083' },
+        { label: "Sponsor's Matching", value: '₹0.00', tone: '#9A9083' },
+        { label: 'Self Performance Bonus', value: '₹0.00', tone: '#9A9083' },
+        { label: 'Royalty Bonus (0%)', value: '₹0.00', tone: '#9A9083' }
+      ],
+      volumeTiles: filter([
+        tile('New Left Business', INR(0), 'added this cycle', 'trending_up', true),
+        tile('New Right Business', INR(0), 'added this cycle', 'trending_up', true),
+        tile('Total Left Business', INR(3100000), 'lifetime volume', 'arrow_back'),
+        tile('Total Right Business', INR(1800000), 'lifetime volume', 'arrow_forward'),
+        tile('Total Self Business', INR(0), 'own bookings', 'person_check', true),
+        tile('New Matching Business', INR(0), 'matched this cycle', 'sync_alt', true)
+      ]),
+      networkTiles: filter([
+        tile('Total Left Associates', '184', 'in left leg', 'group'),
+        tile('Total Right Associates', '134', 'in right leg', 'group'),
+        tile('Network', '5', '2 direct · 3 downline', 'hub'),
+        tile('Sales This Cycle', '1', 'Boring Road', 'sell'),
+        tile('New Booked Area', '0 Sq. Ft.', 'this cycle', 'square_foot', true),
+        tile('Direct Income', INR(49800), 'this cycle', 'payments', false, '#B4790E'),
+        tile('Matching Income', INR(126000), 'lifetime', 'sync_alt', false, '#B4790E'),
+        tile("Sponsor's Matching", INR(0), 'lifetime', 'supervisor_account', true),
+        tile('Current Royalty Bonus', '₹0 (0%)', 'rank-based pool share', 'workspace_premium', true),
+        tile('Wallet Balance', INR(0), 'withdrawals raised by admin', 'account_balance_wallet', true)
+      ]),
+      leftLeg: '₹0',
+      rightLeg: '₹0',
+      leftLegNote: '184 associates',
+      rightLegNote: '134 associates',
+      legNote: 'No volume on either leg yet this cycle. Matching income starts once both legs carry volume in the same cycle.',
+      sales: [
+        { project: 'Boring Road', value: '₹10,00,000.00', date: '8 Sept', status: 'Recorded' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

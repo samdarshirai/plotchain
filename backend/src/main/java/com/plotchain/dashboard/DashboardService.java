@@ -117,6 +117,9 @@ public class DashboardService {
             .map(closed -> ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, closed.getId()))
             .orElse(BigDecimal.ZERO);
 
+        BigDecimal matchingIncomeLifetime = ledgerEntryRepository.sumNetAmountByAssociateAndType(associateId, IncomeType.MATCHING);
+        BigDecimal sponsorMatchingIncomeLifetime = ledgerEntryRepository.sumNetAmountByAssociateAndType(associateId, IncomeType.SPONSOR_MATCHING);
+
         // Seal Card sparkline plots the last 8 cycles, oldest first -- findAllByOrderByPeriodStartDesc
         // comes back newest-first, so it's reversed here.
         List<Cycle> lastCycles = new ArrayList<>(
@@ -149,6 +152,33 @@ public class DashboardService {
 
         long totalDownline = associateRepository.countDownline(associateId);
         long directCount = associateRepository.countByParentId(associateId);
+        long leftAssociateCount = associateRepository.countDownlineByPosition(associateId, "L");
+        long rightAssociateCount = associateRepository.countDownlineByPosition(associateId, "R");
+
+        Optional<Associate> sponsor = Optional.ofNullable(associate.getSponsorId())
+            .flatMap(associateRepository::findById);
+
+        // Lifetime Total Left/Right Business: each closed-cycle row's leftLegVolume/rightLegVolume
+        // already has the PRIOR cycle's carriedForward baked in (CycleService#rollUpSubtree), and
+        // an unmatched carry keeps re-appearing in every subsequent row until it's finally matched
+        // down -- a naive SUM(leftLegVolume) across all rows counts that same still-unmatched
+        // volume once per cycle it survives, not once. Subtracting each row's own incoming carry
+        // (its predecessor's outgoing carriedForwardLeft/Right, 0 for the associate's first row)
+        // before summing leaves exactly the new subtree volume each cycle actually contributed.
+        List<LegVolume> legVolumeHistory = legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId);
+        BigDecimal totalLeftBusiness = BigDecimal.ZERO;
+        BigDecimal totalRightBusiness = BigDecimal.ZERO;
+        BigDecimal incomingCarryLeft = BigDecimal.ZERO;
+        BigDecimal incomingCarryRight = BigDecimal.ZERO;
+        for (LegVolume row : legVolumeHistory) {
+            totalLeftBusiness = totalLeftBusiness.add(row.getLeftLegVolume().subtract(incomingCarryLeft));
+            totalRightBusiness = totalRightBusiness.add(row.getRightLegVolume().subtract(incomingCarryRight));
+            incomingCarryLeft = row.getCarriedForwardLeft();
+            incomingCarryRight = row.getCarriedForwardRight();
+        }
+        BigDecimal totalSelfBusiness = saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED);
+        BigDecimal newBookedAreaSqft = saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(
+            associateId, cycle.getId(), SaleStatus.RECORDED);
 
         long daysRemaining = Math.max(0, ChronoUnit.DAYS.between(LocalDate.now(), cycle.getPeriodEnd()));
         int cycleNumber = (int) cycleRepository.countByPeriodStartLessThanEqual(cycle.getPeriodStart());
@@ -156,16 +186,18 @@ public class DashboardService {
         return new DashboardResponse(
             new DashboardResponse.AssociateSummary(
                 associate.getUserId(), associate.getName(), currentRank.getName(),
-                associate.getPhone(), associate.getJoinedAt(), associate.getRankChangedAt()),
+                associate.getPhone(), associate.getJoinedAt(), associate.getRankChangedAt(),
+                sponsor.map(Associate::getUserId).orElse(null), sponsor.map(Associate::getName).orElse(null)),
             associate.getKycStatus() != KycStatus.VERIFIED,
             new DashboardResponse.CycleIncome(
                 cycle.getId(), direct, matching, sponsorMatching, selfPerformance, royaltyBonus, royaltyBonusPct, total,
-                previousCycleTotalIncome, incomeTrend),
+                previousCycleTotalIncome, incomeTrend, matchingIncomeLifetime, sponsorMatchingIncomeLifetime),
             new DashboardResponse.WalletSummary(wallet.getBalance()),
             new DashboardResponse.CycleCountdown(cycle.getId(), daysRemaining, cycleNumber, cycle.getPeriodStart(), cycle.getPeriodEnd()),
             new DashboardResponse.SalesSummary(salesThisCycle, revenueBookedThisCycle, revenueBookedChangePct),
-            new DashboardResponse.NetworkSummary(totalDownline, directCount),
-            new DashboardResponse.LegVolumeSummary(leftLegVolume, rightLegVolume)
+            new DashboardResponse.NetworkSummary(totalDownline, directCount, leftAssociateCount, rightAssociateCount),
+            new DashboardResponse.LegVolumeSummary(
+                leftLegVolume, rightLegVolume, totalLeftBusiness, totalRightBusiness, totalSelfBusiness, newBookedAreaSqft)
         );
     }
 }

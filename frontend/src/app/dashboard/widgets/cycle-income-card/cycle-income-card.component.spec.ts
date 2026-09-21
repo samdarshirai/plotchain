@@ -17,7 +17,9 @@ describe('CycleIncomeCardComponent', () => {
     royaltyBonusPct: 3,
     totalIncome: 2400,
     previousCycleTotalIncome: 1800,
-    incomeTrend: [1200, 1800, 2400]
+    incomeTrend: [1200, 1800, 2400],
+    matchingIncomeLifetime: 126000,
+    sponsorMatchingIncomeLifetime: 0
   };
 
   beforeEach(async () => {

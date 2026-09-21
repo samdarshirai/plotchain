@@ -86,6 +86,11 @@ class DashboardServiceTest {
         lenient().when(cycleRepository.findAllByOrderByPeriodStartDesc(any(PageRequest.class))).thenReturn(Page.empty());
         lenient().when(associateRepository.countDownline(associateId)).thenReturn(0L);
         lenient().when(associateRepository.countByParentId(associateId)).thenReturn(0L);
+        lenient().when(associateRepository.countDownlineByPosition(any(), any())).thenReturn(0L);
+        lenient().when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId)).thenReturn(List.of());
+        lenient().when(saleRepository.sumAmountByAssociateIdAndStatus(any(), any())).thenReturn(BigDecimal.ZERO);
+        lenient().when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
+        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateAndType(any(), any())).thenReturn(BigDecimal.ZERO);
     }
 
     @Test
@@ -105,6 +110,13 @@ class DashboardServiceTest {
         Instant rankChangedAt = Instant.parse("2026-01-10T09:00:00Z");
         associate.setJoinedAt(joinedAt);
         associate.setRankChangedAt(rankChangedAt);
+        UUID sponsorId = UUID.randomUUID();
+        associate.setSponsorId(sponsorId);
+
+        Associate sponsor = new Associate();
+        sponsor.setId(sponsorId);
+        sponsor.setUserId("SDI100001");
+        sponsor.setName("Head Office Sponsor");
 
         Cycle cycle = new Cycle();
         cycle.setId(cycleId);
@@ -125,6 +137,7 @@ class DashboardServiceTest {
             new BigDecimal("300000"), new BigDecimal("200000"), new BigDecimal("100000"), BigDecimal.ZERO);
 
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+        when(associateRepository.findById(sponsorId)).thenReturn(Optional.of(sponsor));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(cycle));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(closedCycle));
         when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, closedCycleId)).thenReturn(Optional.of(legVolume));
@@ -147,6 +160,11 @@ class DashboardServiceTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
 
         stubUnconditionalCalls(associateId);
+        // Single closed-cycle row -> it's its own first row, so incoming carry is 0 and lifetime
+        // total equals the row's own leftLegVolume/rightLegVolume (300000/200000), not reduced by
+        // its own outgoing carriedForwardLeft (100000). Placed after stubUnconditionalCalls,
+        // which sets the same mock+args to an empty-list default that would otherwise win.
+        when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId)).thenReturn(List.of(legVolume));
         when(cycleRepository.findAllByOrderByPeriodStartDesc(any(PageRequest.class))).thenReturn(new PageImpl<>(List.of(cycle, closedCycle)));
         when(cycleRepository.countByPeriodStartLessThanEqual(cycle.getPeriodStart())).thenReturn(9L);
         when(associateRepository.countDownline(associateId)).thenReturn(12L);
@@ -155,6 +173,14 @@ class DashboardServiceTest {
         when(saleRepository.countByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED)).thenReturn(6L);
         when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED)).thenReturn(new BigDecimal("3850000"));
         when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, closedCycleId, SaleStatus.RECORDED)).thenReturn(new BigDecimal("3260000"));
+        when(saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED)).thenReturn(new BigDecimal("500000"));
+        when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED)).thenReturn(new BigDecimal("1200"));
+
+        when(associateRepository.countDownlineByPosition(associateId, "L")).thenReturn(7L);
+        when(associateRepository.countDownlineByPosition(associateId, "R")).thenReturn(5L);
+
+        when(ledgerEntryRepository.sumNetAmountByAssociateAndType(associateId, IncomeType.MATCHING)).thenReturn(new BigDecimal("126000"));
+        when(ledgerEntryRepository.sumNetAmountByAssociateAndType(associateId, IncomeType.SPONSOR_MATCHING)).thenReturn(BigDecimal.ZERO);
 
         DashboardResponse response = dashboardService.getDashboard(associateId);
 
@@ -163,6 +189,8 @@ class DashboardServiceTest {
         assertThat(response.associate().name()).isEqualTo("Asha Kumar");
         assertThat(response.associate().rank()).isEqualTo("Sales Associate");
         assertThat(response.associate().rankChangedAt()).isEqualTo(rankChangedAt);
+        assertThat(response.associate().sponsorAssociateId()).isEqualTo("SDI100001");
+        assertThat(response.associate().sponsorName()).isEqualTo("Head Office Sponsor");
         assertThat(response.cycleIncome().directIncome()).isEqualByComparingTo("1000");
         assertThat(response.cycleIncome().sponsorMatchingIncome()).isEqualByComparingTo("300");
         assertThat(response.cycleIncome().selfPerformanceBonus()).isEqualByComparingTo("200");
@@ -171,6 +199,8 @@ class DashboardServiceTest {
         assertThat(response.cycleIncome().totalIncome()).isEqualByComparingTo("2400");
         assertThat(response.cycleIncome().previousCycleTotalIncome()).isEqualByComparingTo("1800");
         assertThat(response.cycleIncome().incomeTrend()).hasSize(2);
+        assertThat(response.cycleIncome().matchingIncomeLifetime()).isEqualByComparingTo("126000");
+        assertThat(response.cycleIncome().sponsorMatchingIncomeLifetime()).isEqualByComparingTo("0");
         assertThat(response.wallet().balance()).isEqualByComparingTo("0");
         assertThat(response.cycleCountdown().daysRemaining()).isEqualTo(10L);
         assertThat(response.cycleCountdown().cycleNumber()).isEqualTo(9);
@@ -182,8 +212,79 @@ class DashboardServiceTest {
         assertThat(response.salesSummary().revenueBookedChangePct()).isEqualByComparingTo("18");
         assertThat(response.networkSummary().totalDownline()).isEqualTo(12L);
         assertThat(response.networkSummary().directCount()).isEqualTo(8L);
+        assertThat(response.networkSummary().leftAssociateCount()).isEqualTo(7L);
+        assertThat(response.networkSummary().rightAssociateCount()).isEqualTo(5L);
         assertThat(response.legVolumeSummary().leftLegVolume()).isEqualByComparingTo("300000");
         assertThat(response.legVolumeSummary().rightLegVolume()).isEqualByComparingTo("200000");
+        assertThat(response.legVolumeSummary().totalLeftBusiness()).isEqualByComparingTo("300000");
+        assertThat(response.legVolumeSummary().totalRightBusiness()).isEqualByComparingTo("200000");
+        assertThat(response.legVolumeSummary().totalSelfBusiness()).isEqualByComparingTo("500000");
+        assertThat(response.legVolumeSummary().newBookedAreaSqft()).isEqualByComparingTo("1200");
+    }
+
+    @Test
+    void lifetimeBusinessTotalsSubtractEachRowsIncomingCarryToAvoidDoubleCounting() {
+        UUID associateId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        UUID currentRankId = UUID.randomUUID();
+
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRankId(currentRankId);
+        associate.setKycStatus(KycStatus.VERIFIED);
+
+        Cycle cycle = new Cycle();
+        cycle.setId(cycleId);
+        cycle.setStatus(CycleStatus.OPEN);
+        cycle.setPeriodStart(LocalDate.now().minusDays(5));
+        cycle.setPeriodEnd(LocalDate.now().plusDays(10));
+
+        RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, BigDecimal.valueOf(5000));
+
+        // olderRow has no predecessor (incoming carry 0), so its own leftLegVolume (100000) IS
+        // that cycle's new left volume, and left > right carries 40000 forward. newerRow's
+        // leftLegVolume (300000) = its own new left volume (260000) PLUS that same 40000 carried
+        // in -- a naive SUM(leftLegVolume) would count the 40000 twice (100000 + 300000 =
+        // 400000); the correct lifetime total subtracts each row's incoming carry first
+        // (100000 + (300000 - 40000) = 360000). Right never carries in this fixture, so
+        // totalRightBusiness is unaffected by the bug (60000 + 200000 = 260000 either way).
+        UUID olderCycleId = UUID.randomUUID();
+        UUID newerCycleId = UUID.randomUUID();
+        Cycle newerClosedCycle = new Cycle();
+        newerClosedCycle.setId(newerCycleId);
+        newerClosedCycle.setStatus(CycleStatus.CLOSED);
+        newerClosedCycle.setPeriodStart(LocalDate.now().minusDays(20));
+        newerClosedCycle.setPeriodEnd(LocalDate.now().minusDays(6));
+
+        LegVolume olderRow = new LegVolume(UUID.randomUUID(), associateId, olderCycleId,
+            new BigDecimal("100000"), new BigDecimal("60000"), new BigDecimal("40000"), BigDecimal.ZERO);
+        LegVolume newerRow = new LegVolume(UUID.randomUUID(), associateId, newerCycleId,
+            new BigDecimal("300000"), new BigDecimal("200000"), new BigDecimal("100000"), BigDecimal.ZERO);
+
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(cycle));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(newerClosedCycle));
+        when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, newerCycleId)).thenReturn(Optional.of(newerRow));
+
+        when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(any(), any(), any())).thenReturn(BigDecimal.ZERO);
+        when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(compensationPlanVersion(new BigDecimal("7.00"))));
+        when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
+        when(saleRepository.countByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(0L);
+        when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
+        when(cycleRepository.countByPeriodStartLessThanEqual(cycle.getPeriodStart())).thenReturn(1L);
+
+        stubUnconditionalCalls(associateId);
+        // Placed after stubUnconditionalCalls, which sets the same mock+args to an empty-list
+        // default that would otherwise win (Mockito: last matching stub wins).
+        when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId)).thenReturn(List.of(olderRow, newerRow));
+
+        DashboardResponse response = dashboardService.getDashboard(associateId);
+
+        assertThat(response.legVolumeSummary().totalLeftBusiness()).isEqualByComparingTo("360000");
+        assertThat(response.legVolumeSummary().totalRightBusiness()).isEqualByComparingTo("260000");
     }
 
     @Test
