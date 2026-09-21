@@ -306,7 +306,7 @@ export class MyTreeComponent implements OnInit, OnDestroy {
   }
 
   onCardClick(node: TreeNode): void {
-    this.searchQuery = node.name;
+    this.searchQuery = node.userId;
     this.notFound = false;
     this.loadSubtree(node.id);
   }

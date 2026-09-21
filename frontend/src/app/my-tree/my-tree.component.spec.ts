@@ -147,7 +147,7 @@ describe('MyTreeComponent', () => {
     httpMock.expectOne('/api/associates/me/tree/a2?depth=3').flush(nestedTree.children[0]);
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.searchQuery).toBe('Child');
+    expect(fixture.componentInstance.searchQuery).toBe('VP00002');
     expect(fixture.componentInstance.root?.id).toBe('a2');
   });
 
@@ -172,7 +172,7 @@ describe('MyTreeComponent', () => {
     httpMock.expectOne('/api/associates/me/tree/a2?depth=3').flush(nestedTree.children[0]);
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.searchQuery).toBe('Child');
+    expect(fixture.componentInstance.searchQuery).toBe('VP00002');
     expect(fixture.componentInstance.root?.id).toBe('a2');
   });
 
