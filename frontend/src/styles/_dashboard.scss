@@ -116,7 +116,16 @@
   align-items: stretch;
 }
 
+// Grid stretches each host (app-profile-card/app-cycle-income-card) to the row's tallest item,
+// but .profile-card only takes its own content height unless told to fill that host -- same fix
+// as .dashboard__tiles > app-stat-tile below, needed here too so the profile card matches the
+// Seal Card's height instead of leaving dead space at its bottom.
+.dashboard__hero > app-profile-card {
+  display: flex;
+}
+
 .profile-card {
+  flex: 1;
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -292,17 +301,24 @@
   }
 }
 
+// flex-wrap, not CSS Grid: a partial LAST ROW of tiles (6 or 10 tiles never divide evenly into a
+// fixed column count) needs to stretch to fill the row rather than leave empty tracks. Grid's
+// auto-fit only avoids this when the item count happens to match however many 170px tracks fit
+// the container width -- it still leaves a gap otherwise (e.g. 10 tiles at 6 columns-that-fit
+// wraps 6+4, leaving 2 tracks empty on the second row). Flexbox sizes each wrapped line
+// independently, so leftover space in any partial line is always distributed among just that
+// line's items, with no dead space regardless of item count.
 .dashboard__tiles {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
 }
 
-// Grid stretches each app-stat-tile host to the row's tallest item by default, but the
-// .stat-tile card inside only takes its own content height unless told to fill that host --
-// without this, a tile with a longer (wrapping) hint renders visibly taller than its siblings.
+// flex-basis 170px matches the mockup's minmax(170px, ...) minimum tile width; flex-grow lets
+// tiles stretch to fill remaining space in their row, same as the mockup's 1fr.
 .dashboard__tiles > app-stat-tile {
   display: flex;
+  flex: 1 1 170px;
 }
 
 .dashboard__tiles .stat-tile {
@@ -529,10 +545,6 @@
 @media (max-width: 960px) {
   .dashboard__hero {
     grid-template-columns: 1fr;
-  }
-
-  .dashboard__tiles {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .dashboard__panels {
