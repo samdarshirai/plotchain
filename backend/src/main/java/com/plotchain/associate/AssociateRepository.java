@@ -211,6 +211,20 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         return findSelfAndDownlineIds(associateId).stream().map(UUID::fromString).toList();
     }
 
+    // My-tree search (associate-scoped): same LIKE-on-name-or-userId shape as searchDirectory
+    // below, but restricted to a caller-supplied id set (the caller's own findSelfAndDownline
+    // result) instead of "all associates" -- this is what keeps the /my-tree search bar scoped
+    // to the associate's own downline instead of the whole company.
+    @Query("""
+        SELECT a FROM Associate a
+        WHERE a.role = com.plotchain.associate.AssociateRole.ASSOCIATE
+        AND a.id IN :ids
+        AND (LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+             OR LOWER(a.userId) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))
+        ORDER BY a.userId ASC
+        """)
+    List<Associate> findByIdInAndNameOrUserIdContaining(@Param("ids") List<UUID> ids, @Param("search") String search);
+
     // All five filters are optional (null = "don't filter on this"). Scoped to role = ASSOCIATE
     // only -- this is the associate network directory, not the Admin Team staff roster.
     // joinedToExclusive is an EXCLUSIVE upper bound: callers pass the day *after* the last day

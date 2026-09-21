@@ -59,7 +59,7 @@ describe('MyTreeComponent', () => {
 
     const tag: HTMLElement | null = fixture.nativeElement.querySelector('.tree-explorer__result-tag');
     expect(tag?.textContent?.trim()).toBeTruthy();
-    expect(fixture.componentInstance.selfNodeId).toBe('a1');
+    expect(fixture.componentInstance.meId).toBe('a1');
   });
 
   it('renders every level of a nested downline via the recursive node template', () => {
@@ -103,11 +103,109 @@ describe('MyTreeComponent', () => {
     expect(fixture.nativeElement.querySelector('app-inline-banner')).toBeTruthy();
   });
 
-  it('renders no search input and no associate-id control (view-only, self-scoped only)', () => {
+  it('searches within the downline and re-roots the tree at the match', () => {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+    fixture.detectChanges();
+
+    fixture.componentInstance.searchQuery = 'Child';
+    fixture.componentInstance.onSearch();
+
+    httpMock.expectOne('/api/associates/me/tree/search?q=Child')
+      .flush({ ancestorPath: [{ id: 'a2', userId: 'VP00002', name: 'Child' }] });
+    httpMock.expectOne('/api/associates/me/tree/a2?depth=3').flush(nestedTree.children[0]);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.root?.id).toBe('a2');
+    // meId stays "a1" (the caller), even though the displayed root is now "a2" -- the reset
+    // control's visibility and the "You" tag both depend on this staying put.
+    expect(fixture.componentInstance.meId).toBe('a1');
+  });
+
+  it('shows a not-found banner when the search has no match in the downline', () => {
     fixture.detectChanges();
     httpMock.expectOne('/api/associates/me/tree?depth=3').flush(selfOnly);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('input')).toBeFalsy();
+    fixture.componentInstance.searchQuery = 'Nobody';
+    fixture.componentInstance.onSearch();
+
+    httpMock.expectOne('/api/associates/me/tree/search?q=Nobody').flush(null, { status: 404, statusText: 'Not Found' });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.notFound).toBe(true);
+    expect(fixture.nativeElement.querySelector('app-inline-banner')).toBeTruthy();
+  });
+
+  it('onCardClick fills the search bar with that associate and re-roots at them', () => {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+    fixture.detectChanges();
+
+    fixture.componentInstance.onCardClick(nestedTree.children[0]);
+
+    httpMock.expectOne('/api/associates/me/tree/a2?depth=3').flush(nestedTree.children[0]);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.searchQuery).toBe('Child');
+    expect(fixture.componentInstance.root?.id).toBe('a2');
+  });
+
+  it('tapping a card in the DOM (pointerdown+pointerup, no drag) re-roots at that associate', () => {
+    // Regression test: wrap.setPointerCapture() retargets the synthetic `click` event to
+    // `wrap` itself, so a plain (click) binding on the card never fires -- this must go through
+    // the real pointerdown/pointerup listeners attached to canvasWrap, not a direct method call,
+    // or it would not have caught that bug. setPointerCapture is stubbed because headless
+    // Chrome throws NotFoundError for a pointerId not tied to a real hardware pointer session.
+    fixture.detectChanges();
+    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+    fixture.detectChanges();
+
+    const wrap: HTMLElement = fixture.nativeElement.querySelector('.tree-explorer__canvas-wrap');
+    spyOn(wrap, 'setPointerCapture');
+    const card: HTMLElement = fixture.nativeElement.querySelector('[data-associate-id="a2"]');
+    expect(card).toBeTruthy();
+
+    card.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 1, clientX: 100, clientY: 100, bubbles: true }));
+    card.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, clientX: 100, clientY: 100, bubbles: true }));
+
+    httpMock.expectOne('/api/associates/me/tree/a2?depth=3').flush(nestedTree.children[0]);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.searchQuery).toBe('Child');
+    expect(fixture.componentInstance.root?.id).toBe('a2');
+  });
+
+  it('a drag past the tap threshold does not re-root, so panning near a card stays panning', () => {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+    fixture.detectChanges();
+
+    const wrap: HTMLElement = fixture.nativeElement.querySelector('.tree-explorer__canvas-wrap');
+    spyOn(wrap, 'setPointerCapture');
+    const card: HTMLElement = fixture.nativeElement.querySelector('[data-associate-id="a2"]');
+
+    card.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 1, clientX: 100, clientY: 100, bubbles: true }));
+    card.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, clientX: 140, clientY: 100, bubbles: true }));
+
+    httpMock.expectNone('/api/associates/me/tree/a2?depth=3');
+    expect(fixture.componentInstance.root?.id).toBe('a1');
+  });
+
+  it('the "My Tree" reset control returns to the caller\'s own tree as root', () => {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+    fixture.detectChanges();
+
+    fixture.componentInstance.onCardClick(nestedTree.children[0]);
+    httpMock.expectOne('/api/associates/me/tree/a2?depth=3').flush(nestedTree.children[0]);
+    fixture.detectChanges();
+
+    fixture.componentInstance.resetToSelf();
+    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.root?.id).toBe('a1');
+    expect(fixture.componentInstance.searchQuery).toBe('');
   });
 });

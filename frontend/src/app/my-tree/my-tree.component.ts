@@ -1,7 +1,9 @@
 import { Component, ElementRef, Injector, NgZone, OnDestroy, OnInit, ViewChild, afterNextRender, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
+import { BrandButtonComponent } from '../shared/components/brand-button/brand-button.component';
 import { MyTreeService } from './my-tree.service';
 import { TreeNode } from '../admin/models/tree-node.model';
 import { LAYOUT, LayoutEntry, LayoutLink, TreeLayout, buildTreeLayout, linkPathD, px, py } from '../admin/tree-explorer/tree-explorer-layout';
@@ -18,7 +20,7 @@ const FIT_ANIMATE_MS = 460;
 @Component({
   selector: 'app-my-tree',
   standalone: true,
-  imports: [CommonModule, TranslateModule, InlineBannerComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, BrandButtonComponent],
   template: `
     <div class="my-tree card">
       <div class="tree-explorer__intro">
@@ -26,9 +28,25 @@ const FIT_ANIMATE_MS = 460;
         <p class="tree-explorer__subtitle">{{ 'myTree.subtitle' | translate }}</p>
       </div>
 
-      <div class="tree-explorer__controls-row" *ngIf="layout as l">
+      <div class="tree-explorer__controls-row">
+        <div class="tree-explorer__search">
+          <span class="material-symbols-outlined">search</span>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            [placeholder]="'myTree.searchPlaceholder' | translate"
+            (keydown.enter)="onSearch()"
+          />
+          <button type="button" (click)="onSearch()">{{ 'myTree.searchAction' | translate }}</button>
+        </div>
+
+        <app-brand-button variant="ghost" *ngIf="root?.id !== meId" (clicked)="resetToSelf()">
+          {{ 'myTree.resetLabel' | translate }}
+        </app-brand-button>
+
         <div
           class="tree-explorer__stats-pill"
+          *ngIf="layout as l"
           [title]="'myTree.statsScopeHint' | translate: { depth: maxSlotDepth }"
         >
           <span><b>{{ l.nodes.length }}</b> {{ 'myTree.statsVisiblePositionsLabel' | translate }}</span>
@@ -37,6 +55,7 @@ const FIT_ANIMATE_MS = 460;
         </div>
       </div>
 
+      <app-inline-banner *ngIf="notFound" tone="warning">{{ 'myTree.notFound' | translate }}</app-inline-banner>
       <app-inline-banner *ngIf="loadError" tone="danger">{{ 'myTree.loadError' | translate }}</app-inline-banner>
 
       <div
@@ -70,11 +89,12 @@ const FIT_ANIMATE_MS = 460;
               <div
                 class="tree-explorer__node-card"
                 *ngIf="!entry.vacant"
-                [class.tree-explorer__node-card--highlight]="entry.id === selfNodeId"
+                [class.tree-explorer__node-card--highlight]="entry.id === meId"
                 [style.left.px]="cardLeft(entry)"
                 [style.top.px]="cardTop(entry)"
+                [attr.data-associate-id]="entry.id"
               >
-                <span class="tree-explorer__result-tag" *ngIf="entry.id === selfNodeId">
+                <span class="tree-explorer__result-tag" *ngIf="entry.id === meId">
                   {{ 'myTree.selfLabel' | translate }}
                 </span>
                 <span
@@ -165,8 +185,13 @@ export class MyTreeComponent implements OnInit, OnDestroy {
   readonly maxSlotDepth = DEFAULT_DEPTH;
 
   loadError = false;
+  notFound = false;
+  searchQuery = '';
   layout: TreeLayout | null = null;
-  selfNodeId: string | null = null;
+  // The caller's own associate id, captured once from loadMyTree()'s result -- unlike root.id,
+  // this never changes when the view is re-rooted via search/card-click, so it's what the "You"
+  // tag and the reset-to-self control compare against.
+  meId: string | null = null;
   isPanning = false;
   hintDismissed = false;
 
@@ -177,7 +202,6 @@ export class MyTreeComponent implements OnInit, OnDestroy {
   set root(node: TreeNode | null) {
     this._root = node;
     this.layout = node ? buildTreeLayout(node, this.maxSlotDepth) : null;
-    this.selfNodeId = node?.id ?? null;
   }
 
   private panZoom: PanZoomState = { x: 0, y: 0, scale: 1 };
@@ -188,6 +212,11 @@ export class MyTreeComponent implements OnInit, OnDestroy {
   private pinch: { dist: number; scale: number; mid: { x: number; y: number } } | null = null;
   private hintTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private resizeListener = () => this.fitToScreen(false);
+  // wrap.setPointerCapture() (below) retargets the synthetic `click` event to `wrap` itself, so
+  // a native (click) binding on a descendant card never fires -- the same reason buttons are
+  // special-cased in onPointerDown. Track the down position/target ourselves and treat a
+  // low-movement pointerup as a tap, so clicking a card can re-root the tree.
+  private tapStart: { x: number; y: number; target: HTMLElement } | null = null;
 
   private _canvasWrapRef?: ElementRef<HTMLDivElement>;
   @ViewChild('canvasWrap')
@@ -264,15 +293,62 @@ export class MyTreeComponent implements OnInit, OnDestroy {
     this.applyTransform(next, animated);
   }
 
+  onSearch(): void {
+    if (!this.searchQuery) return;
+    this.notFound = false;
+    this.loadError = false;
+    this.myTreeService.search(this.searchQuery).subscribe({
+      next: result => this.loadSubtree(result.ancestorPath[result.ancestorPath.length - 1].id),
+      error: () => {
+        this.notFound = true;
+      }
+    });
+  }
+
+  onCardClick(node: TreeNode): void {
+    this.searchQuery = node.name;
+    this.notFound = false;
+    this.loadSubtree(node.id);
+  }
+
+  // Entry point from the raw pointerup tap-detection in attachCanvasListeners (see tapStart) --
+  // that handler only has a DOM element/id, not the TreeNode, so resolve it against the
+  // currently rendered layout before delegating to onCardClick.
+  private onCardTap(associateId: string): void {
+    const entry = this.layout?.nodes.find(n => !n.vacant && n.id === associateId);
+    if (entry && !entry.vacant) {
+      this.onCardClick(entry.data);
+    }
+  }
+
+  resetToSelf(): void {
+    this.searchQuery = '';
+    this.notFound = false;
+    this.loadMyTree();
+  }
+
   private loadMyTree(): void {
     this.loadError = false;
     this.myTreeService.getMyTree(DEFAULT_DEPTH).subscribe({
       next: node => {
         this.root = node;
+        this.meId = node.id;
         this.scheduleFit(true);
       },
       error: () => {
         this.root = null;
+        this.loadError = true;
+      }
+    });
+  }
+
+  private loadSubtree(associateId: string): void {
+    this.myTreeService.subtree(associateId, DEFAULT_DEPTH).subscribe({
+      next: node => {
+        this.root = node;
+        this.scheduleFit(true);
+      },
+      error: () => {
         this.loadError = true;
       }
     });
@@ -323,9 +399,11 @@ export class MyTreeComponent implements OnInit, OnDestroy {
         this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
         if (this.activePointers.size === 1) {
           this.panFrom = { px: e.clientX, py: e.clientY, sx: this.panZoom.x, sy: this.panZoom.y };
+          this.tapStart = { x: e.clientX, y: e.clientY, target: e.target as HTMLElement };
           this.ngZone.run(() => (this.isPanning = true));
         } else if (this.activePointers.size === 2) {
           this.panFrom = null;
+          this.tapStart = null;
           const pts = Array.from(this.activePointers.values());
           const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
           const rect = wrap.getBoundingClientRect();
@@ -374,7 +452,34 @@ export class MyTreeComponent implements OnInit, OnDestroy {
         }
       };
 
+      const TAP_MOVE_THRESHOLD_PX = 6;
+
+      const onPointerUp = (e: PointerEvent) => {
+        const tap = this.tapStart;
+        // this.activePointers still holds the pointer being released here (deleted inside
+        // releasePointer below) -- size === 1 means this is the last finger lifting, i.e. a
+        // genuine tap candidate rather than the first finger of a still-active pinch.
+        if (tap && this.activePointers.size === 1) {
+          const distance = Math.hypot(e.clientX - tap.x, e.clientY - tap.y);
+          if (distance <= TAP_MOVE_THRESHOLD_PX) {
+            const card = tap.target.closest<HTMLElement>('[data-associate-id]');
+            const associateId = card?.dataset['associateId'];
+            if (associateId) {
+              this.ngZone.run(() => this.onCardTap(associateId));
+            }
+          }
+        }
+        this.tapStart = null;
+        releasePointer(e);
+      };
+
+      const onPointerCancel = (e: PointerEvent) => {
+        this.tapStart = null;
+        releasePointer(e);
+      };
+
       const onPointerLeave = (e: PointerEvent) => {
+        this.tapStart = null;
         if (this.activePointers.size <= 1) releasePointer(e);
       };
 
@@ -387,16 +492,16 @@ export class MyTreeComponent implements OnInit, OnDestroy {
 
       wrap.addEventListener('pointerdown', onPointerDown, { passive: false });
       wrap.addEventListener('pointermove', onPointerMove, { passive: true });
-      wrap.addEventListener('pointerup', releasePointer, { passive: true });
-      wrap.addEventListener('pointercancel', releasePointer, { passive: true });
+      wrap.addEventListener('pointerup', onPointerUp, { passive: true });
+      wrap.addEventListener('pointercancel', onPointerCancel, { passive: true });
       wrap.addEventListener('pointerleave', onPointerLeave, { passive: true });
       wrap.addEventListener('wheel', onWheel, { passive: false });
 
       this.wrapCleanupFns = [
         () => wrap.removeEventListener('pointerdown', onPointerDown),
         () => wrap.removeEventListener('pointermove', onPointerMove),
-        () => wrap.removeEventListener('pointerup', releasePointer),
-        () => wrap.removeEventListener('pointercancel', releasePointer),
+        () => wrap.removeEventListener('pointerup', onPointerUp),
+        () => wrap.removeEventListener('pointercancel', onPointerCancel),
         () => wrap.removeEventListener('pointerleave', onPointerLeave),
         () => wrap.removeEventListener('wheel', onWheel)
       ];

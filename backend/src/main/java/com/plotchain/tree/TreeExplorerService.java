@@ -94,6 +94,31 @@ public class TreeExplorerService {
         return new TreeSearchResponse(path);
     }
 
+    // /my-tree search bar (associate-scoped, not admin): matches by name or userId within the
+    // caller's own findSelfAndDownline set only. Unlike search() above, this returns a
+    // single-entry ancestorPath (just the match) rather than a full chain to the company root --
+    // the only caller of this (AssociateTreeController.mySearch -> MyTreeComponent.onSearch)
+    // reads just ancestorPath[last].id to re-root, and a full chain here would expose names of
+    // associates above the caller, which the "downline only" scoping is meant to prevent.
+    public TreeSearchResponse searchWithinDownline(UUID associateId, String query) {
+        List<UUID> downlineIds = associateRepository.findSelfAndDownline(associateId);
+        Associate target = associateRepository.findByIdInAndNameOrUserIdContaining(downlineIds, query).stream()
+            .findFirst()
+            .orElseThrow(() -> new AssociateNotFoundException(query));
+        return new TreeSearchResponse(List.of(new TreeNodeSummary(target.getId(), target.getUserId(), target.getName())));
+    }
+
+    // /my-tree re-root (associate-scoped): same subtree() build as the admin route, gated by
+    // membership in the caller's own downline. AssociateNotFoundException (404), not a 403 --
+    // matches subtree()'s existing response for an unknown id, and avoids confirming to the
+    // caller that a given id belongs to some *other* real associate outside their downline.
+    public TreeNodeResponse subtreeWithinDownline(UUID associateId, UUID targetId, int depth) {
+        if (!associateRepository.findSelfAndDownline(associateId).contains(targetId)) {
+            throw new AssociateNotFoundException(targetId);
+        }
+        return subtree(targetId, depth);
+    }
+
     private TreeNodeResponse buildNode(Associate a, int remainingDepth, Map<UUID, RankTier> ranksById,
                                         Optional<Cycle> latestClosedCycle) {
         BigDecimal[] legs = legVolumesFor(a.getId(), latestClosedCycle);

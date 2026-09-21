@@ -116,4 +116,80 @@ class AssociateTreeControllerTest {
 
         verify(associateRepository, never()).findByParentId(chain.get(4).getId());
     }
+
+    @Test
+    void mySearchReturnsAMatchFromTheCallersOwnDownline() throws Exception {
+        UUID selfId = UUID.randomUUID();
+        Associate self = newSelf(selfId, "VP00001");
+        UUID downlineMemberId = UUID.randomUUID();
+        Associate downlineMember = newSelf(downlineMemberId, "VP00002");
+        downlineMember.setName("Downline Person");
+
+        when(associateRepository.findSelfAndDownline(selfId))
+            .thenReturn(List.of(selfId, downlineMemberId));
+        when(associateRepository.findByIdInAndNameOrUserIdContaining(List.of(selfId, downlineMemberId), "Downline"))
+            .thenReturn(List.of(downlineMember));
+
+        mockMvc.perform(get("/api/associates/me/tree/search").param("q", "Downline")
+                .header("Authorization", "Bearer " + tokenForAssociate(self)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.ancestorPath[0].userId").value("VP00002"));
+    }
+
+    @Test
+    void mySearchReturns404ForAnAssociateOutsideTheCallersDownline() throws Exception {
+        // No stub for findByIdInAndNameOrUserIdContaining with any id list containing the
+        // outsider -- the query is scoped to findSelfAndDownline, so an associate elsewhere
+        // in the company can never be matched, regardless of how the mock would otherwise
+        // behave for an unscoped search.
+        UUID selfId = UUID.randomUUID();
+        Associate self = newSelf(selfId, "VP00001");
+
+        when(associateRepository.findSelfAndDownline(selfId)).thenReturn(List.of(selfId));
+        when(associateRepository.findByIdInAndNameOrUserIdContaining(List.of(selfId), "Outsider"))
+            .thenReturn(List.of());
+
+        mockMvc.perform(get("/api/associates/me/tree/search").param("q", "Outsider")
+                .header("Authorization", "Bearer " + tokenForAssociate(self)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void mySubtreeReRootsAtADownlineAssociate() throws Exception {
+        UUID selfId = UUID.randomUUID();
+        Associate self = newSelf(selfId, "VP00001");
+        UUID downlineMemberId = UUID.randomUUID();
+        Associate downlineMember = newSelf(downlineMemberId, "VP00002");
+
+        when(associateRepository.findSelfAndDownline(selfId))
+            .thenReturn(List.of(selfId, downlineMemberId));
+        when(associateRepository.findByIdAndRole(downlineMemberId, AssociateRole.ASSOCIATE))
+            .thenReturn(Optional.of(downlineMember));
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(associateRepository.countByParentId(downlineMemberId)).thenReturn(0L);
+
+        mockMvc.perform(get("/api/associates/me/tree/" + downlineMemberId)
+                .header("Authorization", "Bearer " + tokenForAssociate(self)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.userId").value("VP00002"));
+    }
+
+    @Test
+    void mySubtreeReturns404ForAnAssociateOutsideTheCallersDownlineEvenIfTheyReallyExist() throws Exception {
+        UUID selfId = UUID.randomUUID();
+        Associate self = newSelf(selfId, "VP00001");
+        UUID outsiderId = UUID.randomUUID();
+
+        when(associateRepository.findSelfAndDownline(selfId)).thenReturn(List.of(selfId));
+        // Deliberately no stub for findByIdAndRole(outsiderId, ...) -- the downline-membership
+        // check must short-circuit before that lookup ever runs, proving the 404 comes from the
+        // scoping guard and not merely from an unmocked repository call.
+
+        mockMvc.perform(get("/api/associates/me/tree/" + outsiderId)
+                .header("Authorization", "Bearer " + tokenForAssociate(self)))
+            .andExpect(status().isNotFound());
+
+        verify(associateRepository, never()).findByIdAndRole(outsiderId, AssociateRole.ASSOCIATE);
+    }
 }
