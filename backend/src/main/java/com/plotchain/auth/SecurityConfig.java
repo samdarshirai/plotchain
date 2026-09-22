@@ -105,6 +105,27 @@ public class SecurityConfig {
                 // own -- falls through to anyRequest().authenticated(), same as GET
                 // /api/associates/me/profile.
                 .requestMatchers(HttpMethod.PUT, "/api/associates/me/bank-details").authenticated()
+                // Self-service nominee edit: profile screen redesign ("Viraj Acres" mockup's
+                // Nominee Detail section), same shape as the bank-details matcher directly above.
+                // Must precede the blanket ADMIN write rules below (first-match-wins) or an
+                // associate could never save their own nominee. GET needs no matcher of its own --
+                // falls through to anyRequest().authenticated(), same as GET
+                // /api/associates/me/bank-details.
+                .requestMatchers(HttpMethod.PUT, "/api/associates/me/nominee").authenticated()
+                // Self-service profile photo upload/remove: profile screen redesign ("Viraj
+                // Acres" mockup's hero photo), same shape as the nominee matcher directly above.
+                // Must precede the blanket ADMIN write rules below (first-match-wins) or an
+                // associate could never manage their own photo. GET needs no matcher of its own --
+                // falls through to anyRequest().authenticated().
+                .requestMatchers(HttpMethod.POST, "/api/associates/me/photo").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/associates/me/photo").authenticated()
+                // Self-service transaction-password set/change: profile screen redesign ("Viraj
+                // Acres" mockup's Transaction Password tab), same shape as the login-password
+                // matcher near the top of this block. Must precede the blanket ADMIN write rules
+                // below (first-match-wins) or an associate could never set their own transaction
+                // password. GET needs no matcher of its own -- falls through to
+                // anyRequest().authenticated().
+                .requestMatchers(HttpMethod.POST, "/api/associates/me/transaction-password").authenticated()
                 // Deny-by-default for writes: product policy is "ADMIN can write; associates
                 // are read-only except their own profile". Without this, any future
                 // POST/PUT/PATCH/DELETE endpoint would be reachable by every authenticated

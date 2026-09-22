@@ -253,28 +253,91 @@
       "bankDetails": "Bank Details",
       "kyc": "KYC Details"
     },
+    "hero": {
+      "eyebrow": "Associate",
+      "uploadPhoto": "Upload Photo",
+      "removePhoto": "Remove Photo",
+      "photoUploadError": "Something went wrong uploading your photo. Please try again."
+    },
+    "subtabs": {
+      "profile": "Profile",
+      "loginPassword": "Login Password",
+      "transactionPassword": "Transaction Password"
+    },
     "rank": {
       "eyebrow": "Rank",
       "nextRank": "Next rank: {{rank}} ({{pct}}%)",
       "maxRankReached": "You've reached the highest rank.",
       "cumulativeVolumeLabel": "Cumulative matched volume",
       "volumeToNextRankLabel": "Volume to next rank",
-      "loadError": "Something went wrong loading your rank progress. Please try again."
+      "loadError": "Something went wrong loading your rank progress. Please try again.",
+      "rewardTiersEyebrow": "Reward Tiers",
+      "tierLabel": "Tier {{level}}"
     },
     "verification": {
       "eyebrow": "Verification",
       "hint": "Present this code to verify your identity as an Associate.",
       "copyCode": "Copy code"
     },
+    "personalDetail": {
+      "title": "Personal Detail",
+      "nameLabel": "Name",
+      "fatherHusbandNameLabel": "Father/Husband's Name",
+      "dobLabel": "Date of Birth",
+      "genderLabel": "Gender",
+      "genderMale": "Male",
+      "genderFemale": "Female",
+      "genderOther": "Other",
+      "maritalStatusLabel": "Marital Status",
+      "maritalSingle": "Single",
+      "maritalMarried": "Married",
+      "maritalOther": "Other"
+    },
     "contact": {
-      "title": "Contact details",
+      "title": "Contact Detail",
       "missingFields": "{{count}} field missing",
-      "nameLabel": "Full Name",
-      "emailLabel": "Email",
-      "phoneLabel": "Phone",
+      "emailLabel": "Email address",
+      "phoneLabel": "Mobile No.",
       "addressLabel": "Address",
+      "stateLabel": "State",
+      "districtLabel": "District",
+      "postalCodeLabel": "Postal Code",
       "saveAction": "Save Changes",
       "saveSuccess": "Profile updated."
+    },
+    "nominee": {
+      "title": "Nominee Detail",
+      "nomineeNameLabel": "Nominee Name",
+      "relationLabel": "Relation"
+    },
+    "authorisation": {
+      "title": "Authorisation",
+      "transactionPasswordLabel": "Transaction Password",
+      "placeholder": "Required to save changes",
+      "hint": "Enter your transaction password to confirm these updates."
+    },
+    "actions": {
+      "save": "Save Changes",
+      "cancel": "Cancel"
+    },
+    "loginPasswordTab": {
+      "currentLabel": "Current Password",
+      "newLabel": "New Password",
+      "confirmLabel": "Confirm New Password",
+      "saveAction": "Save Changes",
+      "saveSuccess": "Password updated.",
+      "saveError": "Something went wrong changing your password. Please try again.",
+      "mismatch": "Passwords don't match."
+    },
+    "transactionPasswordTab": {
+      "notSetHint": "You haven't set a transaction password yet.",
+      "currentLabel": "Current Transaction Password",
+      "newLabel": "New Transaction Password",
+      "confirmLabel": "Confirm New Transaction Password",
+      "saveAction": "Save Changes",
+      "saveSuccess": "Transaction password updated.",
+      "saveError": "Something went wrong updating your transaction password. Please try again.",
+      "mismatch": "Passwords don't match."
     },
     "bankDetails": {
       "title": "Bank Details",

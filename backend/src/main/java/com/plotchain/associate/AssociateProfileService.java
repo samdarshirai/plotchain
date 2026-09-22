@@ -12,9 +12,12 @@ import java.util.UUID;
 public class AssociateProfileService {
 
     private final AssociateRepository associateRepository;
+    private final TransactionPasswordVerifier transactionPasswordVerifier;
 
-    public AssociateProfileService(AssociateRepository associateRepository) {
+    public AssociateProfileService(AssociateRepository associateRepository,
+                                    TransactionPasswordVerifier transactionPasswordVerifier) {
         this.associateRepository = associateRepository;
+        this.transactionPasswordVerifier = transactionPasswordVerifier;
     }
 
     public AssociateProfileResponse getProfile(UUID associateId) {
@@ -26,6 +29,8 @@ public class AssociateProfileService {
     public AssociateProfileResponse updateProfile(UUID associateId, UpdateAssociateProfileRequest request) {
         Associate associate = associateRepository.findById(associateId)
             .orElseThrow(() -> new AssociateNotFoundException(associateId));
+
+        transactionPasswordVerifier.requireIfSet(associate, request.transactionPassword());
 
         // Only check uniqueness when the email is actually changing -- resubmitting the
         // associate's own current email (a plain PUT of unchanged data) must not trip a false
@@ -42,6 +47,13 @@ public class AssociateProfileService {
         associate.setName(request.name());
         associate.setPhone(request.phone());
         associate.setAddress(request.address());
+        associate.setFatherHusbandName(request.fatherHusbandName());
+        associate.setDateOfBirth(request.dateOfBirth());
+        associate.setGender(request.gender());
+        associate.setMaritalStatus(request.maritalStatus());
+        associate.setState(request.state());
+        associate.setDistrict(request.district());
+        associate.setPostalCode(request.postalCode());
         associateRepository.save(associate);
 
         return AssociateProfileResponse.from(associate);

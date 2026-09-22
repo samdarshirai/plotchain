@@ -677,6 +677,51 @@ class SecurityConfigTest {
             .andExpect(status().is(not(403)));
     }
 
+    // Profile screen redesign: PUT /api/associates/me/nominee needs its own matcher ABOVE the
+    // blanket ADMIN write rules, same ordering trap as bankDetailsUpdateIsReachableByAnAssociateToken
+    // above. Only a 403 here would mean the matcher ordering regressed.
+    @Test
+    void nomineeUpdateIsReachableByAnAssociateToken() throws Exception {
+        mockMvc.perform(put("/api/associates/me/nominee")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
+                .contentType("application/json")
+                .content("{\"nomineeName\":\"Kajal Devi\",\"relation\":\"Wife\"}"))
+            .andExpect(status().is(not(403)));
+    }
+
+    // Profile screen redesign: POST/DELETE /api/associates/me/photo need their own matchers
+    // ABOVE the blanket ADMIN write rules, same ordering trap as the nominee/bank-details
+    // matchers above. Only a 403 here would mean the matcher ordering regressed.
+    @Test
+    void photoUploadIsReachableByAnAssociateToken() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", new byte[]{1});
+
+        mockMvc.perform(multipart("/api/associates/me/photo")
+                .file(file)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().is(not(403)));
+    }
+
+    @Test
+    void photoRemoveIsReachableByAnAssociateToken() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/associates/me/photo")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().is(not(403)));
+    }
+
+    // Profile screen redesign: POST /api/associates/me/transaction-password needs its own
+    // matcher ABOVE the blanket ADMIN write rules, same ordering trap as
+    // passwordChangeIsReachableByAnAssociateToken above. Only a 403 here would mean the matcher
+    // ordering regressed.
+    @Test
+    void transactionPasswordSetIsReachableByAnAssociateToken() throws Exception {
+        mockMvc.perform(post("/api/associates/me/transaction-password")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
+                .contentType("application/json")
+                .content("{\"newTransactionPassword\":\"secret123\"}"))
+            .andExpect(status().is(not(403)));
+    }
+
     // Sales unit 7 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
     // "Associate own view -- GET /api/associates/me/sales, any authenticated associate"): needs
     // no explicit SecurityConfig matcher -- a bare GET never collides with the blanket

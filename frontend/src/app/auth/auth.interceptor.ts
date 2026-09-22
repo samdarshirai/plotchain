@@ -4,10 +4,20 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
-// Endpoints where a 401 is an expected, in-form validation failure (bad credentials)
+// Endpoint+method pairs where a 401 is an expected, in-form validation failure (bad
+// credentials, or -- profile screen redesign -- a missing/incorrect transaction password)
 // rather than an expired session. A blanket logout here would wipe a valid session and
-// navigate the user away before they can see the error.
-const EXPECTED_401_PATHS = ['/api/auth/login', '/api/associates/me/password'];
+// navigate the user away before they can see the error. Keyed by method, not just path: GET
+// /api/associates/me/profile (for example) still logs out on a real 401, since a plain read
+// never fails a form check -- only its PUT (transaction-password-gated) and the analogous
+// nominee PUT and transaction-password POST do.
+const EXPECTED_401_ROUTES: { method: string; path: string }[] = [
+  { method: 'POST', path: '/api/auth/login' },
+  { method: 'POST', path: '/api/associates/me/password' },
+  { method: 'PUT', path: '/api/associates/me/profile' },
+  { method: 'PUT', path: '/api/associates/me/nominee' },
+  { method: 'POST', path: '/api/associates/me/transaction-password' }
+];
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
@@ -20,7 +30,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authorizedReq).pipe(
     catchError(error => {
-      if (error.status === 401 && !EXPECTED_401_PATHS.some(path => req.url.includes(path))) {
+      const isExpected401Route = EXPECTED_401_ROUTES.some(
+        route => route.method === req.method && req.url.includes(route.path)
+      );
+      if (error.status === 401 && !isExpected401Route) {
         authService.logout();
         router.navigate(['/login']);
       }

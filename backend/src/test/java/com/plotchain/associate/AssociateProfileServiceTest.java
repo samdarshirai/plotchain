@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,13 +22,14 @@ import static org.mockito.Mockito.when;
 class AssociateProfileServiceTest {
 
     @Mock AssociateRepository associateRepository;
+    @Mock TransactionPasswordVerifier transactionPasswordVerifier;
 
     AssociateProfileService service;
     private static final UUID ASSOCIATE_ID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        service = new AssociateProfileService(associateRepository);
+        service = new AssociateProfileService(associateRepository, transactionPasswordVerifier);
     }
 
     private Associate seeded() {
@@ -41,6 +43,11 @@ class AssociateProfileServiceTest {
         a.setRole(AssociateRole.ASSOCIATE);
         a.setJoinedAt(Instant.parse("2026-01-01T00:00:00Z"));
         return a;
+    }
+
+    private static UpdateAssociateProfileRequest requestWith(String name, String phone, String email, String address) {
+        return new UpdateAssociateProfileRequest(
+            name, phone, email, address, null, null, null, null, null, null, null, null);
     }
 
     @Test
@@ -70,7 +77,7 @@ class AssociateProfileServiceTest {
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
         when(associateRepository.existsByEmail("jane.doe@example.com")).thenReturn(false);
         UpdateAssociateProfileRequest request =
-            new UpdateAssociateProfileRequest("Jane A. Doe", "9990002222", "jane.doe@example.com", "42 Wallaby Way");
+            requestWith("Jane A. Doe", "9990002222", "jane.doe@example.com", "42 Wallaby Way");
 
         AssociateProfileResponse response = service.updateProfile(ASSOCIATE_ID, request);
 
@@ -89,8 +96,7 @@ class AssociateProfileServiceTest {
     void updateProfileAllowsResubmittingTheAssociatesOwnUnchangedEmail() {
         Associate associate = seeded();
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
-        UpdateAssociateProfileRequest request =
-            new UpdateAssociateProfileRequest("Jane Doe", "9990001111", "jane@example.com", null);
+        UpdateAssociateProfileRequest request = requestWith("Jane Doe", "9990001111", "jane@example.com", null);
 
         AssociateProfileResponse response = service.updateProfile(ASSOCIATE_ID, request);
 
@@ -104,8 +110,7 @@ class AssociateProfileServiceTest {
         Associate associate = seeded();
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
         when(associateRepository.existsByEmail("taken@example.com")).thenReturn(true);
-        UpdateAssociateProfileRequest request =
-            new UpdateAssociateProfileRequest("Jane Doe", "9990001111", "taken@example.com", null);
+        UpdateAssociateProfileRequest request = requestWith("Jane Doe", "9990001111", "taken@example.com", null);
 
         assertThatThrownBy(() -> service.updateProfile(ASSOCIATE_ID, request))
             .isInstanceOf(EmailAlreadyRegisteredException.class);
@@ -119,8 +124,7 @@ class AssociateProfileServiceTest {
     void updateProfileClearsEmailWhenRequestOmitsIt() {
         Associate associate = seeded();
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
-        UpdateAssociateProfileRequest request =
-            new UpdateAssociateProfileRequest("Jane Doe", "9990001111", null, null);
+        UpdateAssociateProfileRequest request = requestWith("Jane Doe", "9990001111", null, null);
 
         AssociateProfileResponse response = service.updateProfile(ASSOCIATE_ID, request);
 
@@ -132,10 +136,54 @@ class AssociateProfileServiceTest {
     @Test
     void updateProfileThrowsWhenAssociateNotFound() {
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.empty());
-        UpdateAssociateProfileRequest request =
-            new UpdateAssociateProfileRequest("Jane Doe", "9990001111", "jane@example.com", null);
+        UpdateAssociateProfileRequest request = requestWith("Jane Doe", "9990001111", "jane@example.com", null);
 
         assertThatThrownBy(() -> service.updateProfile(ASSOCIATE_ID, request))
             .isInstanceOf(AssociateNotFoundException.class);
+    }
+
+    @Test
+    void updateProfileSavesTheNewPersonalAndContactFields() {
+        Associate associate = seeded();
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
+        UpdateAssociateProfileRequest request = new UpdateAssociateProfileRequest(
+            "Jane Doe", "9990001111", "jane@example.com", "221B Baker Street",
+            "John Doe", LocalDate.of(1990, 5, 1), "FEMALE", "MARRIED", "Bihar", "Patna", "801503", null);
+
+        AssociateProfileResponse response = service.updateProfile(ASSOCIATE_ID, request);
+
+        assertThat(response.fatherHusbandName()).isEqualTo("John Doe");
+        assertThat(response.dateOfBirth()).isEqualTo(LocalDate.of(1990, 5, 1));
+        assertThat(response.gender()).isEqualTo("FEMALE");
+        assertThat(response.maritalStatus()).isEqualTo("MARRIED");
+        assertThat(response.state()).isEqualTo("Bihar");
+        assertThat(response.district()).isEqualTo("Patna");
+        assertThat(response.postalCode()).isEqualTo("801503");
+    }
+
+    @Test
+    void updateProfileDelegatesTheTransactionPasswordGateToTheVerifier() {
+        Associate associate = seeded();
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
+        UpdateAssociateProfileRequest request = new UpdateAssociateProfileRequest(
+            "Jane Doe", "9990001111", "jane@example.com", null,
+            null, null, null, null, null, null, null, "secret123");
+
+        service.updateProfile(ASSOCIATE_ID, request);
+
+        verify(transactionPasswordVerifier).requireIfSet(associate, "secret123");
+    }
+
+    @Test
+    void updateProfilePropagatesTheVerifiersRejectionAndDoesNotSave() {
+        Associate associate = seeded();
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
+        org.mockito.Mockito.doThrow(new InvalidTransactionPasswordException("bad"))
+            .when(transactionPasswordVerifier).requireIfSet(any(), any());
+        UpdateAssociateProfileRequest request = requestWith("Jane Doe", "9990001111", "jane@example.com", null);
+
+        assertThatThrownBy(() -> service.updateProfile(ASSOCIATE_ID, request))
+            .isInstanceOf(InvalidTransactionPasswordException.class);
+        verify(associateRepository, never()).save(any());
     }
 }

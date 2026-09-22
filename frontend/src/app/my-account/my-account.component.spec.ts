@@ -9,6 +9,8 @@ import { AssociateKycStatusResponse } from '../profile-kyc/models/associate-kyc-
 import { AssociateRankProgress } from './models/associate-rank-progress.model';
 import { AssociateIdCard } from './models/associate-id-card.model';
 import { AssociateBankDetailsResponse } from './models/associate-bank-details.model';
+import { AssociateNomineeResponse } from './models/associate-nominee.model';
+import { TransactionPasswordStatusResponse } from './models/associate-transaction-password.model';
 import { CompanyLetterheadResponse } from '../setup/models/company-profile.model';
 import { BrandingBootstrapService } from '../core/theme/branding-bootstrap.service';
 
@@ -25,6 +27,11 @@ import { BrandingBootstrapService } from '../core/theme/branding-bootstrap.servi
 // Bookings tab. DigitalIdCardComponent is embedded unmodified as a print-only child (hidden on
 // screen, shown under @media print) -- it keeps its own self-fetching ngOnInit, so its GET
 // /api/associates/me/id-card fires on init too.
+//
+// Profile screen redesign ("Viraj Acres" mockup): the Profile section (activeTab === 'profile')
+// additionally fires GET nominee/transaction-password-status/photo on init, and splits into an
+// in-page tab bar (`profileSubTab`) -- Profile / Login Password / Transaction Password -- scoped
+// to this route's content only, not a route change.
 describe('MyAccountComponent', () => {
   let fixture: ComponentFixture<MyAccountComponent>;
   let httpMock: HttpTestingController;
@@ -32,7 +39,9 @@ describe('MyAccountComponent', () => {
 
   const profileResponse: AssociateProfileResponse = {
     id: 'a1', userId: 'VP00001', name: 'Left Kumar', phone: null,
-    email: 'left@example.com', address: null, joinedAt: '2026-09-02T00:00:00Z'
+    email: 'left@example.com', address: null, joinedAt: '2026-09-02T00:00:00Z',
+    fatherHusbandName: null, dateOfBirth: null, gender: null, maritalStatus: null,
+    state: null, district: null, postalCode: null
   };
   const companyLetterhead: CompanyLetterheadResponse = {
     displayName: 'Plotchain Estates', registeredAddress: '123 MG Road, Bengaluru',
@@ -53,17 +62,38 @@ describe('MyAccountComponent', () => {
   const bankDetailsResponse: AssociateBankDetailsResponse = {
     bankName: null, accountHolder: null, accountNumber: null, ifscCode: null, accountType: null, updatedAt: null
   };
+  const nomineeResponse: AssociateNomineeResponse = { nomineeName: null, relation: null, updatedAt: null };
+  const transactionPasswordNotSet: TransactionPasswordStatusResponse = { isSet: false };
+
+  function flushInitRequests(profile: AssociateProfileResponse = profileResponse): void {
+    httpMock.expectOne('/api/associates/me/profile').flush(profile);
+    httpMock.expectOne('/api/associates/me/kyc').flush(kycResponse);
+    httpMock.expectOne('/api/associates/me/rank-progress').flush(rankProgress);
+    httpMock.expectOne('/api/associates/me/id-card').flush(idCard);
+    httpMock.expectOne('/api/company/profile/letterhead').flush(companyLetterhead);
+    httpMock.expectOne('/api/associates/me/nominee').flush(nomineeResponse);
+    httpMock.expectOne('/api/associates/me/transaction-password').flush(transactionPasswordNotSet);
+    httpMock.expectOne('/api/associates/me/photo').flush(new Blob(['no photo']), { status: 404, statusText: 'Not Found' });
+  }
 
   function init(): void {
     fixture = TestBed.createComponent(MyAccountComponent);
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
-    httpMock.expectOne('/api/associates/me/profile').flush(profileResponse);
-    httpMock.expectOne('/api/associates/me/kyc').flush(kycResponse);
-    httpMock.expectOne('/api/associates/me/rank-progress').flush(rankProgress);
-    httpMock.expectOne('/api/associates/me/id-card').flush(idCard);
-    httpMock.expectOne('/api/company/profile/letterhead').flush(companyLetterhead);
+    flushInitRequests();
     fixture.detectChanges();
+  }
+
+  // forkJoin fires the profile and nominee PUTs concurrently; whether an error on the profile
+  // request cancels the still-in-flight nominee request before or after this line runs is a
+  // race the test can't control, so this tolerates both outcomes -- httpMock.match() removes a
+  // matching request from the pending queue either way, only flushing it if it's still live.
+  function flushPendingNomineeIfAny(): void {
+    httpMock.match('/api/associates/me/nominee').forEach(req => {
+      if (!req.cancelled) {
+        req.flush(nomineeResponse);
+      }
+    });
   }
 
   function switchTab(tabId: string): void {
@@ -104,6 +134,9 @@ describe('MyAccountComponent', () => {
     httpMock.expectOne('/api/associates/me/rank-progress').flush(rankProgress);
     httpMock.expectOne('/api/associates/me/id-card').flush(idCard);
     httpMock.expectOne('/api/company/profile/letterhead').flush(companyLetterhead);
+    httpMock.expectOne('/api/associates/me/nominee').flush(nomineeResponse);
+    httpMock.expectOne('/api/associates/me/transaction-password').flush(transactionPasswordNotSet);
+    httpMock.expectOne('/api/associates/me/photo').flush(new Blob(['no photo']), { status: 404, statusText: 'Not Found' });
     fixture.detectChanges();
 
     expect(fixture.componentInstance.profileLoadError).toBeTrue();
@@ -118,6 +151,9 @@ describe('MyAccountComponent', () => {
     httpMock.expectOne('/api/associates/me/rank-progress').flush({ error: 'boom' }, { status: 500, statusText: 'Server Error' });
     httpMock.expectOne('/api/associates/me/id-card').flush(idCard);
     httpMock.expectOne('/api/company/profile/letterhead').flush(companyLetterhead);
+    httpMock.expectOne('/api/associates/me/nominee').flush(nomineeResponse);
+    httpMock.expectOne('/api/associates/me/transaction-password').flush(transactionPasswordNotSet);
+    httpMock.expectOne('/api/associates/me/photo').flush(new Blob(['no photo']), { status: 404, statusText: 'Not Found' });
     fixture.detectChanges();
 
     expect(fixture.componentInstance.rankLoadError).toBeTrue();
@@ -125,7 +161,7 @@ describe('MyAccountComponent', () => {
 
   it('renders the current rank figure, next-rank line, and a progress bar width from rank progress', () => {
     init();
-    const rankCard: HTMLElement = fixture.nativeElement.querySelector('.rank-card');
+    const rankCard: HTMLElement = fixture.nativeElement.querySelector('.profile-hero__rank-plaque');
     expect(rankCard.textContent).toContain('Silver');
     expect(rankCard.textContent).toContain('Gold');
     const fill: HTMLElement = fixture.nativeElement.querySelector('.rank-card__bar-fill');
@@ -141,14 +177,17 @@ describe('MyAccountComponent', () => {
     httpMock.expectOne('/api/associates/me/rank-progress').flush({ ...rankProgress, nextRank: null, progressPercent: 100 });
     httpMock.expectOne('/api/associates/me/id-card').flush(idCard);
     httpMock.expectOne('/api/company/profile/letterhead').flush(companyLetterhead);
+    httpMock.expectOne('/api/associates/me/nominee').flush(nomineeResponse);
+    httpMock.expectOne('/api/associates/me/transaction-password').flush(transactionPasswordNotSet);
+    httpMock.expectOne('/api/associates/me/photo').flush(new Blob(['no photo']), { status: 404, statusText: 'Not Found' });
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('myAccount.rank.maxRankReached');
   });
 
-  it('shows the verification card with the associate userId as the code', () => {
+  it('shows the profile hero seal card with the associate userId as the code', () => {
     init();
-    const code: HTMLElement = fixture.nativeElement.querySelector('.verification-card__code');
+    const code: HTMLElement = fixture.nativeElement.querySelector('.profile-hero__code');
     expect(code.textContent?.trim()).toBe('VP00001');
   });
 
@@ -161,10 +200,17 @@ describe('MyAccountComponent', () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('VP00001');
   });
 
+  it('falls back to initials on the hero avatar when no photo is uploaded', () => {
+    init();
+    expect(fixture.nativeElement.querySelector('.profile-hero__avatar--photo')).toBeFalsy();
+    const avatar: HTMLElement = fixture.nativeElement.querySelector('.profile-hero__avatar');
+    expect(avatar.textContent?.trim()).toBe('LK');
+  });
+
   it('defaults to the Profile section when the route supplies no other tab', () => {
     init();
     expect(fixture.componentInstance.activeTab).toBe('profile');
-    expect(fixture.nativeElement.querySelector('.contact-card')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.detail-card')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.letter-card')).toBeFalsy();
     expect(fixture.nativeElement.querySelector('.bank-card')).toBeFalsy();
     expect(fixture.nativeElement.querySelector('.kyc-card')).toBeFalsy();
@@ -175,7 +221,7 @@ describe('MyAccountComponent', () => {
     switchTab('kyc');
     expect(fixture.componentInstance.activeTab).toBe('kyc');
     expect(fixture.nativeElement.querySelector('.kyc-card')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.contact-card')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.detail-card')).toBeFalsy();
 
     switchTab('welcomeLetter');
     expect(fixture.componentInstance.activeTab).toBe('welcomeLetter');
@@ -183,21 +229,29 @@ describe('MyAccountComponent', () => {
     expect(fixture.nativeElement.querySelector('.kyc-card')).toBeFalsy();
   });
 
-  it('shows Rank, Verification, and the Download ID card action only on the Profile section', () => {
+  it('shows Rank, the hero, and the Download ID card action only on the Profile section', () => {
     init();
-    expect(fixture.nativeElement.querySelector('.rank-card')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.verification-card')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.profile-hero__rank-plaque')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.profile-hero')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.my-account__header-actions')).toBeTruthy();
 
     switchTab('kyc');
-    expect(fixture.nativeElement.querySelector('.rank-card')).toBeFalsy();
-    expect(fixture.nativeElement.querySelector('.verification-card')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.profile-hero__rank-plaque')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.profile-hero')).toBeFalsy();
     expect(fixture.nativeElement.querySelector('.my-account__header-actions')).toBeFalsy();
   });
 
-  it('shows a "N field missing" chip on the contact card when phone or email is blank', () => {
+  it('shows the three in-page sub-tabs (Profile / Login Password / Transaction Password) on the Profile section only', () => {
     init();
-    const chip: HTMLElement | null = fixture.nativeElement.querySelector('.contact-card__missing-chip');
+    expect(fixture.nativeElement.querySelector('.profile-subtabs')).toBeTruthy();
+
+    switchTab('kyc');
+    expect(fixture.nativeElement.querySelector('.profile-subtabs')).toBeFalsy();
+  });
+
+  it('shows a "N field missing" chip on the contact detail section when phone or email is blank', () => {
+    init();
+    const chip: HTMLElement | null = fixture.nativeElement.querySelector('.detail-card__missing-chip');
     expect(chip?.textContent).toBeTruthy();
   });
 
@@ -205,37 +259,39 @@ describe('MyAccountComponent', () => {
     fixture = TestBed.createComponent(MyAccountComponent);
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
-    httpMock.expectOne('/api/associates/me/profile').flush({ ...profileResponse, phone: '9990001111' });
-    httpMock.expectOne('/api/associates/me/kyc').flush(kycResponse);
-    httpMock.expectOne('/api/associates/me/rank-progress').flush(rankProgress);
-    httpMock.expectOne('/api/associates/me/id-card').flush(idCard);
-    httpMock.expectOne('/api/company/profile/letterhead').flush(companyLetterhead);
+    flushInitRequests({ ...profileResponse, phone: '9990001111' });
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.contact-card__missing-chip')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.detail-card__missing-chip')).toBeFalsy();
   });
 
-  it('submits the edited name/phone/email/address via updateProfile on save', () => {
+  it('submits the profile and nominee forms together via one Save Changes action', () => {
     init();
     fixture.componentInstance.form.patchValue({
       name: 'Left K. Kumar', phone: '9990002222', email: 'left.k@example.com', address: '42 Wallaby Way'
     });
-    fixture.componentInstance.onSubmit();
+    fixture.componentInstance.nomineeForm.patchValue({ nomineeName: 'Kajal Devi', relation: 'Wife' });
+    fixture.componentInstance.onSaveChanges();
 
-    const req = httpMock.expectOne('/api/associates/me/profile');
-    expect(req.request.method).toBe('PUT');
-    expect(req.request.body).toEqual({
-      name: 'Left K. Kumar', phone: '9990002222', email: 'left.k@example.com', address: '42 Wallaby Way'
-    });
-    req.flush({ ...profileResponse, name: 'Left K. Kumar' });
+    const profileReq = httpMock.expectOne('/api/associates/me/profile');
+    expect(profileReq.request.method).toBe('PUT');
+    expect(profileReq.request.body.name).toBe('Left K. Kumar');
+    expect(profileReq.request.body.address).toBe('42 Wallaby Way');
+    profileReq.flush({ ...profileResponse, name: 'Left K. Kumar' });
+
+    const nomineeReq = httpMock.expectOne('/api/associates/me/nominee');
+    expect(nomineeReq.request.method).toBe('PUT');
+    expect(nomineeReq.request.body).toEqual({ nomineeName: 'Kajal Devi', relation: 'Wife', transactionPassword: null });
+    nomineeReq.flush({ nomineeName: 'Kajal Devi', relation: 'Wife', updatedAt: '2026-09-22T00:00:00Z' });
 
     expect(fixture.componentInstance.saveError).toBeUndefined();
+    expect(fixture.componentInstance.saveSuccess).toBeTrue();
   });
 
   it('does not submit when the form is invalid (blank name)', () => {
     init();
     fixture.componentInstance.form.patchValue({ name: '' });
-    fixture.componentInstance.onSubmit();
+    fixture.componentInstance.onSaveChanges();
 
     httpMock.expectNone('/api/associates/me/profile');
   });
@@ -243,12 +299,98 @@ describe('MyAccountComponent', () => {
   it('surfaces a 409 email-conflict as a field-level error, read from the flat error body', () => {
     init();
     fixture.componentInstance.form.patchValue({ email: 'taken@example.com' });
-    fixture.componentInstance.onSubmit();
+    fixture.componentInstance.onSaveChanges();
 
     httpMock.expectOne('/api/associates/me/profile')
       .flush({ error: 'Email already registered' }, { status: 409, statusText: 'Conflict' });
+    flushPendingNomineeIfAny();
 
     expect(fixture.componentInstance.emailConflictError).toBe('Email already registered');
+  });
+
+  it('surfaces a 401 as an authorisation error when the transaction password gate rejects the save', () => {
+    init();
+    fixture.componentInstance.onSaveChanges();
+
+    httpMock.expectOne('/api/associates/me/profile')
+      .flush({ error: 'Transaction password is required to save these changes' }, { status: 401, statusText: 'Unauthorized' });
+    flushPendingNomineeIfAny();
+
+    expect(fixture.componentInstance.saveError).toBe('Transaction password is required to save these changes');
+  });
+
+  it('changes the login password via the Login Password sub-tab, reusing AuthService', () => {
+    init();
+    fixture.componentInstance.profileSubTab = 'loginPassword';
+    fixture.detectChanges();
+    fixture.componentInstance.loginPasswordForm.setValue({
+      currentPassword: 'OldPass123!', newPassword: 'NewPass123!', confirmPassword: 'NewPass123!'
+    });
+    fixture.componentInstance.onLoginPasswordSubmit();
+
+    const req = httpMock.expectOne('/api/associates/me/password');
+    expect(req.request.method).toBe('POST');
+    req.flush(null);
+
+    expect(fixture.componentInstance.loginPasswordSaveSuccess).toBeTrue();
+  });
+
+  it('rejects a login-password submit when new and confirm do not match, without calling the API', () => {
+    init();
+    fixture.componentInstance.loginPasswordForm.setValue({
+      currentPassword: 'OldPass123!', newPassword: 'NewPass123!', confirmPassword: 'Different123!'
+    });
+    fixture.componentInstance.onLoginPasswordSubmit();
+
+    httpMock.expectNone('/api/associates/me/password');
+    expect(fixture.componentInstance.loginPasswordSaveError).toBeTruthy();
+  });
+
+  it('sets a transaction password for the first time via the Transaction Password sub-tab', () => {
+    init();
+    fixture.componentInstance.profileSubTab = 'transactionPassword';
+    fixture.detectChanges();
+    fixture.componentInstance.transactionPasswordForm.setValue({
+      currentTransactionPassword: '', newTransactionPassword: 'secret123', confirmTransactionPassword: 'secret123'
+    });
+    fixture.componentInstance.onTransactionPasswordSubmit();
+
+    const req = httpMock.expectOne('/api/associates/me/transaction-password');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ currentTransactionPassword: null, newTransactionPassword: 'secret123' });
+    req.flush(null);
+
+    httpMock.expectOne('/api/associates/me/transaction-password').flush({ isSet: true });
+
+    expect(fixture.componentInstance.transactionPasswordSaveSuccess).toBeTrue();
+  });
+
+  it('uploads a selected photo and reloads the avatar as a blob', () => {
+    init();
+    const file = new File(['dummy'], 'photo.png', { type: 'image/png' });
+    fixture.componentInstance.onPhotoSelected(file);
+
+    const uploadReq = httpMock.expectOne('/api/associates/me/photo');
+    expect(uploadReq.request.method).toBe('POST');
+    uploadReq.flush(null);
+
+    const reloadReq = httpMock.expectOne('/api/associates/me/photo');
+    expect(reloadReq.request.method).toBe('GET');
+    reloadReq.flush(new Blob(['fake image bytes'], { type: 'image/png' }));
+
+    expect(fixture.componentInstance.photoObjectUrl).toBeTruthy();
+  });
+
+  it('removes the photo and reverts to the initials fallback', () => {
+    init();
+    fixture.componentInstance.photoObjectUrl = 'blob:existing';
+    fixture.componentInstance.onRemovePhoto();
+
+    const req = httpMock.expectOne('/api/associates/me/photo');
+    expect(req.request.method).toBe('DELETE');
+    req.flush(null);
+
+    expect(fixture.componentInstance.photoObjectUrl).toBeNull();
   });
 
   it('renders the Welcome Letter tab with static notes and the associate\'s own dynamic fields', () => {
@@ -275,11 +417,7 @@ describe('MyAccountComponent', () => {
     fixture = TestBed.createComponent(MyAccountComponent);
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
-    httpMock.expectOne('/api/associates/me/profile').flush({ ...profileResponse, address: '42 Wallaby Way' });
-    httpMock.expectOne('/api/associates/me/kyc').flush(kycResponse);
-    httpMock.expectOne('/api/associates/me/rank-progress').flush(rankProgress);
-    httpMock.expectOne('/api/associates/me/id-card').flush(idCard);
-    httpMock.expectOne('/api/company/profile/letterhead').flush(companyLetterhead);
+    flushInitRequests({ ...profileResponse, address: '42 Wallaby Way' });
     fixture.detectChanges();
     switchTab('welcomeLetter');
 
@@ -400,6 +538,9 @@ describe('MyAccountComponent', () => {
     httpMock.expectOne('/api/associates/me/rank-progress').flush(rankProgress);
     httpMock.expectOne('/api/associates/me/id-card').flush(idCard);
     httpMock.expectOne('/api/company/profile/letterhead').flush(companyLetterhead);
+    httpMock.expectOne('/api/associates/me/nominee').flush(nomineeResponse);
+    httpMock.expectOne('/api/associates/me/transaction-password').flush(transactionPasswordNotSet);
+    httpMock.expectOne('/api/associates/me/photo').flush(new Blob(['no photo']), { status: 404, statusText: 'Not Found' });
     fixture.detectChanges();
     switchTab('kyc');
 

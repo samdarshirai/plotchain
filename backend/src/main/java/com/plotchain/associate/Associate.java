@@ -3,6 +3,7 @@ package com.plotchain.associate;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -46,6 +47,19 @@ public class Associate {
     private AssociateRole role;
     @Column(name = "must_change_password", nullable = false)
     private boolean mustChangePassword;
+    @Column(name = "father_husband_name")
+    private String fatherHusbandName;
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+    private String gender;
+    @Column(name = "marital_status")
+    private String maritalStatus;
+    private String state;
+    private String district;
+    @Column(name = "postal_code")
+    private String postalCode;
+    @Column(name = "transaction_password_hash")
+    private String transactionPasswordHash;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -87,4 +101,20 @@ public class Associate {
     public void setRole(AssociateRole role) { this.role = role; }
     public boolean isMustChangePassword() { return mustChangePassword; }
     public void setMustChangePassword(boolean mustChangePassword) { this.mustChangePassword = mustChangePassword; }
+    public String getFatherHusbandName() { return fatherHusbandName; }
+    public void setFatherHusbandName(String fatherHusbandName) { this.fatherHusbandName = fatherHusbandName; }
+    public LocalDate getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+    public String getMaritalStatus() { return maritalStatus; }
+    public void setMaritalStatus(String maritalStatus) { this.maritalStatus = maritalStatus; }
+    public String getState() { return state; }
+    public void setState(String state) { this.state = state; }
+    public String getDistrict() { return district; }
+    public void setDistrict(String district) { this.district = district; }
+    public String getPostalCode() { return postalCode; }
+    public void setPostalCode(String postalCode) { this.postalCode = postalCode; }
+    public String getTransactionPasswordHash() { return transactionPasswordHash; }
+    public void setTransactionPasswordHash(String transactionPasswordHash) { this.transactionPasswordHash = transactionPasswordHash; }
 }

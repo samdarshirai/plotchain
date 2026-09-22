@@ -52,6 +52,11 @@ class AssociateProfileControllerTest {
         return jwtService.generateToken(associate);
     }
 
+    private static UpdateAssociateProfileRequest requestWith(String name, String phone, String email, String address) {
+        return new UpdateAssociateProfileRequest(
+            name, phone, email, address, null, null, null, null, null, null, null, null);
+    }
+
     @Test
     void getReturnsTheCallersOwnProfile() throws Exception {
         Associate self = seeded(UUID.randomUUID());
@@ -83,7 +88,7 @@ class AssociateProfileControllerTest {
                 .header("Authorization", "Bearer " + token)
                 .contentType("application/json")
                 .content(new ObjectMapper().writeValueAsString(
-                    new UpdateAssociateProfileRequest("Jane A. Doe", "9990002222", "jane.a.doe@example.com", "42 Wallaby Way"))))
+                    requestWith("Jane A. Doe", "9990002222", "jane.a.doe@example.com", "42 Wallaby Way"))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.name").value("Jane A. Doe"))
             .andExpect(jsonPath("$.phone").value("9990002222"))
@@ -100,7 +105,7 @@ class AssociateProfileControllerTest {
                 .header("Authorization", "Bearer " + token)
                 .contentType("application/json")
                 .content(new ObjectMapper().writeValueAsString(
-                    new UpdateAssociateProfileRequest("  ", "9990002222", "jane@example.com", null))))
+                    requestWith("  ", "9990002222", "jane@example.com", null))))
             .andExpect(status().isBadRequest());
     }
 
@@ -114,7 +119,7 @@ class AssociateProfileControllerTest {
                 .header("Authorization", "Bearer " + token)
                 .contentType("application/json")
                 .content(new ObjectMapper().writeValueAsString(
-                    new UpdateAssociateProfileRequest("Jane Doe", "9990001111", "taken@example.com", null))))
+                    requestWith("Jane Doe", "9990001111", "taken@example.com", null))))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.error").isNotEmpty());
     }
@@ -124,7 +129,7 @@ class AssociateProfileControllerTest {
         mockMvc.perform(put("/api/associates/me/profile")
                 .contentType("application/json")
                 .content(new ObjectMapper().writeValueAsString(
-                    new UpdateAssociateProfileRequest("Jane Doe", "9990001111", "jane@example.com", null))))
+                    requestWith("Jane Doe", "9990001111", "jane@example.com", null))))
             .andExpect(status().isUnauthorized());
     }
 }

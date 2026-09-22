@@ -1,6 +1,7 @@
 // My Account (Account Consolidation.dc.html): merges the old /profile, /rewards, and
 // /digital-id-card screens. Reuses .seal-card (_setup.scss) for the one Ink card per screen
-// (Verification) and the %panel-header-eyebrow placeholders (_dashboard.scss) for every
+// (.profile-hero, profile screen redesign -- absorbs the old .verification-card's associate-ID
+// content) and the %panel-header-eyebrow placeholders (_dashboard.scss) for every
 // Oxblood-on-Parchment card header. The Rank card's double gold hairline border is a new
 // pattern the mockup introduces -- not a Seal Card (that's Ink-only, one per screen).
 
@@ -100,61 +101,281 @@
   cursor: pointer;
 }
 
-// -- Profile-only Rank + Verification row (not shown on the other 3 sections). Reuses
-// .rank-card/.verification-card's own grid-column: span 2 / span 1.
-.my-account__profile-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.25rem;
-  align-items: start;
+// -- Profile hero (profile screen redesign): the one Seal Card on this screen now, absorbing
+// the old .verification-card's associate-ID content AND the rank panel (merge request) into one
+// Ink card -- identity row, a divider, then the rank plaque + reward tiers. Reuses
+// .seal-card/.seal-card__* base rules (_setup.scss).
+.profile-hero {
   margin-bottom: 1.25rem;
 }
 
-// -- Rank card: double gold hairline border, Parchment surface (not a Seal Card -- see header note).
-.rank-card {
-  grid-column: span 2;
+.profile-hero__body {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.profile-hero__avatar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 5.25rem;
+  height: 5.25rem;
+  border-radius: 50%;
+  border: 1px solid var(--brand-primary);
+  background: var(--brand-primary-bright);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--brand-secondary);
+}
+
+.profile-hero__avatar--photo {
+  object-fit: cover;
+  background: transparent;
+}
+
+.profile-hero__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4375rem;
+  min-width: 0;
+  flex: 1 1 14rem;
+}
+
+.profile-hero__name {
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 2.2vw, 1.625rem);
+  color: var(--brand-primary-bright);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.profile-hero__meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.profile-hero__code {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  color: rgba(247, 242, 231, 0.65);
+}
+
+.profile-hero__copy-button {
+  border: 1px solid rgba(198, 162, 39, 0.5);
+  background: transparent;
+  color: var(--brand-primary-bright);
+  font-size: 0.65625rem;
+  font-weight: 500;
+  padding: 0.1875rem 0.5rem;
+  cursor: pointer;
+}
+
+.profile-hero__phone {
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  font-size: 0.8125rem;
+  color: var(--surface-page);
+  font-variant-numeric: tabular-nums;
+
+  .material-symbols-outlined {
+    font-size: 1rem;
+    color: var(--brand-primary);
+  }
+}
+
+// -- Second meta row (merge request: join date + KYC status folded into the hero, alongside
+// the identity row above -- previously shown only in the separate .my-account__header, which
+// still carries them on every tab; this is the Profile tab's own richer copy).
+.profile-hero__meta--secondary {
+  margin-top: 0.375rem;
+  font-size: 0.71875rem;
+  color: rgba(247, 242, 231, 0.65);
+}
+
+.profile-hero__kyc {
+  font-weight: 600;
+  color: rgba(247, 242, 231, 0.65);
+}
+
+.profile-hero__kyc--verified {
+  color: var(--status-success);
+}
+
+.profile-hero__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+// -- Divider between the identity row and the merged rank/reward section (merge request: the
+// Associate hero and Rank panel are now one Ink card, not two separate elements).
+.profile-hero__divider {
+  height: 1px;
+  margin: 0 1.25rem;
+  background: rgba(198, 162, 39, 0.22);
+}
+
+.profile-hero__rank-body {
+  padding-top: 1.125rem;
+}
+
+// -- Reward tiers (merge request: AssociateRewardTier[] was already fetched but never
+// rendered anywhere on this screen -- surfaced here as the hero's own "more info").
+.reward-tiers {
+  margin-top: 1rem;
+}
+
+.reward-tiers__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.625rem;
+}
+
+.reward-tiers__rule {
+  width: 0.875rem;
+  height: 1px;
+  background: var(--brand-primary);
+  flex-shrink: 0;
+}
+
+.reward-tiers__label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand-primary);
+}
+
+.reward-tiers__row {
+  display: grid;
+  grid-template-columns: 1.25rem 4.5rem 5.5rem 5.5rem 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid rgba(198, 162, 39, 0.15);
+  font-size: 0.75rem;
+  color: rgba(247, 242, 231, 0.55);
+
+  &:first-of-type {
+    border-top: none;
+  }
+}
+
+.reward-tiers__row--achieved {
+  color: var(--surface-page);
+}
+
+.reward-tiers__icon {
+  font-size: 1.0625rem;
+  color: rgba(247, 242, 231, 0.35);
+}
+
+.reward-tiers__row--achieved .reward-tiers__icon {
+  color: var(--status-success);
+}
+
+.reward-tiers__tier {
+  font-weight: 600;
+  color: var(--brand-primary-bright);
+}
+
+.reward-tiers__threshold,
+.reward-tiers__cash {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-hero__upload-button {
+  position: relative;
+  padding: 0.625rem 1.125rem;
+  background: var(--brand-secondary);
+  border: 1px solid var(--brand-secondary);
+  color: var(--brand-primary-bright);
+  font-size: 0.78125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.profile-hero__upload-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.profile-hero__remove-button {
+  padding: 0.625rem 1.125rem;
+  background: transparent;
+  border: 1px solid rgba(198, 162, 39, 0.4);
+  color: rgba(247, 242, 231, 0.65);
+  font-size: 0.78125rem;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--status-danger);
+    color: var(--status-danger);
+  }
+}
+
+// -- In-page tab bar (Profile / Login Password / Transaction Password), scoped to this route's
+// content only -- not a route change, unlike the 4 sidebar sub-items above it.
+.profile-subtabs {
+  display: flex;
+  gap: 0.125rem;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 1.25rem;
+}
+
+.profile-subtabs__tab {
+  padding: 0.6875rem 1.25rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 150ms;
+}
+
+.profile-subtabs__tab--active {
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom-color: var(--brand-primary);
+}
+
+// -- Rank plaque (merged into .profile-hero below): double gold hairline border, Parchment
+// surface nested inside the dark hero -- the mockup's own "plaque within a plaque" composition,
+// not a second Seal Card (that's Ink-only, one per screen).
+.profile-hero__rank-plaque {
   border: 1px solid var(--brand-primary);
   padding: 3px;
 }
 
-.rank-card__header,
 .rank-card__body {
   border: 1px solid var(--brand-primary);
   background: var(--surface-card);
-  padding: 1.375rem 1.5rem 0;
-}
-
-.rank-card__header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  border-bottom: none;
-  padding-bottom: 1rem;
-}
-
-.rank-card__label {
-  font-size: 0.59375rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--brand-secondary);
-}
-
-.rank-card__rule {
-  flex: 1;
-  height: 1px;
-  background: var(--brand-secondary);
-  opacity: 0.5;
-}
-
-.rank-card__body {
+  padding: 1.375rem 1.5rem 1.125rem;
   display: grid;
   grid-template-columns: 1.1fr 1fr 1fr;
   gap: 1.5rem;
   align-items: end;
-  border-top: none;
-  padding-top: 0;
-  padding-bottom: 1.125rem;
 }
 
 .rank-card__current {
@@ -224,79 +445,69 @@
   color: var(--text-muted);
 }
 
-// -- Verification card: the one Seal Card on this screen (base .seal-card/.seal-card__* rules
-// live in _setup.scss).
-.verification-card {
-  grid-column: span 1;
-}
-
-.verification-card__code {
-  font-family: var(--font-mono);
-  font-size: 1.625rem;
-  letter-spacing: 0.08em;
-  color: var(--brand-primary-bright);
-}
-
-.verification-card__hint {
-  margin: 0.625rem 0 0;
-  font-size: 0.71875rem;
-  line-height: 1.5;
-  color: rgba(247, 242, 231, 0.65);
-}
-
-.verification-card__copy-button {
-  margin-top: 1rem;
-  width: 100%;
-  border: 1px solid rgba(198, 162, 39, 0.5);
-  background: transparent;
-  color: var(--brand-primary-bright);
-  font-size: 0.71875rem;
-  font-weight: 500;
-  padding: 0.5rem 0;
-  cursor: pointer;
-}
-
-// -- Contact details card.
-.contact-card {
+// -- Profile tab's Personal Detail / Contact Detail / Nominee Detail / Authorisation sections
+// (profile screen redesign): one generic bordered-section card shape, reused across all three
+// (previously .contact-card, now split into three flanking-header sections in one card, since
+// the redesign folds them into a single Save Changes form rather than one card per section).
+.detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   border: 1px solid var(--border-subtle);
   background: var(--surface-card);
+  padding: 1.5rem 1.5rem 1.75rem;
 }
 
-.contact-card__header {
+// -- The mockup's "── SECTION LABEL ──" flanking-hairline small-caps header pattern (echoes the
+// wordmark's own flanking rule, per the design system's §3 Typography note) -- genuinely new,
+// not reused from elsewhere on this screen.
+.detail-card__flanking-header {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border-subtle);
+  margin: 1.25rem 0 1rem;
+
+  &:first-child {
+    margin-top: 0;
+  }
 }
 
-.contact-card__title {
-  font-size: 0.8125rem;
+.detail-card__flanking-rule {
+  width: 1rem;
+  height: 1px;
+  background: var(--brand-secondary);
+}
+
+.detail-card__flanking-rule--fill {
+  flex: 1;
+  width: auto;
+  background: var(--border-subtle);
+}
+
+.detail-card__flanking-label {
+  font-size: 0.625rem;
   font-weight: 600;
-  color: var(--text-primary);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brand-secondary);
 }
 
-.contact-card__missing-chip {
+.detail-card__missing-chip {
   font-size: 0.71875rem;
   color: var(--status-warning);
 }
 
-.contact-card__save {
-  margin-left: auto;
-}
-
-.contact-card__save-error {
-  margin: 0 1.5rem;
-}
-
-.contact-card__fields {
+.detail-card__fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem 1.25rem;
-  padding: 1.25rem 1.5rem;
 }
 
-.contact-card__field {
+.detail-card__fields--auth {
+  max-width: 22rem;
+}
+
+.detail-card__field {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
@@ -304,12 +515,43 @@
   font-weight: 500;
   color: var(--text-muted);
 
-  input {
+  input,
+  select {
     border: 1px solid var(--border-subtle);
     background: #fff;
     padding: 0.625rem 0.75rem;
     font-size: 0.84375rem;
     color: var(--text-primary);
+  }
+}
+
+.detail-card__hint {
+  margin: 0;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding-top: 1.5rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.profile-actions__cancel {
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.6875rem 1.5rem;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--status-danger);
+    color: var(--status-danger);
   }
 }
 
@@ -403,10 +645,18 @@
   color: var(--text-primary);
 }
 
+.letter-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
 .letter-card__logo {
   display: block;
-  max-height: 3rem;
-  margin-bottom: 1rem;
+  max-height: 8rem;
+  flex-shrink: 0;
 }
 
 .letter-card__fields {
@@ -425,22 +675,53 @@
   }
 }
 
+.letter-card__greeting {
+  margin: 0 0 0.75rem;
+  font-weight: 600;
+}
+
+.letter-card__intro {
+  margin: 0 0 1.25rem;
+  text-align: justify;
+}
+
+.letter-card__notes-title {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+
 .letter-card__notes {
   padding-left: 1.25rem;
-  margin: 0.5rem 0 1.25rem;
+  margin: 0.5rem 0 1.75rem;
 
   li {
-    margin-bottom: 0.375rem;
+    margin-bottom: 0.5rem;
   }
+}
+
+.letter-card__signoff {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+}
+
+.letter-card__regards {
+  margin: 0 0 2rem;
 }
 
 .letter-card__company {
   margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
   font-size: 0.78125rem;
   color: var(--text-muted);
 
   p {
     margin: 0.125rem 0;
+  }
+
+  p:first-child {
+    font-weight: 600;
+    color: var(--text-primary);
   }
 }
 
@@ -476,7 +757,7 @@
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  padding: 0.8125rem 1.25rem;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border-subtle);
 
   &:last-of-type {
@@ -486,21 +767,36 @@
 
 .kyc-card__row-label {
   font-size: 0.8125rem;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
 .kyc-card__row-meta {
   font-size: 0.71875rem;
   color: var(--text-muted);
+
+  &::before {
+    content: '\00b7';
+    margin-right: 0.625rem;
+  }
 }
 
 .kyc-card__upload {
   position: relative;
   margin-left: auto;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
   font-size: 0.71875rem;
-  font-weight: 500;
-  color: var(--brand-secondary);
+  font-weight: 600;
+  color: var(--text-primary);
   cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.85;
+  }
 }
 
 .kyc-card__upload-input {
@@ -539,22 +835,38 @@
 }
 
 @media (max-width: 960px) {
-  .my-account__profile-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .rank-card,
-  .verification-card {
-    grid-column: span 1;
-  }
-
   .rank-card__body {
     grid-template-columns: 1fr;
     gap: 0.75rem;
   }
 
-  .contact-card__fields,
+  .detail-card__fields,
   .bank-card__fields {
     grid-template-columns: 1fr;
   }
+
+  .profile-hero__body {
+    gap: 1rem;
+  }
+
+  .profile-hero__actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .reward-tiers__row {
+    grid-template-columns: 1.25rem 1fr;
+    grid-template-areas:
+      'icon tier'
+      '.    threshold'
+      '.    cash'
+      '.    perk';
+    row-gap: 0.125rem;
+  }
+
+  .reward-tiers__icon { grid-area: icon; }
+  .reward-tiers__tier { grid-area: tier; }
+  .reward-tiers__threshold { grid-area: threshold; }
+  .reward-tiers__cash { grid-area: cash; }
+  .reward-tiers__perk { grid-area: perk; }
 }
