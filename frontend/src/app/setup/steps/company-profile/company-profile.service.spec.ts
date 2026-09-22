@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { CompanyProfileService } from './company-profile.service';
-import { CompanyProfileRequest, CompanyProfileResponse } from '../../models/company-profile.model';
+import { CompanyLetterheadResponse, CompanyProfileRequest, CompanyProfileResponse } from '../../models/company-profile.model';
 
 describe('CompanyProfileService', () => {
   let service: CompanyProfileService;
@@ -61,5 +61,22 @@ describe('CompanyProfileService', () => {
     req.flush(response);
 
     expect(result).toEqual(response);
+  });
+
+  it('fetches the associate-reachable letterhead subset', () => {
+    const letterhead: CompanyLetterheadResponse = {
+      displayName: 'Plotchain Estates',
+      registeredAddress: '123 MG Road, Bengaluru',
+      contactPhone: '+919876543210',
+      contactEmail: 'jane@plotchain.test'
+    };
+    let result: CompanyLetterheadResponse | undefined;
+    service.getLetterhead().subscribe(r => (result = r));
+
+    const req = httpMock.expectOne('/api/company/profile/letterhead');
+    expect(req.request.method).toBe('GET');
+    req.flush(letterhead);
+
+    expect(result).toEqual(letterhead);
   });
 });

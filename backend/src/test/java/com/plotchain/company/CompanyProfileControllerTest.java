@@ -81,6 +81,35 @@ class CompanyProfileControllerTest {
     }
 
     @Test
+    void getLetterheadReturnsTheLimitedFieldsForAnAssociateToken() throws Exception {
+        CompanyProfile stored = new CompanyProfile();
+        stored.setDisplayName("Plotchain Estates");
+        stored.setLegalName("Plotchain Estates Private Limited");
+        stored.setRegisteredAddress("123 MG Road, Bengaluru");
+        stored.setContactPhone("+919876543210");
+        stored.setContactEmail("jane@plotchain.test");
+        when(companyProfileRepository.findAll()).thenReturn(List.of(stored));
+
+        mockMvc.perform(get("/api/company/profile/letterhead")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.displayName").value("Plotchain Estates"))
+            .andExpect(jsonPath("$.registeredAddress").value("123 MG Road, Bengaluru"))
+            .andExpect(jsonPath("$.contactPhone").value("+919876543210"))
+            .andExpect(jsonPath("$.contactEmail").value("jane@plotchain.test"))
+            .andExpect(jsonPath("$.legalName").doesNotExist());
+    }
+
+    @Test
+    void getLetterheadIsReachableForAnAdminTokenToo() throws Exception {
+        when(companyProfileRepository.findAll()).thenReturn(List.of(new CompanyProfile()));
+
+        mockMvc.perform(get("/api/company/profile/letterhead")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk());
+    }
+
+    @Test
     void putProfileSavesAndReturnsTheUpdatedProfile() throws Exception {
         CompanyProfile stored = new CompanyProfile();
         when(companyProfileRepository.findAll()).thenReturn(List.of(stored));

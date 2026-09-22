@@ -62,6 +62,25 @@ describe('AssociateSidebarComponent', () => {
     expect(component.expanded).toBe(false);
   });
 
+  it('renders the My Account sub-items (Welcome Letter, Profile, Bank Details, KYC Details) when expanded', () => {
+    const fixture = TestBed.createComponent(AssociateSidebarComponent);
+    fixture.detectChanges();
+
+    const sublinks = fixture.nativeElement.querySelectorAll('.associate-sidebar__sublink');
+    expect(sublinks.length).toBe(4);
+    const hrefs = Array.from(sublinks as NodeListOf<HTMLAnchorElement>).map(a => a.getAttribute('href'));
+    expect(hrefs).toEqual(['/profile/welcome-letter', '/profile', '/profile/bank-details', '/profile/kyc']);
+  });
+
+  it('hides the My Account sub-items when the sidebar is collapsed', () => {
+    const fixture = TestBed.createComponent(AssociateSidebarComponent);
+    fixture.detectChanges();
+    fixture.componentInstance.togglePin();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll('.associate-sidebar__sublink').length).toBe(0);
+  });
+
   it('emits logout when the Log Out control is clicked', () => {
     const fixture = TestBed.createComponent(AssociateSidebarComponent);
     fixture.detectChanges();

@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { TreeNode } from '../admin/models/tree-node.model';
 import { TreeSearchResult } from '../admin/models/tree-search.model';
+import { TreeNodeDetails } from '../admin/models/tree-node-details.model';
 
 const DEFAULT_DEPTH = 3;
 
@@ -26,5 +27,9 @@ export class MyTreeService {
 
   search(q: string): Observable<TreeSearchResult> {
     return this.http.get<TreeSearchResult>('/api/associates/me/tree/search', { params: new HttpParams().set('q', q) });
+  }
+
+  nodeDetails(associateId: string): Observable<TreeNodeDetails> {
+    return this.http.get<TreeNodeDetails>(`/api/associates/me/tree/${associateId}/details`);
   }
 }

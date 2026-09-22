@@ -665,6 +665,18 @@ class SecurityConfigTest {
             .andExpect(status().is(not(403)));
     }
 
+    // My Account "Bank Details" tab: PUT /api/associates/me/bank-details needs its own matcher
+    // ABOVE the blanket ADMIN write rules, same ordering trap as profileUpdateIsReachableByAnAssociateToken
+    // above. Only a 403 here would mean the matcher ordering regressed.
+    @Test
+    void bankDetailsUpdateIsReachableByAnAssociateToken() throws Exception {
+        mockMvc.perform(put("/api/associates/me/bank-details")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
+                .contentType("application/json")
+                .content("{\"bankName\":\"State Bank\",\"accountHolder\":\"Jane Doe\",\"accountNumber\":\"123456789012\",\"ifscCode\":\"SBIN0001234\",\"accountType\":\"SAVINGS\"}"))
+            .andExpect(status().is(not(403)));
+    }
+
     // Sales unit 7 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
     // "Associate own view -- GET /api/associates/me/sales, any authenticated associate"): needs
     // no explicit SecurityConfig matcher -- a bare GET never collides with the blanket
@@ -799,6 +811,17 @@ class SecurityConfigTest {
     @Test
     void adminTreeIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(get("/api/admin/tree/" + UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    // Two path segments past "/tree" ("/{associateId}/details"), which "/api/admin/tree/*"
+    // does NOT cover (AntPathMatcher's "/*" is exactly one segment) -- needs its own explicit
+    // "/api/admin/tree/*/details" matcher, or this falls through to anyRequest().authenticated()
+    // and any associate could read hover details for an arbitrary associate.
+    @Test
+    void adminTreeNodeDetailsIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/admin/tree/" + UUID.randomUUID() + "/details")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
             .andExpect(status().isForbidden());
     }

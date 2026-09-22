@@ -70,6 +70,21 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         """, nativeQuery = true)
     long countDownlineByPosition(@Param("associateId") UUID associateId, @Param("position") String position);
 
+    // Admin Tree Explorer hover details: "Active Left/Right Member" count -- same leg-seeded CTE
+    // as countDownlineByPosition above, combined with the status-filter-join shape
+    // countDownlineByKycStatus already uses (status passed as its enum .name() for the same
+    // nativeQuery=true enum-JDBC-mapping reason documented there).
+    @Query(value = """
+        WITH RECURSIVE downline(id) AS (
+            SELECT id FROM associate WHERE parent_id = :associateId AND position = :position
+            UNION ALL
+            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
+        )
+        SELECT count(*) FROM downline dl JOIN associate a2 ON a2.id = dl.id
+        WHERE a2.status = :status
+        """, nativeQuery = true)
+    long countDownlineByPositionAndStatus(@Param("associateId") UUID associateId, @Param("position") String position, @Param("status") String status);
+
     Optional<Associate> findByEmail(String email);
 
     boolean existsByEmail(String email);

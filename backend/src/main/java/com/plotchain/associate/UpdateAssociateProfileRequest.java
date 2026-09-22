@@ -12,5 +12,6 @@ import jakarta.validation.constraints.NotBlank;
 public record UpdateAssociateProfileRequest(
     @NotBlank String name,
     String phone,
-    @Email String email
+    @Email String email,
+    String address
 ) {}

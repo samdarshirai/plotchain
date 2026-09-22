@@ -9,6 +9,8 @@ import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTierRepository;
+import com.plotchain.sales.SaleRepository;
+import com.plotchain.sales.SaleStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -17,11 +19,14 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,6 +46,7 @@ class TreeExplorerControllerTest {
     @MockBean RankTierRepository rankTierRepository;
     @MockBean CycleRepository cycleRepository;
     @MockBean LegVolumeRepository legVolumeRepository;
+    @MockBean SaleRepository saleRepository;
 
     private static final UUID ROOT_ID = UUID.randomUUID();
 
@@ -163,5 +169,42 @@ class TreeExplorerControllerTest {
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ancestorPath[0].userId").value("VP00001"));
+    }
+
+    @Test
+    void nodeDetailsReturnsTheHoverDetailsForAnAdminToken() throws Exception {
+        Associate root = seedRoot();
+        when(associateRepository.findByIdAndRole(ROOT_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(root));
+        when(associateRepository.findByParentId(ROOT_ID)).thenReturn(List.of());
+        when(associateRepository.countDownlineByPosition(ROOT_ID, "L")).thenReturn(0L);
+        when(associateRepository.countDownlineByPosition(ROOT_ID, "R")).thenReturn(0L);
+        when(associateRepository.countDownlineByPositionAndStatus(eq(ROOT_ID), eq("L"), any())).thenReturn(0L);
+        when(associateRepository.countDownlineByPositionAndStatus(eq(ROOT_ID), eq("R"), any())).thenReturn(0L);
+        when(legVolumeRepository.totalBusiness(ROOT_ID))
+            .thenReturn(new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
+        when(saleRepository.sumAmountByAssociateIdAndStatus(ROOT_ID, SaleStatus.RECORDED)).thenReturn(BigDecimal.ZERO);
+
+        mockMvc.perform(get("/api/admin/tree/" + ROOT_ID + "/details")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.userId").value("VP00001"))
+            .andExpect(jsonPath("$.leftMemberId").doesNotExist());
+    }
+
+    @Test
+    void nodeDetailsReturns404ForAnUnknownAssociateId() throws Exception {
+        UUID unknownId = UUID.randomUUID();
+        when(associateRepository.findByIdAndRole(unknownId, AssociateRole.ASSOCIATE)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/admin/tree/" + unknownId + "/details")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void nodeDetailsIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/admin/tree/" + ROOT_ID + "/details")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
     }
 }

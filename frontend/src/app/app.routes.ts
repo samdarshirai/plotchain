@@ -45,8 +45,17 @@ export const routes: Routes = [
   { path: 'my-tree', component: MyTreeComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'plot-bookings', component: PlotBookingsComponent, canActivate: [authGuard, associateOnlyGuard] },
   // Merged into one "My Account" screen (Account Consolidation.dc.html) -- /rewards and
-  // /digital-id-card redirect here so old bookmarks/links keep working.
-  { path: 'profile', component: MyAccountComponent, canActivate: [authGuard, associateOnlyGuard] },
+  // /digital-id-card redirect here so old bookmarks/links keep working. Split into 4 sibling
+  // routes (Welcome Letter, Profile, Bank Details, KYC Details), all rendering the same
+  // MyAccountComponent with a different `data.tab`, so the sidebar's My Account sub-items are
+  // real, deep-linkable, back/forward-safe URLs (docs/superpowers/plans/
+  // can-you-break-down-vectorized-dongarra.md) -- same MyAccountComponent instance is reused
+  // across these sibling routes by Angular, so the component reads `data.tab` reactively
+  // (ActivatedRoute.data subscription), not just once on init.
+  { path: 'profile', component: MyAccountComponent, data: { tab: 'profile' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'profile/welcome-letter', component: MyAccountComponent, data: { tab: 'welcomeLetter' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'profile/bank-details', component: MyAccountComponent, data: { tab: 'bankDetails' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'profile/kyc', component: MyAccountComponent, data: { tab: 'kyc' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'rewards', redirectTo: 'profile' },
   { path: 'digital-id-card', redirectTo: 'profile' },
   { path: 'income-statement', component: IncomeStatementComponent, canActivate: [authGuard, associateOnlyGuard] },

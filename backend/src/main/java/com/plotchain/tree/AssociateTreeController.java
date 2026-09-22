@@ -51,4 +51,15 @@ public class AssociateTreeController {
     public TreeSearchResponse mySearch(@AuthenticationPrincipal UUID associateId, @RequestParam String q) {
         return treeExplorerService.searchWithinDownline(associateId, q);
     }
+
+    // Hover details for /my-tree (associate-scoped counterpart of the admin
+    // TreeExplorerController's "/{associateId}/details"). Two path segments past the base
+    // mapping, same as "/{targetId}" above plus a literal suffix -- Spring resolves this
+    // correctly alongside "/{targetId}" and "/search" without ambiguity. No SecurityConfig
+    // matcher needed: this route is self-scoped, reachable by any authenticated associate,
+    // same as every other route on this controller.
+    @GetMapping("/{targetId}/details")
+    public TreeNodeDetailsResponse myNodeDetails(@AuthenticationPrincipal UUID associateId, @PathVariable UUID targetId) {
+        return treeExplorerService.nodeDetailsWithinDownline(associateId, targetId);
+    }
 }

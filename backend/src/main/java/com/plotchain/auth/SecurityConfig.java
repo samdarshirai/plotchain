@@ -98,6 +98,13 @@ public class SecurityConfig {
                 // /api/associates/me/dashboard, GET /api/associates/me/sales, and GET
                 // /api/associates/me/kyc already do.
                 .requestMatchers(HttpMethod.PUT, "/api/associates/me/profile").authenticated()
+                // Self-service bank-details edit: same shape as the profile-edit matcher directly
+                // above (My Account "Bank Details" tab, docs/superpowers/plans/can-you-break-down-vectorized-dongarra.md).
+                // Must precede the blanket ADMIN write rules below (first-match-wins) or an
+                // associate could never save their own bank details. GET needs no matcher of its
+                // own -- falls through to anyRequest().authenticated(), same as GET
+                // /api/associates/me/profile.
+                .requestMatchers(HttpMethod.PUT, "/api/associates/me/bank-details").authenticated()
                 // Deny-by-default for writes: product policy is "ADMIN can write; associates
                 // are read-only except their own profile". Without this, any future
                 // POST/PUT/PATCH/DELETE endpoint would be reachable by every authenticated
@@ -312,6 +319,12 @@ public class SecurityConfig {
                 // are needed -- otherwise the bare GET falls through to
                 // anyRequest().authenticated() and any associate could pull the full downline.
                 .requestMatchers(HttpMethod.GET, "/api/admin/tree", "/api/admin/tree/*")
+                    .hasAuthority("ADMIN")
+                // "/{associateId}/details" (hover details) is TWO segments past "/tree", which
+                // "/api/admin/tree/*" above does NOT match (AntPathMatcher's "/*" is exactly one
+                // segment) -- without this, the route would fall through to
+                // anyRequest().authenticated() and be reachable by any associate, not just admins.
+                .requestMatchers(HttpMethod.GET, "/api/admin/tree/*/details")
                     .hasAuthority("ADMIN")
                 // "/api/admin/kyc" is an exact match in AntPathMatcher and does NOT cover
                 // "/api/admin/kyc/counts" as a prefix -- without the "/*" pattern that GET

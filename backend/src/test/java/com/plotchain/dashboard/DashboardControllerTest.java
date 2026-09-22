@@ -109,7 +109,8 @@ class DashboardControllerTest {
         when(saleRepository.sumAmountByAssociateIdAndStatus(any(), any())).thenReturn(BigDecimal.ZERO);
         when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
         when(associateRepository.countDownlineByPosition(any(), any())).thenReturn(0L);
-        when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(any())).thenReturn(List.of());
+        when(legVolumeRepository.totalBusiness(any()))
+            .thenReturn(new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
         when(ledgerEntryRepository.sumNetAmountByAssociateAndType(any(), any())).thenReturn(BigDecimal.ZERO);
 
         mockMvc.perform(get("/api/associates/me/dashboard")

@@ -158,24 +158,11 @@ public class DashboardService {
         Optional<Associate> sponsor = Optional.ofNullable(associate.getSponsorId())
             .flatMap(associateRepository::findById);
 
-        // Lifetime Total Left/Right Business: each closed-cycle row's leftLegVolume/rightLegVolume
-        // already has the PRIOR cycle's carriedForward baked in (CycleService#rollUpSubtree), and
-        // an unmatched carry keeps re-appearing in every subsequent row until it's finally matched
-        // down -- a naive SUM(leftLegVolume) across all rows counts that same still-unmatched
-        // volume once per cycle it survives, not once. Subtracting each row's own incoming carry
-        // (its predecessor's outgoing carriedForwardLeft/Right, 0 for the associate's first row)
-        // before summing leaves exactly the new subtree volume each cycle actually contributed.
-        List<LegVolume> legVolumeHistory = legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId);
-        BigDecimal totalLeftBusiness = BigDecimal.ZERO;
-        BigDecimal totalRightBusiness = BigDecimal.ZERO;
-        BigDecimal incomingCarryLeft = BigDecimal.ZERO;
-        BigDecimal incomingCarryRight = BigDecimal.ZERO;
-        for (LegVolume row : legVolumeHistory) {
-            totalLeftBusiness = totalLeftBusiness.add(row.getLeftLegVolume().subtract(incomingCarryLeft));
-            totalRightBusiness = totalRightBusiness.add(row.getRightLegVolume().subtract(incomingCarryRight));
-            incomingCarryLeft = row.getCarriedForwardLeft();
-            incomingCarryRight = row.getCarriedForwardRight();
-        }
+        // Lifetime Total Left/Right Business -- see LegVolumeRepository.totalBusiness() for why a
+        // naive SUM(leftLegVolume) across all rows would double-count a long-lived unmatched carry.
+        LegVolumeRepository.LegBusinessTotals legBusinessTotals = legVolumeRepository.totalBusiness(associateId);
+        BigDecimal totalLeftBusiness = legBusinessTotals.left();
+        BigDecimal totalRightBusiness = legBusinessTotals.right();
         BigDecimal totalSelfBusiness = saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED);
         BigDecimal newBookedAreaSqft = saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(
             associateId, cycle.getId(), SaleStatus.RECORDED);

@@ -40,16 +40,28 @@ import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap
       <div class="associate-sidebar__divider"></div>
 
       <div class="associate-sidebar__nav">
-        <a
-          *ngFor="let item of navItems"
-          class="associate-sidebar__link"
-          routerLinkActive="associate-sidebar__link--active"
-          [routerLink]="item.path"
-          [title]="item.labelKey | translate"
-        >
-          <span class="material-symbols-outlined associate-sidebar__link-icon" aria-hidden="true">{{ item.icon }}</span>
-          <span class="associate-sidebar__link-label" *ngIf="expanded">{{ item.labelKey | translate }}</span>
-        </a>
+        <ng-container *ngFor="let item of navItems">
+          <a
+            class="associate-sidebar__link"
+            routerLinkActive="associate-sidebar__link--active"
+            [routerLink]="item.path"
+            [title]="item.labelKey | translate"
+          >
+            <span class="material-symbols-outlined associate-sidebar__link-icon" aria-hidden="true">{{ item.icon }}</span>
+            <span class="associate-sidebar__link-label" *ngIf="expanded">{{ item.labelKey | translate }}</span>
+          </a>
+          <div class="associate-sidebar__subnav" *ngIf="item.children && expanded">
+            <a
+              *ngFor="let sub of item.children"
+              class="associate-sidebar__sublink"
+              routerLinkActive="associate-sidebar__sublink--active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              [routerLink]="sub.path"
+            >
+              <span class="associate-sidebar__sublink-label">{{ sub.labelKey | translate }}</span>
+            </a>
+          </div>
+        </ng-container>
       </div>
 
       <div class="associate-sidebar__spacer"></div>

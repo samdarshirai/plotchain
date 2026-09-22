@@ -4,6 +4,7 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
+import com.plotchain.associate.AssociateStatus;
 import com.plotchain.associate.KycStatus;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
@@ -12,6 +13,8 @@ import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
+import com.plotchain.sales.SaleRepository;
+import com.plotchain.sales.SaleStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,13 +39,14 @@ class TreeExplorerServiceTest {
     @Mock RankTierRepository rankTierRepository;
     @Mock CycleRepository cycleRepository;
     @Mock LegVolumeRepository legVolumeRepository;
+    @Mock SaleRepository saleRepository;
 
     TreeExplorerService service;
     private final RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(5000));
 
     @BeforeEach
     void setUp() {
-        service = new TreeExplorerService(associateRepository, rankTierRepository, cycleRepository, legVolumeRepository);
+        service = new TreeExplorerService(associateRepository, rankTierRepository, cycleRepository, legVolumeRepository, saleRepository);
     }
 
     private Associate newAssociate(UUID id, String userId, Instant joinedAt) {
@@ -261,5 +265,49 @@ class TreeExplorerServiceTest {
         when(associateRepository.findByUserId("nobody")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.search("nobody")).isInstanceOf(AssociateNotFoundException.class);
+    }
+
+    @Test
+    void nodeDetailsAggregatesLegCountsBusinessAndDirectChildIdsWithOneLegVacant() {
+        UUID id = UUID.randomUUID();
+        UUID leftChildId = UUID.randomUUID();
+        Instant joinedAt = Instant.parse("2025-09-05T05:25:42Z");
+        Associate associate = newAssociate(id, "VP00001", joinedAt);
+        Associate leftChild = newAssociate(leftChildId, "VP00002", Instant.now());
+        leftChild.setPosition("L");
+        // No right child -- rightMemberId must come back null, not "" or throw.
+
+        when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
+        when(associateRepository.findByParentId(id)).thenReturn(List.of(leftChild));
+        when(associateRepository.countDownlineByPosition(id, "L")).thenReturn(4L);
+        when(associateRepository.countDownlineByPosition(id, "R")).thenReturn(0L);
+        when(associateRepository.countDownlineByPositionAndStatus(id, "L", AssociateStatus.ACTIVE.name())).thenReturn(3L);
+        when(associateRepository.countDownlineByPositionAndStatus(id, "R", AssociateStatus.ACTIVE.name())).thenReturn(0L);
+        when(legVolumeRepository.totalBusiness(id))
+            .thenReturn(new LegVolumeRepository.LegBusinessTotals(new BigDecimal("50000"), new BigDecimal("0")));
+        when(saleRepository.sumAmountByAssociateIdAndStatus(id, SaleStatus.RECORDED)).thenReturn(new BigDecimal("12000"));
+
+        TreeNodeDetailsResponse response = service.nodeDetails(id);
+
+        assertThat(response.name()).isEqualTo("Name VP00001");
+        assertThat(response.userId()).isEqualTo("VP00001");
+        assertThat(response.joinedAt()).isEqualTo(joinedAt);
+        assertThat(response.leftMemberId()).isEqualTo("VP00002");
+        assertThat(response.rightMemberId()).isNull();
+        assertThat(response.totalLeftMembers()).isEqualTo(4L);
+        assertThat(response.totalRightMembers()).isEqualTo(0L);
+        assertThat(response.activeLeftMembers()).isEqualTo(3L);
+        assertThat(response.activeRightMembers()).isEqualTo(0L);
+        assertThat(response.totalLeftBusiness()).isEqualByComparingTo("50000");
+        assertThat(response.totalRightBusiness()).isEqualByComparingTo("0");
+        assertThat(response.totalSelfBusiness()).isEqualByComparingTo("12000");
+    }
+
+    @Test
+    void nodeDetailsThrowsWhenAssociateNotFound() {
+        UUID id = UUID.randomUUID();
+        when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.nodeDetails(id)).isInstanceOf(AssociateNotFoundException.class);
     }
 }

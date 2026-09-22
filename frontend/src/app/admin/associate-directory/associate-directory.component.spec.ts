@@ -104,7 +104,7 @@ describe('AssociateDirectoryComponent', () => {
   });
 
   it('shows an action error when suspend fails, without silently doing nothing', () => {
-    fixture.componentInstance.selected = { id: 'a1', userId: 'VP00001', status: 'ACTIVE' } as any;
+    fixture.componentInstance.selected = { id: 'a1', userId: 'VP00001', status: 'ACTIVE', kycStatus: 'VERIFIED' } as any;
 
     fixture.componentInstance.suspendSelected();
 

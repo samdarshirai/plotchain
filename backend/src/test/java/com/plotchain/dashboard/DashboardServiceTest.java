@@ -87,7 +87,13 @@ class DashboardServiceTest {
         lenient().when(associateRepository.countDownline(associateId)).thenReturn(0L);
         lenient().when(associateRepository.countByParentId(associateId)).thenReturn(0L);
         lenient().when(associateRepository.countDownlineByPosition(any(), any())).thenReturn(0L);
-        lenient().when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId)).thenReturn(List.of());
+        // legVolumeRepository is a @Mock, so its totalBusiness() default method is itself
+        // mocked (returns null unless stubbed) rather than falling through to the real
+        // carry-forward computation against a stubbed findByAssociateIdOrderByCyclePeriodStartAsc
+        // -- stub the default method's result directly. The carry-forward math itself is
+        // covered by LegVolumeRepositoryTest, not here.
+        lenient().when(legVolumeRepository.totalBusiness(associateId))
+            .thenReturn(new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
         lenient().when(saleRepository.sumAmountByAssociateIdAndStatus(any(), any())).thenReturn(BigDecimal.ZERO);
         lenient().when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
         lenient().when(ledgerEntryRepository.sumNetAmountByAssociateAndType(any(), any())).thenReturn(BigDecimal.ZERO);
@@ -162,9 +168,11 @@ class DashboardServiceTest {
         stubUnconditionalCalls(associateId);
         // Single closed-cycle row -> it's its own first row, so incoming carry is 0 and lifetime
         // total equals the row's own leftLegVolume/rightLegVolume (300000/200000), not reduced by
-        // its own outgoing carriedForwardLeft (100000). Placed after stubUnconditionalCalls,
-        // which sets the same mock+args to an empty-list default that would otherwise win.
-        when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId)).thenReturn(List.of(legVolume));
+        // its own outgoing carriedForwardLeft (100000) -- see LegVolumeRepositoryTest for the
+        // carry-forward math itself. Placed after stubUnconditionalCalls, which sets the same
+        // mock+args to a zeroed default that would otherwise win.
+        when(legVolumeRepository.totalBusiness(associateId))
+            .thenReturn(new LegVolumeRepository.LegBusinessTotals(new BigDecimal("300000"), new BigDecimal("200000")));
         when(cycleRepository.findAllByOrderByPeriodStartDesc(any(PageRequest.class))).thenReturn(new PageImpl<>(List.of(cycle, closedCycle)));
         when(cycleRepository.countByPeriodStartLessThanEqual(cycle.getPeriodStart())).thenReturn(9L);
         when(associateRepository.countDownline(associateId)).thenReturn(12L);
@@ -222,70 +230,10 @@ class DashboardServiceTest {
         assertThat(response.legVolumeSummary().newBookedAreaSqft()).isEqualByComparingTo("1200");
     }
 
-    @Test
-    void lifetimeBusinessTotalsSubtractEachRowsIncomingCarryToAvoidDoubleCounting() {
-        UUID associateId = UUID.randomUUID();
-        UUID cycleId = UUID.randomUUID();
-        UUID currentRankId = UUID.randomUUID();
-
-        Associate associate = new Associate();
-        associate.setId(associateId);
-        associate.setRankId(currentRankId);
-        associate.setKycStatus(KycStatus.VERIFIED);
-
-        Cycle cycle = new Cycle();
-        cycle.setId(cycleId);
-        cycle.setStatus(CycleStatus.OPEN);
-        cycle.setPeriodStart(LocalDate.now().minusDays(5));
-        cycle.setPeriodEnd(LocalDate.now().plusDays(10));
-
-        RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, BigDecimal.valueOf(5000));
-
-        // olderRow has no predecessor (incoming carry 0), so its own leftLegVolume (100000) IS
-        // that cycle's new left volume, and left > right carries 40000 forward. newerRow's
-        // leftLegVolume (300000) = its own new left volume (260000) PLUS that same 40000 carried
-        // in -- a naive SUM(leftLegVolume) would count the 40000 twice (100000 + 300000 =
-        // 400000); the correct lifetime total subtracts each row's incoming carry first
-        // (100000 + (300000 - 40000) = 360000). Right never carries in this fixture, so
-        // totalRightBusiness is unaffected by the bug (60000 + 200000 = 260000 either way).
-        UUID olderCycleId = UUID.randomUUID();
-        UUID newerCycleId = UUID.randomUUID();
-        Cycle newerClosedCycle = new Cycle();
-        newerClosedCycle.setId(newerCycleId);
-        newerClosedCycle.setStatus(CycleStatus.CLOSED);
-        newerClosedCycle.setPeriodStart(LocalDate.now().minusDays(20));
-        newerClosedCycle.setPeriodEnd(LocalDate.now().minusDays(6));
-
-        LegVolume olderRow = new LegVolume(UUID.randomUUID(), associateId, olderCycleId,
-            new BigDecimal("100000"), new BigDecimal("60000"), new BigDecimal("40000"), BigDecimal.ZERO);
-        LegVolume newerRow = new LegVolume(UUID.randomUUID(), associateId, newerCycleId,
-            new BigDecimal("300000"), new BigDecimal("200000"), new BigDecimal("100000"), BigDecimal.ZERO);
-
-        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(cycle));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(newerClosedCycle));
-        when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, newerCycleId)).thenReturn(Optional.of(newerRow));
-
-        when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(any(), any(), any())).thenReturn(BigDecimal.ZERO);
-        when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(any(), any())).thenReturn(BigDecimal.ZERO);
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
-            .thenReturn(Optional.of(compensationPlanVersion(new BigDecimal("7.00"))));
-        when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
-        when(saleRepository.countByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(0L);
-        when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
-        when(cycleRepository.countByPeriodStartLessThanEqual(cycle.getPeriodStart())).thenReturn(1L);
-
-        stubUnconditionalCalls(associateId);
-        // Placed after stubUnconditionalCalls, which sets the same mock+args to an empty-list
-        // default that would otherwise win (Mockito: last matching stub wins).
-        when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId)).thenReturn(List.of(olderRow, newerRow));
-
-        DashboardResponse response = dashboardService.getDashboard(associateId);
-
-        assertThat(response.legVolumeSummary().totalLeftBusiness()).isEqualByComparingTo("360000");
-        assertThat(response.legVolumeSummary().totalRightBusiness()).isEqualByComparingTo("260000");
-    }
+    // The carry-forward-adjusted lifetime-business math itself now lives in, and is tested by,
+    // LegVolumeRepositoryTest.totalBusinessSubtractsEachRowsIncomingCarryToAvoidDoubleCounting()
+    // -- this class only needs to confirm the value is wired through (see
+    // aggregatesTheDashboardForAnAssociate()'s totalLeftBusiness()/totalRightBusiness() assertions).
 
     @Test
     void royaltyBonusPctIsZeroWhenNoCycleHasEverClosed() {

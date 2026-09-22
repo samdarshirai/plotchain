@@ -114,4 +114,43 @@ class LegVolumeRepositoryTest {
 
         assertThat(rows).isEmpty();
     }
+
+    // Moved here from DashboardServiceTest: totalBusiness() is now the single home for this
+    // carry-forward math (both DashboardService and the admin Tree Explorer's hover details
+    // call it), so it's tested once here against a real repository instead of a mock.
+    @Test
+    void totalBusinessSubtractsEachRowsIncomingCarryToAvoidDoubleCounting() {
+        Associate associate = seedAssociate();
+        Cycle older = seedCycle(LocalDate.of(2026, 7, 1));
+        Cycle newer = seedCycle(LocalDate.of(2026, 8, 1));
+
+        // olderRow has no predecessor (incoming carry 0), so its own leftLegVolume (100000) IS
+        // that cycle's new left volume, and left > right carries 40000 forward. newerRow's
+        // leftLegVolume (300000) = its own new left volume (260000) PLUS that same 40000 carried
+        // in -- a naive SUM(leftLegVolume) would double-count the 40000 (100000 + 300000 =
+        // 400000); the correct lifetime total subtracts each row's incoming carry first
+        // (100000 + (300000 - 40000) = 360000). Right never carries in this fixture, so
+        // totalRightBusiness is unaffected by the bug (60000 + 200000 = 260000 either way).
+        legVolumeRepository.saveAndFlush(new LegVolume(
+            UUID.randomUUID(), associate.getId(), older.getId(),
+            new BigDecimal("100000"), new BigDecimal("60000"), new BigDecimal("40000"), BigDecimal.ZERO));
+        legVolumeRepository.saveAndFlush(new LegVolume(
+            UUID.randomUUID(), associate.getId(), newer.getId(),
+            new BigDecimal("300000"), new BigDecimal("200000"), new BigDecimal("100000"), BigDecimal.ZERO));
+
+        LegVolumeRepository.LegBusinessTotals totals = legVolumeRepository.totalBusiness(associate.getId());
+
+        assertThat(totals.left()).isEqualByComparingTo("360000");
+        assertThat(totals.right()).isEqualByComparingTo("260000");
+    }
+
+    @Test
+    void totalBusinessIsZeroWhenTheAssociateHasNoLegVolumeRowsYet() {
+        Associate associate = seedAssociate();
+
+        LegVolumeRepository.LegBusinessTotals totals = legVolumeRepository.totalBusiness(associate.getId());
+
+        assertThat(totals.left()).isEqualByComparingTo("0");
+        assertThat(totals.right()).isEqualByComparingTo("0");
+    }
 }

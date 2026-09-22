@@ -6,7 +6,8 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
 import { NewAssociatePanelComponent, PresetParent } from '../new-associate-panel/new-associate-panel.component';
 import { TreeExplorerService } from './tree-explorer.service';
 import { TreeNode } from '../models/tree-node.model';
-import { LAYOUT, LayoutEntry, LayoutLink, TreeLayout, VacantEntry, buildTreeLayout, linkPathD, px, py } from './tree-explorer-layout';
+import { TreeNodeDetails } from '../models/tree-node-details.model';
+import { FilledEntry, LAYOUT, LayoutEntry, LayoutLink, TreeLayout, VacantEntry, buildTreeLayout, linkPathD, px, py } from './tree-explorer-layout';
 import { PanZoomState, computeFitTransform, panBy, zoomAround } from './tree-explorer-pan-zoom';
 
 const DEFAULT_DEPTH = 3;
@@ -16,6 +17,9 @@ const DEFAULT_DEPTH = 3;
 const FULL_TREE_DEPTH = 5;
 const HINT_TIMEOUT_MS = 3500;
 const FIT_ANIMATE_MS = 460;
+// Debounce before firing the hover-details request, so a mouse merely passing over several
+// cards on its way elsewhere doesn't fire one request per card.
+const HOVER_DEBOUNCE_MS = 150;
 
 @Component({
   selector: 'app-tree-explorer',
@@ -96,6 +100,8 @@ const FIT_ANIMATE_MS = 460;
                 [class.tree-explorer__node-card--highlight]="entry.id === highlightedNodeId"
                 [style.left.px]="cardLeft(entry)"
                 [style.top.px]="cardTop(entry)"
+                (mouseenter)="onCardHoverStart(entry, $event)"
+                (mouseleave)="onCardHoverEnd()"
               >
                 <span class="tree-explorer__result-tag" *ngIf="entry.id === highlightedNodeId">
                   {{ 'admin.treeExplorer.searchResultLabel' | translate }}
@@ -156,6 +162,32 @@ const FIT_ANIMATE_MS = 460;
           </div>
         </div>
 
+        <!-- Deliberately a sibling of #canvasInner, not nested inside it: canvasInner carries
+             the JS-driven pan/zoom CSS transform, which would give a position:fixed descendant
+             a new containing block and trap it (still clipped by canvas-wrap's overflow:hidden)
+             instead of escaping to the viewport. -->
+        <div
+          class="tree-explorer__hover-card"
+          *ngIf="hoveredNodeId"
+          [style.left.px]="hoverPos?.left"
+          [style.top.px]="hoverPos?.top"
+        >
+          <ng-container *ngIf="hoveredDetailsLoading">{{ 'admin.treeExplorer.hoverLoading' | translate }}</ng-container>
+          <ng-container *ngIf="hoveredDetails as d">
+            <div class="tree-explorer__hover-title">{{ d.name }} ({{ d.userId }})</div>
+            <div>{{ 'admin.treeExplorer.hoverJoinedLabel' | translate }}: {{ d.joinedAt | date }}</div>
+            <div>{{ 'admin.treeExplorer.hoverLeftIdLabel' | translate }}: {{ d.leftMemberId ?? '—' }}</div>
+            <div>{{ 'admin.treeExplorer.hoverRightIdLabel' | translate }}: {{ d.rightMemberId ?? '—' }}</div>
+            <div>{{ 'admin.treeExplorer.hoverTotalLeftMembersLabel' | translate }}: {{ d.totalLeftMembers }}</div>
+            <div>{{ 'admin.treeExplorer.hoverTotalRightMembersLabel' | translate }}: {{ d.totalRightMembers }}</div>
+            <div>{{ 'admin.treeExplorer.hoverActiveLeftMembersLabel' | translate }}: {{ d.activeLeftMembers }}</div>
+            <div>{{ 'admin.treeExplorer.hoverActiveRightMembersLabel' | translate }}: {{ d.activeRightMembers }}</div>
+            <div>{{ 'admin.treeExplorer.hoverTotalLeftBusinessLabel' | translate }}: ₹{{ d.totalLeftBusiness | number }}</div>
+            <div>{{ 'admin.treeExplorer.hoverTotalRightBusinessLabel' | translate }}: ₹{{ d.totalRightBusiness | number }}</div>
+            <div>{{ 'admin.treeExplorer.hoverTotalSelfBusinessLabel' | translate }}: ₹{{ d.totalSelfBusiness | number }}</div>
+          </ng-container>
+        </div>
+
         <div class="tree-explorer__hint" *ngIf="!hintDismissed">{{ 'admin.treeExplorer.panZoomHint' | translate }}</div>
 
         <div class="tree-explorer__zoom-controls">
@@ -203,6 +235,12 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
   hintDismissed = false;
   panelOpen = false;
   presetParent: PresetParent | null = null;
+
+  hoveredNodeId: string | null = null;
+  hoveredDetails: TreeNodeDetails | null = null;
+  hoveredDetailsLoading = false;
+  hoverPos: { left: number; top: number } | null = null;
+  private hoverTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Re-runs whichever load produced the currently visible tree (default company-tree load or a
   // search-derived subtree), so a fresh associate created from a vacant slot reliably replaces
@@ -269,7 +307,46 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     window.removeEventListener('resize', this.resizeListener);
     if (this.hintTimeoutId !== null) clearTimeout(this.hintTimeoutId);
+    if (this.hoverTimer !== null) clearTimeout(this.hoverTimer);
     this.detachCanvasListeners();
+  }
+
+  onCardHoverStart(entry: FilledEntry, event: MouseEvent): void {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.hoverPos = { left: rect.right + 12, top: rect.top };
+    this.hoveredNodeId = entry.id;
+    this.hoveredDetails = null;
+    if (this.hoverTimer !== null) clearTimeout(this.hoverTimer);
+    this.hoverTimer = setTimeout(() => this.loadNodeDetails(entry.id), HOVER_DEBOUNCE_MS);
+  }
+
+  onCardHoverEnd(): void {
+    if (this.hoverTimer !== null) clearTimeout(this.hoverTimer);
+    this.hoverTimer = null;
+    this.hoveredNodeId = null;
+    this.hoveredDetails = null;
+    this.hoveredDetailsLoading = false;
+    this.hoverPos = null;
+  }
+
+  private loadNodeDetails(associateId: string): void {
+    this.hoveredDetailsLoading = true;
+    this.treeExplorerService.nodeDetails(associateId).subscribe({
+      next: details => {
+        // Guards against a stale response landing after the mouse has already moved to (or
+        // off) a different card -- no real request cancellation, matching this component's
+        // existing subscribe-without-teardown style everywhere else.
+        if (this.hoveredNodeId === associateId) {
+          this.hoveredDetails = details;
+          this.hoveredDetailsLoading = false;
+        }
+      },
+      error: () => {
+        if (this.hoveredNodeId === associateId) {
+          this.hoveredDetailsLoading = false;
+        }
+      }
+    });
   }
 
   onSearch(): void {

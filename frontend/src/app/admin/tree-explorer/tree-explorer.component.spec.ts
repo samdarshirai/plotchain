@@ -161,6 +161,71 @@ describe('TreeExplorerComponent', () => {
     expect(['L', 'R']).toContain(fixture.componentInstance.presetParent!.leg);
   });
 
+  it('hovering a card past the debounce fires the details request and renders the tooltip', () => {
+    jasmine.clock().install();
+    try {
+      initWithCompanyTree();
+      fixture.componentInstance.root = nestedTree;
+      fixture.detectChanges();
+
+      const card: HTMLElement = fixture.nativeElement.querySelector('.tree-explorer__node-card');
+      card.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      jasmine.clock().tick(150);
+
+      const req = httpMock.expectOne('/api/admin/tree/a1/details');
+      req.flush({
+        name: 'Root', userId: 'VP00001', joinedAt: '2025-01-01T00:00:00Z',
+        leftMemberId: 'VP00002', rightMemberId: null,
+        totalLeftMembers: 4, totalRightMembers: 0, activeLeftMembers: 3, activeRightMembers: 0,
+        totalLeftBusiness: 50000, totalRightBusiness: 0, totalSelfBusiness: 12000
+      });
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.hoveredDetails?.userId).toBe('VP00001');
+      expect(fixture.nativeElement.querySelector('.tree-explorer__hover-card')).toBeTruthy();
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('leaving a card before the debounce elapses cancels the pending details request', () => {
+    jasmine.clock().install();
+    try {
+      initWithCompanyTree();
+      fixture.componentInstance.root = nestedTree;
+      fixture.detectChanges();
+
+      const card: HTMLElement = fixture.nativeElement.querySelector('.tree-explorer__node-card');
+      card.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      card.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+      jasmine.clock().tick(150);
+
+      expect(fixture.componentInstance.hoveredNodeId).toBeNull();
+      // No request should have fired at all -- afterEach's httpMock.verify() would also catch
+      // an unexpected outstanding request here, but this is explicit about what's being proven.
+      httpMock.expectNone('/api/admin/tree/a1/details');
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('hovering a vacant card does not trigger a details request', () => {
+    jasmine.clock().install();
+    try {
+      initWithCompanyTree();
+      fixture.componentInstance.root = nestedTree;
+      fixture.detectChanges();
+
+      const vacantCard: HTMLElement = fixture.nativeElement.querySelector('.tree-explorer__vacant-card');
+      vacantCard.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      jasmine.clock().tick(150);
+
+      expect(fixture.componentInstance.hoveredNodeId).toBeNull();
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
   it('reloads the current root in the background when the panel emits created, without closing it early', () => {
     initWithCompanyTree();
 

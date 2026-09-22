@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { CompanyProfileRequest, CompanyProfileResponse } from '../../models/company-profile.model';
+import { CompanyLetterheadResponse, CompanyProfileRequest, CompanyProfileResponse } from '../../models/company-profile.model';
 
 @Injectable({ providedIn: 'root' })
 export class CompanyProfileService {
@@ -9,6 +9,10 @@ export class CompanyProfileService {
 
   getProfile(): Observable<CompanyProfileResponse> {
     return this.http.get<CompanyProfileResponse>('/api/company/profile');
+  }
+
+  getLetterhead(): Observable<CompanyLetterheadResponse> {
+    return this.http.get<CompanyLetterheadResponse>('/api/company/profile/letterhead');
   }
 
   updateProfile(request: CompanyProfileRequest): Observable<CompanyProfileResponse> {

@@ -25,6 +25,13 @@ public class CompanyProfileController {
         return companyProfileService.getProfile();
     }
 
+    // No SecurityConfig matcher needed: GET falls through to anyRequest().authenticated(),
+    // reachable by any associate token, unlike GET /api/company/profile above.
+    @GetMapping("/profile/letterhead")
+    public CompanyLetterheadResponse getLetterhead() {
+        return CompanyLetterheadResponse.from(companyProfileService.getProfile());
+    }
+
     @PutMapping("/profile")
     public CompanyProfileResponse updateProfile(
             @Valid @RequestBody CompanyProfileRequest request,

@@ -192,6 +192,52 @@ describe('MyTreeComponent', () => {
     expect(fixture.componentInstance.root?.id).toBe('a1');
   });
 
+  it('hovering a card past the debounce fires the details request and renders the tooltip', () => {
+    jasmine.clock().install();
+    try {
+      fixture.detectChanges();
+      httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+      fixture.detectChanges();
+
+      const card: HTMLElement = fixture.nativeElement.querySelector('[data-associate-id="a2"]');
+      card.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      jasmine.clock().tick(150);
+
+      const req = httpMock.expectOne('/api/associates/me/tree/a2/details');
+      req.flush({
+        name: 'Child', userId: 'VP00002', joinedAt: '2025-01-01T00:00:00Z',
+        leftMemberId: null, rightMemberId: null,
+        totalLeftMembers: 0, totalRightMembers: 0, activeLeftMembers: 0, activeRightMembers: 0,
+        totalLeftBusiness: 0, totalRightBusiness: 0, totalSelfBusiness: 0
+      });
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.hoveredDetails?.userId).toBe('VP00002');
+      expect(fixture.nativeElement.querySelector('.tree-explorer__hover-card')).toBeTruthy();
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('leaving a card before the debounce elapses cancels the pending details request', () => {
+    jasmine.clock().install();
+    try {
+      fixture.detectChanges();
+      httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+      fixture.detectChanges();
+
+      const card: HTMLElement = fixture.nativeElement.querySelector('[data-associate-id="a2"]');
+      card.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      card.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+      jasmine.clock().tick(150);
+
+      expect(fixture.componentInstance.hoveredNodeId).toBeNull();
+      httpMock.expectNone('/api/associates/me/tree/a2/details');
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
   it('the "My Tree" reset control returns to the caller\'s own tree as root', () => {
     fixture.detectChanges();
     httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);

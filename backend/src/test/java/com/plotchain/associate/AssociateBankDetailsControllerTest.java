@@ -10,7 +10,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,29 +20,26 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// @MockBean on the repository INTERFACE (not AssociateProfileService), so this runs a real
-// AssociateProfileService inside a real Spring Security filter chain -- same pattern as
-// KycSubmissionControllerTest.
+// @MockBean on the repository INTERFACES (not AssociateBankDetailsService), so this runs a real
+// AssociateBankDetailsService inside a real Spring Security filter chain -- same pattern as
+// AssociateProfileControllerTest.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class AssociateProfileControllerTest {
+class AssociateBankDetailsControllerTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired JwtService jwtService;
 
     @MockBean AssociateRepository associateRepository;
+    @MockBean AssociateBankDetailsRepository associateBankDetailsRepository;
 
     private Associate seeded(UUID id) {
         Associate a = new Associate();
         a.setId(id);
         a.setUserId("VP00001");
         a.setName("Jane Doe");
-        a.setPhone("9990001111");
-        a.setEmail("jane@example.com");
-        a.setAddress("221B Baker Street");
         a.setRole(AssociateRole.ASSOCIATE);
-        a.setJoinedAt(Instant.now());
         return a;
     }
 
@@ -52,79 +48,76 @@ class AssociateProfileControllerTest {
         return jwtService.generateToken(associate);
     }
 
+    private String requestJson(String bankName, String accountHolder, String accountNumber,
+                                String ifscCode, String accountType) throws Exception {
+        return new ObjectMapper().writeValueAsString(
+            new UpdateAssociateBankDetailsRequest(bankName, accountHolder, accountNumber, ifscCode, accountType));
+    }
+
     @Test
-    void getReturnsTheCallersOwnProfile() throws Exception {
+    void getReturnsEmptyFieldsWhenNoBankDetailsSavedYet() throws Exception {
         Associate self = seeded(UUID.randomUUID());
         String token = tokenFor(self);
+        when(associateBankDetailsRepository.findByAssociateId(self.getId())).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/associates/me/profile")
+        mockMvc.perform(get("/api/associates/me/bank-details")
                 .header("Authorization", "Bearer " + token))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.userId").value("VP00001"))
-            .andExpect(jsonPath("$.name").value("Jane Doe"))
-            .andExpect(jsonPath("$.email").value("jane@example.com"))
-            .andExpect(jsonPath("$.address").value("221B Baker Street"));
+            .andExpect(jsonPath("$.bankName").doesNotExist());
     }
 
     @Test
     void getReturns401WithoutAToken() throws Exception {
-        mockMvc.perform(get("/api/associates/me/profile"))
+        mockMvc.perform(get("/api/associates/me/bank-details"))
             .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void putUpdatesNamePhoneAndEmail() throws Exception {
+    void putSavesBankDetails() throws Exception {
         Associate self = seeded(UUID.randomUUID());
         String token = tokenFor(self);
-        when(associateRepository.existsByEmail("jane.a.doe@example.com")).thenReturn(false);
-        when(associateRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(associateBankDetailsRepository.findByAssociateId(self.getId())).thenReturn(Optional.empty());
+        when(associateBankDetailsRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        mockMvc.perform(put("/api/associates/me/profile")
+        mockMvc.perform(put("/api/associates/me/bank-details")
                 .header("Authorization", "Bearer " + token)
                 .contentType("application/json")
-                .content(new ObjectMapper().writeValueAsString(
-                    new UpdateAssociateProfileRequest("Jane A. Doe", "9990002222", "jane.a.doe@example.com", "42 Wallaby Way"))))
+                .content(requestJson("State Bank", "Jane Doe", "123456789012", "SBIN0001234", "SAVINGS")))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.name").value("Jane A. Doe"))
-            .andExpect(jsonPath("$.phone").value("9990002222"))
-            .andExpect(jsonPath("$.email").value("jane.a.doe@example.com"))
-            .andExpect(jsonPath("$.address").value("42 Wallaby Way"));
+            .andExpect(jsonPath("$.bankName").value("State Bank"))
+            .andExpect(jsonPath("$.accountNumber").value("123456789012"))
+            .andExpect(jsonPath("$.ifscCode").value("SBIN0001234"));
     }
 
     @Test
-    void putRejectsABlankName() throws Exception {
+    void putRejectsAMalformedIfscCode() throws Exception {
         Associate self = seeded(UUID.randomUUID());
         String token = tokenFor(self);
 
-        mockMvc.perform(put("/api/associates/me/profile")
+        mockMvc.perform(put("/api/associates/me/bank-details")
                 .header("Authorization", "Bearer " + token)
                 .contentType("application/json")
-                .content(new ObjectMapper().writeValueAsString(
-                    new UpdateAssociateProfileRequest("  ", "9990002222", "jane@example.com", null))))
+                .content(requestJson("State Bank", "Jane Doe", "123456789012", "not-an-ifsc", "SAVINGS")))
             .andExpect(status().isBadRequest());
     }
 
     @Test
-    void putReturnsConflictWhenEmailAlreadyRegisteredToAnotherAssociate() throws Exception {
+    void putRejectsABlankBankName() throws Exception {
         Associate self = seeded(UUID.randomUUID());
         String token = tokenFor(self);
-        when(associateRepository.existsByEmail("taken@example.com")).thenReturn(true);
 
-        mockMvc.perform(put("/api/associates/me/profile")
+        mockMvc.perform(put("/api/associates/me/bank-details")
                 .header("Authorization", "Bearer " + token)
                 .contentType("application/json")
-                .content(new ObjectMapper().writeValueAsString(
-                    new UpdateAssociateProfileRequest("Jane Doe", "9990001111", "taken@example.com", null))))
-            .andExpect(status().isConflict())
-            .andExpect(jsonPath("$.error").isNotEmpty());
+                .content(requestJson("  ", "Jane Doe", "123456789012", "SBIN0001234", "SAVINGS")))
+            .andExpect(status().isBadRequest());
     }
 
     @Test
     void putReturns401WithoutAToken() throws Exception {
-        mockMvc.perform(put("/api/associates/me/profile")
+        mockMvc.perform(put("/api/associates/me/bank-details")
                 .contentType("application/json")
-                .content(new ObjectMapper().writeValueAsString(
-                    new UpdateAssociateProfileRequest("Jane Doe", "9990001111", "jane@example.com", null))))
+                .content(requestJson("State Bank", "Jane Doe", "123456789012", "SBIN0001234", "SAVINGS")))
             .andExpect(status().isUnauthorized());
     }
 }

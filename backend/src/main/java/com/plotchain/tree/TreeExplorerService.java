@@ -4,6 +4,7 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
+import com.plotchain.associate.AssociateStatus;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
@@ -11,6 +12,8 @@ import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
+import com.plotchain.sales.SaleRepository;
+import com.plotchain.sales.SaleStatus;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -37,23 +40,51 @@ public class TreeExplorerService {
     private final RankTierRepository rankTierRepository;
     private final CycleRepository cycleRepository;
     private final LegVolumeRepository legVolumeRepository;
+    private final SaleRepository saleRepository;
 
     public TreeExplorerService(
         AssociateRepository associateRepository,
         RankTierRepository rankTierRepository,
         CycleRepository cycleRepository,
-        LegVolumeRepository legVolumeRepository
+        LegVolumeRepository legVolumeRepository,
+        SaleRepository saleRepository
     ) {
         this.associateRepository = associateRepository;
         this.rankTierRepository = rankTierRepository;
         this.cycleRepository = cycleRepository;
         this.legVolumeRepository = legVolumeRepository;
+        this.saleRepository = saleRepository;
     }
 
     public TreeNodeResponse subtree(UUID associateId, int depth) {
         Associate root = associateRepository.findByIdAndRole(associateId, AssociateRole.ASSOCIATE)
             .orElseThrow(() -> new AssociateNotFoundException(associateId));
         return buildFrom(root, depth);
+    }
+
+    // Admin Tree Explorer hover details (lazy, per-node -- see TreeNodeDetailsResponse for why
+    // this isn't baked into the bulk tree response).
+    public TreeNodeDetailsResponse nodeDetails(UUID associateId) {
+        Associate a = associateRepository.findByIdAndRole(associateId, AssociateRole.ASSOCIATE)
+            .orElseThrow(() -> new AssociateNotFoundException(associateId));
+
+        List<Associate> directChildren = associateRepository.findByParentId(associateId);
+        String leftMemberId = directChildren.stream()
+            .filter(c -> "L".equals(c.getPosition())).findFirst().map(Associate::getUserId).orElse(null);
+        String rightMemberId = directChildren.stream()
+            .filter(c -> "R".equals(c.getPosition())).findFirst().map(Associate::getUserId).orElse(null);
+
+        long totalLeftMembers = associateRepository.countDownlineByPosition(associateId, "L");
+        long totalRightMembers = associateRepository.countDownlineByPosition(associateId, "R");
+        long activeLeftMembers = associateRepository.countDownlineByPositionAndStatus(associateId, "L", AssociateStatus.ACTIVE.name());
+        long activeRightMembers = associateRepository.countDownlineByPositionAndStatus(associateId, "R", AssociateStatus.ACTIVE.name());
+
+        LegVolumeRepository.LegBusinessTotals business = legVolumeRepository.totalBusiness(associateId);
+        BigDecimal totalSelfBusiness = saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED);
+
+        return new TreeNodeDetailsResponse(a.getName(), a.getUserId(), a.getJoinedAt(), leftMemberId, rightMemberId,
+            totalLeftMembers, totalRightMembers, activeLeftMembers, activeRightMembers,
+            business.left(), business.right(), totalSelfBusiness);
     }
 
     /**
@@ -117,6 +148,15 @@ public class TreeExplorerService {
             throw new AssociateNotFoundException(targetId);
         }
         return subtree(targetId, depth);
+    }
+
+    // /my-tree hover details (associate-scoped counterpart of nodeDetails() above): same
+    // downline-membership guard as subtreeWithinDownline().
+    public TreeNodeDetailsResponse nodeDetailsWithinDownline(UUID associateId, UUID targetId) {
+        if (!associateRepository.findSelfAndDownline(associateId).contains(targetId)) {
+            throw new AssociateNotFoundException(targetId);
+        }
+        return nodeDetails(targetId);
     }
 
     private TreeNodeResponse buildNode(Associate a, int remainingDepth, Map<UUID, RankTier> ranksById,

@@ -17,11 +17,14 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -187,6 +190,46 @@ class AssociateTreeControllerTest {
         // scoping guard and not merely from an unmocked repository call.
 
         mockMvc.perform(get("/api/associates/me/tree/" + outsiderId)
+                .header("Authorization", "Bearer " + tokenForAssociate(self)))
+            .andExpect(status().isNotFound());
+
+        verify(associateRepository, never()).findByIdAndRole(outsiderId, AssociateRole.ASSOCIATE);
+    }
+
+    @Test
+    void myNodeDetailsReturnsHoverDetailsForADownlineAssociate() throws Exception {
+        UUID selfId = UUID.randomUUID();
+        Associate self = newSelf(selfId, "VP00001");
+        UUID downlineMemberId = UUID.randomUUID();
+        Associate downlineMember = newSelf(downlineMemberId, "VP00002");
+
+        when(associateRepository.findSelfAndDownline(selfId))
+            .thenReturn(List.of(selfId, downlineMemberId));
+        when(associateRepository.findByIdAndRole(downlineMemberId, AssociateRole.ASSOCIATE))
+            .thenReturn(Optional.of(downlineMember));
+        when(associateRepository.findByParentId(downlineMemberId)).thenReturn(List.of());
+        when(associateRepository.countDownlineByPosition(downlineMemberId, "L")).thenReturn(0L);
+        when(associateRepository.countDownlineByPosition(downlineMemberId, "R")).thenReturn(0L);
+        when(associateRepository.countDownlineByPositionAndStatus(eq(downlineMemberId), eq("L"), any())).thenReturn(0L);
+        when(associateRepository.countDownlineByPositionAndStatus(eq(downlineMemberId), eq("R"), any())).thenReturn(0L);
+        when(legVolumeRepository.totalBusiness(downlineMemberId))
+            .thenReturn(new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
+
+        mockMvc.perform(get("/api/associates/me/tree/" + downlineMemberId + "/details")
+                .header("Authorization", "Bearer " + tokenForAssociate(self)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.userId").value("VP00002"));
+    }
+
+    @Test
+    void myNodeDetailsReturns404ForAnAssociateOutsideTheCallersDownline() throws Exception {
+        UUID selfId = UUID.randomUUID();
+        Associate self = newSelf(selfId, "VP00001");
+        UUID outsiderId = UUID.randomUUID();
+
+        when(associateRepository.findSelfAndDownline(selfId)).thenReturn(List.of(selfId));
+
+        mockMvc.perform(get("/api/associates/me/tree/" + outsiderId + "/details")
                 .header("Authorization", "Bearer " + tokenForAssociate(self)))
             .andExpect(status().isNotFound());
 

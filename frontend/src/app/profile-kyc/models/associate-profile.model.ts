@@ -8,14 +8,16 @@ export interface AssociateProfileResponse {
   name: string;
   phone: string | null;
   email: string | null;
+  address: string | null;
   joinedAt: string;
 }
 
-// A null phone/email clears the field server-side (both are nullable columns, not "required
+// A null phone/email/address clears the field server-side (all nullable columns, not "required
 // going forward" -- see UpdateAssociateProfileRequest.java's own header comment). name is
 // @NotBlank server-side.
 export interface UpdateAssociateProfileRequest {
   name: string;
   phone: string | null;
   email: string | null;
+  address: string | null;
 }

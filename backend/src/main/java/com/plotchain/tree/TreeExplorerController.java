@@ -30,6 +30,14 @@ public class TreeExplorerController {
         return treeExplorerService.subtree(associateId, depth);
     }
 
+    // Admin Tree Explorer hover details (see SecurityConfig for the ADMIN-only matcher this
+    // nested route needs of its own -- the existing "/api/admin/tree/*" matcher only covers one
+    // path segment and does not cover "/{associateId}/details").
+    @GetMapping("/{associateId}/details")
+    public TreeNodeDetailsResponse nodeDetails(@PathVariable UUID associateId) {
+        return treeExplorerService.nodeDetails(associateId);
+    }
+
     @GetMapping("/search")
     public TreeSearchResponse search(@RequestParam String q) {
         return treeExplorerService.search(q);

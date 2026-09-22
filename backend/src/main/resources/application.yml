@@ -21,7 +21,7 @@ jwt:
   expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
 
 plotchain:
-  associate-id-prefix: ${PLOTCHAIN_ASSOCIATE_ID_PREFIX:VP}
+  associate-id-prefix: ${PLOTCHAIN_ASSOCIATE_ID_PREFIX:VSA}
   secrets-key: ${PLOTCHAIN_SECRETS_KEY:dev-only-change-me-this-encryption-key-needs-32-bytes-too}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}

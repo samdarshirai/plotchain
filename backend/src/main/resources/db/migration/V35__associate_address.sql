@@ -1,0 +1,1 @@
+ALTER TABLE associate ADD COLUMN address VARCHAR(255);

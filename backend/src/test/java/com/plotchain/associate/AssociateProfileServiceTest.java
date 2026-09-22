@@ -37,6 +37,7 @@ class AssociateProfileServiceTest {
         a.setName("Jane Doe");
         a.setPhone("9990001111");
         a.setEmail("jane@example.com");
+        a.setAddress("221B Baker Street");
         a.setRole(AssociateRole.ASSOCIATE);
         a.setJoinedAt(Instant.parse("2026-01-01T00:00:00Z"));
         return a;
@@ -52,6 +53,7 @@ class AssociateProfileServiceTest {
         assertThat(response.name()).isEqualTo("Jane Doe");
         assertThat(response.phone()).isEqualTo("9990001111");
         assertThat(response.email()).isEqualTo("jane@example.com");
+        assertThat(response.address()).isEqualTo("221B Baker Street");
     }
 
     @Test
@@ -68,16 +70,18 @@ class AssociateProfileServiceTest {
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
         when(associateRepository.existsByEmail("jane.doe@example.com")).thenReturn(false);
         UpdateAssociateProfileRequest request =
-            new UpdateAssociateProfileRequest("Jane A. Doe", "9990002222", "jane.doe@example.com");
+            new UpdateAssociateProfileRequest("Jane A. Doe", "9990002222", "jane.doe@example.com", "42 Wallaby Way");
 
         AssociateProfileResponse response = service.updateProfile(ASSOCIATE_ID, request);
 
         assertThat(response.name()).isEqualTo("Jane A. Doe");
         assertThat(response.phone()).isEqualTo("9990002222");
         assertThat(response.email()).isEqualTo("jane.doe@example.com");
+        assertThat(response.address()).isEqualTo("42 Wallaby Way");
         assertThat(associate.getName()).isEqualTo("Jane A. Doe");
         assertThat(associate.getPhone()).isEqualTo("9990002222");
         assertThat(associate.getEmail()).isEqualTo("jane.doe@example.com");
+        assertThat(associate.getAddress()).isEqualTo("42 Wallaby Way");
         verify(associateRepository).save(associate);
     }
 
@@ -86,7 +90,7 @@ class AssociateProfileServiceTest {
         Associate associate = seeded();
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
         UpdateAssociateProfileRequest request =
-            new UpdateAssociateProfileRequest("Jane Doe", "9990001111", "jane@example.com");
+            new UpdateAssociateProfileRequest("Jane Doe", "9990001111", "jane@example.com", null);
 
         AssociateProfileResponse response = service.updateProfile(ASSOCIATE_ID, request);
 
@@ -101,7 +105,7 @@ class AssociateProfileServiceTest {
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
         when(associateRepository.existsByEmail("taken@example.com")).thenReturn(true);
         UpdateAssociateProfileRequest request =
-            new UpdateAssociateProfileRequest("Jane Doe", "9990001111", "taken@example.com");
+            new UpdateAssociateProfileRequest("Jane Doe", "9990001111", "taken@example.com", null);
 
         assertThatThrownBy(() -> service.updateProfile(ASSOCIATE_ID, request))
             .isInstanceOf(EmailAlreadyRegisteredException.class);
@@ -116,7 +120,7 @@ class AssociateProfileServiceTest {
         Associate associate = seeded();
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
         UpdateAssociateProfileRequest request =
-            new UpdateAssociateProfileRequest("Jane Doe", "9990001111", null);
+            new UpdateAssociateProfileRequest("Jane Doe", "9990001111", null, null);
 
         AssociateProfileResponse response = service.updateProfile(ASSOCIATE_ID, request);
 
@@ -129,7 +133,7 @@ class AssociateProfileServiceTest {
     void updateProfileThrowsWhenAssociateNotFound() {
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.empty());
         UpdateAssociateProfileRequest request =
-            new UpdateAssociateProfileRequest("Jane Doe", "9990001111", "jane@example.com");
+            new UpdateAssociateProfileRequest("Jane Doe", "9990001111", "jane@example.com", null);
 
         assertThatThrownBy(() -> service.updateProfile(ASSOCIATE_ID, request))
             .isInstanceOf(AssociateNotFoundException.class);

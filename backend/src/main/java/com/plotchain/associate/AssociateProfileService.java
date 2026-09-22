@@ -41,6 +41,7 @@ public class AssociateProfileService {
 
         associate.setName(request.name());
         associate.setPhone(request.phone());
+        associate.setAddress(request.address());
         associateRepository.save(associate);
 
         return AssociateProfileResponse.from(associate);
