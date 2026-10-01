@@ -4,7 +4,6 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.KycStatus;
-import com.plotchain.booking.PlotBooking;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
 import com.plotchain.compensation.SelfPerformanceBonusConfigService;
@@ -70,8 +69,9 @@ public class SaleService {
 
     // Sales unit 2 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
     // flow "Record a sale", steps 1-3): guards. Sales unit 3 (same doc, flow steps 4-9): the
-    // Plot->SOLD flip, cycle lookup, Sale persistence, and Direct Income ledger entry, inserted
-    // between the associate lookup and the response mapping below, all inside one transaction.
+    // Plot->SOLD flip, cycle lookup, Sale persistence, and Direct Income ledger entry, now in the
+    // shared persistSaleAndIncome below (also used by recordConfirmedBooking), all inside one
+    // transaction.
     //
     // Mandatory-fields change on /admin/sales/new: plotId is now optional -- a sale need not be
     // tied to a specific inventory Plot. When present, the Plot guard/lock/SOLD-flip stays first
@@ -119,10 +119,10 @@ public class SaleService {
         Cycle cycle = cycleService.getOrOpenCurrent();
 
         // Flow step 6: amount and legCredited are snapshots taken now, never live references
-        // (Decisions 1 and 7) -- request.price() and associate.getPosition() are read once, here,
-        // and never re-read from Sale later. amount is the admin-entered price (request.price()),
-        // not a Plot.price snapshot -- price is now a mandatory client input for every sale,
-        // whether or not a Plot is linked.
+        // (Decisions 1 and 7) -- the amount parameter and associate.getPosition() are read once,
+        // here, and never re-read from Sale later. amount is supplied by the caller (the
+        // admin-entered price for recordSale, the booking's total for recordConfirmedBooking),
+        // never a Plot.price snapshot.
         Sale sale = new Sale();
         sale.setId(UUID.randomUUID());
         sale.setPlotId(plot != null ? plot.getId() : null);
@@ -229,20 +229,23 @@ public class SaleService {
     // AVAILABLE) and in where the Sale's fields come from. Booking status/sale_id/event stay with
     // the caller.
     @Transactional
-    public SaleResponse recordConfirmedBooking(PlotBooking booking, Plot plot) {
+    // Takes primitives, not PlotBooking: booking -> sales is the allowed dependency direction
+    // (booking must not be imported by sales; see booking.PlotNotAvailableException).
+    public SaleResponse recordConfirmedBooking(UUID bookingId, UUID associateId, String buyerName,
+            String buyerPhone, BigDecimal totalAmount, Plot plot) {
         if (plot.getStatus() != PlotStatus.BOOKED) {
             throw new PlotNotAvailableException(plot.getId());
         }
 
-        Associate associate = associateRepository.findById(booking.getAssociateId())
-            .orElseThrow(() -> new AssociateNotFoundException(booking.getAssociateId()));
+        Associate associate = associateRepository.findById(associateId)
+            .orElseThrow(() -> new AssociateNotFoundException(associateId));
 
         Project project = projectRepository.findById(plot.getProjectId())
             .orElseThrow(() -> new ProjectNotFoundException(plot.getProjectId()));
 
         return persistSaleAndIncome(plot, associate, project,
-            booking.getBuyerName(), booking.getBuyerPhone(), null,
-            "Confirmed from booking " + booking.getId(), booking.getTotalAmount(), booking.getId());
+            buyerName, buyerPhone, null,
+            "Confirmed from booking " + bookingId, totalAmount, bookingId);
     }
 
     // Sales unit 4 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,

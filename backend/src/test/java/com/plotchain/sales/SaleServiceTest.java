@@ -4,7 +4,6 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.KycStatus;
-import com.plotchain.booking.PlotBooking;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
 import com.plotchain.compensation.SelfPerformanceBonusConfigService;
@@ -47,6 +46,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -361,7 +361,7 @@ class SaleServiceTest {
         SaleResponse response = saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
 
         ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
-        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        verify(ledgerEntryRepository, times(2)).save(captor.capture());
         LedgerEntry selfPerformanceEntry = captor.getAllValues().stream()
             .filter(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE).findFirst().orElseThrow();
         // gross = 600000.00 * 1% = 6000
@@ -385,7 +385,7 @@ class SaleServiceTest {
         saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
 
         ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
-        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        verify(ledgerEntryRepository, times(2)).save(captor.capture());
         LedgerEntry selfPerformanceEntry = captor.getAllValues().stream()
             .filter(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE).findFirst().orElseThrow();
         // gross = 600000.00 * 2% = 12000
@@ -440,7 +440,7 @@ class SaleServiceTest {
         saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
 
         ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
-        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        verify(ledgerEntryRepository, times(2)).save(captor.capture());
         LedgerEntry selfPerformanceEntry = captor.getAllValues().stream()
             .filter(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE).findFirst().orElseThrow();
         assertThat(selfPerformanceEntry.getStatus()).isEqualTo(LedgerEntryStatus.CARRIED_FORWARD);
@@ -527,7 +527,7 @@ class SaleServiceTest {
         // recordSaleThrowsAssociateNotFoundExceptionWhenTheAssociateDoesNotExist) -- proving it's
         // called exactly once here proves the response fields came from that same call, not a
         // second, redundant lookup.
-        verify(associateRepository, org.mockito.Mockito.times(1)).findById(ASSOCIATE_ID);
+        verify(associateRepository, times(1)).findById(ASSOCIATE_ID);
     }
 
     @Test
@@ -551,15 +551,9 @@ class SaleServiceTest {
     // recordSale; differs in the BOOKED guard and where the Sale's fields come from.
     private static final UUID BOOKING_ID = UUID.randomUUID();
 
-    private PlotBooking bookingFixture(String totalAmount) {
-        PlotBooking b = new PlotBooking();
-        b.setId(BOOKING_ID);
-        b.setPlotId(PLOT_ID);
-        b.setAssociateId(ASSOCIATE_ID);
-        b.setTotalAmount(new BigDecimal(totalAmount));
-        b.setBuyerName("Jane Buyer");
-        b.setBuyerPhone("9999999999");
-        return b;
+    private SaleResponse confirm(String totalAmount, Plot plot) {
+        return saleService.recordConfirmedBooking(BOOKING_ID, ASSOCIATE_ID, "Jane Buyer",
+            "9999999999", new BigDecimal(totalAmount), plot);
     }
 
     private Plot plotForBooking(PlotStatus status, String areaSqft) {
@@ -584,7 +578,7 @@ class SaleServiceTest {
         Plot plot = plotForBooking(PlotStatus.BOOKED, "1200.00");
 
         // amount comes from the booking (750000), not the plot price (600000)
-        SaleResponse response = saleService.recordConfirmedBooking(bookingFixture("750000.00"), plot);
+        SaleResponse response = confirm("750000.00", plot);
 
         assertThat(plot.getStatus()).isEqualTo(PlotStatus.SOLD);
         verify(plotRepository).save(plot);
@@ -615,8 +609,7 @@ class SaleServiceTest {
     void recordConfirmedBookingCreditsSameDirectIncomeAsRecordSaleForSameInputs() {
         stubConfirmedPathDependencies();
 
-        SaleResponse response = saleService.recordConfirmedBooking(
-            bookingFixture("600000.00"), plotForBooking(PlotStatus.BOOKED, "1200.00"));
+        SaleResponse response = confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1200.00"));
 
         ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository).save(captor.capture());
@@ -633,9 +626,31 @@ class SaleServiceTest {
     }
 
     @Test
+    void recordConfirmedBookingThrowsAssociateNotFoundForUnknownAssociate() {
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1200.00")))
+            .isInstanceOf(AssociateNotFoundException.class);
+
+        verify(plotRepository, never()).save(any());
+        verify(saleRepository, never()).save(any());
+    }
+
+    @Test
+    void recordConfirmedBookingThrowsProjectNotFoundForUnknownProject() {
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1200.00")))
+            .isInstanceOf(ProjectNotFoundException.class);
+
+        verify(plotRepository, never()).save(any());
+        verify(saleRepository, never()).save(any());
+    }
+
+    @Test
     void recordConfirmedBookingRejectsAnAvailablePlot() {
-        assertThatThrownBy(() -> saleService.recordConfirmedBooking(
-                bookingFixture("600000.00"), plotForBooking(PlotStatus.AVAILABLE, "1200.00")))
+        assertThatThrownBy(() -> confirm("600000.00", plotForBooking(PlotStatus.AVAILABLE, "1200.00")))
             .isInstanceOf(PlotNotAvailableException.class);
 
         verify(saleRepository, never()).save(any());
@@ -645,8 +660,7 @@ class SaleServiceTest {
 
     @Test
     void recordConfirmedBookingRejectsASoldPlot() {
-        assertThatThrownBy(() -> saleService.recordConfirmedBooking(
-                bookingFixture("600000.00"), plotForBooking(PlotStatus.SOLD, "1200.00")))
+        assertThatThrownBy(() -> confirm("600000.00", plotForBooking(PlotStatus.SOLD, "1200.00")))
             .isInstanceOf(PlotNotAvailableException.class);
 
         verify(saleRepository, never()).save(any());
@@ -659,11 +673,10 @@ class SaleServiceTest {
         stubConfirmedPathDependencies();
         when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
 
-        SaleResponse response = saleService.recordConfirmedBooking(
-            bookingFixture("600000.00"), plotForBooking(PlotStatus.BOOKED, "3000"));
+        SaleResponse response = confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "3000"));
 
         ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
-        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        verify(ledgerEntryRepository, times(2)).save(captor.capture());
         LedgerEntry spb = captor.getAllValues().get(1);
         assertThat(spb.getIncomeType()).isEqualTo(IncomeType.SELF_PERFORMANCE);
         // gross = 600000.00 * 2% = 12000
@@ -681,8 +694,7 @@ class SaleServiceTest {
                 .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
             .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> saleService.recordConfirmedBooking(
-                bookingFixture("600000.00"), plotForBooking(PlotStatus.BOOKED, "1200.00")))
+        assertThatThrownBy(() -> confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1200.00")))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("compensation_plan_version");
 
@@ -883,7 +895,7 @@ class SaleServiceTest {
         saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out"));
 
         ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
-        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        verify(ledgerEntryRepository, times(2)).save(captor.capture());
         assertThat(captor.getAllValues()).allMatch(e -> e.getStatus() == LedgerEntryStatus.REVERSED);
         assertThat(captor.getAllValues()).extracting(LedgerEntry::getId)
             .containsExactlyInAnyOrder(directEntry.getId(), selfPerformanceEntry.getId());

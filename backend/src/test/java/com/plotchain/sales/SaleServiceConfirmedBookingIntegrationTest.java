@@ -58,7 +58,7 @@ class SaleServiceConfirmedBookingIntegrationTest {
     @BeforeEach
     void setUp() {
         CompensationPlanVersion planVersion = new CompensationPlanVersion(
-            UUID.randomUUID(), "conf-booking", LocalDate.of(2025, 6, 1),
+            UUID.randomUUID(), "conf-booking", LocalDate.of(2025, 7, 1),
             new BigDecimal("6.00"), new BigDecimal("7.00"), new BigDecimal("11.00"),
             new BigDecimal("2.00"), BigDecimal.ZERO, new BigDecimal("15.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null,
@@ -120,7 +120,7 @@ class SaleServiceConfirmedBookingIntegrationTest {
     @Test
     void recordConfirmedBookingPersistsLinkedSaleSoldPlotAndDirectIncome() {
         SaleResponse r = saleService.recordConfirmedBooking(
-            plotBookingRepository.findById(bookingId).orElseThrow(),
+            bookingId, associateId, "Jane Buyer", null, new BigDecimal("900000.00"),
             plotRepository.findById(plotId).orElseThrow());
         saleId = r.id();
 
@@ -132,16 +132,17 @@ class SaleServiceConfirmedBookingIntegrationTest {
         assertThat(plotRepository.findById(plotId).orElseThrow().getStatus()).isEqualTo(PlotStatus.SOLD);
 
         List<LedgerEntry> entries = ledgerEntryRepository.findAllBySourceRef(saleId);
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getIncomeType()).isEqualTo(IncomeType.DIRECT);
+        // select by type so this does not depend on the SPB config default
+        LedgerEntry direct = entries.stream()
+            .filter(e -> e.getIncomeType() == IncomeType.DIRECT).findFirst().orElseThrow();
         // gross = 900000.00 * 6% = 54000
-        assertThat(entries.get(0).getGrossAmount()).isEqualByComparingTo("54000");
+        assertThat(direct.getGrossAmount()).isEqualByComparingTo("54000");
     }
 
     @Test
-    void voidingTheLinkedSaleReturnsPlotToAvailableAndLeavesBookingUntouched() {
+    void voidingTheLinkedSaleReturnsPlotToAvailable() {
         saleId = saleService.recordConfirmedBooking(
-            plotBookingRepository.findById(bookingId).orElseThrow(),
+            bookingId, associateId, "Jane Buyer", null, new BigDecimal("900000.00"),
             plotRepository.findById(plotId).orElseThrow()).id();
 
         saleService.voidSale(saleId, new VoidSaleRequest("test"));
@@ -150,8 +151,5 @@ class SaleServiceConfirmedBookingIntegrationTest {
         assertThat(ledgerEntryRepository.findAllBySourceRef(saleId))
             .isNotEmpty()
             .allMatch(e -> e.getStatus() == LedgerEntryStatus.REVERSED);
-        PlotBooking booking = plotBookingRepository.findById(bookingId).orElseThrow();
-        assertThat(booking.getStatus()).isEqualTo(BookingStatus.ACTIVE);
-        assertThat(booking.getSaleId()).isNull();
     }
 }
