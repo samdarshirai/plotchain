@@ -4,6 +4,7 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.KycStatus;
+import com.plotchain.booking.PlotBooking;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
 import com.plotchain.compensation.SelfPerformanceBonusConfigService;
@@ -219,6 +220,29 @@ public class SaleService {
         // Flow step 9. plot and project are already loaded above -- toResponse(sale, plot,
         // associate, project) reuses them instead of re-fetching via toResponses' batch lookups.
         return toResponse(sale, plot, associate, project);
+    }
+
+    // Plot-booking lifecycle unit 3 (docs/superpowers/specs/role-capability/2026-10-01-plot-booking-lifecycle-design.md,
+    // Decision 2). Called by BookingService.confirm (unit 4), which already holds the PlotBooking
+    // and Plot row locks (Decision 8) and passes the locked Plot. Same cycle/ledger/SPB logic as
+    // recordSale via persistSaleAndIncome; differs only in the guard (plot must be BOOKED, not
+    // AVAILABLE) and in where the Sale's fields come from. Booking status/sale_id/event stay with
+    // the caller.
+    @Transactional
+    public SaleResponse recordConfirmedBooking(PlotBooking booking, Plot plot) {
+        if (plot.getStatus() != PlotStatus.BOOKED) {
+            throw new PlotNotAvailableException(plot.getId());
+        }
+
+        Associate associate = associateRepository.findById(booking.getAssociateId())
+            .orElseThrow(() -> new AssociateNotFoundException(booking.getAssociateId()));
+
+        Project project = projectRepository.findById(plot.getProjectId())
+            .orElseThrow(() -> new ProjectNotFoundException(plot.getProjectId()));
+
+        return persistSaleAndIncome(plot, associate, project,
+            booking.getBuyerName(), booking.getBuyerPhone(), null,
+            "Confirmed from booking " + booking.getId(), booking.getTotalAmount(), booking.getId());
     }
 
     // Sales unit 4 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,

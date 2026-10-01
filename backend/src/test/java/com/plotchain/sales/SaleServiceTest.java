@@ -4,6 +4,7 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.KycStatus;
+import com.plotchain.booking.PlotBooking;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
 import com.plotchain.compensation.SelfPerformanceBonusConfigService;
@@ -542,6 +543,148 @@ class SaleServiceTest {
 
         assertThatThrownBy(() -> saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID)))
             .isInstanceOf(IllegalStateException.class);
+
+        verify(ledgerEntryRepository, never()).save(any());
+    }
+
+    // Plot-booking lifecycle unit 3: recordConfirmedBooking shares persistSaleAndIncome with
+    // recordSale; differs in the BOOKED guard and where the Sale's fields come from.
+    private static final UUID BOOKING_ID = UUID.randomUUID();
+
+    private PlotBooking bookingFixture(String totalAmount) {
+        PlotBooking b = new PlotBooking();
+        b.setId(BOOKING_ID);
+        b.setPlotId(PLOT_ID);
+        b.setAssociateId(ASSOCIATE_ID);
+        b.setTotalAmount(new BigDecimal(totalAmount));
+        b.setBuyerName("Jane Buyer");
+        b.setBuyerPhone("9999999999");
+        return b;
+    }
+
+    private Plot plotForBooking(PlotStatus status, String areaSqft) {
+        return new Plot(PLOT_ID, PROJECT_ID, "A-101", PlotType.NORMAL,
+            new BigDecimal(areaSqft), new BigDecimal("500.00"), new BigDecimal("600000.00"), status);
+    }
+
+    private void stubConfirmedPathDependencies() {
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
+        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(compensationPlanVersionRepository
+                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(compensationPlanVersion()));
+    }
+
+    @Test
+    void recordConfirmedBookingFlipsBookedPlotToSoldAndLinksSaleToBooking() {
+        stubConfirmedPathDependencies();
+        Plot plot = plotForBooking(PlotStatus.BOOKED, "1200.00");
+
+        // amount comes from the booking (750000), not the plot price (600000)
+        SaleResponse response = saleService.recordConfirmedBooking(bookingFixture("750000.00"), plot);
+
+        assertThat(plot.getStatus()).isEqualTo(PlotStatus.SOLD);
+        verify(plotRepository).save(plot);
+        ArgumentCaptor<Sale> captor = ArgumentCaptor.forClass(Sale.class);
+        verify(saleRepository).save(captor.capture());
+        Sale saved = captor.getValue();
+        assertThat(saved.getBookingId()).isEqualTo(BOOKING_ID);
+        assertThat(saved.getPlotId()).isEqualTo(PLOT_ID);
+        assertThat(saved.getProjectId()).isEqualTo(PROJECT_ID);
+        assertThat(saved.getAssociateId()).isEqualTo(ASSOCIATE_ID);
+        assertThat(saved.getAmount()).isEqualByComparingTo("750000.00");
+        assertThat(saved.getBuyerName()).isEqualTo("Jane Buyer");
+        assertThat(saved.getBuyerPhone()).isEqualTo("9999999999");
+        assertThat(saved.getNote()).isEqualTo("Confirmed from booking " + BOOKING_ID);
+        assertThat(saved.getStatus()).isEqualTo(SaleStatus.RECORDED);
+        assertThat(saved.getLegCredited()).isEqualTo("L");
+        assertThat(saved.getCycleId()).isEqualTo(CYCLE_ID);
+        assertThat(response.status()).isEqualTo("RECORDED");
+        assertThat(response.plotNo()).isEqualTo("A-101");
+        // the confirmed path takes the locked plot from the caller; it must not lock/read it itself
+        verify(plotRepository, never()).findByIdForUpdate(any());
+        verify(plotRepository, never()).findById(any());
+    }
+
+    // Parity with recordSaleSavesADirectIncomeLedgerEntryWithCorrectMath: same plan fixture, same
+    // 600000.00 amount, same literal expectations.
+    @Test
+    void recordConfirmedBookingCreditsSameDirectIncomeAsRecordSaleForSameInputs() {
+        stubConfirmedPathDependencies();
+
+        SaleResponse response = saleService.recordConfirmedBooking(
+            bookingFixture("600000.00"), plotForBooking(PlotStatus.BOOKED, "1200.00"));
+
+        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository).save(captor.capture());
+        LedgerEntry entry = captor.getValue();
+        assertThat(entry.getIncomeType()).isEqualTo(IncomeType.DIRECT);
+        assertThat(entry.getAssociateId()).isEqualTo(ASSOCIATE_ID);
+        assertThat(entry.getCycleId()).isEqualTo(CYCLE_ID);
+        assertThat(entry.getGrossAmount()).isEqualByComparingTo("60000");
+        assertThat(entry.getTdsDeduction()).isEqualByComparingTo("3000");
+        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("2400");
+        assertThat(entry.getNetAmount()).isEqualByComparingTo("54600");
+        assertThat(entry.getStatus()).isEqualTo(LedgerEntryStatus.PENDING);
+        assertThat(entry.getSourceRef()).isEqualTo(response.id());
+    }
+
+    @Test
+    void recordConfirmedBookingRejectsAnAvailablePlot() {
+        assertThatThrownBy(() -> saleService.recordConfirmedBooking(
+                bookingFixture("600000.00"), plotForBooking(PlotStatus.AVAILABLE, "1200.00")))
+            .isInstanceOf(PlotNotAvailableException.class);
+
+        verify(saleRepository, never()).save(any());
+        verify(ledgerEntryRepository, never()).save(any());
+        verify(plotRepository, never()).save(any());
+    }
+
+    @Test
+    void recordConfirmedBookingRejectsASoldPlot() {
+        assertThatThrownBy(() -> saleService.recordConfirmedBooking(
+                bookingFixture("600000.00"), plotForBooking(PlotStatus.SOLD, "1200.00")))
+            .isInstanceOf(PlotNotAvailableException.class);
+
+        verify(saleRepository, never()).save(any());
+        verify(ledgerEntryRepository, never()).save(any());
+        verify(plotRepository, never()).save(any());
+    }
+
+    @Test
+    void recordConfirmedBookingCreditsSelfPerformanceBonusForBookedPlotArea() {
+        stubConfirmedPathDependencies();
+        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
+
+        SaleResponse response = saleService.recordConfirmedBooking(
+            bookingFixture("600000.00"), plotForBooking(PlotStatus.BOOKED, "3000"));
+
+        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        LedgerEntry spb = captor.getAllValues().get(1);
+        assertThat(spb.getIncomeType()).isEqualTo(IncomeType.SELF_PERFORMANCE);
+        // gross = 600000.00 * 2% = 12000
+        assertThat(spb.getGrossAmount()).isEqualByComparingTo("12000");
+        assertThat(spb.getSourceRef()).isEqualTo(response.id());
+    }
+
+    @Test
+    void recordConfirmedBookingThrowsWhenCompensationPlanMissing() {
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
+        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
+        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(compensationPlanVersionRepository
+                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> saleService.recordConfirmedBooking(
+                bookingFixture("600000.00"), plotForBooking(PlotStatus.BOOKED, "1200.00")))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("compensation_plan_version");
 
         verify(ledgerEntryRepository, never()).save(any());
     }
