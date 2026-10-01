@@ -22,7 +22,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -43,8 +45,12 @@ class BookingControllerTest {
         """;
 
     private String tokenFor(AssociateRole role) {
+        return tokenFor(UUID.randomUUID(), role);
+    }
+
+    private String tokenFor(UUID id, AssociateRole role) {
         Associate associate = new Associate();
-        associate.setId(UUID.randomUUID());
+        associate.setId(id);
         associate.setRole(role);
         when(associateRepository.findById(associate.getId())).thenReturn(Optional.of(associate));
         return jwtService.generateToken(associate);
@@ -151,5 +157,66 @@ class BookingControllerTest {
             .andExpect(jsonPath("$.id").value(bookingId.toString()))
             .andExpect(jsonPath("$.installmentCount").value(4))
             .andExpect(jsonPath("$.installments[0].installmentNumber").value(1));
+    }
+
+    private static final String PAY_BODY = """
+        {"amount":100000.00,"paymentRef":"UTR-1"}
+        """;
+
+    private org.springframework.test.web.servlet.ResultActions pay(UUID bookingId, int n, String body) throws Exception {
+        return mockMvc.perform(patch("/api/admin/bookings/{id}/installments/{n}/pay", bookingId, n)
+            .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+            .contentType("application/json").content(body));
+    }
+
+    @Test
+    void payReturns200WithTheUpdatedBookingAndPassesTheAdminAsActor() throws Exception {
+        UUID bookingId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        BookingResponse updated = new BookingResponse(bookingId, UUID.randomUUID(), UUID.randomUUID(),
+            BookingStatus.ACTIVE, "Jane Buyer", new BigDecimal("200000.00"), 2, Instant.now(),
+            new BigDecimal("100000.00"), new BigDecimal("100000.00"), List.of());
+        when(bookingService.recordPayment(eq(bookingId), eq(1), any(RecordPaymentRequest.class), eq(adminId)))
+            .thenReturn(updated);
+
+        mockMvc.perform(patch("/api/admin/bookings/{id}/installments/{n}/pay", bookingId, 1)
+                .header("Authorization", "Bearer " + tokenFor(adminId, AssociateRole.ADMIN))
+                .contentType("application/json").content(PAY_BODY))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(bookingId.toString()))
+            .andExpect(jsonPath("$.paidAmount").value(100000.00));
+    }
+
+    @Test
+    void payMapsServiceExceptionsToTheSpecStatuses() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(bookingService.recordPayment(eq(id), eq(1), any(), any())).thenThrow(new BookingNotFoundException(id));
+        when(bookingService.recordPayment(eq(id), eq(2), any(), any())).thenThrow(new BookingNotActiveException(id));
+        when(bookingService.recordPayment(eq(id), eq(3), any(), any())).thenThrow(new InstallmentNotFoundException(id, 3));
+        when(bookingService.recordPayment(eq(id), eq(4), any(), any())).thenThrow(new InstallmentNotPayableException(id, 4));
+        when(bookingService.recordPayment(eq(id), eq(5), any(), any()))
+            .thenThrow(new PaymentAmountMismatchException(id, 5, new BigDecimal("1.00")));
+
+        pay(id, 1, PAY_BODY).andExpect(status().isNotFound());
+        pay(id, 2, PAY_BODY).andExpect(status().isConflict());
+        pay(id, 3, PAY_BODY).andExpect(status().isNotFound());
+        pay(id, 4, PAY_BODY).andExpect(status().isConflict());
+        pay(id, 5, PAY_BODY).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void payRejectsInvalidBodiesWith400WithoutCallingTheService() throws Exception {
+        UUID id = UUID.randomUUID();
+        String longRef = "x".repeat(101);
+        for (String body : List.of(
+                "{\"paymentRef\":\"UTR-1\"}",                                  // amount missing
+                "{\"amount\":0,\"paymentRef\":\"UTR-1\"}",                     // zero
+                "{\"amount\":-5.00,\"paymentRef\":\"UTR-1\"}",                 // negative
+                "{\"amount\":100.00}",                                         // paymentRef missing
+                "{\"amount\":100.00,\"paymentRef\":\"   \"}",                  // blank
+                "{\"amount\":100.00,\"paymentRef\":\"" + longRef + "\"}")) {   // > 100
+            pay(id, 1, body).andExpect(status().isBadRequest());
+        }
+        org.mockito.Mockito.verifyNoInteractions(bookingService);
     }
 }

@@ -3,10 +3,15 @@ package com.plotchain.booking;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/bookings")
@@ -25,5 +30,15 @@ public class BookingController {
     @PostMapping
     public ResponseEntity<BookingResponse> create(@Valid @RequestBody CreateBookingRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(bookingService.createBooking(request));
+    }
+
+    // Admin records one installment's payment on an associate's behalf (Decisions 6, 12).
+    // Returns the whole updated booking (200), not 204: the admin UI needs refreshed paid/due
+    // totals, and unit 5's auto-confirm will flip status in this same call.
+    @PatchMapping("/{id}/installments/{n}/pay")
+    public BookingResponse pay(@PathVariable UUID id, @PathVariable("n") int installmentNumber,
+                               @Valid @RequestBody RecordPaymentRequest request,
+                               @AuthenticationPrincipal UUID actorId) {
+        return bookingService.recordPayment(id, installmentNumber, request, actorId);
     }
 }
