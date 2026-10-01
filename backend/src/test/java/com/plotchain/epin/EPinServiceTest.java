@@ -597,4 +597,131 @@ class EPinServiceTest {
 
         verify(epinRepository, never()).findAllocatable(any(), any(), any());
     }
+
+    private EPin heldPin(UUID holder, EPinStatus status) {
+        EPin pin = new EPin();
+        pin.setId(UUID.randomUUID());
+        pin.setStatus(status);
+        pin.setAllocatedTo(holder);
+        when(epinRepository.findByIdForUpdate(pin.getId())).thenReturn(Optional.of(pin));
+        return pin;
+    }
+
+    private Associate pendingDownline(String userId, UUID caller, boolean inDownline) {
+        Associate target = new Associate();
+        target.setId(UUID.randomUUID());
+        target.setUserId(userId);
+        target.setStatus(AssociateStatus.PENDING);
+        when(associateRepository.findByUserId(userId)).thenReturn(Optional.of(target));
+        when(associateRepository.findSelfAndDownline(caller))
+            .thenReturn(inDownline ? List.of(caller, target.getId()) : List.of(caller));
+        return target;
+    }
+
+    @Test
+    void redeemOwnActivatesAPendingDownlineMemberAndUsesTheHoldersPin() {
+        UUID caller = UUID.randomUUID();
+        EPin pin = heldPin(caller, EPinStatus.ALLOCATED);
+        Associate target = pendingDownline("VP00042", caller, true);
+        ArgumentCaptor<EPinEvent> events = ArgumentCaptor.forClass(EPinEvent.class);
+
+        epinService.redeemOwn(pin.getId(), "VP00042", caller);
+
+        assertThat(pin.getStatus()).isEqualTo(EPinStatus.USED);
+        assertThat(pin.getRedeemedTo()).isEqualTo(target.getId());
+        assertThat(pin.getRedeemedBy()).isEqualTo(caller);
+        assertThat(pin.getRedemptionType()).isEqualTo(RedemptionType.ACTIVATION);
+        assertThat(target.getStatus()).isEqualTo(AssociateStatus.ACTIVE);
+        verify(associateStatusCache).evict(target.getId());
+        verify(epinEventRepository).save(events.capture());
+        assertThat(events.getValue().getEventType()).isEqualTo(EPinEventType.REDEEMED);
+        assertThat(events.getValue().getFromAssociateId()).isEqualTo(caller);
+    }
+
+    @Test
+    void redeemOwnReturnsNotOwnedForAPinHeldBySomeoneElseOrMissingWithoutLeaking() {
+        UUID caller = UUID.randomUUID();
+        EPin theirs = heldPin(UUID.randomUUID(), EPinStatus.ALLOCATED);
+        EPin unallocated = heldPin(null, EPinStatus.UNUSED);
+        UUID missing = UUID.randomUUID();
+        when(epinRepository.findByIdForUpdate(missing)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> epinService.redeemOwn(theirs.getId(), "VP1", caller)).isInstanceOf(EPinNotOwnedException.class);
+        assertThatThrownBy(() -> epinService.redeemOwn(unallocated.getId(), "VP1", caller)).isInstanceOf(EPinNotOwnedException.class);
+        assertThatThrownBy(() -> epinService.redeemOwn(missing, "VP1", caller)).isInstanceOf(EPinNotOwnedException.class);
+
+        verify(epinRepository, never()).save(any());
+    }
+
+    @Test
+    void redeemOwnRejectsUsedBlockedAndExpiredHeldPins() {
+        UUID caller = UUID.randomUUID();
+        EPin used = heldPin(caller, EPinStatus.USED);
+        EPin blocked = heldPin(caller, EPinStatus.BLOCKED);
+        EPin expired = heldPin(caller, EPinStatus.ALLOCATED);
+        expired.setExpiresAt(NOW);
+
+        assertThatThrownBy(() -> epinService.redeemOwn(used.getId(), "VP1", caller)).isInstanceOf(EPinAlreadyRedeemedException.class);
+        assertThatThrownBy(() -> epinService.redeemOwn(blocked.getId(), "VP1", caller)).isInstanceOf(EPinBlockedException.class);
+        assertThatThrownBy(() -> epinService.redeemOwn(expired.getId(), "VP1", caller)).isInstanceOf(EPinExpiredException.class);
+
+        verify(epinRepository, never()).save(any());
+    }
+
+    @Test
+    void redeemOwnTargetOutsideTheCallersDownlineIsNotFoundAndLeavesThePinAllocated() {
+        UUID caller = UUID.randomUUID();
+        EPin pin = heldPin(caller, EPinStatus.ALLOCATED);
+        pendingDownline("VP00099", caller, false);
+
+        assertThatThrownBy(() -> epinService.redeemOwn(pin.getId(), "VP00099", caller))
+            .isInstanceOf(AssociateNotFoundException.class);
+
+        assertThat(pin.getStatus()).isEqualTo(EPinStatus.ALLOCATED);
+        verify(epinRepository, never()).save(any());
+    }
+
+    @Test
+    void redeemOwnRejectsAnUnknownUserIdAndANonPendingDownlineMember() {
+        UUID caller = UUID.randomUUID();
+        EPin pin = heldPin(caller, EPinStatus.ALLOCATED);
+        when(associateRepository.findByUserId("NOPE")).thenReturn(Optional.empty());
+        Associate active = pendingDownline("VP00007", caller, true);
+        active.setStatus(AssociateStatus.ACTIVE);
+
+        assertThatThrownBy(() -> epinService.redeemOwn(pin.getId(), "NOPE", caller)).isInstanceOf(AssociateNotFoundException.class);
+        assertThatThrownBy(() -> epinService.redeemOwn(pin.getId(), "VP00007", caller)).isInstanceOf(AssociateNotPendingException.class);
+
+        assertThat(pin.getStatus()).isEqualTo(EPinStatus.ALLOCATED);
+    }
+
+    @Test
+    void redeemOwnForSelfIsNotFoundBecauseSelfIsExcludedFromTheDownline() {
+        UUID caller = UUID.randomUUID();
+        EPin pin = heldPin(caller, EPinStatus.ALLOCATED);
+        Associate me = new Associate();
+        me.setId(caller);
+        me.setUserId("VP00001");
+        me.setStatus(AssociateStatus.PENDING);
+        when(associateRepository.findByUserId("VP00001")).thenReturn(Optional.of(me));
+        // No findSelfAndDownline stub: the explicit self check short-circuits before it (strict stubs).
+
+        assertThatThrownBy(() -> epinService.redeemOwn(pin.getId(), "VP00001", caller))
+            .isInstanceOf(AssociateNotFoundException.class);
+    }
+
+    @Test
+    void secondRedeemOnTheSamePinAfterTheFirstIsRejected() {
+        // Review focus #2 (the lock itself is findByIdForUpdate, asserted by every stub above):
+        // the second caller sees the already-mutated pin and is rejected, with one event only.
+        UUID caller = UUID.randomUUID();
+        EPin pin = heldPin(caller, EPinStatus.ALLOCATED);
+        pendingDownline("VP00042", caller, true);
+
+        epinService.redeemOwn(pin.getId(), "VP00042", caller);
+        assertThatThrownBy(() -> epinService.redeemOwn(pin.getId(), "VP00042", caller))
+            .isInstanceOf(EPinAlreadyRedeemedException.class);
+
+        verify(epinEventRepository, times(1)).save(any());
+    }
 }

@@ -738,6 +738,17 @@ class SecurityConfigTest {
             .andExpect(status().is(not(403)));
     }
 
+    // epin-blog-extension unit 11: POST /api/associates/me/epins/{id}/redeem needs its own matcher
+    // ABOVE the blanket ADMIN write rules. Only a 403 here means the ordering regressed.
+    @Test
+    void epinSelfRedeemIsReachableByAnAssociateToken() throws Exception {
+        mockMvc.perform(post("/api/associates/me/epins/" + java.util.UUID.randomUUID() + "/redeem")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
+                .contentType("application/json")
+                .content("{\"userId\":\"VP00042\"}"))
+            .andExpect(status().is(not(403)));
+    }
+
     // Sales unit 7 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
     // "Associate own view -- GET /api/associates/me/sales, any authenticated associate"): needs
     // no explicit SecurityConfig matcher -- a bare GET never collides with the blanket

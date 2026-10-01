@@ -200,6 +200,55 @@ public class EPinService {
         return new AllocateEPinResponse(recipient.getId(), items.size(), items);
     }
 
+    // Shared by redeemOwn and transfer: lock the pin, then require it be held by the caller.
+    // Missing and not-held both surface as EPinNotOwnedException (404) so ids don't leak.
+    private EPin loadHeldPin(UUID epinId, UUID callerId) {
+        EPin epin = epinRepository.findByIdForUpdate(epinId)
+            .orElseThrow(() -> new EPinNotOwnedException(epinId));
+        if (!callerId.equals(epin.getAllocatedTo())) {
+            throw new EPinNotOwnedException(epinId);
+        }
+        if (epin.getStatus() == EPinStatus.USED) {
+            throw new EPinAlreadyRedeemedException(epinId);
+        }
+        if (epin.getStatus() == EPinStatus.BLOCKED) {
+            throw new EPinBlockedException(epinId);
+        }
+        if (epin.isExpiredAt(clock.instant())) {
+            throw new EPinExpiredException(epinId);
+        }
+        return epin;
+    }
+
+    @Transactional
+    public EPinResponse redeemOwn(UUID epinId, String userId, UUID callerId) {
+        EPin epin = loadHeldPin(epinId, callerId);
+
+        Associate target = associateRepository.findByUserId(userId)
+            .orElseThrow(() -> new AssociateNotFoundException(userId));
+        // findSelfAndDownline includes the caller, so exclude self explicitly. A target outside
+        // the caller's downline is reported as not-found, same as an unknown userId (no leak).
+        if (target.getId().equals(callerId) || !associateRepository.findSelfAndDownline(callerId).contains(target.getId())) {
+            throw new AssociateNotFoundException(userId);
+        }
+        if (target.getStatus() != AssociateStatus.PENDING) {
+            throw new AssociateNotPendingException(target.getId());
+        }
+
+        epin.setStatus(EPinStatus.USED);
+        epin.setRedeemedTo(target.getId());
+        epin.setRedeemedBy(callerId);
+        epin.setRedeemedAt(clock.instant());
+        epin.setRedemptionType(RedemptionType.ACTIVATION);
+        epinRepository.save(epin);
+        recordEvent(epinId, EPinEventType.REDEEMED, callerId, callerId, target.getId(), null);
+
+        target.setStatus(AssociateStatus.ACTIVE);
+        associateRepository.save(target);
+        associateStatusCache.evict(target.getId());
+        return toResponse(epin);
+    }
+
     private void recordEvent(UUID epinId, EPinEventType type, UUID actorId, UUID from, UUID to, String note) {
         epinEventRepository.save(EPinEvent.of(epinId, type, actorId, from, to, clock.instant(), note));
     }

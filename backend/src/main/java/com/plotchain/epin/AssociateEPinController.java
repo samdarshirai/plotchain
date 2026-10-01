@@ -1,7 +1,11 @@
 package com.plotchain.epin;
 
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,5 +33,11 @@ public class AssociateEPinController {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
         return epinService.listForAssociate(associateId, status, page, size);
+    }
+
+    @PostMapping("/{id}/redeem")
+    public EPinResponse redeem(@PathVariable UUID id, @Valid @RequestBody AssociateRedeemEPinRequest request,
+                               @AuthenticationPrincipal UUID associateId) {
+        return epinService.redeemOwn(id, request.userId(), associateId);
     }
 }
