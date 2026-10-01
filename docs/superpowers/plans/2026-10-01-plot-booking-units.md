@@ -14,7 +14,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. En
 | 2 | Admin records a per-installment payment — `PATCH /api/admin/bookings/{id}/installments/{n}/pay` | backend | 1 | merged | `2026-10-01-plot-booking-unit-2-pay-installment.md` | `a0b3c6b..d7d6ec1` |
 | 3 | `SaleService.recordConfirmedBooking` extracted from `recordSale` with `recordSale` behaviour unchanged | backend | 1 | merged | `2026-10-01-plot-booking-unit-3-extract-confirmed-booking-sale.md` | `2b36d24..c5dbac8` (merge `490f137`) |
 | 4 | Admin manually confirms an `ACTIVE` booking, creating a linked `Sale` — `POST /api/admin/bookings/{id}/confirm` | backend | 1, 3 | merged | `2026-10-01-plot-booking-unit-4-manual-confirm.md` | `aa2f5b5..a7f7909` (merge `feaaa8b`) |
-| 5 | `AUTO_THRESHOLD` rule confirms the booking inside the pay call once paid% reaches the threshold | backend | 2, 4 | planned | `2026-10-01-plot-booking-unit-5-auto-threshold-confirm.md` | — |
+| 5 | `AUTO_THRESHOLD` rule confirms the booking inside the pay call once paid% reaches the threshold | backend | 2, 4 | merged | `2026-10-01-plot-booking-unit-5-auto-threshold-confirm.md` | `397e3d5..90689fd` (merge `d90168a`) |
 | 6 | Admin cancels an `ACTIVE` booking — `POST /api/admin/bookings/{id}/cancel` | backend | 1 | pending | — | — |
 | 7 | Admin transfers an `ACTIVE` booking to another associate — `POST /api/admin/bookings/{id}/transfer` | backend | 1 | pending | — | — |
 | 8 | Admin views a paged, filterable booking register — `GET /api/admin/bookings` | backend | 1 | pending | — | — |
@@ -223,6 +223,11 @@ Resolutions: (1) `RecordPaymentRequest` gains `amount`, 400 on mismatch; (2) can
 - Unit 5 hooks into `BookingService.afterInstallmentPaid(booking, installments, actorId)` (empty seam from unit 2).
 - `plot_booking.sale_id` / `sale.booking_id` redundant two-way link: DECIDED in unit 4 — `sale.booking_id` (FK + unique `uq_sale_booking_id`) is authoritative; `plot_booking.sale_id` stays as an unindexed read convenience. Circular FKs: test cleanup must `UPDATE plot_booking SET sale_id = NULL` before deleting sales.
 - Unit 4 provides package-private `BookingService.confirmLocked(booking, actorId)` (locks plot itself; lock order booking -> plot) for unit 5 to call from `afterInstallmentPaid`. Unit 5 must also prove atomicity of pay+confirm (rollback test with a spy, see `BookingConfirmIntegrationTest.aFailureAfterTheSaleIsCreatedRollsTheWholeConfirmBack`; Boot 3.3.4 so use `@SpyBean`, not `@MockitoSpyBean`).
+
+**Known follow-ups / operational notes (unit 5 review, merged as-is 2026-10-01):**
+- Cosmetic debt: `BookingServiceTest.java` (~lines 752-975) has the unit 5 block at column 0 instead of indented inside the class; `lockedAutoBooking` is a pass-through wrapper over `lockedBookingWith`; `Mockito.times/reset` are fully qualified inline (file uses static imports); `pool.shutdownNow()` not in `finally` in the race tests. Fix opportunistically in the next unit that edits this test file.
+- Operational trap (spec-mandated): if a plot has drifted away from `BOOKED`, any pay that crosses the `AUTO_THRESHOLD` fails with 409 `PlotNotAvailableException` and rolls back, so the cash cannot be recorded until the plot is repaired or the config switched to `MANUAL`. The 409 text does not hint at the cause. Surface this in unit 12's UI error copy.
+- A `VOID` installment exclusion from paid% has no unit test (no flow yields `VOID` until unit 6).
 
 ## Excluded — not a unit
 
