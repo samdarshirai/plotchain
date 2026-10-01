@@ -13,6 +13,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -150,6 +152,19 @@ class OverdueReportIntegrationTest {
         Page<OverdueReportRow> beyond = repo.findOverdueReport(TODAY, PageRequest.of(5000, 20));
         assertThat(beyond.getContent()).isEmpty();
         assertThat(beyond.getTotalElements()).isEqualTo(before + 3);
+    }
+
+    // Not the Spring Clock bean: a fixed Clock makes this immune to midnight-UTC drift.
+    @Test
+    void serviceWithFixedClockReportsTheSeededOverdueBooking() {
+        PlotBooking overdue = booking(BookingStatus.ACTIVE, "PENDING|2|100.00");
+        booking(BookingStatus.ACTIVE, "PENDING|0|100.00");
+        OverdueReportService service = new OverdueReportService(repo,
+            Clock.fixed(TODAY.atStartOfDay(ZoneOffset.UTC).toInstant(), ZoneOffset.UTC));
+        OverdueReportPageResponse r = service.getOverdueReport(0, 1000);
+        assertThat(r.rows()).extracting(OverdueReportRow::bookingId).filteredOn(tracked::contains)
+            .containsExactly(overdue.getId());
+        assertThat(r.totalElements()).isEqualTo(before + 1);
     }
 
     @Test
