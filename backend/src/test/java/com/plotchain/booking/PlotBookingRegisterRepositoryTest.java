@@ -13,6 +13,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -52,7 +54,7 @@ class PlotBookingRegisterRepositoryTest {
 
     // b6 and b7 share booked_at, so their relative order is id DESC.
     private List<UUID> b6b7ByIdDesc() {
-        return List.of(d.b6.getId(), d.b7.getId()).stream().sorted(java.util.Comparator.reverseOrder()).toList();
+        return List.of(d.b6.getId(), d.b7.getId()).stream().sorted(Comparator.reverseOrder()).toList();
     }
 
     @Test
@@ -62,7 +64,7 @@ class PlotBookingRegisterRepositoryTest {
         assertThat(p1.getTotalElements()).isEqualTo(4);
 
         Page<PlotBooking> p2 = search(null, null, null, d.p2, false, 0, 50);
-        List<UUID> expected = new java.util.ArrayList<>(b6b7ByIdDesc());
+        List<UUID> expected = new ArrayList<>(b6b7ByIdDesc());
         expected.add(d.b5.getId());
         expected.add(d.b4.getId());
         assertThat(ids(p2)).containsExactlyElementsOf(expected);   // tiebreak: id DESC

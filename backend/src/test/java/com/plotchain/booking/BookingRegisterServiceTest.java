@@ -54,7 +54,7 @@ class BookingRegisterServiceTest {
         reset(installments);   // forget the seeding calls; only count the service's reads
     }
 
-    private static List<UUID> ids(com.plotchain.booking.AdminBookingPageResponse p) {
+    private static List<UUID> ids(AdminBookingPageResponse p) {
         return p.bookings().stream().map(BookingResponse::id).toList();
     }
 
@@ -92,9 +92,8 @@ class BookingRegisterServiceTest {
     @Test
     void overdueFilterAgreesWithTheRowFlags() {
         AdminBookingPageResponse overdue = service.list(null, null, null, null, true, 0, 100);
-        List<BookingResponse> mine = overdue.bookings().stream()
-            .filter(b -> List.of(d.b1.getId(), d.b6.getId()).contains(b.id())
-                      || List.of(d.b2.getId(), d.b3.getId(), d.b4.getId()).contains(b.id())).toList();
+        List<UUID> seeded = List.of(d.b1.getId(), d.b2.getId(), d.b3.getId(), d.b4.getId(), d.b6.getId());
+        List<BookingResponse> mine = overdue.bookings().stream().filter(b -> seeded.contains(b.id())).toList();
         assertThat(mine).extracting(BookingResponse::id).containsExactlyInAnyOrder(d.b1.getId(), d.b6.getId());
         // every returned row (including any leftovers from other tests) has >=1 overdue installment and is ACTIVE
         assertThat(overdue.bookings()).allSatisfy(b -> {
