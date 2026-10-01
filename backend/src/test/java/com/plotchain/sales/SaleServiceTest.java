@@ -169,6 +169,34 @@ class SaleServiceTest {
     }
 
     @Test
+    void recordSaleThrowsPlotNotAvailableExceptionWhenThePlotIsBooked() {
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.BOOKED)));
+
+        assertThatThrownBy(() -> saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID)))
+            .isInstanceOf(PlotNotAvailableException.class);
+
+        verify(plotRepository, never()).save(any());
+        verify(saleRepository, never()).save(any());
+        verify(ledgerEntryRepository, never()).save(any());
+    }
+
+    @Test
+    void recordSaleLeavesBookingIdNullAndSnapshotsLegAndCycle() {
+        stubHappyPathGuardsAndDependencies();
+
+        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        ArgumentCaptor<Sale> saleCaptor = ArgumentCaptor.forClass(Sale.class);
+        verify(saleRepository).save(saleCaptor.capture());
+        Sale saved = saleCaptor.getValue();
+        assertThat(saved.getBookingId()).isNull();
+        assertThat(saved.getLegCredited()).isEqualTo("L");
+        assertThat(saved.getCycleId()).isEqualTo(CYCLE_ID);
+        assertThat(saved.getAmount()).isEqualByComparingTo("600000.00");
+        assertThat(saved.getStatus()).isEqualTo(SaleStatus.RECORDED);
+    }
+
+    @Test
     void recordSaleThrowsAssociateNotFoundExceptionWhenTheAssociateDoesNotExist() {
         when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.empty());
