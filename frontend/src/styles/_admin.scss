@@ -4223,3 +4223,15 @@ button.tree-explorer__vacant-card {
     gap: 0.75rem;
   }
 }
+
+.epin-register {
+  &__filters { display: flex; flex-wrap: wrap; gap: 1rem; margin-block: 1rem; }
+  &__header-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+  &__panel { padding: 1rem; margin-block: 1rem; }
+  &__table-wrap { overflow-x: auto; }
+  &__table { width: 100%; border-collapse: collapse; th, td { padding: 0.5rem 0.75rem; text-align: left; } }
+  &__code { font-family: var(--font-mono, monospace); }
+  &__actions { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+  &__chip { padding: 0.125rem 0.5rem; border-radius: 999px; background: var(--surface-muted, #eee); &--expired { background: var(--danger-soft, #fde8e8); } }
+  &__pagination { display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem; }
+}
