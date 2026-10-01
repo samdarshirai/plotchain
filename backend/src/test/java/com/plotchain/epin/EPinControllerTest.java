@@ -1,5 +1,6 @@
 package com.plotchain.epin;
 
+import com.plotchain.associate.AssociateStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
@@ -43,6 +45,7 @@ class EPinControllerTest {
 
     @MockBean AssociateRepository associateRepository;
     @MockBean EPinRepository epinRepository;
+    @MockBean EPinEventRepository epinEventRepository;
 
     private String tokenFor(AssociateRole role) {
         Associate associate = new Associate();
@@ -134,7 +137,7 @@ class EPinControllerTest {
         epin.setRedeemedBy(UUID.randomUUID());
         epin.setRedeemedAt(Instant.now());
         epin.setRedemptionType(RedemptionType.ACTIVATION);
-        when(epinRepository.search(eq(EPinStatus.USED), eq(redeemedTo), eq(batchId), any()))
+        when(epinRepository.search(eq(EPinStatus.USED), eq(redeemedTo), eq(batchId), isNull(), eq(false), any(), any()))
             .thenReturn(new PageImpl<>(List.of(epin), PageRequest.of(0, 20), 1));
 
         mockMvc.perform(get("/api/admin/epins")
@@ -152,7 +155,7 @@ class EPinControllerTest {
 
     @Test
     void listReturns200WithAnEmptyPageWhenUnfiltered() throws Exception {
-        when(epinRepository.search(isNull(), isNull(), isNull(), any()))
+        when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), any()))
             .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/admin/epins")
@@ -164,26 +167,26 @@ class EPinControllerTest {
 
     @Test
     void listClampsAnOversizedPageSizeToTheServerSideMaximum() throws Exception {
-        when(epinRepository.search(isNull(), isNull(), isNull(), eq(PageRequest.of(0, 100))))
+        when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 100))))
             .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/admin/epins").param("size", "999999")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
-        verify(epinRepository).search(isNull(), isNull(), isNull(), eq(PageRequest.of(0, 100)));
+        verify(epinRepository).search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 100)));
     }
 
     @Test
     void listClampsANegativePageToZeroInsteadOfThrowing() throws Exception {
-        when(epinRepository.search(isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/admin/epins").param("page", "-5")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
-        verify(epinRepository).search(isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20)));
+        verify(epinRepository).search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 20)));
     }
 
     @Test
@@ -222,7 +225,7 @@ class EPinControllerTest {
     void redeemReturns404WhenTheEPinDoesNotExist() throws Exception {
         UUID epinId = UUID.randomUUID();
         UUID associateId = UUID.randomUUID();
-        when(epinRepository.findById(epinId)).thenReturn(Optional.empty());
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/admin/epins/{id}/redeem", epinId)
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
@@ -238,12 +241,32 @@ class EPinControllerTest {
         EPin usedEPin = new EPin();
         usedEPin.setId(epinId);
         usedEPin.setStatus(EPinStatus.USED);
-        when(epinRepository.findById(epinId)).thenReturn(Optional.of(usedEPin));
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(usedEPin));
 
         mockMvc.perform(post("/api/admin/epins/{id}/redeem", epinId)
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
                 .contentType("application/json")
                 .content("{\"associateId\":\"" + associateId + "\",\"redemptionType\":\"ACTIVATION\"}"))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void activationRedeemForAnActiveAssociateReturns409() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID target = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(id);
+        pin.setStatus(EPinStatus.UNUSED);
+        when(epinRepository.findByIdForUpdate(id)).thenReturn(Optional.of(pin));
+        Associate a = new Associate();
+        a.setId(target);
+        a.setStatus(AssociateStatus.ACTIVE);
+        when(associateRepository.findById(target)).thenReturn(Optional.of(a));
+
+        mockMvc.perform(post("/api/admin/epins/" + id + "/redeem")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"associateId\":\"" + target + "\",\"redemptionType\":\"ACTIVATION\"}"))
             .andExpect(status().isConflict());
     }
 
@@ -254,7 +277,7 @@ class EPinControllerTest {
         EPin unusedEPin = new EPin();
         unusedEPin.setId(epinId);
         unusedEPin.setStatus(EPinStatus.UNUSED);
-        when(epinRepository.findById(epinId)).thenReturn(Optional.of(unusedEPin));
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(unusedEPin));
         when(associateRepository.findById(associateId)).thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/admin/epins/{id}/redeem", epinId)
@@ -316,7 +339,7 @@ class EPinControllerTest {
         unusedEPin.setStatus(EPinStatus.UNUSED);
         unusedEPin.setGeneratedBy(UUID.randomUUID());
         unusedEPin.setGeneratedAt(Instant.now());
-        when(epinRepository.findById(epinId)).thenReturn(Optional.of(unusedEPin));
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(unusedEPin));
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(new Associate()));
         when(epinRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -335,5 +358,155 @@ class EPinControllerTest {
             .andExpect(jsonPath("$.linkedEntityId").value(linkedEntityId.toString()));
 
         verify(epinRepository).save(any());
+    }
+
+    @Test
+    void listAcceptsTheAllocatedToAndExpiredFiltersAndPassesThemThrough() throws Exception {
+        UUID holder = UUID.randomUUID();
+        when(epinRepository.search(any(), any(), any(), any(), anyBoolean(), any(), any()))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        mockMvc.perform(get("/api/admin/epins")
+                .param("allocatedTo", holder.toString())
+                .param("expired", "true")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk());
+
+        verify(epinRepository).search(isNull(), isNull(), isNull(), eq(holder), eq(true), any(), any());
+    }
+
+    @Test
+    void generateBatchRejectsAnExpiryInThePastWith400() throws Exception {
+        String body = "{\"count\":2,\"expiresAt\":\"2020-01-01T00:00:00Z\"}";
+
+        mockMvc.perform(post("/api/admin/epins")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json").content(body))
+            .andExpect(status().isBadRequest());
+
+        verify(epinRepository, never()).save(any());
+    }
+
+    @Test
+    void generateBatchAcceptsAFutureExpiryAndEchoesIt() throws Exception {
+        when(epinRepository.existsByCode(any())).thenReturn(false);
+        when(epinRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        String body = "{\"count\":1,\"expiresAt\":\"2999-01-01T00:00:00Z\"}";
+
+        mockMvc.perform(post("/api/admin/epins")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json").content(body))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.expiresAt").isNotEmpty());
+    }
+
+    @Test
+    void generateBatchWithOnlyCountStillDeserializes() throws Exception {
+        when(epinRepository.existsByCode(any())).thenReturn(false);
+        when(epinRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        mockMvc.perform(post("/api/admin/epins")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json").content("{\"count\":1}"))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.expiresAt").doesNotExist());
+    }
+
+    @Test
+    void redeemOfAnExpiredPinReturns409() throws Exception {
+        UUID id = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(id);
+        pin.setStatus(EPinStatus.UNUSED);
+        pin.setExpiresAt(Instant.parse("2020-01-01T00:00:00Z"));
+        when(epinRepository.findByIdForUpdate(id)).thenReturn(Optional.of(pin));
+        String body = "{\"associateId\":\"" + UUID.randomUUID() + "\",\"redemptionType\":\"TOPUP\"}";
+
+        mockMvc.perform(post("/api/admin/epins/" + id + "/redeem")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json").content(body))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void blockReturns200AndUnblockRestoresIt() throws Exception {
+        UUID id = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(id);
+        pin.setStatus(EPinStatus.UNUSED);
+        when(epinRepository.findByIdForUpdate(id)).thenReturn(Optional.of(pin));
+        String admin = tokenFor(AssociateRole.ADMIN);
+
+        mockMvc.perform(post("/api/admin/epins/" + id + "/block")
+                .header("Authorization", "Bearer " + admin)
+                .contentType("application/json").content("{\"reason\":\"lost\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("BLOCKED"))
+            .andExpect(jsonPath("$.blockReason").value("lost"));
+
+        mockMvc.perform(post("/api/admin/epins/" + id + "/unblock")
+                .header("Authorization", "Bearer " + admin))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("UNUSED"));
+    }
+
+    @Test
+    void blockWithABlankReasonReturns400AndBlockingAUsedPinReturns409() throws Exception {
+        UUID id = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(id);
+        pin.setStatus(EPinStatus.USED);
+        when(epinRepository.findByIdForUpdate(id)).thenReturn(Optional.of(pin));
+        String admin = tokenFor(AssociateRole.ADMIN);
+
+        mockMvc.perform(post("/api/admin/epins/" + id + "/block")
+                .header("Authorization", "Bearer " + admin)
+                .contentType("application/json").content("{\"reason\":\"  \"}"))
+            .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/admin/epins/" + id + "/block")
+                .header("Authorization", "Bearer " + admin)
+                .contentType("application/json").content("{\"reason\":\"x\"}"))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void eventsEndpointIs404ForAnUnknownPinAndForbiddenForAnAssociateToken() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(epinRepository.existsById(id)).thenReturn(false);
+
+        mockMvc.perform(get("/api/admin/epins/" + id + "/events")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/admin/epins/" + id + "/events")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void allocateReturns409WhenThePoolIsTooSmallAnd400ForACountOutOfRange() throws Exception {
+        UUID target = UUID.randomUUID();
+        Associate a = new Associate();
+        a.setId(target);
+        a.setStatus(AssociateStatus.ACTIVE);
+        when(associateRepository.findById(target)).thenReturn(Optional.of(a));
+        when(epinRepository.findAllocatable(any(), any(), any())).thenReturn(List.of());
+        String admin = tokenFor(AssociateRole.ADMIN);
+
+        mockMvc.perform(post("/api/admin/epins/allocate")
+                .header("Authorization", "Bearer " + admin).contentType("application/json")
+                .content("{\"associateId\":\"" + target + "\",\"count\":2}"))
+            .andExpect(status().isConflict());
+        mockMvc.perform(post("/api/admin/epins/allocate")
+                .header("Authorization", "Bearer " + admin).contentType("application/json")
+                .content("{\"associateId\":\"" + target + "\",\"count\":0}"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void allocateIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(post("/api/admin/epins/allocate")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)).contentType("application/json")
+                .content("{\"associateId\":\"" + UUID.randomUUID() + "\",\"count\":1}"))
+            .andExpect(status().isForbidden());
     }
 }

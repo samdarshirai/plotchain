@@ -91,6 +91,8 @@ public class AdminAssociateService {
     @Transactional
     public AdminAssociateDetailResponse reactivate(UUID id, UUID actorId) {
         Associate associate = findOrThrow(id);
+        // Known gap (epin-blog-extension spec, Review Focus 7): reactivating a suspended
+        // associate who was PENDING sets ACTIVE and skips the activation e-PIN. Out of scope.
         associate.setStatus(AssociateStatus.ACTIVE);
         associateRepository.save(associate);
         evictStatusCacheAfterCommit(id);

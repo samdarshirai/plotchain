@@ -135,6 +135,7 @@ describe('AppComponent', () => {
         'nav.myTree': 'My Tree',
         'nav.salesHistory': 'Sales History',
         'nav.plotBookings': 'Plot Bookings',
+        'nav.epins': 'e-Pins',
         'nav.myAccount': 'My Account',
         'nav.incomeStatement': 'Income Statement',
         'nav.payoutHistory': 'Payout History',
@@ -148,7 +149,7 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('.app-header')).toBeFalsy();
     const links = Array.from(compiled.querySelectorAll('.associate-sidebar__link-label')).map(el => el.textContent?.trim());
     expect(links).toEqual([
-      'Dashboard', 'My Tree', 'Sales History', 'Plot Bookings', 'My Account', 'Income Statement', 'Payout History'
+      'Dashboard', 'My Tree', 'Sales History', 'Plot Bookings', 'e-Pins', 'My Account', 'Income Statement', 'Payout History'
     ]);
   });
 

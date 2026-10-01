@@ -61,6 +61,7 @@ class AssociateProfileServiceTest {
         assertThat(response.phone()).isEqualTo("9990001111");
         assertThat(response.email()).isEqualTo("jane@example.com");
         assertThat(response.address()).isEqualTo("221B Baker Street");
+        assertThat(response.status()).isEqualTo(AssociateStatus.ACTIVE);
     }
 
     @Test

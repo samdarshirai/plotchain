@@ -3,6 +3,7 @@ package com.plotchain.associate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -12,6 +13,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface AssociateRepository extends JpaRepository<Associate, UUID> {
+
+    // e-PIN activation: atomic PENDING -> ACTIVE, so two racing activations (or an admin suspend)
+    // can't both win. Returns 0 if the associate was not PENDING.
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Associate a SET a.status = com.plotchain.associate.AssociateStatus.ACTIVE WHERE a.id = :id AND a.status = com.plotchain.associate.AssociateStatus.PENDING")
+    int activateIfPending(@Param("id") UUID id);
 
     @Query(value = """
         WITH RECURSIVE downline(id) AS (

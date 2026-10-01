@@ -598,6 +598,22 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
     }
 
+    // e-PIN block/unblock/events are ADMIN-only; events is a GET so it needs its own matcher.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminEpinsBlockUnblockAndEventsAreForbiddenForEveryNonAdminRole(AssociateRole role) throws Exception {
+        if (role == AssociateRole.ADMIN) return;
+        String auth = "Bearer " + tokenFor(role);
+        UUID id = UUID.randomUUID();
+        mockMvc.perform(post("/api/admin/epins/{id}/block", id).header("Authorization", auth)
+                .contentType("application/json").content("{\"reason\":\"x\"}"))
+            .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/admin/epins/{id}/unblock", id).header("Authorization", auth))
+            .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/admin/epins/{id}/events", id).header("Authorization", auth))
+            .andExpect(status().isForbidden());
+    }
+
     // Role-capability unit 7: GET /api/associates/me/bookings needs no explicit SecurityConfig
     // matcher -- a bare GET never collides with the blanket POST/PUT/PATCH/DELETE write rules
     // above, so it falls through to anyRequest().authenticated() below, the same way GET
@@ -722,6 +738,17 @@ class SecurityConfigTest {
             .andExpect(status().is(not(403)));
     }
 
+    // epin-blog-extension unit 11: POST /api/associates/me/epins/{id}/redeem needs its own matcher
+    // ABOVE the blanket ADMIN write rules. Only a 403 here means the ordering regressed.
+    @Test
+    void epinSelfRedeemIsReachableByAnAssociateToken() throws Exception {
+        mockMvc.perform(post("/api/associates/me/epins/" + java.util.UUID.randomUUID() + "/redeem")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
+                .contentType("application/json")
+                .content("{\"userId\":\"VP00042\"}"))
+            .andExpect(status().is(not(403)));
+    }
+
     // Sales unit 7 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
     // "Associate own view -- GET /api/associates/me/sales, any authenticated associate"): needs
     // no explicit SecurityConfig matcher -- a bare GET never collides with the blanket
@@ -800,6 +827,16 @@ class SecurityConfigTest {
     @Test
     void associateMeWithdrawalsIsReachableByAnAssociateToken() throws Exception {
         mockMvc.perform(get("/api/associates/me/withdrawals")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk());
+    }
+
+    // epin-extension unit 10: GET /api/associates/me/epins needs no matcher (falls through to
+    // anyRequest().authenticated()); EPinRepository is not @MockBean'd here, so it runs for real
+    // against the empty H2 DB and returns an empty page.
+    @Test
+    void associateMeEpinsIsReachableByAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/associates/me/epins")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
             .andExpect(status().isOk());
     }

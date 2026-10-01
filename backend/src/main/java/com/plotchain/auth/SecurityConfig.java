@@ -126,6 +126,11 @@ public class SecurityConfig {
                 // password. GET needs no matcher of its own -- falls through to
                 // anyRequest().authenticated().
                 .requestMatchers(HttpMethod.POST, "/api/associates/me/transaction-password").authenticated()
+                // Associate self-redeem of an allocated e-PIN (epin-blog-extension unit 11): must
+                // precede the blanket ADMIN write rules below (first-match-wins). Ownership and
+                // downline checks are in EPinService, not here.
+                .requestMatchers(HttpMethod.POST, "/api/associates/me/epins/*/redeem").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/associates/me/epins/*/transfer").authenticated()
                 // Deny-by-default for writes: product policy is "ADMIN can write; associates
                 // are read-only except their own profile". Without this, any future
                 // POST/PUT/PATCH/DELETE endpoint would be reachable by every authenticated
@@ -261,8 +266,14 @@ public class SecurityConfig {
                 // guards only (unknown/already-redeemed EPin or unknown associate rejected with
                 // no side effects); epin-domain unit 4's actual write reuses this same matcher,
                 // no security change needed when that unit lands.
+                .requestMatchers(HttpMethod.POST, "/api/admin/epins/allocate").hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/admin/epins/*/redeem")
                     .hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/admin/epins/*/block").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/admin/epins/*/unblock").hasAuthority("ADMIN")
+                // GET needs its own matcher: without one it falls to anyRequest().authenticated()
+                // and any associate could read a pin's audit trail.
+                .requestMatchers(HttpMethod.GET, "/api/admin/epins/*/events").hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/**")
                     .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/**")

@@ -1,5 +1,6 @@
 package com.plotchain.epin;
 
+import java.util.List;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.associate.KycStatus;
@@ -116,19 +117,19 @@ class EPinRepositoryTest {
         usedForBInBatchB.setRedemptionType(RedemptionType.TOPUP);
         epinRepository.saveAndFlush(usedForBInBatchB);
 
-        Page<EPin> byStatus = epinRepository.search(EPinStatus.UNUSED, null, null, PageRequest.of(0, 20));
+        Page<EPin> byStatus = epinRepository.search(EPinStatus.UNUSED, null, null, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(byStatus.getContent()).extracting(EPin::getId).containsExactly(unusedInBatchA.getId());
 
-        Page<EPin> byRedeemedTo = epinRepository.search(null, associateA, null, PageRequest.of(0, 20));
+        Page<EPin> byRedeemedTo = epinRepository.search(null, associateA, null, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(byRedeemedTo.getContent()).extracting(EPin::getId).containsExactly(usedForA.getId());
 
-        Page<EPin> byBatchId = epinRepository.search(null, null, batchB, PageRequest.of(0, 20));
+        Page<EPin> byBatchId = epinRepository.search(null, null, batchB, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(byBatchId.getContent()).extracting(EPin::getId).containsExactly(usedForBInBatchB.getId());
 
-        Page<EPin> combined = epinRepository.search(EPinStatus.USED, associateA, batchA, PageRequest.of(0, 20));
+        Page<EPin> combined = epinRepository.search(EPinStatus.USED, associateA, batchA, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(combined.getContent()).extracting(EPin::getId).containsExactly(usedForA.getId());
 
-        Page<EPin> unfiltered = epinRepository.search(null, null, null, PageRequest.of(0, 20));
+        Page<EPin> unfiltered = epinRepository.search(null, null, null, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(unfiltered.getTotalElements()).isEqualTo(3);
     }
 
@@ -145,12 +146,12 @@ class EPinRepositoryTest {
         latest.setGeneratedAt(Instant.parse("2026-01-30T00:00:00Z"));
         epinRepository.saveAndFlush(latest);
 
-        Page<EPin> firstPage = epinRepository.search(null, null, null, PageRequest.of(0, 2));
+        Page<EPin> firstPage = epinRepository.search(null, null, null, null, false, Instant.now(), PageRequest.of(0, 2));
         assertThat(firstPage.getContent()).extracting(EPin::getId)
             .containsExactly(latest.getId(), later.getId());
         assertThat(firstPage.getTotalElements()).isEqualTo(3);
 
-        Page<EPin> secondPage = epinRepository.search(null, null, null, PageRequest.of(1, 2));
+        Page<EPin> secondPage = epinRepository.search(null, null, null, null, false, Instant.now(), PageRequest.of(1, 2));
         assertThat(secondPage.getContent()).extracting(EPin::getId).containsExactly(earlier.getId());
     }
 
@@ -158,9 +159,174 @@ class EPinRepositoryTest {
     void searchReturnsAnEmptyPageWhenNoRowMatchesTheGivenFilters() {
         persistAdmin();
 
-        Page<EPin> result = epinRepository.search(null, UUID.randomUUID(), null, PageRequest.of(0, 20));
+        Page<EPin> result = epinRepository.search(null, UUID.randomUUID(), null, null, false, Instant.now(), PageRequest.of(0, 20));
 
         assertThat(result.getContent()).isEmpty();
         assertThat(result.getTotalElements()).isZero();
+    }
+
+    private EPin persistPin(UUID adminId, EPinStatus status, UUID allocatedTo, Instant expiresAt) {
+        EPin epin = new EPin();
+        epin.setId(UUID.randomUUID());
+        epin.setCode("c-" + UUID.randomUUID().toString().substring(0, 20)); // epin.code is VARCHAR(24)
+        epin.setBatchId(UUID.randomUUID());
+        epin.setStatus(status);
+        epin.setGeneratedBy(adminId);
+        epin.setGeneratedAt(Instant.now());
+        epin.setAllocatedTo(allocatedTo);
+        epin.setExpiresAt(expiresAt);
+        return entityManager.persist(epin);
+    }
+
+    @Test
+    void checkConstraintAcceptsAllocatedAndBlockedStatuses() {
+        UUID admin = persistAdmin();
+        persistPin(admin, EPinStatus.ALLOCATED, admin, null);
+        persistPin(admin, EPinStatus.BLOCKED, null, null);
+        entityManager.flush(); // would throw DataIntegrityViolationException if the CHECK rejected them
+    }
+
+    @Test
+    void searchFiltersByAllocatedTo() {
+        UUID admin = persistAdmin();
+        UUID holder = persistAdmin();
+        EPin mine = persistPin(admin, EPinStatus.ALLOCATED, holder, null);
+        persistPin(admin, EPinStatus.ALLOCATED, admin, null);
+        entityManager.flush();
+
+        Page<EPin> page = epinRepository.search(null, null, null, holder, false, Instant.now(), PageRequest.of(0, 20));
+
+        assertThat(page.getContent()).extracting(EPin::getId).containsExactly(mine.getId());
+    }
+
+    @Test
+    void searchExpiredOnlyReturnsOnlyUnusedOrAllocatedPinsPastExpiry() {
+        UUID admin = persistAdmin();
+        Instant now = Instant.parse("2026-10-01T00:00:00Z");
+        EPin expiredUnused = persistPin(admin, EPinStatus.UNUSED, null, now);              // boundary: == now is expired
+        persistPin(admin, EPinStatus.UNUSED, null, now.plusSeconds(1));                    // future
+        persistPin(admin, EPinStatus.UNUSED, null, null);                                  // never expires
+        persistPin(admin, EPinStatus.USED, null, now.minusSeconds(60));                    // used pins are never "expired"
+        entityManager.flush();
+
+        Page<EPin> page = epinRepository.search(null, null, null, null, true, now, PageRequest.of(0, 20));
+
+        assertThat(page.getContent()).extracting(EPin::getId).containsExactly(expiredUnused.getId());
+    }
+
+    @Test
+    void findByIdForUpdateReturnsThePin() {
+        UUID admin = persistAdmin();
+        EPin pin = persistPin(admin, EPinStatus.UNUSED, null, null);
+        entityManager.flush();
+
+        assertThat(epinRepository.findByIdForUpdate(pin.getId())).isPresent();
+    }
+
+    @Test
+    void findAllocatableReturnsOnlyUnusedUnexpiredPinsOldestFirstWithinTheBatch() {
+        UUID admin = persistAdmin();
+        Instant now = Instant.parse("2026-10-01T00:00:00Z");
+        EPin older = persistPin(admin, EPinStatus.UNUSED, null, null);
+        older.setGeneratedAt(now.minusSeconds(100));
+        EPin newer = persistPin(admin, EPinStatus.UNUSED, null, now.plusSeconds(60));
+        newer.setGeneratedAt(now.minusSeconds(50));
+        persistPin(admin, EPinStatus.UNUSED, null, now);              // expired boundary
+        persistPin(admin, EPinStatus.ALLOCATED, admin, null);          // not in the pool
+        persistPin(admin, EPinStatus.BLOCKED, null, null);             // not in the pool
+        entityManager.flush();
+
+        List<EPin> pool = epinRepository.findAllocatable(now, null, PageRequest.of(0, 10));
+
+        assertThat(pool).extracting(EPin::getId).containsExactly(older.getId(), newer.getId());
+    }
+
+    @Test
+    void searchForAssociateReturnsPinsAllocatedToRedeemedToOrRedeemedByMeAndNoOthers() {
+        UUID admin = persistAdmin();
+        UUID me = persistAdmin();
+        UUID other = persistAdmin();
+        EPin held = persistPin(admin, EPinStatus.ALLOCATED, me, null);
+        EPin redeemedForMe = persistPin(admin, EPinStatus.USED, null, null);
+        redeemedForMe.setRedeemedTo(me);
+        EPin redeemedByMe = persistPin(admin, EPinStatus.USED, null, null);
+        redeemedByMe.setRedeemedBy(me);
+        persistPin(admin, EPinStatus.ALLOCATED, other, null);
+        persistPin(admin, EPinStatus.UNUSED, null, null);
+        entityManager.flush();
+
+        Page<EPin> page = epinRepository.searchForAssociate(me, null, PageRequest.of(0, 20));
+
+        assertThat(page.getContent()).extracting(EPin::getId)
+            .containsExactlyInAnyOrder(held.getId(), redeemedForMe.getId(), redeemedByMe.getId());
+    }
+
+    @Test
+    void searchForAssociateAppliesTheStatusFilter() {
+        UUID admin = persistAdmin();
+        UUID me = persistAdmin();
+        EPin held = persistPin(admin, EPinStatus.ALLOCATED, me, null);
+        EPin used = persistPin(admin, EPinStatus.USED, me, null);
+        entityManager.flush();
+
+        Page<EPin> page = epinRepository.searchForAssociate(me, EPinStatus.ALLOCATED, PageRequest.of(0, 20));
+
+        assertThat(page.getContent()).extracting(EPin::getId).containsExactly(held.getId());
+    }
+
+    @Test
+    void searchForAssociateReturnsAPinTheCallerTransferredAwayButNotToAStranger() {
+        UUID admin = persistAdmin();
+        UUID me = persistAdmin();
+        UUID recipient = persistAdmin();
+        UUID stranger = persistAdmin();
+        EPin transferred = persistPin(admin, EPinStatus.ALLOCATED, recipient, null);
+        entityManager.persist(EPinEvent.of(transferred.getId(), EPinEventType.TRANSFERRED, me, me, recipient, Instant.now(), null));
+        entityManager.flush();
+
+        assertThat(epinRepository.searchForAssociate(me, null, PageRequest.of(0, 20)).getContent())
+            .extracting(EPin::getId).containsExactly(transferred.getId());
+        assertThat(epinRepository.searchForAssociate(me, EPinStatus.USED, PageRequest.of(0, 20)).getContent()).isEmpty();
+        assertThat(epinRepository.searchForAssociate(stranger, null, PageRequest.of(0, 20)).getContent()).isEmpty();
+    }
+
+    // Guards the V40 CHECK constraints: every EPinEventType, every EPinStatus and associate PENDING
+    // must be insertable and read back.
+    @Test
+    void everyEventTypeEPinStatusAndAPendingAssociatePersistAndReadBack() {
+        UUID admin = persistAdmin();
+        Associate pending = new Associate();
+        pending.setId(UUID.randomUUID());
+        pending.setPosition("L");
+        pending.setName("Pending");
+        pending.setKycStatus(KycStatus.VERIFIED);
+        pending.setJoinedAt(Instant.now());
+        pending.setCumulativeMatchedVolume(BigDecimal.ZERO);
+        pending.setUserId("u-" + pending.getId());
+        pending.setEmail(pending.getId() + "@test.local");
+        pending.setPasswordHash("$2y$10$m1anhr1Y8va62ZGafTcLOODFQNYTpJDdbbnuriSLpRSELJIkV8J5C");
+        pending.setRole(AssociateRole.ADMIN);
+        pending.setStatus(com.plotchain.associate.AssociateStatus.PENDING);
+        entityManager.persist(pending);
+
+        List<EPin> pins = new java.util.ArrayList<>();
+        for (EPinStatus st : EPinStatus.values()) {
+            pins.add(persistPin(admin, st, null, null));
+        }
+        for (EPinEventType type : EPinEventType.values()) {
+            entityManager.persist(EPinEvent.of(pins.get(0).getId(), type, admin, admin, admin, Instant.now(), "n"));
+        }
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(entityManager.find(Associate.class, pending.getId()).getStatus())
+            .isEqualTo(com.plotchain.associate.AssociateStatus.PENDING);
+        for (EPin pin : pins) {
+            assertThat(entityManager.find(EPin.class, pin.getId()).getStatus()).isEqualTo(pin.getStatus());
+        }
+        Long events = entityManager.getEntityManager()
+            .createQuery("SELECT count(e) FROM EPinEvent e WHERE e.epinId = :id", Long.class)
+            .setParameter("id", pins.get(0).getId()).getSingleResult();
+        assertThat(events).isEqualTo(EPinEventType.values().length);
     }
 }

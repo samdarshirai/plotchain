@@ -15,6 +15,11 @@ import java.util.Map;
 @RestControllerAdvice
 public class WithdrawalExceptionHandler {
 
+    @ExceptionHandler(AssociatePendingActivationException.class)
+    public ResponseEntity<Map<String, String>> handleAssociatePendingActivation(AssociatePendingActivationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(AssociateSuspendedException.class)
     public ResponseEntity<Map<String, String>> handleAssociateSuspended(AssociateSuspendedException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));

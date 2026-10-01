@@ -14,7 +14,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => category.items.map(item => item.key))).toEqual([
       ['companyProfile', 'branding', 'compensation', 'projects', 'paymentsKyc'],
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
-      ['salesRegister', 'cycleManagement', 'ledgerRegister', 'payoutApproval'],
+      ['salesRegister', 'cycleManagement', 'ledgerRegister', 'epinRegister', 'payoutApproval'],
       ['auditLog', 'adminStats']
     ]);
   });

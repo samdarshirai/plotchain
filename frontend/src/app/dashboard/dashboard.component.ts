@@ -3,6 +3,7 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { DashboardService } from './dashboard.service';
 import { DashboardResponse } from './models/dashboard-response.model';
+import { PendingActivationBannerComponent } from '../shared/components/pending-activation-banner/pending-activation-banner.component';
 import { KycBannerComponent } from './widgets/kyc-banner/kyc-banner.component';
 import { CycleIncomeCardComponent } from './widgets/cycle-income-card/cycle-income-card.component';
 import { ProfileCardComponent } from './widgets/profile-card/profile-card.component';
@@ -26,11 +27,13 @@ type CollapsibleSection = 'businessVolume' | 'networkIncome';
   standalone: true,
   imports: [
     CommonModule, TranslateModule, KycBannerComponent, CycleIncomeCardComponent, ProfileCardComponent,
-    QuickActionsComponent, RecentSalesTableComponent, LegBalanceComponent, StatTileComponent
+    QuickActionsComponent, RecentSalesTableComponent, LegBalanceComponent, StatTileComponent,
+    PendingActivationBannerComponent
   ],
   providers: [CurrencyPipe],
   template: `
     <div class="dashboard" *ngIf="dashboard as d">
+      <app-pending-activation-banner></app-pending-activation-banner>
       <div class="dashboard__header">
         <div class="dashboard__header-left">
           <h1 class="dashboard__title">{{ 'dashboard.title' | translate }}</h1>

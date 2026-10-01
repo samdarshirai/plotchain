@@ -26,6 +26,7 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
   { key: 'myTree', labelKey: 'nav.myTree', icon: 'account_tree', path: '/my-tree' },
   { key: 'salesHistory', labelKey: 'nav.salesHistory', icon: 'receipt_long', path: '/sales-history' },
   { key: 'plotBookings', labelKey: 'nav.plotBookings', icon: 'grid_view', path: '/plot-bookings' },
+  { key: 'epins', labelKey: 'nav.epins', icon: 'confirmation_number', path: '/e-pins' },
   {
     key: 'myAccount', labelKey: 'nav.myAccount', icon: 'person', path: '/profile',
     children: [

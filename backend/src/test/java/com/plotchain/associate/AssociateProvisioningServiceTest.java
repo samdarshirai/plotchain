@@ -63,6 +63,7 @@ class AssociateProvisioningServiceTest {
         assertThat(created.getEmail()).isEqualTo("new@plotchain.test");
         assertThat(created.getName()).isEqualTo("Jane Doe");
         assertThat(created.getRole()).isEqualTo(AssociateRole.ASSOCIATE);
+        assertThat(created.getStatus()).isEqualTo(AssociateStatus.PENDING);
         assertThat(created.getRankId()).isEqualTo(lowestRank.getId());
         assertThat(created.getKycStatus()).isEqualTo(KycStatus.PENDING);
         assertThat(created.isMustChangePassword()).isTrue();

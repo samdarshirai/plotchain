@@ -68,7 +68,8 @@ class AssociateProfileControllerTest {
             .andExpect(jsonPath("$.userId").value("VP00001"))
             .andExpect(jsonPath("$.name").value("Jane Doe"))
             .andExpect(jsonPath("$.email").value("jane@example.com"))
-            .andExpect(jsonPath("$.address").value("221B Baker Street"));
+            .andExpect(jsonPath("$.address").value("221B Baker Street"))
+            .andExpect(jsonPath("$.status").value("ACTIVE"));
     }
 
     @Test

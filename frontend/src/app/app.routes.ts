@@ -26,6 +26,7 @@ import { SalesRegisterComponent } from './admin/sales-register/sales-register.co
 import { RecordSaleComponent } from './admin/sales-register/record-sale.component';
 import { CycleManagementComponent } from './admin/cycle-management/cycle-management.component';
 import { LedgerRegisterComponent } from './admin/ledger-register/ledger-register.component';
+import { EPinRegisterComponent } from './admin/epin-register/epin-register.component';
 import { PayoutApprovalComponent } from './admin/payout-approval/payout-approval.component';
 import { TermsOfServiceComponent } from './legal/terms-of-service.component';
 import { PrivacyPolicyComponent } from './legal/privacy-policy.component';
@@ -35,6 +36,7 @@ import { PlotBookingsComponent } from './plot-bookings/plot-bookings.component';
 import { MyAccountComponent } from './my-account/my-account.component';
 import { IncomeStatementComponent } from './income-statement/income-statement.component';
 import { PayoutHistoryComponent } from './payout-history/payout-history.component';
+import { EPinsComponent } from './epins/epins.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [loginRedirectGuard] },
@@ -44,6 +46,7 @@ export const routes: Routes = [
   { path: 'sales-history', component: SalesHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'my-tree', component: MyTreeComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'plot-bookings', component: PlotBookingsComponent, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'e-pins', component: EPinsComponent, canActivate: [authGuard, associateOnlyGuard] },
   // Merged into one "My Account" screen (Account Consolidation.dc.html) -- /rewards and
   // /digital-id-card redirect here so old bookmarks/links keep working. Split into 4 sibling
   // routes (Welcome Letter, Profile, Bank Details, KYC Details), all rendering the same
@@ -93,6 +96,7 @@ export const routes: Routes = [
       { path: 'sales-register', component: SalesRegisterComponent, data: { sectionKey: 'salesRegister' } },
       { path: 'cycle-management', component: CycleManagementComponent, data: { sectionKey: 'cycleManagement' } },
       { path: 'ledger-register', component: LedgerRegisterComponent, data: { sectionKey: 'ledgerRegister' } },
+      { path: 'e-pin-register', component: EPinRegisterComponent, data: { sectionKey: 'epinRegister' } },
       { path: 'payout-approval', component: PayoutApprovalComponent, data: { sectionKey: 'payoutApproval' } },
       { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } },
       { path: 'admin-stats', component: AdminStatsComponent, data: { sectionKey: 'adminStats' } },

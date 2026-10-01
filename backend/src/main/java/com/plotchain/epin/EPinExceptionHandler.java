@@ -21,8 +21,45 @@ public class EPinExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(com.plotchain.associate.AssociateNotPendingException.class)
+    public ResponseEntity<Map<String, String>> handleAssociateNotPending(
+            com.plotchain.associate.AssociateNotPendingException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(EPinNotOwnedException.class)
+    public ResponseEntity<Map<String, String>> handleEPinNotOwned(EPinNotOwnedException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(EPinExpiredException.class)
+    public ResponseEntity<Map<String, String>> handleEPinExpired(EPinExpiredException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(EPinAlreadyRedeemedException.class)
     public ResponseEntity<Map<String, String>> handleEPinAlreadyRedeemed(EPinAlreadyRedeemedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(EPinBlockedException.class)
+    public ResponseEntity<Map<String, String>> handleEPinBlocked(EPinBlockedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(EPinInvalidStateException.class)
+    public ResponseEntity<Map<String, String>> handleEPinInvalidState(EPinInvalidStateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(EPinInsufficientPoolException.class)
+    public ResponseEntity<Map<String, String>> handleInsufficientPool(EPinInsufficientPoolException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(com.plotchain.associate.AssociateNotActiveException.class)
+    public ResponseEntity<Map<String, String>> handleAssociateNotActive(
+            com.plotchain.associate.AssociateNotActiveException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
 }

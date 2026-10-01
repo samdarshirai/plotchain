@@ -4,7 +4,7 @@ export interface AdminAssociateSummary {
   name: string;
   rankName: string | null;
   kycStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
-  status: 'ACTIVE' | 'SUSPENDED';
+  status: 'ACTIVE' | 'SUSPENDED' | 'PENDING';
   joinedAt: string;
   lastActiveAt: string | null;
 }

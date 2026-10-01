@@ -8,5 +8,6 @@ public record EPinBatchResponse(
     UUID batchId,
     int count,
     List<String> codes,
-    Instant generatedAt
+    Instant generatedAt,
+    Instant expiresAt
 ) {}

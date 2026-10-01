@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -42,21 +43,42 @@ public class EPinController {
             @RequestParam(required = false) EPinStatus status,
             @RequestParam(required = false) UUID redeemedTo,
             @RequestParam(required = false) UUID batchId,
+            @RequestParam(required = false) UUID allocatedTo,
+            @RequestParam(defaultValue = "false") boolean expired,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
-        return epinService.list(status, redeemedTo, batchId, page, size);
+        return epinService.list(status, redeemedTo, batchId, allocatedTo, expired, page, size);
     }
 
-    // epin-domain unit 3 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
-    // Decision 10: the path parameter is the EPin's id, not its code): guard-only wiring --
-    // EPinService.redeem still ends in a placeholder throw until epin-domain unit 4 lands.
+    @PostMapping("/allocate")
+    public AllocateEPinResponse allocate(@Valid @RequestBody AllocateEPinRequest request,
+                                         @AuthenticationPrincipal UUID actorId) {
+        return epinService.allocate(request, actorId);
+    }
+
     @PostMapping("/{id}/redeem")
     public ResponseEntity<EPinResponse> redeem(
             @PathVariable UUID id,
             @Valid @RequestBody RedeemEPinRequest request,
             @AuthenticationPrincipal UUID actorId) {
         return ResponseEntity.ok(epinService.redeem(id, request, actorId));
+    }
+
+    @PostMapping("/{id}/block")
+    public EPinResponse block(@PathVariable UUID id, @Valid @RequestBody BlockEPinRequest request,
+                              @AuthenticationPrincipal UUID actorId) {
+        return epinService.block(id, request.reason(), actorId);
+    }
+
+    @PostMapping("/{id}/unblock")
+    public EPinResponse unblock(@PathVariable UUID id, @AuthenticationPrincipal UUID actorId) {
+        return epinService.unblock(id, actorId);
+    }
+
+    @GetMapping("/{id}/events")
+    public List<EPinEventResponse> events(@PathVariable UUID id) {
+        return epinService.events(id);
     }
 }

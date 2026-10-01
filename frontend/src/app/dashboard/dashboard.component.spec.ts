@@ -88,6 +88,9 @@ describe('DashboardComponent', () => {
     dashboardReq.flush(mockResponse);
     fixture.detectChanges();
 
+    // PendingActivationBannerComponent fetches the profile itself.
+    httpMock.expectOne('/api/associates/me/profile').flush({ status: 'ACTIVE' });
+
     // RecentSalesTableComponent fires its own request as a child; flush it so fixture settles.
     const salesReq = httpMock.expectOne(r => r.url === '/api/associates/me/sales');
     salesReq.flush({ page: 0, size: 5, totalElements: 0, sales: [] });

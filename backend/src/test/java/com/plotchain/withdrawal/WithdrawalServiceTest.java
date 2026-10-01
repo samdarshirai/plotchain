@@ -101,6 +101,18 @@ class WithdrawalServiceTest {
     }
 
     @Test
+    void submitRequestRejectsAPendingAssociate() {
+        Associate associate = verifiedActiveAssociate();
+        associate.setStatus(AssociateStatus.PENDING);
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
+
+        assertThatThrownBy(() -> withdrawalService.submitRequest(requestFor(ASSOCIATE_ID, new BigDecimal("1000")), ADMIN_ACTOR_ID))
+            .isInstanceOf(AssociatePendingActivationException.class);
+
+        verify(walletRepository, never()).debitIfSufficient(any(), any());
+    }
+
+    @Test
     void submitRequestThrowsWhenKycIsNotVerified() {
         Associate associate = verifiedActiveAssociate();
         associate.setKycStatus(KycStatus.PENDING);

@@ -59,6 +59,48 @@ public class EPin {
     @Column(name = "linked_entity_id")
     private UUID linkedEntityId;
 
+    @Column(name = "expires_at")
+    private Instant expiresAt;
+
+    @Column(name = "allocated_to")
+    private UUID allocatedTo;
+
+    @Column(name = "allocated_by")
+    private UUID allocatedBy;
+
+    @Column(name = "allocated_at")
+    private Instant allocatedAt;
+
+    @Column(name = "blocked_by")
+    private UUID blockedBy;
+
+    @Column(name = "blocked_at")
+    private Instant blockedAt;
+
+    @Column(name = "block_reason")
+    private String blockReason;
+
+    public Instant getExpiresAt() { return expiresAt; }
+    public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
+    public UUID getAllocatedTo() { return allocatedTo; }
+    public void setAllocatedTo(UUID allocatedTo) { this.allocatedTo = allocatedTo; }
+    public UUID getAllocatedBy() { return allocatedBy; }
+    public void setAllocatedBy(UUID allocatedBy) { this.allocatedBy = allocatedBy; }
+    public Instant getAllocatedAt() { return allocatedAt; }
+    public void setAllocatedAt(Instant allocatedAt) { this.allocatedAt = allocatedAt; }
+    public UUID getBlockedBy() { return blockedBy; }
+    public void setBlockedBy(UUID blockedBy) { this.blockedBy = blockedBy; }
+    public Instant getBlockedAt() { return blockedAt; }
+    public void setBlockedAt(Instant blockedAt) { this.blockedAt = blockedAt; }
+    public String getBlockReason() { return blockReason; }
+    public void setBlockReason(String blockReason) { this.blockReason = blockReason; }
+
+    // Expiry boundary: expiresAt == now is expired. Callers check status first; a USED or
+    // BLOCKED pin is never reported "expired" (see EPinService.toResponse).
+    public boolean isExpiredAt(Instant now) {
+        return expiresAt != null && !expiresAt.isAfter(now);
+    }
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
     public String getCode() { return code; }

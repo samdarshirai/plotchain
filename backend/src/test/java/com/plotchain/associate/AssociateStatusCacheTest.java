@@ -42,6 +42,15 @@ class AssociateStatusCacheTest {
     }
 
     @Test
+    void pendingAssociateIsStillTreatedAsAuthenticatedActive() {
+        UUID id = UUID.randomUUID();
+        when(associateRepository.findById(id)).thenReturn(Optional.of(newAssociate(id, AssociateStatus.PENDING)));
+
+        // A PENDING associate must not be locked out by the JWT filter.
+        assertThat(cache.isActive(id)).isTrue();
+    }
+
+    @Test
     void isActiveReturnsFalseForASuspendedAssociate() {
         UUID id = UUID.randomUUID();
         when(associateRepository.findById(id)).thenReturn(Optional.of(newAssociate(id, AssociateStatus.SUSPENDED)));

@@ -62,6 +62,9 @@ public class WithdrawalService {
         if (associate.getStatus() == AssociateStatus.SUSPENDED) {
             throw new AssociateSuspendedException(associate.getId());
         }
+        if (associate.getStatus() == AssociateStatus.PENDING) {
+            throw new AssociatePendingActivationException(associate.getId());
+        }
         if (associate.getKycStatus() != KycStatus.VERIFIED) {
             throw new KycNotVerifiedException(associate.getUserId());
         }
