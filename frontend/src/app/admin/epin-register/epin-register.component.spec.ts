@@ -354,6 +354,25 @@ describe('EPinRegisterComponent', () => {
     expect(fixture.nativeElement.querySelector('.epin-register__panel')).toBeNull();
   });
 
+  it('renders Redeem in the seal in place of the pin detail, and closes it on row select', () => {
+    flushInitial([pin(), pin({ id: 'p2' })]);
+    const c = fixture.componentInstance;
+    c.select(pin() as never);
+    httpMock.expectOne('/api/admin/epins/p1/events').flush([]);
+    c.openPanel({ kind: 'redeem', epin: pin() as never });
+    fixture.detectChanges();
+    const seal = fixture.nativeElement.querySelector('.epin-register__seal');
+    expect(fixture.nativeElement.querySelector('.epin-register__panel')).toBeNull();
+    expect(seal.textContent).toContain('admin.epinRegister.redeemAction');
+    expect(seal.textContent).toContain('CODE-1');
+    expect(seal.textContent).not.toContain('admin.epinRegister.historyTitle');
+    c.select(pin({ id: 'p2' }) as never);
+    httpMock.expectOne('/api/admin/epins/p2/events').flush([]);
+    fixture.detectChanges();
+    expect(c.panel).toBeNull();
+    expect(fixture.nativeElement.querySelector('.epin-register__seal').textContent).toContain('admin.epinRegister.historyTitle');
+  });
+
   it('ignores a history response that is still in flight when Allocate opens', () => {
     flushInitial([pin()]);
     const c = fixture.componentInstance;

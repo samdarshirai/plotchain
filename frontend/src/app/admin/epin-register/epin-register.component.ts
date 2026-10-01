@@ -76,7 +76,7 @@ type Panel =
       <app-inline-banner *ngIf="loadError" tone="danger">{{ 'admin.epinRegister.loadError' | translate }}</app-inline-banner>
       <app-inline-banner *ngIf="actionError" tone="danger">{{ actionError | translate }}</app-inline-banner>
 
-      <div class="epin-register__panel" *ngIf="panel && panel.kind !== 'allocate'">
+      <div class="epin-register__panel" *ngIf="panel && panel.kind !== 'allocate' && panel.kind !== 'redeem'">
         <ng-container [ngSwitch]="panel.kind">
           <form *ngSwitchCase="'generate'" (ngSubmit)="submitGenerate()">
             <h2>{{ 'admin.epinRegister.generateAction' | translate }}</h2>
@@ -85,25 +85,6 @@ type Panel =
             </label>
             <label>{{ 'admin.epinRegister.expiresLabel' | translate }}
               <input type="datetime-local" name="expires" [(ngModel)]="generateExpiresLocal" />
-            </label>
-            <div class="epin-register__form-actions">
-              <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
-              <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.cancel' | translate }}</button>
-            </div>
-          </form>
-
-          <form *ngSwitchCase="'redeem'" (ngSubmit)="submitRedeem()">
-            <h2>{{ 'admin.epinRegister.redeemAction' | translate }}</h2>
-            <div class="epin-register__field">{{ 'admin.epinRegister.associateLabel' | translate }}
-              <app-associate-lookup [associates]="associates" [value]="redeemAssociateId"
-                [placeholder]="'admin.epinRegister.lookupPlaceholder' | translate"
-                (selected)="onRedeemAssociate($event)"></app-associate-lookup>
-            </div>
-            <label>{{ 'admin.epinRegister.typeLabel' | translate }}
-              <select name="redeem-type" [(ngModel)]="redeemType">
-                <option value="ACTIVATION">{{ 'admin.epinRegister.typeActivation' | translate }}</option>
-                <option value="TOPUP">{{ 'admin.epinRegister.typeTopup' | translate }}</option>
-              </select>
             </label>
             <div class="epin-register__form-actions">
               <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
@@ -175,7 +156,28 @@ type Panel =
 
         <aside class="epin-register__detail">
           <div class="epin-register__seal">
-            <ng-container *ngIf="panel?.kind === 'allocate'; else pinDetail">
+            <ng-container *ngIf="panel?.kind === 'redeem'">
+              <div class="epin-register__seal-title">{{ 'admin.epinRegister.redeemAction' | translate }}</div>
+              <div class="epin-register__detail-code">{{ redeemEpin?.code }}</div>
+              <form (ngSubmit)="submitRedeem()">
+                <div class="epin-register__field">{{ 'admin.epinRegister.associateLabel' | translate }}
+                  <app-associate-lookup [associates]="associates" [value]="redeemAssociateId"
+                    [placeholder]="'admin.epinRegister.lookupPlaceholder' | translate"
+                    (selected)="onRedeemAssociate($event)"></app-associate-lookup>
+                </div>
+                <label>{{ 'admin.epinRegister.typeLabel' | translate }}
+                  <select name="redeem-type" [(ngModel)]="redeemType">
+                    <option value="ACTIVATION">{{ 'admin.epinRegister.typeActivation' | translate }}</option>
+                    <option value="TOPUP">{{ 'admin.epinRegister.typeTopup' | translate }}</option>
+                  </select>
+                </label>
+                <div class="epin-register__form-actions">
+                  <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
+                  <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.cancel' | translate }}</button>
+                </div>
+              </form>
+            </ng-container>
+            <ng-container *ngIf="panel?.kind === 'allocate'; else sealOther">
               <div class="epin-register__seal-title">{{ 'admin.epinRegister.allocateAction' | translate }}</div>
               <form (ngSubmit)="submitAllocate()">
                 <div class="epin-register__field">{{ 'admin.epinRegister.associateLabel' | translate }}
@@ -196,7 +198,8 @@ type Panel =
                 </div>
               </form>
             </ng-container>
-            <ng-template #pinDetail>
+            <ng-template #sealOther>
+            <ng-container *ngIf="panel?.kind !== 'redeem'">
             <div class="epin-register__seal-title">{{ 'admin.epinRegister.detailTitle' | translate }}</div>
             <p *ngIf="!selected" class="epin-register__detail-empty">{{ 'admin.epinRegister.detailEmpty' | translate }}</p>
             <ng-container *ngIf="selected as p">
@@ -235,6 +238,7 @@ type Panel =
                 </ng-container>
                 <button type="button" class="brand-button brand-button--secondary" *ngIf="p.status === 'BLOCKED'" (click)="unblock(p)">{{ 'admin.epinRegister.unblockAction' | translate }}</button>
               </div>
+            </ng-container>
             </ng-container>
             </ng-template>
           </div>
@@ -288,6 +292,10 @@ export class EPinRegisterComponent implements OnInit {
     this.loadPage(0);
   }
 
+  get redeemEpin(): EPin | null {
+    return this.panel?.kind === 'redeem' ? this.panel.epin : null;
+  }
+
   get selected(): EPin | null {
     return this.page?.epins.find(p => p.id === this.selectedId) ?? null;
   }
@@ -297,7 +305,7 @@ export class EPinRegisterComponent implements OnInit {
   }
 
   select(p: EPin): void {
-    if (this.panel?.kind === 'allocate') this.closePanel();
+    if (this.panel?.kind === 'allocate' || this.panel?.kind === 'redeem') this.closePanel();
     this.selectedId = p.id;
     this.events = [];
     this.loadEvents(p.id);
