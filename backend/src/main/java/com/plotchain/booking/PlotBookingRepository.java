@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,4 +27,9 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT b FROM PlotBooking b WHERE b.id = :id")
     Optional<PlotBooking> findByIdForUpdate(@Param("id") UUID id);
+
+    // Unit 6 stale-booking guard: is there ANOTHER booking in the given statuses on this plot?
+    // Derived query (plotId, id, status are all mapped fields). Must be called under the plot row lock.
+    Optional<PlotBooking> findFirstByPlotIdAndIdNotAndStatusIn(
+        UUID plotId, UUID excludedBookingId, Collection<BookingStatus> statuses);
 }
