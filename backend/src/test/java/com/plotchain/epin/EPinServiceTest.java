@@ -12,7 +12,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,6 +22,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -30,6 +33,10 @@ class EPinServiceTest {
 
     @Mock EPinRepository epinRepository;
     @Mock AssociateRepository associateRepository;
+    @Mock EPinEventRepository epinEventRepository;
+
+    static final Instant NOW = Instant.parse("2026-10-01T00:00:00Z");
+    final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
 
     // Field-initializer order note (same reasoning as SaleServiceTest's setUp()): a
     // `= new EPinService(epinRepository)` initializer here would run during instance
@@ -39,7 +46,7 @@ class EPinServiceTest {
 
     @BeforeEach
     void setUp() {
-        epinService = new EPinService(epinRepository, associateRepository);
+        epinService = new EPinService(epinRepository, associateRepository, epinEventRepository, clock);
     }
 
     @Test
@@ -104,10 +111,10 @@ class EPinServiceTest {
         epin.setRedemptionType(RedemptionType.ACTIVATION);
         epin.setLinkedEntityId(linkedEntityId);
 
-        when(epinRepository.search(any(), any(), any(), any()))
+        when(epinRepository.search(any(), any(), any(), any(), anyBoolean(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(epin), PageRequest.of(0, 20), 1));
 
-        EPinPageResponse response = epinService.list(EPinStatus.USED, redeemedTo, batchId, 0, 20);
+        EPinPageResponse response = epinService.list(EPinStatus.USED, redeemedTo, batchId, null, false, 0, 20);
 
         assertThat(response.page()).isEqualTo(0);
         assertThat(response.size()).isEqualTo(20);
@@ -130,18 +137,18 @@ class EPinServiceTest {
     void listPassesAllThreeFiltersAndThePageRequestThroughToSearchUnchanged() {
         UUID redeemedTo = UUID.randomUUID();
         UUID batchId = UUID.randomUUID();
-        when(epinRepository.search(any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
+        when(epinRepository.search(any(), any(), any(), any(), anyBoolean(), any(), any())).thenReturn(new PageImpl<>(List.of()));
 
-        epinService.list(EPinStatus.UNUSED, redeemedTo, batchId, 2, 10);
+        epinService.list(EPinStatus.UNUSED, redeemedTo, batchId, null, false, 2, 10);
 
-        verify(epinRepository).search(EPinStatus.UNUSED, redeemedTo, batchId, PageRequest.of(2, 10));
+        verify(epinRepository).search(EPinStatus.UNUSED, redeemedTo, batchId, null, false, NOW, PageRequest.of(2, 10));
     }
 
     @Test
     void listReturnsAnEmptyPageWhenSearchFindsNothing() {
-        when(epinRepository.search(any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
+        when(epinRepository.search(any(), any(), any(), any(), anyBoolean(), any(), any())).thenReturn(new PageImpl<>(List.of()));
 
-        EPinPageResponse response = epinService.list(null, null, null, 0, 20);
+        EPinPageResponse response = epinService.list(null, null, null, null, false, 0, 20);
 
         assertThat(response.epins()).isEmpty();
         assertThat(response.totalElements()).isZero();
@@ -155,7 +162,7 @@ class EPinServiceTest {
     @Test
     void redeemThrowsEPinNotFoundExceptionWhenTheEPinDoesNotExist() {
         UUID epinId = UUID.randomUUID();
-        when(epinRepository.findById(epinId)).thenReturn(Optional.empty());
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> epinService.redeem(epinId,
                 new RedeemEPinRequest(UUID.randomUUID(), RedemptionType.ACTIVATION, null), UUID.randomUUID()))
@@ -171,7 +178,7 @@ class EPinServiceTest {
         EPin usedEPin = new EPin();
         usedEPin.setId(epinId);
         usedEPin.setStatus(EPinStatus.USED);
-        when(epinRepository.findById(epinId)).thenReturn(Optional.of(usedEPin));
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(usedEPin));
 
         assertThatThrownBy(() -> epinService.redeem(epinId,
                 new RedeemEPinRequest(UUID.randomUUID(), RedemptionType.ACTIVATION, null), UUID.randomUUID()))
@@ -188,7 +195,7 @@ class EPinServiceTest {
         EPin unusedEPin = new EPin();
         unusedEPin.setId(epinId);
         unusedEPin.setStatus(EPinStatus.UNUSED);
-        when(epinRepository.findById(epinId)).thenReturn(Optional.of(unusedEPin));
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(unusedEPin));
         when(associateRepository.findById(associateId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> epinService.redeem(epinId,
@@ -211,7 +218,7 @@ class EPinServiceTest {
         EPin unusedEPin = new EPin();
         unusedEPin.setId(epinId);
         unusedEPin.setStatus(EPinStatus.UNUSED);
-        when(epinRepository.findById(epinId)).thenReturn(Optional.of(unusedEPin));
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(unusedEPin));
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(new Associate()));
         when(epinRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -247,7 +254,7 @@ class EPinServiceTest {
         EPin unusedEPin = new EPin();
         unusedEPin.setId(epinId);
         unusedEPin.setStatus(EPinStatus.UNUSED);
-        when(epinRepository.findById(epinId)).thenReturn(Optional.of(unusedEPin));
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(unusedEPin));
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(new Associate()));
         when(epinRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -263,5 +270,63 @@ class EPinServiceTest {
         assertThat(response.linkedEntityId()).isEqualTo(linkedEntityId);
 
         verify(associateRepository, never()).save(any());
+    }
+
+    @Test
+    void generateBatchRecordsOneGeneratedEventPerRowAttributedToTheActor() {
+        when(epinRepository.existsByCode(any())).thenReturn(false);
+        when(epinRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        ArgumentCaptor<EPinEvent> events = ArgumentCaptor.forClass(EPinEvent.class);
+        UUID actor = UUID.randomUUID();
+
+        epinService.generateBatch(new CreateEPinBatchRequest(3), actor);
+
+        verify(epinEventRepository, times(3)).save(events.capture());
+        assertThat(events.getAllValues()).allMatch(e ->
+            e.getEventType() == EPinEventType.GENERATED && e.getActorId().equals(actor) && e.getAt().equals(NOW));
+    }
+
+    @Test
+    void redeemRecordsARedeemedEventFromTheCurrentHolderToTheTarget() {
+        UUID epinId = UUID.randomUUID();
+        UUID holder = UUID.randomUUID();
+        UUID target = UUID.randomUUID();
+        UUID actor = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(epinId);
+        pin.setStatus(EPinStatus.ALLOCATED);
+        pin.setAllocatedTo(holder);
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(pin));
+        when(associateRepository.findById(target)).thenReturn(Optional.of(new Associate()));
+        ArgumentCaptor<EPinEvent> events = ArgumentCaptor.forClass(EPinEvent.class);
+
+        epinService.redeem(epinId, new RedeemEPinRequest(target, RedemptionType.TOPUP, null), actor);
+
+        verify(epinEventRepository).save(events.capture());
+        EPinEvent e = events.getValue();
+        assertThat(e.getEventType()).isEqualTo(EPinEventType.REDEEMED);
+        assertThat(e.getFromAssociateId()).isEqualTo(holder);
+        assertThat(e.getToAssociateId()).isEqualTo(target);
+        assertThat(pin.getStatus()).isEqualTo(EPinStatus.USED);
+        assertThat(pin.getRedeemedAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    void toResponseMarksAnUnusedPinPastItsExpiryAsExpiredButNeverAUsedOne() {
+        EPin expired = new EPin();
+        expired.setId(UUID.randomUUID());
+        expired.setStatus(EPinStatus.UNUSED);
+        expired.setExpiresAt(NOW);
+        EPin used = new EPin();
+        used.setId(UUID.randomUUID());
+        used.setStatus(EPinStatus.USED);
+        used.setExpiresAt(NOW.minusSeconds(60));
+        when(epinRepository.search(any(), any(), any(), any(), anyBoolean(), any(), any()))
+            .thenReturn(new PageImpl<>(List.of(expired, used), PageRequest.of(0, 20), 2));
+
+        EPinPageResponse response = epinService.list(null, null, null, null, false, 0, 20);
+
+        assertThat(response.epins().get(0).expired()).isTrue();
+        assertThat(response.epins().get(1).expired()).isFalse();
     }
 }

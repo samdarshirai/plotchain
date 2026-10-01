@@ -116,19 +116,19 @@ class EPinRepositoryTest {
         usedForBInBatchB.setRedemptionType(RedemptionType.TOPUP);
         epinRepository.saveAndFlush(usedForBInBatchB);
 
-        Page<EPin> byStatus = epinRepository.search(EPinStatus.UNUSED, null, null, PageRequest.of(0, 20));
+        Page<EPin> byStatus = epinRepository.search(EPinStatus.UNUSED, null, null, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(byStatus.getContent()).extracting(EPin::getId).containsExactly(unusedInBatchA.getId());
 
-        Page<EPin> byRedeemedTo = epinRepository.search(null, associateA, null, PageRequest.of(0, 20));
+        Page<EPin> byRedeemedTo = epinRepository.search(null, associateA, null, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(byRedeemedTo.getContent()).extracting(EPin::getId).containsExactly(usedForA.getId());
 
-        Page<EPin> byBatchId = epinRepository.search(null, null, batchB, PageRequest.of(0, 20));
+        Page<EPin> byBatchId = epinRepository.search(null, null, batchB, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(byBatchId.getContent()).extracting(EPin::getId).containsExactly(usedForBInBatchB.getId());
 
-        Page<EPin> combined = epinRepository.search(EPinStatus.USED, associateA, batchA, PageRequest.of(0, 20));
+        Page<EPin> combined = epinRepository.search(EPinStatus.USED, associateA, batchA, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(combined.getContent()).extracting(EPin::getId).containsExactly(usedForA.getId());
 
-        Page<EPin> unfiltered = epinRepository.search(null, null, null, PageRequest.of(0, 20));
+        Page<EPin> unfiltered = epinRepository.search(null, null, null, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(unfiltered.getTotalElements()).isEqualTo(3);
     }
 
@@ -145,12 +145,12 @@ class EPinRepositoryTest {
         latest.setGeneratedAt(Instant.parse("2026-01-30T00:00:00Z"));
         epinRepository.saveAndFlush(latest);
 
-        Page<EPin> firstPage = epinRepository.search(null, null, null, PageRequest.of(0, 2));
+        Page<EPin> firstPage = epinRepository.search(null, null, null, null, false, Instant.now(), PageRequest.of(0, 2));
         assertThat(firstPage.getContent()).extracting(EPin::getId)
             .containsExactly(latest.getId(), later.getId());
         assertThat(firstPage.getTotalElements()).isEqualTo(3);
 
-        Page<EPin> secondPage = epinRepository.search(null, null, null, PageRequest.of(1, 2));
+        Page<EPin> secondPage = epinRepository.search(null, null, null, null, false, Instant.now(), PageRequest.of(1, 2));
         assertThat(secondPage.getContent()).extracting(EPin::getId).containsExactly(earlier.getId());
     }
 
@@ -158,9 +158,67 @@ class EPinRepositoryTest {
     void searchReturnsAnEmptyPageWhenNoRowMatchesTheGivenFilters() {
         persistAdmin();
 
-        Page<EPin> result = epinRepository.search(null, UUID.randomUUID(), null, PageRequest.of(0, 20));
+        Page<EPin> result = epinRepository.search(null, UUID.randomUUID(), null, null, false, Instant.now(), PageRequest.of(0, 20));
 
         assertThat(result.getContent()).isEmpty();
         assertThat(result.getTotalElements()).isZero();
+    }
+
+    private EPin persistPin(UUID adminId, EPinStatus status, UUID allocatedTo, Instant expiresAt) {
+        EPin epin = new EPin();
+        epin.setId(UUID.randomUUID());
+        epin.setCode("c-" + UUID.randomUUID().toString().substring(0, 20)); // epin.code is VARCHAR(24)
+        epin.setBatchId(UUID.randomUUID());
+        epin.setStatus(status);
+        epin.setGeneratedBy(adminId);
+        epin.setGeneratedAt(Instant.now());
+        epin.setAllocatedTo(allocatedTo);
+        epin.setExpiresAt(expiresAt);
+        return entityManager.persist(epin);
+    }
+
+    @Test
+    void checkConstraintAcceptsAllocatedAndBlockedStatuses() {
+        UUID admin = persistAdmin();
+        persistPin(admin, EPinStatus.ALLOCATED, admin, null);
+        persistPin(admin, EPinStatus.BLOCKED, null, null);
+        entityManager.flush(); // would throw DataIntegrityViolationException if the CHECK rejected them
+    }
+
+    @Test
+    void searchFiltersByAllocatedTo() {
+        UUID admin = persistAdmin();
+        UUID holder = persistAdmin();
+        EPin mine = persistPin(admin, EPinStatus.ALLOCATED, holder, null);
+        persistPin(admin, EPinStatus.ALLOCATED, admin, null);
+        entityManager.flush();
+
+        Page<EPin> page = epinRepository.search(null, null, null, holder, false, Instant.now(), PageRequest.of(0, 20));
+
+        assertThat(page.getContent()).extracting(EPin::getId).containsExactly(mine.getId());
+    }
+
+    @Test
+    void searchExpiredOnlyReturnsOnlyUnusedOrAllocatedPinsPastExpiry() {
+        UUID admin = persistAdmin();
+        Instant now = Instant.parse("2026-10-01T00:00:00Z");
+        EPin expiredUnused = persistPin(admin, EPinStatus.UNUSED, null, now);              // boundary: == now is expired
+        persistPin(admin, EPinStatus.UNUSED, null, now.plusSeconds(1));                    // future
+        persistPin(admin, EPinStatus.UNUSED, null, null);                                  // never expires
+        persistPin(admin, EPinStatus.USED, null, now.minusSeconds(60));                    // used pins are never "expired"
+        entityManager.flush();
+
+        Page<EPin> page = epinRepository.search(null, null, null, null, true, now, PageRequest.of(0, 20));
+
+        assertThat(page.getContent()).extracting(EPin::getId).containsExactly(expiredUnused.getId());
+    }
+
+    @Test
+    void findByIdForUpdateReturnsThePin() {
+        UUID admin = persistAdmin();
+        EPin pin = persistPin(admin, EPinStatus.UNUSED, null, null);
+        entityManager.flush();
+
+        assertThat(epinRepository.findByIdForUpdate(pin.getId())).isPresent();
     }
 }

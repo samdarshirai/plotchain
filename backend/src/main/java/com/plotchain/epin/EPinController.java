@@ -42,11 +42,13 @@ public class EPinController {
             @RequestParam(required = false) EPinStatus status,
             @RequestParam(required = false) UUID redeemedTo,
             @RequestParam(required = false) UUID batchId,
+            @RequestParam(required = false) UUID allocatedTo,
+            @RequestParam(defaultValue = "false") boolean expired,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
-        return epinService.list(status, redeemedTo, batchId, page, size);
+        return epinService.list(status, redeemedTo, batchId, allocatedTo, expired, page, size);
     }
 
     // epin-domain unit 3 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,

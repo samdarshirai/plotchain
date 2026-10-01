@@ -3,14 +3,8 @@ package com.plotchain.epin;
 import java.time.Instant;
 import java.util.UUID;
 
-// epin-domain unit 2 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
-// Data model): one row of the admin register, one field per EPin column. Raw UUIDs for
-// generatedBy/redeemedTo/redeemedBy/linkedEntityId -- deliberately no batch-resolved associate
-// userId/name enrichment like AdminLedgerEntryResponse's associateUserId/associateName:
-// nothing in this spec's Decisions/Flows asks for it (unlike the Income/Ledger spec's explicit
-// Decisions 11-13), this is a backend-only unit, and a future screen unit can add an
-// enrichment endpoint if the admin UI turns out to need associate names inline. Full code
-// visibility, no masking (spec's Resolved decisions #4).
+// One row of the admin register, one field per EPin column (plus derived `expired`). Raw UUIDs,
+// deliberately no associate name enrichment. Full code visibility, no masking.
 public record EPinResponse(
     UUID id,
     String code,
@@ -18,9 +12,17 @@ public record EPinResponse(
     EPinStatus status,
     UUID generatedBy,
     Instant generatedAt,
+    Instant expiresAt,
+    UUID allocatedTo,
+    UUID allocatedBy,
+    Instant allocatedAt,
     UUID redeemedTo,
     UUID redeemedBy,
     Instant redeemedAt,
     RedemptionType redemptionType,
-    UUID linkedEntityId
+    UUID linkedEntityId,
+    UUID blockedBy,
+    Instant blockedAt,
+    String blockReason,
+    boolean expired
 ) {}

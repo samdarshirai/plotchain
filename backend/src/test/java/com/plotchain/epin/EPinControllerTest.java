@@ -21,6 +21,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
@@ -43,6 +44,7 @@ class EPinControllerTest {
 
     @MockBean AssociateRepository associateRepository;
     @MockBean EPinRepository epinRepository;
+    @MockBean EPinEventRepository epinEventRepository;
 
     private String tokenFor(AssociateRole role) {
         Associate associate = new Associate();
@@ -134,7 +136,7 @@ class EPinControllerTest {
         epin.setRedeemedBy(UUID.randomUUID());
         epin.setRedeemedAt(Instant.now());
         epin.setRedemptionType(RedemptionType.ACTIVATION);
-        when(epinRepository.search(eq(EPinStatus.USED), eq(redeemedTo), eq(batchId), any()))
+        when(epinRepository.search(eq(EPinStatus.USED), eq(redeemedTo), eq(batchId), isNull(), eq(false), any(), any()))
             .thenReturn(new PageImpl<>(List.of(epin), PageRequest.of(0, 20), 1));
 
         mockMvc.perform(get("/api/admin/epins")
@@ -152,7 +154,7 @@ class EPinControllerTest {
 
     @Test
     void listReturns200WithAnEmptyPageWhenUnfiltered() throws Exception {
-        when(epinRepository.search(isNull(), isNull(), isNull(), any()))
+        when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), any()))
             .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/admin/epins")
@@ -164,26 +166,26 @@ class EPinControllerTest {
 
     @Test
     void listClampsAnOversizedPageSizeToTheServerSideMaximum() throws Exception {
-        when(epinRepository.search(isNull(), isNull(), isNull(), eq(PageRequest.of(0, 100))))
+        when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 100))))
             .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/admin/epins").param("size", "999999")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
-        verify(epinRepository).search(isNull(), isNull(), isNull(), eq(PageRequest.of(0, 100)));
+        verify(epinRepository).search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 100)));
     }
 
     @Test
     void listClampsANegativePageToZeroInsteadOfThrowing() throws Exception {
-        when(epinRepository.search(isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/admin/epins").param("page", "-5")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
-        verify(epinRepository).search(isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20)));
+        verify(epinRepository).search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 20)));
     }
 
     @Test
@@ -222,7 +224,7 @@ class EPinControllerTest {
     void redeemReturns404WhenTheEPinDoesNotExist() throws Exception {
         UUID epinId = UUID.randomUUID();
         UUID associateId = UUID.randomUUID();
-        when(epinRepository.findById(epinId)).thenReturn(Optional.empty());
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/admin/epins/{id}/redeem", epinId)
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
@@ -238,7 +240,7 @@ class EPinControllerTest {
         EPin usedEPin = new EPin();
         usedEPin.setId(epinId);
         usedEPin.setStatus(EPinStatus.USED);
-        when(epinRepository.findById(epinId)).thenReturn(Optional.of(usedEPin));
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(usedEPin));
 
         mockMvc.perform(post("/api/admin/epins/{id}/redeem", epinId)
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
@@ -254,7 +256,7 @@ class EPinControllerTest {
         EPin unusedEPin = new EPin();
         unusedEPin.setId(epinId);
         unusedEPin.setStatus(EPinStatus.UNUSED);
-        when(epinRepository.findById(epinId)).thenReturn(Optional.of(unusedEPin));
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(unusedEPin));
         when(associateRepository.findById(associateId)).thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/admin/epins/{id}/redeem", epinId)
@@ -316,7 +318,7 @@ class EPinControllerTest {
         unusedEPin.setStatus(EPinStatus.UNUSED);
         unusedEPin.setGeneratedBy(UUID.randomUUID());
         unusedEPin.setGeneratedAt(Instant.now());
-        when(epinRepository.findById(epinId)).thenReturn(Optional.of(unusedEPin));
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(unusedEPin));
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(new Associate()));
         when(epinRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -335,5 +337,20 @@ class EPinControllerTest {
             .andExpect(jsonPath("$.linkedEntityId").value(linkedEntityId.toString()));
 
         verify(epinRepository).save(any());
+    }
+
+    @Test
+    void listAcceptsTheAllocatedToAndExpiredFiltersAndPassesThemThrough() throws Exception {
+        UUID holder = UUID.randomUUID();
+        when(epinRepository.search(any(), any(), any(), any(), anyBoolean(), any(), any()))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        mockMvc.perform(get("/api/admin/epins")
+                .param("allocatedTo", holder.toString())
+                .param("expired", "true")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk());
+
+        verify(epinRepository).search(isNull(), isNull(), isNull(), eq(holder), eq(true), any(), any());
     }
 }

@@ -2,5 +2,7 @@ package com.plotchain.epin;
 
 public enum EPinStatus {
     UNUSED,
-    USED
+    ALLOCATED,
+    USED,
+    BLOCKED
 }

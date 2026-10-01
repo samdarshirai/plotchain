@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,10 +18,15 @@ public class EPinService {
 
     private final EPinRepository epinRepository;
     private final AssociateRepository associateRepository;
+    private final EPinEventRepository epinEventRepository;
+    private final Clock clock;
 
-    public EPinService(EPinRepository epinRepository, AssociateRepository associateRepository) {
+    public EPinService(EPinRepository epinRepository, AssociateRepository associateRepository,
+                       EPinEventRepository epinEventRepository, Clock clock) {
         this.epinRepository = epinRepository;
         this.associateRepository = associateRepository;
+        this.epinEventRepository = epinEventRepository;
+        this.clock = clock;
     }
 
     // epin-domain unit 1 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
@@ -30,7 +36,7 @@ public class EPinService {
     @Transactional
     public EPinBatchResponse generateBatch(CreateEPinBatchRequest request, UUID actorId) {
         UUID batchId = UUID.randomUUID();
-        Instant generatedAt = Instant.now();
+        Instant generatedAt = clock.instant();
         List<String> codes = new ArrayList<>();
 
         for (int i = 0; i < request.count(); i++) {
@@ -47,6 +53,7 @@ public class EPinService {
             epin.setGeneratedBy(actorId);
             epin.setGeneratedAt(generatedAt);
             epinRepository.save(epin);
+            recordEvent(epin.getId(), EPinEventType.GENERATED, actorId, null, null, null);
             codes.add(code);
         }
 
@@ -57,8 +64,10 @@ public class EPinService {
     // null-safe pattern as LedgerService.adminList -- passed straight through to
     // EPinRepository.search unchanged. No batch-resolved associate enrichment (see
     // EPinResponse's own comment for why).
-    public EPinPageResponse list(EPinStatus status, UUID redeemedTo, UUID batchId, int page, int size) {
-        Page<EPin> result = epinRepository.search(status, redeemedTo, batchId, PageRequest.of(page, size));
+    public EPinPageResponse list(EPinStatus status, UUID redeemedTo, UUID batchId, UUID allocatedTo,
+                                 boolean expiredOnly, int page, int size) {
+        Page<EPin> result = epinRepository.search(status, redeemedTo, batchId, allocatedTo, expiredOnly,
+            clock.instant(), PageRequest.of(page, size));
         List<EPinResponse> epins = result.getContent().stream().map(this::toResponse).toList();
         return new EPinPageResponse(epins, page, size, result.getTotalElements());
     }
@@ -72,7 +81,7 @@ public class EPinService {
     // helper list(...) already uses.
     @Transactional
     public EPinResponse redeem(UUID id, RedeemEPinRequest request, UUID actorId) {
-        EPin epin = epinRepository.findById(id)
+        EPin epin = epinRepository.findByIdForUpdate(id)
             .orElseThrow(() -> new EPinNotFoundException(id));
 
         if (epin.getStatus() == EPinStatus.USED) {
@@ -82,22 +91,32 @@ public class EPinService {
         associateRepository.findById(request.associateId())
             .orElseThrow(() -> new AssociateNotFoundException(request.associateId()));
 
+        UUID holder = epin.getAllocatedTo();
         epin.setStatus(EPinStatus.USED);
         epin.setRedeemedTo(request.associateId());
         epin.setRedeemedBy(actorId);
-        epin.setRedeemedAt(Instant.now());
+        epin.setRedeemedAt(clock.instant());
         epin.setRedemptionType(request.redemptionType());
         epin.setLinkedEntityId(request.linkedEntityId());
         epinRepository.save(epin);
+        recordEvent(id, EPinEventType.REDEEMED, actorId, holder, request.associateId(), null);
 
         return toResponse(epin);
     }
 
+    private void recordEvent(UUID epinId, EPinEventType type, UUID actorId, UUID from, UUID to, String note) {
+        epinEventRepository.save(EPinEvent.of(epinId, type, actorId, from, to, clock.instant(), note));
+    }
+
     private EPinResponse toResponse(EPin epin) {
+        boolean live = epin.getStatus() == EPinStatus.UNUSED || epin.getStatus() == EPinStatus.ALLOCATED;
         return new EPinResponse(
             epin.getId(), epin.getCode(), epin.getBatchId(), epin.getStatus(),
-            epin.getGeneratedBy(), epin.getGeneratedAt(),
+            epin.getGeneratedBy(), epin.getGeneratedAt(), epin.getExpiresAt(),
+            epin.getAllocatedTo(), epin.getAllocatedBy(), epin.getAllocatedAt(),
             epin.getRedeemedTo(), epin.getRedeemedBy(), epin.getRedeemedAt(),
-            epin.getRedemptionType(), epin.getLinkedEntityId());
+            epin.getRedemptionType(), epin.getLinkedEntityId(),
+            epin.getBlockedBy(), epin.getBlockedAt(), epin.getBlockReason(),
+            live && epin.isExpiredAt(clock.instant()));
     }
 }
