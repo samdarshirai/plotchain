@@ -16,7 +16,7 @@ Index over `docs/superpowers/specs/role-capability/*.md`. This is the file a new
 | `2026-08-03-income-ledger-domain-design.md` | **done** | `2026-08-03-income-ledger-units.md` | 4 / 4 |
 | `2026-08-04-wallet-withdrawal-domain-design.md` | **done** | `2026-08-04-wallet-withdrawal-units.md` | 12 / 12 |
 | `2026-08-03-epin-domain-design.md` | **done** (units 5–7 + blog-extension shipped out-of-band, unreviewed) | `2026-08-03-epin-units.md` | 7 / 7 |
-| `2026-10-01-plot-booking-lifecycle-design.md` | **sliced** | `2026-10-01-plot-booking-units.md` | 0 / 13 |
+| `2026-10-01-plot-booking-lifecycle-design.md` | **in progress** | `2026-10-01-plot-booking-units.md` | 1 / 13 |
 | `2026-08-03-support-tickets-domain-design.md` | not started | — | — |
 | `2026-08-03-announcements-domain-design.md` | not started | — | — |
 
