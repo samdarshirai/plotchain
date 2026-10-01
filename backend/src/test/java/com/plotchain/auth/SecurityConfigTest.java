@@ -820,6 +820,16 @@ class SecurityConfigTest {
             .andExpect(status().isOk());
     }
 
+    // epin-extension unit 10: GET /api/associates/me/epins needs no matcher (falls through to
+    // anyRequest().authenticated()); EPinRepository is not @MockBean'd here, so it runs for real
+    // against the empty H2 DB and returns an empty page.
+    @Test
+    void associateMeEpinsIsReachableByAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/associates/me/epins")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk());
+    }
+
     // role-capability unit 9 (docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
     // "Compensation rules" row -- Associate sees "View own rank progress / reward tiers
     // (read-only)"): needs no explicit SecurityConfig matcher -- a bare GET never collides with

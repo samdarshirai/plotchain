@@ -81,6 +81,12 @@ public class EPinService {
         return new EPinPageResponse(epins, page, size, result.getTotalElements());
     }
 
+    public EPinPageResponse listForAssociate(UUID me, EPinStatus status, int page, int size) {
+        Page<EPin> result = epinRepository.searchForAssociate(me, status, PageRequest.of(page, size));
+        List<EPinResponse> epins = result.getContent().stream().map(this::toResponse).toList();
+        return new EPinPageResponse(epins, page, size, result.getTotalElements());
+    }
+
     // epin-domain unit 4 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
     // Flows "Redeem", steps 4-5; Decisions 5, 6, 7, 8): once all three guards (unit 3) pass, this
     // is the only write in the redeem flow -- generation and redemption remain the sole two

@@ -240,4 +240,37 @@ class EPinRepositoryTest {
 
         assertThat(pool).extracting(EPin::getId).containsExactly(older.getId(), newer.getId());
     }
+
+    @Test
+    void searchForAssociateReturnsPinsAllocatedToRedeemedToOrRedeemedByMeAndNoOthers() {
+        UUID admin = persistAdmin();
+        UUID me = persistAdmin();
+        UUID other = persistAdmin();
+        EPin held = persistPin(admin, EPinStatus.ALLOCATED, me, null);
+        EPin redeemedForMe = persistPin(admin, EPinStatus.USED, null, null);
+        redeemedForMe.setRedeemedTo(me);
+        EPin redeemedByMe = persistPin(admin, EPinStatus.USED, null, null);
+        redeemedByMe.setRedeemedBy(me);
+        persistPin(admin, EPinStatus.ALLOCATED, other, null);
+        persistPin(admin, EPinStatus.UNUSED, null, null);
+        entityManager.flush();
+
+        Page<EPin> page = epinRepository.searchForAssociate(me, null, PageRequest.of(0, 20));
+
+        assertThat(page.getContent()).extracting(EPin::getId)
+            .containsExactlyInAnyOrder(held.getId(), redeemedForMe.getId(), redeemedByMe.getId());
+    }
+
+    @Test
+    void searchForAssociateAppliesTheStatusFilter() {
+        UUID admin = persistAdmin();
+        UUID me = persistAdmin();
+        EPin held = persistPin(admin, EPinStatus.ALLOCATED, me, null);
+        EPin used = persistPin(admin, EPinStatus.USED, me, null);
+        entityManager.flush();
+
+        Page<EPin> page = epinRepository.searchForAssociate(me, EPinStatus.ALLOCATED, PageRequest.of(0, 20));
+
+        assertThat(page.getContent()).extracting(EPin::getId).containsExactly(held.getId());
+    }
 }

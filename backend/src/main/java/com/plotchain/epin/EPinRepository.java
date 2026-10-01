@@ -41,6 +41,14 @@ public interface EPinRepository extends JpaRepository<EPin, UUID> {
         @Param("now") Instant now,
         Pageable pageable);
 
+    @Query("""
+        SELECT e FROM EPin e
+        WHERE (e.allocatedTo = :me OR e.redeemedTo = :me OR e.redeemedBy = :me)
+        AND (:status IS NULL OR e.status = :status)
+        ORDER BY e.generatedAt DESC, e.id
+        """)
+    Page<EPin> searchForAssociate(@Param("me") UUID me, @Param("status") EPinStatus status, Pageable pageable);
+
     // Row lock for every state transition (redeem/transfer/allocate/block/unblock): two
     // simultaneous requests on one pin serialise here, so the second sees the mutated status.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
