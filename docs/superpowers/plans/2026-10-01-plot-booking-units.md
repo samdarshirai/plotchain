@@ -65,7 +65,7 @@ Acceptance criteria:
 **Refs:** Decisions 6, 7, 8, 12; Flows "Record payment"; Error handling; Testing (service tests, concurrency)
 
 Acceptance criteria:
-- ADMIN `PATCH /api/admin/bookings/{id}/installments/{n}/pay` with `RecordPaymentRequest(paymentRef, paidAt?)` locks the booking (`findByIdForUpdate`), sets installment `PAID`, `paid_at` (default now), `payment_ref`, `recorded_by`, and writes a `PAID` `booking_event` (Flows).
+- ADMIN `PATCH /api/admin/bookings/{id}/installments/{n}/pay` with `RecordPaymentRequest(amount, paymentRef, paidAt?)` locks the booking (`findByIdForUpdate`), sets installment `PAID`, `paid_at` (default now), `payment_ref`, `recorded_by`, and writes a `PAID` `booking_event` (Flows).
 - Unknown booking 404; booking not `ACTIVE` 409 `BookingNotActiveException`; unknown installment `n` 404; installment not `PENDING` (already `PAID`/`VOID`) 409; amount mismatch 400 (Flows; Decision 6; Error handling). See Ambiguities re: where the amount comes from.
 - Installments may be paid in any order (Decision 6).
 - Concurrent pay on one installment succeeds exactly once (Testing, concurrency).
@@ -201,7 +201,10 @@ Acceptance criteria:
 - No write affordance anywhere on either (Screens; Decision 12).
 - Component/service specs; no e2e.
 
-## Ambiguities (not decided here)
+## Ambiguities — all resolved 2026-10-01 (see spec "Resolved decisions (post-slice)")
+
+Resolutions: (1) `RecordPaymentRequest` gains `amount`, 400 on mismatch; (2) cancel stores reason + paid total in `CANCELLED` `booking_event.detail`; (3) current global `booking_emi_config` at pay/confirm time; (4) transfer target must be `ACTIVE`; (5) `overdue=true` limited to `ACTIVE` bookings; (6) auto-confirm writes both `PAID` and `CONFIRMED` events; (7) `createBooking` already sets `BOOKED`; (8) register `booked_at` desc, overdue report oldest due date asc. Original questions kept below for the record.
+
 
 1. **Payment amount source.** Decision 6 and Flow "Record payment" say "amount must equal the installment amount" / "400 if body amount != installment amount", but `RecordPaymentRequest(paymentRef, paidAt?)` has no amount field. Either the DTO gains an `amount`, or there is nothing to mismatch (and the 400 case is dropped). Unit 2 lists the 400 criterion pending this.
 2. **Where cancelled-booking paid amounts are "retained as a note".** Decision 4 says PAID amounts are retained "as a note"; no column/event field is named (`cancel_reason`? `booking_event.detail`?).

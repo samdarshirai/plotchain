@@ -42,7 +42,7 @@ New migration (next free `V__` number at implementation time):
 - `sale` add: `booking_id` NULL (FK `plot_booking`, unique when not null).
 - `booking_event` (id, booking_id, type [`PAID`/`CONFIRMED`/`CANCELLED`/`TRANSFERRED`], actor_id, detail, created_at) for audit of transfer/cancel/confirm/pay.
 
-DTOs: `RecordPaymentRequest(paymentRef, paidAt?)`, `CancelBookingRequest(reason)`, `TransferBookingRequest(associateId)`, `AdminBookingPageResponse`, `BookingResponse` extended with `status`, `buyerName`, `paidAmount`, `dueAmount`, `installments[status, paidAt, overdue]`, `OverdueReportPageResponse`, `PlotGridResponse`.
+DTOs: `RecordPaymentRequest(amount, paymentRef, paidAt?)`, `CancelBookingRequest(reason)`, `TransferBookingRequest(associateId)`, `AdminBookingPageResponse`, `BookingResponse` extended with `status`, `buyerName`, `paidAmount`, `dueAmount`, `installments[status, paidAt, overdue]`, `OverdueReportPageResponse`, `PlotGridResponse`.
 
 New exceptions: `BookingNotFoundException` (404), `BookingNotActiveException` (409), `InstallmentNotPayableException` (409), `InstallmentNotFoundException` (404), `SameAssociateTransferException` (400).
 
@@ -101,6 +101,17 @@ Any authenticated user; `PlotGridResponse` (plotId, plotNo, type, area, price, s
 ## File overlap notes (for planning/slicing)
 
 Touches `SaleService.java` and `Sale.java` (refactor + `booking_id`), `SecurityConfig.java` (new grid read), `BookingService`/`PlotBooking`/`EmiInstallment`, and admin nav (`admin` sidebar). Sequence units touching `SaleService` and `SecurityConfig` against any other in-flight spec.
+
+## Resolved decisions (post-slice)
+
+1. `RecordPaymentRequest` carries `amount`; server returns 400 if it != the installment amount.
+2. Cancel stores the reason and total paid amount in the `CANCELLED` `booking_event.detail`; no new column.
+3. Confirm rule/threshold are read from the current global `booking_emi_config` singleton at pay/confirm time (no per-booking snapshot, not per-project).
+4. Transfer target must be `ACTIVE`; `PENDING` or suspended targets return 400.
+5. `overdue=true` on the admin register is restricted to `ACTIVE` bookings, matching the overdue report.
+6. Auto-confirm writes both a `PAID` and a `CONFIRMED` `booking_event` in the same transaction.
+7. `createBooking` already sets the plot `BOOKED` (existing behaviour, unchanged).
+8. Register sorts by `booked_at` descending; overdue report by oldest overdue due date ascending.
 
 ## Open items
 
