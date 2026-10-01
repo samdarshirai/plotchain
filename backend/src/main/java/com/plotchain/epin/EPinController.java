@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -60,5 +61,21 @@ public class EPinController {
             @Valid @RequestBody RedeemEPinRequest request,
             @AuthenticationPrincipal UUID actorId) {
         return ResponseEntity.ok(epinService.redeem(id, request, actorId));
+    }
+
+    @PostMapping("/{id}/block")
+    public EPinResponse block(@PathVariable UUID id, @Valid @RequestBody BlockEPinRequest request,
+                              @AuthenticationPrincipal UUID actorId) {
+        return epinService.block(id, request.reason(), actorId);
+    }
+
+    @PostMapping("/{id}/unblock")
+    public EPinResponse unblock(@PathVariable UUID id, @AuthenticationPrincipal UUID actorId) {
+        return epinService.unblock(id, actorId);
+    }
+
+    @GetMapping("/{id}/events")
+    public List<EPinEventResponse> events(@PathVariable UUID id) {
+        return epinService.events(id);
     }
 }

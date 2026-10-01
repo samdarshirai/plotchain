@@ -89,6 +89,10 @@ public class EPinService {
             throw new EPinAlreadyRedeemedException(id);
         }
 
+        if (epin.getStatus() == EPinStatus.BLOCKED) {
+            throw new EPinBlockedException(id);
+        }
+
         if (epin.isExpiredAt(clock.instant())) {
             throw new EPinExpiredException(id);
         }
@@ -107,6 +111,43 @@ public class EPinService {
         recordEvent(id, EPinEventType.REDEEMED, actorId, holder, request.associateId(), null);
 
         return toResponse(epin);
+    }
+
+    @Transactional
+    public EPinResponse block(UUID id, String reason, UUID actorId) {
+        EPin epin = epinRepository.findByIdForUpdate(id).orElseThrow(() -> new EPinNotFoundException(id));
+        if (epin.getStatus() == EPinStatus.USED || epin.getStatus() == EPinStatus.BLOCKED) {
+            throw new EPinInvalidStateException("Cannot block an e-PIN in status " + epin.getStatus() + ": " + id);
+        }
+        epin.setStatus(EPinStatus.BLOCKED);
+        epin.setBlockedBy(actorId);
+        epin.setBlockedAt(clock.instant());
+        epin.setBlockReason(reason);
+        epinRepository.save(epin);
+        recordEvent(id, EPinEventType.BLOCKED, actorId, epin.getAllocatedTo(), null, reason);
+        return toResponse(epin);
+    }
+
+    @Transactional
+    public EPinResponse unblock(UUID id, UUID actorId) {
+        EPin epin = epinRepository.findByIdForUpdate(id).orElseThrow(() -> new EPinNotFoundException(id));
+        if (epin.getStatus() != EPinStatus.BLOCKED) {
+            throw new EPinInvalidStateException("E-PIN is not blocked: " + id);
+        }
+        epin.setStatus(epin.getAllocatedTo() != null ? EPinStatus.ALLOCATED : EPinStatus.UNUSED);
+        epin.setBlockedBy(null);
+        epin.setBlockedAt(null);
+        epin.setBlockReason(null);
+        epinRepository.save(epin);
+        recordEvent(id, EPinEventType.UNBLOCKED, actorId, null, epin.getAllocatedTo(), null);
+        return toResponse(epin);
+    }
+
+    public List<EPinEventResponse> events(UUID id) {
+        if (!epinRepository.existsById(id)) {
+            throw new EPinNotFoundException(id);
+        }
+        return epinEventRepository.findByEpinIdOrderByAtAscIdAsc(id).stream().map(EPinEventResponse::from).toList();
     }
 
     private void recordEvent(UUID epinId, EPinEventType type, UUID actorId, UUID from, UUID to, String note) {

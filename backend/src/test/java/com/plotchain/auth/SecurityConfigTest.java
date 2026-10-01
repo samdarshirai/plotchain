@@ -598,6 +598,22 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
     }
 
+    // e-PIN block/unblock/events are ADMIN-only; events is a GET so it needs its own matcher.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminEpinsBlockUnblockAndEventsAreForbiddenForEveryNonAdminRole(AssociateRole role) throws Exception {
+        if (role == AssociateRole.ADMIN) return;
+        String auth = "Bearer " + tokenFor(role);
+        UUID id = UUID.randomUUID();
+        mockMvc.perform(post("/api/admin/epins/{id}/block", id).header("Authorization", auth)
+                .contentType("application/json").content("{\"reason\":\"x\"}"))
+            .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/admin/epins/{id}/unblock", id).header("Authorization", auth))
+            .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/admin/epins/{id}/events", id).header("Authorization", auth))
+            .andExpect(status().isForbidden());
+    }
+
     // Role-capability unit 7: GET /api/associates/me/bookings needs no explicit SecurityConfig
     // matcher -- a bare GET never collides with the blanket POST/PUT/PATCH/DELETE write rules
     // above, so it falls through to anyRequest().authenticated() below, the same way GET

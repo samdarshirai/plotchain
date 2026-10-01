@@ -30,4 +30,14 @@ public class EPinExceptionHandler {
     public ResponseEntity<Map<String, String>> handleEPinAlreadyRedeemed(EPinAlreadyRedeemedException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(EPinBlockedException.class)
+    public ResponseEntity<Map<String, String>> handleEPinBlocked(EPinBlockedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(EPinInvalidStateException.class)
+    public ResponseEntity<Map<String, String>> handleEPinInvalidState(EPinInvalidStateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
 }

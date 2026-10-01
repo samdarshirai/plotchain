@@ -406,4 +406,58 @@ class EPinControllerTest {
                 .contentType("application/json").content(body))
             .andExpect(status().isConflict());
     }
+
+    @Test
+    void blockReturns200AndUnblockRestoresIt() throws Exception {
+        UUID id = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(id);
+        pin.setStatus(EPinStatus.UNUSED);
+        when(epinRepository.findByIdForUpdate(id)).thenReturn(Optional.of(pin));
+        String admin = tokenFor(AssociateRole.ADMIN);
+
+        mockMvc.perform(post("/api/admin/epins/" + id + "/block")
+                .header("Authorization", "Bearer " + admin)
+                .contentType("application/json").content("{\"reason\":\"lost\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("BLOCKED"))
+            .andExpect(jsonPath("$.blockReason").value("lost"));
+
+        mockMvc.perform(post("/api/admin/epins/" + id + "/unblock")
+                .header("Authorization", "Bearer " + admin))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("UNUSED"));
+    }
+
+    @Test
+    void blockWithABlankReasonReturns400AndBlockingAUsedPinReturns409() throws Exception {
+        UUID id = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(id);
+        pin.setStatus(EPinStatus.USED);
+        when(epinRepository.findByIdForUpdate(id)).thenReturn(Optional.of(pin));
+        String admin = tokenFor(AssociateRole.ADMIN);
+
+        mockMvc.perform(post("/api/admin/epins/" + id + "/block")
+                .header("Authorization", "Bearer " + admin)
+                .contentType("application/json").content("{\"reason\":\"  \"}"))
+            .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/admin/epins/" + id + "/block")
+                .header("Authorization", "Bearer " + admin)
+                .contentType("application/json").content("{\"reason\":\"x\"}"))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void eventsEndpointIs404ForAnUnknownPinAndForbiddenForAnAssociateToken() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(epinRepository.existsById(id)).thenReturn(false);
+
+        mockMvc.perform(get("/api/admin/epins/" + id + "/events")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/admin/epins/" + id + "/events")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
 }

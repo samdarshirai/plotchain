@@ -376,4 +376,94 @@ class EPinServiceTest {
 
         assertThat(pin.getStatus()).isEqualTo(EPinStatus.USED);
     }
+
+    private EPin pinWith(EPinStatus status) {
+        EPin pin = new EPin();
+        pin.setId(UUID.randomUUID());
+        pin.setStatus(status);
+        when(epinRepository.findByIdForUpdate(pin.getId())).thenReturn(Optional.of(pin));
+        return pin;
+    }
+
+    @Test
+    void blockMovesAnUnusedPinToBlockedRecordingReasonActorAndAnEvent() {
+        EPin pin = pinWith(EPinStatus.UNUSED);
+        UUID actor = UUID.randomUUID();
+        ArgumentCaptor<EPinEvent> events = ArgumentCaptor.forClass(EPinEvent.class);
+
+        epinService.block(pin.getId(), "lost voucher", actor);
+
+        assertThat(pin.getStatus()).isEqualTo(EPinStatus.BLOCKED);
+        assertThat(pin.getBlockedBy()).isEqualTo(actor);
+        assertThat(pin.getBlockedAt()).isEqualTo(NOW);
+        assertThat(pin.getBlockReason()).isEqualTo("lost voucher");
+        verify(epinEventRepository).save(events.capture());
+        assertThat(events.getValue().getEventType()).isEqualTo(EPinEventType.BLOCKED);
+        assertThat(events.getValue().getNote()).isEqualTo("lost voucher");
+    }
+
+    @Test
+    void blockRejectsAUsedOrAlreadyBlockedPinWithNoSideEffects() {
+        EPin used = pinWith(EPinStatus.USED);
+        EPin blocked = pinWith(EPinStatus.BLOCKED);
+
+        assertThatThrownBy(() -> epinService.block(used.getId(), "x", UUID.randomUUID()))
+            .isInstanceOf(EPinInvalidStateException.class);
+        assertThatThrownBy(() -> epinService.block(blocked.getId(), "x", UUID.randomUUID()))
+            .isInstanceOf(EPinInvalidStateException.class);
+
+        verify(epinRepository, never()).save(any());
+        verify(epinEventRepository, never()).save(any());
+    }
+
+    @Test
+    void unblockRestoresAllocatedWhenAHolderIsSetElseUnusedAndClearsBlockFields() {
+        EPin held = pinWith(EPinStatus.BLOCKED);
+        held.setAllocatedTo(UUID.randomUUID());
+        held.setBlockedBy(UUID.randomUUID());
+        held.setBlockReason("r");
+        EPin free = pinWith(EPinStatus.BLOCKED);
+
+        epinService.unblock(held.getId(), UUID.randomUUID());
+        epinService.unblock(free.getId(), UUID.randomUUID());
+
+        assertThat(held.getStatus()).isEqualTo(EPinStatus.ALLOCATED);
+        assertThat(held.getBlockedBy()).isNull();
+        assertThat(held.getBlockReason()).isNull();
+        assertThat(free.getStatus()).isEqualTo(EPinStatus.UNUSED);
+    }
+
+    @Test
+    void unblockRejectsAPinThatIsNotBlocked() {
+        EPin pin = pinWith(EPinStatus.UNUSED);
+
+        assertThatThrownBy(() -> epinService.unblock(pin.getId(), UUID.randomUUID()))
+            .isInstanceOf(EPinInvalidStateException.class);
+    }
+
+    @Test
+    void redeemRejectsABlockedPinWithNoSideEffects() {
+        EPin pin = pinWith(EPinStatus.BLOCKED);
+
+        assertThatThrownBy(() -> epinService.redeem(pin.getId(),
+                new RedeemEPinRequest(UUID.randomUUID(), RedemptionType.TOPUP, null), UUID.randomUUID()))
+            .isInstanceOf(EPinBlockedException.class);
+
+        verify(epinRepository, never()).save(any());
+    }
+
+    @Test
+    void eventsReturnsTheTrailOldestFirstAndThrowsNotFoundForAnUnknownPin() {
+        UUID id = UUID.randomUUID();
+        when(epinRepository.existsById(id)).thenReturn(true);
+        when(epinEventRepository.findByEpinIdOrderByAtAscIdAsc(id)).thenReturn(List.of(
+            EPinEvent.of(id, EPinEventType.GENERATED, UUID.randomUUID(), null, null, NOW, null)));
+
+        assertThat(epinService.events(id)).extracting(EPinEventResponse::eventType)
+            .containsExactly(EPinEventType.GENERATED);
+
+        UUID missing = UUID.randomUUID();
+        when(epinRepository.existsById(missing)).thenReturn(false);
+        assertThatThrownBy(() -> epinService.events(missing)).isInstanceOf(EPinNotFoundException.class);
+    }
 }

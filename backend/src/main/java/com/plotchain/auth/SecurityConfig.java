@@ -263,6 +263,11 @@ public class SecurityConfig {
                 // no security change needed when that unit lands.
                 .requestMatchers(HttpMethod.POST, "/api/admin/epins/*/redeem")
                     .hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/admin/epins/*/block").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/admin/epins/*/unblock").hasAuthority("ADMIN")
+                // GET needs its own matcher: without one it falls to anyRequest().authenticated()
+                // and any associate could read a pin's audit trail.
+                .requestMatchers(HttpMethod.GET, "/api/admin/epins/*/events").hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/**")
                     .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/**")
