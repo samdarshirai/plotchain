@@ -15,10 +15,10 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. En
 | 3 | `SaleService.recordConfirmedBooking` extracted from `recordSale` with `recordSale` behaviour unchanged | backend | 1 | merged | `2026-10-01-plot-booking-unit-3-extract-confirmed-booking-sale.md` | `2b36d24..c5dbac8` (merge `490f137`) |
 | 4 | Admin manually confirms an `ACTIVE` booking, creating a linked `Sale` — `POST /api/admin/bookings/{id}/confirm` | backend | 1, 3 | merged | `2026-10-01-plot-booking-unit-4-manual-confirm.md` | `aa2f5b5..a7f7909` (merge `feaaa8b`) |
 | 5 | `AUTO_THRESHOLD` rule confirms the booking inside the pay call once paid% reaches the threshold | backend | 2, 4 | merged | `2026-10-01-plot-booking-unit-5-auto-threshold-confirm.md` | `397e3d5..90689fd` (merge `d90168a`) |
-| 6 | Admin cancels an `ACTIVE` booking — `POST /api/admin/bookings/{id}/cancel` | backend | 1 | pending | — | — |
-| 7 | Admin transfers an `ACTIVE` booking to another associate — `POST /api/admin/bookings/{id}/transfer` | backend | 1 | pending | — | — |
-| 8 | Admin views a paged, filterable booking register — `GET /api/admin/bookings` | backend | 1 | pending | — | — |
-| 9 | Admin views a paged overdue EMI report — `GET /api/admin/emi-reports/overdue` | backend | 1 | pending | — | — |
+| 6 | Admin cancels an `ACTIVE` booking — `POST /api/admin/bookings/{id}/cancel` | backend | 1 | planned | `2026-10-01-plot-booking-unit-6-cancel-booking.md` | — |
+| 7 | Admin transfers an `ACTIVE` booking to another associate — `POST /api/admin/bookings/{id}/transfer` | backend | 1 | planned | `2026-10-01-plot-booking-unit-7-transfer-booking.md` | — |
+| 8 | Admin views a paged, filterable booking register — `GET /api/admin/bookings` | backend | 1 | planned | `2026-10-01-plot-booking-unit-8-admin-booking-register.md` | — |
+| 9 | Admin views a paged overdue EMI report — `GET /api/admin/emi-reports/overdue` | backend | 1 | planned | `2026-10-01-plot-booking-unit-9-overdue-emi-report.md` | — |
 | 10 | Any authenticated user reads a project's plot grid — `GET /api/projects/{id}/plots/grid` | backend | none | pending | — | — |
 | 11 | Admin "Projects & Plots" screen — project list, colour-coded plot grid, plot create/edit, "Book" action | screen | 1, 10 | pending | — | — |
 | 12 | Admin "Bookings & EMI" screen — register, booking detail with Pay/Confirm/Cancel/Transfer, overdue report tab | screen | 1, 2, 4, 5, 6, 7, 8, 9 | pending | — | — |
@@ -228,6 +228,11 @@ Resolutions: (1) `RecordPaymentRequest` gains `amount`, 400 on mismatch; (2) can
 - Cosmetic debt (unit 5 review S1-S3): FIXED post-merge — block reindented, `lockedAutoBooking` wrapper removed, static imports for `times`/`reset`, `pool.shutdownNow()` moved into `finally` in the two race tests.
 - Operational trap (spec-mandated): if a plot has drifted away from `BOOKED`, any pay that crosses the `AUTO_THRESHOLD` fails with 409 `PlotNotAvailableException` and rolls back, so the cash cannot be recorded until the plot is repaired or the config switched to `MANUAL`. The 409 text does not hint at the cause. Surface this in unit 12's UI error copy.
 - A `VOID` installment exclusion from paid% has no unit test (no flow yields `VOID` until unit 6).
+
+**Cross-plan notes (units 6-9 planning, 2026-10-01):**
+- `SecurityConfig` has NO blanket `GET /api/admin/**` ADMIN rule (only POST/PUT/PATCH/DELETE `/api/**`); every admin GET needs its own explicit matcher. Units 8 and 9 add matchers (`GET /api/admin/bookings`, `GET /api/admin/emi-reports/overdue`); the spec's Decision 12 wording is wrong for reads. Unit 10's grid read is intentionally any-authenticated.
+- Implementation order is sequential 6 -> 7 -> 8 -> 9. Units 6 and 7 append to `BookingService`, `BookingController`, `BookingExceptionHandler`/`SecurityConfigTest`; units 6 and 8 both append to `PlotBookingRepository` (keep both methods, one `Collection` import). Unit 8 owns the reusable overdue JPQL fragments (`BookingOverdue`); unit 9 reuses them.
+- Unit 6 adds a stale-booking plot guard (do not free a plot another ACTIVE/CONFIRMED booking holds) via `PlotBookingRepository.findFirstByPlotIdAndIdNotAndStatusIn`.
 
 ## Excluded — not a unit
 
