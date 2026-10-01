@@ -1,5 +1,6 @@
 package com.plotchain.epin;
 
+import java.util.List;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.associate.KycStatus;
@@ -220,5 +221,23 @@ class EPinRepositoryTest {
         entityManager.flush();
 
         assertThat(epinRepository.findByIdForUpdate(pin.getId())).isPresent();
+    }
+
+    @Test
+    void findAllocatableReturnsOnlyUnusedUnexpiredPinsOldestFirstWithinTheBatch() {
+        UUID admin = persistAdmin();
+        Instant now = Instant.parse("2026-10-01T00:00:00Z");
+        EPin older = persistPin(admin, EPinStatus.UNUSED, null, null);
+        older.setGeneratedAt(now.minusSeconds(100));
+        EPin newer = persistPin(admin, EPinStatus.UNUSED, null, now.plusSeconds(60));
+        newer.setGeneratedAt(now.minusSeconds(50));
+        persistPin(admin, EPinStatus.UNUSED, null, now);              // expired boundary
+        persistPin(admin, EPinStatus.ALLOCATED, admin, null);          // not in the pool
+        persistPin(admin, EPinStatus.BLOCKED, null, null);             // not in the pool
+        entityManager.flush();
+
+        List<EPin> pool = epinRepository.findAllocatable(now, null, PageRequest.of(0, 10));
+
+        assertThat(pool).extracting(EPin::getId).containsExactly(older.getId(), newer.getId());
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -42,6 +43,16 @@ public interface EPinRepository extends JpaRepository<EPin, UUID> {
 
     // Row lock for every state transition (redeem/transfer/allocate/block/unblock): two
     // simultaneous requests on one pin serialise here, so the second sees the mutated status.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT e FROM EPin e
+        WHERE e.status = com.plotchain.epin.EPinStatus.UNUSED
+        AND (e.expiresAt IS NULL OR e.expiresAt > :now)
+        AND (:batchId IS NULL OR e.batchId = :batchId)
+        ORDER BY e.generatedAt, e.id
+        """)
+    List<EPin> findAllocatable(@Param("now") Instant now, @Param("batchId") UUID batchId, Pageable pageable);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM EPin e WHERE e.id = :id")
     Optional<EPin> findByIdForUpdate(@Param("id") UUID id);

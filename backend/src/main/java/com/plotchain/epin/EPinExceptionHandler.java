@@ -40,4 +40,15 @@ public class EPinExceptionHandler {
     public ResponseEntity<Map<String, String>> handleEPinInvalidState(EPinInvalidStateException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(EPinInsufficientPoolException.class)
+    public ResponseEntity<Map<String, String>> handleInsufficientPool(EPinInsufficientPoolException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(com.plotchain.associate.AssociateNotActiveException.class)
+    public ResponseEntity<Map<String, String>> handleAssociateNotActive(
+            com.plotchain.associate.AssociateNotActiveException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
 }

@@ -1,5 +1,6 @@
 package com.plotchain.epin;
 
+import com.plotchain.associate.AssociateStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
@@ -458,6 +459,34 @@ class EPinControllerTest {
             .andExpect(status().isNotFound());
         mockMvc.perform(get("/api/admin/epins/" + id + "/events")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void allocateReturns409WhenThePoolIsTooSmallAnd400ForACountOutOfRange() throws Exception {
+        UUID target = UUID.randomUUID();
+        Associate a = new Associate();
+        a.setId(target);
+        a.setStatus(AssociateStatus.ACTIVE);
+        when(associateRepository.findById(target)).thenReturn(Optional.of(a));
+        when(epinRepository.findAllocatable(any(), any(), any())).thenReturn(List.of());
+        String admin = tokenFor(AssociateRole.ADMIN);
+
+        mockMvc.perform(post("/api/admin/epins/allocate")
+                .header("Authorization", "Bearer " + admin).contentType("application/json")
+                .content("{\"associateId\":\"" + target + "\",\"count\":2}"))
+            .andExpect(status().isConflict());
+        mockMvc.perform(post("/api/admin/epins/allocate")
+                .header("Authorization", "Bearer " + admin).contentType("application/json")
+                .content("{\"associateId\":\"" + target + "\",\"count\":0}"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void allocateIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(post("/api/admin/epins/allocate")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)).contentType("application/json")
+                .content("{\"associateId\":\"" + UUID.randomUUID() + "\",\"count\":1}"))
             .andExpect(status().isForbidden());
     }
 }

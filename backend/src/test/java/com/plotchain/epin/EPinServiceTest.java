@@ -1,5 +1,9 @@
 package com.plotchain.epin;
 
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.eq;
+import com.plotchain.associate.AssociateNotActiveException;
+import com.plotchain.associate.AssociateStatus;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
@@ -465,5 +469,70 @@ class EPinServiceTest {
         UUID missing = UUID.randomUUID();
         when(epinRepository.existsById(missing)).thenReturn(false);
         assertThatThrownBy(() -> epinService.events(missing)).isInstanceOf(EPinNotFoundException.class);
+    }
+
+    private Associate associateWith(UUID id, AssociateStatus status) {
+        Associate a = new Associate();
+        a.setId(id);
+        a.setStatus(status);
+        when(associateRepository.findById(id)).thenReturn(Optional.of(a));
+        return a;
+    }
+
+    private EPin unusedPin() {
+        EPin pin = new EPin();
+        pin.setId(UUID.randomUUID());
+        pin.setCode("c-" + pin.getId());
+        pin.setStatus(EPinStatus.UNUSED);
+        return pin;
+    }
+
+    @Test
+    void allocateAssignsTheOldestUnusedPinsToTheAssociateAndRecordsEvents() {
+        UUID target = UUID.randomUUID();
+        UUID actor = UUID.randomUUID();
+        associateWith(target, AssociateStatus.ACTIVE);
+        EPin a = unusedPin();
+        EPin b = unusedPin();
+        when(epinRepository.findAllocatable(eq(NOW), isNull(), eq(PageRequest.of(0, 2)))).thenReturn(List.of(a, b));
+        ArgumentCaptor<EPinEvent> events = ArgumentCaptor.forClass(EPinEvent.class);
+
+        AllocateEPinResponse response = epinService.allocate(new AllocateEPinRequest(target, 2, null), actor);
+
+        assertThat(List.of(a, b)).allMatch(p -> p.getStatus() == EPinStatus.ALLOCATED
+            && target.equals(p.getAllocatedTo()) && actor.equals(p.getAllocatedBy()) && NOW.equals(p.getAllocatedAt()));
+        assertThat(response.count()).isEqualTo(2);
+        assertThat(response.pins()).extracting(AllocateEPinResponse.Item::id).containsExactly(a.getId(), b.getId());
+        verify(epinEventRepository, times(2)).save(events.capture());
+        assertThat(events.getAllValues()).allMatch(e ->
+            e.getEventType() == EPinEventType.ALLOCATED && target.equals(e.getToAssociateId()));
+    }
+
+    @Test
+    void allocateFailsWholesaleWhenThePoolIsSmallerThanCount() {
+        UUID target = UUID.randomUUID();
+        associateWith(target, AssociateStatus.ACTIVE);
+        when(epinRepository.findAllocatable(any(), any(), any())).thenReturn(List.of(unusedPin()));
+
+        assertThatThrownBy(() -> epinService.allocate(new AllocateEPinRequest(target, 3, null), UUID.randomUUID()))
+            .isInstanceOf(EPinInsufficientPoolException.class);
+
+        verify(epinRepository, never()).save(any());
+        verify(epinEventRepository, never()).save(any());
+    }
+
+    @Test
+    void allocateRejectsAnUnknownOrNonActiveRecipientBeforeTouchingThePool() {
+        UUID unknown = UUID.randomUUID();
+        when(associateRepository.findById(unknown)).thenReturn(Optional.empty());
+        UUID pending = UUID.randomUUID();
+        associateWith(pending, AssociateStatus.PENDING);
+
+        assertThatThrownBy(() -> epinService.allocate(new AllocateEPinRequest(unknown, 1, null), UUID.randomUUID()))
+            .isInstanceOf(AssociateNotFoundException.class);
+        assertThatThrownBy(() -> epinService.allocate(new AllocateEPinRequest(pending, 1, null), UUID.randomUUID()))
+            .isInstanceOf(AssociateNotActiveException.class);
+
+        verify(epinRepository, never()).findAllocatable(any(), any(), any());
     }
 }

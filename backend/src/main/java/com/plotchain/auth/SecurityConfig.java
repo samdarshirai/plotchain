@@ -261,6 +261,7 @@ public class SecurityConfig {
                 // guards only (unknown/already-redeemed EPin or unknown associate rejected with
                 // no side effects); epin-domain unit 4's actual write reuses this same matcher,
                 // no security change needed when that unit lands.
+                .requestMatchers(HttpMethod.POST, "/api/admin/epins/allocate").hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/admin/epins/*/redeem")
                     .hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/admin/epins/*/block").hasAuthority("ADMIN")

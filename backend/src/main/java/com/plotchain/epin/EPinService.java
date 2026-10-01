@@ -1,7 +1,10 @@
 package com.plotchain.epin;
 
+import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateNotActiveException;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -148,6 +151,33 @@ public class EPinService {
             throw new EPinNotFoundException(id);
         }
         return epinEventRepository.findByEpinIdOrderByAtAscIdAsc(id).stream().map(EPinEventResponse::from).toList();
+    }
+
+    @Transactional
+    public AllocateEPinResponse allocate(AllocateEPinRequest request, UUID actorId) {
+        Associate recipient = associateRepository.findById(request.associateId())
+            .orElseThrow(() -> new AssociateNotFoundException(request.associateId()));
+        if (recipient.getStatus() != AssociateStatus.ACTIVE) {
+            throw new AssociateNotActiveException(recipient.getId());
+        }
+
+        Instant now = clock.instant();
+        List<EPin> pool = epinRepository.findAllocatable(now, request.batchId(), PageRequest.of(0, request.count()));
+        if (pool.size() < request.count()) {
+            throw new EPinInsufficientPoolException(request.count(), pool.size());
+        }
+
+        List<AllocateEPinResponse.Item> items = new ArrayList<>();
+        for (EPin epin : pool) {
+            epin.setStatus(EPinStatus.ALLOCATED);
+            epin.setAllocatedTo(recipient.getId());
+            epin.setAllocatedBy(actorId);
+            epin.setAllocatedAt(now);
+            epinRepository.save(epin);
+            recordEvent(epin.getId(), EPinEventType.ALLOCATED, actorId, null, recipient.getId(), null);
+            items.add(new AllocateEPinResponse.Item(epin.getId(), epin.getCode()));
+        }
+        return new AllocateEPinResponse(recipient.getId(), items.size(), items);
     }
 
     private void recordEvent(UUID epinId, EPinEventType type, UUID actorId, UUID from, UUID to, String note) {
