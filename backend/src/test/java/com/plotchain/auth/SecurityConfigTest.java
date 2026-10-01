@@ -540,6 +540,14 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
     }
 
+    @Test
+    void adminBookingsCreateIsUnauthorizedWithoutAToken() throws Exception {
+        String body = new ObjectMapper().writeValueAsString(
+            new com.plotchain.booking.CreateBookingRequest(UUID.randomUUID(), UUID.randomUUID(), "Jane Buyer", null));
+        mockMvc.perform(post("/api/admin/bookings").contentType("application/json").content(body))
+            .andExpect(status().isUnauthorized());
+    }
+
     // epin-domain unit 1 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
     // "POST /api/admin/epins, ADMIN-only", Decision 12): same target-role-model pattern as
     // adminSalesRecordIsReachableOnlyForAdminAndForbiddenForEveryOtherRole and
