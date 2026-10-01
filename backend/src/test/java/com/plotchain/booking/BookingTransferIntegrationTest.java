@@ -395,7 +395,6 @@ class BookingTransferIntegrationTest {
             long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(500);
             while (System.nanoTime() < deadline) {
                 assertThat(transfer.isDone()).as("transfer must wait for the booking lock").isFalse();
-                Thread.onSpinWait();
                 Thread.sleep(20);
             }
             release.countDown();
@@ -416,8 +415,6 @@ class BookingTransferIntegrationTest {
     void transferRacingConfirmNeverLeavesTheSaleCreditedToTheWrongAssociate() throws Exception {
         UUID from = seedAssociate(AssociateStatus.ACTIVE);
         UUID to = seedAssociate(AssociateStatus.ACTIVE);
-        int transferWins = 0;
-        int confirmWins = 0;
         for (int i = 0; i < 20; i++) {
             BookingResponse b = seedBooking(from);
             CountDownLatch start = new CountDownLatch(1);
@@ -448,10 +445,7 @@ class BookingTransferIntegrationTest {
             assertThat(jdbc.queryForObject("SELECT associate_id FROM sale WHERE booking_id = ?", UUID.class, b.id()))
                 .as("sale seller must equal the booking's final owner").isEqualTo(owner);
             assertThat(transferredEvents(b.id())).isEqualTo(transferred ? 1 : 0);
-            if (transferred) transferWins++; else confirmWins++;
         }
-        // informational: with the lock either order is legal; log so a reviewer can see both occur
-        System.out.println("transfer-vs-confirm: transferWins=" + transferWins + " confirmWins=" + confirmWins);
     }
 
     // Transfer racing a pay: both succeed in either order; payment is never lost, owner is the target.
@@ -503,8 +497,6 @@ class BookingTransferIntegrationTest {
     void transferRacingCancelEndsCancelledWithConsistentOwnerAndEvents() throws Exception {
         UUID from = seedAssociate(AssociateStatus.ACTIVE);
         UUID to = seedAssociate(AssociateStatus.ACTIVE);
-        int transferWins = 0;
-        int cancelWins = 0;
         for (int i = 0; i < 20; i++) {
             BookingResponse b = seedBooking(from);
             CountDownLatch start = new CountDownLatch(1);
@@ -538,8 +530,6 @@ class BookingTransferIntegrationTest {
             assertThat(transferredEvents(b.id())).isEqualTo(transferred ? 1 : 0);
             assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CANCELLED'", b.id()))
                 .isEqualTo(1);
-            if (transferred) transferWins++; else cancelWins++;
         }
-        System.out.println("transfer-vs-cancel: transferWins=" + transferWins + " cancelWins=" + cancelWins);
     }
 }
