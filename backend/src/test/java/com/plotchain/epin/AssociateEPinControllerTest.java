@@ -95,6 +95,7 @@ class AssociateEPinControllerTest {
         target.setStatus(AssociateStatus.PENDING);
         when(associateRepository.findByUserId("VP00042")).thenReturn(Optional.of(target));
         when(associateRepository.findSelfAndDownline(me.getId())).thenReturn(List.of(me.getId(), target.getId()));
+        when(associateRepository.activateIfPending(target.getId())).thenReturn(1);
 
         mockMvc.perform(post("/api/associates/me/epins/" + pin.getId() + "/redeem")
                 .header("Authorization", "Bearer " + jwtService.generateToken(me))
