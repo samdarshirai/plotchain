@@ -859,7 +859,17 @@
       "errorConflict": "That action is not allowed in the pin's current state, or not enough pins are available.",
       "errorNotFound": "Pin or associate not found.",
       "errorInvalid": "Check the values entered.",
-      "errorGeneric": "Something went wrong. Try again."
+      "errorGeneric": "Something went wrong. Try again.",
+      "pinsCount": "{{count}} pins",
+      "detailTitle": "Pin detail",
+      "detailEmpty": "Select a pin to see its details and history.",
+      "historyTitle": "History",
+      "searchPlaceholder": "Batch ID",
+      "redeemedToFilterLabel": "Redeemed to",
+      "redeemPinAction": "Redeem pin",
+      "lookupPlaceholder": "Type a user ID or name",
+      "lookupNoMatch": "No matching associate.",
+      "lookupClear": "Clear selection"
     },
     "ledgerRegister": {
       "eyebrow": "Admin · Ledger Register",

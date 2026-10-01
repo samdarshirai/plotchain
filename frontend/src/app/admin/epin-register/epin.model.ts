@@ -34,6 +34,7 @@ export interface EPinFilters {
   status?: EPinStatus | '';
   batchId?: string;
   allocatedTo?: string;
+  redeemedTo?: string;
   expired?: boolean;
 }
 

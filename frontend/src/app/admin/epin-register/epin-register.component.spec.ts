@@ -210,7 +210,7 @@ describe('EPinRegisterComponent', () => {
 
   it('loads and renders translated events', () => {
     flushInitial([pin()]);
-    fixture.componentInstance.openPanel({ kind: 'events', epin: pin() as never });
+    fixture.componentInstance.select(pin() as never);
     httpMock.expectOne('/api/admin/epins/p1/events').flush([
       { eventType: 'GENERATED', actorId: 'g', fromAssociateId: null, toAssociateId: null, at: '2026-10-01T00:00:00Z', note: null }
     ]);
@@ -218,13 +218,13 @@ describe('EPinRegisterComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('admin.epinRegister.event.GENERATED');
   });
 
-  it('renders the actor and from/to userIds in the events panel', () => {
+  it('renders the actor and from/to userIds in the detail timeline', () => {
     flushInitial([pin()]);
     const c = fixture.componentInstance;
     c.associates = [
       { id: 'act', userId: 'VPACTOR', name: 'A' }, { id: 'f1', userId: 'VPFROM', name: 'F' }, { id: 't1', userId: 'VPTO', name: 'T' }
     ] as never;
-    c.openPanel({ kind: 'events', epin: pin() as never });
+    c.select(pin() as never);
     httpMock.expectOne('/api/admin/epins/p1/events').flush([
       { eventType: 'TRANSFERRED', actorId: 'act', fromAssociateId: 'f1', toAssociateId: 't1', at: '2026-10-01T00:00:00Z', note: null }
     ]);
@@ -243,5 +243,74 @@ describe('EPinRegisterComponent', () => {
     c.openPanel({ kind: 'redeem', epin: pin({ id: 'p2' }) as never });
     expect(c.redeemAssociateId).toBe('');
     expect(c.redeemType).toBe('ACTIVATION');
+  });
+
+  it('selects a row on click and loads its history into the detail seal', () => {
+    flushInitial([pin(), pin({ id: 'p2', code: 'CODE-2' })]);
+    expect(fixture.nativeElement.textContent).toContain('admin.epinRegister.detailEmpty');
+    (fixture.nativeElement.querySelectorAll('.epin-register__row')[1] as HTMLElement).click();
+    httpMock.expectOne('/api/admin/epins/p2/events').flush([]);
+    fixture.detectChanges();
+    const detail = fixture.nativeElement.querySelector('.epin-register__detail');
+    expect(detail.textContent).toContain('CODE-2');
+    expect(fixture.nativeElement.querySelector('.epin-register__row--selected').textContent).toContain('CODE-2');
+  });
+
+  it('ignores a stale history response for a previously selected pin', () => {
+    flushInitial([pin(), pin({ id: 'p2' })]);
+    const c = fixture.componentInstance;
+    c.select(pin() as never);
+    c.select(pin({ id: 'p2' }) as never);
+    httpMock.expectOne('/api/admin/epins/p2/events').flush([
+      { eventType: 'GENERATED', actorId: 'g', fromAssociateId: null, toAssociateId: null, at: '2026-10-01T00:00:00Z', note: null }
+    ]);
+    httpMock.expectOne('/api/admin/epins/p1/events').flush([
+      { eventType: 'BLOCKED', actorId: 'g', fromAssociateId: null, toAssociateId: null, at: '2026-10-01T00:00:00Z', note: null }
+    ]);
+    expect(c.events.map(e => e.eventType)).toEqual(['GENERATED']);
+  });
+
+  it('offers Redeem and Block for a live pin and Unblock for a blocked pin in the detail seal', () => {
+    flushInitial([pin()]);
+    const c = fixture.componentInstance;
+    c.select(pin() as never);
+    httpMock.expectOne('/api/admin/epins/p1/events').flush([]);
+    fixture.detectChanges();
+    const detail = () => fixture.nativeElement.querySelector('.epin-register__detail').textContent;
+    expect(detail()).toContain('admin.epinRegister.redeemPinAction');
+    expect(detail()).toContain('admin.epinRegister.blockAction');
+    expect(detail()).not.toContain('admin.epinRegister.unblockAction');
+    c.page = { ...c.page!, epins: [pin({ status: 'BLOCKED' }) as never] };
+    fixture.detectChanges();
+    expect(detail()).toContain('admin.epinRegister.unblockAction');
+    expect(detail()).not.toContain('admin.epinRegister.redeemPinAction');
+  });
+
+  it('applies the redeemed-to filter', () => {
+    flushInitial([]);
+    fixture.componentInstance.onRedeemedToChange('a1');
+    const req = httpMock.expectOne(r => r.url === '/api/admin/epins');
+    expect(req.request.params.get('redeemedTo')).toBe('a1');
+    req.flush(emptyPage);
+  });
+
+  it('allocates with the associate chosen in the lookup', () => {
+    flushInitial([]);
+    const c = fixture.componentInstance;
+    c.openPanel({ kind: 'allocate' });
+    fixture.detectChanges();
+    const lookup = fixture.nativeElement.querySelector('.epin-register__panel app-associate-lookup');
+    expect(lookup).not.toBeNull();
+    c.onAllocateAssociate({ id: 'a1' } as never);
+    expect(c.allocateAssociateId).toBe('a1');
+    c.onAllocateAssociate(null);
+    expect(c.allocateAssociateId).toBe('');
+  });
+
+  it('shows the total pin count in the header', () => {
+    httpMock.expectOne(r => r.url === '/api/associates').flush(associates);
+    httpMock.expectOne(r => r.url === '/api/admin/epins').flush({ epins: [pin()], page: 0, size: 20, totalElements: 37 });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.epin-register__count').textContent).toContain('admin.epinRegister.pinsCount');
   });
 });

@@ -6,6 +6,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { EPinRegisterService } from './epin-register.service';
 import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
+import { AssociateLookupComponent } from '../../shared/components/associate-lookup/associate-lookup.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { AllocateResult, EPin, EPinEvent, EPinFilters, EPinPage, EPinStatus, RedemptionType } from './epin.model';
 
@@ -17,58 +18,63 @@ type Panel =
   | { kind: 'generate' }
   | { kind: 'allocate' }
   | { kind: 'redeem'; epin: EPin }
-  | { kind: 'block'; epin: EPin }
-  | { kind: 'events'; epin: EPin };
+  | { kind: 'block'; epin: EPin };
 
 @Component({
   selector: 'app-epin-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, AssociateLookupComponent],
   providers: [DatePipe],
   template: `
     <div class="epin-register">
-      <div class="epin-register__intro">
-        <h1 class="epin-register__title">{{ 'admin.epinRegister.title' | translate }}</h1>
-        <p class="epin-register__subtitle">{{ 'admin.epinRegister.subtitle' | translate }}</p>
+      <div class="epin-register__head">
+        <div class="epin-register__intro">
+          <h1 class="epin-register__title">{{ 'admin.epinRegister.title' | translate }}</h1>
+          <span class="epin-register__count" *ngIf="page">{{ 'admin.epinRegister.pinsCount' | translate: { count: page.totalElements } }}</span>
+        </div>
         <div class="epin-register__header-actions">
-          <button type="button" class="brand-button" (click)="openPanel({ kind: 'generate' })">
-            {{ 'admin.epinRegister.generateAction' | translate }}
-          </button>
           <button type="button" class="brand-button brand-button--secondary" (click)="openPanel({ kind: 'allocate' })">
             {{ 'admin.epinRegister.allocateAction' | translate }}
+          </button>
+          <button type="button" class="brand-button" (click)="openPanel({ kind: 'generate' })">
+            {{ 'admin.epinRegister.generateAction' | translate }}
           </button>
         </div>
       </div>
 
       <div class="epin-register__filters">
-        <label>
+        <input type="text" class="epin-register__search" [placeholder]="'admin.epinRegister.searchPlaceholder' | translate"
+          [attr.aria-label]="'admin.epinRegister.batchFilterLabel' | translate"
+          [ngModel]="batchId" (ngModelChange)="onBatchChange($event)" />
+        <label class="epin-register__filter">
           {{ 'admin.epinRegister.statusFilterLabel' | translate }}
           <select (change)="onStatusChange($any($event.target).value)">
             <option value="">{{ 'admin.epinRegister.filterAll' | translate }}</option>
             <option *ngFor="let s of statuses" [value]="s">{{ 'admin.epinRegister.status.' + s | translate }}</option>
           </select>
         </label>
-        <label>
+        <div class="epin-register__filter">
           {{ 'admin.epinRegister.holderFilterLabel' | translate }}
-          <select (change)="onHolderChange($any($event.target).value)">
-            <option value="">{{ 'admin.epinRegister.filterAll' | translate }}</option>
-            <option *ngFor="let a of associates" [value]="a.id">{{ a.userId }} — {{ a.name }}</option>
-          </select>
-        </label>
-        <label>
-          {{ 'admin.epinRegister.batchFilterLabel' | translate }}
-          <input type="text" [ngModel]="batchId" (ngModelChange)="onBatchChange($event)" />
-        </label>
-        <label class="epin-register__check">
-          <input type="checkbox" [ngModel]="expiredOnly" (ngModelChange)="onExpiredChange($event)" />
+          <app-associate-lookup [associates]="associates" [value]="holderId"
+            [placeholder]="'admin.epinRegister.filterAll' | translate"
+            (selected)="onHolderChange($event?.id ?? '')"></app-associate-lookup>
+        </div>
+        <div class="epin-register__filter">
+          {{ 'admin.epinRegister.redeemedToFilterLabel' | translate }}
+          <app-associate-lookup [associates]="associates" [value]="redeemedToId"
+            [placeholder]="'admin.epinRegister.filterAll' | translate"
+            (selected)="onRedeemedToChange($event?.id ?? '')"></app-associate-lookup>
+        </div>
+        <button type="button" class="epin-register__toggle" [class.epin-register__toggle--on]="expiredOnly"
+          [attr.aria-pressed]="expiredOnly" (click)="onExpiredChange(!expiredOnly)">
           {{ 'admin.epinRegister.expiredOnlyLabel' | translate }}
-        </label>
+        </button>
       </div>
 
       <app-inline-banner *ngIf="loadError" tone="danger">{{ 'admin.epinRegister.loadError' | translate }}</app-inline-banner>
       <app-inline-banner *ngIf="actionError" tone="danger">{{ actionError | translate }}</app-inline-banner>
 
-      <div class="epin-register__panel card" *ngIf="panel">
+      <div class="epin-register__panel" *ngIf="panel">
         <ng-container [ngSwitch]="panel.kind">
           <form *ngSwitchCase="'generate'" (ngSubmit)="submitGenerate()">
             <h2>{{ 'admin.epinRegister.generateAction' | translate }}</h2>
@@ -78,45 +84,49 @@ type Panel =
             <label>{{ 'admin.epinRegister.expiresLabel' | translate }}
               <input type="datetime-local" name="expires" [(ngModel)]="generateExpiresLocal" />
             </label>
-            <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
-            <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.cancel' | translate }}</button>
+            <div class="epin-register__form-actions">
+              <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
+              <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.cancel' | translate }}</button>
+            </div>
           </form>
 
           <form *ngSwitchCase="'allocate'" (ngSubmit)="submitAllocate()">
             <h2>{{ 'admin.epinRegister.allocateAction' | translate }}</h2>
-            <label>{{ 'admin.epinRegister.associateLabel' | translate }}
-              <select name="alloc-assoc" [(ngModel)]="allocateAssociateId" required>
-                <option value="">{{ 'admin.epinRegister.selectPlaceholder' | translate }}</option>
-                <option *ngFor="let a of associates" [value]="a.id">{{ a.userId }} — {{ a.name }}</option>
-              </select>
-            </label>
+            <div class="epin-register__field">{{ 'admin.epinRegister.associateLabel' | translate }}
+              <app-associate-lookup [associates]="associates" [value]="allocateAssociateId"
+                [placeholder]="'admin.epinRegister.lookupPlaceholder' | translate"
+                (selected)="onAllocateAssociate($event)"></app-associate-lookup>
+            </div>
             <label>{{ 'admin.epinRegister.countLabel' | translate }}
               <input type="number" min="1" max="2000" name="alloc-count" [(ngModel)]="allocateCount" required />
             </label>
             <label>{{ 'admin.epinRegister.batchFilterLabel' | translate }}
               <input type="text" name="alloc-batch" [(ngModel)]="allocateBatchId" />
             </label>
-            <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
-            <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.cancel' | translate }}</button>
+            <div class="epin-register__form-actions">
+              <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
+              <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.cancel' | translate }}</button>
+            </div>
             <p *ngIf="allocateResult">{{ 'admin.epinRegister.allocatedCount' | translate: { count: allocateResult.count } }}</p>
           </form>
 
           <form *ngSwitchCase="'redeem'" (ngSubmit)="submitRedeem()">
             <h2>{{ 'admin.epinRegister.redeemAction' | translate }}</h2>
-            <label>{{ 'admin.epinRegister.associateLabel' | translate }}
-              <select name="redeem-assoc" [(ngModel)]="redeemAssociateId" required>
-                <option value="">{{ 'admin.epinRegister.selectPlaceholder' | translate }}</option>
-                <option *ngFor="let a of associates" [value]="a.id">{{ a.userId }} — {{ a.name }}</option>
-              </select>
-            </label>
+            <div class="epin-register__field">{{ 'admin.epinRegister.associateLabel' | translate }}
+              <app-associate-lookup [associates]="associates" [value]="redeemAssociateId"
+                [placeholder]="'admin.epinRegister.lookupPlaceholder' | translate"
+                (selected)="onRedeemAssociate($event)"></app-associate-lookup>
+            </div>
             <label>{{ 'admin.epinRegister.typeLabel' | translate }}
               <select name="redeem-type" [(ngModel)]="redeemType">
                 <option value="ACTIVATION">{{ 'admin.epinRegister.typeActivation' | translate }}</option>
                 <option value="TOPUP">{{ 'admin.epinRegister.typeTopup' | translate }}</option>
               </select>
             </label>
-            <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
-            <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.cancel' | translate }}</button>
+            <div class="epin-register__form-actions">
+              <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
+              <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.cancel' | translate }}</button>
+            </div>
           </form>
 
           <form *ngSwitchCase="'block'" (ngSubmit)="submitBlock()">
@@ -124,28 +134,15 @@ type Panel =
             <label>{{ 'admin.epinRegister.reasonLabel' | translate }}
               <input type="text" name="reason" maxlength="255" [(ngModel)]="panelReason" required />
             </label>
-            <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
-            <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.cancel' | translate }}</button>
+            <div class="epin-register__form-actions">
+              <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
+              <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.cancel' | translate }}</button>
+            </div>
           </form>
-
-          <div *ngSwitchCase="'events'">
-            <h2>{{ 'admin.epinRegister.eventsTitle' | translate }}</h2>
-            <ul class="epin-register__events">
-              <li *ngFor="let e of events">
-                {{ datePipe.transform(e.at, 'medium') }} — {{ 'admin.epinRegister.event.' + e.eventType | translate }}
-                — {{ 'admin.epinRegister.eventActor' | translate }} {{ userId(e.actorId) }}
-                <span *ngIf="e.fromAssociateId || e.toAssociateId">
-                  — {{ 'admin.epinRegister.eventFrom' | translate }} {{ userId(e.fromAssociateId) }} -&gt; {{ 'admin.epinRegister.eventTo' | translate }} {{ userId(e.toAssociateId) }}
-                </span>
-                <span *ngIf="e.note">({{ e.note }})</span>
-              </li>
-            </ul>
-            <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.close' | translate }}</button>
-          </div>
         </ng-container>
       </div>
 
-      <div *ngIf="generatedCodes.length" class="epin-register__codes card">
+      <div *ngIf="generatedCodes.length" class="epin-register__codes">
         <p>{{ 'admin.epinRegister.codesShownOnce' | translate }}</p>
         <p class="epin-register__batch-id">{{ 'admin.epinRegister.batchIdLabel' | translate }}: {{ generatedBatchId }}</p>
         <ul class="epin-register__code-list">
@@ -154,49 +151,89 @@ type Panel =
         <button type="button" class="brand-button brand-button--secondary" (click)="copyCodes()">{{ 'admin.epinRegister.copyAll' | translate }}</button>
       </div>
 
-      <div class="card epin-register__table-wrap">
-        <table class="epin-register__table">
-          <thead>
-            <tr>
-              <th>{{ 'admin.epinRegister.colCode' | translate }}</th>
-              <th>{{ 'admin.epinRegister.colStatus' | translate }}</th>
-              <th>{{ 'admin.epinRegister.colBatch' | translate }}</th>
-              <th>{{ 'admin.epinRegister.colExpires' | translate }}</th>
-              <th>{{ 'admin.epinRegister.colHolder' | translate }}</th>
-              <th>{{ 'admin.epinRegister.colRedeemedTo' | translate }}</th>
-              <th>{{ 'admin.epinRegister.colActions' | translate }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let p of page?.epins">
-              <td class="epin-register__code">{{ p.code }}</td>
-              <td>
-                <span class="epin-register__chip" [class.epin-register__chip--expired]="p.expired">
+      <div class="epin-register__grid">
+        <div class="epin-register__list">
+          <div class="epin-register__table-wrap">
+            <table class="epin-register__table">
+              <thead>
+                <tr>
+                  <th>{{ 'admin.epinRegister.colCode' | translate }}</th>
+                  <th>{{ 'admin.epinRegister.colStatus' | translate }}</th>
+                  <th>{{ 'admin.epinRegister.colBatch' | translate }}</th>
+                  <th>{{ 'admin.epinRegister.colExpires' | translate }}</th>
+                  <th>{{ 'admin.epinRegister.colHolder' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let p of page?.epins" class="epin-register__row"
+                  [class.epin-register__row--selected]="p.id === selectedId" (click)="select(p)">
+                  <td class="epin-register__code">{{ p.code }}</td>
+                  <td>
+                    <span class="epin-register__chip" [ngClass]="chipClass(p)">
+                      {{ (p.expired ? 'admin.epinRegister.expiredChip' : 'admin.epinRegister.status.' + p.status) | translate }}
+                    </span>
+                  </td>
+                  <td [attr.title]="p.batchId">{{ p.batchId.slice(0, 8) }}</td>
+                  <td [class.epin-register__expired-date]="p.expired">{{ p.expiresAt ? datePipe.transform(p.expiresAt, 'mediumDate') : '—' }}</td>
+                  <td>{{ userId(p.allocatedTo) }}</td>
+                </tr>
+                <tr *ngIf="!page?.epins?.length">
+                  <td colspan="5">{{ 'admin.epinRegister.emptyState' | translate }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="epin-register__pagination" *ngIf="page">
+            <span>{{ 'admin.epinRegister.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}</span>
+            <button type="button" class="brand-button brand-button--secondary" [disabled]="page.page === 0" (click)="loadPage(page.page - 1)">{{ 'admin.epinRegister.previousPageAction' | translate }}</button>
+            <button type="button" class="brand-button brand-button--secondary" [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="loadPage(page.page + 1)">{{ 'admin.epinRegister.nextPageAction' | translate }}</button>
+          </div>
+        </div>
+
+        <aside class="epin-register__detail">
+          <div class="epin-register__seal">
+            <div class="epin-register__seal-title">{{ 'admin.epinRegister.detailTitle' | translate }}</div>
+            <p *ngIf="!selected" class="epin-register__detail-empty">{{ 'admin.epinRegister.detailEmpty' | translate }}</p>
+            <ng-container *ngIf="selected as p">
+              <div class="epin-register__detail-head">
+                <div class="epin-register__detail-code">{{ p.code }}</div>
+                <span class="epin-register__chip" [ngClass]="chipClass(p)">
                   {{ (p.expired ? 'admin.epinRegister.expiredChip' : 'admin.epinRegister.status.' + p.status) | translate }}
                 </span>
-              </td>
-              <td [attr.title]="p.batchId">{{ p.batchId.slice(0, 8) }}</td>
-              <td>{{ p.expiresAt ? datePipe.transform(p.expiresAt, 'mediumDate') : '—' }}</td>
-              <td>{{ userId(p.allocatedTo) }}</td>
-              <td>{{ userId(p.redeemedTo) }}</td>
-              <td class="epin-register__actions">
-                <button type="button" *ngIf="p.status === 'UNUSED' || p.status === 'ALLOCATED'" (click)="openPanel({ kind: 'redeem', epin: p })">{{ 'admin.epinRegister.redeemAction' | translate }}</button>
-                <button type="button" *ngIf="p.status === 'UNUSED' || p.status === 'ALLOCATED'" (click)="openPanel({ kind: 'block', epin: p })">{{ 'admin.epinRegister.blockAction' | translate }}</button>
-                <button type="button" *ngIf="p.status === 'BLOCKED'" (click)="unblock(p)">{{ 'admin.epinRegister.unblockAction' | translate }}</button>
-                <button type="button" (click)="openPanel({ kind: 'events', epin: p })">{{ 'admin.epinRegister.eventsAction' | translate }}</button>
-              </td>
-            </tr>
-            <tr *ngIf="!page?.epins?.length">
-              <td colspan="7">{{ 'admin.epinRegister.emptyState' | translate }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="epin-register__pagination" *ngIf="page">
-        <span>{{ 'admin.epinRegister.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}</span>
-        <button type="button" class="brand-button brand-button--secondary" [disabled]="page.page === 0" (click)="loadPage(page.page - 1)">{{ 'admin.epinRegister.previousPageAction' | translate }}</button>
-        <button type="button" class="brand-button brand-button--secondary" [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="loadPage(page.page + 1)">{{ 'admin.epinRegister.nextPageAction' | translate }}</button>
+              </div>
+              <dl class="epin-register__meta">
+                <div><dt>{{ 'admin.epinRegister.colBatch' | translate }}</dt><dd class="epin-register__code">{{ p.batchId.slice(0, 8) }}</dd></div>
+                <div><dt>{{ 'admin.epinRegister.colExpires' | translate }}</dt><dd>{{ p.expiresAt ? datePipe.transform(p.expiresAt, 'mediumDate') : '—' }}</dd></div>
+                <div><dt>{{ 'admin.epinRegister.colHolder' | translate }}</dt><dd class="epin-register__code">{{ userId(p.allocatedTo) }}</dd></div>
+                <div><dt>{{ 'admin.epinRegister.colRedeemedTo' | translate }}</dt><dd class="epin-register__code">{{ userId(p.redeemedTo) }}</dd></div>
+              </dl>
+              <div class="epin-register__history">
+                <div class="epin-register__history-title">{{ 'admin.epinRegister.historyTitle' | translate }}</div>
+                <ol class="epin-register__timeline">
+                  <li *ngFor="let e of events" class="epin-register__event">
+                    <div class="epin-register__event-what">{{ 'admin.epinRegister.event.' + e.eventType | translate }}
+                      <span *ngIf="e.fromAssociateId || e.toAssociateId">
+                        — {{ 'admin.epinRegister.eventFrom' | translate }} {{ userId(e.fromAssociateId) }} -&gt; {{ 'admin.epinRegister.eventTo' | translate }} {{ userId(e.toAssociateId) }}
+                      </span>
+                      <span *ngIf="e.note">({{ e.note }})</span>
+                    </div>
+                    <div class="epin-register__event-meta">
+                      {{ datePipe.transform(e.at, 'medium') }} · {{ 'admin.epinRegister.eventActor' | translate }} {{ userId(e.actorId) }}
+                    </div>
+                  </li>
+                </ol>
+              </div>
+              <div class="epin-register__detail-actions">
+                <ng-container *ngIf="p.status === 'UNUSED' || p.status === 'ALLOCATED'">
+                  <button type="button" class="brand-button" (click)="openPanel({ kind: 'redeem', epin: p })">{{ 'admin.epinRegister.redeemPinAction' | translate }}</button>
+                  <button type="button" class="epin-register__danger" (click)="openPanel({ kind: 'block', epin: p })">{{ 'admin.epinRegister.blockAction' | translate }}</button>
+                </ng-container>
+                <button type="button" class="brand-button brand-button--secondary" *ngIf="p.status === 'BLOCKED'" (click)="unblock(p)">{{ 'admin.epinRegister.unblockAction' | translate }}</button>
+              </div>
+            </ng-container>
+          </div>
+        </aside>
       </div>
     </div>
   `
@@ -214,6 +251,8 @@ export class EPinRegisterComponent implements OnInit {
 
   status = '';
   holderId = '';
+  redeemedToId = '';
+  selectedId: string | null = null;
   batchId = '';
   expiredOnly = false;
 
@@ -224,6 +263,7 @@ export class EPinRegisterComponent implements OnInit {
   generatedBatchId = '';
   private appliedBatchId = '';
   private loadSeq = 0;
+  private eventsSeq = 0;
   allocateAssociateId = '';
   allocateCount = 1;
   allocateBatchId = '';
@@ -242,6 +282,34 @@ export class EPinRegisterComponent implements OnInit {
     this.adminService.listAssociates().subscribe(a => (this.associates = a));
     this.loadPage(0);
   }
+
+  get selected(): EPin | null {
+    return this.page?.epins.find(p => p.id === this.selectedId) ?? null;
+  }
+
+  chipClass(p: EPin): string {
+    return 'epin-register__chip--' + (p.expired ? 'expired' : p.status.toLowerCase());
+  }
+
+  select(p: EPin): void {
+    this.selectedId = p.id;
+    this.events = [];
+    this.loadEvents(p.id);
+  }
+
+  private loadEvents(id: string): void {
+    const seq = ++this.eventsSeq;
+    this.service.events(id).subscribe(e => { if (seq === this.eventsSeq) this.events = e; });
+  }
+
+  private refreshSelected(): void {
+    this.loadPage(this.page?.page ?? 0);
+    if (this.selectedId) this.loadEvents(this.selectedId);
+  }
+
+  onRedeemedToChange(v: string): void { this.redeemedToId = v; this.loadPage(0); }
+  onAllocateAssociate(a: AssociateSummary | null): void { this.allocateAssociateId = a?.id ?? ''; }
+  onRedeemAssociate(a: AssociateSummary | null): void { this.redeemAssociateId = a?.id ?? ''; }
 
   userId(id: string | null): string {
     if (!id) return '—';
@@ -265,6 +333,7 @@ export class EPinRegisterComponent implements OnInit {
     const filters: EPinFilters = {};
     if (this.status) filters.status = this.status as EPinStatus;
     if (this.holderId) filters.allocatedTo = this.holderId;
+    if (this.redeemedToId) filters.redeemedTo = this.redeemedToId;
     if (this.appliedBatchId) filters.batchId = this.appliedBatchId;
     if (this.expiredOnly) filters.expired = true;
     const seq = ++this.loadSeq;
@@ -288,10 +357,6 @@ export class EPinRegisterComponent implements OnInit {
     this.redeemAssociateId = '';
     this.redeemType = 'ACTIVATION';
     this.panelReason = '';
-    if (panel.kind === 'events') {
-      this.events = [];
-      this.service.events(panel.epin.id).subscribe(e => (this.events = e));
-    }
   }
 
   closePanel(): void { this.panel = null; }
@@ -333,7 +398,7 @@ export class EPinRegisterComponent implements OnInit {
     this.actionError = '';
     if (!this.redeemAssociateId) return this.invalid();
     this.service.redeem(this.panel.epin.id, this.redeemAssociateId, this.redeemType).subscribe({
-      next: () => { this.closePanel(); this.loadPage(this.page?.page ?? 0); },
+      next: () => { this.closePanel(); this.refreshSelected(); },
       error: e => this.fail(e)
     });
   }
@@ -344,7 +409,7 @@ export class EPinRegisterComponent implements OnInit {
     const reason = (this.panelReason ?? '').trim();
     if (!reason) return this.invalid();
     this.service.block(this.panel.epin.id, reason).subscribe({
-      next: () => { this.closePanel(); this.loadPage(this.page?.page ?? 0); },
+      next: () => { this.closePanel(); this.refreshSelected(); },
       error: e => this.fail(e)
     });
   }
@@ -352,7 +417,7 @@ export class EPinRegisterComponent implements OnInit {
   unblock(p: EPin): void {
     this.actionError = '';
     this.service.unblock(p.id).subscribe({
-      next: () => this.loadPage(this.page?.page ?? 0),
+      next: () => this.refreshSelected(),
       error: e => this.fail(e)
     });
   }
