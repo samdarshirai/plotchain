@@ -60,7 +60,7 @@ class BookingCancelIntegrationTest {
     @Autowired PlotBookingRepository plotBookingRepository;
     @Autowired EmiInstallmentRepository emiInstallmentRepository;
     // Pass-through spy (reset by Spring after each test) so one test can make the CANCELLED event write
-    // fail AFTER the PAID write, the sale insert and the plot flip. Boot 3.3.4: @SpyBean.
+    // fail AFTER the installments were voided and the plot flipped. Boot 3.3.4: @SpyBean.
     @SpyBean BookingEventRepository bookingEventRepository;
     @Autowired PlatformTransactionManager transactionManager;
     @Autowired JdbcTemplate jdbc;
@@ -594,5 +594,74 @@ class BookingCancelIntegrationTest {
         assertThat(plotStatus()).isEqualTo("BOOKED");
         assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'VOID'", b.id())).isZero();
         assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CANCELLED'", b.id())).isZero();
+    }
+
+    // Deterministic proof cancel takes the PLOT lock too (the booking-lock races above all serialize on the
+    // booking row and would stay green without it). A holder transaction locks ONLY the plot row (never the
+    // booking); cancel must park on it. If flipToSold, the holder also marks the plot SOLD before commit,
+    // which proves cancel reads the plot AFTER acquiring the lock (a pre-lock read would see BOOKED and
+    // overwrite the SOLD status with AVAILABLE).
+    private void cancelWhileAnotherTransactionHoldsThePlotLock(UUID bookingId, boolean flipToSold) throws Exception {
+        CountDownLatch lockHeld = new CountDownLatch(1);
+        CountDownLatch releaseLock = new CountDownLatch(1);
+        AtomicReference<Thread> cancelThread = new AtomicReference<>();
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        try {
+            Future<?> holder = pool.submit(() -> tx.executeWithoutResult(s -> {
+                Plot locked = plotRepository.findByIdForUpdate(plotId).orElseThrow();
+                if (flipToSold) {
+                    locked.setStatus(PlotStatus.SOLD);
+                    plotRepository.saveAndFlush(locked);
+                }
+                lockHeld.countDown();
+                awaitQuietly(releaseLock);
+            }));
+            assertThat(lockHeld.await(5, TimeUnit.SECONDS)).isTrue();
+
+            Future<BookingResponse> cancel = pool.submit(() -> {
+                cancelThread.set(Thread.currentThread());
+                return bookingService.cancelBooking(bookingId, new CancelBookingRequest("x"), associateId);
+            });
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+            while (System.nanoTime() < deadline) {
+                Thread t = cancelThread.get();
+                if (cancel.isDone() || (t != null && (t.getState() == Thread.State.WAITING
+                        || t.getState() == Thread.State.TIMED_WAITING || t.getState() == Thread.State.BLOCKED))) {
+                    break;
+                }
+                Thread.sleep(5);
+            }
+            assertThat(cancel.isDone()).as("cancel must still be waiting on the holder's plot lock").isFalse();
+
+            releaseLock.countDown();
+            holder.get(5, TimeUnit.SECONDS);
+            cancel.get(10, TimeUnit.SECONDS);
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
+    void cancelWaitsForAHolderOfThePlotLockAndThenFreesThePlot() throws Exception {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+
+        cancelWhileAnotherTransactionHoldsThePlotLock(b.id(), false);
+
+        assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
+        assertThat(plotStatus()).isEqualTo("AVAILABLE");
+    }
+
+    @Test
+    void cancelReadsThePlotAfterTheLockSoAHoldersSoldStatusIsNeverOverwritten() throws Exception {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+
+        cancelWhileAnotherTransactionHoldsThePlotLock(b.id(), true);
+
+        assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
+        assertThat(plotStatus()).isEqualTo("SOLD");
+        assertThat(eventDetail(b.id(), "CANCELLED")).endsWith("; plot left SOLD");
     }
 }
