@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -229,6 +230,64 @@ public class BookingService {
 
         bookingEventRepository.save(BookingEvent.of(lockedBooking.getId(), BookingEventType.CONFIRMED,
             actorId, "sale " + sale.id() + ", amount " + lockedBooking.getTotalAmount().toPlainString(), now));
+    }
+
+    // Plot-booking unit 6 (spec Flow "Cancel", Decisions 4, 8). Locks the booking FIRST so a concurrent
+    // pay / confirm / cancel serializes on it (the loser re-reads CANCELLED/CONFIRMED and gets 409),
+    // then the plot. LOCK ORDER IS BOOKING -> PLOT EVERYWHERE (Decision 8), same as confirmLocked.
+    // PAID installments are untouched; PENDING -> VOID; amounts retained as a note only (no refunds).
+    // Plot goes BOOKED -> AVAILABLE only if it is currently BOOKED AND no other ACTIVE/CONFIRMED booking holds it. Any other status is plot drift (a BOOKED plot held by another live booking is kept the same way):
+    // cancel must stay possible (it is the repair tool, unlike confirm which 409s on drift), and
+    // flipping a SOLD plot to AVAILABLE would let a sold plot be sold twice. The drift is recorded in
+    // the event detail instead. Reason + paid total live in booking_event.detail (Resolved decision #2).
+    @Transactional
+    public BookingResponse cancelBooking(UUID bookingId, CancelBookingRequest request, UUID actorId) {
+        PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)
+            .orElseThrow(() -> new BookingNotFoundException(bookingId));
+        if (booking.getStatus() != BookingStatus.ACTIVE) {
+            throw new BookingNotActiveException(bookingId);
+        }
+        Plot plot = plotRepository.findByIdForUpdate(booking.getPlotId())
+            .orElseThrow(() -> new IllegalStateException(
+                "plot row missing for booking " + bookingId + " - plot_id has an FK constraint"));
+
+        List<EmiInstallment> installments =
+            emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId);
+        for (EmiInstallment installment : installments) {
+            if (installment.getStatus() == InstallmentStatus.PENDING) {
+                installment.setStatus(InstallmentStatus.VOID);
+            }
+        }
+        emiInstallmentRepository.saveAll(installments);
+
+        String plotNote = "";
+        if (plot.getStatus() == PlotStatus.BOOKED) {
+            // Stale-booking guard: runs under the booking + plot locks. If the plot drifted and another
+            // live booking now holds it, freeing it would double-sell it; keep it and say so.
+            Optional<PlotBooking> holder = plotBookingRepository.findFirstByPlotIdAndIdNotAndStatusIn(
+                plot.getId(), bookingId, List.of(BookingStatus.ACTIVE, BookingStatus.CONFIRMED));
+            if (holder.isPresent()) {
+                plotNote = "; plot kept: held by booking " + holder.get().getId();
+            } else {
+                plot.setStatus(PlotStatus.AVAILABLE);
+                plotRepository.save(plot);
+            }
+        } else {
+            plotNote = "; plot left " + plot.getStatus();
+        }
+
+        Instant now = clock.instant();
+        String reason = request.reason().trim();
+        booking.setStatus(BookingStatus.CANCELLED);
+        booking.setCancelledAt(now);
+        booking.setCancelReason(reason);
+        plotBookingRepository.save(booking);
+
+        BigDecimal paid = sumByStatus(installments, InstallmentStatus.PAID).setScale(2, RoundingMode.HALF_UP);
+        bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.CANCELLED, actorId,
+            "reason: " + reason + "; paid: " + paid.toPlainString() + plotNote, now));
+
+        return toResponse(booking, installments);
     }
 
     // Self-scoped only, unlike Sales' getMySales -- the data visibility matrix's Plot/project
