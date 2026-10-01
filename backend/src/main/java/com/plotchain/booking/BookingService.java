@@ -236,10 +236,11 @@ public class BookingService {
     // pay / confirm / cancel serializes on it (the loser re-reads CANCELLED/CONFIRMED and gets 409),
     // then the plot. LOCK ORDER IS BOOKING -> PLOT EVERYWHERE (Decision 8), same as confirmLocked.
     // PAID installments are untouched; PENDING -> VOID; amounts retained as a note only (no refunds).
-    // Plot goes BOOKED -> AVAILABLE only if it is currently BOOKED AND no other ACTIVE/CONFIRMED booking holds it. Any other status is plot drift (a BOOKED plot held by another live booking is kept the same way):
-    // cancel must stay possible (it is the repair tool, unlike confirm which 409s on drift), and
-    // flipping a SOLD plot to AVAILABLE would let a sold plot be sold twice. The drift is recorded in
-    // the event detail instead. Reason + paid total live in booking_event.detail (Resolved decision #2).
+    // The plot goes BOOKED -> AVAILABLE only if it is BOOKED and no other ACTIVE/CONFIRMED booking
+    // holds it (see the stale-booking guard below). Any other plot state is drift: cancel must stay
+    // possible (it is the repair tool, unlike confirm which 409s on drift), and flipping a SOLD plot
+    // to AVAILABLE would let it be sold twice. Drift is recorded in the event detail instead.
+    // Reason + paid total live in booking_event.detail (Resolved decision #2).
     @Transactional
     public BookingResponse cancelBooking(UUID bookingId, CancelBookingRequest request, UUID actorId) {
         PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)

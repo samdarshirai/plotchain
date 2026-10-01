@@ -37,6 +37,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -58,7 +59,7 @@ class BookingCancelIntegrationTest {
     @Autowired AssociateRepository associateRepository;
     @Autowired PlotBookingRepository plotBookingRepository;
     @Autowired EmiInstallmentRepository emiInstallmentRepository;
-    // Pass-through spy (reset by Spring after each test) so one test can make the CONFIRMED event write
+    // Pass-through spy (reset by Spring after each test) so one test can make the CANCELLED event write
     // fail AFTER the PAID write, the sale insert and the plot flip. Boot 3.3.4: @SpyBean.
     @SpyBean BookingEventRepository bookingEventRepository;
     @Autowired PlatformTransactionManager transactionManager;
@@ -555,7 +556,7 @@ class BookingCancelIntegrationTest {
         BookingResponse b = seedBooking();
         CountDownLatch lockHeld = new CountDownLatch(1);
         CountDownLatch releaseLock = new CountDownLatch(1);
-        java.util.concurrent.atomic.AtomicReference<Thread> cancelThread = new java.util.concurrent.atomic.AtomicReference<>();
+        AtomicReference<Thread> cancelThread = new AtomicReference<>();
         ExecutorService pool = Executors.newFixedThreadPool(2);
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         try {
