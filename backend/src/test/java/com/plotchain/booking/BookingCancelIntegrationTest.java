@@ -418,4 +418,180 @@ class BookingCancelIntegrationTest {
         bookingService.cancelBooking(b.id(), new CancelBookingRequest("retry"), associateId);
         assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
     }
+
+    // Helper: run two callables at the same instant; returns each outcome (null = success, else the cause).
+    private List<Throwable> race(java.util.concurrent.Callable<?> a, java.util.concurrent.Callable<?> b) throws Exception {
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            List<Future<?>> fs = new ArrayList<>();
+            for (java.util.concurrent.Callable<?> c : List.of(a, b)) {
+                fs.add(pool.submit(() -> { awaitQuietly(start); return c.call(); }));
+            }
+            start.countDown();
+            List<Throwable> out = new ArrayList<>();
+            for (Future<?> f : fs) {
+                try { f.get(10, TimeUnit.SECONDS); out.add(null); }
+                catch (ExecutionException e) { out.add(e.getCause()); }
+            }
+            return out;
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    @RepeatedTest(10)
+    void twoSimultaneousCancelsYieldExactlyOneWinnerAndOneEvent() throws Exception {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        payInstallment(b, 1);
+
+        List<Throwable> r = race(
+            () -> bookingService.cancelBooking(b.id(), new CancelBookingRequest("A"), associateId),
+            () -> bookingService.cancelBooking(b.id(), new CancelBookingRequest("B"), associateId));
+
+        assertThat(r.stream().filter(java.util.Objects::isNull)).hasSize(1);
+        assertThat(r.stream().filter(java.util.Objects::nonNull)).hasSize(1)
+            .allSatisfy(t -> assertThat(t).isInstanceOf(BookingNotActiveException.class));
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CANCELLED'", b.id())).isEqualTo(1);
+        assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
+        assertThat(plotStatus()).isEqualTo("AVAILABLE");
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'VOID'", b.id())).isEqualTo(3);
+    }
+
+    // Cancel vs manual confirm: exactly one winner, state consistent with the winner.
+    @RepeatedTest(10)
+    void aCancelRacingAManualConfirmYieldsExactlyOneWinner() throws Exception {
+        setConfig(false, 1, "MANUAL", null);
+        BookingResponse b = seedBooking();
+
+        List<Throwable> r = race(
+            () -> bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId),
+            () -> bookingService.confirmBooking(b.id(), associateId));
+
+        boolean cancelWon = r.get(0) == null;
+        boolean confirmWon = r.get(1) == null;
+        assertThat(cancelWon ^ confirmWon).as("exactly one winner").isTrue();
+        Throwable loser = cancelWon ? r.get(1) : r.get(0);
+        assertThat(loser).isInstanceOf(BookingNotActiveException.class);
+        if (cancelWon) {
+            assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
+            assertThat(plotStatus()).isEqualTo("AVAILABLE");
+            assertThat(count("SELECT COUNT(*) FROM sale WHERE booking_id = ?", b.id())).isZero();
+            assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CONFIRMED'", b.id())).isZero();
+        } else {
+            assertThat(bookingStatus(b.id())).isEqualTo("CONFIRMED");
+            assertThat(plotStatus()).isEqualTo("SOLD");
+            assertThat(count("SELECT COUNT(*) FROM sale WHERE booking_id = ?", b.id())).isEqualTo(1);
+            assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CANCELLED'", b.id())).isZero();
+        }
+    }
+
+    // Cancel vs a pay that auto-confirms (single installment, AUTO_THRESHOLD 100): exactly one winner.
+    // Exercises booking -> plot lock order from both sides (pay's auto-confirm and cancel both take the
+    // plot lock after the booking lock): a lock-order inversion would deadlock/time out here.
+    @RepeatedTest(10)
+    void aCancelRacingAnAutoConfirmingPayYieldsExactlyOneWinner() throws Exception {
+        setConfig(false, 1, "AUTO_THRESHOLD", 100);
+        BookingResponse b = seedBooking();
+        BigDecimal total = b.installments().get(0).amount();
+
+        List<Throwable> r = race(
+            () -> bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId),
+            () -> bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(total, "UTR-R", null), associateId));
+
+        boolean cancelWon = r.get(0) == null;
+        boolean payWon = r.get(1) == null;
+        assertThat(cancelWon ^ payWon).as("exactly one winner").isTrue();
+        assertThat(cancelWon ? r.get(1) : r.get(0)).isInstanceOf(BookingNotActiveException.class);
+        if (cancelWon) {
+            assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
+            assertThat(plotStatus()).isEqualTo("AVAILABLE");
+            assertThat(jdbc.queryForObject("SELECT status FROM emi_installment WHERE booking_id = ?", String.class, b.id())).isEqualTo("VOID");
+            assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id())).isZero();
+            assertThat(count("SELECT COUNT(*) FROM sale WHERE booking_id = ?", b.id())).isZero();
+        } else {
+            assertThat(bookingStatus(b.id())).isEqualTo("CONFIRMED");
+            assertThat(plotStatus()).isEqualTo("SOLD");
+            assertThat(jdbc.queryForObject("SELECT status FROM emi_installment WHERE booking_id = ?", String.class, b.id())).isEqualTo("PAID");
+            assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CANCELLED'", b.id())).isZero();
+        }
+    }
+
+    // Cancel vs a plain pay under MANUAL: pay-then-cancel legitimately BOTH succeed (the paid installment
+    // is retained), cancel-then-pay is 409 for the pay. Invariant under every interleaving: no lost
+    // update. The cancel event's "paid" total equals the final sum of PAID installments, and PAID events
+    // match PAID rows.
+    @RepeatedTest(10)
+    void aCancelRacingAPlainPayNeverLosesTheUpdate() throws Exception {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        BigDecimal amount = b.installments().get(0).amount();
+
+        List<Throwable> r = race(
+            () -> bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId),
+            () -> bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(amount, "UTR-R", null), associateId));
+
+        assertThat(r.get(0)).as("cancel always succeeds on an ACTIVE booking").isNull();
+        if (r.get(1) != null) {
+            assertThat(r.get(1)).isInstanceOf(BookingNotActiveException.class);
+        }
+        int paidRows = count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PAID'", b.id());
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id())).isEqualTo(paidRows);
+        assertThat(eventDetail(b.id(), "CANCELLED")).endsWith("paid: " + (paidRows == 1 ? "150000.00" : "0.00"));
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PENDING'", b.id())).isZero();
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'VOID'", b.id())).isEqualTo(3 + (1 - paidRows));
+        assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
+        assertThat(plotStatus()).isEqualTo("AVAILABLE");
+    }
+
+    // Deterministic proof the booking is read WITH the lock (the races above can pass by luck without it).
+    // A holder transaction takes the booking lock and sets CONFIRMED (simulating a confirm that commits
+    // first). cancel must park on the lock, then see CONFIRMED and 409, and must NOT have touched the plot.
+    // Same polling pattern as BookingConfirmIntegrationTest.confirmWaitsForAHolderOfTheBookingLock...
+    @Test
+    void cancelWaitsForAHolderOfTheBookingLockAndThenSeesItsCommittedState() throws Exception {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        CountDownLatch lockHeld = new CountDownLatch(1);
+        CountDownLatch releaseLock = new CountDownLatch(1);
+        java.util.concurrent.atomic.AtomicReference<Thread> cancelThread = new java.util.concurrent.atomic.AtomicReference<>();
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        try {
+            Future<?> holder = pool.submit(() -> tx.executeWithoutResult(s -> {
+                PlotBooking locked = plotBookingRepository.findByIdForUpdate(b.id()).orElseThrow();
+                locked.setStatus(BookingStatus.CONFIRMED);
+                plotBookingRepository.save(locked);
+                lockHeld.countDown();
+                awaitQuietly(releaseLock);
+            }));
+            assertThat(lockHeld.await(5, TimeUnit.SECONDS)).isTrue();
+
+            Future<BookingResponse> cancel = pool.submit(() -> {
+                cancelThread.set(Thread.currentThread());
+                return bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId);
+            });
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+            while (System.nanoTime() < deadline) {
+                Thread t = cancelThread.get();
+                if (t != null && (t.getState() == Thread.State.WAITING || t.getState() == Thread.State.TIMED_WAITING
+                        || t.getState() == Thread.State.BLOCKED)) {
+                    break;
+                }
+                Thread.sleep(5);
+            }
+            assertThat(cancel.isDone()).as("cancel must still be waiting on the holder's lock").isFalse();
+
+            releaseLock.countDown();
+            holder.get(5, TimeUnit.SECONDS);
+            assertThatThrownBy(() -> cancel.get(10, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class).hasCauseInstanceOf(BookingNotActiveException.class);
+        } finally {
+            pool.shutdownNow();
+        }
+        assertThat(plotStatus()).isEqualTo("BOOKED");
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'VOID'", b.id())).isZero();
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CANCELLED'", b.id())).isZero();
+    }
 }
