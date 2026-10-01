@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -44,6 +45,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doThrow;
 
 // Real-DB (H2 via Flyway) proof for BookingService.confirmBooking (plot-booking unit 4): linked
 // sale, parity with recordSale, void, rollback, and the booking row lock serializing confirms.
@@ -60,7 +63,9 @@ class BookingConfirmIntegrationTest {
     @Autowired AssociateRepository associateRepository;
     @Autowired PlotBookingRepository plotBookingRepository;
     @Autowired EmiInstallmentRepository emiInstallmentRepository;
-    @Autowired BookingEventRepository bookingEventRepository;
+    // Spy (pass-through by default, reset after each test) so one test can make the CONFIRMED event
+    // write fail AFTER the sale insert and plot flip, proving confirmBooking is one transaction.
+    @SpyBean BookingEventRepository bookingEventRepository;
     @Autowired PlatformTransactionManager transactionManager;
     @Autowired JdbcTemplate jdbc;
 
@@ -244,9 +249,35 @@ class BookingConfirmIntegrationTest {
             Integer.class, b.id())).isEqualTo(1);
     }
 
-    // Data drift: plot edited away from BOOKED while the booking is ACTIVE. Must 409 and leave no trace.
+    // Real rollback proof: the CONFIRMED event write fails AFTER recordConfirmedBooking has inserted the
+    // sale + ledger rows and flipped the plot to SOLD, so only the surrounding transaction can undo them.
     @Test
-    void confirmWithAPlotThatIsNoLongerBookedIs409AndRollsBackEverything() {
+    void aFailureAfterTheSaleIsCreatedRollsTheWholeConfirmBack() {
+        BookingResponse b = seedBooking();
+        doThrow(new IllegalStateException("simulated event write failure"))
+            .when(bookingEventRepository).save(argThat(e -> e.getType() == BookingEventType.CONFIRMED));
+
+        assertThatThrownBy(() -> bookingService.confirmBooking(b.id(), associateId))
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("simulated");
+
+        // fresh reads via JDBC (no persistence context involved)
+        assertThat(jdbc.queryForObject("SELECT status FROM plot WHERE id = ?", String.class, plotId)).isEqualTo("BOOKED");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM sale WHERE booking_id = ?", Integer.class, b.id())).isZero();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM sale WHERE associate_id = ?", Integer.class, associateId)).isZero();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM ledger_entry WHERE associate_id = ?", Integer.class, associateId)).isZero();
+        Map<String, Object> row = jdbc.queryForMap(
+            "SELECT status, confirmed_at, sale_id FROM plot_booking WHERE id = ?", b.id());
+        assertThat(row.get("status")).isEqualTo("ACTIVE");
+        assertThat(row.get("confirmed_at")).isNull();
+        assertThat(row.get("sale_id")).isNull();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CONFIRMED'",
+            Integer.class, b.id())).isZero();
+    }
+
+    // Data drift: plot edited away from BOOKED while the booking is ACTIVE. Must 409 and write nothing.
+    // (Fails fast before any write, so this does NOT prove rollback; see the test above for that.)
+    @Test
+    void confirmWithAPlotThatIsNoLongerBookedIs409AndWritesNothing() {
         BookingResponse b = seedBooking();
         jdbc.update("UPDATE plot SET status = 'AVAILABLE' WHERE id = ?", plotId);
 
