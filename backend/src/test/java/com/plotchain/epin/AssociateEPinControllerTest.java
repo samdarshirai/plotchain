@@ -123,4 +123,42 @@ class AssociateEPinControllerTest {
                 .contentType("application/json").content("{\"userId\":\" \"}"))
             .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void transferReturns200ForTheHolderAndAnAssociateTokenIsNotForbidden() throws Exception {
+        Associate me = associate(AssociateRole.ASSOCIATE);
+        EPin pin = new EPin();
+        pin.setId(UUID.randomUUID());
+        pin.setStatus(EPinStatus.ALLOCATED);
+        pin.setAllocatedTo(me.getId());
+        when(epinRepository.findByIdForUpdate(pin.getId())).thenReturn(Optional.of(pin));
+        Associate to = new Associate();
+        to.setId(UUID.randomUUID());
+        to.setUserId("VP00050");
+        to.setStatus(AssociateStatus.ACTIVE);
+        when(associateRepository.findByUserId("VP00050")).thenReturn(Optional.of(to));
+
+        mockMvc.perform(post("/api/associates/me/epins/" + pin.getId() + "/transfer")
+                .header("Authorization", "Bearer " + jwtService.generateToken(me))
+                .contentType("application/json").content("{\"toUserId\":\"VP00050\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.allocatedTo").value(to.getId().toString()));
+    }
+
+    @Test
+    void transferToSelfIs409() throws Exception {
+        Associate me = associate(AssociateRole.ASSOCIATE);
+        me.setUserId("VP00001");
+        EPin pin = new EPin();
+        pin.setId(UUID.randomUUID());
+        pin.setStatus(EPinStatus.ALLOCATED);
+        pin.setAllocatedTo(me.getId());
+        when(epinRepository.findByIdForUpdate(pin.getId())).thenReturn(Optional.of(pin));
+        when(associateRepository.findByUserId("VP00001")).thenReturn(Optional.of(me));
+
+        mockMvc.perform(post("/api/associates/me/epins/" + pin.getId() + "/transfer")
+                .header("Authorization", "Bearer " + jwtService.generateToken(me))
+                .contentType("application/json").content("{\"toUserId\":\"VP00001\"}"))
+            .andExpect(status().isConflict());
+    }
 }

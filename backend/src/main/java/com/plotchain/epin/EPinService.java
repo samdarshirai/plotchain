@@ -249,6 +249,25 @@ public class EPinService {
         return toResponse(epin);
     }
 
+    @Transactional
+    public EPinResponse transfer(UUID epinId, String toUserId, UUID callerId) {
+        EPin epin = loadHeldPin(epinId, callerId);
+
+        Associate to = associateRepository.findByUserId(toUserId)
+            .orElseThrow(() -> new AssociateNotFoundException(toUserId));
+        if (to.getId().equals(callerId)) {
+            throw new EPinInvalidStateException("Cannot transfer an e-PIN to yourself: " + epinId);
+        }
+        if (to.getStatus() != AssociateStatus.ACTIVE) {
+            throw new AssociateNotActiveException(to.getId());
+        }
+
+        epin.setAllocatedTo(to.getId());
+        epinRepository.save(epin);
+        recordEvent(epinId, EPinEventType.TRANSFERRED, callerId, callerId, to.getId(), null);
+        return toResponse(epin);
+    }
+
     private void recordEvent(UUID epinId, EPinEventType type, UUID actorId, UUID from, UUID to, String note) {
         epinEventRepository.save(EPinEvent.of(epinId, type, actorId, from, to, clock.instant(), note));
     }

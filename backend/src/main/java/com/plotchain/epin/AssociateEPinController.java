@@ -40,4 +40,10 @@ public class AssociateEPinController {
                                @AuthenticationPrincipal UUID associateId) {
         return epinService.redeemOwn(id, request.userId(), associateId);
     }
+
+    @PostMapping("/{id}/transfer")
+    public EPinResponse transfer(@PathVariable UUID id, @Valid @RequestBody TransferEPinRequest request,
+                                 @AuthenticationPrincipal UUID associateId) {
+        return epinService.transfer(id, request.toUserId(), associateId);
+    }
 }

@@ -130,6 +130,7 @@ public class SecurityConfig {
                 // precede the blanket ADMIN write rules below (first-match-wins). Ownership and
                 // downline checks are in EPinService, not here.
                 .requestMatchers(HttpMethod.POST, "/api/associates/me/epins/*/redeem").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/associates/me/epins/*/transfer").authenticated()
                 // Deny-by-default for writes: product policy is "ADMIN can write; associates
                 // are read-only except their own profile". Without this, any future
                 // POST/PUT/PATCH/DELETE endpoint would be reachable by every authenticated

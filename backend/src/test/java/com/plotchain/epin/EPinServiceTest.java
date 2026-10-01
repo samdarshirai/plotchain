@@ -730,4 +730,91 @@ class EPinServiceTest {
 
         verify(epinEventRepository, times(1)).save(any());
     }
+
+    private Associate recipient(String userId, AssociateStatus status) {
+        Associate r = new Associate();
+        r.setId(UUID.randomUUID());
+        r.setUserId(userId);
+        r.setStatus(status);
+        when(associateRepository.findByUserId(userId)).thenReturn(Optional.of(r));
+        return r;
+    }
+
+    @Test
+    void transferMovesAHeldPinToAnActiveRecipientAndRecordsATransferredEvent() {
+        UUID caller = UUID.randomUUID();
+        EPin pin = heldPin(caller, EPinStatus.ALLOCATED);
+        Associate to = recipient("VP00050", AssociateStatus.ACTIVE);
+        ArgumentCaptor<EPinEvent> events = ArgumentCaptor.forClass(EPinEvent.class);
+
+        epinService.transfer(pin.getId(), "VP00050", caller);
+
+        assertThat(pin.getAllocatedTo()).isEqualTo(to.getId());
+        assertThat(pin.getStatus()).isEqualTo(EPinStatus.ALLOCATED);
+        verify(epinEventRepository).save(events.capture());
+        assertThat(events.getValue().getEventType()).isEqualTo(EPinEventType.TRANSFERRED);
+        assertThat(events.getValue().getFromAssociateId()).isEqualTo(caller);
+        assertThat(events.getValue().getToAssociateId()).isEqualTo(to.getId());
+        assertThat(events.getValue().getActorId()).isEqualTo(caller);
+    }
+
+    @Test
+    void transferToSelfOrAPendingOrSuspendedRecipientIsRejectedWithNoSideEffects() {
+        UUID caller = UUID.randomUUID();
+        EPin pin = heldPin(caller, EPinStatus.ALLOCATED);
+        Associate me = recipient("VP00001", AssociateStatus.ACTIVE);
+        me.setId(caller);
+        recipient("VP00002", AssociateStatus.PENDING);
+        recipient("VP00003", AssociateStatus.SUSPENDED);
+
+        assertThatThrownBy(() -> epinService.transfer(pin.getId(), "VP00001", caller))
+            .isInstanceOf(EPinInvalidStateException.class);
+        assertThatThrownBy(() -> epinService.transfer(pin.getId(), "VP00002", caller))
+            .isInstanceOf(AssociateNotActiveException.class);
+        assertThatThrownBy(() -> epinService.transfer(pin.getId(), "VP00003", caller))
+            .isInstanceOf(AssociateNotActiveException.class);
+
+        assertThat(pin.getAllocatedTo()).isEqualTo(caller);
+        verify(epinRepository, never()).save(any());
+        verify(epinEventRepository, never()).save(any());
+    }
+
+    @Test
+    void transferRejectsAnUnknownRecipientAndAPinTheCallerDoesNotHoldOrThatIsBlockedOrExpired() {
+        UUID caller = UUID.randomUUID();
+        EPin ok = heldPin(caller, EPinStatus.ALLOCATED);
+        when(associateRepository.findByUserId("NOPE")).thenReturn(Optional.empty());
+        EPin theirs = heldPin(UUID.randomUUID(), EPinStatus.ALLOCATED);
+        EPin blocked = heldPin(caller, EPinStatus.BLOCKED);
+        EPin expired = heldPin(caller, EPinStatus.ALLOCATED);
+        expired.setExpiresAt(NOW);
+        // lenient: every pin-state rejection short-circuits before the recipient lookup
+        Associate active = new Associate();
+        active.setId(UUID.randomUUID());
+        active.setStatus(AssociateStatus.ACTIVE);
+        lenient().when(associateRepository.findByUserId("VP00050")).thenReturn(Optional.of(active));
+
+        assertThatThrownBy(() -> epinService.transfer(ok.getId(), "NOPE", caller)).isInstanceOf(AssociateNotFoundException.class);
+        assertThatThrownBy(() -> epinService.transfer(theirs.getId(), "VP00050", caller)).isInstanceOf(EPinNotOwnedException.class);
+        assertThatThrownBy(() -> epinService.transfer(blocked.getId(), "VP00050", caller)).isInstanceOf(EPinBlockedException.class);
+        assertThatThrownBy(() -> epinService.transfer(expired.getId(), "VP00050", caller)).isInstanceOf(EPinExpiredException.class);
+
+        verify(epinRepository, never()).save(any());
+        verify(epinEventRepository, never()).save(any());
+    }
+
+    @Test
+    void afterATransferTheOldHolderCanNoLongerTransferOrRedeemThePin() {
+        UUID caller = UUID.randomUUID();
+        EPin pin = heldPin(caller, EPinStatus.ALLOCATED);
+        recipient("VP00050", AssociateStatus.ACTIVE);
+
+        epinService.transfer(pin.getId(), "VP00050", caller);
+
+        assertThatThrownBy(() -> epinService.transfer(pin.getId(), "VP00050", caller))
+            .isInstanceOf(EPinNotOwnedException.class);
+        assertThatThrownBy(() -> epinService.redeemOwn(pin.getId(), "VP00050", caller))
+            .isInstanceOf(EPinNotOwnedException.class);
+        verify(epinEventRepository, times(1)).save(any());
+    }
 }
