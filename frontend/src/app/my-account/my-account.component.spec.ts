@@ -120,6 +120,7 @@ describe('MyAccountComponent', () => {
 
   it('renders the header identity strip with name, associate ID, joined date, and KYC status', () => {
     init();
+    switchTab('kyc');
     const header: HTMLElement = fixture.nativeElement.querySelector('.my-account__header');
     expect(header.textContent).toContain('Left Kumar');
     expect(header.textContent).toContain('VP00001');
@@ -233,12 +234,14 @@ describe('MyAccountComponent', () => {
     init();
     expect(fixture.nativeElement.querySelector('.profile-hero__rank-plaque')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.profile-hero')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.my-account__header-actions')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.my-account__rank-chip')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.profile-hero__print-button')).toBeTruthy();
 
     switchTab('kyc');
     expect(fixture.nativeElement.querySelector('.profile-hero__rank-plaque')).toBeFalsy();
     expect(fixture.nativeElement.querySelector('.profile-hero')).toBeFalsy();
-    expect(fixture.nativeElement.querySelector('.my-account__header-actions')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.my-account__rank-chip')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.profile-hero__print-button')).toBeFalsy();
   });
 
   it('shows the three in-page sub-tabs (Profile / Login Password / Transaction Password) on the Profile section only', () => {

@@ -71,24 +71,18 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
     <div class="my-account">
       <p *ngIf="profileLoadError" class="my-account__load-error">{{ 'myAccount.profileLoadError' | translate }}</p>
 
-      <div class="my-account__header" *ngIf="profile as p">
+      <div class="my-account__header" *ngIf="profile && activeTab !== 'profile'">
         <span class="my-account__avatar">{{ initials }}</span>
         <div class="my-account__identity">
-          <h1 class="my-account__name">{{ p.name }}</h1>
+          <h1 class="my-account__name">{{ profile.name }}</h1>
           <div class="my-account__meta">
-            <span>{{ p.userId }}</span>
+            <span>{{ profile.userId }}</span>
             <span>&middot;</span>
-            <span>{{ 'myAccount.joinedOn' | translate: { date: (p.joinedAt | date: 'd-MMM-yyyy') } }}</span>
+            <span>{{ 'myAccount.joinedOn' | translate: { date: (profile.joinedAt | date: 'd-MMM-yyyy') } }}</span>
             <span *ngIf="kycStatus as k" class="my-account__status" [class.my-account__status--verified]="k.kycStatus === 'VERIFIED'">
               {{ 'myAccount.statusLabel' | translate: { status: kycStatusLabel(k.kycStatus) } }}
             </span>
           </div>
-        </div>
-        <div class="my-account__header-actions" *ngIf="activeTab === 'profile'">
-          <span class="my-account__rank-chip" *ngIf="rankProgress as rp">{{ rp.currentRank }}</span>
-          <button type="button" class="my-account__print-button" (click)="printIdCard()">
-            {{ 'myAccount.downloadIdCard' | translate }}
-          </button>
         </div>
       </div>
 
@@ -133,6 +127,10 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
                 </div>
               </div>
               <div class="profile-hero__actions">
+                <span class="my-account__rank-chip" *ngIf="rankProgress as rp">{{ rp.currentRank }}</span>
+                <button type="button" class="profile-hero__print-button" (click)="printIdCard()">
+                  {{ 'myAccount.downloadIdCard' | translate }}
+                </button>
                 <label class="profile-hero__upload-button">
                   {{ 'myAccount.hero.uploadPhoto' | translate }}
                   <input
