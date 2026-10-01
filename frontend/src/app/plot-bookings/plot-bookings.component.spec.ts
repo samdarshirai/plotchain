@@ -146,11 +146,12 @@ describe('PlotBookingsComponent', () => {
     fixture.componentInstance.onTabChange('myBookings');
     httpMock.expectOne('/api/associates/me/bookings?page=0&size=20').flush({
       bookings: [{
-        id: 'b1', plotId: 'plot-1', associateId: 'a1', totalAmount: 600000, installmentCount: 2,
-        bookedAt: '2026-01-01T00:00:00Z',
+        id: 'b1', plotId: 'plot-1', associateId: 'a1', status: 'ACTIVE', buyerName: 'Jane Buyer',
+        totalAmount: 600000, installmentCount: 2,
+        bookedAt: '2026-01-01T00:00:00Z', paidAmount: 0, dueAmount: 600000,
         installments: [
-          { installmentNumber: 1, amount: 300000, dueDate: '2026-02-01' },
-          { installmentNumber: 2, amount: 300000, dueDate: '2026-03-01' }
+          { installmentNumber: 1, amount: 300000, dueDate: '2026-02-01', status: 'PENDING', paidAt: null, overdue: false },
+          { installmentNumber: 2, amount: 300000, dueDate: '2026-03-01', status: 'PENDING', paidAt: null, overdue: false }
         ]
       }],
       page: 0, size: 20, totalElements: 1
@@ -168,11 +169,12 @@ describe('PlotBookingsComponent', () => {
     fixture.componentInstance.onTabChange('myBookings');
     httpMock.expectOne('/api/associates/me/bookings?page=0&size=20').flush({
       bookings: [{
-        id: 'b1', plotId: 'plot-1', associateId: 'a1', totalAmount: 600000, installmentCount: 2,
-        bookedAt: '2026-01-01T00:00:00Z',
+        id: 'b1', plotId: 'plot-1', associateId: 'a1', status: 'ACTIVE', buyerName: 'Jane Buyer',
+        totalAmount: 600000, installmentCount: 2,
+        bookedAt: '2026-01-01T00:00:00Z', paidAmount: 0, dueAmount: 600000,
         installments: [
-          { installmentNumber: 1, amount: 300000, dueDate: '2026-02-01' },
-          { installmentNumber: 2, amount: 300000, dueDate: '2026-03-01' }
+          { installmentNumber: 1, amount: 300000, dueDate: '2026-02-01', status: 'PENDING', paidAt: null, overdue: false },
+          { installmentNumber: 2, amount: 300000, dueDate: '2026-03-01', status: 'PENDING', paidAt: null, overdue: false }
         ]
       }],
       page: 0, size: 20, totalElements: 1
@@ -186,7 +188,10 @@ describe('PlotBookingsComponent', () => {
   });
 
   it('closes the side panel via the close event', () => {
-    fixture.componentInstance.selectedBooking = { id: 'b1', plotId: 'plot-1', associateId: 'a1', totalAmount: 1, installmentCount: 1, bookedAt: '', installments: [] };
+    fixture.componentInstance.selectedBooking = {
+      id: 'b1', plotId: 'plot-1', associateId: 'a1', status: 'ACTIVE', buyerName: 'Jane Buyer',
+      totalAmount: 1, installmentCount: 1, bookedAt: '', paidAmount: 0, dueAmount: 1, installments: []
+    };
     fixture.componentInstance.panelOpen = true;
 
     fixture.componentInstance.closePanel();
