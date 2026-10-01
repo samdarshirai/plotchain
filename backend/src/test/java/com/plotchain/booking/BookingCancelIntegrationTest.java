@@ -388,4 +388,34 @@ class BookingCancelIntegrationTest {
         bookingService.cancelBooking(second.id(), new CancelBookingRequest("again"), associateId);
         assertThat(plotStatus()).isEqualTo("AVAILABLE");
     }
+
+    // Real rollback proof. The CANCELLED event write is the LAST write, so it fails AFTER the installments
+    // were voided, the plot flipped to AVAILABLE and the booking row set to CANCELLED. Only the
+    // surrounding transaction can undo them. Reads are fresh JDBC (no persistence context).
+    @Test
+    void aFailureAfterTheInstallmentsAreVoidedAndThePlotFlippedRollsTheWholeCancelBack() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        payInstallment(b, 1);
+        doThrow(new IllegalStateException("simulated event write failure"))
+            .when(bookingEventRepository).save(argThat(e -> e.getType() == BookingEventType.CANCELLED));
+
+        assertThatThrownBy(() -> bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId))
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("simulated");
+
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'VOID'", b.id())).isZero();
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PENDING'", b.id())).isEqualTo(3);
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PAID'", b.id())).isEqualTo(1);
+        assertThat(plotStatus()).isEqualTo("BOOKED");
+        Map<String, Object> row = jdbc.queryForMap(
+            "SELECT status, cancelled_at, cancel_reason FROM plot_booking WHERE id = ?", b.id());
+        assertThat(row.get("STATUS")).isEqualTo("ACTIVE");
+        assertThat(row.get("CANCELLED_AT")).isNull();
+        assertThat(row.get("CANCEL_REASON")).isNull();
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CANCELLED'", b.id())).isZero();
+        // booking still cancellable afterwards (nothing left half-done / lock released)
+        org.mockito.Mockito.reset(bookingEventRepository);
+        bookingService.cancelBooking(b.id(), new CancelBookingRequest("retry"), associateId);
+        assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
+    }
 }
