@@ -364,4 +364,87 @@ class BookingAutoConfirmIntegrationTest {
             "SELECT status FROM emi_installment WHERE booking_id = ? AND installment_number = 3",
             String.class, b.id())).isEqualTo("PENDING");
     }
+
+    // Single installment (EMI disabled) at 100%: the pay itself would auto-confirm, so pay and manual
+    // confirm genuinely compete for the same confirm. The booking lock serializes them: the loser re-reads
+    // the committed state and gets BookingNotActiveException (409), never a plot-lock or unique-index error.
+    @Test
+    void aPayRacingAManualConfirmYieldsExactlyOneSaleAndTheLoserGets409() throws Exception {
+        setConfig(false, 1, "AUTO_THRESHOLD", 100);
+        BookingResponse b = seedBooking();
+        BigDecimal total = b.installments().get(0).amount();
+
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        Future<BookingResponse> pay = pool.submit(() -> {
+            awaitQuietly(start);
+            return bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(total, "UTR-R", null), associateId);
+        });
+        Future<BookingResponse> confirm = pool.submit(() -> {
+            awaitQuietly(start);
+            return bookingService.confirmBooking(b.id(), associateId);
+        });
+        start.countDown();
+
+        boolean payWon = true;
+        boolean confirmWon = true;
+        try {
+            pay.get(10, TimeUnit.SECONDS);
+        } catch (ExecutionException e) {
+            assertThat(e.getCause()).isInstanceOf(BookingNotActiveException.class);
+            payWon = false;
+        }
+        try {
+            confirm.get(10, TimeUnit.SECONDS);
+        } catch (ExecutionException e) {
+            assertThat(e.getCause()).isInstanceOf(BookingNotActiveException.class);
+            confirmWon = false;
+        }
+        pool.shutdownNow();
+
+        assertThat(payWon ^ confirmWon).as("exactly one of pay/confirm wins").isTrue();
+        assertThat(count("SELECT COUNT(*) FROM sale WHERE booking_id = ?", b.id())).isEqualTo(1);
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CONFIRMED'", b.id())).isEqualTo(1);
+        assertThat(bookingStatus(b.id())).isEqualTo("CONFIRMED");
+        assertThat(plotStatus()).isEqualTo("SOLD");
+        // state is consistent with who won: a losing pay left the installment PENDING and wrote no PAID event
+        assertThat(jdbc.queryForObject("SELECT status FROM emi_installment WHERE booking_id = ?", String.class, b.id()))
+            .isEqualTo(payWon ? "PAID" : "PENDING");
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id()))
+            .isEqualTo(payWon ? 1 : 0);
+    }
+
+    // 4 installments, threshold 75%, installment 1 pre-paid (25%). Two admins pay installments 2 and 3 at
+    // the same time. Alone, each leaves 50% (below 75%); together 75%. Because the booking lock serializes
+    // them and the second pay re-reads installments AFTER the first commits, the second sees 75% and
+    // confirms: both pays succeed and there is exactly one Sale. Without the lock (lost update) both would
+    // see 50% and the booking would sit ACTIVE at 75% paid forever.
+    @Test
+    void twoPaysThatTogetherCrossTheThresholdConfirmExactlyOnceWithNoLostUpdate() throws Exception {
+        setConfig(true, 4, "AUTO_THRESHOLD", 75);
+        BookingResponse b = seedBooking();
+        payInstallment(b, 1);
+
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        List<Future<BookingResponse>> results = new ArrayList<>();
+        for (int n : new int[] {2, 3}) {
+            results.add(pool.submit(() -> {
+                awaitQuietly(start);
+                return payInstallment(b, n);
+            }));
+        }
+        start.countDown();
+        for (Future<BookingResponse> f : results) {
+            f.get(10, TimeUnit.SECONDS);                   // both succeed: neither is "already paid"/"not active"
+        }
+        pool.shutdownNow();
+
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PAID'", b.id())).isEqualTo(3);
+        assertThat(bookingStatus(b.id())).isEqualTo("CONFIRMED");
+        assertThat(plotStatus()).isEqualTo("SOLD");
+        assertThat(count("SELECT COUNT(*) FROM sale WHERE booking_id = ?", b.id())).isEqualTo(1);
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CONFIRMED'", b.id())).isEqualTo(1);
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id())).isEqualTo(3);
+    }
 }
