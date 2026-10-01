@@ -212,4 +212,46 @@ class BookingConcurrencyTest {
         assertThatThrownBy(second::get).hasCauseInstanceOf(PlotNotAvailableException.class);
         pool.shutdownNow();
     }
+
+    @Test
+    void findByIdForUpdateOnABookingBlocksASecondLockerUntilTheFirstTransactionEnds() throws Exception {
+        plotId = seedAvailablePlot();
+        associateId = seedAssociate();
+        UUID bookingId = bookingService.createBooking(bookingRequestFor(plotId, associateId)).id();
+
+        CountDownLatch lockHeld = new CountDownLatch(1);
+        CountDownLatch releaseLock = new CountDownLatch(1);
+        List<String> events = Collections.synchronizedList(new ArrayList<>());
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+
+        Future<?> holder = pool.submit(() -> tx.executeWithoutResult(s -> {
+            plotBookingRepository.findByIdForUpdate(bookingId).orElseThrow();
+            events.add("holder-locked");
+            lockHeld.countDown();
+            awaitQuietly(releaseLock);
+        }));
+        lockHeld.await(5, TimeUnit.SECONDS);
+
+        Future<?> second = pool.submit(() -> tx.executeWithoutResult(s -> {
+            events.add("second-calling");
+            plotBookingRepository.findByIdForUpdate(bookingId).orElseThrow();
+            events.add("second-locked");
+        }));
+
+        Thread.sleep(300);
+        assertThat(events).containsExactly("holder-locked", "second-calling");
+        releaseLock.countDown();
+        holder.get(5, TimeUnit.SECONDS);
+        second.get(5, TimeUnit.SECONDS);
+        assertThat(events).containsExactly("holder-locked", "second-calling", "second-locked");
+        pool.shutdownNow();
+    }
+
+    @Test
+    void findByIdForUpdateReturnsEmptyForAnUnknownBooking() {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        Boolean empty = tx.execute(s -> plotBookingRepository.findByIdForUpdate(UUID.randomUUID()).isEmpty());
+        assertThat(empty).isTrue();
+    }
 }
