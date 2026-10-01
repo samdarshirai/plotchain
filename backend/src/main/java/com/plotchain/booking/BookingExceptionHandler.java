@@ -49,6 +49,13 @@ public class BookingExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
     }
 
+    // 400 per spec Resolved decision #4. Not AssociateNotActiveException: EPinExceptionHandler maps that
+    // type to 409 globally.
+    @ExceptionHandler(InvalidTransferTargetException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidTransferTarget(InvalidTransferTargetException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(PaymentAmountMismatchException.class)
     public ResponseEntity<Map<String, String>> handlePaymentAmountMismatch(PaymentAmountMismatchException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));

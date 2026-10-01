@@ -56,4 +56,12 @@ public class BookingController {
                                   @AuthenticationPrincipal UUID actorId) {
         return bookingService.cancelBooking(id, request, actorId);
     }
+
+    // Admin transfers an ACTIVE booking to another ACTIVE associate (Decisions 5, 8, 12). Returns the
+    // updated booking (200), like pay/confirm/cancel.
+    @PostMapping("/{id}/transfer")
+    public BookingResponse transfer(@PathVariable UUID id, @Valid @RequestBody TransferBookingRequest request,
+                                    @AuthenticationPrincipal UUID actorId) {
+        return bookingService.transferBooking(id, request.associateId(), actorId);
+    }
 }
