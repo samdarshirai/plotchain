@@ -62,12 +62,12 @@ class BookingRegisterTestData {
         return this;
     }
 
-    private UUID project(String name) {
+    UUID project(String name) {
         Project p = new Project(UUID.randomUUID(), name, "Hyderabad", null, null, Instant.now());
         return projects.saveAndFlush(p).getId();
     }
 
-    private UUID associate() {
+    UUID associate() {
         UUID id = UUID.randomUUID();
         Associate a = new Associate();
         a.setId(id);
@@ -83,13 +83,13 @@ class BookingRegisterTestData {
         return associates.saveAndFlush(a).getId();
     }
 
-    private PlotBooking booking(UUID associateId, UUID projectId, BookingStatus status, int bookedDayOffset) {
+    PlotBooking booking(UUID associateId, UUID projectId, BookingStatus status, int bookedDayOffset) {
         return booking(associateId, projectId, status, bookedDayOffset, UUID.randomUUID());
     }
 
     // Fixed small ids for the b6/b7 tie: Java UUID order is signed, H2/Postgres order differs for random
     // ids with the high bit set, so random ids made the tiebreak assertion flaky.
-    private PlotBooking booking(UUID associateId, UUID projectId, BookingStatus status, int bookedDayOffset, UUID id) {
+    PlotBooking booking(UUID associateId, UUID projectId, BookingStatus status, int bookedDayOffset, UUID id) {
         Plot plot = plots.saveAndFlush(new Plot(UUID.randomUUID(), projectId, "R-" + UUID.randomUUID().toString().substring(0, 8),
             PlotType.NORMAL, new BigDecimal("1200.00"), new BigDecimal("500.00"), new BigDecimal("600000.00"),
             status == BookingStatus.CONFIRMED ? PlotStatus.SOLD : PlotStatus.BOOKED));
@@ -105,12 +105,16 @@ class BookingRegisterTestData {
         return bookings.saveAndFlush(b);
     }
 
-    private void inst(PlotBooking b, int n, InstallmentStatus status, String due) {
+    void inst(PlotBooking b, int n, InstallmentStatus status, String due) {
+        inst(b, n, status, due, "200000.00");
+    }
+
+    void inst(PlotBooking b, int n, InstallmentStatus status, String due, String amount) {
         EmiInstallment i = new EmiInstallment();
         i.setId(UUID.randomUUID());
         i.setBookingId(b.getId());
         i.setInstallmentNumber(n);
-        i.setAmount(new BigDecimal("200000.00"));
+        i.setAmount(new BigDecimal(amount));
         i.setDueDate(LocalDate.parse(due));
         i.setStatus(status);
         installments.saveAndFlush(i);

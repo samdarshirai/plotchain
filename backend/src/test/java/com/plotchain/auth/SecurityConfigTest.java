@@ -646,6 +646,21 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/admin/bookings")).andExpect(status().isUnauthorized());
     }
 
+    // plot-booking unit 9 (Decision 12): GET /api/admin/emi-reports/overdue needs its OWN ADMIN
+    // matcher (no blanket GET /api/admin/**); without it any associate token would read the report.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminOverdueEmiReportIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/admin/emi-reports/overdue")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+    }
+
+    @Test
+    void adminOverdueEmiReportIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/admin/emi-reports/overdue")).andExpect(status().isUnauthorized());
+    }
+
     @Test
     void adminBookingRegisterWithOverdueFilterIsAlsoAdminOnly() throws Exception {
         mockMvc.perform(get("/api/admin/bookings").param("overdue", "true")

@@ -56,4 +56,33 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         @Param("overdueOnly") boolean overdueOnly,
         @Param("today") LocalDate today,
         Pageable pageable);
+
+    // Admin overdue-EMI report (plot-booking unit 9): one grouped query, one row per ACTIVE booking.
+    // Overdue comes from unit 8's BookingOverdue.INSTALLMENT_CONDITION (alias contract b, i, :today);
+    // do not combine with EXISTS_OVERDUE (both alias `i`). The fragments carry no ACTIVE restriction,
+    // so it is added here. Pageable must be UNSORTED: order is fixed here (oldest overdue due date,
+    // bookedAt, id) so page boundaries are deterministic. The count query counts BOOKINGS, not rows.
+    @Query(value = """
+        SELECT new com.plotchain.booking.OverdueReportRow(
+            b.id, b.plotId, p.plotNo, b.associateId, a.name, b.buyerName,
+            COUNT(i), SUM(i.amount), MIN(i.dueDate))
+        FROM PlotBooking b
+        JOIN EmiInstallment i ON i.bookingId = b.id
+        JOIN Associate a ON a.id = b.associateId
+        JOIN Plot p ON p.id = b.plotId
+        WHERE b.status = com.plotchain.booking.BookingStatus.ACTIVE AND
+        """
+        + BookingOverdue.INSTALLMENT_CONDITION + """
+
+        GROUP BY b.id, b.plotId, p.plotNo, b.associateId, a.name, b.buyerName, b.bookedAt
+        ORDER BY MIN(i.dueDate) ASC, b.bookedAt ASC, b.id ASC
+        """,
+        countQuery = """
+        SELECT COUNT(DISTINCT b.id)
+        FROM PlotBooking b
+        JOIN EmiInstallment i ON i.bookingId = b.id
+        WHERE b.status = com.plotchain.booking.BookingStatus.ACTIVE AND
+        """
+        + BookingOverdue.INSTALLMENT_CONDITION)
+    Page<OverdueReportRow> findOverdueReport(@Param("today") LocalDate today, Pageable pageable);
 }
