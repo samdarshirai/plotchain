@@ -534,6 +534,21 @@ class BookingServiceTest {
         assertThat(i1.getPaymentRef()).isEqualTo("UTR-9");
     }
 
+    // paidAt is the admin's recorded collection date; it is deliberately NOT validated as past/present
+    // (backdating and post-dating are both legitimate for cheque/UTR reconciliation). Pins that.
+    @Test
+    void recordPaymentAcceptsAPaidAtLaterThanTheClock() {
+        EmiInstallment i1 = installment(1, "100.00", LocalDate.of(2026, 7, 15), InstallmentStatus.PENDING);
+        PlotBooking booking = lockedBookingWith(i1);
+        Instant future = NOW.plusSeconds(30L * 24 * 3600);
+
+        bookingService.recordPayment(booking.getId(), 1,
+            new RecordPaymentRequest(new BigDecimal("100.00"), "UTR-F", future), ACTOR_ID);
+
+        assertThat(i1.getStatus()).isEqualTo(InstallmentStatus.PAID);
+        assertThat(i1.getPaidAt()).isEqualTo(future);
+    }
+
     @Test
     void recordPaymentDoesNotRequireEarlierInstallmentsToBePaid() {
         EmiInstallment i1 = installment(1, "100.00", LocalDate.of(2026, 7, 15), InstallmentStatus.PENDING);
