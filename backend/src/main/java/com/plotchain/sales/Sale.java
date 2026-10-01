@@ -38,6 +38,8 @@ public class Sale {
     private String voidReason;
     @Column(name = "recorded_at", nullable = false)
     private Instant recordedAt;
+    @Column(name = "booking_id")
+    private UUID bookingId;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -65,6 +67,8 @@ public class Sale {
     public void setStatus(SaleStatus status) { this.status = status; }
     public String getVoidReason() { return voidReason; }
     public void setVoidReason(String voidReason) { this.voidReason = voidReason; }
+    public UUID getBookingId() { return bookingId; }
+    public void setBookingId(UUID bookingId) { this.bookingId = bookingId; }
     public Instant getRecordedAt() { return recordedAt; }
     public void setRecordedAt(Instant recordedAt) { this.recordedAt = recordedAt; }
 }
