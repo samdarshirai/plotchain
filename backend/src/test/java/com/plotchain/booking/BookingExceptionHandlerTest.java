@@ -42,4 +42,12 @@ class BookingExceptionHandlerTest {
         assertThat(handler.handleSameAssociateTransfer(new SameAssociateTransferException(id)).getStatusCode())
             .isEqualTo(HttpStatus.BAD_REQUEST);
     }
+
+    @Test
+    void paymentAmountMismatchIs400() {
+        var r = handler.handlePaymentAmountMismatch(
+            new PaymentAmountMismatchException(id, 2, new java.math.BigDecimal("100000.00")));
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(r.getBody().get("error")).contains("100000.00");
+    }
 }
