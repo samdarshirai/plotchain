@@ -69,8 +69,9 @@ public class SaleService {
 
     // Sales unit 2 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
     // flow "Record a sale", steps 1-3): guards. Sales unit 3 (same doc, flow steps 4-9): the
-    // Plot->SOLD flip, cycle lookup, Sale persistence, and Direct Income ledger entry, inserted
-    // between the associate lookup and the response mapping below, all inside one transaction.
+    // Plot->SOLD flip, cycle lookup, Sale persistence, and Direct Income ledger entry, now in the
+    // shared persistSaleAndIncome below (also used by recordConfirmedBooking), all inside one
+    // transaction.
     //
     // Mandatory-fields change on /admin/sales/new: plotId is now optional -- a sale need not be
     // tied to a specific inventory Plot. When present, the Plot guard/lock/SOLD-flip stays first
@@ -98,6 +99,16 @@ public class SaleService {
         Project project = projectRepository.findById(request.projectId())
             .orElseThrow(() -> new ProjectNotFoundException(request.projectId()));
 
+        return persistSaleAndIncome(plot, associate, project,
+            request.buyerName(), request.buyerPhone(), request.buyerEmail(),
+            request.note(), request.price(), null);
+    }
+
+    // Shared core of recordSale and recordConfirmedBooking. plot may be null (plotless sale).
+    // Runs inside the caller's transaction.
+    private SaleResponse persistSaleAndIncome(Plot plot, Associate associate, Project project,
+            String buyerName, String buyerPhone, String buyerEmail, String note,
+            BigDecimal amount, UUID bookingId) {
         // Flow step 4: flip Plot -> SOLD (Decision 1) -- only when a Plot is linked.
         if (plot != null) {
             plot.setStatus(PlotStatus.SOLD);
@@ -108,20 +119,21 @@ public class SaleService {
         Cycle cycle = cycleService.getOrOpenCurrent();
 
         // Flow step 6: amount and legCredited are snapshots taken now, never live references
-        // (Decisions 1 and 7) -- request.price() and associate.getPosition() are read once, here,
-        // and never re-read from Sale later. amount is the admin-entered price (request.price()),
-        // not a Plot.price snapshot -- price is now a mandatory client input for every sale,
-        // whether or not a Plot is linked.
+        // (Decisions 1 and 7) -- the amount parameter and associate.getPosition() are read once,
+        // here, and never re-read from Sale later. amount is supplied by the caller (the
+        // admin-entered price for recordSale, the booking's total for recordConfirmedBooking),
+        // never a Plot.price snapshot.
         Sale sale = new Sale();
         sale.setId(UUID.randomUUID());
         sale.setPlotId(plot != null ? plot.getId() : null);
         sale.setProjectId(project.getId());
         sale.setAssociateId(associate.getId());
-        sale.setBuyerName(request.buyerName());
-        sale.setBuyerPhone(request.buyerPhone());
-        sale.setBuyerEmail(request.buyerEmail());
-        sale.setNote(request.note());
-        sale.setAmount(request.price());
+        sale.setBuyerName(buyerName);
+        sale.setBuyerPhone(buyerPhone);
+        sale.setBuyerEmail(buyerEmail);
+        sale.setNote(note);
+        sale.setAmount(amount);
+        sale.setBookingId(bookingId);
         sale.setCycleId(cycle.getId());
         sale.setLegCredited(associate.getPosition());
         sale.setStatus(SaleStatus.RECORDED);
@@ -208,6 +220,32 @@ public class SaleService {
         // Flow step 9. plot and project are already loaded above -- toResponse(sale, plot,
         // associate, project) reuses them instead of re-fetching via toResponses' batch lookups.
         return toResponse(sale, plot, associate, project);
+    }
+
+    // Plot-booking lifecycle unit 3 (docs/superpowers/specs/role-capability/2026-10-01-plot-booking-lifecycle-design.md,
+    // Decision 2). Called by BookingService.confirm (unit 4), which already holds the PlotBooking
+    // and Plot row locks (Decision 8) and passes the locked Plot. Same cycle/ledger/SPB logic as
+    // recordSale via persistSaleAndIncome; differs only in the guard (plot must be BOOKED, not
+    // AVAILABLE) and in where the Sale's fields come from. Booking status/sale_id/event stay with
+    // the caller.
+    @Transactional
+    // Takes primitives, not PlotBooking: booking -> sales is the allowed dependency direction
+    // (booking must not be imported by sales; see booking.PlotNotAvailableException).
+    public SaleResponse recordConfirmedBooking(UUID bookingId, UUID associateId, String buyerName,
+            String buyerPhone, BigDecimal totalAmount, Plot plot) {
+        if (plot.getStatus() != PlotStatus.BOOKED) {
+            throw new PlotNotAvailableException(plot.getId());
+        }
+
+        Associate associate = associateRepository.findById(associateId)
+            .orElseThrow(() -> new AssociateNotFoundException(associateId));
+
+        Project project = projectRepository.findById(plot.getProjectId())
+            .orElseThrow(() -> new ProjectNotFoundException(plot.getProjectId()));
+
+        return persistSaleAndIncome(plot, associate, project,
+            buyerName, buyerPhone, null,
+            "Confirmed from booking " + bookingId, totalAmount, bookingId);
     }
 
     // Sales unit 4 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
