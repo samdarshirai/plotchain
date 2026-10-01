@@ -336,37 +336,53 @@ class BookingConfirmIntegrationTest {
         assertThat(plotRepository.findById(plotId).orElseThrow().getStatus()).isEqualTo(PlotStatus.SOLD);
     }
 
+    // Proves the booking is read WITH the lock: a holder transaction cancels the booking while holding
+    // the row lock. confirm must wait for the holder and then see CANCELLED (409). With a plain,
+    // non-locking read, confirm would read the stale ACTIVE row before the holder commits.
+    // No sleeps: we poll the confirming thread until it is parked (waiting on the lock, or, in the
+    // mutated case, past its read), and only then let the holder commit.
     @Test
-    void confirmBlocksWhileAnotherTransactionHoldsTheBookingLockThenProceeds() throws Exception {
+    void confirmWaitsForAHolderOfTheBookingLockAndThenSeesItsCommittedState() throws Exception {
         BookingResponse b = seedBooking();
         CountDownLatch lockHeld = new CountDownLatch(1);
         CountDownLatch releaseLock = new CountDownLatch(1);
-        List<String> events = Collections.synchronizedList(new ArrayList<>());
+        java.util.concurrent.atomic.AtomicReference<Thread> confirmThread = new java.util.concurrent.atomic.AtomicReference<>();
         ExecutorService pool = Executors.newFixedThreadPool(2);
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
 
         Future<?> holder = pool.submit(() -> tx.executeWithoutResult(s -> {
-            plotBookingRepository.findByIdForUpdate(b.id()).orElseThrow();
-            events.add("holder-locked");
+            PlotBooking locked = plotBookingRepository.findByIdForUpdate(b.id()).orElseThrow();
+            locked.setStatus(BookingStatus.CANCELLED);
+            plotBookingRepository.save(locked);
             lockHeld.countDown();
             awaitQuietly(releaseLock);
         }));
-        lockHeld.await(5, TimeUnit.SECONDS);
+        assertThat(lockHeld.await(5, TimeUnit.SECONDS)).isTrue();
 
         Future<BookingResponse> confirm = pool.submit(() -> {
-            events.add("confirm-calling");
-            BookingResponse r = bookingService.confirmBooking(b.id(), associateId);
-            events.add("confirm-returned");
-            return r;
+            confirmThread.set(Thread.currentThread());
+            return bookingService.confirmBooking(b.id(), associateId);
         });
 
-        Thread.sleep(300);
-        assertThat(events).containsExactly("holder-locked", "confirm-calling");   // blocked on the booking lock
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            Thread t = confirmThread.get();
+            if (t != null && (t.getState() == Thread.State.WAITING || t.getState() == Thread.State.TIMED_WAITING
+                    || t.getState() == Thread.State.BLOCKED)) {
+                break;
+            }
+            Thread.sleep(5);
+        }
+        assertThat(confirm.isDone()).as("confirm must still be waiting on the holder's lock").isFalse();
 
         releaseLock.countDown();
         holder.get(5, TimeUnit.SECONDS);
-        confirm.get(5, TimeUnit.SECONDS);
-        assertThat(events).containsExactly("holder-locked", "confirm-calling", "confirm-returned");
+        assertThatThrownBy(() -> confirm.get(10, TimeUnit.SECONDS))
+            .isInstanceOf(ExecutionException.class)
+            .hasCauseInstanceOf(BookingNotActiveException.class);
         pool.shutdownNow();
+
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM sale WHERE booking_id = ?", Integer.class, b.id())).isZero();
+        assertThat(jdbc.queryForObject("SELECT status FROM plot WHERE id = ?", String.class, plotId)).isEqualTo("BOOKED");
     }
 }
