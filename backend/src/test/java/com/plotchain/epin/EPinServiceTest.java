@@ -6,7 +6,9 @@ import com.plotchain.associate.AssociateNotActiveException;
 import com.plotchain.associate.AssociateStatus;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
+import com.plotchain.associate.AssociateNotPendingException;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateStatusCache;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +40,7 @@ class EPinServiceTest {
     @Mock EPinRepository epinRepository;
     @Mock AssociateRepository associateRepository;
     @Mock EPinEventRepository epinEventRepository;
+    @Mock AssociateStatusCache associateStatusCache;
 
     static final Instant NOW = Instant.parse("2026-10-01T00:00:00Z");
     final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
@@ -50,7 +53,7 @@ class EPinServiceTest {
 
     @BeforeEach
     void setUp() {
-        epinService = new EPinService(epinRepository, associateRepository, epinEventRepository, clock);
+        epinService = new EPinService(epinRepository, associateRepository, epinEventRepository, clock, associateStatusCache);
     }
 
     @Test
@@ -223,7 +226,7 @@ class EPinServiceTest {
         unusedEPin.setId(epinId);
         unusedEPin.setStatus(EPinStatus.UNUSED);
         when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(unusedEPin));
-        when(associateRepository.findById(associateId)).thenReturn(Optional.of(new Associate()));
+        associateWith(associateId, AssociateStatus.PENDING);
         when(epinRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         EPinResponse response = epinService.redeem(epinId,
@@ -246,7 +249,8 @@ class EPinServiceTest {
         assertThat(response.redemptionType()).isEqualTo(RedemptionType.ACTIVATION);
         assertThat(response.linkedEntityId()).isNull();
 
-        verify(associateRepository, never()).save(any());
+        // Activation now flips the PENDING target to ACTIVE (Task 5).
+        verify(associateRepository).save(any());
     }
 
     @Test
@@ -469,6 +473,64 @@ class EPinServiceTest {
         UUID missing = UUID.randomUUID();
         when(epinRepository.existsById(missing)).thenReturn(false);
         assertThatThrownBy(() -> epinService.events(missing)).isInstanceOf(EPinNotFoundException.class);
+    }
+
+    @Test
+    void activationRedeemFlipsAPendingTargetToActiveAndEvictsItsStatusCache() {
+        UUID epinId = UUID.randomUUID();
+        UUID targetId = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(epinId);
+        pin.setStatus(EPinStatus.UNUSED);
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(pin));
+        Associate target = associateWith(targetId, AssociateStatus.PENDING);
+
+        epinService.redeem(epinId, new RedeemEPinRequest(targetId, RedemptionType.ACTIVATION, null), UUID.randomUUID());
+
+        assertThat(target.getStatus()).isEqualTo(AssociateStatus.ACTIVE);
+        verify(associateRepository).save(target);
+        verify(associateStatusCache).evict(targetId);
+        assertThat(pin.getStatus()).isEqualTo(EPinStatus.USED);
+    }
+
+    @Test
+    void activationRedeemRejectsATargetThatIsNotPendingWithNoSideEffects() {
+        UUID epinId = UUID.randomUUID();
+        UUID active = UUID.randomUUID();
+        UUID suspended = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(epinId);
+        pin.setStatus(EPinStatus.UNUSED);
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(pin));
+        associateWith(active, AssociateStatus.ACTIVE);
+        associateWith(suspended, AssociateStatus.SUSPENDED);
+
+        assertThatThrownBy(() -> epinService.redeem(epinId,
+                new RedeemEPinRequest(active, RedemptionType.ACTIVATION, null), UUID.randomUUID()))
+            .isInstanceOf(AssociateNotPendingException.class);
+        assertThatThrownBy(() -> epinService.redeem(epinId,
+                new RedeemEPinRequest(suspended, RedemptionType.ACTIVATION, null), UUID.randomUUID()))
+            .isInstanceOf(AssociateNotPendingException.class);
+
+        assertThat(pin.getStatus()).isEqualTo(EPinStatus.UNUSED);
+        verify(epinRepository, never()).save(any());
+        verify(associateStatusCache, never()).evict(any());
+    }
+
+    @Test
+    void topupRedeemHasNoTargetStatusRequirementAndDoesNotChangeTheTarget() {
+        UUID epinId = UUID.randomUUID();
+        UUID targetId = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(epinId);
+        pin.setStatus(EPinStatus.UNUSED);
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(pin));
+        Associate target = associateWith(targetId, AssociateStatus.ACTIVE);
+
+        epinService.redeem(epinId, new RedeemEPinRequest(targetId, RedemptionType.TOPUP, null), UUID.randomUUID());
+
+        assertThat(target.getStatus()).isEqualTo(AssociateStatus.ACTIVE);
+        verify(associateRepository, never()).save(any());
     }
 
     private Associate associateWith(UUID id, AssociateStatus status) {

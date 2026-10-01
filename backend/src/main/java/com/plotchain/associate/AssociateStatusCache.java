@@ -34,9 +34,12 @@ public class AssociateStatusCache {
             .build();
     }
 
+    // "Active" here is the JwtAuthenticationFilter's gate: "may this token keep working", i.e. not
+    // suspended or deleted. PENDING associates (awaiting an ACTIVATION e-PIN) can still log in;
+    // withdrawal is separately blocked for them (WithdrawalService).
     public boolean isActive(UUID associateId) {
         AssociateStatus status = cache.get(associateId, this::loadStatus);
-        return status == AssociateStatus.ACTIVE;
+        return status == AssociateStatus.ACTIVE || status == AssociateStatus.PENDING;
     }
 
     public void evict(UUID associateId) {

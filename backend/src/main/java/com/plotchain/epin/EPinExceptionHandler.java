@@ -21,6 +21,12 @@ public class EPinExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(com.plotchain.associate.AssociateNotPendingException.class)
+    public ResponseEntity<Map<String, String>> handleAssociateNotPending(
+            com.plotchain.associate.AssociateNotPendingException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(EPinExpiredException.class)
     public ResponseEntity<Map<String, String>> handleEPinExpired(EPinExpiredException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));

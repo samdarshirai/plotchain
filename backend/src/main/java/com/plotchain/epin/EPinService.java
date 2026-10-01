@@ -3,6 +3,8 @@ package com.plotchain.epin;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotActiveException;
 import com.plotchain.associate.AssociateNotFoundException;
+import com.plotchain.associate.AssociateNotPendingException;
+import com.plotchain.associate.AssociateStatusCache;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateStatus;
 import org.springframework.data.domain.Page;
@@ -23,13 +25,16 @@ public class EPinService {
     private final AssociateRepository associateRepository;
     private final EPinEventRepository epinEventRepository;
     private final Clock clock;
+    private final AssociateStatusCache associateStatusCache;
 
     public EPinService(EPinRepository epinRepository, AssociateRepository associateRepository,
-                       EPinEventRepository epinEventRepository, Clock clock) {
+                       EPinEventRepository epinEventRepository, Clock clock,
+                       AssociateStatusCache associateStatusCache) {
         this.epinRepository = epinRepository;
         this.associateRepository = associateRepository;
         this.epinEventRepository = epinEventRepository;
         this.clock = clock;
+        this.associateStatusCache = associateStatusCache;
     }
 
     // epin-domain unit 1 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
@@ -100,8 +105,12 @@ public class EPinService {
             throw new EPinExpiredException(id);
         }
 
-        associateRepository.findById(request.associateId())
+        Associate target = associateRepository.findById(request.associateId())
             .orElseThrow(() -> new AssociateNotFoundException(request.associateId()));
+        boolean activates = request.redemptionType() == RedemptionType.ACTIVATION;
+        if (activates && target.getStatus() != AssociateStatus.PENDING) {
+            throw new AssociateNotPendingException(target.getId());
+        }
 
         UUID holder = epin.getAllocatedTo();
         epin.setStatus(EPinStatus.USED);
@@ -112,6 +121,11 @@ public class EPinService {
         epin.setLinkedEntityId(request.linkedEntityId());
         epinRepository.save(epin);
         recordEvent(id, EPinEventType.REDEEMED, actorId, holder, request.associateId(), null);
+        if (activates) {
+            target.setStatus(AssociateStatus.ACTIVE);
+            associateRepository.save(target);
+            associateStatusCache.evict(target.getId());
+        }
 
         return toResponse(epin);
     }

@@ -251,6 +251,26 @@ class EPinControllerTest {
     }
 
     @Test
+    void activationRedeemForAnActiveAssociateReturns409() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID target = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(id);
+        pin.setStatus(EPinStatus.UNUSED);
+        when(epinRepository.findByIdForUpdate(id)).thenReturn(Optional.of(pin));
+        Associate a = new Associate();
+        a.setId(target);
+        a.setStatus(AssociateStatus.ACTIVE);
+        when(associateRepository.findById(target)).thenReturn(Optional.of(a));
+
+        mockMvc.perform(post("/api/admin/epins/" + id + "/redeem")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"associateId\":\"" + target + "\",\"redemptionType\":\"ACTIVATION\"}"))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
     void redeemReturns404WhenTheAssociateIdDoesNotResolve() throws Exception {
         UUID epinId = UUID.randomUUID();
         UUID associateId = UUID.randomUUID();
