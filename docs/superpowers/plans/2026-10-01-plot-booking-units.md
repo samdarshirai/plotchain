@@ -15,7 +15,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. En
 | 3 | `SaleService.recordConfirmedBooking` extracted from `recordSale` with `recordSale` behaviour unchanged | backend | 1 | merged | `2026-10-01-plot-booking-unit-3-extract-confirmed-booking-sale.md` | `2b36d24..c5dbac8` (merge `490f137`) |
 | 4 | Admin manually confirms an `ACTIVE` booking, creating a linked `Sale` — `POST /api/admin/bookings/{id}/confirm` | backend | 1, 3 | merged | `2026-10-01-plot-booking-unit-4-manual-confirm.md` | `aa2f5b5..a7f7909` (merge `feaaa8b`) |
 | 5 | `AUTO_THRESHOLD` rule confirms the booking inside the pay call once paid% reaches the threshold | backend | 2, 4 | merged | `2026-10-01-plot-booking-unit-5-auto-threshold-confirm.md` | `397e3d5..90689fd` (merge `d90168a`) |
-| 6 | Admin cancels an `ACTIVE` booking — `POST /api/admin/bookings/{id}/cancel` | backend | 1 | planned | `2026-10-01-plot-booking-unit-6-cancel-booking.md` | — |
+| 6 | Admin cancels an `ACTIVE` booking — `POST /api/admin/bookings/{id}/cancel` | backend | 1 | merged | `2026-10-01-plot-booking-unit-6-cancel-booking.md` | `d49b9ff..ee40da4` (merge `a46f1f4`) |
 | 7 | Admin transfers an `ACTIVE` booking to another associate — `POST /api/admin/bookings/{id}/transfer` | backend | 1 | planned | `2026-10-01-plot-booking-unit-7-transfer-booking.md` | — |
 | 8 | Admin views a paged, filterable booking register — `GET /api/admin/bookings` | backend | 1 | planned | `2026-10-01-plot-booking-unit-8-admin-booking-register.md` | — |
 | 9 | Admin views a paged overdue EMI report — `GET /api/admin/emi-reports/overdue` | backend | 1 | planned | `2026-10-01-plot-booking-unit-9-overdue-emi-report.md` | — |
@@ -233,6 +233,11 @@ Resolutions: (1) `RecordPaymentRequest` gains `amount`, 400 on mismatch; (2) can
 - `SecurityConfig` has NO blanket `GET /api/admin/**` ADMIN rule (only POST/PUT/PATCH/DELETE `/api/**`); every admin GET needs its own explicit matcher. Units 8 and 9 add matchers (`GET /api/admin/bookings`, `GET /api/admin/emi-reports/overdue`); the spec's Decision 12 wording is wrong for reads. Unit 10's grid read is intentionally any-authenticated.
 - Implementation order is sequential 6 -> 7 -> 8 -> 9. Units 6 and 7 append to `BookingService`, `BookingController`, `BookingExceptionHandler`/`SecurityConfigTest`; units 6 and 8 both append to `PlotBookingRepository` (keep both methods, one `Collection` import). Unit 8 owns the reusable overdue JPQL fragments (`BookingOverdue`); unit 9 reuses them.
 - Unit 6 adds a stale-booking plot guard (do not free a plot another ACTIVE/CONFIRMED booking holds) via `PlotBookingRepository.findFirstByPlotIdAndIdNotAndStatusIn`.
+
+**Unit 6 notes (merged 2026-10-01):**
+- Cancel frees the plot only when it is `BOOKED` and no other `ACTIVE`/`CONFIRMED` booking holds it; a non-`BOOKED` plot is left as found (`; plot left <STATUS>`), and a `SOLD` plot is never freed.
+- Plot-lock coverage: only `cancelReadsThePlotAfterTheLockSoAHoldersSoldStatusIsNeverOverwritten` discriminates the plot `findByIdForUpdate` (the plain `AVAILABLE` variant stays green under the mutation on H2).
+- Unit 7 must rebase over unit 6's appended code in `BookingService` (after `confirmLocked`), `BookingController` (after `cancel`) and `SecurityConfigTest`. `BookingExceptionHandler` is unchanged by unit 6. Unit 8 appends to `PlotBookingRepository` (keep both methods, one `Collection` import).
 
 ## Excluded — not a unit
 
