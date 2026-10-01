@@ -52,9 +52,6 @@ public class EPinController {
         return epinService.list(status, redeemedTo, batchId, allocatedTo, expired, page, size);
     }
 
-    // epin-domain unit 3 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
-    // Decision 10: the path parameter is the EPin's id, not its code): guard-only wiring --
-    // EPinService.redeem still ends in a placeholder throw until epin-domain unit 4 lands.
     @PostMapping("/allocate")
     public AllocateEPinResponse allocate(@Valid @RequestBody AllocateEPinRequest request,
                                          @AuthenticationPrincipal UUID actorId) {

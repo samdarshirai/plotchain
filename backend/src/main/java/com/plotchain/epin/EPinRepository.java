@@ -43,7 +43,10 @@ public interface EPinRepository extends JpaRepository<EPin, UUID> {
 
     @Query("""
         SELECT e FROM EPin e
-        WHERE (e.allocatedTo = :me OR e.redeemedTo = :me OR e.redeemedBy = :me)
+        WHERE (e.allocatedTo = :me OR e.redeemedTo = :me OR e.redeemedBy = :me
+               OR EXISTS (SELECT 1 FROM EPinEvent ev WHERE ev.epinId = e.id
+                          AND ev.eventType = com.plotchain.epin.EPinEventType.TRANSFERRED
+                          AND ev.fromAssociateId = :me))
         AND (:status IS NULL OR e.status = :status)
         ORDER BY e.generatedAt DESC, e.id
         """)

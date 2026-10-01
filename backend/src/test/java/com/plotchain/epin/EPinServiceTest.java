@@ -250,8 +250,9 @@ class EPinServiceTest {
         assertThat(response.redemptionType()).isEqualTo(RedemptionType.ACTIVATION);
         assertThat(response.linkedEntityId()).isNull();
 
-        // Activation now flips the PENDING target to ACTIVE (Task 5).
-        verify(associateRepository).save(any());
+        // Activation flips the PENDING target to ACTIVE via the conditional update.
+        verify(associateRepository).activateIfPending(associateId);
+        verify(associateStatusCache).evict(associateId);
     }
 
     @Test
@@ -488,10 +489,44 @@ class EPinServiceTest {
 
         epinService.redeem(epinId, new RedeemEPinRequest(targetId, RedemptionType.ACTIVATION, null), UUID.randomUUID());
 
-        assertThat(target.getStatus()).isEqualTo(AssociateStatus.ACTIVE);
-        verify(associateRepository).save(target);
+        verify(associateRepository).activateIfPending(targetId);
         verify(associateStatusCache).evict(targetId);
         assertThat(pin.getStatus()).isEqualTo(EPinStatus.USED);
+    }
+
+    @Test
+    void activationRedeemThrowsAssociateNotPendingWhenTheConditionalUpdateLosesTheRace() {
+        UUID epinId = UUID.randomUUID();
+        UUID targetId = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(epinId);
+        pin.setStatus(EPinStatus.UNUSED);
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(pin));
+        associateWith(targetId, AssociateStatus.PENDING);
+        when(associateRepository.activateIfPending(targetId)).thenReturn(0);
+
+        assertThatThrownBy(() -> epinService.redeem(epinId,
+                new RedeemEPinRequest(targetId, RedemptionType.ACTIVATION, null), UUID.randomUUID()))
+            .isInstanceOf(AssociateNotPendingException.class);
+
+        // The throw happens before any pin write or event, and the transaction rolls back anyway.
+        verify(epinRepository, never()).save(any());
+        verify(epinEventRepository, never()).save(any());
+        verify(associateStatusCache, never()).evict(any());
+    }
+
+    @Test
+    void redeemOwnThrowsAssociateNotPendingWhenTheConditionalUpdateLosesTheRace() {
+        UUID caller = UUID.randomUUID();
+        EPin pin = heldPin(caller, EPinStatus.ALLOCATED);
+        Associate target = pendingDownline("VP00042", caller, true);
+        when(associateRepository.activateIfPending(target.getId())).thenReturn(0);
+
+        assertThatThrownBy(() -> epinService.redeemOwn(pin.getId(), "VP00042", caller))
+            .isInstanceOf(AssociateNotPendingException.class);
+
+        assertThat(pin.getStatus()).isEqualTo(EPinStatus.ALLOCATED);
+        verify(epinEventRepository, never()).save(any());
     }
 
     @Test
@@ -538,6 +573,9 @@ class EPinServiceTest {
         Associate a = new Associate();
         a.setId(id);
         a.setStatus(status);
+        if (status == AssociateStatus.PENDING) {
+            lenient().when(associateRepository.activateIfPending(id)).thenReturn(1);
+        }
         when(associateRepository.findById(id)).thenReturn(Optional.of(a));
         return a;
     }
@@ -613,6 +651,7 @@ class EPinServiceTest {
         target.setId(UUID.randomUUID());
         target.setUserId(userId);
         target.setStatus(AssociateStatus.PENDING);
+        lenient().when(associateRepository.activateIfPending(target.getId())).thenReturn(1);
         when(associateRepository.findByUserId(userId)).thenReturn(Optional.of(target));
         when(associateRepository.findSelfAndDownline(caller))
             .thenReturn(inDownline ? List.of(caller, target.getId()) : List.of(caller));
@@ -632,7 +671,7 @@ class EPinServiceTest {
         assertThat(pin.getRedeemedTo()).isEqualTo(target.getId());
         assertThat(pin.getRedeemedBy()).isEqualTo(caller);
         assertThat(pin.getRedemptionType()).isEqualTo(RedemptionType.ACTIVATION);
-        assertThat(target.getStatus()).isEqualTo(AssociateStatus.ACTIVE);
+        verify(associateRepository).activateIfPending(target.getId());
         verify(associateStatusCache).evict(target.getId());
         verify(epinEventRepository).save(events.capture());
         assertThat(events.getValue().getEventType()).isEqualTo(EPinEventType.REDEEMED);

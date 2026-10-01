@@ -87,13 +87,10 @@ public class EPinService {
         return new EPinPageResponse(epins, page, size, result.getTotalElements());
     }
 
-    // epin-domain unit 4 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
-    // Flows "Redeem", steps 4-5; Decisions 5, 6, 7, 8): once all three guards (unit 3) pass, this
-    // is the only write in the redeem flow -- generation and redemption remain the sole two
-    // lifecycle events (Decision 5), so there's no separate "allocate" step to also perform. No
-    // write to the Associate row for either RedemptionType (Decision 8) -- activation_fee_paid
-    // does not exist on the entity and nothing here adds it. toResponse(...) below is the same
-    // helper list(...) already uses.
+    // Redeem: lock the pin, run the status/expiry guards, then mark it USED and record the event.
+    // ACTIVATION additionally flips the target PENDING -> ACTIVE via a conditional UPDATE; if the
+    // associate is no longer PENDING the throw rolls back the pin write and event in this transaction.
+    // TOPUP never touches the Associate row.
     @Transactional
     public EPinResponse redeem(UUID id, RedeemEPinRequest request, UUID actorId) {
         EPin epin = epinRepository.findByIdForUpdate(id)
@@ -119,6 +116,9 @@ public class EPinService {
         }
 
         UUID holder = epin.getAllocatedTo();
+        if (activates) {
+            activateOrThrow(target.getId());
+        }
         epin.setStatus(EPinStatus.USED);
         epin.setRedeemedTo(request.associateId());
         epin.setRedeemedBy(actorId);
@@ -127,11 +127,6 @@ public class EPinService {
         epin.setLinkedEntityId(request.linkedEntityId());
         epinRepository.save(epin);
         recordEvent(id, EPinEventType.REDEEMED, actorId, holder, request.associateId(), null);
-        if (activates) {
-            target.setStatus(AssociateStatus.ACTIVE);
-            associateRepository.save(target);
-            associateStatusCache.evict(target.getId());
-        }
 
         return toResponse(epin);
     }
@@ -235,6 +230,7 @@ public class EPinService {
             throw new AssociateNotPendingException(target.getId());
         }
 
+        activateOrThrow(target.getId());
         epin.setStatus(EPinStatus.USED);
         epin.setRedeemedTo(target.getId());
         epin.setRedeemedBy(callerId);
@@ -242,11 +238,17 @@ public class EPinService {
         epin.setRedemptionType(RedemptionType.ACTIVATION);
         epinRepository.save(epin);
         recordEvent(epinId, EPinEventType.REDEEMED, callerId, callerId, target.getId(), null);
-
-        target.setStatus(AssociateStatus.ACTIVE);
-        associateRepository.save(target);
-        associateStatusCache.evict(target.getId());
         return toResponse(epin);
+    }
+
+    // Conditional PENDING -> ACTIVE flip: 0 rows means a concurrent activation or an admin status
+    // change got there first. Runs before the pin is mutated because clearAutomatically detaches
+    // the (already-loaded) pin entity; the throw rolls the whole transaction back.
+    private void activateOrThrow(UUID associateId) {
+        if (associateRepository.activateIfPending(associateId) == 0) {
+            throw new AssociateNotPendingException(associateId);
+        }
+        associateStatusCache.evict(associateId);
     }
 
     @Transactional

@@ -273,4 +273,60 @@ class EPinRepositoryTest {
 
         assertThat(page.getContent()).extracting(EPin::getId).containsExactly(held.getId());
     }
+
+    @Test
+    void searchForAssociateReturnsAPinTheCallerTransferredAwayButNotToAStranger() {
+        UUID admin = persistAdmin();
+        UUID me = persistAdmin();
+        UUID recipient = persistAdmin();
+        UUID stranger = persistAdmin();
+        EPin transferred = persistPin(admin, EPinStatus.ALLOCATED, recipient, null);
+        entityManager.persist(EPinEvent.of(transferred.getId(), EPinEventType.TRANSFERRED, me, me, recipient, Instant.now(), null));
+        entityManager.flush();
+
+        assertThat(epinRepository.searchForAssociate(me, null, PageRequest.of(0, 20)).getContent())
+            .extracting(EPin::getId).containsExactly(transferred.getId());
+        assertThat(epinRepository.searchForAssociate(me, EPinStatus.USED, PageRequest.of(0, 20)).getContent()).isEmpty();
+        assertThat(epinRepository.searchForAssociate(stranger, null, PageRequest.of(0, 20)).getContent()).isEmpty();
+    }
+
+    // Guards the V40 CHECK constraints: every EPinEventType, every EPinStatus and associate PENDING
+    // must be insertable and read back.
+    @Test
+    void everyEventTypeEPinStatusAndAPendingAssociatePersistAndReadBack() {
+        UUID admin = persistAdmin();
+        Associate pending = new Associate();
+        pending.setId(UUID.randomUUID());
+        pending.setPosition("L");
+        pending.setName("Pending");
+        pending.setKycStatus(KycStatus.VERIFIED);
+        pending.setJoinedAt(Instant.now());
+        pending.setCumulativeMatchedVolume(BigDecimal.ZERO);
+        pending.setUserId("u-" + pending.getId());
+        pending.setEmail(pending.getId() + "@test.local");
+        pending.setPasswordHash("$2y$10$m1anhr1Y8va62ZGafTcLOODFQNYTpJDdbbnuriSLpRSELJIkV8J5C");
+        pending.setRole(AssociateRole.ADMIN);
+        pending.setStatus(com.plotchain.associate.AssociateStatus.PENDING);
+        entityManager.persist(pending);
+
+        List<EPin> pins = new java.util.ArrayList<>();
+        for (EPinStatus st : EPinStatus.values()) {
+            pins.add(persistPin(admin, st, null, null));
+        }
+        for (EPinEventType type : EPinEventType.values()) {
+            entityManager.persist(EPinEvent.of(pins.get(0).getId(), type, admin, admin, admin, Instant.now(), "n"));
+        }
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(entityManager.find(Associate.class, pending.getId()).getStatus())
+            .isEqualTo(com.plotchain.associate.AssociateStatus.PENDING);
+        for (EPin pin : pins) {
+            assertThat(entityManager.find(EPin.class, pin.getId()).getStatus()).isEqualTo(pin.getStatus());
+        }
+        Long events = entityManager.getEntityManager()
+            .createQuery("SELECT count(e) FROM EPinEvent e WHERE e.epinId = :id", Long.class)
+            .setParameter("id", pins.get(0).getId()).getSingleResult();
+        assertThat(events).isEqualTo(EPinEventType.values().length);
+    }
 }
