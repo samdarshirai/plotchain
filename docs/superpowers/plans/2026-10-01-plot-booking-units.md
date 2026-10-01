@@ -16,7 +16,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. En
 | 4 | Admin manually confirms an `ACTIVE` booking, creating a linked `Sale` — `POST /api/admin/bookings/{id}/confirm` | backend | 1, 3 | merged | `2026-10-01-plot-booking-unit-4-manual-confirm.md` | `aa2f5b5..a7f7909` (merge `feaaa8b`) |
 | 5 | `AUTO_THRESHOLD` rule confirms the booking inside the pay call once paid% reaches the threshold | backend | 2, 4 | merged | `2026-10-01-plot-booking-unit-5-auto-threshold-confirm.md` | `397e3d5..90689fd` (merge `d90168a`) |
 | 6 | Admin cancels an `ACTIVE` booking — `POST /api/admin/bookings/{id}/cancel` | backend | 1 | merged | `2026-10-01-plot-booking-unit-6-cancel-booking.md` | `d49b9ff..ee40da4` (merge `a46f1f4`) |
-| 7 | Admin transfers an `ACTIVE` booking to another associate — `POST /api/admin/bookings/{id}/transfer` | backend | 1 | planned | `2026-10-01-plot-booking-unit-7-transfer-booking.md` | — |
+| 7 | Admin transfers an `ACTIVE` booking to another associate — `POST /api/admin/bookings/{id}/transfer` | backend | 1 | merged | `2026-10-01-plot-booking-unit-7-transfer-booking.md` | `4c533df..e946dc5` (merge `2a92070`) |
 | 8 | Admin views a paged, filterable booking register — `GET /api/admin/bookings` | backend | 1 | planned | `2026-10-01-plot-booking-unit-8-admin-booking-register.md` | — |
 | 9 | Admin views a paged overdue EMI report — `GET /api/admin/emi-reports/overdue` | backend | 1 | planned | `2026-10-01-plot-booking-unit-9-overdue-emi-report.md` | — |
 | 10 | Any authenticated user reads a project's plot grid — `GET /api/projects/{id}/plots/grid` | backend | none | pending | — | — |
@@ -238,6 +238,11 @@ Resolutions: (1) `RecordPaymentRequest` gains `amount`, 400 on mismatch; (2) can
 - Cancel frees the plot only when it is `BOOKED` and no other `ACTIVE`/`CONFIRMED` booking holds it; a non-`BOOKED` plot is left as found (`; plot left <STATUS>`), and a `SOLD` plot is never freed.
 - Plot-lock coverage: only `cancelReadsThePlotAfterTheLockSoAHoldersSoldStatusIsNeverOverwritten` discriminates the plot `findByIdForUpdate` (the plain `AVAILABLE` variant stays green under the mutation on H2).
 - Unit 7 must rebase over unit 6's appended code in `BookingService` (after `confirmLocked`), `BookingController` (after `cancel`) and `SecurityConfigTest`. `BookingExceptionHandler` is unchanged by unit 6. Unit 8 appends to `PlotBookingRepository` (keep both methods, one `Collection` import).
+
+**Unit 7 notes (merged 2026-10-01):**
+- Transfer takes only the booking lock (never the plot), so it cannot deadlock with confirm/cancel (booking -> plot). Target must be `ACTIVE` (`InvalidTransferTargetException` -> 400, deliberately not `AssociateNotActiveException`, which `EPinExceptionHandler` maps to 409).
+- Operational note: the target associate row is not locked, so a suspension landing between the status check and commit slips through (same window as `EPinService`). Target role is not restricted to `ASSOCIATE`.
+- The plain "transfer waits for the lock" test is not discriminating on H2 (the unlocked UPDATE blocks anyway); the lock is proven by the holder-flips-to-`CANCELLED` variant and the transfer-vs-confirm/cancel races. The transfer-vs-pay race is a smoke test only (different tables).
 
 ## Excluded — not a unit
 
