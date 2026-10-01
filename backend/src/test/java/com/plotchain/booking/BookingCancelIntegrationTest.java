@@ -1,0 +1,391 @@
+package com.plotchain.booking;
+
+import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateRole;
+import com.plotchain.associate.KycStatus;
+import com.plotchain.income.LedgerEntryRepository;
+import com.plotchain.projects.Plot;
+import com.plotchain.projects.PlotRepository;
+import com.plotchain.projects.PlotStatus;
+import com.plotchain.projects.PlotType;
+import com.plotchain.projects.Project;
+import com.plotchain.projects.ProjectRepository;
+import com.plotchain.sales.Sale;
+import com.plotchain.sales.SaleRepository;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doThrow;
+
+// Real-DB (H2 via Flyway) proof for plot-booking unit 6: admin cancel of an ACTIVE booking.
+// Harness copied from BookingAutoConfirmIntegrationTest (committed rows, manual cleanup, circular sale<->booking
+// FKs nulled first) plus save/restore of the global booking_emi_config singleton.
+@SpringBootTest
+@ActiveProfiles("test")
+class BookingCancelIntegrationTest {
+
+    @Autowired BookingService bookingService;
+    @Autowired SaleRepository saleRepository;
+    @Autowired LedgerEntryRepository ledgerEntryRepository;
+    @Autowired PlotRepository plotRepository;
+    @Autowired ProjectRepository projectRepository;
+    @Autowired AssociateRepository associateRepository;
+    @Autowired PlotBookingRepository plotBookingRepository;
+    @Autowired EmiInstallmentRepository emiInstallmentRepository;
+    // Pass-through spy (reset by Spring after each test) so one test can make the CONFIRMED event write
+    // fail AFTER the PAID write, the sale insert and the plot flip. Boot 3.3.4: @SpyBean.
+    @SpyBean BookingEventRepository bookingEventRepository;
+    @Autowired PlatformTransactionManager transactionManager;
+    @Autowired JdbcTemplate jdbc;
+
+    private UUID plotId;
+    private UUID projectId;
+    private UUID associateId;
+    private Map<String, Object> originalConfig;
+
+    @BeforeEach
+    void saveConfig() {
+        originalConfig = jdbc.queryForMap(
+            "SELECT emi_enabled, default_installment_count, confirm_rule, confirm_threshold_percent FROM booking_emi_config");
+    }
+
+    @AfterEach
+    void cleanUp() {
+        jdbc.update("UPDATE booking_emi_config SET emi_enabled = ?, default_installment_count = ?, "
+                + "confirm_rule = ?, confirm_threshold_percent = ?, updated_at = CURRENT_TIMESTAMP",
+            originalConfig.get("EMI_ENABLED"), originalConfig.get("DEFAULT_INSTALLMENT_COUNT"),
+            originalConfig.get("CONFIRM_RULE"), originalConfig.get("CONFIRM_THRESHOLD_PERCENT"));
+        if (associateId != null) {
+            jdbc.update("UPDATE plot_booking SET sale_id = NULL WHERE associate_id = ?", associateId);
+            List<Sale> sales = saleRepository.findAll().stream()
+                .filter(s -> associateId.equals(s.getAssociateId())).toList();
+            for (Sale s : sales) {
+                ledgerEntryRepository.deleteAll(ledgerEntryRepository.findAllBySourceRef(s.getId()));
+            }
+            saleRepository.deleteAll(sales);
+            List<PlotBooking> bookings = plotBookingRepository.findAll().stream()
+                .filter(b -> associateId.equals(b.getAssociateId())).toList();
+            for (PlotBooking b : bookings) {
+                bookingEventRepository.deleteAll(bookingEventRepository.findByBookingIdOrderByCreatedAtAsc(b.getId()));
+                emiInstallmentRepository.deleteAll(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(b.getId()));
+            }
+            plotBookingRepository.deleteAll(bookings);
+        }
+        if (plotId != null) plotRepository.deleteById(plotId);
+        if (projectId != null) projectRepository.deleteById(projectId);
+        if (associateId != null) associateRepository.deleteById(associateId);
+    }
+
+    // Plot price is 600000.00. With emiEnabled=true and count=4 every installment is 150000.00.
+    private void setConfig(boolean emiEnabled, int count, String rule, Integer threshold) {
+        jdbc.update("UPDATE booking_emi_config SET emi_enabled = ?, default_installment_count = ?, "
+                + "confirm_rule = ?, confirm_threshold_percent = ?, updated_at = CURRENT_TIMESTAMP",
+            emiEnabled, count, rule, threshold);
+    }
+
+    private UUID seedAvailablePlot() {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        return tx.execute(status -> {
+            Project project = new Project(UUID.randomUUID(), "Green Valley", "Hyderabad", null, null, Instant.now());
+            projectRepository.saveAndFlush(project);
+            projectId = project.getId();
+            Plot plot = new Plot(UUID.randomUUID(), project.getId(), "A-101", PlotType.NORMAL,
+                new BigDecimal("1200.00"), new BigDecimal("500.00"), new BigDecimal("600000.00"),
+                PlotStatus.AVAILABLE);
+            plotRepository.saveAndFlush(plot);
+            return plot.getId();
+        });
+    }
+
+    private UUID seedAssociate() {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        return tx.execute(status -> {
+            UUID id = UUID.randomUUID();
+            Associate associate = new Associate();
+            associate.setId(id);
+            associate.setPosition("L");
+            associate.setName("Test Associate");
+            associate.setKycStatus(KycStatus.VERIFIED);
+            associate.setJoinedAt(Instant.now());
+            associate.setCumulativeMatchedVolume(BigDecimal.ZERO);
+            associate.setUserId("u-" + id);
+            associate.setEmail(id + "@test.local");
+            associate.setPasswordHash("$2y$10$m1anhr1Y8va62ZGafTcLOODFQNYTpJDdbbnuriSLpRSELJIkV8J5C");
+            // ADMIN, not ASSOCIATE: chk_associate_rank_required (V4) demands a rank_id for ASSOCIATE rows;
+            // this row is also the FK-satisfying actor.
+            associate.setRole(AssociateRole.ADMIN);
+            associateRepository.saveAndFlush(associate);
+            return id;
+        });
+    }
+
+    private void awaitQuietly(CountDownLatch latch) {
+        try {
+            latch.await(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    // Config MUST be set before this: the schedule is generated from the config at booking time.
+    private BookingResponse seedBooking() {
+        plotId = seedAvailablePlot();
+        associateId = seedAssociate();
+        return bookingService.createBooking(new CreateBookingRequest(plotId, associateId, "Jane Buyer", null));
+    }
+
+    private BookingResponse payInstallment(BookingResponse b, int n) {
+        BigDecimal amount = b.installments().get(n - 1).amount();
+        return bookingService.recordPayment(b.id(), n, new RecordPaymentRequest(amount, "UTR-" + n, null), associateId);
+    }
+
+    private int count(String sql, Object... args) {
+        return jdbc.queryForObject(sql, Integer.class, args);
+    }
+
+    private String bookingStatus(UUID id) {
+        return jdbc.queryForObject("SELECT status FROM plot_booking WHERE id = ?", String.class, id);
+    }
+
+    private String plotStatus() {
+        return jdbc.queryForObject("SELECT status FROM plot WHERE id = ?", String.class, plotId);
+    }
+
+    private String eventDetail(UUID bookingId, String type) {
+        return jdbc.queryForObject(
+            "SELECT detail FROM booking_event WHERE booking_id = ? AND type = ?", String.class, bookingId, type);
+    }
+
+    @Test
+    void cancelPersistsEverythingAndLeavesPaidInstallmentsUntouched() {
+        setConfig(true, 4, "MANUAL", null);                       // 4 x 150000.00
+        BookingResponse b = seedBooking();
+        payInstallment(b, 1);
+        payInstallment(b, 3);                                      // out of order is fine
+
+        BookingResponse after = bookingService.cancelBooking(b.id(), new CancelBookingRequest("  buyer withdrew "), associateId);
+
+        assertThat(after.status()).isEqualTo(BookingStatus.CANCELLED);
+        assertThat(after.paidAmount()).isEqualByComparingTo("300000.00");
+        assertThat(after.dueAmount()).isEqualByComparingTo("0");
+        Map<String, Object> row = jdbc.queryForMap(
+            "SELECT status, cancelled_at, cancel_reason, confirmed_at, sale_id FROM plot_booking WHERE id = ?", b.id());
+        assertThat(row.get("STATUS")).isEqualTo("CANCELLED");
+        assertThat(row.get("CANCELLED_AT")).isNotNull();
+        assertThat(row.get("CANCEL_REASON")).isEqualTo("buyer withdrew");
+        assertThat(row.get("CONFIRMED_AT")).isNull();
+        assertThat(row.get("SALE_ID")).isNull();
+        assertThat(plotStatus()).isEqualTo("AVAILABLE");
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PAID'", b.id())).isEqualTo(2);
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'VOID'", b.id())).isEqualTo(2);
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PENDING'", b.id())).isZero();
+        // PAID rows keep their payment fields
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PAID' AND payment_ref IS NOT NULL AND paid_at IS NOT NULL", b.id())).isEqualTo(2);
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CANCELLED' AND actor_id = ?", b.id(), associateId)).isEqualTo(1);
+        assertThat(eventDetail(b.id(), "CANCELLED")).isEqualTo("reason: buyer withdrew; paid: 300000.00");
+        assertThat(count("SELECT COUNT(*) FROM sale WHERE associate_id = ?", associateId)).isZero();
+    }
+
+    @Test
+    void a255CharReasonFitsTheEventDetailColumnEvenWithTheLongestSuffix() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        payInstallment(b, 1);
+        reBookUnderneath(b);                                       // forces the longest suffix: plot kept: held by booking <uuid>
+        String reason = "r".repeat(255);
+
+        bookingService.cancelBooking(b.id(), new CancelBookingRequest(reason), associateId);
+
+        assertThat(eventDetail(b.id(), "CANCELLED")).startsWith("reason: " + reason).contains("plot kept: held by booking");
+        assertThat(jdbc.queryForObject("SELECT cancel_reason FROM plot_booking WHERE id = ?", String.class, b.id())).hasSize(255);
+    }
+
+    @Test
+    void cancelOfAConfirmedBookingIs409AndChangesNothing() {
+        setConfig(false, 1, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        bookingService.confirmBooking(b.id(), associateId);
+
+        assertThatThrownBy(() -> bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId))
+            .isInstanceOf(BookingNotActiveException.class);
+        assertThat(bookingStatus(b.id())).isEqualTo("CONFIRMED");
+        assertThat(plotStatus()).isEqualTo("SOLD");
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CANCELLED'", b.id())).isZero();
+    }
+
+    @Test
+    void cancelOfAnAlreadyCancelledBookingIs409AndWritesNoSecondEvent() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        bookingService.cancelBooking(b.id(), new CancelBookingRequest("first"), associateId);
+
+        assertThatThrownBy(() -> bookingService.cancelBooking(b.id(), new CancelBookingRequest("second"), associateId))
+            .isInstanceOf(BookingNotActiveException.class);
+        assertThat(jdbc.queryForObject("SELECT cancel_reason FROM plot_booking WHERE id = ?", String.class, b.id())).isEqualTo("first");
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CANCELLED'", b.id())).isEqualTo(1);
+    }
+
+    @Test
+    void cancelOfAnUnknownBookingIs404() {
+        assertThatThrownBy(() -> bookingService.cancelBooking(UUID.randomUUID(), new CancelBookingRequest("x"), UUID.randomUUID()))
+            .isInstanceOf(BookingNotFoundException.class);
+    }
+
+    // Decision (plan): plot drift never blocks cancel.
+    @Test
+    void cancelWithASoldPlotSucceedsAndLeavesThePlotSold() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        jdbc.update("UPDATE plot SET status = 'SOLD' WHERE id = ?", plotId);
+
+        bookingService.cancelBooking(b.id(), new CancelBookingRequest("drift"), associateId);
+
+        assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
+        assertThat(plotStatus()).isEqualTo("SOLD");
+        assertThat(eventDetail(b.id(), "CANCELLED")).endsWith("; plot left SOLD");
+    }
+
+    @Test
+    void cancelWithAnAvailablePlotSucceedsAndLeavesThePlotAvailable() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        jdbc.update("UPDATE plot SET status = 'AVAILABLE' WHERE id = ?", plotId);
+
+        bookingService.cancelBooking(b.id(), new CancelBookingRequest("drift"), associateId);
+
+        assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
+        assertThat(plotStatus()).isEqualTo("AVAILABLE");
+        assertThat(eventDetail(b.id(), "CANCELLED")).endsWith("; plot left AVAILABLE");
+    }
+
+    // After cancel, the existing pay guard (booking not ACTIVE) rejects every pay: the VOID installment
+    // can never be paid, nothing is written.
+    // Stale-booking guard, real DB. A is ACTIVE; the plot is then (manually) freed and re-booked by B,
+    // leaving A stale on a plot B holds. Cancelling A must not free B's plot.
+    private BookingResponse reBookUnderneath(BookingResponse a) {
+        jdbc.update("UPDATE plot SET status = 'AVAILABLE' WHERE id = ?", plotId);
+        return bookingService.createBooking(new CreateBookingRequest(plotId, associateId, "Buyer B", null));
+    }
+
+    @Test
+    void cancellingAStaleBookingDoesNotFreeAPlotHeldByAnotherActiveBooking() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse a = seedBooking();
+        BookingResponse b = reBookUnderneath(a);                  // plot BOOKED by B (ACTIVE)
+
+        bookingService.cancelBooking(a.id(), new CancelBookingRequest("stale"), associateId);
+
+        assertThat(bookingStatus(a.id())).isEqualTo("CANCELLED");
+        assertThat(plotStatus()).isEqualTo("BOOKED");             // NOT freed
+        assertThat(eventDetail(a.id(), "CANCELLED")).endsWith("; plot kept: held by booking " + b.id());
+        // B completely untouched
+        assertThat(bookingStatus(b.id())).isEqualTo("ACTIVE");
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PENDING'", b.id())).isEqualTo(4);
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ?", b.id())).isZero();
+        // and B can still be cancelled normally, which now frees the plot
+        bookingService.cancelBooking(b.id(), new CancelBookingRequest("ok"), associateId);
+        assertThat(plotStatus()).isEqualTo("AVAILABLE");
+    }
+
+    @Test
+    void cancellingAStaleBookingDoesNotFreeAPlotHeldByAConfirmedBooking() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse a = seedBooking();
+        BookingResponse b = reBookUnderneath(a);
+        // CONFIRMED holder while the plot is still BOOKED (hand-set; a real confirm would make it SOLD,
+        // which is the separate "plot left SOLD" path already covered above)
+        jdbc.update("UPDATE plot_booking SET status = 'CONFIRMED' WHERE id = ?", b.id());
+
+        bookingService.cancelBooking(a.id(), new CancelBookingRequest("stale"), associateId);
+
+        assertThat(plotStatus()).isEqualTo("BOOKED");
+        assertThat(eventDetail(a.id(), "CANCELLED")).endsWith("; plot kept: held by booking " + b.id());
+        assertThat(bookingStatus(b.id())).isEqualTo("CONFIRMED");
+    }
+
+    @Test
+    void aCancelledOtherBookingOnThePlotDoesNotCountAsAHolder() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse a = seedBooking();
+        BookingResponse b = reBookUnderneath(a);
+        bookingService.cancelBooking(b.id(), new CancelBookingRequest("b out"), associateId);   // frees plot
+        jdbc.update("UPDATE plot SET status = 'BOOKED' WHERE id = ?", plotId);                  // A stale again
+
+        bookingService.cancelBooking(a.id(), new CancelBookingRequest("a out"), associateId);
+
+        assertThat(plotStatus()).isEqualTo("AVAILABLE");          // only a CANCELLED booking remains
+        assertThat(eventDetail(a.id(), "CANCELLED")).doesNotContain("plot kept");
+    }
+
+    @Test
+    void payAfterCancelIs409ForVoidAndPaidInstallmentsAndWritesNothing() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        payInstallment(b, 1);
+        bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId);
+        int paidEventsBefore = count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id());
+
+        assertThatThrownBy(() -> payInstallment(b, 2)).isInstanceOf(BookingNotActiveException.class);   // VOID row
+        assertThatThrownBy(() -> payInstallment(b, 1)).isInstanceOf(BookingNotActiveException.class);   // PAID row
+        assertThat(jdbc.queryForObject("SELECT status FROM emi_installment WHERE booking_id = ? AND installment_number = 2",
+            String.class, b.id())).isEqualTo("VOID");
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id())).isEqualTo(paidEventsBefore);
+    }
+
+    @Test
+    void confirmAfterCancelIs409AndCreatesNoSale() {
+        setConfig(false, 1, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId);
+
+        assertThatThrownBy(() -> bookingService.confirmBooking(b.id(), associateId)).isInstanceOf(BookingNotActiveException.class);
+        assertThat(count("SELECT COUNT(*) FROM sale WHERE associate_id = ?", associateId)).isZero();
+        assertThat(plotStatus()).isEqualTo("AVAILABLE");
+    }
+
+    @Test
+    void theFreedPlotCanBeBookedAgainAndTheCancelledBookingStaysCancelled() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse first = seedBooking();
+        bookingService.cancelBooking(first.id(), new CancelBookingRequest("x"), associateId);
+
+        BookingResponse second = bookingService.createBooking(
+            new CreateBookingRequest(plotId, associateId, "New Buyer", null));
+
+        assertThat(second.status()).isEqualTo(BookingStatus.ACTIVE);
+        assertThat(second.id()).isNotEqualTo(first.id());
+        assertThat(second.installments()).hasSize(4).allMatch(i -> i.status() == InstallmentStatus.PENDING);
+        assertThat(plotStatus()).isEqualTo("BOOKED");
+        assertThat(bookingStatus(first.id())).isEqualTo("CANCELLED");
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'VOID'", first.id())).isEqualTo(4);
+        // and the new booking can itself be cancelled (full cycle)
+        bookingService.cancelBooking(second.id(), new CancelBookingRequest("again"), associateId);
+        assertThat(plotStatus()).isEqualTo("AVAILABLE");
+    }
+}
