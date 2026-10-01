@@ -14,7 +14,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. En
 | 2 | Admin records a per-installment payment — `PATCH /api/admin/bookings/{id}/installments/{n}/pay` | backend | 1 | merged | `2026-10-01-plot-booking-unit-2-pay-installment.md` | `a0b3c6b..d7d6ec1` |
 | 3 | `SaleService.recordConfirmedBooking` extracted from `recordSale` with `recordSale` behaviour unchanged | backend | 1 | merged | `2026-10-01-plot-booking-unit-3-extract-confirmed-booking-sale.md` | `2b36d24..c5dbac8` (merge `490f137`) |
 | 4 | Admin manually confirms an `ACTIVE` booking, creating a linked `Sale` — `POST /api/admin/bookings/{id}/confirm` | backend | 1, 3 | merged | `2026-10-01-plot-booking-unit-4-manual-confirm.md` | `aa2f5b5..a7f7909` (merge `feaaa8b`) |
-| 5 | `AUTO_THRESHOLD` rule confirms the booking inside the pay call once paid% reaches the threshold | backend | 2, 4 | pending | — | — |
+| 5 | `AUTO_THRESHOLD` rule confirms the booking inside the pay call once paid% reaches the threshold | backend | 2, 4 | planned | `2026-10-01-plot-booking-unit-5-auto-threshold-confirm.md` | — |
 | 6 | Admin cancels an `ACTIVE` booking — `POST /api/admin/bookings/{id}/cancel` | backend | 1 | pending | — | — |
 | 7 | Admin transfers an `ACTIVE` booking to another associate — `POST /api/admin/bookings/{id}/transfer` | backend | 1 | pending | — | — |
 | 8 | Admin views a paged, filterable booking register — `GET /api/admin/bookings` | backend | 1 | pending | — | — |
