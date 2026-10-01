@@ -1,6 +1,8 @@
 package com.plotchain.booking;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
 
@@ -10,5 +12,7 @@ import java.util.UUID;
 // not a per-booking client override -- no acceptance criterion asks for one.
 public record CreateBookingRequest(
     @NotNull UUID plotId,
-    @NotNull UUID associateId
+    @NotNull UUID associateId,
+    @NotBlank @Size(max = 200) String buyerName,
+    @Size(max = 20) String buyerPhone
 ) {}

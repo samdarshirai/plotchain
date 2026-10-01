@@ -63,7 +63,7 @@ class BookingServiceTest {
     }
 
     private CreateBookingRequest requestFor(UUID plotId, UUID associateId) {
-        return new CreateBookingRequest(plotId, associateId);
+        return new CreateBookingRequest(plotId, associateId, "Jane Buyer", "9999999999");
     }
 
     private BookingEmiConfig emiConfig(boolean enabled, int count) {
@@ -159,6 +159,19 @@ class BookingServiceTest {
             .isInstanceOf(IllegalStateException.class);
 
         verify(plotBookingRepository, never()).save(any());
+    }
+
+    @Test
+    void createBookingPersistsBuyerDetailsAndStartsActive() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        ArgumentCaptor<PlotBooking> captor = ArgumentCaptor.forClass(PlotBooking.class);
+        verify(plotBookingRepository).save(captor.capture());
+        assertThat(captor.getValue().getBuyerName()).isEqualTo("Jane Buyer");
+        assertThat(captor.getValue().getBuyerPhone()).isEqualTo("9999999999");
+        assertThat(captor.getValue().getStatus()).isEqualTo(BookingStatus.ACTIVE);
     }
 
     @Test

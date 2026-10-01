@@ -39,7 +39,7 @@ class BookingControllerTest {
     @MockBean BookingService bookingService;
 
     private static final String REQUEST_BODY = """
-        {"plotId":"%s","associateId":"%s"}
+        {"plotId":"%s","associateId":"%s","buyerName":"Jane Buyer"}
         """;
 
     private String tokenFor(AssociateRole role) {
@@ -96,6 +96,39 @@ class BookingControllerTest {
                 .contentType("application/json")
                 .content(REQUEST_BODY.formatted(UUID.randomUUID(), UUID.randomUUID())))
             .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createReturns400WhenBuyerNameIsMissing() throws Exception {
+        mockMvc.perform(post("/api/admin/bookings")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"plotId\":\"%s\",\"associateId\":\"%s\"}".formatted(UUID.randomUUID(), UUID.randomUUID())))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createReturns400WhenBuyerNameIsWhitespaceOnly() throws Exception {
+        mockMvc.perform(post("/api/admin/bookings")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"plotId\":\"%s\",\"associateId\":\"%s\",\"buyerName\":\"   \"}".formatted(UUID.randomUUID(), UUID.randomUUID())))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createReturns400WhenBuyerNameOrPhoneExceedTheColumnWidths() throws Exception {
+        String longName = "x".repeat(201);
+        mockMvc.perform(post("/api/admin/bookings")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"plotId\":\"%s\",\"associateId\":\"%s\",\"buyerName\":\"%s\"}".formatted(UUID.randomUUID(), UUID.randomUUID(), longName)))
+            .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/admin/bookings")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"plotId\":\"%s\",\"associateId\":\"%s\",\"buyerName\":\"Jane\",\"buyerPhone\":\"%s\"}".formatted(UUID.randomUUID(), UUID.randomUUID(), "9".repeat(21))))
+            .andExpect(status().isBadRequest());
     }
 
     @Test

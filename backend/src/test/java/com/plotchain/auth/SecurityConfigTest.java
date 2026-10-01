@@ -531,7 +531,7 @@ class SecurityConfigTest {
     @EnumSource(AssociateRole.class)
     void adminBookingsCreateIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
         String body = new ObjectMapper().writeValueAsString(
-            new com.plotchain.booking.CreateBookingRequest(UUID.randomUUID(), UUID.randomUUID()));
+            new com.plotchain.booking.CreateBookingRequest(UUID.randomUUID(), UUID.randomUUID(), "Jane Buyer", null));
 
         mockMvc.perform(post("/api/admin/bookings")
                 .header("Authorization", "Bearer " + tokenFor(role))

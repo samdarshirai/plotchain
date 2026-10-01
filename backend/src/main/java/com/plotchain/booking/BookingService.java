@@ -83,7 +83,10 @@ public class BookingService {
         booking.setTotalAmount(plot.getPrice());
         booking.setInstallmentCount(schedule.size());
         booking.setBookedAt(bookedAt);
-        booking = plotBookingRepository.save(booking);
+        booking.setBuyerName(request.buyerName().trim());
+        booking.setBuyerPhone(request.buyerPhone());
+        booking.setStatus(BookingStatus.ACTIVE);
+        booking =plotBookingRepository.save(booking);
 
         for (EmiInstallment installment : schedule) {
             installment.setBookingId(booking.getId());
