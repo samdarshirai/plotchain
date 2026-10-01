@@ -4258,7 +4258,11 @@ button.tree-explorer__vacant-card {
     h2 { margin: 0; font: 600 1.125rem var(--font-sans); }
     label, .epin-register__field { display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.875rem; font-weight: 500; margin: 0; }
   }
+  &__seal form { display: flex; flex-direction: column; gap: 1rem; }
+  &__seal label, &__seal .epin-register__field { display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.875rem; font-weight: 500; margin: 0; }
+  &__allocated { margin: 0; font-size: 0.875rem; color: var(--status-success); }
   &__form-actions { display: flex; gap: 0.75rem; }
+  &__seal &__form-actions > * { flex: 1; padding-inline: 1rem; }
   &__code-list { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; padding: 0; list-style: none; }
   &__code { font-family: var(--font-mono, monospace); }
 

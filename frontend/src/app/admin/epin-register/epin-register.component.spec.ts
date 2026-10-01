@@ -299,8 +299,9 @@ describe('EPinRegisterComponent', () => {
     const c = fixture.componentInstance;
     c.openPanel({ kind: 'allocate' });
     fixture.detectChanges();
-    const lookup = fixture.nativeElement.querySelector('.epin-register__panel app-associate-lookup');
+    const lookup = fixture.nativeElement.querySelector('.epin-register__detail app-associate-lookup');
     expect(lookup).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.epin-register__panel')).toBeNull();
     c.onAllocateAssociate({ id: 'a1' } as never);
     expect(c.allocateAssociateId).toBe('a1');
     c.onAllocateAssociate(null);
@@ -312,5 +313,55 @@ describe('EPinRegisterComponent', () => {
     httpMock.expectOne(r => r.url === '/api/admin/epins').flush({ epins: [pin()], page: 0, size: 20, totalElements: 37 });
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.epin-register__count').textContent).toContain('admin.epinRegister.pinsCount');
+  });
+
+  it('clears the selection and swaps Pin Detail for the Allocate form when Allocate is opened', () => {
+    flushInitial([pin(), pin({ id: 'p2', code: 'CODE-2' })]);
+    const c = fixture.componentInstance;
+    c.select(pin() as never);
+    httpMock.expectOne('/api/admin/epins/p1/events').flush([]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.epin-register__row--selected')).not.toBeNull();
+    c.openPanel({ kind: 'allocate' });
+    fixture.detectChanges();
+    expect(c.selectedId).toBeNull();
+    expect(fixture.nativeElement.querySelector('.epin-register__row--selected')).toBeNull();
+    const detail = fixture.nativeElement.querySelector('.epin-register__detail');
+    expect(detail.textContent).toContain('admin.epinRegister.allocateAction');
+    expect(detail.textContent).not.toContain('admin.epinRegister.detailEmpty');
+    expect(detail.querySelector('.epin-register__detail-code')).toBeNull();
+  });
+
+  it('returns to Pin Detail when a row is selected while Allocate is open', () => {
+    flushInitial([pin()]);
+    const c = fixture.componentInstance;
+    c.openPanel({ kind: 'allocate' });
+    c.select(pin() as never);
+    httpMock.expectOne('/api/admin/epins/p1/events').flush([]);
+    fixture.detectChanges();
+    expect(c.panel).toBeNull();
+    expect(fixture.nativeElement.querySelector('.epin-register__detail-code').textContent).toContain('CODE-1');
+  });
+
+  it('keeps the top panel for generate but not for allocate', () => {
+    flushInitial([]);
+    const c = fixture.componentInstance;
+    c.openPanel({ kind: 'generate' });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.epin-register__panel')).not.toBeNull();
+    c.openPanel({ kind: 'allocate' });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.epin-register__panel')).toBeNull();
+  });
+
+  it('ignores a history response that is still in flight when Allocate opens', () => {
+    flushInitial([pin()]);
+    const c = fixture.componentInstance;
+    c.select(pin() as never);
+    c.openPanel({ kind: 'allocate' });
+    httpMock.expectOne('/api/admin/epins/p1/events').flush([
+      { eventType: 'GENERATED', actorId: 'g', fromAssociateId: null, toAssociateId: null, at: '2026-10-01T00:00:00Z', note: null }
+    ]);
+    expect(c.events).toEqual([]);
   });
 });

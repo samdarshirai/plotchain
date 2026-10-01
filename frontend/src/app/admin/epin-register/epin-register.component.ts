@@ -76,7 +76,7 @@ type Panel =
       <app-inline-banner *ngIf="loadError" tone="danger">{{ 'admin.epinRegister.loadError' | translate }}</app-inline-banner>
       <app-inline-banner *ngIf="actionError" tone="danger">{{ actionError | translate }}</app-inline-banner>
 
-      <div class="epin-register__panel" *ngIf="panel">
+      <div class="epin-register__panel" *ngIf="panel && panel.kind !== 'allocate'">
         <ng-container [ngSwitch]="panel.kind">
           <form *ngSwitchCase="'generate'" (ngSubmit)="submitGenerate()">
             <h2>{{ 'admin.epinRegister.generateAction' | translate }}</h2>
@@ -90,26 +90,6 @@ type Panel =
               <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
               <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.cancel' | translate }}</button>
             </div>
-          </form>
-
-          <form *ngSwitchCase="'allocate'" (ngSubmit)="submitAllocate()">
-            <h2>{{ 'admin.epinRegister.allocateAction' | translate }}</h2>
-            <div class="epin-register__field">{{ 'admin.epinRegister.associateLabel' | translate }}
-              <app-associate-lookup [associates]="associates" [value]="allocateAssociateId"
-                [placeholder]="'admin.epinRegister.lookupPlaceholder' | translate"
-                (selected)="onAllocateAssociate($event)"></app-associate-lookup>
-            </div>
-            <label>{{ 'admin.epinRegister.countLabel' | translate }}
-              <input type="number" min="1" max="2000" name="alloc-count" [(ngModel)]="allocateCount" required />
-            </label>
-            <label>{{ 'admin.epinRegister.batchFilterLabel' | translate }}
-              <input type="text" name="alloc-batch" [(ngModel)]="allocateBatchId" />
-            </label>
-            <div class="epin-register__form-actions">
-              <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
-              <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.cancel' | translate }}</button>
-            </div>
-            <p *ngIf="allocateResult">{{ 'admin.epinRegister.allocatedCount' | translate: { count: allocateResult.count } }}</p>
           </form>
 
           <form *ngSwitchCase="'redeem'" (ngSubmit)="submitRedeem()">
@@ -195,6 +175,28 @@ type Panel =
 
         <aside class="epin-register__detail">
           <div class="epin-register__seal">
+            <ng-container *ngIf="panel?.kind === 'allocate'; else pinDetail">
+              <div class="epin-register__seal-title">{{ 'admin.epinRegister.allocateAction' | translate }}</div>
+              <form (ngSubmit)="submitAllocate()">
+                <div class="epin-register__field">{{ 'admin.epinRegister.associateLabel' | translate }}
+                  <app-associate-lookup [associates]="associates" [value]="allocateAssociateId"
+                    [placeholder]="'admin.epinRegister.lookupPlaceholder' | translate"
+                    (selected)="onAllocateAssociate($event)"></app-associate-lookup>
+                </div>
+                <label>{{ 'admin.epinRegister.countLabel' | translate }}
+                  <input type="number" min="1" max="2000" name="alloc-count" [(ngModel)]="allocateCount" required />
+                </label>
+                <label>{{ 'admin.epinRegister.batchFilterLabel' | translate }}
+                  <input type="text" name="alloc-batch" [(ngModel)]="allocateBatchId" />
+                </label>
+                <p *ngIf="allocateResult" class="epin-register__allocated">{{ 'admin.epinRegister.allocatedCount' | translate: { count: allocateResult.count } }}</p>
+                <div class="epin-register__form-actions">
+                  <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
+                  <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.cancel' | translate }}</button>
+                </div>
+              </form>
+            </ng-container>
+            <ng-template #pinDetail>
             <div class="epin-register__seal-title">{{ 'admin.epinRegister.detailTitle' | translate }}</div>
             <p *ngIf="!selected" class="epin-register__detail-empty">{{ 'admin.epinRegister.detailEmpty' | translate }}</p>
             <ng-container *ngIf="selected as p">
@@ -234,6 +236,7 @@ type Panel =
                 <button type="button" class="brand-button brand-button--secondary" *ngIf="p.status === 'BLOCKED'" (click)="unblock(p)">{{ 'admin.epinRegister.unblockAction' | translate }}</button>
               </div>
             </ng-container>
+            </ng-template>
           </div>
         </aside>
       </div>
@@ -294,6 +297,7 @@ export class EPinRegisterComponent implements OnInit {
   }
 
   select(p: EPin): void {
+    if (this.panel?.kind === 'allocate') this.closePanel();
     this.selectedId = p.id;
     this.events = [];
     this.loadEvents(p.id);
@@ -347,6 +351,11 @@ export class EPinRegisterComponent implements OnInit {
 
   openPanel(panel: Panel): void {
     this.panel = panel;
+    if (panel.kind === 'allocate') {
+      this.selectedId = null;
+      this.events = [];
+      this.eventsSeq++;
+    }
     this.actionError = '';
     this.generatedCodes = [];
     this.generatedBatchId = '';
