@@ -268,6 +268,15 @@ class BookingServiceTest {
     }
 
     @Test
+    void createBookingStampsBookedAtFromTheInjectedClock() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        BookingResponse response = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        assertThat(response.bookedAt()).isEqualTo(NOW);
+    }
+
+    @Test
     void createBookingFlipsThePlotToBooked() {
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
 

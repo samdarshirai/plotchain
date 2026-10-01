@@ -77,7 +77,7 @@ public class BookingService {
             .orElseThrow(() -> new IllegalStateException(
                 "booking_emi_config row missing - V14 migration seeds it"));
 
-        Instant bookedAt = Instant.now();
+        Instant bookedAt = clock.instant();
         List<EmiInstallment> schedule = computeSchedule(plot.getPrice(), config, bookedAt);
 
         PlotBooking booking = new PlotBooking();
@@ -90,7 +90,7 @@ public class BookingService {
         booking.setBuyerName(request.buyerName().trim());
         booking.setBuyerPhone(request.buyerPhone());
         booking.setStatus(BookingStatus.ACTIVE);
-        booking =plotBookingRepository.save(booking);
+        booking = plotBookingRepository.save(booking);
 
         for (EmiInstallment installment : schedule) {
             installment.setBookingId(booking.getId());
