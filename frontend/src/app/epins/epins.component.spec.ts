@@ -15,6 +15,7 @@ describe('EPinsComponent', () => {
   });
 
   function flush(epins: unknown[]) {
+    httpMock.match('/api/associates/me/profile').forEach(r => r.flush({ id: 'me' }));
     httpMock.expectOne(r => r.url === '/api/associates/me/epins').flush(
       { epins, page: 0, size: 100, totalElements: epins.length });
     fixture.detectChanges();
@@ -117,8 +118,31 @@ describe('EPinsComponent', () => {
     const first = httpMock.expectOne(r => r.url === '/api/associates/me/epins');
     c.load();
     const second = httpMock.expectOne(r => r.url === '/api/associates/me/epins');
+    httpMock.expectOne('/api/associates/me/profile').flush({ id: 'me' });
     second.flush({ epins: [pin({ code: 'NEW' })], page: 0, size: 100, totalElements: 1 });
     first.flush({ epins: [pin({ code: 'STALE' })], page: 0, size: 100, totalElements: 1 });
     expect(c.all.map(p => p.code)).toEqual(['NEW']);
+  });
+
+  it('lists a transferred-out pin in History as Transferred with no action buttons', () => {
+    flush([pin({ id: 'p7', code: 'GONE', allocatedTo: 'someone-else' })]);
+    const c = fixture.componentInstance;
+    expect(c.available.length).toBe(0);
+    expect(c.history.map(p => p.code)).toEqual(['GONE']);
+    expect(c.historyLabel(c.history[0])).toBe('epins.statusTransferred');
+    expect(fixture.nativeElement.querySelectorAll('.epins__available-row').length).toBe(0);
+    c.tab = 'history';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('epins.statusTransferred');
+    expect(fixture.nativeElement.querySelectorAll('button[type=button]').length).toBe(2); // tabs only
+  });
+
+  it('treats nothing as available until the caller id is known', () => {
+    const c = fixture.componentInstance;
+    httpMock.expectOne(r => r.url === '/api/associates/me/epins').flush(
+      { epins: [pin()], page: 0, size: 100, totalElements: 1 });
+    expect(c.available.length).toBe(0);
+    httpMock.expectOne('/api/associates/me/profile').flush({ id: 'me' });
+    expect(c.available.map(p => p.code)).toEqual(['CODE-1']);
   });
 });

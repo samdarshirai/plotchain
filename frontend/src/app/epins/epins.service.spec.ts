@@ -21,6 +21,13 @@ describe('EPinsService', () => {
     req.flush({ epins: [], page: 0, size: 100, totalElements: 0 });
   });
 
+  it('fetches the caller id from the profile', () => {
+    let id = '';
+    service.meId().subscribe(v => (id = v));
+    httpMock.expectOne('/api/associates/me/profile').flush({ id: 'me-1', name: 'x' });
+    expect(id).toBe('me-1');
+  });
+
   it('omits status when unfiltered', () => {
     service.list(undefined, 0, 20).subscribe();
     const req = httpMock.expectOne(r => r.url === '/api/associates/me/epins');

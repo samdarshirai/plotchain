@@ -133,6 +133,10 @@ type Panel =
             <ul class="epin-register__events">
               <li *ngFor="let e of events">
                 {{ datePipe.transform(e.at, 'medium') }} — {{ 'admin.epinRegister.event.' + e.eventType | translate }}
+                — {{ 'admin.epinRegister.eventActor' | translate }} {{ userId(e.actorId) }}
+                <span *ngIf="e.fromAssociateId || e.toAssociateId">
+                  — {{ 'admin.epinRegister.eventFrom' | translate }} {{ userId(e.fromAssociateId) }} -&gt; {{ 'admin.epinRegister.eventTo' | translate }} {{ userId(e.toAssociateId) }}
+                </span>
                 <span *ngIf="e.note">({{ e.note }})</span>
               </li>
             </ul>

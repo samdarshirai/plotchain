@@ -57,7 +57,7 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
         <p *ngIf="!history.length">{{ 'epins.emptyHistory' | translate }}</p>
         <div class="epins__history-row" *ngFor="let p of history">
           <span class="epins__code">{{ p.code }}</span>
-          <span>{{ (p.expired ? 'epins.statusExpired' : 'epins.status.' + p.status) | translate }}</span>
+          <span>{{ historyLabel(p) | translate }}</span>
         </div>
       </div>
     </div>
@@ -68,6 +68,7 @@ export class EPinsComponent implements OnInit {
   protected datePipe = inject(DatePipe);
 
   all: EPin[] = [];
+  meId: string | null = null;
   loadError = false;
   tab: 'available' | 'history' = 'available';
 
@@ -78,8 +79,18 @@ export class EPinsComponent implements OnInit {
 
   private loadSeq = 0;
 
-  get available(): EPin[] { return this.all.filter(p => p.status === 'ALLOCATED' && !p.expired); }
-  get history(): EPin[] { return this.all.filter(p => !(p.status === 'ALLOCATED' && !p.expired)); }
+  // Until the caller's id is known nothing is actionable. A pin the caller transferred away comes
+  // back ALLOCATED to someone else: History only, never Activate/Transfer.
+  private isAvailable(p: EPin): boolean {
+    return this.meId !== null && p.status === 'ALLOCATED' && !p.expired && p.allocatedTo === this.meId;
+  }
+  get available(): EPin[] { return this.all.filter(p => this.isAvailable(p)); }
+  get history(): EPin[] { return this.all.filter(p => !this.isAvailable(p)); }
+
+  historyLabel(p: EPin): string {
+    if (p.status === 'ALLOCATED' && this.meId !== null && p.allocatedTo !== this.meId) return 'epins.statusTransferred';
+    return p.expired ? 'epins.statusExpired' : 'epins.status.' + p.status;
+  }
   get availableCount(): number { return this.available.length; }
   get usedCount(): number { return this.all.filter(p => p.status === 'USED').length; }
   get expiringSoonCount(): number {
@@ -87,7 +98,10 @@ export class EPinsComponent implements OnInit {
     return this.available.filter(p => p.expiresAt && new Date(p.expiresAt).getTime() <= limit).length;
   }
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void {
+    this.service.meId().subscribe({ next: id => (this.meId = id), error: () => (this.loadError = true) });
+    this.load();
+  }
 
   // Known limit: loads the 100 most recent pins (backend clamp); counts reflect that window.
   load(): void {

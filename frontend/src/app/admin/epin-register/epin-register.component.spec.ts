@@ -218,6 +218,23 @@ describe('EPinRegisterComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('admin.epinRegister.event.GENERATED');
   });
 
+  it('renders the actor and from/to userIds in the events panel', () => {
+    flushInitial([pin()]);
+    const c = fixture.componentInstance;
+    c.associates = [
+      { id: 'act', userId: 'VPACTOR', name: 'A' }, { id: 'f1', userId: 'VPFROM', name: 'F' }, { id: 't1', userId: 'VPTO', name: 'T' }
+    ] as never;
+    c.openPanel({ kind: 'events', epin: pin() as never });
+    httpMock.expectOne('/api/admin/epins/p1/events').flush([
+      { eventType: 'TRANSFERRED', actorId: 'act', fromAssociateId: 'f1', toAssociateId: 't1', at: '2026-10-01T00:00:00Z', note: null }
+    ]);
+    fixture.detectChanges();
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('VPACTOR');
+    expect(text).toContain('VPFROM');
+    expect(text).toContain('VPTO');
+  });
+
   it('resets redeem form state when a panel is reopened', () => {
     flushInitial([]);
     const c = fixture.componentInstance;
