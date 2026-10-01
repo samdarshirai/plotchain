@@ -1,45 +1,7 @@
-<header class="app-header" *ngIf="authService.isAuthenticated() && !isChromelessRoute && isAdminFamily">
-  <div class="app-header__left">
-    <div class="app-header__brand">
-      <img *ngIf="showSquareLogo; else brandFallbackMark" class="app-header__logo" src="/api/company/branding/logo/square" alt="" />
-      <ng-template #brandFallbackMark>
-        <span class="app-header__logo-fallback" aria-hidden="true">{{ 'brand.fallbackMark' | translate }}</span>
-      </ng-template>
-      <!-- Fixed brand caption, not the per-tenant BrandingPublic.tagline: the login brand aside
-           renders both side by side (see login.component.ts), so they are separate strings. -->
-      <span class="app-header__wordmark">
-        <span class="app-header__wordmark-name">{{ 'brand.wordmark' | translate }}</span>
-        <span class="app-header__wordmark-tagline">{{ 'brand.caption' | translate }}</span>
-      </span>
-    </div>
-    <nav class="app-nav">
-      <a class="app-nav__link" routerLink="/admin/dashboard" routerLinkActive="app-nav__link--active">{{ 'nav.dashboard' | translate }}</a>
-      <!-- Category tabs. Active state comes from activeNavCategory (URL-derived) rather than
-           routerLinkActive, because a tab links to its FIRST item but must stay lit for any of
-           them. Clicking one lands on that first item; the row below then lists the rest. -->
-      <a
-        *ngFor="let category of navCategories"
-        class="app-nav__link"
-        [class.app-nav__link--active]="activeNavCategory?.key === category.key"
-        [routerLink]="category.items[0].path"
-      ><span class="material-symbols-outlined app-nav__link-icon" aria-hidden="true">{{ category.icon }}</span>{{ category.labelKey | translate }}</a>
-    </nav>
-  </div>
-  <button type="button" class="logout" (click)="onLogout()">{{ 'auth.logout' | translate }}</button>
-</header>
-<!-- Second nav row: the active category's items as pills. Absent on the Dashboard (and every
-     non-settings route), where no category is active. -->
-<nav
-  class="app-nav-items"
-  *ngIf="authService.isAuthenticated() && !isChromelessRoute && isAdminFamily && activeNavCategory"
->
-  <a
-    *ngFor="let item of activeNavCategory.items"
-    class="app-nav-items__link"
-    [routerLink]="item.path"
-    routerLinkActive="app-nav-items__link--active"
-  >{{ item.labelKey | translate }}</a>
-</nav>
+<app-admin-sidebar
+  *ngIf="authService.isAuthenticated() && !isChromelessRoute && isAdminFamily"
+  (logout)="onLogout()"
+></app-admin-sidebar>
 <app-associate-sidebar
   *ngIf="authService.isAuthenticated() && !isChromelessRoute && !isAdminFamily"
   [(pinned)]="associateSidebarPinned"
@@ -47,8 +9,8 @@
 ></app-associate-sidebar>
 <div
   class="app-content"
-  [class.app-content--sidebar-rail]="authService.isAuthenticated() && !isChromelessRoute && !isAdminFamily"
-  [class.app-content--sidebar-expanded]="authService.isAuthenticated() && !isChromelessRoute && !isAdminFamily && associateSidebarPinned"
+  [class.app-content--sidebar-rail]="authService.isAuthenticated() && !isChromelessRoute"
+  [class.app-content--sidebar-expanded]="authService.isAuthenticated() && !isChromelessRoute && (isAdminFamily || associateSidebarPinned)"
 >
   <router-outlet></router-outlet>
 </div>

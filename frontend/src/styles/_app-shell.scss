@@ -1,182 +1,7 @@
-// The global header carries the same Ink "Legacy Living" chrome as the /login brand aside
-// (DESIGN.md §4: "Ink sidebar/header ... gold VS mark, small, top-left ... nav items, Inter,
-// gold on hover"), on every authenticated, non-chromeless route. Every value below is transcribed
-// from docs/design/viraj_acres_settings_mockup/Viraj_Acres_Settings.dc.html. The nav's own shades
-// are --nav-active-fill/--nav-inactive-muted/--nav-tagline-muted in _tokens.scss, so a tenant can
-// retheme them alongside --brand-primary/--brand-secondary; they're separate tokens rather than
-// --text-muted/--border-subtle because those are tuned for Parchment content and would
-// under-contrast against black. The Log Out button's #4a4038/#e8e0d0 stay literal here: they're
-// this one control's border/label, not a shade any other rule reads.
-//
-// For admin-family roles the nav is Dashboard plus the four category tabs
-// (admin-nav-categories.model.ts); the active category's screens are listed in the .app-nav-items
-// row directly below this header. Settings has no sidebar and no hub screen.
-.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  padding: 0 28px;
-  height: var(--app-header-height);
-  background: var(--ink);
-}
-
-.app-header__left {
-  display: flex;
-  align-items: center;
-  gap: 36px;
-  min-width: 0;
-}
-
-.app-header__brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.app-header__logo,
-.app-header__logo-fallback {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 4px;
-}
-
-.app-header__logo {
-  display: block;
-  object-fit: contain;
-}
-
-// Shown whenever the tenant hasn't uploaded a square logo, so the brand corner is never empty.
-.app-header__logo-fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--brand-secondary), var(--ink));
-  border: 1px solid var(--brand-primary);
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--brand-primary-bright);
-}
-
-.app-header__wordmark {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-  white-space: nowrap;
-}
-
-.app-header__wordmark-name {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  color: var(--brand-primary-bright);
-}
-
-.app-header__wordmark-tagline {
-  font-size: 8px;
-  letter-spacing: 0.2em;
-  color: var(--nav-tagline-muted);
-}
-
-.app-header .logout {
-  flex-shrink: 0;
-  padding: 9px 18px;
-  border-radius: 3px;
-  background: transparent;
-  color: #e8e0d0;
-  border: 1px solid #4a4038;
-  font-size: 13px;
-  font-weight: 600;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
-
-.app-header .logout:hover {
-  color: var(--brand-primary-bright);
-  border-color: var(--brand-primary);
-}
-
-.app-nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  overflow-x: auto;
-}
-
-.app-nav__link {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  padding: 9px 16px;
-  border-radius: 4px;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--nav-inactive-muted);
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.app-nav__link-icon {
-  font-size: 16px;
-}
-
-.app-nav__link:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--brand-primary-bright);
-}
-
-.app-nav__link--active {
-  background: var(--nav-active-fill);
-  color: var(--brand-primary-bright);
-}
-
-// The header's second row: the active category's screens as Wine pills on the Raised parchment
-// band. Rendered only while a category is active (i.e. on a /settings route), so the Dashboard
-// keeps the full viewport below the header. min-height keeps the band a known height so
-// .settings-shell can subtract it from the viewport (see _settings.scss); it grows past that only
-// when the pills wrap on a narrow viewport.
-.app-nav-items {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-height: var(--app-nav-items-height);
-  padding: 12px 32px;
-  background: var(--surface-raised);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.app-nav-items__link {
-  padding: 8px 16px;
-  border-radius: 14px;
-  font-size: 13px;
-  // Tighter than the app's 1.5 body leading, matching the mockup's default-leading pills; also
-  // what keeps a single unwrapped row inside --app-nav-items-height exactly.
-  line-height: 1.2;
-  font-weight: 600;
-  color: var(--brand-secondary);
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.app-nav-items__link:hover {
-  background: color-mix(in srgb, var(--brand-secondary) 8%, transparent);
-}
-
-.app-nav-items__link--active,
-.app-nav-items__link--active:hover {
-  background: var(--brand-secondary);
-  color: var(--brand-primary-bright);
-}
-
-// Associate role's left nav (DESIGN.md SS4; mockup: "Header to sidebar conversion" ->
-// Dashboard Sidebar.dc.html). Admin-family roles keep .app-header/.app-nav above instead -- this
-// never renders for them. Fixed full-height, above .app-header's own stacking (z-index 20 there
+// Left nav for every authenticated role (DESIGN.md SS4; mockup: "Header to sidebar conversion" ->
+// Dashboard Sidebar.dc.html). Associates get the pinnable rail; admin-family roles get
+// AdminSidebarComponent, which reuses these same classes at full width with accordion groups.
+// Its own Ink chrome shades are --nav-active-fill/--nav-inactive-muted in _tokens.scss. Fixed full-height, above .app-header's own stacking (z-index 20 there
 // vs 10), width driven by --sidebar-rail-width/--sidebar-expanded-width so .app-content's
 // margin-left (below) can share the same tokens.
 .associate-sidebar {
@@ -359,6 +184,20 @@
   transform: rotate(40deg);
 }
 
+.associate-sidebar__group-toggle {
+  width: 100%;
+}
+
+.associate-sidebar__chevron {
+  margin-left: auto;
+  font-size: 20px;
+  transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.associate-sidebar__chevron--open {
+  transform: rotate(180deg);
+}
+
 .associate-sidebar__footer {
   display: flex;
   flex-direction: column;
@@ -367,8 +206,7 @@
   flex-shrink: 0;
 }
 
-// Content column for Associate routes only (admin routes never get this class -- see
-// app.component.html -- so margin-left stays 0 for them, unaffected by the sidebar tokens).
+// Content column beside the sidebar (see app.component.html): rail or expanded margin-left.
 .app-content {
   transition: margin-left 180ms cubic-bezier(0.4, 0, 0.2, 1);
 }

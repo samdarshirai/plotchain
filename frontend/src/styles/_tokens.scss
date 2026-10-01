@@ -37,12 +37,6 @@
   --nav-inactive-muted: #a89878;
   --nav-tagline-muted: #8a7a56;
 
-  // Heights of the two global chrome rows (.app-header and, on settings routes, .app-nav-items),
-  // named so the settings content column can subtract them from the viewport instead of repeating
-  // magic numbers -- see .settings-shell in _settings.scss.
-  --app-header-height: 68px;
-  --app-nav-items-height: 57px;
-
   // Associate sidebar (see _app-shell.scss's .associate-sidebar): collapsed icon rail vs pinned
   // width, transcribed from the Dashboard Sidebar mockup's railWidth/expandedWidth defaults.
   --sidebar-rail-width: 68px;

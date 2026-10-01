@@ -3,16 +3,13 @@
 // so this adds no duplicate CSS -- styles.scss already @uses 'styles/admin' ahead of this file.
 @use 'admin';
 
-// Settings area layout: no chrome of its own -- the header's category tabs and the .app-nav-items
-// pill row (see _app-shell.scss) are the whole navigation, per
-// docs/design/viraj_acres_settings_mockup/Viraj_Acres_Settings.dc.html. All that is left here is
-// the content column. The min-height subtracts both global chrome rows, which is exact on settings
-// routes because a settings route always has an active category and therefore always shows the
-// pill row.
+// Settings area layout: no chrome of its own -- the admin sidebar's category accordions (see
+// AdminSidebarComponent) are the whole navigation. All that is left here is the content column,
+// which fills the viewport height.
 .settings-shell {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - var(--app-header-height) - var(--app-nav-items-height));
+  min-height: 100vh;
 }
 
 .settings-shell__content {
