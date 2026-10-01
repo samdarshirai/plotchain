@@ -32,6 +32,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -356,5 +362,184 @@ class BookingTransferIntegrationTest {
         // fresh JDBC read (no persistence context)
         assertThat(ownerOf(b.id())).isEqualTo(from);
         assertThat(transferredEvents(b.id())).isZero();
+    }
+
+    private void awaitQuietly(CountDownLatch latch) {
+        try { latch.await(5, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+    }
+
+    // Deterministic lock proof: hold the booking row lock in one transaction; a concurrent transfer must
+    // BLOCK until it commits, then see the committed CANCELLED status (409). With findByIdForUpdate swapped
+    // for findById it reads the stale ACTIVE row and overwrites the owner (lost update).
+    @Test
+    void transferBlocksWhileAnotherTransactionHoldsTheBookingLock() throws Exception {
+        UUID from = seedAssociate(AssociateStatus.ACTIVE);
+        UUID to = seedAssociate(AssociateStatus.ACTIVE);
+        BookingResponse b = seedBooking(from);
+        CountDownLatch lockHeld = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> holder = pool.submit(() -> new TransactionTemplate(transactionManager).executeWithoutResult(s -> {
+                PlotBooking locked = plotBookingRepository.findByIdForUpdate(b.id()).orElseThrow();
+                // Uncommitted status change: only a transfer that waits for the lock sees it (on H2 even an
+                // unlocked read-then-write would block at the UPDATE, so blocking alone proves nothing).
+                locked.setStatus(BookingStatus.CANCELLED);
+                plotBookingRepository.saveAndFlush(locked);
+                lockHeld.countDown();
+                awaitQuietly(release);
+            }));
+            assertThat(lockHeld.await(5, TimeUnit.SECONDS)).isTrue();
+            Future<BookingResponse> transfer = pool.submit(() -> bookingService.transferBooking(b.id(), to, from));
+
+            long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(500);
+            while (System.nanoTime() < deadline) {
+                assertThat(transfer.isDone()).as("transfer must wait for the booking lock").isFalse();
+                Thread.onSpinWait();
+                Thread.sleep(20);
+            }
+            release.countDown();
+            holder.get(10, TimeUnit.SECONDS);
+            assertThatThrownBy(() -> transfer.get(10, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class).hasCauseInstanceOf(BookingNotActiveException.class);
+            assertNothingWritten(b.id(), from, 0);
+        } finally {
+            release.countDown();
+            pool.shutdownNow();
+        }
+    }
+
+    // Must-handle (5): transfer racing a manual confirm, repeated. Whichever wins, the invariants hold:
+    // the Sale (if any) belongs to the booking's final owner; a transfer that lost is BookingNotActive (409)
+    // with no TRANSFERRED event; a transfer that won happened strictly before the confirm.
+    @Test
+    void transferRacingConfirmNeverLeavesTheSaleCreditedToTheWrongAssociate() throws Exception {
+        UUID from = seedAssociate(AssociateStatus.ACTIVE);
+        UUID to = seedAssociate(AssociateStatus.ACTIVE);
+        int transferWins = 0;
+        int confirmWins = 0;
+        for (int i = 0; i < 20; i++) {
+            BookingResponse b = seedBooking(from);
+            CountDownLatch start = new CountDownLatch(1);
+            ExecutorService pool = Executors.newFixedThreadPool(2);
+            Future<BookingResponse> transfer = pool.submit(() -> {
+                awaitQuietly(start);
+                return bookingService.transferBooking(b.id(), to, from);
+            });
+            Future<BookingResponse> confirm = pool.submit(() -> {
+                awaitQuietly(start);
+                return bookingService.confirmBooking(b.id(), from);
+            });
+            start.countDown();
+            boolean transferred = true;
+            try {
+                try {
+                    transfer.get(10, TimeUnit.SECONDS);
+                } catch (ExecutionException e) {
+                    assertThat(e.getCause()).isInstanceOf(BookingNotActiveException.class);
+                    transferred = false;
+                }
+                confirm.get(10, TimeUnit.SECONDS);      // confirm always succeeds: transfer never makes it fail
+            } finally {
+                pool.shutdownNow();
+            }
+            UUID owner = ownerOf(b.id());
+            assertThat(owner).isEqualTo(transferred ? to : from);
+            assertThat(jdbc.queryForObject("SELECT associate_id FROM sale WHERE booking_id = ?", UUID.class, b.id()))
+                .as("sale seller must equal the booking's final owner").isEqualTo(owner);
+            assertThat(transferredEvents(b.id())).isEqualTo(transferred ? 1 : 0);
+            if (transferred) transferWins++; else confirmWins++;
+        }
+        // informational: with the lock either order is legal; log so a reviewer can see both occur
+        System.out.println("transfer-vs-confirm: transferWins=" + transferWins + " confirmWins=" + confirmWins);
+    }
+
+    // Transfer racing a pay: both succeed in either order; payment is never lost, owner is the target.
+    @Test
+    void transferRacingAPayLosesNeitherWrite() throws Exception {
+        UUID from = seedAssociate(AssociateStatus.ACTIVE);
+        UUID to = seedAssociate(AssociateStatus.ACTIVE);
+        BookingResponse b = seedBooking(from);
+        BigDecimal amt = b.installments().get(0).amount();
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> t = pool.submit(() -> { awaitQuietly(start); return bookingService.transferBooking(b.id(), to, from); });
+            Future<?> p = pool.submit(() -> {
+                awaitQuietly(start);
+                return bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(amt, "UTR-X", null), from);
+            });
+            start.countDown();
+            t.get(10, TimeUnit.SECONDS);
+            p.get(10, TimeUnit.SECONDS);
+        } finally {
+            pool.shutdownNow();
+        }
+        assertThat(ownerOf(b.id())).isEqualTo(to);
+        assertThat(jdbc.queryForObject(
+            "SELECT status FROM emi_installment WHERE booking_id = ? AND installment_number = 1", String.class, b.id()))
+            .isEqualTo("PAID");
+        assertThat(transferredEvents(b.id())).isEqualTo(1);
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id())).isEqualTo(1);
+    }
+
+    // Unit 6 is merged: a CANCELLED booking cannot be transferred.
+    @Test
+    void transferOfACancelledBookingIs409AndNothingChanges() {
+        UUID from = seedAssociate(AssociateStatus.ACTIVE);
+        UUID to = seedAssociate(AssociateStatus.ACTIVE);
+        BookingResponse b = seedBooking(from);
+        bookingService.cancelBooking(b.id(), new CancelBookingRequest("buyer withdrew"), from);   // 1 CANCELLED event
+
+        assertThatThrownBy(() -> bookingService.transferBooking(b.id(), to, from))
+            .isInstanceOf(BookingNotActiveException.class);
+        assertNothingWritten(b.id(), from, 1);
+    }
+
+    // Transfer racing cancel: cancel never fails (it does not care who owns the booking); a transfer that
+    // loses is BookingNotActive (409) with no TRANSFERRED event and the owner unchanged; one that wins
+    // moved the owner. Either way the booking ends CANCELLED and the plot is released.
+    @Test
+    void transferRacingCancelEndsCancelledWithConsistentOwnerAndEvents() throws Exception {
+        UUID from = seedAssociate(AssociateStatus.ACTIVE);
+        UUID to = seedAssociate(AssociateStatus.ACTIVE);
+        int transferWins = 0;
+        int cancelWins = 0;
+        for (int i = 0; i < 20; i++) {
+            BookingResponse b = seedBooking(from);
+            CountDownLatch start = new CountDownLatch(1);
+            ExecutorService pool = Executors.newFixedThreadPool(2);
+            Future<BookingResponse> transfer = pool.submit(() -> {
+                awaitQuietly(start);
+                return bookingService.transferBooking(b.id(), to, from);
+            });
+            Future<BookingResponse> cancel = pool.submit(() -> {
+                awaitQuietly(start);
+                return bookingService.cancelBooking(b.id(), new CancelBookingRequest("race"), from);
+            });
+            start.countDown();
+            boolean transferred = true;
+            try {
+                try {
+                    transfer.get(10, TimeUnit.SECONDS);
+                } catch (ExecutionException e) {
+                    assertThat(e.getCause()).isInstanceOf(BookingNotActiveException.class);
+                    transferred = false;
+                }
+                cancel.get(10, TimeUnit.SECONDS);
+            } finally {
+                pool.shutdownNow();
+            }
+            assertThat(ownerOf(b.id())).isEqualTo(transferred ? to : from);
+            assertThat(jdbc.queryForObject("SELECT status FROM plot_booking WHERE id = ?", String.class, b.id()))
+                .isEqualTo("CANCELLED");
+            assertThat(jdbc.queryForObject("SELECT status FROM plot WHERE id = ?", String.class, b.plotId()))
+                .isEqualTo("AVAILABLE");
+            assertThat(transferredEvents(b.id())).isEqualTo(transferred ? 1 : 0);
+            assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CANCELLED'", b.id()))
+                .isEqualTo(1);
+            if (transferred) transferWins++; else cancelWins++;
+        }
+        System.out.println("transfer-vs-cancel: transferWins=" + transferWins + " cancelWins=" + cancelWins);
     }
 }
