@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -31,13 +32,16 @@ public class BookingService {
     private final BookingEmiConfigRepository bookingEmiConfigRepository;
     private final PlotBookingRepository plotBookingRepository;
     private final EmiInstallmentRepository emiInstallmentRepository;
+    private final Clock clock;
 
     public BookingService(
             PlotRepository plotRepository,
             AssociateRepository associateRepository,
             BookingEmiConfigRepository bookingEmiConfigRepository,
             PlotBookingRepository plotBookingRepository,
-            EmiInstallmentRepository emiInstallmentRepository) {
+            EmiInstallmentRepository emiInstallmentRepository,
+            Clock clock) {
+        this.clock = clock;
         this.plotRepository = plotRepository;
         this.associateRepository = associateRepository;
         this.bookingEmiConfigRepository = bookingEmiConfigRepository;
@@ -148,18 +152,26 @@ public class BookingService {
         return schedule;
     }
 
-    private BookingResponse toResponse(PlotBooking booking, List<EmiInstallment> installments) {
-        List<EmiInstallmentResponse> installmentResponses = installments.stream()
-            .map(i -> new EmiInstallmentResponse(i.getInstallmentNumber(), i.getAmount(), i.getDueDate()))
+    // Package-private: later lifecycle units reuse it. Overdue is derived here, never stored
+    // (Decision 7): PENDING and due strictly before today (UTC via the injected Clock).
+    BookingResponse toResponse(PlotBooking booking, List<EmiInstallment> installments) {
+        LocalDate today = LocalDate.now(clock);
+        List<EmiInstallmentResponse> rows = installments.stream()
+            .map(i -> new EmiInstallmentResponse(
+                i.getInstallmentNumber(), i.getAmount(), i.getDueDate(), i.getStatus(), i.getPaidAt(),
+                i.getStatus() == InstallmentStatus.PENDING && i.getDueDate().isBefore(today)))
             .toList();
         return new BookingResponse(
-            booking.getId(),
-            booking.getPlotId(),
-            booking.getAssociateId(),
-            booking.getTotalAmount(),
-            booking.getInstallmentCount(),
-            booking.getBookedAt(),
-            installmentResponses
-        );
+            booking.getId(), booking.getPlotId(), booking.getAssociateId(),
+            booking.getStatus(), booking.getBuyerName(),
+            booking.getTotalAmount(), booking.getInstallmentCount(), booking.getBookedAt(),
+            sumByStatus(installments, InstallmentStatus.PAID),
+            sumByStatus(installments, InstallmentStatus.PENDING),
+            rows);
+    }
+
+    private BigDecimal sumByStatus(List<EmiInstallment> installments, InstallmentStatus status) {
+        return installments.stream().filter(i -> i.getStatus() == status)
+            .map(EmiInstallment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

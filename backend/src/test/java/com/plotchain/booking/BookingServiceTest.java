@@ -21,6 +21,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -49,12 +50,104 @@ class BookingServiceTest {
 
     private static final UUID PLOT_ID = UUID.randomUUID();
     private static final UUID ASSOCIATE_ID = UUID.randomUUID();
+    private static final Instant NOW = Instant.parse("2026-06-15T10:00:00Z");
+    private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
 
     @BeforeEach
     void setUp() {
         bookingService = new BookingService(
             plotRepository, associateRepository, bookingEmiConfigRepository,
-            plotBookingRepository, emiInstallmentRepository);
+            plotBookingRepository, emiInstallmentRepository, clock);
+    }
+
+    private PlotBooking bookingWithBuyer() {
+        PlotBooking booking = new PlotBooking();
+        booking.setId(UUID.randomUUID());
+        booking.setPlotId(PLOT_ID);
+        booking.setAssociateId(ASSOCIATE_ID);
+        booking.setBuyerName("Jane Buyer");
+        booking.setTotalAmount(new BigDecimal("600000.00"));
+        booking.setInstallmentCount(1);
+        booking.setBookedAt(NOW);
+        return booking;
+    }
+
+    private EmiInstallment installment(int n, String amount, LocalDate due, InstallmentStatus status) {
+        EmiInstallment i = new EmiInstallment();
+        i.setId(UUID.randomUUID());
+        i.setInstallmentNumber(n);
+        i.setAmount(new BigDecimal(amount));
+        i.setDueDate(due);
+        i.setStatus(status);
+        return i;
+    }
+
+    private void stubOwnPage(PlotBooking booking, List<EmiInstallment> installments) {
+        when(plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(eq(ASSOCIATE_ID), any()))
+            .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
+        when(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId()))
+            .thenReturn(installments);
+    }
+
+    @Test
+    void getMyBookingsFlagsOnlyPendingInstallmentsDueBeforeTodayUtcAsOverdue() {
+        PlotBooking booking = bookingWithBuyer();
+        stubOwnPage(booking, List.of(
+            installment(1, "100.00", LocalDate.of(2026, 6, 14), InstallmentStatus.PENDING),
+            installment(2, "100.00", LocalDate.of(2026, 6, 15), InstallmentStatus.PENDING),
+            installment(3, "100.00", LocalDate.of(2026, 1, 1), InstallmentStatus.PAID),
+            installment(4, "100.00", LocalDate.of(2026, 1, 1), InstallmentStatus.VOID)));
+
+        BookingResponse r = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20).bookings().get(0);
+
+        assertThat(r.installments()).extracting(EmiInstallmentResponse::overdue)
+            .containsExactly(true, false, false, false);
+    }
+
+    @Test
+    void getMyBookingsComputesPaidAndDueAmountsAndExposesStatusAndBuyer() {
+        PlotBooking booking = bookingWithBuyer();
+        EmiInstallment paid = installment(1, "200000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PAID);
+        paid.setPaidAt(NOW);
+        stubOwnPage(booking, List.of(
+            paid,
+            installment(2, "250000.00", LocalDate.of(2026, 8, 1), InstallmentStatus.PENDING),
+            installment(3, "150000.00", LocalDate.of(2026, 9, 1), InstallmentStatus.VOID)));
+
+        BookingResponse r = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20).bookings().get(0);
+
+        assertThat(r.status()).isEqualTo(BookingStatus.ACTIVE);
+        assertThat(r.buyerName()).isEqualTo("Jane Buyer");
+        assertThat(r.paidAmount()).isEqualByComparingTo("200000.00");
+        assertThat(r.dueAmount()).isEqualByComparingTo("250000.00");
+        assertThat(r.installments().get(0).status()).isEqualTo(InstallmentStatus.PAID);
+        assertThat(r.installments().get(0).paidAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    void getMyBookingsDueAmountOfACancelledBookingIsZeroBecauseVoidInstallmentsDoNotCount() {
+        PlotBooking booking = bookingWithBuyer();
+        booking.setStatus(BookingStatus.CANCELLED);
+        stubOwnPage(booking, List.of(
+            installment(1, "300000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.VOID),
+            installment(2, "300000.00", LocalDate.of(2026, 8, 1), InstallmentStatus.VOID)));
+
+        BookingResponse r = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20).bookings().get(0);
+
+        assertThat(r.status()).isEqualTo(BookingStatus.CANCELLED);
+        assertThat(r.dueAmount()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void createBookingResponseIsActiveWithAllInstallmentsPendingNoneOverdueAndZeroPaid() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        BookingResponse r = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID));
+
+        assertThat(r.status()).isEqualTo(BookingStatus.ACTIVE);
+        assertThat(r.paidAmount()).isEqualByComparingTo("0");
+        assertThat(r.dueAmount()).isEqualByComparingTo("600000.00");
+        assertThat(r.installments()).allMatch(i -> i.status() == InstallmentStatus.PENDING && !i.overdue());
     }
 
     private Plot plotWithStatusAndPrice(PlotStatus status, String price) {

@@ -49,8 +49,10 @@ class AssociateBookingControllerTest {
         UUID associateId = UUID.randomUUID();
         UUID bookingId = UUID.randomUUID();
         BookingResponse booking = new BookingResponse(
-            bookingId, UUID.randomUUID(), associateId, new BigDecimal("600000.00"), 1, Instant.now(),
-            List.of(new EmiInstallmentResponse(1, new BigDecimal("600000.00"), LocalDate.now().plusMonths(1))));
+            bookingId, UUID.randomUUID(), associateId, BookingStatus.ACTIVE, "Jane Buyer",
+            new BigDecimal("600000.00"), 1, Instant.now(), BigDecimal.ZERO, new BigDecimal("600000.00"),
+            List.of(new EmiInstallmentResponse(1, new BigDecimal("600000.00"), LocalDate.now().plusMonths(1),
+                InstallmentStatus.PENDING, null, false)));
         AssociateBookingPageResponse page = new AssociateBookingPageResponse(List.of(booking), 0, 20, 1);
         when(bookingService.getMyBookings(eq(associateId), eq(0), eq(20))).thenReturn(page);
 
@@ -58,6 +60,11 @@ class AssociateBookingControllerTest {
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.bookings[0].id").value(bookingId.toString()))
+            .andExpect(jsonPath("$.bookings[0].status").value("ACTIVE"))
+            .andExpect(jsonPath("$.bookings[0].buyerName").value("Jane Buyer"))
+            .andExpect(jsonPath("$.bookings[0].paidAmount").value(0))
+            .andExpect(jsonPath("$.bookings[0].installments[0].status").value("PENDING"))
+            .andExpect(jsonPath("$.bookings[0].installments[0].overdue").value(false))
             .andExpect(jsonPath("$.totalElements").value(1));
     }
 

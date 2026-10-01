@@ -137,8 +137,10 @@ class BookingControllerTest {
         UUID plotId = UUID.randomUUID();
         UUID associateId = UUID.randomUUID();
         BookingResponse response = new BookingResponse(
-            bookingId, plotId, associateId, new BigDecimal("600000.00"), 4, Instant.now(),
-            List.of(new EmiInstallmentResponse(1, new BigDecimal("150000.00"), LocalDate.now().plusMonths(1))));
+            bookingId, plotId, associateId, BookingStatus.ACTIVE, "Jane Buyer",
+            new BigDecimal("600000.00"), 4, Instant.now(), BigDecimal.ZERO, new BigDecimal("600000.00"),
+            List.of(new EmiInstallmentResponse(1, new BigDecimal("150000.00"), LocalDate.now().plusMonths(1),
+                InstallmentStatus.PENDING, null, false)));
         when(bookingService.createBooking(any(CreateBookingRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/admin/bookings")

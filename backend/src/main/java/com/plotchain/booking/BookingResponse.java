@@ -9,8 +9,12 @@ public record BookingResponse(
     UUID id,
     UUID plotId,
     UUID associateId,
+    BookingStatus status,
+    String buyerName,
     BigDecimal totalAmount,
     int installmentCount,
     Instant bookedAt,
+    BigDecimal paidAmount,
+    BigDecimal dueAmount,
     List<EmiInstallmentResponse> installments
 ) {}
