@@ -240,6 +240,10 @@ public class SecurityConfig {
                 // associate token would fall through to anyRequest().authenticated().
                 .requestMatchers(HttpMethod.GET, "/api/admin/bookings")
                     .hasAuthority("ADMIN")
+                // Admin overdue-EMI report (plot-booking unit 9, Decision 12): same reason as the
+                // GET /api/admin/bookings matcher directly above -- no blanket GET /api/admin/**.
+                .requestMatchers(HttpMethod.GET, "/api/admin/emi-reports/overdue")
+                    .hasAuthority("ADMIN")
                 // Generate a batch of e-PINs: ADMIN-only, per epin-domain unit 1
                 // (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
                 // Decision 12: "POST/GET /api/admin/epins* require hasAuthority("ADMIN")...
