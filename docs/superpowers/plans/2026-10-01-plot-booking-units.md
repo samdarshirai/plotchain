@@ -18,7 +18,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. En
 | 6 | Admin cancels an `ACTIVE` booking — `POST /api/admin/bookings/{id}/cancel` | backend | 1 | merged | `2026-10-01-plot-booking-unit-6-cancel-booking.md` | `d49b9ff..ee40da4` (merge `a46f1f4`) |
 | 7 | Admin transfers an `ACTIVE` booking to another associate — `POST /api/admin/bookings/{id}/transfer` | backend | 1 | merged | `2026-10-01-plot-booking-unit-7-transfer-booking.md` | `4c533df..e946dc5` (merge `2a92070`) |
 | 8 | Admin views a paged, filterable booking register — `GET /api/admin/bookings` | backend | 1 | merged | `2026-10-01-plot-booking-unit-8-admin-booking-register.md` | `099b955..c1f4f16` (merge `c010443`) |
-| 9 | Admin views a paged overdue EMI report — `GET /api/admin/emi-reports/overdue` | backend | 1 | planned | `2026-10-01-plot-booking-unit-9-overdue-emi-report.md` | — |
+| 9 | Admin views a paged overdue EMI report — `GET /api/admin/emi-reports/overdue` | backend | 1 | merged | `2026-10-01-plot-booking-unit-9-overdue-emi-report.md` | `e0420d6..a865aa5` (merge `b9cd7fb`) |
 | 10 | Any authenticated user reads a project's plot grid — `GET /api/projects/{id}/plots/grid` | backend | none | pending | — | — |
 | 11 | Admin "Projects & Plots" screen — project list, colour-coded plot grid, plot create/edit, "Book" action | screen | 1, 10 | pending | — | — |
 | 12 | Admin "Bookings & EMI" screen — register, booking detail with Pay/Confirm/Cancel/Transfer, overdue report tab | screen | 1, 2, 4, 5, 6, 7, 8, 9 | pending | — | — |
@@ -249,6 +249,12 @@ Resolutions: (1) `RecordPaymentRequest` gains `amount`, 400 on mismatch; (2) can
 - The register's `@Query` closes a text block mid-expression and concatenates (`ACTIVE\n` + `" AND " + EXISTS_OVERDUE`); an earlier `ANDEXISTS` token bug came from that, so keep spaces explicit in any similar concatenation.
 - `GET /api/admin/bookings` has an explicit ADMIN matcher in `SecurityConfig` (placed after the POST matcher). Unit 9 needs its own matcher for `GET /api/admin/emi-reports/overdue`.
 - Null-UUID/enum parameter binding in the register query is proven on H2 only (same shape as `EPinRepository.search`). The register sorts `booked_at` DESC then `id` DESC; `id DESC` is only a stable tiebreak (UUID order differs between H2 and Postgres). Size is clamped to [1,100] (default 20); unknown `projectId`/`plotId`/`associateId` returns an empty page, not 404.
+
+**Unit 9 notes (merged 2026-10-01) — for the screen units (11-13) and ops:**
+- `GET /api/admin/emi-reports/overdue` returns `OverdueReportPageResponse(rows, page, size, totalElements)`; each row is `OverdueReportRow(bookingId, plotId, plotNo, associateId, associateName, buyerName, overdueCount, overdueAmount, oldestDueDate)`, sorted oldest overdue due date ASC then `booked_at` ASC then `id`. Size clamped to [1,100] (default 20). It has its own explicit ADMIN matcher in `SecurityConfig`. The register rows (unit 8) carry `associateId` + `buyerName` only (no associate name); the report rows carry `associateName` and `plotNo`.
+- Before relying on units 8 and 9 in production, smoke-test their JPQL against real PostgreSQL: the register's null-UUID/enum parameter binding and the report's grouped query (entity joins, constructor expression, `COUNT(DISTINCT)`) are proven on H2 only. V41 itself also has not been run on real Postgres.
+- Test-quality nits left as is: an underscore in `OverdueReportIntegrationTest` test name `paidAndVoidPastDueNeverCount_andMixedBookingCountsOnlyPending`; the `id` tiebreak alone is only probabilistically caught on H2; no HTTP-level test pins empty-page `totalElements`.
+- Backend units 1-9 are complete. Remaining: unit 10 (plot grid read endpoint, unplanned) and screen units 11-13 (unplanned).
 
 ## Excluded — not a unit
 
