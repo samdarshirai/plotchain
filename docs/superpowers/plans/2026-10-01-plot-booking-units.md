@@ -12,7 +12,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. En
 |---|---|---|---|---|---|---|
 | 1 | Bookings carry buyer details and an `ACTIVE` status; associate own view shows status, paid/due and per-installment overdue — schema migration + `POST /api/admin/bookings` + `GET /api/associates/me/bookings` | backend | none | merged | `2026-10-01-plot-booking-unit-1-buyer-status-own-view.md` | `a321459..a6ba44f` |
 | 2 | Admin records a per-installment payment — `PATCH /api/admin/bookings/{id}/installments/{n}/pay` | backend | 1 | merged | `2026-10-01-plot-booking-unit-2-pay-installment.md` | `a0b3c6b..d7d6ec1` |
-| 3 | `SaleService.recordConfirmedBooking` extracted from `recordSale` with `recordSale` behaviour unchanged | backend | 1 | planned | `2026-10-01-plot-booking-unit-3-extract-confirmed-booking-sale.md` | — |
+| 3 | `SaleService.recordConfirmedBooking` extracted from `recordSale` with `recordSale` behaviour unchanged | backend | 1 | merged | `2026-10-01-plot-booking-unit-3-extract-confirmed-booking-sale.md` | `2b36d24..c5dbac8` (merge `490f137`) |
 | 4 | Admin manually confirms an `ACTIVE` booking, creating a linked `Sale` — `POST /api/admin/bookings/{id}/confirm` | backend | 1, 3 | pending | — | — |
 | 5 | `AUTO_THRESHOLD` rule confirms the booking inside the pay call once paid% reaches the threshold | backend | 2, 4 | pending | — | — |
 | 6 | Admin cancels an `ACTIVE` booking — `POST /api/admin/bookings/{id}/cancel` | backend | 1 | pending | — | — |
@@ -216,6 +216,12 @@ Resolutions: (1) `RecordPaymentRequest` gains `amount`, 400 on mismatch; (2) can
 8. **Sort order** of the register and overdue report is unspecified.
 
 **Spec correction (unit 3 planning, 2026-10-01):** the spec/units text refers to "leg-volume" logic in `recordSale`; there is none at sale time. `recordSale` only snapshots `legCredited` and `cycleId`; leg volumes are computed at cycle close in `CycleService.rollUpLegVolumes`. Unit 3 parity is therefore proven on `legCredited`, `cycleId` and the ledger entry.
+
+**Carry-forward notes for planners (from unit 2/3 reviews):**
+- `SaleService.recordConfirmedBooking(bookingId, associateId, buyerName, buyerPhone, totalAmount, Plot)` takes primitives so `sales` never imports `booking` (repo rule: booking must not depend on sales' package direction reversed; `booking -> sales` is the allowed direction). Unit 4 calls it from `BookingService` with the locked plot; a non-`BOOKED` plot throws `sales.PlotNotAvailableException` — unit 4 should translate it to a booking-flavoured error.
+- Unit 4/5/6/7 first write non-`PAID` `booking_event` types: add a test that persists one event per `BookingEventType` value (enum-CHECK lesson; unit 2 only covers `PAID`). Also pin that a future `paidAt` is accepted and that a `PAID`/`VOID` installment returns 409 if not already covered.
+- Unit 5 hooks into `BookingService.afterInstallmentPaid(booking, installments, actorId)` (empty seam from unit 2).
+- `plot_booking.sale_id` / `sale.booking_id` is a redundant two-way link and `sale_id` is unindexed: pick one direction when unit 4 lands.
 
 ## Excluded — not a unit
 
