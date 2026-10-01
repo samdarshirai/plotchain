@@ -32,6 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -545,6 +546,28 @@ class SecurityConfigTest {
         String body = new ObjectMapper().writeValueAsString(
             new com.plotchain.booking.CreateBookingRequest(UUID.randomUUID(), UUID.randomUUID(), "Jane Buyer", null));
         mockMvc.perform(post("/api/admin/bookings").contentType("application/json").content(body))
+            .andExpect(status().isUnauthorized());
+    }
+
+    // plot-booking unit 2 (Decision 12): PATCH .../installments/{n}/pay rides the blanket ADMIN
+    // write rule. A random booking id reaches the real BookingService for the ADMIN token, whose
+    // findByIdForUpdate is empty -> 404, proving the request passed the security layer (same
+    // "not 403" reasoning as adminBookingsCreate above). Every other role is 403 at the filter.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminBookingPayIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(patch("/api/admin/bookings/{id}/installments/1/pay", UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(role))
+                .contentType("application/json")
+                .content("{\"amount\":100.00,\"paymentRef\":\"UTR-1\"}"))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+    }
+
+    @Test
+    void adminBookingPayIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(patch("/api/admin/bookings/{id}/installments/1/pay", UUID.randomUUID())
+                .contentType("application/json")
+                .content("{\"amount\":100.00,\"paymentRef\":\"UTR-1\"}"))
             .andExpect(status().isUnauthorized());
     }
 
