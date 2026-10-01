@@ -11,8 +11,8 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. En
 | Unit # | Title | Type | Depends on | Status | Plan file path | Merged commit range |
 |---|---|---|---|---|---|---|
 | 1 | Bookings carry buyer details and an `ACTIVE` status; associate own view shows status, paid/due and per-installment overdue — schema migration + `POST /api/admin/bookings` + `GET /api/associates/me/bookings` | backend | none | merged | `2026-10-01-plot-booking-unit-1-buyer-status-own-view.md` | `a321459..a6ba44f` |
-| 2 | Admin records a per-installment payment — `PATCH /api/admin/bookings/{id}/installments/{n}/pay` | backend | 1 | pending | — | — |
-| 3 | `SaleService.recordConfirmedBooking` extracted from `recordSale` with `recordSale` behaviour unchanged | backend | 1 | pending | — | — |
+| 2 | Admin records a per-installment payment — `PATCH /api/admin/bookings/{id}/installments/{n}/pay` | backend | 1 | planned | `2026-10-01-plot-booking-unit-2-pay-installment.md` | — |
+| 3 | `SaleService.recordConfirmedBooking` extracted from `recordSale` with `recordSale` behaviour unchanged | backend | 1 | planned | `2026-10-01-plot-booking-unit-3-extract-confirmed-booking-sale.md` | — |
 | 4 | Admin manually confirms an `ACTIVE` booking, creating a linked `Sale` — `POST /api/admin/bookings/{id}/confirm` | backend | 1, 3 | pending | — | — |
 | 5 | `AUTO_THRESHOLD` rule confirms the booking inside the pay call once paid% reaches the threshold | backend | 2, 4 | pending | — | — |
 | 6 | Admin cancels an `ACTIVE` booking — `POST /api/admin/bookings/{id}/cancel` | backend | 1 | pending | — | — |
@@ -214,6 +214,8 @@ Resolutions: (1) `RecordPaymentRequest` gains `amount`, 400 on mismatch; (2) can
 6. **Event rows on auto-confirm** — pay + confirm in one call presumably writes both a `PAID` and a `CONFIRMED` event; not stated explicitly.
 7. **Admin booking-creation response / plot status.** The spec assumes `createBooking` already moves the plot to `BOOKED` (confirm "Plot `BOOKED` to `SOLD`"); not restated in the spec.
 8. **Sort order** of the register and overdue report is unspecified.
+
+**Spec correction (unit 3 planning, 2026-10-01):** the spec/units text refers to "leg-volume" logic in `recordSale`; there is none at sale time. `recordSale` only snapshots `legCredited` and `cycleId`; leg volumes are computed at cycle close in `CycleService.rollUpLegVolumes`. Unit 3 parity is therefore proven on `legCredited`, `cycleId` and the ledger entry.
 
 ## Excluded — not a unit
 
