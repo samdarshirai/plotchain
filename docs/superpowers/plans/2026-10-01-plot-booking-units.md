@@ -225,7 +225,7 @@ Resolutions: (1) `RecordPaymentRequest` gains `amount`, 400 on mismatch; (2) can
 - Unit 4 provides package-private `BookingService.confirmLocked(booking, actorId)` (locks plot itself; lock order booking -> plot) for unit 5 to call from `afterInstallmentPaid`. Unit 5 must also prove atomicity of pay+confirm (rollback test with a spy, see `BookingConfirmIntegrationTest.aFailureAfterTheSaleIsCreatedRollsTheWholeConfirmBack`; Boot 3.3.4 so use `@SpyBean`, not `@MockitoSpyBean`).
 
 **Known follow-ups / operational notes (unit 5 review, merged as-is 2026-10-01):**
-- Cosmetic debt: `BookingServiceTest.java` (~lines 752-975) has the unit 5 block at column 0 instead of indented inside the class; `lockedAutoBooking` is a pass-through wrapper over `lockedBookingWith`; `Mockito.times/reset` are fully qualified inline (file uses static imports); `pool.shutdownNow()` not in `finally` in the race tests. Fix opportunistically in the next unit that edits this test file.
+- Cosmetic debt (unit 5 review S1-S3): FIXED post-merge — block reindented, `lockedAutoBooking` wrapper removed, static imports for `times`/`reset`, `pool.shutdownNow()` moved into `finally` in the two race tests.
 - Operational trap (spec-mandated): if a plot has drifted away from `BOOKED`, any pay that crosses the `AUTO_THRESHOLD` fails with 409 `PlotNotAvailableException` and rolls back, so the cash cannot be recorded until the plot is repaired or the config switched to `MANUAL`. The 409 text does not hint at the cause. Surface this in unit 12's UI error copy.
 - A `VOID` installment exclusion from paid% has no unit test (no flow yields `VOID` until unit 6).
 

@@ -389,18 +389,21 @@ class BookingAutoConfirmIntegrationTest {
         boolean payWon = true;
         boolean confirmWon = true;
         try {
-            pay.get(10, TimeUnit.SECONDS);
-        } catch (ExecutionException e) {
-            assertThat(e.getCause()).isInstanceOf(BookingNotActiveException.class);
-            payWon = false;
+            try {
+                pay.get(10, TimeUnit.SECONDS);
+            } catch (ExecutionException e) {
+                assertThat(e.getCause()).isInstanceOf(BookingNotActiveException.class);
+                payWon = false;
+            }
+            try {
+                confirm.get(10, TimeUnit.SECONDS);
+            } catch (ExecutionException e) {
+                assertThat(e.getCause()).isInstanceOf(BookingNotActiveException.class);
+                confirmWon = false;
+            }
+        } finally {
+            pool.shutdownNow();
         }
-        try {
-            confirm.get(10, TimeUnit.SECONDS);
-        } catch (ExecutionException e) {
-            assertThat(e.getCause()).isInstanceOf(BookingNotActiveException.class);
-            confirmWon = false;
-        }
-        pool.shutdownNow();
 
         assertThat(payWon ^ confirmWon).as("exactly one of pay/confirm wins").isTrue();
         assertThat(count("SELECT COUNT(*) FROM sale WHERE booking_id = ?", b.id())).isEqualTo(1);
@@ -435,10 +438,13 @@ class BookingAutoConfirmIntegrationTest {
             }));
         }
         start.countDown();
-        for (Future<BookingResponse> f : results) {
-            f.get(10, TimeUnit.SECONDS);                   // both succeed: neither is "already paid"/"not active"
+        try {
+            for (Future<BookingResponse> f : results) {
+                f.get(10, TimeUnit.SECONDS);               // both succeed: neither is "already paid"/"not active"
+            }
+        } finally {
+            pool.shutdownNow();
         }
-        pool.shutdownNow();
 
         assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PAID'", b.id())).isEqualTo(3);
         assertThat(bookingStatus(b.id())).isEqualTo("CONFIRMED");
