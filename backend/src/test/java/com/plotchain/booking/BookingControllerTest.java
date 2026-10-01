@@ -219,4 +219,38 @@ class BookingControllerTest {
         }
         org.mockito.Mockito.verifyNoInteractions(bookingService);
     }
+
+    @Test
+    void confirmReturns200WithTheConfirmedBookingAndPassesTheAdminAsActor() throws Exception {
+        UUID bookingId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        BookingResponse confirmed = new BookingResponse(bookingId, UUID.randomUUID(), UUID.randomUUID(),
+            BookingStatus.CONFIRMED, "Jane Buyer", new BigDecimal("200000.00"), 2, Instant.now(),
+            BigDecimal.ZERO, new BigDecimal("200000.00"), List.of());
+        when(bookingService.confirmBooking(bookingId, adminId)).thenReturn(confirmed);
+
+        mockMvc.perform(post("/api/admin/bookings/{id}/confirm", bookingId)
+                .header("Authorization", "Bearer " + tokenFor(adminId, AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(bookingId.toString()))
+            .andExpect(jsonPath("$.status").value("CONFIRMED"));
+    }
+
+    @Test
+    void confirmMapsServiceExceptionsToTheSpecStatuses() throws Exception {
+        UUID missing = UUID.randomUUID();
+        UUID notActive = UUID.randomUUID();
+        UUID plotGone = UUID.randomUUID();
+        when(bookingService.confirmBooking(eq(missing), any())).thenThrow(new BookingNotFoundException(missing));
+        when(bookingService.confirmBooking(eq(notActive), any())).thenThrow(new BookingNotActiveException(notActive));
+        when(bookingService.confirmBooking(eq(plotGone), any())).thenThrow(new PlotNotAvailableException(UUID.randomUUID()));
+        String admin = "Bearer " + tokenFor(AssociateRole.ADMIN);
+
+        mockMvc.perform(post("/api/admin/bookings/{id}/confirm", missing).header("Authorization", admin))
+            .andExpect(status().isNotFound());
+        mockMvc.perform(post("/api/admin/bookings/{id}/confirm", notActive).header("Authorization", admin))
+            .andExpect(status().isConflict());
+        mockMvc.perform(post("/api/admin/bookings/{id}/confirm", plotGone).header("Authorization", admin))
+            .andExpect(status().isConflict());
+    }
 }

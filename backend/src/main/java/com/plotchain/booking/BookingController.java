@@ -41,4 +41,11 @@ public class BookingController {
                                @AuthenticationPrincipal UUID actorId) {
         return bookingService.recordPayment(id, installmentNumber, request, actorId);
     }
+
+    // Admin manually confirms an ACTIVE booking (Decisions 1, 2, 12), creating the linked Sale.
+    // Allowed under MANUAL and AUTO_THRESHOLD. Returns the updated booking (200), like pay.
+    @PostMapping("/{id}/confirm")
+    public BookingResponse confirm(@PathVariable UUID id, @AuthenticationPrincipal UUID actorId) {
+        return bookingService.confirmBooking(id, actorId);
+    }
 }

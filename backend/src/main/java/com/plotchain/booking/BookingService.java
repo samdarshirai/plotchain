@@ -9,6 +9,8 @@ import com.plotchain.projects.Plot;
 import com.plotchain.projects.PlotNotFoundException;
 import com.plotchain.projects.PlotRepository;
 import com.plotchain.projects.PlotStatus;
+import com.plotchain.sales.SaleResponse;
+import com.plotchain.sales.SaleService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,7 @@ public class BookingService {
     private final PlotBookingRepository plotBookingRepository;
     private final EmiInstallmentRepository emiInstallmentRepository;
     private final BookingEventRepository bookingEventRepository;
+    private final SaleService saleService;
     private final Clock clock;
 
     public BookingService(
@@ -42,7 +45,9 @@ public class BookingService {
             PlotBookingRepository plotBookingRepository,
             EmiInstallmentRepository emiInstallmentRepository,
             BookingEventRepository bookingEventRepository,
+            SaleService saleService,
             Clock clock) {
+        this.saleService = saleService;
         this.clock = clock;
         this.bookingEventRepository = bookingEventRepository;
         this.plotRepository = plotRepository;
@@ -147,10 +152,56 @@ public class BookingService {
     }
 
     // Seam for later units, deliberately empty here: unit 5 adds the AUTO_THRESHOLD check and
-    // calls unit 4's confirm from this spot, inside the same locked transaction, after the PAID
+    // calls confirmLocked from this spot, inside the same locked transaction, after the PAID
     // event above and before the response is built (so the response reflects a CONFIRMED booking).
     void afterInstallmentPaid(PlotBooking booking, List<EmiInstallment> installments, UUID actorId) {
         // no-op until units 4/5
+    }
+
+    // Plot-booking unit 4 (spec Flow "Confirm", Decisions 1, 2, 8). Locks the booking FIRST (so two
+    // simultaneous confirms serialize: the loser re-reads CONFIRMED and gets 409 -- the unique
+    // sale.booking_id index is only the backstop), then confirmLocked takes the plot lock.
+    // Allowed under MANUAL and AUTO_THRESHOLD alike: never reads booking_emi_config (Decision 1).
+    @Transactional
+    public BookingResponse confirmBooking(UUID bookingId, UUID actorId) {
+        PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)
+            .orElseThrow(() -> new BookingNotFoundException(bookingId));
+        if (booking.getStatus() != BookingStatus.ACTIVE) {
+            throw new BookingNotActiveException(bookingId);
+        }
+        confirmLocked(booking, actorId);
+        return toResponse(booking, emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
+    }
+
+    // Reusable confirm step; unit 5 calls this from afterInstallmentPaid inside recordPayment's
+    // transaction. PRECONDITIONS (not re-checked): caller is inside a transaction, already holds the
+    // booking row lock (findByIdForUpdate) and has verified status == ACTIVE.
+    // LOCK ORDER IS BOOKING -> PLOT EVERYWHERE (Decision 8): never take a plot lock and then a
+    // booking lock, or concurrent confirm/cancel/pay can deadlock. The plot lock is taken here so
+    // callers cannot forget it or get the order wrong.
+    void confirmLocked(PlotBooking lockedBooking, UUID actorId) {
+        Plot plot = plotRepository.findByIdForUpdate(lockedBooking.getPlotId())
+            .orElseThrow(() -> new IllegalStateException(
+                "plot row missing for booking " + lockedBooking.getId() + " - plot_id has an FK constraint"));
+        // Checked here (not left to SaleService.recordConfirmedBooking's identical guard) so the
+        // failure is the booking-flavoured PlotNotAvailableException (409), not a sales exception.
+        if (plot.getStatus() != PlotStatus.BOOKED) {
+            throw new PlotNotAvailableException(plot.getId());
+        }
+
+        // Flips the plot BOOKED -> SOLD and sets sale.booking_id itself.
+        SaleResponse sale = saleService.recordConfirmedBooking(
+            lockedBooking.getId(), lockedBooking.getAssociateId(), lockedBooking.getBuyerName(),
+            lockedBooking.getBuyerPhone(), lockedBooking.getTotalAmount(), plot);
+
+        Instant now = clock.instant();
+        lockedBooking.setStatus(BookingStatus.CONFIRMED);
+        lockedBooking.setConfirmedAt(now);
+        lockedBooking.setSaleId(sale.id());
+        plotBookingRepository.save(lockedBooking);
+
+        bookingEventRepository.save(BookingEvent.of(lockedBooking.getId(), BookingEventType.CONFIRMED,
+            actorId, "sale " + sale.id() + ", amount " + lockedBooking.getTotalAmount().toPlainString(), now));
     }
 
     // Self-scoped only, unlike Sales' getMySales -- the data visibility matrix's Plot/project

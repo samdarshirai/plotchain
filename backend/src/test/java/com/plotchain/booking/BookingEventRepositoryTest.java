@@ -90,4 +90,23 @@ class BookingEventRepositoryTest {
             "SELECT type FROM booking_event WHERE id = ?", String.class, events.get(0).getId()))
             .isEqualTo("PAID");
     }
+
+    // DB-enum-CHECK lesson: every Java enum value must be accepted by chk_booking_event_type (V41).
+    // A new BookingEventType added later without a migration fails here, not in production.
+    @Test
+    void everyBookingEventTypeIsAcceptedByTheDatabaseCheckConstraint() {
+        PlotBooking b = persistBooking();
+        Instant t0 = Instant.parse("2026-06-15T10:00:00Z");
+        int i = 0;
+        for (BookingEventType type : BookingEventType.values()) {
+            BookingEvent saved = bookingEventRepository.saveAndFlush(
+                BookingEvent.of(b.getId(), type, b.getAssociateId(), "detail " + type, t0.plusSeconds(i++)));
+            assertThat(jdbc.queryForObject(
+                "SELECT type FROM booking_event WHERE id = ?", String.class, saved.getId()))
+                .isEqualTo(type.name());
+        }
+        assertThat(bookingEventRepository.findByBookingIdOrderByCreatedAtAsc(b.getId()))
+            .extracting(BookingEvent::getType)
+            .containsExactly(BookingEventType.values());
+    }
 }
