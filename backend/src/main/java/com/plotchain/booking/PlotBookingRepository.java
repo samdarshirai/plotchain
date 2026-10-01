@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,4 +33,27 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
     // Derived query (plotId, id, status are all mapped fields). Must be called under the plot row lock.
     Optional<PlotBooking> findFirstByPlotIdAndIdNotAndStatusIn(
         UUID plotId, UUID excludedBookingId, Collection<BookingStatus> statuses);
+
+    // Admin register (plot-booking unit 8). Null-safe optional filters, same JPQL pattern as
+    // EPinRepository.search. project_id lives on plot, so projectId is an EXISTS (no join => no
+    // duplicate rows); overdue is EXISTS too, restricted to ACTIVE bookings (Resolved decision #5).
+    // `today` is always non-null; `overdueOnly` is a primitive so no null-typed boolean binding.
+    // Sort comes from the Pageable (booked_at DESC, id DESC); the count query is derived from this one.
+    @Query("""
+        SELECT b FROM PlotBooking b
+        WHERE (:status IS NULL OR b.status = :status)
+        AND (:associateId IS NULL OR b.associateId = :associateId)
+        AND (:plotId IS NULL OR b.plotId = :plotId)
+        AND (:projectId IS NULL OR EXISTS (SELECT 1 FROM Plot p WHERE p.id = b.plotId AND p.projectId = :projectId))
+        AND (:overdueOnly = false OR (b.status = com.plotchain.booking.BookingStatus.ACTIVE
+        """
+        + " AND " + BookingOverdue.EXISTS_OVERDUE + "))")
+    Page<PlotBooking> search(
+        @Param("status") BookingStatus status,
+        @Param("associateId") UUID associateId,
+        @Param("plotId") UUID plotId,
+        @Param("projectId") UUID projectId,
+        @Param("overdueOnly") boolean overdueOnly,
+        @Param("today") LocalDate today,
+        Pageable pageable);
 }
