@@ -17,7 +17,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. En
 | 5 | `AUTO_THRESHOLD` rule confirms the booking inside the pay call once paid% reaches the threshold | backend | 2, 4 | merged | `2026-10-01-plot-booking-unit-5-auto-threshold-confirm.md` | `397e3d5..90689fd` (merge `d90168a`) |
 | 6 | Admin cancels an `ACTIVE` booking — `POST /api/admin/bookings/{id}/cancel` | backend | 1 | merged | `2026-10-01-plot-booking-unit-6-cancel-booking.md` | `d49b9ff..ee40da4` (merge `a46f1f4`) |
 | 7 | Admin transfers an `ACTIVE` booking to another associate — `POST /api/admin/bookings/{id}/transfer` | backend | 1 | merged | `2026-10-01-plot-booking-unit-7-transfer-booking.md` | `4c533df..e946dc5` (merge `2a92070`) |
-| 8 | Admin views a paged, filterable booking register — `GET /api/admin/bookings` | backend | 1 | planned | `2026-10-01-plot-booking-unit-8-admin-booking-register.md` | — |
+| 8 | Admin views a paged, filterable booking register — `GET /api/admin/bookings` | backend | 1 | merged | `2026-10-01-plot-booking-unit-8-admin-booking-register.md` | `099b955..c1f4f16` (merge `c010443`) |
 | 9 | Admin views a paged overdue EMI report — `GET /api/admin/emi-reports/overdue` | backend | 1 | planned | `2026-10-01-plot-booking-unit-9-overdue-emi-report.md` | — |
 | 10 | Any authenticated user reads a project's plot grid — `GET /api/projects/{id}/plots/grid` | backend | none | pending | — | — |
 | 11 | Admin "Projects & Plots" screen — project list, colour-coded plot grid, plot create/edit, "Book" action | screen | 1, 10 | pending | — | — |
@@ -243,6 +243,12 @@ Resolutions: (1) `RecordPaymentRequest` gains `amount`, 400 on mismatch; (2) can
 - Transfer takes only the booking lock (never the plot), so it cannot deadlock with confirm/cancel (booking -> plot). Target must be `ACTIVE` (`InvalidTransferTargetException` -> 400, deliberately not `AssociateNotActiveException`, which `EPinExceptionHandler` maps to 409).
 - Operational note: the target associate row is not locked, so a suspension landing between the status check and commit slips through (same window as `EPinService`). Target role is not restricted to `ASSOCIATE`.
 - The plain "transfer waits for the lock" test is not discriminating on H2 (the unlocked UPDATE blocks anyway); the lock is proven by the holder-flips-to-`CANCELLED` variant and the transfer-vs-confirm/cancel races. The transfer-vs-pay race is a smoke test only (different tables).
+
+**Unit 8 notes (merged 2026-10-01) — for unit 9's implementer:**
+- `BookingOverdue` holds two JPQL fragments (alias contract `b`, `i`, `:today`): `INSTALLMENT_CONDITION` (PENDING and `dueDate < :today`) and `EXISTS_OVERDUE`. For unit 9's grouped count/sum/min, join `EmiInstallment i` to `PlotBooking b` and reuse `INSTALLMENT_CONDITION`. Do NOT combine it with `EXISTS_OVERDUE` in one query (both use alias `i`, so they shadow). Neither fragment includes the `ACTIVE` restriction (it lives in `PlotBookingRepository.search`), so unit 9 must add its own `b.status = ACTIVE`.
+- The register's `@Query` closes a text block mid-expression and concatenates (`ACTIVE\n` + `" AND " + EXISTS_OVERDUE`); an earlier `ANDEXISTS` token bug came from that, so keep spaces explicit in any similar concatenation.
+- `GET /api/admin/bookings` has an explicit ADMIN matcher in `SecurityConfig` (placed after the POST matcher). Unit 9 needs its own matcher for `GET /api/admin/emi-reports/overdue`.
+- Null-UUID/enum parameter binding in the register query is proven on H2 only (same shape as `EPinRepository.search`). The register sorts `booked_at` DESC then `id` DESC; `id DESC` is only a stable tiebreak (UUID order differs between H2 and Postgres). Size is clamped to [1,100] (default 20); unknown `projectId`/`plotId`/`associateId` returns an empty page, not 404.
 
 ## Excluded — not a unit
 
