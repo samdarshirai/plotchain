@@ -16,50 +16,80 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
   providers: [DatePipe],
   template: `
     <div class="epins">
-      <h1 class="epins__title">{{ 'epins.title' | translate }}</h1>
-      <p class="epins__subtitle">{{ 'epins.subtitle' | translate }}</p>
+      <div class="epins__main">
+        <header class="epins__header">
+          <h1 class="epins__title">{{ 'epins.title' | translate }}</h1>
+          <p class="epins__subtitle">{{ 'epins.subtitle' | translate }}</p>
+        </header>
 
-      <div class="epins__summary">
-        <div class="card"><strong>{{ availableCount }}</strong> {{ 'epins.summaryAvailable' | translate }}</div>
-        <div class="card"><strong>{{ usedCount }}</strong> {{ 'epins.summaryUsed' | translate }}</div>
-        <div class="card"><strong>{{ expiringSoonCount }}</strong> {{ 'epins.summaryExpiring' | translate }}</div>
-      </div>
-
-      <app-inline-banner *ngIf="loadError" tone="danger">{{ 'epins.loadError' | translate }}</app-inline-banner>
-
-      <div class="epins__tabs">
-        <button type="button" [class.epins__tab--active]="tab === 'available'" (click)="tab = 'available'">{{ 'epins.tabAvailable' | translate }}</button>
-        <button type="button" [class.epins__tab--active]="tab === 'history'" (click)="tab = 'history'">{{ 'epins.tabHistory' | translate }}</button>
-      </div>
-
-      <div class="card epins__action" *ngIf="actionPin">
-        <h2>{{ (action === 'activate' ? 'epins.activateTitle' : 'epins.transferTitle') | translate }}</h2>
-        <p class="epins__code">{{ actionPin.code }}</p>
-        <label>{{ 'epins.userIdLabel' | translate }}
-          <input type="text" name="userId" [(ngModel)]="userIdInput" />
-        </label>
-        <app-inline-banner *ngIf="actionError" tone="danger">{{ actionError | translate }}</app-inline-banner>
-        <button type="button" class="brand-button" (click)="confirmAction()">{{ 'epins.confirm' | translate }}</button>
-        <button type="button" class="brand-button brand-button--secondary" (click)="cancelAction()">{{ 'epins.cancel' | translate }}</button>
-      </div>
-
-      <div *ngIf="tab === 'available'" class="card">
-        <p *ngIf="!available.length">{{ 'epins.emptyAvailable' | translate }}</p>
-        <div class="epins__available-row" *ngFor="let p of available">
-          <span class="epins__code">{{ p.code }}</span>
-          <span class="epins__expiry" *ngIf="p.expiresAt">{{ 'epins.expiresOn' | translate: { date: datePipe.transform(p.expiresAt, 'mediumDate') } }}</span>
-          <button type="button" (click)="startAction(p, 'activate')">{{ 'epins.activateAction' | translate }}</button>
-          <button type="button" (click)="startAction(p, 'transfer')">{{ 'epins.transferAction' | translate }}</button>
+        <div class="epins__summary">
+          <span><strong>{{ availableCount }}</strong> {{ 'epins.summaryAvailable' | translate }}</span>
+          <span><strong>{{ usedCount }}</strong> {{ 'epins.summaryUsed' | translate }}</span>
+          <span class="epins__summary--warn"><strong>{{ expiringSoonCount }}</strong> {{ 'epins.summaryExpiring' | translate }}</span>
         </div>
+
+        <app-inline-banner *ngIf="loadError" tone="danger">{{ 'epins.loadError' | translate }}</app-inline-banner>
+
+        <section class="epins__section">
+          <h2 class="epins__section-title">{{ 'epins.tabAvailable' | translate }}</h2>
+          <p *ngIf="!available.length" class="epins__empty">{{ 'epins.emptyAvailable' | translate }}</p>
+          <div class="epins__available-row" *ngFor="let p of available" [class.epins__available-row--selected]="p.id === selectedPin?.id"
+               role="radio" tabindex="0" [attr.aria-checked]="p.id === selectedPin?.id"
+               (click)="select(p)" (keydown.enter)="select(p)" (keydown.space)="select(p); $event.preventDefault()">
+            <span class="epins__radio"><span class="epins__radio-dot"></span></span>
+            <span class="epins__code">{{ p.code }}</span>
+            <span class="epins__left" *ngIf="p.expiresAt">{{ 'epins.daysLeft' | translate: { count: daysLeft(p) } }}</span>
+            <span class="epins__expiry" *ngIf="p.expiresAt">{{ p.expiresAt | date: 'mediumDate' }}</span>
+          </div>
+        </section>
+
+        <section class="epins__section">
+          <h2 class="epins__section-title">{{ 'epins.recentActivity' | translate }}</h2>
+          <p *ngIf="!history.length" class="epins__empty">{{ 'epins.emptyHistory' | translate }}</p>
+          <div class="epins__history-row" *ngFor="let p of history">
+            <span class="epins__history-date">{{ (p.redeemedAt || p.allocatedAt || p.generatedAt) | date: 'mediumDate' }}</span>
+            <span class="epins__history-label">{{ historyLabel(p) | translate }}</span>
+            <span class="epins__code">{{ p.code }}</span>
+          </div>
+        </section>
       </div>
 
-      <div *ngIf="tab === 'history'" class="card">
-        <p *ngIf="!history.length">{{ 'epins.emptyHistory' | translate }}</p>
-        <div class="epins__history-row" *ngFor="let p of history">
-          <span class="epins__code">{{ p.code }}</span>
-          <span>{{ historyLabel(p) | translate }}</span>
+      <aside class="epins__detail" *ngIf="selectedPin as sel">
+        <div class="epins__seal">
+          <div class="epins__seal-label">── {{ 'epins.selectedPin' | translate }} ──</div>
+          <div class="epins__seal-code">
+            <span class="epins__code">{{ sel.code }}</span>
+            <button type="button" class="epins__copy" (click)="copy(sel.code)" [attr.aria-label]="'epins.copy' | translate">
+              <span class="material-symbols-outlined">{{ copied === sel.code ? 'check' : 'content_copy' }}</span>
+            </button>
+          </div>
+          <div class="epins__seal-meta" *ngIf="sel.expiresAt">
+            <span class="epins__left">{{ 'epins.expiresOn' | translate: { date: datePipe.transform(sel.expiresAt, 'mediumDate') } }}</span>
+          </div>
         </div>
-      </div>
+
+        <div class="epins__segment" role="tablist">
+          <button type="button" role="tab" class="epins__segment-btn" [class.epins__segment-btn--active]="action === 'activate'"
+                  (click)="setAction('activate')">
+            <span class="material-symbols-outlined">person_add</span>{{ 'epins.activateAction' | translate }}
+          </button>
+          <button type="button" role="tab" class="epins__segment-btn" [class.epins__segment-btn--active]="action === 'transfer'"
+                  (click)="setAction('transfer')">
+            <span class="material-symbols-outlined">swap_horiz</span>{{ 'epins.transferAction' | translate }}
+          </button>
+        </div>
+
+        <div class="epins__form">
+          <label>{{ 'epins.userIdLabel' | translate }}
+            <input type="text" name="userId" [(ngModel)]="userIdInput" />
+          </label>
+          <p class="epins__hint">{{ (action === 'activate' ? 'epins.activateHint' : 'epins.transferHint') | translate }}</p>
+          <app-inline-banner *ngIf="actionError" tone="danger">{{ actionError | translate }}</app-inline-banner>
+          <button type="button" class="brand-button" (click)="confirmAction()">
+            {{ (action === 'activate' ? 'epins.activateAction' : 'epins.transferConfirm') | translate }}
+          </button>
+        </div>
+      </aside>
     </div>
   `
 })
@@ -70,19 +100,25 @@ export class EPinsComponent implements OnInit {
   all: EPin[] = [];
   meId: string | null = null;
   loadError = false;
-  tab: 'available' | 'history' = 'available';
+  copied: string | null = null;
 
-  actionPin: EPin | null = null;
+  private selectedId: string | null = null;
   action: 'activate' | 'transfer' = 'activate';
   userIdInput = '';
   actionError = '';
 
   private loadSeq = 0;
+  private copyTimer?: ReturnType<typeof setTimeout>;
 
   // Until the caller's id is known nothing is actionable. A pin the caller transferred away comes
   // back ALLOCATED to someone else: History only, never Activate/Transfer.
   private isAvailable(p: EPin): boolean {
     return this.meId !== null && p.status === 'ALLOCATED' && !p.expired && p.allocatedTo === this.meId;
+  }
+  // Explicit pick if still available, otherwise the first available pin (none -> no detail panel).
+  get selectedPin(): EPin | null {
+    const a = this.available;
+    return a.find(p => p.id === this.selectedId) ?? a[0] ?? null;
   }
   get available(): EPin[] { return this.all.filter(p => this.isAvailable(p)); }
   get history(): EPin[] { return this.all.filter(p => !this.isAvailable(p)); }
@@ -113,17 +149,34 @@ export class EPinsComponent implements OnInit {
     });
   }
 
+  daysLeft(p: EPin): number {
+    return Math.max(0, Math.ceil((new Date(p.expiresAt as string).getTime() - Date.now()) / 86_400_000));
+  }
+
+  select(pin: EPin): void { this.startAction(pin, this.action); }
+
+  setAction(action: 'activate' | 'transfer'): void {
+    if (this.selectedPin) this.startAction(this.selectedPin, action);
+  }
+
   startAction(pin: EPin, action: 'activate' | 'transfer'): void {
-    this.actionPin = pin;
+    this.selectedId = pin.id;
     this.action = action;
     this.userIdInput = '';
     this.actionError = '';
   }
 
-  cancelAction(): void { this.actionPin = null; }
+  copy(code: string): void {
+    // writeText rejects asynchronously (unfocused document, denied permission): swallow, the check icon is cosmetic.
+    try { navigator.clipboard.writeText(code).catch(() => undefined); } catch { /* clipboard unavailable */ }
+    this.copied = code;
+    clearTimeout(this.copyTimer);
+    this.copyTimer = setTimeout(() => (this.copied = null), 1400);
+  }
 
   confirmAction(): void {
-    if (!this.actionPin) return;
+    const pin = this.selectedPin;
+    if (!pin) return;
     const userId = this.userIdInput.trim();
     if (!userId) {
       this.actionError = 'epins.errorUserIdRequired';
@@ -131,10 +184,10 @@ export class EPinsComponent implements OnInit {
     }
     this.actionError = '';
     const call = this.action === 'activate'
-      ? this.service.redeem(this.actionPin.id, userId)
-      : this.service.transfer(this.actionPin.id, userId);
+      ? this.service.redeem(pin.id, userId)
+      : this.service.transfer(pin.id, userId);
     call.subscribe({
-      next: () => { this.actionPin = null; this.load(); },
+      next: () => { this.userIdInput = ''; this.load(); },
       error: (e: HttpErrorResponse) => {
         this.actionError = e.status === 404 ? 'epins.errorNotFound'
           : e.status === 409 ? 'epins.errorConflict'

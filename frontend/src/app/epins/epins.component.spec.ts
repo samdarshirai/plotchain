@@ -9,8 +9,8 @@ describe('EPinsComponent', () => {
   const soon = new Date(Date.now() + 3 * 86_400_000).toISOString();
 
   const pin = (over: Record<string, unknown> = {}) => ({
-    id: 'p1', code: 'CODE-1', batchId: 'b', status: 'ALLOCATED', generatedBy: 'g', generatedAt: 'x', expiresAt: null,
-    allocatedTo: 'me', allocatedBy: 'g', allocatedAt: 'x', redeemedTo: null, redeemedBy: null, redeemedAt: null,
+    id: 'p1', code: 'CODE-1', batchId: 'b', status: 'ALLOCATED', generatedBy: 'g', generatedAt: '2026-10-01T00:00:00Z', expiresAt: null,
+    allocatedTo: 'me', allocatedBy: 'g', allocatedAt: '2026-10-01T00:00:00Z', redeemedTo: null, redeemedBy: null, redeemedAt: null,
     redemptionType: null, linkedEntityId: null, blockedBy: null, blockedAt: null, blockReason: null, expired: false, ...over
   });
 
@@ -56,9 +56,10 @@ describe('EPinsComponent', () => {
     const req = httpMock.expectOne('/api/associates/me/epins/p1/redeem');
     expect(req.request.body).toEqual({ userId: 'VP00042' });
     req.flush(pin({ status: 'USED' }));
-    expect(c.actionPin).toBeNull();
+    expect(c.userIdInput).toBe('');
     flush([]);
     expect(c.all.length).toBe(0);
+    expect(c.selectedPin).toBeNull();
   });
 
   it('transfers by userId then closes the panel and reloads', () => {
@@ -70,7 +71,7 @@ describe('EPinsComponent', () => {
     const req = httpMock.expectOne('/api/associates/me/epins/p1/transfer');
     expect(req.request.body).toEqual({ toUserId: 'VP00050' });
     req.flush(pin({ allocatedTo: 'other' }));
-    expect(c.actionPin).toBeNull();
+    expect(c.userIdInput).toBe('');
     flush([]);
   });
 
@@ -83,7 +84,7 @@ describe('EPinsComponent', () => {
     httpMock.expectOne('/api/associates/me/epins/p1/transfer')
       .flush({ error: 'x' }, { status: 404, statusText: 'Not Found' });
     expect(c.actionError).toBe('epins.errorNotFound');
-    expect(c.actionPin).not.toBeNull();
+    expect(c.selectedPin).not.toBeNull();
 
     c.confirmAction();
     httpMock.expectOne('/api/associates/me/epins/p1/transfer')
@@ -110,7 +111,7 @@ describe('EPinsComponent', () => {
     c.startAction(pin({ id: 'p9' }) as never, 'transfer');
     expect(c.userIdInput).toBe('');
     expect(c.actionError).toBe('');
-    expect(c.actionPin?.id).toBe('p9');
+    expect(c.selectedPin?.id).toBe('p1'); // p9 is not in the loaded list, falls back to first available
   });
 
   it('ignores a superseded list response', () => {
@@ -131,10 +132,9 @@ describe('EPinsComponent', () => {
     expect(c.history.map(p => p.code)).toEqual(['GONE']);
     expect(c.historyLabel(c.history[0])).toBe('epins.statusTransferred');
     expect(fixture.nativeElement.querySelectorAll('.epins__available-row').length).toBe(0);
-    c.tab = 'history';
-    fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('epins.statusTransferred');
-    expect(fixture.nativeElement.querySelectorAll('button[type=button]').length).toBe(2); // tabs only
+    expect(fixture.nativeElement.querySelector('.epins__detail')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('button[type=button]').length).toBe(0);
   });
 
   it('treats nothing as available until the caller id is known', () => {
@@ -144,5 +144,49 @@ describe('EPinsComponent', () => {
     expect(c.available.length).toBe(0);
     httpMock.expectOne('/api/associates/me/profile').flush({ id: 'me' });
     expect(c.available.map(p => p.code)).toEqual(['CODE-1']);
+  });
+
+  it('selects the first available pin by default and switches on click', () => {
+    flush([pin({ id: 'p1', code: 'A' }), pin({ id: 'p2', code: 'B' })]);
+    const c = fixture.componentInstance;
+    expect(c.selectedPin?.id).toBe('p1');
+    const rows = fixture.nativeElement.querySelectorAll('.epins__available-row');
+    rows[1].click();
+    fixture.detectChanges();
+    expect(c.selectedPin?.id).toBe('p2');
+    expect(fixture.nativeElement.querySelector('.epins__seal-code').textContent).toContain('B');
+  });
+
+  it('switching action via the segment resets the form and posts to the matching endpoint', () => {
+    flush([pin()]);
+    const c = fixture.componentInstance;
+    c.userIdInput = 'VP1';
+    const tabs = fixture.nativeElement.querySelectorAll('.epins__segment-btn');
+    tabs[1].click();
+    fixture.detectChanges();
+    expect(c.action).toBe('transfer');
+    expect(c.userIdInput).toBe('');
+    c.userIdInput = 'VP2';
+    c.confirmAction();
+    httpMock.expectOne('/api/associates/me/epins/p1/transfer').flush(pin({ allocatedTo: 'other' }));
+    flush([]);
+  });
+
+  it('shows the empty state and no detail panel with no available pins', () => {
+    flush([]);
+    expect(fixture.nativeElement.querySelector('.epins__detail')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('epins.emptyAvailable');
+  });
+
+  it('copy shows a check for the copied code then resets', () => {
+    jasmine.clock().install();
+    try {
+      flush([pin()]);
+      const c = fixture.componentInstance;
+      c.copy('CODE-1');
+      expect(c.copied).toBe('CODE-1');
+      jasmine.clock().tick(1500);
+      expect(c.copied).toBeNull();
+    } finally { jasmine.clock().uninstall(); }
   });
 });
