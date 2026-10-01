@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -693,6 +694,7 @@ class EPinServiceTest {
         assertThatThrownBy(() -> epinService.redeemOwn(pin.getId(), "VP00007", caller)).isInstanceOf(AssociateNotPendingException.class);
 
         assertThat(pin.getStatus()).isEqualTo(EPinStatus.ALLOCATED);
+        verify(epinRepository, never()).save(any());
     }
 
     @Test
@@ -704,10 +706,14 @@ class EPinServiceTest {
         me.setUserId("VP00001");
         me.setStatus(AssociateStatus.PENDING);
         when(associateRepository.findByUserId("VP00001")).thenReturn(Optional.of(me));
-        // No findSelfAndDownline stub: the explicit self check short-circuits before it (strict stubs).
+        // lenient: the explicit self check short-circuits before this is read. The stub models
+        // production (self IS in the list) so removing the self check would make this test fail.
+        lenient().when(associateRepository.findSelfAndDownline(caller)).thenReturn(List.of(caller));
 
         assertThatThrownBy(() -> epinService.redeemOwn(pin.getId(), "VP00001", caller))
             .isInstanceOf(AssociateNotFoundException.class);
+
+        verify(epinRepository, never()).save(any());
     }
 
     @Test
