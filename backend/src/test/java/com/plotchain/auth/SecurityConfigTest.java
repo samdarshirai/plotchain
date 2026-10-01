@@ -609,6 +609,26 @@ class SecurityConfigTest {
             .andExpect(status().isUnauthorized());
     }
 
+    // plot-booking unit 7 (Decision 12): POST .../transfer rides the blanket ADMIN write rule; no
+    // SecurityConfig edit. Random booking id -> ADMIN reaches the real service and 404s; other roles 403.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminBookingTransferIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(post("/api/admin/bookings/{id}/transfer", UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(role))
+                .contentType("application/json")
+                .content("{\"associateId\":\"" + UUID.randomUUID() + "\"}"))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+    }
+
+    @Test
+    void adminBookingTransferIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(post("/api/admin/bookings/{id}/transfer", UUID.randomUUID())
+                .contentType("application/json")
+                .content("{\"associateId\":\"" + UUID.randomUUID() + "\"}"))
+            .andExpect(status().isUnauthorized());
+    }
+
     // epin-domain unit 1 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
     // "POST /api/admin/epins, ADMIN-only", Decision 12): same target-role-model pattern as
     // adminSalesRecordIsReachableOnlyForAdminAndForbiddenForEveryOtherRole and
