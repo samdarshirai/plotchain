@@ -10,10 +10,13 @@ import com.plotchain.projects.PlotNotFoundException;
 import com.plotchain.projects.PlotRepository;
 import com.plotchain.projects.PlotStatus;
 import com.plotchain.projects.PlotType;
+import com.plotchain.sales.SaleResponse;
+import com.plotchain.sales.SaleService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -33,7 +36,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -46,6 +51,7 @@ class BookingServiceTest {
     @Mock PlotBookingRepository plotBookingRepository;
     @Mock EmiInstallmentRepository emiInstallmentRepository;
     @Mock BookingEventRepository bookingEventRepository;
+    @Mock SaleService saleService;
 
     BookingService bookingService;
 
@@ -58,7 +64,7 @@ class BookingServiceTest {
     void setUp() {
         bookingService = new BookingService(
             plotRepository, associateRepository, bookingEmiConfigRepository,
-            plotBookingRepository, emiInstallmentRepository, bookingEventRepository, clock);
+            plotBookingRepository, emiInstallmentRepository, bookingEventRepository, saleService, clock);
     }
 
     private PlotBooking bookingWithBuyer() {
@@ -611,5 +617,115 @@ class BookingServiceTest {
         assertThat(i1.getRecordedBy()).isNull();
         verify(emiInstallmentRepository, never()).save(any());
         verify(bookingEventRepository, never()).save(any());
+    }
+
+    private Plot plotWithStatus(PlotStatus status) {
+        return new Plot(PLOT_ID, UUID.randomUUID(), "A-101", PlotType.NORMAL,
+            new BigDecimal("1200.00"), new BigDecimal("500.00"), new BigDecimal("600000.00"), status);
+    }
+
+    private SaleResponse saleResponse(UUID saleId) {
+        return new SaleResponse(saleId, PLOT_ID, ASSOCIATE_ID, "Jane Buyer", null, null,
+            new BigDecimal("600000.00"), UUID.randomUUID(), "L", "RECORDED", null, NOW,
+            "A-101", "Green Valley", "u1", "Test Associate", "note");
+    }
+
+    // Booking locked + ACTIVE (bookingWithBuyer defaults status ACTIVE), plot locked with given status.
+    private PlotBooking lockedBookingAndPlot(PlotStatus plotStatus, UUID saleId) {
+        PlotBooking booking = bookingWithBuyer();
+        when(plotBookingRepository.findByIdForUpdate(booking.getId())).thenReturn(Optional.of(booking));
+        Plot plot = plotWithStatus(plotStatus);
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plot));
+        if (saleId != null) {
+            when(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId()))
+                .thenReturn(List.of());
+            when(saleService.recordConfirmedBooking(any(), any(), any(), any(), any(), any()))
+                .thenReturn(saleResponse(saleId));
+        }
+        return booking;
+    }
+
+    @Test
+    void confirmBookingCreatesSaleFromBookingFieldsStampsBookingAndWritesConfirmedEvent() {
+        UUID saleId = UUID.randomUUID();
+        PlotBooking booking = lockedBookingAndPlot(PlotStatus.BOOKED, saleId);
+        booking.setBuyerPhone("999");
+
+        BookingResponse response = bookingService.confirmBooking(booking.getId(), ACTOR_ID);
+
+        verify(saleService).recordConfirmedBooking(eq(booking.getId()), eq(ASSOCIATE_ID),
+            eq("Jane Buyer"), eq("999"), eq(new BigDecimal("600000.00")), any(Plot.class));
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(booking.getConfirmedAt()).isEqualTo(NOW);
+        assertThat(booking.getSaleId()).isEqualTo(saleId);
+        verify(plotBookingRepository).save(booking);
+
+        ArgumentCaptor<BookingEvent> event = ArgumentCaptor.forClass(BookingEvent.class);
+        verify(bookingEventRepository).save(event.capture());
+        assertThat(event.getValue().getType()).isEqualTo(BookingEventType.CONFIRMED);
+        assertThat(event.getValue().getBookingId()).isEqualTo(booking.getId());
+        assertThat(event.getValue().getActorId()).isEqualTo(ACTOR_ID);
+        assertThat(event.getValue().getCreatedAt()).isEqualTo(NOW);
+        assertThat(event.getValue().getDetail()).contains(saleId.toString()).contains("600000");
+        assertThat(response.status()).isEqualTo(BookingStatus.CONFIRMED);
+    }
+
+    @Test
+    void confirmBookingLocksTheBookingBeforeThePlotAndNeverUsesAnUnlockedFind() {
+        PlotBooking booking = lockedBookingAndPlot(PlotStatus.BOOKED, UUID.randomUUID());
+
+        bookingService.confirmBooking(booking.getId(), ACTOR_ID);
+
+        InOrder order = inOrder(plotBookingRepository, plotRepository);
+        order.verify(plotBookingRepository).findByIdForUpdate(booking.getId());
+        order.verify(plotRepository).findByIdForUpdate(PLOT_ID);
+        verify(plotRepository, never()).findById(any());
+    }
+
+    @Test
+    void confirmBookingOnUnknownBookingIs404AndTouchesNothingElse() {
+        UUID id = UUID.randomUUID();
+        when(plotBookingRepository.findByIdForUpdate(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> bookingService.confirmBooking(id, ACTOR_ID))
+            .isInstanceOf(BookingNotFoundException.class);
+        verifyNoInteractions(plotRepository, saleService, bookingEventRepository);
+    }
+
+    @Test
+    void confirmBookingOnNonActiveBookingIs409BeforeLockingThePlot() {
+        for (BookingStatus status : List.of(BookingStatus.CONFIRMED, BookingStatus.CANCELLED)) {
+            PlotBooking booking = bookingWithBuyer();
+            booking.setStatus(status);
+            when(plotBookingRepository.findByIdForUpdate(booking.getId())).thenReturn(Optional.of(booking));
+
+            assertThatThrownBy(() -> bookingService.confirmBooking(booking.getId(), ACTOR_ID))
+                .isInstanceOf(BookingNotActiveException.class);
+            assertThat(booking.getStatus()).isEqualTo(status);
+        }
+        verifyNoInteractions(plotRepository, saleService, bookingEventRepository);
+    }
+
+    @Test
+    void confirmBookingWithANonBookedPlotThrowsBookingPlotNotAvailableAndChangesNothing() {
+        for (PlotStatus status : List.of(PlotStatus.AVAILABLE, PlotStatus.SOLD)) {
+            PlotBooking booking = lockedBookingAndPlot(status, null);
+
+            assertThatThrownBy(() -> bookingService.confirmBooking(booking.getId(), ACTOR_ID))
+                .isInstanceOf(PlotNotAvailableException.class);   // booking.PlotNotAvailableException -> 409
+            assertThat(booking.getStatus()).isEqualTo(BookingStatus.ACTIVE);
+            assertThat(booking.getSaleId()).isNull();
+        }
+        verifyNoInteractions(saleService, bookingEventRepository);
+    }
+
+    // Decision 1: manual confirm is never gated by confirmRule/threshold, so it never reads the config.
+    @Test
+    void confirmBookingNeverConsultsTheEmiConfigSoItIsAllowedUnderBothRules() {
+        PlotBooking booking = lockedBookingAndPlot(PlotStatus.BOOKED, UUID.randomUUID());
+
+        bookingService.confirmBooking(booking.getId(), ACTOR_ID);
+
+        verifyNoInteractions(bookingEmiConfigRepository);
     }
 }
