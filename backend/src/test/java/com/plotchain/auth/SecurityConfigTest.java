@@ -629,6 +629,30 @@ class SecurityConfigTest {
             .andExpect(status().isUnauthorized());
     }
 
+    // plot-booking unit 8 (Decision 12): GET /api/admin/bookings needs its OWN ADMIN matcher --
+    // SecurityConfig has no blanket GET /api/admin/**, so without it any authenticated associate
+    // would fall through to anyRequest().authenticated() and read every booking. ADMIN reaches the
+    // real (H2, unmocked) register query and gets 200; every other role is 403 at the filter.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminBookingRegisterIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/admin/bookings")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+    }
+
+    @Test
+    void adminBookingRegisterIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/admin/bookings")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void adminBookingRegisterWithOverdueFilterIsAlsoAdminOnly() throws Exception {
+        mockMvc.perform(get("/api/admin/bookings").param("overdue", "true")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
     // epin-domain unit 1 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
     // "POST /api/admin/epins, ADMIN-only", Decision 12): same target-role-model pattern as
     // adminSalesRecordIsReachableOnlyForAdminAndForbiddenForEveryOtherRole and

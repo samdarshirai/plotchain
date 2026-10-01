@@ -235,6 +235,11 @@ public class SecurityConfig {
                 // reason those Sales matchers document.
                 .requestMatchers(HttpMethod.POST, "/api/admin/bookings")
                     .hasAuthority("ADMIN")
+                // Admin booking register (plot-booking unit 8, Decision 12): GET needs its own
+                // matcher -- there is no blanket GET /api/admin/** rule, so without this an
+                // associate token would fall through to anyRequest().authenticated().
+                .requestMatchers(HttpMethod.GET, "/api/admin/bookings")
+                    .hasAuthority("ADMIN")
                 // Generate a batch of e-PINs: ADMIN-only, per epin-domain unit 1
                 // (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
                 // Decision 12: "POST/GET /api/admin/epins* require hasAuthority("ADMIN")...
