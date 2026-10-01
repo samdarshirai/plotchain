@@ -98,6 +98,16 @@ public class SaleService {
         Project project = projectRepository.findById(request.projectId())
             .orElseThrow(() -> new ProjectNotFoundException(request.projectId()));
 
+        return persistSaleAndIncome(plot, associate, project,
+            request.buyerName(), request.buyerPhone(), request.buyerEmail(),
+            request.note(), request.price(), null);
+    }
+
+    // Shared core of recordSale and recordConfirmedBooking. plot may be null (plotless sale).
+    // Runs inside the caller's transaction.
+    private SaleResponse persistSaleAndIncome(Plot plot, Associate associate, Project project,
+            String buyerName, String buyerPhone, String buyerEmail, String note,
+            BigDecimal amount, UUID bookingId) {
         // Flow step 4: flip Plot -> SOLD (Decision 1) -- only when a Plot is linked.
         if (plot != null) {
             plot.setStatus(PlotStatus.SOLD);
@@ -117,11 +127,12 @@ public class SaleService {
         sale.setPlotId(plot != null ? plot.getId() : null);
         sale.setProjectId(project.getId());
         sale.setAssociateId(associate.getId());
-        sale.setBuyerName(request.buyerName());
-        sale.setBuyerPhone(request.buyerPhone());
-        sale.setBuyerEmail(request.buyerEmail());
-        sale.setNote(request.note());
-        sale.setAmount(request.price());
+        sale.setBuyerName(buyerName);
+        sale.setBuyerPhone(buyerPhone);
+        sale.setBuyerEmail(buyerEmail);
+        sale.setNote(note);
+        sale.setAmount(amount);
+        sale.setBookingId(bookingId);
         sale.setCycleId(cycle.getId());
         sale.setLegCredited(associate.getPosition());
         sale.setStatus(SaleStatus.RECORDED);
