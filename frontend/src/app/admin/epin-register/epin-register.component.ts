@@ -10,6 +10,8 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
 import { AllocateResult, EPin, EPinEvent, EPinFilters, EPinPage, EPinStatus, RedemptionType } from './epin.model';
 
 const PAGE_SIZE = 20;
+const MAX_COUNT = 2000;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Panel =
   | { kind: 'generate' }
@@ -84,7 +86,7 @@ type Panel =
             <h2>{{ 'admin.epinRegister.allocateAction' | translate }}</h2>
             <label>{{ 'admin.epinRegister.associateLabel' | translate }}
               <select name="alloc-assoc" [(ngModel)]="allocateAssociateId" required>
-                <option value="">—</option>
+                <option value="">{{ 'admin.epinRegister.selectPlaceholder' | translate }}</option>
                 <option *ngFor="let a of associates" [value]="a.id">{{ a.userId }} — {{ a.name }}</option>
               </select>
             </label>
@@ -103,7 +105,7 @@ type Panel =
             <h2>{{ 'admin.epinRegister.redeemAction' | translate }}</h2>
             <label>{{ 'admin.epinRegister.associateLabel' | translate }}
               <select name="redeem-assoc" [(ngModel)]="redeemAssociateId" required>
-                <option value="">—</option>
+                <option value="">{{ 'admin.epinRegister.selectPlaceholder' | translate }}</option>
                 <option *ngFor="let a of associates" [value]="a.id">{{ a.userId }} — {{ a.name }}</option>
               </select>
             </label>
@@ -130,7 +132,7 @@ type Panel =
             <h2>{{ 'admin.epinRegister.eventsTitle' | translate }}</h2>
             <ul class="epin-register__events">
               <li *ngFor="let e of events">
-                {{ datePipe.transform(e.at, 'medium') }} — {{ e.eventType }}
+                {{ datePipe.transform(e.at, 'medium') }} — {{ 'admin.epinRegister.event.' + e.eventType | translate }}
                 <span *ngIf="e.note">({{ e.note }})</span>
               </li>
             </ul>
@@ -141,6 +143,7 @@ type Panel =
 
       <div *ngIf="generatedCodes.length" class="epin-register__codes card">
         <p>{{ 'admin.epinRegister.codesShownOnce' | translate }}</p>
+        <p class="epin-register__batch-id">{{ 'admin.epinRegister.batchIdLabel' | translate }}: {{ generatedBatchId }}</p>
         <ul class="epin-register__code-list">
           <li *ngFor="let c of generatedCodes" class="epin-register__code">{{ c }}</li>
         </ul>
@@ -168,7 +171,7 @@ type Panel =
                   {{ (p.expired ? 'admin.epinRegister.expiredChip' : 'admin.epinRegister.status.' + p.status) | translate }}
                 </span>
               </td>
-              <td>{{ p.batchId.slice(0, 8) }}</td>
+              <td [attr.title]="p.batchId">{{ p.batchId.slice(0, 8) }}</td>
               <td>{{ p.expiresAt ? datePipe.transform(p.expiresAt, 'mediumDate') : '—' }}</td>
               <td>{{ userId(p.allocatedTo) }}</td>
               <td>{{ userId(p.redeemedTo) }}</td>
@@ -214,6 +217,9 @@ export class EPinRegisterComponent implements OnInit {
   generateCount = 10;
   generateExpiresLocal = '';
   generatedCodes: string[] = [];
+  generatedBatchId = '';
+  private appliedBatchId = '';
+  private loadSeq = 0;
   allocateAssociateId = '';
   allocateCount = 1;
   allocateBatchId = '';
@@ -240,7 +246,14 @@ export class EPinRegisterComponent implements OnInit {
 
   onStatusChange(v: string): void { this.status = v; this.loadPage(0); }
   onHolderChange(v: string): void { this.holderId = v; this.loadPage(0); }
-  onBatchChange(v: string): void { this.batchId = v.trim(); this.loadPage(0); }
+  onBatchChange(v: string): void {
+    this.batchId = v;
+    const trimmed = (v ?? '').trim();
+    if (trimmed === '' || UUID_RE.test(trimmed)) {
+      this.appliedBatchId = trimmed;
+      this.loadPage(0);
+    }
+  }
   onExpiredChange(v: boolean): void { this.expiredOnly = v; this.loadPage(0); }
 
   loadPage(page: number): void {
@@ -248,11 +261,12 @@ export class EPinRegisterComponent implements OnInit {
     const filters: EPinFilters = {};
     if (this.status) filters.status = this.status as EPinStatus;
     if (this.holderId) filters.allocatedTo = this.holderId;
-    if (this.batchId) filters.batchId = this.batchId;
+    if (this.appliedBatchId) filters.batchId = this.appliedBatchId;
     if (this.expiredOnly) filters.expired = true;
+    const seq = ++this.loadSeq;
     this.service.list(filters, page, PAGE_SIZE).subscribe({
-      next: res => (this.page = res),
-      error: () => (this.loadError = true)
+      next: res => { if (seq === this.loadSeq) this.page = res; },
+      error: () => { if (seq === this.loadSeq) this.loadError = true; }
     });
   }
 
@@ -260,7 +274,15 @@ export class EPinRegisterComponent implements OnInit {
     this.panel = panel;
     this.actionError = '';
     this.generatedCodes = [];
+    this.generatedBatchId = '';
+    this.generateCount = 10;
+    this.generateExpiresLocal = '';
+    this.allocateAssociateId = '';
+    this.allocateCount = 1;
+    this.allocateBatchId = '';
     this.allocateResult = null;
+    this.redeemAssociateId = '';
+    this.redeemType = 'ACTIVATION';
     this.panelReason = '';
     if (panel.kind === 'events') {
       this.events = [];
@@ -270,11 +292,18 @@ export class EPinRegisterComponent implements OnInit {
 
   closePanel(): void { this.panel = null; }
 
+  private validCount(n: number | null): boolean {
+    return Number.isInteger(n) && (n as number) >= 1 && (n as number) <= MAX_COUNT;
+  }
+
+  private invalid(): void { this.actionError = 'admin.epinRegister.errorInvalid'; }
+
   submitGenerate(): void {
     this.actionError = '';
+    if (!this.validCount(this.generateCount)) return this.invalid();
     const expiresAt = this.generateExpiresLocal ? new Date(this.generateExpiresLocal).toISOString() : undefined;
     this.service.generate(this.generateCount, expiresAt).subscribe({
-      next: res => { this.generatedCodes = res.codes; this.loadPage(0); },
+      next: res => { this.generatedCodes = res.codes; this.generatedBatchId = res.batchId; this.loadPage(0); },
       error: e => this.fail(e)
     });
   }
@@ -285,7 +314,11 @@ export class EPinRegisterComponent implements OnInit {
 
   submitAllocate(): void {
     this.actionError = '';
-    this.service.allocate(this.allocateAssociateId, this.allocateCount, this.allocateBatchId || undefined).subscribe({
+    const batch = (this.allocateBatchId ?? '').trim();
+    if (!this.allocateAssociateId || !this.validCount(this.allocateCount) || (batch !== '' && !UUID_RE.test(batch))) {
+      return this.invalid();
+    }
+    this.service.allocate(this.allocateAssociateId, this.allocateCount, batch || undefined).subscribe({
       next: res => { this.allocateResult = res; this.loadPage(0); },
       error: e => this.fail(e)
     });
@@ -294,6 +327,7 @@ export class EPinRegisterComponent implements OnInit {
   submitRedeem(): void {
     if (this.panel?.kind !== 'redeem') return;
     this.actionError = '';
+    if (!this.redeemAssociateId) return this.invalid();
     this.service.redeem(this.panel.epin.id, this.redeemAssociateId, this.redeemType).subscribe({
       next: () => { this.closePanel(); this.loadPage(this.page?.page ?? 0); },
       error: e => this.fail(e)
@@ -303,7 +337,9 @@ export class EPinRegisterComponent implements OnInit {
   submitBlock(): void {
     if (this.panel?.kind !== 'block') return;
     this.actionError = '';
-    this.service.block(this.panel.epin.id, this.panelReason).subscribe({
+    const reason = (this.panelReason ?? '').trim();
+    if (!reason) return this.invalid();
+    this.service.block(this.panel.epin.id, reason).subscribe({
       next: () => { this.closePanel(); this.loadPage(this.page?.page ?? 0); },
       error: e => this.fail(e)
     });
