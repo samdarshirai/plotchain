@@ -107,6 +107,36 @@ class PlotBookingSchemaTest {
         assertThat(emiInstallmentRepository.findById(i.getId()).orElseThrow().getStatus()).isEqualTo(InstallmentStatus.PENDING);
     }
 
+    // Raw JDBC omitting status: proves the SQL DEFAULTs, not the Java field initializers.
+    @Test
+    void sqlDefaultsGiveActiveAndPendingWhenStatusIsOmittedFromTheInsert() {
+        UUID plotId = persistPlot(persistProject());
+        UUID associateId = persistAssociate();
+        entityManager.flush();
+        UUID bookingId = UUID.randomUUID();
+        jdbc.update("INSERT INTO plot_booking (id, plot_id, associate_id, buyer_name, total_amount, installment_count, booked_at) "
+            + "VALUES (?, ?, ?, 'Jane Buyer', 600000, 1, CURRENT_TIMESTAMP)", bookingId, plotId, associateId);
+        UUID installmentId = UUID.randomUUID();
+        jdbc.update("INSERT INTO emi_installment (id, booking_id, installment_number, amount, due_date) "
+            + "VALUES (?, ?, 1, 600000, DATE '2026-01-01')", installmentId, bookingId);
+
+        assertThat(jdbc.queryForObject("SELECT status FROM plot_booking WHERE id = ?", String.class, bookingId)).isEqualTo("ACTIVE");
+        assertThat(jdbc.queryForObject("SELECT status FROM emi_installment WHERE id = ?", String.class, installmentId)).isEqualTo("PENDING");
+    }
+
+    @Test
+    void ownViewQueryNeverReturnsAnotherAssociatesBooking() {
+        PlotBooking mine = persistBooking();
+        PlotBooking theirs = persistBooking();
+
+        var page = plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(
+            mine.getAssociateId(), org.springframework.data.domain.PageRequest.of(0, 20));
+
+        assertThat(page.getContent()).extracting(PlotBooking::getId)
+            .containsExactly(mine.getId())
+            .doesNotContain(theirs.getId());
+    }
+
     @Test
     void dbRejectsAnInvalidPlotBookingStatus() {
         PlotBooking b = persistBooking();
