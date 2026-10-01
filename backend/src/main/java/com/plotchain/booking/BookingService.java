@@ -151,11 +151,38 @@ public class BookingService {
         return toResponse(booking, installments);
     }
 
-    // Seam for later units, deliberately empty here: unit 5 adds the AUTO_THRESHOLD check and
-    // calls confirmLocked from this spot, inside the same locked transaction, after the PAID
-    // event above and before the response is built (so the response reflects a CONFIRMED booking).
+    // Unit 5: AUTO_THRESHOLD auto-confirm (spec Decision 1, Flow "Record payment"). Runs inside
+    // recordPayment's locked transaction, after the PAID event and before the response is built, so
+    // the response reflects a CONFIRMED booking. Holds only the booking lock; confirmLocked takes the
+    // plot lock itself (booking -> plot, Decision 8). Any failure in confirmLocked propagates and
+    // rolls the whole pay back (installment write + PAID event included).
+    // Config is read fresh from the global singleton every call (Resolved decision #3): no snapshot.
     void afterInstallmentPaid(PlotBooking booking, List<EmiInstallment> installments, UUID actorId) {
-        // no-op until units 4/5
+        BookingEmiConfig config = bookingEmiConfigRepository.findBySingletonGuardTrue()
+            .orElseThrow(() -> new IllegalStateException(
+                "booking_emi_config row missing - V14 migration seeds it"));
+        if (thresholdReached(booking, installments, config)) {
+            confirmLocked(booking, actorId);
+        }
+    }
+
+    // `installments` already contains the just-paid row as PAID (recordPayment mutates the same
+    // object that is in this list). Exact math, no division: paid/total >= threshold/100
+    // <=> paid*100 >= total*threshold. Only the literal AUTO_THRESHOLD rule qualifies (MANUAL and
+    // KYC_GATED never auto-confirm); a null/<=0 threshold never confirms rather than blocking the pay.
+    private boolean thresholdReached(PlotBooking booking, List<EmiInstallment> installments,
+                                     BookingEmiConfig config) {
+        if (!"AUTO_THRESHOLD".equals(config.getConfirmRule())) {
+            return false;
+        }
+        Integer threshold = config.getConfirmThresholdPercent();
+        BigDecimal total = booking.getTotalAmount();
+        if (threshold == null || threshold <= 0 || total.signum() <= 0) {
+            return false;
+        }
+        BigDecimal paid = sumByStatus(installments, InstallmentStatus.PAID);
+        return paid.multiply(BigDecimal.valueOf(100))
+            .compareTo(total.multiply(BigDecimal.valueOf(threshold))) >= 0;
     }
 
     // Plot-booking unit 4 (spec Flow "Confirm", Decisions 1, 2, 8). Locks the booking FIRST (so two
