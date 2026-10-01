@@ -10,7 +10,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. En
 
 | Unit # | Title | Type | Depends on | Status | Plan file path | Merged commit range |
 |---|---|---|---|---|---|---|
-| 1 | Bookings carry buyer details and an `ACTIVE` status; associate own view shows status, paid/due and per-installment overdue — schema migration + `POST /api/admin/bookings` + `GET /api/associates/me/bookings` | backend | none | pending | — | — |
+| 1 | Bookings carry buyer details and an `ACTIVE` status; associate own view shows status, paid/due and per-installment overdue — schema migration + `POST /api/admin/bookings` + `GET /api/associates/me/bookings` | backend | none | planned | `2026-10-01-plot-booking-unit-1-buyer-status-own-view.md` | — |
 | 2 | Admin records a per-installment payment — `PATCH /api/admin/bookings/{id}/installments/{n}/pay` | backend | 1 | pending | — | — |
 | 3 | `SaleService.recordConfirmedBooking` extracted from `recordSale` with `recordSale` behaviour unchanged | backend | 1 | pending | — | — |
 | 4 | Admin manually confirms an `ACTIVE` booking, creating a linked `Sale` — `POST /api/admin/bookings/{id}/confirm` | backend | 1, 3 | pending | — | — |
