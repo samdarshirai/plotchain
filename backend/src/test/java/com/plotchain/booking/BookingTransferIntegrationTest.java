@@ -285,4 +285,56 @@ class BookingTransferIntegrationTest {
         assertThatThrownBy(() -> bookingService.transferBooking(b.id(), from, from))
             .isInstanceOf(SameAssociateTransferException.class);
     }
+
+    // Must-handle (2): confirm credits booking.getAssociateId() at confirm time, so transfer-then-confirm
+    // makes the NEW associate the seller and puts the ledger entries on the new associate, none on the old.
+    @Test
+    void confirmAfterTransferCreatesTheSaleAndLedgerEntriesForTheNewAssociate() {
+        UUID from = seedAssociate(AssociateStatus.ACTIVE);
+        UUID to = seedAssociate(AssociateStatus.ACTIVE);
+        BookingResponse b = seedBooking(from);
+
+        bookingService.transferBooking(b.id(), to, to);
+        bookingService.confirmBooking(b.id(), to);
+
+        Sale sale = saleRepository.findAll().stream()
+            .filter(s -> b.id().equals(s.getBookingId())).findFirst().orElseThrow();
+        assertThat(sale.getAssociateId()).isEqualTo(to);
+        assertThat(count("SELECT COUNT(*) FROM sale WHERE associate_id = ?", from)).isZero();
+        assertThat(count("SELECT COUNT(*) FROM ledger_entry WHERE associate_id = ?", from)).isZero();
+        // Non-empty guard: the seeded seller does get ledger entries (see BookingConfirmIntegrationTest's
+        // parity test), so the allSatisfy below is not vacuous.
+        assertThat(ledgerEntryRepository.findAllBySourceRef(sale.getId())).isNotEmpty()
+            .allSatisfy(e -> assertThat(e.getAssociateId()).isEqualTo(to));
+        assertThat(ownerOf(b.id())).isEqualTo(to);
+    }
+
+    // Must-handle (3): own view (GET /api/associates/me/bookings reads getMyBookings) follows the owner.
+    @Test
+    void afterTransferTheOldAssociateNoLongerSeesTheBookingAndTheNewOneDoes() {
+        UUID from = seedAssociate(AssociateStatus.ACTIVE);
+        UUID to = seedAssociate(AssociateStatus.ACTIVE);
+        BookingResponse b = seedBooking(from);
+        assertThat(bookingService.getMyBookings(from, 0, 10).bookings())
+            .extracting(BookingResponse::id).contains(b.id());
+
+        bookingService.transferBooking(b.id(), to, to);
+
+        assertThat(bookingService.getMyBookings(from, 0, 10).bookings())
+            .extracting(BookingResponse::id).doesNotContain(b.id());
+        assertThat(bookingService.getMyBookings(to, 0, 10).bookings())
+            .extracting(BookingResponse::id).contains(b.id());
+    }
+
+    // The new owner can be transferred onward (and back): chained transfers each write one event.
+    @Test
+    void chainedTransfersEachWriteOneEvent() {
+        UUID a = seedAssociate(AssociateStatus.ACTIVE);
+        UUID c = seedAssociate(AssociateStatus.ACTIVE);
+        BookingResponse b = seedBooking(a);
+        bookingService.transferBooking(b.id(), c, a);
+        bookingService.transferBooking(b.id(), a, a);
+        assertThat(ownerOf(b.id())).isEqualTo(a);
+        assertThat(transferredEvents(b.id())).isEqualTo(2);
+    }
 }
