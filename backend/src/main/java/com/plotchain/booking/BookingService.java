@@ -3,6 +3,7 @@ package com.plotchain.booking;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateStatus;
 import com.plotchain.payments.BookingEmiConfig;
 import com.plotchain.payments.BookingEmiConfigRepository;
 import com.plotchain.projects.Plot;
@@ -289,6 +290,37 @@ public class BookingService {
             "reason: " + reason + "; paid: " + paid.toPlainString() + plotNote, now));
 
         return toResponse(booking, installments);
+    }
+
+    // Plot-booking unit 7 (spec Flow "Transfer", Decisions 5, 8). Locks the booking FIRST so a transfer
+    // racing pay/confirm/cancel serializes on the row. Guard order, all before the first write so every
+    // 4xx leaves the database untouched: booking 404 -> not ACTIVE 409 -> same associate 400 ->
+    // target 404 -> target not ACTIVE 400 (Resolved decision #4). Installments, payments and the plot
+    // are not touched. A later confirm credits whoever owns the booking at confirm time (confirmLocked
+    // reads booking.getAssociateId()).
+    @Transactional
+    public BookingResponse transferBooking(UUID bookingId, UUID targetAssociateId, UUID actorId) {
+        PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)
+            .orElseThrow(() -> new BookingNotFoundException(bookingId));
+        if (booking.getStatus() != BookingStatus.ACTIVE) {
+            throw new BookingNotActiveException(bookingId);
+        }
+        UUID fromAssociateId = booking.getAssociateId();
+        if (fromAssociateId.equals(targetAssociateId)) {
+            throw new SameAssociateTransferException(targetAssociateId);
+        }
+        Associate target = associateRepository.findById(targetAssociateId)
+            .orElseThrow(() -> new AssociateNotFoundException(targetAssociateId));
+        if (target.getStatus() != AssociateStatus.ACTIVE) {
+            throw new InvalidTransferTargetException(targetAssociateId, target.getStatus());
+        }
+
+        booking.setAssociateId(targetAssociateId);
+        plotBookingRepository.save(booking);
+        bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.TRANSFERRED, actorId,
+            "from " + fromAssociateId + " to " + targetAssociateId, clock.instant()));
+
+        return toResponse(booking, emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
     }
 
     // Self-scoped only, unlike Sales' getMySales -- the data visibility matrix's Plot/project
