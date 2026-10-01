@@ -860,6 +860,7 @@
       "errorNotFound": "Pin or associate not found.",
       "errorInvalid": "Check the values entered.",
       "errorGeneric": "Something went wrong. Try again.",
+      "eyebrow": "Admin · e-Pin Register",
       "pinsCount": "{{count}} pins",
       "detailTitle": "Pin detail",
       "detailEmpty": "Select a pin to see its details and history.",
