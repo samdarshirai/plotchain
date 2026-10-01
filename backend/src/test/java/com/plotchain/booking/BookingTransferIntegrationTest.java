@@ -35,6 +35,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doThrow;
 
 // Real-DB (H2 via Flyway) proof for BookingService.transferBooking (plot-booking unit 7).
 @SpringBootTest
@@ -336,5 +338,23 @@ class BookingTransferIntegrationTest {
         bookingService.transferBooking(b.id(), a, a);
         assertThat(ownerOf(b.id())).isEqualTo(a);
         assertThat(transferredEvents(b.id())).isEqualTo(2);
+    }
+
+    // The TRANSFERRED event write fails AFTER booking.associate_id was changed and saved, so only the
+    // surrounding transaction can undo the reassignment. Boot 3.3.4: @SpyBean.
+    @Test
+    void aFailureWritingTheTransferredEventRollsTheReassignmentBack() {
+        UUID from = seedAssociate(AssociateStatus.ACTIVE);
+        UUID to = seedAssociate(AssociateStatus.ACTIVE);
+        BookingResponse b = seedBooking(from);
+        doThrow(new IllegalStateException("simulated event failure"))
+            .when(bookingEventRepository).save(argThat(e -> e.getType() == BookingEventType.TRANSFERRED));
+
+        assertThatThrownBy(() -> bookingService.transferBooking(b.id(), to, from))
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("simulated");
+
+        // fresh JDBC read (no persistence context)
+        assertThat(ownerOf(b.id())).isEqualTo(from);
+        assertThat(transferredEvents(b.id())).isZero();
     }
 }
