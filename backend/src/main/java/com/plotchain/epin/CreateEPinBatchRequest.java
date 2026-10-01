@@ -1,12 +1,19 @@
 package com.plotchain.epin;
 
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
-// epin-domain unit 1 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
-// Decision 9): count is validated, not silently clamped -- an out-of-range value rejects the
-// whole request with 400 (bean validation) instead of generating a different number of codes
-// than asked for. 2,000 is the confirmed real ceiling (spec's Resolved decisions #1).
+import java.time.Instant;
+
+// expiresAt is optional (null = never expires); when present it must be in the future
+// (epin-blog-extension spec, Data model / Endpoints). count stays validated, not clamped
+// (2026-08-03 spec Decision 9).
 public record CreateEPinBatchRequest(
-    @Min(1) @Max(2000) int count
-) {}
+    @Min(1) @Max(2000) int count,
+    @Future Instant expiresAt
+) {
+    public CreateEPinBatchRequest(int count) {
+        this(count, null);
+    }
+}

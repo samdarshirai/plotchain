@@ -353,4 +353,57 @@ class EPinControllerTest {
 
         verify(epinRepository).search(isNull(), isNull(), isNull(), eq(holder), eq(true), any(), any());
     }
+
+    @Test
+    void generateBatchRejectsAnExpiryInThePastWith400() throws Exception {
+        String body = "{\"count\":2,\"expiresAt\":\"2020-01-01T00:00:00Z\"}";
+
+        mockMvc.perform(post("/api/admin/epins")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json").content(body))
+            .andExpect(status().isBadRequest());
+
+        verify(epinRepository, never()).save(any());
+    }
+
+    @Test
+    void generateBatchAcceptsAFutureExpiryAndEchoesIt() throws Exception {
+        when(epinRepository.existsByCode(any())).thenReturn(false);
+        when(epinRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        String body = "{\"count\":1,\"expiresAt\":\"2999-01-01T00:00:00Z\"}";
+
+        mockMvc.perform(post("/api/admin/epins")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json").content(body))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.expiresAt").isNotEmpty());
+    }
+
+    @Test
+    void generateBatchWithOnlyCountStillDeserializes() throws Exception {
+        when(epinRepository.existsByCode(any())).thenReturn(false);
+        when(epinRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        mockMvc.perform(post("/api/admin/epins")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json").content("{\"count\":1}"))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.expiresAt").doesNotExist());
+    }
+
+    @Test
+    void redeemOfAnExpiredPinReturns409() throws Exception {
+        UUID id = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(id);
+        pin.setStatus(EPinStatus.UNUSED);
+        pin.setExpiresAt(Instant.parse("2020-01-01T00:00:00Z"));
+        when(epinRepository.findByIdForUpdate(id)).thenReturn(Optional.of(pin));
+        String body = "{\"associateId\":\"" + UUID.randomUUID() + "\",\"redemptionType\":\"TOPUP\"}";
+
+        mockMvc.perform(post("/api/admin/epins/" + id + "/redeem")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json").content(body))
+            .andExpect(status().isConflict());
+    }
 }

@@ -329,4 +329,51 @@ class EPinServiceTest {
         assertThat(response.epins().get(0).expired()).isTrue();
         assertThat(response.epins().get(1).expired()).isFalse();
     }
+
+    @Test
+    void generateBatchStampsTheExpiryOnEveryRow() {
+        when(epinRepository.existsByCode(any())).thenReturn(false);
+        when(epinRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        ArgumentCaptor<EPin> captor = ArgumentCaptor.forClass(EPin.class);
+        Instant expiry = NOW.plusSeconds(86_400);
+
+        EPinBatchResponse response = epinService.generateBatch(new CreateEPinBatchRequest(2, expiry), UUID.randomUUID());
+
+        verify(epinRepository, times(2)).save(captor.capture());
+        assertThat(captor.getAllValues()).allMatch(e -> expiry.equals(e.getExpiresAt()));
+        assertThat(response.expiresAt()).isEqualTo(expiry);
+    }
+
+    @Test
+    void redeemRejectsAPinWhoseExpiryIsExactlyNow() {
+        UUID epinId = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(epinId);
+        pin.setStatus(EPinStatus.UNUSED);
+        pin.setExpiresAt(NOW);
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(pin));
+
+        assertThatThrownBy(() -> epinService.redeem(epinId,
+                new RedeemEPinRequest(UUID.randomUUID(), RedemptionType.TOPUP, null), UUID.randomUUID()))
+            .isInstanceOf(EPinExpiredException.class);
+
+        verify(epinRepository, never()).save(any());
+        verify(associateRepository, never()).findById(any());
+    }
+
+    @Test
+    void redeemAcceptsAPinExpiringOneSecondAfterNow() {
+        UUID epinId = UUID.randomUUID();
+        UUID target = UUID.randomUUID();
+        EPin pin = new EPin();
+        pin.setId(epinId);
+        pin.setStatus(EPinStatus.UNUSED);
+        pin.setExpiresAt(NOW.plusSeconds(1));
+        when(epinRepository.findByIdForUpdate(epinId)).thenReturn(Optional.of(pin));
+        when(associateRepository.findById(target)).thenReturn(Optional.of(new Associate()));
+
+        epinService.redeem(epinId, new RedeemEPinRequest(target, RedemptionType.TOPUP, null), UUID.randomUUID());
+
+        assertThat(pin.getStatus()).isEqualTo(EPinStatus.USED);
+    }
 }

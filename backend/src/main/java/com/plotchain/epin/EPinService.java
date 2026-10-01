@@ -52,12 +52,13 @@ public class EPinService {
             epin.setStatus(EPinStatus.UNUSED);
             epin.setGeneratedBy(actorId);
             epin.setGeneratedAt(generatedAt);
+            epin.setExpiresAt(request.expiresAt());
             epinRepository.save(epin);
             recordEvent(epin.getId(), EPinEventType.GENERATED, actorId, null, null, null);
             codes.add(code);
         }
 
-        return new EPinBatchResponse(batchId, request.count(), codes, generatedAt);
+        return new EPinBatchResponse(batchId, request.count(), codes, generatedAt, request.expiresAt());
     }
 
     // epin-domain unit 2 (Flows "Admin register"): three independently-optional filters, same
@@ -86,6 +87,10 @@ public class EPinService {
 
         if (epin.getStatus() == EPinStatus.USED) {
             throw new EPinAlreadyRedeemedException(id);
+        }
+
+        if (epin.isExpiredAt(clock.instant())) {
+            throw new EPinExpiredException(id);
         }
 
         associateRepository.findById(request.associateId())

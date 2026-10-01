@@ -21,6 +21,11 @@ public class EPinExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(EPinExpiredException.class)
+    public ResponseEntity<Map<String, String>> handleEPinExpired(EPinExpiredException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(EPinAlreadyRedeemedException.class)
     public ResponseEntity<Map<String, String>> handleEPinAlreadyRedeemed(EPinAlreadyRedeemedException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
