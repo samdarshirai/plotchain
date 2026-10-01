@@ -268,6 +268,17 @@ class BookingServiceTest {
     }
 
     @Test
+    void createBookingStoresABlankBuyerPhoneAsNull() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        bookingService.createBooking(new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "   "));
+
+        ArgumentCaptor<PlotBooking> captor = ArgumentCaptor.forClass(PlotBooking.class);
+        verify(plotBookingRepository).save(captor.capture());
+        assertThat(captor.getValue().getBuyerPhone()).isNull();
+    }
+
+    @Test
     void createBookingStampsBookedAtFromTheInjectedClock() {
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
 

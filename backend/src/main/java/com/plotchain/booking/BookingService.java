@@ -88,7 +88,8 @@ public class BookingService {
         booking.setInstallmentCount(schedule.size());
         booking.setBookedAt(bookedAt);
         booking.setBuyerName(request.buyerName().trim());
-        booking.setBuyerPhone(request.buyerPhone());
+        booking.setBuyerPhone(request.buyerPhone() == null || request.buyerPhone().isBlank()
+            ? null : request.buyerPhone().trim());
         booking.setStatus(BookingStatus.ACTIVE);
         booking = plotBookingRepository.save(booking);
 
