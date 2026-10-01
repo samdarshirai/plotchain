@@ -45,6 +45,7 @@ class BookingServiceTest {
     @Mock BookingEmiConfigRepository bookingEmiConfigRepository;
     @Mock PlotBookingRepository plotBookingRepository;
     @Mock EmiInstallmentRepository emiInstallmentRepository;
+    @Mock BookingEventRepository bookingEventRepository;
 
     BookingService bookingService;
 
@@ -57,7 +58,7 @@ class BookingServiceTest {
     void setUp() {
         bookingService = new BookingService(
             plotRepository, associateRepository, bookingEmiConfigRepository,
-            plotBookingRepository, emiInstallmentRepository, clock);
+            plotBookingRepository, emiInstallmentRepository, bookingEventRepository, clock);
     }
 
     private PlotBooking bookingWithBuyer() {
@@ -470,5 +471,145 @@ class BookingServiceTest {
 
         assertThat(response.totalElements()).isEqualTo(0);
         assertThat(response.bookings()).isEmpty();
+    }
+
+    private static final UUID ACTOR_ID = UUID.randomUUID();
+
+    private PlotBooking lockedBookingWith(EmiInstallment... installments) {
+        PlotBooking booking = bookingWithBuyer();
+        when(plotBookingRepository.findByIdForUpdate(booking.getId())).thenReturn(Optional.of(booking));
+        when(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId()))
+            .thenReturn(List.of(installments));
+        return booking;
+    }
+
+    private RecordPaymentRequest pay(String amount) {
+        return new RecordPaymentRequest(new BigDecimal(amount), "UTR-1", null);
+    }
+
+    @Test
+    void recordPaymentMarksInstallmentPaidStampsFieldsWritesEventAndReturnsUpdatedBooking() {
+        EmiInstallment i1 = installment(1, "100000.00", LocalDate.of(2026, 7, 15), InstallmentStatus.PENDING);
+        EmiInstallment i2 = installment(2, "100000.00", LocalDate.of(2026, 8, 15), InstallmentStatus.PENDING);
+        PlotBooking booking = lockedBookingWith(i1, i2);
+
+        BookingResponse response = bookingService.recordPayment(booking.getId(), 1, pay("100000"), ACTOR_ID);
+
+        assertThat(i1.getStatus()).isEqualTo(InstallmentStatus.PAID);
+        assertThat(i1.getPaidAt()).isEqualTo(NOW);              // paidAt omitted -> Clock now
+        assertThat(i1.getPaymentRef()).isEqualTo("UTR-1");
+        assertThat(i1.getRecordedBy()).isEqualTo(ACTOR_ID);
+        assertThat(i2.getStatus()).isEqualTo(InstallmentStatus.PENDING);
+        verify(emiInstallmentRepository).save(i1);
+
+        ArgumentCaptor<BookingEvent> event = ArgumentCaptor.forClass(BookingEvent.class);
+        verify(bookingEventRepository).save(event.capture());
+        assertThat(event.getValue().getType()).isEqualTo(BookingEventType.PAID);
+        assertThat(event.getValue().getBookingId()).isEqualTo(booking.getId());
+        assertThat(event.getValue().getActorId()).isEqualTo(ACTOR_ID);
+        assertThat(event.getValue().getCreatedAt()).isEqualTo(NOW);
+        assertThat(event.getValue().getDetail()).contains("1").contains("100000").contains("UTR-1");
+
+        assertThat(response.paidAmount()).isEqualByComparingTo("100000.00");
+        assertThat(response.dueAmount()).isEqualByComparingTo("100000.00");
+        assertThat(response.installments().get(0).status()).isEqualTo(InstallmentStatus.PAID);
+    }
+
+    @Test
+    void recordPaymentUsesSuppliedPaidAtAndTrimsPaymentRef() {
+        EmiInstallment i1 = installment(1, "100.00", LocalDate.of(2026, 7, 15), InstallmentStatus.PENDING);
+        PlotBooking booking = lockedBookingWith(i1);
+        Instant earlier = Instant.parse("2026-06-10T08:00:00Z");
+
+        bookingService.recordPayment(booking.getId(), 1,
+            new RecordPaymentRequest(new BigDecimal("100.00"), "  UTR-9  ", earlier), ACTOR_ID);
+
+        assertThat(i1.getPaidAt()).isEqualTo(earlier);
+        assertThat(i1.getPaymentRef()).isEqualTo("UTR-9");
+    }
+
+    @Test
+    void recordPaymentDoesNotRequireEarlierInstallmentsToBePaid() {
+        EmiInstallment i1 = installment(1, "100.00", LocalDate.of(2026, 7, 15), InstallmentStatus.PENDING);
+        EmiInstallment i3 = installment(3, "100.00", LocalDate.of(2026, 9, 15), InstallmentStatus.PENDING);
+        PlotBooking booking = lockedBookingWith(i1, i3);
+
+        bookingService.recordPayment(booking.getId(), 3, pay("100.00"), ACTOR_ID);
+
+        assertThat(i3.getStatus()).isEqualTo(InstallmentStatus.PAID);
+        assertThat(i1.getStatus()).isEqualTo(InstallmentStatus.PENDING);
+    }
+
+    @Test
+    void recordPaymentOnAPastDueInstallmentClearsItsOverdueFlag() {
+        EmiInstallment i1 = installment(1, "100.00", LocalDate.of(2026, 6, 1), InstallmentStatus.PENDING); // before NOW
+        PlotBooking booking = lockedBookingWith(i1);
+
+        BookingResponse response = bookingService.recordPayment(booking.getId(), 1, pay("100.00"), ACTOR_ID);
+
+        assertThat(response.installments().get(0).overdue()).isFalse();
+    }
+
+    @Test
+    void recordPaymentOnUnknownBookingIs404AndWritesNothing() {
+        UUID id = UUID.randomUUID();
+        when(plotBookingRepository.findByIdForUpdate(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> bookingService.recordPayment(id, 1, pay("1"), ACTOR_ID))
+            .isInstanceOf(BookingNotFoundException.class);
+        verify(bookingEventRepository, never()).save(any());
+        verify(emiInstallmentRepository, never()).save(any());
+    }
+
+    @Test
+    void recordPaymentOnNonActiveBookingIs409BeforeLookingAtInstallments() {
+        for (BookingStatus status : List.of(BookingStatus.CONFIRMED, BookingStatus.CANCELLED)) {
+            PlotBooking booking = bookingWithBuyer();
+            booking.setStatus(status);
+            when(plotBookingRepository.findByIdForUpdate(booking.getId())).thenReturn(Optional.of(booking));
+
+            assertThatThrownBy(() -> bookingService.recordPayment(booking.getId(), 1, pay("1"), ACTOR_ID))
+                .isInstanceOf(BookingNotActiveException.class);
+        }
+        verify(emiInstallmentRepository, never()).findByBookingIdOrderByInstallmentNumberAsc(any());
+        verify(bookingEventRepository, never()).save(any());
+    }
+
+    @Test
+    void recordPaymentOnUnknownInstallmentNumberIs404() {
+        PlotBooking booking = lockedBookingWith(
+            installment(1, "100.00", LocalDate.of(2026, 7, 15), InstallmentStatus.PENDING));
+
+        assertThatThrownBy(() -> bookingService.recordPayment(booking.getId(), 9, pay("100.00"), ACTOR_ID))
+            .isInstanceOf(InstallmentNotFoundException.class);
+        verify(bookingEventRepository, never()).save(any());
+    }
+
+    @Test
+    void recordPaymentOnPaidOrVoidInstallmentIs409AndLeavesItUntouched() {
+        for (InstallmentStatus status : List.of(InstallmentStatus.PAID, InstallmentStatus.VOID)) {
+            EmiInstallment i1 = installment(1, "100.00", LocalDate.of(2026, 7, 15), status);
+            i1.setPaymentRef("original");
+            PlotBooking booking = lockedBookingWith(i1);
+
+            assertThatThrownBy(() -> bookingService.recordPayment(booking.getId(), 1, pay("100.00"), ACTOR_ID))
+                .isInstanceOf(InstallmentNotPayableException.class);
+            assertThat(i1.getStatus()).isEqualTo(status);
+            assertThat(i1.getPaymentRef()).isEqualTo("original");
+        }
+        verify(bookingEventRepository, never()).save(any());
+    }
+
+    @Test
+    void recordPaymentWithWrongAmountIs400AndLeavesInstallmentPending() {
+        EmiInstallment i1 = installment(1, "100000.00", LocalDate.of(2026, 7, 15), InstallmentStatus.PENDING);
+        PlotBooking booking = lockedBookingWith(i1);
+
+        assertThatThrownBy(() -> bookingService.recordPayment(booking.getId(), 1, pay("99999.99"), ACTOR_ID))
+            .isInstanceOf(PaymentAmountMismatchException.class);
+        assertThat(i1.getStatus()).isEqualTo(InstallmentStatus.PENDING);
+        assertThat(i1.getRecordedBy()).isNull();
+        verify(emiInstallmentRepository, never()).save(any());
+        verify(bookingEventRepository, never()).save(any());
     }
 }

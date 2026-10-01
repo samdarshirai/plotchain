@@ -32,6 +32,7 @@ public class BookingService {
     private final BookingEmiConfigRepository bookingEmiConfigRepository;
     private final PlotBookingRepository plotBookingRepository;
     private final EmiInstallmentRepository emiInstallmentRepository;
+    private final BookingEventRepository bookingEventRepository;
     private final Clock clock;
 
     public BookingService(
@@ -40,8 +41,10 @@ public class BookingService {
             BookingEmiConfigRepository bookingEmiConfigRepository,
             PlotBookingRepository plotBookingRepository,
             EmiInstallmentRepository emiInstallmentRepository,
+            BookingEventRepository bookingEventRepository,
             Clock clock) {
         this.clock = clock;
+        this.bookingEventRepository = bookingEventRepository;
         this.plotRepository = plotRepository;
         this.associateRepository = associateRepository;
         this.bookingEmiConfigRepository = bookingEmiConfigRepository;
@@ -99,6 +102,55 @@ public class BookingService {
         emiInstallmentRepository.saveAll(schedule);
 
         return toResponse(booking, schedule);
+    }
+
+    // Row-locks the booking FIRST (Decision 8) so two simultaneous pays on one installment
+    // serialize: the loser re-reads the installment as PAID and gets 409. Check order is the
+    // spec's Flow "Record payment". Installments are deliberately payable in any order.
+    @Transactional
+    public BookingResponse recordPayment(UUID bookingId, int installmentNumber,
+                                         RecordPaymentRequest request, UUID actorId) {
+        PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)
+            .orElseThrow(() -> new BookingNotFoundException(bookingId));
+        if (booking.getStatus() != BookingStatus.ACTIVE) {
+            throw new BookingNotActiveException(bookingId);
+        }
+
+        List<EmiInstallment> installments =
+            emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId);
+        EmiInstallment installment = installments.stream()
+            .filter(i -> i.getInstallmentNumber() == installmentNumber)
+            .findFirst()
+            .orElseThrow(() -> new InstallmentNotFoundException(bookingId, installmentNumber));
+        if (installment.getStatus() != InstallmentStatus.PENDING) {
+            throw new InstallmentNotPayableException(bookingId, installmentNumber);
+        }
+        // compareTo, not equals: 100000 and 100000.00 are the same money.
+        if (request.amount().compareTo(installment.getAmount()) != 0) {
+            throw new PaymentAmountMismatchException(bookingId, installmentNumber, installment.getAmount());
+        }
+
+        Instant now = clock.instant();
+        String paymentRef = request.paymentRef().trim();
+        installment.setStatus(InstallmentStatus.PAID);
+        installment.setPaidAt(request.paidAt() != null ? request.paidAt() : now);
+        installment.setPaymentRef(paymentRef);
+        installment.setRecordedBy(actorId);
+        emiInstallmentRepository.save(installment);
+
+        bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.PAID, actorId,
+            "installment " + installmentNumber + ", amount " + installment.getAmount().toPlainString()
+                + ", ref " + paymentRef, now));
+
+        afterInstallmentPaid(booking, installments, actorId);
+        return toResponse(booking, installments);
+    }
+
+    // Seam for later units, deliberately empty here: unit 5 adds the AUTO_THRESHOLD check and
+    // calls unit 4's confirm from this spot, inside the same locked transaction, after the PAID
+    // event above and before the response is built (so the response reflects a CONFIRMED booking).
+    void afterInstallmentPaid(PlotBooking booking, List<EmiInstallment> installments, UUID actorId) {
+        // no-op until units 4/5
     }
 
     // Self-scoped only, unlike Sales' getMySales -- the data visibility matrix's Plot/project
