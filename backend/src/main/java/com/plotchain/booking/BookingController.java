@@ -48,4 +48,12 @@ public class BookingController {
     public BookingResponse confirm(@PathVariable UUID id, @AuthenticationPrincipal UUID actorId) {
         return bookingService.confirmBooking(id, actorId);
     }
+
+    // Admin cancels an ACTIVE booking (Decisions 4, 12). Returns the updated booking (200), like
+    // pay/confirm: the admin UI needs the refreshed status and paid/due totals (VOID rows, due = 0).
+    @PostMapping("/{id}/cancel")
+    public BookingResponse cancel(@PathVariable UUID id, @Valid @RequestBody CancelBookingRequest request,
+                                  @AuthenticationPrincipal UUID actorId) {
+        return bookingService.cancelBooking(id, request, actorId);
+    }
 }
