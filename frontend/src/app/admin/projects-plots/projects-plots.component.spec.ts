@@ -147,6 +147,17 @@ describe('ProjectsPlotsComponent', () => {
   });
 
   describe('plot and project mutations', () => {
+    it('opens the CSV panel and refreshes grid and counts after a successful import', () => {
+      boot();
+      el().querySelectorAll<HTMLButtonElement>('.projects-plots__project-actions button')[1].click();
+      fixture.detectChanges();
+      expect(el().querySelector('app-csv-import-panel')).not.toBeNull();
+      fixture.componentInstance.onCsvImported();
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-1')]);
+      http.expectOne('/api/company/projects').flush([project()]);
+      expect(fixture.componentInstance.aside.kind).toBe('none');
+    });
+
     const detail = (over: Record<string, unknown> = {}) =>
       ({ id: 'id-A-2', plotNo: 'A-2', plotType: 'NORMAL', areaSqft: 1200, rate: 3750, price: 4500000, status: 'AVAILABLE', ...over });
 

@@ -13,6 +13,7 @@ import { PlotTileComponent } from '../../shared/components/plot-tile/plot-tile.c
 import {
   PlotBlock, PlotGridItem, StatusCounts, countByStatus, formatArea, formatInr, groupIntoBlocks
 } from '../../shared/utils/plot-grid.util';
+import { CsvImportPanelComponent } from './csv-import-panel.component';
 import { PlotFormComponent } from './plot-form.component';
 import { ProjectFormComponent } from './project-form.component';
 import { ProjectsPlotsService } from './projects-plots.service';
@@ -40,7 +41,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
 @Component({
   selector: 'app-projects-plots',
   standalone: true,
-  imports: [CommonModule, RouterLink, TranslateModule, InlineBannerComponent, PlotTileComponent, PlotFormComponent, ProjectFormComponent],
+  imports: [CommonModule, RouterLink, TranslateModule, InlineBannerComponent, PlotTileComponent, PlotFormComponent, ProjectFormComponent, CsvImportPanelComponent],
   template: `
     <div class="projects-plots">
       <div class="projects-plots__head">
@@ -171,6 +172,8 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             (submitted)="saveNewPlot($event)" (cancelled)="closeAside()"></app-plot-form>
           <app-project-form *ngIf="aside.kind === 'project'" [project]="aside.mode === 'edit' ? selectedProject : null" [busy]="busy"
             (submitted)="saveProject($event)" (cancelled)="closeAside()"></app-project-form>
+          <app-csv-import-panel *ngIf="aside.kind === 'csv' && selectedProject" [projectId]="selectedProject.id"
+            (imported)="onCsvImported()" (cancelled)="closeAside()"></app-csv-import-panel>
         </aside>
       </div>
     </div>
@@ -344,6 +347,11 @@ export class ProjectsPlotsComponent implements OnInit {
         this.reloadProjects(p.id);
       }
     );
+  }
+
+  onCsvImported(): void {
+    this.refreshAfterPlotChange();
+    this.aside = { kind: 'none' };
   }
 
   // Grid and the project list's counts both change when plots are added/edited.
