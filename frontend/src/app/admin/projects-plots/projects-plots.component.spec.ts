@@ -145,4 +145,73 @@ describe('ProjectsPlotsComponent', () => {
     fixture.detectChanges();
     expect(el().querySelector('.projects-plots__facts')!.textContent).toContain('—');
   });
+
+  describe('plot and project mutations', () => {
+    const detail = (over: Record<string, unknown> = {}) =>
+      ({ id: 'id-A-2', plotNo: 'A-2', plotType: 'NORMAL', areaSqft: 1200, rate: 3750, price: 4500000, status: 'AVAILABLE', ...over });
+
+    function selectFirstAvailable(status = 'AVAILABLE') {
+      const first = fixture.componentInstance.grid!.find(p => p.status === status)!;
+      el().querySelectorAll<HTMLButtonElement>('app-plot-tile button')[
+        fixture.componentInstance.visibleBlocks.flatMap(b => b.plots).findIndex(p => p.plotId === first.plotId)
+      ].click();
+      http.expectOne(`/api/company/projects/p1/plots/${first.plotId}`).flush(detail({ id: first.plotId, plotNo: first.plotNo, status }));
+      fixture.detectChanges();
+    }
+
+    it('offers Edit plot on an AVAILABLE plot and PUTs the change, then refreshes grid and project counts', () => {
+      boot();
+      selectFirstAvailable();
+      el().querySelector<HTMLButtonElement>('.projects-plots__edit-plot')!.click();
+      fixture.detectChanges();
+      fixture.componentInstance.saveEditedPlot({ plotNo: 'A-2', plotType: 'NORMAL', areaSqft: 1300, rate: 3750, price: 4875000, status: 'AVAILABLE' });
+      const put = http.expectOne('/api/company/projects/p1/plots/id-A-2');
+      expect(put.request.method).toBe('PUT');
+      put.flush(detail({ areaSqft: 1300 }));
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2')]);
+      http.expectOne('/api/company/projects').flush([project()]);
+      http.expectOne('/api/company/projects/p1/plots/id-A-2').flush(detail({ areaSqft: 1300 }));
+      expect(fixture.componentInstance.aside.kind).toBe('detail');
+    });
+
+    it('shows the locked edit variant for a BOOKED plot', () => {
+      boot();
+      selectFirstAvailable('BOOKED');
+      el().querySelector<HTMLButtonElement>('.projects-plots__edit-plot')!.click();
+      fixture.detectChanges();
+      expect(el().textContent).toContain('admin.projectsPlots.editLockedTitle');
+      expect(el().querySelector('app-plot-form input')).toBeNull();
+    });
+
+    it('maps a 409 on plot save to the duplicate plot number field error', () => {
+      boot();
+      fixture.componentInstance.openAside({ kind: 'addPlot' });
+      fixture.componentInstance.saveNewPlot({ plotNo: 'A-1', plotType: 'NORMAL', areaSqft: 1, rate: 1, price: 1, status: 'AVAILABLE' });
+      http.expectOne('/api/company/projects/p1/plots').flush({ error: 'dup' }, { status: 409, statusText: 'Conflict' });
+      fixture.detectChanges();
+      expect(fixture.componentInstance.duplicatePlotNo).toBeTrue();
+      expect(el().textContent).toContain('admin.projectsPlots.error.duplicatePlotNo');
+    });
+
+    it('creates a plot then refreshes grid and project counts and closes the aside', () => {
+      boot();
+      fixture.componentInstance.openAside({ kind: 'addPlot' });
+      fixture.componentInstance.saveNewPlot({ plotNo: 'C-1', plotType: 'NORMAL', areaSqft: 1, rate: 1, price: 1, status: 'AVAILABLE' });
+      http.expectOne('/api/company/projects/p1/plots').flush(detail());
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('C-1')]);
+      http.expectOne('/api/company/projects').flush([project({ totalPlots: 4 })]);
+      expect(fixture.componentInstance.aside.kind).toBe('none');
+    });
+
+    it('creates a project, uploads its photo, and selects it', () => {
+      boot();
+      const photo = new File(['x'], 'p.png');
+      fixture.componentInstance.saveProject({ request: { name: 'New', location: 'Goa' }, photo });
+      http.expectOne({ method: 'POST', url: '/api/company/projects' }).flush(project({ id: 'p9', name: 'New' }));
+      http.expectOne('/api/company/projects/p9/thumbnail').flush(null);
+      http.expectOne('/api/company/projects').flush([project(), project({ id: 'p9', name: 'New' })]);
+      http.expectOne('/api/projects/p9/plots/grid').flush([]);
+      expect(fixture.componentInstance.selectedProject!.id).toBe('p9');
+    });
+  });
 });

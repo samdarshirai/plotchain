@@ -3,16 +3,18 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule } from '@ngx-translate/core';
-import { catchError, of } from 'rxjs';
+import { Observable, catchError, map, of, switchMap } from 'rxjs';
 import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { ProjectsService } from '../../setup/steps/projects/projects.service';
-import { Plot, PlotStatus, Project } from '../../setup/models/project.model';
+import { Plot, PlotRequest, PlotStatus, Project, ProjectRequest } from '../../setup/models/project.model';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { PlotTileComponent } from '../../shared/components/plot-tile/plot-tile.component';
 import {
   PlotBlock, PlotGridItem, StatusCounts, countByStatus, formatArea, formatInr, groupIntoBlocks
 } from '../../shared/utils/plot-grid.util';
+import { PlotFormComponent } from './plot-form.component';
+import { ProjectFormComponent } from './project-form.component';
 import { ProjectsPlotsService } from './projects-plots.service';
 import { BookingEmiConfig } from './projects-plots.model';
 
@@ -38,7 +40,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
 @Component({
   selector: 'app-projects-plots',
   standalone: true,
-  imports: [CommonModule, RouterLink, TranslateModule, InlineBannerComponent, PlotTileComponent],
+  imports: [CommonModule, RouterLink, TranslateModule, InlineBannerComponent, PlotTileComponent, PlotFormComponent, ProjectFormComponent],
   template: `
     <div class="projects-plots">
       <div class="projects-plots__head">
@@ -155,7 +157,20 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
               <dt>{{ 'admin.projectsPlots.factsPrice' | translate }}</dt><dd>{{ priceText(sel.price) }}</dd>
               <dt>{{ 'admin.projectsPlots.statusLabel' | translate }}</dt><dd>{{ 'plotTile.status.' + sel.status | translate }}</dd>
             </dl>
+            <div class="projects-plots__aside-actions">
+              <button type="button" class="brand-button brand-button--secondary projects-plots__edit-plot" (click)="openAside({ kind: 'editPlot' })">
+                {{ 'admin.projectsPlots.editPlotAction' | translate }}
+              </button>
+            </div>
           </ng-container>
+
+          <app-plot-form *ngIf="aside.kind === 'editPlot' && selectedPlot && plotDetail"
+            [plot]="plotDetail" [locked]="plotDetail.status !== 'AVAILABLE'" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
+            (submitted)="saveEditedPlot($event)" (cancelled)="openAside({ kind: 'detail' })"></app-plot-form>
+          <app-plot-form *ngIf="aside.kind === 'addPlot'" [plot]="null" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
+            (submitted)="saveNewPlot($event)" (cancelled)="closeAside()"></app-plot-form>
+          <app-project-form *ngIf="aside.kind === 'project'" [project]="aside.mode === 'edit' ? selectedProject : null" [busy]="busy"
+            (submitted)="saveProject($event)" (cancelled)="closeAside()"></app-project-form>
         </aside>
       </div>
     </div>
@@ -180,6 +195,8 @@ export class ProjectsPlotsComponent implements OnInit {
   plotDetail: Plot | null = null;
   aside: Aside = { kind: 'none' };
   banner: Banner | null = null;
+  busy = false;
+  duplicatePlotNo = false;
   associates: AssociateSummary[] = [];
   emiConfig: BookingEmiConfig | null = null;
 
@@ -282,6 +299,7 @@ export class ProjectsPlotsComponent implements OnInit {
 
   openAside(next: Aside): void {
     this.banner = null;
+    this.duplicatePlotNo = false;
     this.aside = next;
   }
 
@@ -296,6 +314,58 @@ export class ProjectsPlotsComponent implements OnInit {
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.aside.kind !== 'none') { this.closeAside(); }
+  }
+
+  saveNewPlot(req: PlotRequest): void {
+    this.mutate(this.projectsService.createPlot(this.selectedProject!.id, req), () => {
+      this.refreshAfterPlotChange();
+      this.aside = { kind: 'none' };
+    });
+  }
+
+  saveEditedPlot(req: PlotRequest): void {
+    const plotId = this.selectedPlotId!;
+    this.mutate(this.projectsService.updatePlot(this.selectedProject!.id, plotId, req), () => {
+      this.refreshAfterPlotChange();
+      this.aside = { kind: 'detail' };
+      this.plotsService.getPlot(this.selectedProject!.id, plotId).subscribe(d => (this.plotDetail = d));
+    });
+  }
+
+  saveProject(v: { request: ProjectRequest; photo: File | null }): void {
+    const editing = this.aside.kind === 'project' && this.aside.mode === 'edit' && this.selectedProject;
+    const save$ = editing
+      ? this.projectsService.updateProject(this.selectedProject!.id, v.request)
+      : this.projectsService.createProject(v.request);
+    this.mutate(
+      save$.pipe(switchMap(p => (v.photo ? this.projectsService.uploadThumbnail(p.id, v.photo).pipe(map(() => p)) : of(p)))),
+      p => {
+        this.aside = { kind: 'none' };
+        this.reloadProjects(p.id);
+      }
+    );
+  }
+
+  // Grid and the project list's counts both change when plots are added/edited.
+  private refreshAfterPlotChange(): void {
+    this.loadGrid();
+    this.reloadProjects();
+  }
+
+  private mutate<T>(source: Observable<T>, onOk: (v: T) => void): void {
+    this.busy = true;
+    this.duplicatePlotNo = false;
+    source.subscribe({
+      next: v => { this.busy = false; onOk(v); },
+      error: (err: HttpErrorResponse) => {
+        this.busy = false;
+        if (err.status === 409 && (this.aside.kind === 'addPlot' || this.aside.kind === 'editPlot')) {
+          this.duplicatePlotNo = true;
+        } else {
+          this.banner = this.errorBanner(err);
+        }
+      }
+    });
   }
 
   areaText = formatArea;
