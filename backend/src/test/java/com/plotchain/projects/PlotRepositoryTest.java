@@ -87,4 +87,18 @@ class PlotRepositoryTest {
         assertThat(plotRepository.countByProjectIdAndStatus(project.getId(), PlotStatus.SOLD)).isEqualTo(1);
         assertThat(plotRepository.countByProjectId(project.getId())).isEqualTo(2);
     }
+
+    @Test
+    void findByProjectIdReturnsOnlyThatProjectsPlots() {
+        Project mine = persistProject();
+        Project other = persistProject();
+        plotRepository.save(newPlot(mine.getId(), "A-101", PlotStatus.AVAILABLE));
+        plotRepository.save(newPlot(mine.getId(), "A-102", PlotStatus.SOLD));
+        plotRepository.save(newPlot(other.getId(), "B-1", PlotStatus.AVAILABLE));
+        entityManager.flush();
+
+        List<Plot> result = plotRepository.findByProjectId(mine.getId());
+
+        assertThat(result).extracting(Plot::getPlotNo).containsExactlyInAnyOrder("A-101", "A-102");
+    }
 }
