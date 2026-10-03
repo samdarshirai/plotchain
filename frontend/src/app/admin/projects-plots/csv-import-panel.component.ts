@@ -49,23 +49,26 @@ export class CsvImportPanelComponent {
     this.file = f;
     this.result = null; // a result belongs to the file it validated
     this.failed = false;
+    this.busy = false; // any in-flight request belongs to the previous file and is ignored below
   }
 
   validate(): void {
-    if (!this.file) { return; }
+    const f = this.file;
+    if (!f) { return; }
     this.busy = true;
-    this.projects.validateCsv(this.projectId, this.file).subscribe({
-      next: r => { this.busy = false; this.failed = false; this.result = r; },
-      error: () => { this.busy = false; this.failed = true; }
+    this.projects.validateCsv(this.projectId, f).subscribe({
+      next: r => { if (f !== this.file) { return; } this.busy = false; this.failed = false; this.result = r; },
+      error: () => { if (f !== this.file) { return; } this.busy = false; this.failed = true; }
     });
   }
 
   commit(): void {
-    if (!this.file || !this.canCommit) { return; }
+    const f = this.file;
+    if (!f || !this.canCommit) { return; }
     this.busy = true;
-    this.projects.commitCsv(this.projectId, this.file).subscribe({
-      next: () => { this.busy = false; this.imported.emit(); },
-      error: () => { this.busy = false; this.failed = true; }
+    this.projects.commitCsv(this.projectId, f).subscribe({
+      next: () => { if (f !== this.file) { return; } this.busy = false; this.imported.emit(); },
+      error: () => { if (f !== this.file) { return; } this.busy = false; this.failed = true; this.result = null; }
     });
   }
 }

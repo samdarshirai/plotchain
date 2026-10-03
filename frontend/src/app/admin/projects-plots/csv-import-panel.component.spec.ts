@@ -50,6 +50,30 @@ describe('CsvImportPanelComponent', () => {
     expect(el().textContent).toContain('admin.projectsPlots.csvGenericError');
   });
 
+  it('ignores a validation response for a file that is no longer selected', () => {
+    fixture.componentInstance.file = file;
+    fixture.componentInstance.validate();
+    const req = http.expectOne('/api/company/projects/p1/plots/csv/validate');
+    fixture.componentInstance.onFile(new File(['z'], 'b.csv'));
+    req.flush({ totalRows: 1, validRows: 1, errors: [] });
+    fixture.detectChanges();
+    expect(fixture.componentInstance.result).toBeNull();
+    expect(fixture.componentInstance.busy).toBeFalse();
+    expect(el().querySelector<HTMLButtonElement>('.csv-panel__commit')!.disabled).toBeTrue();
+  });
+
+  it('clears the clean result when commit fails', () => {
+    fixture.componentInstance.file = file;
+    fixture.componentInstance.validate();
+    http.expectOne('/api/company/projects/p1/plots/csv/validate').flush({ totalRows: 1, validRows: 1, errors: [] });
+    fixture.componentInstance.commit();
+    http.expectOne('/api/company/projects/p1/plots/csv/commit').flush('x', { status: 400, statusText: 'bad' });
+    fixture.detectChanges();
+    expect(fixture.componentInstance.failed).toBeTrue();
+    expect(fixture.componentInstance.result).toBeNull();
+    expect(el().querySelector<HTMLButtonElement>('.csv-panel__commit')!.disabled).toBeTrue();
+  });
+
   it('forgets a previous validation result when a different file is chosen', () => {
     fixture.componentInstance.file = file;
     fixture.componentInstance.validate();
