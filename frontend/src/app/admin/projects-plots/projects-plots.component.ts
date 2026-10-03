@@ -59,9 +59,9 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
         <p>{{ 'admin.projectsPlots.empty.noProjectsBody' | translate }}</p>
       </div>
 
-      <div class="projects-plots__layout" *ngIf="projects?.length">
+      <div class="projects-plots__layout" *ngIf="projects">
         <!-- (a) master list; a <select> stands in below 1024px -->
-        <nav class="projects-plots__list" [attr.aria-label]="'admin.projectsPlots.projectsHeading' | translate">
+        <nav class="projects-plots__list" *ngIf="projects.length" [attr.aria-label]="'admin.projectsPlots.projectsHeading' | translate">
           <h2 class="projects-plots__list-heading">{{ 'admin.projectsPlots.projectsHeading' | translate }}</h2>
           <button type="button" *ngFor="let p of projects" class="projects-plots__project"
             [class.projects-plots__project--selected]="p.id === selectedProject?.id"
@@ -76,7 +76,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             <span class="projects-plots__project-count">{{ 'admin.projectsPlots.plotsSummary' | translate: { total: p.totalPlots, available: p.availablePlots } }}</span>
           </button>
         </nav>
-        <label class="projects-plots__project-select">
+        <label class="projects-plots__project-select" *ngIf="projects.length">
           {{ 'admin.projectsPlots.projectSelectLabel' | translate }}
           <select (change)="selectProjectById($any($event.target).value)">
             <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === selectedProject?.id">{{ p.name }}</option>
@@ -125,7 +125,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             <section class="projects-plots__block" *ngFor="let b of visibleBlocks">
               <h3 class="projects-plots__block-heading" *ngIf="b.block">
                 {{ 'admin.projectsPlots.blockHeading' | translate: { block: b.block } }}
-                <span>{{ 'admin.projectsPlots.blockSummary' | translate: blockSummary(b) }}</span>
+                <span>{{ 'admin.projectsPlots.blockSummary' | translate: blockStats[b.block] }}</span>
               </h3>
               <ul class="projects-plots__tiles">
                 <li *ngFor="let p of b.plots">
@@ -151,7 +151,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             <dl class="projects-plots__facts">
               <dt>{{ 'admin.projectsPlots.factsType' | translate }}</dt><dd>{{ 'plotTile.type.' + sel.type | translate }}</dd>
               <dt>{{ 'admin.projectsPlots.factsArea' | translate }}</dt><dd>{{ areaText(sel.area) }}</dd>
-              <dt>{{ 'admin.projectsPlots.factsRate' | translate }}</dt><dd>{{ plotDetail ? plotDetail.rate.toLocaleString('en-IN') : '—' }}</dd>
+              <dt>{{ 'admin.projectsPlots.factsRate' | translate }}</dt><dd>{{ plotDetail?.rate != null ? plotDetail!.rate.toLocaleString('en-IN') : '—' }}</dd>
               <dt>{{ 'admin.projectsPlots.factsPrice' | translate }}</dt><dd>{{ priceText(sel.price) }}</dd>
               <dt>{{ 'admin.projectsPlots.statusLabel' | translate }}</dt><dd>{{ 'plotTile.status.' + sel.status | translate }}</dd>
             </dl>
@@ -175,6 +175,7 @@ export class ProjectsPlotsComponent implements OnInit {
   filter = new Set<PlotStatus>();
   counts: StatusCounts = { AVAILABLE: 0, BOOKED: 0, SOLD: 0 };
   visibleBlocks: PlotBlock[] = [];
+  blockStats: Record<string, { available: number; total: number }> = {};
   selectedPlotId: string | null = null;
   plotDetail: Plot | null = null;
   aside: Aside = { kind: 'none' };
@@ -225,6 +226,7 @@ export class ProjectsPlotsComponent implements OnInit {
     this.banner = null;
     this.filter.clear();
     this.grid = null;
+    this.gridError = false;
     this.loadGrid();
   }
 
@@ -253,14 +255,14 @@ export class ProjectsPlotsComponent implements OnInit {
   private rebuild(): void {
     const all = this.grid ?? [];
     this.counts = countByStatus(all);
-    this.visibleBlocks = groupIntoBlocks(all)
+    const whole = groupIntoBlocks(all);
+    this.blockStats = {};
+    for (const b of whole) {
+      this.blockStats[b.block] = { available: b.plots.filter(p => p.status === 'AVAILABLE').length, total: b.plots.length };
+    }
+    this.visibleBlocks = whole
       .map(b => ({ block: b.block, plots: this.filter.size ? b.plots.filter(p => this.filter.has(p.status)) : b.plots }))
       .filter(b => b.plots.length);
-  }
-
-  blockSummary(b: PlotBlock): { available: number; total: number } {
-    const full = (this.grid ?? []).filter(p => groupIntoBlocks([p])[0].block === b.block || !b.block);
-    return { available: full.filter(p => p.status === 'AVAILABLE').length, total: full.length };
   }
 
   bookedCount(p: Project): number {

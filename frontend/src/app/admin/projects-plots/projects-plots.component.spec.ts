@@ -111,4 +111,38 @@ describe('ProjectsPlotsComponent', () => {
     expect(fixture.componentInstance.aside.kind).toBe('none');
     expect(fixture.componentInstance.selectedPlot).toBeNull();
   });
+
+  it('switching project clears a previous grid-load error and shows the skeleton', () => {
+    boot([project(), project({ id: 'p2', name: 'Lake View' })]);
+    fixture.componentInstance.loadGrid();
+    http.expectOne('/api/projects/p1/plots/grid').flush('boom', { status: 500, statusText: 'err' });
+    fixture.componentInstance.selectProject(fixture.componentInstance.projects![1]);
+    fixture.detectChanges();
+    expect(el().textContent).not.toContain('admin.projectsPlots.error.loadGrid');
+    expect(el().querySelector('.projects-plots__skeleton')).not.toBeNull();
+    http.expectOne('/api/projects/p2/plots/grid').flush([]);
+  });
+
+  it('Add project is usable with zero projects', () => {
+    boot([]);
+    fixture.componentInstance.openAside({ kind: 'project', mode: 'add' });
+    fixture.detectChanges();
+    expect(el().querySelector('.projects-plots__aside')).not.toBeNull();
+  });
+
+  it('block summary shows whole-block counts while a status filter is active', () => {
+    boot([project()], [cell('A-1'), cell('A-2', 'BOOKED'), cell('A-3', 'SOLD')]);
+    el().querySelectorAll<HTMLButtonElement>('.projects-plots__chip')[1].click(); // BOOKED
+    fixture.detectChanges();
+    expect(el().querySelectorAll('app-plot-tile').length).toBe(1);
+    expect(fixture.componentInstance.blockStats['A']).toEqual({ available: 1, total: 3 });
+  });
+
+  it('shows a dash when the plot detail has no rate', () => {
+    boot();
+    el().querySelector<HTMLButtonElement>('app-plot-tile button')!.click();
+    http.expectOne('/api/company/projects/p1/plots/id-A-1').flush({ id: 'id-A-1' });
+    fixture.detectChanges();
+    expect(el().querySelector('.projects-plots__facts')!.textContent).toContain('—');
+  });
 });
