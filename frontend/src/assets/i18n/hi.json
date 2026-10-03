@@ -1195,5 +1195,11 @@
       "title": "गोपनीयता नीति",
       "body": "यह एक अस्थायी गोपनीयता नीति पृष्ठ है। वास्तविक कानूनी सामग्री अभी तक नहीं लिखी गई है।"
     }
+  },
+  "plotTile": {
+    "aria": "Plot {{no}}, {{type}}, {{area}} square feet, {{price}}, {{status}}",
+    "corner": "Corner",
+    "status": { "AVAILABLE": "Available", "BOOKED": "Booked", "SOLD": "Sold" },
+    "type": { "NORMAL": "Normal", "CORNER": "Corner" }
   }
 }

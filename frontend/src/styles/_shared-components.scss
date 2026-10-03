@@ -500,3 +500,40 @@
 input[type='file'].logo-uploader__input {
   display: none;
 }
+
+// ---- Plot tile (shared: admin Projects & Plots, associate availability grid) ----------------
+// Darker text-only status shades: the raw status colours fail 4.5:1 on their own tints.
+// Derived per DESIGN.md "Token drift" so a re-themed --status-* stays legible.
+:root {
+  --status-success-text: color-mix(in srgb, var(--status-success) 55%, black);
+  --status-warning-text: color-mix(in srgb, var(--status-warning) 55%, black);
+}
+
+.plot-tile {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 0.125rem;
+  width: 100%; min-width: 88px; min-height: 88px; padding: 0.5rem 0.625rem; text-align: left;
+  background: var(--surface-card); color: var(--text-primary);
+  border: 2px solid var(--border-subtle); border-radius: 10px; cursor: pointer;
+  font-family: var(--font-sans);
+
+  &__no { font: 700 0.9375rem var(--font-mono); font-variant-numeric: tabular-nums; }
+  &__meta { font: 500 0.75rem var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-muted); }
+  &__price { font: 600 0.8125rem var(--font-mono); font-variant-numeric: tabular-nums; }
+  &__status { display: inline-flex; align-items: center; gap: 0.25rem; margin-top: auto; font-size: 0.75rem; font-weight: 600; }
+  &__icon { font-size: 1rem; }
+
+  // Survey-plan signature: corner plots get a notched top-right corner.
+  &--corner { clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
+
+  &--available { background: color-mix(in srgb, var(--status-success) 12%, var(--surface-card)); border-color: var(--status-success);
+    .plot-tile__status { color: var(--status-success-text); } }
+  &--booked { background: color-mix(in srgb, var(--status-warning) 12%, var(--surface-card)); border-color: var(--status-warning);
+    .plot-tile__status { color: var(--status-warning-text); } }
+  &--sold { border-style: dashed; border-color: var(--text-muted);
+    background: repeating-linear-gradient(45deg, var(--surface-raised) 0 6px, var(--surface-card) 6px 12px);
+    .plot-tile__status { color: var(--text-muted); } }
+
+  &--selected { border-width: 3px; border-color: var(--brand-primary); }
+  &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+  &:disabled { cursor: default; }
+}

@@ -1291,5 +1291,11 @@
       "title": "Privacy Policy",
       "body": "This is a placeholder Privacy Policy page. Real legal copy has not been written yet."
     }
+  },
+  "plotTile": {
+    "aria": "Plot {{no}}, {{type}}, {{area}} square feet, {{price}}, {{status}}",
+    "corner": "Corner",
+    "status": { "AVAILABLE": "Available", "BOOKED": "Booked", "SOLD": "Sold" },
+    "type": { "NORMAL": "Normal", "CORNER": "Corner" }
   }
 }
