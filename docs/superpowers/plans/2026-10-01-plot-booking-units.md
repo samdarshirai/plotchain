@@ -23,9 +23,14 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. En
 | 11 | Admin "Projects & Plots" screen — project list, colour-coded plot grid, plot create/edit, "Book" action | screen | 1, 10 | pending | `2026-10-03-plot-booking-unit-11-admin-projects-plots-screen.md` (design: `docs/design/admin_operational_screens/projects_plots/`) | — |
 | 12 | Admin "Bookings & EMI" screen — register, booking detail with Pay/Confirm/Cancel/Transfer, overdue report tab | screen | 1, 2, 4, 5, 6, 7, 8, 9 | pending | `2026-10-03-plot-booking-unit-12-admin-bookings-emi-screen.md` (design: `docs/design/admin_operational_screens/bookings_emi/`; Task 8 gated on unit 14) | — |
 | 13 | Associate view-only availability grid + extended Plot Bookings screen | screen | 1, 10 | pending | `2026-10-03-plot-booking-unit-13-associate-availability-bookings-screen.md` (design: `docs/design/associate_operational_screens/plot_availability_bookings/`) | — |
-| 14 | Booking read-model follow-up for the screens — `GET /api/admin/bookings/{id}`; `plotNo` + `projectName` on `BookingResponse` (admin register and associate own view); `associateName` on admin register rows; optional distinct error `code` for plot-drift 409 | backend | 1, 8 | pending | — | — |
+| 14a | Admin reads one booking — `GET /api/admin/bookings/{id}` (unit 12 overdue click-through and unit 11 banner deep link) | backend | 1 | pending | — | — |
+| 14b | Booking responses carry `plotNo`, `projectName`, `associateName`, enriched inside `BookingService.toResponse` for every endpoint, batched on paged lists | backend | 1, 8 | pending | — | — |
+| 14c | OPTIONAL — distinct `code` on the plot-drift 409 body (additive), plus frontend swap from substring match | backend + small frontend | none | optional | — | — |
+| 14d | OPTIONAL — `status` on `AssociateSummaryResponse` so lookups can list ACTIVE associates only | backend + small frontend | none | optional | — | — |
 
-**Unit 14 (added 2026-10-01 after screen design sign-off):** not in the original spec. The approved designs for units 11-13 bind to fields the merged backend lacks: unit 12's overdue-report click-through needs `GET /api/admin/bookings/{id}` (no by-id endpoint exists); units 12 and 13 need `plotNo` and `projectName` on `BookingResponse` (it carries `plotId` only); the admin register needs `associateName` (rows carry `associateId` only); unit 12's plot-drift hint currently matches the 409 text 'Plot is not available', so an optional distinct error `code` is more robust. Screens 11-13 can be built without it (fallbacks are specified in each DESIGN.md: short plot id, client-side directory lookup) but unit 12's overdue click-through is not shippable until the by-id endpoint exists. Needs its own spec addendum, plan and review like any unit; also requires a `SecurityConfig` explicit ADMIN matcher for the new GET (no blanket GET admin rule).
+**Unit 14 sliced 2026-10-03 into 14a-14d** (user: 14a and 14b hard, 14c and 14d optional; acceptance criteria in section "14a-14d" below). Only 14a gates a screen (unit 12 Task 8); 14b upgrades fallback labels in units 12/13 with no frontend change beyond reading the new fields. Neither needs a plan yet; write plans when a slice is picked up.
+
+**Unit 14 (added 2026-10-01 after screen design sign-off; superseded by the slicing above):** not in the original spec. The approved designs for units 11-13 bind to fields the merged backend lacks: unit 12's overdue-report click-through needs `GET /api/admin/bookings/{id}` (no by-id endpoint exists); units 12 and 13 need `plotNo` and `projectName` on `BookingResponse` (it carries `plotId` only); the admin register needs `associateName` (rows carry `associateId` only); unit 12's plot-drift hint currently matches the 409 text 'Plot is not available', so an optional distinct error `code` is more robust. Screens 11-13 can be built without it (fallbacks are specified in each DESIGN.md: short plot id, client-side directory lookup) but unit 12's overdue click-through is not shippable until the by-id endpoint exists. Needs its own spec addendum, plan and review like any unit; also requires a `SecurityConfig` explicit ADMIN matcher for the new GET (no blanket GET admin rule).
 
 **Screen plans written 2026-10-03 (commit 403ae32), none built yet.** Build order 11 -> 13 -> 12 (user choice). Unit 11 builds the shared `app-plot-tile`, `shared/utils/plot-grid.util.ts`, the `--status-*-text` tokens and nav category `inventory` (not `inventory-bookings`); 13 and 12 consume them unchanged. All three plans use the live gold/oxblood tokens instead of the designs' violet/cyan (deviation, pending user veto). Unit 12 Tasks 1-7 do not depend on unit 14; Task 8 (overdue click-through and unit 11's banner deep link) needs `GET /api/admin/bookings/{id}` from unit 14, still unsliced.
 
@@ -207,6 +212,29 @@ Acceptance criteria:
 - Existing Plot Bookings screen shows booking status, paid/due amounts, and overdue badges per installment (unit 1).
 - No write affordance anywhere on either (Screens; Decision 12).
 - Component/service specs; no e2e.
+
+### 14a-14d. Booking read-model follow-up (sliced 2026-10-03)
+
+Origin: needs listed in the unit 14 note above. Not in the original spec; each slice needs a short spec addendum before its plan.
+
+**14a. `GET /api/admin/bookings/{id}`** — Depends on: 1. Acceptance criteria:
+- Returns the same `BookingResponse` shape as the register rows (installments embedded, overdue derived via `toResponse`).
+- Unknown id: 404 `{"error": "Booking not found: <id>"}` (reuse `BookingNotFoundException`; handler already exists).
+- `SecurityConfig` gets an explicit `GET /api/admin/bookings/*` ADMIN matcher placed before the catch-all (no blanket GET admin rule); associate token gets 403, no token 401. `SecurityConfigTest` matrix row added. The existing exact-path `GET /api/admin/bookings` matcher stays and must not shadow or be shadowed.
+- Controller shape follows `AdminBookingRegisterController` (bare `@RestController`, absolute path); watch the path-collision with `BookingController`'s class-level `/api/admin/bookings` mapping (pin with a test like `getDoesNotCollideWithPostOnTheSamePath`).
+- Works for ACTIVE, CONFIRMED and CANCELLED bookings.
+
+**14b. Enriched booking responses** — Depends on: 1, 8. Acceptance criteria:
+- `BookingResponse` gains `plotNo` (String), `projectName` (String), `associateName` (String). All populated by `toResponse` on every endpoint that returns it: create, pay, confirm, cancel, transfer, associate own view, admin register, and 14a.
+- Paged paths (`getMyBookings`, register `list`) batch-load plots, projects and associates with `findAllById`-style queries: constant number of queries regardless of page size (pinned by a query-count or repository-interaction test), no N+1.
+- Missing referent (deleted plot/associate) yields `null` for that field, never an exception.
+- Existing `BookingResponse` consumers (frontend `Booking` model already has the optional fields from unit 13/12 plans) keep working; fields are additive, no existing field changes.
+- No leak: associate own view exposes only the associate's own name; the unit 10 plot grid response is unchanged (it carries no booking data).
+- Booking package must not gain a circular dependency: use existing repository access (`PlotRepository`, `ProjectRepository`, `AssociateRepository`) the way `BookingService` already reads plots/associates; do not import controllers or response DTOs from other packages.
+
+**14c (optional). Distinct plot-drift error code** — Acceptance criteria: the 409 body for `PlotNotAvailableException` becomes `{"error": "...", "code": "PLOT_NOT_AVAILABLE"}` (additive; the `error` text is unchanged so current clients keep working); same exception serves booking creation (unit 11) and pay/confirm (unit 12), so the frontend keys on `code` only where it distinguishes drift; unit 12's `classifyError` replaces the `Plot is not available` substring match with a `code` check (keeping the substring as fallback for one release).
+
+**14d (optional). Associate status in the directory** — Acceptance criteria: `AssociateSummaryResponse` gains `status`; existing consumers unaffected (additive); unit 11's Book form lookup and unit 12's Transfer lookup filter to `ACTIVE`, replacing the role-only filter; unit 11/12 plan deviations noting the role-only filter are retired.
 
 ## Ambiguities — all resolved 2026-10-01 (see spec "Resolved decisions (post-slice)")
 
