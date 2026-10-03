@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -41,8 +41,8 @@ export class ProjectFormComponent implements OnChanges {
   photo: File | null = null;
   tried = false;
 
-  ngOnChanges(): void {
-    if (this.project) {
+  ngOnChanges(c: SimpleChanges): void {
+    if (c['project'] && this.project) {
       this.name = this.project.name;
       this.location = this.project.location;
     }

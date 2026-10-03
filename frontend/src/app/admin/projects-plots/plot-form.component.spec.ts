@@ -37,6 +37,7 @@ describe('PlotFormComponent', () => {
     setup();
     const out: PlotRequest[] = [];
     fixture.componentInstance.submitted.subscribe(r => out.push(r));
+    await fixture.whenStable();
     type('areaSqft', '0');
     await fixture.whenStable();
     el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
@@ -52,6 +53,20 @@ describe('PlotFormComponent', () => {
     await fixture.whenStable();
     el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
     expect(out[0]).toEqual({ plotNo: 'A-1', plotType: 'CORNER', areaSqft: 1800, rate: 2850, price: 5130000, status: 'AVAILABLE' });
+  });
+
+  it('keeps typed edits when busy or duplicatePlotNo inputs change', async () => {
+    setup({ plot });
+    const out: PlotRequest[] = [];
+    fixture.componentInstance.submitted.subscribe(r => out.push(r));
+    await fixture.whenStable();
+    type('plotNo', 'Z-5');
+    fixture.componentRef.setInput('busy', true); fixture.detectChanges();
+    fixture.componentRef.setInput('busy', false);
+    fixture.componentRef.setInput('duplicatePlotNo', true); fixture.detectChanges();
+    await fixture.whenStable();
+    el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
+    expect(out[0].plotNo).toBe('Z-5');
   });
 
   it('renders the locked variant with no inputs and a back button', () => {

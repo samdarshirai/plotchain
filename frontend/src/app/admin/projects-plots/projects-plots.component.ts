@@ -158,7 +158,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
               <dt>{{ 'admin.projectsPlots.statusLabel' | translate }}</dt><dd>{{ 'plotTile.status.' + sel.status | translate }}</dd>
             </dl>
             <div class="projects-plots__aside-actions">
-              <button type="button" class="brand-button brand-button--secondary projects-plots__edit-plot" (click)="openAside({ kind: 'editPlot' })">
+              <button type="button" *ngIf="plotDetail" class="brand-button brand-button--secondary projects-plots__edit-plot" (click)="openAside({ kind: 'editPlot' })">
                 {{ 'admin.projectsPlots.editPlotAction' | translate }}
               </button>
             </div>
@@ -328,7 +328,7 @@ export class ProjectsPlotsComponent implements OnInit {
     this.mutate(this.projectsService.updatePlot(this.selectedProject!.id, plotId, req), () => {
       this.refreshAfterPlotChange();
       this.aside = { kind: 'detail' };
-      this.plotsService.getPlot(this.selectedProject!.id, plotId).subscribe(d => (this.plotDetail = d));
+      this.plotsService.getPlot(this.selectedProject!.id, plotId).subscribe({ next: d => (this.plotDetail = d), error: () => undefined }); // keep the prior detail on failure
     });
   }
 

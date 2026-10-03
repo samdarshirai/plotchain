@@ -30,9 +30,24 @@ describe('ProjectFormComponent', () => {
     expect(out).toEqual([{ request: { name: 'Lake View', location: 'Pune' }, photo: null }]);
   });
 
+  it('keeps typed edits when busy changes', async () => {
+    fixture.componentRef.setInput('project', { id: 'p', name: 'Old', location: 'Pune' });
+    fixture.detectChanges();
+    const out: { request: { name: string } }[] = [];
+    fixture.componentInstance.submitted.subscribe(v => out.push(v as never));
+    await fixture.whenStable();
+    type('name', 'Typed');
+    fixture.componentRef.setInput('busy', true); fixture.detectChanges();
+    fixture.componentRef.setInput('busy', false); fixture.detectChanges();
+    await fixture.whenStable();
+    el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
+    expect(out[0].request.name).toBe('Typed');
+  });
+
   it('does not emit when the name is blank', async () => {
     const out: unknown[] = [];
     fixture.componentInstance.submitted.subscribe(v => out.push(v));
+    await fixture.whenStable();
     type('name', '   '); type('location', 'Pune');
     await fixture.whenStable();
     el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));

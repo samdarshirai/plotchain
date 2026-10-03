@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -67,8 +67,8 @@ export class PlotFormComponent implements OnChanges {
   price: number | null = null;
   submitted_ = false;
 
-  ngOnChanges(): void {
-    if (this.plot) {
+  ngOnChanges(c: SimpleChanges): void {
+    if (c['plot'] && this.plot) {
       ({ plotNo: this.plotNo, plotType: this.plotType, areaSqft: this.areaSqft, rate: this.rate, price: this.price } = this.plot);
     }
   }

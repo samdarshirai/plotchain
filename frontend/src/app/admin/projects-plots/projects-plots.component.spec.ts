@@ -174,6 +174,14 @@ describe('ProjectsPlotsComponent', () => {
       expect(fixture.componentInstance.aside.kind).toBe('detail');
     });
 
+    it('hides Edit plot until the plot detail has loaded', () => {
+      boot();
+      el().querySelector<HTMLButtonElement>('app-plot-tile button')!.click();
+      fixture.detectChanges();
+      expect(el().querySelector('.projects-plots__edit-plot')).toBeNull();
+      http.expectOne('/api/company/projects/p1/plots/id-A-1').flush(detail({ id: 'id-A-1' }));
+    });
+
     it('shows the locked edit variant for a BOOKED plot', () => {
       boot();
       selectFirstAvailable('BOOKED');
