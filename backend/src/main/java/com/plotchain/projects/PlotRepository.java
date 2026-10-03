@@ -19,6 +19,9 @@ public interface PlotRepository extends JpaRepository<Plot, UUID> {
 
     Page<Plot> findAllByProjectId(UUID projectId, Pageable pageable);
 
+    // Unit 10 plot grid: one unpaged read of a project's plots (bounded set); the caller sorts.
+    List<Plot> findByProjectId(UUID projectId);
+
     Optional<Plot> findByIdAndProjectId(UUID id, UUID projectId);
 
     List<Plot> findAllByProjectIdAndPlotNoIn(UUID projectId, Collection<String> plotNos);

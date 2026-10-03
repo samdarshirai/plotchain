@@ -668,6 +668,35 @@ class SecurityConfigTest {
             .andExpect(status().isForbidden());
     }
 
+    // plot-booking unit 10 (Decision 10): the plot grid is readable by ANY authenticated user. No SecurityConfig
+    // matcher exists for /api/projects/**, so it falls through to anyRequest().authenticated(). ProjectRepository is
+    // not @MockBean'd here, so a random project id is a genuine miss -> ProjectNotFoundException -> 404. Asserting
+    // the precise 404 (not just "not 403") proves the request passed the security layer and reached the controller.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void plotGridIsReachableForEveryAuthenticatedRole(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/projects/" + UUID.randomUUID() + "/plots/grid")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void plotGridIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/projects/" + UUID.randomUUID() + "/plots/grid"))
+            .andExpect(status().isUnauthorized());
+    }
+
+    // Proves the grid being open did not loosen the neighbouring admin-only plot GET: the thumbnail stays
+    // ADMIN-only (associate 403, admin passes security -> unknown project 404).
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void plotGridOpenAccessDoesNotLoosenTheAdminOnlyThumbnailRead(AssociateRole role) throws Exception {
+        int expected = role == AssociateRole.ASSOCIATE ? 403 : 404;
+        mockMvc.perform(get("/api/company/projects/" + UUID.randomUUID() + "/thumbnail")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(expected));
+    }
+
     // epin-domain unit 1 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
     // "POST /api/admin/epins, ADMIN-only", Decision 12): same target-role-model pattern as
     // adminSalesRecordIsReachableOnlyForAdminAndForbiddenForEveryOtherRole and
