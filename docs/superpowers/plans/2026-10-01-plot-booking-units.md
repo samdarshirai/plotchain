@@ -19,7 +19,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone. En
 | 7 | Admin transfers an `ACTIVE` booking to another associate — `POST /api/admin/bookings/{id}/transfer` | backend | 1 | merged | `2026-10-01-plot-booking-unit-7-transfer-booking.md` | `4c533df..e946dc5` (merge `2a92070`) |
 | 8 | Admin views a paged, filterable booking register — `GET /api/admin/bookings` | backend | 1 | merged | `2026-10-01-plot-booking-unit-8-admin-booking-register.md` | `099b955..c1f4f16` (merge `c010443`) |
 | 9 | Admin views a paged overdue EMI report — `GET /api/admin/emi-reports/overdue` | backend | 1 | merged | `2026-10-01-plot-booking-unit-9-overdue-emi-report.md` | `e0420d6..a865aa5` (merge `b9cd7fb`) |
-| 10 | Any authenticated user reads a project's plot grid — `GET /api/projects/{id}/plots/grid` | backend | none | planned | `2026-10-01-plot-booking-unit-10-plot-grid-read.md` | — |
+| 10 | Any authenticated user reads a project's plot grid — `GET /api/projects/{id}/plots/grid` | backend | none | merged | `2026-10-01-plot-booking-unit-10-plot-grid-read.md` | `f837e7b..5ee47f7` (merge `f02ccdf`) |
 | 11 | Admin "Projects & Plots" screen — project list, colour-coded plot grid, plot create/edit, "Book" action | screen | 1, 10 | pending | `docs/design/admin_operational_screens/projects_plots/` (design approved; plan pending) | — |
 | 12 | Admin "Bookings & EMI" screen — register, booking detail with Pay/Confirm/Cancel/Transfer, overdue report tab | screen | 1, 2, 4, 5, 6, 7, 8, 9 | pending | `docs/design/admin_operational_screens/bookings_emi/` (design approved; plan pending) | — |
 | 13 | Associate view-only availability grid + extended Plot Bookings screen | screen | 1, 10 | pending | `docs/design/associate_operational_screens/plot_availability_bookings/` (design approved; plan pending) | — |
@@ -259,7 +259,13 @@ Resolutions: (1) `RecordPaymentRequest` gains `amount`, 400 on mismatch; (2) can
 - `GET /api/admin/emi-reports/overdue` returns `OverdueReportPageResponse(rows, page, size, totalElements)`; each row is `OverdueReportRow(bookingId, plotId, plotNo, associateId, associateName, buyerName, overdueCount, overdueAmount, oldestDueDate)`, sorted oldest overdue due date ASC then `booked_at` ASC then `id`. Size clamped to [1,100] (default 20). It has its own explicit ADMIN matcher in `SecurityConfig`. The register rows (unit 8) carry `associateId` + `buyerName` only (no associate name); the report rows carry `associateName` and `plotNo`.
 - Before relying on units 8 and 9 in production, smoke-test their JPQL against real PostgreSQL: the register's null-UUID/enum parameter binding and the report's grouped query (entity joins, constructor expression, `COUNT(DISTINCT)`) are proven on H2 only. V41 itself also has not been run on real Postgres.
 - Test-quality nits left as is: an underscore in `OverdueReportIntegrationTest` test name `paidAndVoidPastDueNeverCount_andMixedBookingCountsOnlyPending`; the `id` tiebreak alone is only probabilistically caught on H2; no HTTP-level test pins empty-page `totalElements`.
-- Backend units 1-9 are complete. Remaining: unit 10 (plot grid read endpoint, unplanned) and screen units 11-13 (unplanned).
+- Backend units 1-9 are complete. Remaining: screen units 11-13 (designed, unplanned) and unit 14 (backend read-model follow-up, unsliced).
+
+**Unit 10 notes (merged 2026-10-03) — frontend contract for units 11 and 13:**
+- `GET /api/projects/{id}/plots/grid` (NOT under `/api/company/projects`) returns a bare JSON array of `{plotId, plotNo, type, area, price, status}`; `type` is `NORMAL`|`CORNER`, `status` is `AVAILABLE`|`BOOKED`|`SOLD`, `area` and `price` are numbers. No project name, no counts, no `rate`, no thumbnail, no booking or buyer data. Counts per status are derived client-side; unit 11 fetches `GET /api/company/projects/{projectId}/plots/{plotId}` for the rate.
+- Natural order on `plotNo` ('2' before '10', 'A-2' before 'A-10'), done in Java after one query. Unpaginated (`// ponytail:` ceiling about 5,000 plots per project). Unknown project is 404; an empty project is 200 with `[]`.
+- Any authenticated user can read it. No `SecurityConfig` edit was needed: `/api/projects/**` has no matcher and falls to `anyRequest().authenticated()`; only `/api/company/projects/*/thumbnail` and `/plots/csv-template` stay admin-only (pinned by a `SecurityConfigTest` row).
+- Nit left as is: the leak-guard test also has brittle `doesNotContain("booking")`-style substring assertions next to the exact key-set check.
 
 ## Excluded — not a unit
 
