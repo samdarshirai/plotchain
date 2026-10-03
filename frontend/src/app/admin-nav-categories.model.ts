@@ -54,6 +54,14 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     ]
   },
   {
+    key: 'inventory',
+    labelKey: 'nav.categories.inventory',
+    icon: 'domain',
+    items: [
+      { key: 'projectsPlots', labelKey: 'settings.sections.projectsPlots', path: '/settings/projects-plots' }
+    ]
+  },
+  {
     key: 'system',
     labelKey: 'nav.categories.system',
     icon: 'admin_panel_settings',

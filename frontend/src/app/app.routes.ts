@@ -36,6 +36,7 @@ import { PlotBookingsComponent } from './plot-bookings/plot-bookings.component';
 import { MyAccountComponent } from './my-account/my-account.component';
 import { IncomeStatementComponent } from './income-statement/income-statement.component';
 import { PayoutHistoryComponent } from './payout-history/payout-history.component';
+import { ProjectsPlotsComponent } from './admin/projects-plots/projects-plots.component';
 import { EPinsComponent } from './epins/epins.component';
 
 export const routes: Routes = [
@@ -98,6 +99,7 @@ export const routes: Routes = [
       { path: 'ledger-register', component: LedgerRegisterComponent, data: { sectionKey: 'ledgerRegister' } },
       { path: 'e-pin-register', component: EPinRegisterComponent, data: { sectionKey: 'epinRegister' } },
       { path: 'payout-approval', component: PayoutApprovalComponent, data: { sectionKey: 'payoutApproval' } },
+      { path: 'projects-plots', component: ProjectsPlotsComponent, data: { sectionKey: 'projectsPlots' } },
       { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } },
       { path: 'admin-stats', component: AdminStatsComponent, data: { sectionKey: 'adminStats' } },
       // There is no settings hub screen any more -- every entry point (a header category tab, an

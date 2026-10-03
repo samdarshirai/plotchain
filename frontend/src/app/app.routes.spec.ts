@@ -180,6 +180,13 @@ describe('routes', () => {
       expect(payoutApprovalChild).toBeTruthy();
       expect(payoutApprovalChild!.data).toEqual({ sectionKey: 'payoutApproval' });
     });
+
+    it('has a projects-plots child stamped with sectionKey projectsPlots', () => {
+      const settingsRoute = routes.find(r => r.path === 'settings');
+      const child = settingsRoute!.children!.find(c => c.path === 'projects-plots');
+      expect(child).toBeTruthy();
+      expect(child!.data).toEqual({ sectionKey: 'projectsPlots' });
+    });
   });
 
   describe('root route', () => {

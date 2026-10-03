@@ -1,0 +1,308 @@
+import { Component, HostListener, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import { TranslateModule } from '@ngx-translate/core';
+import { catchError, of } from 'rxjs';
+import { AdminService } from '../admin.service';
+import { AssociateSummary } from '../models/associate-summary.model';
+import { ProjectsService } from '../../setup/steps/projects/projects.service';
+import { Plot, PlotStatus, Project } from '../../setup/models/project.model';
+import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
+import { PlotTileComponent } from '../../shared/components/plot-tile/plot-tile.component';
+import {
+  PlotBlock, PlotGridItem, StatusCounts, countByStatus, formatArea, formatInr, groupIntoBlocks
+} from '../../shared/utils/plot-grid.util';
+import { ProjectsPlotsService } from './projects-plots.service';
+import { BookingEmiConfig } from './projects-plots.model';
+
+type Aside =
+  | { kind: 'none' }
+  | { kind: 'detail' }
+  | { kind: 'book' }
+  | { kind: 'editPlot' }
+  | { kind: 'addPlot' }
+  | { kind: 'project'; mode: 'add' | 'edit' }
+  | { kind: 'csv' };
+
+interface Banner {
+  tone: 'success' | 'warning' | 'danger';
+  key?: string;
+  params?: Record<string, unknown>;
+  text?: string;
+  bookingId?: string;
+}
+
+const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
+
+@Component({
+  selector: 'app-projects-plots',
+  standalone: true,
+  imports: [CommonModule, RouterLink, TranslateModule, InlineBannerComponent, PlotTileComponent],
+  template: `
+    <div class="projects-plots">
+      <div class="projects-plots__head">
+        <div class="projects-plots__intro">
+          <span class="projects-plots__eyebrow">{{ 'admin.projectsPlots.eyebrow' | translate }}</span>
+          <h1 class="projects-plots__title">{{ 'admin.projectsPlots.title' | translate }}</h1>
+          <p class="projects-plots__subtitle">{{ 'admin.projectsPlots.subtitle' | translate }}</p>
+        </div>
+        <button type="button" class="brand-button" (click)="openAside({ kind: 'project', mode: 'add' })">
+          {{ 'admin.projectsPlots.addProjectAction' | translate }}
+        </button>
+      </div>
+
+      <app-inline-banner *ngIf="projectsError" tone="danger">{{ 'admin.projectsPlots.error.loadProjects' | translate }}</app-inline-banner>
+
+      <div class="projects-plots__empty" *ngIf="projects && !projects.length">
+        <h2>{{ 'admin.projectsPlots.empty.noProjectsTitle' | translate }}</h2>
+        <p>{{ 'admin.projectsPlots.empty.noProjectsBody' | translate }}</p>
+      </div>
+
+      <div class="projects-plots__layout" *ngIf="projects?.length">
+        <!-- (a) master list; a <select> stands in below 1024px -->
+        <nav class="projects-plots__list" [attr.aria-label]="'admin.projectsPlots.projectsHeading' | translate">
+          <h2 class="projects-plots__list-heading">{{ 'admin.projectsPlots.projectsHeading' | translate }}</h2>
+          <button type="button" *ngFor="let p of projects" class="projects-plots__project"
+            [class.projects-plots__project--selected]="p.id === selectedProject?.id"
+            [attr.aria-current]="p.id === selectedProject?.id ? 'true' : null" (click)="selectProject(p)">
+            <span class="projects-plots__project-name">{{ p.name }}</span>
+            <span class="projects-plots__project-loc">{{ p.location }}</span>
+            <span class="projects-plots__bar" aria-hidden="true">
+              <span class="projects-plots__bar-seg projects-plots__bar-seg--available" [style.flex-grow]="p.availablePlots"></span>
+              <span class="projects-plots__bar-seg projects-plots__bar-seg--booked" [style.flex-grow]="bookedCount(p)"></span>
+              <span class="projects-plots__bar-seg projects-plots__bar-seg--sold" [style.flex-grow]="p.soldPlots"></span>
+            </span>
+            <span class="projects-plots__project-count">{{ 'admin.projectsPlots.plotsSummary' | translate: { total: p.totalPlots, available: p.availablePlots } }}</span>
+          </button>
+        </nav>
+        <label class="projects-plots__project-select">
+          {{ 'admin.projectsPlots.projectSelectLabel' | translate }}
+          <select (change)="selectProjectById($any($event.target).value)">
+            <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === selectedProject?.id">{{ p.name }}</option>
+          </select>
+        </label>
+
+        <!-- (b) project header + legend + grid -->
+        <section class="projects-plots__main" *ngIf="selectedProject as sp">
+          <div class="projects-plots__project-head">
+            <div>
+              <h2 class="projects-plots__project-title">{{ sp.name }}</h2>
+              <span class="projects-plots__project-loc">{{ sp.location }}</span>
+            </div>
+            <div class="projects-plots__project-actions">
+              <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'project', mode: 'edit' })">{{ 'admin.projectsPlots.editProjectAction' | translate }}</button>
+              <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'csv' })">{{ 'admin.projectsPlots.importCsvAction' | translate }}</button>
+              <button type="button" class="brand-button" (click)="openAside({ kind: 'addPlot' })">{{ 'admin.projectsPlots.addPlotAction' | translate }}</button>
+            </div>
+          </div>
+
+          <app-inline-banner *ngIf="gridError" tone="danger">
+            {{ 'admin.projectsPlots.error.loadGrid' | translate }}
+            <button type="button" class="projects-plots__retry" (click)="loadGrid()">{{ 'admin.projectsPlots.retry' | translate }}</button>
+          </app-inline-banner>
+
+          <div class="projects-plots__skeleton" role="status" *ngIf="!grid && !gridError">
+            <span class="projects-plots__sr">{{ 'admin.projectsPlots.loading' | translate }}</span>
+            <span class="projects-plots__skeleton-tile" *ngFor="let i of [1,2,3,4,5,6,7,8]"></span>
+          </div>
+
+          <ng-container *ngIf="grid">
+            <div class="projects-plots__legend" role="group" [attr.aria-label]="'admin.projectsPlots.legendLabel' | translate">
+              <button type="button" *ngFor="let s of statuses" class="projects-plots__chip"
+                [class.projects-plots__chip--on]="filter.has(s)" [attr.aria-pressed]="filter.has(s)" (click)="toggleFilter(s)">
+                {{ 'admin.projectsPlots.status.' + s | translate }} <span class="projects-plots__chip-count">{{ counts[s] }}</span>
+              </button>
+              <span class="projects-plots__note">{{ 'admin.projectsPlots.cornerNote' | translate }}</span>
+            </div>
+
+            <div class="projects-plots__empty" *ngIf="!grid.length">
+              <h2>{{ 'admin.projectsPlots.empty.noPlotsTitle' | translate }}</h2>
+              <p>{{ 'admin.projectsPlots.empty.noPlotsBody' | translate }}</p>
+            </div>
+            <p class="projects-plots__empty" *ngIf="grid.length && !visibleBlocks.length">{{ 'admin.projectsPlots.empty.filter' | translate }}</p>
+
+            <section class="projects-plots__block" *ngFor="let b of visibleBlocks">
+              <h3 class="projects-plots__block-heading" *ngIf="b.block">
+                {{ 'admin.projectsPlots.blockHeading' | translate: { block: b.block } }}
+                <span>{{ 'admin.projectsPlots.blockSummary' | translate: blockSummary(b) }}</span>
+              </h3>
+              <ul class="projects-plots__tiles">
+                <li *ngFor="let p of b.plots">
+                  <app-plot-tile [attr.data-plot-id]="p.plotId" [plotNo]="p.plotNo" [type]="p.type" [area]="p.area"
+                    [price]="p.price" [status]="p.status" [selected]="p.plotId === selectedPlotId" (tileSelect)="selectPlot(p)"></app-plot-tile>
+                </li>
+              </ul>
+            </section>
+          </ng-container>
+        </section>
+
+        <!-- (c/d) aside: one region, swapped content. Task 5-7 add the form cases. -->
+        <div class="projects-plots__scrim" *ngIf="aside.kind !== 'none'" (click)="closeAside()"></div>
+        <aside class="projects-plots__aside" *ngIf="aside.kind !== 'none'" [attr.aria-label]="'admin.projectsPlots.title' | translate">
+          <app-inline-banner *ngIf="banner as b" [tone]="b.tone" [dismissible]="true" (dismissed)="banner = null">
+            <span [attr.role]="b.tone === 'success' ? 'status' : 'alert'">
+              {{ b.key ? (b.key | translate: b.params) : b.text }}
+              <a *ngIf="b.bookingId" [routerLink]="['/settings/bookings-emi']" [queryParams]="{ booking: b.bookingId }">{{ 'admin.projectsPlots.banner.viewBooking' | translate }}</a>
+            </span>
+          </app-inline-banner>
+          <ng-container *ngIf="aside.kind === 'detail' && selectedPlot as sel">
+            <h2 class="projects-plots__aside-title">{{ sel.plotNo }}</h2>
+            <dl class="projects-plots__facts">
+              <dt>{{ 'admin.projectsPlots.factsType' | translate }}</dt><dd>{{ 'plotTile.type.' + sel.type | translate }}</dd>
+              <dt>{{ 'admin.projectsPlots.factsArea' | translate }}</dt><dd>{{ areaText(sel.area) }}</dd>
+              <dt>{{ 'admin.projectsPlots.factsRate' | translate }}</dt><dd>{{ plotDetail ? plotDetail.rate.toLocaleString('en-IN') : '—' }}</dd>
+              <dt>{{ 'admin.projectsPlots.factsPrice' | translate }}</dt><dd>{{ priceText(sel.price) }}</dd>
+              <dt>{{ 'admin.projectsPlots.statusLabel' | translate }}</dt><dd>{{ 'plotTile.status.' + sel.status | translate }}</dd>
+            </dl>
+          </ng-container>
+        </aside>
+      </div>
+    </div>
+  `
+})
+export class ProjectsPlotsComponent implements OnInit {
+  protected projectsService = inject(ProjectsService);
+  protected plotsService = inject(ProjectsPlotsService);
+  private adminService = inject(AdminService);
+
+  readonly statuses = STATUSES;
+  projects: Project[] | null = null;
+  projectsError = false;
+  selectedProject: Project | null = null;
+  grid: PlotGridItem[] | null = null;
+  gridError = false;
+  filter = new Set<PlotStatus>();
+  counts: StatusCounts = { AVAILABLE: 0, BOOKED: 0, SOLD: 0 };
+  visibleBlocks: PlotBlock[] = [];
+  selectedPlotId: string | null = null;
+  plotDetail: Plot | null = null;
+  aside: Aside = { kind: 'none' };
+  banner: Banner | null = null;
+  associates: AssociateSummary[] = [];
+  emiConfig: BookingEmiConfig | null = null;
+
+  get selectedPlot(): PlotGridItem | null {
+    return this.grid?.find(p => p.plotId === this.selectedPlotId) ?? null;
+  }
+
+  ngOnInit(): void {
+    // Only role ASSOCIATE can sell; the summary has no status field (see plan Deviation 2).
+    this.adminService.listAssociates().pipe(catchError(() => of([] as AssociateSummary[])))
+      .subscribe(list => (this.associates = list.filter(a => a.role === 'ASSOCIATE')));
+    // EMI preview is a nicety: an unreadable config hides the preview, never blocks the form.
+    this.plotsService.getEmiConfig().pipe(catchError(() => of(null))).subscribe(c => (this.emiConfig = c));
+    this.reloadProjects();
+  }
+
+  reloadProjects(selectId?: string): void {
+    this.projectsService.listProjects().subscribe({
+      next: list => {
+        this.projects = list;
+        this.projectsError = false;
+        const keep = selectId ?? this.selectedProject?.id;
+        const next = list.find(p => p.id === keep) ?? list[0] ?? null;
+        if (next && next.id !== this.selectedProject?.id) {
+          this.selectProject(next);
+        } else {
+          this.selectedProject = next;
+        }
+      },
+      error: () => (this.projectsError = true)
+    });
+  }
+
+  selectProjectById(id: string): void {
+    const p = this.projects?.find(x => x.id === id);
+    if (p) { this.selectProject(p); }
+  }
+
+  selectProject(p: Project): void {
+    this.selectedProject = p;
+    this.selectedPlotId = null;
+    this.plotDetail = null;
+    this.aside = { kind: 'none' };
+    this.banner = null;
+    this.filter.clear();
+    this.grid = null;
+    this.loadGrid();
+  }
+
+  // Keeps the last good grid on a failed refresh (DESIGN: "Grid refresh failure").
+  loadGrid(): void {
+    const project = this.selectedProject;
+    if (!project) { return; }
+    this.plotsService.getGrid(project.id).subscribe({
+      next: grid => {
+        if (project.id !== this.selectedProject?.id) { return; }
+        this.grid = grid;
+        this.gridError = false;
+        this.rebuild();
+      },
+      error: () => {
+        if (project.id === this.selectedProject?.id) { this.gridError = true; }
+      }
+    });
+  }
+
+  toggleFilter(s: PlotStatus): void {
+    this.filter.has(s) ? this.filter.delete(s) : this.filter.add(s);
+    this.rebuild();
+  }
+
+  private rebuild(): void {
+    const all = this.grid ?? [];
+    this.counts = countByStatus(all);
+    this.visibleBlocks = groupIntoBlocks(all)
+      .map(b => ({ block: b.block, plots: this.filter.size ? b.plots.filter(p => this.filter.has(p.status)) : b.plots }))
+      .filter(b => b.plots.length);
+  }
+
+  blockSummary(b: PlotBlock): { available: number; total: number } {
+    const full = (this.grid ?? []).filter(p => groupIntoBlocks([p])[0].block === b.block || !b.block);
+    return { available: full.filter(p => p.status === 'AVAILABLE').length, total: full.length };
+  }
+
+  bookedCount(p: Project): number {
+    return Math.max(p.totalPlots - p.availablePlots - p.soldPlots, 0);
+  }
+
+  selectPlot(p: PlotGridItem): void {
+    this.selectedPlotId = p.plotId;
+    this.plotDetail = null;
+    this.banner = null;
+    this.aside = { kind: 'detail' };
+    this.plotsService.getPlot(this.selectedProject!.id, p.plotId).subscribe({
+      next: d => { if (this.selectedPlotId === p.plotId) { this.plotDetail = d; } },
+      error: () => undefined // rate shows "—"; the grid facts are still enough to act on
+    });
+  }
+
+  openAside(next: Aside): void {
+    this.banner = null;
+    this.aside = next;
+  }
+
+  closeAside(): void {
+    const returnTo = this.selectedPlotId;
+    this.aside = { kind: 'none' };
+    if (returnTo) {
+      setTimeout(() => document.querySelector<HTMLElement>(`[data-plot-id="${returnTo}"] button`)?.focus());
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.aside.kind !== 'none') { this.closeAside(); }
+  }
+
+  areaText = formatArea;
+  priceText = formatInr;
+
+  protected errorBanner(err: HttpErrorResponse): Banner {
+    if (err.status === 403) { return { tone: 'danger', key: 'admin.projectsPlots.error.forbidden' }; }
+    if (err.status === 404) { return { tone: 'danger', key: 'admin.projectsPlots.error.notFound' }; }
+    const serverText = err.status === 400 && typeof err.error?.error === 'string' ? err.error.error : undefined;
+    return serverText ? { tone: 'danger', text: serverText } : { tone: 'danger', key: 'admin.projectsPlots.error.generic' };
+  }
+}

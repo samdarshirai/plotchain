@@ -31,10 +31,10 @@ describe('AdminSidebarComponent', () => {
   const groupLabels = (el: HTMLElement) =>
     Array.from(el.querySelectorAll('.associate-sidebar__group-toggle')).map(b => b.textContent?.trim());
 
-  it('lists Dashboard plus the four category groups, all closed by default', () => {
+  it('lists Dashboard plus the five category groups, all closed by default', () => {
     const { el } = render();
     expect(el.querySelector('a[href="/admin/dashboard"]')).toBeTruthy();
-    expect(groupLabels(el).length).toBe(4);
+    expect(groupLabels(el).length).toBe(5);
     expect(el.querySelectorAll('.associate-sidebar__subnav').length).toBe(0);
     expect(el.querySelectorAll('[aria-expanded="true"]').length).toBe(0);
   });
