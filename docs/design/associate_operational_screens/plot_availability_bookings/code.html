@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plot Availability and Bookings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Tokens: violet/cyan sibling set (income_statement, payout_history, dashboard) per user decision; plus AA text variants of the status colours. */
+:root{
+ --brand-primary:#7C3AED;--brand-secondary:#22D3EE;
+ --brand-gradient:linear-gradient(135deg,var(--brand-primary),var(--brand-secondary));
+ --brand-primary-soft:color-mix(in srgb,var(--brand-primary) 14%,transparent);
+ --brand-primary-contrast:#FFFFFF;
+ --surface-page:#f8f9ff;--surface-card:#ffffff;--surface-raised:#eff4ff;--border-subtle:#c2c6d9;
+ --text-primary:#0b1c30;--text-muted:#424656;
+ --ink:var(--text-primary);
+ /* sibling status tokens: tints and fills only (fail 4.5:1 as text on white) */
+ --status-success:#34D399;--status-warning:#F59E0B;--status-danger:#F87171;
+ /* text/border-safe variants added by this design: AA on card, raised and page surfaces */
+ --status-success-text:#047857;--status-warning-text:#92400E;--status-danger-text:#B91C1C;
+ --nav-active-fill:color-mix(in srgb,var(--brand-primary) 30%,var(--ink));
+ --shadow-card:0 4px 20px -2px rgba(0,0,0,.08);--shadow-pop:0 12px 32px -8px rgba(11,28,48,.35);
+ --sidebar-rail-width:68px;
+ --font-sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+ --font-display:'Geist',var(--font-sans);--font-mono:'JetBrains Mono','Courier New',monospace;
+ --radius-card:20px;--radius-panel:16px;--radius-ctl:10px;--radius-pill:999px;
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--surface-page);color:var(--text-primary);font:15px/1.5 var(--font-sans)}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:2px solid var(--brand-primary);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* design-preview chrome (NOT part of the shipped screen) */
+.preview{margin-left:var(--sidebar-rail-width);background:var(--surface-card);border-bottom:1px dashed var(--border-subtle);padding:.5rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;font:500 12px var(--font-mono);color:var(--text-muted)}
+.preview button{border:1px solid var(--border-subtle);padding:.25rem .625rem;background:var(--surface-card)}
+.preview button[aria-pressed=true]{background:var(--ink);color:var(--brand-secondary)}
+
+/* shell */
+.rail{position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-rail-width);background:var(--ink);display:flex;flex-direction:column;align-items:center;gap:.25rem;padding:1rem 0;z-index:20}
+.rail__mark{width:36px;height:36px;border:1px solid var(--brand-secondary);border-radius:var(--radius-ctl);display:grid;place-items:center;color:var(--brand-secondary);font:600 15px var(--font-display);margin-bottom:1rem}
+.rail a{width:44px;height:44px;display:grid;place-items:center;color:var(--border-subtle);border-radius:var(--radius-ctl);position:relative}
+.rail a svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6}
+.rail a[aria-current=page]{background:var(--nav-active-fill);color:var(--brand-secondary)}
+.rail a[aria-current=page]::after{content:"";position:absolute;left:8px;right:8px;bottom:3px;height:2px;background:var(--brand-secondary)}
+.app{margin-left:var(--sidebar-rail-width)}
+.page{max-width:1180px;margin:0 auto;padding:1.5rem 2rem 3rem;display:flex;flex-direction:column;gap:1.25rem}
+h1,h2,h3,p{margin:0}
+.title{font:600 1.75rem/1.2 var(--font-display);letter-spacing:-.01em}
+.sub{color:var(--text-muted);max-width:44rem;margin-top:.25rem}
+
+/* tab bar (shipped .tab-bar idiom) */
+.tabs{display:inline-flex;gap:.25rem;padding:.25rem;background:var(--surface-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-pill);align-self:flex-start;max-width:100%;overflow-x:auto}
+.tabs button{border-radius:var(--radius-pill);padding:.5rem 1rem;min-height:44px;font-weight:500;font-size:.875rem;color:var(--text-muted);white-space:nowrap}
+.tabs button[aria-selected=true]{background:var(--brand-primary);color:var(--brand-primary-contrast)}
+
+/* flanking rule header (style guide s3) */
+.rule{display:flex;align-items:center;gap:.75rem;font:500 .75rem var(--font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--brand-primary);margin:0 0 .75rem}
+.rule::before,.rule::after{content:"";height:1px;flex:1;background:var(--border-subtle)}
+.rule::before{max-width:2rem}
+
+.card{background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-card);padding:1.5rem;box-shadow:var(--shadow-card)}
+.banner{display:flex;gap:.75rem;align-items:center;justify-content:space-between;padding:.875rem 1.25rem;border:1px solid var(--status-danger-text);background:color-mix(in srgb,var(--status-danger) 14%,var(--surface-card));color:var(--status-danger-text);font-size:.875rem;border-radius:var(--radius-panel)}
+.banner button{border:1px solid currentColor;border-radius:var(--radius-ctl);padding:.375rem .875rem;min-height:44px;font-weight:600}
+.btn2{border-radius:var(--radius-ctl);background:var(--surface-raised);border:1px solid var(--border-subtle);padding:.625rem 1.25rem;min-height:44px;font-weight:600}
+
+/* ---------- Availability ---------- */
+.toolbar{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.9fr);gap:1.25rem;align-items:stretch}
+.seal{position:relative;padding:1.25rem 1.5rem;background:var(--surface-card);border:1px solid var(--brand-primary);box-shadow:0 0 0 4px var(--brand-primary-soft);border-radius:var(--radius-card);display:flex;flex-direction:column;gap:.5rem}
+.seal .rule{margin:0}
+.seal__fig{font:600 2.5rem/1 var(--font-mono);color:var(--text-primary)}
+.seal__fig small{font:400 1rem var(--font-sans);color:var(--text-muted)}
+.seal__proj{font-size:.875rem;color:var(--text-muted)}
+.seal select{margin-top:.25rem}
+label.f{display:flex;flex-direction:column;gap:.375rem;font-size:.8125rem;font-weight:500}
+select{width:100%;min-height:44px;padding:.5rem .75rem;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-ctl);font:inherit;color:var(--text-primary)}
+.filters{background:var(--surface-raised);padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;border-radius:var(--radius-panel)}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem}
+.chip{border-radius:var(--radius-pill);display:inline-flex;gap:.5rem;align-items:center;min-height:44px;padding:.375rem .875rem;border:1px solid var(--border-subtle);background:var(--surface-card);font-size:.875rem;font-weight:500}
+.chip b{font:600 .875rem var(--font-mono)}
+.chip i{font-style:normal;font-weight:700}
+.chip[aria-pressed=true]{border-color:var(--ink);background:var(--ink);color:var(--surface-card)}
+.filters__row{display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;justify-content:space-between}
+.filters__row label.f{min-width:200px;flex:0 1 220px}
+.legend{display:flex;flex-wrap:wrap;gap:.5rem 1.25rem;font-size:.8125rem;color:var(--text-muted);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:.375rem}
+.sw{width:22px;height:16px;border:1.5px solid;display:inline-block}
+
+.block{margin-bottom:1.5rem}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:.625rem}
+.tile{position:relative;min-height:92px;padding:.5rem .625rem;display:flex;flex-direction:column;gap:1px;text-align:left;border:1.5px solid;border-radius:var(--radius-ctl);background:var(--surface-card)}
+.tile__no{font:600 1rem var(--font-mono)}
+.tile__meta{font-size:.75rem;color:var(--text-muted);font-variant-numeric:tabular-nums}
+.tile__st{margin-top:auto;font-size:.75rem;font-weight:600;display:flex;gap:.375rem;align-items:center}
+.tile__st i{font-style:normal;width:1rem;text-align:center}
+.tile__corner{position:absolute;top:0;right:0;width:0;height:0;border-style:solid;border-width:0 18px 18px 0;border-color:transparent var(--brand-primary) transparent transparent;border-top-right-radius:var(--radius-ctl)}
+.tile--available{border-color:var(--status-success-text)}
+.tile--available .tile__st{color:var(--status-success-text)}
+.tile--booked{border-color:var(--status-warning-text);background:repeating-linear-gradient(135deg,var(--surface-card) 0 7px,color-mix(in srgb,var(--status-warning) 16%,var(--surface-card)) 7px 9px)}
+.tile--booked .tile__st{color:var(--status-warning-text)}
+.tile--sold{border-color:var(--ink);background:var(--ink);color:var(--surface-card)}
+.tile--sold .tile__meta{color:var(--border-subtle)}.tile--sold .tile__no{color:var(--brand-secondary)}
+.tile--sold .tile__st{color:var(--border-subtle)}
+.tile--sold .tile__corner{border-color:transparent var(--brand-secondary) transparent transparent}
+.tile:hover{box-shadow:0 0 0 2px var(--brand-primary-soft)}
+.tile[aria-expanded=true]{outline:2px solid var(--brand-primary);outline-offset:2px}
+.tile--skel{border-color:var(--border-subtle);background:linear-gradient(90deg,var(--surface-raised),var(--surface-card),var(--surface-raised));background-size:200% 100%;animation:sh 1.4s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.tile--skel{animation:none}}
+.empty{padding:3rem 1.5rem;text-align:center;color:var(--text-muted);display:flex;flex-direction:column;gap:.75rem;align-items:center}
+.empty h3{font:600 1.125rem var(--font-display);color:var(--text-primary)}
+
+/* popover / sheet */
+.pop{position:fixed;z-index:40;background:var(--surface-card);border:1px solid var(--brand-primary);padding:1.25rem 1.5rem;width:300px;box-shadow:var(--shadow-pop);border-radius:var(--radius-card);display:none}
+.pop.open{display:block}
+.pop h3{font:600 1.375rem var(--font-display);display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+.pop dl{margin:.75rem 0 0;display:grid;grid-template-columns:auto 1fr;gap:.375rem 1rem;font-size:.875rem}
+.pop dt{color:var(--text-muted)}.pop dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.pop__close{border-radius:var(--radius-ctl);min-width:44px;min-height:44px;font-size:1.25rem;margin:-.5rem -.75rem 0 0}
+.pop__hint{margin-top:.75rem;font-size:.75rem;color:var(--text-muted)}
+
+/* ---------- Bookings ---------- */
+.ms{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:1.25rem;align-items:start}
+.list{display:flex;flex-direction:column;gap:.75rem}
+.bk{display:flex;flex-direction:column;gap:.5rem;text-align:left;padding:1rem 1.125rem;background:var(--surface-card);border:1px solid var(--border-subtle);border-left:4px solid var(--brand-primary);border-radius:var(--radius-panel);min-height:44px}
+.bk--sel{outline:2px solid var(--brand-primary);outline-offset:-1px;background:var(--surface-raised)}
+.bk--confirmed{border-left-color:var(--status-success-text)}
+.bk--cancelled{border-left-color:var(--border-subtle);color:var(--text-muted)}
+.bk--cancelled .bk__plot{text-decoration:line-through;text-decoration-thickness:1px}
+.bk--cancelled .bar span{background:var(--text-muted)}
+.bk__top{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+.bk__plot{font:600 1.125rem var(--font-mono);margin-right:auto}
+.bk__buyer{font-size:.8125rem;color:var(--text-muted)}
+.bk__sums{display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;font-size:.8125rem;font-variant-numeric:tabular-nums}
+.bk__due{font-weight:600}
+.bar{display:block;height:8px;background:var(--surface-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-pill);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--status-success-text)}
+.bar--lg{height:12px}
+.badge{display:inline-flex;gap:.25rem;align-items:center;padding:.125rem .5rem;font-size:.75rem;font-weight:600;border:1px solid;border-radius:var(--radius-pill);white-space:nowrap;line-height:1.4}
+.badge i{font-style:normal}
+.badge--active{color:var(--brand-primary);border-color:var(--brand-primary);background:color-mix(in srgb,var(--brand-primary) 8%,transparent)}
+.badge--confirmed,.badge--paid{color:var(--status-success-text);border-color:var(--status-success-text);background:color-mix(in srgb,var(--status-success) 12%,transparent)}
+.badge--cancelled,.badge--void{color:var(--text-muted);border-color:var(--border-subtle);background:var(--surface-raised)}
+.badge--pending{color:var(--text-primary);border-color:var(--text-muted);background:transparent}
+.badge--overdue{color:var(--surface-card);background:var(--status-danger-text);border-color:var(--status-danger-text)}
+.detail{display:none;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:1.5rem;flex-direction:column;gap:1rem}
+.detail.show{display:flex}
+.detail__head{display:flex;gap:1rem}.detail__head h3{font:600 1.375rem var(--font-display);display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+.detail__head p{font-size:.875rem;color:var(--text-muted);margin-top:.25rem}
+.detail__back{display:none;min-height:44px;font-weight:600;color:var(--brand-primary);padding-right:.5rem}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin:0}
+.facts div{border-top:1px solid var(--brand-primary);padding-top:.375rem}
+.facts dt{font-size:.75rem;color:var(--text-muted)}.facts dd{margin:0;font:600 1rem var(--font-mono);font-variant-numeric:tabular-nums}
+.note{font-size:.875rem;padding:.625rem .875rem;background:var(--surface-raised);border-left:3px solid var(--status-success-text);border-radius:0 var(--radius-ctl) var(--radius-ctl) 0}
+.note--muted{border-left-color:var(--text-muted);color:var(--text-muted)}
+.tablewrap{overflow-x:auto}
+.ischedule{width:100%;border-collapse:collapse;font-size:.875rem}
+.ischedule th{font:600 .75rem var(--font-sans);color:var(--text-muted);text-align:left;padding:.5rem .625rem;border-bottom:1px solid var(--border-subtle);white-space:nowrap}
+.ischedule td{padding:.625rem;border-bottom:1px solid var(--border-subtle);font-variant-numeric:tabular-nums;white-space:nowrap}
+.num{text-align:right!important;font-family:var(--font-mono)}
+.ir--void td{color:var(--text-muted);background:repeating-linear-gradient(135deg,transparent 0 6px,var(--surface-raised) 6px 8px)}
+.ir--void td.num{text-decoration:line-through}
+.ir--overdue td{background:color-mix(in srgb,var(--status-danger) 10%,transparent)}
+.ir--overdue td:first-child{box-shadow:inset 3px 0 var(--status-danger-text)}
+.detail--cancelled .facts dd{color:var(--text-muted)}
+.pager{display:flex;justify-content:space-between;align-items:center;gap:1rem;font-size:.875rem;color:var(--text-muted)}
+.pager button{border-radius:var(--radius-ctl);min-height:44px;padding:.5rem 1.25rem;border:1px solid var(--border-subtle);background:var(--surface-raised);font-weight:600;color:var(--text-primary)}
+.pager button:disabled{opacity:.5;cursor:not-allowed}
+.fine{font-size:.8125rem;color:var(--text-muted)}
+.skelcard{border-radius:var(--radius-panel);height:112px;border:1px solid var(--border-subtle);background:linear-gradient(90deg,var(--surface-raised),var(--surface-card),var(--surface-raised));background-size:200% 100%;animation:sh 1.4s linear infinite}
+
+/* ---------- state switching ---------- */
+[hidden]{display:none!important}
+[data-view]{display:none;flex-direction:column;gap:1.25rem}
+body[data-tab=availability] [data-view=availability],body[data-tab=bookings] [data-view=bookings]{display:flex}
+.s{display:none}
+body[data-state=default] .s-default,body[data-state=loading] .s-loading,body[data-state=empty] .s-empty,body[data-state=error] .s-error,body[data-state=partial] .s-partial{display:block}
+body[data-state=default] .s-default.flex,body[data-state=partial] .s-partial.flex{display:flex}
+.s-default.flex,.s-partial.flex{flex-direction:column;gap:1rem}
+.s{margin:0}
+body[data-state=partial] .s-default-or-partial,body[data-state=default] .s-default-or-partial{display:block}
+.hide-in-error{}
+body[data-state=error] .hide-in-error,body[data-state=loading] .hide-on-loading.h{display:none}
+
+/* ---------- responsive ---------- */
+@media(max-width:959px){
+ .ms{grid-template-columns:1fr}
+ .ms .detail{position:fixed;inset:0;z-index:50;border:0;border-radius:0;overflow-y:auto;padding:1rem}
+ .ms .detail.show{display:none}
+ .ms.sheet .detail.show{display:flex}
+ .detail__back{display:inline-block}
+ .toolbar{grid-template-columns:1fr}
+}
+@media(max-width:767px){
+ .page{padding:1rem 1rem 2.5rem}
+ .title{font-size:1.5rem}
+ .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .facts{grid-template-columns:repeat(2,1fr)}
+ .pop{left:0!important;right:0;bottom:0;top:auto!important;width:auto;border-width:1px 0 0;border-radius:var(--radius-card) var(--radius-card) 0 0;padding-bottom:1.5rem}
+ .filters__row label.f{flex:1 1 100%}
+ .seal__fig{font-size:2.25rem}
+ .ischedule thead{display:none}
+ .ischedule,.ischedule tbody,.ischedule tr,.ischedule td{display:block;width:100%}
+ .ischedule tr{border:1px solid var(--border-subtle);margin-bottom:.5rem;padding:.25rem .5rem}
+ .ischedule td{border:0;display:flex;justify-content:space-between;padding:.25rem .125rem;white-space:normal}
+ .ischedule td::before{content:attr(data-label);color:var(--text-muted);font:400 .75rem var(--font-sans)}
+ .ir--void td{background:none}.ir--void{background:repeating-linear-gradient(135deg,transparent 0 6px,var(--surface-raised) 6px 8px)}
+ .ir--overdue td{background:none}.ir--overdue{background:color-mix(in srgb,var(--status-danger) 10%,transparent);box-shadow:inset 3px 0 var(--status-danger-text)}
+ .ir--overdue td:first-child{box-shadow:none}
+ .preview{font-size:11px}
+}
+.app,.page,[data-view],.s,.ms,.list,.detail,.toolbar>*,.filters,.seal{min-width:0}
+.app{width:calc(100% - var(--sidebar-rail-width))}
+.preview{overflow-wrap:anywhere}
+
+</style>
+</head>
+<body data-tab="availability" data-state="default">
+
+<div class="preview" role="group" aria-label="Design preview controls (not part of the screen)">
+ <span>DESIGN PREVIEW</span>
+ <span>State:</span>
+ <button data-set="state" data-v="default" aria-pressed="true">default</button>
+ <button data-set="state" data-v="loading" aria-pressed="false">loading</button>
+ <button data-set="state" data-v="empty" aria-pressed="false">empty</button>
+ <button data-set="state" data-v="error" aria-pressed="false">error</button>
+ <button data-set="state" data-v="partial" aria-pressed="false">partial</button>
+ <span>Tiles/rows are clickable. Esc closes the popover.</span>
+</div>
+
+<nav class="rail" aria-label="Main">
+ <div class="rail__mark" aria-hidden="true">VS</div>
+ <a href="#" aria-label="Dashboard" title="Dashboard"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></a>
+ <a href="#" aria-label="My Tree" title="My Tree"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5"/><rect x="3" y="16" width="6" height="5"/><rect x="15" y="16" width="6" height="5"/><path d="M12 8v4M6 16v-4h12v4"/></svg></a>
+ <a href="#" aria-label="Sales History" title="Sales History"><svg viewBox="0 0 24 24"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg></a>
+ <a href="#" aria-current="page" aria-label="Plot Bookings" title="Plot Bookings"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg></a>
+ <a href="#" aria-label="e-Pins" title="e-Pins"><svg viewBox="0 0 24 24"><path d="M3 8h18v3a2 2 0 000 4v3H3v-3a2 2 0 000-4z"/></svg></a>
+ <a href="#" aria-label="My Account" title="My Account"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></a>
+ <a href="#" aria-label="Income Statement" title="Income Statement"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7"/></svg></a>
+ <a href="#" aria-label="Payout History" title="Payout History"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12"/><circle cx="12" cy="12" r="2.5"/></svg></a>
+</nav>
+
+<main class="app"><div class="page">
+ <header>
+  <h1 class="title">Plot Bookings</h1>
+  <p class="sub">See which plots are open in a project, and follow your own bookings and EMI payments. This page is view-only.</p>
+ </header>
+
+ <div class="tabs" role="tablist" aria-label="Plot Bookings sections">
+  <button role="tab" data-v="availability" aria-selected="true">Availability</button>
+  <button role="tab" data-v="bookings" aria-selected="false">My bookings</button>
+ </div>
+
+ <!-- ================= AVAILABILITY ================= -->
+ <div data-view="availability">
+
+  <!-- error: project list failed -->
+  <div class="s s-error"><div class="banner" role="alert"><span>Couldn't load projects. Check your connection and try again.</span><button type="button">Try again</button></div>
+   <div class="card empty" style="margin-top:1rem"><h3>No project to show</h3><p>Projects couldn't be loaded, so there is no plot grid yet.</p></div></div>
+
+  <!-- loading -->
+  <div class="s s-loading" aria-busy="true" role="status"><span class="sr">Loading plots</span>
+   <div class="toolbar"><div class="seal"><h2 class="rule"><span>Project</span></h2><div class="skelcard" style="height:64px"></div></div><div class="filters"><div class="skelcard" style="height:44px"></div><div class="skelcard" style="height:44px"></div></div></div>
+   <div class="tiles" style="margin-top:1.25rem"><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div><div class="tile tile--skel" aria-hidden="true"></div></div></div>
+
+  <!-- empty: project has no plots -->
+  <div class="s s-empty"><div class="toolbar"><div class="seal"><h2 class="rule"><span>Project</span></h2><label class="f"><span class="sr">Project</span><select><option>Viraj Meadows, Danapur</option></select></label><p class="seal__proj">0 plots</p></div></div>
+   <div class="card empty" style="margin-top:1rem"><h3>No plots in this project yet</h3><p>Plots appear here once the company adds them. Pick another project to see its plots.</p></div></div>
+
+  <!-- partial extra: refresh failed, stale grid still shown -->
+  <div class="s s-partial"><div class="banner" role="alert"><span>Couldn't refresh the plot grid. Showing the last loaded plots; availability may be out of date.</span><button type="button">Try again</button></div></div>
+
+  <!-- default / partial -->
+  <div class="s s-default s-partial flex">
+      <div class="toolbar">
+    <div class="seal">
+     <h2 class="rule"><span>Open now</span></h2>
+     <p class="seal__fig">17 <small>of 36 plots</small></p>
+     <label class="f">Project
+      <select aria-label="Project"><option>Viraj Greens — Phulwari Sharif, Patna</option><option>Viraj Meadows — Danapur, Patna</option><option>Viraj Enclave — Bihta, Patna</option></select></label>
+    </div>
+    <div class="filters">
+     <div class="chips" role="group" aria-label="Filter by status">
+      <button class="chip" data-f="ALL" aria-pressed="true">All <b>36</b></button>
+      <button class="chip" data-f="AVAILABLE" aria-pressed="false"><i style="color:var(--status-success-text)" aria-hidden="true">✓</i>Available <b>17</b></button>
+      <button class="chip" data-f="BOOKED" aria-pressed="false"><i style="color:var(--status-warning-text)" aria-hidden="true">◐</i>Booked <b>8</b></button>
+      <button class="chip" data-f="SOLD" aria-pressed="false"><i aria-hidden="true">■</i>Sold <b>11</b></button>
+     </div>
+     <div class="filters__row">
+      <label class="f">Plot type<select id="type"><option value="ALL">All types</option><option value="NORMAL">Normal</option><option value="CORNER">Corner</option></select></label>
+      <div class="legend" aria-label="Legend">
+       <span><i class="sw" style="border-color:var(--status-success-text);background:var(--surface-card)"></i>Available</span>
+       <span><i class="sw" style="border-color:var(--status-warning-text);background:repeating-linear-gradient(135deg,var(--surface-card) 0 4px,color-mix(in srgb,var(--status-warning) 30%,var(--surface-card)) 4px 6px)"></i>Booked</span>
+       <span><i class="sw" style="border-color:var(--ink);background:var(--ink)"></i>Sold</span>
+       <span><i style="width:0;height:0;border-style:solid;border-width:0 12px 12px 0;border-color:transparent var(--brand-primary) transparent transparent;display:inline-block"></i>Corner plot</span>
+      </div>
+     </div>
+    </div>
+   </div>
+   <p class="fine" aria-live="polite">Showing <b id="shown">36</b> of 36 plots. Select a plot for details.</p>
+   <div id="nomatch" class="card empty" hidden><h3>No plots match these filters</h3><p>Try a different status or plot type.</p><button class="btn2" data-clear>Clear filters</button></div>
+   <section class="block" data-block="A"><h3 class="rule"><span>Block A &middot; 14 plots</span></h3><div class="tiles"><button type="button" class="tile tile--sold" data-st="SOLD" data-type="CORNER" data-no="A-1" data-area="1,350" data-price="₹42,32,000" aria-label="Plot A-1, corner, 1,350 sq ft, ₹42,32,000, sold" aria-haspopup="dialog"><span class="tile__corner" title="Corner plot" aria-hidden="true"></span><span class="tile__no">A-1</span><span class="tile__meta">1,350 sq ft</span><span class="tile__meta">₹42.3 L</span><span class="tile__st"><i aria-hidden="true">■</i>Sold</span></button><button type="button" class="tile tile--booked" data-st="BOOKED" data-type="NORMAL" data-no="A-2" data-area="1,800" data-price="₹51,30,000" aria-label="Plot A-2, normal, 1,800 sq ft, ₹51,30,000, booked" aria-haspopup="dialog"><span class="tile__no">A-2</span><span class="tile__meta">1,800 sq ft</span><span class="tile__meta">₹51.3 L</span><span class="tile__st"><i aria-hidden="true">◐</i>Booked</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="NORMAL" data-no="A-3" data-area="1,000" data-price="₹28,50,000" aria-label="Plot A-3, normal, 1,000 sq ft, ₹28,50,000, available" aria-haspopup="dialog"><span class="tile__no">A-3</span><span class="tile__meta">1,000 sq ft</span><span class="tile__meta">₹28.5 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="NORMAL" data-no="A-4" data-area="1,800" data-price="₹51,30,000" aria-label="Plot A-4, normal, 1,800 sq ft, ₹51,30,000, available" aria-haspopup="dialog"><span class="tile__no">A-4</span><span class="tile__meta">1,800 sq ft</span><span class="tile__meta">₹51.3 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--sold" data-st="SOLD" data-type="NORMAL" data-no="A-5" data-area="1,350" data-price="₹38,48,000" aria-label="Plot A-5, normal, 1,350 sq ft, ₹38,48,000, sold" aria-haspopup="dialog"><span class="tile__no">A-5</span><span class="tile__meta">1,350 sq ft</span><span class="tile__meta">₹38.5 L</span><span class="tile__st"><i aria-hidden="true">■</i>Sold</span></button><button type="button" class="tile tile--sold" data-st="SOLD" data-type="NORMAL" data-no="A-6" data-area="1,800" data-price="₹51,30,000" aria-label="Plot A-6, normal, 1,800 sq ft, ₹51,30,000, sold" aria-haspopup="dialog"><span class="tile__no">A-6</span><span class="tile__meta">1,800 sq ft</span><span class="tile__meta">₹51.3 L</span><span class="tile__st"><i aria-hidden="true">■</i>Sold</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="NORMAL" data-no="A-7" data-area="1,200" data-price="₹34,20,000" aria-label="Plot A-7, normal, 1,200 sq ft, ₹34,20,000, available" aria-haspopup="dialog"><span class="tile__no">A-7</span><span class="tile__meta">1,200 sq ft</span><span class="tile__meta">₹34.2 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--booked" data-st="BOOKED" data-type="NORMAL" data-no="A-8" data-area="1,000" data-price="₹28,50,000" aria-label="Plot A-8, normal, 1,000 sq ft, ₹28,50,000, booked" aria-haspopup="dialog"><span class="tile__no">A-8</span><span class="tile__meta">1,000 sq ft</span><span class="tile__meta">₹28.5 L</span><span class="tile__st"><i aria-hidden="true">◐</i>Booked</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="NORMAL" data-no="A-9" data-area="1,800" data-price="₹51,30,000" aria-label="Plot A-9, normal, 1,800 sq ft, ₹51,30,000, available" aria-haspopup="dialog"><span class="tile__no">A-9</span><span class="tile__meta">1,800 sq ft</span><span class="tile__meta">₹51.3 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="NORMAL" data-no="A-10" data-area="1,800" data-price="₹51,30,000" aria-label="Plot A-10, normal, 1,800 sq ft, ₹51,30,000, available" aria-haspopup="dialog"><span class="tile__no">A-10</span><span class="tile__meta">1,800 sq ft</span><span class="tile__meta">₹51.3 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--sold" data-st="SOLD" data-type="NORMAL" data-no="A-11" data-area="1,200" data-price="₹34,20,000" aria-label="Plot A-11, normal, 1,200 sq ft, ₹34,20,000, sold" aria-haspopup="dialog"><span class="tile__no">A-11</span><span class="tile__meta">1,200 sq ft</span><span class="tile__meta">₹34.2 L</span><span class="tile__st"><i aria-hidden="true">■</i>Sold</span></button><button type="button" class="tile tile--booked" data-st="BOOKED" data-type="NORMAL" data-no="A-12" data-area="1,350" data-price="₹38,48,000" aria-label="Plot A-12, normal, 1,350 sq ft, ₹38,48,000, booked" aria-haspopup="dialog"><span class="tile__no">A-12</span><span class="tile__meta">1,350 sq ft</span><span class="tile__meta">₹38.5 L</span><span class="tile__st"><i aria-hidden="true">◐</i>Booked</span></button><button type="button" class="tile tile--sold" data-st="SOLD" data-type="NORMAL" data-no="A-13" data-area="1,000" data-price="₹28,50,000" aria-label="Plot A-13, normal, 1,000 sq ft, ₹28,50,000, sold" aria-haspopup="dialog"><span class="tile__no">A-13</span><span class="tile__meta">1,000 sq ft</span><span class="tile__meta">₹28.5 L</span><span class="tile__st"><i aria-hidden="true">■</i>Sold</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="CORNER" data-no="A-14" data-area="1,800" data-price="₹56,43,000" aria-label="Plot A-14, corner, 1,800 sq ft, ₹56,43,000, available" aria-haspopup="dialog"><span class="tile__corner" title="Corner plot" aria-hidden="true"></span><span class="tile__no">A-14</span><span class="tile__meta">1,800 sq ft</span><span class="tile__meta">₹56.4 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button></div></section><section class="block" data-block="B"><h3 class="rule"><span>Block B &middot; 12 plots</span></h3><div class="tiles"><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="CORNER" data-no="B-1" data-area="1,800" data-price="₹56,43,000" aria-label="Plot B-1, corner, 1,800 sq ft, ₹56,43,000, available" aria-haspopup="dialog"><span class="tile__corner" title="Corner plot" aria-hidden="true"></span><span class="tile__no">B-1</span><span class="tile__meta">1,800 sq ft</span><span class="tile__meta">₹56.4 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--booked" data-st="BOOKED" data-type="NORMAL" data-no="B-2" data-area="1,000" data-price="₹28,50,000" aria-label="Plot B-2, normal, 1,000 sq ft, ₹28,50,000, booked" aria-haspopup="dialog"><span class="tile__no">B-2</span><span class="tile__meta">1,000 sq ft</span><span class="tile__meta">₹28.5 L</span><span class="tile__st"><i aria-hidden="true">◐</i>Booked</span></button><button type="button" class="tile tile--sold" data-st="SOLD" data-type="NORMAL" data-no="B-3" data-area="1,800" data-price="₹51,30,000" aria-label="Plot B-3, normal, 1,800 sq ft, ₹51,30,000, sold" aria-haspopup="dialog"><span class="tile__no">B-3</span><span class="tile__meta">1,800 sq ft</span><span class="tile__meta">₹51.3 L</span><span class="tile__st"><i aria-hidden="true">■</i>Sold</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="NORMAL" data-no="B-4" data-area="1,000" data-price="₹28,50,000" aria-label="Plot B-4, normal, 1,000 sq ft, ₹28,50,000, available" aria-haspopup="dialog"><span class="tile__no">B-4</span><span class="tile__meta">1,000 sq ft</span><span class="tile__meta">₹28.5 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--booked" data-st="BOOKED" data-type="NORMAL" data-no="B-5" data-area="1,800" data-price="₹51,30,000" aria-label="Plot B-5, normal, 1,800 sq ft, ₹51,30,000, booked" aria-haspopup="dialog"><span class="tile__no">B-5</span><span class="tile__meta">1,800 sq ft</span><span class="tile__meta">₹51.3 L</span><span class="tile__st"><i aria-hidden="true">◐</i>Booked</span></button><button type="button" class="tile tile--sold" data-st="SOLD" data-type="NORMAL" data-no="B-6" data-area="1,200" data-price="₹34,20,000" aria-label="Plot B-6, normal, 1,200 sq ft, ₹34,20,000, sold" aria-haspopup="dialog"><span class="tile__no">B-6</span><span class="tile__meta">1,200 sq ft</span><span class="tile__meta">₹34.2 L</span><span class="tile__st"><i aria-hidden="true">■</i>Sold</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="CORNER" data-no="B-7" data-area="1,500" data-price="₹47,02,000" aria-label="Plot B-7, corner, 1,500 sq ft, ₹47,02,000, available" aria-haspopup="dialog"><span class="tile__corner" title="Corner plot" aria-hidden="true"></span><span class="tile__no">B-7</span><span class="tile__meta">1,500 sq ft</span><span class="tile__meta">₹47.0 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="NORMAL" data-no="B-8" data-area="1,800" data-price="₹51,30,000" aria-label="Plot B-8, normal, 1,800 sq ft, ₹51,30,000, available" aria-haspopup="dialog"><span class="tile__no">B-8</span><span class="tile__meta">1,800 sq ft</span><span class="tile__meta">₹51.3 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--sold" data-st="SOLD" data-type="NORMAL" data-no="B-9" data-area="1,500" data-price="₹42,75,000" aria-label="Plot B-9, normal, 1,500 sq ft, ₹42,75,000, sold" aria-haspopup="dialog"><span class="tile__no">B-9</span><span class="tile__meta">1,500 sq ft</span><span class="tile__meta">₹42.8 L</span><span class="tile__st"><i aria-hidden="true">■</i>Sold</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="NORMAL" data-no="B-10" data-area="1,350" data-price="₹38,48,000" aria-label="Plot B-10, normal, 1,350 sq ft, ₹38,48,000, available" aria-haspopup="dialog"><span class="tile__no">B-10</span><span class="tile__meta">1,350 sq ft</span><span class="tile__meta">₹38.5 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="NORMAL" data-no="B-11" data-area="1,500" data-price="₹42,75,000" aria-label="Plot B-11, normal, 1,500 sq ft, ₹42,75,000, available" aria-haspopup="dialog"><span class="tile__no">B-11</span><span class="tile__meta">1,500 sq ft</span><span class="tile__meta">₹42.8 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="CORNER" data-no="B-12" data-area="1,800" data-price="₹56,43,000" aria-label="Plot B-12, corner, 1,800 sq ft, ₹56,43,000, available" aria-haspopup="dialog"><span class="tile__corner" title="Corner plot" aria-hidden="true"></span><span class="tile__no">B-12</span><span class="tile__meta">1,800 sq ft</span><span class="tile__meta">₹56.4 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button></div></section><section class="block" data-block="C"><h3 class="rule"><span>Block C &middot; 10 plots</span></h3><div class="tiles"><button type="button" class="tile tile--booked" data-st="BOOKED" data-type="CORNER" data-no="C-1" data-area="1,500" data-price="₹47,02,000" aria-label="Plot C-1, corner, 1,500 sq ft, ₹47,02,000, booked" aria-haspopup="dialog"><span class="tile__corner" title="Corner plot" aria-hidden="true"></span><span class="tile__no">C-1</span><span class="tile__meta">1,500 sq ft</span><span class="tile__meta">₹47.0 L</span><span class="tile__st"><i aria-hidden="true">◐</i>Booked</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="NORMAL" data-no="C-2" data-area="1,350" data-price="₹38,48,000" aria-label="Plot C-2, normal, 1,350 sq ft, ₹38,48,000, available" aria-haspopup="dialog"><span class="tile__no">C-2</span><span class="tile__meta">1,350 sq ft</span><span class="tile__meta">₹38.5 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--sold" data-st="SOLD" data-type="NORMAL" data-no="C-3" data-area="1,350" data-price="₹38,48,000" aria-label="Plot C-3, normal, 1,350 sq ft, ₹38,48,000, sold" aria-haspopup="dialog"><span class="tile__no">C-3</span><span class="tile__meta">1,350 sq ft</span><span class="tile__meta">₹38.5 L</span><span class="tile__st"><i aria-hidden="true">■</i>Sold</span></button><button type="button" class="tile tile--booked" data-st="BOOKED" data-type="NORMAL" data-no="C-4" data-area="1,200" data-price="₹34,20,000" aria-label="Plot C-4, normal, 1,200 sq ft, ₹34,20,000, booked" aria-haspopup="dialog"><span class="tile__no">C-4</span><span class="tile__meta">1,200 sq ft</span><span class="tile__meta">₹34.2 L</span><span class="tile__st"><i aria-hidden="true">◐</i>Booked</span></button><button type="button" class="tile tile--sold" data-st="SOLD" data-type="NORMAL" data-no="C-5" data-area="1,200" data-price="₹34,20,000" aria-label="Plot C-5, normal, 1,200 sq ft, ₹34,20,000, sold" aria-haspopup="dialog"><span class="tile__no">C-5</span><span class="tile__meta">1,200 sq ft</span><span class="tile__meta">₹34.2 L</span><span class="tile__st"><i aria-hidden="true">■</i>Sold</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="NORMAL" data-no="C-6" data-area="1,200" data-price="₹34,20,000" aria-label="Plot C-6, normal, 1,200 sq ft, ₹34,20,000, available" aria-haspopup="dialog"><span class="tile__no">C-6</span><span class="tile__meta">1,200 sq ft</span><span class="tile__meta">₹34.2 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="NORMAL" data-no="C-7" data-area="1,000" data-price="₹28,50,000" aria-label="Plot C-7, normal, 1,000 sq ft, ₹28,50,000, available" aria-haspopup="dialog"><span class="tile__no">C-7</span><span class="tile__meta">1,000 sq ft</span><span class="tile__meta">₹28.5 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--sold" data-st="SOLD" data-type="NORMAL" data-no="C-8" data-area="1,800" data-price="₹51,30,000" aria-label="Plot C-8, normal, 1,800 sq ft, ₹51,30,000, sold" aria-haspopup="dialog"><span class="tile__no">C-8</span><span class="tile__meta">1,800 sq ft</span><span class="tile__meta">₹51.3 L</span><span class="tile__st"><i aria-hidden="true">■</i>Sold</span></button><button type="button" class="tile tile--available" data-st="AVAILABLE" data-type="NORMAL" data-no="C-9" data-area="1,350" data-price="₹38,48,000" aria-label="Plot C-9, normal, 1,350 sq ft, ₹38,48,000, available" aria-haspopup="dialog"><span class="tile__no">C-9</span><span class="tile__meta">1,350 sq ft</span><span class="tile__meta">₹38.5 L</span><span class="tile__st"><i aria-hidden="true">✓</i>Available</span></button><button type="button" class="tile tile--booked" data-st="BOOKED" data-type="CORNER" data-no="C-10" data-area="1,800" data-price="₹56,43,000" aria-label="Plot C-10, corner, 1,800 sq ft, ₹56,43,000, booked" aria-haspopup="dialog"><span class="tile__corner" title="Corner plot" aria-hidden="true"></span><span class="tile__no">C-10</span><span class="tile__meta">1,800 sq ft</span><span class="tile__meta">₹56.4 L</span><span class="tile__st"><i aria-hidden="true">◐</i>Booked</span></button></div></section>
+  </div>
+
+
+ </div>
+
+ <!-- ================= MY BOOKINGS ================= -->
+ <div data-view="bookings">
+
+  <div class="s s-error"><div class="banner" role="alert"><span>Couldn't load your bookings. Check your connection and try again.</span><button type="button">Try again</button></div></div>
+
+  <div class="s s-loading" aria-busy="true" role="status"><span class="sr">Loading your bookings</span><div class="list"><div class="skelcard"></div><div class="skelcard"></div><div class="skelcard"></div></div></div>
+
+  <div class="s s-empty"><div class="card empty"><h3>No bookings yet</h3><p>When the company books a plot for you, it appears here with its EMI schedule. Check the Availability tab to see which plots are open.</p><button class="btn2" data-set="tab" data-v="availability">View availability</button></div></div>
+
+  <div class="s s-default s-partial flex">
+   <p class="fine">Bookings are shown newest first.</p>
+   <div class="ms" id="ms">
+    <div class="list" role="group" aria-label="My bookings"><button type="button" class="bk bk--active bk--sel" data-id="b1" aria-pressed="true">
+ <span class="bk__top"><span class="bk__plot">Plot A-12</span><span class="badge badge--active"><i aria-hidden="true">●</i>Active</span><span class="badge badge--overdue"><i aria-hidden="true">!</i>1 overdue</span></span>
+ <span class="bk__buyer">Sunil Kumar Singh &middot; booked 14 Apr 2026</span>
+ <span class="bar" role="img" aria-label="33% paid"><span style="width:33%"></span></span>
+ <span class="bk__sums"><span><b>₹9,50,000</b> paid of ₹28,50,000</span><span class="bk__due">₹19,00,000 due</span></span>
+</button><button type="button" class="bk bk--confirmed" data-id="b2" aria-pressed="false">
+ <span class="bk__top"><span class="bk__plot">Plot B-7</span><span class="badge badge--confirmed"><i aria-hidden="true">✓</i>Confirmed</span></span>
+ <span class="bk__buyer">Meena Devi &middot; booked 2 Mar 2026</span>
+ <span class="bar" role="img" aria-label="100% paid"><span style="width:100%"></span></span>
+ <span class="bk__sums"><span><b>₹21,60,000</b> paid of ₹21,60,000</span><span class="bk__due">Fully paid</span></span>
+</button><button type="button" class="bk bk--cancelled" data-id="b3" aria-pressed="false">
+ <span class="bk__top"><span class="bk__plot">Plot A-3</span><span class="badge badge--cancelled"><i aria-hidden="true">✕</i>Cancelled</span></span>
+ <span class="bk__buyer">Rakesh Prasad &middot; booked 20 Jan 2026</span>
+ <span class="bar" role="img" aria-label="25% paid"><span style="width:25%"></span></span>
+ <span class="bk__sums"><span><b>₹4,80,000</b> paid of ₹19,20,000</span><span class="bk__due">No further dues</span></span>
+</button>
+     <div class="pager"><button disabled>Previous</button><span>Page 1 of 1</span><button disabled>Next</button></div>
+    </div>
+    <div><article class="detail" data-for="b1">
+ <header class="detail__head"><button type="button" class="detail__back" aria-label="Back to bookings">‹ Bookings</button>
+  <div><h3>Plot A-12 <span class="badge badge--active"><i aria-hidden="true">●</i>Active</span></h3><p>Viraj Greens, Phulwari Sharif<br>Buyer: Sunil Kumar Singh</p></div></header>
+ <dl class="facts"><div><dt>Total</dt><dd>₹28,50,000</dd></div><div><dt>Paid</dt><dd>₹9,50,000</dd></div><div><dt>Due</dt><dd>₹19,00,000</dd></div><div><dt>Installments</dt><dd>12</dd></div></dl>
+ <div class="bar bar--lg" role="img" aria-label="33% paid"><span style="width:33%"></span></div>
+ 
+ <div class="tablewrap"><table class="ischedule"><thead><tr><th>No.</th><th>Due date</th><th class="num">Amount</th><th>Status</th><th>Paid on</th></tr></thead><tbody><tr class="ir ir--paid"><td data-label="No.">1</td><td data-label="Due date">5 May 2026</td><td data-label="Amount" class="num">₹2,37,500</td><td data-label="Status"><span class="badge badge--paid"><i aria-hidden="true">✓</i>Paid</span> </td><td data-label="Paid on">3 May 2026</td></tr><tr class="ir ir--paid"><td data-label="No.">2</td><td data-label="Due date">5 Jun 2026</td><td data-label="Amount" class="num">₹2,37,500</td><td data-label="Status"><span class="badge badge--paid"><i aria-hidden="true">✓</i>Paid</span> </td><td data-label="Paid on">6 Jun 2026</td></tr><tr class="ir ir--paid"><td data-label="No.">3</td><td data-label="Due date">5 Jul 2026</td><td data-label="Amount" class="num">₹2,37,500</td><td data-label="Status"><span class="badge badge--paid"><i aria-hidden="true">✓</i>Paid</span> </td><td data-label="Paid on">4 Jul 2026</td></tr><tr class="ir ir--pending ir--overdue"><td data-label="No.">4</td><td data-label="Due date">5 Aug 2026</td><td data-label="Amount" class="num">₹2,37,500</td><td data-label="Status"><span class="badge badge--pending"><i aria-hidden="true">○</i>Pending</span> <span class="badge badge--overdue"><i aria-hidden="true">!</i>Overdue</span></td><td data-label="Paid on">—</td></tr><tr class="ir ir--paid"><td data-label="No.">5</td><td data-label="Due date">5 Sep 2026</td><td data-label="Amount" class="num">₹2,37,500</td><td data-label="Status"><span class="badge badge--paid"><i aria-hidden="true">✓</i>Paid</span> </td><td data-label="Paid on">9 Sep 2026</td></tr><tr class="ir ir--pending"><td data-label="No.">6</td><td data-label="Due date">5 Oct 2026</td><td data-label="Amount" class="num">₹2,37,500</td><td data-label="Status"><span class="badge badge--pending"><i aria-hidden="true">○</i>Pending</span> </td><td data-label="Paid on">—</td></tr><tr class="ir ir--pending"><td data-label="No.">7</td><td data-label="Due date">5 Nov 2026</td><td data-label="Amount" class="num">₹2,37,500</td><td data-label="Status"><span class="badge badge--pending"><i aria-hidden="true">○</i>Pending</span> </td><td data-label="Paid on">—</td></tr><tr class="ir ir--pending"><td data-label="No.">8</td><td data-label="Due date">5 Dec 2026</td><td data-label="Amount" class="num">₹2,37,500</td><td data-label="Status"><span class="badge badge--pending"><i aria-hidden="true">○</i>Pending</span> </td><td data-label="Paid on">—</td></tr><tr class="ir ir--pending"><td data-label="No.">9</td><td data-label="Due date">5 Jan 2027</td><td data-label="Amount" class="num">₹2,37,500</td><td data-label="Status"><span class="badge badge--pending"><i aria-hidden="true">○</i>Pending</span> </td><td data-label="Paid on">—</td></tr><tr class="ir ir--pending"><td data-label="No.">10</td><td data-label="Due date">5 Feb 2027</td><td data-label="Amount" class="num">₹2,37,500</td><td data-label="Status"><span class="badge badge--pending"><i aria-hidden="true">○</i>Pending</span> </td><td data-label="Paid on">—</td></tr><tr class="ir ir--pending"><td data-label="No.">11</td><td data-label="Due date">5 Mar 2027</td><td data-label="Amount" class="num">₹2,37,500</td><td data-label="Status"><span class="badge badge--pending"><i aria-hidden="true">○</i>Pending</span> </td><td data-label="Paid on">—</td></tr><tr class="ir ir--pending"><td data-label="No.">12</td><td data-label="Due date">5 Apr 2027</td><td data-label="Amount" class="num">₹2,37,500</td><td data-label="Status"><span class="badge badge--pending"><i aria-hidden="true">○</i>Pending</span> </td><td data-label="Paid on">—</td></tr></tbody></table></div>
+</article><article class="detail" data-for="b2">
+ <header class="detail__head"><button type="button" class="detail__back" aria-label="Back to bookings">‹ Bookings</button>
+  <div><h3>Plot B-7 <span class="badge badge--confirmed"><i aria-hidden="true">✓</i>Confirmed</span></h3><p>Viraj Greens, Phulwari Sharif<br>Buyer: Meena Devi</p></div></header>
+ <dl class="facts"><div><dt>Total</dt><dd>₹21,60,000</dd></div><div><dt>Paid</dt><dd>₹21,60,000</dd></div><div><dt>Due</dt><dd>₹0</dd></div><div><dt>Installments</dt><dd>6</dd></div></dl>
+ <div class="bar bar--lg" role="img" aria-label="100% paid"><span style="width:100%"></span></div>
+ <p class="note">Booking confirmed. This plot is now yours as a completed sale.</p>
+ <div class="tablewrap"><table class="ischedule"><thead><tr><th>No.</th><th>Due date</th><th class="num">Amount</th><th>Status</th><th>Paid on</th></tr></thead><tbody><tr class="ir ir--paid"><td data-label="No.">1</td><td data-label="Due date">5 Mar 2026</td><td data-label="Amount" class="num">₹3,60,000</td><td data-label="Status"><span class="badge badge--paid"><i aria-hidden="true">✓</i>Paid</span> </td><td data-label="Paid on">4 Mar 2026</td></tr><tr class="ir ir--paid"><td data-label="No.">2</td><td data-label="Due date">5 Apr 2026</td><td data-label="Amount" class="num">₹3,60,000</td><td data-label="Status"><span class="badge badge--paid"><i aria-hidden="true">✓</i>Paid</span> </td><td data-label="Paid on">5 Apr 2026</td></tr><tr class="ir ir--paid"><td data-label="No.">3</td><td data-label="Due date">5 May 2026</td><td data-label="Amount" class="num">₹3,60,000</td><td data-label="Status"><span class="badge badge--paid"><i aria-hidden="true">✓</i>Paid</span> </td><td data-label="Paid on">5 May 2026</td></tr><tr class="ir ir--paid"><td data-label="No.">4</td><td data-label="Due date">5 Jun 2026</td><td data-label="Amount" class="num">₹3,60,000</td><td data-label="Status"><span class="badge badge--paid"><i aria-hidden="true">✓</i>Paid</span> </td><td data-label="Paid on">3 Jun 2026</td></tr><tr class="ir ir--paid"><td data-label="No.">5</td><td data-label="Due date">5 Jul 2026</td><td data-label="Amount" class="num">₹3,60,000</td><td data-label="Status"><span class="badge badge--paid"><i aria-hidden="true">✓</i>Paid</span> </td><td data-label="Paid on">7 Jul 2026</td></tr><tr class="ir ir--paid"><td data-label="No.">6</td><td data-label="Due date">5 Aug 2026</td><td data-label="Amount" class="num">₹3,60,000</td><td data-label="Status"><span class="badge badge--paid"><i aria-hidden="true">✓</i>Paid</span> </td><td data-label="Paid on">5 Aug 2026</td></tr></tbody></table></div>
+</article><article class="detail detail--cancelled" data-for="b3">
+ <header class="detail__head"><button type="button" class="detail__back" aria-label="Back to bookings">‹ Bookings</button>
+  <div><h3>Plot A-3 <span class="badge badge--cancelled"><i aria-hidden="true">✕</i>Cancelled</span></h3><p>Viraj Greens, Phulwari Sharif<br>Buyer: Rakesh Prasad</p></div></header>
+ <dl class="facts"><div><dt>Total</dt><dd>₹19,20,000</dd></div><div><dt>Paid</dt><dd>₹4,80,000</dd></div><div><dt>Due</dt><dd>₹0</dd></div><div><dt>Installments</dt><dd>8</dd></div></dl>
+ <div class="bar bar--lg" role="img" aria-label="25% paid"><span style="width:25%"></span></div>
+ <p class="note note--muted">Booking cancelled. Unpaid installments were voided. The amount already paid stays on record.</p>
+ <div class="tablewrap"><table class="ischedule"><thead><tr><th>No.</th><th>Due date</th><th class="num">Amount</th><th>Status</th><th>Paid on</th></tr></thead><tbody><tr class="ir ir--paid"><td data-label="No.">1</td><td data-label="Due date">5 Feb 2026</td><td data-label="Amount" class="num">₹2,40,000</td><td data-label="Status"><span class="badge badge--paid"><i aria-hidden="true">✓</i>Paid</span> </td><td data-label="Paid on">4 Feb 2026</td></tr><tr class="ir ir--paid"><td data-label="No.">2</td><td data-label="Due date">5 Mar 2026</td><td data-label="Amount" class="num">₹2,40,000</td><td data-label="Status"><span class="badge badge--paid"><i aria-hidden="true">✓</i>Paid</span> </td><td data-label="Paid on">6 Mar 2026</td></tr><tr class="ir ir--void"><td data-label="No.">3</td><td data-label="Due date">5 Apr 2026</td><td data-label="Amount" class="num">₹2,40,000</td><td data-label="Status"><span class="badge badge--void"><i aria-hidden="true">—</i>Void</span> </td><td data-label="Paid on">—</td></tr><tr class="ir ir--void"><td data-label="No.">4</td><td data-label="Due date">5 May 2026</td><td data-label="Amount" class="num">₹2,40,000</td><td data-label="Status"><span class="badge badge--void"><i aria-hidden="true">—</i>Void</span> </td><td data-label="Paid on">—</td></tr><tr class="ir ir--void"><td data-label="No.">5</td><td data-label="Due date">5 Jun 2026</td><td data-label="Amount" class="num">₹2,40,000</td><td data-label="Status"><span class="badge badge--void"><i aria-hidden="true">—</i>Void</span> </td><td data-label="Paid on">—</td></tr><tr class="ir ir--void"><td data-label="No.">6</td><td data-label="Due date">5 Jul 2026</td><td data-label="Amount" class="num">₹2,40,000</td><td data-label="Status"><span class="badge badge--void"><i aria-hidden="true">—</i>Void</span> </td><td data-label="Paid on">—</td></tr><tr class="ir ir--void"><td data-label="No.">7</td><td data-label="Due date">5 Aug 2026</td><td data-label="Amount" class="num">₹2,40,000</td><td data-label="Status"><span class="badge badge--void"><i aria-hidden="true">—</i>Void</span> </td><td data-label="Paid on">—</td></tr><tr class="ir ir--void"><td data-label="No.">8</td><td data-label="Due date">5 Sep 2026</td><td data-label="Amount" class="num">₹2,40,000</td><td data-label="Status"><span class="badge badge--void"><i aria-hidden="true">—</i>Void</span> </td><td data-label="Paid on">—</td></tr></tbody></table></div>
+</article></div>
+   </div>
+  </div>
+ </div>
+</div></main>
+
+<div class="pop" id="pop" role="dialog" aria-label="Plot details">
+ <h3><span class="pn"></span><button class="pop__close" aria-label="Close plot details">×</button></h3>
+ <dl><dt>Status</dt><dd class="ps"></dd><dt>Type</dt><dd class="pt"></dd><dt>Area</dt><dd class="pa"></dd><dt>Price</dt><dd class="pp"></dd></dl>
+ <p class="pop__hint">To book this plot, contact the company office.</p>
+</div>
+
+<script>
+(function(){
+ var b=document.body,q=new URLSearchParams(location.search);
+ function set(k,v){b.dataset[k]=v;document.querySelectorAll('[data-set="'+k+'"]').forEach(function(x){x.setAttribute('aria-pressed',x.dataset.v===v)});
+  document.querySelectorAll('[role=tab]').forEach(function(t){t.setAttribute('aria-selected',t.dataset.v===b.dataset.tab)});}
+ document.querySelectorAll('[data-set]').forEach(function(x){x.onclick=function(){set(x.dataset.set,x.dataset.v);closePop()}});
+ document.querySelectorAll('[role=tab]').forEach(function(t){t.onclick=function(){set('tab',t.dataset.v);closePop()}});
+ set('tab',q.get('tab')||'availability');set('state',q.get('state')||'default');
+ /* status + type filters */
+ var fs='ALL',ft='ALL';
+ function apply(){var shown=0;document.querySelectorAll('.tile[data-st]').forEach(function(t){var ok=(fs==='ALL'||t.dataset.st===fs)&&(ft==='ALL'||t.dataset.type===ft);t.hidden=!ok;if(ok)shown++});
+  document.querySelectorAll('.block').forEach(function(bl){bl.hidden=!bl.querySelector('.tile:not([hidden])')});
+  document.getElementById('nomatch').hidden=shown>0;document.getElementById('shown').textContent=shown;}
+ document.querySelectorAll('.chip[data-f]').forEach(function(c){c.onclick=function(){fs=c.dataset.f;document.querySelectorAll('.chip[data-f]').forEach(function(x){x.setAttribute('aria-pressed',x===c)});apply()}});
+ document.getElementById('type').onchange=function(e){ft=e.target.value;apply()};
+ document.querySelectorAll('[data-clear]').forEach(function(c){c.onclick=function(){fs='ALL';ft='ALL';document.getElementById('type').value='ALL';document.querySelectorAll('.chip[data-f]').forEach(function(x){x.setAttribute('aria-pressed',x.dataset.f==='ALL')});apply()}});
+ /* popover (read-only) */
+ var pop=document.getElementById('pop'),cur=null;
+ function closePop(){pop.classList.remove('open');if(cur)cur.setAttribute('aria-expanded','false');cur=null}
+ function open(t){cur=t;t.setAttribute('aria-expanded','true');var d=t.dataset,w={AVAILABLE:'✓ Available',BOOKED:'◐ Booked',SOLD:'■ Sold'};
+  pop.querySelector('.pn').textContent='Plot '+d.no;pop.querySelector('.pt').textContent=d.type==='CORNER'?'Corner':'Normal';pop.querySelector('.pa').textContent=d.area+' sq ft';pop.querySelector('.pp').textContent=d.price;pop.querySelector('.ps').textContent=w[d.st];
+  var r=t.getBoundingClientRect();pop.classList.add('open');pop.style.left=Math.min(r.left,innerWidth-320)+'px';pop.style.top=Math.min(r.bottom+8,innerHeight-260)+'px';pop.querySelector('.pop__close').focus()}
+ document.querySelectorAll('.tile[data-st]').forEach(function(t){t.onclick=function(e){e.stopPropagation();cur===t?closePop():open(t)}});
+ pop.querySelector('.pop__close').onclick=function(){var c=cur;closePop();if(c)c.focus()};
+ document.addEventListener('keydown',function(e){if(e.key==='Escape')closePop()});
+ if(q.get('pop')){var t=document.querySelector('.tile[data-no="'+q.get('pop')+'"]');if(t)open(t)}
+ /* bookings master-detail */
+ var ms=document.getElementById('ms');
+ function sel(id,sheet){document.querySelectorAll('.bk').forEach(function(x){var on=x.dataset.id===id;x.classList.toggle('bk--sel',on);x.setAttribute('aria-pressed',on)});
+  document.querySelectorAll('.detail').forEach(function(d){d.classList.toggle('show',d.dataset.for===id)});ms.classList.toggle('sheet',!!sheet)}
+ document.querySelectorAll('.bk').forEach(function(x){x.onclick=function(){sel(x.dataset.id,true)}});
+ document.querySelectorAll('.detail__back').forEach(function(x){x.onclick=function(){ms.classList.remove('sheet')}});
+ sel(q.get('bk')||'b1',q.get('sheet')==='1');
+ apply();
+})();
+
+</script>
+</body>
+</html>

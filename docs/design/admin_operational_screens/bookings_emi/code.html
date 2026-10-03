@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bookings &amp; EMI — Admin Operational Screen Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Material+Symbols+Outlined" rel="stylesheet" />
+<style>
+  /* Tokens: violet/cyan palette shared with sales_register / ledger_register / payout_approval (user decision).
+     The live frontend/src/styles/_tokens.scss (gold/oxblood/parchment) differs; implementers port tokens deliberately.
+     Every colour below :root is var() of these tokens or a color-mix() of them. */
+  :root {
+    --brand-primary: #7C3AED;
+    --brand-secondary: #22D3EE;
+    --brand-primary-bright: color-mix(in srgb, var(--brand-primary) 40%, #ffffff);
+    --brand-gradient: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    --brand-primary-soft: color-mix(in srgb, var(--brand-primary) 12%, transparent);
+    --on-brand: #ffffff;
+    --ink: #0b1c30;
+    --surface-page: #f8f9ff;
+    --surface-card: #ffffff;
+    --surface-raised: #eff4ff;
+    --border-subtle: #c2c6d9;
+    --text-primary: #0b1c30;
+    --text-muted: #424656;
+    --status-success: #34D399;
+    --status-warning: #F59E0B;
+    --status-danger: #F87171;
+    /* readable ink/fill variants of the (light) status colours */
+    --success-ink: color-mix(in srgb, var(--status-success) 50%, var(--text-primary));
+    --warning-ink: color-mix(in srgb, var(--status-warning) 55%, var(--text-primary));
+    --danger-strong: color-mix(in srgb, var(--status-danger) 65%, var(--text-primary));
+    --shadow-card: 0 4px 20px -2px color-mix(in srgb, var(--text-primary) 10%, transparent);
+    --shadow-pop: 0 6px 18px color-mix(in srgb, var(--text-primary) 16%, transparent);
+    --nav-active-fill: color-mix(in srgb, var(--brand-primary) 28%, var(--ink));
+    --nav-inactive-muted: color-mix(in srgb, var(--on-brand) 62%, var(--ink));
+    --nav-tagline-muted: color-mix(in srgb, var(--on-brand) 45%, var(--ink));
+    --nav-hairline: color-mix(in srgb, var(--brand-secondary) 30%, transparent);
+    --sidebar-expanded-width: 248px;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    --font-display: 'Geist', 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--surface-page); color: var(--text-primary); font-family: var(--font-sans); font-size: 15px; line-height: 1.5; }
+  [hidden] { display: none !important; }
+  .material-symbols-outlined { font-family: 'Material Symbols Outlined'; font-size: 20px; line-height: 1; font-weight: 400; font-style: normal; display: inline-block; }
+  :focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+
+  /* ---- shared primitives (as _buttons/_forms/_shared-components) ---- */
+  button { cursor: pointer; border-radius: var(--radius-sm); padding: 0.6875rem 1.5rem; border: none; background: none; font-family: inherit; font-size: 0.875rem; }
+  button:disabled { cursor: not-allowed; opacity: 0.5; }
+  .brand-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background: var(--brand-primary); color: var(--on-brand); font-weight: 600; }
+  .brand-button--secondary { background: var(--surface-raised); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+  .brand-button--danger { background: var(--danger-strong); color: var(--on-brand); }
+  label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500; }
+  input[type=text], input[type=number], input[type=datetime-local], select, textarea {
+    display: block; width: 100%; padding: 0.625rem 0.875rem; background: var(--surface-card); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm); font-family: inherit; font-size: 0.875rem; color: var(--text-primary);
+  }
+  textarea { resize: vertical; min-height: 5rem; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px var(--brand-primary-soft); }
+  input[readonly] { background: var(--surface-raised); color: var(--text-muted); cursor: not-allowed; }
+  .inline-banner { display: flex; gap: 0.75rem; padding: 0.875rem 1.25rem; border: 1px solid var(--border-subtle); background: var(--surface-card); font-size: 0.875rem; }
+  .inline-banner p { margin: 0 0 0.375rem; } .inline-banner p:last-child { margin: 0; }
+  .inline-banner__content { flex: 1; }
+  .inline-banner--danger { border-color: var(--status-danger); background: color-mix(in srgb, var(--status-danger) 12%, var(--surface-card)); }
+  .inline-banner--danger strong { color: var(--danger-strong); }
+  .inline-banner--success { border-color: var(--status-success); background: color-mix(in srgb, var(--status-success) 14%, var(--surface-card)); }
+  .inline-banner--warning { border-color: var(--status-warning); background: color-mix(in srgb, var(--status-warning) 12%, var(--surface-card)); }
+  .inline-banner__dismiss { align-self: flex-start; padding: 0 0.25rem; font-size: 1.125rem; line-height: 1; color: inherit; opacity: .7; }
+  .field-error { margin: 0.375rem 0 0; font-size: 0.8125rem; color: var(--danger-strong); }
+  .hint { margin: 0.375rem 0 0; font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; gap: .5rem; }
+
+  /* ---- shell: admin sidebar (reuses .associate-sidebar visual: Ink, gold hairlines) ---- */
+  .sb { position: fixed; inset: 0 auto 0 0; width: var(--sidebar-expanded-width); background: var(--ink); border-right: 1px solid var(--nav-hairline); display: flex; flex-direction: column; z-index: 20; overflow: auto; }
+  .sb__brand { display: flex; align-items: center; gap: 12px; padding: 20px 16px 18px; min-height: 88px; }
+  .sb__mark { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--brand-secondary); color: var(--brand-secondary); font-family: var(--font-display); border-radius: 8px; font-weight: 600; }
+  .sb__name { color: var(--on-brand); font-family: var(--font-display); font-size: 1rem; font-weight: 600; display: block; line-height: 1.2; }
+  .sb__tag { color: var(--nav-tagline-muted); font-size: 11px; }
+  .sb__div { height: 1px; background: linear-gradient(90deg, var(--nav-hairline), transparent); margin-bottom: 10px; }
+  .sb__nav { display: flex; flex-direction: column; gap: 2px; padding: 0 8px; }
+  .sb a, .sb__grp { display: flex; align-items: center; gap: 14px; padding: 11px 12px; border-radius: 8px; color: var(--nav-inactive-muted); font-size: 13.5px; font-weight: 500; text-decoration: none; width: 100%; background: none; text-align: left; border: 0; }
+  .sb__grp .chev { margin-left: auto; transition: transform .18s; } .sb__grp[aria-expanded=true] .chev { transform: rotate(180deg); }
+  .sb__sub { display: flex; flex-direction: column; gap: 1px; padding-left: 35px; margin-bottom: 4px; }
+  .sb__sub a { padding: 7px 12px; font-size: 12.5px; }
+  .sb a.is-active { background: var(--nav-active-fill); color: var(--on-brand); box-shadow: inset 3px 0 0 var(--brand-secondary); }
+  .sb__spacer { flex: 1; }
+  .sb__foot { padding: 0 8px 14px; }
+  .content { margin-left: var(--sidebar-expanded-width); }
+  .topbar { display: none; align-items: center; gap: .75rem; padding: .75rem 1rem; background: var(--ink); color: var(--on-brand); font-family: var(--font-display); font-weight: 600; }
+  .topbar button { color: var(--on-brand); padding: .5rem; min-height: 44px; min-width: 44px; }
+
+  /* ---- Bookings & EMI (bookings-emi__*) ---- */
+  .bookings-emi { display: flex; flex-direction: column; gap: 1.5rem; max-width: 1280px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
+  .bookings-emi__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1.5rem; }
+  .bookings-emi__eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brand-primary); }
+  .bookings-emi__title { margin: 0.25rem 0 0.375rem; font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; }
+  .bookings-emi__subtitle { margin: 0; max-width: 46rem; font-size: 0.9375rem; line-height: 1.6; color: var(--text-muted); }
+  .rule-pill { display: inline-flex; align-items: center; gap: .625rem; padding: .5rem .875rem; border: 1px solid var(--border-subtle); background: var(--surface-card); font-size: .8125rem; }
+  .rule-pill b { font-family: var(--font-mono); font-weight: 700; color: var(--brand-primary); }
+  .rule-pill small { color: var(--text-muted); }
+
+  /* tabs: reuse TabBarComponent idiom, gold underline on active */
+  .tabs { display: flex; gap: 1.75rem; border-bottom: 1px solid var(--border-subtle); }
+  .tabs button { padding: .625rem 0; border-radius: 0; font-weight: 600; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; gap: .5rem; align-items: center; min-height: 44px; }
+  .tabs button[aria-selected=true] { color: var(--text-primary); border-bottom-color: var(--brand-primary); }
+  .count { font-family: var(--font-mono); font-size: .6875rem; padding: .125rem .5rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); color: var(--text-muted); }
+  .count--danger { background: color-mix(in srgb, var(--status-danger) 14%, var(--surface-card)); border-color: var(--status-danger); color: var(--danger-strong); }
+
+  .filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem 1.25rem; padding: 1.25rem 1.5rem; background: var(--surface-raised); border-radius: 16px; }
+  .filters__f { display: flex; flex-direction: column; gap: .375rem; flex: 1 1 170px; min-width: 150px; margin: 0; font-family: var(--font-mono); font-size: .6875rem; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+  .filters__f select, .filters__f input { text-transform: none; letter-spacing: 0; font-family: var(--font-sans); }
+  .lookup { display: flex; align-items: center; gap: .5rem; padding: .625rem .875rem; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: .875rem; text-transform: none; letter-spacing: 0; font-family: var(--font-sans); font-weight: 400; color: var(--text-primary); }
+  .lookup--placeholder { color: var(--text-muted); }
+  .lookup .id { font-family: var(--font-mono); font-size: .8125rem; } .lookup .nm { color: var(--text-muted); flex: 1; }
+  .lookup__list { position: absolute; z-index: 5; margin: 0; padding: .25rem 0; list-style: none; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); box-shadow: var(--shadow-pop); width: 100%; top: 100%; }
+  .lookup__list li { padding: .45rem .75rem; font-size: .875rem; display: flex; gap: .5rem; } .lookup__list li:first-child { background: var(--brand-primary-soft); }
+  .lookup__list .id { font-family: var(--font-mono); } .lookup__list .nm { color: var(--text-muted); }
+  .rel { position: relative; }
+  .toggle { padding: .6875rem 1.25rem; border: 1px dashed var(--status-danger); color: var(--danger-strong); background: transparent; font-weight: 600; min-height: 44px; }
+  .toggle[aria-pressed=true] { background: var(--danger-strong); color: var(--on-brand); border-style: solid; }
+  .reset { color: var(--text-muted); text-decoration: underline; padding: .6875rem .5rem; min-height: 44px; }
+
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 1.5rem; align-items: start; }
+  .grid--solo { grid-template-columns: minmax(0, 1fr); }
+  .card { background: var(--surface-card); border-radius: 20px; box-shadow: var(--shadow-card); overflow: hidden; }
+  .card--scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th { padding: .75rem .5rem; font-family: var(--font-mono); font-size: .6875rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; text-align: left; color: var(--text-muted); background: var(--surface-card); border-bottom: 1px solid var(--border-subtle); white-space: nowrap; }
+  td { padding: .75rem .5rem; font-size: .875rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  .num { text-align: right; font-family: var(--font-mono); font-size: .8125rem; font-weight: 500; white-space: nowrap; }
+  td:last-child, th:last-child { padding-right: 1rem; }
+  td:first-child, th:first-child { padding-left: 1rem; }
+  th.num { text-align: right; }
+  .mono { font-family: var(--font-mono); }
+  .muted { color: var(--text-muted); }
+  .small { font-size: .75rem; }
+  tr.row { cursor: pointer; } tr.row:hover { background: var(--surface-page); }
+  tr.row--sel, tr.row--sel:hover { background: var(--brand-primary-soft); box-shadow: inset 3px 0 0 var(--brand-primary); }
+  tr.row:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: -2px; }
+  .who b { font-weight: 600; display: block; white-space: nowrap; } .who span { font-size: .75rem; color: var(--text-muted); }
+  .who .mono { font-size: .75rem; }
+
+  .chip { display: inline-flex; align-items: center; gap: .375rem; padding: .1875rem .625rem .1875rem .5rem; border-radius: 999px; font-size: .75rem; font-weight: 600; background: var(--surface-raised); color: var(--text-muted); white-space: nowrap; }
+  .chip::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .chip--active { background: color-mix(in srgb, var(--status-warning) 16%, var(--surface-card)); color: var(--warning-ink); }
+  .chip--confirmed { background: color-mix(in srgb, var(--status-success) 16%, var(--surface-card)); color: var(--success-ink); }
+  .chip--cancelled, .chip--void { background: var(--surface-raised); color: var(--text-muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--text-muted) 50%, transparent); }
+  .chip--pending { background: var(--surface-raised); color: var(--text-muted); }
+  .chip--paid { background: color-mix(in srgb, var(--status-success) 16%, var(--surface-card)); color: var(--success-ink); }
+  .overdue { display: inline-flex; align-items: center; gap: .25rem; margin-left: .375rem; padding: .0625rem .5rem; font-size: .6875rem; font-weight: 700; letter-spacing: .02em; color: var(--on-brand); background: var(--danger-strong); border-radius: 999px; white-space: nowrap; }
+  .meter { display: block; width: 100%; height: 4px; margin-top: .375rem; background: var(--surface-raised); position: relative; }
+  .meter i { position: absolute; inset: 0 auto 0 0; background: var(--status-success); }
+  .meter u { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text-primary); }
+
+  .pager { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1rem; padding: 0 .25rem; }
+  .pager span { font-family: var(--font-mono); font-size: .8125rem; color: var(--text-muted); }
+  .pager button { padding: .5rem 1rem; font-size: .8125rem; min-height: 44px; }
+
+  /* ---- detail "seal" (double-ruled panel, same as .epin-register__detail/__seal) ---- */
+  .detail { position: sticky; top: 1rem; padding: 3px; border: 1px solid var(--brand-primary); border-radius: 12px; max-height: calc(100vh - 2rem); overflow: auto; }
+  .seal { display: flex; flex-direction: column; gap: 1.125rem; padding: 1.25rem; border-radius: 9px; border: 1px solid var(--brand-primary); background: var(--surface-card); }
+  .seal__title { display: flex; align-items: center; gap: .625rem; font-family: var(--font-mono); font-size: .6875rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--brand-primary); }
+  .seal__title::before, .seal__title::after { content: ''; flex: 1; height: 1px; background: var(--brand-primary); }
+  .seal__title + .form, .seal__title + p { margin-top: 1.125rem; }
+  .seal__head { display: flex; flex-direction: column; align-items: center; gap: .5rem; text-align: center; }
+  .seal__buyer { font-family: var(--font-display); font-size: 1.375rem; font-weight: 600; line-height: 1.2; }
+  .seal__plot { font-family: var(--font-mono); font-size: .8125rem; color: var(--text-muted); }
+  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem 1rem; margin: 0; padding: .875rem 0; border-block: 1px solid var(--border-subtle); }
+  .meta dt { font-family: var(--font-mono); font-size: .6875rem; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+  .meta dd { margin: .1875rem 0 0; font-size: .875rem; } .meta dd.mono { font-weight: 500; }
+  .meta .wide { grid-column: 1 / -1; }
+  .sect { font-family: var(--font-mono); font-size: .6875rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: .5rem; }
+  .emi { border: 1px solid var(--border-subtle); max-height: 236px; overflow: auto; }
+  .emi table { font-size: .8125rem; }
+  .emi th { padding: .5rem .5rem; position: sticky; top: 0; z-index: 1; }
+  .emi td:nth-child(4) { white-space: nowrap; }
+  .emi td { padding: .5rem .5rem; vertical-align: middle; font-size: .8125rem; ; white-space: nowrap; }
+  .emi tr.is-over td { background: color-mix(in srgb, var(--status-danger) 7%, var(--surface-card)); }
+  .emi .btn-sm { padding: .25rem .75rem; font-size: .75rem; font-weight: 600; border: 1px solid var(--brand-primary); color: var(--brand-primary); min-height: 32px; }
+  .emi .btn-sm:hover:not(:disabled) { background: var(--brand-primary-soft); }
+  .emi .btn-sm.is-picked { background: var(--brand-primary); color: var(--on-brand); }
+  .actions { display: flex; gap: .625rem; flex-wrap: wrap; }
+  .actions > * { flex: 1 1 auto; padding-inline: 1rem; min-height: 44px; }
+  .btn-danger-o { border: 1px solid var(--status-danger); color: var(--danger-strong); background: transparent; font-weight: 600; }
+  .btn-danger-o:hover:not(:disabled) { background: color-mix(in srgb, var(--status-danger) 10%, transparent); }
+  .why { display: flex; gap: .5rem; align-items: flex-start; font-size: .8125rem; color: var(--text-muted); padding: .625rem .75rem; background: var(--surface-raised); }
+  .form { display: flex; flex-direction: column; gap: 1rem; }
+  .form > div > label { margin-bottom: .375rem; }
+  .form-actions { display: flex; gap: .75rem; } .form-actions > * { flex: 1; padding-inline: 1rem; min-height: 44px; }
+  .lock { position: relative; } .lock .material-symbols-outlined { position: absolute; right: .625rem; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--text-muted); }
+  .lock input { padding-right: 2.25rem; }
+  .facts { margin: 0; padding: .75rem .875rem; border-left: 3px solid var(--brand-primary); background: var(--surface-raised); font-size: .8125rem; display: flex; flex-direction: column; gap: .25rem; }
+  .facts .row { display: flex; justify-content: space-between; gap: 1rem; } .facts .mono { font-weight: 500; }
+  ul.cons { margin: 0; padding-left: 1.125rem; font-size: .8125rem; display: flex; flex-direction: column; gap: .375rem; }
+  .spin { width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: sp .7s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2s; } .sb__grp .chev { transition: none; } }
+
+  /* ---- states ---- */
+  .skel { height: 14px; background: linear-gradient(90deg, var(--surface-raised), var(--surface-card), var(--surface-raised)); background-size: 200% 100%; animation: sh 1.4s linear infinite; border-radius: 4px; }
+  @keyframes sh { to { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+  .empty { padding: 3rem 1.5rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: .5rem; }
+  .empty .glyph { width: 56px; height: 56px; display: grid; place-items: center; border: 1px solid var(--brand-primary); color: var(--brand-primary); font-size: 28px; }
+  .empty h3 { margin: .5rem 0 0; font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; }
+  .empty p { margin: 0; max-width: 28rem; color: var(--text-muted); font-size: .875rem; }
+  .detail-empty { margin: 0; text-align: center; font-size: .875rem; color: var(--text-muted); padding: 1.5rem 0; }
+  .flash { position: relative; }
+
+  /* mock-only state switcher (not part of the screen) */
+  .mock { position: fixed; left: calc(var(--sidebar-expanded-width) + 12px); bottom: 10px; z-index: 50; display: flex; flex-wrap: wrap; gap: .375rem; padding: .5rem .625rem; background: var(--ink); color: var(--on-brand); font-size: 11px; max-width: calc(100vw - 280px); border-radius: 4px; opacity: .92; }
+  .mock b { font-family: var(--font-mono); color: var(--nav-inactive-muted); margin-right: .25rem; }
+  .mock button { padding: .1875rem .5rem; font-size: 11px; color: var(--on-brand); border: 1px solid var(--nav-hairline); }
+  .mock button.on { background: var(--brand-primary); color: var(--on-brand); }
+  body.clean .mock { display: none; }
+
+  /* ---- Overdue report mobile/stacked + responsive ---- */
+  @media (max-width: 1100px) { .grid { grid-template-columns: minmax(0,1fr) 360px; } }
+  @media (max-width: 960px) {
+    .sb { display: none; } .content { margin-left: 0; } .topbar { display: flex; }
+    .bookings-emi { padding-inline: 1rem; }
+    .grid { grid-template-columns: 1fr; }
+    .detail { position: static; max-height: none; }
+    .mock { left: 8px; max-width: calc(100vw - 16px); }
+  }
+  @media (max-width: 768px) {
+    .stack thead { position: absolute; left: -9999px; }
+    .stack, .stack tbody, .stack tr, .stack td { display: block; }
+    .stack tr { padding: .875rem 1rem; border-bottom: 1px solid var(--border-subtle); }
+    .stack td { border: 0; padding: .1875rem 0; display: flex; justify-content: space-between; gap: 1rem; text-align: right; }
+    .stack td::before { content: attr(data-label); font-family: var(--font-mono); font-size: .6875rem; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    .stack td.first { justify-content: space-between; font-weight: 600; padding-bottom: .5rem; }
+    .stack td.first::before { content: none; }
+    .stack .num { text-align: right; }
+    .stack td .meter { display: none; }
+    .stack .who { text-align: right; }
+    .stack td.first .who { text-align: left; }
+    .stack td.first .who span { display: inline; margin-left: .5rem; }
+    .stack td.first .who b { display: inline; }
+    .rule-pill { flex-wrap: wrap; }
+    .detail { padding: 2px; } .seal { padding: 1rem; }
+    .filters { padding: 1rem; } .filters__f { flex-basis: 100%; }
+    .toggle, .reset { width: 100%; }
+    .pager { justify-content: space-between; }
+    .meta { grid-template-columns: 1fr 1fr; }
+    .form-actions, .actions { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sb" aria-label="Admin navigation">
+  <div class="sb__brand"><span class="sb__mark" aria-hidden="true">VA</span><span><span class="sb__name">Viraj Acres</span><span class="sb__tag">Legacy Living</span></span></div>
+  <div class="sb__div"></div>
+  <nav class="sb__nav">
+    <a href="#"><span class="material-symbols-outlined" aria-hidden="true">dashboard</span>Dashboard</a>
+    <button type="button" class="sb__grp" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">tune</span>Setup<span class="material-symbols-outlined chev" aria-hidden="true">expand_more</span></button>
+    <button type="button" class="sb__grp" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">group</span>Network<span class="material-symbols-outlined chev" aria-hidden="true">expand_more</span></button>
+    <button type="button" class="sb__grp" aria-expanded="true"><span class="material-symbols-outlined" aria-hidden="true">real_estate_agent</span>Inventory &amp; Bookings<span class="material-symbols-outlined chev" aria-hidden="true">expand_more</span></button>
+    <div class="sb__sub">
+      <a href="#">Projects &amp; Plots</a>
+      <a href="#" class="is-active" aria-current="page">Bookings &amp; EMI</a>
+    </div>
+    <button type="button" class="sb__grp" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">point_of_sale</span>Finance<span class="material-symbols-outlined chev" aria-hidden="true">expand_more</span></button>
+    <button type="button" class="sb__grp" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span>System<span class="material-symbols-outlined chev" aria-hidden="true">expand_more</span></button>
+  </nav>
+  <div class="sb__spacer"></div>
+  <div class="sb__foot"><a href="#"><span class="material-symbols-outlined" aria-hidden="true">logout</span>Log out</a></div>
+</aside>
+
+<div class="content">
+<div class="topbar"><button type="button" aria-label="Open navigation"><span class="material-symbols-outlined">menu</span></button>Viraj Acres</div>
+<main class="bookings-emi">
+
+  <header class="bookings-emi__head">
+    <div>
+      <div class="bookings-emi__eyebrow">Inventory &amp; Bookings</div>
+      <h1 class="bookings-emi__title">Bookings &amp; EMI</h1>
+      <p class="bookings-emi__subtitle">Track every plot booking, record instalments as they are collected, and chase the ones that are overdue.</p>
+    </div>
+    <div class="rule-pill" title="From Settings, Booking &amp; EMI"><span class="material-symbols-outlined" aria-hidden="true">rule</span><span>Confirm rule <b>Auto at 30%</b></span><small>Paying past 30% confirms a booking automatically</small></div>
+  </header>
+
+  <div class="flash" data-flash="none ok-pay ok-auto ok-cancel ok-confirm ok-transfer">
+    <div class="inline-banner inline-banner--success" role="status" data-flash="ok-pay"><div class="inline-banner__content"><p><strong>Payment recorded.</strong> Instalment 4 of booking BK-7F3A is paid, ₹1,50,000 received.</p></div><button class="inline-banner__dismiss" aria-label="Dismiss">×</button></div>
+    <div class="inline-banner inline-banner--success" role="status" data-flash="ok-auto"><div class="inline-banner__content"><p><strong>Booking auto-confirmed.</strong> Paying instalment 4 took Rohan Deshmukh to 33.3% paid, past the 30% threshold. Plot A-12 is now Sold and the sale is in the Sales Register.</p></div><button class="inline-banner__dismiss" aria-label="Dismiss">×</button></div>
+    <div class="inline-banner inline-banner--success" role="status" data-flash="ok-confirm"><div class="inline-banner__content"><p><strong>Booking confirmed.</strong> Plot A-12 is now Sold and the sale is in the Sales Register.</p></div><button class="inline-banner__dismiss" aria-label="Dismiss">×</button></div>
+    <div class="inline-banner inline-banner--success" role="status" data-flash="ok-cancel"><div class="inline-banner__content"><p><strong>Booking cancelled.</strong> 9 pending instalments voided and plot A-12 is Available again.</p></div><button class="inline-banner__dismiss" aria-label="Dismiss">×</button></div>
+    <div class="inline-banner inline-banner--success" role="status" data-flash="ok-transfer"><div class="inline-banner__content"><p><strong>Booking transferred</strong> to Suresh Patil (VA-0017). Paid instalments carry over.</p></div><button class="inline-banner__dismiss" aria-label="Dismiss">×</button></div>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Bookings views">
+    <button role="tab" id="tab-register" aria-selected="true" aria-controls="panel-register" data-set="view=register">Register <span class="count">48</span></button>
+    <button role="tab" id="tab-overdue" aria-selected="false" aria-controls="panel-overdue" data-set="view=overdue">Overdue report <span class="count count--danger">7</span></button>
+  </div>
+
+  <!-- ===================== REGISTER ===================== -->
+  <section id="panel-register" role="tabpanel" aria-labelledby="tab-register" data-view="register" style="display:flex;flex-direction:column;gap:1.5rem">
+
+    <form class="filters" role="search" aria-label="Filter bookings" onsubmit="return false">
+      <label class="filters__f">Status
+        <select><option>All statuses</option><option>Active</option><option>Confirmed</option><option>Cancelled</option></select>
+      </label>
+      <div class="filters__f rel" id="assoc-filter">Associate
+        <div class="lookup lookup--placeholder" role="combobox" aria-expanded="false" aria-label="Associate"><span class="nm">Any associate</span><span class="material-symbols-outlined" aria-hidden="true">search</span></div>
+      </div>
+      <label class="filters__f">Plot
+        <input type="text" placeholder="Plot, e.g. A-12" />
+      </label>
+      <label class="filters__f">Project
+        <select><option>All projects</option><option>Sunrise Meadows</option><option>Godavari Heights</option></select>
+      </label>
+      <button type="button" class="toggle" aria-pressed="false" data-toggle-overdue>Overdue only</button>
+      <button type="button" class="reset">Reset filters</button>
+    </form>
+
+    <div class="inline-banner inline-banner--danger" role="alert" data-list="error"><div class="inline-banner__content"><p><strong>The booking register didn't load.</strong> Check your connection and try again.</p></div><button class="brand-button brand-button--secondary" type="button" style="padding:.375rem 1rem">Try again</button></div>
+
+    <div class="grid" data-grid>
+      <div>
+        <div class="card card--scroll" data-list="ok loading empty error">
+          <table class="stack" aria-label="Bookings, newest first">
+            <thead><tr>
+              <th scope="col">Buyer</th><th scope="col">Associate</th><th scope="col">Status</th>
+              <th scope="col" class="num">Total</th><th scope="col" class="num">Paid</th><th scope="col" class="num">Due</th>
+            </tr></thead>
+            <tbody data-list="ok" id="rows"></tbody>
+            <tbody data-list="loading" aria-busy="true">
+              <tr><td colspan="6"><div class="skel" style="width:60%"></div></td></tr>
+              <tr><td colspan="6"><div class="skel" style="width:82%"></div></td></tr>
+              <tr><td colspan="6"><div class="skel" style="width:48%"></div></td></tr>
+              <tr><td colspan="6"><div class="skel" style="width:74%"></div></td></tr>
+              <tr><td colspan="6"><div class="skel" style="width:66%"></div></td></tr>
+              <tr><td colspan="6"><div class="skel" style="width:55%"></div></td></tr>
+            </tbody>
+          </table>
+          <div class="empty" data-list="empty">
+            <div class="glyph material-symbols-outlined" aria-hidden="true">event_available</div>
+            <h3>No bookings yet</h3>
+            <p>When an associate books a plot it appears here, with its instalment plan. Book a plot from Projects &amp; Plots to get started.</p>
+            <button class="brand-button" type="button">Go to Projects &amp; Plots</button>
+          </div>
+          <div class="empty" data-list="error">
+            <div class="glyph material-symbols-outlined" aria-hidden="true">cloud_off</div>
+            <h3>Couldn't load bookings</h3>
+            <p>The register is unavailable right now.</p>
+          </div>
+        </div>
+        <div class="pager" data-list="ok"><span>Page 1 of 3 · 48 bookings</span><button class="brand-button brand-button--secondary" disabled>Previous</button><button class="brand-button brand-button--secondary">Next</button></div>
+      </div>
+
+      <!-- DETAIL SEAL -->
+      <aside class="detail" aria-label="Booking detail" aria-live="polite" data-list="ok loading empty error">
+        <div class="seal">
+
+          <!-- no selection -->
+          <div data-seal="none">
+            <div class="seal__title">Booking detail</div>
+            <p class="detail-empty">Select a booking to see its instalments and take action.</p>
+          </div>
+
+          <!-- DETAIL -->
+          <div data-seal="detail" style="display:flex;flex-direction:column;gap:1.125rem">
+            <div class="seal__title">Booking detail</div>
+            <div class="seal__head">
+              <div class="seal__buyer">Rohan Deshmukh</div>
+              <span class="chip chip--active">Active</span>
+              <div class="seal__plot">Plot A-12 · BK-7F3A</div>
+            </div>
+            <dl class="meta">
+              <div><dt>Associate</dt><dd>Anjali Rao <span class="mono muted small">VA-0042</span></dd></div>
+              <div><dt>Booked</dt><dd>2 Jun 2026</dd></div>
+              <div><dt>Total</dt><dd class="mono">₹18,00,000</dd></div>
+              <div><dt>Paid</dt><dd class="mono">₹4,50,000</dd></div>
+              <div><dt>Due</dt><dd class="mono">₹13,50,000</dd></div>
+              <div><dt>Plan</dt><dd>12 × ₹1,50,000 monthly</dd></div>
+              <div class="wide"><dt>Paid 25.0% of 30% needed to auto-confirm</dt><dd><span class="meter" role="img" aria-label="25 percent paid, auto-confirm at 30 percent"><i style="width:25%"></i><u style="left:30%"></u></span></dd></div>
+            </dl>
+            <div>
+              <div class="sect"><span>Instalments</span><span>1 overdue · 8 pending</span></div>
+              <div class="emi">
+                <table aria-label="Instalments of booking BK-7F3A">
+                  <thead><tr><th scope="col">#</th><th scope="col">Due</th><th scope="col" class="num">Amount</th><th scope="col">Status</th></tr></thead>
+                  <tbody id="emi"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="actions" role="group" aria-label="Booking actions">
+              <button type="button" class="brand-button" data-set="seal=confirm">Confirm booking</button>
+              <button type="button" class="brand-button brand-button--secondary" data-set="seal=transfer">Transfer</button>
+              <button type="button" class="btn-danger-o" data-set="seal=cancel">Cancel booking</button>
+            </div>
+            <p class="hint" style="justify-content:flex-start">Pay an instalment with the Pay button on its row. Instalments can be paid in any order.</p>
+          </div>
+
+          <!-- PAY -->
+          <div data-seal="pay pay-busy pay-err pay-net">
+            <div class="seal__title">Record payment</div>
+            <form class="form" onsubmit="return false" novalidate>
+              <div class="seal__head" style="align-items:flex-start;text-align:left">
+                <div class="seal__buyer" style="font-size:1.125rem">Rohan Deshmukh</div>
+                <div class="seal__plot">Plot A-12 · Instalment 4 of 12 · due 5 Sep 2026</div>
+              </div>
+
+              <div class="inline-banner inline-banner--danger" role="alert" data-seal="pay-err"><div class="inline-banner__content">
+                <p><strong>Payment not recorded. Plot A-12 is no longer marked Booked.</strong></p>
+                <p>This payment would take the booking past the 30% auto-confirm threshold, and confirming needs the plot to be Booked. Nothing was saved: instalment 4 is still pending.</p>
+                <p><strong>To fix it,</strong> either set plot A-12 back to Booked in Projects &amp; Plots, or switch the confirm rule to Manual in Settings, then record the payment again.</p>
+                <p class="small muted">Server said: Plot is not available for booking (409)</p>
+              </div></div>
+
+              <div class="inline-banner inline-banner--danger" role="alert" data-seal="pay-net"><div class="inline-banner__content">
+                <p><strong>We couldn't confirm whether the payment was recorded.</strong></p>
+                <p>The connection dropped before the server answered. Reload to check whether instalment 4 was recorded before you try again.</p>
+                <button type="button" class="brand-button brand-button--secondary" style="padding:.375rem 1rem;margin-top:.25rem">Reload booking</button>
+              </div></div>
+
+              <div>
+                <label for="p-amt">Amount received</label>
+                <div class="lock"><input id="p-amt" type="text" inputmode="decimal" value="₹1,50,000.00" readonly aria-describedby="p-amt-h" /><span class="material-symbols-outlined" aria-hidden="true">lock</span></div>
+                <p class="hint" id="p-amt-h">Fixed to the instalment amount. Part payments aren't supported.</p>
+              </div>
+              <div>
+                <label for="p-ref">Payment reference <span class="muted">(required)</span></label>
+                <input id="p-ref" type="text" maxlength="100" value="UTR 4082 7731 9920" aria-describedby="p-ref-h" />
+                <p class="hint" id="p-ref-h"><span>UTR, cheque or receipt number</span><span class="mono">17 / 100</span></p>
+              </div>
+              <div>
+                <label for="p-at">Received on <span class="muted">(optional)</span></label>
+                <input id="p-at" type="datetime-local" aria-describedby="p-at-h" />
+                <p class="hint" id="p-at-h">Leave blank to record it as received now.</p>
+              </div>
+
+              <div class="inline-banner inline-banner--warning" data-seal="pay pay-busy pay-err pay-net">
+                <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
+                <div class="inline-banner__content"><p><strong>This payment will confirm the booking.</strong></p><p class="small">Paid goes from ₹4,50,000 to ₹6,00,000 (33.3%), past the 30% threshold. In the same step plot A-12 becomes Sold and a ₹18,00,000 sale is created. If anything fails, the payment is rolled back.</p></div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="brand-button" data-seal="pay pay-err">Record ₹1,50,000</button>
+                <button type="button" class="brand-button" data-seal="pay-busy" disabled aria-busy="true"><span class="spin" aria-hidden="true"></span>Recording…</button>
+                <button type="button" class="brand-button brand-button--secondary" data-set="seal=detail">Back</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- CONFIRM -->
+          <div data-seal="confirm">
+            <div class="seal__title">Confirm booking</div>
+            <div class="form">
+              <div class="seal__head" style="align-items:flex-start;text-align:left"><div class="seal__buyer" style="font-size:1.125rem">Rohan Deshmukh</div><div class="seal__plot">Plot A-12 · BK-7F3A</div></div>
+              <p style="margin:0;font-size:.875rem">Confirming turns this booking into a sale now, even though only 25% is paid. This works under both confirm rules.</p>
+              <div class="facts"><div class="row"><span>Sale amount</span><span class="mono">₹18,00,000</span></div><div class="row"><span>Collected so far</span><span class="mono">₹4,50,000 (25.0%)</span></div><div class="row"><span>Plot A-12</span><span class="mono">Booked → Sold</span></div></div>
+              <ul class="cons"><li>The sale is recorded for Anjali Rao (VA-0042) and credits her ledger, like a sale recorded by hand.</li><li>The remaining 9 instalments stay pending and can still be recorded.</li><li>To undo it later, void the sale in the Sales Register. The booking stays Confirmed.</li></ul>
+              <div class="form-actions"><button class="brand-button" type="button" data-set="seal=detail&flash=ok-confirm">Confirm booking</button><button class="brand-button brand-button--secondary" type="button" data-set="seal=detail">Back</button></div>
+            </div>
+          </div>
+
+          <!-- CANCEL -->
+          <div data-seal="cancel">
+            <div class="seal__title">Cancel booking</div>
+            <form class="form" onsubmit="return false" novalidate>
+              <div class="seal__head" style="align-items:flex-start;text-align:left"><div class="seal__buyer" style="font-size:1.125rem">Rohan Deshmukh</div><div class="seal__plot">Plot A-12 · BK-7F3A</div></div>
+              <div class="inline-banner inline-banner--warning"><span class="material-symbols-outlined" aria-hidden="true">warning</span><div class="inline-banner__content"><p><strong>This can't be undone.</strong></p>
+                <ul class="cons"><li>9 pending instalments are voided.</li><li>The ₹4,50,000 already paid stays on record. Refunds aren't handled here, so settle that outside the system.</li><li>Plot A-12 becomes Available, unless another live booking still holds it.</li></ul></div></div>
+              <div>
+                <label for="c-reason">Reason <span class="muted">(required)</span></label>
+                <textarea id="c-reason" maxlength="255" aria-describedby="c-h"></textarea>
+                <p class="hint" id="c-h"><span class="field-error" style="margin:0" hidden>Enter a reason for cancelling.</span><span class="mono" style="margin-left:auto">0 / 255</span></p>
+              </div>
+              <div class="form-actions"><button type="submit" class="brand-button brand-button--danger">Cancel booking</button><button type="button" class="brand-button brand-button--secondary" data-set="seal=detail">Keep booking</button></div>
+            </form>
+          </div>
+
+          <!-- TRANSFER -->
+          <div data-seal="transfer">
+            <div class="seal__title">Transfer booking</div>
+            <form class="form" onsubmit="return false" novalidate>
+              <div class="seal__head" style="align-items:flex-start;text-align:left"><div class="seal__buyer" style="font-size:1.125rem">Rohan Deshmukh</div><div class="seal__plot">Plot A-12 · currently Anjali Rao (VA-0042)</div></div>
+              <div class="rel">
+                <label for="t-a">New associate</label>
+                <input id="t-a" type="text" role="combobox" aria-expanded="true" aria-controls="t-list" value="Sur" />
+                <ul class="lookup__list" id="t-list" role="listbox"><li role="option"><span class="mono">VA-0017</span><span class="nm">Suresh Patil</span></li><li role="option"><span class="mono">VA-0063</span><span class="nm">Surbhi Kapoor</span></li></ul>
+                <p class="hint" style="margin-top:3.75rem">Only active associates can receive a booking.</p>
+              </div>
+              <p class="why"><span class="material-symbols-outlined" aria-hidden="true">swap_horiz</span><span>The buyer, instalment plan and the ₹4,50,000 already paid move with the booking. The change is recorded in the booking history.</span></p>
+              <div class="form-actions"><button type="submit" class="brand-button" disabled>Transfer booking</button><button type="button" class="brand-button brand-button--secondary" data-set="seal=detail">Back</button></div>
+            </form>
+          </div>
+
+          <!-- CONFIRMED / CANCELLED (read-only, actions disabled with reason) -->
+          <div data-seal="locked" style="display:flex;flex-direction:column;gap:1.125rem">
+            <div class="seal__title">Booking detail</div>
+            <div class="seal__head"><div class="seal__buyer">Karan Malhotra</div><span class="chip chip--confirmed">Confirmed</span><div class="seal__plot">Plot A-03 · BK-2C91</div></div>
+            <dl class="meta"><div><dt>Associate</dt><dd>Anjali Rao <span class="mono muted small">VA-0042</span></dd></div><div><dt>Confirmed</dt><dd>14 Aug 2026</dd></div><div><dt>Total</dt><dd class="mono">₹15,60,000</dd></div><div><dt>Paid</dt><dd class="mono">₹15,60,000</dd></div></dl>
+            <div class="actions" role="group" aria-label="Booking actions">
+              <button type="button" class="brand-button" disabled aria-describedby="locked-why">Confirm booking</button>
+              <button type="button" class="brand-button brand-button--secondary" disabled aria-describedby="locked-why">Transfer</button>
+              <button type="button" class="btn-danger-o" disabled aria-describedby="locked-why">Cancel booking</button>
+            </div>
+            <p class="why" id="locked-why"><span class="material-symbols-outlined" aria-hidden="true">lock</span><span>Actions are only available while a booking is Active. To reverse a confirmed booking, void its sale in the Sales Register.</span></p>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ===================== OVERDUE REPORT ===================== -->
+  <section id="panel-overdue" role="tabpanel" aria-labelledby="tab-overdue" data-view="overdue" style="display:flex;flex-direction:column;gap:1rem">
+    <p class="bookings-emi__subtitle" style="max-width:none">Active bookings with at least one instalment past its due date, oldest first. Select a row to open the booking and record the payment.</p>
+    <div class="card card--scroll" data-list="ok">
+      <table class="stack" aria-label="Overdue instalments, oldest first">
+        <thead><tr><th scope="col">Associate</th><th scope="col">Buyer</th><th scope="col">Plot</th><th scope="col" class="num">Overdue</th><th scope="col" class="num">Amount overdue</th><th scope="col">Oldest due</th></tr></thead>
+        <tbody id="over"></tbody>
+      </table>
+    </div>
+    <div class="card" data-list="loading"><table><tbody><tr><td><div class="skel" style="width:70%"></div></td></tr><tr><td><div class="skel" style="width:50%"></div></td></tr><tr><td><div class="skel" style="width:62%"></div></td></tr></tbody></table></div>
+    <div class="card" data-list="empty"><div class="empty"><div class="glyph material-symbols-outlined" aria-hidden="true">task_alt</div><h3>Nothing overdue</h3><p>Every active booking is paid up to date. This list fills in on its own when an instalment passes its due date.</p></div></div>
+    <div class="inline-banner inline-banner--danger" role="alert" data-list="error"><div class="inline-banner__content"><p><strong>The overdue report didn't load.</strong> Check your connection and try again.</p></div><button class="brand-button brand-button--secondary" type="button" style="padding:.375rem 1rem">Try again</button></div>
+    <div class="pager" data-list="ok"><span>Page 1 of 1 · 7 bookings</span><button class="brand-button brand-button--secondary" disabled>Previous</button><button class="brand-button brand-button--secondary" disabled>Next</button></div>
+  </section>
+
+</main>
+</div>
+
+<div class="mock" role="group" aria-label="Mock states (design review only)">
+  <b>VIEW</b><button data-set="view=register">Register</button><button data-set="view=overdue">Overdue</button>
+  <b>LIST</b><button data-set="list=ok">Loaded</button><button data-set="list=loading">Loading</button><button data-set="list=empty">Empty</button><button data-set="list=error">Error</button>
+  <b>SEAL</b><button data-set="seal=none">None</button><button data-set="seal=detail">Detail</button><button data-set="seal=locked">Confirmed</button><button data-set="seal=pay">Pay</button><button data-set="seal=pay-busy">Pay busy</button><button data-set="seal=pay-err">Pay 409 plot drift</button><button data-set="seal=pay-net">Pay network error</button><button data-set="seal=confirm">Confirm</button><button data-set="seal=cancel">Cancel</button><button data-set="seal=transfer">Transfer</button>
+  <b>FLASH</b><button data-set="flash=none">None</button><button data-set="flash=ok-auto">Auto-confirmed</button><button data-set="flash=ok-pay">Paid</button>
+</div>
+
+<script>
+  // Mock-state toggling only. Hash form: #view=register&list=ok&seal=detail&flash=none&clean
+  var S = { view: 'register', list: 'ok', seal: 'detail', flash: 'none' };
+  var money = function (n) { return '₹' + n.toLocaleString('en-IN'); };
+  var bookings = [
+    ['Rohan Deshmukh','Anjali Rao','VA-0042','A-12','ACTIVE',1800000,450000,1],
+    ['Meera Iyer','Suresh Patil','VA-0017','B-07','ACTIVE',2400000,800000,0],
+    ['Karan Malhotra','Anjali Rao','VA-0042','A-03','CONFIRMED',1560000,1560000,0],
+    ['Farhan Sheikh','Vikram Nair','VA-0031','C-21','ACTIVE',2100000,350000,3],
+    ['Pooja Bhatt','Suresh Patil','VA-0017','B-15','CANCELLED',1200000,200000,0],
+    ['Lakshmi Narayanan','Neha Kulkarni','VA-0058','D-02','ACTIVE',3000000,500000,0],
+    ['Amit Joshi','Vikram Nair','VA-0031','A-19','CONFIRMED',1650000,1650000,0],
+    ['Sunita Verma','Neha Kulkarni','VA-0058','D-09','ACTIVE',2700000,900000,0]
+  ];
+  var rows = document.getElementById('rows');
+  bookings.forEach(function (b, i) {
+    var live = b[4] === 'ACTIVE', due = live ? b[5] - b[6] : 0, pct = Math.round(b[6] / b[5] * 100);
+    var tr = document.createElement('tr'); tr.className = 'row' + (i === 0 ? ' row--sel' : ''); tr.tabIndex = 0;
+    tr.dataset.seal = b[4] === 'ACTIVE' ? 'detail' : 'locked';
+    tr.innerHTML =
+      '<td class="first" data-label="Buyer"><span class="who"><b>' + b[0] + '</b><span class="mono">Plot ' + b[3] + '</span></span></td>' +
+      '<td data-label="Associate"><span class="who"><b style="font-weight:500">' + b[1] + '</b><span class="mono">' + b[2] + '</span></span></td>' +
+      '<td data-label="Status"><span class="chip chip--' + b[4].toLowerCase() + '">' + b[4][0] + b[4].slice(1).toLowerCase() + '</span>' + (b[7] ? '<span class="overdue">' + b[7] + ' overdue</span>' : '') + '</td>' +
+      '<td class="num" data-label="Total">' + money(b[5]) + '</td>' +
+      '<td class="num" data-label="Paid">' + money(b[6]) + '<span class="meter" aria-hidden="true"><i style="width:' + pct + '%"></i></span></td>' +
+      '<td class="num" data-label="Due">' + (due ? money(due) : '<span class="muted">—</span>') + '</td>';
+    rows.appendChild(tr);
+  });
+  var emi = document.getElementById('emi'), mo = ['Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May'];
+  for (var n = 1; n <= 12; n++) {
+    var yr = n <= 7 ? 2026 : 2027, paid = n <= 3, over = n === 4, tr2 = document.createElement('tr');
+    if (over) tr2.className = 'is-over';
+    tr2.innerHTML = '<td class="mono">' + n + '</td><td>5 ' + mo[n-1] + ' ' + yr + (over ? '<br><span class="overdue" style="margin:0">Overdue</span>' : '') + '</td><td class="num">₹1,50,000</td>' +
+      '<td>' + (paid ? '<span class="chip chip--paid">Paid</span> <span class="small muted">5 ' + mo[n-1] + '</span>' : '<span style="display:inline-flex;align-items:center;gap:.5rem"><span class="small muted">Pending</span><button type="button" class="btn-sm' + (over ? ' is-picked' : '') + '" data-set="seal=pay" aria-label="Pay instalment ' + n + '">Pay</button></span>') + '</td>';
+    emi.appendChild(tr2);
+  }
+  var over = [
+    ['Vikram Nair','Farhan Sheikh','C-21',3,525000,'5 Jul 2026'],['Anjali Rao','Rohan Deshmukh','A-12',1,150000,'5 Sep 2026'],
+    ['Neha Kulkarni','Sunita Verma','D-09',2,450000,'5 Aug 2026'],['Suresh Patil','Meera Iyer','B-07',1,200000,'12 Sep 2026'],
+    ['Deepak Menon','Girish Rao','E-04',1,175000,'18 Sep 2026'],['Neha Kulkarni','Tanvi Shah','D-15',1,225000,'25 Sep 2026'],['Vikram Nair','Imran Qureshi','C-08',1,150000,'28 Sep 2026']
+  ].sort(function (a, b) { return new Date(a[5]) - new Date(b[5]); });
+  var ot = document.getElementById('over');
+  over.forEach(function (r) {
+    var tr = document.createElement('tr'); tr.className = 'row'; tr.tabIndex = 0; tr.dataset.open = '1';
+    tr.innerHTML = '<td class="first" data-label="Associate"><b>' + r[0] + '</b></td><td data-label="Buyer">' + r[1] + '</td><td data-label="Plot" class="mono">' + r[2] + '</td>' +
+      '<td class="num" data-label="Overdue">' + r[3] + (r[3] > 1 ? ' instalments' : ' instalment') + '</td><td class="num" data-label="Amount overdue">' + money(r[4]) + '</td><td data-label="Oldest due">' + r[5] + '</td>';
+    ot.appendChild(tr);
+  });
+  function apply() {
+    document.querySelectorAll('[data-view],[data-list],[data-seal],[data-flash],[data-seal-err]').forEach(function (el) {
+      if (el.hasAttribute('data-set') || el.classList.contains('row')) return;
+      var ok = true;
+      ['view','list','seal','flash'].forEach(function (k) {
+        var v = el.getAttribute('data-' + k);
+        if (v && v.split(' ').indexOf(S[k]) < 0) ok = false;
+      });
+      el.hidden = !ok;
+    });
+    // flash container: hide when none
+    document.querySelectorAll('.flash').forEach(function (f) { f.hidden = S.flash === 'none'; });
+    document.getElementById('tab-register').setAttribute('aria-selected', S.view === 'register');
+    document.getElementById('tab-overdue').setAttribute('aria-selected', S.view === 'overdue');
+    document.querySelectorAll('.mock button').forEach(function (b) { var p = b.dataset.set.split('='); b.classList.toggle('on', S[p[0]] === p[1]); });
+    document.querySelector('[data-grid]').classList.toggle('grid--solo', S.list === 'empty' || S.list === 'error');
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-set]');
+    if (t) { t.dataset.set.split('&').forEach(function (kv) { var p = kv.split('='); S[p[0]] = p[1]; }); apply(); return; }
+    var r = e.target.closest('tr.row');
+    if (r && r.dataset.open) { S.view = 'register'; S.seal = 'detail'; apply(); }
+    else if (r && r.dataset.seal) { document.querySelectorAll('#rows tr').forEach(function (x) { x.classList.remove('row--sel'); }); r.classList.add('row--sel'); S.seal = r.dataset.seal; apply(); }
+    var g = e.target.closest('.sb__grp'); if (g) g.setAttribute('aria-expanded', g.getAttribute('aria-expanded') !== 'true');
+    var tg = e.target.closest('[data-toggle-overdue]'); if (tg) tg.setAttribute('aria-pressed', tg.getAttribute('aria-pressed') !== 'true');
+  });
+  document.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('tr.row')) { e.preventDefault(); e.target.click(); } });
+  location.hash.slice(1).split('&').forEach(function (kv) { var p = kv.split('='); if (p[0] === 'clean') document.body.classList.add('clean'); else if (p[1]) S[p[0]] = p[1]; });
+  apply();
+  // the real screen scrolls the instalment table to the first unpaid row
+  var emiBox = document.querySelector(".emi"); if (emiBox) { var ov = emiBox.querySelector("tr.is-over"); emiBox.scrollTop = ov.offsetTop - 33; }
+</script>
+</body>
+</html>

@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Projects &amp; Plots — Admin Operational Screen Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&family=Material+Symbols+Outlined&display=swap" rel="stylesheet" />
+<style>
+/* Tokens: names + values match sales_register/DESIGN.md (violet mock palette). Everything below uses var() only;
+   see DESIGN.md "Token drift" - the live _tokens.scss is Viraj Acres gold/oxblood, swap :root only. */
+:root{
+  --brand-primary:#7C3AED;--brand-secondary:#22D3EE;
+  --brand-gradient:linear-gradient(135deg,var(--brand-primary),var(--brand-secondary));
+  --brand-primary-soft:color-mix(in srgb,var(--brand-primary) 14%,transparent);
+  --brand-primary-contrast:#FFFFFF;
+  --surface-page:#f8f9ff;--surface-card:#ffffff;--surface-raised:#eff4ff;
+  --border-subtle:#c2c6d9;--text-primary:#0b1c30;--text-muted:#424656;
+  --status-success:#34D399;--status-warning:#F59E0B;--status-danger:#F87171;
+  /* sidebar tokens copied from live _tokens.scss (not in sibling front-matter) */
+  --ink:#0C0A0B;--nav-active-fill:#241c16;--nav-inactive-muted:#a89878;--nav-accent:#EAD07D;--sidebar-expanded-width:248px;
+  --font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--surface-page);color:var(--text-primary);font-family:'Inter',var(--font-sans);font-size:15px;line-height:1.5}
+button{font-family:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed}
+:focus-visible{outline:2px solid var(--brand-primary);outline-offset:2px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* shared primitives (mirror _buttons/_forms/_shared-components) */
+.brand-button{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;border:0;border-radius:8px;padding:.625rem 1.25rem;background:var(--brand-gradient);color:var(--brand-primary-contrast);font-weight:600;font-size:.875rem;min-height:40px}
+.brand-button--secondary{background:var(--surface-raised);color:var(--text-primary);border:1px solid var(--border-subtle)}
+.brand-button:disabled{opacity:.5}
+.link-btn{background:none;border:0;padding:0;color:var(--brand-primary);font-weight:600;font-size:.8125rem;text-decoration:underline}
+label,.lbl{display:block;margin:0 0 .375rem;font-family:var(--mono);font-size:.6875rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted)}
+input[type=text],input[type=tel],input[type=number],select{display:block;width:100%;padding:.625rem .875rem;background:var(--surface-raised);border:1px solid var(--border-subtle);border-radius:8px;font:inherit;font-size:.875rem;color:var(--text-primary);min-height:40px}
+input:focus,select:focus{outline:none;border-color:var(--brand-primary);box-shadow:0 0 0 3px var(--brand-primary-soft)}
+input[aria-invalid=true]{border-color:var(--status-danger)}
+.field{margin-bottom:1rem}.field .hint{margin:.25rem 0 0;font-size:.75rem;color:var(--text-muted)}
+.field-error{margin:.375rem 0 0;font-size:.8125rem;color:#b3261e;display:flex;gap:.375rem;align-items:center}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.banner{display:flex;gap:.75rem;align-items:flex-start;padding:.75rem 1rem;border-radius:12px;border:1px solid var(--border-subtle);background:var(--surface-card);font-size:.8125rem;margin-bottom:1rem}
+.banner--danger{border-color:var(--status-danger);background:color-mix(in srgb,var(--status-danger) 14%,var(--surface-card))}
+.banner--success{border-color:var(--status-success);background:color-mix(in srgb,var(--status-success) 14%,var(--surface-card))}
+.banner--warning{border-color:var(--status-warning);background:color-mix(in srgb,var(--status-warning) 16%,var(--surface-card))}
+.banner b{display:block;margin-bottom:.125rem}
+
+/* app shell: collapsible admin sidebar (reuses .associate-sidebar look) */
+.shell{display:grid;grid-template-columns:var(--sidebar-expanded-width) 1fr;min-height:100vh}
+.sb{background:var(--ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;color:var(--nav-inactive-muted);font-size:13.5px;font-weight:500;overflow:auto}
+.sb__brand{display:flex;gap:12px;align-items:center;padding:20px 16px 18px;min-height:88px}
+.sb__mark{width:40px;height:40px;border-radius:2px;background:var(--nav-active-fill);color:var(--nav-accent);display:grid;place-items:center;font-family:'Geist';font-weight:600}
+.sb__name{display:block;color:#F7F2E7;font-weight:600;font-size:14px}.sb__tag{display:block;font-size:11px;color:#8a7a56}
+.sb hr{border:0;border-top:1px solid rgba(255,255,255,.08);margin:0 16px 8px;width:auto}
+.sb__nav{padding:0 8px;display:flex;flex-direction:column;gap:2px}
+.sb__link{display:flex;align-items:center;gap:14px;padding:11px 12px;border-radius:2px;background:none;border:0;color:inherit;font:inherit;text-align:left;width:100%}
+.sb__link .material-symbols-outlined{font-size:20px}
+.sb__link .chev{margin-left:auto;font-size:18px}
+.sb__sub{display:flex;flex-direction:column;gap:1px;padding-left:35px;margin-bottom:4px}
+.sb__sublink{padding:7px 12px;font-size:12.5px;border-radius:2px;color:inherit;display:block}
+.sb__sublink--active{background:var(--nav-active-fill);color:var(--nav-accent)}
+.sb__link--open{color:var(--nav-accent)}
+.sb__new{font-family:var(--mono);font-size:10px;margin-left:6px;padding:1px 5px;border:1px solid #8a7a56;color:#8a7a56;border-radius:3px}
+.sb__sublink--soon{opacity:.7}
+.sb__spacer{flex:1}
+
+/* page */
+.page{padding:1.5rem 2rem 4rem;min-width:0}
+.intro{display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;align-items:flex-start;margin-bottom:1.25rem}
+.eyebrow{font-family:var(--mono);font-size:.8125rem;font-weight:500;letter-spacing:.02em;text-transform:uppercase;color:var(--brand-primary)}
+h1{margin:.25rem 0;font-family:'Geist',var(--font-sans);font-size:1.75rem;font-weight:600;letter-spacing:-.01em;line-height:1.25}
+.sub{margin:0;color:var(--text-muted);font-size:.9375rem;max-width:40rem}
+.pp{display:grid;grid-template-columns:272px minmax(0,1fr) 352px;gap:1.25rem;align-items:start}
+
+/* project list (master) */
+.panel{background:var(--surface-card);border-radius:20px;box-shadow:0 4px 20px -2px rgba(0,0,0,.08)}
+.plist{padding:1rem}
+.plist__head{display:flex;justify-content:space-between;align-items:center;margin:0 0 .75rem .25rem}
+.plist__head h2{margin:0;font-family:var(--mono);font-size:.75rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted)}
+.plist ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.375rem}
+.proj{width:100%;text-align:left;border:1px solid transparent;background:transparent;border-radius:12px;padding:.75rem .875rem;display:grid;gap:.125rem;color:inherit}
+.proj:hover{background:var(--surface-raised)}
+.proj.is-selected{background:var(--surface-raised);border-color:var(--brand-primary);box-shadow:inset 3px 0 0 var(--brand-primary)}
+.proj__name{font-family:'Geist';font-weight:600;font-size:.9375rem}
+.proj__loc{font-size:.8125rem;color:var(--text-muted)}
+.proj__sub{font-family:var(--mono);font-size:.75rem;color:var(--text-muted);margin-top:.25rem}
+.mini{display:flex;height:6px;border-radius:99px;overflow:hidden;margin-top:.5rem;gap:2px}
+.mini i{display:block}.m-a{background:var(--status-success)}.m-b{background:var(--status-warning)}.m-s{background:var(--text-muted)}
+
+/* centre: project header + legend + grid */
+.main{padding:1.25rem 1.5rem 1.5rem;min-width:0}
+.main__head{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:flex-start}
+.main__head h2{margin:0;font-family:'Geist';font-size:1.25rem;font-weight:600}
+.main__loc{margin:.125rem 0 0;color:var(--text-muted);font-size:.875rem}
+.actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.legend{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0 .5rem;padding:0;list-style:none}
+.chip{display:inline-flex;align-items:center;gap:.5rem;border-radius:999px;padding:.375rem .75rem;border:1px solid var(--border-subtle);background:var(--surface-card);font-size:.8125rem;color:var(--text-primary);min-height:36px}
+.chip svg{width:16px;height:16px}.chip b{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.chip[aria-pressed=true]{border-color:var(--brand-primary);box-shadow:0 0 0 3px var(--brand-primary-soft)}
+.chip--available{background:color-mix(in srgb,var(--status-success) 14%,var(--surface-card))}
+.chip--booked{background:color-mix(in srgb,var(--status-warning) 16%,var(--surface-card))}
+.chip--sold{background:var(--surface-raised);background-image:repeating-linear-gradient(135deg,transparent 0 5px,color-mix(in srgb,var(--text-muted) 14%,transparent) 5px 6px)}
+.legend__note{font-size:.75rem;color:var(--text-muted);margin:0 0 .5rem}
+.block{margin-top:1rem}
+.block__h{margin:0 0 .5rem;font-family:var(--mono);font-size:.75rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);display:flex;justify-content:space-between;border-bottom:1px solid var(--border-subtle);padding-bottom:.375rem}
+.block__h span{text-transform:none;letter-spacing:0}
+.grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:.5rem}
+.tile{width:100%;min-height:92px;text-align:left;border-radius:10px;border:1.5px solid var(--border-subtle);background:var(--surface-card);padding:.5rem .5rem .4rem;display:flex;flex-direction:column;gap:1px;color:var(--text-primary);position:relative}
+.tile__no{font-family:var(--mono);font-weight:700;font-size:.9375rem}
+.tile__meta{font-size:.6875rem;color:var(--text-muted);line-height:1.25}
+.tile__price{font-family:var(--mono);font-size:.75rem;font-weight:600;font-variant-numeric:tabular-nums}
+.tile__status{margin-top:auto;display:flex;gap:.25rem;align-items:center;font-size:.6875rem;font-weight:600}
+.tile__status svg{width:13px;height:13px;flex:none}
+.tile--available{border-color:var(--status-success);background:color-mix(in srgb,var(--status-success) 12%,var(--surface-card))}
+.tile--available .tile__status{color:#146c43}
+.tile--booked{border-color:var(--status-warning);background:color-mix(in srgb,var(--status-warning) 16%,var(--surface-card))}
+.tile--booked .tile__status{color:#8a5a00}
+.tile--sold{border-style:dashed;border-color:var(--text-muted);background:var(--surface-raised);background-image:repeating-linear-gradient(135deg,transparent 0 6px,color-mix(in srgb,var(--text-muted) 12%,transparent) 6px 7px)}
+.tile--sold .tile__status{color:var(--text-muted)}
+/* corner plots: notched top-right corner = survey-plan corner plot */
+.tile--corner{clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,0 100%)}
+.tile.is-selected{border:3px solid var(--brand-primary);padding:calc(.5rem - 1.5px) calc(.5rem - 1.5px) calc(.4rem - 1.5px)}
+.tile:hover{filter:brightness(.97)}
+.tile--skel{height:92px;border:0;background:linear-gradient(90deg,var(--surface-raised),var(--surface-card),var(--surface-raised));background-size:200% 100%;animation:sh 1.4s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.tile--skel{animation:none}}
+
+/* detail / form aside */
+.aside{padding:1.25rem;position:sticky;top:1rem}
+.aside h2{margin:0 0 .25rem;font-family:'Geist';font-size:1.125rem;font-weight:600}
+.aside__plot{font-family:var(--mono);font-size:1.5rem;font-weight:700}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:.375rem 1rem;margin:1rem 0;font-size:.875rem}
+.facts dt{color:var(--text-muted)}.facts dd{margin:0;text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600}
+.status-pill{display:inline-flex;gap:.375rem;align-items:center;border-radius:999px;padding:.25rem .625rem;font-size:.75rem;font-weight:600;border:1px solid}
+.status-pill svg{width:14px;height:14px}
+.status-pill--available{border-color:var(--status-success);background:color-mix(in srgb,var(--status-success) 14%,var(--surface-card));color:#146c43}
+.status-pill--booked{border-color:var(--status-warning);background:color-mix(in srgb,var(--status-warning) 16%,var(--surface-card));color:#8a5a00}
+.stack{display:flex;flex-direction:column;gap:.5rem}
+.reason{font-size:.8125rem;color:var(--text-muted);margin:.25rem 0 0}
+.total{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--border-subtle);margin-top:.5rem;padding-top:.75rem}
+.total b{font-family:var(--mono);font-size:1.25rem;font-variant-numeric:tabular-nums}
+.sched--line{display:flex;gap:.75rem;align-items:baseline;padding:.625rem .875rem;font-size:.8125rem;background:var(--surface-raised)}.sched--line b{font-family:var(--mono);font-size:.6875rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)}.mono{font-family:var(--mono);font-weight:600}
+input[readonly]{background:var(--surface-raised)}
+.sched{margin:.75rem 0 1rem;border:1px solid var(--border-subtle);border-radius:12px;overflow:hidden;background:var(--surface-card)}
+.sched summary{padding:.625rem .875rem;font-size:.8125rem;font-weight:600;cursor:pointer;background:var(--surface-raised)}
+.sched table{width:100%;border-collapse:collapse;font-size:.8125rem}
+.sched td,.sched th{padding:.375rem .875rem;border-top:1px solid var(--border-subtle);text-align:left}
+.sched td:last-child,.sched th:last-child{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.sched caption{padding:.5rem .875rem;font-size:.75rem;color:var(--text-muted);text-align:left}
+.seg{display:flex;border:1px solid var(--border-subtle);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--surface-raised);padding:.5rem;font-size:.8125rem;min-height:40px}
+.seg button[aria-checked=true]{background:var(--brand-primary);color:var(--brand-primary-contrast);font-weight:600}
+.lookup{position:relative}.lookup .chosen{display:flex;gap:.5rem;align-items:center;background:var(--surface-raised);border:1px solid var(--border-subtle);border-radius:8px;padding:.5rem .75rem;font-size:.875rem;min-height:40px}
+.lookup .chosen .id{font-family:var(--mono);font-weight:600}.lookup .chosen button{margin-left:auto;border:0;background:none;font-size:1.125rem}
+.spin{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{padding:2.5rem 1rem;text-align:center;color:var(--text-muted)}
+.empty h3{margin:.5rem 0 .25rem;color:var(--text-primary);font-family:'Geist';font-size:1.125rem}
+.empty .glyph{width:64px;height:64px;margin:0 auto;border:1.5px dashed var(--border-subtle);border-radius:10px;clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,0 100%)}
+.dropzone{border:1.5px dashed var(--border-subtle);border-radius:12px;padding:1rem;text-align:center;font-size:.8125rem;color:var(--text-muted);background:var(--surface-raised)}
+.errlist{margin:.5rem 0;padding:0;list-style:none;font-family:var(--mono);font-size:.75rem;color:#b3261e}
+.mobilebar{display:none}
+
+/* mock-only state switcher */
+.mockbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--ink);padding:.5rem 1rem;display:flex;gap:.375rem;flex-wrap:wrap;align-items:center}
+.mockbar span{color:#a89878;font-family:var(--mono);font-size:.6875rem;margin-right:.5rem}
+.mockbar button{border:1px solid #3a342b;background:transparent;color:#F7F2E7;border-radius:6px;padding:.25rem .5rem;font-size:.75rem}
+.mockbar button[aria-pressed=true]{background:var(--nav-accent);color:#0C0A0B}
+body.shot .mockbar{display:none}
+
+/* responsive */
+@media (max-width:1279px){
+  .pp{grid-template-columns:240px minmax(0,1fr)}
+  .aside{position:fixed;top:0;right:0;bottom:0;width:min(400px,100vw);z-index:25;border-radius:20px 0 0 20px;overflow:auto;box-shadow:-12px 0 40px -8px rgba(0,0,0,.3)}
+}
+@media (max-width:1023px){
+  .shell{grid-template-columns:1fr}
+  .sb{display:none}
+  .mobilebar{display:flex;gap:.5rem;align-items:center;padding:.75rem 1rem;background:var(--ink);color:#F7F2E7;position:sticky;top:0;z-index:15}
+  .mobilebar button{background:none;border:1px solid #3a342b;color:#F7F2E7;border-radius:8px;min-height:44px;min-width:44px}
+  .page{padding:1rem}
+  .pp{grid-template-columns:1fr}
+  .plist{display:none}  /* becomes a "Projects" drawer; one-line project switcher shown instead */
+  .switcher{display:flex!important}
+}
+.switcher{display:none;align-items:center;gap:.5rem;margin-bottom:.75rem}
+@media (max-width:640px){
+  .grid{grid-template-columns:repeat(3,1fr)}
+  .aside{width:100vw;border-radius:0}
+  .row2{grid-template-columns:1fr}
+  .tile{min-height:96px}
+  .brand-button,.chip{min-height:44px}
+}
+</style>
+</head>
+<body>
+<div class="mobilebar"><button aria-label="Open navigation">☰</button><b>Projects &amp; Plots</b></div>
+<div class="shell">
+<nav class="sb" aria-label="Admin">
+  <div class="sb__brand"><span class="sb__mark" aria-hidden="true">VA</span><span><span class="sb__name">Viraj Acres</span><span class="sb__tag">Legacy Living</span></span></div>
+  <hr>
+  <div class="sb__nav">
+    <a class="sb__link"><span class="material-symbols-outlined" aria-hidden="true">dashboard</span>Dashboard</a>
+    <button class="sb__link" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">tune</span>Setup<span class="material-symbols-outlined chev">expand_more</span></button>
+    <button class="sb__link" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">group</span>Network<span class="material-symbols-outlined chev">expand_more</span></button>
+    <button class="sb__link" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">point_of_sale</span>Finance &amp; Cycles<span class="material-symbols-outlined chev">expand_more</span></button>
+    <button class="sb__link sb__link--open" aria-expanded="true"><span class="material-symbols-outlined" aria-hidden="true">domain</span>Inventory &amp; Bookings<span class="material-symbols-outlined chev">expand_less</span></button>
+    <div class="sb__sub">
+      <a class="sb__sublink sb__sublink--active" aria-current="page">Projects &amp; Plots</a>
+      <a class="sb__sublink sb__sublink--soon">Bookings &amp; EMI <span class="sb__new">unit 12</span></a>
+    </div>
+    <button class="sb__link" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span>System<span class="material-symbols-outlined chev">expand_more</span></button>
+  </div>
+  <div class="sb__spacer"></div>
+  <div class="sb__nav" style="padding-bottom:1rem"><a class="sb__link"><span class="material-symbols-outlined" aria-hidden="true">logout</span>Log out</a></div>
+</nav>
+
+<main class="page">
+  <header class="intro">
+    <div>
+      <span class="eyebrow">Inventory · Plots</span>
+      <h1>Projects &amp; Plots</h1>
+      <p class="sub">See what is open, booked and sold in every project, and book a plot for an associate's buyer.</p>
+    </div>
+    <div class="actions">
+      <button class="brand-button brand-button--secondary" data-go="newproject">Add project</button>
+    </div>
+  </header>
+
+  <div class="pp">
+    <!-- (a) master -->
+    <section class="panel plist" aria-labelledby="pl-h" data-show="!noprojects">
+      <div class="plist__head"><h2 id="pl-h">Projects</h2><button class="link-btn" data-go="newproject">+ Add</button></div>
+      <ul data-show="!loading"><li><button type="button" class="proj is-selected" aria-current="true"><span class="proj__name">Viraj Acres Phase II</span><span class="proj__loc">Nashik, Maharashtra</span><span class="mini" aria-hidden="true"><i class="m-a" style="flex:24"></i><i class="m-b" style="flex:7"></i><i class="m-s" style="flex:5"></i></span><span class="proj__sub">36 plots · 24 available</span></button></li><li><button type="button" class="proj" aria-current="false"><span class="proj__name">Sai Enclave</span><span class="proj__loc">Hinjewadi, Pune</span><span class="mini" aria-hidden="true"><i class="m-a" style="flex:31"></i><i class="m-b" style="flex:12"></i><i class="m-s" style="flex:11"></i></span><span class="proj__sub">54 plots · 31 available</span></button></li><li><button type="button" class="proj" aria-current="false"><span class="proj__name">Green Meadows</span><span class="proj__loc">Wardha Road, Nagpur</span><span class="mini" aria-hidden="true"><i class="m-a" style="flex:0"></i><i class="m-b" style="flex:3"></i><i class="m-s" style="flex:25"></i></span><span class="proj__sub">28 plots · 0 available</span></button></li><li><button type="button" class="proj" aria-current="false"><span class="proj__name">Godavari Heights</span><span class="proj__loc">Panchavati, Nashik</span><span class="proj__sub">No plots yet</span></button></li></ul>
+      <ul data-show="loading"><li><div class="tile--skel" style="height:72px;border-radius:12px"></div></li><li><div class="tile--skel" style="height:72px;border-radius:12px"></div></li><li><div class="tile--skel" style="height:72px;border-radius:12px"></div></li></ul>
+    </section>
+
+    <!-- (b) centre -->
+    <section class="panel main" aria-labelledby="proj-h">
+      <div class="switcher"><label for="psel" class="lbl" style="margin:0">Project</label><select id="psel"><option>Viraj Acres Phase II</option></select></div>
+
+      <div data-show="noprojects" class="empty"><div class="glyph"></div><h3>No projects yet</h3><p>Create your first project, then add plots one by one or import them from a CSV.</p><button class="brand-button" data-go="newproject">Add project</button></div>
+
+      <div data-show="!noprojects">
+        <div class="main__head">
+          <div><h2 id="proj-h" data-show="!emptyproject">Viraj Acres Phase II</h2><h2 data-show="emptyproject">Godavari Heights</h2>
+            <p class="main__loc" data-show="!emptyproject">Nashik, Maharashtra · 36 plots</p><p class="main__loc" data-show="emptyproject">Panchavati, Nashik · 0 plots</p></div>
+          <div class="actions">
+            <button class="brand-button brand-button--secondary" data-go="newproject">Edit project</button>
+            <button class="brand-button brand-button--secondary" data-go="csv">Import CSV</button>
+            <button class="brand-button" data-go="newplot">Add plot</button>
+          </div>
+        </div>
+
+        <div data-show="loading"><div class="legend" aria-hidden="true"></div><ul class="grid"><li><div class="tile tile--skel"></div></li><li><div class="tile tile--skel"></div></li><li><div class="tile tile--skel"></div></li><li><div class="tile tile--skel"></div></li><li><div class="tile tile--skel"></div></li><li><div class="tile tile--skel"></div></li><li><div class="tile tile--skel"></div></li><li><div class="tile tile--skel"></div></li><li><div class="tile tile--skel"></div></li><li><div class="tile tile--skel"></div></li><li><div class="tile tile--skel"></div></li><li><div class="tile tile--skel"></div></li><li><div class="tile tile--skel"></div></li><li><div class="tile tile--skel"></div></li><li><div class="tile tile--skel"></div></li></ul><p class="sr" role="status">Loading plots</p></div>
+
+        <div data-show="emptyproject" class="empty"><div class="glyph"></div><h3>No plots in this project</h3><p>Add a plot manually, or download the CSV template and import the whole layout at once.</p>
+          <div class="actions" style="justify-content:center"><button class="brand-button" data-go="newplot">Add plot</button><button class="brand-button brand-button--secondary" data-go="csv">Import CSV</button></div></div>
+
+        <div data-show="!loading !emptyproject">
+          <ul class="legend" aria-label="Filter plots by status">
+            <li><button class="chip chip--available" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available <b>24</b></button></li>
+            <li><button class="chip chip--booked" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Booked <b>7</b></button></li>
+            <li><button class="chip chip--sold" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 7V5.2a2.5 2.5 0 015 0V7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Sold <b>5</b></button></li>
+          </ul>
+          <p class="legend__note">Notched tiles are corner plots. Select a plot for details.</p>
+          <section class="block"><h3 class="block__h">Block A <span>8 available of 12</span></h3><ul class="grid"><li><button type="button" class="tile tile--available tile--corner" aria-label="Plot A-1, corner, 1,200 square feet, ₹34,20,000, Available" aria-pressed="false">
+<span class="tile__no">A-1</span><span class="tile__meta">1,200 sq ft · Corner</span><span class="tile__price">₹34.2 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--available" aria-label="Plot A-2, normal, 1,200 square feet, ₹34,20,000, Available" aria-pressed="false">
+<span class="tile__no">A-2</span><span class="tile__meta">1,200 sq ft</span><span class="tile__price">₹34.2 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--available" aria-label="Plot A-3, normal, 1,500 square feet, ₹42,75,000, Available" aria-pressed="false">
+<span class="tile__no">A-3</span><span class="tile__meta">1,500 sq ft</span><span class="tile__price">₹42.8 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--booked" aria-label="Plot A-4, normal, 2,400 square feet, ₹68,40,000, Booked" aria-pressed="false">
+<span class="tile__no">A-4</span><span class="tile__meta">2,400 sq ft</span><span class="tile__price">₹68.4 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Booked</span></button></li><li><button type="button" class="tile tile--available" aria-label="Plot A-5, normal, 1,800 square feet, ₹51,30,000, Available" aria-pressed="false">
+<span class="tile__no">A-5</span><span class="tile__meta">1,800 sq ft</span><span class="tile__price">₹51.3 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--sold tile--corner" aria-label="Plot A-6, corner, 1,500 square feet, ₹42,75,000, Sold" aria-pressed="false">
+<span class="tile__no">A-6</span><span class="tile__meta">1,500 sq ft · Corner</span><span class="tile__price">₹42.8 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 7V5.2a2.5 2.5 0 015 0V7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Sold</span></button></li><li><button type="button" class="tile tile--available tile--corner" aria-label="Plot A-7, corner, 1,200 square feet, ₹34,20,000, Available" aria-pressed="false">
+<span class="tile__no">A-7</span><span class="tile__meta">1,200 sq ft · Corner</span><span class="tile__price">₹34.2 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--available" aria-label="Plot A-8, normal, 1,200 square feet, ₹34,20,000, Available" aria-pressed="false">
+<span class="tile__no">A-8</span><span class="tile__meta">1,200 sq ft</span><span class="tile__price">₹34.2 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--booked" aria-label="Plot A-9, normal, 1,500 square feet, ₹42,75,000, Booked" aria-pressed="false">
+<span class="tile__no">A-9</span><span class="tile__meta">1,500 sq ft</span><span class="tile__price">₹42.8 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Booked</span></button></li><li><button type="button" class="tile tile--booked" aria-label="Plot A-10, normal, 2,400 square feet, ₹68,40,000, Booked" aria-pressed="false">
+<span class="tile__no">A-10</span><span class="tile__meta">2,400 sq ft</span><span class="tile__price">₹68.4 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Booked</span></button></li><li><button type="button" class="tile tile--available" aria-label="Plot A-11, normal, 1,800 square feet, ₹51,30,000, Available" aria-pressed="false">
+<span class="tile__no">A-11</span><span class="tile__meta">1,800 sq ft</span><span class="tile__price">₹51.3 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--available tile--corner is-selected" aria-label="Plot A-12, corner, 1,800 square feet, ₹51,30,000, Available" aria-pressed="true">
+<span class="tile__no">A-12</span><span class="tile__meta">1,800 sq ft · Corner</span><span class="tile__price">₹51.3 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li></ul></section><section class="block"><h3 class="block__h">Block B <span>8 available of 12</span></h3><ul class="grid"><li><button type="button" class="tile tile--available tile--corner" aria-label="Plot B-1, corner, 1,200 square feet, ₹34,20,000, Available" aria-pressed="false">
+<span class="tile__no">B-1</span><span class="tile__meta">1,200 sq ft · Corner</span><span class="tile__price">₹34.2 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--sold" aria-label="Plot B-2, normal, 1,200 square feet, ₹34,20,000, Sold" aria-pressed="false">
+<span class="tile__no">B-2</span><span class="tile__meta">1,200 sq ft</span><span class="tile__price">₹34.2 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 7V5.2a2.5 2.5 0 015 0V7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Sold</span></button></li><li><button type="button" class="tile tile--available" aria-label="Plot B-3, normal, 1,500 square feet, ₹42,75,000, Available" aria-pressed="false">
+<span class="tile__no">B-3</span><span class="tile__meta">1,500 sq ft</span><span class="tile__price">₹42.8 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--available" aria-label="Plot B-4, normal, 2,400 square feet, ₹68,40,000, Available" aria-pressed="false">
+<span class="tile__no">B-4</span><span class="tile__meta">2,400 sq ft</span><span class="tile__price">₹68.4 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--booked" aria-label="Plot B-5, normal, 1,800 square feet, ₹51,30,000, Booked" aria-pressed="false">
+<span class="tile__no">B-5</span><span class="tile__meta">1,800 sq ft</span><span class="tile__price">₹51.3 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Booked</span></button></li><li><button type="button" class="tile tile--available tile--corner" aria-label="Plot B-6, corner, 1,500 square feet, ₹42,75,000, Available" aria-pressed="false">
+<span class="tile__no">B-6</span><span class="tile__meta">1,500 sq ft · Corner</span><span class="tile__price">₹42.8 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--available tile--corner" aria-label="Plot B-7, corner, 1,200 square feet, ₹34,20,000, Available" aria-pressed="false">
+<span class="tile__no">B-7</span><span class="tile__meta">1,200 sq ft · Corner</span><span class="tile__price">₹34.2 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--available" aria-label="Plot B-8, normal, 1,200 square feet, ₹34,20,000, Available" aria-pressed="false">
+<span class="tile__no">B-8</span><span class="tile__meta">1,200 sq ft</span><span class="tile__price">₹34.2 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--sold" aria-label="Plot B-9, normal, 1,500 square feet, ₹42,75,000, Sold" aria-pressed="false">
+<span class="tile__no">B-9</span><span class="tile__meta">1,500 sq ft</span><span class="tile__price">₹42.8 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 7V5.2a2.5 2.5 0 015 0V7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Sold</span></button></li><li><button type="button" class="tile tile--available" aria-label="Plot B-10, normal, 2,400 square feet, ₹68,40,000, Available" aria-pressed="false">
+<span class="tile__no">B-10</span><span class="tile__meta">2,400 sq ft</span><span class="tile__price">₹68.4 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--booked" aria-label="Plot B-11, normal, 1,800 square feet, ₹51,30,000, Booked" aria-pressed="false">
+<span class="tile__no">B-11</span><span class="tile__meta">1,800 sq ft</span><span class="tile__price">₹51.3 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Booked</span></button></li><li><button type="button" class="tile tile--available tile--corner" aria-label="Plot B-12, corner, 1,500 square feet, ₹42,75,000, Available" aria-pressed="false">
+<span class="tile__no">B-12</span><span class="tile__meta">1,500 sq ft · Corner</span><span class="tile__price">₹42.8 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li></ul></section><section class="block"><h3 class="block__h">Block C <span>8 available of 12</span></h3><ul class="grid"><li><button type="button" class="tile tile--available tile--corner" aria-label="Plot C-1, corner, 1,200 square feet, ₹34,20,000, Available" aria-pressed="false">
+<span class="tile__no">C-1</span><span class="tile__meta">1,200 sq ft · Corner</span><span class="tile__price">₹34.2 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--available" aria-label="Plot C-2, normal, 1,200 square feet, ₹34,20,000, Available" aria-pressed="false">
+<span class="tile__no">C-2</span><span class="tile__meta">1,200 sq ft</span><span class="tile__price">₹34.2 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--available" aria-label="Plot C-3, normal, 1,500 square feet, ₹42,75,000, Available" aria-pressed="false">
+<span class="tile__no">C-3</span><span class="tile__meta">1,500 sq ft</span><span class="tile__price">₹42.8 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--sold" aria-label="Plot C-4, normal, 2,400 square feet, ₹68,40,000, Sold" aria-pressed="false">
+<span class="tile__no">C-4</span><span class="tile__meta">2,400 sq ft</span><span class="tile__price">₹68.4 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 7V5.2a2.5 2.5 0 015 0V7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Sold</span></button></li><li><button type="button" class="tile tile--available" aria-label="Plot C-5, normal, 1,800 square feet, ₹51,30,000, Available" aria-pressed="false">
+<span class="tile__no">C-5</span><span class="tile__meta">1,800 sq ft</span><span class="tile__price">₹51.3 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--booked tile--corner" aria-label="Plot C-6, corner, 1,500 square feet, ₹42,75,000, Booked" aria-pressed="false">
+<span class="tile__no">C-6</span><span class="tile__meta">1,500 sq ft · Corner</span><span class="tile__price">₹42.8 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Booked</span></button></li><li><button type="button" class="tile tile--available tile--corner" aria-label="Plot C-7, corner, 1,200 square feet, ₹34,20,000, Available" aria-pressed="false">
+<span class="tile__no">C-7</span><span class="tile__meta">1,200 sq ft · Corner</span><span class="tile__price">₹34.2 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--available" aria-label="Plot C-8, normal, 1,200 square feet, ₹34,20,000, Available" aria-pressed="false">
+<span class="tile__no">C-8</span><span class="tile__meta">1,200 sq ft</span><span class="tile__price">₹34.2 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--available" aria-label="Plot C-9, normal, 1,500 square feet, ₹42,75,000, Available" aria-pressed="false">
+<span class="tile__no">C-9</span><span class="tile__meta">1,500 sq ft</span><span class="tile__price">₹42.8 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li><li><button type="button" class="tile tile--booked" aria-label="Plot C-10, normal, 2,400 square feet, ₹68,40,000, Booked" aria-pressed="false">
+<span class="tile__no">C-10</span><span class="tile__meta">2,400 sq ft</span><span class="tile__price">₹68.4 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Booked</span></button></li><li><button type="button" class="tile tile--sold" aria-label="Plot C-11, normal, 1,800 square feet, ₹51,30,000, Sold" aria-pressed="false">
+<span class="tile__no">C-11</span><span class="tile__meta">1,800 sq ft</span><span class="tile__price">₹51.3 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 7V5.2a2.5 2.5 0 015 0V7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Sold</span></button></li><li><button type="button" class="tile tile--available tile--corner" aria-label="Plot C-12, corner, 1,500 square feet, ₹42,75,000, Available" aria-pressed="false">
+<span class="tile__no">C-12</span><span class="tile__meta">1,500 sq ft · Corner</span><span class="tile__price">₹42.8 L</span><span class="tile__status"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span></button></li></ul></section>
+        </div>
+      </div>
+    </section>
+
+    <!-- (c)(d) aside -->
+    <aside class="panel aside" aria-label="Plot details" data-show="!noprojects !loading !emptyproject">
+      <div data-show="default bookok">
+        <div class="banner banner--success" role="status" data-show="bookok"><div><b>Plot A-12 booked for Rohit Kulkarni.</b><a href="#" class="link-btn">View booking</a></div></div>
+        <h2>Plot</h2><div class="aside__plot">A-12</div>
+        <span class="status-pill status-pill--available" data-show="default"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.2l2 2 4-4.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Available</span>
+        <span class="status-pill status-pill--booked" data-show="bookok"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Booked</span>
+        <dl class="facts"><dt>Type</dt><dd>Corner</dd><dt>Area</dt><dd>1,800 sq ft</dd><dt>Rate</dt><dd>₹2,850 / sq ft</dd><dt>Price</dt><dd>₹51,30,000</dd></dl>
+        <div class="stack">
+          <button class="brand-button" data-go="book" data-show="default">Book this plot</button>
+          <button class="brand-button" disabled data-show="bookok" aria-describedby="why1">Book this plot</button>
+          <p class="reason" id="why1" data-show="bookok">Already booked. Open it in Bookings &amp; EMI to pay, confirm or cancel.</p>
+          <button class="brand-button brand-button--secondary" data-go="editplot">Edit plot</button>
+        </div>
+      </div>
+
+      <div data-show="booked">
+        <h2>Plot</h2><div class="aside__plot">A-9</div>
+        <span class="status-pill status-pill--booked"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Booked</span>
+        <dl class="facts"><dt>Type</dt><dd>Normal</dd><dt>Area</dt><dd>1,500 sq ft</dd><dt>Rate</dt><dd>₹2,850 / sq ft</dd><dt>Price</dt><dd>₹42,75,000</dd></dl>
+        <div class="stack"><button class="brand-button" disabled aria-describedby="why2">Book this plot</button>
+          <p class="reason" id="why2">Already booked. Open it in Bookings &amp; EMI to pay, confirm or cancel.</p>
+          <button class="brand-button brand-button--secondary" data-go="editbooked">Edit plot</button></div>
+      </div>
+
+      <form data-show="book book400 booksubmit book409" novalidate onsubmit="return false">
+        <h2>Book plot A-12</h2>
+        <p class="reason" style="margin:0 0 1rem">Viraj Acres Phase II · Corner · 1,800 sq ft</p>
+
+        <div class="banner banner--warning" role="alert" data-show="book409"><div><b>Plot A-12 was just booked by someone else.</b>The grid has been refreshed. Pick another available plot.<br><button type="button" class="link-btn" data-go="default">Back to the grid</button></div></div>
+
+        <div class="field"><span class="lbl" id="al">Associate</span>
+          <div class="lookup" aria-labelledby="al">
+            <div class="chosen" data-show="book400 booksubmit book409"><span class="id">VA-10482</span><span>Sunita Deshmukh</span><button type="button" aria-label="Clear associate">×</button></div>
+            <input type="text" role="combobox" aria-expanded="false" autocomplete="off" placeholder="Search by ID or name" data-show="book">
+          </div>
+          <p class="hint">The associate who gets credit for this booking. Only active associates are listed.</p></div>
+
+        <div class="field"><label for="bn">Buyer name</label>
+          <input id="bn" type="text" maxlength="200" aria-required="true" data-show="book book409" placeholder="Full name of the buyer">
+          <input id="bn2" type="text" maxlength="200" aria-required="true" aria-invalid="true" aria-describedby="bn-e" data-show="book400" placeholder="Full name of the buyer">
+          <input id="bn3" type="text" maxlength="200" value="Rohit Kulkarni" data-show="booksubmit" disabled>
+          <p class="field-error" id="bn-e" data-show="book400">Enter the buyer's name.</p></div>
+
+        <div class="field"><label for="bp">Buyer phone <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input id="bp" type="tel" maxlength="20" inputmode="tel" placeholder="+91 98220 45310"></div>
+
+        <div class="total"><span class="lbl" style="margin:0">Total</span><b>₹51,30,000</b></div>
+        <p class="reason">Fixed to the plot price at the time of booking.</p>
+
+        <div class="sched sched--line"><b>Preview</b><span>6 installments of <span class="mono">₹8,55,000</span> each</span></div>
+
+        <div class="stack">
+          <button type="submit" class="brand-button" data-show="book book400 book409">Confirm booking</button>
+          <button type="submit" class="brand-button" aria-busy="true" disabled data-show="booksubmit"><span class="spin" aria-hidden="true"></span>Booking…</button>
+          <button type="button" class="brand-button brand-button--secondary" data-go="default">Cancel</button>
+        </div>
+      </form>
+
+      <form data-show="editbooked" novalidate onsubmit="return false">
+        <h2>Plot A-9</h2>
+        <p class="reason" style="margin:0 0 1rem">Viraj Acres Phase II</p>
+        <div class="banner" role="note"><div><b>This plot can't be edited.</b>Booked and sold plots are locked so the booking's price and plot details stay accurate.</div></div>
+        <div class="field"><label for="ro1">Plot number</label><input id="ro1" type="text" value="A-9" readonly></div>
+        <div class="field"><label for="ro2">Type</label><input id="ro2" type="text" value="Normal" readonly></div>
+        <div class="row2"><div class="field"><label for="ro3">Area (sq ft)</label><input id="ro3" type="text" value="1,500" readonly></div><div class="field"><label for="ro4">Rate (₹ / sq ft)</label><input id="ro4" type="text" value="2,850" readonly></div></div>
+        <div class="field"><label for="ro5">Price (₹)</label><input id="ro5" type="text" value="42,75,000" readonly></div>
+        <div class="field"><label for="ro6">Status</label><select id="ro6" disabled><option>Booked</option></select></div>
+        <div class="stack"><button class="brand-button brand-button--secondary" type="button" data-go="booked">Back to plot</button></div>
+      </form>
+
+      <form data-show="editplot newplot" novalidate onsubmit="return false">
+        <h2 data-show="editplot">Edit plot A-12</h2><h2 data-show="newplot">Add plot</h2>
+        <p class="reason" style="margin:0 0 1rem">Viraj Acres Phase II</p>
+        <div class="field"><label for="pn">Plot number</label><input id="pn" type="text" value="A-12" data-show="editplot"><input type="text" data-show="newplot" placeholder="e.g. B-7" aria-label="Plot number"><p class="hint">Must be unique within the project.</p></div>
+        <div class="field"><span class="lbl">Type</span><div class="seg" role="radiogroup" aria-label="Plot type"><button type="button" role="radio" aria-checked="false">Normal</button><button type="button" role="radio" aria-checked="true">Corner</button></div></div>
+        <div class="row2"><div class="field"><label for="ar">Area (sq ft)</label><input id="ar" type="number" value="1800"></div><div class="field"><label for="rt">Rate (₹ / sq ft)</label><input id="rt" type="number" value="2850"></div></div>
+        <div class="field"><label for="pr">Price (₹)</label><input id="pr" type="number" value="5130000"><p class="hint">Entered separately from area × rate, as in the existing project setup.</p></div>
+        <div class="field" data-show="editplot"><label for="ps">Status</label><select id="ps" disabled><option>Available</option></select><p class="hint">Status changes through booking, not here.</p></div>
+        <div class="stack"><button class="brand-button" type="submit">Save plot</button><button class="brand-button brand-button--secondary" type="button" data-go="default">Cancel</button></div>
+      </form>
+
+      <form data-show="newproject" novalidate onsubmit="return false">
+        <h2>Edit project</h2><p class="reason" style="margin:0 0 1rem">Viraj Acres Phase II</p>
+        <div class="field"><label for="prn">Project name</label><input id="prn" type="text" value="Viraj Acres Phase II"></div>
+        <div class="field"><label for="prl">Location</label><input id="prl" type="text" value="Nashik, Maharashtra"></div>
+        <div class="field"><span class="lbl">Project photo</span><div class="dropzone">Drop an image here or <button type="button" class="link-btn">choose a file</button></div></div>
+        <div class="stack"><button class="brand-button" type="submit">Save project</button><button class="brand-button brand-button--secondary" type="button" data-go="default">Cancel</button></div>
+      </form>
+
+      <div data-show="csv">
+        <h2>Import plots from CSV</h2><p class="reason" style="margin:0 0 1rem">Viraj Acres Phase II</p>
+        <p style="font-size:.875rem;margin:0 0 .75rem"><button type="button" class="link-btn">Download CSV template</button></p>
+        <div class="dropzone">plots_phase2.csv · 36 rows</div>
+        <div class="banner banner--danger" style="margin-top:1rem" role="alert"><div><b>34 of 36 rows are valid</b>Fix the rows below and validate again.<ul class="errlist"><li>Row 7: plotNo - already exists</li><li>Row 19: price - must be greater than 0</li></ul></div></div>
+        <div class="stack"><button class="brand-button brand-button--secondary" type="button">Validate</button><button class="brand-button" type="button" disabled>Commit import</button><button class="brand-button brand-button--secondary" type="button" data-go="default">Close</button></div>
+      </div>
+    </aside>
+  </div>
+</main>
+</div>
+
+
+<div class="mockbar" role="toolbar" aria-label="Mock state switcher (not part of the design)"><span>MOCK STATE</span></div>
+<script>
+const states=[['default','Default'],['booked','Booked plot'],['book','Book form'],['book400','400 blank name'],['booksubmit','Submitting'],['book409','409 conflict'],['bookok','Success'],['editplot','Edit plot'],['editbooked','Edit booked (read-only)'],['newplot','Add plot'],['newproject','Project form'],['csv','CSV import'],['loading','Loading'],['emptyproject','Empty project'],['noprojects','No projects']];
+const bar=document.querySelector('.mockbar');
+function set(s){document.body.dataset.state=s;
+ // mock only: after a successful booking, tile A-12 flips to Booked (live app: grid refetch after POST /api/admin/bookings)
+ const a12=document.querySelector('.tile[aria-label^="Plot A-12"]');
+ if(a12){const done=s=='bookok';
+  a12.classList.toggle('tile--booked',done);a12.classList.toggle('tile--available',!done);
+  const st=a12.querySelector('.tile__status');
+  if(st){const svg=st.querySelector('svg');
+   if(!a12.dataset.availSvg)a12.dataset.availSvg=svg.outerHTML;
+   if(!a12.dataset.bookedSvg)a12.dataset.bookedSvg='<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
+   st.innerHTML=(done?a12.dataset.bookedSvg:a12.dataset.availSvg)+(done?'Booked':'Available');}
+  a12.setAttribute('aria-label',a12.getAttribute('aria-label').replace(done?'Available':'Booked',done?'Booked':'Available'));}
+ document.querySelectorAll('[data-show]').forEach(e=>{const t=e.dataset.show.split(' ');
+  e.hidden=!t.some(x=>x[0]=='!'?false:x==s) && !(t.every(x=>x[0]=='!')&&!t.some(x=>x.slice(1)==s));});
+ bar.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s==s));}
+states.forEach(([k,l])=>{const b=document.createElement('button');b.textContent=l;b.dataset.s=k;b.onclick=()=>set(k);bar.append(b)});
+document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g)set(g.dataset.go)});
+const h=location.hash.slice(1).split('&');if(h.includes('shot'))document.body.classList.add('shot');
+set(states.find(s=>h.includes(s[0]))?.[0]||'default');
+</script>
+</body>
+</html>
