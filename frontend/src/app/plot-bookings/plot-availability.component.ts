@@ -23,6 +23,11 @@ type TypeFilter = 'ALL' | PlotType;
         <button type="button" class="plot-availability__retry" (click)="loadProjects()">{{ 'plotBookings.retryAction' | translate }}</button>
       </app-inline-banner>
 
+      <div class="plot-availability__empty" *ngIf="loadedProjects && !projects.length && !projectsError">
+        <h2>{{ 'plotBookings.noProjectsTitle' | translate }}</h2>
+        <p>{{ 'plotBookings.noProjectsBody' | translate }}</p>
+      </div>
+
       <ng-container *ngIf="projects.length">
         <div class="plot-availability__toolbar">
           <section class="plot-availability__seal" [attr.aria-label]="'plotBookings.seal.label' | translate">
@@ -107,7 +112,7 @@ type TypeFilter = 'ALL' | PlotType;
           <dt>{{ 'plotBookings.popover.area' | translate }}</dt><dd>{{ areaText(s.area) }}</dd>
           <dt>{{ 'plotBookings.popover.price' | translate }}</dt><dd>{{ priceText(s.price) }}</dd>
         </dl>
-        <p class="plot-availability__hint">{{ 'plotBookings.popover.hint' | translate }}</p>
+        <p class="plot-availability__hint" *ngIf="s.status === 'AVAILABLE'">{{ 'plotBookings.popover.hint' | translate }}</p>
         <button #closeBtn type="button" class="brand-button brand-button--secondary plot-availability__close"
           [attr.aria-label]="'plotBookings.popover.closeLabel' | translate" (click)="closePopover()">
           {{ 'plotBookings.popover.closeLabel' | translate }}
@@ -122,6 +127,7 @@ export class PlotAvailabilityComponent implements OnInit {
   readonly statusFilters: StatusFilter[] = ['ALL', 'AVAILABLE', 'BOOKED', 'SOLD'];
   projects: Project[] = [];
   projectsError = false;
+  loadedProjects = false;
   projectId = '';
   grid: PlotGridItem[] | null = null;
   gridError = false;
@@ -150,6 +156,7 @@ export class PlotAvailabilityComponent implements OnInit {
     this.service.listProjects().subscribe({
       next: list => {
         this.projects = list;
+        this.loadedProjects = true;
         if (list.length && !this.projectId) { this.selectProject(list[0].id); }
       },
       error: () => (this.projectsError = true)
@@ -178,6 +185,7 @@ export class PlotAvailabilityComponent implements OnInit {
         this.loadingGrid = false;
         this.gridError = false;
         this.grid = grid;
+        if (this.selected) { this.selected = grid.find(g => g.plotId === this.selected!.plotId) ?? null; }
         this.rebuild();
       },
       error: () => {
@@ -188,9 +196,9 @@ export class PlotAvailabilityComponent implements OnInit {
     });
   }
 
-  setStatus(f: StatusFilter): void { this.statusFilter = f; this.rebuild(); }
-  setType(t: string): void { this.typeFilter = t as TypeFilter; this.rebuild(); }
-  clearFilters(): void { this.statusFilter = 'ALL'; this.typeFilter = 'ALL'; this.rebuild(); }
+  setStatus(f: StatusFilter): void { this.statusFilter = f; this.selected = null; this.rebuild(); }
+  setType(t: string): void { this.typeFilter = t as TypeFilter; this.selected = null; this.rebuild(); }
+  clearFilters(): void { this.statusFilter = 'ALL'; this.typeFilter = 'ALL'; this.selected = null; this.rebuild(); }
 
   countFor(f: StatusFilter): number {
     return f === 'ALL' ? (this.grid?.length ?? 0) : this.counts[f];

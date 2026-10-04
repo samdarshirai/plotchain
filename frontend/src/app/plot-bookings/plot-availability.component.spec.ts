@@ -110,7 +110,7 @@ describe('PlotAvailabilityComponent', () => {
 
   it('opens a read-only popover with exact price and nothing about buyers or bookings', () => {
     boot();
-    el().querySelector<HTMLButtonElement>('app-plot-tile button')!.click();
+    el().querySelectorAll<HTMLButtonElement>('app-plot-tile button')[1].click(); // A-2 AVAILABLE
     fixture.detectChanges();
     const dialog = el().querySelector('[role="dialog"]')!;
     expect(dialog.textContent).toContain('₹45,00,000');
@@ -140,6 +140,49 @@ describe('PlotAvailabilityComponent', () => {
     expect(fixture.componentInstance.selected).toBeNull();
     expect(document.activeElement).toBe(tile);
     fixture.nativeElement.remove();
+  });
+
+  it('shows the contact hint only for AVAILABLE plots', () => {
+    boot();
+    const tiles = () => el().querySelectorAll<HTMLButtonElement>('app-plot-tile button');
+    tiles()[0].click(); // A-1 BOOKED
+    fixture.detectChanges();
+    expect(el().querySelector('.plot-availability__hint')).toBeNull();
+    fixture.componentInstance.closePopover();
+    tiles()[1].click(); // A-2 AVAILABLE
+    fixture.detectChanges();
+    expect(el().querySelector('.plot-availability__hint')).not.toBeNull();
+  });
+
+  it('re-points an open popover to the refreshed grid row, or closes it if the plot is gone', () => {
+    boot();
+    const c = fixture.componentInstance;
+    c.openPopover(c.grid![0]);
+    c.loadGrid();
+    http.expectOne('/api/projects/p1/plots/grid').flush([cell(c.grid![0].plotNo, 'SOLD', c.grid![0].type, { plotId: c.grid![0].plotId })]);
+    expect(c.selected!.status).toBe('SOLD');
+    c.loadGrid();
+    http.expectOne('/api/projects/p1/plots/grid').flush([cell('Z-9')]);
+    expect(c.selected).toBeNull();
+  });
+
+  it('closes the popover when a filter changes or is cleared', () => {
+    boot();
+    const c = fixture.componentInstance;
+    c.openPopover(c.grid![0]);
+    c.setStatus('SOLD');
+    expect(c.selected).toBeNull();
+    c.openPopover(c.grid![0]);
+    c.setType('CORNER');
+    expect(c.selected).toBeNull();
+    c.openPopover(c.grid![0]);
+    c.clearFilters();
+    expect(c.selected).toBeNull();
+  });
+
+  it('shows an empty state when there are no projects', () => {
+    boot([]);
+    expect(el().textContent).toContain('plotBookings.noProjectsTitle');
   });
 
   it('has no write controls on the tab', () => {

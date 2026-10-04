@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
@@ -40,7 +40,7 @@ const PAGE_SIZE = 20;
             <li *ngFor="let b of page!.bookings">
               <button type="button" class="my-bookings__card" [class.my-bookings__card--selected]="b.id === selected?.id"
                 [class.my-bookings__card--cancelled]="b.status === 'CANCELLED'" [class.my-bookings__card--confirmed]="b.status === 'CONFIRMED'"
-                [attr.aria-pressed]="b.id === selected?.id" (click)="select(b)">
+                [attr.data-booking-id]="b.id" [attr.aria-pressed]="b.id === selected?.id" (click)="select(b)">
                 <span class="my-bookings__card-head">
                   <span class="my-bookings__plot" [class.my-bookings__plot--struck]="b.status === 'CANCELLED'">{{ label(b) }}</span>
                   <span class="my-bookings__badge my-bookings__badge--{{ b.status | lowercase }}">{{ 'plotBookings.bookingStatus.' + b.status | translate }}</span>
@@ -57,7 +57,7 @@ const PAGE_SIZE = 20;
           </ul>
 
           <article class="my-bookings__detail" [class.my-bookings__detail--open]="sheetOpen" *ngIf="selected as s">
-            <button type="button" class="brand-button brand-button--secondary my-bookings__back" (click)="back()">
+            <button #backBtn type="button" class="brand-button brand-button--secondary my-bookings__back" (click)="back()">
               {{ 'plotBookings.backToBookings' | translate }}
             </button>
             <h2 class="my-bookings__detail-title" [class.my-bookings__plot--struck]="s.status === 'CANCELLED'">{{ label(s) }}</h2>
@@ -118,6 +118,7 @@ export class MyBookingsComponent implements OnInit {
   private service = inject(PlotBookingsService);
   @Output() viewAvailability = new EventEmitter<void>();
 
+  @ViewChild('backBtn') backBtn?: ElementRef<HTMLButtonElement>;
   page: AssociateBookingPage | null = null;
   selected: Booking | null = null;
   sheetOpen = false;
@@ -145,20 +146,37 @@ export class MyBookingsComponent implements OnInit {
     this.error = false;
     this.service.getMyBookings(p, PAGE_SIZE).subscribe({
       next: res => {
+        if (p !== this.requestedPage) { return; }
         this.loading = false;
         this.page = res;
         this.selected = res.bookings[0] ?? null;
         this.sheetOpen = false;
       },
-      error: () => { this.loading = false; this.error = true; }
+      error: () => {
+        if (p !== this.requestedPage) { return; }
+        this.loading = false; this.error = true;
+      }
     });
   }
 
   goTo(p: number): void { this.load(p); }
 
   // No HTTP: each booking already embeds its installments (BookingService.getMyBookings).
-  select(b: Booking): void { this.selected = b; this.sheetOpen = true; }
-  back(): void { this.sheetOpen = false; }
+  // On <960px the sheet is fixed full-screen: focus Back on open (only if visible), return to the card on close.
+  select(b: Booking): void {
+    this.selected = b;
+    this.sheetOpen = true;
+    setTimeout(() => { const el = this.backBtn?.nativeElement; if (el && el.offsetParent) { el.focus(); } });
+  }
+
+  back(): void {
+    const id = this.selected?.id;
+    this.sheetOpen = false;
+    setTimeout(() => document.querySelector<HTMLElement>(`[data-booking-id="${id}"]`)?.focus());
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void { if (this.sheetOpen) { this.back(); } }
 
   dueKey(b: Booking): string {
     if (b.status === 'CANCELLED') { return 'plotBookings.noFurtherDues'; }

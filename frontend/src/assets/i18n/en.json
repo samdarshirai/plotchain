@@ -175,6 +175,8 @@
     "clearFilters": "Clear filters",
     "plotsEmptyTitle": "No plots in this project yet",
     "plotsEmptyBody": "Plots appear here once the company adds them. Pick another project to see its plots.",
+    "noProjectsTitle": "No projects yet",
+    "noProjectsBody": "Projects appear here once the company adds them.",
     "projectsLoadError": "Couldn't load projects. Check your connection and try again.",
     "plotsLoadError": "Couldn't load the plot grid. Check your connection and try again.",
     "plotsRefreshError": "Couldn't refresh the plot grid. Showing the last loaded plots; availability may be out of date.",

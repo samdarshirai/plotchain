@@ -165,6 +165,56 @@ describe('MyBookingsComponent', () => {
     retry.flush(pageOf([booking('b9')], 1, 25));
   });
 
+  it('moves focus to Back when the sheet opens and returns it to the originating card on Back and Esc', async () => {
+    document.body.appendChild(fixture.nativeElement);
+    boot();
+    const card = el().querySelector<HTMLButtonElement>('[data-booking-id="b2"]')!;
+    card.click();
+    fixture.detectChanges();
+    await new Promise(r => setTimeout(r));
+    expect(document.activeElement).toBe(el().querySelector('.my-bookings__back'));
+    el().querySelector<HTMLButtonElement>('.my-bookings__back')!.click();
+    fixture.detectChanges();
+    await new Promise(r => setTimeout(r));
+    expect(document.activeElement).toBe(card);
+    card.click();
+    fixture.detectChanges();
+    await new Promise(r => setTimeout(r));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    await new Promise(r => setTimeout(r));
+    expect(fixture.componentInstance.sheetOpen).toBeFalse();
+    expect(document.activeElement).toBe(card);
+    fixture.nativeElement.remove();
+  });
+
+  it('Esc does nothing when the sheet is closed', () => {
+    boot();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(fixture.componentInstance.sheetOpen).toBeFalse();
+  });
+
+  it('ignores an out-of-order page response (success and error) from a superseded request', () => {
+    http.expectOne(r => r.url === '/api/associates/me/bookings').flush(pageOf([booking('b1')], 0, 60));
+    fixture.detectChanges();
+    const c = fixture.componentInstance;
+    c.goTo(1);
+    c.goTo(2);
+    const reqs = http.match(r => r.url === '/api/associates/me/bookings');
+    expect(reqs.length).toBe(2);
+    reqs[1].flush(pageOf([booking('p2')], 2, 60));
+    reqs[0].flush(pageOf([booking('p1')], 1, 60));
+    fixture.detectChanges();
+    expect(c.page!.page).toBe(2);
+    c.goTo(1);
+    c.goTo(2);
+    const r2 = http.match(r => r.url === '/api/associates/me/bookings');
+    r2[1].flush(pageOf([booking('p2')], 2, 60));
+    r2[0].flush('x', { status: 500, statusText: 'err' });
+    expect(c.error).toBeFalse();
+    expect(c.loading).toBeFalse();
+  });
+
   it('exposes no write controls', () => {
     boot();
     expect(el().querySelectorAll('form, input, textarea, select').length).toBe(0);
