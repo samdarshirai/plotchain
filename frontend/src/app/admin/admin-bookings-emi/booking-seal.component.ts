@@ -22,7 +22,7 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
   standalone: true,
   imports: [CommonModule, RouterLink, TranslateModule, AssociateLookupComponent, InlineBannerComponent, FieldErrorComponent],
   template: `
-    <section class="booking-seal" aria-live="polite">
+    <section class="booking-seal">
       <p class="booking-seal__none" *ngIf="!booking">{{ 'admin.bookingsEmi.seal.none' | translate }}</p>
 
       <ng-container *ngIf="booking as b">
@@ -33,13 +33,13 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
         </div>
         <div class="booking-seal__sub">{{ plot(b) }}<ng-container *ngIf="b.projectName"> · {{ b.projectName }}</ng-container></div>
         <div class="booking-seal__id">{{ b.id }}</div>
-        <p class="booking-seal__note" *ngIf="filterMismatch">{{ 'admin.bookingsEmi.seal.filterMismatch' | translate }}</p>
+        <p class="booking-seal__note" role="status" *ngIf="filterMismatch">{{ 'admin.bookingsEmi.seal.filterMismatch' | translate }}</p>
 
         <dl class="booking-seal__meta">
           <dt>{{ 'admin.bookingsEmi.col.associate' | translate }}</dt><dd>{{ assoc(b) }}</dd>
           <dt>{{ 'admin.bookingsEmi.seal.booked' | translate }}</dt><dd>{{ b.bookedAt | date: 'mediumDate' }}</dd>
           <dt>{{ 'admin.bookingsEmi.seal.plan' | translate }}</dt>
-          <dd>{{ 'admin.bookingsEmi.seal.planValue' | translate: { count: b.installmentCount, amount: money(b.installments[0]?.amount ?? 0) } }}</dd>
+          <dd>{{ b.installments.length ? ('admin.bookingsEmi.seal.planValue' | translate: { count: b.installmentCount, amount: money(b.installments[0].amount) }) : '—' }}</dd>
           <dt>{{ 'admin.bookingsEmi.col.total' | translate }}</dt><dd>{{ money(b.totalAmount) }}</dd>
           <dt>{{ 'admin.bookingsEmi.col.paid' | translate }}</dt><dd>{{ money(b.paidAmount) }}</dd>
           <dt>{{ 'admin.bookingsEmi.col.due' | translate }}</dt><dd>{{ b.status === 'CANCELLED' ? '—' : money(b.dueAmount) }}</dd>
@@ -70,7 +70,7 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
                 <td>
                   <button type="button" class="brand-button brand-button--secondary booking-seal__pay"
                     *ngIf="b.status === 'ACTIVE' && i.status === 'PENDING'" [disabled]="busy"
-                    [attr.aria-label]="('admin.bookingsEmi.action.pay' | translate) + ' ' + i.installmentNumber" (click)="open('pay', i)">{{ 'admin.bookingsEmi.action.pay' | translate }}</button>
+                    [attr.aria-label]="('admin.bookingsEmi.action.pay' | translate) + ' ' + i.installmentNumber" [attr.data-opener]="'pay-' + i.installmentNumber" (click)="open('pay', i)">{{ 'admin.bookingsEmi.action.pay' | translate }}</button>
                 </td>
               </tr>
             </tbody>
@@ -78,11 +78,11 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
 
           <div class="booking-seal__actions">
             <button type="button" class="brand-button booking-seal__action" [disabled]="b.status !== 'ACTIVE' || busy"
-              [attr.aria-describedby]="b.status !== 'ACTIVE' ? 'seal-locked-reason' : null" (click)="open('confirm')">{{ 'admin.bookingsEmi.action.confirm' | translate }}</button>
+              [attr.aria-describedby]="b.status !== 'ACTIVE' ? 'seal-locked-reason' : null" data-opener="confirm" (click)="open('confirm')">{{ 'admin.bookingsEmi.action.confirm' | translate }}</button>
             <button type="button" class="brand-button brand-button--secondary booking-seal__action" [disabled]="b.status !== 'ACTIVE' || busy"
-              [attr.aria-describedby]="b.status !== 'ACTIVE' ? 'seal-locked-reason' : null" (click)="open('transfer')">{{ 'admin.bookingsEmi.action.transfer' | translate }}</button>
+              [attr.aria-describedby]="b.status !== 'ACTIVE' ? 'seal-locked-reason' : null" data-opener="transfer" (click)="open('transfer')">{{ 'admin.bookingsEmi.action.transfer' | translate }}</button>
             <button type="button" class="brand-button brand-button--secondary booking-seal__action" [disabled]="b.status !== 'ACTIVE' || busy"
-              [attr.aria-describedby]="b.status !== 'ACTIVE' ? 'seal-locked-reason' : null" (click)="open('cancel')">{{ 'admin.bookingsEmi.action.cancel' | translate }}</button>
+              [attr.aria-describedby]="b.status !== 'ACTIVE' ? 'seal-locked-reason' : null" data-opener="cancel" (click)="open('cancel')">{{ 'admin.bookingsEmi.action.cancel' | translate }}</button>
           </div>
           <p id="seal-locked-reason" class="booking-seal__locked" *ngIf="b.status !== 'ACTIVE'">
             {{ 'admin.bookingsEmi.locked.' + (b.status === 'CANCELLED' ? 'cancelled' : 'active') | translate }}
@@ -109,7 +109,7 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
           </app-inline-banner>
 
           <ng-container *ngIf="mode === 'pay' && payTarget">
-            <app-inline-banner tone="warning" *ngIf="predicts">
+            <app-inline-banner tone="warning" role="status" *ngIf="predicts">
               <strong>{{ 'admin.bookingsEmi.warn.autoConfirm' | translate }}</strong>
               {{ 'admin.bookingsEmi.warn.autoConfirmDetail' | translate: { before: money(b.paidAmount), after: money(b.paidAmount + payTarget.amount) } }}
             </app-inline-banner>
@@ -118,9 +118,9 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
                 <input name="amount" type="text" readonly [value]="money(payTarget.amount)" aria-describedby="seal-amount-hint" /></label>
               <small id="seal-amount-hint">{{ 'admin.bookingsEmi.field.amountHint' | translate }}</small>
               <label>{{ 'admin.bookingsEmi.field.ref' | translate }}
-                <input name="paymentRef" type="text" maxlength="200" autocomplete="off" [value]="paymentRef" (input)="paymentRef = $any($event.target).value" /></label>
-              <small>{{ 'admin.bookingsEmi.field.refCount' | translate: { n: paymentRef.trim().length } }}</small>
-              <app-field-error [message]="tried && !paymentRef.trim() ? ('admin.bookingsEmi.validation.ref' | translate) : tried && paymentRef.trim().length > 100 ? ('admin.bookingsEmi.validation.refMax' | translate) : undefined"></app-field-error>
+                <input name="paymentRef" type="text" maxlength="200" autocomplete="off" [attr.aria-invalid]="refInvalid ? 'true' : null" aria-describedby="seal-ref-count seal-ref-error" [value]="paymentRef" (input)="paymentRef = $any($event.target).value" /></label>
+              <small id="seal-ref-count">{{ 'admin.bookingsEmi.field.refCount' | translate: { n: paymentRef.trim().length } }}</small>
+              <app-field-error id="seal-ref-error" [message]="tried && !paymentRef.trim() ? ('admin.bookingsEmi.validation.ref' | translate) : tried && paymentRef.trim().length > 100 ? ('admin.bookingsEmi.validation.refMax' | translate) : undefined"></app-field-error>
               <label>{{ 'admin.bookingsEmi.field.receivedOn' | translate }}
                 <input name="receivedOn" type="datetime-local" [value]="receivedOn" (input)="receivedOn = $any($event.target).value" /></label>
             </fieldset>
@@ -142,16 +142,16 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
             </ul>
             <fieldset class="booking-seal__fields" [disabled]="busy">
               <label>{{ 'admin.bookingsEmi.field.reason' | translate }}
-                <textarea name="reason" rows="3" [value]="reason" (input)="reason = $any($event.target).value"></textarea></label>
-              <small>{{ 'admin.bookingsEmi.field.reasonCount' | translate: { n: reason.trim().length } }}</small>
-              <app-field-error [message]="tried && !reason.trim() ? ('admin.bookingsEmi.validation.reason' | translate) : tried && reason.trim().length > 255 ? ('admin.bookingsEmi.validation.reasonMax' | translate) : undefined"></app-field-error>
+                <textarea name="reason" rows="3" [attr.aria-invalid]="reasonInvalid ? 'true' : null" aria-describedby="seal-reason-count seal-reason-error" [value]="reason" (input)="reason = $any($event.target).value"></textarea></label>
+              <small id="seal-reason-count">{{ 'admin.bookingsEmi.field.reasonCount' | translate: { n: reason.trim().length } }}</small>
+              <app-field-error id="seal-reason-error" [message]="tried && !reason.trim() ? ('admin.bookingsEmi.validation.reason' | translate) : tried && reason.trim().length > 255 ? ('admin.bookingsEmi.validation.reasonMax' | translate) : undefined"></app-field-error>
             </fieldset>
           </ng-container>
 
           <ng-container *ngIf="mode === 'transfer'">
             <fieldset class="booking-seal__fields" [disabled]="busy">
-              <label>{{ 'admin.bookingsEmi.field.target' | translate }}</label>
-              <app-associate-lookup [associates]="directory" [value]="targetId" (selected)="targetId = $event?.id ?? ''"></app-associate-lookup>
+              <span id="seal-target-label">{{ 'admin.bookingsEmi.field.target' | translate }}</span>
+              <div role="group" aria-labelledby="seal-target-label"><app-associate-lookup [associates]="transferChoices" [value]="targetId" (selected)="targetId = $event?.id ?? ''"></app-associate-lookup></div>
               <small>{{ 'admin.bookingsEmi.transferHint' | translate }}</small>
               <app-field-error [message]="tried && !targetId ? ('admin.bookingsEmi.validation.target' | translate) : undefined"></app-field-error>
               <app-field-error *ngIf="error && isLookupError" [message]="'admin.bookingsEmi.err.' + error.kind | translate"></app-field-error>
@@ -179,6 +179,8 @@ export class BookingSealComponent implements OnChanges {
   @Output() reloadRequested = new EventEmitter<void>();
   @ViewChild('title') title?: ElementRef<HTMLElement>;
 
+  private el = inject<ElementRef<HTMLElement>>(ElementRef);
+  private opener = '';
   mode: Mode = 'detail';
   payTarget: EmiInstallment | null = null;
   paymentRef = ''; receivedOn = ''; reason = ''; targetId = '';
@@ -193,6 +195,9 @@ export class BookingSealComponent implements OnChanges {
   get threshold(): number | null {
     return this.config?.emiEnabled && this.config.confirmRule === 'AUTO_THRESHOLD' ? this.config.confirmThresholdPercent : null;
   }
+  get refInvalid(): boolean { const n = this.paymentRef.trim().length; return this.tried && (n === 0 || n > 100); }
+  get reasonInvalid(): boolean { const n = this.reason.trim().length; return this.tried && (n === 0 || n > 255); }
+  get transferChoices(): AssociateSummary[] { return this.directory.filter(a => a.id !== this.booking?.associateId); }
   get isLookupError(): boolean { return this.mode === 'transfer' && (this.error?.kind === 'sameAssociate' || this.error?.kind === 'invalidTarget'); }
   get bannerKey(): string {
     const k = this.error?.kind;
@@ -208,22 +213,38 @@ export class BookingSealComponent implements OnChanges {
 
   ngOnChanges(ch: SimpleChanges): void {
     if (!ch['booking']) { return; }
-    if (ch['booking'].previousValue?.id !== this.booking?.id) { this.netUnknown = false; this.close(); return; }
+    if (ch['booking'].previousValue?.id !== this.booking?.id) { this.netUnknown = false; this.reset(); return; } // never releases a busy lock
     // same booking refreshed (e.g. after Reload): the outcome of an unknown request is now visible
     if (this.netUnknown) { this.netUnknown = false; this.error = null; }
-    if (this.mode === 'pay') {
-      const fresh = this.booking?.installments.find(i => i.installmentNumber === this.payTarget?.installmentNumber);
-      if (this.booking?.status !== 'ACTIVE' || fresh?.status !== 'PENDING') { this.close(); } else { this.payTarget = fresh; }
-    }
+    if (this.mode === 'detail' || this.busy) { return; }
+    const fresh = this.mode === 'pay' ? this.booking?.installments.find(i => i.installmentNumber === this.payTarget?.installmentNumber) : null;
+    if (this.booking?.status !== 'ACTIVE' || (this.mode === 'pay' && fresh?.status !== 'PENDING')) {
+      const e = this.error;
+      const n = this.payTarget?.installmentNumber;
+      this.close();
+      // the form (and its explanation) is going away because state changed: keep the explanation visible
+      if (e && (e.kind === 'notActive' || e.kind === 'notPayable')) { this.flash.emit({ key: 'admin.bookingsEmi.err.' + e.kind, params: { n } }); }
+    } else if (fresh) { this.payTarget = fresh; }
   }
 
   open(mode: 'pay' | 'confirm' | 'cancel' | 'transfer', i?: EmiInstallment): void {
     if (this.busy) { return; }
+    this.opener = mode === 'pay' ? 'pay-' + i!.installmentNumber : mode;
     this.mode = mode; this.payTarget = i ?? null; this.error = this.netUnknown && mode === 'pay' ? { kind: 'network' } : null; this.tried = false;
     this.paymentRef = ''; this.receivedOn = ''; this.reason = ''; this.targetId = '';
     setTimeout(() => this.title?.nativeElement.focus());
   }
-  close(): void { if (this.busy) { return; } this.mode = 'detail'; this.payTarget = null; this.error = null; this.tried = false; }
+  private reset(): void { this.mode = 'detail'; this.payTarget = null; this.error = null; this.tried = false; this.opener = ''; }
+  close(): void {
+    if (this.busy) { return; }
+    const opener = this.opener;
+    this.reset();
+    setTimeout(() => {
+      const host = this.el.nativeElement;
+      const target = opener ? host.querySelector<HTMLElement>(`[data-opener="${opener}"]:not([disabled])`) : null;
+      (target ?? this.title?.nativeElement)?.focus();
+    });
+  }
 
   onSubmit(): void {
     if (this.mode === 'pay') { this.submitPay(); }
@@ -278,6 +299,7 @@ export class BookingSealComponent implements OnChanges {
     if (this.busy || !this.booking) { return; }
     this.tried = true;
     if (!this.targetId) { return; }
+    if (this.targetId === this.booking.associateId) { this.error = { kind: 'sameAssociate' }; return; }
     const name = this.directory.find(a => a.id === this.targetId)?.name ?? '';
     this.run('transfer', this.service.transfer(this.booking.id, this.targetId), () => ({ key: 'admin.bookingsEmi.ok.transfer', params: { associate: name } }));
   }

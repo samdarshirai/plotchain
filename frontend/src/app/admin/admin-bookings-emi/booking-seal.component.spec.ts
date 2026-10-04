@@ -57,6 +57,14 @@ describe('BookingSealComponent', () => {
   it('cancelled booking shows the cancelled reason and "—" for due', () => {
     setup(bk({ status: 'CANCELLED', dueAmount: 0 }));
     expect(el().querySelector('#seal-locked-reason')!.textContent).toContain('admin.bookingsEmi.locked.cancelled');
+    const due = Array.from(el().querySelectorAll('dd')).map(d => d.textContent!.trim());
+    expect(due).toContain('—');
+    expect(el().querySelector('.booking-seal__meta')!.textContent).not.toContain('₹0');
+  });
+
+  it('shows a dash, not ₹0, for the plan when there are no instalments', () => {
+    setup(bk({ installments: [] }));
+    expect(Array.from(el().querySelectorAll('dd')).map(d => d.textContent!.trim())).toContain('—');
   });
 
   it('pay form locks the amount, requires a reference, and sends no request when blank', () => {
@@ -221,11 +229,12 @@ describe('BookingSealComponent', () => {
     c().submitTransfer();
     fixture.detectChanges();
     expect(el().textContent).toContain('admin.bookingsEmi.validation.target');
-    c().targetId = 'a1';
+    c().targetId = 'a1'; // the booking's own associate
     c().submitTransfer();
-    http.expectOne('/api/admin/bookings/b1/transfer').flush({ error: 'Booking is already assigned to associate a1' }, { status: 400, statusText: 'Bad Request' });
     fixture.detectChanges();
+    http.expectNone(r => r.url.includes('/transfer'));
     expect(el().textContent).toContain('admin.bookingsEmi.err.sameAssociate');
+    expect(c().transferChoices.map(a => a.id)).toEqual(['a2']);
   });
 
   it('switching to a different booking closes any open form', () => {
@@ -308,9 +317,73 @@ describe('BookingSealComponent', () => {
   it('action buttons are disabled while busy', () => {
     setup();
     c().open('confirm'); c().submitConfirm();
-    c().close();
+    c().busy = true; c().mode = 'detail'; // simulate the detail view while a write is pending
     fixture.detectChanges();
-    el().querySelectorAll<HTMLButtonElement>('.booking-seal__action').forEach(b => expect(b.disabled).toBeTrue());
-    http.match(r => r.url.endsWith('/confirm'));
+    const btns = el().querySelectorAll<HTMLButtonElement>('.booking-seal__action, .booking-seal__pay');
+    expect(btns.length).toBe(5);
+    btns.forEach(b => expect(b.disabled).toBeTrue());
+    c().busy = false;
+    http.expectOne('/api/admin/bookings/b1/confirm');
+  });
+
+  it('returns focus to the opener on close, and to the title when it is gone', async () => {
+    setup();
+    document.body.appendChild(el());
+    el().querySelector<HTMLButtonElement>('[data-opener="pay-2"]')!.click();
+    fixture.detectChanges();
+    c().close(); fixture.detectChanges();
+    await new Promise(r => setTimeout(r));
+    expect(document.activeElement).toBe(el().querySelector('[data-opener="pay-2"]'));
+    c().open('cancel'); fixture.detectChanges();
+    c().close(); fixture.detectChanges();
+    await new Promise(r => setTimeout(r));
+    expect(document.activeElement).toBe(el().querySelector('[data-opener="cancel"]'));
+    c().open('pay', c().booking!.installments[1]); fixture.detectChanges();
+    fixture.componentRef.setInput('booking', bk({ installments: [inst(1, { status: 'PAID' }), inst(2, { status: 'PAID' }), inst(3), inst(4)] }));
+    fixture.detectChanges();
+    await new Promise(r => setTimeout(r));
+    expect(document.activeElement).toBe(el().querySelector('h2'));
+    el().remove();
+  });
+
+  it('pay 409 not ACTIVE: when the reload closes the form the explanation is surfaced as a flash', async () => {
+    setup();
+    const flashes: { key: string }[] = []; c().flash.subscribe(f => flashes.push(f));
+    c().open('pay', c().booking!.installments[1]); fixture.detectChanges();
+    type('paymentRef', 'R'); await fixture.whenStable(); submit();
+    http.expectOne('/api/admin/bookings/b1/installments/2/pay').flush({ error: 'Booking is not ACTIVE' }, { status: 409, statusText: 'Conflict' });
+    fixture.componentRef.setInput('booking', bk({ status: 'CANCELLED', dueAmount: 0 }));
+    fixture.detectChanges();
+    expect(c().mode).toBe('detail');
+    expect(flashes.map(f => f.key)).toContain('admin.bookingsEmi.err.notActive');
+  });
+
+  it('closes any open form (cancel) when the refreshed booking is no longer ACTIVE', () => {
+    setup();
+    c().open('cancel'); fixture.detectChanges();
+    fixture.componentRef.setInput('booking', bk({ status: 'CONFIRMED' }));
+    fixture.detectChanges();
+    expect(c().mode).toBe('detail');
+  });
+
+  it('switching booking while a write is in flight resets the form but keeps the busy lock', () => {
+    setup();
+    c().open('confirm'); c().submitConfirm();
+    fixture.componentRef.setInput('booking', bk({ id: 'b2' }));
+    fixture.detectChanges();
+    expect(c().mode).toBe('detail');
+    expect(c().busy).toBeTrue();
+    http.expectOne('/api/admin/bookings/b1/confirm');
+  });
+
+  it('links field errors with aria-invalid and aria-describedby', async () => {
+    setup();
+    c().open('pay', c().booking!.installments[1]); fixture.detectChanges();
+    type('paymentRef', ' '); await fixture.whenStable(); submit(); fixture.detectChanges();
+    const input = el().querySelector('[name="paymentRef"]')!;
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    const ids = input.getAttribute('aria-describedby')!.split(' ');
+    ids.forEach(id => expect(el().querySelector('#' + id)).not.toBeNull());
+    expect(el().querySelector('#seal-ref-error')!.textContent).toContain('admin.bookingsEmi.validation.ref');
   });
 });
