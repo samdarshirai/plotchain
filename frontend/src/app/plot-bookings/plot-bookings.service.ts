@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Project } from '../setup/models/project.model';
+import { Project, PlotPageResponse } from '../setup/models/project.model';
 import { PlotGridItem } from '../shared/utils/plot-grid.util';
 import { AssociateBookingPage } from './models/associate-booking-page.model';
 
@@ -15,6 +15,11 @@ export class PlotBookingsService {
 
   listProjects(): Observable<Project[]> {
     return this.http.get<Project[]>('/api/company/projects');
+  }
+
+  listPlots(projectId: string, page: number, size: number): Observable<PlotPageResponse> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<PlotPageResponse>(`/api/company/projects/${projectId}/plots`, { params });
   }
 
   // The grid path is /api/projects/..., not /api/company/projects/... (any-authenticated, unit 10).
