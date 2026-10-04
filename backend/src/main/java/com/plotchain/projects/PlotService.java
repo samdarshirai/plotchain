@@ -4,6 +4,7 @@ import com.plotchain.company.SettingsAuditService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -48,16 +49,28 @@ public class PlotService {
         return response;
     }
 
+    // Row-locked read (same lock BookingService/SaleService take) so a concurrent booking can't
+    // commit between this status check and the save and then be overwritten.
+    @Transactional
     public PlotResponse update(UUID projectId, UUID plotId, PlotRequest request, UUID actorId) {
-        Plot plot = findOrThrow(projectId, plotId);
+        Plot plot = plotRepository.findByIdForUpdate(plotId)
+            .filter(p -> p.getProjectId().equals(projectId))
+            .orElseThrow(() -> new PlotNotFoundException(plotId));
         assertPlotNoAvailable(projectId, request.plotNo(), plotId);
+        // BOOKED/SOLD transitions belong to the booking/sale flows; omitted status keeps the current one.
+        boolean statusOmitted = request.status() == null || request.status().isBlank();
+        PlotStatus newStatus = statusOmitted ? plot.getStatus() : resolveStatus(request.status());
+        if (plot.getStatus() != PlotStatus.AVAILABLE && newStatus != plot.getStatus()) {
+            throw new PlotStatusLockedException(
+                "Plot " + plot.getPlotNo() + " is " + plot.getStatus() + " and its status cannot be changed here");
+        }
         PlotResponse before = toResponse(plot);
         plot.setPlotNo(request.plotNo());
         plot.setPlotType(PlotType.valueOf(request.plotType()));
         plot.setAreaSqft(request.areaSqft());
         plot.setRate(request.rate());
         plot.setPrice(request.price());
-        plot.setStatus(resolveStatus(request.status()));
+        plot.setStatus(newStatus);
         plotRepository.save(plot);
         PlotResponse after = toResponse(plot);
         settingsAuditService.record("PROJECTS", "Updated plot " + request.plotNo(),
