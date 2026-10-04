@@ -133,6 +133,38 @@ describe('MyBookingsComponent', () => {
     expect(el().textContent).toContain('plotBookings.bookingsLoadError');
   });
 
+  it('ignores a stale overdue flag on PAID/VOID rows; only PENDING+overdue counts', () => {
+    boot([booking('b1', { installments: [inst(1, { status: 'PAID', overdue: true }), inst(2, { status: 'VOID', overdue: true }), inst(3, { overdue: true })] })]);
+    const rows = el().querySelectorAll('.my-bookings__detail tbody tr');
+    expect(rows[0].classList).not.toContain('my-bookings__row--overdue');
+    expect(rows[1].classList).not.toContain('my-bookings__row--overdue');
+    expect(rows[2].classList).toContain('my-bookings__row--overdue');
+    expect(el().querySelectorAll('.my-bookings__detail tbody .my-bookings__badge--overdue').length).toBe(1);
+    expect(el().querySelectorAll('.my-bookings__detail tbody tr .my-bookings__badge--overdue')[0].closest('tr')).toBe(rows[2] as HTMLTableRowElement);
+    expect(el().querySelector('.my-bookings__card .my-bookings__badge--overdue')!.textContent).toContain('plotBookings.overdueCount');
+  });
+
+  it('never renders NaN or >100% bars (zero total, overpaid)', () => {
+    boot([booking('b1', { totalAmount: 0, paidAmount: 5, dueAmount: 0 }), booking('b2', { totalAmount: 100, paidAmount: 500, dueAmount: 0 })]);
+    const fills = el().querySelectorAll<HTMLElement>('.my-bookings__card .my-bookings__bar-fill');
+    expect(fills[0].style.width).toBe('0%');
+    expect(fills[1].style.width).toBe('100%');
+    expect(el().querySelector('.my-bookings__cards')!.textContent).not.toContain('NaN');
+  });
+
+  it('Retry after a failed page-N load re-requests that page and keeps page 1 visible', () => {
+    http.expectOne(r => r.url === '/api/associates/me/bookings').flush(pageOf([booking('b1')], 0, 25));
+    fixture.detectChanges();
+    el().querySelector<HTMLButtonElement>('.my-bookings__next')!.click();
+    http.expectOne(r => r.url === '/api/associates/me/bookings').flush('x', { status: 500, statusText: 'err' });
+    fixture.detectChanges();
+    expect(el().querySelectorAll('.my-bookings__card').length).toBe(1);
+    el().querySelector<HTMLButtonElement>('.my-bookings__retry')!.click();
+    const retry = http.expectOne(r => r.url === '/api/associates/me/bookings');
+    expect(retry.request.params.get('page')).toBe('1');
+    retry.flush(pageOf([booking('b9')], 1, 25));
+  });
+
   it('exposes no write controls', () => {
     boot();
     expect(el().querySelectorAll('form, input, textarea, select').length).toBe(0);

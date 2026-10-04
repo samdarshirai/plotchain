@@ -1,5 +1,5 @@
 import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { formatInr } from '../shared/utils/plot-grid.util';
@@ -13,7 +13,6 @@ const PAGE_SIZE = 20;
   selector: 'app-my-bookings',
   standalone: true,
   imports: [CommonModule, TranslateModule, InlineBannerComponent],
-  providers: [DatePipe],
   template: `
     <div class="my-bookings" [attr.aria-busy]="loading">
       <app-inline-banner *ngIf="error" tone="danger">
