@@ -25,6 +25,7 @@ export interface Booking {
   // Added by plot-booking unit 14 (read-model follow-up); absent until it lands.
   plotNo?: string;
   projectName?: string;
+  associateName?: string;
 }
 
 export interface AssociateBookingPage {
