@@ -2,7 +2,10 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
+import { By } from '@angular/platform-browser';
 import { ProjectsPlotsComponent } from './projects-plots.component';
+import { BookPlotFormComponent } from './book-plot-form.component';
+import { PlotFormComponent } from './plot-form.component';
 
 describe('ProjectsPlotsComponent', () => {
   let fixture: ComponentFixture<ProjectsPlotsComponent>;
@@ -40,7 +43,7 @@ describe('ProjectsPlotsComponent', () => {
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
   });
-  afterEach(() => http.verify());
+  afterEach(() => { http.verify(); el().remove(); });
 
   it('lists projects and loads the first project grid, grouped into blocks in natural order', () => {
     boot();
@@ -523,6 +526,115 @@ describe('ProjectsPlotsComponent', () => {
       fixture.componentInstance.submitBooking(form);
       fixture.componentInstance.submitBooking(form);
       expect(http.match('/api/admin/bookings').length).toBe(1);
+    });
+  });
+
+  describe('wave 2 fixes', () => {
+    const detail = (over: Record<string, unknown> = {}) =>
+      ({ id: 'id-A-2', plotNo: 'A-2', plotType: 'NORMAL', areaSqft: 1200, rate: 3750, price: 4500000, status: 'AVAILABLE', ...over });
+    const newPlot = { plotNo: 'C-1', plotType: 'NORMAL', areaSqft: 1, rate: 1, price: 1, status: 'AVAILABLE' } as const;
+    const form = { associateId: 'a1', buyerName: 'Rohit', buyerPhone: '' };
+    const actions = () => el().querySelectorAll<HTMLButtonElement>('.projects-plots__project-actions button');
+
+    function openDetail() {
+      boot([project()], [cell('A-2')]);
+      document.body.appendChild(el());
+      el().querySelector<HTMLButtonElement>('app-plot-tile button')!.click();
+      http.expectOne('/api/company/projects/p1/plots/id-A-2').flush(detail());
+      fixture.detectChanges();
+    }
+
+    it('a successful plot save returns focus to the opener', fakeAsync(() => {
+      boot();
+      document.body.appendChild(el());
+      const add = actions()[2];
+      add.focus(); add.click(); fixture.detectChanges();
+      fixture.componentInstance.saveNewPlot({ ...newPlot });
+      http.expectOne('/api/company/projects/p1/plots').flush(detail());
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('C-1')]);
+      http.expectOne('/api/company/projects').flush([project()]);
+      fixture.detectChanges(); tick();
+      expect(fixture.componentInstance.aside.kind).toBe('none');
+      expect(document.activeElement).toBe(actions()[2]);
+    }));
+
+    it('a successful CSV import returns focus to the opener', fakeAsync(() => {
+      boot();
+      document.body.appendChild(el());
+      const csv = actions()[1];
+      csv.focus(); csv.click(); fixture.detectChanges();
+      fixture.componentInstance.onCsvImported();
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('C-1')]);
+      http.expectOne('/api/company/projects').flush([project()]);
+      fixture.detectChanges(); tick();
+      expect(document.activeElement).toBe(actions()[1]);
+    }));
+
+    it('an opener clicked while the detail aside is open gets focus back on close', fakeAsync(() => {
+      openDetail();
+      const add = actions()[2];
+      add.focus(); add.click(); fixture.detectChanges();
+      expect(fixture.componentInstance.aside.kind).toBe('addPlot');
+      fixture.componentInstance.closeAside();
+      tick();
+      expect(document.activeElement).toBe(add);
+    }));
+
+    it('a plot save in flight does not put the book form into the busy state', () => {
+      openDetail();
+      fixture.componentInstance.saveNewPlot({ ...newPlot });
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.detectChanges();
+      expect(fixture.debugElement.query(By.directive(BookPlotFormComponent)).componentInstance.busy).toBeFalse();
+      http.expectOne('/api/company/projects/p1/plots').flush(detail(), { status: 500, statusText: 'x' });
+    });
+
+    it('a booking in flight does not disable the plot form', () => {
+      openDetail();
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.componentInstance.submitBooking(form);
+      fixture.componentInstance.openAside({ kind: 'addPlot' });
+      fixture.detectChanges();
+      expect(fixture.debugElement.query(By.directive(PlotFormComponent)).componentInstance.busy).toBeFalse();
+      http.expectOne('/api/admin/bookings').flush({ error: 'x' }, { status: 500, statusText: 'x' });
+    });
+
+    it('marks the plot BOOKED locally on 201, before the grid refresh returns', () => {
+      openDetail();
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.componentInstance.submitBooking(form);
+      http.expectOne('/api/admin/bookings').flush({ id: 'b1', plotId: 'id-A-2', buyerName: 'Rohit', totalAmount: 1, installmentCount: 1 });
+      fixture.detectChanges();
+      const btn = el().querySelector<HTMLButtonElement>('.projects-plots__book')!;
+      expect(btn.disabled).toBeTrue();
+      expect(el().textContent).toContain('admin.projectsPlots.bookDisabledBooked');
+      expect(fixture.componentInstance.counts.BOOKED).toBe(1);
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
+      http.expectOne('/api/company/projects').flush([project()]);
+      http.expectOne('/api/company/projects/p1/plots/id-A-2').flush(detail({ status: 'BOOKED' }));
+    });
+
+    it('keeps the local BOOKED mark when the grid refresh fails', () => {
+      openDetail();
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.componentInstance.submitBooking(form);
+      http.expectOne('/api/admin/bookings').flush({ id: 'b1', plotId: 'id-A-2', buyerName: 'Rohit', totalAmount: 1, installmentCount: 1 });
+      http.expectOne('/api/projects/p1/plots/grid').error(new ProgressEvent('error'));
+      http.expectOne('/api/company/projects').flush([project()]);
+      http.expectOne('/api/company/projects/p1/plots/id-A-2').flush(detail({ status: 'BOOKED' }));
+      expect(fixture.componentInstance.selectedPlot!.status).toBe('BOOKED');
+    });
+
+    it('keeps the photo-upload warning when the project list reload fails', () => {
+      boot();
+      fixture.componentInstance.openAside({ kind: 'project', mode: 'add' });
+      fixture.componentInstance.saveProject({ request: { name: 'New', location: 'Goa' }, photo: new File(['x'], 'p.png') });
+      http.expectOne({ method: 'POST', url: '/api/company/projects' }).flush(project({ id: 'p9', name: 'New' }));
+      http.expectOne('/api/company/projects/p9/thumbnail').flush('bad', { status: 400, statusText: 'Bad' });
+      http.expectOne('/api/company/projects').error(new ProgressEvent('error'));
+      fixture.detectChanges();
+      expect(fixture.componentInstance.projectsError).toBeTrue();
+      expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'warning', key: 'admin.projectsPlots.error.photoUploadFailed' }));
     });
   });
 });
