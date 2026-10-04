@@ -506,6 +506,17 @@ describe('ProjectsPlotsComponent', () => {
       expect(fixture.componentInstance.aside.kind).toBe('none');
     });
 
+    it('real Escape keydown: a handler lower in the tree that prevents default keeps the aside open; otherwise it closes', () => {
+      boot();
+      fixture.componentInstance.openAside({ kind: 'addPlot' });
+      const swallow = (e: Event) => e.preventDefault();
+      document.body.addEventListener('keydown', swallow, { once: true });
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      expect(fixture.componentInstance.aside.kind).toBe('addPlot');
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      expect(fixture.componentInstance.aside.kind).toBe('none');
+    });
+
     it('ignores a second submit while the first is in flight', () => {
       openBookForm();
       fixture.componentInstance.openAside({ kind: 'book' });

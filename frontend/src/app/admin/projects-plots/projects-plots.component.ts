@@ -346,7 +346,7 @@ export class ProjectsPlotsComponent implements OnInit {
     });
   }
 
-  @HostListener('document:keydown.escape')
+  @HostListener('document:keydown.escape', ['$event'])
   onEscape(event?: Event): void {
     if (event?.defaultPrevented) { return; } // e.g. the associate lookup just closed its list
     if (this.aside.kind !== 'none') { this.closeAside(); }
