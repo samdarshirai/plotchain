@@ -4442,6 +4442,13 @@ button.tree-explorer__vacant-card {
 }
 
 // ---- Plot Bookings (associate; plot-booking unit 13) -----------------------------------------
+.plot-bookings {
+  max-width: 1180px; margin: 0 auto; padding: 1.5rem 2rem; font-family: 'Inter', var(--font-sans);
+  &__title { @extend %admin-screen-title; margin: 0; }
+  &__subtitle { @extend %admin-screen-subtitle; margin: 0.375rem 0 1rem; }
+}
+@media (max-width: 767px) { .plot-bookings { padding-inline: 1rem; } }
+
 .plot-availability {
   display: flex; flex-direction: column; gap: 1.25rem; padding-top: 1rem;
 

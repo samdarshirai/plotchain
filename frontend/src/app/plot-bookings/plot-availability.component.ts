@@ -39,7 +39,7 @@ type TypeFilter = 'ALL' | PlotType;
           </section>
 
           <div class="plot-availability__filters" *ngIf="grid?.length">
-            <div class="plot-availability__chips" role="group">
+            <div class="plot-availability__chips" role="group" [attr.aria-label]="'plotBookings.popover.status' | translate">
               <button type="button" *ngFor="let f of statusFilters" class="plot-availability__chip"
                 [class.plot-availability__chip--on]="statusFilter === f" [attr.aria-pressed]="statusFilter === f" (click)="setStatus(f)">
                 {{ 'plotBookings.filter.' + f | translate }} <span class="plot-availability__chip-count">{{ countFor(f) }}</span>
