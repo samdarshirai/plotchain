@@ -180,10 +180,10 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           </ng-container>
 
           <app-book-plot-form *ngIf="aside.kind === 'book' && selectedPlot" [plot]="selectedPlot" [associates]="associates"
-            [emiConfig]="emiConfig" [busy]="bookingBusy" (submitted)="submitBooking($event)" (cancelled)="openAside({ kind: 'detail' })"></app-book-plot-form>
+            [emiConfig]="emiConfig" [busy]="bookingBusy" (submitted)="submitBooking($event)" (cancelled)="backToDetail('.projects-plots__book')"></app-book-plot-form>
           <app-plot-form *ngIf="aside.kind === 'editPlot' && selectedPlot && plotDetail"
             [plot]="plotDetail" [locked]="plotDetail.status !== 'AVAILABLE' || selectedPlot.status !== 'AVAILABLE'" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
-            (submitted)="saveEditedPlot($event)" (cancelled)="openAside({ kind: 'detail' })"></app-plot-form>
+            (submitted)="saveEditedPlot($event)" (cancelled)="backToDetail('.projects-plots__edit-plot')"></app-plot-form>
           <app-plot-form *ngIf="aside.kind === 'addPlot'" [plot]="null" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
             (submitted)="saveNewPlot($event)" (cancelled)="closeAside()"></app-plot-form>
           <app-project-form *ngIf="aside.kind === 'project'" [project]="aside.mode === 'edit' ? selectedProject : null" [busy]="busy"
@@ -335,8 +335,28 @@ export class ProjectsPlotsComponent implements OnInit {
   openAside(next: Aside): void {
     this.banner = null;
     this.duplicatePlotNo = false;
-    if (this.aside.kind === 'none' || this.aside.kind === 'detail') { this.opener = document.activeElement as HTMLElement | null; }
+    if (this.aside.kind === 'none' || this.aside.kind === 'detail') {
+      // Safari doesn't focus buttons on click, leaving body: treat that as "no opener" so focus falls back to the tile.
+      const active = document.activeElement as HTMLElement | null;
+      this.opener = active && active !== document.body ? active : null;
+    }
     this.aside = next;
+  }
+
+  // Leaves a form for the detail view; focus goes to the matching live control there (else the tile).
+  backToDetail(prefer: string): void {
+    this.aside = { kind: 'detail' };
+    this.banner = null;
+    this.focusDetail(prefer);
+  }
+
+  private focusDetail(prefer: string): void {
+    const plotId = this.selectedPlotId;
+    setTimeout(() => {
+      const btn = document.querySelector<HTMLButtonElement>(`.projects-plots__aside ${prefer}`);
+      if (btn && !btn.disabled) { btn.focus(); }
+      else if (plotId) { document.querySelector<HTMLElement>(`[data-plot-id="${plotId}"] button`)?.focus(); }
+    });
   }
 
   // Focus goes back to whatever opened the aside; if that element is gone, to the selected tile.
@@ -377,7 +397,7 @@ export class ProjectsPlotsComponent implements OnInit {
       if (!this.stillOn(projectId, plotId)) { return; }
       if (this.aside.kind === 'editPlot') {
         this.aside = { kind: 'detail' };
-        this.restoreFocus(null, plotId);
+        this.focusDetail('.projects-plots__edit-plot');
       }
       this.fetchDetail(projectId, plotId); // keeps the prior detail on failure
     });
@@ -389,7 +409,7 @@ export class ProjectsPlotsComponent implements OnInit {
       ? this.projectsService.updateProject(this.selectedProject!.id, v.request)
       : this.projectsService.createProject(v.request);
     this.mutate(save$, p => {
-      this.closeAside();
+      if (this.aside.kind === 'project') { this.closeAside(); } // the admin may have moved on mid-save
       if (!v.photo) { this.reloadProjects(p.id); return; }
       // The project is saved; a failed upload must not keep the form open (a retry would duplicate it).
       this.projectsService.uploadThumbnail(p.id, v.photo).subscribe({
@@ -414,14 +434,14 @@ export class ProjectsPlotsComponent implements OnInit {
         this.bookingBusy = false;
         this.markBooked(projectId, plotId);
         this.banner = { tone: 'success', key: 'admin.projectsPlots.banner.booked', params: { no: plot.plotNo, buyer: booking.buyerName }, bookingId: booking.id };
-        if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'detail' }; }
+        if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'detail' }; this.focusDetail('.projects-plots__book'); }
         this.refreshAfterBooking(projectId, plotId);
       },
       error: (err: HttpErrorResponse) => {
         this.bookingBusy = false;
         if (err.status === 409) {
           this.banner = { tone: 'warning', key: 'admin.projectsPlots.error.conflict', params: { no: plot.plotNo } };
-          if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'detail' }; }
+          if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'detail' }; this.focusDetail('.projects-plots__book'); }
           this.refreshAfterBooking(projectId, plotId);
         } else {
           this.banner = this.errorBanner(err);

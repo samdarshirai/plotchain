@@ -53,18 +53,28 @@ describe('PlotTileComponent', () => {
     expect(button().getAttribute('aria-pressed')).toBeNull();
   });
 
-  it('draws the focus ring inside the clip on corner tiles (inset offset beats the generic rule)', () => {
-    document.body.appendChild(fixture.nativeElement);
-    try {
-      button().focus();
-      const cs = getComputedStyle(button());
-      // :focus-visible only matches for keyboard-ish focus; skip the assertion if the browser says otherwise.
-      if (button().matches(':focus-visible')) {
-        expect(cs.outlineOffset).toBe('-7px');
-      }
-      fixture.componentRef.setInput('type', 'STANDARD');
+  describe('keyboard focus ring', () => {
+    function focused(type: string, selected: boolean) {
+      fixture.componentRef.setInput('type', type);
+      fixture.componentRef.setInput('selected', selected);
       fixture.detectChanges();
-      if (button().matches(':focus-visible')) { expect(getComputedStyle(button()).outlineOffset).toBe('2px'); }
-    } finally { fixture.nativeElement.remove(); }
+      document.body.appendChild(fixture.nativeElement);
+      button().focus({ focusVisible: true } as FocusOptions);
+      expect(button().matches(':focus-visible')).withContext('focus-visible must match for a real assertion').toBeTrue();
+      return getComputedStyle(button());
+    }
+    afterEach(() => fixture.nativeElement.remove());
+
+    it('corner tile draws the ring inset (inside the clip)', () => {
+      expect(focused('CORNER', false).outlineOffset).toBe('-7px');
+    });
+    it('selected corner tile keeps the inset ring and the 3px border', () => {
+      const cs = focused('CORNER', true);
+      expect(cs.outlineOffset).toBe('-7px');
+      expect(cs.borderTopWidth).toBe('3px');
+    });
+    it('non-corner tile keeps the outside 2px offset', () => {
+      expect(focused('STANDARD', false).outlineOffset).toBe('2px');
+    });
   });
 });
