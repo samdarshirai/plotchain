@@ -177,4 +177,120 @@ describe('BookingRegisterComponent', () => {
     listReq().flush(pageOf([bk('b1'), bk('b2')]));
     expect(c.filterMismatch).toBeFalse();
   });
+
+  it('paging away from the selected booking does not raise the mismatch note', () => {
+    boot([bk('b1')], 45);
+    const c = fixture.componentInstance;
+    c.selectBooking(c.page!.bookings[0]);
+    c.goTo(1);
+    listReq().flush(pageOf([bk('z')], 45, 1));
+    expect(c.selected!.id).toBe('b1');
+    expect(c.filterMismatch).toBeFalse();
+  });
+
+  it('reload and onBookingChanged raise the mismatch note when the selection is missing', () => {
+    boot();
+    const c = fixture.componentInstance;
+    c.selectBooking(c.page!.bookings[0]);
+    c.reload();
+    listReq().flush(pageOf([bk('b2')]));
+    expect(c.filterMismatch).toBeTrue();
+  });
+
+  it('a filter change clears the mismatch flag', () => {
+    boot();
+    const c = fixture.componentInstance;
+    c.selectBooking(c.page!.bookings[0]);
+    c.reload();
+    listReq().flush(pageOf([bk('b2')]));
+    c.applyFilter({ status: 'ACTIVE' });
+    expect(c.filterMismatch).toBeFalse();
+    listReq().flush(pageOf([]));
+    expect(c.filterMismatch).toBeFalse();
+  });
+
+  it('filters, reset and paging do nothing while locked; reload still works', () => {
+    boot([bk('b1')], 45);
+    const c = fixture.componentInstance;
+    c.locked = true;
+    c.applyFilter({ status: 'ACTIVE' });
+    c.resetFilters();
+    c.goTo(1);
+    http.expectNone('/api/admin/bookings');
+    expect(c.filters.status).toBe('');
+    c.reload();
+    listReq().flush(pageOf([bk('b1')], 45));
+  });
+
+  it('disables pager, reset and the associate wrapper while locked', () => {
+    boot([bk('b1')], 45);
+    fixture.componentInstance.locked = true;
+    fixture.detectChanges();
+    expect(el().querySelector<HTMLButtonElement>('.booking-register__next')!.disabled).toBeTrue();
+    expect(el().querySelector<HTMLButtonElement>('.booking-register__filters .brand-button')!.disabled).toBeTrue();
+    expect(el().querySelector('.booking-register__field--locked')!.hasAttribute('inert')).toBeTrue();
+  });
+
+  it('disables the empty-state Reset and the Retry button while locked', () => {
+    boot();
+    const c = fixture.componentInstance;
+    c.applyFilter({ status: 'CANCELLED' });
+    listReq().flush(pageOf([]));
+    c.locked = true;
+    fixture.detectChanges();
+    expect(el().querySelector<HTMLButtonElement>('.booking-register__empty button')!.disabled).toBeTrue();
+    c.locked = false;
+    c.applyFilter({ status: 'ACTIVE' });
+    listReq().flush('x', { status: 500, statusText: 'err' });
+    c.locked = true;
+    fixture.detectChanges();
+    expect(el().querySelector<HTMLButtonElement>('.booking-register__retry')!.disabled).toBeTrue();
+  });
+
+  it('a filter change on a later page requests page 0', () => {
+    boot([bk('b1')], 45);
+    const c = fixture.componentInstance;
+    c.goTo(1);
+    listReq().flush(pageOf([bk('z')], 45, 1));
+    c.applyFilter({ status: 'ACTIVE' });
+    const r = listReq();
+    expect(r.request.params.get('page')).toBe('0');
+    r.flush(pageOf([]));
+  });
+
+  it('Retry after a failed filter change re-requests page 0, not the old page', () => {
+    boot([bk('b1')], 45);
+    const c = fixture.componentInstance;
+    c.goTo(1);
+    listReq().flush(pageOf([bk('z')], 45, 1));
+    c.applyFilter({ status: 'ACTIVE' });
+    listReq().flush('x', { status: 500, statusText: 'err' });
+    c.reload();
+    const r = listReq();
+    expect(r.request.params.get('page')).toBe('0');
+    r.flush(pageOf([]));
+  });
+
+  it('a slow plot grid for a previous project does not replace the current options', () => {
+    boot();
+    const c = fixture.componentInstance;
+    c.applyFilter({ projectId: 'p1' });
+    listReq().flush(pageOf([]));
+    const g1 = http.expectOne('/api/projects/p1/plots/grid');
+    c.applyFilter({ projectId: 'p2' });
+    listReq().flush(pageOf([]));
+    http.expectOne('/api/projects/p2/plots/grid').flush([{ plotId: 'q', plotNo: 'P2-1', type: 'NORMAL', area: 1, price: 1, status: 'BOOKED' }]);
+    g1.flush([{ plotId: 'x', plotNo: 'P1-1', type: 'NORMAL', area: 1, price: 1, status: 'BOOKED' }]);
+    expect(c.plotOptions.map(o => o.plotNo)).toEqual(['P2-1']);
+  });
+
+  it('marks the selected row with aria-current and selects on Space', () => {
+    boot();
+    const rows = el().querySelectorAll<HTMLElement>('tbody tr.booking-register__row');
+    rows[1].dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.selected!.id).toBe('b2');
+    expect(rows[1].getAttribute('aria-current')).toBe('true');
+    expect(rows[0].hasAttribute('aria-current')).toBeFalse();
+  });
 });

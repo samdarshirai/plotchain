@@ -4627,3 +4627,4 @@ button.tree-explorer__vacant-card {
   .booking-register__table td::before { content: attr(data-label); font: 500 0.6875rem var(--font-mono); text-transform: uppercase; color: var(--text-muted); }
   .booking-register__meter { display: none; }
 }
+.booking-register__field--locked { pointer-events: none; opacity: 0.6; }

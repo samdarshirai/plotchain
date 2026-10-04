@@ -32,7 +32,7 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
             <option *ngFor="let s of statuses" [value]="s" [selected]="filters.status === s">{{ 'admin.bookingsEmi.status.' + s | translate }}</option>
           </select>
         </label>
-        <div class="booking-register__field">{{ 'admin.bookingsEmi.filter.associate' | translate }}
+        <div class="booking-register__field" [class.booking-register__field--locked]="locked" [attr.inert]="locked ? '' : null">{{ 'admin.bookingsEmi.filter.associate' | translate }}
           <app-associate-lookup [associates]="directory" [value]="filters.associateId"
             [placeholder]="'admin.bookingsEmi.filter.anyAssociate' | translate"
             (selected)="applyFilter({ associateId: $event?.id ?? '' })"></app-associate-lookup>
@@ -58,7 +58,7 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
 
       <app-inline-banner *ngIf="loadError" tone="danger">
         {{ 'admin.bookingsEmi.err.load' | translate }}
-        <button type="button" class="booking-register__retry" (click)="reload()">{{ 'admin.bookingsEmi.err.retry' | translate }}</button>
+        <button type="button" class="booking-register__retry" [disabled]="locked" (click)="reload()">{{ 'admin.bookingsEmi.err.retry' | translate }}</button>
       </app-inline-banner>
 
       <div class="booking-register__grid">
@@ -71,7 +71,7 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
           <div class="booking-register__empty" *ngIf="page && !page.bookings.length">
             <ng-container *ngIf="hasFilters; else firstRun">
               <h2>{{ 'admin.bookingsEmi.empty.noMatchTitle' | translate }}</h2>
-              <button type="button" class="brand-button brand-button--secondary" (click)="resetFilters()">{{ 'admin.bookingsEmi.filter.reset' | translate }}</button>
+              <button type="button" class="brand-button brand-button--secondary" [disabled]="locked" (click)="resetFilters()">{{ 'admin.bookingsEmi.filter.reset' | translate }}</button>
             </ng-container>
             <ng-template #firstRun>
               <h2>{{ 'admin.bookingsEmi.empty.noBookingsTitle' | translate }}</h2>
@@ -93,7 +93,7 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
             </thead>
             <tbody>
               <tr *ngFor="let b of page!.bookings" class="booking-register__row" tabindex="0"
-                [class.booking-register__row--selected]="b.id === selected?.id" [attr.aria-selected]="b.id === selected?.id"
+                [class.booking-register__row--selected]="b.id === selected?.id" [attr.aria-current]="b.id === selected?.id ? 'true' : null"
                 (click)="selectBooking(b)" (keydown.enter)="selectBooking(b)" (keydown.space)="selectBooking(b); $event.preventDefault()">
                 <td [attr.data-label]="'admin.bookingsEmi.col.buyer' | translate">
                   <strong>{{ b.buyerName }}</strong><br /><span class="booking-register__sub">{{ plot(b) }}<ng-container *ngIf="b.projectName"> · {{ b.projectName }}</ng-container></span>
@@ -147,6 +147,7 @@ export class BookingRegisterComponent implements OnInit, OnChanges {
   loading = false;
   locked = false; // true while a seal write is in flight: filters, pager and selection freeze
   private seq = 0;
+  private currentPage = 0;
 
   money = formatInr;
   pct = (b: Booking) => meterPercent(b.paidAmount, b.totalAmount);
@@ -171,30 +172,38 @@ export class BookingRegisterComponent implements OnInit, OnChanges {
   ngOnChanges(_: SimpleChanges): void { /* focusBookingId handled in Task 8 */ }
 
   applyFilter(partial: Partial<RegisterFilters>): void {
+    if (this.locked) { return; }
     const projectChanged = 'projectId' in partial && partial.projectId !== this.filters.projectId;
     this.filters = { ...this.filters, ...partial };
     if (projectChanged) {
       this.filters.plotId = '';
       this.plotOptions = [];
       if (this.filters.projectId) {
-        this.plotsService.getGrid(this.filters.projectId).subscribe({ next: g => (this.plotOptions = g), error: () => undefined });
+        const id = this.filters.projectId;
+        // a slow grid for a previously chosen project must not replace the current project's options
+        this.plotsService.getGrid(id).subscribe({ next: g => { if (this.filters.projectId === id) { this.plotOptions = g; } }, error: () => undefined });
       }
     }
+    this.filterMismatch = false;
     this.load(0);
   }
 
   resetFilters(): void {
+    if (this.locked) { return; }
+    this.filterMismatch = false;
     this.filters = { ...NO_FILTERS };
     this.plotOptions = [];
     this.load(0);
   }
 
-  reload(): void { this.load(this.page?.page ?? 0); }
-  goTo(p: number): void { this.load(p); }
+  // re-requests the last attempted page (so Retry after a failed filter change uses page 0)
+  reload(): void { this.load(this.currentPage, true); }
+  goTo(p: number): void { if (!this.locked) { this.load(p); } }
 
   // Latest-request-wins: a slow earlier response can never overwrite a newer one.
-  private load(p: number): void {
+  private load(p: number, checkMismatch = false): void {
     const mine = ++this.seq;
+    this.currentPage = p;
     this.loading = true;
     this.loadError = false;
     this.service.list(this.filters, p, PAGE_SIZE).subscribe({
@@ -204,7 +213,7 @@ export class BookingRegisterComponent implements OnInit, OnChanges {
         this.page = res;
         if (this.selected) {
           const still = res.bookings.find(b => b.id === this.selected!.id);
-          if (still) { this.selected = still; this.filterMismatch = false; } else { this.filterMismatch = true; }
+          if (still) { this.selected = still; this.filterMismatch = false; } else if (checkMismatch) { this.filterMismatch = true; }
         }
       },
       error: () => { if (mine === this.seq) { this.loading = false; this.loadError = true; } }
