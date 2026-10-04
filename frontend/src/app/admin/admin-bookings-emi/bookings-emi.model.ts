@@ -25,3 +25,5 @@ export interface RegisterFilters {
 }
 
 export interface PayRequest { amount: number; paymentRef: string; paidAt?: string; }
+
+export interface FlashMessage { key: string; params?: Record<string, unknown>; }
