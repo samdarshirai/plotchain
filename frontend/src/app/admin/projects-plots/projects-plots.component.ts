@@ -137,13 +137,13 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             </div>
             <p class="projects-plots__empty" *ngIf="grid.length && !visibleBlocks.length">{{ 'admin.projectsPlots.empty.filter' | translate }}</p>
 
-            <section class="projects-plots__block" *ngFor="let b of visibleBlocks">
+            <section class="projects-plots__block" *ngFor="let b of visibleBlocks; trackBy: trackBlock">
               <h3 class="projects-plots__block-heading" *ngIf="b.block">
                 {{ 'admin.projectsPlots.blockHeading' | translate: { block: b.block } }}
                 <span>{{ 'admin.projectsPlots.blockSummary' | translate: blockStats[b.block] }}</span>
               </h3>
               <ul class="projects-plots__tiles">
-                <li *ngFor="let p of b.plots">
+                <li *ngFor="let p of b.plots; trackBy: trackPlot">
                   <app-plot-tile [attr.data-plot-id]="p.plotId" [plotNo]="p.plotNo" [type]="p.type" [area]="p.area"
                     [price]="p.price" [status]="p.status" [selected]="p.plotId === selectedPlotId" (tileSelect)="selectPlot(p)"></app-plot-tile>
                 </li>
@@ -307,6 +307,10 @@ export class ProjectsPlotsComponent implements OnInit {
       .filter(b => b.plots.length);
   }
 
+  // Stable identity so a grid refresh updates tiles in place and a focused tile keeps focus.
+  trackBlock = (_: number, b: PlotBlock) => b.block;
+  trackPlot = (_: number, p: PlotGridItem) => p.plotId;
+
   bookedCount(p: Project): number {
     return Math.max(p.totalPlots - p.availablePlots - p.soldPlots, 0);
   }
@@ -350,10 +354,10 @@ export class ProjectsPlotsComponent implements OnInit {
     this.focusDetail(prefer);
   }
 
-  private focusDetail(prefer: string): void {
+  private focusDetail(prefer?: string): void {
     const plotId = this.selectedPlotId;
     setTimeout(() => {
-      const btn = document.querySelector<HTMLButtonElement>(`.projects-plots__aside ${prefer}`);
+      const btn = prefer ? document.querySelector<HTMLButtonElement>(`.projects-plots__aside ${prefer}`) : null;
       if (btn && !btn.disabled) { btn.focus(); }
       else if (plotId) { document.querySelector<HTMLElement>(`[data-plot-id="${plotId}"] button`)?.focus(); }
     });
@@ -441,7 +445,7 @@ export class ProjectsPlotsComponent implements OnInit {
         this.bookingBusy = false;
         if (err.status === 409) {
           this.banner = { tone: 'warning', key: 'admin.projectsPlots.error.conflict', params: { no: plot.plotNo } };
-          if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'detail' }; this.focusDetail('.projects-plots__book'); }
+          if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'detail' }; this.focusDetail(); } // the refresh books the plot, so Book is about to be disabled: tile
           this.refreshAfterBooking(projectId, plotId);
         } else {
           this.banner = this.errorBanner(err);

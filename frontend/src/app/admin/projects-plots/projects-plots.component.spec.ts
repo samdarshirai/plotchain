@@ -635,6 +635,21 @@ describe('ProjectsPlotsComponent', () => {
       http.expectOne('/api/company/projects/p1/plots/id-A-2').flush(detail({ status: 'BOOKED' }));
     }));
 
+    it('a booking 409 leaves focus on the tile, not a Book button the refresh then disables', fakeAsync(() => {
+      openDetail();
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.detectChanges();
+      fixture.componentInstance.submitBooking(form);
+      http.expectOne('/api/admin/bookings').flush({ error: 'taken' }, { status: 409, statusText: 'Conflict' });
+      fixture.detectChanges(); tick();
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
+      http.expectOne('/api/company/projects').flush([project()]);
+      http.expectOne('/api/company/projects/p1/plots/id-A-2').flush(detail({ status: 'BOOKED' }));
+      fixture.detectChanges(); tick();
+      expect(el().querySelector<HTMLButtonElement>('.projects-plots__book')!.disabled).toBeTrue();
+      expect(document.activeElement).toBe(el().querySelector('[data-plot-id="id-A-2"] button'));
+    }));
+
     it('cancel from the book form focuses the Book button in the detail aside', fakeAsync(() => {
       openDetail();
       fixture.componentInstance.openAside({ kind: 'book' });
