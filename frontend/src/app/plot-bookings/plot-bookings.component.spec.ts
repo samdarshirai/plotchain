@@ -25,12 +25,21 @@ describe('PlotBookingsComponent', () => {
     http.expectNone(r => r.url === '/api/associates/me/bookings');
   });
 
-  it('switching to My bookings mounts it and loads the first page once', () => {
+  it('switching to My bookings mounts it and fetches the first page (it refetches on every reopen because the tab is *ngIf-mounted; intended)', () => {
     fixture.componentInstance.onTabChange('myBookings');
     fixture.detectChanges();
     http.expectOne(r => r.url === '/api/associates/me/bookings').flush({ bookings: [], page: 0, size: 20, totalElements: 0 });
     expect(el().querySelector('app-my-bookings')).not.toBeNull();
     expect(el().querySelector('app-plot-availability')).toBeNull();
+  });
+
+  it('clicking the real "My bookings" tab button switches tabs and requests bookings', () => {
+    const tabs = Array.from(el().querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    expect(tabs.length).toBe(2);
+    tabs[1].click();
+    fixture.detectChanges();
+    http.expectOne(r => r.url === '/api/associates/me/bookings').flush({ bookings: [], page: 0, size: 20, totalElements: 0 });
+    expect(fixture.componentInstance.activeTab).toBe('myBookings');
   });
 
   it('the empty-state "View availability" link switches back to the Availability tab', () => {
