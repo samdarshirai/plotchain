@@ -121,7 +121,7 @@ class PlotControllerTest {
 
     @Test
     void updateReturns200() throws Exception {
-        when(plotRepository.findByIdAndProjectId(PLOT_ID, PROJECT_ID)).thenReturn(Optional.of(seedPlot()));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(seedPlot()));
         when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-102"))).thenReturn(List.of());
 
         mockMvc.perform(put("/api/company/projects/" + PROJECT_ID + "/plots/" + PLOT_ID)
@@ -136,7 +136,7 @@ class PlotControllerTest {
     void updateReturns409WhenMovingABookedPlotBackToAvailable() throws Exception {
         Plot booked = new Plot(PLOT_ID, PROJECT_ID, "A-101", PlotType.NORMAL,
             new BigDecimal("1200.00"), new BigDecimal("500.00"), new BigDecimal("600000.00"), PlotStatus.BOOKED);
-        when(plotRepository.findByIdAndProjectId(PLOT_ID, PROJECT_ID)).thenReturn(Optional.of(booked));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(booked));
         when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-101"))).thenReturn(List.of(booked));
 
         mockMvc.perform(put("/api/company/projects/" + PROJECT_ID + "/plots/" + PLOT_ID)
@@ -144,7 +144,8 @@ class PlotControllerTest {
                 .contentType("application/json")
                 .content("{\"plotNo\":\"A-101\",\"plotType\":\"NORMAL\",\"areaSqft\":1200,\"rate\":500,\"price\":600000,\"status\":\"AVAILABLE\"}"))
             .andExpect(status().isConflict())
-            .andExpect(jsonPath("$.error").isNotEmpty());
+            .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.allOf(
+                org.hamcrest.Matchers.containsString("A-101"), org.hamcrest.Matchers.containsString("BOOKED"))));
     }
 
     @Test

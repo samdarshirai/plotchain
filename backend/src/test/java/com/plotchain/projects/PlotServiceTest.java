@@ -139,7 +139,7 @@ class PlotServiceTest {
 
     @Test
     void updateChangesFieldsOfAnExistingPlot() {
-        when(plotRepository.findByIdAndProjectId(PLOT_ID, PROJECT_ID)).thenReturn(Optional.of(seedPlot()));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(seedPlot()));
         when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-102"))).thenReturn(List.of());
 
         PlotResponse response = plotService.update(PROJECT_ID, PLOT_ID, requestWithPlotNo("A-102"), ACTOR_ID);
@@ -152,7 +152,7 @@ class PlotServiceTest {
 
     @Test
     void updateRecordsAnAuditEntry() {
-        when(plotRepository.findByIdAndProjectId(PLOT_ID, PROJECT_ID)).thenReturn(Optional.of(seedPlot()));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(seedPlot()));
         when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-102"))).thenReturn(List.of());
 
         plotService.update(PROJECT_ID, PLOT_ID, requestWithPlotNo("A-102"), ACTOR_ID);
@@ -171,7 +171,7 @@ class PlotServiceTest {
 
     @Test
     void updateAllowsKeepingTheSamePlotNo() {
-        when(plotRepository.findByIdAndProjectId(PLOT_ID, PROJECT_ID)).thenReturn(Optional.of(seedPlot()));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(seedPlot()));
         when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-101")))
             .thenReturn(List.of(seedPlot()));
 
@@ -184,7 +184,7 @@ class PlotServiceTest {
     void updateThrowsWhenNewPlotNoBelongsToADifferentExistingPlot() {
         Plot otherPlot = new Plot(UUID.randomUUID(), PROJECT_ID, "A-102", PlotType.NORMAL,
             new BigDecimal("1000.00"), new BigDecimal("400.00"), new BigDecimal("400000.00"), PlotStatus.AVAILABLE);
-        when(plotRepository.findByIdAndProjectId(PLOT_ID, PROJECT_ID)).thenReturn(Optional.of(seedPlot()));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(seedPlot()));
         when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-102")))
             .thenReturn(List.of(otherPlot));
 
@@ -207,7 +207,7 @@ class PlotServiceTest {
     @Test
     void updateRejectsMovingABookedPlotToAvailableAndAppliesNothing() {
         Plot plot = plotWithStatus(PlotStatus.BOOKED);
-        when(plotRepository.findByIdAndProjectId(PLOT_ID, PROJECT_ID)).thenReturn(Optional.of(plot));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plot));
         when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-101"))).thenReturn(List.of(plot));
 
         assertThatThrownBy(() -> plotService.update(PROJECT_ID, PLOT_ID, requestWithStatus("AVAILABLE", "700000.00"), ACTOR_ID))
@@ -222,7 +222,7 @@ class PlotServiceTest {
     @Test
     void updateRejectsMovingASoldPlotToAvailable() {
         Plot plot = plotWithStatus(PlotStatus.SOLD);
-        when(plotRepository.findByIdAndProjectId(PLOT_ID, PROJECT_ID)).thenReturn(Optional.of(plot));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plot));
         when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-101"))).thenReturn(List.of(plot));
 
         assertThatThrownBy(() -> plotService.update(PROJECT_ID, PLOT_ID, requestWithStatus("AVAILABLE", "600000.00"), ACTOR_ID))
@@ -235,7 +235,7 @@ class PlotServiceTest {
     @Test
     void updateAllowsEditingABookedPlotWhenStatusIsEchoedUnchanged() {
         Plot plot = plotWithStatus(PlotStatus.BOOKED);
-        when(plotRepository.findByIdAndProjectId(PLOT_ID, PROJECT_ID)).thenReturn(Optional.of(plot));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plot));
         when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-101"))).thenReturn(List.of(plot));
 
         PlotResponse response = plotService.update(PROJECT_ID, PLOT_ID, requestWithStatus("BOOKED", "700000.00"), ACTOR_ID);
@@ -248,7 +248,7 @@ class PlotServiceTest {
     @Test
     void updateKeepsTheCurrentStatusWhenStatusIsOmittedOnABookedPlot() {
         Plot plot = plotWithStatus(PlotStatus.BOOKED);
-        when(plotRepository.findByIdAndProjectId(PLOT_ID, PROJECT_ID)).thenReturn(Optional.of(plot));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plot));
         when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-101"))).thenReturn(List.of(plot));
 
         PlotResponse response = plotService.update(PROJECT_ID, PLOT_ID, requestWithStatus(null, "600000.00"), ACTOR_ID);
@@ -260,12 +260,68 @@ class PlotServiceTest {
     @Test
     void updateStillLetsAnAvailablePlotChangeStatus() {
         Plot plot = plotWithStatus(PlotStatus.AVAILABLE);
-        when(plotRepository.findByIdAndProjectId(PLOT_ID, PROJECT_ID)).thenReturn(Optional.of(plot));
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plot));
         when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-101"))).thenReturn(List.of(plot));
 
         PlotResponse response = plotService.update(PROJECT_ID, PLOT_ID, requestWithStatus("BOOKED", "600000.00"), ACTOR_ID);
 
         assertThat(response.status()).isEqualTo("BOOKED");
+        verify(plotRepository).save(plot);
+    }
+
+    @Test
+    void updateRejectsBookedToSoldAndSoldToBookedWithoutMutation() {
+        for (PlotStatus[] pair : new PlotStatus[][] {{PlotStatus.BOOKED, PlotStatus.SOLD}, {PlotStatus.SOLD, PlotStatus.BOOKED}}) {
+            Plot plot = plotWithStatus(pair[0]);
+            when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plot));
+            when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-101"))).thenReturn(List.of(plot));
+
+            assertThatThrownBy(() -> plotService.update(PROJECT_ID, PLOT_ID, requestWithStatus(pair[1].name(), "700000.00"), ACTOR_ID))
+                .isInstanceOf(PlotStatusLockedException.class);
+
+            assertThat(plot.getStatus()).isEqualTo(pair[0]);
+            assertThat(plot.getPrice()).isEqualByComparingTo("600000.00");
+        }
+        verify(plotRepository, never()).save(any());
+        verify(settingsAuditLogRepository, never()).save(any());
+    }
+
+    @Test
+    void updateAllowsEditingASoldPlotWhenStatusIsEchoedUnchanged() {
+        Plot plot = plotWithStatus(PlotStatus.SOLD);
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plot));
+        when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-101"))).thenReturn(List.of(plot));
+
+        PlotResponse response = plotService.update(PROJECT_ID, PLOT_ID, requestWithStatus("SOLD", "700000.00"), ACTOR_ID);
+
+        assertThat(response.status()).isEqualTo("SOLD");
+        assertThat(response.price()).isEqualByComparingTo("700000.00");
+        verify(plotRepository).save(plot);
+    }
+
+    @Test
+    void updateRejectsAnUnknownStatusOnABookedPlotWithoutMutation() {
+        Plot plot = plotWithStatus(PlotStatus.BOOKED);
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plot));
+        when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-101"))).thenReturn(List.of(plot));
+
+        assertThatThrownBy(() -> plotService.update(PROJECT_ID, PLOT_ID, requestWithStatus("BOGUS", "700000.00"), ACTOR_ID))
+            .isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(plot.getStatus()).isEqualTo(PlotStatus.BOOKED);
+        assertThat(plot.getPrice()).isEqualByComparingTo("600000.00");
+        verify(plotRepository, never()).save(any());
+    }
+
+    @Test
+    void updateThrowsNotFoundWhenTheLockedPlotBelongsToAnotherProject() {
+        Plot plot = new Plot(PLOT_ID, UUID.randomUUID(), "A-101", PlotType.NORMAL,
+            new BigDecimal("1200.00"), new BigDecimal("500.00"), new BigDecimal("600000.00"), PlotStatus.AVAILABLE);
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plot));
+
+        assertThatThrownBy(() -> plotService.update(PROJECT_ID, PLOT_ID, requestWithStatus("AVAILABLE", "1.00"), ACTOR_ID))
+            .isInstanceOf(PlotNotFoundException.class);
+        verify(plotRepository, never()).save(any());
     }
 
     @Test

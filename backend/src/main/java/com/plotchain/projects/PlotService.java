@@ -4,6 +4,7 @@ import com.plotchain.company.SettingsAuditService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -48,8 +49,13 @@ public class PlotService {
         return response;
     }
 
+    // Row-locked read (same lock BookingService/SaleService take) so a concurrent booking can't
+    // commit between this status check and the save and then be overwritten.
+    @Transactional
     public PlotResponse update(UUID projectId, UUID plotId, PlotRequest request, UUID actorId) {
-        Plot plot = findOrThrow(projectId, plotId);
+        Plot plot = plotRepository.findByIdForUpdate(plotId)
+            .filter(p -> p.getProjectId().equals(projectId))
+            .orElseThrow(() -> new PlotNotFoundException(plotId));
         assertPlotNoAvailable(projectId, request.plotNo(), plotId);
         // BOOKED/SOLD transitions belong to the booking/sale flows; omitted status keeps the current one.
         boolean statusOmitted = request.status() == null || request.status().isBlank();
