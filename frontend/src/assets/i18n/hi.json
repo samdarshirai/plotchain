@@ -838,6 +838,90 @@
       "pageIndicator": "Page {{page}} of {{totalPages}}",
       "emptyState": "No ledger entries match these filters."
     },
+    "bookingsEmi": {
+      "eyebrow": "Inventory & Bookings",
+      "title": "Bookings & EMI",
+      "subtitle": "Track every plot booking, record instalments as they are collected, and chase the ones that are overdue.",
+      "tab": { "register": "Register", "overdue": "Overdue report" },
+      "rule": {
+        "manual": "Confirm rule: Manual",
+        "auto": "Confirm rule: Auto at {{percent}}%"
+      },
+      "filter": {
+        "status": "Status", "allStatuses": "All statuses", "associate": "Associate", "anyAssociate": "Any associate",
+        "project": "Project", "allProjects": "All projects", "plot": "Plot", "anyPlot": "Any plot", "plotNeedsProject": "Choose a project first",
+        "overdueOnly": "Overdue only", "reset": "Reset filters"
+      },
+      "status": { "ACTIVE": "Active", "CONFIRMED": "Confirmed", "CANCELLED": "Cancelled" },
+      "col": { "buyer": "Buyer", "associate": "Associate", "status": "Status", "total": "Total", "paid": "Paid", "due": "Due",
+               "overdue": "Overdue", "amountOverdue": "Amount overdue", "oldestDue": "Oldest due", "plot": "Plot",
+               "no": "#", "dueDate": "Due", "amount": "Amount", "installmentStatus": "Status" },
+      "overduePill": "{{count}} overdue",
+      "overdueBadge": "Overdue",
+      "installment": { "PENDING": "Pending", "PAID": "Paid", "VOID": "Void" },
+      "seal": {
+        "detail": "Booking detail", "pay": "Record payment", "confirm": "Confirm booking", "cancel": "Cancel booking", "transfer": "Transfer booking",
+        "none": "Select a booking to see its instalments and take action.",
+        "booked": "Booked", "plan": "Plan", "planValue": "{{count}} × {{amount}}",
+        "meter": "Paid {{pct}}% of {{threshold}}% needed to auto-confirm", "meterPlain": "Paid {{pct}}%",
+        "filterMismatch": "This booking no longer matches the current filters"
+      },
+      "action": {
+        "pay": "Pay", "payBtn": "Record {{amount}}", "confirm": "Confirm", "transfer": "Transfer", "cancel": "Cancel",
+        "cancelBtn": "Cancel booking", "keep": "Keep booking", "back": "Back", "confirmBtn": "Confirm booking", "transferBtn": "Transfer booking",
+        "recording": "Recording…", "confirming": "Confirming…", "cancelling": "Cancelling…", "transferring": "Transferring…", "reload": "Reload booking"
+      },
+      "field": {
+        "amount": "Amount received", "amountHint": "Fixed to the instalment amount. Part payments aren't supported.",
+        "ref": "Payment reference", "refCount": "{{n}}/100", "receivedOn": "Received on (optional)",
+        "reason": "Reason", "reasonCount": "{{n}}/255", "target": "Transfer to"
+      },
+      "validation": {
+        "ref": "Enter a payment reference.", "refMax": "Keep the reference to 100 characters.",
+        "reason": "Enter a reason for cancelling.", "reasonMax": "Keep the reason to 255 characters.", "target": "Choose an associate."
+      },
+      "warn": { "autoConfirm": "This payment will confirm the booking.", "autoConfirmDetail": "Paid goes from {{before}} to {{after}}. If confirming fails, the payment is rolled back." },
+      "confirmEffects": ["Sale amount equals the booking total.", "The plot moves from Booked to Sold and the sale credits the associate's ledger.", "Remaining instalments stay pending. To undo, void the sale in the Sales Register."],
+      "cancelEffects": ["{{count}} pending instalments will be voided.", "Amounts already paid stay on record; no refund is handled here.", "The plot becomes Available unless another live booking holds it."],
+      "transferHint": "Only active associates can receive a booking. Buyer, plan and paid instalments move with it.",
+      "locked": {
+        "active": "Actions are only available while a booking is Active. To reverse a confirmed booking, void its sale in the Sales Register.",
+        "cancelled": "This booking was cancelled. Cancelled bookings can't be changed."
+      },
+      "ok": {
+        "pay": "Payment recorded. Instalment {{n}} of {{buyer}}'s booking is paid, {{amount}} received.",
+        "autoConfirm": "Booking auto-confirmed. Paying instalment {{n}} took {{buyer}} to {{pct}}% paid. The plot is now Sold and the sale is in the Sales Register.",
+        "confirm": "Booking confirmed for {{buyer}}.",
+        "cancel": "Booking cancelled for {{buyer}}.",
+        "transfer": "Booking transferred to {{associate}}."
+      },
+      "err": {
+        "amountMismatch": "The amount must be exactly {{amount}}, the instalment amount. Reload the booking in case the plan changed.",
+        "notFound": "This booking or instalment no longer exists.",
+        "notActive": "This booking is no longer Active. It was confirmed or cancelled in the meantime.",
+        "notPayable": "Instalment {{n}} is already paid or voided. Reload to see its current status.",
+        "plotDriftPay": "Payment not recorded. The plot is no longer marked Booked. This payment would take the booking past the auto-confirm threshold, and confirming needs the plot to be Booked. Nothing was saved: instalment {{n}} is still pending.",
+        "plotDriftConfirm": "The booking wasn't confirmed. The plot is no longer marked Booked, and confirming needs it to be Booked.",
+        "plotDriftFix": "To fix it, set the plot back to Booked in Projects & Plots, or switch the confirm rule to Manual in Settings, then try again.",
+        "sameAssociate": "Choose a different associate. This booking already belongs to that associate.",
+        "invalidTarget": "Only active associates can receive a booking.",
+        "payNetwork": "We couldn't confirm whether the payment was recorded. Reload to check whether instalment {{n}} was recorded before you try again.",
+        "generic": "Something went wrong and nothing was saved. Check your connection and try again.",
+        "serverSaid": "Server said: {{text}}",
+        "load": "The booking register didn't load. Check your connection and try again.",
+        "retry": "Try again"
+      },
+      "empty": {
+        "noBookingsTitle": "No bookings yet", "noBookingsBody": "When an associate books a plot it appears here, with its instalment plan.",
+        "goToPlots": "Go to Projects & Plots",
+        "noMatchTitle": "No bookings match these filters.",
+        "overdueTitle": "Nothing overdue", "overdueBody": "Every active booking is paid up to date. This list fills in on its own when an instalment passes its due date."
+      },
+      "linkProjectsPlots": "Projects & Plots",
+      "linkSettings": "Settings",
+      "pager": "Page {{page}} of {{totalPages}} · {{count}} bookings",
+      "previous": "Previous", "next": "Next", "loading": "Loading"
+},
     "projectsPlots": {
       "eyebrow": "Inventory · Plots",
       "title": "Projects & Plots",
@@ -1278,7 +1362,8 @@
       "cycleManagement": "चक्र प्रबंधन",
       "ledgerRegister": "Ledger Register",
       "payoutApproval": "Payout Approval",
-      "projectsPlots": "प्रोजेक्ट्स और प्लॉट्स"
+      "projectsPlots": "प्रोजेक्ट्स और प्लॉट्स",
+      "bookingsEmi": "बुकिंग और ईएमआई"
     },
     "auditLog": {
       "sectionFilterLabel": "अनुभाग",
