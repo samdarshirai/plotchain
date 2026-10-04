@@ -4628,3 +4628,39 @@ button.tree-explorer__vacant-card {
   .booking-register__meter { display: none; }
 }
 .booking-register__field--locked { pointer-events: none; opacity: 0.6; }
+
+// Booking seal (plot-booking unit 12): double-ruled panel, same look as the e-Pin register seal
+.booking-seal {
+  position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; padding: 1.25rem 1.5rem;
+  background: var(--surface-card); border: 1px solid var(--brand-primary); border-radius: 4px;
+  box-shadow: 0 0 0 4px var(--surface-card), 0 0 0 5px var(--brand-primary);
+  &__none { margin: 0; color: var(--text-muted); }
+  &__title { margin: 0 0 0.75rem; font: 600 1.125rem var(--font-sans); &:focus { outline: none; } &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; } }
+  &__head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+  &__sub { font-size: 0.8125rem; color: var(--text-muted); }
+  &__id { font: 400 0.6875rem var(--font-mono); color: var(--text-muted); overflow-wrap: anywhere; }
+  &__note { margin: 0.75rem 0 0; padding: 0.5rem 0.75rem; border-left: 3px solid var(--status-warning); background: var(--surface-raised); font-size: 0.8125rem; }
+  &__meta { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; margin: 1rem 0;
+    dt { font: 500 0.6875rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+    dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; } }
+  &__meter { position: relative; height: 8px; margin-bottom: 1rem; border-radius: 999px; background: var(--border-subtle); overflow: visible; }
+  &__meter-fill { display: block; height: 100%; border-radius: 999px; background: var(--status-success); }
+  &__meter-tick { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--brand-primary); }
+  &__table { width: 100%; border-collapse: collapse; font-size: 0.875rem;
+    th { text-align: left; padding: 0.375rem 0.25rem; font: 500 0.6875rem var(--font-mono); text-transform: uppercase; color: var(--text-muted); }
+    td { padding: 0.5rem 0.25rem; border-top: 1px solid var(--border-subtle); vertical-align: middle; } }
+  &__row--void { color: var(--text-muted); text-decoration: line-through;
+    background: repeating-linear-gradient(135deg, transparent 0 6px, var(--surface-raised) 6px 8px); }
+  &__overdue { margin-left: 0.375rem; padding: 0.125rem 0.5rem; border-radius: 999px; background: var(--status-danger); color: #fff; font-size: 0.75rem; font-weight: 600; text-decoration: none; }
+  &__pay { min-height: 32px; padding: 0 0.75rem; }
+  &__actions, &__form-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; .brand-button { min-height: 44px; } }
+  &__locked { margin: 0.75rem 0 0; font-size: 0.8125rem; color: var(--text-muted); }
+  &__form { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
+  &__fields { display: flex; flex-direction: column; gap: 0.375rem; border: 0; padding: 0; margin: 0; min-width: 0;
+    label { font-weight: 500; } input, textarea { min-height: 44px; width: 100%; box-sizing: border-box; } small { color: var(--text-muted); } }
+  &__effects { margin: 0; padding-left: 1.25rem; font-size: 0.875rem; }
+  &__server { margin-top: 0.375rem; font-size: 0.8125rem; color: var(--text-muted); }
+  &__reload { margin-top: 0.5rem; min-height: 44px; }
+}
+@media (max-width: 960px) { .booking-seal { position: static; max-height: none; } }
+@media (max-width: 768px) { .booking-seal__pay { min-height: 44px; } }

@@ -1,3 +1,5 @@
+import { By } from '@angular/platform-browser';
+import { BookingSealComponent } from './booking-seal.component';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
@@ -292,5 +294,29 @@ describe('BookingRegisterComponent', () => {
     expect(fixture.componentInstance.selected!.id).toBe('b2');
     expect(rows[1].getAttribute('aria-current')).toBe('true');
     expect(rows[0].hasAttribute('aria-current')).toBeFalse();
+  });
+
+  it('locks filters, paging and row selection while a seal write is in flight', () => {
+    boot();
+    const status = el().querySelector<HTMLSelectElement>('.booking-register__filters select')!;
+    expect(status.disabled).toBeFalse();
+    fixture.componentInstance.locked = true;
+    fixture.detectChanges();
+    expect(status.disabled).toBeTrue();
+    fixture.componentInstance.selectBooking(fixture.componentInstance.page!.bookings[1]);
+    expect(fixture.componentInstance.selected).toBeNull();
+  });
+
+  it('seal busy locks the register, and a seal reload request refetches the list (never GET /bookings/{id})', () => {
+    boot();
+    const c = fixture.componentInstance;
+    c.selectBooking(c.page!.bookings[0]);
+    fixture.detectChanges();
+    const seal = fixture.debugElement.query(By.directive(BookingSealComponent)).componentInstance as BookingSealComponent;
+    seal.busyChange.emit(true);
+    expect(c.locked).toBeTrue();
+    seal.reloadRequested.emit();
+    listReq().flush(pageOf([bk('b1'), bk('b2')]));
+    http.expectNone(r => /\/api\/admin\/bookings\/[^/?]+$/.test(r.url));
   });
 });

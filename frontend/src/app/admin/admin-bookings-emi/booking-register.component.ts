@@ -13,6 +13,7 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
 import { PlotGridItem, formatInr } from '../../shared/utils/plot-grid.util';
 import { ProjectsPlotsService } from '../projects-plots/projects-plots.service';
 import { BookingEmiConfig, BookingPage, FlashMessage, RegisterFilters } from './bookings-emi.model';
+import { BookingSealComponent } from './booking-seal.component';
 import { BookingsEmiService } from './bookings-emi.service';
 import { associateLabel, meterPercent, plotText } from './bookings-emi.util';
 
@@ -22,7 +23,7 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
 @Component({
   selector: 'app-booking-register',
   standalone: true,
-  imports: [CommonModule, RouterLink, TranslateModule, AssociateLookupComponent, InlineBannerComponent],
+  imports: [CommonModule, RouterLink, TranslateModule, AssociateLookupComponent, InlineBannerComponent, BookingSealComponent],
   template: `
     <div class="booking-register">
       <div class="booking-register__filters">
@@ -119,7 +120,9 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
             <button type="button" class="brand-button brand-button--secondary booking-register__next" [disabled]="locked || page!.page + 1 >= totalPages" (click)="goTo(page!.page + 1)">{{ 'admin.bookingsEmi.next' | translate }}</button>
           </div>
         </div>
-        <!-- seal: added in Task 5 -->
+        <app-booking-seal [booking]="selected" [config]="config" [directory]="directory" [filterMismatch]="filterMismatch"
+          (updated)="onBookingChanged($event)" (flash)="flash.emit($event)" (busyChange)="locked = $event"
+          (reloadRequested)="reload()"></app-booking-seal>
       </div>
     </div>
   `
