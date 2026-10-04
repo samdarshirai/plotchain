@@ -4420,3 +4420,22 @@ button.tree-explorer__vacant-card {
 }
 @keyframes projects-plots-shimmer { to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .projects-plots__skeleton-tile { animation: none; } }
+@media (max-width: 1279px) {
+  .projects-plots__layout { grid-template-columns: 240px minmax(0, 1fr); }
+  .projects-plots__aside {
+    grid-column: auto; position: fixed; top: 0; right: 0; bottom: 0; z-index: 40; width: min(400px, 100vw);
+    border-radius: 20px 0 0 20px; overflow-y: auto;
+  }
+  .projects-plots__scrim { display: block; position: fixed; inset: 0; z-index: 30; background: rgba(0, 0, 0, 0.35); }
+}
+@media (max-width: 1023px) {
+  .projects-plots { padding-inline: 1rem; }
+  .projects-plots__layout { grid-template-columns: 1fr; }
+  .projects-plots__list { display: none; }
+  .projects-plots__project-select { display: flex; }
+}
+@media (max-width: 639px) {
+  .projects-plots__tiles, .projects-plots__skeleton { grid-template-columns: repeat(3, 1fr); }
+  .projects-plots__aside { width: 100vw; border-radius: 0; }
+  .projects-plots .brand-button, .projects-plots__chip { min-height: 44px; }
+}
