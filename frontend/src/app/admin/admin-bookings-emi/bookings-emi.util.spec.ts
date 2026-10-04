@@ -15,6 +15,9 @@ describe('bookings-emi.util', () => {
     expect(meterPercent(1, 0)).toBe(0);
     expect(meterPercent(2000, 1000)).toBe(100);
     expect(meterPercent(-1, 1000)).toBe(0);
+    expect(meterPercent(NaN, 1000)).toBe(0);
+    expect(meterPercent(996, 1000)).toBe(99);
+    expect(meterPercent(1000, 1000)).toBe(100);
   });
 
   it('predicts auto-confirm only under AUTO_THRESHOLD when paid+installment reaches the threshold', () => {
@@ -25,6 +28,13 @@ describe('bookings-emi.util', () => {
     expect(willAutoConfirm(b(), 900, auto(null))).toBeFalse();
     expect(willAutoConfirm(b(), 900, null)).toBeFalse();
     expect(willAutoConfirm(b({ totalAmount: 0 }), 10, auto(30))).toBeFalse();
+    expect(willAutoConfirm(b({ status: 'CONFIRMED' }), 900, auto(30))).toBeFalse();
+    expect(willAutoConfirm(b({ status: 'CANCELLED' }), 900, auto(30))).toBeFalse();
+  });
+
+  it('auto-confirm uses exact math at the boundary', () => {
+    expect(willAutoConfirm(b({ paidAmount: 190 }), 100, auto(29))).toBeTrue();   // 290/1000
+    expect(willAutoConfirm(b({ paidAmount: 189 }), 100, auto(29))).toBeFalse();  // 289/1000
   });
 
   it('classifies pay errors by status and text', () => {
@@ -59,12 +69,12 @@ describe('bookings-emi.util', () => {
   });
 
   // extra edge cases (task-2 verification)
-  it('edge: paid > total clamps to 100; NaN-ish total is 0; boundary threshold inclusive', () => {
+  it('edge: paid > total clamps to 100; NaN total is 0; threshold 0 never auto-confirms (server <=0 rule)', () => {
     expect(meterPercent(5000, 1000)).toBe(100);
     expect(meterPercent(0, 1000)).toBe(0);
     expect(meterPercent(1, NaN)).toBe(0);
     expect(willAutoConfirm(b({ paidAmount: 5000 }), 0, auto(30))).toBeTrue();
-    expect(willAutoConfirm(b({ paidAmount: 0 }), 0, auto(0))).toBeTrue();
+    expect(willAutoConfirm(b({ paidAmount: 0 }), 0, auto(0))).toBeFalse();
   });
 
   it('edge: every error kind is reachable and op-gated', () => {

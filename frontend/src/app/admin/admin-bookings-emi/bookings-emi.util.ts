@@ -7,15 +7,18 @@ export type ErrorKind =
   | 'sameAssociate' | 'invalidTarget' | 'validation' | 'network' | 'generic';
 
 export function meterPercent(paid: number, total: number): number {
-  if (!(total > 0)) { return 0; }
-  return Math.min(100, Math.max(0, Math.round((paid / total) * 100)));
+  if (!(total > 0) || !(paid > 0)) { return 0; }
+  if (paid >= total) { return 100; }
+  return Math.floor((paid * 100) / total);
 }
 
 // Client-side prediction only; the server is authoritative and the refreshed booking shows the real outcome.
 export function willAutoConfirm(b: Booking, installmentAmount: number, cfg: BookingEmiConfig | null): boolean {
-  if (!cfg || !cfg.emiEnabled || cfg.confirmRule !== 'AUTO_THRESHOLD' || cfg.confirmThresholdPercent == null) { return false; }
-  if (!(b.totalAmount > 0)) { return false; }
-  return ((b.paidAmount + installmentAmount) / b.totalAmount) * 100 >= cfg.confirmThresholdPercent;
+  if (!cfg || !cfg.emiEnabled || cfg.confirmRule !== 'AUTO_THRESHOLD' || b.status !== 'ACTIVE') { return false; }
+  const pct = cfg.confirmThresholdPercent;
+  if (pct == null || !(pct > 0) || !(b.totalAmount > 0)) { return false; }
+  // mirrors server thresholdReached: exact math, no division
+  return (b.paidAmount + installmentAmount) * 100 >= pct * b.totalAmount;
 }
 
 // ponytail: matches the server's error text -- brittle by design (DESIGN Q4); a distinct error `code`
