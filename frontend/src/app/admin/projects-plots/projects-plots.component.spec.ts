@@ -233,4 +233,103 @@ describe('ProjectsPlotsComponent', () => {
       expect(fixture.componentInstance.selectedProject!.id).toBe('p9');
     });
   });
+
+  describe('booking', () => {
+    const detail = { id: 'id-A-2', plotNo: 'A-2', plotType: 'NORMAL', areaSqft: 1200, rate: 3750, price: 4500000, status: 'AVAILABLE' };
+    const form = { associateId: 'a1', buyerName: 'Rohit', buyerPhone: '' };
+
+    function openBookForm(status = 'AVAILABLE') {
+      boot([project()], [cell('A-2', status)]);
+      el().querySelector<HTMLButtonElement>('app-plot-tile button')!.click();
+      http.expectOne('/api/company/projects/p1/plots/id-A-2').flush({ ...detail, status });
+      fixture.detectChanges();
+    }
+
+    it('offers Book on an AVAILABLE plot and opens the form with only ASSOCIATE-role lookups', () => {
+      openBookForm();
+      el().querySelector<HTMLButtonElement>('.projects-plots__book')!.click();
+      fixture.detectChanges();
+      expect(el().querySelector('app-book-plot-form')).not.toBeNull();
+      expect(fixture.componentInstance.associates.map(a => a.id)).toEqual(['a1']);
+    });
+
+    it('disables Book on a BOOKED plot and explains why in text', () => {
+      openBookForm('BOOKED');
+      const btn = el().querySelector<HTMLButtonElement>('.projects-plots__book')!;
+      expect(btn.disabled).toBeTrue();
+      expect(el().textContent).toContain('admin.projectsPlots.bookDisabledBooked');
+      expect(btn.getAttribute('aria-describedby')).toBe('book-disabled-reason');
+    });
+
+    it('explains a SOLD plot too', () => {
+      openBookForm('SOLD');
+      expect(el().textContent).toContain('admin.projectsPlots.bookDisabledSold');
+    });
+
+    it('on 201 refreshes the grid, shows the success banner with a view-booking link, returns to detail', () => {
+      openBookForm();
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.componentInstance.submitBooking(form);
+      const post = http.expectOne('/api/admin/bookings');
+      expect(post.request.body).toEqual({ plotId: 'id-A-2', associateId: 'a1', buyerName: 'Rohit', buyerPhone: undefined });
+      post.flush({ id: 'b1', plotId: 'id-A-2', buyerName: 'Rohit', totalAmount: 4500000, installmentCount: 4 }, { status: 201, statusText: 'Created' });
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
+      http.expectOne('/api/company/projects').flush([project()]);
+      fixture.detectChanges();
+      expect(fixture.componentInstance.aside.kind).toBe('detail');
+      expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'success', bookingId: 'b1' }));
+      expect(el().querySelector('.projects-plots__aside a')!.getAttribute('href')).toContain('booking=b1');
+    });
+
+    it('on 409 refreshes the grid, shows the warning banner and returns to the (now booked) detail', () => {
+      openBookForm();
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.componentInstance.submitBooking(form);
+      http.expectOne('/api/admin/bookings').flush({ error: 'Plot is not available' }, { status: 409, statusText: 'Conflict' });
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
+      fixture.detectChanges();
+      expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'warning', key: 'admin.projectsPlots.error.conflict' }));
+      expect(fixture.componentInstance.selectedPlot!.status).toBe('BOOKED');
+      expect(el().querySelector<HTMLButtonElement>('.projects-plots__book')!.disabled).toBeTrue();
+    });
+
+    it('shows the server error text on a 400 and keeps the form open and re-enabled', () => {
+      openBookForm();
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.componentInstance.submitBooking(form);
+      http.expectOne('/api/admin/bookings').flush({ error: 'buyerName must not be blank' }, { status: 400, statusText: 'Bad Request' });
+      expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'danger', text: 'buyerName must not be blank' }));
+      expect(fixture.componentInstance.aside.kind).toBe('book');
+      expect(fixture.componentInstance.busy).toBeFalse();
+    });
+
+    it('shows a generic error on a network failure and keeps the form', () => {
+      openBookForm();
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.componentInstance.submitBooking(form);
+      http.expectOne('/api/admin/bookings').error(new ProgressEvent('error'));
+      expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ key: 'admin.projectsPlots.error.generic' }));
+      expect(fixture.componentInstance.aside.kind).toBe('book');
+    });
+
+    it('lets the request finish and refresh the grid after the admin cancels mid-flight', () => {
+      openBookForm();
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.componentInstance.submitBooking(form);
+      fixture.componentInstance.closeAside();
+      http.expectOne('/api/admin/bookings').flush({ id: 'b1', plotId: 'id-A-2', buyerName: 'Rohit', totalAmount: 1, installmentCount: 1 });
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
+      http.expectOne('/api/company/projects').flush([project()]);
+      expect(fixture.componentInstance.selectedPlot!.status).toBe('BOOKED');
+      expect(fixture.componentInstance.aside.kind).toBe('none'); // stays closed; the banner still records the outcome
+    });
+
+    it('ignores a second submit while the first is in flight', () => {
+      openBookForm();
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.componentInstance.submitBooking(form);
+      fixture.componentInstance.submitBooking(form);
+      expect(http.match('/api/admin/bookings').length).toBe(1);
+    });
+  });
 });

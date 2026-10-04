@@ -17,7 +17,8 @@ import { CsvImportPanelComponent } from './csv-import-panel.component';
 import { PlotFormComponent } from './plot-form.component';
 import { ProjectFormComponent } from './project-form.component';
 import { ProjectsPlotsService } from './projects-plots.service';
-import { BookingEmiConfig } from './projects-plots.model';
+import { BookPlotFormComponent } from './book-plot-form.component';
+import { BookingEmiConfig, BookingFormValue } from './projects-plots.model';
 
 type Aside =
   | { kind: 'none' }
@@ -41,7 +42,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
 @Component({
   selector: 'app-projects-plots',
   standalone: true,
-  imports: [CommonModule, RouterLink, TranslateModule, InlineBannerComponent, PlotTileComponent, PlotFormComponent, ProjectFormComponent, CsvImportPanelComponent],
+  imports: [CommonModule, RouterLink, TranslateModule, InlineBannerComponent, PlotTileComponent, PlotFormComponent, ProjectFormComponent, CsvImportPanelComponent, BookPlotFormComponent],
   template: `
     <div class="projects-plots">
       <div class="projects-plots__head">
@@ -159,12 +160,21 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
               <dt>{{ 'admin.projectsPlots.statusLabel' | translate }}</dt><dd>{{ 'plotTile.status.' + sel.status | translate }}</dd>
             </dl>
             <div class="projects-plots__aside-actions">
+              <button type="button" class="brand-button projects-plots__book" [disabled]="sel.status !== 'AVAILABLE'"
+                [attr.aria-describedby]="sel.status !== 'AVAILABLE' ? 'book-disabled-reason' : null" (click)="openAside({ kind: 'book' })">
+                {{ 'admin.projectsPlots.bookAction' | translate }}
+              </button>
               <button type="button" *ngIf="plotDetail" class="brand-button brand-button--secondary projects-plots__edit-plot" (click)="openAside({ kind: 'editPlot' })">
                 {{ 'admin.projectsPlots.editPlotAction' | translate }}
               </button>
             </div>
+            <p id="book-disabled-reason" class="projects-plots__reason" *ngIf="sel.status !== 'AVAILABLE'">
+              {{ (sel.status === 'BOOKED' ? 'admin.projectsPlots.bookDisabledBooked' : 'admin.projectsPlots.bookDisabledSold') | translate }}
+            </p>
           </ng-container>
 
+          <app-book-plot-form *ngIf="aside.kind === 'book' && selectedPlot" [plot]="selectedPlot" [associates]="associates"
+            [emiConfig]="emiConfig" [busy]="busy" (submitted)="submitBooking($event)" (cancelled)="openAside({ kind: 'detail' })"></app-book-plot-form>
           <app-plot-form *ngIf="aside.kind === 'editPlot' && selectedPlot && plotDetail"
             [plot]="plotDetail" [locked]="plotDetail.status !== 'AVAILABLE'" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
             (submitted)="saveEditedPlot($event)" (cancelled)="openAside({ kind: 'detail' })"></app-plot-form>
@@ -347,6 +357,35 @@ export class ProjectsPlotsComponent implements OnInit {
         this.reloadProjects(p.id);
       }
     );
+  }
+
+  // The request is owned here, not by the form, so cancelling or switching plots mid-flight does
+  // not abort it: it completes and the grid refreshes (DESIGN Decision 7).
+  submitBooking(v: BookingFormValue): void {
+    const plot = this.selectedPlot;
+    if (!plot || this.busy) { return; }
+    const plotId = plot.plotId;
+    this.busy = true;
+    this.plotsService.createBooking({
+      plotId, associateId: v.associateId, buyerName: v.buyerName, buyerPhone: v.buyerPhone || undefined
+    }).subscribe({
+      next: booking => {
+        this.busy = false;
+        this.banner = { tone: 'success', key: 'admin.projectsPlots.banner.booked', params: { no: plot.plotNo, buyer: booking.buyerName }, bookingId: booking.id };
+        if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'detail' }; }
+        this.refreshAfterPlotChange();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.busy = false;
+        if (err.status === 409) {
+          this.banner = { tone: 'warning', key: 'admin.projectsPlots.error.conflict', params: { no: plot.plotNo } };
+          if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'detail' }; }
+          this.loadGrid();
+        } else {
+          this.banner = this.errorBanner(err);
+        }
+      }
+    });
   }
 
   onCsvImported(): void {

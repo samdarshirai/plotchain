@@ -4407,6 +4407,12 @@ button.tree-explorer__vacant-card {
     legend { font: 500 0.6875rem var(--font-mono); text-transform: uppercase; color: var(--text-muted); }
     label { flex-direction: row; align-items: center; } }
   &__aside-title { margin: 0; font: 700 1.125rem var(--font-mono); }
+  .book-form { display: flex; flex-direction: column; gap: 1rem; }
+  .book-form__label { font: 500 0.6875rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  .book-form__field, .book-form__total { display: flex; flex-direction: column; gap: 0.375rem; }
+  .book-form__preview { margin: 0; padding: 0.625rem 0.75rem; background: var(--surface-raised); border-radius: 8px; font: 500 0.875rem var(--font-mono); }
+  .book-form input[aria-invalid='true'] { border-color: var(--status-danger); }
+  &__reason { margin: 0; font-size: 0.875rem; color: var(--text-muted); }
   &__facts { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1rem; margin: 0;
     dt { font: 500 0.6875rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); align-self: center; }
     dd { margin: 0; font: 600 0.9375rem var(--font-mono); font-variant-numeric: tabular-nums; } }
