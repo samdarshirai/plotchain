@@ -37,6 +37,7 @@ describe('routes', () => {
     expect(route).toBeTruthy();
     expect(route!.canActivate).toContain(authGuard);
     expect(route!.canActivate).toContain(associateOnlyGuard);
+    expect(route!.loadComponent).toBeDefined(); // lazy: keeps the initial bundle under budget
   });
 
   it('guards the profile route with authGuard and associateOnlyGuard', () => {

@@ -22,6 +22,9 @@ export interface Booking {
   paidAmount: number;
   dueAmount: number;
   installments: EmiInstallment[];
+  // Added by plot-booking unit 14 (read-model follow-up); absent until it lands.
+  plotNo?: string;
+  projectName?: string;
 }
 
 export interface AssociateBookingPage {
