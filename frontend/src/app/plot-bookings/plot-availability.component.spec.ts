@@ -102,7 +102,9 @@ describe('PlotAvailabilityComponent', () => {
     stale.flush([cell('OLD-1')]);                       // arrives late
     fixture.detectChanges();
     expect(fixture.componentInstance.statusFilter).toBe('ALL');
+    expect(fixture.componentInstance.typeFilter).toBe('ALL');
     expect(fixture.componentInstance.selected).toBeNull();
+    expect(el().querySelector('[role="dialog"]')).toBeNull();
     expect(fixture.componentInstance.grid!.map(g => g.plotNo)).toEqual(['Z-1']);
   });
 
@@ -118,11 +120,12 @@ describe('PlotAvailabilityComponent', () => {
   });
 
   it('never renders extra grid fields even if the API adds them', () => {
-    boot([project('p1')], [cell('A-1', 'BOOKED', 'NORMAL', { buyerName: 'SECRET', associateId: 'LEAK' })]);
+    boot([project('p1')], [cell('A-1', 'BOOKED', 'NORMAL', { buyerName: 'SECRET', associateId: 'LEAK', bookingId: 'BKLEAK', bookedBy: 'BYLEAK' })]);
     el().querySelector<HTMLButtonElement>('app-plot-tile button')!.click();
     fixture.detectChanges();
     expect(el().textContent).not.toContain('SECRET');
-    expect(el().textContent).not.toContain('LEAK');
+    expect(el().querySelector('[role="dialog"]')).not.toBeNull();
+    for (const w of ['SECRET', 'LEAK', 'BKLEAK', 'BYLEAK']) { expect(el().textContent).not.toContain(w); }
   });
 
   it('closes the popover on Escape and returns focus to the tile', async () => {
@@ -141,6 +144,10 @@ describe('PlotAvailabilityComponent', () => {
 
   it('has no write controls on the tab', () => {
     boot();
+    el().querySelector<HTMLButtonElement>('app-plot-tile button')!.click();
+    fixture.detectChanges();
+    expect(el().querySelector('[role="dialog"]')).not.toBeNull();
+    el().querySelectorAll('button:not(.plot-availability__chip):not(app-plot-tile button)').forEach(b => expect((b.textContent || '').replace(/plotBookings\./g, '')).not.toMatch(/book|pay|cancel|transfer|edit/i));
     expect(el().querySelectorAll('form, input[type="text"], textarea').length).toBe(0);
   });
 });
