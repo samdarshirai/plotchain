@@ -5,6 +5,7 @@ export interface BookingEmiConfig {
   defaultInstallmentCount: number;
   confirmRule: 'MANUAL' | 'AUTO_THRESHOLD';
   confirmThresholdPercent: number | null;
+  updatedAt: string;
 }
 
 export interface BookingPage { bookings: Booking[]; page: number; size: number; totalElements: number; }
