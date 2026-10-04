@@ -4402,7 +4402,8 @@ button.tree-explorer__vacant-card {
   &__aside-actions, &__form-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   &__aside form, &__aside .plot-form, &__aside .project-form { display: flex; flex-direction: column; gap: 1rem; }
   &__aside label { display: flex; flex-direction: column; gap: 0.375rem; font-size: 0.875rem; font-weight: 500; margin: 0; }
-  &__aside small { font-weight: 400; color: var(--text-muted); }
+  &__aside small, &__aside label span span { font-weight: 400; color: var(--text-muted); }
+  &__aside .field-error { font-size: 0.8125rem; font-weight: 500; color: var(--status-danger); }
   &__aside fieldset { display: flex; gap: 1rem; border: 0; padding: 0; margin: 0;
     legend { font: 500 0.6875rem var(--font-mono); text-transform: uppercase; color: var(--text-muted); }
     label { flex-direction: row; align-items: center; } }
@@ -4435,7 +4436,7 @@ button.tree-explorer__vacant-card {
   .projects-plots__project-select { display: flex; }
 }
 @media (max-width: 639px) {
-  .projects-plots__tiles, .projects-plots__skeleton { grid-template-columns: repeat(3, 1fr); }
+  .projects-plots__tiles, .projects-plots__skeleton { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .projects-plots__aside { width: 100vw; border-radius: 0; }
   .projects-plots .brand-button, .projects-plots__chip { min-height: 44px; }
 }
