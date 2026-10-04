@@ -35,6 +35,11 @@ public class ProjectsExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(PlotStatusLockedException.class)
+    public ResponseEntity<Map<String, String>> handlePlotStatusLocked(PlotStatusLockedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(CsvImportRejectedException.class)
     public ResponseEntity<Map<String, Object>> handleCsvImportRejected(CsvImportRejectedException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)

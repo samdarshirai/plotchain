@@ -133,6 +133,21 @@ class PlotControllerTest {
     }
 
     @Test
+    void updateReturns409WhenMovingABookedPlotBackToAvailable() throws Exception {
+        Plot booked = new Plot(PLOT_ID, PROJECT_ID, "A-101", PlotType.NORMAL,
+            new BigDecimal("1200.00"), new BigDecimal("500.00"), new BigDecimal("600000.00"), PlotStatus.BOOKED);
+        when(plotRepository.findByIdAndProjectId(PLOT_ID, PROJECT_ID)).thenReturn(Optional.of(booked));
+        when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-101"))).thenReturn(List.of(booked));
+
+        mockMvc.perform(put("/api/company/projects/" + PROJECT_ID + "/plots/" + PLOT_ID)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"plotNo\":\"A-101\",\"plotType\":\"NORMAL\",\"areaSqft\":1200,\"rate\":500,\"price\":600000,\"status\":\"AVAILABLE\"}"))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.error").isNotEmpty());
+    }
+
+    @Test
     void deleteReturns204() throws Exception {
         when(plotRepository.findByIdAndProjectId(PLOT_ID, PROJECT_ID)).thenReturn(Optional.of(seedPlot()));
 
