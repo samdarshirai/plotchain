@@ -9,6 +9,8 @@ const ICONS: Record<PlotStatus, string> = { AVAILABLE: 'check_circle', BOOKED: '
 // Shared by the admin Projects & Plots grid (unit 11) and the associate availability grid
 // (unit 13). Book/Edit controls deliberately live outside it. Status is conveyed by icon shape,
 // visible word and border/hatch style as well as colour (DESIGN.md Accessibility).
+// Callers attach `data-plot-id` to the <app-plot-tile> host (container convention, reused by unit 13),
+// and the tile exposes no aria-haspopup/aria-expanded: it is a toggle (aria-pressed), not a disclosure.
 @Component({
   selector: 'app-plot-tile',
   standalone: true,

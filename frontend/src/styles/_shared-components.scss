@@ -525,7 +525,6 @@ input[type='file'].logo-uploader__input {
   // Survey-plan signature: corner plots get a notched top-right corner.
   &--corner { clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
   // The clip hides an outside outline, so corner tiles draw the focus ring inside the box.
-  &--corner:focus-visible { outline-offset: -5px; }
 
   &--available { background: color-mix(in srgb, var(--status-success) 12%, var(--surface-card)); border-color: var(--status-success);
     .plot-tile__status { color: var(--status-success-text); } }
@@ -537,5 +536,7 @@ input[type='file'].logo-uploader__input {
 
   &--selected { border-width: 3px; border-color: var(--brand-primary); }
   &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+  // After the generic rule, and clipped tiles hide an outside outline, so draw it inside the box.
+  &.plot-tile--corner:focus-visible { outline-offset: -5px; }
   &:disabled { cursor: default; }
 }

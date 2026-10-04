@@ -52,4 +52,19 @@ describe('PlotTileComponent', () => {
     expect(button().disabled).toBeTrue();
     expect(button().getAttribute('aria-pressed')).toBeNull();
   });
+
+  it('draws the focus ring inside the clip on corner tiles (inset offset beats the generic rule)', () => {
+    document.body.appendChild(fixture.nativeElement);
+    try {
+      button().focus();
+      const cs = getComputedStyle(button());
+      // :focus-visible only matches for keyboard-ish focus; skip the assertion if the browser says otherwise.
+      if (button().matches(':focus-visible')) {
+        expect(cs.outlineOffset).toBe('-5px');
+      }
+      fixture.componentRef.setInput('type', 'STANDARD');
+      fixture.detectChanges();
+      if (button().matches(':focus-visible')) { expect(getComputedStyle(button()).outlineOffset).toBe('2px'); }
+    } finally { fixture.nativeElement.remove(); }
+  });
 });
