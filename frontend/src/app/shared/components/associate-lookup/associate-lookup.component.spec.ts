@@ -79,4 +79,15 @@ describe('AssociateLookupComponent', () => {
     fixture.detectChanges();
     expect(el().querySelectorAll('[role="option"]').length).toBe(0);
   });
+
+  it('prevents default on Escape only while the list is open (so a parent drawer stays open)', () => {
+    const input = el().querySelector('input') as HTMLInputElement;
+    const closedEsc = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true });
+    input.dispatchEvent(closedEsc);
+    expect(closedEsc.defaultPrevented).toBeFalse();
+    type('vp');
+    const openEsc = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true });
+    input.dispatchEvent(openEsc);
+    expect(openEsc.defaultPrevented).toBeTrue();
+  });
 });

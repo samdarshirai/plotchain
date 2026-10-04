@@ -1,20 +1,22 @@
 import { ADMIN_NAV_CATEGORIES, findNavCategoryForUrl } from './admin-nav-categories.model';
 
 describe('ADMIN_NAV_CATEGORIES', () => {
-  it('listsTheFourMockupCategoriesInOrderWithTheirIcons', () => {
+  it('listsTheMockupCategoriesInOrderWithTheirIcons', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => [category.key, category.icon])).toEqual([
       ['setup', 'tune'],
       ['network', 'group'],
       ['finance', 'point_of_sale'],
+      ['inventory', 'domain'],
       ['system', 'admin_panel_settings']
     ]);
   });
 
-  it('groupsAllFourteenSettingsScreensUnderTheirCategory', () => {
+  it('groupsEverySettingsScreenUnderTheirCategory', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => category.items.map(item => item.key))).toEqual([
       ['companyProfile', 'branding', 'compensation', 'projects', 'paymentsKyc'],
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
       ['salesRegister', 'cycleManagement', 'ledgerRegister', 'epinRegister', 'payoutApproval'],
+      ['projectsPlots'],
       ['auditLog', 'adminStats']
     ]);
   });
@@ -31,6 +33,10 @@ describe('ADMIN_NAV_CATEGORIES', () => {
 });
 
 describe('findNavCategoryForUrl', () => {
+  it('resolvesTheProjectsPlotsScreenToTheInventoryCategory', () => {
+    expect(findNavCategoryForUrl('/settings/projects-plots')?.key).toBe('inventory');
+  });
+
   it('returnsTheCategoryOwningTheCurrentSettingsScreen', () => {
     expect(findNavCategoryForUrl('/settings/branding')?.key).toBe('setup');
     expect(findNavCategoryForUrl('/settings/tree-explorer')?.key).toBe('network');

@@ -65,7 +65,10 @@ export class AssociateLookupComponent {
     if (e.key === 'ArrowDown') { this.open = true; this.active = n ? (this.active + 1) % n : 0; e.preventDefault(); }
     else if (e.key === 'ArrowUp') { this.active = n ? (this.active - 1 + n) % n : 0; e.preventDefault(); }
     else if (e.key === 'Enter' && this.open && n) { this.pick(this.matches[this.active]); e.preventDefault(); }
-    else if (e.key === 'Escape') { this.open = false; }
+    else if (e.key === 'Escape') {
+      if (this.open && this.query.trim()) { e.preventDefault(); } // list was showing: swallow so a parent drawer stays open
+      this.open = false;
+    }
   }
 
   pick(a: AssociateSummary, e?: Event): void {
