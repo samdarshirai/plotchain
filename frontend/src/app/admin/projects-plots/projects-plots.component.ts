@@ -56,6 +56,17 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
         </button>
       </div>
 
+      <!-- Shared by the aside and the page level; only one is rendered at a time. -->
+      <ng-template #bannerTpl>
+        <app-inline-banner *ngIf="banner as b" [tone]="b.tone" [dismissible]="true" (dismissed)="banner = null">
+          <span [attr.role]="b.tone === 'success' ? 'status' : 'alert'">
+            {{ b.key ? (b.key | translate: b.params) : b.text }}
+            <a *ngIf="b.bookingId" [routerLink]="['/settings/bookings-emi']" [queryParams]="{ booking: b.bookingId }">{{ 'admin.projectsPlots.banner.viewBooking' | translate }}</a>
+          </span>
+        </app-inline-banner>
+      </ng-template>
+      <ng-container *ngIf="aside.kind === 'none'"><ng-container *ngTemplateOutlet="bannerTpl"></ng-container></ng-container>
+
       <app-inline-banner *ngIf="projectsError" tone="danger">{{ 'admin.projectsPlots.error.loadProjects' | translate }}</app-inline-banner>
 
       <div class="projects-plots__empty" *ngIf="projects && !projects.length">
@@ -144,12 +155,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
         <!-- (c/d) aside: one region, swapped content. Task 5-7 add the form cases. -->
         <div class="projects-plots__scrim" *ngIf="aside.kind !== 'none'" (click)="closeAside()"></div>
         <aside class="projects-plots__aside" *ngIf="aside.kind !== 'none'" [attr.aria-label]="'admin.projectsPlots.title' | translate">
-          <app-inline-banner *ngIf="banner as b" [tone]="b.tone" [dismissible]="true" (dismissed)="banner = null">
-            <span [attr.role]="b.tone === 'success' ? 'status' : 'alert'">
-              {{ b.key ? (b.key | translate: b.params) : b.text }}
-              <a *ngIf="b.bookingId" [routerLink]="['/settings/bookings-emi']" [queryParams]="{ booking: b.bookingId }">{{ 'admin.projectsPlots.banner.viewBooking' | translate }}</a>
-            </span>
-          </app-inline-banner>
+          <ng-container *ngTemplateOutlet="bannerTpl"></ng-container>
           <ng-container *ngIf="aside.kind === 'detail' && selectedPlot as sel">
             <h2 class="projects-plots__aside-title">{{ sel.plotNo }}</h2>
             <dl class="projects-plots__facts">
@@ -365,6 +371,7 @@ export class ProjectsPlotsComponent implements OnInit {
     const plot = this.selectedPlot;
     if (!plot || this.busy) { return; }
     const plotId = plot.plotId;
+    const projectId = this.selectedProject!.id;
     this.busy = true;
     this.plotsService.createBooking({
       plotId, associateId: v.associateId, buyerName: v.buyerName, buyerPhone: v.buyerPhone || undefined
@@ -373,19 +380,25 @@ export class ProjectsPlotsComponent implements OnInit {
         this.busy = false;
         this.banner = { tone: 'success', key: 'admin.projectsPlots.banner.booked', params: { no: plot.plotNo, buyer: booking.buyerName }, bookingId: booking.id };
         if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'detail' }; }
-        this.refreshAfterPlotChange();
+        this.refreshAfterBooking(projectId);
       },
       error: (err: HttpErrorResponse) => {
         this.busy = false;
         if (err.status === 409) {
           this.banner = { tone: 'warning', key: 'admin.projectsPlots.error.conflict', params: { no: plot.plotNo } };
           if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'detail' }; }
-          this.loadGrid();
+          this.refreshAfterBooking(projectId);
         } else {
           this.banner = this.errorBanner(err);
         }
       }
     });
+  }
+
+  // The grid is only reloaded if the admin is still on the booked plot's project; counts always refresh.
+  private refreshAfterBooking(projectId: string): void {
+    if (this.selectedProject?.id === projectId) { this.loadGrid(); }
+    this.reloadProjects();
   }
 
   onCsvImported(): void {

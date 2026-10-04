@@ -287,6 +287,7 @@ describe('ProjectsPlotsComponent', () => {
       fixture.componentInstance.submitBooking(form);
       http.expectOne('/api/admin/bookings').flush({ error: 'Plot is not available' }, { status: 409, statusText: 'Conflict' });
       http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
+      http.expectOne('/api/company/projects').flush([project()]);
       fixture.detectChanges();
       expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'warning', key: 'admin.projectsPlots.error.conflict' }));
       expect(fixture.componentInstance.selectedPlot!.status).toBe('BOOKED');
@@ -312,7 +313,7 @@ describe('ProjectsPlotsComponent', () => {
       expect(fixture.componentInstance.aside.kind).toBe('book');
     });
 
-    it('lets the request finish and refresh the grid after the admin cancels mid-flight', () => {
+    it('lets the request finish after a mid-flight cancel and renders the page-level success banner with the link', () => {
       openBookForm();
       fixture.componentInstance.openAside({ kind: 'book' });
       fixture.componentInstance.submitBooking(form);
@@ -320,8 +321,42 @@ describe('ProjectsPlotsComponent', () => {
       http.expectOne('/api/admin/bookings').flush({ id: 'b1', plotId: 'id-A-2', buyerName: 'Rohit', totalAmount: 1, installmentCount: 1 });
       http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
       http.expectOne('/api/company/projects').flush([project()]);
+      fixture.detectChanges();
       expect(fixture.componentInstance.selectedPlot!.status).toBe('BOOKED');
-      expect(fixture.componentInstance.aside.kind).toBe('none'); // stays closed; the banner still records the outcome
+      expect(fixture.componentInstance.aside.kind).toBe('none');
+      expect(el().querySelector('.projects-plots__aside')).toBeNull();
+      const banners = el().querySelectorAll('app-inline-banner [role="status"]');
+      expect(banners.length).toBe(1);
+      expect(banners[0].textContent).toContain('admin.projectsPlots.banner.booked');
+      expect(banners[0].querySelector('a')!.getAttribute('href')).toContain('booking=b1');
+    });
+
+    it('renders the 409 warning at page level after a mid-flight cancel', () => {
+      openBookForm();
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.componentInstance.submitBooking(form);
+      fixture.componentInstance.closeAside();
+      http.expectOne('/api/admin/bookings').flush({ error: 'x' }, { status: 409, statusText: 'Conflict' });
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
+      http.expectOne('/api/company/projects').flush([project()]);
+      fixture.detectChanges();
+      const alerts = el().querySelectorAll('app-inline-banner [role="alert"]');
+      expect(alerts.length).toBe(1);
+      expect(alerts[0].textContent).toContain('admin.projectsPlots.error.conflict');
+    });
+
+    it('does not refetch a grid for another project when the outcome lands after switching projects', () => {
+      boot([project(), project({ id: 'p2', name: 'Other' })], [cell('A-2')]);
+      el().querySelector<HTMLButtonElement>('app-plot-tile button')!.click();
+      http.expectOne('/api/company/projects/p1/plots/id-A-2').flush(detail);
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.componentInstance.submitBooking(form);
+      fixture.componentInstance.selectProjectById('p2');
+      http.expectOne('/api/projects/p2/plots/grid').flush([]);
+      http.expectOne('/api/admin/bookings').flush({ id: 'b1', plotId: 'id-A-2', buyerName: 'Rohit', totalAmount: 1, installmentCount: 1 }, { status: 201, statusText: 'Created' });
+      http.expectNone(r => r.url.endsWith('/plots/grid'));
+      http.expectOne('/api/company/projects').flush([project(), project({ id: 'p2', name: 'Other' })]);
+      expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'success', bookingId: 'b1' }));
     });
 
     it('ignores a second submit while the first is in flight', () => {
