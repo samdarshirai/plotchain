@@ -536,7 +536,7 @@ input[type='file'].logo-uploader__input {
 
   &--selected { border-width: 3px; border-color: var(--brand-primary); }
   &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
-  // After the generic rule, and clipped tiles hide an outside outline, so draw it inside the box.
-  &.plot-tile--corner:focus-visible { outline-offset: -5px; }
+  // After the generic rule, and clipped tiles hide an outside outline, so draw it inside the box, 2px clear of the 3px selected border.
+  &.plot-tile--corner:focus-visible { outline-offset: -7px; }
   &:disabled { cursor: default; }
 }

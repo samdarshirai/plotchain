@@ -60,7 +60,7 @@ describe('PlotTileComponent', () => {
       const cs = getComputedStyle(button());
       // :focus-visible only matches for keyboard-ish focus; skip the assertion if the browser says otherwise.
       if (button().matches(':focus-visible')) {
-        expect(cs.outlineOffset).toBe('-5px');
+        expect(cs.outlineOffset).toBe('-7px');
       }
       fixture.componentRef.setInput('type', 'STANDARD');
       fixture.detectChanges();
