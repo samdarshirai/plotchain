@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule } from '@ngx-translate/core';
-import { Observable, catchError, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, of } from 'rxjs';
 import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { ProjectsService } from '../../setup/steps/projects/projects.service';
@@ -182,7 +182,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           <app-book-plot-form *ngIf="aside.kind === 'book' && selectedPlot" [plot]="selectedPlot" [associates]="associates"
             [emiConfig]="emiConfig" [busy]="busy" (submitted)="submitBooking($event)" (cancelled)="openAside({ kind: 'detail' })"></app-book-plot-form>
           <app-plot-form *ngIf="aside.kind === 'editPlot' && selectedPlot && plotDetail"
-            [plot]="plotDetail" [locked]="plotDetail.status !== 'AVAILABLE'" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
+            [plot]="plotDetail" [locked]="plotDetail.status !== 'AVAILABLE' || selectedPlot?.status !== 'AVAILABLE'" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
             (submitted)="saveEditedPlot($event)" (cancelled)="openAside({ kind: 'detail' })"></app-plot-form>
           <app-plot-form *ngIf="aside.kind === 'addPlot'" [plot]="null" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
             (submitted)="saveNewPlot($event)" (cancelled)="closeAside()"></app-plot-form>
@@ -218,6 +218,7 @@ export class ProjectsPlotsComponent implements OnInit {
   duplicatePlotNo = false;
   associates: AssociateSummary[] = [];
   emiConfig: BookingEmiConfig | null = null;
+  private opener: HTMLElement | null = null;
 
   get selectedPlot(): PlotGridItem | null {
     return this.grid?.find(p => p.plotId === this.selectedPlotId) ?? null;
@@ -232,7 +233,7 @@ export class ProjectsPlotsComponent implements OnInit {
     this.reloadProjects();
   }
 
-  reloadProjects(selectId?: string): void {
+  reloadProjects(selectId?: string, banner?: Banner): void {
     this.projectsService.listProjects().subscribe({
       next: list => {
         this.projects = list;
@@ -244,6 +245,7 @@ export class ProjectsPlotsComponent implements OnInit {
         } else {
           this.selectedProject = next;
         }
+        if (banner) { this.banner = banner; } // after selectProject, which clears banners
       },
       error: () => (this.projectsError = true)
     });
@@ -310,44 +312,62 @@ export class ProjectsPlotsComponent implements OnInit {
     this.plotDetail = null;
     this.banner = null;
     this.aside = { kind: 'detail' };
-    this.plotsService.getPlot(this.selectedProject!.id, p.plotId).subscribe({
-      next: d => { if (this.selectedPlotId === p.plotId) { this.plotDetail = d; } },
-      error: () => undefined // rate shows "—"; the grid facts are still enough to act on
+    this.opener = null;
+    this.fetchDetail(this.selectedProject!.id, p.plotId);
+  }
+
+  // Only lands if the admin is still on that plot; on failure the rate shows "—" and Edit stays hidden.
+  private fetchDetail(projectId: string, plotId: string): void {
+    this.plotsService.getPlot(projectId, plotId).subscribe({
+      next: d => { if (this.stillOn(projectId, plotId)) { this.plotDetail = d; } },
+      error: () => undefined
     });
+  }
+
+  private stillOn(projectId: string, plotId: string): boolean {
+    return this.selectedPlotId === plotId && this.selectedProject?.id === projectId;
   }
 
   openAside(next: Aside): void {
     this.banner = null;
     this.duplicatePlotNo = false;
+    if (this.aside.kind === 'none') { this.opener = document.activeElement as HTMLElement | null; }
     this.aside = next;
   }
 
   closeAside(): void {
     const returnTo = this.selectedPlotId;
+    const opener = this.opener;
+    this.opener = null;
     this.aside = { kind: 'none' };
-    if (returnTo) {
-      setTimeout(() => document.querySelector<HTMLElement>(`[data-plot-id="${returnTo}"] button`)?.focus());
-    }
+    setTimeout(() => {
+      if (opener?.isConnected) { opener.focus(); }
+      else if (returnTo) { document.querySelector<HTMLElement>(`[data-plot-id="${returnTo}"] button`)?.focus(); }
+    });
   }
 
   @HostListener('document:keydown.escape')
-  onEscape(): void {
+  onEscape(event?: Event): void {
+    if (event?.defaultPrevented) { return; } // e.g. the associate lookup just closed its list
     if (this.aside.kind !== 'none') { this.closeAside(); }
   }
 
   saveNewPlot(req: PlotRequest): void {
-    this.mutate(this.projectsService.createPlot(this.selectedProject!.id, req), () => {
-      this.refreshAfterPlotChange();
-      this.aside = { kind: 'none' };
+    const projectId = this.selectedProject!.id;
+    this.mutate(this.projectsService.createPlot(projectId, req), () => {
+      this.refreshAfterPlotChange(projectId);
+      if (this.aside.kind === 'addPlot' && this.selectedProject?.id === projectId) { this.aside = { kind: 'none' }; }
     });
   }
 
   saveEditedPlot(req: PlotRequest): void {
+    const projectId = this.selectedProject!.id;
     const plotId = this.selectedPlotId!;
-    this.mutate(this.projectsService.updatePlot(this.selectedProject!.id, plotId, req), () => {
-      this.refreshAfterPlotChange();
-      this.aside = { kind: 'detail' };
-      this.plotsService.getPlot(this.selectedProject!.id, plotId).subscribe({ next: d => (this.plotDetail = d), error: () => undefined }); // keep the prior detail on failure
+    this.mutate(this.projectsService.updatePlot(projectId, plotId, req), () => {
+      this.refreshAfterPlotChange(projectId);
+      if (!this.stillOn(projectId, plotId)) { return; }
+      if (this.aside.kind === 'editPlot') { this.aside = { kind: 'detail' }; }
+      this.fetchDetail(projectId, plotId); // keeps the prior detail on failure
     });
   }
 
@@ -356,13 +376,15 @@ export class ProjectsPlotsComponent implements OnInit {
     const save$ = editing
       ? this.projectsService.updateProject(this.selectedProject!.id, v.request)
       : this.projectsService.createProject(v.request);
-    this.mutate(
-      save$.pipe(switchMap(p => (v.photo ? this.projectsService.uploadThumbnail(p.id, v.photo).pipe(map(() => p)) : of(p)))),
-      p => {
-        this.aside = { kind: 'none' };
-        this.reloadProjects(p.id);
-      }
-    );
+    this.mutate(save$, p => {
+      this.aside = { kind: 'none' };
+      if (!v.photo) { this.reloadProjects(p.id); return; }
+      // The project is saved; a failed upload must not keep the form open (a retry would duplicate it).
+      this.projectsService.uploadThumbnail(p.id, v.photo).subscribe({
+        next: () => this.reloadProjects(p.id),
+        error: () => this.reloadProjects(p.id, { tone: 'warning', key: 'admin.projectsPlots.error.photoUploadFailed' })
+      });
+    });
   }
 
   // The request is owned here, not by the form, so cancelling or switching plots mid-flight does
@@ -380,14 +402,14 @@ export class ProjectsPlotsComponent implements OnInit {
         this.busy = false;
         this.banner = { tone: 'success', key: 'admin.projectsPlots.banner.booked', params: { no: plot.plotNo, buyer: booking.buyerName }, bookingId: booking.id };
         if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'detail' }; }
-        this.refreshAfterBooking(projectId);
+        this.refreshAfterBooking(projectId, plotId);
       },
       error: (err: HttpErrorResponse) => {
         this.busy = false;
         if (err.status === 409) {
           this.banner = { tone: 'warning', key: 'admin.projectsPlots.error.conflict', params: { no: plot.plotNo } };
           if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'detail' }; }
-          this.refreshAfterBooking(projectId);
+          this.refreshAfterBooking(projectId, plotId);
         } else {
           this.banner = this.errorBanner(err);
         }
@@ -396,19 +418,25 @@ export class ProjectsPlotsComponent implements OnInit {
   }
 
   // The grid is only reloaded if the admin is still on the booked plot's project; counts always refresh.
-  private refreshAfterBooking(projectId: string): void {
+  // plotDetail is stale once booked (status AVAILABLE would be echoed back by Edit), so drop and re-fetch it.
+  private refreshAfterBooking(projectId: string, plotId: string): void {
     if (this.selectedProject?.id === projectId) { this.loadGrid(); }
+    if (this.stillOn(projectId, plotId)) {
+      this.plotDetail = null;
+      this.fetchDetail(projectId, plotId);
+    }
     this.reloadProjects();
   }
 
   onCsvImported(): void {
-    this.refreshAfterPlotChange();
-    this.aside = { kind: 'none' };
+    const projectId = this.selectedProject!.id;
+    this.refreshAfterPlotChange(projectId);
+    if (this.aside.kind === 'csv' && this.selectedProject?.id === projectId) { this.aside = { kind: 'none' }; }
   }
 
   // Grid and the project list's counts both change when plots are added/edited.
-  private refreshAfterPlotChange(): void {
-    this.loadGrid();
+  private refreshAfterPlotChange(projectId: string): void {
+    if (this.selectedProject?.id === projectId) { this.loadGrid(); }
     this.reloadProjects();
   }
 

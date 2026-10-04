@@ -524,6 +524,8 @@ input[type='file'].logo-uploader__input {
 
   // Survey-plan signature: corner plots get a notched top-right corner.
   &--corner { clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
+  // The clip hides an outside outline, so corner tiles draw the focus ring inside the box.
+  &--corner:focus-visible { outline-offset: -5px; }
 
   &--available { background: color-mix(in srgb, var(--status-success) 12%, var(--surface-card)); border-color: var(--status-success);
     .plot-tile__status { color: var(--status-success-text); } }

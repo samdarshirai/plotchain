@@ -886,6 +886,7 @@
         "conflict": "Plot {{no}} was just booked by someone else. The grid has been refreshed. Pick another available plot.",
         "generic": "Something went wrong. Try again.",
         "forbidden": "You do not have access to this action.",
+        "photoUploadFailed": "Project saved, but the photo upload failed. You can edit the project to try again.",
         "loadGrid": "Could not load plots.",
         "loadProjects": "Could not load projects.",
         "duplicatePlotNo": "A plot with this number already exists in the project.",

@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
@@ -222,6 +222,94 @@ describe('ProjectsPlotsComponent', () => {
       expect(fixture.componentInstance.aside.kind).toBe('none');
     });
 
+    it('create ok + photo upload fail: closes aside, reloads list, warns, and only one POST was made', () => {
+      boot();
+      fixture.componentInstance.openAside({ kind: 'project', mode: 'add' });
+      fixture.componentInstance.saveProject({ request: { name: 'New', location: 'Goa' }, photo: new File(['x'], 'p.png') });
+      http.expectOne({ method: 'POST', url: '/api/company/projects' }).flush(project({ id: 'p9', name: 'New' }));
+      http.expectOne('/api/company/projects/p9/thumbnail').flush('bad', { status: 400, statusText: 'Bad' });
+      http.expectOne('/api/company/projects').flush([project(), project({ id: 'p9', name: 'New' })]);
+      http.expectOne('/api/projects/p9/plots/grid').flush([]);
+      fixture.detectChanges();
+      expect(fixture.componentInstance.aside.kind).toBe('none');
+      expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'warning', key: 'admin.projectsPlots.error.photoUploadFailed' }));
+      expect(el().textContent).toContain('admin.projectsPlots.error.photoUploadFailed');
+    });
+
+    it('edit ok + photo upload fail: list is reloaded with the new name', () => {
+      boot();
+      fixture.componentInstance.openAside({ kind: 'project', mode: 'edit' });
+      fixture.componentInstance.saveProject({ request: { name: 'Renamed', location: 'Goa' }, photo: new File(['x'], 'p.png') });
+      http.expectOne({ method: 'PUT', url: '/api/company/projects/p1' }).flush(project({ name: 'Renamed' }));
+      http.expectOne('/api/company/projects/p1/thumbnail').flush('bad', { status: 500, statusText: 'err' });
+      http.expectOne('/api/company/projects').flush([project({ name: 'Renamed' })]);
+      fixture.detectChanges();
+      expect(fixture.componentInstance.projects![0].name).toBe('Renamed');
+      expect(fixture.componentInstance.aside.kind).toBe('none');
+      expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'warning' }));
+    });
+
+    it('edit-save then selecting plot B before the response does not overwrite detail or force the aside', () => {
+      boot([project()], [cell('A-2'), cell('B-2')]);
+      selectFirstAvailable();
+      fixture.componentInstance.openAside({ kind: 'editPlot' });
+      fixture.componentInstance.saveEditedPlot({ plotNo: 'A-2', plotType: 'NORMAL', areaSqft: 1, rate: 1, price: 1, status: 'AVAILABLE' });
+      fixture.componentInstance.selectPlot(fixture.componentInstance.grid!.find(g => g.plotNo === 'B-2')!);
+      const bReq = http.expectOne('/api/company/projects/p1/plots/id-B-2'); // left pending
+      http.expectOne({ method: 'PUT', url: '/api/company/projects/p1/plots/id-A-2' }).flush(detail());
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2'), cell('B-2')]);
+      http.expectOne('/api/company/projects').flush([project()]);
+      expect(fixture.componentInstance.plotDetail).toBeNull();
+      expect(fixture.componentInstance.aside.kind).toBe('detail');
+      http.expectNone('/api/company/projects/p1/plots/id-A-2');
+      bReq.flush(detail({ id: 'id-B-2', plotNo: 'B-2' }));
+    });
+
+    it('edit-save then switching project forces no aside and fetches nothing for the new project', () => {
+      boot([project(), project({ id: 'p2', name: 'Other' })], [cell('A-2')]);
+      selectFirstAvailable();
+      fixture.componentInstance.openAside({ kind: 'editPlot' });
+      fixture.componentInstance.saveEditedPlot({ plotNo: 'A-2', plotType: 'NORMAL', areaSqft: 1, rate: 1, price: 1, status: 'AVAILABLE' });
+      fixture.componentInstance.selectProjectById('p2');
+      http.expectOne('/api/projects/p2/plots/grid').flush([]);
+      http.expectOne({ method: 'PUT', url: '/api/company/projects/p1/plots/id-A-2' }).flush(detail());
+      http.expectOne('/api/company/projects').flush([project(), project({ id: 'p2', name: 'Other' })]);
+      expect(fixture.componentInstance.aside.kind).toBe('none');
+      http.expectNone(r => r.url.includes('/plots/id-A-2'));
+    });
+
+    it('add-plot success while a book form is open leaves the book form', () => {
+      boot();
+      fixture.componentInstance.openAside({ kind: 'addPlot' });
+      fixture.componentInstance.saveNewPlot({ plotNo: 'C-1', plotType: 'NORMAL', areaSqft: 1, rate: 1, price: 1, status: 'AVAILABLE' });
+      fixture.componentInstance.aside = { kind: 'book' };
+      http.expectOne('/api/company/projects/p1/plots').flush(detail());
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('C-1')]);
+      http.expectOne('/api/company/projects').flush([project()]);
+      expect(fixture.componentInstance.aside.kind).toBe('book');
+    });
+
+    it('csv-import success while a book form is open leaves the book form', () => {
+      boot();
+      fixture.componentInstance.aside = { kind: 'book' };
+      fixture.componentInstance.onCsvImported();
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('C-1')]);
+      http.expectOne('/api/company/projects').flush([project()]);
+      expect(fixture.componentInstance.aside.kind).toBe('book');
+    });
+
+    it('Add plot returns focus to its opener button on close', fakeAsync(() => {
+      boot();
+      const btns = el().querySelectorAll<HTMLButtonElement>('.projects-plots__project-actions button');
+      document.body.appendChild(el());
+      btns[2].focus();
+      btns[2].click();
+      fixture.detectChanges();
+      fixture.componentInstance.closeAside();
+      tick();
+      expect(document.activeElement).toBe(btns[2]);
+    }));
+
     it('creates a project, uploads its photo, and selects it', () => {
       boot();
       const photo = new File(['x'], 'p.png');
@@ -275,6 +363,7 @@ describe('ProjectsPlotsComponent', () => {
       post.flush({ id: 'b1', plotId: 'id-A-2', buyerName: 'Rohit', totalAmount: 4500000, installmentCount: 4 }, { status: 201, statusText: 'Created' });
       http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
       http.expectOne('/api/company/projects').flush([project()]);
+      http.expectOne('/api/company/projects/p1/plots/id-A-2').flush({ ...detail, status: 'BOOKED' });
       fixture.detectChanges();
       expect(fixture.componentInstance.aside.kind).toBe('detail');
       expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'success', bookingId: 'b1' }));
@@ -288,6 +377,7 @@ describe('ProjectsPlotsComponent', () => {
       http.expectOne('/api/admin/bookings').flush({ error: 'Plot is not available' }, { status: 409, statusText: 'Conflict' });
       http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
       http.expectOne('/api/company/projects').flush([project()]);
+      http.expectOne('/api/company/projects/p1/plots/id-A-2').flush({ ...detail, status: 'BOOKED' });
       fixture.detectChanges();
       expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'warning', key: 'admin.projectsPlots.error.conflict' }));
       expect(fixture.componentInstance.selectedPlot!.status).toBe('BOOKED');
@@ -321,6 +411,7 @@ describe('ProjectsPlotsComponent', () => {
       http.expectOne('/api/admin/bookings').flush({ id: 'b1', plotId: 'id-A-2', buyerName: 'Rohit', totalAmount: 1, installmentCount: 1 });
       http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
       http.expectOne('/api/company/projects').flush([project()]);
+      http.expectOne('/api/company/projects/p1/plots/id-A-2').flush({ ...detail, status: 'BOOKED' });
       fixture.detectChanges();
       expect(fixture.componentInstance.selectedPlot!.status).toBe('BOOKED');
       expect(fixture.componentInstance.aside.kind).toBe('none');
@@ -339,6 +430,7 @@ describe('ProjectsPlotsComponent', () => {
       http.expectOne('/api/admin/bookings').flush({ error: 'x' }, { status: 409, statusText: 'Conflict' });
       http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
       http.expectOne('/api/company/projects').flush([project()]);
+      http.expectOne('/api/company/projects/p1/plots/id-A-2').flush({ ...detail, status: 'BOOKED' });
       fixture.detectChanges();
       const alerts = el().querySelectorAll('app-inline-banner [role="alert"]');
       expect(alerts.length).toBe(1);
@@ -357,6 +449,61 @@ describe('ProjectsPlotsComponent', () => {
       http.expectNone(r => r.url.endsWith('/plots/grid'));
       http.expectOne('/api/company/projects').flush([project(), project({ id: 'p2', name: 'Other' })]);
       expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'success', bookingId: 'b1' }));
+    });
+
+    it('after 201, Edit plot is hidden until the plot is re-fetched, then the form is locked and no PUT can be issued', () => {
+      openBookForm();
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.componentInstance.submitBooking(form);
+      http.expectOne('/api/admin/bookings').flush({ id: 'b1', plotId: 'id-A-2', buyerName: 'Rohit', totalAmount: 1, installmentCount: 1 }, { status: 201, statusText: 'Created' });
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
+      http.expectOne('/api/company/projects').flush([project()]);
+      fixture.detectChanges();
+      expect(fixture.componentInstance.plotDetail).toBeNull();
+      expect(el().querySelector('.projects-plots__edit-plot')).toBeNull();
+      http.expectOne('/api/company/projects/p1/plots/id-A-2').flush({ ...detail, status: 'BOOKED' });
+      fixture.detectChanges();
+      el().querySelector<HTMLButtonElement>('.projects-plots__edit-plot')!.click();
+      fixture.detectChanges();
+      expect(el().textContent).toContain('admin.projectsPlots.editLockedTitle');
+      expect(el().querySelector('app-plot-form form')).toBeNull();
+    });
+
+    it('after 409, the plot is re-fetched and the edit form is locked', () => {
+      openBookForm();
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.componentInstance.submitBooking(form);
+      http.expectOne('/api/admin/bookings').flush({ error: 'x' }, { status: 409, statusText: 'Conflict' });
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
+      http.expectOne('/api/company/projects').flush([project()]);
+      expect(fixture.componentInstance.plotDetail).toBeNull();
+      http.expectOne('/api/company/projects/p1/plots/id-A-2').flush({ ...detail, status: 'BOOKED' });
+      fixture.detectChanges();
+      el().querySelector<HTMLButtonElement>('.projects-plots__edit-plot')!.click();
+      fixture.detectChanges();
+      expect(el().querySelector('app-plot-form form')).toBeNull();
+    });
+
+    it('locks the edit form when the grid says BOOKED even though plotDetail is stale AVAILABLE', () => {
+      openBookForm();
+      fixture.componentInstance.loadGrid();
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
+      fixture.componentInstance.openAside({ kind: 'editPlot' });
+      fixture.detectChanges();
+      expect(fixture.componentInstance.plotDetail!.status).toBe('AVAILABLE');
+      expect(el().querySelector('app-plot-form form')).toBeNull();
+      expect(el().textContent).toContain('admin.projectsPlots.editLockedTitle');
+    });
+
+    it('Escape closes the aside; an Escape already handled (defaultPrevented) does not', () => {
+      boot();
+      fixture.componentInstance.openAside({ kind: 'addPlot' });
+      const handled = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true });
+      handled.preventDefault();
+      fixture.componentInstance.onEscape(handled);
+      expect(fixture.componentInstance.aside.kind).toBe('addPlot');
+      fixture.componentInstance.onEscape(new KeyboardEvent('keydown', { key: 'Escape' }));
+      expect(fixture.componentInstance.aside.kind).toBe('none');
     });
 
     it('ignores a second submit while the first is in flight', () => {
