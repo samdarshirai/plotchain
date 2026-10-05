@@ -319,4 +319,42 @@ describe('BookingRegisterComponent', () => {
     listReq().flush(pageOf([bk('b1'), bk('b2')]));
     http.expectNone(r => /\/api\/admin\/bookings\/[^/?]+$/.test(r.url));
   });
+
+  describe('focusBookingId', () => {
+    const focus = (id: string) => { fixture.componentRef.setInput('focusBookingId', id); fixture.detectChanges(); };
+    const getReq = (id: string) => http.expectOne('/api/admin/bookings/' + id);
+
+    it('fetches the booking, selects it and flags a filter mismatch when it is off the page', () => {
+      boot();
+      focus('b9');
+      getReq('b9').flush(bk('b9'));
+      expect(fixture.componentInstance.selected?.id).toBe('b9');
+      expect(fixture.componentInstance.filterMismatch).toBeTrue();
+    });
+
+    it('no mismatch when the booking is already on the page', () => {
+      boot();
+      focus('b1');
+      getReq('b1').flush(bk('b1'));
+      expect(fixture.componentInstance.selected?.id).toBe('b1');
+      expect(fixture.componentInstance.filterMismatch).toBeFalse();
+    });
+
+    it('404 shows the not-found banner and selects nothing', () => {
+      boot();
+      focus('b9');
+      getReq('b9').flush({ error: 'x' }, { status: 404, statusText: 'Not Found' });
+      fixture.detectChanges();
+      expect(fixture.componentInstance.selected).toBeNull();
+      expect(el().textContent).toContain('admin.bookingsEmi.err.notFound');
+    });
+
+    it('a late response after a manual selection is ignored', () => {
+      boot();
+      focus('b9');
+      fixture.componentInstance.selectBooking(fixture.componentInstance.page!.bookings[0]);
+      getReq('b9').flush(bk('b9'));
+      expect(fixture.componentInstance.selected?.id).toBe('b1');
+    });
+  });
 });

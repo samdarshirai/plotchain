@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { BookingsEmiComponent } from './bookings-emi.component';
 import { BookingRegisterComponent } from './booking-register.component';
@@ -113,6 +113,26 @@ describe('BookingsEmiComponent', () => {
     expect(el().querySelector('app-overdue-report')).toBeNull();
     expect(el().querySelector('app-booking-register')).not.toBeNull();
     flushRegister();
+  });
+
+  it('opening a booking from the overdue tab switches to the register focused on it', () => {
+    boot();
+    switchTab('overdue');
+    http.expectOne(r => r.url === '/api/admin/emi-reports/overdue' && r.params.get('size') === '20').flush({ rows: [], page: 0, size: 20, totalElements: 9 });
+    fixture.componentInstance.openFromOverdue('b9');
+    fixture.detectChanges();
+    expect(fixture.componentInstance.activeTab).toBe('register');
+    expect(register().componentInstance.focusBookingId).toBe('b9');
+    http.expectOne('/api/admin/bookings/b9').flush({ id: 'b9', installments: [] });
+    flushRegister();
+  });
+
+  it('?booking=<id> in the URL focuses that booking in the register', async () => {
+    boot();
+    await TestBed.inject(Router).navigate([], { queryParams: { booking: 'b7' } });
+    fixture.detectChanges();
+    expect(register().componentInstance.focusBookingId).toBe('b7');
+    http.expectOne('/api/admin/bookings/b7').flush({ id: 'b7', installments: [] });
   });
 
   it('a flash from the register shows a dismissible success banner above the tabs', () => {

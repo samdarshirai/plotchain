@@ -1,3 +1,4 @@
+import { ActivatedRoute } from '@angular/router';
 import { Component, OnInit, ViewEncapsulation, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -37,6 +38,7 @@ import { BookingEmiConfig, FlashMessage } from './bookings-emi.model';
 export class BookingsEmiComponent implements OnInit {
   private service = inject(BookingsEmiService);
   private translate = inject(TranslateService);
+  private route = inject(ActivatedRoute);
   activeTab: 'register' | 'overdue' = 'register';
   config: BookingEmiConfig | null = null;
   flash: FlashMessage | null = null;
@@ -61,9 +63,15 @@ export class BookingsEmiComponent implements OnInit {
     // Config unreadable hides the pill and the auto-confirm warnings; never guess a rule. emiEnabled only hides the pill (the backend threshold ignores it).
     this.service.config().subscribe({ next: c => (this.config = c), error: () => (this.config = null) });
     this.loadOverdueTotal();
+    // unit 11 banner link: /settings/bookings-emi?booking=<id>
+    this.route.queryParamMap.subscribe(q => { const id = q.get('booking'); if (id) { this.openBooking(id); } });
   }
   loadOverdueTotal(): void {
     this.service.overdue(0, 1).subscribe({ next: r => (this.overdueTotal = r.totalElements), error: () => (this.overdueTotal = null) });
   }
-  openFromOverdue(_bookingId: string): void { /* Task 8 (needs unit 14a) */ }
+  openFromOverdue(bookingId: string): void { this.openBooking(bookingId); }
+  private openBooking(id: string): void {
+    this.focusBookingId = id;
+    this.activeTab = 'register';
+  }
 }

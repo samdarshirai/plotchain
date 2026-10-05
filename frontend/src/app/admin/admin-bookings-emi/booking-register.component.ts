@@ -64,6 +64,8 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
         <button type="button" class="booking-register__retry" [disabled]="locked" (click)="reload()">{{ 'admin.bookingsEmi.err.retry' | translate }}</button>
       </app-inline-banner>
 
+      <app-inline-banner *ngIf="focusError" tone="danger">{{ 'admin.bookingsEmi.err.notFound' | translate }}</app-inline-banner>
+
       <div class="booking-register__grid">
         <div class="booking-register__list" [attr.aria-busy]="loading">
           <div class="booking-register__skeleton" role="status" *ngIf="!page && !loadError">
@@ -152,6 +154,8 @@ export class BookingRegisterComponent implements OnInit, OnChanges {
   loading = false;
   locked = false; // true while a seal write is in flight: filters, pager and selection freeze
   private seq = 0;
+  private focusSeq = 0;
+  focusError = false;
   private currentPage = 0;
 
   money = formatMoney;
@@ -174,7 +178,21 @@ export class BookingRegisterComponent implements OnInit, OnChanges {
     this.reload();
   }
 
-  ngOnChanges(_: SimpleChanges): void { /* focusBookingId handled in Task 8 */ }
+  // Overdue click-through / ?booking= deep link: fetch the booking directly (it may be off the current page or filtered out).
+  ngOnChanges(changes: SimpleChanges): void {
+    const id = changes['focusBookingId']?.currentValue as string | null | undefined;
+    if (!id) { return; }
+    this.focusError = false;
+    const mine = ++this.focusSeq;
+    this.service.get(id).subscribe({
+      next: b => {
+        if (mine !== this.focusSeq) { return; } // admin picked another booking meanwhile
+        this.selected = b;
+        this.filterMismatch = !!this.page && !this.page.bookings.some(r => r.id === b.id);
+      },
+      error: () => { if (mine === this.focusSeq) { this.focusError = true; } }
+    });
+  }
 
   applyFilter(partial: Partial<RegisterFilters>): void {
     if (this.locked) { return; }
@@ -227,6 +245,8 @@ export class BookingRegisterComponent implements OnInit, OnChanges {
 
   selectBooking(b: Booking): void {
     if (this.locked) { return; }
+    this.focusSeq++;
+    this.focusError = false;
     this.selected = b;
     this.filterMismatch = false;
   }

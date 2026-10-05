@@ -60,25 +60,13 @@ describe('OverdueReportComponent', () => {
     expect(totals).toEqual([41]);
   });
 
-  it('rows are not interactive yet (no tabindex, no pointer cursor, click and Enter emit nothing)', () => {
+  it('clicking the buyer button emits the booking id', () => {
     const ids: string[] = [];
     fixture.componentInstance.openBooking.subscribe((id: string) => ids.push(id));
     req().flush(pageOf([row('b1')]));
     fixture.detectChanges();
-    const r = rowEls()[0] as HTMLElement;
-    expect(r.hasAttribute('tabindex')).toBeFalse();
-    expect(r.classList.contains('booking-register__row')).toBeFalse(); // that class carries cursor:pointer
-    r.click();
-    r.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    expect(ids).toEqual([]);
-  });
-
-  it('keeps the openBooking output API for Task 8', () => {
-    const ids: string[] = [];
-    fixture.componentInstance.openBooking.subscribe((id: string) => ids.push(id));
-    fixture.componentInstance.openBooking.emit('b1');
+    (rowEls()[0].querySelector('button.overdue-report__open') as HTMLElement).click();
     expect(ids).toEqual(['b1']);
-    req().flush(pageOf([]));
   });
 
   it('shows the calm empty state when nothing is overdue', () => {
