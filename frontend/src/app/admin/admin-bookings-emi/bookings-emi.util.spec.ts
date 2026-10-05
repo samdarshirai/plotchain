@@ -37,6 +37,10 @@ describe('bookings-emi.util', () => {
     expect(willAutoConfirm(b({ paidAmount: 189 }), 100, auto(29))).toBeFalse();  // 289/1000
   });
 
+  it('plot drift is recognised by the 409 code even when the text differs', () => {
+    expect(classifyError({ status: 409, error: { error: 'something else', code: 'PLOT_NOT_AVAILABLE' } }, 'pay').kind).toBe('plotDrift');
+  });
+
   it('classifies pay errors by status and text', () => {
     const e = (status: number, error?: string) => ({ status, error: error ? { error } : undefined });
     expect(classifyError(e(400, 'Payment amount must equal the installment amount 100'), 'pay').kind).toBe('amountMismatch');
@@ -57,7 +61,7 @@ describe('bookings-emi.util', () => {
   });
 
   it('labels the associate from the directory, else short id', () => {
-    const dir = [{ id: 'a1', userId: 'VA-1', name: 'Jane', role: 'ASSOCIATE' as const, hasFreeSlot: true }];
+    const dir = [{ id: 'a1', userId: 'VA-1', name: 'Jane', role: 'ASSOCIATE' as const, status: 'ACTIVE' as const, hasFreeSlot: true }];
     expect(associateLabel(b(), dir)).toBe('Jane (VA-1)');
     expect(associateLabel(b({ associateName: 'Zed' }), dir)).toBe('Zed (VA-1)');
     expect(associateLabel(b({ associateId: 'zzzzzzzzzz' }), dir)).toBe('zzzzzzzz');

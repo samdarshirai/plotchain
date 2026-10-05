@@ -3,5 +3,6 @@ export interface AssociateSummary {
   userId: string;
   name: string;
   role: 'ADMIN' | 'ASSOCIATE';
+  status: 'ACTIVE' | 'SUSPENDED' | 'PENDING';
   hasFreeSlot: boolean;
 }

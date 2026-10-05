@@ -15,7 +15,7 @@ describe('BookingSealComponent', () => {
     bookedAt: '2026-02-01T00:00:00Z', paidAmount: 250, dueAmount: 750,
     installments: [inst(1, { status: 'PAID', paidAt: '2026-02-05T00:00:00Z' }), inst(2, { overdue: true }), inst(3), inst(4, { status: 'VOID' })], ...over
   });
-  const dir = [{ id: 'a1', userId: 'VA-1', name: 'Jane', role: 'ASSOCIATE', hasFreeSlot: true }, { id: 'a2', userId: 'VA-2', name: 'Raj', role: 'ASSOCIATE', hasFreeSlot: true }];
+  const dir = [{ id: 'a1', userId: 'VA-1', name: 'Jane', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: true }, { id: 'a2', userId: 'VA-2', name: 'Raj', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: true }, { id: 'a3', userId: 'VA-3', name: 'Sus', role: 'ASSOCIATE', status: 'SUSPENDED', hasFreeSlot: true }];
   const auto = { emiEnabled: true, defaultInstallmentCount: 4, confirmRule: 'AUTO_THRESHOLD', confirmThresholdPercent: 50 };
 
   function setup(booking: unknown = bk(), config: unknown = auto) {

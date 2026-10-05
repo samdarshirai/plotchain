@@ -199,7 +199,7 @@ export class BookingSealComponent implements OnChanges {
   }
   get refInvalid(): boolean { const n = this.paymentRef.trim().length; return this.tried && (n === 0 || n > 100); }
   get reasonInvalid(): boolean { const n = this.reason.trim().length; return this.tried && (n === 0 || n > 255); }
-  get transferChoices(): AssociateSummary[] { return this.directory.filter(a => a.id !== this.booking?.associateId); }
+  get transferChoices(): AssociateSummary[] { return this.directory.filter(a => a.status === 'ACTIVE' && a.id !== this.booking?.associateId); }
   get isLookupError(): boolean { return this.mode === 'transfer' && (this.error?.kind === 'sameAssociate' || this.error?.kind === 'invalidTarget'); }
   get bannerKey(): string {
     const k = this.error?.kind;

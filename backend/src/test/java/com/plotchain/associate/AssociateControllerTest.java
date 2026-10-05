@@ -92,6 +92,7 @@ class AssociateControllerTest {
         mockMvc.perform(get("/api/associates")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].status").value("ACTIVE"))
             .andExpect(jsonPath("$[0].hasFreeSlot").value(true))
             .andExpect(jsonPath("$[1].hasFreeSlot").value(true))
             .andExpect(jsonPath("$[2].hasFreeSlot").value(false))

@@ -21,7 +21,7 @@ public class BookingExceptionHandler {
 
     @ExceptionHandler(PlotNotAvailableException.class)
     public ResponseEntity<Map<String, String>> handlePlotNotAvailable(PlotNotAvailableException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage(), "code", "PLOT_NOT_AVAILABLE"));
     }
 
     @ExceptionHandler(BookingNotFoundException.class)

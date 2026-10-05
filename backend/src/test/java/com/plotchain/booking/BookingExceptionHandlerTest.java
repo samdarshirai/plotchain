@@ -20,6 +20,14 @@ class BookingExceptionHandlerTest {
     }
 
     @Test
+    void plotNotAvailableIs409WithDistinctCodeAndUnchangedErrorText() {
+        var ex = new PlotNotAvailableException(id);
+        var r = handler.handlePlotNotAvailable(ex);
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(r.getBody()).containsEntry("code", "PLOT_NOT_AVAILABLE").containsEntry("error", ex.getMessage());
+    }
+
+    @Test
     void bookingNotActiveIs409() {
         assertThat(handler.handleBookingNotActive(new BookingNotActiveException(id)).getStatusCode())
             .isEqualTo(HttpStatus.CONFLICT);

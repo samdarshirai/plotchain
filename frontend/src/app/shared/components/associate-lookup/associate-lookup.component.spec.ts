@@ -7,8 +7,8 @@ describe('AssociateLookupComponent', () => {
   let fixture: ComponentFixture<AssociateLookupComponent>;
   let c: AssociateLookupComponent;
   const associates: AssociateSummary[] = [
-    { id: 'a1', userId: 'VP00001', name: 'Jane Doe', role: 'ASSOCIATE', hasFreeSlot: true },
-    { id: 'a2', userId: 'VP00002', name: 'Ravi Kumar', role: 'ASSOCIATE', hasFreeSlot: false }
+    { id: 'a1', userId: 'VP00001', name: 'Jane Doe', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: true },
+    { id: 'a2', userId: 'VP00002', name: 'Ravi Kumar', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: false }
   ];
   const el = () => fixture.nativeElement as HTMLElement;
   const type = (v: string) => {

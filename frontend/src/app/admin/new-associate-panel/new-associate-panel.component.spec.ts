@@ -22,7 +22,7 @@ describe('NewAssociatePanelComponent', () => {
     fixture.detectChanges();
 
     httpMock.expectOne('/api/associates')
-      .flush([{ id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE', hasFreeSlot: true }]);
+      .flush([{ id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: true }]);
   });
 
   afterEach(() => httpMock.verify());
@@ -40,8 +40,8 @@ describe('NewAssociatePanelComponent', () => {
     it('only offers associates with a free slot in the Parent Node dropdown', () => {
       open();
       fixture.componentInstance.sponsorOptions = [
-        { id: 'free-1', userId: 'VP00010', name: 'Has Room', role: 'ASSOCIATE', hasFreeSlot: true },
-        { id: 'full-1', userId: 'VP00011', name: 'Fully Placed', role: 'ASSOCIATE', hasFreeSlot: false }
+        { id: 'free-1', userId: 'VP00010', name: 'Has Room', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: true },
+        { id: 'full-1', userId: 'VP00011', name: 'Fully Placed', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: false }
       ];
       fixture.detectChanges();
 
@@ -57,7 +57,7 @@ describe('NewAssociatePanelComponent', () => {
     it('resolves the typed sponsor search text to the matching associate id', () => {
       open();
       fixture.componentInstance.sponsorOptions = [
-        { id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE', hasFreeSlot: true }
+        { id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: true }
       ];
 
       fixture.componentInstance.onSponsorSearchInput('VP00002 — Sunil Sponsor');

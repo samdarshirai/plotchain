@@ -228,7 +228,7 @@ export class ProjectsPlotsComponent implements OnInit {
   ngOnInit(): void {
     // Only role ASSOCIATE can sell; the summary has no status field (see plan Deviation 2).
     this.adminService.listAssociates().pipe(catchError(() => of([] as AssociateSummary[])))
-      .subscribe(list => (this.associates = list.filter(a => a.role === 'ASSOCIATE')));
+      .subscribe(list => (this.associates = list.filter(a => a.role === 'ASSOCIATE' && a.status === 'ACTIVE')));
     // EMI preview is a nicety: an unreadable config hides the preview, never blocks the form.
     this.plotsService.getEmiConfig().pipe(catchError(() => of(null))).subscribe(c => (this.emiConfig = c));
     this.reloadProjects();

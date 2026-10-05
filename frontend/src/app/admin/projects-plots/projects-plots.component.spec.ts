@@ -18,8 +18,9 @@ describe('ProjectsPlotsComponent', () => {
   const cell = (plotNo: string, status = 'AVAILABLE', over: Record<string, unknown> = {}) =>
     ({ plotId: 'id-' + plotNo, plotNo, type: 'NORMAL', area: 1200, price: 4500000, status, ...over });
   const associates = [
-    { id: 'a1', userId: 'VP00001', name: 'Jane', role: 'ASSOCIATE', hasFreeSlot: true },
-    { id: 'adm', userId: 'ADMIN', name: 'Boss', role: 'ADMIN', hasFreeSlot: false }
+    { id: 'a1', userId: 'VP00001', name: 'Jane', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: true },
+    { id: 'a2', userId: 'VP00002', name: 'Suspended', role: 'ASSOCIATE', status: 'SUSPENDED', hasFreeSlot: true },
+    { id: 'adm', userId: 'ADMIN', name: 'Boss', role: 'ADMIN', status: 'ACTIVE', hasFreeSlot: false }
   ];
   const el = () => fixture.nativeElement as HTMLElement;
 

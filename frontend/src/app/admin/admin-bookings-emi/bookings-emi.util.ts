@@ -28,7 +28,7 @@ export function willAutoConfirm(b: Booking, installmentAmount: number, cfg: Book
 // ponytail: matches the server's error text -- brittle by design (DESIGN Q4); a distinct error `code`
 // from the backend would replace these substring checks.
 export function classifyError(
-  err: { status: number; error?: { error?: string } },
+  err: { status: number; error?: { error?: string; code?: string } },
   op: 'pay' | 'confirm' | 'cancel' | 'transfer'
 ): { kind: ErrorKind; serverText?: string } {
   const text = err.error?.error;
@@ -36,7 +36,8 @@ export function classifyError(
   if (err.status === 0) { return done('network'); }
   if (err.status === 404) { return done(op === 'transfer' ? 'invalidTarget' : 'notFound'); } // transfer 404 = unknown target associate
   if (err.status === 409) {
-    if (text?.includes('Plot is not available')) { return done('plotDrift'); }
+    // code is authoritative; the substring stays as a fallback for one release (unit 14c)
+    if (err.error?.code === 'PLOT_NOT_AVAILABLE' || text?.includes('Plot is not available')) { return done('plotDrift'); }
     if (text?.includes('not payable')) { return done('notPayable'); }
     if (text?.includes('not ACTIVE')) { return done('notActive'); }
     return done('generic');
