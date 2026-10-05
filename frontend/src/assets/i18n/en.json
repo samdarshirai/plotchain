@@ -909,6 +909,7 @@
         "generic": "Something went wrong and nothing was saved. Check your connection and try again.",
         "serverSaid": "Server said: {{text}}",
         "load": "The booking register didn't load. Check your connection and try again.",
+        "loadOverdue": "The overdue report didn't load. Check your connection and try again.",
         "retry": "Try again"
       },
       "empty": {

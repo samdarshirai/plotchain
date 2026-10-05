@@ -52,4 +52,4 @@ export function associateLabel(b: Booking, dir: AssociateSummary[]): string {
   return `${b.associateName ?? found.name} (${found.userId})`;
 }
 
-export const plotText = (b: Booking): string => b.plotNo ?? b.plotId.slice(0, 8);
+export const plotText = (b: { plotNo?: string | null; plotId: string }): string => b.plotNo ?? b.plotId.slice(0, 8);

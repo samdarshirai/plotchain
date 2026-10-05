@@ -4664,3 +4664,7 @@ button.tree-explorer__vacant-card {
 }
 @media (max-width: 960px) { .booking-seal { position: static; max-height: none; } }
 @media (max-width: 768px) { .booking-seal__pay { min-height: 44px; } }
+
+// Overdue EMI report tab: reuses the register's table/pager/empty/skeleton classes
+.overdue-report { background: var(--surface-card); border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); overflow: hidden;
+  .booking-register__empty .material-symbols-outlined { font-size: 2.5rem; color: var(--status-success); } }
