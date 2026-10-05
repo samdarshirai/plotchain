@@ -63,11 +63,12 @@ describe('BookingsEmiComponent', () => {
     expect(pill()!.textContent).not.toContain('rule.auto');
   });
 
-  it('hides the pill and passes null config when emiEnabled is false', () => {
+  it('passes the real config but shows no pill when emiEnabled is false', () => {
     boot({ config: cfg({ emiEnabled: false }) });
     expect(pill()).toBeNull();
-    expect(fixture.componentInstance.config).toBeNull();
-    expect(register().componentInstance.config).toBeNull();
+    expect(fixture.componentInstance.config!.confirmRule).toBe('AUTO_THRESHOLD');
+    expect(register().componentInstance.config.emiEnabled).toBeFalse();
+    expect(register().componentInstance.config.confirmThresholdPercent).toBe(30);
   });
 
   it('hides the pill when the config call fails (does not guess)', () => {

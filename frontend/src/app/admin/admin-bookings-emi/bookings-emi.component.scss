@@ -16,7 +16,6 @@
   &__skeleton { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; }
   &__skeleton-row { height: 44px; border-radius: 8px; background: linear-gradient(90deg, var(--surface-raised), var(--surface-card), var(--surface-raised)); background-size: 200% 100%; animation: booking-register-shimmer 1.4s linear infinite; }
 }
-:root { --status-danger-text: color-mix(in srgb, var(--status-danger) 70%, black); }
 @keyframes booking-register-shimmer { to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .booking-register__skeleton-row { animation: none; } }
 @media (max-width: 768px) {

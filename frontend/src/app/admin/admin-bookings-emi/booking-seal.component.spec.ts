@@ -284,7 +284,8 @@ describe('BookingSealComponent', () => {
     fixture.detectChanges();
     expect(el().textContent).toContain('admin.bookingsEmi.err.plotDriftFix');
     expect(el().querySelector('a[href="/settings/projects-plots"]')).not.toBeNull();
-    expect(el().querySelector('a[href="/settings/compensation"]')).not.toBeNull();
+    expect(el().querySelector('a[href="/settings/payments-kyc"]')).not.toBeNull();
+    expect(el().querySelector('a[href="/settings/compensation"]')).toBeNull();
   });
 
   it('submit is disabled while a write is in flight and busy returns to false afterwards', async () => {
@@ -331,11 +332,11 @@ describe('BookingSealComponent', () => {
     document.body.appendChild(el());
     el().querySelector<HTMLButtonElement>('[data-opener="pay-2"]')!.click();
     fixture.detectChanges();
-    c().close(); fixture.detectChanges();
+    c().close(); // no detectChanges: a real browser only gives one macrotask before the timer fires
     await new Promise(r => setTimeout(r));
     expect(document.activeElement).toBe(el().querySelector('[data-opener="pay-2"]'));
     c().open('cancel'); fixture.detectChanges();
-    c().close(); fixture.detectChanges();
+    c().close();
     await new Promise(r => setTimeout(r));
     expect(document.activeElement).toBe(el().querySelector('[data-opener="cancel"]'));
     c().open('pay', c().booking!.installments[1]); fixture.detectChanges();
@@ -385,5 +386,61 @@ describe('BookingSealComponent', () => {
     const ids = input.getAttribute('aria-describedby')!.split(' ');
     ids.forEach(id => expect(el().querySelector('#' + id)).not.toBeNull());
     expect(el().querySelector('#seal-ref-error')!.textContent).toContain('admin.bookingsEmi.validation.ref');
+  });
+
+  it('auto-confirm warning and meter tick do not depend on emiEnabled', () => {
+    setup(bk({ paidAmount: 250 }), { ...auto, emiEnabled: false });
+    c().open('pay', c().booking!.installments[1]);
+    fixture.detectChanges();
+    expect(el().textContent).toContain('admin.bookingsEmi.warn.autoConfirm');
+    c().close();
+    fixture.detectChanges();
+    expect(el().querySelector('.booking-seal__meter-tick')).not.toBeNull();
+  });
+
+  it('shows paise: non-integer instalment amounts render and are sent exactly', async () => {
+    const third = bk({ totalAmount: 1000000, paidAmount: 0, dueAmount: 1000000, installmentCount: 3,
+      installments: [inst(1, { amount: 333333.33 }), inst(2, { amount: 333333.33 }), inst(3, { amount: 333333.34 })] });
+    setup(third, { ...auto, confirmRule: 'MANUAL' });
+    expect(el().textContent).toContain('₹3,33,333.33');
+    expect(el().textContent).toContain('₹3,33,333.34');
+    c().open('pay', c().booking!.installments[2]);
+    fixture.detectChanges();
+    expect(el().querySelector<HTMLInputElement>('[name="amount"]')!.value).toBe('₹3,33,333.34');
+    expect(el().querySelector('.booking-seal__submit')!.textContent).toContain('admin.bookingsEmi.action.payBtn');
+    type('paymentRef', 'R'); await fixture.whenStable(); submit();
+    const req = http.expectOne('/api/admin/bookings/b1/installments/3/pay');
+    expect(req.request.body.amount).toBe(333333.34);
+    req.flush(third);
+  });
+
+  it('paying the last instalment out of order uses that instalment number and amount', async () => {
+    const b = bk({ installments: [inst(1, { status: 'PAID' }), inst(2, { amount: 250 }), inst(3, { amount: 275 }), inst(4, { amount: 225 })] });
+    setup(b, { ...auto, confirmRule: 'MANUAL' });
+    const pays = el().querySelectorAll<HTMLButtonElement>('.booking-seal__pay');
+    pays[pays.length - 1].click();
+    fixture.detectChanges();
+    type('paymentRef', 'R'); await fixture.whenStable(); submit();
+    const req = http.expectOne('/api/admin/bookings/b1/installments/4/pay');
+    expect(req.request.body.amount).toBe(225);
+    req.flush(b);
+  });
+
+  it('confirm plot drift offers only the Projects & Plots fix, not the Manual-rule one', () => {
+    setup();
+    c().open('confirm'); fixture.detectChanges();
+    c().submitConfirm();
+    http.expectOne('/api/admin/bookings/b1/confirm').flush({ error: 'Plot is not available for booking: x' }, { status: 409, statusText: 'Conflict' });
+    fixture.detectChanges();
+    expect(el().textContent).toContain('admin.bookingsEmi.err.plotDriftFixConfirm');
+    expect(el().textContent).not.toContain('admin.bookingsEmi.err.plotDriftFix' + ' ');
+    expect(el().querySelector('a[href="/settings/projects-plots"]')).not.toBeNull();
+    expect(el().querySelector('a[href="/settings/payments-kyc"]')).toBeNull();
+  });
+
+  it('gives the transfer combobox an accessible name', () => {
+    setup();
+    c().open('transfer'); fixture.detectChanges();
+    expect(el().querySelector('input[role="combobox"]')!.getAttribute('placeholder')).toContain('admin.bookingsEmi.field.target');
   });
 });

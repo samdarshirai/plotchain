@@ -58,8 +58,8 @@ export class BookingsEmiComponent implements OnInit {
     ];
   }
   ngOnInit(): void {
-    // Config unreadable/disabled hides the pill and the auto-confirm warnings; never guess a rule.
-    this.service.config().subscribe({ next: c => (this.config = c.emiEnabled ? c : null), error: () => (this.config = null) });
+    // Config unreadable hides the pill and the auto-confirm warnings; never guess a rule. emiEnabled only hides the pill (the backend threshold ignores it).
+    this.service.config().subscribe({ next: c => (this.config = c), error: () => (this.config = null) });
     this.loadOverdueTotal();
   }
   loadOverdueTotal(): void {

@@ -1,6 +1,6 @@
 import { Booking } from '../../plot-bookings/models/associate-booking-page.model';
 import { BookingEmiConfig } from './bookings-emi.model';
-import { associateLabel, classifyError, meterPercent, plotText, willAutoConfirm } from './bookings-emi.util';
+import { formatMoney, associateLabel, classifyError, meterPercent, plotText, willAutoConfirm } from './bookings-emi.util';
 
 const b = (over: Partial<Booking> = {}): Booking => ({
   id: 'b', plotId: '123e4567-89ab', associateId: 'a1', status: 'ACTIVE', buyerName: 'R', totalAmount: 1000,
@@ -24,7 +24,7 @@ describe('bookings-emi.util', () => {
     expect(willAutoConfirm(b({ paidAmount: 200 }), 100, auto(30))).toBeTrue();   // 300/1000 = 30%
     expect(willAutoConfirm(b({ paidAmount: 200 }), 99, auto(30))).toBeFalse();
     expect(willAutoConfirm(b(), 900, { ...auto(30), confirmRule: 'MANUAL' })).toBeFalse();
-    expect(willAutoConfirm(b(), 900, { ...auto(30), emiEnabled: false })).toBeFalse();
+    expect(willAutoConfirm(b(), 900, { ...auto(30), emiEnabled: false })).toBeTrue(); // backend ignores emiEnabled: EMI off = one full instalment, always crosses
     expect(willAutoConfirm(b(), 900, auto(null))).toBeFalse();
     expect(willAutoConfirm(b(), 900, null)).toBeFalse();
     expect(willAutoConfirm(b({ totalAmount: 0 }), 10, auto(30))).toBeFalse();
@@ -84,5 +84,13 @@ describe('bookings-emi.util', () => {
     expect(classifyError(e(400, 'must equal the installment amount'), 'confirm').kind).toBe('validation');
     expect(classifyError(e(400, 'already assigned'), 'pay').kind).toBe('validation');
     expect(classifyError(e(404), 'cancel').kind).toBe('notFound');
+    expect(classifyError(e(404), 'transfer').kind).toBe('invalidTarget');
+  });
+
+  it('formatMoney keeps whole rupees clean and shows paise when present', () => {
+    expect(formatMoney(1500000)).toBe('₹15,00,000');
+    expect(formatMoney(333333.33)).toBe('₹3,33,333.33');
+    expect(formatMoney(333333.34)).toBe('₹3,33,333.34');
+    expect(formatMoney(0)).toBe('₹0');
   });
 });

@@ -1,5 +1,5 @@
 // booking-seal.component.ts
-import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject , ViewEncapsulation } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject , ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -10,10 +10,9 @@ import { Booking, EmiInstallment } from '../../plot-bookings/models/associate-bo
 import { AssociateLookupComponent } from '../../shared/components/associate-lookup/associate-lookup.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
-import { formatInr } from '../../shared/utils/plot-grid.util';
 import { BookingEmiConfig, FlashMessage, PayRequest } from './bookings-emi.model';
 import { BookingsEmiService } from './bookings-emi.service';
-import { ErrorKind, associateLabel, classifyError, meterPercent, plotText, willAutoConfirm } from './bookings-emi.util';
+import { ErrorKind, associateLabel, formatMoney, classifyError, meterPercent, plotText, willAutoConfirm } from './bookings-emi.util';
 
 type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
 
@@ -103,9 +102,9 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
               <ng-container *ngSwitchDefault>{{ 'admin.bookingsEmi.err.' + bannerKey | translate }}</ng-container>
             </ng-container>
             <ng-container *ngIf="error.kind === 'plotDrift'">
-              <br />{{ 'admin.bookingsEmi.err.plotDriftFix' | translate }}
-              <a routerLink="/settings/projects-plots">{{ 'admin.bookingsEmi.linkProjectsPlots' | translate }}</a> ·
-              <a routerLink="/settings/compensation">{{ 'admin.bookingsEmi.linkSettings' | translate }}</a>
+              <br />{{ (mode === 'pay' ? 'admin.bookingsEmi.err.plotDriftFix' : 'admin.bookingsEmi.err.plotDriftFixConfirm') | translate }}
+              <a routerLink="/settings/projects-plots">{{ 'admin.bookingsEmi.linkProjectsPlots' | translate }}</a>
+              <ng-container *ngIf="mode === 'pay'"> · <a routerLink="/settings/payments-kyc">{{ 'admin.bookingsEmi.linkSettings' | translate }}</a></ng-container>
             </ng-container>
             <div class="booking-seal__server" *ngIf="error.serverText">{{ 'admin.bookingsEmi.err.serverSaid' | translate: { text: error.serverText } }}</div>
           </app-inline-banner>
@@ -153,7 +152,7 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
           <ng-container *ngIf="mode === 'transfer'">
             <fieldset class="booking-seal__fields" [disabled]="busy">
               <span id="seal-target-label">{{ 'admin.bookingsEmi.field.target' | translate }}</span>
-              <div role="group" aria-labelledby="seal-target-label"><app-associate-lookup [associates]="transferChoices" [value]="targetId" (selected)="targetId = $event?.id ?? ''"></app-associate-lookup></div>
+              <div role="group" aria-labelledby="seal-target-label"><app-associate-lookup [associates]="transferChoices" [placeholder]="'admin.bookingsEmi.field.target' | translate" [value]="targetId" (selected)="targetId = $event?.id ?? ''"></app-associate-lookup></div>
               <small>{{ 'admin.bookingsEmi.transferHint' | translate }}</small>
               <app-field-error [message]="tried && !targetId ? ('admin.bookingsEmi.validation.target' | translate) : undefined"></app-field-error>
               <app-field-error *ngIf="error && isLookupError" [message]="'admin.bookingsEmi.err.' + error.kind | translate"></app-field-error>
@@ -181,6 +180,7 @@ export class BookingSealComponent implements OnChanges {
   @Output() reloadRequested = new EventEmitter<void>();
   @ViewChild('title') title?: ElementRef<HTMLElement>;
 
+  private cdr = inject(ChangeDetectorRef);
   private el = inject<ElementRef<HTMLElement>>(ElementRef);
   private opener = '';
   mode: Mode = 'detail';
@@ -190,12 +190,12 @@ export class BookingSealComponent implements OnChanges {
   netUnknown = false; // a pay request died with no response: outcome unknown, no resubmit until the booking is refreshed
   error: { kind: ErrorKind; serverText?: string } | null = null;
 
-  money = formatInr; pct = meterPercent; plot = plotText;
+  money = formatMoney; pct = meterPercent; plot = plotText;
   assoc = (b: Booking) => associateLabel(b, this.directory);
   get pendingCount(): number { return this.booking?.installments.filter(i => i.status === 'PENDING').length ?? 0; }
   get predicts(): boolean { return !!(this.booking && this.payTarget && willAutoConfirm(this.booking, this.payTarget.amount, this.config)); }
   get threshold(): number | null {
-    return this.config?.emiEnabled && this.config.confirmRule === 'AUTO_THRESHOLD' ? this.config.confirmThresholdPercent : null;
+    return this.config?.confirmRule === 'AUTO_THRESHOLD' ? this.config.confirmThresholdPercent : null;
   }
   get refInvalid(): boolean { const n = this.paymentRef.trim().length; return this.tried && (n === 0 || n > 100); }
   get reasonInvalid(): boolean { const n = this.reason.trim().length; return this.tried && (n === 0 || n > 255); }
@@ -242,6 +242,7 @@ export class BookingSealComponent implements OnChanges {
     const opener = this.opener;
     this.reset();
     setTimeout(() => {
+      this.cdr.detectChanges(); // the detail view re-renders only after this tick; query it after it exists
       const host = this.el.nativeElement;
       const target = opener ? host.querySelector<HTMLElement>(`[data-opener="${opener}"]:not([disabled])`) : null;
       (target ?? this.title?.nativeElement)?.focus();

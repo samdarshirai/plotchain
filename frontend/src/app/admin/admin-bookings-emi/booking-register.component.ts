@@ -10,12 +10,12 @@ import { Project } from '../../setup/models/project.model';
 import { Booking } from '../../plot-bookings/models/associate-booking-page.model';
 import { AssociateLookupComponent } from '../../shared/components/associate-lookup/associate-lookup.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
-import { PlotGridItem, formatInr } from '../../shared/utils/plot-grid.util';
+import { PlotGridItem } from '../../shared/utils/plot-grid.util';
 import { ProjectsPlotsService } from '../projects-plots/projects-plots.service';
 import { BookingEmiConfig, BookingPage, FlashMessage, RegisterFilters } from './bookings-emi.model';
 import { BookingSealComponent } from './booking-seal.component';
 import { BookingsEmiService } from './bookings-emi.service';
-import { associateLabel, meterPercent, plotText } from './bookings-emi.util';
+import { formatMoney, associateLabel, meterPercent, plotText } from './bookings-emi.util';
 
 const PAGE_SIZE = 20;
 const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', projectId: '', overdue: false };
@@ -154,7 +154,7 @@ export class BookingRegisterComponent implements OnInit, OnChanges {
   private seq = 0;
   private currentPage = 0;
 
-  money = formatInr;
+  money = formatMoney;
   pct = (b: Booking) => meterPercent(b.paidAmount, b.totalAmount);
   plot = plotText;
   assoc = (b: Booking) => associateLabel(b, this.directory);

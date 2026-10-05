@@ -2,10 +2,9 @@ import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
-import { formatInr } from '../../shared/utils/plot-grid.util';
 import { OverdueReportPage } from './bookings-emi.model';
 import { BookingsEmiService } from './bookings-emi.service';
-import { plotText } from './bookings-emi.util';
+import { formatMoney, plotText } from './bookings-emi.util';
 
 const PAGE_SIZE = 20;
 
@@ -42,9 +41,7 @@ const PAGE_SIZE = 20;
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let r of page!.rows" class="booking-register__row" tabindex="0"
-              (click)="openBooking.emit(r.bookingId)" (keydown.enter)="openBooking.emit(r.bookingId)"
-              (keydown.space)="openBooking.emit(r.bookingId); $event.preventDefault()">
+          <tr *ngFor="let r of page!.rows" class="overdue-report__row">
             <td [attr.data-label]="'admin.bookingsEmi.col.buyer' | translate">
               <strong>{{ r.buyerName }}</strong><br /><span class="booking-register__sub">{{ plot(r) }}</span>
             </td>
@@ -67,6 +64,7 @@ const PAGE_SIZE = 20;
 export class OverdueReportComponent implements OnInit {
   private service = inject(BookingsEmiService);
 
+  // ponytail: rows are not interactive until Task 8 wires openFromOverdue (needs unit 14a GET /bookings/{id}); emit from the row then.
   @Output() openBooking = new EventEmitter<string>();
   @Output() total = new EventEmitter<number>();
 
@@ -76,7 +74,7 @@ export class OverdueReportComponent implements OnInit {
   private seq = 0;
   private currentPage = 0;
 
-  money = formatInr;
+  money = formatMoney;
   plot = plotText;
 
   get totalPages(): number {

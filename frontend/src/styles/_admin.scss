@@ -4584,7 +4584,7 @@ button.tree-explorer__vacant-card {
   .my-bookings__cell-label { display: inline; font: 500 0.6875rem var(--font-mono); text-transform: uppercase; color: var(--text-muted); }
 }
 
-// Bookings & EMI register/seal/overdue styles live in admin-bookings-emi/bookings-emi.component.scss (lazy, ViewEncapsulation.None)
+// Bookings & EMI: only the host header lives here (it @extends global placeholders); register/seal/overdue styles are in admin-bookings-emi/*.component.scss (lazy)
 
 // Bookings & EMI host (plot-booking unit 12)
 .bookings-emi {

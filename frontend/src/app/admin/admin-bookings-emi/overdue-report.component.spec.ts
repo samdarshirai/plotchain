@@ -60,19 +60,25 @@ describe('OverdueReportComponent', () => {
     expect(totals).toEqual([41]);
   });
 
-  it('emits openBooking with the booking id on click, Enter and Space', () => {
+  it('rows are not interactive yet (no tabindex, no pointer cursor, click and Enter emit nothing)', () => {
     const ids: string[] = [];
     fixture.componentInstance.openBooking.subscribe((id: string) => ids.push(id));
-    req().flush(pageOf([row('b1'), row('b2')]));
+    req().flush(pageOf([row('b1')]));
     fixture.detectChanges();
-    const rows = rowEls();
-    expect(rows[0].getAttribute('tabindex')).toBe('0');
-    (rows[0] as HTMLElement).click();
-    rows[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    const space = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
-    rows[0].dispatchEvent(space);
-    expect(ids).toEqual(['b1', 'b2', 'b1']);
-    expect(space.defaultPrevented).toBeTrue();
+    const r = rowEls()[0] as HTMLElement;
+    expect(r.hasAttribute('tabindex')).toBeFalse();
+    expect(r.classList.contains('booking-register__row')).toBeFalse(); // that class carries cursor:pointer
+    r.click();
+    r.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    expect(ids).toEqual([]);
+  });
+
+  it('keeps the openBooking output API for Task 8', () => {
+    const ids: string[] = [];
+    fixture.componentInstance.openBooking.subscribe((id: string) => ids.push(id));
+    fixture.componentInstance.openBooking.emit('b1');
+    expect(ids).toEqual(['b1']);
+    req().flush(pageOf([]));
   });
 
   it('shows the calm empty state when nothing is overdue', () => {

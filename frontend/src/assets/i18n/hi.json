@@ -903,6 +903,7 @@
         "plotDriftPay": "Payment not recorded. The plot is no longer marked Booked. This payment would take the booking past the auto-confirm threshold, and confirming needs the plot to be Booked. Nothing was saved: instalment {{n}} is still pending.",
         "plotDriftConfirm": "The booking wasn't confirmed. The plot is no longer marked Booked, and confirming needs it to be Booked.",
         "plotDriftFix": "To fix it, set the plot back to Booked in Projects & Plots, or switch the confirm rule to Manual in Settings, then try again.",
+        "plotDriftFixConfirm": "To fix it, set the plot back to Booked in Projects & Plots, then try again.",
         "sameAssociate": "Choose a different associate. This booking already belongs to that associate.",
         "invalidTarget": "Only active associates can receive a booking.",
         "payNetwork": "We couldn't confirm whether the payment was recorded. Reload to check whether instalment {{n}} was recorded before you try again.",
