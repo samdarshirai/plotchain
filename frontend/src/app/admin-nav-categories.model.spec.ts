@@ -13,7 +13,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
 
   it('groupsEverySettingsScreenUnderTheirCategory', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => category.items.map(item => item.key))).toEqual([
-      ['companyProfile', 'branding', 'compensation', 'projects', 'paymentsKyc'],
+      ['companyProfile', 'branding', 'compensation', 'paymentsKyc'],
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
       ['salesRegister', 'cycleManagement', 'ledgerRegister', 'epinRegister', 'payoutApproval'],
       ['projectsPlots', 'bookingsEmi'],

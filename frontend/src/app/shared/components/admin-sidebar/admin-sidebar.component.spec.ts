@@ -50,7 +50,6 @@ describe('AdminSidebarComponent', () => {
       '/settings/company-profile',
       '/settings/branding',
       '/settings/compensation',
-      '/settings/projects',
       '/settings/payments-kyc'
     ]);
     expect(setup.getAttribute('aria-expanded')).toBe('true');

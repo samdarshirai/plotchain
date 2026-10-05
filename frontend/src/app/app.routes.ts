@@ -88,7 +88,6 @@ export const routes: Routes = [
       { path: 'company-profile', component: CompanyProfileStepComponent, data: { sectionKey: 'companyProfile', mode: 'settings' } },
       { path: 'branding', component: BrandingStepComponent, data: { sectionKey: 'branding', mode: 'settings' } },
       { path: 'compensation', component: CompensationStepComponent, data: { sectionKey: 'compensation', mode: 'settings' } },
-      { path: 'projects', component: ProjectsStepComponent, data: { sectionKey: 'projects', mode: 'settings' } },
       { path: 'payments-kyc', component: PaymentsKycStepComponent, data: { sectionKey: 'paymentsKyc', mode: 'settings' } },
       { path: 'associate-directory', component: AssociateDirectoryComponent, data: { sectionKey: 'associateDirectory' } },
       { path: 'tree-explorer', component: TreeExplorerComponent, data: { sectionKey: 'treeExplorer' } },
