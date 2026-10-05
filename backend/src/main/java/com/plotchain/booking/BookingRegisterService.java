@@ -51,9 +51,7 @@ public class BookingRegisterService {
             : emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(bookingIds).stream()
                 .collect(Collectors.groupingBy(EmiInstallment::getBookingId));
 
-        List<BookingResponse> rows = result.getContent().stream()
-            .map(b -> bookingService.toResponse(b, byBooking.getOrDefault(b.getId(), List.of())))
-            .toList();
+        List<BookingResponse> rows = bookingService.toResponses(result.getContent(), byBooking);
         return new AdminBookingPageResponse(rows, page, size, result.getTotalElements());
     }
 }

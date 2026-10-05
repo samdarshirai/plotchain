@@ -8,6 +8,7 @@ import com.plotchain.payments.BookingEmiConfigRepository;
 import com.plotchain.projects.Plot;
 import com.plotchain.projects.PlotNotFoundException;
 import com.plotchain.projects.PlotRepository;
+import com.plotchain.projects.ProjectRepository;
 import com.plotchain.projects.PlotStatus;
 import com.plotchain.projects.PlotType;
 import com.plotchain.sales.SaleResponse;
@@ -48,6 +49,7 @@ import static org.mockito.Mockito.when;
 class BookingServiceTest {
 
     @Mock PlotRepository plotRepository;
+    @Mock ProjectRepository projectRepository;
     @Mock AssociateRepository associateRepository;
     @Mock BookingEmiConfigRepository bookingEmiConfigRepository;
     @Mock PlotBookingRepository plotBookingRepository;
@@ -65,7 +67,7 @@ class BookingServiceTest {
     @BeforeEach
     void setUp() {
         bookingService = new BookingService(
-            plotRepository, associateRepository, bookingEmiConfigRepository,
+            plotRepository, projectRepository, associateRepository, bookingEmiConfigRepository,
             plotBookingRepository, emiInstallmentRepository, bookingEventRepository, saleService, clock);
     }
 
@@ -91,11 +93,17 @@ class BookingServiceTest {
         return i;
     }
 
+    // getMyBookings batch-loads installments for the whole page and groups them by booking id.
+    private static List<EmiInstallment> forBooking(PlotBooking booking, List<EmiInstallment> installments) {
+        installments.forEach(i -> i.setBookingId(booking.getId()));
+        return installments;
+    }
+
     private void stubOwnPage(PlotBooking booking, List<EmiInstallment> installments) {
         when(plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(eq(ASSOCIATE_ID), any()))
             .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
-        when(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId()))
-            .thenReturn(installments);
+        when(emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(any()))
+            .thenReturn(forBooking(booking, installments));
     }
 
     @Test
@@ -429,8 +437,8 @@ class BookingServiceTest {
         when(plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(
             eq(ASSOCIATE_ID), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
-        when(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId()))
-            .thenReturn(List.of());
+        when(emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(any()))
+            .thenReturn(forBooking(booking, new java.util.ArrayList<>(List.of())));
 
         AssociateBookingPageResponse response = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20);
 
@@ -461,8 +469,8 @@ class BookingServiceTest {
         second.setDueDate(LocalDate.now().plusMonths(2));
         when(plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(eq(ASSOCIATE_ID), any()))
             .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
-        when(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId()))
-            .thenReturn(List.of(first, second));
+        when(emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(any()))
+            .thenReturn(forBooking(booking, new java.util.ArrayList<>(List.of(first, second))));
 
         AssociateBookingPageResponse response = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20);
 
@@ -808,7 +816,9 @@ class BookingServiceTest {
 
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.ACTIVE);
         assertThat(response.status()).isEqualTo(BookingStatus.ACTIVE);
-        verifyNoInteractions(plotRepository, saleService);
+        verifyNoInteractions(saleService);
+        verify(plotRepository, never()).findByIdForUpdate(any());
+        verify(plotRepository, never()).save(any());
         verify(bookingEventRepository, times(1)).save(any(BookingEvent.class)); // PAID only
     }
 
@@ -879,7 +889,9 @@ class BookingServiceTest {
         bookingService.recordPayment(booking.getId(), 4, pay("150000.00"), ACTOR_ID);
 
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.ACTIVE);
-        verifyNoInteractions(plotRepository, saleService);
+        verifyNoInteractions(saleService);
+        verify(plotRepository, never()).findByIdForUpdate(any());
+        verify(plotRepository, never()).save(any());
     }
 
     @Test
@@ -895,7 +907,9 @@ class BookingServiceTest {
 
             assertThat(booking.getStatus()).as(rule).isEqualTo(BookingStatus.ACTIVE);
         }
-        verifyNoInteractions(plotRepository, saleService);
+        verifyNoInteractions(saleService);
+        verify(plotRepository, never()).findByIdForUpdate(any());
+        verify(plotRepository, never()).save(any());
     }
 
     @Test
@@ -912,7 +926,9 @@ class BookingServiceTest {
             assertThat(response.status()).as("threshold " + bad).isEqualTo(BookingStatus.ACTIVE);
             assertThat(rows[3].getStatus()).isEqualTo(InstallmentStatus.PAID);
         }
-        verifyNoInteractions(plotRepository, saleService);
+        verifyNoInteractions(saleService);
+        verify(plotRepository, never()).findByIdForUpdate(any());
+        verify(plotRepository, never()).save(any());
     }
 
     @Test
@@ -968,5 +984,16 @@ class BookingServiceTest {
             .isInstanceOf(BookingNotActiveException.class);
 
         verifyNoInteractions(bookingEmiConfigRepository, plotRepository, saleService, bookingEventRepository);
+    }
+
+    @Test
+    void missingPlotOrAssociateYieldsNullLabelsNotAnException() {
+        PlotBooking booking = bookingWithBuyer();   // plotRepository/projectRepository/associateRepository mocks return empty
+
+        BookingResponse response = bookingService.toResponse(booking, List.of());
+
+        assertThat(response.plotNo()).isNull();
+        assertThat(response.projectName()).isNull();
+        assertThat(response.associateName()).isNull();
     }
 }

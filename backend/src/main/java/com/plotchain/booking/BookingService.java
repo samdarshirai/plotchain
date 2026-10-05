@@ -10,6 +10,8 @@ import com.plotchain.projects.Plot;
 import com.plotchain.projects.PlotNotFoundException;
 import com.plotchain.projects.PlotRepository;
 import com.plotchain.projects.PlotStatus;
+import com.plotchain.projects.Project;
+import com.plotchain.projects.ProjectRepository;
 import com.plotchain.sales.SaleResponse;
 import com.plotchain.sales.SaleService;
 import org.springframework.data.domain.Page;
@@ -24,7 +26,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,6 +37,7 @@ import java.util.UUID;
 public class BookingService {
 
     private final PlotRepository plotRepository;
+    private final ProjectRepository projectRepository;
     private final AssociateRepository associateRepository;
     private final BookingEmiConfigRepository bookingEmiConfigRepository;
     private final PlotBookingRepository plotBookingRepository;
@@ -42,6 +48,7 @@ public class BookingService {
 
     public BookingService(
             PlotRepository plotRepository,
+            ProjectRepository projectRepository,
             AssociateRepository associateRepository,
             BookingEmiConfigRepository bookingEmiConfigRepository,
             PlotBookingRepository plotBookingRepository,
@@ -53,6 +60,7 @@ public class BookingService {
         this.clock = clock;
         this.bookingEventRepository = bookingEventRepository;
         this.plotRepository = plotRepository;
+        this.projectRepository = projectRepository;
         this.associateRepository = associateRepository;
         this.bookingEmiConfigRepository = bookingEmiConfigRepository;
         this.plotBookingRepository = plotBookingRepository;
@@ -338,10 +346,10 @@ public class BookingService {
         Page<PlotBooking> result = plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(
             associateId, PageRequest.of(page, size));
 
-        List<BookingResponse> bookings = result.getContent().stream()
-            .map(booking -> toResponse(booking, emiInstallmentRepository
-                .findByBookingIdOrderByInstallmentNumberAsc(booking.getId())))
-            .toList();
+        List<BookingResponse> bookings = toResponses(result.getContent(), emiInstallmentRepository
+            .findByBookingIdInOrderByInstallmentNumberAsc(
+                result.getContent().stream().map(PlotBooking::getId).toList()).stream()
+            .collect(java.util.stream.Collectors.groupingBy(EmiInstallment::getBookingId)));
 
         return new AssociateBookingPageResponse(bookings, page, size, result.getTotalElements());
     }
@@ -385,19 +393,49 @@ public class BookingService {
     // Package-private: later lifecycle units reuse it. Overdue is derived here, never stored
     // (Decision 7): PENDING and due strictly before today (UTC via the injected Clock).
     BookingResponse toResponse(PlotBooking booking, List<EmiInstallment> installments) {
+        return toResponses(List.of(booking), Map.of(booking.getId(), installments)).get(0);
+    }
+
+    // Unit 14b: plotNo / projectName / associateName are batch-loaded (3 findAllById calls for the
+    // whole list, no N+1). A missing referent gives null, never an exception.
+    List<BookingResponse> toResponses(List<PlotBooking> bookings, Map<UUID, List<EmiInstallment>> installmentsByBooking) {
+        if (bookings.isEmpty()) { return List.of(); }
+        Map<UUID, Plot> plots = byId(plotRepository.findAllById(ids(bookings, PlotBooking::getPlotId)), Plot::getId);
+        Map<UUID, Project> projects = byId(projectRepository.findAllById(
+            plots.values().stream().map(Plot::getProjectId).filter(java.util.Objects::nonNull).distinct().toList()), Project::getId);
+        Map<UUID, Associate> associates = byId(associateRepository.findAllById(ids(bookings, PlotBooking::getAssociateId)), Associate::getId);
         LocalDate today = LocalDate.now(clock);
-        List<EmiInstallmentResponse> rows = installments.stream()
-            .map(i -> new EmiInstallmentResponse(
-                i.getInstallmentNumber(), i.getAmount(), i.getDueDate(), i.getStatus(), i.getPaidAt(),
-                i.getStatus() == InstallmentStatus.PENDING && i.getDueDate().isBefore(today)))
-            .toList();
-        return new BookingResponse(
-            booking.getId(), booking.getPlotId(), booking.getAssociateId(),
-            booking.getStatus(), booking.getBuyerName(),
-            booking.getTotalAmount(), booking.getInstallmentCount(), booking.getBookedAt(),
-            sumByStatus(installments, InstallmentStatus.PAID),
-            sumByStatus(installments, InstallmentStatus.PENDING),
-            rows);
+        return bookings.stream().map(booking -> {
+            List<EmiInstallment> installments = installmentsByBooking.getOrDefault(booking.getId(), List.of());
+            List<EmiInstallmentResponse> rows = installments.stream()
+                .map(i -> new EmiInstallmentResponse(
+                    i.getInstallmentNumber(), i.getAmount(), i.getDueDate(), i.getStatus(), i.getPaidAt(),
+                    i.getStatus() == InstallmentStatus.PENDING && i.getDueDate().isBefore(today)))
+                .toList();
+            Plot plot = plots.get(booking.getPlotId());
+            Project project = plot == null ? null : projects.get(plot.getProjectId());
+            Associate associate = associates.get(booking.getAssociateId());
+            return new BookingResponse(
+                booking.getId(), booking.getPlotId(), booking.getAssociateId(),
+                booking.getStatus(), booking.getBuyerName(),
+                booking.getTotalAmount(), booking.getInstallmentCount(), booking.getBookedAt(),
+                sumByStatus(installments, InstallmentStatus.PAID),
+                sumByStatus(installments, InstallmentStatus.PENDING),
+                rows,
+                plot == null ? null : plot.getPlotNo(),
+                project == null ? null : project.getName(),
+                associate == null ? null : associate.getName());
+        }).toList();
+    }
+
+    private static List<UUID> ids(Collection<PlotBooking> bookings, java.util.function.Function<PlotBooking, UUID> f) {
+        return bookings.stream().map(f).filter(java.util.Objects::nonNull).distinct().toList();
+    }
+
+    private static <T> Map<UUID, T> byId(Iterable<T> items, java.util.function.Function<T, UUID> id) {
+        Map<UUID, T> m = new HashMap<>();
+        items.forEach(i -> m.put(id.apply(i), i));
+        return m;
     }
 
     private BigDecimal sumByStatus(List<EmiInstallment> installments, InstallmentStatus status) {

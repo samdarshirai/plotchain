@@ -5,6 +5,7 @@ import com.plotchain.payments.BookingEmiConfig;
 import com.plotchain.payments.BookingEmiConfigRepository;
 import com.plotchain.projects.Plot;
 import com.plotchain.projects.PlotRepository;
+import com.plotchain.projects.ProjectRepository;
 import com.plotchain.projects.PlotStatus;
 import com.plotchain.projects.PlotType;
 import com.plotchain.sales.SaleService;
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.when;
 class BookingCancelServiceTest {
 
     @Mock PlotRepository plotRepository;
+    @Mock ProjectRepository projectRepository;
     @Mock AssociateRepository associateRepository;
     @Mock BookingEmiConfigRepository bookingEmiConfigRepository;
     @Mock PlotBookingRepository plotBookingRepository;
@@ -57,7 +59,7 @@ class BookingCancelServiceTest {
     @BeforeEach
     void setUp() {
         bookingService = new BookingService(
-            plotRepository, associateRepository, bookingEmiConfigRepository,
+            plotRepository, projectRepository, associateRepository, bookingEmiConfigRepository,
             plotBookingRepository, emiInstallmentRepository, bookingEventRepository, saleService, clock);
     }
 

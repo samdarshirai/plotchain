@@ -42,8 +42,8 @@ class BookingRegisterServiceTest {
     @Autowired BookingRegisterService service;
     @Autowired PlotBookingRepository bookings;
     @Autowired AssociateRepository associates;
-    @Autowired ProjectRepository projects;
-    @Autowired PlotRepository plots;
+    @SpyBean ProjectRepository projects;
+    @SpyBean PlotRepository plots;
     @SpyBean EmiInstallmentRepository installments;
 
     BookingRegisterTestData d;
@@ -51,6 +51,7 @@ class BookingRegisterServiceTest {
     @BeforeEach
     void seed() {
         d = new BookingRegisterTestData(associates, projects, plots, bookings, installments).seed();
+        reset(plots, projects);
         reset(installments);   // forget the seeding calls; only count the service's reads
     }
 
@@ -78,6 +79,19 @@ class BookingRegisterServiceTest {
         assertThat(b8.installments()).isEmpty();
         assertThat(b8.paidAmount()).isEqualByComparingTo("0");
         assertThat(b8.dueAmount()).isEqualByComparingTo("0");
+    }
+
+    // Unit 14b: labels are batch-loaded, one findAllById per referent type regardless of page size.
+    @Test
+    void rowsCarryPlotProjectAndAssociateNamesLoadedInConstantQueries() {
+        AdminBookingPageResponse page = service.list(null, null, null, null, false, 0, 50);
+        assertThat(page.bookings().size()).isGreaterThan(3);
+        BookingResponse b1 = page.bookings().stream().filter(b -> b.id().equals(d.b1.getId())).findFirst().orElseThrow();
+        assertThat(b1.plotNo()).startsWith("R-");
+        assertThat(b1.projectName()).isEqualTo("Reg P1");
+        assertThat(b1.associateName()).isEqualTo("Reg Associate");
+        verify(plots, times(1)).findAllById(anyCollection());
+        verify(projects, times(1)).findAllById(anyCollection());
     }
 
     @Test
