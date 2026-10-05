@@ -58,7 +58,8 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     labelKey: 'nav.categories.inventory',
     icon: 'domain',
     items: [
-      { key: 'projectsPlots', labelKey: 'settings.sections.projectsPlots', path: '/settings/projects-plots' }
+      { key: 'projectsPlots', labelKey: 'settings.sections.projectsPlots', path: '/settings/projects-plots' },
+      { key: 'bookingsEmi', labelKey: 'settings.sections.bookingsEmi', path: '/settings/bookings-emi' }
     ]
   },
   {

@@ -4583,3 +4583,20 @@ button.tree-explorer__vacant-card {
   .my-bookings__table td { display: flex; justify-content: space-between; gap: 1rem; border: 0; padding: 0.25rem 0.5rem; }
   .my-bookings__cell-label { display: inline; font: 500 0.6875rem var(--font-mono); text-transform: uppercase; color: var(--text-muted); }
 }
+
+// Bookings & EMI: only the host header lives here (it @extends global placeholders); register/seal/overdue styles are in admin-bookings-emi/*.component.scss (lazy)
+
+// Bookings & EMI host (plot-booking unit 12)
+.bookings-emi {
+  display: flex; flex-direction: column; gap: 1.5rem;
+  max-width: 1480px; margin: 0 auto; padding: 1.5rem 2rem;
+  font-family: 'Inter', var(--font-sans);
+
+  &__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 1.5rem; }
+  &__intro { display: flex; flex-direction: column; gap: 0.375rem; }
+  &__eyebrow { @extend %admin-screen-eyebrow; }
+  &__title { @extend %admin-screen-title; }
+  &__subtitle { @extend %admin-screen-subtitle; max-width: 46rem; }
+  &__rule { border: 1px solid var(--border-subtle); border-radius: 999px; padding: 0.375rem 0.875rem; font: 500 0.8125rem var(--font-mono); }
+}
+@media (max-width: 768px) { .bookings-emi { padding-inline: 1rem; } }

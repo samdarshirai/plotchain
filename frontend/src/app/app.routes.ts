@@ -99,6 +99,7 @@ export const routes: Routes = [
       { path: 'e-pin-register', component: EPinRegisterComponent, data: { sectionKey: 'epinRegister' } },
       { path: 'payout-approval', component: PayoutApprovalComponent, data: { sectionKey: 'payoutApproval' } },
       { path: 'projects-plots', component: ProjectsPlotsComponent, data: { sectionKey: 'projectsPlots' } },
+      { path: 'bookings-emi', loadComponent: () => import('./admin/admin-bookings-emi/bookings-emi.component').then(m => m.BookingsEmiComponent), data: { sectionKey: 'bookingsEmi' } },
       { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } },
       { path: 'admin-stats', component: AdminStatsComponent, data: { sectionKey: 'adminStats' } },
       // There is no settings hub screen any more -- every entry point (a header category tab, an

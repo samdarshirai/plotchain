@@ -16,7 +16,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
       ['companyProfile', 'branding', 'compensation', 'projects', 'paymentsKyc'],
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
       ['salesRegister', 'cycleManagement', 'ledgerRegister', 'epinRegister', 'payoutApproval'],
-      ['projectsPlots'],
+      ['projectsPlots', 'bookingsEmi'],
       ['auditLog', 'adminStats']
     ]);
   });
@@ -57,5 +57,9 @@ describe('findNavCategoryForUrl', () => {
     expect(findNavCategoryForUrl('/admin/dashboard')).toBeUndefined();
     expect(findNavCategoryForUrl('/settings')).toBeUndefined();
     expect(findNavCategoryForUrl('/admin/sales/new')).toBeUndefined();
+  });
+
+  it('resolvesTheBookingsEmiScreenToTheInventoryCategory', () => {
+    expect(findNavCategoryForUrl('/settings/bookings-emi')?.key).toBe('inventory');
   });
 });
