@@ -1,5 +1,5 @@
 // booking-register.component.ts
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
@@ -21,6 +21,8 @@ const PAGE_SIZE = 20;
 const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', projectId: '', overdue: false };
 
 @Component({
+  encapsulation: ViewEncapsulation.None,
+  styleUrls: ['./booking-register.component.scss'],
   selector: 'app-booking-register',
   standalone: true,
   imports: [CommonModule, RouterLink, TranslateModule, AssociateLookupComponent, InlineBannerComponent, BookingSealComponent],

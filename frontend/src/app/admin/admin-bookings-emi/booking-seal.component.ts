@@ -1,5 +1,5 @@
 // booking-seal.component.ts
-import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject , ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -18,6 +18,8 @@ import { ErrorKind, associateLabel, classifyError, meterPercent, plotText, willA
 type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
 
 @Component({
+  encapsulation: ViewEncapsulation.None,
+  styleUrls: ['./booking-seal.component.scss'],
   selector: 'app-booking-seal',
   standalone: true,
   imports: [CommonModule, RouterLink, TranslateModule, AssociateLookupComponent, InlineBannerComponent, FieldErrorComponent],

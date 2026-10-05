@@ -1,0 +1,31 @@
+// ---- Bookings & EMI (plot-booking unit 12) ---------------------------------------------------
+.booking-register {
+  display: flex; flex-direction: column; gap: 1.25rem;
+  &__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  &__list { background: var(--surface-card); border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); overflow: hidden; }
+  &__table { width: 100%; border-collapse: collapse;
+    th { text-align: left; padding: 0.75rem 1rem; font: 500 0.6875rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+    td { padding: 0.75rem 1rem; border-top: 1px solid var(--border-subtle); vertical-align: top; } }
+  &__row { cursor: pointer; &--selected { background: var(--brand-primary-soft); box-shadow: inset 4px 0 0 var(--brand-primary); }
+    &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: -2px; } }
+  &__sub { font-size: 0.8125rem; color: var(--text-muted); }
+  &__num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  &__pager { display: flex; justify-content: center; align-items: center; gap: 1rem; padding: 1rem; .brand-button { min-height: 44px; } }
+  &__empty { padding: 2.5rem 1rem; text-align: center; h2 { margin: 0 0 0.5rem; font: 600 1.125rem var(--font-sans); } p { margin: 0 0 1rem; color: var(--text-muted); } }
+  &__retry { margin-left: 0.75rem; background: none; border: 0; text-decoration: underline; cursor: pointer; color: inherit; font-weight: 600; min-height: 44px; }
+  &__skeleton { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; }
+  &__skeleton-row { height: 44px; border-radius: 8px; background: linear-gradient(90deg, var(--surface-raised), var(--surface-card), var(--surface-raised)); background-size: 200% 100%; animation: booking-register-shimmer 1.4s linear infinite; }
+}
+:root { --status-danger-text: color-mix(in srgb, var(--status-danger) 70%, black); }
+@keyframes booking-register-shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .booking-register__skeleton-row { animation: none; } }
+@media (max-width: 768px) {
+  .booking-register__table thead { display: none; }
+  .booking-register__table tr { display: block; padding: 0.5rem 0; border-top: 1px solid var(--border-subtle); }
+  .booking-register__table td { display: flex; justify-content: space-between; gap: 1rem; border: 0; padding: 0.25rem 1rem; }
+  .booking-register__table td::before { content: attr(data-label); font: 500 0.6875rem var(--font-mono); text-transform: uppercase; color: var(--text-muted); }
+}
+
+// Overdue EMI report tab: reuses the register's table/pager/empty/skeleton classes
+.overdue-report { background: var(--surface-card); border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); overflow: hidden;
+  .booking-register__empty .material-symbols-outlined { font-size: 2.5rem; color: var(--status-success); } }
