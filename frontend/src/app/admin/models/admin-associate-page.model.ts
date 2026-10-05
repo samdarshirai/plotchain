@@ -11,7 +11,9 @@ export interface AdminAssociateFilters {
   search?: string;
   rank?: string;
   kycStatus?: string;
+  excludeKycStatus?: string;
   status?: string;
   joinedFrom?: string;
   joinedTo?: string;
+  newestFirst?: string;
 }

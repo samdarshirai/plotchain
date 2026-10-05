@@ -129,11 +129,29 @@ describe('AssociateDirectoryComponent', () => {
     req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
   });
 
-  it('changing the KYC status filter reloads page 0 with the kycStatus param', () => {
-    fixture.componentInstance.onKycStatusChange('VERIFIED');
+  it('Green tab loads only VERIFIED associates', () => {
+    fixture.componentInstance.onViewChange('green');
 
     const req = httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('kycStatus') === 'VERIFIED' && r.params.get('page') === '0');
-    expect(req.request.method).toBe('GET');
+    req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('Red tab excludes VERIFIED associates', () => {
+    fixture.componentInstance.onViewChange('red');
+
+    const req = httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('excludeKycStatus') === 'VERIFIED' && !r.params.has('kycStatus'));
+    req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('By Date tab asks for newest first, and All clears the view filters', () => {
+    fixture.componentInstance.onViewChange('byDate');
+    httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('newestFirst') === 'true')
+      .flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+
+    fixture.componentInstance.onViewChange('all');
+    const req = httpMock.expectOne(r => r.url === '/api/admin/associates');
+    expect(req.request.params.has('newestFirst')).toBe(false);
+    expect(req.request.params.has('kycStatus')).toBe(false);
     req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
   });
 

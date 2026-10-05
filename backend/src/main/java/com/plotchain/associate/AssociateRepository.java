@@ -268,17 +268,20 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
              OR LOWER(a.userId) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))
         AND (:rankId IS NULL OR a.rankId = :rankId)
         AND (:kycStatus IS NULL OR a.kycStatus = :kycStatus)
+        AND (:excludeKycStatus IS NULL OR a.kycStatus <> :excludeKycStatus)
         AND (:status IS NULL OR a.status = :status)
         AND (CAST(:joinedFrom AS timestamp) IS NULL OR a.joinedAt >= :joinedFrom)
         AND (CAST(:joinedToExclusive AS timestamp) IS NULL OR a.joinedAt < :joinedToExclusive)
-        ORDER BY a.userId ASC
+        ORDER BY CASE WHEN :newestFirst = true THEN a.joinedAt END DESC, a.userId ASC
         """)
     Page<Associate> searchDirectory(
         @Param("search") String search,
         @Param("rankId") UUID rankId,
         @Param("kycStatus") KycStatus kycStatus,
+        @Param("excludeKycStatus") KycStatus excludeKycStatus,
         @Param("status") AssociateStatus status,
         @Param("joinedFrom") Instant joinedFrom,
         @Param("joinedToExclusive") Instant joinedToExclusive,
+        @Param("newestFirst") boolean newestFirst,
         Pageable pageable);
 }

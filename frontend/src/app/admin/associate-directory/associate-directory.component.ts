@@ -10,10 +10,16 @@ import { SidePanelComponent } from '../../shared/components/side-panel/side-pane
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { CompensationPlanService } from '../../setup/steps/compensation/compensation-plan.service';
 import { RankOption } from '../../setup/models/compensation-plan.model';
+import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/tab-bar.component';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { titleCase } from '../../shared/utils/title-case';
 
 const PAGE_SIZE = 20;
+
+// Quick views over the directory. Green/Red are KYC-based: Green = VERIFIED, Red = anything else.
+// By Date lists newest joiners first.
+type DirectoryView = 'all' | 'green' | 'red' | 'byDate';
+const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'byDate'];
 
 // Enum values the backend returns for kycStatus/status are shouty-uppercase (PENDING/VERIFIED/...);
 // the mockup renders them Title Case (Viraj_Acres_Settings.dc.html lines 646-650) -- see the shared
@@ -21,7 +27,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-associate-directory',
   standalone: true,
-  imports: [CommonModule, TranslateModule, SidePanelComponent, InlineBannerComponent, NewAssociatePanelComponent, EditableTableComponent],
+  imports: [CommonModule, TranslateModule, SidePanelComponent, InlineBannerComponent, NewAssociatePanelComponent, EditableTableComponent, TabBarComponent],
   template: `
     <div class="associate-directory">
       <div class="associate-directory__header">
@@ -43,6 +49,7 @@ const PAGE_SIZE = 20;
            in one wrapper so the parent's flex gap (used for header/error spacing) doesn't land
            between them the way it would if they were direct siblings of .associate-directory. -->
       <div class="associate-directory__list">
+      <app-tab-bar [tabs]="viewTabs" [activeTabId]="view" (tabChange)="onViewChange($event)"></app-tab-bar>
       <div class="associate-directory__filters">
         <input
           type="text"
@@ -56,15 +63,6 @@ const PAGE_SIZE = 20;
             <select (change)="onRankChange($any($event.target).value)">
               <option value="">{{ 'admin.associateDirectory.rankFilterAllOption' | translate }}</option>
               <option *ngFor="let rank of availableRanks" [value]="rank.id">{{ rank.name }}</option>
-            </select>
-          </div>
-          <div class="associate-directory__filter-field">
-            <label>{{ 'admin.associateDirectory.kycStatusFilterLabel' | translate }}</label>
-            <select (change)="onKycStatusChange($any($event.target).value)">
-              <option value="">{{ 'admin.associateDirectory.kycStatusFilterAllOption' | translate }}</option>
-              <option value="PENDING">PENDING</option>
-              <option value="VERIFIED">VERIFIED</option>
-              <option value="REJECTED">REJECTED</option>
             </select>
           </div>
           <div class="associate-directory__filter-field">
@@ -224,7 +222,8 @@ export class AssociateDirectoryComponent implements OnInit {
   directoryRows: Record<string, string>[] = [];
   private search = '';
   private rank = '';
-  private kycStatus = '';
+  view: DirectoryView = 'all';
+  viewTabs: TabDefinition[] = [];
   private status = '';
   private joinedFrom = '';
   private joinedTo = '';
@@ -235,6 +234,7 @@ export class AssociateDirectoryComponent implements OnInit {
   modalOpen = false;
 
   ngOnInit(): void {
+    this.viewTabs = VIEWS.map(id => ({ id, label: this.translate.instant('admin.associateDirectory.views.' + id) }));
     this.directoryColumns = [
       { key: 'userId', label: this.translate.instant('admin.associateDirectory.columnUserId'), type: 'text' },
       { key: 'name', label: this.translate.instant('admin.associateDirectory.columnName'), type: 'text' },
@@ -274,8 +274,8 @@ export class AssociateDirectoryComponent implements OnInit {
     this.loadPage(0);
   }
 
-  onKycStatusChange(value: string): void {
-    this.kycStatus = value;
+  onViewChange(view: string): void {
+    this.view = view as DirectoryView;
     this.loadPage(0);
   }
 
@@ -383,7 +383,9 @@ export class AssociateDirectoryComponent implements OnInit {
     const filters: AdminAssociateFilters = {};
     if (this.search) filters.search = this.search;
     if (this.rank) filters.rank = this.rank;
-    if (this.kycStatus) filters.kycStatus = this.kycStatus;
+    if (this.view === 'green') filters.kycStatus = 'VERIFIED';
+    if (this.view === 'red') filters.excludeKycStatus = 'VERIFIED';
+    if (this.view === 'byDate') filters.newestFirst = 'true';
     if (this.status) filters.status = this.status;
     if (this.joinedFrom) filters.joinedFrom = this.joinedFrom;
     if (this.joinedTo) filters.joinedTo = this.joinedTo;

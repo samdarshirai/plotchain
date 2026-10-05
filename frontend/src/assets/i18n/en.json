@@ -542,7 +542,7 @@
     "payoutHistory": "Payout History",
     "categories": {
       "setup": "Setup",
-      "network": "Network",
+      "network": "Associates",
       "finance": "Finance & Cycles",
       "inventory": "Inventory & Bookings",
       "system": "System"
@@ -605,6 +605,12 @@
       "genericSaveError": "Could not create the associate. Check the details and try again."
     },
     "associateDirectory": {
+      "views": {
+        "all": "All Associates",
+        "green": "Green Associates",
+        "red": "Red Associates",
+        "byDate": "Associates By Date"
+      },
       "title": "Associate Directory",
       "subtitle": "Manage and provision associates in one place.",
       "newAssociateAction": "New Associate",
@@ -632,8 +638,6 @@
       "rankLoadError": "Something went wrong loading rank options.",
       "rankFilterLabel": "Rank",
       "rankFilterAllOption": "All ranks",
-      "kycStatusFilterLabel": "KYC Status",
-      "kycStatusFilterAllOption": "All KYC statuses",
       "statusFilterLabel": "Status",
       "statusFilterAllOption": "All statuses",
       "joinedFromLabel": "Joined from",

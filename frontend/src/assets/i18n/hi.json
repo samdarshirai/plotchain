@@ -506,7 +506,7 @@
     "payoutHistory": "भुगतान इतिहास",
     "categories": {
       "setup": "सेटअप",
-      "network": "नेटवर्क",
+      "network": "एसोसिएट्स",
       "finance": "वित्त और चक्र",
       "inventory": "इन्वेंटरी और बुकिंग",
       "system": "सिस्टम"
@@ -569,6 +569,12 @@
       "genericSaveError": "एसोसिएट नहीं बनाया जा सका। विवरण जांचें और पुनः प्रयास करें।"
     },
     "associateDirectory": {
+      "views": {
+        "all": "सभी एसोसिएट्स",
+        "green": "ग्रीन एसोसिएट्स",
+        "red": "रेड एसोसिएट्स",
+        "byDate": "तारीख अनुसार एसोसिएट्स"
+      },
       "title": "Associate Directory",
       "subtitle": "Manage and provision associates in one place.",
       "newAssociateAction": "New Associate",
@@ -596,8 +602,6 @@
       "rankLoadError": "Something went wrong loading rank options.",
       "rankFilterLabel": "Rank",
       "rankFilterAllOption": "All ranks",
-      "kycStatusFilterLabel": "KYC Status",
-      "kycStatusFilterAllOption": "All KYC statuses",
       "statusFilterLabel": "Status",
       "statusFilterAllOption": "All statuses",
       "joinedFromLabel": "Joined from",

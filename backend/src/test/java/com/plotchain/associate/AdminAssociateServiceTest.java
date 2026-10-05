@@ -81,12 +81,12 @@ class AdminAssociateServiceTest {
     void listReturnsAPageMappedToSummaries() {
         Associate associate = newAssociate(UUID.randomUUID(), "VP00001");
         when(associateRepository.searchDirectory(
-            eq("jane"), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            eq("jane"), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(false), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(associate), PageRequest.of(0, 20), 1));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
 
         AdminAssociatePageResponse response = service.list(
-            "jane", null, null, null, null, null, 0, 20);
+            "jane", null, null, null, null, null, null, false, 0, 20);
 
         assertThat(response.totalElements()).isEqualTo(1);
         assertThat(response.associates()).hasSize(1);
@@ -97,16 +97,16 @@ class AdminAssociateServiceTest {
     @Test
     void listConvertsJoinedDateRangeToAnExclusiveUpperBoundInstant() {
         when(associateRepository.searchDirectory(
-            isNull(), isNull(), isNull(), isNull(), any(), any(), eq(PageRequest.of(0, 20))))
+            isNull(), isNull(), isNull(), isNull(), isNull(), any(), any(), eq(false), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
 
-        service.list(null, null, null, null, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31), 0, 20);
+        service.list(null, null, null, null, null, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31), false, 0, 20);
 
         ArgumentCaptor<Instant> fromCaptor = ArgumentCaptor.forClass(Instant.class);
         ArgumentCaptor<Instant> toCaptor = ArgumentCaptor.forClass(Instant.class);
         verify(associateRepository).searchDirectory(
-            isNull(), isNull(), isNull(), isNull(), fromCaptor.capture(), toCaptor.capture(), any());
+            isNull(), isNull(), isNull(), isNull(), isNull(), fromCaptor.capture(), toCaptor.capture(), eq(false), any());
         assertThat(fromCaptor.getValue()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
         // Exclusive upper bound: the day AFTER joinedTo, so Jan 31 itself is included.
         assertThat(toCaptor.getValue()).isEqualTo(Instant.parse("2026-02-01T00:00:00Z"));

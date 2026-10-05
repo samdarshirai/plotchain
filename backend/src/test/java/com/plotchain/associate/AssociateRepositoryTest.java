@@ -296,25 +296,29 @@ class AssociateRepositoryTest {
         entityManager.flush();
 
         Page<Associate> bySearch = associateRepository.searchDirectory(
-            "jane", null, null, null, null, null, PageRequest.of(0, 20));
+            "jane", null, null, null, null, null, null, false, PageRequest.of(0, 20));
         assertThat(bySearch.getContent()).extracting(Associate::getUserId).containsExactly("VP00001");
 
         Page<Associate> byRank = associateRepository.searchDirectory(
-            null, rankB.getId(), null, null, null, null, PageRequest.of(0, 20));
+            null, rankB.getId(), null, null, null, null, null, false, PageRequest.of(0, 20));
         assertThat(byRank.getContent()).extracting(Associate::getUserId).containsExactly("VP00002");
 
         Page<Associate> byKycStatus = associateRepository.searchDirectory(
-            null, null, KycStatus.PENDING, null, null, null, PageRequest.of(0, 20));
+            null, null, KycStatus.PENDING, null, null, null, null, false, PageRequest.of(0, 20));
         assertThat(byKycStatus.getContent()).extracting(Associate::getUserId).containsExactly("VP00002");
 
         Page<Associate> byStatus = associateRepository.searchDirectory(
-            null, null, null, AssociateStatus.SUSPENDED, null, null, PageRequest.of(0, 20));
+            null, null, null, null, AssociateStatus.SUSPENDED, null, null, false, PageRequest.of(0, 20));
         assertThat(byStatus.getContent()).extracting(Associate::getUserId).containsExactly("VP00002");
 
         Page<Associate> noFilters = associateRepository.searchDirectory(
-            null, null, null, null, null, null, PageRequest.of(0, 20));
+            null, null, null, null, null, null, null, false, PageRequest.of(0, 20));
         assertThat(noFilters.getContent()).extracting(Associate::getUserId)
             .containsExactlyInAnyOrder("VP00001", "VP00002");
+
+        Page<Associate> notVerified = associateRepository.searchDirectory(
+            null, null, null, KycStatus.VERIFIED, null, null, null, false, PageRequest.of(0, 20));
+        assertThat(notVerified.getContent()).extracting(Associate::getUserId).containsExactly("VP00002");
     }
 
     @Test
@@ -329,11 +333,26 @@ class AssociateRepositoryTest {
         entityManager.flush();
 
         Page<Associate> result = associateRepository.searchDirectory(
-            null, null, null, null,
+            null, null, null, null, null,
             Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2026-02-01T00:00:00Z"),
-            PageRequest.of(0, 20));
+            false, PageRequest.of(0, 20));
 
         assertThat(result.getContent()).extracting(Associate::getUserId).containsExactly("VP00001");
+    }
+
+    @Test
+    void searchDirectoryNewestFirstOrdersByJoinedAtDescending() {
+        RankTier rank = persistRank("Sales Associate", 1);
+        persistAssociate("VP00001", "Jane", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.parse("2026-01-15T00:00:00Z"));
+        persistAssociate("VP00002", "John", AssociateRole.ASSOCIATE, rank.getId(),
+            KycStatus.PENDING, AssociateStatus.ACTIVE, Instant.parse("2026-02-15T00:00:00Z"));
+        entityManager.flush();
+
+        Page<Associate> result = associateRepository.searchDirectory(
+            null, null, null, null, null, null, null, true, PageRequest.of(0, 20));
+
+        assertThat(result.getContent()).extracting(Associate::getUserId).containsExactly("VP00002", "VP00001");
     }
 
     @Test

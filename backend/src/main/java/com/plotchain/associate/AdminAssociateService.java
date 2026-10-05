@@ -55,16 +55,17 @@ public class AdminAssociateService {
         this.associateStatusCache = associateStatusCache;
     }
 
-    public AdminAssociatePageResponse list(String search, UUID rankId, KycStatus kycStatus, AssociateStatus status,
-                                            LocalDate joinedFrom, LocalDate joinedTo, int page, int size) {
+    public AdminAssociatePageResponse list(String search, UUID rankId, KycStatus kycStatus, KycStatus excludeKycStatus,
+                                            AssociateStatus status, LocalDate joinedFrom, LocalDate joinedTo,
+                                            boolean newestFirst, int page, int size) {
         Instant joinedFromInstant = joinedFrom == null ? null : joinedFrom.atStartOfDay(ZoneOffset.UTC).toInstant();
         Instant joinedToExclusive = joinedTo == null
             ? null : joinedTo.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
         String normalizedSearch = (search == null || search.isBlank()) ? null : search;
 
         Page<Associate> result = associateRepository.searchDirectory(
-            normalizedSearch, rankId, kycStatus, status, joinedFromInstant, joinedToExclusive,
-            PageRequest.of(page, size));
+            normalizedSearch, rankId, kycStatus, excludeKycStatus, status, joinedFromInstant, joinedToExclusive,
+            newestFirst, PageRequest.of(page, size));
 
         Map<UUID, RankTier> ranksById = ranksById();
         List<AdminAssociateSummaryResponse> summaries = result.getContent().stream()
