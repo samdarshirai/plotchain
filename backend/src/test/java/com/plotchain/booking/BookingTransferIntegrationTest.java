@@ -146,7 +146,7 @@ class BookingTransferIntegrationTest {
     }
 
     private BookingResponse seedBooking(UUID ownerId) {
-        return bookingService.createBooking(new CreateBookingRequest(seedPlot(), ownerId, "Jane Buyer", null));
+        return LegacyScheduleSeed.book(bookingService, jdbc, seedPlot(), ownerId, "Jane Buyer");
     }
 
     private int count(String sql, Object... args) {

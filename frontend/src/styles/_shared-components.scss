@@ -534,7 +534,23 @@ input[type='file'].logo-uploader__input {
     background: repeating-linear-gradient(45deg, var(--surface-raised) 0 6px, var(--surface-card) 6px 12px);
     .plot-tile__status { color: var(--text-muted); } }
 
+  // Plan variant (mockup): square flat tile, status shown by colour only. The edge is the button's own
+  // background and the face sits 1-2px inside it, so the corner notch gets a diagonal edge too.
+  &--plan { min-width: 0; min-height: 0; padding: 1px; gap: 0; border: 0; border-radius: 0; background: #8C8172; color: #3E372E;
+    .plot-tile__face { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; width: 100%; height: 64px; padding: 10px 12px; box-sizing: border-box; }
+    .plot-tile__no { font: 500 0.875rem var(--font-mono); }
+    .plot-tile__meta { font: 400 0.71875rem var(--font-sans); color: inherit; opacity: 0.8; }
+    &.plot-tile--corner, &.plot-tile--corner .plot-tile__face { clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
+    &.plot-tile--corner .plot-tile__face { clip-path: polygon(0 0, calc(100% - 13.5px) 0, 100% 13.5px, 100% 100%, 0 100%); }
+    &.plot-tile--available { background: #4B7A52; color: #23402A; .plot-tile__face { background: #DCE8D6; } }
+    &.plot-tile--booked { background: #B4790E; color: #5A3D07; .plot-tile__face { background: #F1D9A6; } }
+    &.plot-tile--sold { background: #8C8172; color: #3E372E; .plot-tile__face { background: #CFC6B6; } }
+    &.plot-tile--selected { padding: 2px; background: #C6A227; color: #EAD07D; .plot-tile__face { background: #5C1A2A; }
+      &.plot-tile--corner .plot-tile__face { clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 0 100%); } }
+  }
+
   &--selected { border-width: 3px; border-color: var(--brand-primary); }
+  &--selected, &--selected .plot-tile__meta, &--selected .plot-tile__status { background: var(--brand-secondary); color: #EAD07D; }
   &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
   // After the generic rule, and clipped tiles hide an outside outline, so draw it inside the box, 2px clear of the 3px selected border.
   &.plot-tile--corner:focus-visible { outline-offset: -7px; }

@@ -532,7 +532,7 @@ class SecurityConfigTest {
     @EnumSource(AssociateRole.class)
     void adminBookingsCreateIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
         String body = new ObjectMapper().writeValueAsString(
-            new com.plotchain.booking.CreateBookingRequest(UUID.randomUUID(), UUID.randomUUID(), "Jane Buyer", null));
+            new com.plotchain.booking.CreateBookingRequest(UUID.randomUUID(), UUID.randomUUID(), "Jane Buyer", null, new java.math.BigDecimal("1000")));
 
         mockMvc.perform(post("/api/admin/bookings")
                 .header("Authorization", "Bearer " + tokenFor(role))
@@ -544,7 +544,7 @@ class SecurityConfigTest {
     @Test
     void adminBookingsCreateIsUnauthorizedWithoutAToken() throws Exception {
         String body = new ObjectMapper().writeValueAsString(
-            new com.plotchain.booking.CreateBookingRequest(UUID.randomUUID(), UUID.randomUUID(), "Jane Buyer", null));
+            new com.plotchain.booking.CreateBookingRequest(UUID.randomUUID(), UUID.randomUUID(), "Jane Buyer", null, new java.math.BigDecimal("1000")));
         mockMvc.perform(post("/api/admin/bookings").contentType("application/json").content(body))
             .andExpect(status().isUnauthorized());
     }

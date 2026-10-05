@@ -83,6 +83,11 @@ public class BookingService {
         Associate associate = associateRepository.findById(request.associateId())
             .orElseThrow(() -> new AssociateNotFoundException(request.associateId()));
 
+        BigDecimal token = request.tokenAmount();
+        if (token.compareTo(plot.getPrice()) >= 0) {
+            throw new InvalidTokenAmountException(token, plot.getPrice());
+        }
+
         // Plot -> BOOKED, not SOLD: a booking reserves the plot under an installment plan, it
         // doesn't complete a sale. A BOOKED plot still fails the AVAILABLE check above (and
         // SaleService.recordSale's own AVAILABLE check), so it can't be independently booked or
@@ -96,7 +101,7 @@ public class BookingService {
                 "booking_emi_config row missing - V14 migration seeds it"));
 
         Instant bookedAt = clock.instant();
-        List<EmiInstallment> schedule = computeSchedule(plot.getPrice(), config, bookedAt);
+        List<EmiInstallment> schedule = computeSchedule(plot.getPrice(), token, config, bookedAt);
 
         PlotBooking booking = new PlotBooking();
         booking.setId(UUID.randomUUID());
@@ -361,17 +366,33 @@ public class BookingService {
     // installment for the full amount, still due one month out -- the same formula as every
     // other case below, deliberately not special-cased to a due-today date, so there's one
     // schedule shape for a future payment-recording unit to reason about, not two.
-    private List<EmiInstallment> computeSchedule(BigDecimal totalAmount, BookingEmiConfig config, Instant bookedAt) {
+    // Installment 1 is the token, PAID at booking time. The rest of the price (total - token) splits
+    // equally across the other installments: the configured count less the token's slot, and at
+    // least one (so with EMI off the schedule is token + one balance installment).
+    private List<EmiInstallment> computeSchedule(BigDecimal totalAmount, BigDecimal token,
+                                                 BookingEmiConfig config, Instant bookedAt) {
         int count = config.isEmiEnabled() ? config.getDefaultInstallmentCount() : 1;
+        int balanceCount = Math.max(count - 1, 1);
         LocalDate bookedDate = bookedAt.atZone(ZoneOffset.UTC).toLocalDate();
-        BigDecimal base = totalAmount.divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
+        BigDecimal balance = totalAmount.subtract(token);
+        BigDecimal base = balance.divide(BigDecimal.valueOf(balanceCount), 2, RoundingMode.DOWN);
 
         List<EmiInstallment> schedule = new ArrayList<>();
+        EmiInstallment tokenInstallment = new EmiInstallment();
+        tokenInstallment.setId(UUID.randomUUID());
+        tokenInstallment.setInstallmentNumber(1);
+        tokenInstallment.setAmount(token);
+        tokenInstallment.setDueDate(bookedDate);
+        tokenInstallment.setStatus(InstallmentStatus.PAID);
+        tokenInstallment.setPaidAt(bookedAt);
+        tokenInstallment.setPaymentRef("TOKEN");
+        schedule.add(tokenInstallment);
+
         BigDecimal runningTotal = BigDecimal.ZERO;
-        for (int i = 1; i < count; i++) {
+        for (int i = 1; i < balanceCount; i++) {
             EmiInstallment installment = new EmiInstallment();
             installment.setId(UUID.randomUUID());
-            installment.setInstallmentNumber(i);
+            installment.setInstallmentNumber(i + 1);
             installment.setAmount(base);
             installment.setDueDate(bookedDate.plusMonths(i));
             schedule.add(installment);
@@ -382,9 +403,9 @@ public class BookingService {
         // schedule's total always equals totalAmount exactly, never a cent short or over.
         EmiInstallment last = new EmiInstallment();
         last.setId(UUID.randomUUID());
-        last.setInstallmentNumber(count);
-        last.setAmount(totalAmount.subtract(runningTotal));
-        last.setDueDate(bookedDate.plusMonths(count));
+        last.setInstallmentNumber(balanceCount + 1);
+        last.setAmount(balance.subtract(runningTotal));
+        last.setDueDate(bookedDate.plusMonths(balanceCount));
         schedule.add(last);
 
         return schedule;

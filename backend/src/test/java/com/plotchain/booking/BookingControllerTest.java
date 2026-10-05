@@ -41,7 +41,7 @@ class BookingControllerTest {
     @MockBean BookingService bookingService;
 
     private static final String REQUEST_BODY = """
-        {"plotId":"%s","associateId":"%s","buyerName":"Jane Buyer"}
+        {"plotId":"%s","associateId":"%s","buyerName":"Jane Buyer","tokenAmount":1000}
         """;
 
     private String tokenFor(AssociateRole role) {

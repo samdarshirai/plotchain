@@ -70,7 +70,7 @@ describe('ProjectsPlotsComponent', () => {
 
   it('legend counts match the tiles and a chip filters the grid by status', fakeAsync(() => {
     boot();
-    const chips = el().querySelectorAll<HTMLButtonElement>('.projects-plots__chip');
+    const chips = el().querySelectorAll<HTMLButtonElement>('.projects-plots__key:not(.projects-plots__key--static)');
     expect(chips[0].textContent).toContain('1');
     chips[1].click(); // BOOKED
     fixture.detectChanges();
@@ -83,7 +83,7 @@ describe('ProjectsPlotsComponent', () => {
 
   it('shows the filter-empty message when the chosen status has no plots', fakeAsync(() => {
     boot([project()], [cell('A-1')]);
-    el().querySelectorAll<HTMLButtonElement>('.projects-plots__chip')[2].click(); // SOLD
+    el().querySelectorAll<HTMLButtonElement>('.projects-plots__key:not(.projects-plots__key--static)')[2].click(); // SOLD
     fixture.detectChanges();
     expect(el().textContent).toContain('admin.projectsPlots.empty.filter');
     flush();
@@ -146,7 +146,7 @@ describe('ProjectsPlotsComponent', () => {
 
   it('block summary shows whole-block counts while a status filter is active', fakeAsync(() => {
     boot([project()], [cell('A-1'), cell('A-2', 'BOOKED'), cell('A-3', 'SOLD')]);
-    el().querySelectorAll<HTMLButtonElement>('.projects-plots__chip')[1].click(); // BOOKED
+    el().querySelectorAll<HTMLButtonElement>('.projects-plots__key:not(.projects-plots__key--static)')[1].click(); // BOOKED
     fixture.detectChanges();
     expect(el().querySelectorAll('app-plot-tile').length).toBe(1);
     expect(fixture.componentInstance.blockStats['A']).toEqual({ available: 1, total: 3 });
@@ -353,7 +353,7 @@ describe('ProjectsPlotsComponent', () => {
 
   describe('booking', () => {
     const detail = { id: 'id-A-2', plotNo: 'A-2', plotType: 'NORMAL', areaSqft: 1200, rate: 3750, price: 4500000, status: 'AVAILABLE' };
-    const form = { associateId: 'a1', buyerName: 'Rohit', buyerPhone: '' };
+    const form = { associateId: 'a1', buyerName: 'Rohit', buyerPhone: '', tokenAmount: 100000 };
 
     function openBookForm(status = 'AVAILABLE') {
       boot([project()], [cell('A-2', status)]);
@@ -391,7 +391,7 @@ describe('ProjectsPlotsComponent', () => {
       fixture.componentInstance.openAside({ kind: 'book' });
       fixture.componentInstance.submitBooking(form);
       const post = http.expectOne('/api/admin/bookings');
-      expect(post.request.body).toEqual({ plotId: 'id-A-2', associateId: 'a1', buyerName: 'Rohit', buyerPhone: undefined });
+      expect(post.request.body).toEqual({ plotId: 'id-A-2', associateId: 'a1', buyerName: 'Rohit', buyerPhone: undefined, tokenAmount: 100000 });
       post.flush({ id: 'b1', plotId: 'id-A-2', buyerName: 'Rohit', totalAmount: 4500000, installmentCount: 4 }, { status: 201, statusText: 'Created' });
       http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
       http.expectOne('/api/company/projects').flush([project()]);
@@ -575,7 +575,7 @@ describe('ProjectsPlotsComponent', () => {
     const detail = (over: Record<string, unknown> = {}) =>
       ({ id: 'id-A-2', plotNo: 'A-2', plotType: 'NORMAL', areaSqft: 1200, rate: 3750, price: 4500000, status: 'AVAILABLE', ...over });
     const newPlot = { plotNo: 'C-1', plotType: 'NORMAL', areaSqft: 1, rate: 1, price: 1, status: 'AVAILABLE' } as const;
-    const form = { associateId: 'a1', buyerName: 'Rohit', buyerPhone: '' };
+    const form = { associateId: 'a1', buyerName: 'Rohit', buyerPhone: '', tokenAmount: 100000 };
     const actions = () => el().querySelectorAll<HTMLButtonElement>('.projects-plots__project-actions button');
 
     function openDetail() {

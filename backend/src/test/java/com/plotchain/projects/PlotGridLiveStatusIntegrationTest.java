@@ -111,7 +111,7 @@ class PlotGridLiveStatusIntegrationTest {
         assertThat(gridStatusOfPlot2()).isEqualTo(PlotStatus.AVAILABLE);
 
         BookingResponse booking = bookingService.createBooking(
-            new CreateBookingRequest(plotId, associateId, "Jane Buyer", null));
+            new CreateBookingRequest(plotId, associateId, "Jane Buyer", null, new java.math.BigDecimal("1000")));
         assertThat(gridStatusOfPlot2()).isEqualTo(PlotStatus.BOOKED);
 
         bookingService.cancelBooking(booking.id(), new CancelBookingRequest("buyer withdrew"), associateId);

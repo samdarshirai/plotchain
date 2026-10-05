@@ -158,7 +158,7 @@ class BookingCancelIntegrationTest {
     private BookingResponse seedBooking() {
         plotId = seedAvailablePlot();
         associateId = seedAssociate();
-        return bookingService.createBooking(new CreateBookingRequest(plotId, associateId, "Jane Buyer", null));
+        return LegacyScheduleSeed.book(bookingService, jdbc, plotId, associateId, "Jane Buyer");
     }
 
     private BookingResponse payInstallment(BookingResponse b, int n) {
@@ -291,7 +291,7 @@ class BookingCancelIntegrationTest {
     // leaving A stale on a plot B holds. Cancelling A must not free B's plot.
     private BookingResponse reBookUnderneath(BookingResponse a) {
         jdbc.update("UPDATE plot SET status = 'AVAILABLE' WHERE id = ?", plotId);
-        return bookingService.createBooking(new CreateBookingRequest(plotId, associateId, "Buyer B", null));
+        return LegacyScheduleSeed.book(bookingService, jdbc, plotId, associateId, "Buyer B");
     }
 
     @Test
@@ -376,8 +376,7 @@ class BookingCancelIntegrationTest {
         BookingResponse first = seedBooking();
         bookingService.cancelBooking(first.id(), new CancelBookingRequest("x"), associateId);
 
-        BookingResponse second = bookingService.createBooking(
-            new CreateBookingRequest(plotId, associateId, "New Buyer", null));
+        BookingResponse second = LegacyScheduleSeed.book(bookingService, jdbc, plotId, associateId, "New Buyer");
 
         assertThat(second.status()).isEqualTo(BookingStatus.ACTIVE);
         assertThat(second.id()).isNotEqualTo(first.id());

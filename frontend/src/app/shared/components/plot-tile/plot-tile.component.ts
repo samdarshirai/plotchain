@@ -22,19 +22,29 @@ const ICONS: Record<PlotStatus, string> = { AVAILABLE: 'check_circle', BOOKED: '
       [class.plot-tile--booked]="status === 'BOOKED'"
       [class.plot-tile--sold]="status === 'SOLD'"
       [class.plot-tile--selected]="selected"
+      [class.plot-tile--plan]="plan"
       [disabled]="!selectable"
       [attr.aria-pressed]="selectable ? selected : null"
       [attr.aria-label]="'plotTile.aria' | translate: {
         no: plotNo, type: ('plotTile.type.' + type | translate), area: areaText, price: fullPrice,
         status: ('plotTile.status.' + status | translate) }"
       (click)="tileSelect.emit()">
-      <span class="plot-tile__no">{{ plotNo }}</span>
-      <span class="plot-tile__meta">{{ areaText }}<ng-container *ngIf="type === 'CORNER'"> · {{ 'plotTile.corner' | translate }}</ng-container></span>
-      <span class="plot-tile__price">{{ shortPrice }}</span>
-      <span class="plot-tile__status">
-        <span class="material-symbols-outlined plot-tile__icon" aria-hidden="true">{{ icon }}</span>
-        {{ 'plotTile.status.' + status | translate }}
-      </span>
+      <ng-container *ngIf="!plan; else planFace">
+        <span class="plot-tile__no">{{ plotNo }}</span>
+        <span class="plot-tile__meta">{{ areaText }}<ng-container *ngIf="type === 'CORNER'"> · {{ 'plotTile.corner' | translate }}</ng-container></span>
+        <span class="plot-tile__price">{{ shortPrice }}</span>
+        <span class="plot-tile__status">
+          <span class="material-symbols-outlined plot-tile__icon" aria-hidden="true">{{ icon }}</span>
+          {{ 'plotTile.status.' + status | translate }}
+        </span>
+      </ng-container>
+      <!-- Plan variant (admin Projects & Plots): status is the tile colour (and the legend), the aria-label still says it. -->
+      <ng-template #planFace>
+        <span class="plot-tile__face">
+          <span class="plot-tile__no">{{ plotNo }}</span>
+          <span class="plot-tile__meta">{{ areaText }} {{ 'plotTile.sqft' | translate }}</span>
+        </span>
+      </ng-template>
     </button>
   `
 })
@@ -46,6 +56,7 @@ export class PlotTileComponent {
   @Input({ required: true }) status!: PlotStatus;
   @Input() selectable = true;
   @Input() selected = false;
+  @Input() plan = false;
   @Output() tileSelect = new EventEmitter<void>();
 
   get areaText(): string { return formatArea(this.area); }

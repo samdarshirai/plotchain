@@ -156,15 +156,48 @@ class BookingServiceTest {
     }
 
     @Test
-    void createBookingResponseIsActiveWithAllInstallmentsPendingNoneOverdueAndZeroPaid() {
+    void createBookingResponseIsActiveWithTheTokenPaidAndTheRestPendingNoneOverdue() {
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
 
-        BookingResponse r = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID));
+        BookingResponse r = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "100000"));
 
         assertThat(r.status()).isEqualTo(BookingStatus.ACTIVE);
-        assertThat(r.paidAmount()).isEqualByComparingTo("0");
-        assertThat(r.dueAmount()).isEqualByComparingTo("600000.00");
-        assertThat(r.installments()).allMatch(i -> i.status() == InstallmentStatus.PENDING && !i.overdue());
+        assertThat(r.paidAmount()).isEqualByComparingTo("100000");
+        assertThat(r.dueAmount()).isEqualByComparingTo("500000.00");
+        assertThat(r.installments().get(0).status()).isEqualTo(InstallmentStatus.PAID);
+        assertThat(r.installments().subList(1, 4))
+            .allMatch(i -> i.status() == InstallmentStatus.PENDING && !i.overdue());
+    }
+
+    @Test
+    void createBookingRejectsATokenEqualToOrAboveThePlotPriceAndDoesNotBookThePlot() {
+        when(plotRepository.findByIdForUpdate(PLOT_ID))
+            .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, "600000.00")));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
+
+        assertThatThrownBy(() -> bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "600000.00")))
+            .isInstanceOf(InvalidTokenAmountException.class);
+        assertThatThrownBy(() -> bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "700000")))
+            .isInstanceOf(InvalidTokenAmountException.class);
+
+        verify(plotBookingRepository, never()).save(any());
+        verify(plotRepository, never()).save(any());
+    }
+
+    @Test
+    void createBookingRecordsTheTokenAsInstallmentOnePaidAtBookingTimeWithRefToken() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "100000"));
+
+        ArgumentCaptor<List<EmiInstallment>> captor = ArgumentCaptor.forClass(List.class);
+        verify(emiInstallmentRepository).saveAll(captor.capture());
+        EmiInstallment token = captor.getValue().get(0);
+        assertThat(token.getInstallmentNumber()).isEqualTo(1);
+        assertThat(token.getAmount()).isEqualByComparingTo("100000");
+        assertThat(token.getStatus()).isEqualTo(InstallmentStatus.PAID);
+        assertThat(token.getPaidAt()).isNotNull();
+        assertThat(token.getPaymentRef()).isEqualTo("TOKEN");
     }
 
     private Plot plotWithStatusAndPrice(PlotStatus status, String price) {
@@ -173,7 +206,11 @@ class BookingServiceTest {
     }
 
     private CreateBookingRequest requestFor(UUID plotId, UUID associateId) {
-        return new CreateBookingRequest(plotId, associateId, "Jane Buyer", "9999999999");
+        return requestFor(plotId, associateId, "1000");
+    }
+
+    private CreateBookingRequest requestFor(UUID plotId, UUID associateId, String token) {
+        return new CreateBookingRequest(plotId, associateId, "Jane Buyer", "9999999999", new BigDecimal(token));
     }
 
     private BookingEmiConfig emiConfig(boolean enabled, int count) {
@@ -288,7 +325,7 @@ class BookingServiceTest {
     void createBookingStoresABlankBuyerPhoneAsNull() {
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
 
-        bookingService.createBooking(new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "   "));
+        bookingService.createBooking(new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "   ", new java.math.BigDecimal("1000")));
 
         ArgumentCaptor<PlotBooking> captor = ArgumentCaptor.forClass(PlotBooking.class);
         verify(plotBookingRepository).save(captor.capture());
@@ -331,13 +368,13 @@ class BookingServiceTest {
         assertThat(saved.getBookedAt()).isNotNull();
     }
 
-    // Flat, no-interest amortization: BookingEmiConfig has no down-payment or interest-rate
-    // field, so an evenly-divisible total splits into exactly-equal installments.
+    // The token is installment 1; the balance (price - token) splits equally across the other
+    // installments (count - 1 of them).
     @Test
-    void createBookingGeneratesEqualInstallmentsWhenTheAmountDividesEvenly() {
+    void createBookingSplitsTheBalanceEquallyAfterTheTokenWhenItDividesEvenly() {
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
 
-        BookingResponse response = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID));
+        BookingResponse response = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "150000"));
 
         assertThat(response.installments()).hasSize(4);
         assertThat(response.installments()).allSatisfy(i ->
@@ -347,45 +384,62 @@ class BookingServiceTest {
         assertThat(sum).isEqualByComparingTo("600000.00");
     }
 
-    // The DOWN-rounded per-installment amount times (count - 1) leaves a remainder; the last
-    // installment absorbs it so the schedule's total always equals the plot price exactly.
+    // The DOWN-rounded balance installment times (n - 1) leaves a remainder; the last installment
+    // absorbs it so the schedule's total always equals the plot price exactly.
     @Test
     void createBookingLastInstallmentAbsorbsTheRoundingRemainder() {
-        stubHappyPathGuardsAndDependencies("100000.00", emiConfig(true, 3));
+        stubHappyPathGuardsAndDependencies("100000.00", emiConfig(true, 4));
 
-        BookingResponse response = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID));
+        BookingResponse response = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "1.00"));
 
-        assertThat(response.installments()).hasSize(3);
-        assertThat(response.installments().get(0).amount()).isEqualByComparingTo("33333.33");
-        assertThat(response.installments().get(1).amount()).isEqualByComparingTo("33333.33");
-        assertThat(response.installments().get(2).amount()).isEqualByComparingTo("33333.34");
+        assertThat(response.installments()).hasSize(4);
+        assertThat(response.installments().get(0).amount()).isEqualByComparingTo("1.00");
+        assertThat(response.installments().get(1).amount()).isEqualByComparingTo("33333.00");
+        assertThat(response.installments().get(2).amount()).isEqualByComparingTo("33333.00");
+        assertThat(response.installments().get(3).amount()).isEqualByComparingTo("33333.00");
         BigDecimal sum = response.installments().stream()
             .map(EmiInstallmentResponse::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
         assertThat(sum).isEqualByComparingTo("100000.00");
     }
 
     @Test
-    void createBookingGeneratesASingleInstallmentForTheFullAmountWhenEmiIsDisabled() {
+    void createBookingRoundingRemainderLandsOnTheLastInstallmentNotAnEarlierOne() {
+        stubHappyPathGuardsAndDependencies("100000.00", emiConfig(true, 4));
+
+        BookingResponse response = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "0.01"));
+
+        assertThat(response.installments().get(1).amount()).isEqualByComparingTo("33333.33");
+        assertThat(response.installments().get(2).amount()).isEqualByComparingTo("33333.33");
+        assertThat(response.installments().get(3).amount()).isEqualByComparingTo("33333.33");
+        BigDecimal sum = response.installments().stream()
+            .map(EmiInstallmentResponse::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertThat(sum).isEqualByComparingTo("100000.00");
+    }
+
+    // EMI off: the token is still taken, so the schedule is token + one balance installment.
+    @Test
+    void createBookingGeneratesTheTokenPlusOneBalanceInstallmentWhenEmiIsDisabled() {
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(false, 4));
 
-        BookingResponse response = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID));
+        BookingResponse response = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "100000"));
 
-        assertThat(response.installmentCount()).isEqualTo(1);
-        assertThat(response.installments()).hasSize(1);
-        assertThat(response.installments().get(0).amount()).isEqualByComparingTo("600000.00");
-        assertThat(response.installments().get(0).installmentNumber()).isEqualTo(1);
+        assertThat(response.installmentCount()).isEqualTo(2);
+        assertThat(response.installments()).hasSize(2);
+        assertThat(response.installments().get(0).amount()).isEqualByComparingTo("100000");
+        assertThat(response.installments().get(1).amount()).isEqualByComparingTo("500000.00");
+        assertThat(response.installments().get(1).installmentNumber()).isEqualTo(2);
     }
 
     @Test
-    void createBookingSpacesInstallmentDueDatesOneMonthApartStartingOneMonthAfterBooking() {
+    void createBookingDueDatesAreTodayForTheTokenThenOneMonthApartFromOneMonthAfterBooking() {
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 3));
 
         BookingResponse response = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID));
 
         LocalDate bookedDate = response.bookedAt().atZone(ZoneOffset.UTC).toLocalDate();
-        assertThat(response.installments().get(0).dueDate()).isEqualTo(bookedDate.plusMonths(1));
-        assertThat(response.installments().get(1).dueDate()).isEqualTo(bookedDate.plusMonths(2));
-        assertThat(response.installments().get(2).dueDate()).isEqualTo(bookedDate.plusMonths(3));
+        assertThat(response.installments().get(0).dueDate()).isEqualTo(bookedDate);
+        assertThat(response.installments().get(1).dueDate()).isEqualTo(bookedDate.plusMonths(1));
+        assertThat(response.installments().get(2).dueDate()).isEqualTo(bookedDate.plusMonths(2));
     }
 
     @Test

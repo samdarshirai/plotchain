@@ -26,7 +26,7 @@ describe('ProjectsPlotsService', () => {
   });
 
   it('creates a booking at POST /api/admin/bookings with the request body', () => {
-    const body = { plotId: 'x', associateId: 'a', buyerName: 'Rohit', buyerPhone: '99' };
+    const body = { plotId: 'x', associateId: 'a', buyerName: 'Rohit', buyerPhone: '99', tokenAmount: 100000 };
     service.createBooking(body).subscribe();
     const req = http.expectOne('/api/admin/bookings');
     expect(req.request.method).toBe('POST');

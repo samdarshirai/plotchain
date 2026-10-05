@@ -160,7 +160,7 @@ class BookingConfirmIntegrationTest {
     private BookingResponse seedBooking() {
         plotId = seedAvailablePlot();
         associateId = seedAssociate();
-        return bookingService.createBooking(new CreateBookingRequest(plotId, associateId, "Jane Buyer", null));
+        return LegacyScheduleSeed.book(bookingService, jdbc, plotId, associateId, "Jane Buyer");
     }
 
     @Test

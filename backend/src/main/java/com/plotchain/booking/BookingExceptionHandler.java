@@ -44,6 +44,11 @@ public class BookingExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(InvalidTokenAmountException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidTokenAmount(InvalidTokenAmountException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(SameAssociateTransferException.class)
     public ResponseEntity<Map<String, String>> handleSameAssociateTransfer(SameAssociateTransferException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));

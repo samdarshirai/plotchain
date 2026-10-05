@@ -121,7 +121,7 @@ class BookingConcurrencyTest {
     }
 
     private CreateBookingRequest bookingRequestFor(UUID plotId, UUID associateId) {
-        return new CreateBookingRequest(plotId, associateId, "Jane Buyer", null);
+        return new CreateBookingRequest(plotId, associateId, "Jane Buyer", null, new java.math.BigDecimal("1000"));
     }
 
     private void awaitQuietly(CountDownLatch latch) {

@@ -37,6 +37,8 @@ interface Banner {
   bookingId?: string;
 }
 
+type View = 'grid' | 'site' | 'table';
+
 const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
 
 @Component({
@@ -47,11 +49,29 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
     <div class="projects-plots">
       <div class="projects-plots__head">
         <div class="projects-plots__intro">
-          <span class="projects-plots__eyebrow">{{ 'admin.projectsPlots.eyebrow' | translate }}</span>
-          <h1 class="projects-plots__title">{{ 'admin.projectsPlots.title' | translate }}</h1>
-          <p class="projects-plots__subtitle">{{ 'admin.projectsPlots.subtitle' | translate }}</p>
+          <span class="projects-plots__eyebrow">{{ 'admin.projectsPlots.eyebrow' | translate }}<ng-container *ngIf="selectedProject"> · {{ selectedProject.name }}</ng-container></span>
+          <h1 class="projects-plots__title">{{ selectedProject ? selectedProject.name + ', ' + selectedProject.location : ('admin.projectsPlots.title' | translate) }}</h1>
         </div>
-        <button type="button" class="brand-button" (click)="openAside({ kind: 'project', mode: 'add' })">
+        <div class="projects-plots__views" *ngIf="selectedProject && grid" role="group" [attr.aria-label]="'admin.projectsPlots.viewLabel' | translate">
+          <button type="button" *ngFor="let v of views" [class.projects-plots__view--on]="view === v" [attr.aria-pressed]="view === v" (click)="view = v">
+            {{ 'admin.projectsPlots.view.' + v | translate }}
+          </button>
+        </div>
+      </div>
+
+      <div class="projects-plots__toolbar">
+        <label class="projects-plots__project-select" *ngIf="projects?.length">
+          <span class="projects-plots__sr">{{ 'admin.projectsPlots.projectSelectLabel' | translate }}</span>
+          <select (change)="selectProjectById($any($event.target).value)">
+            <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === selectedProject?.id">{{ p.name }}</option>
+          </select>
+        </label>
+        <div class="projects-plots__project-actions" *ngIf="selectedProject">
+          <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'project', mode: 'edit' })">{{ 'admin.projectsPlots.editProjectAction' | translate }}</button>
+          <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'csv' })">{{ 'admin.projectsPlots.importCsvAction' | translate }}</button>
+          <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'addPlot' })">{{ 'admin.projectsPlots.addPlotAction' | translate }}</button>
+        </div>
+        <button type="button" class="brand-button projects-plots__add-project" (click)="openAside({ kind: 'project', mode: 'add' })">
           {{ 'admin.projectsPlots.addProjectAction' | translate }}
         </button>
       </div>
@@ -74,7 +94,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
         <p>{{ 'admin.projectsPlots.empty.noProjectsBody' | translate }}</p>
       </div>
 
-      <div class="projects-plots__layout" *ngIf="projects">
+      <div class="projects-plots__layout" [class.projects-plots__layout--aside]="aside.kind !== 'none'" *ngIf="projects">
         <!-- (a) master list; a <select> stands in below 1024px -->
         <nav class="projects-plots__list" *ngIf="projects.length" [attr.aria-label]="'admin.projectsPlots.projectsHeading' | translate">
           <h2 class="projects-plots__list-heading">{{ 'admin.projectsPlots.projectsHeading' | translate }}</h2>
@@ -91,27 +111,8 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             <span class="projects-plots__project-count">{{ 'admin.projectsPlots.plotsSummary' | translate: { total: p.totalPlots, available: p.availablePlots } }}</span>
           </button>
         </nav>
-        <label class="projects-plots__project-select" *ngIf="projects.length">
-          {{ 'admin.projectsPlots.projectSelectLabel' | translate }}
-          <select (change)="selectProjectById($any($event.target).value)">
-            <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === selectedProject?.id">{{ p.name }}</option>
-          </select>
-        </label>
-
         <!-- (b) project header + legend + grid -->
         <section class="projects-plots__main" *ngIf="selectedProject as sp">
-          <div class="projects-plots__project-head">
-            <div>
-              <h2 class="projects-plots__project-title">{{ sp.name }}</h2>
-              <span class="projects-plots__project-loc">{{ sp.location }}</span>
-            </div>
-            <div class="projects-plots__project-actions">
-              <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'project', mode: 'edit' })">{{ 'admin.projectsPlots.editProjectAction' | translate }}</button>
-              <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'csv' })">{{ 'admin.projectsPlots.importCsvAction' | translate }}</button>
-              <button type="button" class="brand-button" (click)="openAside({ kind: 'addPlot' })">{{ 'admin.projectsPlots.addPlotAction' | translate }}</button>
-            </div>
-          </div>
-
           <app-inline-banner *ngIf="gridError" tone="danger">
             {{ 'admin.projectsPlots.error.loadGrid' | translate }}
             <button type="button" class="projects-plots__retry" (click)="loadGrid()">{{ 'admin.projectsPlots.retry' | translate }}</button>
@@ -123,13 +124,21 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           </div>
 
           <ng-container *ngIf="grid">
-            <div class="projects-plots__legend" role="group" [attr.aria-label]="'admin.projectsPlots.legendLabel' | translate">
-              <button type="button" *ngFor="let s of statuses" class="projects-plots__chip"
-                [class.projects-plots__chip--on]="filter.has(s)" [attr.aria-pressed]="filter.has(s)" (click)="toggleFilter(s)">
-                {{ 'admin.projectsPlots.status.' + s | translate }} <span class="projects-plots__chip-count">{{ counts[s] }}</span>
-              </button>
-              <span class="projects-plots__note">{{ 'admin.projectsPlots.cornerNote' | translate }}</span>
-            </div>
+            <ng-template #legendTpl>
+              <div class="projects-plots__legend" role="group" [attr.aria-label]="'admin.projectsPlots.legendLabel' | translate">
+                <button type="button" *ngFor="let s of statuses" class="projects-plots__key"
+                  [class.projects-plots__key--on]="filter.has(s)" [attr.aria-pressed]="filter.has(s)" (click)="toggleFilter(s)">
+                  <span class="projects-plots__swatch projects-plots__swatch--{{ s.toLowerCase() }}" aria-hidden="true"></span>
+                  {{ 'admin.projectsPlots.status.' + s | translate }} <span class="projects-plots__key-count">{{ counts[s] }}</span>
+                </button>
+                <span class="projects-plots__key projects-plots__key--static">
+                  <span class="projects-plots__swatch projects-plots__swatch--selected" aria-hidden="true"></span>{{ 'admin.projectsPlots.selectedKey' | translate }}
+                </span>
+                <span class="projects-plots__key projects-plots__key--static">
+                  <span class="projects-plots__swatch projects-plots__swatch--corner" aria-hidden="true"></span>{{ 'admin.projectsPlots.cornerNote' | translate }}
+                </span>
+              </div>
+            </ng-template>
 
             <div class="projects-plots__empty" *ngIf="!grid.length">
               <h2>{{ 'admin.projectsPlots.empty.noPlotsTitle' | translate }}</h2>
@@ -137,18 +146,49 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             </div>
             <p class="projects-plots__empty" *ngIf="grid.length && !visibleBlocks.length">{{ 'admin.projectsPlots.empty.filter' | translate }}</p>
 
-            <section class="projects-plots__block" *ngFor="let b of visibleBlocks; trackBy: trackBlock">
+            <div class="projects-plots__table-wrap" *ngIf="view === 'table' && visibleBlocks.length">
+              <table class="projects-plots__table">
+                <thead><tr>
+                  <th scope="col">{{ 'admin.projectsPlots.table.plot' | translate }}</th>
+                  <th scope="col">{{ 'admin.projectsPlots.table.area' | translate }}</th>
+                  <th scope="col" class="projects-plots__num">{{ 'admin.projectsPlots.table.total' | translate }}</th>
+                  <th scope="col">{{ 'admin.projectsPlots.table.status' | translate }}</th>
+                </tr></thead>
+                <tbody>
+                  <ng-container *ngFor="let b of visibleBlocks; trackBy: trackBlock">
+                    <tr *ngFor="let p of b.plots; trackBy: trackPlot" [attr.data-plot-id]="p.plotId" class="projects-plots__row"
+                      [class.projects-plots__row--selected]="p.plotId === selectedPlotId">
+                      <td><button type="button" class="projects-plots__row-btn" [attr.aria-pressed]="p.plotId === selectedPlotId" (click)="selectPlot(p)">{{ p.plotNo }}</button>
+                        <span class="projects-plots__corner" *ngIf="p.type === 'CORNER'">{{ 'plotTile.corner' | translate }}</span></td>
+                      <td>{{ areaText(p.area) }} {{ 'plotTile.sqft' | translate }}</td>
+                      <td class="projects-plots__num">{{ priceText(p.price) }}</td>
+                      <td><span class="projects-plots__pill projects-plots__pill--{{ p.status.toLowerCase() }}">{{ 'plotTile.status.' + p.status | translate }}</span></td>
+                    </tr>
+                  </ng-container>
+                </tbody>
+              </table>
+            </div>
+            <ng-container *ngIf="view === 'table' && grid.length"><ng-container *ngTemplateOutlet="legendTpl"></ng-container></ng-container>
+
+            <div class="projects-plots__panel" [class.projects-plots__panel--site]="view === 'site'" *ngIf="view !== 'table' && grid.length">
+            <ng-container *ngFor="let b of visibleBlocks; trackBy: trackBlock; let i = index; let last = last">
+            <section class="projects-plots__block" [class.projects-plots__block--road-below]="i % 2 === 0">
               <h3 class="projects-plots__block-heading" *ngIf="b.block">
                 {{ 'admin.projectsPlots.blockHeading' | translate: { block: b.block } }}
                 <span>{{ 'admin.projectsPlots.blockSummary' | translate: blockStats[b.block] }}</span>
               </h3>
-              <ul class="projects-plots__tiles">
+              <ul class="projects-plots__tiles" [class.projects-plots__tiles--site]="view === 'site'">
                 <li *ngFor="let p of b.plots; trackBy: trackPlot">
                   <app-plot-tile [attr.data-plot-id]="p.plotId" [plotNo]="p.plotNo" [type]="p.type" [area]="p.area"
-                    [price]="p.price" [status]="p.status" [selected]="p.plotId === selectedPlotId" (tileSelect)="selectPlot(p)"></app-plot-tile>
+                    [price]="p.price" [status]="p.status" [selected]="p.plotId === selectedPlotId" [plan]="true" (tileSelect)="selectPlot(p)"></app-plot-tile>
                 </li>
               </ul>
             </section>
+            <div class="projects-plots__road" *ngIf="view === 'site' && !last" aria-hidden="true">{{ 'admin.projectsPlots.roadLabel' | translate }}</div>
+            </ng-container>
+              <div class="projects-plots__main-road" *ngIf="view === 'site' && selectedProject">{{ selectedProject.name }}</div>
+              <ng-container *ngTemplateOutlet="legendTpl"></ng-container>
+            </div>
           </ng-container>
         </section>
 
@@ -156,6 +196,12 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
         <div class="projects-plots__scrim" *ngIf="aside.kind !== 'none'" (click)="closeAside()"></div>
         <aside class="projects-plots__aside" *ngIf="aside.kind !== 'none'" [attr.aria-label]="'admin.projectsPlots.title' | translate">
           <ng-container *ngTemplateOutlet="bannerTpl"></ng-container>
+          <div class="projects-plots__aside-head" *ngIf="aside.kind === 'detail' || aside.kind === 'book'">
+            <span class="projects-plots__aside-eyebrow">{{ (aside.kind === 'book' ? 'admin.projectsPlots.drawerBook' : 'admin.projectsPlots.drawerDetail') | translate }}</span>
+            <button type="button" class="projects-plots__aside-close" [attr.aria-label]="'admin.projectsPlots.closeAction' | translate" (click)="closeAside()">
+              <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+          </div>
           <ng-container *ngIf="aside.kind === 'detail' && selectedPlot as sel">
             <h2 class="projects-plots__aside-title">{{ sel.plotNo }}</h2>
             <dl class="projects-plots__facts">
@@ -201,6 +247,8 @@ export class ProjectsPlotsComponent implements OnInit {
   private adminService = inject(AdminService);
 
   readonly statuses = STATUSES;
+  readonly views: View[] = ['grid', 'site', 'table'];
+  view: View = 'grid';
   projects: Project[] | null = null;
   projectsError = false;
   selectedProject: Project | null = null;
@@ -432,7 +480,7 @@ export class ProjectsPlotsComponent implements OnInit {
     const projectId = this.selectedProject!.id;
     this.bookingBusy = true;
     this.plotsService.createBooking({
-      plotId, associateId: v.associateId, buyerName: v.buyerName, buyerPhone: v.buyerPhone || undefined
+      plotId, associateId: v.associateId, buyerName: v.buyerName, buyerPhone: v.buyerPhone || undefined, tokenAmount: v.tokenAmount
     }).subscribe({
       next: booking => {
         this.bookingBusy = false;

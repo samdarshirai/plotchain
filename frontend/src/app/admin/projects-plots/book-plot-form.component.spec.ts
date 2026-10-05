@@ -60,20 +60,68 @@ describe('BookPlotFormComponent', () => {
     await fixture.whenStable();
     typeInto('buyerName', '  Rohit Kulkarni ');
     typeInto('buyerPhone', ' 9876543210 ');
+    typeInto('tokenAmount', '100000');
     submitForm();
-    expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit Kulkarni', buyerPhone: '9876543210' }]);
+    expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit Kulkarni', buyerPhone: '9876543210', tokenAmount: 100000 }]);
   });
 
-  it('shows the equal-split preview when EMI is on', () => {
+  it('blocks submit without a token amount and flags the field', async () => {
     setup();
+    const out: BookingFormValue[] = [];
+    fixture.componentInstance.submitted.subscribe(v => out.push(v));
+    fixture.componentInstance.associateId = 'a1';
+    await fixture.whenStable();
+    typeInto('buyerName', 'Rohit');
+    submitForm();
+    fixture.detectChanges();
+    const field = el().querySelector<HTMLInputElement>('[name="tokenAmount"]')!;
+    expect(out.length).toBe(0);
+    expect(field.getAttribute('aria-invalid')).toBe('true');
+    expect(el().textContent).toContain('admin.projectsPlots.token.required');
+    expect(document.activeElement).toBe(field);
+  });
+
+  it('rejects a token equal to or above the plot price, and zero', async () => {
+    setup();
+    const out: BookingFormValue[] = [];
+    fixture.componentInstance.submitted.subscribe(v => out.push(v));
+    fixture.componentInstance.associateId = 'a1';
+    await fixture.whenStable();
+    typeInto('buyerName', 'Rohit');
+    typeInto('tokenAmount', String(plot.price));
+    submitForm();
+    fixture.detectChanges();
+    expect(el().textContent).toContain('admin.projectsPlots.token.tooHigh');
+    typeInto('tokenAmount', '0');
+    submitForm();
+    fixture.detectChanges();
+    expect(el().textContent).toContain('admin.projectsPlots.token.required');
+    expect(out.length).toBe(0);
+  });
+
+  it('shows the token-then-balance preview once a valid token is typed and EMI is on', async () => {
+    setup();
+    await fixture.whenStable(); // ngModel's first write is async and would clear a value typed before it
+    expect(el().textContent).not.toContain('admin.projectsPlots.schedulePreview');
+    typeInto('tokenAmount', '100000');
+    await fixture.whenStable();
+    fixture.detectChanges();
     expect(el().textContent).toContain('admin.projectsPlots.schedulePreview');
   });
 
-  it('shows the single-installment line when EMI is off, and no preview when config is unreadable', () => {
+  it('shows the single-balance line when EMI is off, and no preview when config is unreadable', async () => {
     setup({ emiEnabled: false, defaultInstallmentCount: 1 });
+    await fixture.whenStable();
+    typeInto('tokenAmount', '100000');
+    await fixture.whenStable();
+    fixture.detectChanges();
     expect(el().textContent).toContain('admin.projectsPlots.scheduleSingle');
     TestBed.resetTestingModule();
     setup(null);
+    await fixture.whenStable();
+    typeInto('tokenAmount', '100000');
+    await fixture.whenStable();
+    fixture.detectChanges();
     expect(el().textContent).not.toContain('admin.projectsPlots.schedulePreview');
     expect(el().textContent).not.toContain('admin.projectsPlots.scheduleSingle');
   });
@@ -95,6 +143,7 @@ describe('BookPlotFormComponent', () => {
     fixture.componentInstance.submitted.subscribe(v => out.push(v));
     fixture.componentInstance.associateId = 'a1';
     fixture.componentInstance.buyerName = 'Rohit';
+    fixture.componentInstance.tokenAmount = 100000;
     submitForm();
     expect(out.length).toBe(0);
   });
