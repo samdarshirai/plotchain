@@ -240,6 +240,10 @@ public class SecurityConfig {
                 // associate token would fall through to anyRequest().authenticated().
                 .requestMatchers(HttpMethod.GET, "/api/admin/bookings")
                     .hasAuthority("ADMIN")
+                // Admin single booking (plot-booking unit 14a): single-segment wildcard, so it never
+                // shadows the exact-path list matcher above or the POST/PATCH sub-paths.
+                .requestMatchers(HttpMethod.GET, "/api/admin/bookings/*")
+                    .hasAuthority("ADMIN")
                 // Admin overdue-EMI report (plot-booking unit 9, Decision 12): same reason as the
                 // GET /api/admin/bookings matcher directly above -- no blanket GET /api/admin/**.
                 .requestMatchers(HttpMethod.GET, "/api/admin/emi-reports/overdue")

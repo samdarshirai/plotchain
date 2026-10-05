@@ -646,6 +646,21 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/admin/bookings")).andExpect(status().isUnauthorized());
     }
 
+    // plot-booking unit 14a: GET /api/admin/bookings/{id} needs its own ADMIN matcher. Unknown id
+    // means ADMIN reaches the service and gets 404; every other role is 403 at the filter.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminBookingByIdIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/admin/bookings/{id}", UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+    }
+
+    @Test
+    void adminBookingByIdIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/admin/bookings/{id}", UUID.randomUUID())).andExpect(status().isUnauthorized());
+    }
+
     // plot-booking unit 9 (Decision 12): GET /api/admin/emi-reports/overdue needs its OWN ADMIN
     // matcher (no blanket GET /api/admin/**); without it any associate token would read the report.
     @ParameterizedTest

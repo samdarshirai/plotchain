@@ -1,6 +1,7 @@
 package com.plotchain.booking;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,9 +15,17 @@ import java.util.UUID;
 public class AdminBookingRegisterController {
 
     private final BookingRegisterService registerService;
+    private final BookingService bookingService;
 
-    public AdminBookingRegisterController(BookingRegisterService registerService) {
+    public AdminBookingRegisterController(BookingRegisterService registerService, BookingService bookingService) {
         this.registerService = registerService;
+        this.bookingService = bookingService;
+    }
+
+    // Unit 14a: single booking for the overdue click-through and the unit 11 banner deep link.
+    @GetMapping("/api/admin/bookings/{id}")
+    public BookingResponse get(@PathVariable UUID id) {
+        return bookingService.getBooking(id);
     }
 
     @GetMapping("/api/admin/bookings")

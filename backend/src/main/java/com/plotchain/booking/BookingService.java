@@ -323,6 +323,13 @@ public class BookingService {
         return toResponse(booking, emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
     }
 
+    // Plot-booking unit 14a: admin reads one booking (any status) with installments and derived overdue.
+    public BookingResponse getBooking(UUID bookingId) {
+        PlotBooking booking = plotBookingRepository.findById(bookingId)
+            .orElseThrow(() -> new BookingNotFoundException(bookingId));
+        return toResponse(booking, emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
+    }
+
     // Self-scoped only, unlike Sales' getMySales -- the data visibility matrix's Plot/project
     // inventory row gives an Associate "own bookings + EMI schedule", not "own + descendant"
     // like the Sales row's explicit "team-volume reports" wording. No AssociateRepository

@@ -36,6 +36,7 @@ class AdminBookingRegisterControllerTest {
     @Autowired JwtService jwtService;
     @MockBean AssociateRepository associateRepository;
     @MockBean BookingRegisterService registerService;
+    @MockBean BookingService bookingService;
 
     private String tokenFor(AssociateRole role) {
         Associate associate = new Associate();
@@ -105,6 +106,25 @@ class AdminBookingRegisterControllerTest {
             .andExpect(status().isBadRequest());
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin()).param("associateId", "nope"))
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getByIdReturnsTheBooking() throws Exception {
+        UUID id = UUID.randomUUID();
+        BookingResponse body = org.mockito.Mockito.mock(BookingResponse.class);
+        when(bookingService.getBooking(id)).thenReturn(body);
+        mockMvc.perform(get("/api/admin/bookings/{id}", id).header("Authorization", admin()))
+            .andExpect(status().isOk());
+        verify(bookingService).getBooking(id);
+    }
+
+    @Test
+    void getByIdUnknownIs404WithErrorBody() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(bookingService.getBooking(id)).thenThrow(new BookingNotFoundException(id));
+        mockMvc.perform(get("/api/admin/bookings/{id}", id).header("Authorization", admin()))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.error").value("Booking not found: " + id));
     }
 
     @Test
