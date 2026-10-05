@@ -135,6 +135,14 @@ describe('BookingsEmiComponent', () => {
     http.expectOne('/api/admin/bookings/b7').flush({ id: 'b7', installments: [] });
   });
 
+  it('switching tabs clears the flash', () => {
+    boot();
+    fixture.componentInstance.flash = { key: 'x' };
+    switchTab('overdue');
+    expect(fixture.componentInstance.flash).toBeNull();
+    http.expectOne(r => r.url === '/api/admin/emi-reports/overdue' && r.params.get('size') === '20').flush({ rows: [], page: 0, size: 20, totalElements: 0 });
+  });
+
   it('a flash from the register shows a dismissible success banner above the tabs', () => {
     boot();
     expect(el().querySelector('app-inline-banner')).toBeNull();

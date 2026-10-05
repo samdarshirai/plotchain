@@ -28,7 +28,7 @@ import { BookingEmiConfig, FlashMessage } from './bookings-emi.model';
       <app-inline-banner *ngIf="flash" tone="success" [dismissible]="true" (dismissed)="flash = null">
         <span role="status">{{ flash.key | translate: flash.params }}</span>
       </app-inline-banner>
-      <app-tab-bar [tabs]="tabs" [activeTabId]="activeTab" (tabChange)="activeTab = $any($event)"></app-tab-bar>
+      <app-tab-bar [tabs]="tabs" [activeTabId]="activeTab" (tabChange)="activeTab = $any($event); flash = null"></app-tab-bar>
       <app-booking-register *ngIf="activeTab === 'register'" [config]="config" [focusBookingId]="focusBookingId"
         (flash)="flash = $event" (changed)="loadOverdueTotal()"></app-booking-register>
       <app-overdue-report *ngIf="activeTab === 'overdue'" (openBooking)="openFromOverdue($event)" (total)="overdueTotal = $event"></app-overdue-report>
