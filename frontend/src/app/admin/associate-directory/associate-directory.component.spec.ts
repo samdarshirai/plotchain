@@ -7,6 +7,15 @@ import { TranslateModule } from '@ngx-translate/core';
 import { AssociateDirectoryComponent } from './associate-directory.component';
 import { NewAssociatePanelComponent } from '../new-associate-panel/new-associate-panel.component';
 
+// loadCounts() fires 6 size-1 queries (total/active/suspended/kyc pending/green/red); answer each with
+// a count derived from its query string so specs can assert on the seal card.
+function flushCounts(httpMock: HttpTestingController, totals: Record<string, number> = {}): void {
+  httpMock.match(r => r.url === '/api/admin/associates' && r.params.get('size') === '1').forEach(req => {
+    const key = req.request.params.keys().filter(k => k !== 'page' && k !== 'size').map(k => `${k}=${req.request.params.get(k)}`).join('&');
+    req.flush({ associates: [], page: 0, size: 1, totalElements: totals[key] ?? 0 });
+  });
+}
+
 describe('AssociateDirectoryComponent', () => {
   let fixture: ComponentFixture<AssociateDirectoryComponent>;
   let httpMock: HttpTestingController;
@@ -28,6 +37,12 @@ describe('AssociateDirectoryComponent', () => {
       .flush([{ id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE', hasFreeSlot: true }]);
     httpMock.expectOne('/api/admin/associates?page=0&size=20')
       .flush({ associates: [{ id: 'a1', userId: 'VP00001', name: 'Jane', rankName: 'Sales Associate', kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', lastActiveAt: null }], page: 0, size: 20, totalElements: 1 });
+    flushCounts(httpMock, { '': 168, 'status=ACTIVE': 142, 'status=SUSPENDED': 26, 'kycStatus=PENDING': 11, 'kycStatus=VERIFIED': 100, 'excludeKycStatus=VERIFIED': 68 });
+  });
+
+  it('shows network counts on the seal card and tabs', () => {
+    expect(fixture.componentInstance.counts).toEqual({ total: 168, active: 142, inactive: 26, kycPending: 11, green: 100, red: 68 });
+    expect(fixture.componentInstance.viewTabs.map(t => t.count)).toEqual([168, 100, 68, 168]);
   });
 
   afterEach(() => httpMock.verify());
@@ -62,6 +77,7 @@ describe('AssociateDirectoryComponent', () => {
 
     const reloadReq = httpMock.expectOne('/api/admin/associates?page=0&size=20');
     reloadReq.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+    flushCounts(httpMock);
 
     expect(fixture.componentInstance.selected?.status).toBe('SUSPENDED');
   });
@@ -76,6 +92,7 @@ describe('AssociateDirectoryComponent', () => {
 
     const reloadReq = httpMock.expectOne('/api/admin/associates?page=0&size=20');
     reloadReq.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+    flushCounts(httpMock);
 
     expect(fixture.componentInstance.selected?.status).toBe('ACTIVE');
   });
@@ -205,6 +222,8 @@ describe('AssociateDirectoryComponent', () => {
     const errorEl: HTMLElement | null = isolatedFixture.nativeElement.querySelector('.associate-directory__rank-load-error');
     expect(errorEl?.textContent?.trim()).toBeTruthy();
 
+    flushCounts(isolatedHttpMock);
+
     isolatedHttpMock.verify();
   });
 
@@ -259,6 +278,7 @@ describe('AssociateDirectoryComponent', () => {
 
       const reloadReq = httpMock.expectOne('/api/admin/associates?page=0&size=20');
       reloadReq.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+    flushCounts(httpMock);
 
       panel.closed.emit();
       expect(fixture.componentInstance.modalOpen).toBeFalse();
@@ -321,6 +341,7 @@ describe('AssociateDirectoryComponent with ?provision=1', () => {
 
     expect(fixture.componentInstance.modalOpen).toBeTrue();
     expect(navigateSpy).toHaveBeenCalled();
+    flushCounts(httpMock);
     httpMock.verify();
   });
 });

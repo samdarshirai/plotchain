@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 export interface TabDefinition {
   id: string;
   label: string;
+  count?: number;
 }
 
 @Component({
@@ -21,7 +22,7 @@ export interface TabDefinition {
         [class.tab-bar__tab--active]="tab.id === activeTabId"
         (click)="select(tab.id)"
       >
-        {{ tab.label }}
+        {{ tab.label }}<span class="tab-bar__count" *ngIf="tab.count !== undefined">{{ tab.count }}</span>
       </button>
     </div>
   `

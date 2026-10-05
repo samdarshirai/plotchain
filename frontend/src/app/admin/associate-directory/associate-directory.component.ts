@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { forkJoin } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AssociateDirectoryService } from './associate-directory.service';
@@ -19,6 +20,7 @@ const PAGE_SIZE = 20;
 // Quick views over the directory. Green/Red are KYC-based: Green = VERIFIED, Red = anything else.
 // By Date lists newest joiners first.
 type DirectoryView = 'all' | 'green' | 'red' | 'byDate';
+interface DirectoryCounts { total: number; active: number; inactive: number; kycPending: number; green: number; red: number }
 const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'byDate'];
 
 // Enum values the backend returns for kycStatus/status are shouty-uppercase (PENDING/VERIFIED/...);
@@ -31,13 +33,27 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'byDate'];
   template: `
     <div class="associate-directory">
       <div class="associate-directory__header">
-        <div>
+        <div class="associate-directory__intro">
+          <div class="associate-directory__eyebrow">{{ 'admin.associateDirectory.eyebrow' | translate }}</div>
           <h1 class="card-title">{{ 'admin.associateDirectory.title' | translate }}</h1>
           <p class="associate-directory__subtitle">{{ 'admin.associateDirectory.subtitle' | translate }}</p>
+          <button type="button" class="associate-directory__new-link brand-button" (click)="openProvisionModal()">
+            <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+            {{ 'admin.associateDirectory.newAssociateAction' | translate }}
+          </button>
         </div>
-        <button type="button" class="associate-directory__new-link brand-button" (click)="openProvisionModal()">
-          {{ 'admin.associateDirectory.newAssociateAction' | translate }}
-        </button>
+        <div class="associate-directory__seal" *ngIf="counts">
+          <div class="associate-directory__seal-label">{{ 'admin.associateDirectory.sealLabel' | translate }}</div>
+          <div class="associate-directory__seal-total">
+            <span class="associate-directory__seal-number">{{ counts.total }}</span>
+            <span>{{ 'admin.associateDirectory.sealUnit' | translate }}</span>
+          </div>
+          <div class="associate-directory__seal-stats">
+            <span><i class="associate-directory__dot associate-directory__dot--ok"></i>{{ counts.active }} {{ 'admin.associateDirectory.sealActive' | translate }}</span>
+            <span><i class="associate-directory__dot associate-directory__dot--bad"></i>{{ counts.inactive }} {{ 'admin.associateDirectory.sealInactive' | translate }}</span>
+            <span><i class="associate-directory__dot associate-directory__dot--warn"></i>{{ counts.kycPending }} {{ 'admin.associateDirectory.sealKycPending' | translate }}</span>
+          </div>
+        </div>
       </div>
 
       <p *ngIf="loadError" class="associate-directory__load-error">{{ 'admin.associateDirectory.loadError' | translate }}</p>
@@ -51,12 +67,15 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'byDate'];
       <div class="associate-directory__list">
       <app-tab-bar [tabs]="viewTabs" [activeTabId]="view" (tabChange)="onViewChange($event)"></app-tab-bar>
       <div class="associate-directory__filters">
-        <input
-          type="text"
-          class="associate-directory__search"
-          [placeholder]="'admin.associateDirectory.searchPlaceholder' | translate"
-          (input)="onSearchInput($any($event.target).value)"
-        />
+        <span class="associate-directory__search-wrap">
+          <span class="material-symbols-outlined" aria-hidden="true">search</span>
+          <input
+            type="text"
+            class="associate-directory__search"
+            [placeholder]="'admin.associateDirectory.searchPlaceholder' | translate"
+            (input)="onSearchInput($any($event.target).value)"
+          />
+        </span>
         <div class="associate-directory__filter-grid">
           <div class="associate-directory__filter-field">
             <label>{{ 'admin.associateDirectory.rankFilterLabel' | translate }}</label>
@@ -77,10 +96,10 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'byDate'];
             <label>{{ 'admin.associateDirectory.joinedFromLabel' | translate }}</label>
             <input type="date" (change)="onJoinedFromChange($any($event.target).value)" />
           </div>
-        </div>
-        <div class="associate-directory__filter-field associate-directory__filter-secondary-row">
-          <label>{{ 'admin.associateDirectory.joinedToLabel' | translate }}</label>
-          <input type="date" (change)="onJoinedToChange($any($event.target).value)" />
+          <div class="associate-directory__filter-field">
+            <label>{{ 'admin.associateDirectory.joinedToLabel' | translate }}</label>
+            <input type="date" (change)="onJoinedToChange($any($event.target).value)" />
+          </div>
         </div>
       </div>
 
@@ -195,7 +214,7 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'byDate'];
     <app-new-associate-panel
       [open]="modalOpen"
       (closed)="closeProvisionModal()"
-      (created)="loadPage(page?.page ?? 0)"
+      (created)="loadPage(page?.page ?? 0); loadCounts()"
     ></app-new-associate-panel>
   `
 })
@@ -224,6 +243,7 @@ export class AssociateDirectoryComponent implements OnInit {
   private rank = '';
   view: DirectoryView = 'all';
   viewTabs: TabDefinition[] = [];
+  counts: DirectoryCounts | null = null;
   private status = '';
   private joinedFrom = '';
   private joinedTo = '';
@@ -250,13 +270,15 @@ export class AssociateDirectoryComponent implements OnInit {
         label: this.translate.instant('admin.associateDirectory.columnStatus'),
         type: 'badge',
         badgeTone: value => this.statusBadgeTone(value)
-      }
+      },
+      { key: 'joinedAt', label: this.translate.instant('admin.associateDirectory.joinedLabel'), type: 'text' }
     ];
     this.compensationPlanService.getCurrent().subscribe({
       next: res => (this.availableRanks = res.availableRanks),
       error: () => (this.rankLoadError = true)
     });
     this.loadPage(0);
+    this.loadCounts();
     if (this.route.snapshot.queryParamMap.has('provision')) {
       this.openProvisionModal();
       // Strip the param so closing the modal then refreshing/going back doesn't reopen it.
@@ -317,6 +339,7 @@ export class AssociateDirectoryComponent implements OnInit {
       next: detail => {
         this.selected = detail;
         this.loadPage(this.page?.page ?? 0);
+        this.loadCounts();
       },
       error: () => (this.actionError = true)
     });
@@ -329,6 +352,7 @@ export class AssociateDirectoryComponent implements OnInit {
       next: detail => {
         this.selected = detail;
         this.loadPage(this.page?.page ?? 0);
+        this.loadCounts();
       },
       error: () => (this.actionError = true)
     });
@@ -397,10 +421,27 @@ export class AssociateDirectoryComponent implements OnInit {
           name: a.name,
           rankName: a.rankName ?? '',
           kycStatus: titleCase(a.kycStatus),
-          status: titleCase(a.status)
+          status: titleCase(a.status),
+          joinedAt: new Date(a.joinedAt).toLocaleDateString('en-GB')
         }));
       },
       error: () => (this.loadError = true)
+    });
+  }
+
+  // Tab/seal counts: unfiltered size-1 queries, reading only totalElements -- no stats endpoint.
+  loadCounts(): void {
+    const n = (f: AdminAssociateFilters) => this.associateDirectoryService.list(f, 0, 1);
+    forkJoin([
+      n({}), n({ status: 'ACTIVE' }), n({ status: 'SUSPENDED' }), n({ kycStatus: 'PENDING' }),
+      n({ kycStatus: 'VERIFIED' }), n({ excludeKycStatus: 'VERIFIED' })
+    ]).subscribe(([t, a, i, k, g, r]) => {
+      this.counts = { total: t.totalElements, active: a.totalElements, inactive: i.totalElements, kycPending: k.totalElements, green: g.totalElements, red: r.totalElements };
+      this.viewTabs = VIEWS.map(id => ({
+        id,
+        label: this.translate.instant('admin.associateDirectory.views.' + id),
+        count: { all: t, green: g, red: r, byDate: t }[id].totalElements
+      }));
     });
   }
 }

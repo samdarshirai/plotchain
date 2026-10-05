@@ -173,11 +173,146 @@
 }
 
 .associate-directory__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 2rem;
+  align-items: stretch;
+}
+
+.associate-directory__intro {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 1.5rem;
+  gap: 0.5rem;
+}
+
+.associate-directory__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-secondary);
+
+  &::before,
+  &::after {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: var(--brand-secondary);
+  }
+}
+
+// Network seal: gold double-border card with the headline associate count.
+.associate-directory__seal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 24px;
+  border: 1px solid var(--brand-primary);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 3px var(--surface-page), inset 0 0 0 4px var(--brand-primary);
+}
+
+.associate-directory__seal-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--brand-secondary);
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--brand-primary);
+  }
+}
+
+.associate-directory__seal-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.associate-directory__seal-number {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.associate-directory__seal-stats {
+  display: flex;
+  justify-content: center;
   flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+
+  span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.associate-directory__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+
+  &--ok { background: var(--status-success); }
+  &--bad { background: var(--status-danger); }
+  &--warn { background: var(--status-warning); }
+}
+
+// Underline tabs with count pills, scoped so other tab-bar users keep the pill-group look.
+.associate-directory__list .tab-bar {
+  display: flex;
+  gap: 28px;
+  padding: 0 20px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+}
+
+.associate-directory__list .tab-bar__tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 0 12px;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font-weight: 500;
+}
+
+.associate-directory__list .tab-bar__tab--active {
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: 600;
+  border-bottom-color: var(--brand-primary);
+}
+
+.tab-bar__count {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--text-muted);
 }
 
 .associate-directory__subtitle {
@@ -189,6 +324,10 @@
 // Opens the provisioning modal (see .new-associate-panel__modal-overlay below) instead of
 // navigating -- previously a routerLink to /admin/associates/new, now a plain button.
 .associate-directory__new-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0.5rem;
   border: none;
   text-decoration: none;
   white-space: nowrap;
@@ -207,56 +346,78 @@
 .associate-directory__filters {
   background: var(--surface-raised);
   border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-  padding: 24px;
-}
-
-.associate-directory__search {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 3px;
-  font-size: 14px;
-  background: var(--surface-card);
-  margin-bottom: 20px;
-}
-
-.associate-directory__filter-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.associate-directory__filter-field {
+  border-radius: 0;
+  border-top: none;
+  padding: 12px 20px;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap; // wraps to a second line only on narrow widths
+  gap: 10px;
+  align-items: center;
+}
+
+.associate-directory__search-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+
+  .material-symbols-outlined {
+    position: absolute;
+    left: 10px;
+    font-size: 18px;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+}
+
+.associate-directory__search-wrap .associate-directory__search {
+  width: 300px;
+  max-width: 100%;
+  height: 36px;
+  padding: 0 10px 0 34px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  font-size: 13.5px;
+  background: #fff;
+}
+
+// Fields flow inline in the same flex row as the search box.
+.associate-directory__filter-grid {
+  display: contents;
+}
+
+// Pill chip: muted inline label prefix + borderless control.
+.associate-directory__filter-field {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px dashed #c9bc9f;
+  border-radius: 999px;
+  background: var(--surface-card);
+
+  &:hover,
+  &:focus-within {
+    border: 1px solid var(--brand-primary);
+  }
 
   label {
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    margin: 0;
+    font-size: 12.5px;
+    font-weight: 400;
     color: var(--text-muted);
+    white-space: nowrap;
   }
 
   select,
   input {
-    width: 100%;
-    padding: 9px 10px;
-    border: 1px solid var(--border-subtle);
-    border-radius: 3px;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    outline: 0;
     font-size: 13.5px;
-    background: var(--surface-card);
+    background: transparent;
   }
-}
-
-// The 5th (Joined To) filter sits on its own row below the 4-column grid, at 25% width --
-// Viraj_Acres_Settings.dc.html line 288's `width:calc(25% - 12px)`.
-.associate-directory__filter-secondary-row {
-  width: calc(25% - 12px);
-  margin-bottom: 0;
 }
 
 // Table sits flush under the filter panel, sharing its side/bottom border and rounding only the
@@ -265,7 +426,7 @@
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-top: none;
-  border-radius: 0 0 4px 4px;
+  border-radius: 0 0 6px 6px;
   overflow: hidden;
 
   .editable-table {
@@ -279,7 +440,7 @@
   thead tr,
   tbody tr {
     display: grid;
-    grid-template-columns: 1.3fr 1.8fr 1fr 1.2fr 1fr;
+    grid-template-columns: 1.3fr 1.8fr 1fr 1.2fr 1fr 1fr;
     column-gap: 12px;
     align-items: center;
   }
@@ -292,17 +453,35 @@
     text-transform: uppercase;
     color: var(--text-muted);
     text-align: left;
+    border-bottom: none;
+  }
+
+  // Borders live on the grid <tr> (not th/td) so the line is continuous across column-gap.
+  thead tr {
     border-bottom: 1px solid var(--border-subtle);
   }
 
   tbody td {
     padding: 16px 24px;
     font-size: 14px;
+    border-bottom: none;
+  }
+
+  tbody tr {
     border-bottom: 1px solid #EFE9DA;
   }
 
-  tbody tr:last-child td {
+  tbody tr:last-child {
     border-bottom: none;
+  }
+
+  // Empty-state row: its single colspan cell must span every grid column (colspan is ignored in grid).
+  td.editable-table__empty {
+    grid-column: 1 / -1;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text-muted);
+    text-align: center;
   }
 
   // Associate ID (1st column) -- mono, muted, smaller than the rest of the row.
@@ -315,6 +494,18 @@
   // Name (2nd column).
   td:nth-child(2) {
     font-weight: 600;
+  }
+
+  // Joined (6th column).
+  td:nth-child(6),
+  th:nth-child(6) {
+    text-align: right;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  tbody tr:hover {
+    background: var(--surface-page);
   }
 }
 
