@@ -10,7 +10,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone (ro
 
 | Unit # | Title | Type | Depends on | Status | Plan file path | Merged commit range |
 |---|---|---|---|---|---|---|
-| 1 | Admin logs an `OPEN` ticket on an associate's behalf — migration + `POST /api/admin/support-tickets` | backend | none | pending | — | — |
+| 1 | Admin logs an `OPEN` ticket on an associate's behalf — migration + `POST /api/admin/support-tickets` | backend | none | planned | `docs/superpowers/plans/2026-08-03-support-tickets-unit-1-log-ticket.md` | — |
 | 2 | Admin views a paged, filterable ticket queue — `GET /api/admin/support-tickets` | backend | 1 | pending | — | — |
 | 3 | Admin responds to / changes status of a ticket — `POST /api/admin/support-tickets/{id}/respond` | backend | 1 | pending | — | — |
 | 4 | Associate reads own ticket history, view-only — `GET /api/associates/me/support-tickets` | backend | 1 | pending | — | — |
@@ -90,7 +90,7 @@ Acceptance criteria:
 - "Log a ticket" form: associate picker (existing associate lookup, as in Projects & Plots Book form), subject, description; calls unit 1; 400/404 surfaced (Flows step 1).
 - Respond/status form on a ticket calling unit 3; Resolved/Closed requires a response (client-side hint plus the 400 surfaced); status-only change allowed (Decision 4).
 - Admin sidebar entry added to the admin nav categories (see File overlap check).
-- Uses live tokens and the shared components (pager, tab bar, inline banner); design folder `docs/design/admin_operational_screens/support_ticket_queue/` is needed first (see Open questions).
+- Uses live tokens and the shared components (pager, tab bar, inline banner); design folder `docs/design/admin_operational_screens/support_tickets/` is needed first (see Open questions).
 - Component/service specs; no e2e (e2e deferred, see memory).
 
 ### 6. Associate "Support Ticket history" screen

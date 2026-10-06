@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Support Tickets — Admin Operational Screen Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Material+Symbols+Outlined" rel="stylesheet" />
+<style>
+  /* Tokens: violet/cyan palette shared with sales_register / ledger_register / payout_approval (user decision).
+     The live frontend/src/styles/_tokens.scss (gold/oxblood/parchment) differs; implementers port tokens deliberately.
+     Every colour below :root is var() of these tokens or a color-mix() of them. */
+  :root {
+    --brand-primary: #7C3AED;
+    --brand-secondary: #22D3EE;
+    --brand-primary-bright: color-mix(in srgb, var(--brand-primary) 40%, #ffffff);
+    --brand-gradient: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    --brand-primary-soft: color-mix(in srgb, var(--brand-primary) 12%, transparent);
+    --on-brand: #ffffff;
+    --ink: #0b1c30;
+    --surface-page: #f8f9ff;
+    --surface-card: #ffffff;
+    --surface-raised: #eff4ff;
+    --border-subtle: #c2c6d9;
+    --text-primary: #0b1c30;
+    --text-muted: #424656;
+    --status-success: #34D399;
+    --status-warning: #F59E0B;
+    --status-danger: #F87171;
+    /* readable ink/fill variants of the (light) status colours */
+    --success-ink: color-mix(in srgb, var(--status-success) 50%, var(--text-primary));
+    --warning-ink: color-mix(in srgb, var(--status-warning) 55%, var(--text-primary));
+    --danger-strong: color-mix(in srgb, var(--status-danger) 65%, var(--text-primary));
+    --shadow-card: 0 4px 20px -2px color-mix(in srgb, var(--text-primary) 10%, transparent);
+    --shadow-pop: 0 6px 18px color-mix(in srgb, var(--text-primary) 16%, transparent);
+    --nav-active-fill: color-mix(in srgb, var(--brand-primary) 28%, var(--ink));
+    --nav-inactive-muted: color-mix(in srgb, var(--on-brand) 62%, var(--ink));
+    --nav-tagline-muted: color-mix(in srgb, var(--on-brand) 45%, var(--ink));
+    --nav-hairline: color-mix(in srgb, var(--brand-secondary) 30%, transparent);
+    --sidebar-expanded-width: 248px;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    --font-display: 'Geist', 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--surface-page); color: var(--text-primary); font-family: var(--font-sans); font-size: 15px; line-height: 1.5; }
+  [hidden] { display: none !important; }
+  .material-symbols-outlined { font-family: 'Material Symbols Outlined'; font-size: 20px; line-height: 1; font-weight: 400; font-style: normal; display: inline-block; }
+  :focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+
+  /* ---- shared primitives (as _buttons/_forms/_shared-components) ---- */
+  button { cursor: pointer; border-radius: var(--radius-sm); padding: 0.6875rem 1.5rem; border: none; background: none; font-family: inherit; font-size: 0.875rem; }
+  button:disabled { cursor: not-allowed; opacity: 0.5; }
+  .brand-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background: var(--brand-primary); color: var(--on-brand); font-weight: 600; }
+  .brand-button--secondary { background: var(--surface-raised); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+  .brand-button--danger { background: var(--danger-strong); color: var(--on-brand); }
+  label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500; }
+  input[type=text], input[type=number], input[type=datetime-local], select, textarea {
+    display: block; width: 100%; padding: 0.625rem 0.875rem; background: var(--surface-card); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm); font-family: inherit; font-size: 0.875rem; color: var(--text-primary);
+  }
+  textarea { resize: vertical; min-height: 5rem; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px var(--brand-primary-soft); }
+  input[readonly] { background: var(--surface-raised); color: var(--text-muted); cursor: not-allowed; }
+  .inline-banner { display: flex; gap: 0.75rem; padding: 0.875rem 1.25rem; border: 1px solid var(--border-subtle); background: var(--surface-card); font-size: 0.875rem; }
+  .inline-banner p { margin: 0 0 0.375rem; } .inline-banner p:last-child { margin: 0; }
+  .inline-banner__content { flex: 1; }
+  .inline-banner--danger { border-color: var(--status-danger); background: color-mix(in srgb, var(--status-danger) 12%, var(--surface-card)); }
+  .inline-banner--danger strong { color: var(--danger-strong); }
+  .inline-banner--success { border-color: var(--status-success); background: color-mix(in srgb, var(--status-success) 14%, var(--surface-card)); }
+  .inline-banner--warning { border-color: var(--status-warning); background: color-mix(in srgb, var(--status-warning) 12%, var(--surface-card)); }
+  .inline-banner__dismiss { align-self: flex-start; padding: 0 0.25rem; font-size: 1.125rem; line-height: 1; color: inherit; opacity: .7; }
+  .field-error { margin: 0.375rem 0 0; font-size: 0.8125rem; color: var(--danger-strong); }
+  .hint { margin: 0.375rem 0 0; font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; gap: .5rem; }
+
+  /* ---- shell: admin sidebar (reuses .associate-sidebar visual: Ink, gold hairlines) ---- */
+  .sb { position: fixed; inset: 0 auto 0 0; width: var(--sidebar-expanded-width); background: var(--ink); border-right: 1px solid var(--nav-hairline); display: flex; flex-direction: column; z-index: 20; overflow: auto; }
+  .sb__brand { display: flex; align-items: center; gap: 12px; padding: 20px 16px 18px; min-height: 88px; }
+  .sb__mark { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--brand-secondary); color: var(--brand-secondary); font-family: var(--font-display); border-radius: 8px; font-weight: 600; }
+  .sb__name { color: var(--on-brand); font-family: var(--font-display); font-size: 1rem; font-weight: 600; display: block; line-height: 1.2; }
+  .sb__tag { color: var(--nav-tagline-muted); font-size: 11px; }
+  .sb__div { height: 1px; background: linear-gradient(90deg, var(--nav-hairline), transparent); margin-bottom: 10px; }
+  .sb__nav { display: flex; flex-direction: column; gap: 2px; padding: 0 8px; }
+  .sb a, .sb__grp { display: flex; align-items: center; gap: 14px; padding: 11px 12px; border-radius: 8px; color: var(--nav-inactive-muted); font-size: 13.5px; font-weight: 500; text-decoration: none; width: 100%; background: none; text-align: left; border: 0; }
+  .sb__grp .chev { margin-left: auto; transition: transform .18s; } .sb__grp[aria-expanded=true] .chev { transform: rotate(180deg); }
+  .sb__sub { display: flex; flex-direction: column; gap: 1px; padding-left: 35px; margin-bottom: 4px; }
+  .sb__sub a { padding: 7px 12px; font-size: 12.5px; }
+  .sb a.is-active { background: var(--nav-active-fill); color: var(--on-brand); box-shadow: inset 3px 0 0 var(--brand-secondary); }
+  .sb__spacer { flex: 1; }
+  .sb__foot { padding: 0 8px 14px; }
+  .content { margin-left: var(--sidebar-expanded-width); }
+  .topbar { display: none; align-items: center; gap: .75rem; padding: .75rem 1rem; background: var(--ink); color: var(--on-brand); font-family: var(--font-display); font-weight: 600; }
+  .topbar button { color: var(--on-brand); padding: .5rem; min-height: 44px; min-width: 44px; }
+
+  /* ---- Support tickets (tickets__*) ---- */
+  .tickets { display: flex; flex-direction: column; gap: 1.5rem; max-width: 1280px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
+  .tickets__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1.5rem; }
+  .tickets__eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brand-primary); }
+  .tickets__title { margin: 0.25rem 0 0.375rem; font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; }
+  .tickets__subtitle { margin: 0; max-width: 46rem; font-size: 0.9375rem; line-height: 1.6; color: var(--text-muted); }
+  .rule-pill { display: inline-flex; align-items: center; gap: .625rem; padding: .5rem .875rem; border: 1px solid var(--border-subtle); background: var(--surface-card); font-size: .8125rem; }
+  .rule-pill b { font-family: var(--font-mono); font-weight: 700; color: var(--brand-primary); }
+  .rule-pill small { color: var(--text-muted); }
+
+  /* tabs: reuse TabBarComponent idiom, gold underline on active */
+  .tabs { display: flex; gap: 1.75rem; border-bottom: 1px solid var(--border-subtle); }
+  .tabs button { padding: .625rem 0; border-radius: 0; font-weight: 600; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; gap: .5rem; align-items: center; min-height: 44px; }
+  .tabs button[aria-selected=true] { color: var(--text-primary); border-bottom-color: var(--brand-primary); }
+  .count { font-family: var(--font-mono); font-size: .6875rem; padding: .125rem .5rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); color: var(--text-muted); }
+  .count--danger { background: color-mix(in srgb, var(--status-danger) 14%, var(--surface-card)); border-color: var(--status-danger); color: var(--danger-strong); }
+
+  .filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem 1.25rem; padding: 1.25rem 1.5rem; background: var(--surface-raised); border-radius: 16px; }
+  .filters__f { display: flex; flex-direction: column; gap: .375rem; flex: 1 1 170px; min-width: 150px; margin: 0; font-family: var(--font-mono); font-size: .6875rem; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+  .filters__f select, .filters__f input { text-transform: none; letter-spacing: 0; font-family: var(--font-sans); }
+  .lookup { display: flex; align-items: center; gap: .5rem; padding: .625rem .875rem; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: .875rem; text-transform: none; letter-spacing: 0; font-family: var(--font-sans); font-weight: 400; color: var(--text-primary); }
+  .lookup--placeholder { color: var(--text-muted); }
+  .lookup .id { font-family: var(--font-mono); font-size: .8125rem; } .lookup .nm { color: var(--text-muted); flex: 1; }
+  .lookup__list { position: absolute; z-index: 5; margin: 0; padding: .25rem 0; list-style: none; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); box-shadow: var(--shadow-pop); width: 100%; top: 100%; }
+  .lookup__list li { padding: .45rem .75rem; font-size: .875rem; display: flex; gap: .5rem; } .lookup__list li:first-child { background: var(--brand-primary-soft); }
+  .lookup__list .id { font-family: var(--font-mono); } .lookup__list .nm { color: var(--text-muted); }
+  .rel { position: relative; }
+  .toggle { padding: .6875rem 1.25rem; border: 1px dashed var(--status-danger); color: var(--danger-strong); background: transparent; font-weight: 600; min-height: 44px; }
+  .toggle[aria-pressed=true] { background: var(--danger-strong); color: var(--on-brand); border-style: solid; }
+  .reset { color: var(--text-muted); text-decoration: underline; padding: .6875rem .5rem; min-height: 44px; }
+
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 1.5rem; align-items: start; }
+  .grid--solo { grid-template-columns: minmax(0, 1fr); }
+  .card { background: var(--surface-card); border-radius: 20px; box-shadow: var(--shadow-card); overflow: hidden; }
+  .card--scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th { padding: .75rem .5rem; font-family: var(--font-mono); font-size: .6875rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; text-align: left; color: var(--text-muted); background: var(--surface-card); border-bottom: 1px solid var(--border-subtle); white-space: nowrap; }
+  td { padding: .75rem .5rem; font-size: .875rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  .num { text-align: right; font-family: var(--font-mono); font-size: .8125rem; font-weight: 500; white-space: nowrap; }
+  td:last-child, th:last-child { padding-right: 1rem; }
+  td:first-child, th:first-child { padding-left: 1rem; }
+  th.num { text-align: right; }
+  .mono { font-family: var(--font-mono); }
+  .muted { color: var(--text-muted); }
+  .small { font-size: .75rem; }
+  tr.row { cursor: pointer; } tr.row:hover { background: var(--surface-page); }
+  tr.row--sel, tr.row--sel:hover { background: var(--brand-primary-soft); box-shadow: inset 3px 0 0 var(--brand-primary); }
+  tr.row:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: -2px; }
+  .who b { font-weight: 600; display: block; white-space: nowrap; } .who span { font-size: .75rem; color: var(--text-muted); }
+  .who .mono { font-size: .75rem; }
+
+  .chip { display: inline-flex; align-items: center; gap: .375rem; padding: .1875rem .625rem .1875rem .5rem; border-radius: 999px; font-size: .75rem; font-weight: 600; background: var(--surface-raised); color: var(--text-muted); white-space: nowrap; }
+  .chip::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .chip--active { background: color-mix(in srgb, var(--status-warning) 16%, var(--surface-card)); color: var(--warning-ink); }
+  .chip--confirmed { background: color-mix(in srgb, var(--status-success) 16%, var(--surface-card)); color: var(--success-ink); }
+  .chip--cancelled, .chip--void { background: var(--surface-raised); color: var(--text-muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--text-muted) 50%, transparent); }
+  .chip--pending { background: var(--surface-raised); color: var(--text-muted); }
+  .chip--paid { background: color-mix(in srgb, var(--status-success) 16%, var(--surface-card)); color: var(--success-ink); }
+  .overdue { display: inline-flex; align-items: center; gap: .25rem; margin-left: .375rem; padding: .0625rem .5rem; font-size: .6875rem; font-weight: 700; letter-spacing: .02em; color: var(--on-brand); background: var(--danger-strong); border-radius: 999px; white-space: nowrap; }
+  .meter { display: block; width: 100%; height: 4px; margin-top: .375rem; background: var(--surface-raised); position: relative; }
+  .meter i { position: absolute; inset: 0 auto 0 0; background: var(--status-success); }
+  .meter u { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text-primary); }
+
+  .pager { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1rem; padding: 0 .25rem; }
+  .pager span { font-family: var(--font-mono); font-size: .8125rem; color: var(--text-muted); }
+  .pager button { padding: .5rem 1rem; font-size: .8125rem; min-height: 44px; }
+
+  /* ---- detail "seal" (double-ruled panel, same as .epin-register__detail/__seal) ---- */
+  .detail { position: sticky; top: 1rem; padding: 3px; border: 1px solid var(--brand-primary); border-radius: 12px; max-height: calc(100vh - 2rem); overflow: auto; }
+  .seal { display: flex; flex-direction: column; gap: 1.125rem; padding: 1.25rem; border-radius: 9px; border: 1px solid var(--brand-primary); background: var(--surface-card); }
+  .seal__title { display: flex; align-items: center; gap: .625rem; font-family: var(--font-mono); font-size: .6875rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--brand-primary); }
+  .seal__title::before, .seal__title::after { content: ''; flex: 1; height: 1px; background: var(--brand-primary); }
+  .seal__title + .form, .seal__title + p { margin-top: 1.125rem; }
+  .seal__head { display: flex; flex-direction: column; align-items: center; gap: .5rem; text-align: center; }
+  .seal__buyer { font-family: var(--font-display); font-size: 1.375rem; font-weight: 600; line-height: 1.2; }
+  .seal__plot { font-family: var(--font-mono); font-size: .8125rem; color: var(--text-muted); }
+  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem 1rem; margin: 0; padding: .875rem 0; border-block: 1px solid var(--border-subtle); }
+  .meta dt { font-family: var(--font-mono); font-size: .6875rem; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+  .meta dd { margin: .1875rem 0 0; font-size: .875rem; } .meta dd.mono { font-weight: 500; }
+  .meta .wide { grid-column: 1 / -1; }
+  .sect { font-family: var(--font-mono); font-size: .6875rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: .5rem; }
+  .emi { border: 1px solid var(--border-subtle); max-height: 236px; overflow: auto; }
+  .emi table { font-size: .8125rem; }
+  .emi th { padding: .5rem .5rem; position: sticky; top: 0; z-index: 1; }
+  .emi td:nth-child(4) { white-space: nowrap; }
+  .emi td { padding: .5rem .5rem; vertical-align: middle; font-size: .8125rem; ; white-space: nowrap; }
+  .emi tr.is-over td { background: color-mix(in srgb, var(--status-danger) 7%, var(--surface-card)); }
+  .emi .btn-sm { padding: .25rem .75rem; font-size: .75rem; font-weight: 600; border: 1px solid var(--brand-primary); color: var(--brand-primary); min-height: 32px; }
+  .emi .btn-sm:hover:not(:disabled) { background: var(--brand-primary-soft); }
+  .emi .btn-sm.is-picked { background: var(--brand-primary); color: var(--on-brand); }
+  .actions { display: flex; gap: .625rem; flex-wrap: wrap; }
+  .actions > * { flex: 1 1 auto; padding-inline: 1rem; min-height: 44px; }
+  .btn-danger-o { border: 1px solid var(--status-danger); color: var(--danger-strong); background: transparent; font-weight: 600; }
+  .btn-danger-o:hover:not(:disabled) { background: color-mix(in srgb, var(--status-danger) 10%, transparent); }
+  .why { display: flex; gap: .5rem; align-items: flex-start; font-size: .8125rem; color: var(--text-muted); padding: .625rem .75rem; background: var(--surface-raised); }
+  .form { display: flex; flex-direction: column; gap: 1rem; }
+  .form > div > label { margin-bottom: .375rem; }
+  .form-actions { display: flex; gap: .75rem; } .form-actions > * { flex: 1; padding-inline: 1rem; min-height: 44px; }
+  .lock { position: relative; } .lock .material-symbols-outlined { position: absolute; right: .625rem; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--text-muted); }
+  .lock input { padding-right: 2.25rem; }
+  .facts { margin: 0; padding: .75rem .875rem; border-left: 3px solid var(--brand-primary); background: var(--surface-raised); font-size: .8125rem; display: flex; flex-direction: column; gap: .25rem; }
+  .facts .row { display: flex; justify-content: space-between; gap: 1rem; } .facts .mono { font-weight: 500; }
+  ul.cons { margin: 0; padding-left: 1.125rem; font-size: .8125rem; display: flex; flex-direction: column; gap: .375rem; }
+  .spin { width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: sp .7s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2s; } .sb__grp .chev { transition: none; } }
+
+  /* ---- states ---- */
+  .skel { height: 14px; background: linear-gradient(90deg, var(--surface-raised), var(--surface-card), var(--surface-raised)); background-size: 200% 100%; animation: sh 1.4s linear infinite; border-radius: 4px; }
+  @keyframes sh { to { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+  .empty { padding: 3rem 1.5rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: .5rem; }
+  .empty .glyph { width: 56px; height: 56px; display: grid; place-items: center; border: 1px solid var(--brand-primary); color: var(--brand-primary); font-size: 28px; }
+  .empty h3 { margin: .5rem 0 0; font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; }
+  .empty p { margin: 0; max-width: 28rem; color: var(--text-muted); font-size: .875rem; }
+  .detail-empty { margin: 0; text-align: center; font-size: .875rem; color: var(--text-muted); padding: 1.5rem 0; }
+  .flash { position: relative; }
+
+  /* mock-only state switcher (not part of the screen) */
+  .mock { position: fixed; left: calc(var(--sidebar-expanded-width) + 12px); bottom: 10px; z-index: 50; display: flex; flex-wrap: wrap; gap: .375rem; padding: .5rem .625rem; background: var(--ink); color: var(--on-brand); font-size: 11px; max-width: calc(100vw - 280px); border-radius: 4px; opacity: .92; }
+  .mock b { font-family: var(--font-mono); color: var(--nav-inactive-muted); margin-right: .25rem; }
+  .mock button { padding: .1875rem .5rem; font-size: 11px; color: var(--on-brand); border: 1px solid var(--nav-hairline); }
+  .mock button.on { background: var(--brand-primary); color: var(--on-brand); }
+  body.clean .mock { display: none; }
+
+  /* ---- Overdue report mobile/stacked + responsive ---- */
+  @media (max-width: 1100px) { .grid { grid-template-columns: minmax(0,1fr) 360px; } }
+  @media (max-width: 960px) {
+    .sb { display: none; } .content { margin-left: 0; } .topbar { display: flex; }
+    .tickets { padding-inline: 1rem; }
+    .grid { grid-template-columns: 1fr; }
+    .detail { position: static; max-height: none; }
+    .mock { left: 8px; max-width: calc(100vw - 16px); }
+  }
+  @media (max-width: 768px) {
+    .stack thead { position: absolute; left: -9999px; }
+    .stack, .stack tbody, .stack tr, .stack td { display: block; }
+    .stack tr { padding: .875rem 1rem; border-bottom: 1px solid var(--border-subtle); }
+    .stack td { border: 0; padding: .1875rem 0; display: flex; justify-content: space-between; gap: 1rem; text-align: right; }
+    .stack td::before { content: attr(data-label); font-family: var(--font-mono); font-size: .6875rem; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); text-align: left; }
+    .stack td.first { justify-content: space-between; font-weight: 600; padding-bottom: .5rem; }
+    .stack td.first::before { content: none; }
+    .stack .num { text-align: right; }
+    .stack td .meter { display: none; }
+    .stack .who { text-align: right; }
+    .stack td.first .who { text-align: left; }
+    .stack td.first .who span { display: inline; margin-left: .5rem; }
+    .stack td.first .who b { display: inline; }
+    .rule-pill { flex-wrap: wrap; }
+    .detail { padding: 2px; } .seal { padding: 1rem; }
+    .filters { padding: 1rem; } .filters__f { flex-basis: 100%; }
+    .toggle, .reset { width: 100%; }
+    .pager { justify-content: space-between; }
+    .meta { grid-template-columns: 1fr 1fr; }
+    .form-actions, .actions { flex-direction: column; }
+  }
+  /* ---- Support tickets: screen-local only ---- */
+  .chip--open { background: color-mix(in srgb, var(--status-warning) 16%, var(--surface-card)); color: var(--warning-ink); }
+  .chip--in_progress { background: var(--brand-primary-soft); color: var(--brand-primary); }
+  .chip--resolved { background: color-mix(in srgb, var(--status-success) 16%, var(--surface-card)); color: var(--success-ink); }
+  .chip--closed { background: var(--surface-raised); color: var(--text-muted); }
+  .subj { display: block; font-weight: 600; max-width: 34rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .snip { display: block; font-size: .75rem; color: var(--text-muted); max-width: 34rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .stack .subj, .stack .snip { white-space: normal; text-align: left; max-width: none; }
+  .body-text { margin: 0; font-size: .875rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .quote { margin: 0; padding: .75rem .875rem; border-left: 3px solid var(--brand-primary); background: var(--surface-raised); font-size: .875rem; line-height: 1.6; white-space: pre-wrap; }
+  .req { color: var(--danger-strong); font-weight: 700; }
+  .is-invalid { border-color: var(--status-danger) !important; }
+  .seal__sub { margin: 0; font-size: .8125rem; color: var(--text-muted); text-align: center; }
+  @media (max-width: 768px) { .stack td.first { flex-direction: column; gap: .125rem; text-align: left; } }
+  .tickets__skelrow td { padding: 1rem; } @media (max-width: 960px) { .mock { left: 8px; } }
+</style>
+</head>
+<body>
+
+<aside class="sb" aria-label="Admin navigation">
+  <div class="sb__brand"><span class="sb__mark" aria-hidden="true">VA</span><span><span class="sb__name">Viraj Acres</span><span class="sb__tag">Legacy Living</span></span></div>
+  <div class="sb__div"></div>
+  <nav class="sb__nav">
+    <a href="#"><span class="material-symbols-outlined" aria-hidden="true">dashboard</span>Dashboard</a>
+    <button type="button" class="sb__grp" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">tune</span>Setup<span class="material-symbols-outlined chev" aria-hidden="true">expand_more</span></button>
+    <button type="button" class="sb__grp" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">group</span>Associates<span class="material-symbols-outlined chev" aria-hidden="true">expand_more</span></button>
+    <button type="button" class="sb__grp" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">real_estate_agent</span>Inventory &amp; Bookings<span class="material-symbols-outlined chev" aria-hidden="true">expand_more</span></button>
+    <button type="button" class="sb__grp" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">point_of_sale</span>Finance<span class="material-symbols-outlined chev" aria-hidden="true">expand_more</span></button>
+    <button type="button" class="sb__grp" aria-expanded="true"><span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span>System<span class="material-symbols-outlined chev" aria-hidden="true">expand_more</span></button>
+    <div class="sb__sub">
+      <a href="#">KYC Review</a>
+      <a href="#" class="is-active" aria-current="page">Support Tickets</a>
+    </div>
+  </nav>
+  <div class="sb__spacer"></div>
+  <div class="sb__foot"><a href="#"><span class="material-symbols-outlined" aria-hidden="true">logout</span>Log out</a></div>
+</aside>
+
+<div class="content">
+<div class="topbar"><button type="button" aria-label="Open navigation"><span class="material-symbols-outlined">menu</span></button>Viraj Acres</div>
+<main class="tickets">
+  <header class="tickets__head">
+    <div>
+      <div class="tickets__eyebrow">System</div>
+      <h1 class="tickets__title">Support Tickets</h1>
+      <p class="tickets__subtitle">Log what an associate reported by phone or message, then reply and move it to resolved.</p>
+    </div>
+    <button type="button" class="brand-button" data-set="seal=log"><span class="material-symbols-outlined" aria-hidden="true">add</span>Log a ticket</button>
+  </header>
+
+  <div class="filters" role="search" aria-label="Filter tickets">
+    <label class="filters__f">Status
+      <select><option>All statuses</option><option>Open</option><option>In progress</option><option>Resolved</option><option>Closed</option></select>
+    </label>
+    <div class="filters__f rel">Associate
+      <div class="lookup lookup--placeholder" role="combobox" aria-expanded="false" aria-label="Associate"><span class="nm">Any associate</span><span class="material-symbols-outlined" aria-hidden="true">search</span></div>
+    </div>
+    <button type="button" class="reset">Reset filters</button>
+  </div>
+
+  <div class="inline-banner inline-banner--success flash" role="status" data-flash="ok"><div class="inline-banner__content"><p><strong>Ticket logged.</strong> "Commission not credited for September" is open for Anjali Rao (VA-0042).</p></div><button type="button" class="inline-banner__dismiss" aria-label="Dismiss" data-set="flash=none">×</button></div>
+
+  <div class="grid" data-grid>
+    <section aria-label="Ticket queue" data-list="ok loading">
+      <div class="card card--scroll">
+        <table class="stack" data-list="ok">
+          <thead><tr><th>Ticket</th><th>Associate</th><th>Status</th><th>Logged</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <table class="stack" data-list="loading" aria-busy="true">
+          <thead><tr><th>Ticket</th><th>Associate</th><th>Status</th><th>Logged</th></tr></thead>
+          <tbody>
+            <tr class="tickets__skelrow"><td><div class="skel" style="width:70%"></div></td><td><div class="skel" style="width:60%"></div></td><td><div class="skel" style="width:50px"></div></td><td><div class="skel" style="width:70px"></div></td></tr>
+            <tr class="tickets__skelrow"><td><div class="skel" style="width:55%"></div></td><td><div class="skel" style="width:50%"></div></td><td><div class="skel" style="width:50px"></div></td><td><div class="skel" style="width:70px"></div></td></tr>
+            <tr class="tickets__skelrow"><td><div class="skel" style="width:65%"></div></td><td><div class="skel" style="width:55%"></div></td><td><div class="skel" style="width:50px"></div></td><td><div class="skel" style="width:70px"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager" data-list="ok"><button type="button" class="brand-button brand-button--secondary" disabled>Previous</button><span>Page 1 of 3 · 47 tickets</span><button type="button" class="brand-button brand-button--secondary">Next</button></div>
+    </section>
+
+    <section class="card empty" data-list="empty" style="grid-column:1/-1">
+      <span class="glyph material-symbols-outlined" aria-hidden="true">support_agent</span>
+      <h3>No tickets yet</h3>
+      <p>When an associate reports a problem, log it here so it can be tracked to a reply.</p>
+      <button type="button" class="brand-button" data-set="seal=log">Log a ticket</button>
+    </section>
+    <section class="card empty" data-list="filtered" style="grid-column:1/-1">
+      <span class="glyph material-symbols-outlined" aria-hidden="true">filter_alt_off</span>
+      <h3>No tickets match these filters</h3>
+      <p>Try another status or associate, or clear the filters to see the whole queue.</p>
+      <button type="button" class="brand-button brand-button--secondary">Reset filters</button>
+    </section>
+    <section style="grid-column:1/-1" data-list="error">
+      <div class="inline-banner inline-banner--danger" role="alert"><div class="inline-banner__content"><p><strong>The ticket queue didn't load.</strong> Check your connection and try again. Nothing was changed.</p></div><button type="button" class="brand-button brand-button--secondary" style="padding:.375rem 1rem">Retry</button></div>
+    </section>
+
+    <aside class="detail" aria-live="polite" aria-label="Ticket panel" data-list="ok loading">
+      <!-- respond -->
+      <div class="seal" data-seal="respond respond-invalid">
+        <div class="seal__title">Ticket</div>
+        <div class="seal__head"><span class="seal__buyer">Commission not credited for September</span><span class="seal__plot">Anjali Rao · VA-0042</span></div>
+        <dl class="meta">
+          <div><dt>Status</dt><dd><span class="chip chip--open">Open</span></dd></div>
+          <div><dt>Logged</dt><dd class="mono">3 Oct 2026</dd></div>
+          <div class="wide"><dt>Description</dt><dd><p class="body-text">Associate says the September left-leg commission for the A-12 sale is missing from her ledger. Called on 3 Oct, asked for a check.</p></dd></div>
+        </dl>
+        <div data-seal="respond"><div class="sect"><span>Current reply</span></div><p class="detail-empty" style="padding:0;text-align:left">No reply yet.</p></div>
+        <form class="form" onsubmit="return false">
+          <div class="seal__title">Reply</div>
+          <div><label for="st">Status</label>
+            <select id="st"><option>Open</option><option>In progress</option><option id="opt-res">Resolved</option><option>Closed</option></select></div>
+          <div><label for="rs">Reply <span class="req" id="reqmark" aria-hidden="true">*</span></label>
+            <textarea id="rs" aria-describedby="rs-hint" rows="4"></textarea>
+            <p class="hint" id="rs-hint">Required for Resolved and Closed. The associate sees this reply. Saving a new reply replaces the current one.</p>
+            <p class="field-error" id="rs-err" role="alert" data-seal="respond-invalid">Add a reply before resolving or closing this ticket.</p></div>
+          <div class="form-actions"><button type="submit" class="brand-button">Save response</button></div>
+        </form>
+      </div>
+      <!-- log -->
+      <div class="seal" data-seal="log log-invalid">
+        <div class="seal__title">Log a ticket</div>
+        <p class="seal__sub">Records the request on the associate's behalf. It starts as Open.</p>
+        <form class="form" onsubmit="return false">
+          <div class="rel"><label for="lg-a">Associate <span class="req" aria-hidden="true">*</span></label>
+            <div class="lookup lookup--placeholder" role="combobox" aria-expanded="false" aria-label="Associate"><span class="nm">Search by name or ID</span><span class="material-symbols-outlined" aria-hidden="true">search</span></div></div>
+          <div><label for="lg-s">Subject <span class="req" aria-hidden="true">*</span></label><input id="lg-s" type="text" maxlength="200" /></div>
+          <div><label for="lg-d">Description <span class="req" aria-hidden="true">*</span></label><textarea id="lg-d" rows="5"></textarea>
+            <p class="field-error" role="alert" data-seal="log-invalid">Choose an associate and fill in the subject and description.</p></div>
+          <div class="form-actions"><button type="button" class="brand-button brand-button--secondary" data-set="seal=respond">Cancel</button><button type="submit" class="brand-button">Log ticket</button></div>
+        </form>
+      </div>
+      <p class="detail-empty" data-seal="none">Select a ticket to read it and reply.</p>
+    </aside>
+  </div>
+</main>
+</div>
+
+<div class="mock" aria-label="Mock state switcher"><b>list</b>
+  <button data-set="list=ok">ok</button><button data-set="list=loading">loading</button><button data-set="list=empty">empty</button><button data-set="list=filtered">no match</button><button data-set="list=error">error</button>
+  <b>panel</b><button data-set="seal=respond">respond</button><button data-set="seal=respond-invalid">blank reply</button><button data-set="seal=log">log</button><button data-set="seal=log-invalid">log invalid</button>
+  <b>flash</b><button data-set="flash=ok">logged</button><button data-set="flash=none">none</button></div>
+
+<script>
+  // Mock-state toggling only. Hash: #list=ok&seal=respond&flash=none&clean
+  var S = { list: 'ok', seal: 'respond', flash: 'none' };
+  var T = [
+    ['Commission not credited for September','Associate says the September commission is missing from her ledger.','Anjali Rao','VA-0042','OPEN','Open','3 Oct 2026'],
+    ['Cannot see Plot A-12 in my bookings','Booking list shows only two of three plots.','Suresh Patil','VA-0017','IN_PROGRESS','In progress','2 Oct 2026'],
+    ['Withdrawal still pending after 5 days','Requested on 27 Sep, no update.','Vikram Nair','VA-0031','OPEN','Open','1 Oct 2026'],
+    ['KYC document rejected, reason unclear','Asked what was wrong with the PAN scan.','Neha Kulkarni','VA-0058','RESOLVED','Resolved','29 Sep 2026'],
+    ['Change registered mobile number','Old number lost; wants OTP on the new one.','Deepak Menon','VA-0072','CLOSED','Closed','27 Sep 2026'],
+    ['E-pin not received after payment','Paid for 5 pins, none issued.','Anjali Rao','VA-0042','RESOLVED','Resolved','24 Sep 2026']
+  ];
+  var rows = document.getElementById('rows');
+  T.forEach(function (t, i) {
+    var tr = document.createElement('tr'); tr.className = 'row' + (i === 0 ? ' row--sel' : ''); tr.tabIndex = 0; tr.dataset.seal = 'respond';
+    tr.innerHTML = '<td class="first" data-label="Ticket"><span class="subj">' + t[0] + '</span><span class="snip">' + t[1] + '</span></td>' +
+      '<td data-label="Associate"><span class="who"><b style="font-weight:500">' + t[2] + '</b><span class="mono">' + t[3] + '</span></span></td>' +
+      '<td data-label="Status"><span class="chip chip--' + t[4].toLowerCase() + '">' + t[5] + '</span></td>' +
+      '<td class="num" data-label="Logged">' + t[6] + '</td>';
+    rows.appendChild(tr);
+  });
+  function apply() {
+    document.querySelectorAll('[data-list],[data-seal],[data-flash]').forEach(function (el) {
+      if (el.classList.contains('row')) return;
+      var ok = true;
+      ['list','seal','flash'].forEach(function (k) { var v = el.getAttribute('data-' + k); if (v && v.split(' ').indexOf(S[k]) < 0) ok = false; });
+      el.hidden = !ok;
+    });
+    document.querySelectorAll('.mock button').forEach(function (b) { var p = b.dataset.set.split('='); b.classList.toggle('on', S[p[0]] === p[1]); });
+    document.querySelector('[data-grid]').classList.toggle('grid--solo', ['empty','filtered','error'].indexOf(S.list) >= 0);
+    var inv = S.seal === 'respond-invalid', st = document.getElementById('st'), rs = document.getElementById('rs');
+    if (inv) st.selectedIndex = 2; else if (S.seal === 'respond') st.selectedIndex = 0;
+    rs.classList.toggle('is-invalid', inv); if (inv) rs.setAttribute('aria-invalid', 'true'); else rs.removeAttribute('aria-invalid');
+    document.getElementById('reqmark').hidden = st.selectedIndex < 2;
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-set]');
+    if (t) { t.dataset.set.split('&').forEach(function (kv) { var p = kv.split('='); S[p[0]] = p[1]; }); apply(); return; }
+    var r = e.target.closest('tr.row');
+    if (r) { document.querySelectorAll('#rows tr').forEach(function (x) { x.classList.remove('row--sel'); }); r.classList.add('row--sel'); S.seal = 'respond'; apply(); }
+    var g = e.target.closest('.sb__grp'); if (g) g.setAttribute('aria-expanded', g.getAttribute('aria-expanded') !== 'true');
+  });
+  document.getElementById('st').addEventListener('change', function () { document.getElementById('reqmark').hidden = this.selectedIndex < 2; });
+  document.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('tr.row')) { e.preventDefault(); e.target.click(); } });
+  location.hash.slice(1).split('&').forEach(function (kv) { var p = kv.split('='); if (p[0] === 'clean') document.body.classList.add('clean'); else if (p[1]) S[p[0]] = p[1]; });
+  apply();
+</script>
+</body>
+</html>
