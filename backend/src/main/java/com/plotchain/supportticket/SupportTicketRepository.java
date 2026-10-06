@@ -8,7 +8,6 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.UUID;
 
-// Unit 4 adds findByAssociateId...OrderByCreatedAtDesc (own-history) beside searchQueue.
 public interface SupportTicketRepository extends JpaRepository<SupportTicket, UUID> {
 
     // Admin queue (support-tickets unit 2). Both filters are independently optional (null = don't
