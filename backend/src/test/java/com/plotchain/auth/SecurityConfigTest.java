@@ -873,6 +873,23 @@ class SecurityConfigTest {
             .andExpect(status().is(not(403)));
     }
 
+    // support-tickets unit 4: GET /api/associates/me/support-tickets needs no SecurityConfig matcher
+    // (bare GET -> anyRequest().authenticated(), like /me/bookings above). Reachable by every
+    // authenticated role (ADMIN ungated, spec Resolved decision 1); 401 without a token.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void associateMeSupportTicketsIsReachableByEveryAuthenticatedRole(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/associates/me/support-tickets")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(not(403)));
+    }
+
+    @Test
+    void associateMeSupportTicketsIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/associates/me/support-tickets"))
+            .andExpect(status().isUnauthorized());
+    }
+
     @Test
     void passwordChangeIsReachableByAnAssociateToken() throws Exception {
         // A POST under /api/** that an ASSOCIATE must be able to reach. It needs its own
