@@ -574,6 +574,34 @@ class SecurityConfigTest {
             .andExpect(status().isUnauthorized());
     }
 
+    // support-tickets unit 2 (Decision 8): there is NO blanket GET /api/admin/** rule, so the queue
+    // GET needs its own matcher or an associate token falls through to anyRequest().authenticated().
+    // ADMIN reaches the real controller and the real (H2) repository: an empty queue is 200,
+    // proving the request passed the security layer. Every other role is 403 at the filter.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminSupportTicketQueueIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/admin/support-tickets")
+                .param("associateId", UUID.randomUUID().toString())
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+    }
+
+    @Test
+    void adminSupportTicketQueueIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/admin/support-tickets")).andExpect(status().isUnauthorized());
+    }
+
+    // "/api/admin/support-tickets" is an exact AntPathMatcher match and does not cover sub-paths;
+    // the "/*" pattern keeps any future GET beneath it (and today's non-existent one) off
+    // anyRequest().authenticated(). An associate must be 403, not 404/200.
+    @Test
+    void adminSupportTicketQueueSubPathIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(get("/api/admin/support-tickets/" + UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
     // plot-booking unit 2 (Decision 12): PATCH .../installments/{n}/pay rides the blanket ADMIN
     // write rule. A random booking id reaches the real BookingService for the ADMIN token, whose
     // findByIdForUpdate is empty -> 404, proving the request passed the security layer (same

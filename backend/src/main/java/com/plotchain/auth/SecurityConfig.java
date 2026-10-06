@@ -377,6 +377,12 @@ public class SecurityConfig {
                 // authenticated associate (same reasoning as "/api/admin/cycles/*" below).
                 .requestMatchers(HttpMethod.GET, "/api/admin/kyc", "/api/admin/kyc/*")
                     .hasAuthority("ADMIN")
+                // Admin support-ticket queue (support-tickets unit 2, Decision 8): no blanket GET
+                // /api/admin/** rule exists, and "/api/admin/support-tickets" is an exact match that
+                // does not cover sub-paths (same gotcha as /api/admin/kyc vs /api/admin/kyc/*).
+                // POST (create, respond) is covered by the blanket POST /api/** -> ADMIN rule.
+                .requestMatchers(HttpMethod.GET, "/api/admin/support-tickets", "/api/admin/support-tickets/*")
+                    .hasAuthority("ADMIN")
                 // Company-wide admin stats: same admin-family-only reasoning as every other
                 // admin-aggregate GET above. Read-only, no corresponding write endpoint.
                 .requestMatchers(HttpMethod.GET, "/api/admin/stats")

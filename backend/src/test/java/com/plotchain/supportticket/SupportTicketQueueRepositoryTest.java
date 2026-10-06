@@ -57,9 +57,10 @@ class SupportTicketQueueRepositoryTest {
         return p.getContent().stream().map(SupportTicket::getId).toList();
     }
 
-    // t5 and t6 share createdAt, so their relative order is id DESC.
+    // t5 and t6 share createdAt, so their relative order is id DESC. Compare as strings: the DB orders
+    // UUIDs as unsigned bytes, whereas UUID.compareTo is signed and flips the order randomly.
     private List<UUID> t5t6ByIdDesc() {
-        return List.of(t5.getId(), t6.getId()).stream().sorted(Comparator.reverseOrder()).toList();
+        return List.of(t5.getId(), t6.getId()).stream().sorted(Comparator.comparing(UUID::toString).reversed()).toList();
     }
 
     @Test
