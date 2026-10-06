@@ -17,7 +17,7 @@ import { FlashMessage, TicketErrorKind, classifyTicketError, replyRequired, resp
   styleUrls: ['./ticket-seal.component.scss'],
   imports: [CommonModule, TranslateModule, AssociateLookupComponent, InlineBannerComponent, FieldErrorComponent],
   template: `
-    <section class="ticket-seal" aria-live="polite">
+    <section class="ticket-seal">
       <!-- RESPOND -->
       <ng-container *ngIf="mode === 'respond'">
         <p class="ticket-seal__none" *ngIf="!ticket">{{ 'admin.supportTickets.seal.none' | translate }}</p>
@@ -49,7 +49,7 @@ import { FlashMessage, TicketErrorKind, classifyTicketError, replyRequired, resp
             <label class="ticket-seal__field">{{ 'admin.supportTickets.seal.reply' | translate }}
               <span class="ticket-seal__req" *ngIf="needsReply" aria-hidden="true">*</span>
               <textarea rows="4" name="reply" [class.ticket-seal__invalid]="replyInvalid" [attr.aria-invalid]="replyInvalid ? 'true' : null"
-                [disabled]="busy" [value]="reply" (input)="reply = $any($event.target).value"></textarea>
+                [readOnly]="busy" [value]="reply" (input)="reply = $any($event.target).value"></textarea>
             </label>
             <small class="ticket-seal__hint">{{ 'admin.supportTickets.seal.replyHint' | translate }}</small>
             <div role="alert">
@@ -57,7 +57,7 @@ import { FlashMessage, TicketErrorKind, classifyTicketError, replyRequired, resp
               <div class="ticket-seal__server" *ngIf="error?.kind === 'validation' && error?.serverText">{{ error?.serverText }}</div>
             </div>
             <div class="ticket-seal__form-actions">
-              <button type="submit" class="brand-button ticket-seal__submit" [disabled]="busy" [attr.aria-busy]="busy">{{ (busy ? 'admin.supportTickets.action.saving' : 'admin.supportTickets.action.save') | translate }}</button>
+              <button type="submit" class="brand-button ticket-seal__submit" [attr.aria-disabled]="busy ? 'true' : null" [attr.aria-busy]="busy">{{ (busy ? 'admin.supportTickets.action.saving' : 'admin.supportTickets.action.save') | translate }}</button>
             </div>
           </form>
         </ng-container>
@@ -68,21 +68,21 @@ import { FlashMessage, TicketErrorKind, classifyTicketError, replyRequired, resp
         <h2 #title tabindex="-1" class="ticket-seal__title">{{ 'admin.supportTickets.seal.log' | translate }}</h2>
         <app-inline-banner *ngIf="error && error.kind !== 'notFound'" tone="danger"><span role="alert">{{ error.kind === 'validation' && error.serverText ? error.serverText : (errorKey | translate) }}</span></app-inline-banner>
         <form class="ticket-seal__form" (submit)="submitLog(); $event.preventDefault()" novalidate>
-          <div class="ticket-seal__field">{{ 'admin.supportTickets.seal.associate' | translate }}
+          <div class="ticket-seal__field" role="group" aria-labelledby="ticket-seal-associate-label"><span id="ticket-seal-associate-label">{{ 'admin.supportTickets.seal.associate' | translate }}</span>
             <app-associate-lookup [associates]="directory" [value]="associateId" [placeholder]="'admin.supportTickets.filter.anyAssociate' | translate"
               (selected)="associateId = $event?.id ?? ''; error = null"></app-associate-lookup>
             <div class="ticket-seal__lookup-error" role="alert" *ngIf="error?.kind === 'notFound'">{{ 'admin.supportTickets.err.associateNotFound' | translate }}</div>
           </div>
           <label class="ticket-seal__field">{{ 'admin.supportTickets.seal.subject' | translate }}
-            <input type="text" name="subject" maxlength="200" [disabled]="busy" [value]="subject" (input)="subject = $any($event.target).value" />
+            <input type="text" name="subject" maxlength="200" [readOnly]="busy" [value]="subject" (input)="subject = $any($event.target).value" />
           </label>
           <label class="ticket-seal__field">{{ 'admin.supportTickets.seal.descriptionField' | translate }}
-            <textarea rows="5" name="description" [disabled]="busy" [value]="description" (input)="description = $any($event.target).value"></textarea>
+            <textarea rows="5" name="description" [readOnly]="busy" [value]="description" (input)="description = $any($event.target).value"></textarea>
           </label>
           <div role="alert"><app-field-error [message]="logInvalid ? ('admin.supportTickets.err.logRequired' | translate) : undefined"></app-field-error></div>
           <div class="ticket-seal__form-actions">
-            <button type="submit" class="brand-button ticket-seal__submit" [disabled]="busy" [attr.aria-busy]="busy">{{ (busy ? 'admin.supportTickets.action.logging' : 'admin.supportTickets.action.log') | translate }}</button>
-            <button type="button" class="brand-button brand-button--secondary ticket-seal__cancel" [disabled]="busy" (click)="cancelLog.emit()">{{ 'admin.supportTickets.action.cancel' | translate }}</button>
+            <button type="submit" class="brand-button ticket-seal__submit" [attr.aria-disabled]="busy ? 'true' : null" [attr.aria-busy]="busy">{{ (busy ? 'admin.supportTickets.action.logging' : 'admin.supportTickets.action.log') | translate }}</button>
+            <button type="button" class="brand-button brand-button--secondary ticket-seal__cancel" [attr.aria-disabled]="busy ? 'true' : null" (click)="cancel()">{{ 'admin.supportTickets.action.cancel' | translate }}</button>
           </div>
         </form>
       </ng-container>
@@ -186,6 +186,8 @@ export class TicketSealComponent implements OnChanges {
       error: (err: HttpErrorResponse) => { this.setBusy(false); this.error = classifyTicketError(err); }
     });
   }
+
+  cancel(): void { if (!this.busy) { this.cancelLog.emit(); } }
 
   private setBusy(v: boolean): void { this.busy = v; this.busyChange.emit(v); }
 }

@@ -889,6 +889,7 @@
       "err": {
         "load": "The ticket queue didn't load. Check your connection and try again. Nothing was changed.",
         "retry": "Retry",
+        "directory": "The associate list didn't load, so the associate filter and lookup are empty. Try again.",
         "replyRequired": "Add a reply before resolving or closing this ticket.",
         "logRequired": "Choose an associate and fill in the subject and description.",
         "associateNotFound": "That associate wasn't found.",

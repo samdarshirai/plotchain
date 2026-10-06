@@ -135,6 +135,67 @@ describe('AdminSupportTicketsComponent', () => {
     expect(fixture.componentInstance.selected!.id).toBe('t3');
   });
 
+  it('shows a retry banner when the associate directory fails to load and retries it', () => {
+    http.expectOne('/api/associates').flush('boom', { status: 500, statusText: 'err' });
+    listReq().flush(pageOf([tk('t1')]));
+    fixture.detectChanges();
+    expect(el().querySelector('.support-tickets__directory-error')!.textContent).toContain('admin.supportTickets.err.directory');
+    el().querySelector<HTMLButtonElement>('.support-tickets__directory-retry')!.click();
+    http.expectOne('/api/associates').flush(directory);
+    fixture.detectChanges();
+    expect(el().querySelector('.support-tickets__directory-error')).toBeNull();
+    expect(fixture.componentInstance.directory.length).toBe(1);
+  });
+
+  it('while the seal is writing, the page locks: inert associate filter, disabled controls, then unlocks', () => {
+    boot();
+    fixture.componentInstance.selectTicket(fixture.componentInstance.page!.entries[0]); fixture.detectChanges();
+    const seal = fixture.debugElement.query(By.directive(TicketSealComponent)).componentInstance as TicketSealComponent;
+    seal.status = 'IN_PROGRESS';
+    seal.submitRespond(); fixture.detectChanges();
+    expect(fixture.componentInstance.locked).toBeTrue();
+    expect(el().querySelector('.support-tickets__field--locked')!.hasAttribute('inert')).toBeTrue();
+    expect(el().querySelector<HTMLSelectElement>('.support-tickets__status')!.disabled).toBeTrue();
+    expect(el().querySelector<HTMLButtonElement>('.support-tickets__log')!.disabled).toBeTrue();
+    expect(el().querySelector<HTMLButtonElement>('.support-tickets__next')?.disabled ?? true).toBeTrue();
+    http.expectOne('/api/admin/support-tickets/t1/respond').flush(tk('t1', { status: 'IN_PROGRESS' }));
+    listReq().flush(pageOf([tk('t1', { status: 'IN_PROGRESS' }), tk('t2')]));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.locked).toBeFalse();
+    expect(el().querySelector('.support-tickets__field--locked')).toBeNull();
+    expect(el().querySelector<HTMLSelectElement>('.support-tickets__status')!.disabled).toBeFalse();
+  });
+
+  it('Cancel in log mode returns focus to the Log a ticket button', async () => {
+    boot();
+    const log = el().querySelector<HTMLButtonElement>('.support-tickets__log')!;
+    log.click(); fixture.detectChanges();
+    el().querySelector<HTMLButtonElement>('.ticket-seal__cancel')!.click();
+    await new Promise(r => setTimeout(r));
+    expect(document.activeElement).toBe(log);
+  });
+
+  it('after logging, focus lands on the new ticket heading in the seal', async () => {
+    boot();
+    el().querySelector<HTMLButtonElement>('.support-tickets__log')!.click(); fixture.detectChanges();
+    const seal = fixture.debugElement.query(By.directive(TicketSealComponent)).componentInstance as TicketSealComponent;
+    seal.associateId = 'a1'; seal.subject = 'New'; seal.description = 'Body';
+    seal.submitLog();
+    http.expectOne(r => r.method === 'POST' && r.url === '/api/admin/support-tickets').flush(tk('t9', { subject: 'New' }), { status: 201, statusText: 'Created' });
+    listReq().flush(pageOf([tk('t9', { subject: 'New' })]));
+    fixture.detectChanges();
+    await new Promise(r => setTimeout(r));
+    expect(document.activeElement).toBe(el().querySelector('.ticket-seal__title'));
+  });
+
+  it('rows keep aria-current for the selected row like the Bookings rows', () => {
+    boot();
+    fixture.componentInstance.selectTicket(fixture.componentInstance.page!.entries[1]); fixture.detectChanges();
+    const rows = el().querySelectorAll('tbody tr');
+    expect(rows[1].getAttribute('aria-current')).toBe('true');
+    expect(rows[0].hasAttribute('aria-current')).toBeFalse();
+  });
+
   it('locks filters, pager and selection while a write is in flight', () => {
     boot();
     fixture.componentInstance.locked = true;

@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewEncapsulation, inject } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewEncapsulation, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { AdminService } from '../admin.service';
@@ -47,6 +47,10 @@ const NO_FILTERS: TicketFilters = { status: '', associateId: '' };
 
       <app-inline-banner *ngIf="flash" tone="success" [dismissible]="true" (dismissed)="flash = null">
         <span role="status">{{ flash.key | translate: flash.params }}</span>
+      </app-inline-banner>
+      <app-inline-banner *ngIf="directoryError" tone="warning">
+        <span class="support-tickets__directory-error" role="alert">{{ 'admin.supportTickets.err.directory' | translate }}</span>
+        <button type="button" class="support-tickets__retry support-tickets__directory-retry" (click)="loadDirectory()">{{ 'admin.supportTickets.err.retry' | translate }}</button>
       </app-inline-banner>
       <app-inline-banner *ngIf="loadError" tone="danger">
         <span role="alert">{{ 'admin.supportTickets.err.load' | translate }}</span>
@@ -114,6 +118,7 @@ const NO_FILTERS: TicketFilters = { status: '', associateId: '' };
 export class AdminSupportTicketsComponent implements OnInit {
   private service = inject(SupportTicketService);
   private admin = inject(AdminService);
+  private host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly statuses = SUPPORT_TICKET_STATUSES;
   filters: TicketFilters = { ...NO_FILTERS };
@@ -124,6 +129,7 @@ export class AdminSupportTicketsComponent implements OnInit {
   filterMismatch = false;
   flash: FlashMessage | null = null;
   loadError = false;
+  directoryError = false;
   loading = false;
   locked = false; // true while a seal write is in flight: filters, pager, selection and Log freeze
   private seq = 0;
@@ -136,8 +142,14 @@ export class AdminSupportTicketsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.admin.listAssociates().subscribe({ next: d => (this.directory = d), error: () => undefined });
+    this.loadDirectory();
     this.reload();
+  }
+
+  // The filter and the log lookup both read this list; if it fails they would silently stay empty, so say so and allow a retry.
+  loadDirectory(): void {
+    this.directoryError = false;
+    this.admin.listAssociates().subscribe({ next: d => (this.directory = d), error: () => (this.directoryError = true) });
   }
 
   applyFilter(partial: Partial<TicketFilters>): void {
@@ -186,7 +198,10 @@ export class AdminSupportTicketsComponent implements OnInit {
   }
 
   startLog(): void { if (!this.locked) { this.sealMode = 'log'; this.flash = null; } }
-  onCancelLog(): void { this.sealMode = 'respond'; }
+  onCancelLog(): void {
+    this.sealMode = 'respond';
+    setTimeout(() => this.host.nativeElement.querySelector<HTMLElement>('.support-tickets__log')?.focus()); // the Cancel button is gone; return to the opener
+  }
 
   // Respond finished: patch the row + selection immediately, then re-sync the page.
   onSaved(updated: SupportTicket): void {

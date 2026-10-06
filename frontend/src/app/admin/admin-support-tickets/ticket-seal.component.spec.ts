@@ -116,6 +116,43 @@ describe('TicketSealComponent (respond)', () => {
     expect(el().textContent).not.toContain('admin.supportTickets.err.replyRequired');
   });
 
+  it('keeps the submit button focusable (aria-disabled, not disabled) while busy and keeps focus after save', () => {
+    setTicket(tk());
+    pick('RESOLVED'); typeReply('Done');
+    const btn = el().querySelector<HTMLButtonElement>('.ticket-seal__submit')!;
+    btn.focus();
+    submit();
+    fixture.detectChanges();
+    expect(btn.disabled).toBeFalse();
+    expect(btn.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(btn);
+    http.expectOne('/api/admin/support-tickets/t1/respond').flush(tk({ status: 'RESOLVED', response: 'Done' }));
+    fixture.detectChanges();
+    expect(btn.getAttribute('aria-disabled')).not.toBe('true');
+    expect(document.activeElement).toBe(btn);
+  });
+
+  it('keeps focus on the reply box while a submit from it is in flight and after an error', () => {
+    setTicket(tk());
+    pick('RESOLVED'); typeReply('Done');
+    const ta = el().querySelector<HTMLTextAreaElement>('textarea')!;
+    ta.focus();
+    submit(); fixture.detectChanges();
+    expect(ta.disabled).toBeFalse();
+    expect(ta.readOnly).toBeTrue();
+    expect(document.activeElement).toBe(ta);
+    http.expectOne('/api/admin/support-tickets/t1/respond').flush({ error: 'x' }, { status: 500, statusText: 'err' });
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(ta);
+  });
+
+  it('does not announce the whole seal as a live region', () => {
+    setTicket(tk());
+    expect(el().querySelector('.ticket-seal')!.hasAttribute('aria-live')).toBeFalse();
+    fixture.componentRef.setInput('filterMismatch', true); fixture.detectChanges();
+    expect(el().querySelector('.ticket-seal__note')!.getAttribute('role')).toBe('status');
+  });
+
   it('shows the filter-mismatch note when told', () => {
     fixture.componentRef.setInput('filterMismatch', true);
     setTicket(tk());
@@ -177,6 +214,33 @@ describe('TicketSealComponent (log)', () => {
     const cancel = jasmine.createSpy('cancel'); fixture.componentInstance.cancelLog.subscribe(cancel);
     el().querySelector<HTMLButtonElement>('.ticket-seal__cancel')!.click();
     expect(cancel).toHaveBeenCalled();
+  });
+
+  it('keeps the submit button and the subject box focusable while busy', () => {
+    fill();
+    const subj = el().querySelector<HTMLInputElement>('input[name=subject]')!;
+    subj.focus();
+    submit(); fixture.detectChanges();
+    const btn = el().querySelector<HTMLButtonElement>('.ticket-seal__submit')!;
+    expect(btn.disabled).toBeFalse();
+    expect(btn.getAttribute('aria-disabled')).toBe('true');
+    expect(subj.disabled).toBeFalse();
+    expect(document.activeElement).toBe(subj);
+    http.expectOne('/api/admin/support-tickets').flush({ error: 'x' }, { status: 500, statusText: 'err' });
+  });
+
+  it('Cancel is ignored while a log is in flight', () => {
+    fill(); submit(); fixture.detectChanges();
+    const cancel = jasmine.createSpy('cancel'); fixture.componentInstance.cancelLog.subscribe(cancel);
+    el().querySelector<HTMLButtonElement>('.ticket-seal__cancel')!.click();
+    expect(cancel).not.toHaveBeenCalled();
+    http.expectOne('/api/admin/support-tickets').flush({ error: 'x' }, { status: 500, statusText: 'err' });
+  });
+
+  it('labels the associate lookup group', () => {
+    const g = el().querySelector('[role=group]')!;
+    expect(g.getAttribute('aria-labelledby')).toBeTruthy();
+    expect(el().querySelector('#' + g.getAttribute('aria-labelledby'))).not.toBeNull();
   });
 
   it('re-entering log mode clears previous log input', () => {
