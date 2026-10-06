@@ -91,7 +91,7 @@ class AdminSupportTicketServiceTest {
         ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
         verify(settingsAuditLogRepository).save(captor.capture());
         SettingsAuditLog log = captor.getValue();
-        assertThat(log.getSection()).isEqualTo("support-ticket");
+        assertThat(log.getSection()).isEqualTo("SUPPORT_TICKET");
         assertThat(log.getSummary()).isEqualTo("Logged ticket for VP00001: Wallet blank");
         assertThat(log.getChangedByAssociateId()).isEqualTo(ACTOR_ID);
         assertThat(log.getDetail()).contains(response.id().toString()).contains(ASSOCIATE_ID.toString());
