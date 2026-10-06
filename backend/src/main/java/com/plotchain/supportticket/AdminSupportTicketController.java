@@ -5,9 +5,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -20,6 +22,21 @@ public class AdminSupportTicketController {
 
     public AdminSupportTicketController(AdminSupportTicketService adminSupportTicketService) {
         this.adminSupportTicketService = adminSupportTicketService;
+    }
+
+    // Admin queue (support-tickets unit 2). status and associateId are independently optional; no
+    // default status filter. Clamp: page >= 0, size in [1, 100] (PageRequest.of rejects size < 1).
+    // ADMIN-only via the explicit GET matcher in SecurityConfig; no @PreAuthorize on reads, same
+    // as KycReviewController.list.
+    @GetMapping
+    public SupportTicketPageResponse list(
+            @RequestParam(required = false) SupportTicketStatus status,
+            @RequestParam(required = false) UUID associateId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        page = Math.max(page, 0);
+        size = Math.min(Math.max(size, 1), 100);
+        return adminSupportTicketService.list(status, associateId, page, size);
     }
 
     // 201 like the other admin "create on an associate's behalf" POSTs (SaleController.record,
