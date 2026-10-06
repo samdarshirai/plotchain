@@ -496,6 +496,32 @@
     "errorGeneric": "Something went wrong. Try again.",
     "pendingBanner": "Your account is pending activation. Ask your sponsor for an e-pin."
   },
+  "supportTickets": {
+    "eyebrow": "Associate · Support Tickets",
+    "title": "Support Tickets",
+    "subtitle": "Requests our team has logged for you.",
+    "loading": "Loading support tickets",
+    "statusFilterLabel": "Status",
+    "statusFilterAllOption": "All statuses",
+    "status": {
+      "OPEN": "Open",
+      "IN_PROGRESS": "In progress",
+      "RESOLVED": "Resolved",
+      "CLOSED": "Closed"
+    },
+    "columnSubject": "Subject",
+    "columnStatus": "Status",
+    "columnCreatedAt": "Created",
+    "columnResponse": "Admin response",
+    "awaitingReply": "Awaiting a reply",
+    "loadError": "Couldn't load your support tickets. Check your connection and try again.",
+    "retryAction": "Retry",
+    "emptyState": "No support tickets yet. When our team logs a request for you, it will appear here with any reply.",
+    "emptyStateFiltered": "No tickets with this status. Try another status, or choose All statuses.",
+    "previousPageAction": "Previous",
+    "nextPageAction": "Next",
+    "pageIndicator": "Page {{page}} of {{totalPages}}"
+  },
   "payoutHistory": {
     "title": "Payout History",
     "subtitle": "Your wallet balance and withdrawal request history.",
@@ -540,6 +566,7 @@
     "myAccount": "My Account",
     "incomeStatement": "Income Statement",
     "payoutHistory": "Payout History",
+    "supportTickets": "Support Tickets",
     "categories": {
       "setup": "Setup",
       "network": "Associates",

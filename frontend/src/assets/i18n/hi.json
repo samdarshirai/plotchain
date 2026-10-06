@@ -461,6 +461,32 @@
     "nextPageAction": "Next",
     "pageIndicator": "Page {{page}} of {{totalPages}}"
   },
+  "supportTickets": {
+    "eyebrow": "Associate · Support Tickets",
+    "title": "Support Tickets",
+    "subtitle": "Requests our team has logged for you.",
+    "loading": "Loading support tickets",
+    "statusFilterLabel": "Status",
+    "statusFilterAllOption": "All statuses",
+    "status": {
+      "OPEN": "Open",
+      "IN_PROGRESS": "In progress",
+      "RESOLVED": "Resolved",
+      "CLOSED": "Closed"
+    },
+    "columnSubject": "Subject",
+    "columnStatus": "Status",
+    "columnCreatedAt": "Created",
+    "columnResponse": "Admin response",
+    "awaitingReply": "Awaiting a reply",
+    "loadError": "Couldn't load your support tickets. Check your connection and try again.",
+    "retryAction": "Retry",
+    "emptyState": "No support tickets yet. When our team logs a request for you, it will appear here with any reply.",
+    "emptyStateFiltered": "No tickets with this status. Try another status, or choose All statuses.",
+    "previousPageAction": "Previous",
+    "nextPageAction": "Next",
+    "pageIndicator": "Page {{page}} of {{totalPages}}"
+  },
   "payoutHistory": {
     "title": "Payout History",
     "subtitle": "Your wallet balance and withdrawal request history.",
@@ -504,6 +530,7 @@
     "myAccount": "मेरा खाता",
     "incomeStatement": "आय विवरण",
     "payoutHistory": "भुगतान इतिहास",
+    "supportTickets": "सहायता टिकट",
     "categories": {
       "setup": "सेटअप",
       "network": "एसोसिएट्स",
