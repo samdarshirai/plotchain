@@ -17,7 +17,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
       ['salesRegister', 'cycleManagement', 'ledgerRegister', 'epinRegister', 'payoutApproval'],
       ['projectsPlots', 'bookingsEmi'],
-      ['auditLog', 'adminStats']
+      ['auditLog', 'adminStats', 'supportTickets']
     ]);
   });
 
@@ -33,6 +33,10 @@ describe('ADMIN_NAV_CATEGORIES', () => {
 });
 
 describe('findNavCategoryForUrl', () => {
+  it('resolvesTheSupportTicketsScreenToTheSystemCategory', () => {
+    expect(findNavCategoryForUrl('/settings/support-tickets')?.key).toBe('system');
+  });
+
   it('resolvesTheProjectsPlotsScreenToTheInventoryCategory', () => {
     expect(findNavCategoryForUrl('/settings/projects-plots')?.key).toBe('inventory');
   });

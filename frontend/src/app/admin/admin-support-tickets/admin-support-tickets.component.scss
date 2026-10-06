@@ -1,0 +1,19 @@
+// Support Tickets queue shell (support-tickets unit 5): header, filters, grid. List/table styles: admin-support-tickets-list.scss.
+// Live gold/oxblood tokens only; seal styles live in ticket-seal.component.scss.
+.support-tickets {
+  display: flex; flex-direction: column; gap: 1.25rem;
+  max-width: 1480px; margin: 0 auto; padding: 1.5rem 2rem; font-family: 'Inter', var(--font-sans);
+  &__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 1.5rem; .brand-button { min-height: 44px; } }
+  &__eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brand-secondary); }
+  &__title { margin: 0.375rem 0 0; font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; color: var(--text-primary); }
+  &__subtitle { margin: 0.375rem 0 0; max-width: 46rem; font-size: 0.9375rem; line-height: 1.6; color: var(--text-muted); }
+  &__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  &__filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem; padding: 1.25rem 1.5rem; background: var(--surface-raised); border-radius: 16px; .brand-button { min-height: 44px; } }
+  &__field { display: flex; flex-direction: column; gap: 0.375rem; min-width: 170px; flex: 1 1 170px; margin: 0;
+    font: 500 0.6875rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted);
+    select { min-height: 44px; } &--locked { pointer-events: none; opacity: 0.6; } }
+  &__grid { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 1.5rem; align-items: start; }
+}
+@media (max-width: 1100px) { .support-tickets__grid { grid-template-columns: minmax(0, 1fr) 360px; } }
+@media (max-width: 960px) { .support-tickets__grid { grid-template-columns: 1fr; } }
+@media (max-width: 768px) { .support-tickets { padding-inline: 1rem; } }

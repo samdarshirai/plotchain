@@ -848,6 +848,56 @@
       "pageIndicator": "Page {{page}} of {{totalPages}}",
       "emptyState": "No ledger entries match these filters."
     },
+    "supportTickets": {
+      "eyebrow": "System",
+      "title": "Support Tickets",
+      "subtitle": "Log what an associate reported by phone or message, then reply and move it to resolved.",
+      "logButton": "Log a ticket",
+      "filter": { "status": "Status", "allStatuses": "All statuses", "associate": "Associate", "anyAssociate": "Any associate", "reset": "Reset filters" },
+      "status": { "OPEN": "Open", "IN_PROGRESS": "In progress", "RESOLVED": "Resolved", "CLOSED": "Closed" },
+      "col": { "ticket": "Ticket", "associate": "Associate", "status": "Status", "logged": "Logged" },
+      "loading": "Loading tickets",
+      "pager": "Page {{page}} of {{totalPages}} · {{count}} tickets",
+      "previous": "Previous",
+      "next": "Next",
+      "empty": {
+        "noTicketsTitle": "No tickets yet",
+        "noTicketsBody": "When an associate reports a problem, log it here so it can be tracked to a reply.",
+        "noMatchTitle": "No tickets match these filters"
+      },
+      "seal": {
+        "none": "Select a ticket to read it and reply.",
+        "log": "Log a ticket",
+        "logged": "Logged",
+        "description": "Description",
+        "currentReply": "Current reply",
+        "repliedOn": "Replied {{date}}",
+        "noReply": "No reply yet.",
+        "status": "Status",
+        "reply": "Reply",
+        "replyHint": "Required for Resolved and Closed. The associate sees this reply. Saving a new reply replaces the current one.",
+        "filterMismatch": "This ticket no longer matches the current filters.",
+        "associate": "Associate",
+        "subject": "Subject",
+        "descriptionField": "Description"
+      },
+      "action": { "save": "Save response", "saving": "Saving…", "log": "Log ticket", "logging": "Logging…", "cancel": "Cancel" },
+      "ok": {
+        "responded": "Response saved. Ticket {{subject}} is now {{status}}.",
+        "logged": "Ticket logged. \"{{subject}}\" is open for {{name}} ({{userId}})."
+      },
+      "err": {
+        "load": "The ticket queue didn't load. Check your connection and try again. Nothing was changed.",
+        "retry": "Retry",
+        "directory": "The associate list didn't load, so the associate filter and lookup are empty. Try again.",
+        "replyRequired": "Add a reply before resolving or closing this ticket.",
+        "logRequired": "Choose an associate and fill in the subject and description.",
+        "associateNotFound": "That associate wasn't found.",
+        "ticketNotFound": "This ticket no longer exists. Reload the queue.",
+        "network": "Couldn't reach the server. Check your connection and try again.",
+        "generic": "Something went wrong. Nothing was changed. Please try again."
+      }
+    },
     "bookingsEmi": {
       "eyebrow": "Inventory & Bookings",
       "title": "Bookings & EMI",
@@ -1385,7 +1435,8 @@
       "ledgerRegister": "Ledger Register",
       "payoutApproval": "Payout Approval",
       "projectsPlots": "प्रोजेक्ट्स और प्लॉट्स",
-      "bookingsEmi": "बुकिंग और ईएमआई"
+      "bookingsEmi": "बुकिंग और ईएमआई",
+      "supportTickets": "सहायता टिकट"
     },
     "auditLog": {
       "sectionFilterLabel": "अनुभाग",
