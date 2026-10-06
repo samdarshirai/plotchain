@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,5 +48,14 @@ public class AdminSupportTicketController {
     public ResponseEntity<SupportTicketResponse> create(@Valid @RequestBody CreateSupportTicketRequest request,
                                                         @AuthenticationPrincipal UUID actorId) {
         return ResponseEntity.status(HttpStatus.CREATED).body(adminSupportTicketService.create(request, actorId));
+    }
+
+    // Defense-in-depth @PreAuthorize alongside the blanket POST /api/** -> ADMIN rule (Decision 8).
+    @PostMapping("/{id}/respond")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public SupportTicketResponse respond(@PathVariable UUID id,
+                                         @Valid @RequestBody RespondToSupportTicketRequest request,
+                                         @AuthenticationPrincipal UUID actorId) {
+        return adminSupportTicketService.respond(id, request, actorId);
     }
 }
