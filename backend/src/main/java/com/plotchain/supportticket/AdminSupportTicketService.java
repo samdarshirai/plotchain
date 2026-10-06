@@ -52,7 +52,7 @@ public class AdminSupportTicketService {
         ticket.setUpdatedAt(now);
         SupportTicket saved = supportTicketRepository.save(ticket);
 
-        settingsAuditService.record("support-ticket",
+        settingsAuditService.record("SUPPORT_TICKET",
             "Logged ticket for " + associate.getUserId() + ": " + request.subject(),
             Map.of("ticketId", saved.getId().toString(), "associateId", associate.getId().toString()),
             actorId);
@@ -117,7 +117,7 @@ public class AdminSupportTicketService {
             String r = request.response();
             detail.put("response", r.length() > AUDIT_RESPONSE_MAX ? r.substring(0, AUDIT_RESPONSE_MAX) + "..." : r);
         }
-        settingsAuditService.record("support-ticket",
+        settingsAuditService.record("SUPPORT_TICKET",
             "Responded to ticket " + saved.getId() + " for " + associate.getUserId() + ": status " + status,
             detail, actorId);
 

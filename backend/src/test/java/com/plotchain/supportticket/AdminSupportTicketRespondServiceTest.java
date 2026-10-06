@@ -195,7 +195,7 @@ class AdminSupportTicketRespondServiceTest {
         ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
         verify(settingsAuditLogRepository).save(captor.capture());
         SettingsAuditLog log = captor.getValue();
-        assertThat(log.getSection()).isEqualTo("support-ticket");
+        assertThat(log.getSection()).isEqualTo("SUPPORT_TICKET");
         assertThat(log.getSummary()).isEqualTo("Responded to ticket " + TICKET_ID + " for VP00001: status RESOLVED");
         assertThat(log.getChangedByAssociateId()).isEqualTo(ACTOR_ID);
         assertThat(log.getDetail()).contains(TICKET_ID.toString()).contains("RESOLVED").contains("Fixed");
