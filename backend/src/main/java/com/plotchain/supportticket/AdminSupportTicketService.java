@@ -8,9 +8,15 @@ import com.plotchain.company.SettingsAuditService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class AdminSupportTicketService {
@@ -51,5 +57,28 @@ public class AdminSupportTicketService {
             actorId);
 
         return SupportTicketResponse.of(saved, associate);
+    }
+
+    // Admin queue (support-tickets unit 2). page/size must already be clamped by the controller.
+    // One findAllById for the whole page (not one lookup per row). The query fixes the order, so the
+    // Pageable is unsorted.
+    @Transactional(readOnly = true)
+    public SupportTicketPageResponse list(SupportTicketStatus status, UUID associateId, int page, int size) {
+        Page<SupportTicket> result = supportTicketRepository.searchQueue(status, associateId, PageRequest.of(page, size));
+
+        List<SupportTicketResponse> rows = List.of();
+        if (!result.isEmpty()) {
+            List<UUID> ids = result.getContent().stream().map(SupportTicket::getAssociateId).distinct().toList();
+            Map<UUID, Associate> byId = associateRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Associate::getId, Function.identity()));
+            rows = result.getContent().stream().map(t -> {
+                Associate a = byId.get(t.getAssociateId());
+                if (a == null) {
+                    throw new IllegalStateException("Ticket " + t.getId() + " references missing associate " + t.getAssociateId());
+                }
+                return SupportTicketResponse.of(t, a);
+            }).toList();
+        }
+        return new SupportTicketPageResponse(rows, page, size, result.getTotalElements());
     }
 }
