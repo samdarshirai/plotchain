@@ -10,7 +10,7 @@ No ADRs or glossary file exist for this spec; sliced from the spec doc alone (ro
 
 | Unit # | Title | Type | Depends on | Status | Plan file path | Merged commit range |
 |---|---|---|---|---|---|---|
-| 1 | Admin logs an `OPEN` ticket on an associate's behalf — migration + `POST /api/admin/support-tickets` | backend | none | planned | `docs/superpowers/plans/2026-08-03-support-tickets-unit-1-log-ticket.md` | — |
+| 1 | Admin logs an `OPEN` ticket on an associate's behalf — migration + `POST /api/admin/support-tickets` | backend | none | merged | `docs/superpowers/plans/2026-08-03-support-tickets-unit-1-log-ticket.md` | `63e8af8..b8743bb` (merge `75369df`) |
 | 2 | Admin views a paged, filterable ticket queue — `GET /api/admin/support-tickets` | backend | 1 | pending | — | — |
 | 3 | Admin responds to / changes status of a ticket — `POST /api/admin/support-tickets/{id}/respond` | backend | 1 | pending | — | — |
 | 4 | Associate reads own ticket history, view-only — `GET /api/associates/me/support-tickets` | backend | 1 | pending | — | — |
