@@ -17,7 +17,7 @@ const NO_FILTERS: TicketFilters = { status: '', associateId: '' };
   selector: 'app-admin-support-tickets',
   standalone: true,
   encapsulation: ViewEncapsulation.None,
-  styleUrls: ['./admin-support-tickets.component.scss'],
+  styleUrls: ['./admin-support-tickets.component.scss', './admin-support-tickets-list.scss'],
   imports: [CommonModule, TranslateModule, AssociateLookupComponent, InlineBannerComponent, TicketSealComponent],
   template: `
     <div class="support-tickets">
