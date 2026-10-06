@@ -46,4 +46,21 @@ describe('SupportTicketService', () => {
     expect(r.request.body).toEqual({ status: 'RESOLVED', response: 'Done' });
     r.flush({});
   });
+
+  it('lists my tickets with page, size and optional status', () => {
+    s.listMine('RESOLVED', 2, 20).subscribe(res => expect(res.totalElements).toBe(0));
+    const req = http.expectOne(r => r.url === '/api/associates/me/support-tickets');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('status')).toBe('RESOLVED');
+    expect(req.request.params.get('page')).toBe('2');
+    expect(req.request.params.get('size')).toBe('20');
+    req.flush({ entries: [], page: 2, size: 20, totalElements: 0 });
+  });
+
+  it('omits status when listing all my tickets', () => {
+    s.listMine('', 0, 20).subscribe();
+    const req = http.expectOne(r => r.url === '/api/associates/me/support-tickets');
+    expect(req.request.params.has('status')).toBeFalse();
+    req.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+  });
 });
