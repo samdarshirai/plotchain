@@ -171,7 +171,7 @@ export class AdminSupportTicketsComponent implements OnInit {
         this.page = res;
         if (this.selected) {
           const still = res.entries.find(t => t.id === this.selected!.id);
-          if (still) { this.selected = still; this.filterMismatch = false; } else if (checkMismatch) { this.filterMismatch = true; }
+          if (still) { this.selected = still; this.filterMismatch = false; } else if (checkMismatch && this.hasFilters) { /* unfiltered, a missing ticket is just on another page */ this.filterMismatch = true; }
         }
       },
       error: () => { if (mine === this.seq) { this.loading = false; this.loadError = true; } }

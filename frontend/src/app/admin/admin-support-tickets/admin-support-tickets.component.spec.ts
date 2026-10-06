@@ -121,6 +121,20 @@ describe('AdminSupportTicketsComponent', () => {
     expect(fixture.componentInstance.selected!.id).toBe('t1');
   });
 
+  it('resetting filters while the selected ticket sits on a later page does not claim a filter mismatch', () => {
+    boot();
+    fixture.componentInstance.applyFilter({ status: 'CLOSED' });
+    listReq().flush(pageOf([tk('t3', { status: 'CLOSED' })]));
+    fixture.componentInstance.selectTicket(fixture.componentInstance.page!.entries[0]);
+    fixture.componentInstance.applyFilter({ status: 'OPEN' });
+    listReq().flush(pageOf([tk('t1')]));
+    expect(fixture.componentInstance.filterMismatch).toBeTrue();
+    fixture.componentInstance.resetFilters();
+    listReq().flush(pageOf([tk('t1')], 45)); // t3 exists, just on another page
+    expect(fixture.componentInstance.filterMismatch).toBeFalse();
+    expect(fixture.componentInstance.selected!.id).toBe('t3');
+  });
+
   it('locks filters, pager and selection while a write is in flight', () => {
     boot();
     fixture.componentInstance.locked = true;
