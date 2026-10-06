@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -80,5 +81,46 @@ public class AdminSupportTicketService {
             }).toList();
         }
         return new SupportTicketPageResponse(rows, page, size, result.getTotalElements());
+    }
+
+    private static final int AUDIT_RESPONSE_MAX = 200;
+
+    @Transactional
+    public SupportTicketResponse respond(UUID id, RespondToSupportTicketRequest request, UUID actorId) {
+        SupportTicket ticket = supportTicketRepository.findById(id)
+            .orElseThrow(() -> new SupportTicketNotFoundException(id));
+
+        SupportTicketStatus status = request.status();
+        boolean hasResponse = request.response() != null && !request.response().isBlank();
+        if (!hasResponse && (status == SupportTicketStatus.RESOLVED || status == SupportTicketStatus.CLOSED)) {
+            throw new InvalidSupportTicketResponseException("A response is required when a ticket is " + status);
+        }
+
+        // FK guarantees the associate exists; orElseThrow only guards a corrupted DB.
+        Associate associate = associateRepository.findById(ticket.getAssociateId())
+            .orElseThrow(() -> new AssociateNotFoundException(ticket.getAssociateId()));
+
+        // No @PreUpdate on SupportTicket: updatedAt is set by hand.
+        Instant now = Instant.now();
+        ticket.setStatus(status);
+        if (hasResponse) {
+            ticket.setResponse(request.response());
+            ticket.setRespondedAt(now);
+        }
+        ticket.setUpdatedAt(now);
+        SupportTicket saved = supportTicketRepository.save(ticket);
+
+        Map<String, String> detail = new LinkedHashMap<>();
+        detail.put("ticketId", saved.getId().toString());
+        detail.put("status", status.name());
+        if (hasResponse) {
+            String r = request.response();
+            detail.put("response", r.length() > AUDIT_RESPONSE_MAX ? r.substring(0, AUDIT_RESPONSE_MAX) + "..." : r);
+        }
+        settingsAuditService.record("support-ticket",
+            "Responded to ticket " + saved.getId() + " for " + associate.getUserId() + ": status " + status,
+            detail, actorId);
+
+        return SupportTicketResponse.of(saved, associate);
     }
 }

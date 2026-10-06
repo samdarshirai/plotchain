@@ -602,6 +602,28 @@ class SecurityConfigTest {
             .andExpect(status().isForbidden());
     }
 
+    // support-tickets unit 3 (Decision 8): POST .../{id}/respond rides the blanket ADMIN write rule
+    // plus @PreAuthorize. A random ticket id reaches the real service for the ADMIN token and 404s
+    // (no such ticket) -- proof it passed the security layer, same "not 403" reasoning as create.
+    // Every other role is 403 at the filter.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminSupportTicketRespondIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(post("/api/admin/support-tickets/{id}/respond", UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(role))
+                .contentType("application/json")
+                .content("{\"status\":\"IN_PROGRESS\"}"))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+    }
+
+    @Test
+    void adminSupportTicketRespondIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(post("/api/admin/support-tickets/{id}/respond", UUID.randomUUID())
+                .contentType("application/json")
+                .content("{\"status\":\"IN_PROGRESS\"}"))
+            .andExpect(status().isUnauthorized());
+    }
+
     // plot-booking unit 2 (Decision 12): PATCH .../installments/{n}/pay rides the blanket ADMIN
     // write rule. A random booking id reaches the real BookingService for the ADMIN token, whose
     // findByIdForUpdate is empty -> 404, proving the request passed the security layer (same
