@@ -549,6 +549,31 @@ class SecurityConfigTest {
             .andExpect(status().isUnauthorized());
     }
 
+    // support-tickets unit 1 (Decision 8): POST /api/admin/support-tickets rides the blanket ADMIN
+    // write rule plus @PreAuthorize. A random associateId reaches the real service for the ADMIN
+    // token and 404s (the mocked AssociateRepository.findByIdAndRole is empty) -- proof the request
+    // passed the security layer, not a business outcome. Every other role is 403 at the filter.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminSupportTicketCreateIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        String body = new ObjectMapper().writeValueAsString(
+            new com.plotchain.supportticket.CreateSupportTicketRequest(UUID.randomUUID(), "Subject", "Description"));
+
+        mockMvc.perform(post("/api/admin/support-tickets")
+                .header("Authorization", "Bearer " + tokenFor(role))
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+    }
+
+    @Test
+    void adminSupportTicketCreateIsUnauthorizedWithoutAToken() throws Exception {
+        String body = new ObjectMapper().writeValueAsString(
+            new com.plotchain.supportticket.CreateSupportTicketRequest(UUID.randomUUID(), "Subject", "Description"));
+        mockMvc.perform(post("/api/admin/support-tickets").contentType("application/json").content(body))
+            .andExpect(status().isUnauthorized());
+    }
+
     // plot-booking unit 2 (Decision 12): PATCH .../installments/{n}/pay rides the blanket ADMIN
     // write rule. A random booking id reaches the real BookingService for the ADMIN token, whose
     // findByIdForUpdate is empty -> 404, proving the request passed the security layer (same
