@@ -126,8 +126,8 @@ export class SupportTicketHistoryComponent implements OnInit, OnDestroy {
   }
 
   goToPage(page: number): void {
-    if (page < 0 || (this.page && page * this.page.size >= Math.max(this.page.totalElements, 1))) {
-      return; // aria-disabled buttons stay clickable (focus-safe), so enforce bounds here
+    if (this.loading || page < 0 || (this.page && page * this.page.size >= Math.max(this.page.totalElements, 1))) {
+      return; // aria-disabled buttons stay clickable (focus-safe), so enforce bounds and ignore clicks while a load is in flight
     }
     this.loadPage(page);
   }

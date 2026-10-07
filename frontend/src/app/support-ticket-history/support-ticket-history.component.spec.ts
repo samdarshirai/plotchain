@@ -126,13 +126,21 @@ describe('SupportTicketHistoryComponent', () => {
     expect(fixture.nativeElement.querySelector('table.ticket-history__table')).toBeTruthy();
   });
 
-  it('Retry after a failed later page re-requests THAT page and the current status', () => {
-    flushPage([answered], 45);
+  it('Retry after a failed later page re-requests THAT page with the current status', () => {
+    fixture.componentInstance.onStatusChange('RESOLVED');
+    const first = httpMock.expectOne(r => r.url === URL && r.params.get('status') === 'RESOLVED');
+    first.flush({ entries: [answered], page: 0, size: 20, totalElements: 45 });
+    httpMock.expectOne(r => r.url === URL && !r.params.has('status')).flush({ entries: [], page: 0, size: 20, totalElements: 0 }); // superseded initial load
+    fixture.detectChanges();
     fixture.componentInstance.goToPage(2);
-    httpMock.expectOne(r => r.params.get('page') === '2').flush({}, { status: 500, statusText: 'Server Error' });
+    httpMock.expectOne(r => r.params.get('page') === '2' && r.params.get('status') === 'RESOLVED')
+      .flush({}, { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
     fixture.componentInstance.retry();
-    flushPage([answered], 45, 2);
+    const retried = httpMock.expectOne(r => r.url === URL);
+    expect(retried.request.params.get('page')).toBe('2');
+    expect(retried.request.params.get('status')).toBe('RESOLVED');
+    retried.flush({ entries: [answered], page: 2, size: 20, totalElements: 45 });
     expect(fixture.componentInstance.loadError).toBeFalse();
     expect(fixture.componentInstance.page?.page).toBe(2);
   });
@@ -147,12 +155,32 @@ describe('SupportTicketHistoryComponent', () => {
     expect(fixture.componentInstance.page?.entries[0].id).toBe('t2');
   });
 
-  it('pager buttons are aria-disabled, not disabled, and goToPage ignores out-of-range or in-flight calls', () => {
+  it('pager buttons are aria-disabled, not disabled, and goToPage ignores out-of-range pages', () => {
     flushPage([answered], 21);
     const prev: HTMLButtonElement = fixture.nativeElement.querySelector('.ticket-history__prev');
     expect(prev.disabled).toBeFalse();
     expect(prev.getAttribute('aria-disabled')).toBe('true');
     fixture.componentInstance.goToPage(-1); // no request: afterEach httpMock.verify() would fail otherwise
+    fixture.componentInstance.goToPage(2);
+  });
+
+  it('rapid Next clicks while a page is loading issue only one request', () => {
+    flushPage([answered], 45);
+    const next: HTMLButtonElement = fixture.nativeElement.querySelector('.ticket-history__next');
+    next.click(); next.click(); next.click();
+    const reqs = httpMock.match(r => r.url === URL);
+    expect(reqs.length).toBe(1);
+    expect(reqs[0].request.params.get('page')).toBe('1');
+    reqs[0].flush({ entries: [answered], page: 1, size: 20, totalElements: 45 });
+  });
+
+  it('a status change during loading is still allowed and supersedes the pending request', () => {
+    const first = httpMock.expectOne(r => r.url === URL); // initial load, pending
+    fixture.componentInstance.onStatusChange('CLOSED');
+    const second = httpMock.expectOne(r => r.params.get('status') === 'CLOSED');
+    second.flush({ entries: [waiting], page: 0, size: 20, totalElements: 1 });
+    first.flush({ entries: [answered], page: 0, size: 20, totalElements: 1 });
+    expect(fixture.componentInstance.page?.entries[0].id).toBe('t2');
   });
 
   it('Next loads the next page', () => {
