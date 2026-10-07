@@ -40,6 +40,15 @@ describe('routes', () => {
     expect(route!.loadComponent).toBeDefined(); // lazy: keeps the initial bundle under budget
   });
 
+  it('guards the support-tickets route with authGuard and associateOnlyGuard and lazy-loads it', () => {
+    const route = routes.find(r => r.path === 'support-tickets');
+    expect(route).toBeTruthy();
+    expect(route!.canActivate).toContain(authGuard);
+    expect(route!.canActivate).toContain(associateOnlyGuard);
+    expect(route!.loadComponent).toBeDefined();
+    expect(route!.component).toBeUndefined();
+  });
+
   it('guards the profile route with authGuard and associateOnlyGuard', () => {
     const route = routes.find(r => r.path === 'profile');
 
