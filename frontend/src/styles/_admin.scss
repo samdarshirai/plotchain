@@ -4944,7 +4944,7 @@ button.tree-explorer__vacant-card {
 @media (max-width: 768px) {
   .ticket-history { padding: 1rem; }
   .ticket-history__filters { flex-direction: column; align-items: stretch; }
-  .ticket-history__filter-field { min-width: 0; max-width: none; }
+  .ticket-history__filter-field { min-width: 0; max-width: none; flex: none; } // flex-basis 220px would become a 220px height in the column
   .ticket-history__table { table-layout: fixed; width: 100%; min-width: 0; }
   .ticket-history__table thead { display: none; }
   .ticket-history__table tbody tr {
@@ -4962,7 +4962,10 @@ button.tree-explorer__vacant-card {
     }
   }
   // Subject: full-width, unlabeled, left-aligned lead.
-  .ticket-history__table tbody td:nth-child(1) { display: block; text-align: left; }
+  // nth-child desktop rules (width 34%, nowrap) out-specify the generic td rule above, so reset them here.
+  .ticket-history__table tbody td:nth-child(1) { display: block; width: auto; text-align: left; }
+  .ticket-history__table tbody td:nth-child(2),
+  .ticket-history__table tbody td:nth-child(3) { white-space: normal; }
   .ticket-history__table tbody td:nth-child(1)::before { display: none; }
   .ticket-history__subject { font-size: 1.0625rem; }
   // Admin response: full-width labeled block, left-aligned, rail kept.
