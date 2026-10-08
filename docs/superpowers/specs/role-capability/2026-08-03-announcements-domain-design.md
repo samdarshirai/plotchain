@@ -2,7 +2,7 @@
 
 ## Context
 
-`announcement` package (`backend/src/main/java/com/plotchain/announcement/`) has `Announcement` entity + `AnnouncementRepository` only — no controller, per the reconciliation audit in `docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md`. `AnnouncementRepository.findTop5ByOrderByPublishedAtDesc()` already exists and is used today by `DashboardService` to populate the associate dashboard's 5-most-recent widget (`frontend/src/app/dashboard/widgets/announcements-strip/`). That read path is untouched by this spec.
+**Updated 2026-10-08 (was stale):** the `announcement` package (`Announcement` entity, `AnnouncementRepository`) was deleted in commit `a018129` during the associate-dashboard mockup work, together with `findTop5ByOrderByPublishedAtDesc()`, the `DashboardResponse.announcements` field and the `announcements-strip` widget. Only the `announcement` table remains (`V1__create_dashboard_tables.sql`, columns match this spec), so unit 1 recreates the entity and repository; no migration is needed. No dashboard currently shows announcements, and re-adding a teaser is out of scope here.
 
 Role model, per the same design: "Admin composes/publishes" / "Associate: read-only feed" — and, more specifically, the Screens section calls out Announcements as the one example where a screen shows "the same data both can read," as opposed to every other domain being Admin-only or Associate-only content.
 
