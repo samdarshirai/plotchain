@@ -13,7 +13,7 @@ const PAGE_SIZE = 10;
   selector: 'app-admin-announcements',
   standalone: true,
   encapsulation: ViewEncapsulation.None,
-  styleUrls: ['./admin-announcements.component.scss', './admin-announcements-items.scss'],
+  styleUrls: ['./admin-announcements.component.scss', './admin-announcements-list.scss', './admin-announcements-items.scss'],
   imports: [CommonModule, TranslateModule, InlineBannerComponent, AnnouncementComposeFormComponent],
   template: `
     <main class="announcement-composer">
