@@ -39,6 +39,21 @@ describe('AnnouncementComposeFormComponent', () => {
     expect(titleIn().value.length).toBe(301);
   });
 
+  it('keeps the counter out of the title label so the input name is just "Title", and describes the input with it', () => {
+    const label = el().querySelector('label[for="announcement-composer-title"]')!;
+    expect(label.textContent).not.toMatch(/\d+ \/ \d+/);
+    expect(label.querySelector('.announcement-composer__counter')).toBeNull();
+    const counter = el().querySelector('.announcement-composer__counter')!;
+    expect(counter.id).toBeTruthy();
+    expect(counter.hasAttribute('aria-live')).toBeFalse();
+    expect(titleIn().getAttribute('aria-describedby')!.split(' ')).toContain(counter.id);
+    type(titleIn(), '   '); submit();
+    const ids = titleIn().getAttribute('aria-describedby')!.split(' ');
+    expect(ids).toContain(counter.id);
+    expect(ids).toContain('announcement-composer-title-error');
+    expect(el().querySelector('#announcement-composer-title-error .field-error')).not.toBeNull();
+  });
+
   it('blank submit sends nothing, shows both messages with aria-invalid, and focuses the first invalid field', () => {
     type(titleIn(), '   '); type(bodyIn(), '\n ');
     submit();

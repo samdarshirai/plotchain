@@ -23,11 +23,11 @@ import { DraftErrors, classifyPublishError, publishPayload, validateDraft } from
       </app-inline-banner>
       <form class="announcement-composer__form" (submit)="submit(); $event.preventDefault()" novalidate>
         <div class="announcement-composer__field">
-          <label for="announcement-composer-title">
-            <span>{{ 'announcements.composer.form.title' | translate }} <span class="announcement-composer__req" aria-hidden="true">*</span></span>
-            <span class="announcement-composer__counter" [class.announcement-composer__counter--over]="over > 0">{{ title.length }} / {{ max }}</span>
-          </label>
-          <input #titleInput type="text" id="announcement-composer-title" autocomplete="off" aria-describedby="announcement-composer-title-error"
+          <div class="announcement-composer__label-row">
+            <label for="announcement-composer-title">{{ 'announcements.composer.form.title' | translate }} <span class="announcement-composer__req" aria-hidden="true">*</span></label>
+            <span id="announcement-composer-title-counter" class="announcement-composer__counter" [class.announcement-composer__counter--over]="over > 0">{{ title.length }} / {{ max }}</span>
+          </div>
+          <input #titleInput type="text" id="announcement-composer-title" autocomplete="off" aria-describedby="announcement-composer-title-counter announcement-composer-title-error"
             [readOnly]="busy" [value]="title" (input)="onTitle($any($event.target).value)"
             [class.announcement-composer__invalid]="titleInvalid" [attr.aria-invalid]="titleInvalid ? 'true' : null" />
           <div id="announcement-composer-title-error" role="alert">

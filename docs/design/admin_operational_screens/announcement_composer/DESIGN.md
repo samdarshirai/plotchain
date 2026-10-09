@@ -1,7 +1,7 @@
 ---
 name: Announcement Composer (Admin Operational Screen)
 tokens:
-  colors: { live: "Built directly on frontend/src/styles/_tokens.scss (gold/oxblood/parchment): --brand-primary/secondary/primary-bright/primary-soft, --surface-page/card/raised, --border-subtle, --text-primary/muted, --status-success/warning/danger (+ --status-*-text from _shared-components.scss). No literal colours below :root in code.html. NO PORT NEEDED." }
+  colors: { live: "Built directly on frontend/src/styles/_tokens.scss (gold/oxblood/parchment): --brand-primary/secondary/primary-bright/primary-soft, --surface-page/card/raised, --border-subtle, --text-primary/muted, --status-success/warning/danger (correction: the --status-*-text variants do NOT exist in the live styles; code.html's :root defines them for the mock only, and the implementation uses var(--status-danger) for the counter, asterisk and invalid border). No literal colours below :root in code.html. NO PORT NEEDED." }
   typography: { live: "Fraunces (--font-display: page title, panel title, notice titles, day numeral), Inter (--font-sans: body, controls), IBM Plex Mono (--font-mono: counter, month, timestamps, count)" }
   radius: { card: 20px, seal: 4px (double rule), control: var(--radius-sm) 2px, chip: 999px }
 ---

@@ -173,6 +173,32 @@ describe('AdminAnnouncementsComponent', () => {
     expect(el().querySelector('.inline-banner--success')).toBeNull();
   });
 
+  it('keeps the chip out of the heading so the heading name is just the title, and only on the new item', () => {
+    boot([an('a1')]);
+    fixture.componentInstance.onPublished(an('n1', { title: 'Fresh' }) as never);
+    listReq().flush(pageOf([an('n1', { title: 'Fresh' }), an('a1')], 2));
+    fixture.detectChanges();
+    const items = el().querySelectorAll('.announcement-composer__item');
+    const h = items[0].querySelector('.announcement-composer__item-title')!;
+    expect(h.textContent!.trim()).toBe('Fresh');
+    expect(h.querySelector('.announcement-composer__chip')).toBeNull();
+    expect(items[0].querySelectorAll('.announcement-composer__chip').length).toBe(1);
+    expect(items[1].querySelector('.announcement-composer__chip')).toBeNull();
+  });
+
+  it('Retry is inert while a publish is in flight and works again after it settles', () => {
+    listReq().flush('boom', { status: 500, statusText: 'err' });
+    fixture.detectChanges();
+    publishViaForm();
+    const pub = http.expectOne('/api/admin/announcements');
+    el().querySelector<HTMLButtonElement>('.announcement-composer__retry')!.click();
+    http.expectNone(r => r.url === '/api/announcements');
+    pub.flush('x', { status: 500, statusText: 'err' });
+    fixture.detectChanges();
+    el().querySelector<HTMLButtonElement>('.announcement-composer__retry')!.click();
+    listReq().flush(pageOf([an('a1')]));
+  });
+
   it('publish succeeds while the list is errored: success banner shows and the list load is retried', () => {
     listReq().flush('boom', { status: 500, statusText: 'err' });
     fixture.detectChanges();

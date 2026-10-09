@@ -3,7 +3,9 @@
   &__seal h2 { margin: 0 0 0.75rem; font: 600 1.125rem var(--font-display); }
   &__form { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
   &__field { display: flex; flex-direction: column; font-weight: 500; }
-  &__field label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.375rem; }
+  &__field label { margin-bottom: 0.375rem; }
+  &__label-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.375rem; }
+  &__label-row label { margin: 0; }
   &__field input, &__field textarea { min-height: 44px; }
   &__field textarea { min-height: 9rem; resize: vertical; }
   &__req { color: var(--status-danger); }

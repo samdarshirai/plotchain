@@ -63,7 +63,10 @@ const PAGE_SIZE = 10;
                   <span class="announcement-composer__mon">{{ a.publishedAt | date: 'MMM y' }}</span>
                 </div>
                 <div>
-                  <h3 class="announcement-composer__item-title">{{ a.title }}<span class="announcement-composer__chip" *ngIf="a.id === justPublishedId">{{ 'announcements.composer.list.justPublished' | translate }}</span></h3>
+                  <div class="announcement-composer__item-head">
+                    <h3 class="announcement-composer__item-title">{{ a.title }}</h3>
+                    <span class="announcement-composer__chip" *ngIf="a.id === justPublishedId">{{ 'announcements.composer.list.justPublished' | translate }}</span>
+                  </div>
                   <p class="announcement-composer__body" [class.is-open]="isOpen(a.id)" [id]="'announcement-body-' + a.id">{{ a.body }}</p>
                   <button type="button" class="announcement-composer__more" *ngIf="needsToggle(a)" [attr.aria-expanded]="isOpen(a.id)" [attr.aria-controls]="'announcement-body-' + a.id" (click)="toggle(a.id)">{{ (isOpen(a.id) ? 'announcements.composer.list.showLess' : 'announcements.composer.list.showFull') | translate }}</button>
                   <p class="announcement-composer__time">{{ 'announcements.composer.list.published' | translate: { date: (a.publishedAt | date: 'd MMM y, HH:mm') } }}</p>
