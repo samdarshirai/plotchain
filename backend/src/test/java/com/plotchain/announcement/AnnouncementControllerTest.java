@@ -14,12 +14,19 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+
+import java.time.Instant;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -111,5 +118,106 @@ class AnnouncementControllerTest {
         compose(json("t", "")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.fields.body").exists());
         compose(json("t", null)).andExpect(status().isBadRequest());
         verify(announcementRepository, never()).save(any());
+    }
+
+    private Announcement row(String title, String publishedAt) {
+        return new Announcement(UUID.randomUUID(), title, "Body of " + title, Instant.parse(publishedAt), "ALL");
+    }
+
+    private void stubFeed(PageRequest expected, List<Announcement> rows, long total) {
+        when(announcementRepository.findAllByOrderByPublishedAtDesc(eq(expected)))
+            .thenReturn(new PageImpl<>(rows, expected, total));
+    }
+
+    @Test
+    void feedReturnsPageShapeInRepositoryOrderForAnAssociateAndHidesAudience() throws Exception {
+        stubFeed(PageRequest.of(0, 20),
+            List.of(row("Newer", "2031-02-01T00:00:00Z"), row("Older", "2031-01-01T00:00:00Z")), 2);
+
+        mockMvc.perform(get("/api/announcements").header("Authorization", tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.entries.length()").value(2))
+            .andExpect(jsonPath("$.entries[0].title").value("Newer"))
+            .andExpect(jsonPath("$.entries[1].title").value("Older"))
+            .andExpect(jsonPath("$.entries[0].body").value("Body of Newer"))
+            .andExpect(jsonPath("$.entries[0].publishedAt").exists())
+            .andExpect(jsonPath("$.entries[0].id").exists())
+            .andExpect(jsonPath("$.entries[0].audience").doesNotExist())
+            .andExpect(jsonPath("$.page").value(0))
+            .andExpect(jsonPath("$.size").value(20))
+            .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
+    void adminReadsTheSameFeed() throws Exception {
+        stubFeed(PageRequest.of(0, 20), List.of(row("Only", "2031-01-01T00:00:00Z")), 1);
+
+        mockMvc.perform(get("/api/announcements").header("Authorization", tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.entries[0].title").value("Only"));
+    }
+
+    @Test
+    void emptyFeedIs200WithEmptyEntries() throws Exception {
+        stubFeed(PageRequest.of(0, 20), List.of(), 0);
+
+        mockMvc.perform(get("/api/announcements").header("Authorization", tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.entries.length()").value(0))
+            .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    void pageAndSizeArePassedThrough() throws Exception {
+        stubFeed(PageRequest.of(3, 10), List.of(), 40);
+
+        mockMvc.perform(get("/api/announcements").param("page", "3").param("size", "10")
+                .header("Authorization", tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.page").value(3))
+            .andExpect(jsonPath("$.size").value(10));
+    }
+
+    @Test
+    void oversizedSizeIsCappedAt100() throws Exception {
+        stubFeed(PageRequest.of(0, 100), List.of(), 0);
+
+        mockMvc.perform(get("/api/announcements").param("size", "100000")
+                .header("Authorization", tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.size").value(100));
+    }
+
+    @Test
+    void zeroOrNegativeSizeIsRaisedToOneNotA500() throws Exception {
+        stubFeed(PageRequest.of(0, 1), List.of(), 0);
+
+        mockMvc.perform(get("/api/announcements").param("size", "0")
+                .header("Authorization", tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.size").value(1));
+        mockMvc.perform(get("/api/announcements").param("size", "-5")
+                .header("Authorization", tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.size").value(1));
+    }
+
+    @Test
+    void negativePageIsFlooredToZeroNotA500() throws Exception {
+        stubFeed(PageRequest.of(0, 20), List.of(), 0);
+
+        mockMvc.perform(get("/api/announcements").param("page", "-1")
+                .header("Authorization", tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.page").value(0));
+    }
+
+    @Test
+    void nonNumericPageIsA4xxNotA500() throws Exception {
+        mockMvc.perform(get("/api/announcements").param("page", "abc")
+                .header("Authorization", tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void feedWithoutATokenIs401() throws Exception {
+        mockMvc.perform(get("/api/announcements")).andExpect(status().isUnauthorized());
     }
 }
