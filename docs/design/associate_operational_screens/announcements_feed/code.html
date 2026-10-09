@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Announcements Feed — Associate Operational Screen Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  /* Tokens copied 1:1 from frontend/src/styles/_tokens.scss (LIVE gold/oxblood). No new tokens. */
+  :root {
+    --brand-primary: #C6A227;
+    --brand-secondary: #5C1A2A;
+    --brand-primary-bright: #EAD07D;
+    --brand-gradient: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-bright));
+    --brand-primary-soft: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+    --brand-primary-contrast: #0C0A0B;
+    --surface-page: #F7F2E7;
+    --surface-card: #FCFAF5;
+    --surface-raised: #F0E9D6;
+    --border-subtle: #D9CFBC;
+    --text-primary: #201A15;
+    --text-muted: #6B6153;
+    --status-danger: #B23B32;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --radius-sm: 2px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: var(--surface-page); color: var(--text-primary); font-family: var(--font-sans); font-size: 15px; line-height: 1.5; }
+
+  /* Shared primitives (as in live _cards/_buttons/_shared-components) */
+  .card { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1.5rem; }
+  button { cursor: pointer; border-radius: var(--radius-sm); padding: 0.625rem 1.25rem; border: none; background: none; font-family: inherit; }
+  button:disabled, button[aria-disabled="true"] { cursor: not-allowed; opacity: 0.5; }
+  .brand-button--secondary { background: var(--surface-raised); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+  .inline-banner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.875rem 1.25rem; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--surface-card); font-size: 0.875rem; }
+  .inline-banner--danger { border-color: var(--status-danger); background: color-mix(in srgb, var(--status-danger) 14%, var(--surface-card)); color: var(--status-danger); }
+
+  /* ============ Announcements feed -- additive, scoped under .announcement-feed ============ */
+  .announcement-feed { display: flex; flex-direction: column; gap: 1.5rem; max-width: 880px; margin: 0 auto; padding: 1.5rem 2rem; font-family: var(--font-sans); }
+  .announcement-feed__intro { display: flex; flex-direction: column; gap: 0.25rem; }
+  .announcement-feed__eyebrow { font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  .announcement-feed__title { margin: 0; font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; }
+  .announcement-feed__subtitle { margin: 0; max-width: 40rem; font-size: 0.875rem; color: var(--text-muted); }
+  .announcement-feed__load-error { margin: 0; }
+  .announcement-feed__retry { margin-left: 0.75rem; min-height: 44px; background: none; border: 0; padding: 0; text-decoration: underline; color: inherit; font-weight: 600; }
+
+  /* Feed: one list, one card per announcement. Dateline gutter (desktop) is the signature move. */
+  .announcement-feed__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1rem; }
+  .announcement-feed__item { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); background: var(--surface-card); border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.08); overflow: hidden; }
+  .announcement-feed__dateline { padding: 1.5rem 1rem 1.5rem 1.5rem; border-right: 1px solid var(--border-subtle); background: var(--surface-raised); display: flex; flex-direction: column; gap: 0.125rem; }
+  .announcement-feed__day { font-family: var(--font-display); font-size: 2rem; font-weight: 600; line-height: 1; color: var(--brand-secondary); font-variant-numeric: lining-nums; }
+  .announcement-feed__month { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-primary); }
+  .announcement-feed__year { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-muted); }
+  .announcement-feed__content { padding: 1.5rem 1.75rem; min-width: 0; }
+  .announcement-feed__item-title { margin: 0 0 0.625rem; font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+  .announcement-feed__body { margin: 0; max-width: 62ch; font-size: 0.9375rem; line-height: 1.65; color: var(--text-primary); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .announcement-feed__time { /* <time> element wrapper, no visual of its own */ display: contents; }
+
+  .announcement-feed__empty { margin: 0; padding: 3rem 1.5rem; text-align: center; color: var(--text-muted); background: var(--surface-card); border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.08); font-size: 0.875rem; }
+  .announcement-feed__empty-title { display: block; margin-bottom: 0.25rem; font-family: var(--font-display); font-size: 1.0625rem; font-weight: 600; color: var(--text-primary); }
+
+  .announcement-feed__skeleton-card { height: 8rem; border-radius: 20px; background: var(--surface-raised); animation: announcement-feed-pulse 1.2s ease-in-out infinite; }
+  @keyframes announcement-feed-pulse { 50% { opacity: 0.45; } }
+  @media (prefers-reduced-motion: reduce) { .announcement-feed__skeleton-card { animation: none; } }
+
+  .announcement-feed__pagination { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; padding: 0 0.25rem; }
+  .announcement-feed__page-indicator { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--text-muted); }
+  .announcement-feed__pagination .brand-button--secondary { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+  .announcement-feed button:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+
+  /* Mobile (collapsed-rail case; md = 768px like siblings): dateline collapses to one mono line above the title */
+  @media (max-width: 768px) {
+    .announcement-feed { padding: 1rem; gap: 1rem; }
+    .announcement-feed__item { grid-template-columns: 1fr; border-radius: 16px; }
+    .announcement-feed__dateline { flex-direction: row; align-items: baseline; gap: 0.375rem; padding: 0.75rem 1.25rem; border-right: none; border-bottom: 1px solid var(--border-subtle); }
+    .announcement-feed__day { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; color: var(--brand-secondary); line-height: 1.5; }
+    .announcement-feed__content { padding: 1.125rem 1.25rem 1.25rem; }
+    .announcement-feed__item-title { font-size: 1.125rem; }
+    .announcement-feed__pagination { justify-content: space-between; }
+    .announcement-feed__pagination .brand-button--secondary { min-height: 44px; }
+  }
+
+  /* Mirror of the media block for the harness mobile frame */
+    .docs-frame--mobile .announcement-feed { padding: 1rem; gap: 1rem; }
+    .docs-frame--mobile .announcement-feed__item { grid-template-columns: 1fr; border-radius: 16px; }
+    .docs-frame--mobile .announcement-feed__dateline { flex-direction: row; align-items: baseline; gap: 0.375rem; padding: 0.75rem 1.25rem; border-right: none; border-bottom: 1px solid var(--border-subtle); }
+    .docs-frame--mobile .announcement-feed__day { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; color: var(--brand-secondary); line-height: 1.5; }
+    .docs-frame--mobile .announcement-feed__content { padding: 1.125rem 1.25rem 1.25rem; }
+    .docs-frame--mobile .announcement-feed__item-title { font-size: 1.125rem; }
+    .docs-frame--mobile .announcement-feed__pagination { justify-content: space-between; }
+    .docs-frame--mobile .announcement-feed__pagination .brand-button--secondary { min-height: 44px; }
+
+  /* Review harness only */
+  .docs-index { position: sticky; top: 0; z-index: 10; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; padding: 0.875rem 2rem; background: var(--ink, #0C0A0B); color: #F7F2E7; font-family: var(--font-mono); font-size: 0.75rem; }
+  .docs-index a { color: var(--brand-primary-bright); text-decoration: none; }
+  .docs-frame { padding: 2rem 1.5rem; border-bottom: 1px dashed var(--border-subtle); }
+  .docs-frame__label { max-width: 880px; margin: 0 auto 1rem; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; color: var(--brand-secondary); }
+  .docs-frame__stage { background: var(--surface-page); border: 1px solid var(--border-subtle); padding-bottom: 1.5rem; }
+  .docs-frame--mobile .docs-frame__stage { width: 375px; max-width: 100%; margin: 0 auto; }
+  .docs-frame--mobile .docs-frame__label { max-width: 375px; }
+  .docs-frame--mobile .announcement-feed { max-width: none; }
+</style>
+</head>
+<body>
+<nav class="docs-index"><strong>Announcements feed</strong>
+  <a href="#loaded">Loaded</a><a href="#loading">Loading</a><a href="#empty">Empty</a><a href="#error">Error</a><a href="#mobile">Mobile</a></nav>
+
+<!-- 1. Loaded (desktop) -->
+<section class="docs-frame" id="loaded">
+  <div class="docs-frame__label">1. Loaded, page 1 of 3 (desktop)</div>
+  <div class="docs-frame__stage">
+  <main class="announcement-feed" aria-labelledby="af-title">
+    <header class="announcement-feed__intro">
+      <span class="announcement-feed__eyebrow">Associate · Announcements</span>
+      <h1 class="announcement-feed__title" id="af-title">Announcements</h1>
+      <p class="announcement-feed__subtitle">Updates from Viraj Acres, newest first.</p>
+    </header>
+    <ol class="announcement-feed__list">
+      <li><article class="announcement-feed__item">
+        <time class="announcement-feed__dateline" datetime="2026-10-06T09:30:00+05:30"><span class="announcement-feed__day">6</span><span class="announcement-feed__month">Oct</span><span class="announcement-feed__year">2026</span></time>
+        <div class="announcement-feed__content">
+          <h2 class="announcement-feed__item-title">Phase 2 plot bookings open on 15 October</h2>
+          <p class="announcement-feed__body">Bookings for Phase 2 at Viraj Acres open on Wednesday, 15 October at 10:00 AM.
+
+Plots are allotted in the order bookings are confirmed. Keep your KYC documents verified before then so your bookings are not held up.</p>
+        </div>
+      </article></li>
+      <li><article class="announcement-feed__item">
+        <time class="announcement-feed__dateline" datetime="2026-09-28T17:05:00+05:30"><span class="announcement-feed__day">28</span><span class="announcement-feed__month">Sep</span><span class="announcement-feed__year">2026</span></time>
+        <div class="announcement-feed__content">
+          <h2 class="announcement-feed__item-title">September payouts processed</h2>
+          <p class="announcement-feed__body">Approved September payouts were released today. Check Payout History for the status of your withdrawal. Bank credit can take up to two working days.</p>
+        </div>
+      </article></li>
+      <li><article class="announcement-feed__item">
+        <time class="announcement-feed__dateline" datetime="2026-09-12T11:00:00+05:30"><span class="announcement-feed__day">12</span><span class="announcement-feed__month">Sep</span><span class="announcement-feed__year">2026</span></time>
+        <div class="announcement-feed__content">
+          <h2 class="announcement-feed__item-title">Site visit weekend: 20 and 21 September</h2>
+          <p class="announcement-feed__body">Our team will host guided site visits at Viraj Acres on both days between 9:00 AM and 4:00 PM. Bring a valid photo ID.</p>
+        </div>
+      </article></li>
+    </ol>
+    <nav class="announcement-feed__pagination" aria-label="Announcements pages">
+      <span class="announcement-feed__page-indicator">Page 1 of 3</span>
+      <button class="brand-button--secondary" aria-disabled="true">Previous</button>
+      <button class="brand-button--secondary">Next</button>
+    </nav>
+  </main>
+  </div>
+</section>
+
+<!-- 2. Loading -->
+<section class="docs-frame" id="loading">
+  <div class="docs-frame__label">2. Loading (3 skeleton cards, pagination disabled)</div>
+  <div class="docs-frame__stage">
+  <main class="announcement-feed" aria-busy="true">
+    <header class="announcement-feed__intro">
+      <span class="announcement-feed__eyebrow">Associate · Announcements</span>
+      <h1 class="announcement-feed__title">Announcements</h1>
+      <p class="announcement-feed__subtitle">Updates from Viraj Acres, newest first.</p>
+    </header>
+    <div class="announcement-feed__list" role="status" aria-label="Loading announcements">
+      <span class="announcement-feed__skeleton-card"></span><span class="announcement-feed__skeleton-card"></span><span class="announcement-feed__skeleton-card"></span>
+    </div>
+    <nav class="announcement-feed__pagination" aria-label="Announcements pages">
+      <span class="announcement-feed__page-indicator">Page 1 of 1</span>
+      <button class="brand-button--secondary" aria-disabled="true" disabled>Previous</button>
+      <button class="brand-button--secondary" aria-disabled="true" disabled>Next</button>
+    </nav>
+  </main>
+  </div>
+</section>
+
+<!-- 3. Empty -->
+<section class="docs-frame" id="empty">
+  <div class="docs-frame__label">3. Empty (no announcements published yet; no pagination)</div>
+  <div class="docs-frame__stage">
+  <main class="announcement-feed">
+    <header class="announcement-feed__intro">
+      <span class="announcement-feed__eyebrow">Associate · Announcements</span>
+      <h1 class="announcement-feed__title">Announcements</h1>
+      <p class="announcement-feed__subtitle">Updates from Viraj Acres, newest first.</p>
+    </header>
+    <p class="announcement-feed__empty"><span class="announcement-feed__empty-title">No announcements yet</span>When Viraj Acres posts an update, it will appear here.</p>
+  </main>
+  </div>
+</section>
+
+<!-- 4. Error -->
+<section class="docs-frame" id="error">
+  <div class="docs-frame__label">4. Error (banner + Retry; feed and pagination hidden)</div>
+  <div class="docs-frame__stage">
+  <main class="announcement-feed">
+    <header class="announcement-feed__intro">
+      <span class="announcement-feed__eyebrow">Associate · Announcements</span>
+      <h1 class="announcement-feed__title">Announcements</h1>
+      <p class="announcement-feed__subtitle">Updates from Viraj Acres, newest first.</p>
+    </header>
+    <div class="inline-banner inline-banner--danger announcement-feed__load-error" role="alert"><span>Couldn't load announcements. Check your connection and try again.<button class="announcement-feed__retry">Retry</button></span></div>
+  </main>
+  </div>
+</section>
+
+<!-- 5. Mobile (375px viewport width of the stage; collapsed-rail case) -->
+<section class="docs-frame docs-frame--mobile" id="mobile">
+  <div class="docs-frame__label">5. Mobile, 375px, sidebar collapsed to rail (content ~300px) (rules mirrored under .docs-frame--mobile so the harness can show it on a wide page)</div>
+  <div class="docs-frame__stage"><main class="announcement-feed">
+    <header class="announcement-feed__intro">
+      <span class="announcement-feed__eyebrow">Associate · Announcements</span>
+      <h1 class="announcement-feed__title">Announcements</h1>
+      <p class="announcement-feed__subtitle">Updates from Viraj Acres, newest first.</p>
+    </header>
+    <ol class="announcement-feed__list">
+      <li><article class="announcement-feed__item">
+        <time class="announcement-feed__dateline" datetime="2026-10-06T09:30:00+05:30"><span class="announcement-feed__day">6</span><span class="announcement-feed__month">Oct</span><span class="announcement-feed__year">2026</span></time>
+        <div class="announcement-feed__content">
+          <h2 class="announcement-feed__item-title">Phase 2 plot bookings open on 15 October</h2>
+          <p class="announcement-feed__body">Bookings for Phase 2 at Viraj Acres open on Wednesday, 15 October at 10:00 AM.
+
+Plots are allotted in the order bookings are confirmed. Keep your KYC documents verified before then.</p>
+        </div>
+      </article></li>
+      <li><article class="announcement-feed__item">
+        <time class="announcement-feed__dateline" datetime="2026-09-28T17:05:00+05:30"><span class="announcement-feed__day">28</span><span class="announcement-feed__month">Sep</span><span class="announcement-feed__year">2026</span></time>
+        <div class="announcement-feed__content">
+          <h2 class="announcement-feed__item-title">September payouts processed</h2>
+          <p class="announcement-feed__body">Approved September payouts were released today. Bank credit can take up to two working days.</p>
+        </div>
+      </article></li>
+    </ol>
+    <nav class="announcement-feed__pagination" aria-label="Announcements pages">
+      <button class="brand-button--secondary" aria-disabled="true">Previous</button>
+      <span class="announcement-feed__page-indicator">Page 1 of 3</span>
+      <button class="brand-button--secondary">Next</button>
+    </nav>
+  </main></div>
+</section>
+</body>
+</html>

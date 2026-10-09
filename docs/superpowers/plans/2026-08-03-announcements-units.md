@@ -12,7 +12,7 @@ No ADRs or glossary exist for this spec. The announcements spec has no Screens s
 
 | Unit # | Title | Type | Depends on | Status | Plan file path | Merged commit range |
 |---|---|---|---|---|---|---|
-| 1 | Admin composes and publishes an announcement, live immediately — recreate entity/repo + `POST /api/admin/announcements` | backend | none | pending | — | — |
+| 1 | Admin composes and publishes an announcement, live immediately — recreate entity/repo + `POST /api/admin/announcements` | backend | none | planned | `docs/superpowers/plans/2026-08-03-announcements-unit-1-compose.md` | — |
 | 2 | Any authenticated user reads the paged announcement feed, newest first — `GET /api/announcements` | backend | 1 | pending | — | — |
 | 3 | Admin "Announcement Composer" screen — compose form plus published-announcements list | screen | 1, 2 | pending | — | — |
 | 4 | Associate "Announcements feed" screen — view-only | screen | 2 | pending | — | — |

@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Announcement Composer — Admin Operational Screen Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;700&family=Material+Symbols+Outlined" rel="stylesheet" />
+<style>
+  /* LIVE tokens, copied verbatim from frontend/src/styles/_tokens.scss (+ -text variants from _shared-components.scss).
+     Nothing here needs porting: no colour below :root is a literal. */
+  :root {
+    --brand-primary: #C6A227; --brand-secondary: #5C1A2A; --brand-primary-bright: #EAD07D;
+    --brand-primary-soft: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+    --brand-primary-contrast: #0C0A0B;
+    --ink: #0C0A0B; --surface-page: #F7F2E7; --surface-card: #FCFAF5; --surface-raised: #F0E9D6;
+    --border-subtle: #D9CFBC; --text-primary: #201A15; --text-muted: #6B6153;
+    --status-success: #4B7A52; --status-warning: #B4790E; --status-danger: #B23B32;
+    --status-success-text: color-mix(in srgb, var(--status-success) 55%, black);
+    --status-warning-text: color-mix(in srgb, var(--status-warning) 55%, black);
+    --status-danger-text: color-mix(in srgb, var(--status-danger) 70%, black);
+    --nav-active-fill: #241c16; --nav-inactive-muted: #a89878; --nav-tagline-muted: #8a7a56;
+    --sidebar-expanded-width: 248px;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --radius-sm: 2px;
+  }
+  * { box-sizing: border-box; } [hidden] { display: none !important; }
+  body { margin: 0; background: var(--surface-page); color: var(--text-primary); font: 400 0.875rem/1.5 var(--font-sans); }
+  .material-symbols-outlined { font-family: 'Material Symbols Outlined'; font-size: 20px; line-height: 1; font-weight: normal; font-style: normal; display: inline-block; white-space: nowrap; -webkit-font-feature-settings: 'liga'; font-feature-settings: 'liga'; }
+  :focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+
+  /* ---- shared primitives, as in the live _buttons/_forms/_shared-components ---- */
+  button { cursor: pointer; border-radius: var(--radius-sm); padding: 0.6875rem 1.5rem; border: none; background: none; font: inherit; }
+  button:disabled, button[aria-disabled=true] { cursor: not-allowed; opacity: .5; }
+  .brand-button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; padding: .6875rem 1.5rem; border-radius: var(--radius-sm); background: var(--brand-secondary); color: var(--brand-primary-bright); font-weight: 600; text-decoration: none; }
+  .brand-button--secondary { background: var(--surface-raised); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+  label { display: block; margin-bottom: .5rem; font-size: .875rem; font-weight: 500; }
+  input[type=text], textarea { display: block; width: 100%; padding: .625rem .875rem; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font: inherit; color: inherit; }
+  input[type=text]:focus, textarea:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px var(--brand-primary-soft); }
+  ::placeholder { color: var(--text-muted); }
+  .inline-banner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .875rem 1.25rem; border: 1px solid var(--border-subtle); background: var(--surface-card); font-size: .875rem; }
+  .inline-banner__content { flex: 1; } .inline-banner__content p { margin: 0; }
+  .inline-banner__dismiss { background: transparent; border: none; color: inherit; font-size: 1.125rem; line-height: 1; padding: 0; opacity: .7; min-width: 44px; min-height: 44px; }
+  .inline-banner--warning { border-color: var(--status-warning); background: color-mix(in srgb, var(--status-warning) 14%, var(--surface-card)); color: var(--status-warning-text); }
+  .inline-banner--success { border-color: var(--status-success); background: color-mix(in srgb, var(--status-success) 14%, var(--surface-card)); color: var(--status-success-text); }
+  .inline-banner--danger { border-color: var(--status-danger); background: color-mix(in srgb, var(--status-danger) 12%, var(--surface-card)); color: var(--status-danger-text); }
+  .field-error { margin: .375rem 0 0; font-size: .8125rem; font-weight: 500; color: var(--status-danger-text); }
+
+  /* ---- admin sidebar (Ink chrome; sketch of the live app-admin-sidebar, not part of the unit) ---- */
+  .sb { position: fixed; inset: 0 auto 0 0; width: var(--sidebar-expanded-width); background: var(--ink); display: flex; flex-direction: column; z-index: 20; overflow: auto; }
+  .sb__brand { display: flex; align-items: center; gap: 12px; padding: 20px 16px 18px; min-height: 88px; }
+  .sb__mark { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--brand-primary); color: var(--brand-primary); font-family: var(--font-display); font-weight: 600; }
+  .sb__name { color: var(--brand-primary-bright); font: 600 1rem/1.2 var(--font-display); display: block; }
+  .sb__tag { color: var(--nav-tagline-muted); font-size: .6875rem; display: block; }
+  .sb__nav { display: flex; flex-direction: column; gap: 2px; padding: 0 8px; }
+  .sb a, .sb__grp { display: flex; align-items: center; gap: 14px; padding: 11px 12px; color: var(--nav-inactive-muted); font-size: 13.5px; font-weight: 500; text-decoration: none; width: 100%; text-align: left; border: 0; background: none; border-radius: 0; }
+  .sb__grp .chev { margin-left: auto; }
+  .sb__sub { display: flex; flex-direction: column; gap: 1px; padding-left: 35px; margin-bottom: 4px; }
+  .sb__sub a { padding: 7px 12px; font-size: 12.5px; }
+  .sb a.is-active { background: var(--nav-active-fill); color: var(--brand-primary-bright); box-shadow: inset 3px 0 0 var(--brand-primary); }
+  .sb__spacer { flex: 1; } .sb__foot { padding: 0 8px 14px; }
+  .content { margin-left: var(--sidebar-expanded-width); }
+  .topbar { display: none; align-items: center; gap: .75rem; background: var(--ink); color: var(--brand-primary-bright); font: 600 1rem var(--font-display); padding: .5rem 1rem; }
+  .topbar button { color: var(--brand-primary-bright); padding: 0; min-width: 44px; min-height: 44px; }
+
+  /* ---- Announcement Composer (class prefix .announcement-composer*) ---- */
+  .announcement-composer { display: flex; flex-direction: column; gap: 1.25rem; max-width: 1280px; margin: 0 auto; padding: 1.5rem 2rem; font-family: 'Inter', var(--font-sans); }
+  .announcement-composer__eyebrow { font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--brand-secondary); }
+  .announcement-composer__title { margin: .375rem 0 0; font: 600 1.75rem/1.25 var(--font-display); letter-spacing: -.01em; }
+  .announcement-composer__subtitle { margin: .375rem 0 0; max-width: 46rem; font-size: .9375rem; line-height: 1.6; color: var(--text-muted); }
+  .announcement-composer__grid { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 1.5rem; align-items: start; }
+
+  /* published list: notices, not table rows */
+  .announcement-composer__list { background: var(--surface-card); border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0,0,0,.08); overflow: hidden; }
+  .announcement-composer__list-head { display: flex; justify-content: space-between; align-items: baseline; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-subtle); }
+  .announcement-composer__list-head h2 { margin: 0; font: 600 1.125rem var(--font-display); }
+  .announcement-composer__count { font: 400 .75rem var(--font-mono); color: var(--text-muted); }
+  .announcement-composer__items { list-style: none; margin: 0; padding: 0; }
+  .announcement-composer__item { display: grid; grid-template-columns: 4.25rem minmax(0, 1fr); gap: 1.25rem; padding: 1.25rem 1.5rem; border-top: 1px solid var(--border-subtle); }
+  .announcement-composer__item:first-child { border-top: 0; }
+  .announcement-composer__item--new { background: var(--brand-primary-soft); box-shadow: inset 4px 0 0 var(--brand-primary); }
+  .announcement-composer__date { text-align: center; padding-top: .125rem; }
+  .announcement-composer__day { display: block; font: 600 2rem/1 var(--font-display); }
+  .announcement-composer__mon { display: block; margin-top: .25rem; font: 500 .6875rem var(--font-mono); letter-spacing: .04em; color: var(--text-muted); }
+  .announcement-composer__item-title { margin: 0 0 .375rem; font: 600 1.0625rem/1.35 var(--font-display); overflow-wrap: anywhere; }
+  .announcement-composer__chip { display: inline-block; margin-left: .5rem; vertical-align: middle; padding: .125rem .625rem; border-radius: 999px; font: 600 .75rem var(--font-sans); border: 1px solid var(--brand-primary); background: var(--brand-primary-soft); }
+  .announcement-composer__body { margin: 0; max-width: 62ch; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-primary); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .announcement-composer__body.is-open { display: block; }
+  .announcement-composer__more { padding: 0; margin-top: .25rem; min-height: 44px; color: var(--brand-secondary); font-weight: 600; text-decoration: underline; }
+  .announcement-composer__time { margin: .25rem 0 0; font: 400 .75rem var(--font-mono); color: var(--text-muted); }
+  .announcement-composer__pager { display: flex; justify-content: center; align-items: center; gap: 1rem; padding: 1rem; border-top: 1px solid var(--border-subtle); }
+  .announcement-composer__pager .brand-button { min-height: 44px; }
+  .announcement-composer__page { font: 400 .8125rem var(--font-mono); color: var(--text-muted); }
+  .announcement-composer__empty { padding: 2.5rem 1rem; text-align: center; }
+  .announcement-composer__empty .material-symbols-outlined { font-size: 40px; color: var(--brand-primary); }
+  .announcement-composer__empty h3 { margin: .5rem 0; font: 600 1.125rem var(--font-sans); }
+  .announcement-composer__empty p { margin: 0 auto; max-width: 34ch; color: var(--text-muted); }
+  .announcement-composer__retry { margin-left: .75rem; background: none; border: 0; padding: 0; text-decoration: underline; color: inherit; font-weight: 600; min-height: 44px; }
+  .announcement-composer__skeleton { display: flex; flex-direction: column; gap: 1rem; padding: 1.25rem 1.5rem; }
+  .announcement-composer__skeleton-row { height: 64px; border-radius: 8px; background: linear-gradient(90deg, var(--surface-raised), var(--surface-card), var(--surface-raised)); background-size: 200% 100%; animation: announcement-composer-shimmer 1.4s linear infinite; }
+  @keyframes announcement-composer-shimmer { to { background-position: -200% 0; } }
+
+  /* compose seal: double-ruled, same family as .ticket-seal */
+  .announcement-composer__seal { position: sticky; top: 1rem; padding: 1.25rem 1.5rem; background: var(--surface-card); border: 1px solid var(--brand-primary); border-radius: 4px; box-shadow: 0 0 0 4px var(--surface-card), 0 0 0 5px var(--brand-primary); }
+  .announcement-composer__seal h2 { margin: 0 0 .75rem; font: 600 1.125rem var(--font-display); }
+  .announcement-composer__form { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+  .announcement-composer__field { display: flex; flex-direction: column; font-weight: 500; }
+  .announcement-composer__field label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: .375rem; }
+  .announcement-composer__field input, .announcement-composer__field textarea { min-height: 44px; }
+  .announcement-composer__field textarea { min-height: 9rem; resize: vertical; }
+  .announcement-composer__req { color: var(--status-danger); }
+  .announcement-composer__counter { font: 400 .75rem var(--font-mono); color: var(--text-muted); }
+  .announcement-composer__counter--over { color: var(--status-danger-text); font-weight: 700; }
+  .announcement-composer__invalid { border-color: var(--status-danger) !important; }
+  .announcement-composer__actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .announcement-composer__actions .brand-button { min-height: 44px; }
+  .announcement-composer__spin { width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: announcement-composer-spin .8s linear infinite; }
+  @keyframes announcement-composer-spin { to { transform: rotate(360deg); } }
+  .announcement-composer__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  @media (prefers-reduced-motion: reduce) { .announcement-composer__skeleton-row, .announcement-composer__spin { animation: none; } }
+  @media (max-width: 1100px) { .announcement-composer__grid { grid-template-columns: minmax(0, 1fr) 360px; } }
+  @media (max-width: 960px) {
+    .sb { display: none; } .content { margin-left: 0; } .topbar { display: flex; }
+    .announcement-composer__grid { grid-template-columns: 1fr; }
+    .announcement-composer__seal { position: static; order: -1; }  /* compose first on narrow screens */
+  }
+  @media (max-width: 768px) {
+    .announcement-composer { padding-inline: 1rem; }
+    .announcement-composer__item { grid-template-columns: 1fr; gap: .5rem; padding: 1rem; }
+    .announcement-composer__date { display: flex; align-items: baseline; gap: .5rem; text-align: left; }
+    .announcement-composer__day { font-size: 1.25rem; } .announcement-composer__mon { margin: 0; }
+    .announcement-composer__actions .brand-button { width: 100%; }
+    .announcement-composer__list-head { padding-inline: 1rem; }
+  }
+
+  /* mock-only state switcher (hide with #clean) */
+  .sw { position: fixed; left: 8px; bottom: 8px; z-index: 99; background: var(--ink); color: var(--brand-primary-bright); padding: 6px 8px; font: 11px var(--font-mono); display: flex; gap: 8px; flex-wrap: wrap; max-width: 240px; }
+  .sw a { color: inherit; } .clean .sw { display: none; }
+</style>
+</head>
+<body>
+<aside class="sb" aria-label="Admin navigation">
+  <div class="sb__brand"><span class="sb__mark" aria-hidden="true">VA</span><span><span class="sb__name">Viraj Acres</span><span class="sb__tag">Legacy Living</span></span></div>
+  <nav class="sb__nav">
+    <a href="#"><span class="material-symbols-outlined" aria-hidden="true">dashboard</span>Dashboard</a>
+    <button type="button" class="sb__grp" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">tune</span>Setup<span class="material-symbols-outlined chev" aria-hidden="true">expand_more</span></button>
+    <button type="button" class="sb__grp" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">group</span>Network<span class="material-symbols-outlined chev" aria-hidden="true">expand_more</span></button>
+    <button type="button" class="sb__grp" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">point_of_sale</span>Finance<span class="material-symbols-outlined chev" aria-hidden="true">expand_more</span></button>
+    <button type="button" class="sb__grp" aria-expanded="true"><span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span>System<span class="material-symbols-outlined chev" aria-hidden="true">expand_less</span></button>
+    <div class="sb__sub">
+      <a href="#">Audit Log</a><a href="#">Admin Stats</a><a href="#">Support Tickets</a>
+      <a href="#" class="is-active" aria-current="page">Announcements</a>
+    </div>
+  </nav>
+  <div class="sb__spacer"></div>
+  <div class="sb__foot"><a href="#"><span class="material-symbols-outlined" aria-hidden="true">logout</span>Log out</a></div>
+</aside>
+
+<div class="content">
+<div class="topbar"><button type="button" aria-label="Open navigation"><span class="material-symbols-outlined">menu</span></button>Viraj Acres</div>
+<main class="announcement-composer">
+  <header>
+    <div class="announcement-composer__eyebrow">System</div>
+    <h1 class="announcement-composer__title">Announcements</h1>
+    <p class="announcement-composer__subtitle">Publish a notice that every associate sees in their feed straight away. Below is everything you have published so far.</p>
+  </header>
+
+  <div id="flash"></div>
+
+  <div class="announcement-composer__grid">
+    <section aria-label="Published announcements" aria-live="polite">
+      <div class="announcement-composer__list" id="list"></div>
+    </section>
+
+    <aside class="announcement-composer__seal" aria-labelledby="seal-h">
+      <h2 id="seal-h">New announcement</h2>
+      <div class="inline-banner inline-banner--warning" role="note"><div class="inline-banner__content"><p><strong>Goes live immediately and can't be changed.</strong> Every associate sees it as soon as you publish. There is no edit, delete or scheduling, so check the text first.</p></div></div>
+      <form class="announcement-composer__form" id="form" novalidate>
+        <div class="announcement-composer__field">
+          <label for="t"><span>Title <span class="announcement-composer__req" aria-hidden="true">*</span></span><span class="announcement-composer__counter" id="tc" aria-live="off">0 / 300</span></label>
+          <input type="text" id="t" autocomplete="off" aria-describedby="te" />
+          <p class="field-error" id="te" role="alert" hidden></p>
+        </div>
+        <div class="announcement-composer__field">
+          <label for="b"><span>Announcement <span class="announcement-composer__req" aria-hidden="true">*</span></span></label>
+          <textarea id="b" rows="7" aria-describedby="be" placeholder="Write what associates need to know."></textarea>
+          <p class="field-error" id="be" role="alert" hidden></p>
+        </div>
+        <div class="inline-banner inline-banner--danger" id="srv" role="alert" hidden><div class="inline-banner__content"><p>The announcement wasn't published. Check your connection and try again. Nothing was sent to associates.</p></div></div>
+        <div class="announcement-composer__actions">
+          <button type="submit" class="brand-button" id="pub"><span class="material-symbols-outlined" aria-hidden="true">campaign</span><span id="publbl">Publish announcement</span></button>
+          <button type="button" class="brand-button brand-button--secondary" id="clr">Clear</button>
+        </div>
+      </form>
+    </aside>
+  </div>
+</main>
+</div>
+
+<div class="sw" id="sw">
+  list: <a href="#list=ok">ok</a><a href="#list=loading">loading</a><a href="#list=empty">empty</a><a href="#list=error">error</a>
+  form: <a href="#form=blank">blank</a><a href="#form=long">too long</a><a href="#form=publishing">publishing</a><a href="#form=server">server err</a>
+  <a href="#flash=ok">published</a> <a href="#clean">clean</a>
+</div>
+
+<script>
+  var DATA = [
+    { d: '08', m: 'Oct 2026', time: '8 Oct 2026, 10:15', t: 'Diwali payout cycle closes on 28 October', b: 'The September-October commission cycle closes at 6 pm on 28 October. Sales you want counted must be recorded and verified before then.\nPayouts for the cycle are released within five working days of closing.' },
+    { d: '30', m: 'Sep 2026', time: '30 Sep 2026, 17:40', t: 'KYC documents now needed before first withdrawal', b: 'From 1 October, associates must have an approved KYC before requesting a withdrawal. Upload your PAN and bank proof under Profile & KYC.' },
+    { d: '17', m: 'Sep 2026', time: '17 Sep 2026, 09:05', t: 'Site visit to Viraj Acres Phase 2, Saturday 21 September', b: 'Bring clients for the guided plot walk-through. Pickup from the Nashik office at 9 am. Book seats with your team lead.' },
+    { d: '02', m: 'Sep 2026', time: '2 Sep 2026, 11:30', t: 'New e-PIN pricing from September', b: 'E-PIN packs are now available in bundles of 5 and 10. Existing unused e-PINs stay valid.' }
+  ];
+  var h = {}; (location.hash.slice(1) || '').split('&').forEach(function (p) { var kv = p.split('='); h[kv[0]] = kv[1] === undefined ? true : kv[1]; });
+  if (h.clean) document.documentElement.classList.add('clean');
+  var $ = function (i) { return document.getElementById(i); };
+
+  function item(a, isNew) {
+    return '<li class="announcement-composer__item' + (isNew ? ' announcement-composer__item--new' : '') + '"><div class="announcement-composer__date"><span class="announcement-composer__day">' + a.d + '</span><span class="announcement-composer__mon">' + a.m + '</span></div><article><h3 class="announcement-composer__item-title">' + a.t + (isNew ? '<span class="announcement-composer__chip">Just published</span>' : '') + '</h3><p class="announcement-composer__body">' + a.b + '</p>' + (a.b.length > 150 ? '<button type="button" class="announcement-composer__more" aria-expanded="false">Show full text</button>' : '') + '<p class="announcement-composer__time">Published ' + a.time + '</p></article></li>';
+  }
+  function pager(n) { return '<nav class="announcement-composer__pager" aria-label="Pagination"><button class="brand-button brand-button--secondary" disabled>Previous</button><span class="announcement-composer__page">Page 1 of 3 · ' + n + ' announcements</span><button class="brand-button brand-button--secondary">Next</button></nav>'; }
+  function head(c) { return '<div class="announcement-composer__list-head"><h2>Published</h2><span class="announcement-composer__count">' + c + '</span></div>'; }
+  function renderList() {
+    var s = h.list || 'ok', el = $('list'), isNew = h.flash === 'ok';
+    if (s === 'loading') el.innerHTML = head('Loading…') + '<div class="announcement-composer__skeleton" aria-busy="true"><div class="announcement-composer__skeleton-row"></div><div class="announcement-composer__skeleton-row"></div><div class="announcement-composer__skeleton-row"></div></div>';
+    else if (s === 'empty') el.innerHTML = head('0 announcements') + '<div class="announcement-composer__empty"><span class="material-symbols-outlined" aria-hidden="true">campaign</span><h3>Nothing published yet</h3><p>Your first announcement will appear here, newest first, and in every associate\'s feed.</p></div>';
+    else if (s === 'error') el.innerHTML = head('') + '<div class="inline-banner inline-banner--danger" role="alert" style="margin:1rem 1.5rem"><div class="inline-banner__content"><p><strong>The published list didn\'t load.</strong> Check your connection and try again. You can still publish a new announcement.<button type="button" class="announcement-composer__retry">Retry</button></p></div></div>';
+    else {
+      var rows = DATA.slice();
+      if (isNew) rows.unshift({ d: '09', m: 'Oct 2026', time: '9 Oct 2026, 14:02', t: 'Office closed on 2 November', b: 'The head office is closed for Bhai Dooj. Support tickets raised that day are answered the next working day.' });
+      el.innerHTML = head(rows.length + 8 + ' announcements') + '<ul class="announcement-composer__items">' + rows.map(function (a, i) { return item(a, isNew && i === 0); }).join('') + '</ul>' + pager(rows.length + 8);
+    }
+  }
+  function renderFlash() {
+    $('flash').innerHTML = h.flash === 'ok' ? '<div class="inline-banner inline-banner--success" role="status"><div class="inline-banner__content"><p><strong>Announcement published.</strong> "Office closed on 2 November" is now live in every associate\'s feed.</p></div><button type="button" class="inline-banner__dismiss" aria-label="Dismiss">×</button></div>' : '';
+  }
+  function setErr(id, inputId, msg) { var e = $(id), i = $(inputId); e.hidden = !msg; e.textContent = msg || ''; i.classList.toggle('announcement-composer__invalid', !!msg); i.setAttribute('aria-invalid', msg ? 'true' : 'false'); }
+  function counter() { var n = $('t').value.length, c = $('tc'); c.textContent = n + ' / 300'; c.classList.toggle('announcement-composer__counter--over', n > 300); }
+  function validate() {
+    var t = $('t').value.trim(), b = $('b').value.trim(), ok = true;
+    setErr('te', 't', !t ? 'Add a title.' : $('t').value.length > 300 ? 'Title must be 300 characters or fewer. Shorten it by ' + ($('t').value.length - 300) + '.' : '');
+    setErr('be', 'b', !b ? 'Add the announcement text.' : '');
+    return !$('te').textContent && !$('be').textContent;
+  }
+  $('t').addEventListener('input', counter);
+  $('form').addEventListener('submit', function (e) { e.preventDefault(); if (validate()) { $('srv').hidden = true; } });
+  $('clr').addEventListener('click', function () { $('t').value = ''; $('b').value = ''; setErr('te', 't', ''); setErr('be', 'b', ''); counter(); });
+  document.addEventListener('click', function (e) {
+    var m = e.target.closest('.announcement-composer__more'); if (!m) return;
+    var p = m.previousElementSibling, o = p.classList.toggle('is-open'); m.setAttribute('aria-expanded', o); m.textContent = o ? 'Show less' : 'Show full text';
+  });
+  // preset form states
+  if (h.form === 'blank') { $('t').value = '   '; validate(); }
+  if (h.form === 'long') { $('t').value = 'Quarterly leadership conference: venue, schedule and travel arrangements for every associate in the Nashik, Pune and Mumbai regions, including accommodation, breakfast, partner passes and the revised agenda for both days of the programme ' .repeat(2).slice(0, 322); $('b').value = 'Details follow.'; counter(); validate(); }
+  if (h.form === 'publishing') { $('t').value = 'Office closed on 2 November'; $('b').value = 'The head office is closed for Bhai Dooj.'; counter(); $('pub').setAttribute('aria-disabled', 'true'); $('pub').firstElementChild.outerHTML = '<span class="announcement-composer__spin" aria-hidden="true"></span>'; $('publbl').textContent = 'Publishing…'; $('clr').disabled = true; $('t').readOnly = $('b').readOnly = true; }
+  if (h.form === 'server') { $('t').value = 'Office closed on 2 November'; $('b').value = 'The head office is closed for Bhai Dooj.'; counter(); $('srv').hidden = false; }
+  renderList(); renderFlash();
+</script>
+</body>
+</html>
