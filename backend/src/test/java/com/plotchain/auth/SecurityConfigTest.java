@@ -1301,4 +1301,26 @@ class SecurityConfigTest {
                 .content("{\"decision\":\"VERIFIED\"}"))
             .andExpect(status().isForbidden());
     }
+
+    // announcements unit 1 (Decision 4): POST /api/admin/announcements rides the blanket ADMIN write
+    // rule plus @PreAuthorize; no dedicated matcher. ADMIN reaches the real controller and the real
+    // (H2) announcement table and gets 201, proving the request passed the security layer. Every
+    // other role is 403 at the filter.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminAnnouncementComposeIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(post("/api/admin/announcements")
+                .header("Authorization", "Bearer " + tokenFor(role))
+                .contentType("application/json")
+                .content("{\"title\":\"Hello\",\"body\":\"World\"}"))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 201 : 403));
+    }
+
+    @Test
+    void adminAnnouncementComposeIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(post("/api/admin/announcements")
+                .contentType("application/json")
+                .content("{\"title\":\"Hello\",\"body\":\"World\"}"))
+            .andExpect(status().isUnauthorized());
+    }
 }
