@@ -7,29 +7,33 @@ import com.plotchain.associate.AssociateRole;
 import com.plotchain.auth.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -66,7 +70,7 @@ class AnnouncementControllerTest {
         return objectMapper.writeValueAsString(m);
     }
 
-    private org.springframework.test.web.servlet.ResultActions compose(String content) throws Exception {
+    private ResultActions compose(String content) throws Exception {
         return mockMvc.perform(post("/api/admin/announcements")
             .header("Authorization", tokenFor(AssociateRole.ADMIN))
             .contentType("application/json").content(content));
@@ -87,10 +91,10 @@ class AnnouncementControllerTest {
     void clientSuppliedAudienceAndPublishedAtAreIgnored() throws Exception {
         compose("{\"title\":\"t\",\"body\":\"b\",\"audience\":\"VIP\",\"publishedAt\":\"2000-01-01T00:00:00Z\"}")
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.publishedAt").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.startsWith("2000"))));
-        org.mockito.ArgumentCaptor<Announcement> c = org.mockito.ArgumentCaptor.forClass(Announcement.class);
+            .andExpect(jsonPath("$.publishedAt").value(not(startsWith("2000"))));
+        ArgumentCaptor<Announcement> c = ArgumentCaptor.forClass(Announcement.class);
         verify(announcementRepository).save(c.capture());
-        org.assertj.core.api.Assertions.assertThat(c.getValue().getAudience()).isEqualTo("ALL");
+        assertThat(c.getValue().getAudience()).isEqualTo("ALL");
     }
 
     @Test

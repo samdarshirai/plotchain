@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -74,7 +75,7 @@ class AnnouncementFeedRepositoryTest {
         assertThat(first.getContent()).hasSize(2);
 
         // Walk every page; each of our three tied rows must appear exactly once.
-        java.util.ArrayList<UUID> seen = new java.util.ArrayList<>();
+        List<UUID> seen = new ArrayList<>();
         for (int i = 0; i < first.getTotalPages(); i++) {
             repo.findAllByOrderByPublishedAtDesc(PageRequest.of(i, 2)).forEach(x -> seen.add(x.getId()));
         }
