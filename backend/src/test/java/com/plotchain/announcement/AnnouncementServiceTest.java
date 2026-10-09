@@ -6,6 +6,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+
+import java.util.List;
+import java.util.UUID;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -37,5 +42,30 @@ class AnnouncementServiceTest {
         assertThat(a.getTitle()).isEqualTo("  Holiday  ");
         assertThat(a.getBody()).isEqualTo("Office closed\nMonday");
         assertThat(response).isEqualTo(AnnouncementResponse.of(a));
+    }
+
+    @Test
+    void feedMapsRowsToResponsesAndEchoesPagingWithoutAudience() {
+        Announcement a = new Announcement(UUID.randomUUID(), "T", "B", Instant.parse("2031-01-01T00:00:00Z"), "ALL");
+        when(announcementRepository.findAllByOrderByPublishedAtDesc(PageRequest.of(2, 5)))
+            .thenReturn(new PageImpl<>(List.of(a), PageRequest.of(2, 5), 11));
+
+        AnnouncementPageResponse page = new AnnouncementService(announcementRepository).feed(2, 5);
+
+        assertThat(page.entries()).containsExactly(AnnouncementResponse.of(a));
+        assertThat(page.page()).isEqualTo(2);
+        assertThat(page.size()).isEqualTo(5);
+        assertThat(page.totalElements()).isEqualTo(11);
+    }
+
+    @Test
+    void emptyFeedIsAnEmptyPageNotAnError() {
+        when(announcementRepository.findAllByOrderByPublishedAtDesc(PageRequest.of(0, 20)))
+            .thenReturn(new PageImpl<>(List.of()));
+
+        AnnouncementPageResponse page = new AnnouncementService(announcementRepository).feed(0, 20);
+
+        assertThat(page.entries()).isEmpty();
+        assertThat(page.totalElements()).isZero();
     }
 }
