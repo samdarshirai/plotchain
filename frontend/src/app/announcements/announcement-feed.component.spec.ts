@@ -9,8 +9,10 @@ describe('AnnouncementFeedComponent', () => {
   const URL = '/api/announcements';
   const el = () => fixture.nativeElement as HTMLElement;
 
-  const first = { id: 'a1', title: 'Office closed', body: 'Line one\nLine two', publishedAt: '2026-03-15T12:00:00Z' };
-  const second = { id: 'a2', title: 'Second', body: 'Body two', publishedAt: '2026-03-14T12:00:00Z' };
+  // Local-noon fixtures: the date pipe renders in the runner's timezone, so build the instant from local time.
+  const localNoon = (m: number, d: number) => new Date(2026, m, d, 12, 0).toISOString();
+  const first = { id: 'a1', title: 'Office closed', body: 'Line one\nLine two', publishedAt: localNoon(2, 15) };
+  const second = { id: 'a2', title: 'Second', body: 'Body two', publishedAt: localNoon(2, 14) };
 
   function flushPage(entries: unknown[] = [first, second], total = entries.length, page = 0): void {
     httpMock
@@ -74,7 +76,7 @@ describe('AnnouncementFeedComponent', () => {
     expect(articles[1].querySelector('h2')!.textContent!.trim()).toBe('Second');
     const body = articles[0].querySelector('.announcement-feed__body')!;
     expect(body.textContent).toBe('Line one\nLine two');
-    expect(articles[0].querySelector('time')!.getAttribute('datetime')).toBe('2026-03-15T12:00:00Z');
+    expect(articles[0].querySelector('time')!.getAttribute('datetime')).toBe(first.publishedAt);
     expect(articles[0].querySelector('.announcement-feed__day')!.textContent).toBe('15');
     expect(articles[0].querySelector('.announcement-feed__month')!.textContent).toBe('Mar');
     expect(articles[0].querySelector('.announcement-feed__year')!.textContent).toBe('2026');
@@ -83,8 +85,8 @@ describe('AnnouncementFeedComponent', () => {
   it('renders hostile text literally and a 300-char unbroken title in full', () => {
     const long = 'x'.repeat(300);
     flushPage([
-      { id: 'h', title: '<img src=x onerror=alert(1)>', body: '<script>alert(1)</script><b>x</b>', publishedAt: '2026-03-15T12:00:00Z' },
-      { id: 'l', title: long, body: 'y'.repeat(5000), publishedAt: '2026-03-14T12:00:00Z' }
+      { id: 'h', title: '<img src=x onerror=alert(1)>', body: '<script>alert(1)</script><b>x</b>', publishedAt: localNoon(2, 15) },
+      { id: 'l', title: long, body: 'y'.repeat(5000), publishedAt: localNoon(2, 14) }
     ]);
     expect(el().querySelector('.announcement-feed img, .announcement-feed script, .announcement-feed b')).toBeNull();
     expect(el().textContent).toContain('<img src=x onerror=alert(1)>');
@@ -132,7 +134,9 @@ describe('AnnouncementFeedComponent', () => {
     expect(el().textContent).toContain('Page 2 of 3');
   });
 
-  it('ignores a stale response that arrives after a newer request', () => {
+  it('latest-request-wins: an older in-flight response never overwrites a newer one', () => {
+    // Not reachable via the public API (retry() and goToPage() are both blocked while loading),
+    // so the race guard is exercised through the private loadPage. Removing the seq check fails this spec.
     const c = fixture.componentInstance as any;
     const oldReq = httpMock.expectOne(r => r.params.get('page') === '0');
     c.loadPage(1); // supersede the in-flight request
@@ -161,6 +165,33 @@ describe('AnnouncementFeedComponent', () => {
     next().click();
     next().click();
     flushPage([second], 25, 1);
+  });
+
+  it('hides the pager and shows skeletons while a page change is in flight, then shows the new indicator', () => {
+    flushPage([first], 25);
+    fixture.componentInstance.goToPage(2);
+    fixture.detectChanges();
+    expect(el().querySelector('.announcement-feed__pagination')).toBeNull();
+    expect(el().querySelectorAll('.announcement-feed__skeleton-card').length).toBe(3);
+    flushPage([second], 25, 2);
+    expect(el().querySelector('.announcement-feed__page-indicator')!.textContent).toContain('Page 3 of 3');
+  });
+
+  it('Previous on page 2 requests page 1 (index 0)', () => {
+    flushPage([first], 25);
+    next().click();
+    flushPage([second], 25, 1);
+    el().querySelector<HTMLButtonElement>('.announcement-feed__prev')!.click();
+    flushPage([first], 25, 0);
+    expect(el().textContent).toContain('Page 1 of 3');
+  });
+
+  it('size 0 in the response does not divide by zero: indicator is Page 1 of 1', () => {
+    httpMock.expectOne(r => r.url === URL).flush({ entries: [first], page: 0, size: 0, totalElements: 5 });
+    fixture.detectChanges();
+    const text = el().querySelector('.announcement-feed__page-indicator')!.textContent!;
+    expect(text).toContain('Page 1 of 1');
+    expect(text).not.toContain('NaN');
   });
 
   it('Next loads the next page', () => {

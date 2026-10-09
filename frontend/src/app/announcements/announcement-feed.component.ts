@@ -41,6 +41,7 @@ const PAGE_SIZE = 10;
         <ol class="announcement-feed__list" *ngIf="page.entries.length">
           <li *ngFor="let a of page.entries; trackBy: trackById">
             <article class="announcement-feed__card">
+              <!-- default en-US date locale on purpose: months stay English under hi (hi UI strings are English by decision) -->
               <time class="announcement-feed__dateline" [attr.datetime]="a.publishedAt">
                 <span class="announcement-feed__day">{{ a.publishedAt | date: 'd' }}</span>
                 <span class="announcement-feed__month">{{ a.publishedAt | date: 'MMM' }}</span>
@@ -55,7 +56,7 @@ const PAGE_SIZE = 10;
         </ol>
       </ng-container>
 
-      <div class="announcement-feed__pagination" *ngIf="page && !loadError && page.entries.length">
+      <div class="announcement-feed__pagination" *ngIf="page && !loading && !loadError && page.entries.length">
         <span class="announcement-feed__page-indicator">{{ 'announcements.feed.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}</span>
         <button type="button" class="brand-button brand-button--secondary announcement-feed__prev" [attr.aria-disabled]="page.page === 0 ? 'true' : null" (click)="goToPage(page.page - 1)">{{ 'announcements.feed.previousPageAction' | translate }}</button>
         <button type="button" class="brand-button brand-button--secondary announcement-feed__next" [attr.aria-disabled]="(page.page + 1) * page.size >= page.totalElements ? 'true' : null" (click)="goToPage(page.page + 1)">{{ 'announcements.feed.nextPageAction' | translate }}</button>
