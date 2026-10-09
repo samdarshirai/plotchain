@@ -8,7 +8,7 @@
   &__field textarea { min-height: 9rem; resize: vertical; }
   &__req { color: var(--status-danger); }
   &__counter { font: 400 0.75rem var(--font-mono); color: var(--text-muted); }
-  &__counter--over { color: var(--status-danger-text); font-weight: 700; }
+  &__counter--over { color: var(--status-danger); font-weight: 700; }
   &__invalid { border-color: var(--status-danger) !important; }
   &__failed { display: block; }
   &__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
