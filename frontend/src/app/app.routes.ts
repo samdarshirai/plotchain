@@ -64,6 +64,7 @@ export const routes: Routes = [
   { path: 'income-statement', component: IncomeStatementComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'payout-history', component: PayoutHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'support-tickets', loadComponent: () => import('./support-ticket-history/support-ticket-history.component').then(m => m.SupportTicketHistoryComponent), canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'announcements', loadComponent: () => import('./announcements/announcement-feed.component').then(m => m.AnnouncementFeedComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
   { path: 'admin/sales/new', component: RecordSaleComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/dashboard', component: AdminDashboardComponent, canActivate: [authGuard, adminGuard, launchedModeGuard] },
