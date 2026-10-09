@@ -4978,7 +4978,7 @@ button.tree-explorer__vacant-card {
 .announcement-feed { display: flex; flex-direction: column; gap: 1.5rem; max-width: 880px; margin: 0 auto; padding: 1.5rem 2rem; font-family: var(--font-sans); }
 .announcement-feed__intro { display: flex; flex-direction: column; gap: 0.25rem; }
 .announcement-feed__eyebrow { font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
-.announcement-feed__title { @extend %admin-screen-title; margin: 0; }
+.announcement-feed__title { @extend %admin-screen-title; margin: 0; overflow-wrap: anywhere; }
 .announcement-feed__subtitle { margin: 0; font-size: 0.875rem; color: var(--text-muted); }
 .announcement-feed__load-error { margin: 0; }
 .announcement-feed__retry { margin-left: 0.75rem; min-height: 44px; background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; color: inherit; font-weight: 600; }
