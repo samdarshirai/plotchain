@@ -214,6 +214,15 @@ describe('routes', () => {
       expect(child!.loadComponent).toBeDefined();
       expect(child!.data).toEqual({ sectionKey: 'supportTickets' });
     });
+
+    it('has a lazy announcements child stamped with sectionKey announcements', () => {
+      const settingsRoute = routes.find(r => r.path === 'settings');
+      const child = settingsRoute!.children!.find(c => c.path === 'announcements');
+      expect(child).toBeDefined();
+      expect(child!.component).toBeUndefined();
+      expect(child!.loadComponent).toBeDefined();
+      expect(child!.data).toEqual({ sectionKey: 'announcements' });
+    });
   });
 
   describe('root route', () => {

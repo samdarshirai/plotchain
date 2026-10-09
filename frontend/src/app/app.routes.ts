@@ -103,6 +103,7 @@ export const routes: Routes = [
       { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } },
       { path: 'admin-stats', component: AdminStatsComponent, data: { sectionKey: 'adminStats' } },
       { path: 'support-tickets', loadComponent: () => import('./admin/admin-support-tickets/admin-support-tickets.component').then(m => m.AdminSupportTicketsComponent), data: { sectionKey: 'supportTickets' } },
+      { path: 'announcements', loadComponent: () => import('./admin/admin-announcements/admin-announcements.component').then(m => m.AdminAnnouncementsComponent), data: { sectionKey: 'announcements' } },
       // There is no settings hub screen any more -- every entry point (a header category tab, an
       // item pill) targets a specific screen. Bare /settings is only reachable from an old
       // bookmark, so it lands on the first category's first item, the same shape /setup uses.
