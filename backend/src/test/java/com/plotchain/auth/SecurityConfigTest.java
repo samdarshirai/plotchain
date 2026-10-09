@@ -60,6 +60,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SecurityConfigTest {
 
     @Autowired MockMvc mockMvc;
+    @Autowired com.plotchain.announcement.AnnouncementRepository announcementRepository;
     @Autowired JwtService jwtService;
     @Autowired PasswordEncoder passwordEncoder;
 
@@ -1309,11 +1310,36 @@ class SecurityConfigTest {
     @ParameterizedTest
     @EnumSource(AssociateRole.class)
     void adminAnnouncementComposeIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
-        mockMvc.perform(post("/api/admin/announcements")
+        org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(post("/api/admin/announcements")
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content("{\"title\":\"Hello\",\"body\":\"World\"}"))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 201 : 403));
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 201 : 403))
+            .andReturn();
+        if (role == AssociateRole.ADMIN) {
+            // Real repository / shared in-memory H2: remove the committed row so it does not leak
+            // into other tests (announcements unit 2 feed tests).
+            String id = new ObjectMapper().readTree(result.getResponse().getContentAsString()).get("id").asText();
+            announcementRepository.deleteById(UUID.fromString(id));
+        }
+    }
+
+    // announcements unit 2 (Decision 4): GET /api/announcements has no matcher and falls to
+    // anyRequest().authenticated(), so EVERY role is 200. Real controller + real H2; the table's
+    // contents are not asserted (shared across test classes), only that the request is allowed
+    // and the page shape is returned.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void announcementFeedIsReachableForEveryRole(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/announcements")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.entries").isArray());
+    }
+
+    @Test
+    void announcementFeedIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/announcements")).andExpect(status().isUnauthorized());
     }
 
     @Test
