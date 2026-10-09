@@ -16,7 +16,8 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
   providers: [DatePipe],
   template: `
     <div class="epins">
-      <div class="epins__main">
+      <div class="epins__rail"></div>
+      <div class="epins__top">
         <header class="epins__header">
           <h1 class="epins__title">{{ 'epins.title' | translate }}</h1>
           <p class="epins__subtitle">{{ 'epins.subtitle' | translate }}</p>
@@ -29,7 +30,9 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
         </div>
 
         <app-inline-banner *ngIf="loadError" tone="danger">{{ 'epins.loadError' | translate }}</app-inline-banner>
+      </div>
 
+      <div class="epins__lists">
         <section class="epins__section">
           <h2 class="epins__section-title">{{ 'epins.tabAvailable' | translate }}</h2>
           <p *ngIf="!available.length" class="epins__empty">{{ 'epins.emptyAvailable' | translate }}</p>
