@@ -36,7 +36,7 @@ Page<Announcement> findAllByOrderByPublishedAtDesc(Pageable pageable);
 
 **`Announcement.java` needs an explicit constructor.** The entity today has only field declarations and getters — no setters, no constructor beyond the implicit no-arg one JPA uses via reflection. Application code has no way to build a populated instance to hand to `save()`. Add an all-args constructor, matching `RankTier`'s pattern (`backend/src/main/java/com/plotchain/rank/RankTier.java`: a protected no-arg constructor for JPA plus a public all-args one for application code): `public Announcement(UUID id, String title, String body, Instant publishedAt, String audience)`. This is a one-time gap in the existing entity, not a new column or migration — every field this constructor sets already exists.
 
-**New Java types**: `AnnouncementController`, `AnnouncementService`, `CreateAnnouncementRequest` (`title`, `body`, both `@NotBlank`, `title` also `@Size(max = 300)` to match the column constraint), `AnnouncementResponse` (`id`, `title`, `body`, `publishedAt`), `AnnouncementPageResponse` (`announcements`, `page`, `size`, `totalElements` — same shape as `AdminAssociatePageResponse`). No new exception types: the only failure mode is request validation, already handled application-wide by `ApiExceptionHandler.handleValidationFailure` (400 with per-field messages).
+**New Java types**: `AnnouncementController`, `AnnouncementService`, `CreateAnnouncementRequest` (`title`, `body`, both `@NotBlank`, `title` also `@Size(max = 300)` to match the column constraint), `AnnouncementResponse` (`id`, `title`, `body`, `publishedAt`), `AnnouncementPageResponse` (`entries`, `page`, `size`, `totalElements` — same shape as `SupportTicketPageResponse`; list field is `entries`, decided 2026-10-09, not `announcements`). No new exception types: the only failure mode is request validation, already handled application-wide by `ApiExceptionHandler.handleValidationFailure` (400 with per-field messages).
 
 ## Flows
 
@@ -49,7 +49,7 @@ Page<Announcement> findAllByOrderByPublishedAtDesc(Pageable pageable);
 
 ### Read feed — `GET /api/announcements`, any authenticated user
 
-1. `page` clamped `≥ 0`, `size` clamped `≤ 100` (same convention as `AdminAssociateController.list()`).
+1. `page` clamped `≥ 0`, `size` clamped to `[1, 100]`, default 20 (support-tickets convention; size 0 would make `PageRequest.of` throw, decided 2026-10-09).
 2. `announcementRepository.findAllByOrderByPublishedAtDesc(PageRequest.of(page, size))`.
 3. Map each `Announcement` to `AnnouncementResponse`.
 4. Return `AnnouncementPageResponse` (200).
