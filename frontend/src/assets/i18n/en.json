@@ -566,6 +566,19 @@
         "load": "The published list didn't load. Check your connection and try again. You can still publish a new announcement.",
         "retry": "Retry"
       }
+    },
+    "feed": {
+      "eyebrow": "Associate · Announcements",
+      "title": "Announcements",
+      "subtitle": "Company updates",
+      "loading": "Loading announcements",
+      "loadError": "Couldn't load announcements. Check your connection and try again.",
+      "retryAction": "Retry",
+      "emptyTitle": "No announcements yet",
+      "emptyBody": "When the company posts an update, it will appear here.",
+      "previousPageAction": "Previous",
+      "nextPageAction": "Next",
+      "pageIndicator": "Page {{page}} of {{totalPages}}"
     }
   },
   "payoutHistory": {
@@ -613,6 +626,7 @@
     "incomeStatement": "Income Statement",
     "payoutHistory": "Payout History",
     "supportTickets": "Support Tickets",
+    "announcements": "Announcements",
     "categories": {
       "setup": "Setup",
       "network": "Associates",

@@ -38,5 +38,6 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
   },
   { key: 'incomeStatement', labelKey: 'nav.incomeStatement', icon: 'description', path: '/income-statement' },
   { key: 'payoutHistory', labelKey: 'nav.payoutHistory', icon: 'payments', path: '/payout-history' },
-  { key: 'supportTickets', labelKey: 'nav.supportTickets', icon: 'support_agent', path: '/support-tickets' }
+  { key: 'supportTickets', labelKey: 'nav.supportTickets', icon: 'support_agent', path: '/support-tickets' },
+  { key: 'announcements', labelKey: 'nav.announcements', icon: 'campaign', path: '/announcements' }
 ];

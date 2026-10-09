@@ -49,6 +49,15 @@ describe('routes', () => {
     expect(route!.component).toBeUndefined();
   });
 
+  it('guards the announcements route with authGuard and associateOnlyGuard and lazy-loads it', () => {
+    const route = routes.find(r => r.path === 'announcements');
+    expect(route).toBeTruthy();
+    expect(route!.canActivate).toContain(authGuard);
+    expect(route!.canActivate).toContain(associateOnlyGuard);
+    expect(route!.loadComponent).toBeDefined();
+    expect(route!.component).toBeUndefined();
+  });
+
   it('guards the profile route with authGuard and associateOnlyGuard', () => {
     const route = routes.find(r => r.path === 'profile');
 
