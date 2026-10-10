@@ -23,4 +23,10 @@ public class TransactionPasswordExceptionHandler {
             "code", "TRANSACTION_PASSWORD_LOCKED",
             "lockedUntil", ex.getLockedUntil().toString()));
     }
+
+    @ExceptionHandler(TransactionPasswordSameAsLoginException.class)
+    public ResponseEntity<Map<String, String>> handleSameAsLogin(TransactionPasswordSameAsLoginException ex) {
+        return ResponseEntity.badRequest()
+            .body(Map.of("error", ex.getMessage(), "code", "TRANSACTION_PASSWORD_SAME_AS_LOGIN"));
+    }
 }
