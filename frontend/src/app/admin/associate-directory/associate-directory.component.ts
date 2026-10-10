@@ -267,6 +267,7 @@ export class AssociateDirectoryComponent implements OnInit {
       { key: 'userId', label: this.translate.instant('admin.associateDirectory.columnUserId'), type: 'text' },
       { key: 'name', label: this.translate.instant('admin.associateDirectory.columnName'), type: 'text' },
       { key: 'sponsorUserId', label: this.translate.instant('admin.associateDirectory.columnSponsorId'), type: 'text' },
+      { key: 'position', label: this.translate.instant('admin.associateDirectory.columnPosition'), type: 'text' },
       {
         key: 'status',
         label: this.translate.instant('admin.associateDirectory.columnStatus'),
@@ -436,6 +437,7 @@ export class AssociateDirectoryComponent implements OnInit {
           userId: a.userId,
           name: a.name,
           sponsorUserId: a.sponsorUserId ?? '—',
+          position: a.position ?? '—',
           status: titleCase(a.status),
           joinedAt: new Date(a.joinedAt).toLocaleDateString('en-GB')
         }));

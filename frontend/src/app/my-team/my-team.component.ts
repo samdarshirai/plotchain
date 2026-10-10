@@ -103,6 +103,7 @@ export class MyTeamComponent implements OnInit {
       { key: 'userId', label: t('columnUserId'), type: 'text' },
       { key: 'name', label: t('columnName'), type: 'text' },
       { key: 'sponsorUserId', label: t('columnSponsorId'), type: 'text' },
+      { key: 'position', label: t('columnPosition'), type: 'text' },
       { key: 'status', label: t('columnStatus'), type: 'badge', badgeTone: v => this.statusTone(v) },
       { key: 'joinedAt', label: t('columnRegistrationDate'), type: 'text' }
     ];
@@ -134,6 +135,7 @@ export class MyTeamComponent implements OnInit {
           userId: a.userId,
           name: a.name,
           sponsorUserId: a.sponsorUserId ?? '—',
+          position: a.position ?? '—',
           status: titleCase(a.status),
           joinedAt: new Date(a.joinedAt).toLocaleDateString('en-GB')
         }));

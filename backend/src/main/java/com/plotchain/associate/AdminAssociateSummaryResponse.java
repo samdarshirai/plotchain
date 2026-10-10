@@ -6,4 +6,4 @@ import java.util.UUID;
 public record AdminAssociateSummaryResponse(
     UUID id, String userId, String name, String rankName, KycStatus kycStatus,
     AssociateStatus status, Instant joinedAt, Instant lastActiveAt,
-    String sponsorUserId) {}
+    String sponsorUserId, String position) {}

@@ -736,6 +736,7 @@
       "columnUserId": "Associate ID",
       "columnName": "Name",
       "columnSponsorId": "Sponsor ID",
+      "columnPosition": "Position",
       "columnRegistrationDate": "Registration Date",
       "columnStatus": "Status",
       "previousPageAction": "Previous",
