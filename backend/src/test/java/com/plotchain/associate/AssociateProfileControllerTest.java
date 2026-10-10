@@ -44,6 +44,7 @@ class AssociateProfileControllerTest {
         a.setAddress("221B Baker Street");
         a.setRole(AssociateRole.ASSOCIATE);
         a.setJoinedAt(Instant.now());
+        a.setTransactionPasswordHash(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode("secret123"));
         return a;
     }
 
@@ -54,7 +55,7 @@ class AssociateProfileControllerTest {
 
     private static UpdateAssociateProfileRequest requestWith(String name, String phone, String email, String address) {
         return new UpdateAssociateProfileRequest(
-            name, phone, email, address, null, null, null, null, null, null, null, null);
+            name, phone, email, address, null, null, null, null, null, null, null, "secret123");
     }
 
     @Test
@@ -79,11 +80,29 @@ class AssociateProfileControllerTest {
     }
 
     @Test
-    void putWithoutATransactionPasswordSetReturns409() throws Exception {
+    void putUpdatesNamePhoneAndEmail() throws Exception {
         Associate self = seeded(UUID.randomUUID());
         String token = tokenFor(self);
         when(associateRepository.existsByEmail("jane.a.doe@example.com")).thenReturn(false);
         when(associateRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        mockMvc.perform(put("/api/associates/me/profile")
+                .header("Authorization", "Bearer " + token)
+                .contentType("application/json")
+                .content(new ObjectMapper().writeValueAsString(
+                    requestWith("Jane A. Doe", "9990002222", "jane.a.doe@example.com", "42 Wallaby Way"))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Jane A. Doe"))
+            .andExpect(jsonPath("$.phone").value("9990002222"))
+            .andExpect(jsonPath("$.email").value("jane.a.doe@example.com"))
+            .andExpect(jsonPath("$.address").value("42 Wallaby Way"));
+    }
+
+    @Test
+    void putWithoutATransactionPasswordSetReturns409() throws Exception {
+        Associate self = seeded(UUID.randomUUID());
+        self.setTransactionPasswordHash(null);
+        String token = tokenFor(self);
 
         mockMvc.perform(put("/api/associates/me/profile")
                 .header("Authorization", "Bearer " + token)
