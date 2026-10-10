@@ -86,8 +86,12 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
           <label>{{ 'epins.userIdLabel' | translate }}
             <input type="text" name="userId" [(ngModel)]="userIdInput" />
           </label>
+          <label>{{ 'epins.passwordLabel' | translate }}
+            <input type="password" name="transactionPassword" autocomplete="off" [(ngModel)]="passwordInput" />
+          </label>
           <p class="epins__hint">{{ (action === 'activate' ? 'epins.activateHint' : 'epins.transferHint') | translate }}</p>
           <app-inline-banner *ngIf="actionError" tone="danger">{{ actionError | translate }}</app-inline-banner>
+          <p *ngIf="lockedUntil" class="epins__hint">{{ 'epins.lockedUntilHint' | translate: { time: datePipe.transform(lockedUntil, 'shortTime') } }}</p>
           <button type="button" class="brand-button" (click)="confirmAction()">
             {{ (action === 'activate' ? 'epins.activateAction' : 'epins.transferConfirm') | translate }}
           </button>
@@ -108,7 +112,9 @@ export class EPinsComponent implements OnInit {
   private selectedId: string | null = null;
   action: 'activate' | 'transfer' = 'activate';
   userIdInput = '';
+  passwordInput = '';
   actionError = '';
+  lockedUntil: string | null = null;
 
   private loadSeq = 0;
   private copyTimer?: ReturnType<typeof setTimeout>;
@@ -166,7 +172,9 @@ export class EPinsComponent implements OnInit {
     this.selectedId = pin.id;
     this.action = action;
     this.userIdInput = '';
+    this.passwordInput = '';
     this.actionError = '';
+    this.lockedUntil = null;
   }
 
   copy(code: string): void {
@@ -185,16 +193,28 @@ export class EPinsComponent implements OnInit {
       this.actionError = 'epins.errorUserIdRequired';
       return;
     }
+    const password = this.passwordInput;
+    if (!password.trim()) {
+      this.actionError = 'epins.errorPasswordRequired';
+      return;
+    }
     this.actionError = '';
+    this.lockedUntil = null;
     const call = this.action === 'activate'
-      ? this.service.redeem(pin.id, userId)
-      : this.service.transfer(pin.id, userId);
+      ? this.service.redeem(pin.id, userId, password)
+      : this.service.transfer(pin.id, userId, password);
     call.subscribe({
-      next: () => { this.userIdInput = ''; this.load(); },
+      next: () => { this.userIdInput = ''; this.passwordInput = ''; this.load(); },
       error: (e: HttpErrorResponse) => {
-        this.actionError = e.status === 404 ? 'epins.errorNotFound'
+        this.passwordInput = '';
+        const code = e.error?.code;
+        this.actionError = e.status === 401 ? 'epins.errorPasswordInvalid'
+          : e.status === 423 ? 'epins.errorPasswordLocked'
+          : e.status === 409 && code === 'TRANSACTION_PASSWORD_NOT_SET' ? 'epins.errorPasswordNotSet'
+          : e.status === 404 ? 'epins.errorNotFound'
           : e.status === 409 ? 'epins.errorConflict'
           : 'epins.errorGeneric';
+        this.lockedUntil = e.status === 423 ? e.error?.lockedUntil ?? null : null;
       }
     });
   }

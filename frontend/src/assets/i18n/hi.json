@@ -1,4 +1,12 @@
 {
+  "epins": {
+    "passwordLabel": "लेन-देन पासवर्ड",
+    "errorPasswordRequired": "अपना लेन-देन पासवर्ड दर्ज करें।",
+    "errorPasswordInvalid": "लेन-देन पासवर्ड गलत है।",
+    "errorPasswordNotSet": "पहले मेरा खाता में लेन-देन पासवर्ड सेट करें।",
+    "errorPasswordLocked": "बहुत अधिक गलत प्रयास। लेन-देन पासवर्ड लॉक है।",
+    "lockedUntilHint": "{{time}} के बाद पुनः प्रयास करें।"
+  },
   "dashboard": {
     "title": "डैशबोर्ड",
     "kycBanner": "भुगतान पाने के लिए अपना केवाईसी सत्यापन पूरा करें।",

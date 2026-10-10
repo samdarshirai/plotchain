@@ -11,12 +11,13 @@ import { AuthService } from './auth.service';
 // /api/associates/me/profile (for example) still logs out on a real 401, since a plain read
 // never fails a form check -- only its PUT (transaction-password-gated) and the analogous
 // nominee PUT and transaction-password POST do.
-const EXPECTED_401_ROUTES: { method: string; path: string }[] = [
+const EXPECTED_401_ROUTES: { method: string; path: string | RegExp }[] = [
   { method: 'POST', path: '/api/auth/login' },
   { method: 'POST', path: '/api/associates/me/password' },
   { method: 'PUT', path: '/api/associates/me/profile' },
   { method: 'PUT', path: '/api/associates/me/nominee' },
-  { method: 'POST', path: '/api/associates/me/transaction-password' }
+  { method: 'POST', path: '/api/associates/me/transaction-password' },
+  { method: 'POST', path: /\/api\/associates\/me\/epins\/[^/]+\/(redeem|transfer)$/ }
 ];
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
@@ -31,7 +32,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(authorizedReq).pipe(
     catchError(error => {
       const isExpected401Route = EXPECTED_401_ROUTES.some(
-        route => route.method === req.method && req.url.includes(route.path)
+        route => route.method === req.method &&
+          (typeof route.path === 'string' ? req.url.includes(route.path) : route.path.test(req.url))
       );
       if (error.status === 401 && !isExpected401Route) {
         authService.logout();
