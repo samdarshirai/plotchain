@@ -42,7 +42,21 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
   },
   { key: 'salesHistory', labelKey: 'nav.salesHistory', icon: 'receipt_long', path: '/sales-history' },
   { key: 'plotBookings', labelKey: 'nav.plotBookings', icon: 'grid_view', path: '/plot-bookings' },
-  { key: 'incomeStatement', labelKey: 'nav.incomeStatement', icon: 'description', path: '/income-statement' },
+  {
+    key: 'incomeStatement',
+    labelKey: 'nav.incomeStatement',
+    icon: 'description',
+    path: '/income-statement',
+    children: [
+      { key: 'incomeAll', labelKey: 'incomeStatement.tabAll', path: '/income-statement' },
+      { key: 'incomeDirect', labelKey: 'incomeStatement.tabDirect', path: '/income-statement/direct' },
+      { key: 'incomeMatching', labelKey: 'incomeStatement.tabMatching', path: '/income-statement/matching' },
+      { key: 'incomeSponsorMatching', labelKey: 'incomeStatement.tabSponsorMatching', path: '/income-statement/sponsor-matching' },
+      { key: 'incomeRoyalty', labelKey: 'incomeStatement.tabRoyalty', path: '/income-statement/royalty' },
+      { key: 'incomeReward', labelKey: 'incomeStatement.tabReward', path: '/income-statement/reward' },
+      { key: 'incomePerk', labelKey: 'incomeStatement.tabPerk', path: '/income-statement/perk' }
+    ]
+  },
   { key: 'payoutHistory', labelKey: 'nav.payoutHistory', icon: 'payments', path: '/payout-history' },
   { key: 'supportTickets', labelKey: 'nav.supportTickets', icon: 'support_agent', path: '/support-tickets' },
   { key: 'announcements', labelKey: 'nav.announcements', icon: 'campaign', path: '/announcements' }

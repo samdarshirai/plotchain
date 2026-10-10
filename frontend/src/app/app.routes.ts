@@ -62,7 +62,15 @@ export const routes: Routes = [
   { path: 'profile/kyc', component: MyAccountComponent, data: { tab: 'kyc' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'rewards', redirectTo: 'profile' },
   { path: 'digital-id-card', redirectTo: 'profile' },
-  { path: 'income-statement', component: IncomeStatementComponent, canActivate: [authGuard, associateOnlyGuard] },
+  // Sibling routes sharing one component; data.incomeType replaces the old in-page tab bar so
+  // the sidebar's Income Statement sub-items are deep-linkable.
+  { path: 'income-statement', component: IncomeStatementComponent, data: { incomeType: 'ALL' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'income-statement/direct', component: IncomeStatementComponent, data: { incomeType: 'DIRECT' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'income-statement/matching', component: IncomeStatementComponent, data: { incomeType: 'MATCHING' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'income-statement/sponsor-matching', component: IncomeStatementComponent, data: { incomeType: 'SPONSOR_MATCHING' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'income-statement/royalty', component: IncomeStatementComponent, data: { incomeType: 'ROYALTY' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'income-statement/reward', component: IncomeStatementComponent, data: { incomeType: 'REWARD' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'income-statement/perk', component: IncomeStatementComponent, data: { incomeType: 'PERK' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'payout-history', component: PayoutHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'support-tickets', loadComponent: () => import('./support-ticket-history/support-ticket-history.component').then(m => m.SupportTicketHistoryComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'announcements', loadComponent: () => import('./announcements/announcement-feed.component').then(m => m.AnnouncementFeedComponent), canActivate: [authGuard, associateOnlyGuard] },

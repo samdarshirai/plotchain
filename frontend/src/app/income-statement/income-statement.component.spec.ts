@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { ActivatedRoute } from '@angular/router';
+import { BehaviorSubject } from 'rxjs';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { IncomeStatementComponent } from './income-statement.component';
 
@@ -7,6 +9,7 @@ describe('IncomeStatementComponent', () => {
   let fixture: ComponentFixture<IncomeStatementComponent>;
   let httpMock: HttpTestingController;
   let translateService: TranslateService;
+  let routeData$: BehaviorSubject<Record<string, unknown>>;
 
   const frColumnTranslations = {
     incomeStatement: {
@@ -55,8 +58,10 @@ describe('IncomeStatementComponent', () => {
   }
 
   beforeEach(async () => {
+    routeData$ = new BehaviorSubject<Record<string, unknown>>({ incomeType: 'ALL' });
     await TestBed.configureTestingModule({
-      imports: [IncomeStatementComponent, HttpClientTestingModule, TranslateModule.forRoot()]
+      imports: [IncomeStatementComponent, HttpClientTestingModule, TranslateModule.forRoot()],
+      providers: [{ provide: ActivatedRoute, useValue: { data: routeData$ } }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(IncomeStatementComponent);
@@ -140,9 +145,9 @@ describe('IncomeStatementComponent', () => {
     expect(fixture.componentInstance.loadError).toBe(false);
   });
 
-  it('selecting an income type tab reloads with the incomeType filter and resets to page 0', () => {
+  it('navigating to an income type route reloads with the incomeType filter and resets to page 0', () => {
     flushInitialRequests();
-    fixture.componentInstance.onTabChange('PERK');
+    routeData$.next({ incomeType: 'PERK' });
 
     const req = httpMock.expectOne(
       r => r.url === '/api/associates/me/ledger' && r.params.get('incomeType') === 'PERK' && r.params.get('page') === '0'
@@ -169,7 +174,7 @@ describe('IncomeStatementComponent', () => {
 
   it('combines tab, cycle, and status filters into one request', () => {
     flushInitialRequests();
-    fixture.componentInstance.onTabChange('MATCHING');
+    routeData$.next({ incomeType: 'MATCHING' });
     httpMock.expectOne(r => r.params.get('incomeType') === 'MATCHING').flush({ entries: [], page: 0, size: 20, totalElements: 0 });
 
     fixture.componentInstance.onCycleIdChange('c1');
