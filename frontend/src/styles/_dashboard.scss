@@ -262,8 +262,56 @@
   font-size: 2.25rem;
 }
 
+.seal-card__caption {
+  margin: 0 0 1rem;
+  font-size: 0.75rem;
+  color: #8C8271;
+}
+
+.seal-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.seal-card__chip {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(232, 223, 201, 0.15);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: #E8DFC9;
+  text-decoration: none;
+}
+
+.seal-card__chip-label,
+.seal-card__chip-note {
+  font-size: 0.6875rem;
+  color: #8C8271;
+}
+
+.seal-card__earnings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(232, 223, 201, 0.15);
+}
+
+.seal-card__earnings-figure {
+  font-size: 1.25rem;
+  color: #E8DFC9;
+}
+
+.seal-card__earnings .seal-card__link {
+  margin-left: auto;
+}
+
 .seal-card__delta {
-  margin: 0 0 0.75rem;
+  margin: 0;
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--status-success);
