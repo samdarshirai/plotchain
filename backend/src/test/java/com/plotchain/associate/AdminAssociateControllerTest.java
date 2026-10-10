@@ -154,6 +154,23 @@ class AdminAssociateControllerTest {
     }
 
     @Test
+    void resetTransactionPasswordReturns204ForAnAdminToken() throws Exception {
+        when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE))
+            .thenReturn(Optional.of(seedAssociate()));
+
+        mockMvc.perform(post("/api/admin/associates/" + ASSOCIATE_ID + "/reset-transaction-password")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void resetTransactionPasswordIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(post("/api/admin/associates/" + ASSOCIATE_ID + "/reset-transaction-password")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
     void tokenForANewlySuspendedAssociateIsRejectedOnTheVeryNextRequest() throws Exception {
         // Uses a freshly generated id rather than the shared ASSOCIATE_ID constant: the real
         // AssociateStatusCache is a singleton Spring bean shared across every test in this
