@@ -124,7 +124,7 @@ describe('AppComponent', () => {
     spyOn(translateService, 'get').and.callFake((key: string) => {
       const translations: { [key: string]: string } = {
         'nav.dashboard': 'Dashboard',
-        'nav.myTree': 'My Tree',
+        'nav.myTree': 'Genealogy',
         'nav.salesHistory': 'Sales History',
         'nav.plotBookings': 'Plot Bookings',
         'nav.epins': 'e-Pins',
@@ -143,7 +143,7 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('app-admin-sidebar')).toBeFalsy();
     const links = Array.from(compiled.querySelectorAll('.associate-sidebar__link-label')).map(el => el.textContent?.trim());
     expect(links).toEqual([
-      'Dashboard', 'My Account', 'e-Pins', 'My Tree', 'Sales History', 'Plot Bookings', 'Income Statement', 'Payout History', 'Support Tickets', 'Announcements'
+      'Dashboard', 'My Account', 'e-Pins', 'Genealogy', 'Sales History', 'Plot Bookings', 'Income Statement', 'Payout History', 'Support Tickets', 'Announcements'
     ]);
   });
 
