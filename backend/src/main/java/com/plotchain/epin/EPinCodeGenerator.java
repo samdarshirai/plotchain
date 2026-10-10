@@ -1,14 +1,9 @@
 package com.plotchain.epin;
 
 import java.security.SecureRandom;
-import java.util.Base64;
 
-// epin-domain unit 1 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
-// Decision 2): copies com.plotchain.associate.TemporaryPasswordGenerator's exact pattern rather
-// than reusing that class directly -- e-PIN codes are a different domain concept that happens to
-// share an implementation shape, not a real cross-domain dependency. No "PIN-like" numeric
-// format: redemption is always Admin-driven (see spec Context), so no human ever types this code
-// by hand.
+// E-PINs are 6-digit zero-padded random numbers. Only 1,000,000 values exist, so
+// EPinService's existsByCode retry loop spins if the pool is ever exhausted.
 public final class EPinCodeGenerator {
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -17,8 +12,6 @@ public final class EPinCodeGenerator {
     }
 
     public static String generate() {
-        byte[] bytes = new byte[12];
-        RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return String.format("%06d", RANDOM.nextInt(1_000_000));
     }
 }
