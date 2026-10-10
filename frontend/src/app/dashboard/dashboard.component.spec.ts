@@ -13,7 +13,7 @@ describe('DashboardComponent', () => {
     associate: {
       associateId: 'SDI384818', name: 'Asha Kumar', rank: 'Sales Associate',
       phone: '9876543210', joinedAt: '2025-09-05T05:25:42Z', rankChangedAt: null,
-      sponsorAssociateId: 'SDI100001', sponsorName: 'Head Office Sponsor'
+      sponsorAssociateId: 'SDI100001', sponsorName: 'Head Office Sponsor', lastLoginAt: null
     },
     kycPendingBannerVisible: true,
     cycleIncome: {

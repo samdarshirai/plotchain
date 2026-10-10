@@ -40,6 +40,11 @@ import { AssociateSummary } from '../../models/dashboard-response.model';
           <span class="profile-card__row-label">{{ 'dashboard.profileRegistered' | translate }}</span>
           <span class="profile-card__row-value">{{ associate.joinedAt | date:'d MMM y, h:mm a' }}</span>
         </div>
+        <div class="profile-card__row" *ngIf="associate.lastLoginAt">
+          <span class="material-symbols-outlined profile-card__row-icon">schedule</span>
+          <span class="profile-card__row-label">{{ 'dashboard.profileLastLogin' | translate }}</span>
+          <span class="profile-card__row-value">{{ associate.lastLoginAt | date:'d MMM y, h:mm a' }}</span>
+        </div>
         <div class="profile-card__row" *ngIf="associate.rankChangedAt">
           <span class="material-symbols-outlined profile-card__row-icon">upgrade</span>
           <span class="profile-card__row-label">{{ 'dashboard.profileLatestUpgrade' | translate }}</span>

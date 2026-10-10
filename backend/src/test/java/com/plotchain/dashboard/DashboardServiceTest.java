@@ -116,6 +116,8 @@ class DashboardServiceTest {
         Instant rankChangedAt = Instant.parse("2026-01-10T09:00:00Z");
         associate.setJoinedAt(joinedAt);
         associate.setRankChangedAt(rankChangedAt);
+        Instant lastLoginAt = Instant.parse("2026-10-09T08:30:00Z");
+        associate.setLastActiveAt(lastLoginAt);
         UUID sponsorId = UUID.randomUUID();
         associate.setSponsorId(sponsorId);
 
@@ -197,6 +199,7 @@ class DashboardServiceTest {
         assertThat(response.associate().name()).isEqualTo("Asha Kumar");
         assertThat(response.associate().rank()).isEqualTo("Sales Associate");
         assertThat(response.associate().rankChangedAt()).isEqualTo(rankChangedAt);
+        assertThat(response.associate().lastLoginAt()).isEqualTo(lastLoginAt);
         assertThat(response.associate().sponsorAssociateId()).isEqualTo("SDI100001");
         assertThat(response.associate().sponsorName()).isEqualTo("Head Office Sponsor");
         assertThat(response.cycleIncome().directIncome()).isEqualByComparingTo("1000");

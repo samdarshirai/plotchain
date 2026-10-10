@@ -8,6 +8,8 @@ export interface AssociateSummary {
   // Both null when the associate has no sponsor (tree root) -- render a "Head Office" fallback.
   sponsorAssociateId: string | null;
   sponsorName: string | null;
+  // Set on every successful login (Associate.lastActiveAt); null if never logged in.
+  lastLoginAt: string | null;
 }
 
 export interface CycleIncome {

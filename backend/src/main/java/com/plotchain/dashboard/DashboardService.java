@@ -174,7 +174,8 @@ public class DashboardService {
             new DashboardResponse.AssociateSummary(
                 associate.getUserId(), associate.getName(), currentRank.getName(),
                 associate.getPhone(), associate.getJoinedAt(), associate.getRankChangedAt(),
-                sponsor.map(Associate::getUserId).orElse(null), sponsor.map(Associate::getName).orElse(null)),
+                sponsor.map(Associate::getUserId).orElse(null), sponsor.map(Associate::getName).orElse(null),
+                associate.getLastActiveAt()),
             associate.getKycStatus() != KycStatus.VERIFIED,
             new DashboardResponse.CycleIncome(
                 cycle.getId(), direct, matching, sponsorMatching, selfPerformance, royaltyBonus, royaltyBonusPct, total,

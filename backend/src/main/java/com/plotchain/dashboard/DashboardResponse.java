@@ -20,7 +20,7 @@ public record DashboardResponse(
     // -- the frontend renders a "Head Office" fallback in that case.
     public record AssociateSummary(
         String associateId, String name, String rank, String phone, Instant joinedAt, Instant rankChangedAt,
-        String sponsorAssociateId, String sponsorName) {}
+        String sponsorAssociateId, String sponsorName, Instant lastLoginAt) {}
     public record CycleIncome(
         UUID cycleId, BigDecimal directIncome, BigDecimal matchingIncome, BigDecimal sponsorMatchingIncome,
         BigDecimal selfPerformanceBonus, BigDecimal royaltyBonus, BigDecimal royaltyBonusPct, BigDecimal totalIncome,

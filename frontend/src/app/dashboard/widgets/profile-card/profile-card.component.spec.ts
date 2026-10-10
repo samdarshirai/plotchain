@@ -7,7 +7,7 @@ function associate(overrides: Partial<AssociateSummary>): AssociateSummary {
   return {
     associateId: 'SDI384818', name: 'Asha Kumar', rank: 'Sales Associate',
     phone: '9876543210', joinedAt: '2025-09-05T05:25:42Z', rankChangedAt: null,
-    sponsorAssociateId: null, sponsorName: null,
+    sponsorAssociateId: null, sponsorName: null, lastLoginAt: null,
     ...overrides
   };
 }
@@ -30,6 +30,7 @@ describe('ProfileCardComponent', () => {
         profileSponsor: 'Sponsor',
         profileSponsorHeadOffice: 'Head Office',
         profileRegistered: 'Registered',
+        profileLastLogin: 'Last login',
         profileLatestUpgrade: 'Latest Upgrade'
       }
     });
@@ -60,6 +61,14 @@ describe('ProfileCardComponent', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('SDI384818');
     expect(text).toContain('9876543210');
+  });
+
+  it('shows the last login row only when lastLoginAt is set', () => {
+    createComponent(associate({ lastLoginAt: '2026-10-09T08:30:00Z' }));
+    expect(fixture.nativeElement.textContent).toContain('Last login');
+    fixture.destroy();
+    createComponent(associate({ lastLoginAt: null }));
+    expect(fixture.nativeElement.textContent).not.toContain('Last login');
   });
 
   it('hides the mobile row when phone is null', () => {
