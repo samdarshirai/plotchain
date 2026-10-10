@@ -79,7 +79,7 @@ class AssociateProfileControllerTest {
     }
 
     @Test
-    void putUpdatesNamePhoneAndEmail() throws Exception {
+    void putWithoutATransactionPasswordSetReturns409() throws Exception {
         Associate self = seeded(UUID.randomUUID());
         String token = tokenFor(self);
         when(associateRepository.existsByEmail("jane.a.doe@example.com")).thenReturn(false);
@@ -90,11 +90,8 @@ class AssociateProfileControllerTest {
                 .contentType("application/json")
                 .content(new ObjectMapper().writeValueAsString(
                     requestWith("Jane A. Doe", "9990002222", "jane.a.doe@example.com", "42 Wallaby Way"))))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.name").value("Jane A. Doe"))
-            .andExpect(jsonPath("$.phone").value("9990002222"))
-            .andExpect(jsonPath("$.email").value("jane.a.doe@example.com"))
-            .andExpect(jsonPath("$.address").value("42 Wallaby Way"));
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.code").value("TRANSACTION_PASSWORD_NOT_SET"));
     }
 
     @Test

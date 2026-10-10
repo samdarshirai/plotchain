@@ -21,14 +21,14 @@ class AssociateNomineeServiceTest {
 
     @Mock AssociateRepository associateRepository;
     @Mock AssociateNomineeRepository associateNomineeRepository;
-    @Mock TransactionPasswordVerifier transactionPasswordVerifier;
+    @Mock TransactionPasswordGuard transactionPasswordGuard;
 
     AssociateNomineeService service;
     private static final UUID ASSOCIATE_ID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        service = new AssociateNomineeService(associateRepository, associateNomineeRepository, transactionPasswordVerifier);
+        service = new AssociateNomineeService(associateRepository, associateNomineeRepository, transactionPasswordGuard);
     }
 
     private Associate seededAssociate() {
@@ -91,7 +91,7 @@ class AssociateNomineeServiceTest {
 
         assertThat(response.nomineeName()).isEqualTo("Kajal Devi");
         assertThat(response.relation()).isEqualTo("Wife");
-        verify(transactionPasswordVerifier).requireIfSet(associate, null);
+        verify(transactionPasswordGuard).require(ASSOCIATE_ID, null);
     }
 
     @Test
@@ -105,11 +105,9 @@ class AssociateNomineeServiceTest {
     }
 
     @Test
-    void updateNomineePropagatesTheVerifiersRejectionAndDoesNotSave() {
-        Associate associate = seededAssociate();
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
+    void updateNomineePropagatesTheGuardsRejectionAndDoesNotSave() {
         org.mockito.Mockito.doThrow(new InvalidTransactionPasswordException("bad"))
-            .when(transactionPasswordVerifier).requireIfSet(any(), any());
+            .when(transactionPasswordGuard).require(any(), any());
 
         assertThatThrownBy(() -> service.updateNominee(ASSOCIATE_ID,
             new UpdateAssociateNomineeRequest("Kajal Devi", "Wife", "wrong")))

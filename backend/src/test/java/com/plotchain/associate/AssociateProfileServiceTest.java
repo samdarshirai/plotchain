@@ -22,14 +22,14 @@ import static org.mockito.Mockito.when;
 class AssociateProfileServiceTest {
 
     @Mock AssociateRepository associateRepository;
-    @Mock TransactionPasswordVerifier transactionPasswordVerifier;
+    @Mock TransactionPasswordGuard transactionPasswordGuard;
 
     AssociateProfileService service;
     private static final UUID ASSOCIATE_ID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        service = new AssociateProfileService(associateRepository, transactionPasswordVerifier);
+        service = new AssociateProfileService(associateRepository, transactionPasswordGuard);
     }
 
     private Associate seeded() {
@@ -163,7 +163,7 @@ class AssociateProfileServiceTest {
     }
 
     @Test
-    void updateProfileDelegatesTheTransactionPasswordGateToTheVerifier() {
+    void updateProfileDelegatesTheTransactionPasswordGateToTheGuard() {
         Associate associate = seeded();
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
         UpdateAssociateProfileRequest request = new UpdateAssociateProfileRequest(
@@ -172,15 +172,13 @@ class AssociateProfileServiceTest {
 
         service.updateProfile(ASSOCIATE_ID, request);
 
-        verify(transactionPasswordVerifier).requireIfSet(associate, "secret123");
+        verify(transactionPasswordGuard).require(ASSOCIATE_ID, "secret123");
     }
 
     @Test
-    void updateProfilePropagatesTheVerifiersRejectionAndDoesNotSave() {
-        Associate associate = seeded();
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
+    void updateProfilePropagatesTheGuardsRejectionAndDoesNotSave() {
         org.mockito.Mockito.doThrow(new InvalidTransactionPasswordException("bad"))
-            .when(transactionPasswordVerifier).requireIfSet(any(), any());
+            .when(transactionPasswordGuard).require(any(), any());
         UpdateAssociateProfileRequest request = requestWith("Jane Doe", "9990001111", "jane@example.com", null);
 
         assertThatThrownBy(() -> service.updateProfile(ASSOCIATE_ID, request))
