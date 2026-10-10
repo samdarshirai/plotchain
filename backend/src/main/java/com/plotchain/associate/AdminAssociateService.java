@@ -57,7 +57,7 @@ public class AdminAssociateService {
 
     public AdminAssociatePageResponse list(String search, UUID rankId, KycStatus kycStatus, KycStatus excludeKycStatus,
                                             AssociateStatus status, LocalDate joinedFrom, LocalDate joinedTo,
-                                            boolean newestFirst, int page, int size) {
+                                            boolean newestFirst, String leg, int page, int size) {
         Instant joinedFromInstant = joinedFrom == null ? null : joinedFrom.atStartOfDay(ZoneOffset.UTC).toInstant();
         Instant joinedToExclusive = joinedTo == null
             ? null : joinedTo.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
@@ -65,7 +65,7 @@ public class AdminAssociateService {
 
         Page<Associate> result = associateRepository.searchDirectory(
             normalizedSearch, rankId, kycStatus, excludeKycStatus, status, joinedFromInstant, joinedToExclusive,
-            newestFirst, PageRequest.of(page, size));
+            newestFirst, leg, PageRequest.of(page, size));
 
         Map<UUID, RankTier> ranksById = ranksById();
         List<AdminAssociateSummaryResponse> summaries = result.getContent().stream()
@@ -78,9 +78,13 @@ public class AdminAssociateService {
     public AdminAssociatePageResponse listDownline(UUID callerId, String search, KycStatus kycStatus,
                                                     KycStatus excludeKycStatus, AssociateStatus status,
                                                     LocalDate joinedFrom, LocalDate joinedTo,
-                                                    boolean newestFirst, int page, int size) {
-        List<UUID> ids = associateRepository.findSelfAndDownline(callerId).stream()
-            .filter(id -> !id.equals(callerId)).toList();
+                                                    boolean newestFirst, String leg, int page, int size) {
+        // leg L/R: only the caller's child on that side and everything beneath it.
+        List<UUID> ids = leg == null
+            ? associateRepository.findSelfAndDownline(callerId).stream().filter(id -> !id.equals(callerId)).toList()
+            : associateRepository.findByParentId(callerId).stream()
+                .filter(c -> leg.equals(c.getPosition()))
+                .flatMap(c -> associateRepository.findSelfAndDownline(c.getId()).stream()).toList();
         if (ids.isEmpty()) {
             return new AdminAssociatePageResponse(List.of(), page, size, 0);
         }

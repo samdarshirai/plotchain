@@ -19,9 +19,9 @@ const PAGE_SIZE = 20;
 
 // Quick views over the directory. Green/Red are KYC-based: Green = VERIFIED, Red = anything else.
 // By Date lists newest joiners first.
-type DirectoryView = 'all' | 'green' | 'red' | 'byDate';
+type DirectoryView = 'all' | 'green' | 'red' | 'left' | 'right' | 'byDate';
 interface DirectoryCounts { total: number; active: number; inactive: number; kycPending: number; green: number; red: number }
-const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'byDate'];
+const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'];
 
 // Enum values the backend returns for kycStatus/status are shouty-uppercase (PENDING/VERIFIED/...);
 // the mockup renders them Title Case (Viraj_Acres_Settings.dc.html lines 646-650) -- see the shared
@@ -429,6 +429,8 @@ export class AssociateDirectoryComponent implements OnInit {
     if (this.rank) filters.rank = this.rank;
     if (this.view === 'green') filters.kycStatus = 'VERIFIED';
     if (this.view === 'red') filters.excludeKycStatus = 'VERIFIED';
+    if (this.view === 'left') filters.leg = 'L';
+    if (this.view === 'right') filters.leg = 'R';
     if (this.view === 'byDate') filters.newestFirst = 'true';
     if (this.status) filters.status = this.status;
     if (this.joinedFrom) filters.joinedFrom = this.joinedFrom;
@@ -460,7 +462,7 @@ export class AssociateDirectoryComponent implements OnInit {
       this.viewTabs = VIEWS.map(id => ({
         id,
         label: this.translate.instant('admin.associateDirectory.views.' + id),
-        count: { all: t, green: g, red: r, byDate: t }[id].totalElements
+        count: ({ all: t, green: g, red: r, byDate: t } as Record<string, { totalElements: number }>)[id]?.totalElements
       }));
     });
   }

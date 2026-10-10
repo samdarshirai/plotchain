@@ -31,12 +31,13 @@ public class AssociateDownlineController {
         @RequestParam(required = false) LocalDate joinedFrom,
         @RequestParam(required = false) LocalDate joinedTo,
         @RequestParam(defaultValue = "false") boolean newestFirst,
+        @RequestParam(required = false) String leg,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size
     ) {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
         return adminAssociateService.listDownline(associateId, search, kycStatus, excludeKycStatus, status,
-            joinedFrom, joinedTo, newestFirst, page, size);
+            joinedFrom, joinedTo, newestFirst, leg, page, size);
     }
 }

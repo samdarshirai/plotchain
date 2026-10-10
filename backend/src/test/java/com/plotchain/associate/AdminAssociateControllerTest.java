@@ -77,7 +77,7 @@ class AdminAssociateControllerTest {
 
     @Test
     void listReturnsAPageForAnyAdminFamilyToken() throws Exception {
-        when(associateRepository.searchDirectory(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+        when(associateRepository.searchDirectory(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(seedAssociate()), PageRequest.of(0, 20), 1));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
 
@@ -97,7 +97,7 @@ class AdminAssociateControllerTest {
 
     @Test
     void listClampsAnOversizedPageSizeToTheServerSideMaximum() throws Exception {
-        when(associateRepository.searchDirectory(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+        when(associateRepository.searchDirectory(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 100), 0));
 
         mockMvc.perform(get("/api/admin/associates").param("size", "999999")
@@ -105,13 +105,13 @@ class AdminAssociateControllerTest {
             .andExpect(status().isOk());
 
         ArgumentCaptor<PageRequest> pageableCaptor = ArgumentCaptor.forClass(PageRequest.class);
-        verify(associateRepository).searchDirectory(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), pageableCaptor.capture());
+        verify(associateRepository).searchDirectory(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any(), pageableCaptor.capture());
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(100);
     }
 
     @Test
     void listClampsANegativePageToZeroInsteadOfThrowing() throws Exception {
-        when(associateRepository.searchDirectory(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+        when(associateRepository.searchDirectory(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
         mockMvc.perform(get("/api/admin/associates").param("page", "-5")
@@ -119,7 +119,7 @@ class AdminAssociateControllerTest {
             .andExpect(status().isOk());
 
         ArgumentCaptor<PageRequest> pageableCaptor = ArgumentCaptor.forClass(PageRequest.class);
-        verify(associateRepository).searchDirectory(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), pageableCaptor.capture());
+        verify(associateRepository).searchDirectory(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any(), pageableCaptor.capture());
         assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(0);
     }
 

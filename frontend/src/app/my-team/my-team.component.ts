@@ -10,8 +10,8 @@ import { titleCase } from '../shared/utils/title-case';
 
 const PAGE_SIZE = 20;
 // Same views as the admin directory: Green = KYC VERIFIED, Red = anything else, By Date = newest first.
-type TeamView = 'all' | 'green' | 'red' | 'byDate';
-const VIEWS: TeamView[] = ['all', 'green', 'red', 'byDate'];
+type TeamView = 'all' | 'green' | 'red' | 'left' | 'right' | 'byDate';
+const VIEWS: TeamView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'];
 
 // Reuses the admin directory's .associate-directory__* global styles (styles/_admin.scss).
 @Component({
@@ -122,6 +122,8 @@ export class MyTeamComponent implements OnInit {
     if (this.search) filters.search = this.search;
     if (this.view === 'green') filters.kycStatus = 'VERIFIED';
     if (this.view === 'red') filters.excludeKycStatus = 'VERIFIED';
+    if (this.view === 'left') filters.leg = 'L';
+    if (this.view === 'right') filters.leg = 'R';
     if (this.view === 'byDate') filters.newestFirst = 'true';
     if (this.status) filters.status = this.status;
     if (this.joinedFrom) filters.joinedFrom = this.joinedFrom;
@@ -148,7 +150,7 @@ export class MyTeamComponent implements OnInit {
       this.viewTabs = VIEWS.map(id => ({
         id,
         label: this.translate.instant('admin.associateDirectory.views.' + id),
-        count: { all: t, green: g, red: r, byDate: t }[id].totalElements
+        count: ({ all: t, green: g, red: r, byDate: t } as Record<string, { totalElements: number }>)[id]?.totalElements
       }));
     });
   }

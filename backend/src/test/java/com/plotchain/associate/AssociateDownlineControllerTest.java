@@ -83,6 +83,41 @@ class AssociateDownlineControllerTest {
     }
 
     @Test
+    void legScopesToThatSidesSubtree() throws Exception {
+        String token = token();
+        UUID leftId = UUID.randomUUID(), rightId = UUID.randomUUID(), deepId = UUID.randomUUID();
+        Associate left = new Associate();
+        left.setId(leftId);
+        left.setPosition("L");
+        Associate right = new Associate();
+        right.setId(rightId);
+        right.setPosition("R");
+        when(associateRepository.findByParentId(caller.getId())).thenReturn(List.of(left, right));
+        when(associateRepository.findSelfAndDownline(leftId)).thenReturn(List.of(leftId, deepId));
+        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+            .thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/associates/me/downline?leg=L").header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<UUID>> ids = ArgumentCaptor.forClass(List.class);
+        verify(associateRepository).searchWithinIds(ids.capture(), any(), any(), any(), any(), any(), any(), anyBoolean(), any());
+        assertThat(ids.getValue()).containsExactly(leftId, deepId);
+    }
+
+    @Test
+    void legWithNoChildOnThatSideIsEmpty() throws Exception {
+        String token = token();
+        when(associateRepository.findByParentId(caller.getId())).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/associates/me/downline?leg=R").header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(0));
+        verify(associateRepository, never()).searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any());
+    }
+
+    @Test
     void emptyDownlineSkipsQuery() throws Exception {
         String token = token();
         when(associateRepository.findSelfAndDownline(caller.getId())).thenReturn(List.of(caller.getId()));

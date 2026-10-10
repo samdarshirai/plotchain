@@ -28,12 +28,13 @@ public class AdminAssociateController {
         @RequestParam(required = false) LocalDate joinedFrom,
         @RequestParam(required = false) LocalDate joinedTo,
         @RequestParam(defaultValue = "false") boolean newestFirst,
+        @RequestParam(required = false) String leg,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size
     ) {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
-        return adminAssociateService.list(search, rank, kycStatus, excludeKycStatus, status, joinedFrom, joinedTo, newestFirst, page, size);
+        return adminAssociateService.list(search, rank, kycStatus, excludeKycStatus, status, joinedFrom, joinedTo, newestFirst, leg, page, size);
     }
 
     @GetMapping("/{id}")

@@ -715,6 +715,8 @@
         "green": "Green Associates",
         "red": "Red Associates",
         "byDate": "Associates By Date"
+        "left": "Left Associates",
+        "right": "Right Associates",
       },
       "title": "Associate Directory",
       "subtitle": "Manage and provision associates in one place.",

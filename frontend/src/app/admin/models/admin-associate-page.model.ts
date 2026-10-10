@@ -16,4 +16,5 @@ export interface AdminAssociateFilters {
   joinedFrom?: string;
   joinedTo?: string;
   newestFirst?: string;
+  leg?: string;
 }

@@ -29,4 +29,13 @@ describe('MyTeamComponent', () => {
     c.componentInstance.onViewChange('green');
     expect(list).toHaveBeenCalledWith({ kycStatus: 'VERIFIED' }, 0, 20);
   });
+
+  it('left/right views filter by leg', () => {
+    const c = TestBed.createComponent(MyTeamComponent);
+    c.detectChanges();
+    c.componentInstance.onViewChange('left');
+    expect(list).toHaveBeenCalledWith({ leg: 'L' }, 0, 20);
+    c.componentInstance.onViewChange('right');
+    expect(list).toHaveBeenCalledWith({ leg: 'R' }, 0, 20);
+  });
 });

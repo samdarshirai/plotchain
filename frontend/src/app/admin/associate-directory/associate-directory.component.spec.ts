@@ -42,7 +42,7 @@ describe('AssociateDirectoryComponent', () => {
 
   it('shows network counts on the seal card and tabs', () => {
     expect(fixture.componentInstance.counts).toEqual({ total: 168, active: 142, inactive: 26, kycPending: 11, green: 100, red: 68 });
-    expect(fixture.componentInstance.viewTabs.map(t => t.count)).toEqual([168, 100, 68, 168]);
+    expect(fixture.componentInstance.viewTabs.map(t => t.count)).toEqual([168, 100, 68, undefined, undefined, 168]);
   });
 
   afterEach(() => httpMock.verify());
@@ -184,6 +184,13 @@ describe('AssociateDirectoryComponent', () => {
 
     const req = httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('kycStatus') === 'VERIFIED' && r.params.get('page') === '0');
     req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('Left and Right tabs filter by leg', () => {
+    fixture.componentInstance.onViewChange('left');
+    httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('leg') === 'L').flush({ associates: [], page: 0, size: 20, totalElements: 0 });
+    fixture.componentInstance.onViewChange('right');
+    httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('leg') === 'R').flush({ associates: [], page: 0, size: 20, totalElements: 0 });
   });
 
   it('Red tab excludes VERIFIED associates', () => {

@@ -681,6 +681,8 @@
         "green": "ग्रीन एसोसिएट्स",
         "red": "रेड एसोसिएट्स",
         "byDate": "तारीख अनुसार एसोसिएट्स"
+        "left": "लेफ्ट एसोसिएट्स",
+        "right": "राइट एसोसिएट्स",
       },
       "title": "Associate Directory",
       "subtitle": "Manage and provision associates in one place.",

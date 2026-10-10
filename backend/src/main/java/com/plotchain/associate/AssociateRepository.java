@@ -269,6 +269,7 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         AND (:search IS NULL OR LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
              OR LOWER(a.userId) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))
         AND (:rankId IS NULL OR a.rankId = :rankId)
+        AND (:position IS NULL OR a.position = :position)
         AND (:kycStatus IS NULL OR a.kycStatus = :kycStatus)
         AND (:excludeKycStatus IS NULL OR a.kycStatus <> :excludeKycStatus)
         AND (:status IS NULL OR a.status = :status)
@@ -285,6 +286,7 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         @Param("joinedFrom") Instant joinedFrom,
         @Param("joinedToExclusive") Instant joinedToExclusive,
         @Param("newestFirst") boolean newestFirst,
+        @Param("position") String position,
         Pageable pageable);
 
     // My Team (associate-scoped): searchDirectory's filters restricted to a caller-supplied id set
