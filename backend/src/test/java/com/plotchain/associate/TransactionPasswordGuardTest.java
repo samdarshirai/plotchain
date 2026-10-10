@@ -85,6 +85,8 @@ class TransactionPasswordGuardTest {
         guard.require(id, "secret123");
 
         verify(recorder).reset(id);
+        org.assertj.core.api.Assertions.assertThat(associate.getTransactionPasswordFailedAttempts()).isZero();
+        org.assertj.core.api.Assertions.assertThat(associate.getTransactionPasswordLockedUntil()).isNull();
     }
 
     @Test
@@ -94,5 +96,7 @@ class TransactionPasswordGuardTest {
 
         assertThatCode(() -> guard.require(id, "secret123")).doesNotThrowAnyException();
         verify(recorder).reset(id);
+        org.assertj.core.api.Assertions.assertThat(associate.getTransactionPasswordFailedAttempts()).isZero();
+        org.assertj.core.api.Assertions.assertThat(associate.getTransactionPasswordLockedUntil()).isNull();
     }
 }

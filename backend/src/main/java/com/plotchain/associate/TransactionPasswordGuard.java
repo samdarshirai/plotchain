@@ -44,6 +44,10 @@ public class TransactionPasswordGuard {
         }
         if (a.getTransactionPasswordFailedAttempts() > 0 || lockedUntil != null) {
             recorder.reset(associateId);
+            // Keep the caller's cached copy in sync with the committed reset, so a later flush of
+            // this entity does not write the stale counter/lock back.
+            a.setTransactionPasswordFailedAttempts(0);
+            a.setTransactionPasswordLockedUntil(null);
         }
     }
 }
