@@ -50,21 +50,7 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
       { key: 'mySales', labelKey: 'nav.mySales', path: '/plot-bookings/my-sales' }
     ]
   },
-  {
-    key: 'incomeStatement',
-    labelKey: 'nav.incomeStatement',
-    icon: 'description',
-    path: '/income-statement',
-    children: [
-      { key: 'incomeAll', labelKey: 'incomeStatement.tabAll', path: '/income-statement' },
-      { key: 'incomeDirect', labelKey: 'incomeStatement.tabDirect', path: '/income-statement/direct' },
-      { key: 'incomeMatching', labelKey: 'incomeStatement.tabMatching', path: '/income-statement/matching' },
-      { key: 'incomeSponsorMatching', labelKey: 'incomeStatement.tabSponsorMatching', path: '/income-statement/sponsor-matching' },
-      { key: 'incomeRoyalty', labelKey: 'incomeStatement.tabRoyalty', path: '/income-statement/royalty' },
-      { key: 'incomeReward', labelKey: 'incomeStatement.tabReward', path: '/income-statement/reward' },
-      { key: 'incomePerk', labelKey: 'incomeStatement.tabPerk', path: '/income-statement/perk' }
-    ]
-  },
+  { key: 'incomeStatement', labelKey: 'nav.incomeStatement', icon: 'description', path: '/income-statement' },
   {
     key: 'reports', labelKey: 'nav.reports', icon: 'assessment', path: '/reports',
     children: [

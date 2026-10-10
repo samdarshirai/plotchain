@@ -82,19 +82,6 @@ describe('AssociateSidebarComponent', () => {
     expect(el.querySelectorAll('.associate-sidebar__sublink').length).toBe(0);
   });
 
-  it('auto-opens Income Statement with 7 sub-items when navigating to /income-statement/royalty', async () => {
-    const fixture = TestBed.createComponent(AssociateSidebarComponent);
-    fixture.detectChanges();
-    const router = TestBed.inject(Router);
-    router.resetConfig([{ path: 'income-statement/royalty', component: AssociateSidebarComponent }]);
-
-    await router.navigateByUrl('/income-statement/royalty');
-    fixture.detectChanges();
-
-    expect(fixture.componentInstance.isOpen('incomeStatement')).toBe(true);
-    expect(fixture.nativeElement.querySelectorAll('.associate-sidebar__sublink').length).toBe(7);
-  });
-
   it('auto-opens My Account when navigating to a /profile route', async () => {
     const fixture = TestBed.createComponent(AssociateSidebarComponent);
     fixture.detectChanges();

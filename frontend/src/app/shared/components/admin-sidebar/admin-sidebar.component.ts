@@ -10,7 +10,7 @@ import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap
 // Admin-family left nav. Always full width (no rail/pin, unlike AssociateSidebarComponent) and
 // deliberately reuses its .associate-sidebar__* styles so the two sidebars stay visually identical.
 // Each category is an accordion: closed until clicked, except the one owning the current URL, which
-// opens on every navigation (so deep links and Back show where you are). Groups open independently.
+// opens on every navigation (so deep links and Back show where you are). Only one group is open at a time.
 @Component({
   selector: 'app-admin-sidebar',
   standalone: true,
@@ -85,7 +85,7 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
   @Output() logout = new EventEmitter<void>();
 
   readonly categories = ADMIN_NAV_CATEGORIES;
-  private readonly open = new Set<string>();
+  private openKey: string | null = null;
 
   get showSquareLogo(): boolean {
     return !!this.brandingBootstrap.getLast()?.hasSquareLogo;
@@ -104,19 +104,17 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
   }
 
   isOpen(key: string): boolean {
-    return this.open.has(key);
+    return this.openKey === key;
   }
 
   toggle(key: string): void {
-    if (!this.open.delete(key)) {
-      this.open.add(key);
-    }
+    this.openKey = this.openKey === key ? null : key;
   }
 
   private openOwnerOf(url: string): void {
     const owner = findNavCategoryForUrl(url);
     if (owner) {
-      this.open.add(owner.key);
+      this.openKey = owner.key;
     }
   }
 }

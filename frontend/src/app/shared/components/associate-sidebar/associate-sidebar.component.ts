@@ -121,7 +121,7 @@ export class AssociateSidebarComponent {
   hovering = false;
 
   readonly router = inject(Router);
-  private readonly open = new Set<string>();
+  private openKey: string | null = null;
 
   constructor() {
     this.openOwnerOf(this.router.url);
@@ -131,18 +131,19 @@ export class AssociateSidebarComponent {
   }
 
   isOpen(key: string): boolean {
-    return this.open.has(key);
+    return this.openKey === key;
   }
 
+  // Accordion: only one group open at a time.
   toggle(key: string): void {
-    if (!this.open.delete(key)) this.open.add(key);
+    this.openKey = this.openKey === key ? null : key;
   }
 
   // Keep the group holding the current page open so the active sub-item is never hidden.
   private openOwnerOf(url: string): void {
     const path = url.split(/[?#]/)[0];
     for (const item of this.navItems) {
-      if (item.children && (path === item.path || path.startsWith(item.path + '/'))) this.open.add(item.key);
+      if (item.children && (path === item.path || path.startsWith(item.path + '/'))) this.openKey = item.key;
     }
   }
 

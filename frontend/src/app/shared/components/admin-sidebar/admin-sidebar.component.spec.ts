@@ -59,13 +59,15 @@ describe('AdminSidebarComponent', () => {
     expect(el.querySelectorAll('.associate-sidebar__sublink').length).toBe(0);
   });
 
-  it('keeps several groups open at once', () => {
+  it('keeps only one group open: opening a second closes the first', () => {
     const { fixture, el } = render();
     const toggles = el.querySelectorAll('.associate-sidebar__group-toggle');
     (toggles[0] as HTMLButtonElement).click();
     (toggles[3] as HTMLButtonElement).click();
     fixture.detectChanges();
-    expect(el.querySelectorAll('.associate-sidebar__subnav').length).toBe(2);
+    expect(el.querySelectorAll('.associate-sidebar__subnav').length).toBe(1);
+    expect(toggles[0].getAttribute('aria-expanded')).toBe('false');
+    expect(toggles[3].getAttribute('aria-expanded')).toBe('true');
   });
 
   it('auto-opens the group that owns the current route, and follows navigation', async () => {
