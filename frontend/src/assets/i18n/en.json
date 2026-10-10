@@ -365,6 +365,7 @@
       "errorNotSet": "Set a transaction password first.",
       "errorLocked": "Transaction password is locked after too many wrong attempts. Try again later or ask an admin to reset it.",
       "errorInvalid": "Incorrect transaction password.",
+      "errorRequired": "Enter your transaction password.",
       "errorSameAsLogin": "Transaction password must differ from your login password."
     },
     "bankDetails": {
@@ -737,6 +738,7 @@
       "reactivateAction": "Reactivate",
       "resetPasswordAction": "Reset Password",
       "resetTransactionPasswordAction": "Reset transaction password",
+      "resetTransactionPasswordConfirm": "Clear this associate's transaction password? They must set a new one before any money action.",
       "resetTransactionPasswordDone": "Transaction password cleared. The associate must set a new one.",
       "temporaryPasswordNotice": "New temporary password (shown once)",
       "loadError": "Something went wrong loading the associate directory. Try again.",

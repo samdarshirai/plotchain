@@ -373,6 +373,7 @@
       "errorNotSet": "पहले ट्रांज़ैक्शन पासवर्ड सेट करें।",
       "errorLocked": "बहुत अधिक गलत प्रयासों के कारण ट्रांज़ैक्शन पासवर्ड लॉक हो गया है। बाद में पुनः प्रयास करें या एडमिन से रीसेट करवाएँ।",
       "errorInvalid": "ट्रांज़ैक्शन पासवर्ड गलत है।",
+      "errorRequired": "अपना ट्रांज़ैक्शन पासवर्ड दर्ज करें।",
       "errorSameAsLogin": "ट्रांज़ैक्शन पासवर्ड आपके लॉगिन पासवर्ड से अलग होना चाहिए।"
     },
     "bankDetails": {
@@ -703,6 +704,7 @@
       "reactivateAction": "Reactivate",
       "resetPasswordAction": "Reset Password",
       "resetTransactionPasswordAction": "ट्रांज़ैक्शन पासवर्ड रीसेट करें",
+      "resetTransactionPasswordConfirm": "इस सहयोगी का ट्रांज़ैक्शन पासवर्ड हटाएँ? किसी भी पैसे वाली कार्रवाई से पहले उन्हें नया पासवर्ड सेट करना होगा।",
       "resetTransactionPasswordDone": "ट्रांज़ैक्शन पासवर्ड हटा दिया गया। एसोसिएट को नया पासवर्ड सेट करना होगा।",
       "temporaryPasswordNotice": "New temporary password (shown once)",
       "loadError": "Something went wrong loading the associate directory. Try again.",

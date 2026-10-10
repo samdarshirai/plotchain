@@ -84,18 +84,6 @@ describe('MyAccountComponent', () => {
     fixture.detectChanges();
   }
 
-  // forkJoin fires the profile and nominee PUTs concurrently; whether an error on the profile
-  // request cancels the still-in-flight nominee request before or after this line runs is a
-  // race the test can't control, so this tolerates both outcomes -- httpMock.match() removes a
-  // matching request from the pending queue either way, only flushing it if it's still live.
-  function flushPendingNomineeIfAny(): void {
-    httpMock.match('/api/associates/me/nominee').forEach(req => {
-      if (!req.cancelled) {
-        req.flush(nomineeResponse);
-      }
-    });
-  }
-
   function switchTab(tabId: string): void {
     routeDataSubject.next({ tab: tabId });
     fixture.detectChanges();
@@ -274,6 +262,7 @@ describe('MyAccountComponent', () => {
       name: 'Left K. Kumar', phone: '9990002222', email: 'left.k@example.com', address: '42 Wallaby Way'
     });
     fixture.componentInstance.nomineeForm.patchValue({ nomineeName: 'Kajal Devi', relation: 'Wife' });
+    fixture.componentInstance.form.patchValue({ transactionPassword: 'secret123' });
     fixture.componentInstance.onSaveChanges();
 
     const profileReq = httpMock.expectOne('/api/associates/me/profile');
@@ -284,7 +273,7 @@ describe('MyAccountComponent', () => {
 
     const nomineeReq = httpMock.expectOne('/api/associates/me/nominee');
     expect(nomineeReq.request.method).toBe('PUT');
-    expect(nomineeReq.request.body).toEqual({ nomineeName: 'Kajal Devi', relation: 'Wife', transactionPassword: null });
+    expect(nomineeReq.request.body).toEqual({ nomineeName: 'Kajal Devi', relation: 'Wife', transactionPassword: 'secret123' });
     nomineeReq.flush({ nomineeName: 'Kajal Devi', relation: 'Wife', updatedAt: '2026-09-22T00:00:00Z' });
 
     expect(fixture.componentInstance.saveError).toBeUndefined();
@@ -301,25 +290,47 @@ describe('MyAccountComponent', () => {
 
   it('surfaces a 409 email-conflict as a field-level error, read from the flat error body', () => {
     init();
-    fixture.componentInstance.form.patchValue({ email: 'taken@example.com' });
+    fixture.componentInstance.form.patchValue({ email: 'taken@example.com', transactionPassword: 'secret123' });
     fixture.componentInstance.onSaveChanges();
 
     httpMock.expectOne('/api/associates/me/profile')
       .flush({ error: 'Email already registered' }, { status: 409, statusText: 'Conflict' });
-    flushPendingNomineeIfAny();
+    httpMock.expectNone('/api/associates/me/nominee');
 
     expect(fixture.componentInstance.emailConflictError).toBe('Email already registered');
   });
 
   it('surfaces a 401 as an authorisation error when the transaction password gate rejects the save', () => {
     init();
+    fixture.componentInstance.form.patchValue({ transactionPassword: 'secret123' });
     fixture.componentInstance.onSaveChanges();
 
     httpMock.expectOne('/api/associates/me/profile')
       .flush({ error: 'Transaction password is required to save these changes' }, { status: 401, statusText: 'Unauthorized' });
-    flushPendingNomineeIfAny();
+    httpMock.expectNone('/api/associates/me/nominee');
 
     expect(fixture.componentInstance.saveError).toBe('Transaction password is required to save these changes');
+  });
+
+  it('does not call the server when the password is blank and none is set; jumps to the set-password tab', () => {
+    init();
+    fixture.componentInstance.onSaveChanges();
+
+    httpMock.expectNone('/api/associates/me/profile');
+    httpMock.expectNone('/api/associates/me/nominee');
+    expect(fixture.componentInstance.profileSubTab).toBe('transactionPassword');
+    expect(fixture.componentInstance.saveError).toBe('myAccount.transactionPasswordTab.errorNotSet');
+  });
+
+  it('does not call the server when the password is blank and one is set; asks for it', () => {
+    init();
+    fixture.componentInstance.transactionPasswordStatus = { isSet: true };
+    fixture.componentInstance.onSaveChanges();
+
+    httpMock.expectNone('/api/associates/me/profile');
+    httpMock.expectNone('/api/associates/me/nominee');
+    expect(fixture.componentInstance.profileSubTab).toBe('profile');
+    expect(fixture.componentInstance.saveError).toBe('myAccount.transactionPasswordTab.errorRequired');
   });
 
   const gateCases: [number, any, string][] = [
@@ -331,9 +342,10 @@ describe('MyAccountComponent', () => {
   gateCases.forEach(([status, body, key]) => {
     it(`maps profile-save ${status} ${body.code} to ${key}`, () => {
       init();
+      fixture.componentInstance.form.patchValue({ transactionPassword: 'secret123' });
       fixture.componentInstance.onSaveChanges();
       httpMock.expectOne('/api/associates/me/profile').flush(body, { status, statusText: 'x' });
-      flushPendingNomineeIfAny();
+      httpMock.expectNone('/api/associates/me/nominee');
       expect(fixture.componentInstance.saveError).toBe(key);
       expect(fixture.componentInstance.emailConflictError).toBeUndefined();
       if (status === 409) expect(fixture.componentInstance.profileSubTab).toBe('transactionPassword');

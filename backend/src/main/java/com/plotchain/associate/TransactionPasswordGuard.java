@@ -10,7 +10,9 @@ import java.util.UUID;
 // Single gate for every transaction-password-protected associate action. Not @Transactional on
 // purpose: it only reads; all writes go through the recorder's own REQUIRES_NEW transactions.
 // CALLERS MUST invoke require() BEFORE loading the Associate they later save, or that save() would
-// write stale counter fields back over a reset.
+// write stale counter fields back over a reset. The recorder opens a REQUIRES_NEW transaction with
+// a FOR UPDATE lock on the associate row, so a caller must not lock or flush that same associate
+// row in an outer transaction before calling require(), or the request will wait on itself.
 @Component
 public class TransactionPasswordGuard {
 

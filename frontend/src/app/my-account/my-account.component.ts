@@ -5,8 +5,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { Subject, forkJoin } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { concatMap, map, takeUntil } from 'rxjs/operators';
 import { AssociateProfileService } from '../profile-kyc/associate-profile.service';
 import { AssociateKycService } from '../profile-kyc/associate-kyc.service';
 import { AssociateProfileResponse, UpdateAssociateProfileRequest } from '../profile-kyc/models/associate-profile.model';
@@ -725,6 +725,16 @@ export class MyAccountComponent implements OnInit, OnDestroy {
 
     const v = this.form.getRawValue();
     const transactionPassword = v.transactionPassword || null;
+    if (!transactionPassword) {
+      // Blank: don't hit the server (each guarded PUT would burn a lockout attempt).
+      if (this.transactionPasswordStatus && !this.transactionPasswordStatus.isSet) {
+        this.profileSubTab = 'transactionPassword';
+        this.saveError = this.translate.instant('myAccount.transactionPasswordTab.errorNotSet');
+      } else {
+        this.saveError = this.translate.instant('myAccount.transactionPasswordTab.errorRequired');
+      }
+      return;
+    }
     const profileRequest: UpdateAssociateProfileRequest = {
       name: v.name!, phone: v.phone || null, email: v.email || null, address: v.address || null,
       fatherHusbandName: v.fatherHusbandName || null, dateOfBirth: v.dateOfBirth || null,
@@ -737,10 +747,11 @@ export class MyAccountComponent implements OnInit, OnDestroy {
       nomineeName: nomineeValue.nomineeName || null, relation: nomineeValue.relation || null, transactionPassword
     };
 
-    forkJoin([
-      this.associateProfileService.updateProfile(profileRequest),
-      this.associateNomineeService.updateNominee(nomineeRequest)
-    ]).subscribe({
+    this.associateProfileService.updateProfile(profileRequest).pipe(
+      concatMap(profileRes => this.associateNomineeService.updateNominee(nomineeRequest).pipe(
+        map(nomineeRes => [profileRes, nomineeRes] as const)
+      ))
+    ).subscribe({
       next: ([profileRes, nomineeRes]) => {
         this.profile = profileRes;
         this.nominee = nomineeRes;

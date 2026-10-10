@@ -369,6 +369,7 @@ export class AssociateDirectoryComponent implements OnInit {
 
   resetTransactionPasswordForSelected(): void {
     if (!this.selected) return;
+    if (!window.confirm(this.translate.instant('admin.associateDirectory.resetTransactionPasswordConfirm'))) return;
     this.actionError = false;
     this.transactionPasswordResetDone = false;
     this.associateDirectoryService.resetTransactionPassword(this.selected.id).subscribe({
