@@ -632,6 +632,7 @@
       "network": "Associates",
       "finance": "Finance & Cycles",
       "inventory": "Inventory & Bookings",
+      "communication": "Communication",
       "system": "System"
     }
   },

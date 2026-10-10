@@ -62,14 +62,21 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     ]
   },
   {
+    key: 'communication',
+    labelKey: 'nav.categories.communication',
+    icon: 'forum',
+    items: [
+      { key: 'supportTickets', labelKey: 'settings.sections.supportTickets', path: '/settings/support-tickets' },
+      { key: 'announcements', labelKey: 'settings.sections.announcements', path: '/settings/announcements' }
+    ]
+  },
+  {
     key: 'system',
     labelKey: 'nav.categories.system',
     icon: 'admin_panel_settings',
     items: [
       { key: 'auditLog', labelKey: 'settings.sections.auditLog', path: '/settings/audit-log' },
-      { key: 'adminStats', labelKey: 'settings.sections.adminStats', path: '/settings/admin-stats' },
-      { key: 'supportTickets', labelKey: 'settings.sections.supportTickets', path: '/settings/support-tickets' },
-      { key: 'announcements', labelKey: 'settings.sections.announcements', path: '/settings/announcements' }
+      { key: 'adminStats', labelKey: 'settings.sections.adminStats', path: '/settings/admin-stats' }
     ]
   }
 ];

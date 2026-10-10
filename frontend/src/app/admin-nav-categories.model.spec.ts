@@ -7,6 +7,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
       ['network', 'group'],
       ['finance', 'point_of_sale'],
       ['inventory', 'domain'],
+      ['communication', 'forum'],
       ['system', 'admin_panel_settings']
     ]);
   });
@@ -17,7 +18,8 @@ describe('ADMIN_NAV_CATEGORIES', () => {
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
       ['salesRegister', 'cycleManagement', 'ledgerRegister', 'epinRegister', 'payoutApproval'],
       ['projectsPlots', 'bookingsEmi'],
-      ['auditLog', 'adminStats', 'supportTickets', 'announcements']
+      ['supportTickets', 'announcements'],
+      ['auditLog', 'adminStats']
     ]);
   });
 
@@ -33,12 +35,12 @@ describe('ADMIN_NAV_CATEGORIES', () => {
 });
 
 describe('findNavCategoryForUrl', () => {
-  it('resolvesTheSupportTicketsScreenToTheSystemCategory', () => {
-    expect(findNavCategoryForUrl('/settings/support-tickets')?.key).toBe('system');
+  it('resolvesTheSupportTicketsScreenToTheCommunicationCategory', () => {
+    expect(findNavCategoryForUrl('/settings/support-tickets')?.key).toBe('communication');
   });
 
-  it('resolvesTheAnnouncementsScreenToTheSystemCategory', () => {
-    expect(findNavCategoryForUrl('/settings/announcements')?.key).toBe('system');
+  it('resolvesTheAnnouncementsScreenToTheCommunicationCategory', () => {
+    expect(findNavCategoryForUrl('/settings/announcements')?.key).toBe('communication');
   });
 
   it('resolvesTheProjectsPlotsScreenToTheInventoryCategory', () => {
