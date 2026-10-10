@@ -73,4 +73,13 @@ describe('AssociateDirectoryService', () => {
     expect(req.request.method).toBe('POST');
     req.flush({ temporaryPassword: 'Temp1234!' });
   });
+
+  it('resets an associate transaction password', () => {
+    service.resetTransactionPassword('a1').subscribe();
+
+    const req = httpMock.expectOne('/api/admin/associates/a1/reset-transaction-password');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({});
+    req.flush(null);
+  });
 });
