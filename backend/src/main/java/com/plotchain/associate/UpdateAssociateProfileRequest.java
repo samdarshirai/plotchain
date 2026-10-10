@@ -12,10 +12,8 @@ import java.time.LocalDate;
 // as its use on CreateAssociateRequest.
 //
 // fatherHusbandName..postalCode (V36) are all nullable/optional, same reasoning as phone/email.
-// transactionPassword is NOT @NotBlank: it's required only once the associate has ever set a
-// transaction password (AssociateProfileService checks this conditionally via
-// TransactionPasswordVerifier.requireIfSet), so bean validation can't express it -- a bootstrapping
-// associate must be able to save with this field entirely absent.
+// transactionPassword is required (TransactionPasswordGuard.require) but deliberately NOT
+// @NotBlank: an empty value must reach the guard and yield the 401 INVALID path, not a 400.
 public record UpdateAssociateProfileRequest(
     @NotBlank String name,
     String phone,

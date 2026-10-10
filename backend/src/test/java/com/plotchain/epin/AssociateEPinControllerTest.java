@@ -39,6 +39,7 @@ class AssociateEPinControllerTest {
     @MockBean AssociateRepository associateRepository;
     @MockBean EPinRepository epinRepository;
     @MockBean EPinEventRepository epinEventRepository;
+    @MockBean com.plotchain.associate.TransactionPasswordGuard guard;
 
     private Associate associate(AssociateRole role) {
         Associate a = new Associate();
@@ -161,5 +162,50 @@ class AssociateEPinControllerTest {
                 .header("Authorization", "Bearer " + jwtService.generateToken(me))
                 .contentType("application/json").content("{\"toUserId\":\"VP00001\"}"))
             .andExpect(status().isConflict());
+    }
+
+    @Test
+    void redeemRejectsWhenGuardRejects() throws Exception {
+        Associate caller = associate(AssociateRole.ASSOCIATE);
+        UUID pinId = UUID.randomUUID();
+        org.mockito.Mockito.doThrow(new com.plotchain.associate.InvalidTransactionPasswordException("bad"))
+            .when(guard).require(caller.getId(), "wrong");
+
+        mockMvc.perform(post("/api/associates/me/epins/" + pinId + "/redeem")
+                .header("Authorization", "Bearer " + jwtService.generateToken(caller))
+                .contentType("application/json")
+                .content("{\"userId\":\"VP00002\",\"transactionPassword\":\"wrong\"}"))
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.code").value("TRANSACTION_PASSWORD_INVALID"));
+
+        verify(epinRepository, org.mockito.Mockito.never()).findByIdForUpdate(any());
+    }
+
+    @Test
+    void transferReturns409WhenPasswordNotSet() throws Exception {
+        Associate caller = associate(AssociateRole.ASSOCIATE);
+        org.mockito.Mockito.doThrow(new com.plotchain.associate.TransactionPasswordNotSetException())
+            .when(guard).require(caller.getId(), null);
+
+        mockMvc.perform(post("/api/associates/me/epins/" + UUID.randomUUID() + "/transfer")
+                .header("Authorization", "Bearer " + jwtService.generateToken(caller))
+                .contentType("application/json")
+                .content("{\"toUserId\":\"VP00002\"}"))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.code").value("TRANSACTION_PASSWORD_NOT_SET"));
+    }
+
+    @Test
+    void redeemReturns423WhenLocked() throws Exception {
+        Associate caller = associate(AssociateRole.ASSOCIATE);
+        org.mockito.Mockito.doThrow(new com.plotchain.associate.TransactionPasswordLockedException(java.time.Instant.parse("2026-10-10T12:30:00Z")))
+            .when(guard).require(caller.getId(), "x");
+
+        mockMvc.perform(post("/api/associates/me/epins/" + UUID.randomUUID() + "/redeem")
+                .header("Authorization", "Bearer " + jwtService.generateToken(caller))
+                .contentType("application/json")
+                .content("{\"userId\":\"VP00002\",\"transactionPassword\":\"x\"}"))
+            .andExpect(status().isLocked())
+            .andExpect(jsonPath("$.lockedUntil").value("2026-10-10T12:30:00Z"));
     }
 }

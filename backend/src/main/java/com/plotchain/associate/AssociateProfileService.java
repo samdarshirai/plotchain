@@ -12,12 +12,12 @@ import java.util.UUID;
 public class AssociateProfileService {
 
     private final AssociateRepository associateRepository;
-    private final TransactionPasswordVerifier transactionPasswordVerifier;
+    private final TransactionPasswordGuard transactionPasswordGuard;
 
     public AssociateProfileService(AssociateRepository associateRepository,
-                                    TransactionPasswordVerifier transactionPasswordVerifier) {
+                                    TransactionPasswordGuard transactionPasswordGuard) {
         this.associateRepository = associateRepository;
-        this.transactionPasswordVerifier = transactionPasswordVerifier;
+        this.transactionPasswordGuard = transactionPasswordGuard;
     }
 
     public AssociateProfileResponse getProfile(UUID associateId) {
@@ -27,10 +27,9 @@ public class AssociateProfileService {
     }
 
     public AssociateProfileResponse updateProfile(UUID associateId, UpdateAssociateProfileRequest request) {
+        transactionPasswordGuard.require(associateId, request.transactionPassword());
         Associate associate = associateRepository.findById(associateId)
             .orElseThrow(() -> new AssociateNotFoundException(associateId));
-
-        transactionPasswordVerifier.requireIfSet(associate, request.transactionPassword());
 
         // Only check uniqueness when the email is actually changing -- resubmitting the
         // associate's own current email (a plain PUT of unchanged data) must not trip a false

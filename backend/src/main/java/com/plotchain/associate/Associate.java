@@ -60,6 +60,10 @@ public class Associate {
     private String postalCode;
     @Column(name = "transaction_password_hash")
     private String transactionPasswordHash;
+    @Column(name = "transaction_password_failed_attempts", nullable = false)
+    private int transactionPasswordFailedAttempts;
+    @Column(name = "transaction_password_locked_until")
+    private Instant transactionPasswordLockedUntil;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -117,4 +121,8 @@ public class Associate {
     public void setPostalCode(String postalCode) { this.postalCode = postalCode; }
     public String getTransactionPasswordHash() { return transactionPasswordHash; }
     public void setTransactionPasswordHash(String transactionPasswordHash) { this.transactionPasswordHash = transactionPasswordHash; }
+    public int getTransactionPasswordFailedAttempts() { return transactionPasswordFailedAttempts; }
+    public void setTransactionPasswordFailedAttempts(int v) { this.transactionPasswordFailedAttempts = v; }
+    public Instant getTransactionPasswordLockedUntil() { return transactionPasswordLockedUntil; }
+    public void setTransactionPasswordLockedUntil(Instant v) { this.transactionPasswordLockedUntil = v; }
 }

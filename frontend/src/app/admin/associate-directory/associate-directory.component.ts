@@ -197,6 +197,10 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'byDate'];
           {{ 'admin.associateDirectory.temporaryPasswordNotice' | translate }}: <strong>{{ temporaryPassword }}</strong>
         </app-inline-banner>
 
+        <app-inline-banner *ngIf="transactionPasswordResetDone" tone="success">
+          {{ 'admin.associateDirectory.resetTransactionPasswordDone' | translate }}
+        </app-inline-banner>
+
         <div class="associate-detail__actions">
           <button type="button" class="brand-button brand-button--danger" *ngIf="selected.status === 'ACTIVE'" (click)="suspendSelected()">
             {{ 'admin.associateDirectory.suspendAction' | translate }}
@@ -206,6 +210,9 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'byDate'];
           </button>
           <button type="button" class="brand-button brand-button--secondary" (click)="resetPasswordForSelected()">
             {{ 'admin.associateDirectory.resetPasswordAction' | translate }}
+          </button>
+          <button type="button" class="brand-button brand-button--secondary" (click)="resetTransactionPasswordForSelected()">
+            {{ 'admin.associateDirectory.resetTransactionPasswordAction' | translate }}
           </button>
         </div>
       </div>
@@ -233,6 +240,7 @@ export class AssociateDirectoryComponent implements OnInit {
   selected: AdminAssociateDetail | null = null;
   panelOpen = false;
   temporaryPassword: string | null = null;
+  transactionPasswordResetDone = false;
   loadError = false;
   actionError = false;
   rankLoadError = false;
@@ -322,6 +330,7 @@ export class AssociateDirectoryComponent implements OnInit {
 
   selectAssociate(id: string): void {
     this.temporaryPassword = null;
+    this.transactionPasswordResetDone = false;
     this.associateDirectoryService.get(id).subscribe(detail => {
       this.selected = detail;
       this.panelOpen = true;
@@ -354,6 +363,16 @@ export class AssociateDirectoryComponent implements OnInit {
         this.loadPage(this.page?.page ?? 0);
         this.loadCounts();
       },
+      error: () => (this.actionError = true)
+    });
+  }
+
+  resetTransactionPasswordForSelected(): void {
+    if (!this.selected) return;
+    this.actionError = false;
+    this.transactionPasswordResetDone = false;
+    this.associateDirectoryService.resetTransactionPassword(this.selected.id).subscribe({
+      next: () => (this.transactionPasswordResetDone = true),
       error: () => (this.actionError = true)
     });
   }

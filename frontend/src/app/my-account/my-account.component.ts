@@ -748,7 +748,9 @@ export class MyAccountComponent implements OnInit, OnDestroy {
         this.form.patchValue({ transactionPassword: '' });
       },
       error: (err: HttpErrorResponse) => {
-        if (err.status === 409) {
+        if (String(err.error?.code ?? '').startsWith('TRANSACTION_PASSWORD')) {
+          this.saveError = this.transactionPasswordErrorMessage(err, 'profileKyc.saveError');
+        } else if (err.status === 409) {
           this.emailConflictError = err.error?.error ?? this.translate.instant('profileKyc.validation.emailTaken');
         } else if (err.status === 401) {
           this.saveError = err.error?.error ?? this.translate.instant('myAccount.authorisation.hint');
@@ -809,8 +811,21 @@ export class MyAccountComponent implements OnInit, OnDestroy {
         this.transactionPasswordForm.reset();
         this.loadTransactionPasswordStatus();
       },
-      error: () => (this.transactionPasswordSaveError = this.translate.instant('myAccount.transactionPasswordTab.saveError'))
+      error: (err: HttpErrorResponse) =>
+        (this.transactionPasswordSaveError = this.transactionPasswordErrorMessage(err, 'myAccount.transactionPasswordTab.saveError'))
     });
+  }
+
+  private transactionPasswordErrorMessage(e: HttpErrorResponse, fallbackKey: string): string {
+    const code = e.error?.code;
+    if (e.status === 409 && code === 'TRANSACTION_PASSWORD_NOT_SET') {
+      this.profileSubTab = 'transactionPassword';
+      return this.translate.instant('myAccount.transactionPasswordTab.errorNotSet');
+    }
+    if (e.status === 423) return this.translate.instant('myAccount.transactionPasswordTab.errorLocked');
+    if (e.status === 401) return this.translate.instant('myAccount.transactionPasswordTab.errorInvalid');
+    if (code === 'TRANSACTION_PASSWORD_SAME_AS_LOGIN') return this.translate.instant('myAccount.transactionPasswordTab.errorSameAsLogin');
+    return this.translate.instant(fallbackKey);
   }
 
   onPhotoInputChange(event: Event): void {
