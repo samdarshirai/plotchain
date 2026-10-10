@@ -2,7 +2,9 @@ package com.plotchain.associate;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -284,4 +286,9 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         @Param("joinedToExclusive") Instant joinedToExclusive,
         @Param("newestFirst") boolean newestFirst,
         Pageable pageable);
+
+    // Row lock so concurrent wrong-password attempts serialize and none is lost.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM Associate a WHERE a.id = :id")
+    Optional<Associate> findByIdForUpdate(@Param("id") UUID id);
 }

@@ -52,6 +52,6 @@ public class AssociateProvisioningExceptionHandler {
 
     @ExceptionHandler(InvalidTransactionPasswordException.class)
     public ResponseEntity<Map<String, String>> handleInvalidTransactionPassword(InvalidTransactionPasswordException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", ex.getMessage(), "code", "TRANSACTION_PASSWORD_INVALID"));
     }
 }

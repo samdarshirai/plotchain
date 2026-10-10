@@ -20,11 +20,11 @@ export class EPinsService {
     return this.http.get<{ id: string }>('/api/associates/me/profile').pipe(map(p => p.id));
   }
 
-  redeem(id: string, userId: string): Observable<EPin> {
-    return this.http.post<EPin>(`/api/associates/me/epins/${id}/redeem`, { userId });
+  redeem(id: string, userId: string, transactionPassword: string): Observable<EPin> {
+    return this.http.post<EPin>(`/api/associates/me/epins/${id}/redeem`, { userId, transactionPassword });
   }
 
-  transfer(id: string, toUserId: string): Observable<EPin> {
-    return this.http.post<EPin>(`/api/associates/me/epins/${id}/transfer`, { toUserId });
+  transfer(id: string, toUserId: string, transactionPassword: string): Observable<EPin> {
+    return this.http.post<EPin>(`/api/associates/me/epins/${id}/transfer`, { toUserId, transactionPassword });
   }
 }

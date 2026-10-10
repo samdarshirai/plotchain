@@ -86,6 +86,16 @@ describe('authInterceptor', () => {
     expect(caughtError).toBeTruthy();
   });
 
+  it('does not log out on 401 from e-pin redeem or transfer (bad transaction password)', () => {
+    spyOn(authService, 'getToken').and.returnValue('abc.def.ghi');
+    spyOn(authService, 'logout');
+    for (const action of ['redeem', 'transfer']) {
+      httpClient.post(`/api/associates/me/epins/abc-123/${action}`, {}).subscribe({ error: () => undefined });
+      httpMock.expectOne(`/api/associates/me/epins/abc-123/${action}`).flush({}, { status: 401, statusText: 'Unauthorized' });
+    }
+    expect(authService.logout).not.toHaveBeenCalled();
+  });
+
   it('does not log out or redirect on a 401 from the profile save (transaction password gate)', () => {
     spyOn(authService, 'getToken').and.returnValue('abc.def.ghi');
     spyOn(authService, 'logout');
