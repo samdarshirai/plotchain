@@ -40,8 +40,16 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
       { key: 'myTeam', labelKey: 'nav.myTeam', path: '/my-tree/team' }
     ]
   },
-  { key: 'salesHistory', labelKey: 'nav.salesHistory', icon: 'receipt_long', path: '/sales-history' },
-  { key: 'plotBookings', labelKey: 'nav.plotBookings', icon: 'grid_view', path: '/plot-bookings' },
+  {
+    key: 'plotBookings', labelKey: 'nav.plotBookings', icon: 'grid_view', path: '/plot-bookings',
+    children: [
+      { key: 'viewPlot', labelKey: 'nav.viewPlot', path: '/plot-bookings' },
+      { key: 'teamPlots', labelKey: 'nav.teamPlots', path: '/plot-bookings/team' },
+      { key: 'leftPlots', labelKey: 'nav.leftPlots', path: '/plot-bookings/left' },
+      { key: 'rightPlots', labelKey: 'nav.rightPlots', path: '/plot-bookings/right' },
+      { key: 'mySales', labelKey: 'nav.mySales', path: '/plot-bookings/my-sales' }
+    ]
+  },
   {
     key: 'incomeStatement',
     labelKey: 'nav.incomeStatement',

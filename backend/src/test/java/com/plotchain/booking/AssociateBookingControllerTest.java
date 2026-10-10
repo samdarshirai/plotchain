@@ -81,4 +81,29 @@ class AssociateBookingControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.size").value(100));
     }
+
+    @Test
+    void getTeamBookingsMapsLegToPositionAndScopesToCallerJwtId() throws Exception {
+        UUID associateId = UUID.randomUUID();
+        when(bookingService.getTeamBookings(eq(associateId), eq("L"), eq(0), eq(20)))
+            .thenReturn(new AssociateBookingPageResponse(List.of(), 0, 20, 0));
+        when(bookingService.getTeamBookings(eq(associateId), eq(null), eq(0), eq(20)))
+            .thenReturn(new AssociateBookingPageResponse(List.of(), 0, 20, 7));
+        String token = tokenFor(AssociateRole.ASSOCIATE, associateId);
+
+        mockMvc.perform(get("/api/associates/me/team-bookings").param("leg", "L")
+                .header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(0));
+        mockMvc.perform(get("/api/associates/me/team-bookings")
+                .header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(7));
+    }
+
+    @Test
+    void getTeamBookingsRejectsUnknownLeg() throws Exception {
+        UUID associateId = UUID.randomUUID();
+        mockMvc.perform(get("/api/associates/me/team-bookings").param("leg", "X")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
+            .andExpect(status().isBadRequest());
+    }
 }

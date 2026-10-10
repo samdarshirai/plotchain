@@ -57,6 +57,32 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         @Param("today") LocalDate today,
         Pageable pageable);
 
+    // Associate "Team / Left / Right plot bookings": bookings made by anyone in the caller's downline.
+    // position null = whole team, 'L'/'R' = that leg only (CTE seeded at the immediate child on that
+    // leg, same shape as AssociateRepository.countDownlineByPosition). Order is fixed in SQL, so the
+    // Pageable must be UNSORTED.
+    @Query(value = """
+        WITH RECURSIVE downline(id) AS (
+            SELECT id FROM associate WHERE parent_id = :associateId
+              AND (CAST(:position AS text) IS NULL OR position = CAST(:position AS text))
+            UNION ALL
+            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
+        )
+        SELECT b.* FROM plot_booking b JOIN downline d ON b.associate_id = d.id
+        ORDER BY b.booked_at DESC, b.id DESC
+        """,
+        countQuery = """
+        WITH RECURSIVE downline(id) AS (
+            SELECT id FROM associate WHERE parent_id = :associateId
+              AND (CAST(:position AS text) IS NULL OR position = CAST(:position AS text))
+            UNION ALL
+            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
+        )
+        SELECT count(*) FROM plot_booking b JOIN downline d ON b.associate_id = d.id
+        """,
+        nativeQuery = true)
+    Page<PlotBooking> findByDownline(@Param("associateId") UUID associateId, @Param("position") String position, Pageable pageable);
+
     // Admin overdue-EMI report (plot-booking unit 9): one grouped query, one row per ACTIVE booking.
     // Overdue comes from unit 8's BookingOverdue.INSTALLMENT_CONDITION (alias contract b, i, :today);
     // do not combine with EXISTS_OVERDUE (both alias `i`). The fragments carry no ACTIVE restriction,

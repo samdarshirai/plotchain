@@ -26,4 +26,10 @@ export class PlotBookingsService {
     const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get<AssociateBookingPage>('/api/associates/me/bookings', { params });
   }
+
+  // leg: ALL = whole team, L / R = that leg of my binary tree. Scoped to my downline server-side.
+  getTeamBookings(leg: 'ALL' | 'L' | 'R', page: number, size: number): Observable<AssociateBookingPage> {
+    const params = new HttpParams().set('leg', leg).set('page', page).set('size', size);
+    return this.http.get<AssociateBookingPage>('/api/associates/me/team-bookings', { params });
+  }
 }

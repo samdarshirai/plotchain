@@ -34,4 +34,21 @@ public class AssociateBookingController {
         size = Math.min(size, 100);
         return bookingService.getMyBookings(associateId, page, size);
     }
+
+    // Downline-scoped by the query itself (caller id from the JWT); leg = ALL | L | R.
+    @GetMapping("/api/associates/me/team-bookings")
+    public AssociateBookingPageResponse getTeamBookings(
+            @AuthenticationPrincipal UUID associateId,
+            @RequestParam(defaultValue = "ALL") String leg,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        String position = switch (leg) {
+            case "ALL" -> null;
+            case "L", "R" -> leg;
+            default -> throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST, "leg must be ALL, L or R");
+        };
+        return bookingService.getTeamBookings(associateId, position, Math.max(page, 0), Math.min(size, 100));
+    }
 }

@@ -43,10 +43,16 @@ export const routes: Routes = [
   { path: 'terms', component: TermsOfServiceComponent },
   { path: 'privacy', component: PrivacyPolicyComponent },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard, associateOnlyGuard] },
-  { path: 'sales-history', component: SalesHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'plot-bookings/my-sales', component: SalesHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'sales-history', redirectTo: 'plot-bookings/my-sales' }, // old bookmarks
   { path: 'my-tree', component: MyTreeComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'my-tree/team', loadComponent: () => import('./my-team/my-team.component').then(m => m.MyTeamComponent), canActivate: [authGuard, associateOnlyGuard] },
-  { path: 'plot-bookings', loadComponent: () => import('./plot-bookings/plot-bookings.component').then(m => m.PlotBookingsComponent), canActivate: [authGuard, associateOnlyGuard] },
+  // View Plot = the admin Projects & Plots screen in read-only mode; team/left/right are sibling routes
+  // sharing one component (data.scope) so the sidebar sub-items are deep-linkable.
+  { path: 'plot-bookings', loadComponent: () => import('./admin/projects-plots/projects-plots.component').then(m => m.ProjectsPlotsComponent), data: { readOnly: true }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'plot-bookings/team', loadComponent: () => import('./plot-bookings/team-plot-bookings.component').then(m => m.TeamPlotBookingsComponent), data: { scope: 'TEAM' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'plot-bookings/left', loadComponent: () => import('./plot-bookings/team-plot-bookings.component').then(m => m.TeamPlotBookingsComponent), data: { scope: 'LEFT' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'plot-bookings/right', loadComponent: () => import('./plot-bookings/team-plot-bookings.component').then(m => m.TeamPlotBookingsComponent), data: { scope: 'RIGHT' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'e-pins', component: EPinsComponent, canActivate: [authGuard, associateOnlyGuard] },
   // Merged into one "My Account" screen (Account Consolidation.dc.html) -- /rewards and
   // /digital-id-card redirect here so old bookmarks/links keep working. Split into 4 sibling

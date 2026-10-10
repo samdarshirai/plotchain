@@ -139,7 +139,7 @@
     "networkLegendIdle": "Idle"
   },
   "salesHistory": {
-    "title": "Sales History",
+    "title": "My Sales",
     "subtitle": "Your own and your team's recorded sales.",
     "columnBuyerName": "Buyer",
     "columnBuyerPhone": "Phone",
@@ -156,6 +156,17 @@
   },
   "plotBookings": {
     "title": "Plot Bookings",
+    "team": {
+      "title": { "TEAM": "Team Purchase Plots", "LEFT": "Left Plot Booking", "RIGHT": "Right Plot Booking" },
+      "subtitle": {
+        "TEAM": "Plots booked by everyone in your team.",
+        "LEFT": "Plots booked by members of your left leg.",
+        "RIGHT": "Plots booked by members of your right leg."
+      },
+      "empty": "No plot bookings here yet.",
+      "loadError": "Couldn't load bookings. Check your connection and try again.",
+      "column": { "plot": "Plot", "project": "Project", "associate": "Booked by", "buyer": "Buyer", "bookedOn": "Booked on", "total": "Total", "paid": "Paid", "status": "Status" }
+    },
     "subtitle": "See which plots are open in a project, and follow your own bookings and EMI payments. This page is view-only.",
     "tabAvailability": "Availability",
     "tabMyBookings": "My bookings",
@@ -641,8 +652,12 @@
     "myTree": "Genealogy",
     "myTreeView": "Tree",
     "myTeam": "My Team",
-    "salesHistory": "Sales History",
+    "mySales": "My Sales",
     "plotBookings": "Plot Bookings",
+    "viewPlot": "View Plot",
+    "teamPlots": "Team Purchase Plots",
+    "leftPlots": "Left Plot Booking",
+    "rightPlots": "Right Plot Booking",
     "epins": "e-Pins",
     "myAccount": "My Account",
     "incomeStatement": "Income Statement",

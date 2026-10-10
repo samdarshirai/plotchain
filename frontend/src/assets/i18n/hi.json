@@ -147,7 +147,7 @@
     "networkLegendIdle": "निष्क्रिय"
   },
   "salesHistory": {
-    "title": "Sales History",
+    "title": "मेरी बिक्री",
     "subtitle": "Your own and your team's recorded sales.",
     "columnBuyerName": "Buyer",
     "columnBuyerPhone": "Phone",
@@ -164,6 +164,17 @@
   },
   "plotBookings": {
     "title": "Plot Bookings",
+    "team": {
+      "title": { "TEAM": "टीम द्वारा खरीदे गए प्लॉट", "LEFT": "लेफ्ट प्लॉट बुकिंग", "RIGHT": "राइट प्लॉट बुकिंग" },
+      "subtitle": {
+        "TEAM": "आपकी टीम के सभी सदस्यों द्वारा बुक किए गए प्लॉट।",
+        "LEFT": "आपके लेफ्ट लेग के सदस्यों द्वारा बुक किए गए प्लॉट।",
+        "RIGHT": "आपके राइट लेग के सदस्यों द्वारा बुक किए गए प्लॉट।"
+      },
+      "empty": "यहाँ अभी कोई प्लॉट बुकिंग नहीं है।",
+      "loadError": "बुकिंग लोड नहीं हो सकी। कनेक्शन जाँचकर फिर प्रयास करें।",
+      "column": { "plot": "प्लॉट", "project": "प्रोजेक्ट", "associate": "बुक करने वाला", "buyer": "खरीदार", "bookedOn": "बुकिंग तिथि", "total": "कुल", "paid": "भुगतान", "status": "स्थिति" }
+    },
     "subtitle": "See which plots are open in a project, and follow your own bookings and EMI payments. This page is view-only.",
     "tabAvailability": "Availability",
     "tabMyBookings": "My bookings",
@@ -608,8 +619,12 @@
     "myTree": "वंशावली",
     "myTreeView": "ट्री",
     "myTeam": "मेरी टीम",
-    "salesHistory": "बिक्री इतिहास",
+    "mySales": "मेरी बिक्री",
     "plotBookings": "प्लॉट बुकिंग",
+    "viewPlot": "प्लॉट देखें",
+    "teamPlots": "टीम द्वारा खरीदे गए प्लॉट",
+    "leftPlots": "लेफ्ट प्लॉट बुकिंग",
+    "rightPlots": "राइट प्लॉट बुकिंग",
     "myAccount": "मेरा खाता",
     "incomeStatement": "आय विवरण",
     "payoutHistory": "भुगतान इतिहास",

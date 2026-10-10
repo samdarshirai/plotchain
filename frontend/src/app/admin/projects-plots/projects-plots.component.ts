@@ -1,6 +1,6 @@
 import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule } from '@ngx-translate/core';
 import { Observable, catchError, of } from 'rxjs';
@@ -66,12 +66,12 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === selectedProject?.id">{{ p.name }}</option>
           </select>
         </label>
-        <div class="projects-plots__project-actions" *ngIf="selectedProject">
+        <div class="projects-plots__project-actions" *ngIf="selectedProject && !readOnly">
           <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'project', mode: 'edit' })">{{ 'admin.projectsPlots.editProjectAction' | translate }}</button>
           <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'csv' })">{{ 'admin.projectsPlots.importCsvAction' | translate }}</button>
           <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'addPlot' })">{{ 'admin.projectsPlots.addPlotAction' | translate }}</button>
         </div>
-        <button type="button" class="brand-button projects-plots__add-project" (click)="openAside({ kind: 'project', mode: 'add' })">
+        <button type="button" *ngIf="!readOnly" class="brand-button projects-plots__add-project" (click)="openAside({ kind: 'project', mode: 'add' })">
           {{ 'admin.projectsPlots.addProjectAction' | translate }}
         </button>
       </div>
@@ -211,7 +211,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
               <dt>{{ 'admin.projectsPlots.factsPrice' | translate }}</dt><dd>{{ priceText(sel.price) }}</dd>
               <dt>{{ 'admin.projectsPlots.statusLabel' | translate }}</dt><dd>{{ 'plotTile.status.' + sel.status | translate }}</dd>
             </dl>
-            <div class="projects-plots__aside-actions">
+            <div class="projects-plots__aside-actions" *ngIf="!readOnly">
               <button type="button" class="brand-button projects-plots__book" [disabled]="sel.status !== 'AVAILABLE'"
                 [attr.aria-describedby]="sel.status !== 'AVAILABLE' ? 'book-disabled-reason' : null" (click)="openAside({ kind: 'book' })">
                 {{ 'admin.projectsPlots.bookAction' | translate }}
@@ -220,7 +220,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
                 {{ 'admin.projectsPlots.editPlotAction' | translate }}
               </button>
             </div>
-            <p id="book-disabled-reason" class="projects-plots__reason" *ngIf="sel.status !== 'AVAILABLE'">
+            <p id="book-disabled-reason" class="projects-plots__reason" *ngIf="!readOnly && sel.status !== 'AVAILABLE'">
               {{ (sel.status === 'BOOKED' ? 'admin.projectsPlots.bookDisabledBooked' : 'admin.projectsPlots.bookDisabledSold') | translate }}
             </p>
           </ng-container>
@@ -245,6 +245,8 @@ export class ProjectsPlotsComponent implements OnInit {
   protected projectsService = inject(ProjectsService);
   protected plotsService = inject(ProjectsPlotsService);
   private adminService = inject(AdminService);
+  // Associate "View Plot" reuses this screen with route data { readOnly: true }: no admin-only calls, no write actions.
+  readonly readOnly = inject(ActivatedRoute).snapshot.data['readOnly'] === true;
 
   readonly statuses = STATUSES;
   readonly views: View[] = ['grid', 'site', 'table'];
@@ -274,6 +276,7 @@ export class ProjectsPlotsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (this.readOnly) { this.reloadProjects(); return; }
     // Only role ASSOCIATE can sell; the summary has no status field (see plan Deviation 2).
     this.adminService.listAssociates().pipe(catchError(() => of([] as AssociateSummary[])))
       .subscribe(list => (this.associates = list.filter(a => a.role === 'ASSOCIATE' && a.status === 'ACTIVE')));

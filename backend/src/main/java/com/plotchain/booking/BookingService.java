@@ -359,6 +359,16 @@ public class BookingService {
         return new AssociateBookingPageResponse(bookings, page, size, result.getTotalElements());
     }
 
+    // position: null = whole team, "L"/"R" = that leg. Scoped to the caller's downline by the query.
+    public AssociateBookingPageResponse getTeamBookings(UUID associateId, String position, int page, int size) {
+        Page<PlotBooking> result = plotBookingRepository.findByDownline(associateId, position, PageRequest.of(page, size));
+        List<BookingResponse> bookings = toResponses(result.getContent(), emiInstallmentRepository
+            .findByBookingIdInOrderByInstallmentNumberAsc(
+                result.getContent().stream().map(PlotBooking::getId).toList()).stream()
+            .collect(java.util.stream.Collectors.groupingBy(EmiInstallment::getBookingId)));
+        return new AssociateBookingPageResponse(bookings, page, size, result.getTotalElements());
+    }
+
     // Flat, no-interest amortization: BookingEmiConfig carries no down-payment-percentage or
     // interest-rate field (only emiEnabled, defaultInstallmentCount, confirmRule,
     // confirmThresholdPercent -- confirmed by reading the entity directly, not assumed), so
