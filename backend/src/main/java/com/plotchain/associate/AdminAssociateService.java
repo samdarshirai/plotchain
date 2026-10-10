@@ -22,7 +22,9 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -68,9 +70,7 @@ public class AdminAssociateService {
             newestFirst, leg, PageRequest.of(page, size));
 
         Map<UUID, RankTier> ranksById = ranksById();
-        List<AdminAssociateSummaryResponse> summaries = result.getContent().stream()
-            .map(a -> toSummary(a, ranksById.get(a.getRankId())))
-            .toList();
+        List<AdminAssociateSummaryResponse> summaries = toSummaries(result.getContent(), ranksById);
         return new AdminAssociatePageResponse(summaries, page, size, result.getTotalElements());
     }
 
@@ -98,9 +98,7 @@ public class AdminAssociateService {
             newestFirst, PageRequest.of(page, size));
 
         Map<UUID, RankTier> ranksById = ranksById();
-        List<AdminAssociateSummaryResponse> summaries = result.getContent().stream()
-            .map(a -> toSummary(a, ranksById.get(a.getRankId())))
-            .toList();
+        List<AdminAssociateSummaryResponse> summaries = toSummaries(result.getContent(), ranksById);
         return new AdminAssociatePageResponse(summaries, page, size, result.getTotalElements());
     }
 
@@ -178,10 +176,20 @@ public class AdminAssociateService {
             .collect(Collectors.toMap(RankTier::getId, r -> r));
     }
 
-    private AdminAssociateSummaryResponse toSummary(Associate a, RankTier rank) {
+    // Sponsor userIds resolved in one findAllById for the whole page (toDetail's per-row findById
+    // would be N+1 here).
+    private List<AdminAssociateSummaryResponse> toSummaries(List<Associate> page, Map<UUID, RankTier> ranksById) {
+        Set<UUID> sponsorIds = page.stream().map(Associate::getSponsorId).filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        Map<UUID, String> sponsorUserIds = associateRepository.findAllById(sponsorIds).stream()
+            .collect(Collectors.toMap(Associate::getId, Associate::getUserId));
+        return page.stream().map(a -> toSummary(a, ranksById.get(a.getRankId()), sponsorUserIds.get(a.getSponsorId()))).toList();
+    }
+
+    private AdminAssociateSummaryResponse toSummary(Associate a, RankTier rank, String sponsorUserId) {
         return new AdminAssociateSummaryResponse(
             a.getId(), a.getUserId(), a.getName(), rank == null ? null : rank.getName(),
-            a.getKycStatus(), a.getStatus(), a.getJoinedAt(), a.getLastActiveAt());
+            a.getKycStatus(), a.getStatus(), a.getJoinedAt(), a.getLastActiveAt(), sponsorUserId);
     }
 
     private AdminAssociateDetailResponse toDetail(Associate a) {

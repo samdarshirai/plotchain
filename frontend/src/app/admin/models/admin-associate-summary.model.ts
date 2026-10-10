@@ -6,5 +6,6 @@ export interface AdminAssociateSummary {
   kycStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
   status: 'ACTIVE' | 'SUSPENDED' | 'PENDING';
   joinedAt: string;
+  sponsorUserId: string | null;
   lastActiveAt: string | null;
 }

@@ -5,7 +5,7 @@ import { MyTeamComponent } from './my-team.component';
 import { MyTeamService } from './my-team.service';
 
 describe('MyTeamComponent', () => {
-  const row = { id: '1', userId: 'VP2', name: 'Kid', rankName: null, kycStatus: 'VERIFIED', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z' };
+  const row = { id: '1', userId: 'VP2', name: 'Kid', rankName: null, kycStatus: 'VERIFIED', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: 'VP00000' };
   let list: jasmine.Spy;
 
   beforeEach(() => {

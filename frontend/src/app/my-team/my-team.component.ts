@@ -102,10 +102,9 @@ export class MyTeamComponent implements OnInit {
     this.columns = [
       { key: 'userId', label: t('columnUserId'), type: 'text' },
       { key: 'name', label: t('columnName'), type: 'text' },
-      { key: 'rankName', label: t('columnRank'), type: 'rank-badge' },
-      { key: 'kycStatus', label: t('columnKycStatus'), type: 'badge', badgeTone: v => this.kycTone(v) },
+      { key: 'sponsorUserId', label: t('columnSponsorId'), type: 'text' },
       { key: 'status', label: t('columnStatus'), type: 'badge', badgeTone: v => this.statusTone(v) },
-      { key: 'joinedAt', label: t('joinedLabel'), type: 'text' }
+      { key: 'joinedAt', label: t('columnRegistrationDate'), type: 'text' }
     ];
     this.loadPage(0);
     this.loadCounts();
@@ -134,8 +133,7 @@ export class MyTeamComponent implements OnInit {
         this.rows = res.associates.map(a => ({
           userId: a.userId,
           name: a.name,
-          rankName: a.rankName ?? '',
-          kycStatus: titleCase(a.kycStatus),
+          sponsorUserId: a.sponsorUserId ?? '—',
           status: titleCase(a.status),
           joinedAt: new Date(a.joinedAt).toLocaleDateString('en-GB')
         }));
@@ -153,10 +151,6 @@ export class MyTeamComponent implements OnInit {
         count: ({ all: t, green: g, red: r, left: l, right: rt, byDate: t } as Record<string, { totalElements: number }>)[id]?.totalElements
       }));
     });
-  }
-
-  private kycTone(v: string | number): BadgeTone {
-    return v === 'Verified' ? 'success' : v === 'Pending' ? 'warning' : v === 'Rejected' ? 'danger' : 'default';
   }
 
   private statusTone(v: string | number): BadgeTone {

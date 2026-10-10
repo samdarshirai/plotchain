@@ -266,20 +266,14 @@ export class AssociateDirectoryComponent implements OnInit {
     this.directoryColumns = [
       { key: 'userId', label: this.translate.instant('admin.associateDirectory.columnUserId'), type: 'text' },
       { key: 'name', label: this.translate.instant('admin.associateDirectory.columnName'), type: 'text' },
-      { key: 'rankName', label: this.translate.instant('admin.associateDirectory.columnRank'), type: 'rank-badge' },
-      {
-        key: 'kycStatus',
-        label: this.translate.instant('admin.associateDirectory.columnKycStatus'),
-        type: 'badge',
-        badgeTone: value => this.kycStatusBadgeTone(value)
-      },
+      { key: 'sponsorUserId', label: this.translate.instant('admin.associateDirectory.columnSponsorId'), type: 'text' },
       {
         key: 'status',
         label: this.translate.instant('admin.associateDirectory.columnStatus'),
         type: 'badge',
         badgeTone: value => this.statusBadgeTone(value)
       },
-      { key: 'joinedAt', label: this.translate.instant('admin.associateDirectory.joinedLabel'), type: 'text' }
+      { key: 'joinedAt', label: this.translate.instant('admin.associateDirectory.columnRegistrationDate'), type: 'text' }
     ];
     this.compensationPlanService.getCurrent().subscribe({
       next: res => (this.availableRanks = res.availableRanks),
@@ -441,8 +435,7 @@ export class AssociateDirectoryComponent implements OnInit {
         this.directoryRows = (this.page?.associates ?? []).map(a => ({
           userId: a.userId,
           name: a.name,
-          rankName: a.rankName ?? '',
-          kycStatus: titleCase(a.kycStatus),
+          sponsorUserId: a.sponsorUserId ?? '—',
           status: titleCase(a.status),
           joinedAt: new Date(a.joinedAt).toLocaleDateString('en-GB')
         }));
