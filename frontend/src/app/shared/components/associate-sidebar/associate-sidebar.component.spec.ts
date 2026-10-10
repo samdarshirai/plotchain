@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { AssociateSidebarComponent } from './associate-sidebar.component';
@@ -62,8 +63,41 @@ describe('AssociateSidebarComponent', () => {
     expect(component.expanded).toBe(false);
   });
 
+  it('keeps My Account collapsed off /profile and toggles open/closed on click', () => {
+    const fixture = TestBed.createComponent(AssociateSidebarComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const toggle = el.querySelector('.associate-sidebar__group-toggle') as HTMLButtonElement;
+
+    expect(el.querySelectorAll('.associate-sidebar__sublink').length).toBe(0);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+
+    toggle.click();
+    fixture.detectChanges();
+    expect(el.querySelectorAll('.associate-sidebar__sublink').length).toBe(4);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+
+    toggle.click();
+    fixture.detectChanges();
+    expect(el.querySelectorAll('.associate-sidebar__sublink').length).toBe(0);
+  });
+
+  it('auto-opens My Account when navigating to a /profile route', async () => {
+    const fixture = TestBed.createComponent(AssociateSidebarComponent);
+    fixture.detectChanges();
+    const router = TestBed.inject(Router);
+    router.resetConfig([{ path: 'profile/kyc', component: AssociateSidebarComponent }]);
+
+    await router.navigateByUrl('/profile/kyc');
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.isOpen('myAccount')).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll('.associate-sidebar__sublink').length).toBe(4);
+  });
+
   it('renders the My Account sub-items (Welcome Letter, Profile, Bank Details, KYC Details) when expanded', () => {
     const fixture = TestBed.createComponent(AssociateSidebarComponent);
+    fixture.componentInstance.toggle('myAccount');
     fixture.detectChanges();
 
     const sublinks = fixture.nativeElement.querySelectorAll('.associate-sidebar__sublink');
@@ -74,6 +108,7 @@ describe('AssociateSidebarComponent', () => {
 
   it('hides the My Account sub-items when the sidebar is collapsed', () => {
     const fixture = TestBed.createComponent(AssociateSidebarComponent);
+    fixture.componentInstance.toggle('myAccount');
     fixture.detectChanges();
     fixture.componentInstance.togglePin();
     fixture.detectChanges();

@@ -1,7 +1,9 @@
 import { apiUrl } from '../../../core/api/api-url';
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
 import { ASSOCIATE_NAV_ITEMS } from '../../../associate-nav-items.model';
 import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap.service';
@@ -43,6 +45,7 @@ import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap
       <div class="associate-sidebar__nav">
         <ng-container *ngFor="let item of navItems">
           <a
+            *ngIf="!item.children; else groupToggle"
             class="associate-sidebar__link"
             routerLinkActive="associate-sidebar__link--active"
             [routerLink]="item.path"
@@ -51,7 +54,26 @@ import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap
             <span class="material-symbols-outlined associate-sidebar__link-icon" aria-hidden="true">{{ item.icon }}</span>
             <span class="associate-sidebar__link-label" *ngIf="expanded">{{ item.labelKey | translate }}</span>
           </a>
-          <div class="associate-sidebar__subnav" *ngIf="item.children && expanded">
+          <ng-template #groupToggle>
+            <button
+              type="button"
+              class="associate-sidebar__link associate-sidebar__group-toggle"
+              [class.associate-sidebar__link--active]="router.isActive(item.path, { paths: 'subset', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' })"
+              [attr.aria-expanded]="isOpen(item.key)"
+              [title]="item.labelKey | translate"
+              (click)="toggle(item.key)"
+            >
+              <span class="material-symbols-outlined associate-sidebar__link-icon" aria-hidden="true">{{ item.icon }}</span>
+              <span class="associate-sidebar__link-label" *ngIf="expanded">{{ item.labelKey | translate }}</span>
+              <span
+                class="material-symbols-outlined associate-sidebar__chevron"
+                [class.associate-sidebar__chevron--open]="isOpen(item.key)"
+                *ngIf="expanded"
+                aria-hidden="true"
+              >expand_more</span>
+            </button>
+          </ng-template>
+          <div class="associate-sidebar__subnav" *ngIf="item.children && expanded && isOpen(item.key)">
             <a
               *ngFor="let sub of item.children"
               class="associate-sidebar__sublink"
@@ -97,6 +119,32 @@ export class AssociateSidebarComponent {
 
   readonly navItems = ASSOCIATE_NAV_ITEMS;
   hovering = false;
+
+  readonly router = inject(Router);
+  private readonly open = new Set<string>();
+
+  constructor() {
+    this.openOwnerOf(this.router.url);
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd), takeUntilDestroyed())
+      .subscribe(e => this.openOwnerOf(e.urlAfterRedirects));
+  }
+
+  isOpen(key: string): boolean {
+    return this.open.has(key);
+  }
+
+  toggle(key: string): void {
+    if (!this.open.delete(key)) this.open.add(key);
+  }
+
+  // Keep the group holding the current page open so the active sub-item is never hidden.
+  private openOwnerOf(url: string): void {
+    const path = url.split(/[?#]/)[0];
+    for (const item of this.navItems) {
+      if (item.children && (path === item.path || path.startsWith(item.path + '/'))) this.open.add(item.key);
+    }
+  }
 
   get expanded(): boolean {
     return this.pinned || this.hovering;
