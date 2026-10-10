@@ -18,8 +18,12 @@ public class AssociateEPinController {
 
     private final EPinService epinService;
 
-    public AssociateEPinController(EPinService epinService) {
+    private final com.plotchain.associate.TransactionPasswordGuard transactionPasswordGuard;
+
+    public AssociateEPinController(EPinService epinService,
+                                   com.plotchain.associate.TransactionPasswordGuard transactionPasswordGuard) {
         this.epinService = epinService;
+        this.transactionPasswordGuard = transactionPasswordGuard;
     }
 
     // Self-scoped by construction: the associate id comes only from the JWT principal. There is
@@ -38,12 +42,14 @@ public class AssociateEPinController {
     @PostMapping("/{id}/redeem")
     public EPinResponse redeem(@PathVariable UUID id, @Valid @RequestBody AssociateRedeemEPinRequest request,
                                @AuthenticationPrincipal UUID associateId) {
+        transactionPasswordGuard.require(associateId, request.transactionPassword());
         return epinService.redeemOwn(id, request.userId(), associateId);
     }
 
     @PostMapping("/{id}/transfer")
     public EPinResponse transfer(@PathVariable UUID id, @Valid @RequestBody TransferEPinRequest request,
                                  @AuthenticationPrincipal UUID associateId) {
+        transactionPasswordGuard.require(associateId, request.transactionPassword());
         return epinService.transfer(id, request.toUserId(), associateId);
     }
 }
