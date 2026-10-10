@@ -8,7 +8,9 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
@@ -82,6 +84,21 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         """,
         nativeQuery = true)
     Page<PlotBooking> findByDownline(@Param("associateId") UUID associateId, @Param("position") String position, Pageable pageable);
+
+    // "My Business Datewise": same downline CTE as findByDownline, restricted to booked_at in [from, to).
+    // position is 'L' or 'R'. CANCELLED bookings are not business.
+    @Query(value = """
+        WITH RECURSIVE downline(id) AS (
+            SELECT id FROM associate WHERE parent_id = :associateId AND position = CAST(:position AS text)
+            UNION ALL
+            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
+        )
+        SELECT b.* FROM plot_booking b JOIN downline d ON b.associate_id = d.id
+        WHERE b.status <> 'CANCELLED' AND b.booked_at >= :from AND b.booked_at < :to
+        ORDER BY b.booked_at, b.id
+        """, nativeQuery = true)
+    List<PlotBooking> findByDownlineBetween(@Param("associateId") UUID associateId, @Param("position") String position,
+                                            @Param("from") Instant from, @Param("to") Instant to);
 
     // Admin overdue-EMI report (plot-booking unit 9): one grouped query, one row per ACTIVE booking.
     // Overdue comes from unit 8's BookingOverdue.INSTALLMENT_CONDITION (alias contract b, i, :today);

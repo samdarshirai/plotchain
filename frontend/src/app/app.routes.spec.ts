@@ -91,6 +91,15 @@ describe('routes', () => {
     }
   });
 
+  it('guards the report routes with authGuard and associateOnlyGuard', () => {
+    for (const path of ['reports/my-business', 'reports/emi']) {
+      const route = routes.find(r => r.path === path);
+      expect(route).withContext(path).toBeTruthy();
+      expect(route!.canActivate).toContain(authGuard);
+      expect(route!.canActivate).toContain(associateOnlyGuard);
+    }
+  });
+
   it('guards the payout-history route with authGuard and associateOnlyGuard', () => {
     const route = routes.find(r => r.path === 'payout-history');
 

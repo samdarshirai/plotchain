@@ -130,6 +130,7 @@ describe('AppComponent', () => {
         'nav.epins': 'e-Pins',
         'nav.myAccount': 'My Account',
         'nav.incomeStatement': 'Income Statement',
+        'nav.reports': 'Reports',
         'nav.payoutHistory': 'Payout History',
         'nav.supportTickets': 'Support Tickets',
         'nav.announcements': 'Announcements',
@@ -143,7 +144,7 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('app-admin-sidebar')).toBeFalsy();
     const links = Array.from(compiled.querySelectorAll('.associate-sidebar__link-label')).map(el => el.textContent?.trim());
     expect(links).toEqual([
-      'Dashboard', 'My Account', 'e-Pins', 'Genealogy', 'Plot Bookings', 'Income Statement', 'Payout History', 'Support Tickets', 'Announcements'
+      'Dashboard', 'My Account', 'e-Pins', 'Genealogy', 'Plot Bookings', 'Income Statement', 'Reports', 'Payout History', 'Support Tickets', 'Announcements'
     ]);
   });
 

@@ -369,6 +369,40 @@ public class BookingService {
         return new AssociateBookingPageResponse(bookings, page, size, result.getTotalElements());
     }
 
+    // Dates are inclusive calendar days (UTC, as elsewhere); null bound = unbounded.
+    private static Instant fromInstant(LocalDate d) { return d == null ? Instant.EPOCH : d.atStartOfDay().toInstant(ZoneOffset.UTC); }
+    private static Instant toInstant(LocalDate d) { return d == null ? Instant.parse("9999-01-01T00:00:00Z") : d.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC); }
+
+    public BusinessReportResponse getMyBusiness(UUID associateId, LocalDate from, LocalDate to) {
+        return new BusinessReportResponse(
+            businessLeg(associateId, "L", from, to), businessLeg(associateId, "R", from, to));
+    }
+
+    private List<BusinessReportRow> businessLeg(UUID associateId, String position, LocalDate from, LocalDate to) {
+        List<PlotBooking> bookings = plotBookingRepository.findByDownlineBetween(
+            associateId, position, fromInstant(from), toInstant(to));
+        Map<UUID, Associate> associates = new HashMap<>();
+        associateRepository.findAllById(bookings.stream().map(PlotBooking::getAssociateId).distinct().toList())
+            .forEach(a -> associates.put(a.getId(), a));
+        Map<UUID, Plot> plots = new HashMap<>();
+        plotRepository.findAllById(bookings.stream().map(PlotBooking::getPlotId).distinct().toList())
+            .forEach(p -> plots.put(p.getId(), p));
+        Map<UUID, Project> projects = new HashMap<>();
+        projectRepository.findAllById(plots.values().stream().map(Plot::getProjectId).distinct().toList())
+            .forEach(p -> projects.put(p.getId(), p));
+        return bookings.stream().map(b -> {
+            Associate a = associates.get(b.getAssociateId());
+            Plot p = plots.get(b.getPlotId());
+            Project pr = projects.get(p.getProjectId());
+            return new BusinessReportRow(b.getBookedAt(), b.getConfirmedAt(), a.getUserId(), a.getName(),
+                pr.getName(), p.getPlotNo(), b.getTotalAmount());
+        }).toList();
+    }
+
+    public List<EmiReportRow> getEmiReport(UUID associateId, LocalDate from, LocalDate to) {
+        return emiInstallmentRepository.findEmiReport(associateId, fromInstant(from), toInstant(to));
+    }
+
     // Flat, no-interest amortization: BookingEmiConfig carries no down-payment-percentage or
     // interest-rate field (only emiEnabled, defaultInstallmentCount, confirmRule,
     // confirmThresholdPercent -- confirmed by reading the entity directly, not assumed), so

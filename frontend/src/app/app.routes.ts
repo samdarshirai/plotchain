@@ -77,6 +77,8 @@ export const routes: Routes = [
   { path: 'income-statement/royalty', component: IncomeStatementComponent, data: { incomeType: 'ROYALTY' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'income-statement/reward', component: IncomeStatementComponent, data: { incomeType: 'REWARD' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'income-statement/perk', component: IncomeStatementComponent, data: { incomeType: 'PERK' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'reports/my-business', loadComponent: () => import('./reports/my-business-report.component').then(m => m.MyBusinessReportComponent), canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'reports/emi', loadComponent: () => import('./reports/emi-report.component').then(m => m.EmiReportComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'payout-history', component: PayoutHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'support-tickets', loadComponent: () => import('./support-ticket-history/support-ticket-history.component').then(m => m.SupportTicketHistoryComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'announcements', loadComponent: () => import('./announcements/announcement-feed.component').then(m => m.AnnouncementFeedComponent), canActivate: [authGuard, associateOnlyGuard] },

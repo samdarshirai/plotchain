@@ -154,6 +154,18 @@
     "nextPageAction": "Next",
     "pageIndicator": "Page {{page}} of {{totalPages}}"
   },
+  "reports": {
+    "from": "From",
+    "to": "To",
+    "loadError": "Could not load the report.",
+    "empty": "No records for this period.",
+    "myBusiness": { "title": "My Business Datewise", "left": "Left Business", "right": "Right Business" },
+    "emi": { "title": "EMI Report" },
+    "column": {
+      "number": "Number", "paymentDate": "Payment Date", "confirmDate": "Confirm Date", "associateId": "Associate Id",
+      "name": "Name", "project": "Project", "plotNumber": "Plot Number", "business": "Business", "amount": "Amount", "mode": "Mode"
+    }
+  },
   "plotBookings": {
     "title": "Plot Bookings",
     "team": {
@@ -648,6 +660,9 @@
     "unpin": "Unpin sidebar"
   },
   "nav": {
+    "reports": "Reports",
+    "myBusinessDatewise": "My Business Datewise",
+    "emiReport": "EMI Report",
     "dashboard": "Dashboard",
     "myTree": "Genealogy",
     "myTreeView": "Tree",

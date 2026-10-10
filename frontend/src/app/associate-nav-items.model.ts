@@ -65,6 +65,13 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
       { key: 'incomePerk', labelKey: 'incomeStatement.tabPerk', path: '/income-statement/perk' }
     ]
   },
+  {
+    key: 'reports', labelKey: 'nav.reports', icon: 'assessment', path: '/reports',
+    children: [
+      { key: 'myBusiness', labelKey: 'nav.myBusinessDatewise', path: '/reports/my-business' },
+      { key: 'emiReport', labelKey: 'nav.emiReport', path: '/reports/emi' }
+    ]
+  },
   { key: 'payoutHistory', labelKey: 'nav.payoutHistory', icon: 'payments', path: '/payout-history' },
   { key: 'supportTickets', labelKey: 'nav.supportTickets', icon: 'support_agent', path: '/support-tickets' },
   { key: 'announcements', labelKey: 'nav.announcements', icon: 'campaign', path: '/announcements' }

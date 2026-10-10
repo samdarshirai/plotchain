@@ -1,10 +1,13 @@
 package com.plotchain.booking;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 // Bare @RestController, same shape as AssociateSaleController -- SecurityConfig's own comment
@@ -50,5 +53,33 @@ public class AssociateBookingController {
                 org.springframework.http.HttpStatus.BAD_REQUEST, "leg must be ALL, L or R");
         };
         return bookingService.getTeamBookings(associateId, position, Math.max(page, 0), Math.min(size, 100));
+    }
+
+    // Report endpoints: from/to are inclusive calendar days, both optional.
+    @GetMapping("/api/associates/me/reports/business")
+    public BusinessReportResponse getMyBusiness(
+            @AuthenticationPrincipal UUID associateId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        checkRange(from, to);
+        return bookingService.getMyBusiness(associateId, from, to);
+    }
+
+    @GetMapping("/api/associates/me/reports/emi")
+    public List<EmiReportRow> getEmiReport(
+            @AuthenticationPrincipal UUID associateId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        checkRange(from, to);
+        return bookingService.getEmiReport(associateId, from, to);
+    }
+
+    private static void checkRange(LocalDate from, LocalDate to) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST, "from must not be after to");
+        }
     }
 }

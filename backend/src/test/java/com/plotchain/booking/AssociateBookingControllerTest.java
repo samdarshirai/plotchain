@@ -106,4 +106,29 @@ class AssociateBookingControllerTest {
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
             .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void businessReportReturnsLeftAndRightAndPassesDates() throws Exception {
+        UUID associateId = UUID.randomUUID();
+        BusinessReportRow row = new BusinessReportRow(Instant.parse("2026-06-03T00:00:00Z"), null, "VP00001",
+            "Jane", "Proj", "A-1", new BigDecimal("600000.00"));
+        when(bookingService.getMyBusiness(associateId, LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30)))
+            .thenReturn(new BusinessReportResponse(List.of(row), List.of()));
+
+        mockMvc.perform(get("/api/associates/me/reports/business")
+                .param("from", "2026-06-01").param("to", "2026-06-30")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.left[0].associateId").value("VP00001"))
+            .andExpect(jsonPath("$.right").isEmpty());
+    }
+
+    @Test
+    void reportsRejectFromAfterTo() throws Exception {
+        UUID associateId = UUID.randomUUID();
+        mockMvc.perform(get("/api/associates/me/reports/emi")
+                .param("from", "2026-07-01").param("to", "2026-06-01")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
+            .andExpect(status().isBadRequest());
+    }
 }
