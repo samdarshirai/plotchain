@@ -45,7 +45,7 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'sales-history', component: SalesHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'my-tree', component: MyTreeComponent, canActivate: [authGuard, associateOnlyGuard] },
-  { path: 'my-team', loadComponent: () => import('./my-team/my-team.component').then(m => m.MyTeamComponent), canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'my-tree/team', loadComponent: () => import('./my-team/my-team.component').then(m => m.MyTeamComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'plot-bookings', loadComponent: () => import('./plot-bookings/plot-bookings.component').then(m => m.PlotBookingsComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'e-pins', component: EPinsComponent, canActivate: [authGuard, associateOnlyGuard] },
   // Merged into one "My Account" screen (Account Consolidation.dc.html) -- /rewards and

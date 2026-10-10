@@ -635,6 +635,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "myTree": "Genealogy",
+    "myTreeView": "Tree",
     "myTeam": "My Team",
     "salesHistory": "Sales History",
     "plotBookings": "Plot Bookings",
@@ -646,7 +647,7 @@
     "announcements": "Announcements",
     "categories": {
       "setup": "Setup",
-      "network": "Associates",
+      "network": "Genealogy",
       "finance": "Finance & Cycles",
       "inventory": "Inventory & Bookings",
       "communication": "Communication",
@@ -714,9 +715,9 @@
         "all": "All Associates",
         "green": "Green Associates",
         "red": "Red Associates",
-        "byDate": "Associates By Date"
         "left": "Left Associates",
         "right": "Right Associates",
+        "byDate": "Associates By Date"
       },
       "title": "Associate Directory",
       "subtitle": "Manage and provision associates in one place.",

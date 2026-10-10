@@ -23,7 +23,7 @@ describe('AssociateSidebarComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.associate-sidebar--expanded')).toBeTruthy();
-    expect(compiled.querySelectorAll('.associate-sidebar__link-label').length).toBe(11);
+    expect(compiled.querySelectorAll('.associate-sidebar__link-label').length).toBe(10);
   });
 
   it('collapses to an icon rail and emits pinnedChange when unpinned', () => {

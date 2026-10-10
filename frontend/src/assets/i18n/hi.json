@@ -602,6 +602,7 @@
   "nav": {
     "dashboard": "डैशबोर्ड",
     "myTree": "वंशावली",
+    "myTreeView": "ट्री",
     "myTeam": "मेरी टीम",
     "salesHistory": "बिक्री इतिहास",
     "plotBookings": "प्लॉट बुकिंग",
@@ -612,7 +613,7 @@
     "announcements": "घोषणाएँ",
     "categories": {
       "setup": "सेटअप",
-      "network": "एसोसिएट्स",
+      "network": "वंशावली",
       "finance": "वित्त और चक्र",
       "inventory": "इन्वेंटरी और बुकिंग",
       "communication": "संवाद",
@@ -680,9 +681,9 @@
         "all": "सभी एसोसिएट्स",
         "green": "ग्रीन एसोसिएट्स",
         "red": "रेड एसोसिएट्स",
-        "byDate": "तारीख अनुसार एसोसिएट्स"
         "left": "लेफ्ट एसोसिएट्स",
         "right": "राइट एसोसिएट्स",
+        "byDate": "तारीख अनुसार एसोसिएट्स"
       },
       "title": "Associate Directory",
       "subtitle": "Manage and provision associates in one place.",
