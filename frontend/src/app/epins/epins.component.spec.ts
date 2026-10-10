@@ -52,11 +52,13 @@ describe('EPinsComponent', () => {
     const c = fixture.componentInstance;
     c.startAction(pin() as never, 'activate');
     c.userIdInput = ' VP00042 ';
+    c.passwordInput = 'secret1';
     c.confirmAction();
     const req = httpMock.expectOne('/api/associates/me/epins/p1/redeem');
-    expect(req.request.body).toEqual({ userId: 'VP00042' });
+    expect(req.request.body).toEqual({ userId: 'VP00042', transactionPassword: 'secret1' });
     req.flush(pin({ status: 'USED' }));
     expect(c.userIdInput).toBe('');
+    expect(c.passwordInput).toBe('');
     flush([]);
     expect(c.all.length).toBe(0);
     expect(c.selectedPin).toBeNull();
@@ -67,9 +69,10 @@ describe('EPinsComponent', () => {
     const c = fixture.componentInstance;
     c.startAction(pin() as never, 'transfer');
     c.userIdInput = 'VP00050';
+    c.passwordInput = 'secret1';
     c.confirmAction();
     const req = httpMock.expectOne('/api/associates/me/epins/p1/transfer');
-    expect(req.request.body).toEqual({ toUserId: 'VP00050' });
+    expect(req.request.body).toEqual({ toUserId: 'VP00050', transactionPassword: 'secret1' });
     req.flush(pin({ allocatedTo: 'other' }));
     expect(c.userIdInput).toBe('');
     flush([]);
@@ -80,12 +83,14 @@ describe('EPinsComponent', () => {
     const c = fixture.componentInstance;
     c.startAction(pin() as never, 'transfer');
     c.userIdInput = 'VP00050';
+    c.passwordInput = 'secret1';
     c.confirmAction();
     httpMock.expectOne('/api/associates/me/epins/p1/transfer')
       .flush({ error: 'x' }, { status: 404, statusText: 'Not Found' });
     expect(c.actionError).toBe('epins.errorNotFound');
     expect(c.selectedPin).not.toBeNull();
 
+    c.passwordInput = 'secret1';
     c.confirmAction();
     httpMock.expectOne('/api/associates/me/epins/p1/transfer')
       .flush({ error: 'x' }, { status: 409, statusText: 'Conflict' });
@@ -97,9 +102,38 @@ describe('EPinsComponent', () => {
     const c = fixture.componentInstance;
     c.startAction(pin() as never, 'activate');
     c.userIdInput = '   ';
+    c.passwordInput = 'secret1';
     c.confirmAction();
     httpMock.expectNone(r => r.url.includes('/redeem'));
     expect(c.actionError).toBe('epins.errorUserIdRequired');
+  });
+
+  it('requires a transaction password, makes no call, and maps password errors', () => {
+    flush([pin()]);
+    const c = fixture.componentInstance;
+    c.startAction(pin() as never, 'activate');
+    c.userIdInput = 'VP1';
+    c.passwordInput = ' ';
+    c.confirmAction();
+    httpMock.expectNone(r => r.url.includes('/redeem'));
+    expect(c.actionError).toBe('epins.errorPasswordRequired');
+
+    const fail = (status: number, body: object) => {
+      c.passwordInput = 'bad';
+      c.confirmAction();
+      httpMock.expectOne('/api/associates/me/epins/p1/redeem').flush(body, { status, statusText: 'x' });
+      expect(c.passwordInput).toBe('');
+    };
+    fail(401, { code: 'TRANSACTION_PASSWORD_INVALID' });
+    expect(c.actionError).toBe('epins.errorPasswordInvalid');
+    fail(409, { code: 'TRANSACTION_PASSWORD_NOT_SET' });
+    expect(c.actionError).toBe('epins.errorPasswordNotSet');
+    fail(423, { code: 'TRANSACTION_PASSWORD_LOCKED', lockedUntil: '2026-10-10T10:00:00Z' });
+    expect(c.actionError).toBe('epins.errorPasswordLocked');
+    expect(c.lockedUntil).toBe('2026-10-10T10:00:00Z');
+    fail(409, {});
+    expect(c.actionError).toBe('epins.errorConflict');
+    expect(c.lockedUntil).toBeNull();
   });
 
   it('startAction clears a previous userId and error', () => {
@@ -167,6 +201,7 @@ describe('EPinsComponent', () => {
     expect(c.action).toBe('transfer');
     expect(c.userIdInput).toBe('');
     c.userIdInput = 'VP2';
+    c.passwordInput = 'secret1';
     c.confirmAction();
     httpMock.expectOne('/api/associates/me/epins/p1/transfer').flush(pin({ allocatedTo: 'other' }));
     flush([]);

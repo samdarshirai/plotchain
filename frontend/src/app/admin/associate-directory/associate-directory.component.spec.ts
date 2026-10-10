@@ -108,6 +108,27 @@ describe('AssociateDirectoryComponent', () => {
     expect(fixture.componentInstance.temporaryPassword).toBe('Temp1234!');
   });
 
+  it('clears the transaction password and shows the done banner', () => {
+    fixture.componentInstance.selected = { id: 'a1', userId: 'VP00001' } as any;
+
+    fixture.componentInstance.resetTransactionPasswordForSelected();
+
+    httpMock.expectOne('/api/admin/associates/a1/reset-transaction-password').flush(null);
+
+    expect(fixture.componentInstance.transactionPasswordResetDone).toBeTrue();
+  });
+
+  it('flags an action error when the transaction password reset fails', () => {
+    fixture.componentInstance.selected = { id: 'a1', userId: 'VP00001' } as any;
+
+    fixture.componentInstance.resetTransactionPasswordForSelected();
+
+    httpMock.expectOne('/api/admin/associates/a1/reset-transaction-password')
+      .flush({}, { status: 500, statusText: 'err' });
+
+    expect(fixture.componentInstance.actionError).toBeTrue();
+  });
+
   it('shows a load error when the page reload fails, without silently doing nothing', () => {
     fixture.componentInstance.goToPage(1);
 

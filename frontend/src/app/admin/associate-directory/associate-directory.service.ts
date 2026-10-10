@@ -33,4 +33,8 @@ export class AssociateDirectoryService {
   resetPassword(id: string): Observable<{ temporaryPassword: string }> {
     return this.http.post<{ temporaryPassword: string }>(`/api/admin/associates/${id}/reset-password`, {});
   }
+
+  resetTransactionPassword(id: string): Observable<void> {
+    return this.http.post<void>(`/api/admin/associates/${id}/reset-transaction-password`, {});
+  }
 }
