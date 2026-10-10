@@ -1,3 +1,4 @@
+import { apiUrl } from '../core/api/api-url';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -476,7 +477,7 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
             <dt>{{ 'myAccount.welcomeLetter.addressLabel' | translate }}</dt>
             <dd>{{ p.address || '—' }}</dd>
           </dl>
-          <img *ngIf="showSquareLogo" class="letter-card__logo" src="/api/company/branding/logo/square" alt="" />
+          <img *ngIf="showSquareLogo" class="letter-card__logo" [src]="logoSrc" alt="" />
         </div>
         <p class="letter-card__greeting">{{ 'myAccount.welcomeLetter.greeting' | translate: { name: p.name } }}</p>
         <p class="letter-card__intro">{{ 'myAccount.welcomeLetter.intro' | translate }}</p>
@@ -506,6 +507,7 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
   `
 })
 export class MyAccountComponent implements OnInit, OnDestroy {
+  readonly logoSrc = apiUrl('/api/company/branding/logo/square');
   private fb = inject(FormBuilder);
   private associateProfileService = inject(AssociateProfileService);
   private associateKycService = inject(AssociateKycService);

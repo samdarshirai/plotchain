@@ -1,3 +1,4 @@
+import { apiUrl } from '../../../core/api/api-url';
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
@@ -25,7 +26,7 @@ import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap
         <img
           *ngIf="showSquareLogo; else brandFallbackMark"
           class="associate-sidebar__brand-mark"
-          src="/api/company/branding/logo/square"
+          [src]="logoSrc"
           alt=""
         />
         <ng-template #brandFallbackMark>
@@ -87,6 +88,7 @@ import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap
   `
 })
 export class AssociateSidebarComponent {
+  readonly logoSrc = apiUrl('/api/company/branding/logo/square');
   private brandingBootstrap = inject(BrandingBootstrapService);
 
   @Input() pinned = true;

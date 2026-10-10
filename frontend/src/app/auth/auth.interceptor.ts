@@ -3,6 +3,7 @@ import { HttpInterceptorFn } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
+import { apiUrl } from '../core/api/api-url';
 
 // Endpoint+method pairs where a 401 is an expected, in-form validation failure (bad
 // credentials, or -- profile screen redesign -- a missing/incorrect transaction password)
@@ -24,9 +25,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const token = authService.getToken();
 
+  const absoluteReq = req.clone({ url: apiUrl(req.url) });
   const authorizedReq = token
-    ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
-    : req;
+    ? absoluteReq.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
+    : absoluteReq;
 
   return next(authorizedReq).pipe(
     catchError(error => {

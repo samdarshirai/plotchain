@@ -1,3 +1,4 @@
+import { apiUrl } from '../../../core/api/api-url';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -22,6 +23,6 @@ export class BrandingService {
   }
 
   logoUrl(variant: LogoVariant): string {
-    return `/api/company/branding/logo/${variant}`;
+    return apiUrl(`/api/company/branding/logo/${variant}`);
   }
 }

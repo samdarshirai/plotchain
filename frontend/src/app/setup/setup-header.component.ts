@@ -1,3 +1,4 @@
+import { apiUrl } from '../core/api/api-url';
 import { Component, inject, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
@@ -11,7 +12,7 @@ import { BrandingBootstrapService } from '../core/theme/branding-bootstrap.servi
   template: `
     <header class="setup-header">
       <div class="setup-header__left">
-        <img *ngIf="showSquareLogo" class="setup-header__logo" src="/api/company/branding/logo/square" alt="" />
+        <img *ngIf="showSquareLogo" class="setup-header__logo" [src]="logoSrc" alt="" />
         <div class="setup-header__brand">
           <span class="setup-header__wordmark">
             <span class="setup-header__wordmark-rule"></span>
@@ -33,6 +34,7 @@ import { BrandingBootstrapService } from '../core/theme/branding-bootstrap.servi
   `
 })
 export class SetupHeaderComponent {
+  readonly logoSrc = apiUrl('/api/company/branding/logo/square');
   private brandingBootstrap = inject(BrandingBootstrapService);
 
   @Input() steps: StepStatus[] = [];

@@ -1,3 +1,4 @@
+import { apiUrl } from '../core/api/api-url';
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
@@ -19,7 +20,7 @@ import { BrandButtonComponent } from '../shared/components/brand-button/brand-bu
   template: `
     <div class="login-page" [class.login-page--preview]="previewMode">
       <aside class="login-brand">
-        <img *ngIf="showSquareLogo" class="login-logo" src="/api/company/branding/logo/square" alt="" />
+        <img *ngIf="showSquareLogo" class="login-logo" [src]="logoSrc" alt="" />
         <p *ngIf="showTagline" class="login-tagline">{{ resolvedTagline }}</p>
         <div class="login-wordmark">
           <p class="login-wordmark__name">
@@ -87,6 +88,7 @@ import { BrandButtonComponent } from '../shared/components/brand-button/brand-bu
   `
 })
 export class LoginComponent implements OnInit {
+  readonly logoSrc = apiUrl('/api/company/branding/logo/square');
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private setupService = inject(SetupService);

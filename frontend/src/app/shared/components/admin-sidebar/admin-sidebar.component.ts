@@ -1,3 +1,4 @@
+import { apiUrl } from '../../../core/api/api-url';
 import { Component, EventEmitter, OnDestroy, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
@@ -20,7 +21,7 @@ import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap
         <img
           *ngIf="showSquareLogo; else brandFallbackMark"
           class="associate-sidebar__brand-mark"
-          src="/api/company/branding/logo/square"
+          [src]="logoSrc"
           alt=""
         />
         <ng-template #brandFallbackMark>
@@ -76,6 +77,7 @@ import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap
   `
 })
 export class AdminSidebarComponent implements OnInit, OnDestroy {
+  readonly logoSrc = apiUrl('/api/company/branding/logo/square');
   private router = inject(Router);
   private brandingBootstrap = inject(BrandingBootstrapService);
   private navigationSubscription?: Subscription;

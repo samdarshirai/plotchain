@@ -1,3 +1,4 @@
+import { apiUrl } from '../../../core/api/api-url';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -41,7 +42,7 @@ export class ProjectsService {
   }
 
   thumbnailUrl(id: string): string {
-    return `/api/company/projects/${id}/thumbnail`;
+    return apiUrl(`/api/company/projects/${id}/thumbnail`);
   }
 
   // The thumbnail endpoint requires the Bearer token, which the auth interceptor only attaches to
@@ -70,7 +71,7 @@ export class ProjectsService {
   }
 
   csvTemplateUrl(): string {
-    return '/api/company/projects/plots/csv-template';
+    return apiUrl('/api/company/projects/plots/csv-template');
   }
 
   validateCsv(projectId: string, file: File): Observable<CsvValidationResponse> {
