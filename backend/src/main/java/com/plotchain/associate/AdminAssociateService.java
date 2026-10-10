@@ -74,6 +74,32 @@ public class AdminAssociateService {
         return new AdminAssociatePageResponse(summaries, page, size, result.getTotalElements());
     }
 
+    // My Team: same filters as list(), scoped to callerId's downline (self excluded, any depth).
+    public AdminAssociatePageResponse listDownline(UUID callerId, String search, KycStatus kycStatus,
+                                                    KycStatus excludeKycStatus, AssociateStatus status,
+                                                    LocalDate joinedFrom, LocalDate joinedTo,
+                                                    boolean newestFirst, int page, int size) {
+        List<UUID> ids = associateRepository.findSelfAndDownline(callerId).stream()
+            .filter(id -> !id.equals(callerId)).toList();
+        if (ids.isEmpty()) {
+            return new AdminAssociatePageResponse(List.of(), page, size, 0);
+        }
+        Instant joinedFromInstant = joinedFrom == null ? null : joinedFrom.atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant joinedToExclusive = joinedTo == null
+            ? null : joinedTo.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+        String normalizedSearch = (search == null || search.isBlank()) ? null : search;
+
+        Page<Associate> result = associateRepository.searchWithinIds(
+            ids, normalizedSearch, kycStatus, excludeKycStatus, status, joinedFromInstant, joinedToExclusive,
+            newestFirst, PageRequest.of(page, size));
+
+        Map<UUID, RankTier> ranksById = ranksById();
+        List<AdminAssociateSummaryResponse> summaries = result.getContent().stream()
+            .map(a -> toSummary(a, ranksById.get(a.getRankId())))
+            .toList();
+        return new AdminAssociatePageResponse(summaries, page, size, result.getTotalElements());
+    }
+
     public AdminAssociateDetailResponse get(UUID id) {
         return toDetail(findOrThrow(id));
     }

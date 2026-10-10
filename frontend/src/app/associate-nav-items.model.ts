@@ -34,6 +34,7 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
   },
   { key: 'epins', labelKey: 'nav.epins', icon: 'confirmation_number', path: '/e-pins' },
   { key: 'myTree', labelKey: 'nav.myTree', icon: 'account_tree', path: '/my-tree' },
+  { key: 'myTeam', labelKey: 'nav.myTeam', icon: 'groups', path: '/my-team' },
   { key: 'salesHistory', labelKey: 'nav.salesHistory', icon: 'receipt_long', path: '/sales-history' },
   { key: 'plotBookings', labelKey: 'nav.plotBookings', icon: 'grid_view', path: '/plot-bookings' },
   { key: 'incomeStatement', labelKey: 'nav.incomeStatement', icon: 'description', path: '/income-statement' },

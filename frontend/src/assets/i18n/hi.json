@@ -214,6 +214,10 @@
     "nextPageAction": "Next",
     "pageIndicator": "Page {{page}} of {{totalPages}}"
   },
+  "myTeam": {
+    "title": "मेरी टीम",
+    "subtitle": "ट्री में आपके अंतर्गत एसोसिएट्स।"
+  },
   "myTree": {
     "title": "मेरा ट्री",
     "subtitle": "आपकी स्वयं की स्थिति और डाउनलाइन — यह दृश्य केवल आपके लिए सीमित है।",
@@ -598,6 +602,7 @@
   "nav": {
     "dashboard": "डैशबोर्ड",
     "myTree": "वंशावली",
+    "myTeam": "मेरी टीम",
     "salesHistory": "बिक्री इतिहास",
     "plotBookings": "प्लॉट बुकिंग",
     "myAccount": "मेरा खाता",

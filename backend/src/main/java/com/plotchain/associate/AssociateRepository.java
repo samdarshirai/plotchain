@@ -287,6 +287,32 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         @Param("newestFirst") boolean newestFirst,
         Pageable pageable);
 
+    // My Team (associate-scoped): searchDirectory's filters restricted to a caller-supplied id set
+    // (the caller's downline, self excluded). Same CAST workarounds as searchDirectory above.
+    @Query("""
+        SELECT a FROM Associate a
+        WHERE a.role = com.plotchain.associate.AssociateRole.ASSOCIATE
+        AND a.id IN :ids
+        AND (:search IS NULL OR LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+             OR LOWER(a.userId) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))
+        AND (:kycStatus IS NULL OR a.kycStatus = :kycStatus)
+        AND (:excludeKycStatus IS NULL OR a.kycStatus <> :excludeKycStatus)
+        AND (:status IS NULL OR a.status = :status)
+        AND (CAST(:joinedFrom AS timestamp) IS NULL OR a.joinedAt >= :joinedFrom)
+        AND (CAST(:joinedToExclusive AS timestamp) IS NULL OR a.joinedAt < :joinedToExclusive)
+        ORDER BY CASE WHEN :newestFirst = true THEN a.joinedAt END DESC, a.userId ASC
+        """)
+    Page<Associate> searchWithinIds(
+        @Param("ids") List<UUID> ids,
+        @Param("search") String search,
+        @Param("kycStatus") KycStatus kycStatus,
+        @Param("excludeKycStatus") KycStatus excludeKycStatus,
+        @Param("status") AssociateStatus status,
+        @Param("joinedFrom") Instant joinedFrom,
+        @Param("joinedToExclusive") Instant joinedToExclusive,
+        @Param("newestFirst") boolean newestFirst,
+        Pageable pageable);
+
     // Row lock so concurrent wrong-password attempts serialize and none is lost.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM Associate a WHERE a.id = :id")

@@ -206,6 +206,10 @@
     "nextPageAction": "Next",
     "pageIndicator": "Page {{page}} of {{totalPages}}"
   },
+  "myTeam": {
+    "title": "My Team",
+    "subtitle": "Associates under you in the tree."
+  },
   "myTree": {
     "title": "My Tree",
     "subtitle": "Your own placement and downline — this view is scoped to you only.",
@@ -631,6 +635,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "myTree": "Genealogy",
+    "myTeam": "My Team",
     "salesHistory": "Sales History",
     "plotBookings": "Plot Bookings",
     "epins": "e-Pins",
