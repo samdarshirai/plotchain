@@ -26,9 +26,23 @@
 
 - Wrong attempt inside a transaction that then rolls back (E-PIN redeem): counter must still increase. Pinned in Task 2 integration test.
 - Correct password after 3 failures, then a profile save: counter must end at 0, not be overwritten by the saved stale entity. Pinned in Task 2 integration test.
-- Lock expires (clock past `lockedUntil`): next correct attempt succeeds and clears the lock. Pinned in Task 2 guard test.
-- Supplied password null/blank/whitespace on a gated endpoint: counts as a failure, never a 500. Pinned in Task 2 guard test and Task 3 controller test.
-- Associate with no password set hits E-PIN redeem/transfer/profile/nominee: 409 `TRANSACTION_PASSWORD_NOT_SET`, no state change, no counter change. Pinned in Tasks 2-3.
+- Lock expires (clock past `lockedUntil`): next correct attempt succeeds and clears the lock. Pinned in Task 1 guard test.
+- Supplied password null/blank/whitespace on a gated endpoint: counts as a failure, never a 500. Pinned in Task 1 guard test and Task 3 controller test.
+- Associate with no password set hits E-PIN redeem/transfer/profile/nominee: 409 `TRANSACTION_PASSWORD_NOT_SET`, no state change, no counter change. Pinned in Tasks 1 and 3.
+
+---
+
+## Execution Waves (parallel subagents)
+
+Dispatch rules (lessons from earlier spec cycles): this plan file is committed before any worktree is created; each agent gets its own git worktree and is given ABSOLUTE paths (never rely on cwd); agents do not edit tracking/plan files and do not run `pkill`; the coordinator merges branches and runs the full verification.
+
+| Wave | Runs concurrently | Needs |
+|---|---|---|
+| 1 | Task 1 (backend foundation), Task 6 (frontend e-pin + interceptor), Task 7 (frontend my-account + admin reset) | nothing; frontend tasks code against the HTTP contract in Global Constraints, not the backend |
+| 2 | Task 2 (profile/nominee swap), Task 3 (E-PIN gate), Task 4 (set/change), Task 5 (admin reset) | Task 1 merged to master (they import `TransactionPasswordGuard` and the new entity fields) |
+| 3 | Whole-branch review + full `mvn test` + `ng test` + manual smoke via the `run` skill | all merged |
+
+Wave-2 file ownership is disjoint (2: Profile/Nominee services + their tests + integration test; 3: `epin/*`; 4: `TransactionPasswordService` + `TransactionPasswordExceptionHandler` + its test; 5: `AdminAssociate*`), so merges are conflict-free. Tasks 6 and 7 both add keys to `en.json`/`hi.json` in different blocks (`epins` vs `myAccount`/`admin.associateDirectory`); the coordinator resolves any trivial JSON merge conflict. The user's uncommitted edits to `en.json`/`hi.json`/`admin-nav-*`/`admin-sidebar*` in the main checkout are NOT in the worktrees; merge into master only after the user commits or stashes them.
 
 ---
 
@@ -50,7 +64,7 @@ Frontend (`frontend/src/app/`):
 
 ---
 
-### Task 1: Data model, repository lock query, exceptions and handlers
+### Task 1: Foundation - data model, exceptions, attempt recorder, guard (sequential, blocks Wave 2)
 
 **Files:**
 - Create: `backend/src/main/resources/db/migration/V44__transaction_password_lockout.sql`
@@ -58,10 +72,11 @@ Frontend (`frontend/src/app/`):
 - Modify: `backend/src/main/java/com/plotchain/associate/AssociateRepository.java`
 - Create: `.../associate/TransactionPasswordNotSetException.java`, `TransactionPasswordLockedException.java`, `TransactionPasswordExceptionHandler.java`
 - Modify: `.../associate/AssociateProvisioningExceptionHandler.java:53-56`
-- Test: `backend/src/test/java/com/plotchain/associate/TransactionPasswordExceptionHandlerTest.java`
+- Create: `.../associate/TransactionPasswordAttemptRecorder.java`, `TransactionPasswordGuard.java`
+- Test: `TransactionPasswordExceptionHandlerTest.java`, `TransactionPasswordAttemptRecorderTest.java`, `TransactionPasswordGuardTest.java`
 
 **Interfaces:**
-- Produces: `Associate.getTransactionPasswordFailedAttempts(): int`, `setTransactionPasswordFailedAttempts(int)`, `getTransactionPasswordLockedUntil(): Instant`, `setTransactionPasswordLockedUntil(Instant)`; `AssociateRepository.findByIdForUpdate(UUID): Optional<Associate>`; `new TransactionPasswordNotSetException()`; `new TransactionPasswordLockedException(Instant lockedUntil)` with `getLockedUntil()`.
+- Produces: `TransactionPasswordGuard.require(UUID associateId, String supplied): void` (throws `TransactionPasswordNotSetException`, `TransactionPasswordLockedException`, `InvalidTransactionPasswordException`); `TransactionPasswordAttemptRecorder.recordFailure(UUID)`, `.reset(UUID)`; `Associate.getTransactionPasswordFailedAttempts(): int`, `setTransactionPasswordFailedAttempts(int)`, `getTransactionPasswordLockedUntil(): Instant`, `setTransactionPasswordLockedUntil(Instant)`; `AssociateRepository.findByIdForUpdate(UUID): Optional<Associate>`; `new TransactionPasswordNotSetException()`; `new TransactionPasswordLockedException(Instant lockedUntil)` with `getLockedUntil()`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -203,29 +218,7 @@ public class TransactionPasswordExceptionHandler {
 Run: `cd backend && mvn -q test -Dtest='TransactionPasswordExceptionHandlerTest,AssociateRepositoryTest,PlotBookingSchemaTest'`
 Expected: PASS (schema loads with V44; H2 accepts the migration).
 
-- [ ] **Step 5: Commit**
-
-```bash
-git add backend/src/main/resources/db/migration/V44__transaction_password_lockout.sql backend/src/main/java/com/plotchain/associate backend/src/test/java/com/plotchain/associate/TransactionPasswordExceptionHandlerTest.java
-git commit -m "feat(txn-password): lockout columns, locked/not-set exceptions and handlers"
-```
-
----
-
-### Task 2: Attempt recorder, guard, and swap profile/nominee gates
-
-**Files:**
-- Create: `.../associate/TransactionPasswordAttemptRecorder.java`, `TransactionPasswordGuard.java`
-- Delete: `.../associate/TransactionPasswordVerifier.java`, `backend/src/test/.../TransactionPasswordVerifierTest.java`
-- Modify: `.../associate/AssociateProfileService.java:32-33`, `AssociateNomineeService.java:35-38` (constructors + call sites)
-- Modify tests: `AssociateProfileServiceTest.java`, `AssociateNomineeServiceTest.java` (replace verifier mock with guard mock)
-- Test: `TransactionPasswordAttemptRecorderTest.java`, `TransactionPasswordGuardTest.java`, `TransactionPasswordLockoutIntegrationTest.java`
-
-**Interfaces:**
-- Consumes: Task 1 entity fields, `findByIdForUpdate`, both exceptions.
-- Produces: `TransactionPasswordGuard.require(UUID associateId, String supplied): void` (throws `TransactionPasswordNotSetException`, `TransactionPasswordLockedException`, `InvalidTransactionPasswordException`); `TransactionPasswordAttemptRecorder.recordFailure(UUID)`, `.reset(UUID)`.
-
-- [ ] **Step 1: Write failing recorder test**
+- [ ] **Step 5: Write failing recorder test**
 
 ```java
 package com.plotchain.associate;
@@ -309,12 +302,12 @@ class TransactionPasswordAttemptRecorderTest {
 }
 ```
 
-- [ ] **Step 2: Run to verify fail**
+- [ ] **Step 6: Run to verify fail**
 
 Run: `cd backend && mvn -q test -Dtest=TransactionPasswordAttemptRecorderTest`
 Expected: compilation FAIL.
 
-- [ ] **Step 3: Implement recorder**
+- [ ] **Step 7: Implement recorder**
 
 ```java
 package com.plotchain.associate;
@@ -374,11 +367,11 @@ public class TransactionPasswordAttemptRecorder {
 }
 ```
 
-- [ ] **Step 4: Run recorder test, expect PASS**
+- [ ] **Step 8: Run recorder test, expect PASS**
 
 Run: `cd backend && mvn -q test -Dtest=TransactionPasswordAttemptRecorderTest`
 
-- [ ] **Step 5: Write failing guard test**
+- [ ] **Step 9: Write failing guard test**
 
 ```java
 package com.plotchain.associate;
@@ -481,7 +474,7 @@ class TransactionPasswordGuardTest {
 }
 ```
 
-- [ ] **Step 6: Run to verify fail**, then implement guard
+- [ ] **Step 10: Run to verify fail**, then implement guard
 
 Run: `cd backend && mvn -q test -Dtest=TransactionPasswordGuardTest` -> compilation FAIL.
 
@@ -537,11 +530,34 @@ public class TransactionPasswordGuard {
 }
 ```
 
-- [ ] **Step 7: Run guard test, expect PASS**
+- [ ] **Step 11: Run guard test, expect PASS**
 
 Run: `cd backend && mvn -q test -Dtest=TransactionPasswordGuardTest`
 
-- [ ] **Step 8: Swap profile/nominee services to the guard**
+- [ ] **Step 12: Commit**
+
+```bash
+git add backend/src/main/resources/db/migration/V44__transaction_password_lockout.sql backend/src/main/java/com/plotchain/associate backend/src/test/java/com/plotchain/associate/TransactionPasswordExceptionHandlerTest.java
+git commit -m "feat(txn-password): lockout columns, exceptions, attempt recorder and guard"
+```
+
+---
+
+
+---
+
+### Task 2: Swap profile/nominee gates to the guard + lockout integration test
+
+**Files:**
+- Delete: `.../associate/TransactionPasswordVerifier.java`, `backend/src/test/.../TransactionPasswordVerifierTest.java`
+- Modify: `.../associate/AssociateProfileService.java:32-33`, `AssociateNomineeService.java:35-38` (constructors + call sites)
+- Modify tests: `AssociateProfileServiceTest.java`, `AssociateNomineeServiceTest.java` (replace verifier mock with guard mock)
+- Test: `TransactionPasswordLockoutIntegrationTest.java`
+
+**Interfaces:**
+- Consumes: Task 1's `TransactionPasswordGuard.require(UUID, String)`, entity fields, exceptions.
+
+- [ ] **Step 1: Swap profile/nominee services to the guard**
 
 In `AssociateProfileService`: replace field/ctor param `TransactionPasswordVerifier transactionPasswordVerifier` with `TransactionPasswordGuard transactionPasswordGuard`. In `updateProfile`, move the gate to the FIRST line, before `findById`:
 ```java
@@ -555,7 +571,7 @@ Same for `AssociateNomineeService.updateNominee`: guard first, keep the existenc
 
 Delete `TransactionPasswordVerifier.java` and `TransactionPasswordVerifierTest.java`. In `AssociateProfileServiceTest` and `AssociateNomineeServiceTest`, replace `TransactionPasswordVerifier` mocks with `TransactionPasswordGuard` mocks and `verify(guard).require(associateId, "<pw>")`; add one test per service: when the guard mock throws `InvalidTransactionPasswordException`, `associateRepository.save` is never invoked.
 
-- [ ] **Step 9: Write the integration test (rollback survival, stale-overwrite)**
+- [ ] **Step 2: Write the integration test (rollback survival, stale-overwrite)**
 
 `backend/src/test/java/com/plotchain/associate/TransactionPasswordLockoutIntegrationTest.java`, same annotations/cleanup style as `KycReviewServiceIntegrationTest` (`@SpringBootTest @ActiveProfiles("test")`, delete the seeded row in `@AfterEach`). Seed a row exactly like `seedAdminActor()` there but with role ASSOCIATE, status ACTIVE, `userId = "tp-" + id`, `passwordHash` = any 60-char value, and `transactionPasswordHash = encoder.encode("secret123")`.
 
@@ -599,12 +615,12 @@ Delete `TransactionPasswordVerifier.java` and `TransactionPasswordVerifierTest.j
 ```
 Autowire `TransactionPasswordGuard guard`, `AssociateRepository associateRepository`, `PlatformTransactionManager txManager`, `PasswordEncoder encoder`.
 
-- [ ] **Step 10: Run all touched tests**
+- [ ] **Step 3: Run all touched tests**
 
 Run: `cd backend && mvn -q test -Dtest='TransactionPassword*Test,TransactionPasswordLockoutIntegrationTest,AssociateProfileServiceTest,AssociateNomineeServiceTest,AssociateProfileControllerTest,AssociateNomineeControllerTest'`
 Expected: PASS. If a controller test posts a profile/nominee PUT with no transaction password for an associate without one, update it to expect 409 `TRANSACTION_PASSWORD_NOT_SET` (deliberate behavior change per spec Rollout note).
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add -A backend/src
