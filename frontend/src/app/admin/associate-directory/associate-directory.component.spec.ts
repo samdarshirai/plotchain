@@ -7,7 +7,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { AssociateDirectoryComponent } from './associate-directory.component';
 import { NewAssociatePanelComponent } from '../new-associate-panel/new-associate-panel.component';
 
-// loadCounts() fires 6 size-1 queries (total/active/suspended/kyc pending/green/red); answer each with
+// loadCounts() fires 8 size-1 queries (total/active/suspended/kyc pending/green/red/left/right); answer each with
 // a count derived from its query string so specs can assert on the seal card.
 function flushCounts(httpMock: HttpTestingController, totals: Record<string, number> = {}): void {
   httpMock.match(r => r.url === '/api/admin/associates' && r.params.get('size') === '1').forEach(req => {
@@ -37,12 +37,12 @@ describe('AssociateDirectoryComponent', () => {
       .flush([{ id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE', hasFreeSlot: true }]);
     httpMock.expectOne('/api/admin/associates?page=0&size=20')
       .flush({ associates: [{ id: 'a1', userId: 'VP00001', name: 'Jane', rankName: 'Sales Associate', kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', lastActiveAt: null }], page: 0, size: 20, totalElements: 1 });
-    flushCounts(httpMock, { '': 168, 'status=ACTIVE': 142, 'status=SUSPENDED': 26, 'kycStatus=PENDING': 11, 'kycStatus=VERIFIED': 100, 'excludeKycStatus=VERIFIED': 68 });
+    flushCounts(httpMock, { '': 168, 'status=ACTIVE': 142, 'status=SUSPENDED': 26, 'kycStatus=PENDING': 11, 'kycStatus=VERIFIED': 100, 'excludeKycStatus=VERIFIED': 68, 'leg=L': 90, 'leg=R': 78 });
   });
 
   it('shows network counts on the seal card and tabs', () => {
     expect(fixture.componentInstance.counts).toEqual({ total: 168, active: 142, inactive: 26, kycPending: 11, green: 100, red: 68 });
-    expect(fixture.componentInstance.viewTabs.map(t => t.count)).toEqual([168, 100, 68, undefined, undefined, 168]);
+    expect(fixture.componentInstance.viewTabs.map(t => t.count)).toEqual([168, 100, 68, 90, 78, 168]);
   });
 
   afterEach(() => httpMock.verify());

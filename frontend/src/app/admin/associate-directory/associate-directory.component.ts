@@ -456,13 +456,13 @@ export class AssociateDirectoryComponent implements OnInit {
     const n = (f: AdminAssociateFilters) => this.associateDirectoryService.list(f, 0, 1);
     forkJoin([
       n({}), n({ status: 'ACTIVE' }), n({ status: 'SUSPENDED' }), n({ kycStatus: 'PENDING' }),
-      n({ kycStatus: 'VERIFIED' }), n({ excludeKycStatus: 'VERIFIED' })
-    ]).subscribe(([t, a, i, k, g, r]) => {
+      n({ kycStatus: 'VERIFIED' }), n({ excludeKycStatus: 'VERIFIED' }), n({ leg: 'L' }), n({ leg: 'R' })
+    ]).subscribe(([t, a, i, k, g, r, l, rt]) => {
       this.counts = { total: t.totalElements, active: a.totalElements, inactive: i.totalElements, kycPending: k.totalElements, green: g.totalElements, red: r.totalElements };
       this.viewTabs = VIEWS.map(id => ({
         id,
         label: this.translate.instant('admin.associateDirectory.views.' + id),
-        count: ({ all: t, green: g, red: r, byDate: t } as Record<string, { totalElements: number }>)[id]?.totalElements
+        count: ({ all: t, green: g, red: r, left: l, right: rt, byDate: t } as Record<string, { totalElements: number }>)[id]?.totalElements
       }));
     });
   }

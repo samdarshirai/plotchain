@@ -146,11 +146,11 @@ export class MyTeamComponent implements OnInit {
 
   private loadCounts(): void {
     const n = (f: AdminAssociateFilters) => this.myTeamService.list(f, 0, 1);
-    forkJoin([n({}), n({ kycStatus: 'VERIFIED' }), n({ excludeKycStatus: 'VERIFIED' })]).subscribe(([t, g, r]) => {
+    forkJoin([n({}), n({ kycStatus: 'VERIFIED' }), n({ excludeKycStatus: 'VERIFIED' }), n({ leg: 'L' }), n({ leg: 'R' })]).subscribe(([t, g, r, l, rt]) => {
       this.viewTabs = VIEWS.map(id => ({
         id,
         label: this.translate.instant('admin.associateDirectory.views.' + id),
-        count: ({ all: t, green: g, red: r, byDate: t } as Record<string, { totalElements: number }>)[id]?.totalElements
+        count: ({ all: t, green: g, red: r, left: l, right: rt, byDate: t } as Record<string, { totalElements: number }>)[id]?.totalElements
       }));
     });
   }
