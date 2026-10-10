@@ -233,4 +233,26 @@ class AdminAssociateServiceTest {
         assertThat(associate.isMustChangePassword()).isTrue();
         verify(associateRepository).save(associate);
     }
+
+    @Test
+    void resetTransactionPasswordClearsHashCounterLockAndAudits() {
+        UUID id = UUID.randomUUID();
+        Associate associate = newAssociate(id, "VP00001");
+        associate.setTransactionPasswordHash("hash");
+        associate.setTransactionPasswordFailedAttempts(3);
+        associate.setTransactionPasswordLockedUntil(Instant.now().plusSeconds(600));
+        when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
+
+        service.resetTransactionPassword(id, ACTOR_ID);
+
+        assertThat(associate.getTransactionPasswordHash()).isNull();
+        assertThat(associate.getTransactionPasswordFailedAttempts()).isZero();
+        assertThat(associate.getTransactionPasswordLockedUntil()).isNull();
+        verify(associateRepository).save(associate);
+        ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
+        verify(settingsAuditLogRepository).save(captor.capture());
+        assertThat(captor.getValue().getSection()).isEqualTo("ASSOCIATE");
+        assertThat(captor.getValue().getSummary()).contains("Reset transaction password");
+        assertThat(captor.getValue().getChangedByAssociateId()).isEqualTo(ACTOR_ID);
+    }
 }

@@ -114,6 +114,17 @@ public class AdminAssociateService {
         return new ResetPasswordResponse(temporaryPassword);
     }
 
+    @Transactional
+    public void resetTransactionPassword(UUID id, UUID actorId) {
+        Associate associate = findOrThrow(id);
+        associate.setTransactionPasswordHash(null);
+        associate.setTransactionPasswordFailedAttempts(0);
+        associate.setTransactionPasswordLockedUntil(null);
+        associateRepository.save(associate);
+        settingsAuditService.record("ASSOCIATE", "Reset transaction password for " + associate.getUserId(),
+            Map.of("associateId", id.toString()), actorId);
+    }
+
     private void evictStatusCacheAfterCommit(UUID associateId) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
