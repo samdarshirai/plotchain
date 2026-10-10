@@ -322,6 +322,34 @@ describe('MyAccountComponent', () => {
     expect(fixture.componentInstance.saveError).toBe('Transaction password is required to save these changes');
   });
 
+  const gateCases: [number, any, string][] = [
+    [409, { code: 'TRANSACTION_PASSWORD_NOT_SET' }, 'myAccount.transactionPasswordTab.errorNotSet'],
+    [423, { code: 'TRANSACTION_PASSWORD_LOCKED', lockedUntil: '2026-10-10T10:00:00Z' }, 'myAccount.transactionPasswordTab.errorLocked'],
+    [401, { code: 'TRANSACTION_PASSWORD_INVALID' }, 'myAccount.transactionPasswordTab.errorInvalid'],
+    [400, { code: 'TRANSACTION_PASSWORD_SAME_AS_LOGIN' }, 'myAccount.transactionPasswordTab.errorSameAsLogin']
+  ];
+  gateCases.forEach(([status, body, key]) => {
+    it(`maps profile-save ${status} ${body.code} to ${key}`, () => {
+      init();
+      fixture.componentInstance.onSaveChanges();
+      httpMock.expectOne('/api/associates/me/profile').flush(body, { status, statusText: 'x' });
+      flushPendingNomineeIfAny();
+      expect(fixture.componentInstance.saveError).toBe(key);
+      expect(fixture.componentInstance.emailConflictError).toBeUndefined();
+      if (status === 409) expect(fixture.componentInstance.profileSubTab).toBe('transactionPassword');
+    });
+
+    it(`maps change-transaction-password ${status} ${body.code} to ${key}`, () => {
+      init();
+      fixture.componentInstance.transactionPasswordForm.setValue({
+        currentTransactionPassword: 'old', newTransactionPassword: 'secret123', confirmTransactionPassword: 'secret123'
+      });
+      fixture.componentInstance.onTransactionPasswordSubmit();
+      httpMock.expectOne('/api/associates/me/transaction-password').flush(body, { status, statusText: 'x' });
+      expect(fixture.componentInstance.transactionPasswordSaveError).toBe(key);
+    });
+  });
+
   it('changes the login password via the Login Password sub-tab, reusing AuthService', () => {
     init();
     fixture.componentInstance.profileSubTab = 'loginPassword';
