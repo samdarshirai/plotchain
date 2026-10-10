@@ -23,10 +23,6 @@ export interface AssociateNavItem {
 // can-you-break-down-vectorized-dongarra.md).
 export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
   { key: 'dashboard', labelKey: 'nav.dashboard', icon: 'dashboard', path: '/dashboard' },
-  { key: 'myTree', labelKey: 'nav.myTree', icon: 'account_tree', path: '/my-tree' },
-  { key: 'salesHistory', labelKey: 'nav.salesHistory', icon: 'receipt_long', path: '/sales-history' },
-  { key: 'plotBookings', labelKey: 'nav.plotBookings', icon: 'grid_view', path: '/plot-bookings' },
-  { key: 'epins', labelKey: 'nav.epins', icon: 'confirmation_number', path: '/e-pins' },
   {
     key: 'myAccount', labelKey: 'nav.myAccount', icon: 'person', path: '/profile',
     children: [
@@ -36,6 +32,10 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
       { key: 'kyc', labelKey: 'myAccount.tabs.kyc', path: '/profile/kyc' }
     ]
   },
+  { key: 'epins', labelKey: 'nav.epins', icon: 'confirmation_number', path: '/e-pins' },
+  { key: 'myTree', labelKey: 'nav.myTree', icon: 'account_tree', path: '/my-tree' },
+  { key: 'salesHistory', labelKey: 'nav.salesHistory', icon: 'receipt_long', path: '/sales-history' },
+  { key: 'plotBookings', labelKey: 'nav.plotBookings', icon: 'grid_view', path: '/plot-bookings' },
   { key: 'incomeStatement', labelKey: 'nav.incomeStatement', icon: 'description', path: '/income-statement' },
   { key: 'payoutHistory', labelKey: 'nav.payoutHistory', icon: 'payments', path: '/payout-history' },
   { key: 'supportTickets', labelKey: 'nav.supportTickets', icon: 'support_agent', path: '/support-tickets' },
