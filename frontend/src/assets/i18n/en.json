@@ -361,7 +361,11 @@
       "saveAction": "Save Changes",
       "saveSuccess": "Transaction password updated.",
       "saveError": "Something went wrong updating your transaction password. Please try again.",
-      "mismatch": "Passwords don't match."
+      "mismatch": "Passwords don't match.",
+      "errorNotSet": "Set a transaction password first.",
+      "errorLocked": "Transaction password is locked after too many wrong attempts. Try again later or ask an admin to reset it.",
+      "errorInvalid": "Incorrect transaction password.",
+      "errorSameAsLogin": "Transaction password must differ from your login password."
     },
     "bankDetails": {
       "title": "Bank Details",
@@ -494,6 +498,12 @@
     "errorNotFound": "No such pin, or no associate with that ID.",
     "errorConflict": "That pin or associate cannot be used for this action right now.",
     "errorGeneric": "Something went wrong. Try again.",
+    "passwordLabel": "Transaction password",
+    "errorPasswordRequired": "Enter your transaction password.",
+    "errorPasswordInvalid": "Incorrect transaction password.",
+    "errorPasswordNotSet": "Set a transaction password in My Account first.",
+    "errorPasswordLocked": "Too many wrong attempts. Transaction password is locked.",
+    "lockedUntilHint": "Try again after {{time}}.",
     "pendingBanner": "Your account is pending activation. Ask your sponsor for an e-pin."
   },
   "supportTickets": {
@@ -726,6 +736,8 @@
       "suspendAction": "Suspend",
       "reactivateAction": "Reactivate",
       "resetPasswordAction": "Reset Password",
+      "resetTransactionPasswordAction": "Reset transaction password",
+      "resetTransactionPasswordDone": "Transaction password cleared. The associate must set a new one.",
       "temporaryPasswordNotice": "New temporary password (shown once)",
       "loadError": "Something went wrong loading the associate directory. Try again.",
       "actionError": "Could not complete that action. Please try again.",

@@ -36,14 +36,14 @@ describe('EPinsService', () => {
   });
 
   it('redeems and transfers by human userId', () => {
-    service.redeem('p1', 'VP00042').subscribe();
+    service.redeem('p1', 'VP00042', 'secret1').subscribe();
     let req = httpMock.expectOne('/api/associates/me/epins/p1/redeem');
-    expect(req.request.body).toEqual({ userId: 'VP00042' });
+    expect(req.request.body).toEqual({ userId: 'VP00042', transactionPassword: 'secret1' });
     req.flush({});
 
-    service.transfer('p1', 'VP00050').subscribe();
+    service.transfer('p1', 'VP00050', 'secret1').subscribe();
     req = httpMock.expectOne('/api/associates/me/epins/p1/transfer');
-    expect(req.request.body).toEqual({ toUserId: 'VP00050' });
+    expect(req.request.body).toEqual({ toUserId: 'VP00050', transactionPassword: 'secret1' });
     req.flush({});
   });
 });
