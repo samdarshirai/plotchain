@@ -49,7 +49,7 @@ The failure-counter write must survive the request failing: run it in its own `R
 
 ### 3. Gated endpoints
 
-- `POST /api/associates/me/epins/{id}/redeem` and `/transfer`: add `@NotBlank transactionPassword` to `AssociateRedeemEPinRequest` and `TransferEPinRequest`. Call the guard before any state change.
+- `POST /api/associates/me/epins/{id}/redeem` and `/transfer`: add a `transactionPassword` field to `AssociateRedeemEPinRequest` and `TransferEPinRequest`. It is intentionally NOT `@NotBlank`, so a blank value reaches the guard and counts as a failed attempt (matches §2 step 3). Call the guard before any state change.
 - Profile PUT and nominee PUT: call the guard; remove the skip-if-unset behavior. Request field stays `transactionPassword`, now effectively required (rejected as NOT_SET if the associate has none).
 - `POST /api/associates/me/transaction-password` (set/change):
   - First-time set (hash null): no current password needed.
@@ -62,7 +62,7 @@ The failure-counter write must survive the request failing: run it in its own `R
 
 ### 5. Frontend
 
-- `auth.interceptor.ts` already treats transaction-password errors as non-session-fatal; extend the handling for `TRANSACTION_PASSWORD_NOT_SET` (navigate to the my-account set-password section) and `TRANSACTION_PASSWORD_LOCKED` (show the unlock time).
+- `auth.interceptor.ts` only exempts the E-PIN redeem/transfer routes from the 401-logout rule. `TRANSACTION_PASSWORD_NOT_SET` and `TRANSACTION_PASSWORD_LOCKED` (409/423, never a logout) are handled per component: the E-PIN screen shows a message (and the unlock time for LOCKED); My Account switches to its transaction-password sub-tab for NOT_SET.
 - E-PIN redeem and transfer dialogs gain a transaction-password input; send it in the request.
 - Admin associate screen gains a "Reset transaction password" action with confirmation.
 - Add `en.json` and `hi.json` strings for the new errors and labels.
@@ -77,14 +77,15 @@ Backend:
 - Admin reset: clears hash/counter/lock, audit entry written, non-admin forbidden.
 
 Frontend:
-- Interceptor specs for NOT_SET and LOCKED.
-- E-PIN dialog specs send the password; error display.
-- Admin reset action spec.
+- E-PIN screen specs (`epins.component.spec.ts`): the password is sent; NOT_SET, LOCKED (with unlock time) and invalid errors display.
+- My Account specs: profile/nominee save sends the password sequentially (no nominee request after a failed profile PUT), blank password makes no HTTP call, NOT_SET switches to the transaction-password sub-tab, error mapping for 409/423/401/400.
+- Admin associate directory specs: reset action requires confirmation, then calls the service.
 
 ## Out of scope
 
 - Gating admin actions (withdrawal decision/disburse, wallet credit, booking and sale operations).
 - Associate self-service withdrawal request (does not exist today). When built, it calls `TransactionPasswordGuard.require` like the E-PIN endpoints.
+- `PUT /api/associates/me/bank-details` is not gated by the transaction password in this spec (open product decision).
 - Email/OTP or self-service recovery.
 - Login lockout.
 - Strength rules beyond existing min length and the differs-from-login rule.

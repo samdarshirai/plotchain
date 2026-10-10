@@ -11,7 +11,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -92,5 +99,37 @@ class TransactionPasswordLockoutIntegrationTest {
         associateRepository.save(fresh); // what a profile save does after the guard
 
         assertThat(associateRepository.findById(id).orElseThrow().getTransactionPasswordFailedAttempts()).isZero();
+    }
+
+    @Test
+    void fiveConcurrentWrongAttemptsAllCountAndLock() throws Exception {
+        UUID id = seedAssociate();
+        int n = 5;
+        ExecutorService pool = Executors.newFixedThreadPool(n);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            List<Future<Throwable>> results = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                results.add(pool.submit(() -> {
+                    start.await();
+                    try {
+                        guard.require(id, "wrong");
+                        return null;
+                    } catch (Throwable t) {
+                        return t;
+                    }
+                }));
+            }
+            start.countDown();
+            for (Future<Throwable> f : results) {
+                assertThat(f.get(30, TimeUnit.SECONDS)).isInstanceOfAny(
+                    InvalidTransactionPasswordException.class, TransactionPasswordLockedException.class);
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+
+        Instant lockedUntil = associateRepository.findById(id).orElseThrow().getTransactionPasswordLockedUntil();
+        assertThat(lockedUntil).isNotNull().isAfter(Instant.now());
     }
 }
