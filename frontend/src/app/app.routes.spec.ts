@@ -80,12 +80,15 @@ describe('routes', () => {
     expect(route!.redirectTo).toBe('profile');
   });
 
-  it('guards the income-statement route with authGuard and associateOnlyGuard', () => {
-    const route = routes.find(r => r.path === 'income-statement');
-
-    expect(route).toBeTruthy();
-    expect(route!.canActivate).toContain(authGuard);
-    expect(route!.canActivate).toContain(associateOnlyGuard);
+  it('guards every income-statement route with authGuard and associateOnlyGuard and tags its incomeType', () => {
+    const paths = ['', '/direct', '/matching', '/sponsor-matching', '/royalty', '/reward', '/perk'].map(s => 'income-statement' + s);
+    for (const path of paths) {
+      const route = routes.find(r => r.path === path);
+      expect(route).withContext(path).toBeTruthy();
+      expect(route!.canActivate).toContain(authGuard);
+      expect(route!.canActivate).toContain(associateOnlyGuard);
+      expect(route!.data?.['incomeType']).withContext(path).toBeTruthy();
+    }
   });
 
   it('guards the payout-history route with authGuard and associateOnlyGuard', () => {

@@ -1,11 +1,11 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { IncomeStatementService } from './income-statement.service';
 import { AssociateLedgerPage, AssociateLedgerFilters } from './models/associate-ledger-page.model';
-import { TabBarComponent, TabDefinition } from '../shared/components/tab-bar/tab-bar.component';
 import { EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 
@@ -21,17 +21,13 @@ export interface CycleOption {
 @Component({
   selector: 'app-income-statement',
   standalone: true,
-  imports: [CommonModule, TranslateModule, TabBarComponent, EditableTableComponent, InlineBannerComponent],
+  imports: [CommonModule, TranslateModule, EditableTableComponent, InlineBannerComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="income-statement">
       <div class="income-statement__intro">
         <h1 class="income-statement__title">{{ 'incomeStatement.title' | translate }}</h1>
         <p class="income-statement__subtitle">{{ 'incomeStatement.subtitle' | translate }}</p>
-      </div>
-
-      <div class="income-statement__tabs">
-        <app-tab-bar [tabs]="tabs" [activeTabId]="activeIncomeType" (tabChange)="onTabChange($event)"></app-tab-bar>
       </div>
 
       <div class="income-statement__filters">
@@ -90,6 +86,7 @@ export interface CycleOption {
 export class IncomeStatementComponent implements OnInit, OnDestroy {
   private incomeStatementService = inject(IncomeStatementService);
   private translate = inject(TranslateService);
+  private route = inject(ActivatedRoute);
   private currencyPipe = inject(CurrencyPipe);
   protected datePipe = inject(DatePipe);
   private destroyed$ = new Subject<void>();
@@ -102,18 +99,6 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   statementRows: Record<string, string>[] = [];
   private cycleId = '';
   private status = '';
-
-  get tabs(): TabDefinition[] {
-    return [
-      { id: 'ALL', label: this.translate.instant('incomeStatement.tabAll') },
-      { id: 'DIRECT', label: this.translate.instant('incomeStatement.tabDirect') },
-      { id: 'MATCHING', label: this.translate.instant('incomeStatement.tabMatching') },
-      { id: 'SPONSOR_MATCHING', label: this.translate.instant('incomeStatement.tabSponsorMatching') },
-      { id: 'ROYALTY', label: this.translate.instant('incomeStatement.tabRoyalty') },
-      { id: 'REWARD', label: this.translate.instant('incomeStatement.tabReward') },
-      { id: 'PERK', label: this.translate.instant('incomeStatement.tabPerk') }
-    ];
-  }
 
   get currentPage(): number {
     return (this.page?.page ?? 0) + 1;
@@ -134,7 +119,12 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     this.buildColumns();
     this.translate.onLangChange.pipe(takeUntil(this.destroyed$)).subscribe(() => this.buildColumns());
     this.loadCycleOptions();
-    this.loadPage(0);
+    // Angular reuses this instance across the sibling /income-statement/* routes (see
+    // app.routes.ts), so data must be subscribed to, not read once. Fires on init too.
+    this.route.data.pipe(takeUntil(this.destroyed$)).subscribe(data => {
+      this.activeIncomeType = (data['incomeType'] as string) ?? 'ALL';
+      this.loadPage(0);
+    });
   }
 
   ngOnDestroy(): void {
@@ -169,11 +159,6 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
           { key: 'createdAt', label: t['incomeStatement.columnCreatedAt'], type: 'text' }
         ];
       });
-  }
-
-  onTabChange(id: string): void {
-    this.activeIncomeType = id;
-    this.loadPage(0);
   }
 
   onCycleIdChange(value: string): void {
