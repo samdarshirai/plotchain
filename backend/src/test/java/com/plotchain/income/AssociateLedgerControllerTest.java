@@ -64,7 +64,7 @@ class AssociateLedgerControllerTest {
             entryId, IncomeType.DIRECT, cycleId,
             LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 15),
             new BigDecimal("100.00"), new BigDecimal("5.00"), new BigDecimal("4.00"), new BigDecimal("91.00"),
-            LedgerEntryStatus.PAID, UUID.randomUUID(), Instant.now());
+            LedgerEntryStatus.PAID, UUID.randomUUID(), Instant.now(), null);
         AssociateLedgerPageResponse page = new AssociateLedgerPageResponse(List.of(row), 0, 20, 1);
         when(ledgerService.myList(
             eq(associateId), eq(IncomeType.DIRECT), eq(cycleId), eq(LedgerEntryStatus.PAID), eq(0), eq(20)))

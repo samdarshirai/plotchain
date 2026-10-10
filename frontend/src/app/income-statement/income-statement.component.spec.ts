@@ -102,6 +102,10 @@ describe('IncomeStatementComponent', () => {
         columnNetAmount: 'Net Amount',
         columnSourceRef: 'Source Ref',
         columnCreatedAt: 'Created At',
+        columnSerial: 'S.N.', columnPeriod: 'Period', columnMatchingBusiness: 'Matching Business', columnMatchingIncome: 'Matching Income',
+        bflbAbbr: 'BFLB', bfrbAbbr: 'BFRB', nlbAbbr: 'NLB', nrbAbbr: 'NRB', tlbAbbr: 'TLB', trbAbbr: 'TRB', clbAbbr: 'CLB', crbAbbr: 'CRB',
+        bflbLegend: 'Back Forward Left Business', bfrbLegend: 'Back Forward Right Business', nlbLegend: 'New Left Business', nrbLegend: 'New Right Business',
+        tlbLegend: 'Total Left Business', trbLegend: 'Total Right Business', clbLegend: 'Calculate Left Business', crbLegend: 'Calculate Right Business',
         noSourceRef: '—',
         loadError: 'Something went wrong loading your income statement. Please try again.',
         emptyState: 'No income entries match these filters.',
@@ -303,5 +307,29 @@ describe('IncomeStatementComponent', () => {
       'Type de revenu', 'Période', 'Statut', 'Montant brut', 'Déduction TDS',
       'Déduction admin', 'Montant net', 'Réf. source', 'Créé le'
     ]);
+  });
+
+  it('Matching tab shows the leg-business columns, legend and a running S.N.', () => {
+    flushInitialRequests();
+    routeData$.next({ incomeType: 'MATCHING' });
+    httpMock
+      .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('incomeType') === 'MATCHING')
+      .flush({
+        entries: [{
+          ...sampleEntry, incomeType: 'MATCHING', cyclePeriodStart: '2026-06-02', cyclePeriodEnd: '2026-06-16', grossAmount: 35000,
+          legBreakdown: { bfLeft: 1000000, bfRight: 0, newLeft: 0, newRight: 500000, totalLeft: 1000000, totalRight: 500000,
+            calcLeft: 500000, calcRight: 500000, matchingBusiness: 500000 }
+        }],
+        page: 0, size: 20, totalElements: 1
+      });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
+      'S.N.', 'Period', 'BFLB', 'BFRB', 'NLB', 'NRB', 'TLB', 'TRB', 'CLB', 'CRB', 'Matching Business', 'Matching Income'
+    ]);
+    expect(fixture.nativeElement.querySelector('.income-statement__legend').textContent).toContain('Calculate Right Business');
+    const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
+      .map((td: any) => td.textContent.trim());
+    expect(cells).toEqual(jasmine.arrayContaining(['1', '02-06-2026 / 16-06-2026', '1000000', '500000', '35000']));
   });
 });

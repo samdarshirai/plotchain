@@ -4,10 +4,14 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
+import com.plotchain.legvolume.LegVolume;
+import com.plotchain.legvolume.LegVolumeRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -23,11 +27,14 @@ public class LedgerService {
     private final LedgerEntryRepository ledgerEntryRepository;
     private final AssociateRepository associateRepository;
     private final CycleRepository cycleRepository;
+    private final LegVolumeRepository legVolumeRepository;
 
     public LedgerService(
             LedgerEntryRepository ledgerEntryRepository,
             AssociateRepository associateRepository,
-            CycleRepository cycleRepository) {
+            CycleRepository cycleRepository,
+            LegVolumeRepository legVolumeRepository) {
+        this.legVolumeRepository = legVolumeRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.associateRepository = associateRepository;
         this.cycleRepository = cycleRepository;
@@ -65,8 +72,10 @@ public class LedgerService {
         List<LedgerEntry> content = result.getContent();
         Map<UUID, Cycle> cyclesById = cyclesById(content);
 
+        Map<UUID, AssociateLedgerEntryResponse.LegBreakdown> breakdowns = legBreakdowns(associateId, content);
+
         List<AssociateLedgerEntryResponse> entries = content.stream()
-            .map(e -> toAssociateResponse(e, cyclesById.get(e.getCycleId())))
+            .map(e -> toAssociateResponse(e, cyclesById.get(e.getCycleId()), breakdowns.get(e.getSourceRef())))
             .toList();
         return new AssociateLedgerPageResponse(entries, page, size, result.getTotalElements());
     }
@@ -109,7 +118,8 @@ public class LedgerService {
 
     // Same "leave field null on a lookup miss" behavior as toAdminResponse above (Flow step 6)
     // -- a read-only view, not a strict-consistency write path.
-    private AssociateLedgerEntryResponse toAssociateResponse(LedgerEntry entry, Cycle cycle) {
+    private AssociateLedgerEntryResponse toAssociateResponse(
+            LedgerEntry entry, Cycle cycle, AssociateLedgerEntryResponse.LegBreakdown legBreakdown) {
         return new AssociateLedgerEntryResponse(
             entry.getId(),
             entry.getIncomeType(),
@@ -122,6 +132,33 @@ public class LedgerService {
             entry.getNetAmount(),
             entry.getStatus(),
             entry.getSourceRef(),
-            entry.getCreatedAt());
+            entry.getCreatedAt(),
+            legBreakdown);
+    }
+
+    // MATCHING rows' sourceRef is the leg_volume.id (CycleService#creditMatchingIncome). Brought-forward
+    // is the previous cycle's carriedForward on the caller's own history, same walk as
+    // LegVolumeRepository#totalBusiness; total = leg volume (already includes the carry-in).
+    // Keyed by leg_volume.id; empty when the page has no MATCHING rows.
+    private Map<UUID, AssociateLedgerEntryResponse.LegBreakdown> legBreakdowns(
+            UUID associateId, List<LedgerEntry> entries) {
+        boolean anyMatching = entries.stream()
+            .anyMatch(e -> e.getIncomeType() == IncomeType.MATCHING && e.getSourceRef() != null);
+        Map<UUID, AssociateLedgerEntryResponse.LegBreakdown> result = new HashMap<>();
+        if (!anyMatching) return result;
+
+        BigDecimal bfLeft = BigDecimal.ZERO;
+        BigDecimal bfRight = BigDecimal.ZERO;
+        for (LegVolume row : legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId)) {
+            BigDecimal totalLeft = row.getLeftLegVolume();
+            BigDecimal totalRight = row.getRightLegVolume();
+            BigDecimal matched = totalLeft.min(totalRight);
+            result.put(row.getId(), new AssociateLedgerEntryResponse.LegBreakdown(
+                bfLeft, bfRight, totalLeft.subtract(bfLeft), totalRight.subtract(bfRight),
+                totalLeft, totalRight, matched, matched, matched));
+            bfLeft = row.getCarriedForwardLeft();
+            bfRight = row.getCarriedForwardRight();
+        }
+        return result;
     }
 }

@@ -2256,6 +2256,35 @@
   }
 }
 
+.income-statement__legend {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+  padding: 1rem 1.5rem;
+  background: var(--surface-raised);
+  border-radius: 16px;
+  font-size: 0.8125rem;
+
+  div {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  dt {
+    font-weight: 600;
+    min-width: 3rem;
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  @media (max-width: 1100px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .income-statement__filters {
   display: flex;
   align-items: flex-end;
@@ -2459,6 +2488,48 @@
   padding: 3rem 1.5rem;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+// Matching tab: 12 uniform numeric columns. The nth-child rules above style the generic 9-column
+// ledger by position (pill, colors), so reset them here and right-align the number columns.
+.income-statement--matching .editable-table {
+  min-width: 0;
+  width: 100%;
+}
+
+.income-statement--matching .editable-table thead th,
+.income-statement--matching .editable-table tbody td:not(.editable-table__empty) {
+  padding: 0.875rem 0.625rem;
+  white-space: nowrap;
+}
+
+.income-statement--matching .editable-table thead th:nth-child(n + 3),
+.income-statement--matching .editable-table tbody td:nth-child(n + 3) {
+  text-align: right;
+}
+
+.income-statement--matching .editable-table tbody td:not(.editable-table__empty):nth-child(n) {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text-primary);
+  background: none;
+  border-radius: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.income-statement--matching .editable-table tbody td:nth-child(n) span {
+  font-size: inherit;
+  font-weight: inherit;
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.income-statement--matching .editable-table tbody td:last-child:not(.editable-table__empty) {
+  font-weight: 700;
 }
 
 .income-statement__pagination {

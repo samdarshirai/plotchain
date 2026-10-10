@@ -7,6 +7,19 @@ export type IncomeType = 'DIRECT' | 'MATCHING' | 'SPONSOR_MATCHING' | 'ROYALTY' 
 
 export type LedgerEntryStatus = 'PENDING' | 'CARRIED_FORWARD' | 'PAID' | 'REVERSED';
 
+// MATCHING rows only (null otherwise); calc* == matchingBusiness == min(total left, total right).
+export interface LegBreakdown {
+  bfLeft: number;
+  bfRight: number;
+  newLeft: number;
+  newRight: number;
+  totalLeft: number;
+  totalRight: number;
+  calcLeft: number;
+  calcRight: number;
+  matchingBusiness: number;
+}
+
 export interface AssociateLedgerEntry {
   id: string;
   incomeType: IncomeType;
@@ -20,4 +33,5 @@ export interface AssociateLedgerEntry {
   status: LedgerEntryStatus;
   sourceRef: string | null;
   createdAt: string;
+  legBreakdown?: LegBreakdown | null;
 }

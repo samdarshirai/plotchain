@@ -26,4 +26,18 @@ public record AssociateLedgerEntryResponse(
     BigDecimal netAmount,
     LedgerEntryStatus status,
     UUID sourceRef,
-    Instant createdAt) {}
+    Instant createdAt,
+    LegBreakdown legBreakdown) {
+
+    // MATCHING rows only (null otherwise). calc* == matchingBusiness == min(total left, total right).
+    public record LegBreakdown(
+        BigDecimal bfLeft,
+        BigDecimal bfRight,
+        BigDecimal newLeft,
+        BigDecimal newRight,
+        BigDecimal totalLeft,
+        BigDecimal totalRight,
+        BigDecimal calcLeft,
+        BigDecimal calcRight,
+        BigDecimal matchingBusiness) {}
+}

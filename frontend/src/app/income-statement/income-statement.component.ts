@@ -1,16 +1,29 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { IncomeStatementService } from './income-statement.service';
 import { AssociateLedgerPage, AssociateLedgerFilters } from './models/associate-ledger-page.model';
+import { TabBarComponent, TabDefinition } from '../shared/components/tab-bar/tab-bar.component';
 import { EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 
 const PAGE_SIZE = 20;
 const CYCLE_LOOKUP_SIZE = 100;
+
+const TAB_ROUTES = [
+  { id: 'ALL', labelKey: 'incomeStatement.tabAll', path: '/income-statement' },
+  { id: 'DIRECT', labelKey: 'incomeStatement.tabDirect', path: '/income-statement/direct' },
+  { id: 'MATCHING', labelKey: 'incomeStatement.tabMatching', path: '/income-statement/matching' },
+  { id: 'SPONSOR_MATCHING', labelKey: 'incomeStatement.tabSponsorMatching', path: '/income-statement/sponsor-matching' },
+  { id: 'ROYALTY', labelKey: 'incomeStatement.tabRoyalty', path: '/income-statement/royalty' },
+  { id: 'REWARD', labelKey: 'incomeStatement.tabReward', path: '/income-statement/reward' },
+  { id: 'PERK', labelKey: 'incomeStatement.tabPerk', path: '/income-statement/perk' }
+];
+
+const MATCHING_KEYS = ['bflb', 'bfrb', 'nlb', 'nrb', 'tlb', 'trb', 'clb', 'crb'];
 
 export interface CycleOption {
   cycleId: string;
@@ -21,14 +34,22 @@ export interface CycleOption {
 @Component({
   selector: 'app-income-statement',
   standalone: true,
-  imports: [CommonModule, TranslateModule, EditableTableComponent, InlineBannerComponent],
+  imports: [CommonModule, TranslateModule, TabBarComponent, EditableTableComponent, InlineBannerComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
-    <div class="income-statement">
+    <div class="income-statement" [class.income-statement--matching]="activeIncomeType === 'MATCHING'">
       <div class="income-statement__intro">
         <h1 class="income-statement__title">{{ 'incomeStatement.title' | translate }}</h1>
         <p class="income-statement__subtitle">{{ 'incomeStatement.subtitle' | translate }}</p>
       </div>
+
+      <div class="income-statement__tabs">
+        <app-tab-bar [tabs]="tabs" [activeTabId]="activeIncomeType" (tabChange)="onTabChange($event)"></app-tab-bar>
+      </div>
+
+      <dl class="income-statement__legend" *ngIf="activeIncomeType === 'MATCHING'">
+        <div *ngFor="let key of legendKeys"><dt>{{ 'incomeStatement.' + key + 'Abbr' | translate }}</dt><dd>{{ 'incomeStatement.' + key + 'Legend' | translate }}</dd></div>
+      </dl>
 
       <div class="income-statement__filters">
         <div class="income-statement__filter-field">
@@ -87,9 +108,12 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   private incomeStatementService = inject(IncomeStatementService);
   private translate = inject(TranslateService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private currencyPipe = inject(CurrencyPipe);
   protected datePipe = inject(DatePipe);
   private destroyed$ = new Subject<void>();
+
+  legendKeys = ['bflb', 'nlb', 'tlb', 'clb', 'bfrb', 'nrb', 'trb', 'crb'];
 
   page: AssociateLedgerPage | null = null;
   loadError = false;
@@ -99,6 +123,10 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   statementRows: Record<string, string>[] = [];
   private cycleId = '';
   private status = '';
+
+  get tabs(): TabDefinition[] {
+    return TAB_ROUTES.map(t => ({ id: t.id, label: this.translate.instant(t.labelKey) }));
+  }
 
   get currentPage(): number {
     return (this.page?.page ?? 0) + 1;
@@ -123,6 +151,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     // app.routes.ts), so data must be subscribed to, not read once. Fires on init too.
     this.route.data.pipe(takeUntil(this.destroyed$)).subscribe(data => {
       this.activeIncomeType = (data['incomeType'] as string) ?? 'ALL';
+      this.buildColumns();
       this.loadPage(0);
     });
   }
@@ -133,6 +162,10 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   private buildColumns(): void {
+    if (this.activeIncomeType === 'MATCHING') {
+      this.buildMatchingColumns();
+      return;
+    }
     this.translate
       .get([
         'incomeStatement.columnIncomeType',
@@ -159,6 +192,23 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
           { key: 'createdAt', label: t['incomeStatement.columnCreatedAt'], type: 'text' }
         ];
       });
+  }
+
+  private buildMatchingColumns(): void {
+    const keys = ['columnSerial', 'columnPeriod', ...MATCHING_KEYS.map(k => k + 'Abbr'), 'columnMatchingBusiness', 'columnMatchingIncome']
+      .map(k => 'incomeStatement.' + k);
+    this.translate
+      .get(keys)
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(t => {
+        const cols = ['sn', 'period', ...MATCHING_KEYS, 'matchingBusiness', 'matchingIncome'];
+        this.statementColumns = cols.map((key, i) => ({ key, label: t[keys[i]], type: 'text' as const }));
+      });
+  }
+
+  // Each tab is its own route (see app.routes.ts), so tabs stay deep-linkable.
+  onTabChange(id: string): void {
+    this.router.navigateByUrl(TAB_ROUTES.find(t => t.id === id)?.path ?? '/income-statement');
   }
 
   onCycleIdChange(value: string): void {
@@ -238,7 +288,33 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     return `−${this.formatCurrency(amount)}`;
   }
 
+  private updateMatchingRows(): void {
+    const offset = (this.page?.page ?? 0) * (this.page?.size ?? 0);
+    const n = (v: number | undefined) => String(v ?? 0);
+    this.statementRows = (this.page?.entries ?? []).map((entry, i) => {
+      const b = entry.legBreakdown;
+      return {
+        sn: String(offset + i + 1),
+        period: `${this.datePipe.transform(entry.cyclePeriodStart, 'dd-MM-yyyy')} / ${this.datePipe.transform(entry.cyclePeriodEnd, 'dd-MM-yyyy')}`,
+        bflb: n(b?.bfLeft),
+        bfrb: n(b?.bfRight),
+        nlb: n(b?.newLeft),
+        nrb: n(b?.newRight),
+        tlb: n(b?.totalLeft),
+        trb: n(b?.totalRight),
+        clb: n(b?.calcLeft),
+        crb: n(b?.calcRight),
+        matchingBusiness: n(b?.matchingBusiness),
+        matchingIncome: n(entry.grossAmount)
+      };
+    });
+  }
+
   private updateTableRows(): void {
+    if (this.activeIncomeType === 'MATCHING') {
+      this.updateMatchingRows();
+      return;
+    }
     this.statementRows = (this.page?.entries ?? []).map(entry => ({
       incomeType: entry.incomeType,
       cyclePeriod: `${this.datePipe.transform(entry.cyclePeriodStart, 'mediumDate')} – ${this.datePipe.transform(entry.cyclePeriodEnd, 'mediumDate')}`,
