@@ -494,6 +494,12 @@
     "errorNotFound": "No such pin, or no associate with that ID.",
     "errorConflict": "That pin or associate cannot be used for this action right now.",
     "errorGeneric": "Something went wrong. Try again.",
+    "passwordLabel": "Transaction password",
+    "errorPasswordRequired": "Enter your transaction password.",
+    "errorPasswordInvalid": "Incorrect transaction password.",
+    "errorPasswordNotSet": "Set a transaction password in My Account first.",
+    "errorPasswordLocked": "Too many wrong attempts. Transaction password is locked.",
+    "lockedUntilHint": "Try again after {{time}}.",
     "pendingBanner": "Your account is pending activation. Ask your sponsor for an e-pin."
   },
   "supportTickets": {
