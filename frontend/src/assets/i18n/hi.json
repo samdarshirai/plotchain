@@ -981,8 +981,8 @@
       "creditGenericError": "Could not credit wallets for this cycle. Please try again."
     },
     "ledgerRegister": {
-      "eyebrow": "Admin · Ledger Register",
-      "title": "Ledger Register",
+      "eyebrow": "Admin · Income Statement",
+      "title": "Income Statement",
       "subtitle": "Every posted ledger entry, across every associate and cycle — a raw, view-only audit trail. No entry here can be edited or removed.",
       "associateFilterLabel": "Associate",
       "associateFilterAllOption": "All associates",
@@ -1600,7 +1600,7 @@
       "adminStats": "एडमिन आँकड़े",
       "salesRegister": "बिक्री रजिस्टर",
       "cycleManagement": "चक्र प्रबंधन",
-      "ledgerRegister": "Ledger Register",
+      "ledgerRegister": "Income Statement",
       "payoutApproval": "Payout Approval",
       "projectsPlots": "प्रोजेक्ट्स और प्लॉट्स",
       "bookingsEmi": "बुकिंग और ईएमआई",

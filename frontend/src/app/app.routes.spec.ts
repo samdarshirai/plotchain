@@ -164,13 +164,13 @@ describe('routes', () => {
       expect(settingsRoute!.canActivate).toContain(launchedModeGuard);
     });
 
-    it('redirects bare /settings to the first category\'s first item, with no hub screen left', () => {
+    it('redirects bare /settings to Setup\'s first item, with no hub screen left', () => {
       const settingsRoute = routes.find(r => r.path === 'settings');
       const emptyChild = settingsRoute!.children!.find(c => c.path === '');
       expect(emptyChild).toBeTruthy();
       expect(emptyChild!.component).toBeUndefined();
       expect(emptyChild!.redirectTo).toBe('company-profile');
-      expect(emptyChild!.redirectTo).toBe(ADMIN_NAV_CATEGORIES[0].items[0].path.replace('/settings/', ''));
+      expect(emptyChild!.redirectTo).toBe(ADMIN_NAV_CATEGORIES.find(c => c.key === 'setup')!.items[0].path.replace('/settings/', ''));
     });
 
     it('has a child route behind every nav item in every category', () => {

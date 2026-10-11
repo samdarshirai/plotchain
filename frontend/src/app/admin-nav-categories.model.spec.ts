@@ -3,22 +3,22 @@ import { ADMIN_NAV_CATEGORIES, findNavCategoryForUrl } from './admin-nav-categor
 describe('ADMIN_NAV_CATEGORIES', () => {
   it('listsTheMockupCategoriesInOrderWithTheirIcons', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => [category.key, category.icon])).toEqual([
-      ['setup', 'tune'],
       ['network', 'group'],
       ['finance', 'point_of_sale'],
       ['inventory', 'domain'],
       ['communication', 'forum'],
+      ['setup', 'tune'],
       ['system', 'admin_panel_settings']
     ]);
   });
 
   it('groupsEverySettingsScreenUnderTheirCategory', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => category.items.map(item => item.key))).toEqual([
-      ['companyProfile', 'branding', 'compensation', 'paymentsKyc'],
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
-      ['salesRegister', 'cycleManagement', 'ledgerRegister', 'epinRegister', 'payoutApproval'],
+      ['ledgerRegister', 'salesRegister', 'cycleManagement', 'epinRegister', 'payoutApproval'],
       ['projectsPlots', 'bookingsEmi'],
       ['supportTickets', 'announcements'],
+      ['companyProfile', 'branding', 'compensation', 'paymentsKyc'],
       ['auditLog', 'adminStats']
     ]);
   });

@@ -1309,8 +1309,8 @@
       "lookupClear": "Clear selection"
     },
     "ledgerRegister": {
-      "eyebrow": "Admin · Ledger Register",
-      "title": "Ledger Register",
+      "eyebrow": "Admin · Income Statement",
+      "title": "Income Statement",
       "subtitle": "Every posted ledger entry, across every associate and cycle — a raw, view-only audit trail. No entry here can be edited or removed.",
       "associateFilterLabel": "Associate",
       "associateFilterAllOption": "All associates",
@@ -1693,7 +1693,7 @@
       "adminStats": "Admin Stats",
       "salesRegister": "Sales Register",
       "cycleManagement": "Cycle Management",
-      "ledgerRegister": "Ledger Register",
+      "ledgerRegister": "Income Statement",
       "epinRegister": "e-Pin Register",
       "payoutApproval": "Payout Approval",
       "projectsPlots": "Projects & Plots",

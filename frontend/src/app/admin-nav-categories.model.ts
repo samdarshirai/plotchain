@@ -20,17 +20,6 @@ export interface AdminNavCategory {
 // collapses the item row entirely.
 export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
   {
-    key: 'setup',
-    labelKey: 'nav.categories.setup',
-    icon: 'tune',
-    items: [
-      { key: 'companyProfile', labelKey: 'settings.sections.companyProfile', path: '/settings/company-profile' },
-      { key: 'branding', labelKey: 'settings.sections.branding', path: '/settings/branding' },
-      { key: 'compensation', labelKey: 'settings.sections.compensation', path: '/settings/compensation' },
-      { key: 'paymentsKyc', labelKey: 'settings.sections.paymentsKyc', path: '/settings/payments-kyc' }
-    ]
-  },
-  {
     key: 'network',
     labelKey: 'nav.categories.network',
     icon: 'group',
@@ -45,9 +34,9 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     labelKey: 'nav.categories.finance',
     icon: 'point_of_sale',
     items: [
+      { key: 'ledgerRegister', labelKey: 'settings.sections.ledgerRegister', path: '/settings/ledger-register' },
       { key: 'salesRegister', labelKey: 'settings.sections.salesRegister', path: '/settings/sales-register' },
       { key: 'cycleManagement', labelKey: 'settings.sections.cycleManagement', path: '/settings/cycle-management' },
-      { key: 'ledgerRegister', labelKey: 'settings.sections.ledgerRegister', path: '/settings/ledger-register' },
       { key: 'epinRegister', labelKey: 'settings.sections.epinRegister', path: '/settings/e-pin-register' },
       { key: 'payoutApproval', labelKey: 'settings.sections.payoutApproval', path: '/settings/payout-approval' }
     ]
@@ -68,6 +57,17 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     items: [
       { key: 'supportTickets', labelKey: 'settings.sections.supportTickets', path: '/settings/support-tickets' },
       { key: 'announcements', labelKey: 'settings.sections.announcements', path: '/settings/announcements' }
+    ]
+  },
+  {
+    key: 'setup',
+    labelKey: 'nav.categories.setup',
+    icon: 'tune',
+    items: [
+      { key: 'companyProfile', labelKey: 'settings.sections.companyProfile', path: '/settings/company-profile' },
+      { key: 'branding', labelKey: 'settings.sections.branding', path: '/settings/branding' },
+      { key: 'compensation', labelKey: 'settings.sections.compensation', path: '/settings/compensation' },
+      { key: 'paymentsKyc', labelKey: 'settings.sections.paymentsKyc', path: '/settings/payments-kyc' }
     ]
   },
   {

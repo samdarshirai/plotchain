@@ -41,7 +41,7 @@ describe('AdminSidebarComponent', () => {
 
   it('opens a group on click to show its links, and closes it on a second click', () => {
     const { fixture, el } = render();
-    const setup = el.querySelectorAll('.associate-sidebar__group-toggle')[0] as HTMLButtonElement;
+    const setup = el.querySelectorAll('.associate-sidebar__group-toggle')[4] as HTMLButtonElement;
 
     setup.click();
     fixture.detectChanges();
