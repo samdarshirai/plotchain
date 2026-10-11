@@ -225,6 +225,10 @@ public class CompensationPlanService {
         return value != null ? value : fallback;
     }
 
+    public List<RewardTier> currentRewardTiers() {
+        return rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(currentVersion().getId());
+    }
+
     private CompensationPlanVersion currentVersion() {
         return versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
             .orElseThrow(() -> new IllegalStateException(

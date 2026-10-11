@@ -36,11 +36,13 @@ class LedgerServiceTest {
     @Mock CycleRepository cycleRepository;
     @Mock com.plotchain.legvolume.LegVolumeRepository legVolumeRepository;
 
+    @Mock com.plotchain.compensation.CompensationPlanService compensationPlanService;
+
     LedgerService service;
 
     @BeforeEach
     void setUp() {
-        service = new LedgerService(ledgerEntryRepository, associateRepository, cycleRepository, legVolumeRepository);
+        service = new LedgerService(ledgerEntryRepository, associateRepository, cycleRepository, legVolumeRepository, compensationPlanService);
     }
 
     private Associate newAssociate(UUID id, String userId, String name) {
@@ -285,5 +287,28 @@ class LedgerServiceTest {
 
         assertThat(response.entries()).isEmpty();
         assertThat(response.totalElements()).isZero();
+    }
+
+    @Test
+    void myRewardTiers_joinsLedgerRowToTier_andLeavesUnachievedNull() {
+        UUID me = UUID.randomUUID();
+        UUID t1 = UUID.randomUUID();
+        UUID t2 = UUID.randomUUID();
+        UUID planId = UUID.randomUUID();
+        when(compensationPlanService.currentRewardTiers()).thenReturn(List.of(
+            new com.plotchain.compensation.RewardTier(t1, planId, 1, new BigDecimal("500000"), new BigDecimal("5000"), null),
+            new com.plotchain.compensation.RewardTier(t2, planId, 2, new BigDecimal("1500000"), new BigDecimal("15000"), null)));
+        LedgerEntry e = newEntry(UUID.randomUUID(), me, UUID.randomUUID(), t1);
+        e.setIncomeType(IncomeType.REWARD);
+        when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(e));
+
+        List<AssociateRewardTierRow> rows = service.myRewardTiers(me);
+
+        assertThat(rows).hasSize(2);
+        assertThat(rows.get(0).status()).isEqualTo(LedgerEntryStatus.PAID);
+        assertThat(rows.get(0).achievedDate()).isEqualTo(Instant.parse("2026-01-15T00:00:00Z"));
+        assertThat(rows.get(0).requiredLeftBusiness()).isEqualByComparingTo("500000");
+        assertThat(rows.get(1).status()).isNull();
+        assertThat(rows.get(1).achievedDate()).isNull();
     }
 }

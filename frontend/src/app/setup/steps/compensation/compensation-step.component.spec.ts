@@ -147,6 +147,12 @@ describe('CompensationStepComponent', () => {
     httpMock.expectOne('/api/company/setup-state').flush(setupState);
   }));
 
+  it('returns the same table column arrays across reads, so editable-table cells (and input focus) survive change detection', () => {
+    const component = fixture.componentInstance;
+    expect(component.royaltyColumns).toBe(component.royaltyColumns);
+    expect(component.rewardTierColumns).toBe(component.rewardTierColumns);
+  });
+
   it('renders the Earnings Simulator total with the rupee symbol', () => {
     const el = renderInspectorTemplate();
     const finalEarningsEl = el.querySelector('.compensation-step__final-earnings');

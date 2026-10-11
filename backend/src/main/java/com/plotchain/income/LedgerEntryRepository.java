@@ -95,6 +95,9 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
     // any past cycle, not just the associate's most recent one.
     List<LedgerEntry> findByAssociateIdAndStatus(UUID associateId, LedgerEntryStatus status);
 
+    // Reward tier ladder on /income-statement/reward: every REWARD row the associate has earned.
+    List<LedgerEntry> findByAssociateIdAndIncomeType(UUID associateId, IncomeType incomeType);
+
     // Income/Ledger unit 1 (docs/superpowers/specs/role-capability/2026-08-03-income-ledger-domain-design.md,
     // Decision 4, Flow "Admin ledger register"): shared by both the admin register endpoint and
     // (a follow-up unit's) associate-self endpoint -- the associate endpoint always passes its

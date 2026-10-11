@@ -9,10 +9,21 @@ import { CycleManagementService } from '../cycle-management/cycle-management.ser
 import { CycleSummary } from '../models/cycle.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
+import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/tab-bar.component';
 import { titleCase } from '../../shared/utils/title-case';
 
 const PAGE_SIZE = 20;
 const CYCLE_LOOKUP_SIZE = 100;
+
+const INCOME_TYPE_TABS = [
+  { id: '', labelKey: 'admin.ledgerRegister.incomeTypeFilterAllOption' },
+  { id: 'DIRECT', labelKey: 'admin.ledgerRegister.incomeTypeDirectOption' },
+  { id: 'MATCHING', labelKey: 'admin.ledgerRegister.incomeTypeMatchingOption' },
+  { id: 'SPONSOR_MATCHING', labelKey: 'admin.ledgerRegister.incomeTypeSponsorMatchingOption' },
+  { id: 'ROYALTY', labelKey: 'admin.ledgerRegister.incomeTypeRoyaltyOption' },
+  { id: 'REWARD', labelKey: 'admin.ledgerRegister.incomeTypeRewardOption' },
+  { id: 'PERK', labelKey: 'admin.ledgerRegister.incomeTypePerkOption' }
+];
 
 // The backend's LedgerEntryStatus and IncomeType enums are both shouty-uppercase
 // (PENDING/CARRIED_FORWARD/PAID/REVERSED; DIRECT_INCOME/MATCHING_INCOME/SPONSOR_BONUS/...).
@@ -26,7 +37,7 @@ const CYCLE_LOOKUP_SIZE = 100;
 @Component({
   selector: 'app-ledger-register',
   standalone: true,
-  imports: [CommonModule, TranslateModule, EditableTableComponent, InlineBannerComponent],
+  imports: [CommonModule, TranslateModule, EditableTableComponent, InlineBannerComponent, TabBarComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="ledger-register">
@@ -34,6 +45,10 @@ const CYCLE_LOOKUP_SIZE = 100;
         <span class="ledger-register__eyebrow">{{ 'admin.ledgerRegister.eyebrow' | translate }}</span>
         <h1 class="ledger-register__title">{{ 'admin.ledgerRegister.title' | translate }}</h1>
         <p class="ledger-register__subtitle">{{ 'admin.ledgerRegister.subtitle' | translate }}</p>
+      </div>
+
+      <div class="ledger-register__tabs">
+        <app-tab-bar [tabs]="tabs" [activeTabId]="incomeType" (tabChange)="onIncomeTypeChange($event)"></app-tab-bar>
       </div>
 
       <div class="ledger-register__filters">
@@ -45,20 +60,6 @@ const CYCLE_LOOKUP_SIZE = 100;
               <option *ngFor="let associate of associates" [value]="associate.id">
                 {{ associate.userId }} — {{ associate.name }}
               </option>
-            </select>
-          </label>
-        </div>
-        <div class="ledger-register__filter-field">
-          <label>
-            {{ 'admin.ledgerRegister.incomeTypeFilterLabel' | translate }}
-            <select (change)="onIncomeTypeChange($any($event.target).value)">
-              <option value="">{{ 'admin.ledgerRegister.incomeTypeFilterAllOption' | translate }}</option>
-              <option value="DIRECT">{{ 'admin.ledgerRegister.incomeTypeDirectOption' | translate }}</option>
-              <option value="MATCHING">{{ 'admin.ledgerRegister.incomeTypeMatchingOption' | translate }}</option>
-              <option value="SPONSOR_MATCHING">{{ 'admin.ledgerRegister.incomeTypeSponsorMatchingOption' | translate }}</option>
-              <option value="ROYALTY">{{ 'admin.ledgerRegister.incomeTypeRoyaltyOption' | translate }}</option>
-              <option value="REWARD">{{ 'admin.ledgerRegister.incomeTypeRewardOption' | translate }}</option>
-              <option value="PERK">{{ 'admin.ledgerRegister.incomeTypePerkOption' | translate }}</option>
             </select>
           </label>
         </div>
@@ -129,9 +130,13 @@ export class LedgerRegisterComponent implements OnInit {
   registerColumns: EditableTableColumn[] = [];
   registerRows: Record<string, string>[] = [];
   private associateId = '';
-  private incomeType = '';
+  incomeType = '';
   private cycleId = '';
   private status = '';
+
+  get tabs(): TabDefinition[] {
+    return INCOME_TYPE_TABS.map(t => ({ id: t.id, label: this.translate.instant(t.labelKey) }));
+  }
 
   get currentPage(): number {
     return (this.page?.page ?? 0) + 1;

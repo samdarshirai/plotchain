@@ -2,6 +2,8 @@ package com.plotchain.income;
 
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.compensation.CompensationPlanService;
+import com.plotchain.compensation.RewardTier;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.legvolume.LegVolume;
@@ -28,12 +30,15 @@ public class LedgerService {
     private final AssociateRepository associateRepository;
     private final CycleRepository cycleRepository;
     private final LegVolumeRepository legVolumeRepository;
+    private final CompensationPlanService compensationPlanService;
 
     public LedgerService(
             LedgerEntryRepository ledgerEntryRepository,
             AssociateRepository associateRepository,
             CycleRepository cycleRepository,
-            LegVolumeRepository legVolumeRepository) {
+            LegVolumeRepository legVolumeRepository,
+            CompensationPlanService compensationPlanService) {
+        this.compensationPlanService = compensationPlanService;
         this.legVolumeRepository = legVolumeRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.associateRepository = associateRepository;
@@ -160,5 +165,26 @@ public class LedgerService {
             bfRight = row.getCarriedForwardRight();
         }
         return result;
+    }
+
+    // Full reward ladder for the caller, each tier joined to its REWARD ledger row (sourceRef =
+    // reward_tier.id, CycleService#creditReward). Required left/right = volumeThreshold: matched
+    // business is min(left, right), so each leg must reach the threshold. No row = NOT_ACHIEVED.
+    public List<AssociateRewardTierRow> myRewardTiers(UUID associateId) {
+        Map<UUID, LedgerEntry> bySourceRef = new HashMap<>();
+        for (LedgerEntry e : ledgerEntryRepository.findByAssociateIdAndIncomeType(associateId, IncomeType.REWARD)) {
+            if (e.getSourceRef() != null) bySourceRef.put(e.getSourceRef(), e);
+        }
+        return compensationPlanService.currentRewardTiers().stream().map(t -> {
+            LedgerEntry e = bySourceRef.get(t.getId());
+            return new AssociateRewardTierRow(
+                t.getTierLevel(),
+                t.getVolumeThreshold(),
+                t.getVolumeThreshold(),
+                t.getVolumeThreshold(),
+                t.getCashReward(),
+                e == null ? null : e.getStatus(),
+                e == null ? null : e.getCreatedAt());
+        }).toList();
     }
 }

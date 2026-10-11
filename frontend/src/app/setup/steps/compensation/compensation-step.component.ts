@@ -517,19 +517,24 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     this.inspectorService.clear();
   }
 
+  // Memoized: a getter returning a fresh array each change-detection pass makes <app-editable-table>
+  // re-create every cell (and so every <input>) on each click/keystroke, dropping focus.
+  private royaltyColumnsCache?: EditableTableColumn[];
+  private rewardTierColumnsCache?: EditableTableColumn[];
+
   get royaltyColumns(): EditableTableColumn[] {
-    return [
+    return (this.royaltyColumnsCache ??= [
       { key: 'volumeThreshold', label: this.translate.instant('setup.compensation.volumeThresholdColumnLabel'), type: 'number' },
       { key: 'royaltyPct', label: this.translate.instant('setup.compensation.royaltyPctColumnLabel'), type: 'number' }
-    ];
+    ]);
   }
 
   get rewardTierColumns(): EditableTableColumn[] {
-    return [
+    return (this.rewardTierColumnsCache ??= [
       { key: 'volumeThreshold', label: this.translate.instant('setup.compensation.volumeThresholdColumnLabel'), type: 'number' },
       { key: 'cashReward', label: this.translate.instant('setup.compensation.cashRewardColumnLabel'), type: 'number' },
       { key: 'perkDescription', label: this.translate.instant('setup.compensation.perkDescriptionColumnLabel'), type: 'text' }
-    ];
+    ]);
   }
 
   get settlementCycleOptions(): ToggleOption[] {

@@ -2256,6 +2256,20 @@
   }
 }
 
+.ledger-register__tabs {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-bar {
+    width: max-content;
+  }
+}
+
 .income-statement__legend {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2532,6 +2546,43 @@
   font-weight: 700;
 }
 
+// Reward tab: 6 columns -- 4 money columns (right-aligned, headers too), then Status and
+// Achieved Date left-aligned. Resets the positional ledger styling above, like the Matching tab.
+.income-statement--reward .editable-table {
+  min-width: 0;
+  width: 100%;
+}
+
+.income-statement--reward .editable-table thead th,
+.income-statement--reward .editable-table tbody td:not(.editable-table__empty) {
+  padding: 0.875rem 1rem;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.income-statement--reward .editable-table thead th:nth-child(-n + 4),
+.income-statement--reward .editable-table tbody td:nth-child(-n + 4):not(.editable-table__empty) {
+  text-align: right;
+}
+
+.income-statement--reward .editable-table tbody td:not(.editable-table__empty):nth-child(n) {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.income-statement--reward .editable-table tbody td:nth-child(5):not(.editable-table__empty) {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 .income-statement__pagination {
   @extend %admin-screen-pagination;
 }
@@ -2623,7 +2674,8 @@
   }
 
   .income-statement__pagination .brand-button--secondary,
-  .income-statement__tabs .tab-bar__tab {
+  .income-statement__tabs .tab-bar__tab,
+  .ledger-register__tabs .tab-bar__tab {
     min-height: 44px;
   }
 }

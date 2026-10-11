@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { RewardTierRow } from './models/reward-tier-row.model';
 import { AssociateLedgerFilters, AssociateLedgerPage } from './models/associate-ledger-page.model';
 
 @Injectable({ providedIn: 'root' })
@@ -15,5 +16,9 @@ export class IncomeStatementService {
       }
     }
     return this.http.get<AssociateLedgerPage>('/api/associates/me/ledger', { params });
+  }
+
+  rewardTiers(): Observable<RewardTierRow[]> {
+    return this.http.get<RewardTierRow[]>('/api/associates/me/reward-tiers');
   }
 }

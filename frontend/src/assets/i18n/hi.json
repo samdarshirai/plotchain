@@ -524,6 +524,11 @@
     "columnSerial": "S.N.",
     "columnPeriod": "Period",
     "columnMatchingBusiness": "Matching Business",
+    "columnReward": "Reward",
+    "columnRequiredLeft": "Required Left Business",
+    "columnRequiredRight": "Required Right Business",
+    "columnAchievedDate": "Achieved Date",
+    "statusNotAchieved": "Not Achieved",
     "columnMatchingIncome": "Matching Income"
   },
   "supportTickets": {

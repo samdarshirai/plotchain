@@ -5,6 +5,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 import java.util.UUID;
 
 // Income/Ledger unit 2 (docs/superpowers/specs/role-capability/2026-08-03-income-ledger-domain-design.md,
@@ -41,5 +43,10 @@ public class AssociateLedgerController {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
         return ledgerService.myList(associateId, incomeType, cycleId, status, page, size);
+    }
+
+    @GetMapping("/api/associates/me/reward-tiers")
+    public List<AssociateRewardTierRow> getMyRewardTiers(@AuthenticationPrincipal UUID associateId) {
+        return ledgerService.myRewardTiers(associateId);
     }
 }

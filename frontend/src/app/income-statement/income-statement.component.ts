@@ -37,7 +37,7 @@ export interface CycleOption {
   imports: [CommonModule, TranslateModule, TabBarComponent, EditableTableComponent, InlineBannerComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
-    <div class="income-statement" [class.income-statement--matching]="activeIncomeType === 'MATCHING'">
+    <div class="income-statement" [class.income-statement--matching]="activeIncomeType === 'MATCHING'" [class.income-statement--reward]="activeIncomeType === 'REWARD'">
       <div class="income-statement__intro">
         <h1 class="income-statement__title">{{ 'incomeStatement.title' | translate }}</h1>
         <p class="income-statement__subtitle">{{ 'incomeStatement.subtitle' | translate }}</p>
@@ -51,7 +51,7 @@ export interface CycleOption {
         <div *ngFor="let key of legendKeys"><dt>{{ 'incomeStatement.' + key + 'Abbr' | translate }}</dt><dd>{{ 'incomeStatement.' + key + 'Legend' | translate }}</dd></div>
       </dl>
 
-      <div class="income-statement__filters">
+      <div class="income-statement__filters" *ngIf="activeIncomeType !== 'REWARD'">
         <div class="income-statement__filter-field">
           <label>
             {{ 'incomeStatement.cycleFilterLabel' | translate }}
@@ -166,6 +166,10 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       this.buildMatchingColumns();
       return;
     }
+    if (this.activeIncomeType === 'REWARD') {
+      this.buildRewardColumns();
+      return;
+    }
     this.translate
       .get([
         'incomeStatement.columnIncomeType',
@@ -192,6 +196,37 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
           { key: 'createdAt', label: t['incomeStatement.columnCreatedAt'], type: 'text' }
         ];
       });
+  }
+
+  private buildRewardColumns(): void {
+    const cols = ['columnMatchingBusiness', 'columnReward', 'columnRequiredLeft', 'columnRequiredRight', 'columnStatus', 'columnAchievedDate'];
+    const keys = cols.map(k => 'incomeStatement.' + k);
+    this.translate
+      .get(keys)
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(t => {
+        const rowKeys = ['matchingBusiness', 'reward', 'requiredLeft', 'requiredRight', 'status', 'achievedDate'];
+        this.statementColumns = rowKeys.map((key, i) => ({ key, label: t[keys[i]], type: 'text' as const }));
+      });
+  }
+
+  private loadRewardTiers(): void {
+    this.loadError = false;
+    this.page = null;
+    this.incomeStatementService.rewardTiers().subscribe({
+      next: tiers => {
+        const notAchieved = this.translate.instant('incomeStatement.statusNotAchieved');
+        this.statementRows = tiers.map(t => ({
+          matchingBusiness: this.formatCurrency(t.matchingBusiness),
+          reward: this.formatCurrency(t.reward),
+          requiredLeft: this.formatCurrency(t.requiredLeftBusiness),
+          requiredRight: this.formatCurrency(t.requiredRightBusiness),
+          status: t.status ?? notAchieved,
+          achievedDate: t.achievedDate ? (this.datePipe.transform(t.achievedDate, 'mediumDate') ?? t.achievedDate) : '—'
+        }));
+      },
+      error: () => (this.loadError = true)
+    });
   }
 
   private buildMatchingColumns(): void {
@@ -254,6 +289,10 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   private loadPage(page: number): void {
+    if (this.activeIncomeType === 'REWARD') {
+      this.loadRewardTiers();
+      return;
+    }
     this.loadError = false;
     const filters: AssociateLedgerFilters = {};
     if (this.activeIncomeType !== 'ALL') {

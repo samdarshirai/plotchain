@@ -103,6 +103,8 @@ describe('IncomeStatementComponent', () => {
         columnSourceRef: 'Source Ref',
         columnCreatedAt: 'Created At',
         columnSerial: 'S.N.', columnPeriod: 'Period', columnMatchingBusiness: 'Matching Business', columnMatchingIncome: 'Matching Income',
+        columnReward: 'Reward', columnRequiredLeft: 'Required Left Business', columnRequiredRight: 'Required Right Business',
+        columnAchievedDate: 'Achieved Date', statusNotAchieved: 'Not Achieved',
         bflbAbbr: 'BFLB', bfrbAbbr: 'BFRB', nlbAbbr: 'NLB', nrbAbbr: 'NRB', tlbAbbr: 'TLB', trbAbbr: 'TRB', clbAbbr: 'CLB', crbAbbr: 'CRB',
         bflbLegend: 'Back Forward Left Business', bfrbLegend: 'Back Forward Right Business', nlbLegend: 'New Left Business', nrbLegend: 'New Right Business',
         tlbLegend: 'Total Left Business', trbLegend: 'Total Right Business', clbLegend: 'Calculate Left Business', crbLegend: 'Calculate Right Business',
@@ -331,5 +333,25 @@ describe('IncomeStatementComponent', () => {
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
     expect(cells).toEqual(jasmine.arrayContaining(['1', '02-06-2026 / 16-06-2026', '1000000', '500000', '35000']));
+  });
+
+  it('Reward tab lists every tier with status and achieved date', () => {
+    flushInitialRequests();
+    routeData$.next({ incomeType: 'REWARD' });
+    httpMock.expectOne('/api/associates/me/reward-tiers').flush([
+      { tierLevel: 1, matchingBusiness: 500000, requiredLeftBusiness: 500000, requiredRightBusiness: 500000,
+        reward: 5000, status: 'PAID', achievedDate: '2026-01-05T00:00:00Z' },
+      { tierLevel: 2, matchingBusiness: 1500000, requiredLeftBusiness: 1500000, requiredRightBusiness: 1500000,
+        reward: 15000, status: null, achievedDate: null }
+    ]);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
+      'Matching Business', 'Reward', 'Required Left Business', 'Required Right Business', 'Status', 'Achieved Date'
+    ]);
+    expect(fixture.componentInstance.statementRows.length).toBe(2);
+    expect(fixture.componentInstance.statementRows[0]['status']).toBe('PAID');
+    expect(fixture.componentInstance.statementRows[1]['status']).toBe('Not Achieved');
+    expect(fixture.componentInstance.statementRows[1]['achievedDate']).toBe('—');
   });
 });

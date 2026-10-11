@@ -34,6 +34,8 @@ tokens:
     card: "0 4px 20px -2px rgba(0, 0, 0, 0.08)"
 ---
 
+> **Update (2026-10-11).** Income Type is no longer a `<select>`: it is a row of sub-tabs (`app-tab-bar`, wrapper `.ledger-register__tabs`, scrolls horizontally) above the filter strip, still driving `onIncomeTypeChange`. Text above that says "four selects" now means three.
+
 ## Why this screen, why now
 
 Ledger Register is the third data-table-heavy **operational** admin screen to get a bespoke design pass, after Sales Register (`docs/design/admin_operational_screens/sales_register/`) and Cycle Management (`docs/design/admin_operational_screens/cycle_management/`). This design does not restart that system: same tokens, same `'Geist'`/`'Inter'`/`'JetBrains Mono'` stack, same `EditableTableComponent` (`readOnly`) usage shape, same pagination footer idiom. Per the brief for this dispatch, this screen is explicitly instructed to **mirror** Sales Register's pattern rather than invent new conventions — it is the plainest of the three, by design, not by omission.
@@ -49,7 +51,7 @@ Sales Register lets an admin *act* (record, void). Cycle Management lets an admi
 │ view-only audit trail. No entry here can be edited or removed.         │
 ├──────────────────────────────────────────────────────────────────────┤
 │ ┌ filter strip (surface-raised, 16px radius) ─────────────────────┐   │
-│ │ Associate ▾     Income Type ▾     Cycle ▾     Status ▾          │   │
+│ │ Associate ▾     Cycle ▾     Status ▾                            │   │
 │ └──────────────────────────────────────────────────────────────┘   │
 │ [ inline-banner tone=danger — load error, when present ]              │
 │ ┌ .card / .editable-table (ledger, no Actions column) ─────────────┐  │
@@ -78,7 +80,7 @@ A quieter second expression of the same idea: **`REVERSED` gets no special color
 | Screen need | Component used | Notes |
 |---|---|---|
 | Register table + pagination shell | `EditableTableComponent` (`readOnly`, no `actionTemplate`) | Columns: Associate, Cycle Period, Income Type, Status, Net Amount, Source Ref, Created At. No Actions column — the one hard functional difference from Sales Register/Cycle Management's table shape, per this unit's view-only scope. |
-| Associate / Income Type / Cycle / Status filters | Four plain `<select>`s inside a `surface-raised` strip | Matches Sales Register's `sales-register__filter-field` idiom, minus the date-range fields and Reset button (see Layout concept for why). |
+| Income Type tabs + Associate / Cycle / Status filters | `app-tab-bar` (All + six types, above the strip) and three plain `<select>`s inside a `surface-raised` strip | Matches Sales Register's `sales-register__filter-field` idiom, minus the date-range fields and Reset button (see Layout concept for why). |
 | Load error | `InlineBannerComponent` tone="danger" | The approved plan's Task 3 code currently renders a plain `<p class="ledger-register__load-error">`; this design recommends the same one-line upgrade Sales Register's own DESIGN.md already made over `associate-directory__load-error`'s flat `<p>` — swap for `<app-inline-banner tone="danger">`, keeping the CSS hook class name for the implementer to find but wrapping the established banner component instead of a bare paragraph, so this screen's one feedback surface matches the convention every other bespoke-pass screen already established. |
 | Empty state | `EditableTableComponent`'s built-in `emptyStateLabel` row | The component takes a single translated string, not a template slot — so unlike Sales Register's two-line title+hint empty state (which needed a bespoke inner `<div>`, not available here), Ledger Register's empty state is one centered, muted line via the base `.editable-table__empty` cell. This is a real capability difference, not an inconsistency: Sales Register's fancier empty state depends on markup this component's `readOnly` empty-state branch doesn't expose. |
 
