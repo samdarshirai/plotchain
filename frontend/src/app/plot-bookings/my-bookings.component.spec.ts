@@ -34,34 +34,18 @@ describe('MyBookingsComponent', () => {
   });
   afterEach(() => http.verify());
 
-  it('renders a single page heading when routed (heading defaults on)', () => {
+  it('renders a single page heading', () => {
     boot([]);
     const h1 = el().querySelectorAll('h1.my-bookings__title');
     expect(h1.length).toBe(1);
     expect(h1[0].textContent).toContain('plotBookings.myBookings.title');
   });
 
-  it('omits the heading when a host owns it', () => {
-    fixture.componentInstance.heading = false;
-    boot([]);
-    expect(el().querySelector('h1')).toBeNull();
-  });
-
-  it('navigates to View Plot from the empty state when nothing listens to viewAvailability', () => {
+  it('navigates to View Plot from the empty state', () => {
     boot([]);
     const nav = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
     el().querySelector<HTMLButtonElement>('.my-bookings__view-availability')!.click();
     expect(nav).toHaveBeenCalledWith(['/plot-bookings']);
-  });
-
-  it('emits viewAvailability instead of navigating when a host subscribes', () => {
-    boot([]);
-    const nav = spyOn(TestBed.inject(Router), 'navigate');
-    let emitted = 0;
-    fixture.componentInstance.viewAvailability.subscribe(() => emitted++);
-    el().querySelector<HTMLButtonElement>('.my-bookings__view-availability')!.click();
-    expect(emitted).toBe(1);
-    expect(nav).not.toHaveBeenCalled();
   });
 
   it('renders a card per booking in server order with the plot label fallback', () => {
@@ -136,13 +120,9 @@ describe('MyBookingsComponent', () => {
     expect(el().querySelector('.my-bookings__detail')!.classList).not.toContain('my-bookings__detail--open');
   });
 
-  it('shows the empty state and "View availability" emits', () => {
+  it('shows the empty state', () => {
     boot([]);
     expect(el().textContent).toContain('plotBookings.bookingsEmptyTitle');
-    let emitted = false;
-    fixture.componentInstance.viewAvailability.subscribe(() => (emitted = true));
-    el().querySelector<HTMLButtonElement>('.my-bookings__view-availability')!.click();
-    expect(emitted).toBeTrue();
   });
 
   it('shows an error banner with Retry when the first load fails', () => {

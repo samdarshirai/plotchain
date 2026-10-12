@@ -18,14 +18,6 @@ describe('PlotBookingsService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('fetches the project catalog with no query params (unpaginated endpoint)', () => {
-    service.listProjects().subscribe(res => expect(res).toEqual([]));
-
-    const req = httpMock.expectOne('/api/company/projects');
-    expect(req.request.method).toBe('GET');
-    req.flush([]);
-  });
-
   it('fetches the caller\'s own bookings (with EMI schedules embedded) with page/size as query params', () => {
     const mockResponse: AssociateBookingPage = { bookings: [], page: 0, size: 20, totalElements: 0 };
 
@@ -34,12 +26,5 @@ describe('PlotBookingsService', () => {
     const req = httpMock.expectOne('/api/associates/me/bookings?page=0&size=20');
     expect(req.request.method).toBe('GET');
     req.flush(mockResponse);
-  });
-
-  it('reads the plot grid from /api/projects/{id}/plots/grid', () => {
-    service.getGrid('p1').subscribe(g => expect(g.length).toBe(1));
-    const req = httpMock.expectOne('/api/projects/p1/plots/grid');
-    expect(req.request.method).toBe('GET');
-    req.flush([{ plotId: 'x', plotNo: 'A-1', type: 'NORMAL', area: 1, price: 2, status: 'AVAILABLE' }]);
   });
 });

@@ -165,7 +165,6 @@
     }
   },
   "plotBookings": {
-    "title": "Plot Bookings",
     "myBookings": { "title": "My Bookings" },
     "team": {
       "title": { "TEAM": "Team Purchase Plots", "LEFT": "Left Plot Booking", "RIGHT": "Right Plot Booking" },
@@ -178,35 +177,7 @@
       "loadError": "Couldn't load bookings. Check your connection and try again.",
       "column": { "plot": "Plot", "project": "Project", "associate": "Booked by", "buyer": "Buyer", "bookedOn": "Booked on", "total": "Total", "paid": "Paid", "status": "Status" }
     },
-    "subtitle": "See which plots are open in a project, and follow your own bookings and EMI payments. This page is view-only.",
-    "tabAvailability": "Availability",
-    "tabMyBookings": "My bookings",
     "loading": "Loading",
-    "seal": { "label": "Open now", "figure": "{{available}} of {{total}} plots" },
-    "projectPickerLabel": "Project",
-    "filter": {
-      "ALL": "All", "AVAILABLE": "Available", "BOOKED": "Booked", "SOLD": "Sold",
-      "typeLabel": "Plot type", "typeAll": "All types", "NORMAL": "Normal", "CORNER": "Corner"
-    },
-    "legend": { "cornerPlot": "Notched tiles are corner plots." },
-    "blockHeader": "Block {{block}} · {{count}} plots",
-    "shownCount": "Showing {{shown}} of {{total}} plots. Select a plot for details.",
-    "popover": {
-      "title": "Plot {{plotNo}}",
-      "status": "Status", "type": "Type", "area": "Area (sq ft)", "price": "Price",
-      "closeLabel": "Close plot details",
-      "hint": "To book this plot, contact the company office."
-    },
-    "noMatchTitle": "No plots match these filters",
-    "noMatchBody": "Try a different status or plot type.",
-    "clearFilters": "Clear filters",
-    "plotsEmptyTitle": "No plots in this project yet",
-    "plotsEmptyBody": "Plots appear here once the company adds them. Pick another project to see its plots.",
-    "noProjectsTitle": "No projects yet",
-    "noProjectsBody": "Projects appear here once the company adds them.",
-    "projectsLoadError": "Couldn't load projects. Check your connection and try again.",
-    "plotsLoadError": "Couldn't load the plot grid. Check your connection and try again.",
-    "plotsRefreshError": "Couldn't refresh the plot grid. Showing the last loaded plots; availability may be out of date.",
     "bookingsLoadError": "Couldn't load your bookings. Check your connection and try again.",
     "retryAction": "Try again",
     "bookingsEmptyTitle": "No bookings yet",
