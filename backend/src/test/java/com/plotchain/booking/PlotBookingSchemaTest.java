@@ -163,11 +163,11 @@ class PlotBookingSchemaTest {
     @Test
     void bookingEventAcceptsEveryValidType() {
         PlotBooking b = persistBooking();
-        for (String type : List.of("PAID", "CONFIRMED", "CANCELLED", "TRANSFERRED", "PAY_CONFIRMED")) {
+        for (String type : List.of("PAID", "CONFIRMED", "CANCELLED", "TRANSFERRED", "PAY_CONFIRMED", "RESCHEDULED")) {
             jdbc.update("INSERT INTO booking_event (id, booking_id, type, actor_id, detail, created_at) VALUES (?, ?, ?, ?, NULL, CURRENT_TIMESTAMP)",
                 UUID.randomUUID(), b.getId(), type, b.getAssociateId());
         }
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM booking_event WHERE booking_id = ?", Integer.class, b.getId())).isEqualTo(5);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM booking_event WHERE booking_id = ?", Integer.class, b.getId())).isEqualTo(6);
     }
 
     @Test
