@@ -1137,8 +1137,8 @@
       "ok": {
         "pay": "Payment entered. Instalment {{n}} of {{buyer}}'s booking ({{amount}}) is waiting for confirmation.",
         "confirmPay": "Payment confirmed. Instalment {{n}} of {{buyer}}'s booking, {{amount}} received.",
-        "confirmedOne": "{{count}} payment confirmed.", "confirmedOneAuto": "{{count}} payment confirmed. {{auto}} of the affected bookings are now confirmed.",
-        "confirmedMany": "{{count}} payments confirmed.", "confirmedManyAuto": "{{count}} payments confirmed. {{auto}} of the affected bookings are now confirmed.",
+        "confirmedOne": "{{count}} payment confirmed.", "confirmedOneAuto": "{{count}} payment confirmed. Bookings now confirmed: {{auto}}.",
+        "confirmedMany": "{{count}} payments confirmed.", "confirmedManyAuto": "{{count}} payments confirmed. Bookings now confirmed: {{auto}}.",
         "autoConfirm": "Booking auto-confirmed. Confirming instalment {{n}} took {{buyer}} to {{pct}}% paid. The plot is now Sold and the sale is in the Sales Register.",
         "confirm": "Booking confirmed for {{buyer}}.",
         "cancel": "Booking cancelled for {{buyer}}.",
@@ -1187,6 +1187,7 @@
       },
       "receipt": { "title": "Payment receipt", "no": "Receipt no", "date": "Payment date", "received": "Amount received", "print": "Print" },
       "pager": "Page {{page}} of {{totalPages}} · {{count}} bookings",
+      "pagerOne": "Page {{page}} of {{totalPages}} · {{count}} booking",
       "previous": "Previous", "next": "Next", "loading": "Loading"
 },
     "projectsPlots": {
