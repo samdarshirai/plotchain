@@ -26,7 +26,7 @@ const COLS: [string, (r: LastEmiRow) => string | number | null][] = [
     <div class="last-emi" [attr.aria-busy]="loading">
       <app-report-filters (filtersChange)="onFilters($event)"></app-report-filters>
       <div class="last-emi__bar">
-        <button type="button" class="brand-button brand-button--secondary last-emi__export" (click)="export()">{{ 'admin.bookingsEmi.action.exportCsv' | translate }}</button>
+        <button type="button" class="brand-button brand-button--secondary last-emi__export" [disabled]="loading || loadError" (click)="export()">{{ 'admin.bookingsEmi.action.exportCsv' | translate }}</button>
       </div>
 
       <app-inline-banner *ngIf="loadError" tone="danger">
@@ -51,10 +51,10 @@ const COLS: [string, (r: LastEmiRow) => string | number | null][] = [
         <tbody>
           <tr *ngFor="let r of rows">
             <td [attr.data-label]="K + 'bookedOn' | translate">{{ r.bookedAt | date: 'mediumDate' }}</td>
-            <td [attr.data-label]="K + 'associateId' | translate">{{ r.associateCode || '—' }}</td>
+            <td class="booking-register__num" [attr.data-label]="K + 'associateId' | translate">{{ r.associateCode || '—' }}</td>
             <td [attr.data-label]="K + 'associate' | translate">{{ r.associateName || '—' }}</td>
             <td [attr.data-label]="K + 'buyer' | translate">{{ r.buyerName }}</td>
-            <td [attr.data-label]="K + 'mobile' | translate">{{ r.buyerPhone || '—' }}</td>
+            <td class="booking-register__num" [attr.data-label]="K + 'mobile' | translate">{{ r.buyerPhone || '—' }}</td>
             <td [attr.data-label]="K + 'plot' | translate">{{ r.plotNo || '—' }}</td>
             <td [attr.data-label]="K + 'project' | translate">{{ r.projectName || '—' }}</td>
             <td [attr.data-label]="K + 'lastDueDate' | translate">{{ r.lastDueDate | date: 'mediumDate' }}</td>

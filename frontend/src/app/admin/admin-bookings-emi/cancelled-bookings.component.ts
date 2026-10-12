@@ -29,7 +29,7 @@ const day = (s?: string | null): string => (s ? s.slice(0, 10) : '');
         <button type="button" class="brand-button brand-button--secondary cancelled-bookings__export" [disabled]="exporting" (click)="export()">{{ 'admin.bookingsEmi.action.exportCsv' | translate }}</button>
       </div>
 
-      <app-inline-banner *ngIf="exportError" tone="danger">{{ 'admin.bookingsEmi.err.export' | translate }}</app-inline-banner>
+      <app-inline-banner *ngIf="exportError" tone="danger" [dismissible]="true" (dismissed)="exportError = false">{{ 'admin.bookingsEmi.err.export' | translate }}</app-inline-banner>
       <app-inline-banner *ngIf="loadError" tone="danger">
         {{ 'admin.bookingsEmi.err.loadList' | translate }}
         <button type="button" class="booking-register__retry cancelled-bookings__retry" (click)="load(currentPage)">{{ 'admin.bookingsEmi.err.retry' | translate }}</button>
@@ -74,9 +74,9 @@ const day = (s?: string | null): string => (s ? s.slice(0, 10) : '');
             </tr>
           </tbody>
         </table>
+        <app-pager *ngIf="page" [page]="page.page" [size]="page.size" [total]="page.totalElements" [disabled]="loading || exporting" (pageChange)="load($event)"></app-pager>
       </div>
 
-      <app-pager *ngIf="page" [page]="page.page" [size]="page.size" [total]="page.totalElements" [disabled]="loading || exporting" (pageChange)="load($event)"></app-pager>
     </div>
   `
 })

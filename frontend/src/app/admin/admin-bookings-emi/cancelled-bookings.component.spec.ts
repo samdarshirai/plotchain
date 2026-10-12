@@ -138,6 +138,19 @@ describe('CancelledBookingsComponent', () => {
       expect(names.length).toBe(0);
     });
 
+    it('the export-error banner is dismissible', () => {
+      click();
+      listReq().error(new ProgressEvent('x'));
+      fixture.detectChanges();
+      (el().querySelector('.inline-banner__dismiss') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(el().textContent).not.toContain('admin.bookingsEmi.err.export');
+    });
+
+    it('renders the pager inside the list card', () => {
+      expect(el().querySelector('.booking-register__list app-pager')).not.toBeNull();
+    });
+
     it('empty export is a header-only file', async () => {
       click();
       listReq().flush(pageOf([], 0));
