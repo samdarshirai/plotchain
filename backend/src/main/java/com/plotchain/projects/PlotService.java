@@ -3,6 +3,7 @@ package com.plotchain.projects;
 import com.plotchain.company.SettingsAuditService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,7 @@ public class PlotService {
     }
 
     public PlotPageResponse list(UUID projectId, int page, int size) {
-        Page<Plot> result = plotRepository.findAllByProjectId(projectId, PageRequest.of(page, size));
+        Page<Plot> result = plotRepository.findAllByProjectId(projectId, PageRequest.of(page, size, Sort.by("plotNo", "id")));
         List<PlotResponse> plots = result.getContent().stream().map(PlotService::toResponse).toList();
         return new PlotPageResponse(plots, page, size, result.getTotalElements());
     }

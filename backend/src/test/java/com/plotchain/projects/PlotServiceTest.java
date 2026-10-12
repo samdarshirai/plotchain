@@ -61,6 +61,21 @@ class PlotServiceTest {
     }
 
     @Test
+    void listPagesWithAStableSortByPlotNoThenId() {
+        when(plotRepository.findAllByProjectId(eq(PROJECT_ID), any()))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 500), 0));
+
+        plotService.list(PROJECT_ID, 0, 500);
+
+        ArgumentCaptor<org.springframework.data.domain.Pageable> captor =
+            ArgumentCaptor.forClass(org.springframework.data.domain.Pageable.class);
+        verify(plotRepository).findAllByProjectId(eq(PROJECT_ID), captor.capture());
+        assertThat(captor.getValue().getSort())
+            .isEqualTo(org.springframework.data.domain.Sort.by("plotNo", "id"));
+        assertThat(captor.getValue().getPageSize()).isEqualTo(500);
+    }
+
+    @Test
     void listReturnsAPageResponseFromTheRepositoryPage() {
         Page<Plot> page = new PageImpl<>(List.of(seedPlot()), PageRequest.of(0, 20), 1);
         when(plotRepository.findAllByProjectId(eq(PROJECT_ID), any())).thenReturn(page);
