@@ -1648,5 +1648,12 @@
     "corner": "Corner",
     "status": { "AVAILABLE": "Available", "BOOKED": "Booked", "SOLD": "Sold" },
     "type": { "NORMAL": "Normal", "CORNER": "Corner" }
+  },
+  "shared": {
+    "pager": {
+      "previous": "Previous",
+      "next": "Next",
+      "summary": "{{from}}–{{to}} of {{total}} · Page {{page}} of {{totalPages}}"
+    }
   }
 }
