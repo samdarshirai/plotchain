@@ -135,42 +135,45 @@ class BookingPaymentIntegrationTest {
     }
 
     @Test
-    void payPersistsInstallmentFieldsAndExactlyOnePaidEventInTheDatabase() {
+    void payEntersInstallmentWithoutConfirmingAndWritesExactlyOnePaidEventInTheDatabase() {
         BookingResponse b = seedBooking();
         int n = lastInstallmentNumber(b);   // last first: proves out-of-order against the real DB
 
         BookingResponse after = bookingService.recordPayment(b.id(), n,
-            new RecordPaymentRequest(lastInstallmentAmount(b), "UTR-7", null), associateId);
+            new RecordPaymentRequest(lastInstallmentAmount(b), "UTR-7", PaymentMode.CASH, null), associateId);
 
         Map<String, Object> row = jdbc.queryForMap(
-            "SELECT status, paid_at, payment_ref, recorded_by FROM emi_installment WHERE booking_id = ? AND installment_number = ?",
+            "SELECT status, paid_at, payment_ref, recorded_by, payment_mode, confirmed_at FROM emi_installment WHERE booking_id = ? AND installment_number = ?",
             b.id(), n);
-        assertThat(row.get("status")).isEqualTo("PAID");
+        assertThat(row.get("status")).isEqualTo("ENTERED");
+        assertThat(row.get("payment_mode")).isEqualTo("CASH");
+        assertThat(row.get("confirmed_at")).isNull();
         assertThat(row.get("paid_at")).isNotNull();
         assertThat(row.get("payment_ref")).isEqualTo("UTR-7");
         assertThat(row.get("recorded_by")).isEqualTo(associateId);
         assertThat(jdbc.queryForObject(
             "SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID' AND actor_id = ?",
             Integer.class, b.id(), associateId)).isEqualTo(1);
-        assertThat(after.paidAmount()).isEqualByComparingTo(lastInstallmentAmount(b));
+        assertThat(after.paidAmount()).isEqualByComparingTo("0");          // entered, not confirmed
+        assertThat(after.dueAmount()).isEqualByComparingTo(b.dueAmount()); // entering must not reduce due
         assertThat(jdbc.queryForObject("SELECT status FROM plot_booking WHERE id = ?", String.class, b.id()))
             .isEqualTo("ACTIVE");          // pay never confirms (units 4/5)
         assertThat(plotRepository.findById(plotId).orElseThrow().getStatus()).isEqualTo(PlotStatus.BOOKED);
     }
 
     @Test
-    void rejectedPayLeavesNoEventAndNoPaidInstallment() {
+    void rejectedPayLeavesNoEventAndNoEnteredInstallment() {
         BookingResponse b = seedBooking();
         int n = lastInstallmentNumber(b);
 
         assertThatThrownBy(() -> bookingService.recordPayment(b.id(), n,
-            new RecordPaymentRequest(new BigDecimal("0.01"), "UTR-X", null), associateId))
+            new RecordPaymentRequest(new BigDecimal("0.01"), "UTR-X", PaymentMode.CASH, null), associateId))
             .isInstanceOf(PaymentAmountMismatchException.class);
 
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM booking_event WHERE booking_id = ?",
             Integer.class, b.id())).isZero();
         assertThat(jdbc.queryForObject(
-            "SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PAID'",
+            "SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'ENTERED'",
             Integer.class, b.id())).isZero();
     }
 
@@ -186,7 +189,7 @@ class BookingPaymentIntegrationTest {
         for (String ref : List.of("REF-A", "REF-B")) {
             results.add(pool.submit(() -> {
                 awaitQuietly(start);
-                return bookingService.recordPayment(b.id(), n, new RecordPaymentRequest(amount, ref, null), associateId);
+                return bookingService.recordPayment(b.id(), n, new RecordPaymentRequest(amount, ref, PaymentMode.CASH, null), associateId);
             }));
         }
         start.countDown();
@@ -236,7 +239,7 @@ class BookingPaymentIntegrationTest {
         Future<BookingResponse> pay = pool.submit(() -> {
             events.add("pay-calling");
             BookingResponse r = bookingService.recordPayment(b.id(), n,
-                new RecordPaymentRequest(amount, "UTR-L", null), associateId);
+                new RecordPaymentRequest(amount, "UTR-L", PaymentMode.CASH, null), associateId);
             events.add("pay-returned");
             return r;
         });

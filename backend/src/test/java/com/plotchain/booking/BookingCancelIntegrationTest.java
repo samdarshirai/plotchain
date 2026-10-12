@@ -163,7 +163,8 @@ class BookingCancelIntegrationTest {
 
     private BookingResponse payInstallment(BookingResponse b, int n) {
         BigDecimal amount = b.installments().get(n - 1).amount();
-        return bookingService.recordPayment(b.id(), n, new RecordPaymentRequest(amount, "UTR-" + n, null), associateId);
+        bookingService.recordPayment(b.id(), n, new RecordPaymentRequest(amount, "UTR-" + n, PaymentMode.CASH, null), associateId);
+        return bookingService.confirmPayment(b.id(), n, associateId);
     }
 
     private int count(String sql, Object... args) {
@@ -209,7 +210,7 @@ class BookingCancelIntegrationTest {
         // PAID rows keep their payment fields
         assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PAID' AND payment_ref IS NOT NULL AND paid_at IS NOT NULL", b.id())).isEqualTo(2);
         assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CANCELLED' AND actor_id = ?", b.id(), associateId)).isEqualTo(1);
-        assertThat(eventDetail(b.id(), "CANCELLED")).isEqualTo("reason: buyer withdrew; paid: 300000.00");
+        assertThat(eventDetail(b.id(), "CANCELLED")).isEqualTo("reason: buyer withdrew; paid: 300000.00; unconfirmed payments voided: 0");
         assertThat(count("SELECT COUNT(*) FROM sale WHERE associate_id = ?", associateId)).isZero();
     }
 
@@ -487,7 +488,7 @@ class BookingCancelIntegrationTest {
         }
     }
 
-    // Cancel vs a pay that auto-confirms (single installment, AUTO_THRESHOLD 100): exactly one winner.
+    // Cancel vs a payment CONFIRMATION that auto-confirms (single installment, entered beforehand, AUTO_THRESHOLD 100): exactly one winner.
     // Exercises booking -> plot lock order from both sides (pay's auto-confirm and cancel both take the
     // plot lock after the booking lock): a lock-order inversion would deadlock/time out here.
     @RepeatedTest(10)
@@ -495,10 +496,11 @@ class BookingCancelIntegrationTest {
         setConfig(false, 1, "AUTO_THRESHOLD", 100);
         BookingResponse b = seedBooking();
         BigDecimal total = b.installments().get(0).amount();
+        bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(total, "UTR-R", PaymentMode.CASH, null), associateId);
 
         List<Throwable> r = race(
             () -> bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId),
-            () -> bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(total, "UTR-R", null), associateId));
+            () -> bookingService.confirmPayment(b.id(), 1, associateId));
 
         boolean cancelWon = r.get(0) == null;
         boolean payWon = r.get(1) == null;
@@ -508,7 +510,7 @@ class BookingCancelIntegrationTest {
             assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
             assertThat(plotStatus()).isEqualTo("AVAILABLE");
             assertThat(jdbc.queryForObject("SELECT status FROM emi_installment WHERE booking_id = ?", String.class, b.id())).isEqualTo("VOID");
-            assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id())).isZero();
+            assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAY_CONFIRMED'", b.id())).isZero();
             assertThat(count("SELECT COUNT(*) FROM sale WHERE booking_id = ?", b.id())).isZero();
         } else {
             assertThat(bookingStatus(b.id())).isEqualTo("CONFIRMED");
@@ -518,29 +520,28 @@ class BookingCancelIntegrationTest {
         }
     }
 
-    // Cancel vs a plain pay under MANUAL: pay-then-cancel legitimately BOTH succeed (the paid installment
-    // is retained), cancel-then-pay is 409 for the pay. Invariant under every interleaving: no lost
-    // update. The cancel event's "paid" total equals the final sum of PAID installments, and PAID events
-    // match PAID rows.
+    // Cancel vs entering a payment under MANUAL: enter-then-cancel both succeed (the ENTERED installment is
+    // voided and counted in the event), cancel-then-enter is 409 for the enter. Invariant under every
+    // interleaving: nothing is PAID or PENDING, every row is VOID, and the entered-event count equals the
+    // "unconfirmed payments voided" count.
     @RepeatedTest(10)
-    void aCancelRacingAPlainPayNeverLosesTheUpdate() throws Exception {
+    void aCancelRacingAnEnteredPaymentNeverLosesTheUpdate() throws Exception {
         setConfig(true, 4, "MANUAL", null);
         BookingResponse b = seedBooking();
         BigDecimal amount = b.installments().get(0).amount();
 
         List<Throwable> r = race(
             () -> bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId),
-            () -> bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(amount, "UTR-R", null), associateId));
+            () -> bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(amount, "UTR-R", PaymentMode.CASH, null), associateId));
 
         assertThat(r.get(0)).as("cancel always succeeds on an ACTIVE booking").isNull();
         if (r.get(1) != null) {
             assertThat(r.get(1)).isInstanceOf(BookingNotActiveException.class);
         }
-        int paidRows = count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PAID'", b.id());
-        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id())).isEqualTo(paidRows);
-        assertThat(eventDetail(b.id(), "CANCELLED")).endsWith("paid: " + (paidRows == 1 ? "150000.00" : "0.00"));
-        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PENDING'", b.id())).isZero();
-        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'VOID'", b.id())).isEqualTo(3 + (1 - paidRows));
+        int entered = r.get(1) == null ? 1 : 0;
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id())).isEqualTo(entered);
+        assertThat(eventDetail(b.id(), "CANCELLED")).isEqualTo("reason: x; paid: 0.00; unconfirmed payments voided: " + entered);
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'VOID'", b.id())).isEqualTo(4);
         assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
         assertThat(plotStatus()).isEqualTo("AVAILABLE");
     }

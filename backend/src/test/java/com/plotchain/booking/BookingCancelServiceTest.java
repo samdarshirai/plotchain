@@ -127,7 +127,7 @@ class BookingCancelServiceTest {
         assertThat(ev.getValue().getBookingId()).isEqualTo(b.getId());
         assertThat(ev.getValue().getActorId()).isEqualTo(ACTOR_ID);
         assertThat(ev.getValue().getCreatedAt()).isEqualTo(NOW);
-        assertThat(ev.getValue().getDetail()).isEqualTo("reason: buyer withdrew; paid: 150000.00");
+        assertThat(ev.getValue().getDetail()).isEqualTo("reason: buyer withdrew; paid: 150000.00; unconfirmed payments voided: 0");
 
         assertThat(r.status()).isEqualTo(BookingStatus.CANCELLED);
         assertThat(r.paidAmount()).isEqualByComparingTo("150000.00");
@@ -135,6 +135,24 @@ class BookingCancelServiceTest {
         assertThat(r.installments()).extracting(EmiInstallmentResponse::status)
             .containsExactly(InstallmentStatus.PAID, InstallmentStatus.VOID, InstallmentStatus.VOID);
         assertThat(r.installments()).noneMatch(EmiInstallmentResponse::overdue); // VOID never overdue
+    }
+
+    @Test
+    void cancelVoidsEnteredAndPendingKeepsPaidAndCountsVoidedEnteredPaymentsInTheEvent() {
+        EmiInstallment paid = inst(1, "150000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PAID);
+        EmiInstallment entered = inst(2, "150000.00", LocalDate.of(2026, 8, 1), InstallmentStatus.ENTERED);
+        EmiInstallment pending = inst(3, "300000.00", LocalDate.of(2026, 9, 1), InstallmentStatus.PENDING);
+        PlotBooking b = locked(PlotStatus.BOOKED, paid, entered, pending);
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plot(PlotStatus.BOOKED)));
+
+        BookingResponse r = bookingService.cancelBooking(b.getId(), req("x"), ACTOR_ID);
+
+        assertThat(r.installments()).extracting(EmiInstallmentResponse::status)
+            .containsExactly(InstallmentStatus.PAID, InstallmentStatus.VOID, InstallmentStatus.VOID);
+        ArgumentCaptor<BookingEvent> ev = ArgumentCaptor.forClass(BookingEvent.class);
+        verify(bookingEventRepository).save(ev.capture());
+        assertThat(ev.getValue().getDetail())
+            .isEqualTo("reason: x; paid: 150000.00; unconfirmed payments voided: 1");
     }
 
     @Test
@@ -146,7 +164,7 @@ class BookingCancelServiceTest {
 
         ArgumentCaptor<BookingEvent> ev = ArgumentCaptor.forClass(BookingEvent.class);
         verify(bookingEventRepository).save(ev.capture());
-        assertThat(ev.getValue().getDetail()).isEqualTo("reason: x; paid: 0.00");
+        assertThat(ev.getValue().getDetail()).isEqualTo("reason: x; paid: 0.00; unconfirmed payments voided: 0");
     }
 
     @Test
@@ -204,7 +222,7 @@ class BookingCancelServiceTest {
         verify(plotRepository, never()).save(any());
         ArgumentCaptor<BookingEvent> ev = ArgumentCaptor.forClass(BookingEvent.class);
         verify(bookingEventRepository).save(ev.capture());
-        assertThat(ev.getValue().getDetail()).isEqualTo("reason: drift; paid: 0.00; plot left SOLD");
+        assertThat(ev.getValue().getDetail()).isEqualTo("reason: drift; paid: 0.00; unconfirmed payments voided: 0; plot left SOLD");
     }
 
     @Test
@@ -242,7 +260,7 @@ class BookingCancelServiceTest {
         ArgumentCaptor<BookingEvent> ev = ArgumentCaptor.forClass(BookingEvent.class);
         verify(bookingEventRepository).save(ev.capture());
         assertThat(ev.getValue().getDetail())
-            .isEqualTo("reason: stale; paid: 0.00; plot kept: held by booking " + other.getId());
+            .isEqualTo("reason: stale; paid: 0.00; unconfirmed payments voided: 0; plot kept: held by booking " + other.getId());
     }
 
     // Normal case: no other holder -> plot freed, no suffix. The guard query is asked with exactly

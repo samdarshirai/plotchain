@@ -1,5 +1,6 @@
 package com.plotchain.booking;
 
+// ENTERED installments are deliberately not overdue (payment received, awaiting admin confirmation).
 // ONE definition of "overdue" for JPQL (Decision 7): PENDING and due strictly before :today.
 // Compile-time constants so they can be concatenated into @Query strings. Alias contract:
 // outer booking alias `b`, installment alias `i`, named parameter `:today` (LocalDate, the

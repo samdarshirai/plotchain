@@ -128,8 +128,10 @@ public class BookingService {
         return toResponse(booking, schedule);
     }
 
+    // U2: only ENTERS the payment (PENDING -> ENTERED); confirmPayment moves it to PAID and is the
+    // only thing that feeds Paid/Due and the AUTO_THRESHOLD check.
     // Row-locks the booking FIRST (Decision 8) so two simultaneous pays on one installment
-    // serialize: the loser re-reads the installment as PAID and gets 409. Check order is the
+    // serialize: the loser re-reads the installment as ENTERED and gets 409. Check order is the
     // spec's Flow "Record payment". Installments are deliberately payable in any order.
     @Transactional
     public BookingResponse recordPayment(UUID bookingId, int installmentNumber,
@@ -156,22 +158,89 @@ public class BookingService {
 
         Instant now = clock.instant();
         String paymentRef = request.paymentRef().trim();
-        installment.setStatus(InstallmentStatus.PAID);
+        installment.setStatus(InstallmentStatus.ENTERED);
+        installment.setPaymentMode(request.paymentMode());
         installment.setPaidAt(request.paidAt() != null ? request.paidAt() : now);
         installment.setPaymentRef(paymentRef);
         installment.setRecordedBy(actorId);
         emiInstallmentRepository.save(installment);
 
         bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.PAID, actorId,
-            "installment " + installmentNumber + ", amount " + installment.getAmount().toPlainString()
-                + ", ref " + paymentRef, now));
+            "entered: installment " + installmentNumber + ", amount " + installment.getAmount().toPlainString()
+                + ", ref " + paymentRef + ", mode " + request.paymentMode(), now));
 
-        afterInstallmentPaid(booking, installments, actorId);
         return toResponse(booking, installments);
     }
 
-    // Unit 5: AUTO_THRESHOLD auto-confirm (spec Decision 1, Flow "Record payment"). Runs inside
-    // recordPayment's locked transaction, after the PAID event and before the response is built, so
+    // U2: admin confirms an ENTERED payment (ENTERED -> PAID). Allowed on ACTIVE or CONFIRMED bookings,
+    // never CANCELLED. Booking lock first (Decision 8); the plot lock is taken only inside confirmLocked.
+    @Transactional
+    public BookingResponse confirmPayment(UUID bookingId, int installmentNumber, UUID actorId) {
+        PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)
+            .orElseThrow(() -> new BookingNotFoundException(bookingId));
+        return confirmEntered(booking, List.of(installmentNumber), actorId);
+    }
+
+    // U2 bulk: all-or-nothing in one transaction. Locks ALL distinct bookings first in ascending id order
+    // (deadlock-safe against other bulks), then confirms. The offending item on failure is the first in
+    // (bookingId, installmentNumber) order. Duplicates in the request are rejected up front.
+    @Transactional
+    public List<BookingResponse> confirmPayments(List<PaymentRef> items, UUID actorId) {
+        java.util.SortedMap<UUID, List<Integer>> byBooking = new java.util.TreeMap<>();
+        java.util.Set<PaymentRef> seen = new java.util.HashSet<>();
+        for (PaymentRef r : items) {
+            if (!seen.add(r)) {
+                throw new DuplicatePaymentRefException(r.bookingId(), r.installmentNumber());
+            }
+            byBooking.computeIfAbsent(r.bookingId(), k -> new ArrayList<>()).add(r.installmentNumber());
+        }
+        Map<UUID, PlotBooking> locked = new java.util.LinkedHashMap<>();
+        for (UUID id : byBooking.keySet()) {
+            locked.put(id, plotBookingRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new BookingNotFoundException(id)));
+        }
+        List<BookingResponse> out = new ArrayList<>();
+        byBooking.forEach((id, numbers) -> {
+            java.util.Collections.sort(numbers);
+            out.add(confirmEntered(locked.get(id), numbers, actorId));
+        });
+        return out;
+    }
+
+    // Shared by single + bulk. PRECONDITION: booking row already locked by the caller. All listed
+    // installments are marked PAID first and the threshold check runs ONCE per booking at the end, and
+    // only while ACTIVE (a CONFIRMED booking never re-confirms or gets a second Sale).
+    private BookingResponse confirmEntered(PlotBooking booking, List<Integer> numbers, UUID actorId) {
+        if (booking.getStatus() != BookingStatus.ACTIVE && booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new BookingNotActiveException(booking.getId());
+        }
+        List<EmiInstallment> installments =
+            emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId());
+        Instant now = clock.instant();
+        for (int n : numbers) {
+            EmiInstallment installment = installments.stream()
+                .filter(i -> i.getInstallmentNumber() == n)
+                .findFirst()
+                .orElseThrow(() -> new InstallmentNotFoundException(booking.getId(), n));
+            if (installment.getStatus() != InstallmentStatus.ENTERED) {
+                throw new InstallmentNotEnteredException(booking.getId(), n);
+            }
+            installment.setStatus(InstallmentStatus.PAID);
+            installment.setConfirmedAt(now);
+            installment.setConfirmedBy(actorId);
+            emiInstallmentRepository.save(installment);
+            bookingEventRepository.save(BookingEvent.of(booking.getId(), BookingEventType.PAY_CONFIRMED, actorId,
+                "installment " + n + ", amount " + installment.getAmount().toPlainString()
+                    + ", ref " + installment.getPaymentRef(), now));
+        }
+        if (booking.getStatus() == BookingStatus.ACTIVE) {
+            afterInstallmentPaid(booking, installments, actorId);
+        }
+        return toResponse(booking, installments);
+    }
+
+    // Unit 5: AUTO_THRESHOLD auto-confirm (spec Decision 1, Flow "Record payment"). U2: now runs from
+    // confirmEntered (only for ACTIVE bookings), inside the locked transaction, after the PAY_CONFIRMED event and before the response is built, so
     // the response reflects a CONFIRMED booking. Holds only the booking lock; confirmLocked takes the
     // plot lock itself (booking -> plot, Decision 8). Any failure in confirmLocked propagates and
     // rolls the whole pay back (installment write + PAID event included).
@@ -253,7 +322,7 @@ public class BookingService {
     // Plot-booking unit 6 (spec Flow "Cancel", Decisions 4, 8). Locks the booking FIRST so a concurrent
     // pay / confirm / cancel serializes on it (the loser re-reads CANCELLED/CONFIRMED and gets 409),
     // then the plot. LOCK ORDER IS BOOKING -> PLOT EVERYWHERE (Decision 8), same as confirmLocked.
-    // PAID installments are untouched; PENDING -> VOID; amounts retained as a note only (no refunds).
+    // PAID installments are untouched; PENDING and ENTERED (unconfirmed) -> VOID; amounts retained as a note only (no refunds).
     // The plot goes BOOKED -> AVAILABLE only if it is BOOKED and no other ACTIVE/CONFIRMED booking
     // holds it (see the stale-booking guard below). Any other plot state is drift: cancel must stay
     // possible (it is the repair tool, unlike confirm which 409s on drift), and flipping a SOLD plot
@@ -272,8 +341,12 @@ public class BookingService {
 
         List<EmiInstallment> installments =
             emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId);
+        int voidedEntered = 0;
         for (EmiInstallment installment : installments) {
-            if (installment.getStatus() == InstallmentStatus.PENDING) {
+            if (installment.getStatus() == InstallmentStatus.ENTERED) {
+                voidedEntered++;
+            }
+            if (installment.getStatus() == InstallmentStatus.PENDING || installment.getStatus() == InstallmentStatus.ENTERED) {
                 installment.setStatus(InstallmentStatus.VOID);
             }
         }
@@ -304,7 +377,8 @@ public class BookingService {
 
         BigDecimal paid = sumByStatus(installments, InstallmentStatus.PAID).setScale(2, RoundingMode.HALF_UP);
         bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.CANCELLED, actorId,
-            "reason: " + reason + "; paid: " + paid.toPlainString() + plotNote, now));
+            "reason: " + reason + "; paid: " + paid.toPlainString()
+                + "; unconfirmed payments voided: " + voidedEntered + plotNote, now));
 
         return toResponse(booking, installments);
     }
@@ -482,7 +556,8 @@ public class BookingService {
             List<EmiInstallmentResponse> rows = installments.stream()
                 .map(i -> new EmiInstallmentResponse(
                     i.getInstallmentNumber(), i.getAmount(), i.getDueDate(), i.getStatus(), i.getPaidAt(),
-                    i.getStatus() == InstallmentStatus.PENDING && i.getDueDate().isBefore(today)))
+                    i.getStatus() == InstallmentStatus.PENDING && i.getDueDate().isBefore(today),
+                    i.getPaymentMode(), i.getConfirmedAt()))
                 .toList();
             Plot plot = plots.get(booking.getPlotId());
             Project project = plot == null ? null : projects.get(plot.getProjectId());
@@ -492,7 +567,8 @@ public class BookingService {
                 booking.getStatus(), booking.getBuyerName(),
                 booking.getTotalAmount(), booking.getInstallmentCount(), booking.getBookedAt(),
                 sumByStatus(installments, InstallmentStatus.PAID),
-                sumByStatus(installments, InstallmentStatus.PENDING),
+                // ENTERED is received-but-unconfirmed money: still due until confirmed (paid + due = total).
+                sumByStatus(installments, InstallmentStatus.PENDING).add(sumByStatus(installments, InstallmentStatus.ENTERED)),
                 rows,
                 plot == null ? null : plot.getPlotNo(),
                 project == null ? null : project.getName(),

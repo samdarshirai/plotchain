@@ -42,7 +42,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doThrow;
 
-// Real-DB (H2 via Flyway) proof for plot-booking unit 5: AUTO_THRESHOLD confirms inside recordPayment.
+// Real-DB (H2 via Flyway) proof for plot-booking unit 5: AUTO_THRESHOLD confirms inside confirmPayment (U2:
+// payInstallment = enter then confirm; entering alone never counts toward the threshold).
 // Harness mirrors BookingConfirmIntegrationTest (committed rows, manual cleanup, circular sale<->booking
 // FKs nulled first) plus save/restore of the global booking_emi_config singleton.
 @SpringBootTest
@@ -67,6 +68,8 @@ class BookingAutoConfirmIntegrationTest {
     private UUID projectId;
     private UUID associateId;
     private Map<String, Object> originalConfig;
+    private UUID extraPlotId;
+    private UUID extraProjectId;
 
     @BeforeEach
     void saveConfig() {
@@ -96,6 +99,8 @@ class BookingAutoConfirmIntegrationTest {
             }
             plotBookingRepository.deleteAll(bookings);
         }
+        if (extraPlotId != null) plotRepository.deleteById(extraPlotId);
+        if (extraProjectId != null) projectRepository.deleteById(extraProjectId);
         if (plotId != null) plotRepository.deleteById(plotId);
         if (projectId != null) projectRepository.deleteById(projectId);
         if (associateId != null) associateRepository.deleteById(associateId);
@@ -161,7 +166,13 @@ class BookingAutoConfirmIntegrationTest {
 
     private BookingResponse payInstallment(BookingResponse b, int n) {
         BigDecimal amount = b.installments().get(n - 1).amount();
-        return bookingService.recordPayment(b.id(), n, new RecordPaymentRequest(amount, "UTR-" + n, null), associateId);
+        bookingService.recordPayment(b.id(), n, new RecordPaymentRequest(amount, "UTR-" + n, PaymentMode.CASH, null), associateId);
+        return bookingService.confirmPayment(b.id(), n, associateId);
+    }
+
+    private BookingResponse enterInstallment(BookingResponse b, int n) {
+        BigDecimal amount = b.installments().get(n - 1).amount();
+        return bookingService.recordPayment(b.id(), n, new RecordPaymentRequest(amount, "UTR-" + n, PaymentMode.CASH, null), associateId);
     }
 
     private int count(String sql, Object... args) {
@@ -292,7 +303,7 @@ class BookingAutoConfirmIntegrationTest {
     // ledger rows are inserted and the plot is flipped to SOLD, so only the surrounding transaction can
     // undo all of it.
     @Test
-    void aFailureInTheConfirmStepRollsBackThePaymentTheSaleAndThePlotFlip() {
+    void aFailureInTheConfirmStepRollsBackTheConfirmationTheSaleAndThePlotFlip() {
         setConfig(true, 4, "AUTO_THRESHOLD", 50);
         BookingResponse b = seedBooking();
         payInstallment(b, 1);                              // committed, below threshold
@@ -305,11 +316,11 @@ class BookingAutoConfirmIntegrationTest {
         // fresh JDBC reads (no persistence context involved)
         assertThat(jdbc.queryForObject(
             "SELECT status FROM emi_installment WHERE booking_id = ? AND installment_number = 2",
-            String.class, b.id())).isEqualTo("PENDING");
+            String.class, b.id())).isEqualTo("ENTERED");    // the enter step committed; the confirm step rolled back
         assertThat(jdbc.queryForObject(
-            "SELECT payment_ref FROM emi_installment WHERE booking_id = ? AND installment_number = 2",
-            String.class, b.id())).isNull();
-        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id()))
+            "SELECT confirmed_at FROM emi_installment WHERE booking_id = ? AND installment_number = 2",
+            Object.class, b.id())).isNull();
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAY_CONFIRMED'", b.id()))
             .isEqualTo(1);                                  // only installment 1's
         assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CONFIRMED'", b.id()))
             .isZero();
@@ -337,14 +348,14 @@ class BookingAutoConfirmIntegrationTest {
 
         assertThat(jdbc.queryForObject(
             "SELECT status FROM emi_installment WHERE booking_id = ? AND installment_number = 2",
-            String.class, b.id())).isEqualTo("PENDING");
-        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id())).isEqualTo(1);
+            String.class, b.id())).isEqualTo("ENTERED");    // confirm rolled back; the entered payment stays
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAY_CONFIRMED'", b.id())).isEqualTo(1);
         assertThat(bookingStatus(b.id())).isEqualTo("ACTIVE");
         assertThat(count("SELECT COUNT(*) FROM sale WHERE associate_id = ?", associateId)).isZero();
         assertThat(plotStatus()).isEqualTo("AVAILABLE");   // untouched by the failed pay
         // a pay that does NOT cross the threshold still works on a drifted plot (documented consequence)
         setConfig(true, 4, "AUTO_THRESHOLD", 100);
-        assertThat(payInstallment(b, 2).status()).isEqualTo(BookingStatus.ACTIVE);
+        assertThat(bookingService.confirmPayment(b.id(), 2, associateId).status()).isEqualTo(BookingStatus.ACTIVE);
     }
 
     // ---- already confirmed ----------------------------------------------------------------------
@@ -365,56 +376,46 @@ class BookingAutoConfirmIntegrationTest {
             String.class, b.id())).isEqualTo("PENDING");
     }
 
-    // Single installment (EMI disabled) at 100%: the pay itself would auto-confirm, so pay and manual
-    // confirm genuinely compete for the same confirm. The booking lock serializes them: the loser re-reads
-    // the committed state and gets BookingNotActiveException (409), never a plot-lock or unique-index error.
+    // Single installment (EMI disabled) at 100%, payment ENTERED beforehand: confirming the payment would
+    // auto-confirm the booking, and a manual confirmBooking competes for the same confirm. The booking lock
+    // serializes them. Either (payment confirmation wins -> it auto-confirms, manual confirm gets 409) or
+    // (manual confirm wins -> the payment confirmation still succeeds, promoting to PAID without a second
+    // sale). Never a second sale, never a plot-lock / unique-index error.
     @Test
-    void aPayRacingAManualConfirmYieldsExactlyOneSaleAndTheLoserGets409() throws Exception {
+    void aPaymentConfirmationRacingAManualConfirmYieldsExactlyOneSale() throws Exception {
         setConfig(false, 1, "AUTO_THRESHOLD", 100);
         BookingResponse b = seedBooking();
-        BigDecimal total = b.installments().get(0).amount();
+        enterInstallment(b, 1);
 
         CountDownLatch start = new CountDownLatch(1);
         ExecutorService pool = Executors.newFixedThreadPool(2);
-        Future<BookingResponse> pay = pool.submit(() -> {
+        Future<BookingResponse> payConfirm = pool.submit(() -> {
             awaitQuietly(start);
-            return bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(total, "UTR-R", null), associateId);
+            return bookingService.confirmPayment(b.id(), 1, associateId);
         });
         Future<BookingResponse> confirm = pool.submit(() -> {
             awaitQuietly(start);
             return bookingService.confirmBooking(b.id(), associateId);
         });
         start.countDown();
-
-        boolean payWon = true;
-        boolean confirmWon = true;
         try {
-            try {
-                pay.get(10, TimeUnit.SECONDS);
-            } catch (ExecutionException e) {
-                assertThat(e.getCause()).isInstanceOf(BookingNotActiveException.class);
-                payWon = false;
-            }
+            payConfirm.get(10, TimeUnit.SECONDS);          // never fails: allowed on ACTIVE and CONFIRMED
             try {
                 confirm.get(10, TimeUnit.SECONDS);
             } catch (ExecutionException e) {
                 assertThat(e.getCause()).isInstanceOf(BookingNotActiveException.class);
-                confirmWon = false;
             }
         } finally {
             pool.shutdownNow();
         }
 
-        assertThat(payWon ^ confirmWon).as("exactly one of pay/confirm wins").isTrue();
         assertThat(count("SELECT COUNT(*) FROM sale WHERE booking_id = ?", b.id())).isEqualTo(1);
         assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CONFIRMED'", b.id())).isEqualTo(1);
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAY_CONFIRMED'", b.id())).isEqualTo(1);
         assertThat(bookingStatus(b.id())).isEqualTo("CONFIRMED");
         assertThat(plotStatus()).isEqualTo("SOLD");
-        // state is consistent with who won: a losing pay left the installment PENDING and wrote no PAID event
         assertThat(jdbc.queryForObject("SELECT status FROM emi_installment WHERE booking_id = ?", String.class, b.id()))
-            .isEqualTo(payWon ? "PAID" : "PENDING");
-        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id()))
-            .isEqualTo(payWon ? 1 : 0);
+            .isEqualTo("PAID");
     }
 
     // 4 installments, threshold 75%, installment 1 pre-paid (25%). Two admins pay installments 2 and 3 at
@@ -452,5 +453,191 @@ class BookingAutoConfirmIntegrationTest {
         assertThat(count("SELECT COUNT(*) FROM sale WHERE booking_id = ?", b.id())).isEqualTo(1);
         assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CONFIRMED'", b.id())).isEqualTo(1);
         assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id())).isEqualTo(3);
+    }
+
+    // ---- U2: two-step payments (real DB) -------------------------------------------------------
+
+    @Test
+    void enteredPaymentsNeverAutoConfirmEvenAtOneHundredPercentUntilTheLastIsConfirmed() {
+        setConfig(true, 4, "AUTO_THRESHOLD", 100);
+        BookingResponse b = seedBooking();
+        for (int n = 1; n <= 4; n++) enterInstallment(b, n);
+
+        assertThat(bookingStatus(b.id())).isEqualTo("ACTIVE");
+        assertThat(count("SELECT COUNT(*) FROM sale WHERE booking_id = ?", b.id())).isZero();
+        for (int n = 1; n <= 3; n++) bookingService.confirmPayment(b.id(), n, associateId);
+        assertThat(bookingStatus(b.id())).isEqualTo("ACTIVE");
+        assertThat(bookingService.confirmPayment(b.id(), 4, associateId).status()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(count("SELECT COUNT(*) FROM sale WHERE booking_id = ?", b.id())).isEqualTo(1);
+    }
+
+    @Test
+    void confirmPromotesToPaidWithConfirmedFieldsAndOnePayConfirmedEvent() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        enterInstallment(b, 2);
+
+        BookingResponse after = bookingService.confirmPayment(b.id(), 2, associateId);
+
+        Map<String, Object> row = jdbc.queryForMap(
+            "SELECT status, confirmed_at, confirmed_by, payment_mode FROM emi_installment WHERE booking_id = ? AND installment_number = 2", b.id());
+        assertThat(row.get("STATUS")).isEqualTo("PAID");
+        assertThat(row.get("CONFIRMED_AT")).isNotNull();
+        assertThat(row.get("CONFIRMED_BY")).isEqualTo(associateId);
+        assertThat(row.get("PAYMENT_MODE")).isEqualTo("CASH");
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAY_CONFIRMED' AND actor_id = ?",
+            b.id(), associateId)).isEqualTo(1);
+        assertThat(after.paidAmount()).isEqualByComparingTo("150000.00");
+        assertThat(after.dueAmount()).isEqualByComparingTo("450000.00");
+    }
+
+    @Test
+    void doubleConfirmIs409AndWritesOneEvent() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        enterInstallment(b, 1);
+        bookingService.confirmPayment(b.id(), 1, associateId);
+
+        assertThatThrownBy(() -> bookingService.confirmPayment(b.id(), 1, associateId))
+            .isInstanceOf(InstallmentNotEnteredException.class);
+
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAY_CONFIRMED'", b.id())).isEqualTo(1);
+    }
+
+    @Test
+    void twoSimultaneousConfirmsOfTheSameInstallmentSucceedExactlyOnce() throws Exception {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        enterInstallment(b, 1);
+
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        List<Future<BookingResponse>> results = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            results.add(pool.submit(() -> {
+                awaitQuietly(start);
+                return bookingService.confirmPayment(b.id(), 1, associateId);
+            }));
+        }
+        start.countDown();
+        int ok = 0;
+        try {
+            for (Future<BookingResponse> f : results) {
+                try {
+                    f.get(10, TimeUnit.SECONDS);
+                    ok++;
+                } catch (ExecutionException e) {
+                    assertThat(e.getCause()).isInstanceOf(InstallmentNotEnteredException.class);
+                }
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertThat(ok).isEqualTo(1);
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAY_CONFIRMED'", b.id())).isEqualTo(1);
+    }
+
+    @Test
+    void confirmingAnEnteredPaymentOnAnAlreadyConfirmedBookingCreatesNoSecondSale() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        enterInstallment(b, 1);
+        bookingService.confirmBooking(b.id(), associateId);
+
+        BookingResponse after = bookingService.confirmPayment(b.id(), 1, associateId);
+
+        assertThat(after.status()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(after.installments().get(0).status()).isEqualTo(InstallmentStatus.PAID);
+        assertThat(count("SELECT COUNT(*) FROM sale WHERE booking_id = ?", b.id())).isEqualTo(1);
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CONFIRMED'", b.id())).isEqualTo(1);
+    }
+
+    @Test
+    void confirmOnACancelledBookingIs409() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        enterInstallment(b, 1);
+        bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId);
+        assertThat(jdbc.queryForObject(
+            "SELECT status FROM emi_installment WHERE booking_id = ? AND installment_number = 1", String.class, b.id()))
+            .isEqualTo("VOID");
+
+        assertThatThrownBy(() -> bookingService.confirmPayment(b.id(), 1, associateId))
+            .isInstanceOf(BookingNotActiveException.class);
+    }
+
+    @Test
+    void bulkConfirmIsAllOrNothing() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        enterInstallment(b, 1);                                   // 2 stays PENDING
+
+        assertThatThrownBy(() -> bookingService.confirmPayments(
+                List.of(new PaymentRef(b.id(), 1), new PaymentRef(b.id(), 2)), associateId))
+            .isInstanceOf(InstallmentNotEnteredException.class);
+
+        assertThat(jdbc.queryForObject(
+            "SELECT status FROM emi_installment WHERE booking_id = ? AND installment_number = 1", String.class, b.id()))
+            .isEqualTo("ENTERED");
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAY_CONFIRMED'", b.id())).isZero();
+    }
+
+    // Smoke test: service sorts items by bookingId, so both threads lock in one order whatever the request order.
+    @Test
+    void bulkConfirmAcrossBookingsInOpposingRequestOrdersCompletesWithoutDeadlock() throws Exception {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse a = seedBooking();
+        UUID firstPlotId = plotId;
+        UUID firstProjectId = projectId;
+        // second booking on a second plot (its plot/project are released in cleanUp via extra*)
+        plotId = seedAvailablePlot();
+        extraPlotId = plotId;
+        extraProjectId = projectId;
+        plotId = firstPlotId;
+        projectId = firstProjectId;
+        BookingResponse c = LegacyScheduleSeed.book(bookingService, jdbc, extraPlotId, associateId, "John Buyer");
+        for (int n = 1; n <= 2; n++) {
+            enterInstallment(a, n);
+            enterInstallment(c, n);
+        }
+
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        Future<?> f1 = pool.submit(() -> {
+            awaitQuietly(start);
+            return bookingService.confirmPayments(
+                List.of(new PaymentRef(a.id(), 1), new PaymentRef(c.id(), 1)), associateId);
+        });
+        Future<?> f2 = pool.submit(() -> {
+            awaitQuietly(start);
+            return bookingService.confirmPayments(
+                List.of(new PaymentRef(c.id(), 2), new PaymentRef(a.id(), 2)), associateId);
+        });
+        start.countDown();
+        try {
+            f1.get(10, TimeUnit.SECONDS);
+            f2.get(10, TimeUnit.SECONDS);
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id IN (?, ?) AND status = 'PAID'",
+            a.id(), c.id())).isEqualTo(4);
+    }
+
+    @Test
+    void cancelVoidsEnteredKeepsPaidAndReportsTheCountInTheEvent() {
+        setConfig(true, 4, "MANUAL", null);
+        BookingResponse b = seedBooking();
+        payInstallment(b, 1);
+        enterInstallment(b, 2);
+
+        bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId);
+
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PAID'", b.id())).isEqualTo(1);
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'VOID'", b.id())).isEqualTo(3);
+        assertThat(jdbc.queryForObject("SELECT detail FROM booking_event WHERE booking_id = ? AND type = 'CANCELLED'",
+            String.class, b.id())).isEqualTo("reason: x; paid: 150000.00; unconfirmed payments voided: 1");
     }
 }
