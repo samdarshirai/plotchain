@@ -19,7 +19,7 @@ Index over `docs/superpowers/specs/role-capability/*.md`. This is the file a new
 | `2026-10-01-plot-booking-lifecycle-design.md` | **done** | `2026-10-01-plot-booking-units.md` | 17 / 17 (units 1-13 + 14a-d) |
 | `2026-08-03-support-tickets-domain-design.md` | **done** | `2026-08-03-support-tickets-units.md` | 6 / 6 |
 | `2026-08-03-announcements-domain-design.md` | **done** | `2026-08-03-announcements-units.md` | 4 / 4 |
-| `2026-10-12-plot-booking-reference-gap-plan.md` (reference-video gap close) | **in progress** | `2026-10-12-plot-booking-reference-gap-units.md` | 3 / 8 |
+| `2026-10-12-plot-booking-reference-gap-plan.md` (reference-video gap close) | **in progress** | `2026-10-12-plot-booking-reference-gap-units.md` | 3 / 7 (U4 skipped) |
 
 **Known cross-spec dependency — resolved 2026-08-05:** Sales unit 1 (`CycleService.getOrOpenCurrent()`) merged as `abde5dc` on `master`. This unblocks cycle-management unit 4 (leg-volume rollup, OPEN→CLOSED, reopen), which can now proceed to its own planning phase against the real method signature.
 
