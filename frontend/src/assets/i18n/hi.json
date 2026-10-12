@@ -1137,6 +1137,7 @@
       "ok": {
         "pay": "Payment entered. Instalment {{n}} of {{buyer}}'s booking ({{amount}}) is waiting for confirmation.",
         "confirmPay": "Payment confirmed. Instalment {{n}} of {{buyer}}'s booking, {{amount}} received.",
+        "confirmedOne": "{{count}} payment confirmed.", "confirmedOneAuto": "{{count}} payment confirmed. {{auto}} of the affected bookings are now confirmed.",
         "confirmedMany": "{{count}} payments confirmed.", "confirmedManyAuto": "{{count}} payments confirmed. {{auto}} of the affected bookings are now confirmed.",
         "autoConfirm": "Booking auto-confirmed. Confirming instalment {{n}} took {{buyer}} to {{pct}}% paid. The plot is now Sold and the sale is in the Sales Register.",
         "confirm": "Booking confirmed for {{buyer}}.",
@@ -1179,7 +1180,8 @@
       "linkProjectsPlots": "Projects & Plots",
       "linkSettings": "Settings",
       "queue": {
-        "sealCaption": "{{count}} payments awaiting confirmation", "selected": "{{count}} selected · {{amount}}",
+        "sealCaptionOne": "{{count}} payment awaiting confirmation.", "sealCaption": "{{count}} payments awaiting confirmation.", "selected": "{{count}} selected · {{amount}}",
+        "promptOne": "Confirm {{count}} payment totalling {{amount}}? This cannot be undone.", "yesOne": "Confirm {{count}} payment",
         "prompt": "Confirm {{count}} payments totalling {{amount}}? This cannot be undone.", "yes": "Confirm {{count}} payments",
         "note": "Pending total covers every page for the current filters."
       },
