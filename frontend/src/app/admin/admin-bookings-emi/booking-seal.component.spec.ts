@@ -90,6 +90,7 @@ describe('BookingSealComponent', () => {
     const req = http.expectOne('/api/admin/bookings/b1/installments/2/pay');
     expect(req.request.body.amount).toBe(250);
     expect(req.request.body.paymentRef).toBe('UPI-1');
+    expect(req.request.body.paymentMode).toBe('CASH');
     expect(req.request.body.paidAt).toMatch(/^2026-03-02T/);
     req.flush(bk());
   });
@@ -108,17 +109,26 @@ describe('BookingSealComponent', () => {
     expect(el().textContent).not.toContain('admin.bookingsEmi.warn.autoConfirm');
   });
 
-  it('success emits the updated booking and an auto-confirm flash when status flips to CONFIRMED', async () => {
+  it('success emits the updated booking and the plain payment flash; pay only enters the payment', async () => {
     setup();
     const flashes: unknown[] = []; const updates: unknown[] = [];
     c().flash.subscribe(f => flashes.push(f)); c().updated.subscribe(u => updates.push(u));
     c().open('pay', c().booking!.installments[1]);
     fixture.detectChanges();
     type('paymentRef', 'R'); await fixture.whenStable(); submit();
-    http.expectOne('/api/admin/bookings/b1/installments/2/pay').flush(bk({ status: 'CONFIRMED', paidAmount: 500 }));
+    http.expectOne('/api/admin/bookings/b1/installments/2/pay').flush(bk({
+      paidAmount: 250,
+      installments: [inst(1, { status: 'PAID', paidAt: '2026-02-05T00:00:00Z' }), inst(2, { status: 'ENTERED', paidAt: '2026-03-02T00:00:00Z', paymentMode: 'CASH' }), inst(3), inst(4, { status: 'VOID' })]
+    }));
     expect(updates.length).toBe(1);
-    expect((flashes[0] as { key: string }).key).toBe('admin.bookingsEmi.ok.autoConfirm');
+    expect((flashes[0] as { key: string }).key).toBe('admin.bookingsEmi.ok.pay');
     expect(c().mode).toBe('detail');
+  });
+
+  it('renders an ENTERED instalment with its status label and no Pay button', () => {
+    setup(bk({ installments: [inst(1, { status: 'PAID', paidAt: '2026-02-05T00:00:00Z' }), inst(2, { status: 'ENTERED', paidAt: '2026-03-02T00:00:00Z' }), inst(3), inst(4, { status: 'VOID' })] }));
+    expect(el().textContent).toContain('admin.bookingsEmi.installment.ENTERED');
+    expect(el().querySelectorAll('.booking-seal__pay').length).toBe(1);
   });
 
   it('success without a status flip emits the plain payment flash', async () => {

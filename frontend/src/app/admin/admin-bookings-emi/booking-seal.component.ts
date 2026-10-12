@@ -278,7 +278,8 @@ export class BookingSealComponent implements OnChanges {
     const ref = this.paymentRef.trim();
     if (!ref || ref.length > 100) { return; }
     const target = this.payTarget;
-    const req: PayRequest = { amount: target.amount, paymentRef: ref };
+    // ponytail: U6 replaces this default with the payment-mode select
+    const req: PayRequest = { amount: target.amount, paymentRef: ref, paymentMode: 'CASH' };
     if (this.receivedOn) { req.paidAt = new Date(this.receivedOn).toISOString(); }
     this.run('pay', this.service.pay(this.booking.id, target.installmentNumber, req), (res, before) => {
       const buyer = res.buyerName;
