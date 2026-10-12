@@ -44,6 +44,16 @@ public class EmiInstallment {
     @Column(name = "recorded_by")
     private UUID recordedBy;
 
+    @Column(name = "confirmed_at")
+    private Instant confirmedAt;
+
+    @Column(name = "confirmed_by")
+    private UUID confirmedBy;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_mode")
+    private PaymentMode paymentMode;
+
     public InstallmentStatus getStatus() { return status; }
     public void setStatus(InstallmentStatus status) { this.status = status; }
     public Instant getPaidAt() { return paidAt; }
@@ -52,6 +62,12 @@ public class EmiInstallment {
     public void setPaymentRef(String paymentRef) { this.paymentRef = paymentRef; }
     public UUID getRecordedBy() { return recordedBy; }
     public void setRecordedBy(UUID recordedBy) { this.recordedBy = recordedBy; }
+    public Instant getConfirmedAt() { return confirmedAt; }
+    public void setConfirmedAt(Instant confirmedAt) { this.confirmedAt = confirmedAt; }
+    public UUID getConfirmedBy() { return confirmedBy; }
+    public void setConfirmedBy(UUID confirmedBy) { this.confirmedBy = confirmedBy; }
+    public PaymentMode getPaymentMode() { return paymentMode; }
+    public void setPaymentMode(PaymentMode paymentMode) { this.paymentMode = paymentMode; }
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }

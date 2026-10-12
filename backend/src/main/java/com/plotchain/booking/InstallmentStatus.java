@@ -1,3 +1,3 @@
 package com.plotchain.booking;
 
-public enum InstallmentStatus { PENDING, PAID, VOID }
+public enum InstallmentStatus { PENDING, ENTERED, PAID, VOID }

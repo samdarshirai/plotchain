@@ -101,13 +101,17 @@ public class BookingService {
                 "booking_emi_config row missing - V14 migration seeds it"));
 
         Instant bookedAt = clock.instant();
-        List<EmiInstallment> schedule = computeSchedule(plot.getPrice(), token, config, bookedAt);
+        List<EmiInstallment> schedule = computeSchedule(plot.getPrice(), token, config, bookedAt, associate.getId());
 
         PlotBooking booking = new PlotBooking();
         booking.setId(UUID.randomUUID());
         booking.setPlotId(plot.getId());
         booking.setAssociateId(associate.getId());
         booking.setTotalAmount(plot.getPrice());
+        booking.setListPrice(plot.getPrice());
+        booking.setDiscount(BigDecimal.ZERO);
+        booking.setAreaSqft(plot.getAreaSqft());
+        booking.setRate(plot.getRate());
         booking.setInstallmentCount(schedule.size());
         booking.setBookedAt(bookedAt);
         booking.setBuyerName(request.buyerName().trim());
@@ -414,7 +418,8 @@ public class BookingService {
     // equally across the other installments: the configured count less the token's slot, and at
     // least one (so with EMI off the schedule is token + one balance installment).
     private List<EmiInstallment> computeSchedule(BigDecimal totalAmount, BigDecimal token,
-                                                 BookingEmiConfig config, Instant bookedAt) {
+                                                 BookingEmiConfig config, Instant bookedAt,
+                                                 UUID tokenConfirmedBy) {
         int count = config.isEmiEnabled() ? config.getDefaultInstallmentCount() : 1;
         int balanceCount = Math.max(count - 1, 1);
         LocalDate bookedDate = bookedAt.atZone(ZoneOffset.UTC).toLocalDate();
@@ -430,6 +435,8 @@ public class BookingService {
         tokenInstallment.setStatus(InstallmentStatus.PAID);
         tokenInstallment.setPaidAt(bookedAt);
         tokenInstallment.setPaymentRef("TOKEN");
+        tokenInstallment.setConfirmedAt(bookedAt);
+        tokenInstallment.setConfirmedBy(tokenConfirmedBy);
         schedule.add(tokenInstallment);
 
         BigDecimal runningTotal = BigDecimal.ZERO;

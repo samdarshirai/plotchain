@@ -27,6 +27,17 @@ public class PlotBooking {
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
+    @Column(name = "list_price")
+    private BigDecimal listPrice;
+
+    @Column(nullable = false)
+    private BigDecimal discount = BigDecimal.ZERO;
+
+    @Column(name = "area_sqft")
+    private BigDecimal areaSqft;
+
+    private BigDecimal rate;
+
     @Column(name = "installment_count", nullable = false)
     private int installmentCount;
 
@@ -76,6 +87,14 @@ public class PlotBooking {
     public void setPlotId(UUID plotId) { this.plotId = plotId; }
     public UUID getAssociateId() { return associateId; }
     public void setAssociateId(UUID associateId) { this.associateId = associateId; }
+    public BigDecimal getListPrice() { return listPrice; }
+    public void setListPrice(BigDecimal listPrice) { this.listPrice = listPrice; }
+    public BigDecimal getDiscount() { return discount; }
+    public void setDiscount(BigDecimal discount) { this.discount = discount; }
+    public BigDecimal getAreaSqft() { return areaSqft; }
+    public void setAreaSqft(BigDecimal areaSqft) { this.areaSqft = areaSqft; }
+    public BigDecimal getRate() { return rate; }
+    public void setRate(BigDecimal rate) { this.rate = rate; }
     public BigDecimal getTotalAmount() { return totalAmount; }
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
     public int getInstallmentCount() { return installmentCount; }

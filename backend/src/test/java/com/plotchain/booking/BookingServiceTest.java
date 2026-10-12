@@ -200,6 +200,30 @@ class BookingServiceTest {
         assertThat(token.getPaymentRef()).isEqualTo("TOKEN");
     }
 
+    @Test
+    void createBookingSnapshotsPriceAreaRateAndConfirmsOnlyTheTokenInstallment() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "100000"));
+
+        ArgumentCaptor<PlotBooking> bookingCaptor = ArgumentCaptor.forClass(PlotBooking.class);
+        verify(plotBookingRepository).save(bookingCaptor.capture());
+        PlotBooking booking = bookingCaptor.getValue();
+        assertThat(booking.getListPrice()).isEqualByComparingTo("600000.00");
+        assertThat(booking.getDiscount()).isEqualByComparingTo("0");
+        assertThat(booking.getAreaSqft()).isEqualByComparingTo("1200.00");
+        assertThat(booking.getRate()).isEqualByComparingTo("500.00");
+        assertThat(booking.getTotalAmount()).isEqualByComparingTo("600000.00");
+
+        ArgumentCaptor<List<EmiInstallment>> captor = ArgumentCaptor.forClass(List.class);
+        verify(emiInstallmentRepository).saveAll(captor.capture());
+        List<EmiInstallment> schedule = captor.getValue();
+        assertThat(schedule.get(0).getConfirmedAt()).isEqualTo(booking.getBookedAt());
+        assertThat(schedule.get(0).getConfirmedBy()).isEqualTo(ASSOCIATE_ID);
+        assertThat(schedule.subList(1, schedule.size()))
+            .allMatch(i -> i.getConfirmedAt() == null && i.getConfirmedBy() == null);
+    }
+
     private Plot plotWithStatusAndPrice(PlotStatus status, String price) {
         return new Plot(PLOT_ID, UUID.randomUUID(), "A-101", PlotType.NORMAL,
             new BigDecimal("1200.00"), new BigDecimal("500.00"), new BigDecimal(price), status);
