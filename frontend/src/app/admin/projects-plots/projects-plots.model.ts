@@ -9,6 +9,7 @@ export interface BookingFormValue {
   buyerName: string;
   buyerPhone: string;
   tokenAmount: number;
+  discount?: number; // form always emits it (0 when blank); optional so the container spec compiles until Task 4
 }
 
 export interface CreateBookingRequest {
@@ -17,6 +18,7 @@ export interface CreateBookingRequest {
   buyerName: string;
   buyerPhone?: string;
   tokenAmount: number;
+  discount?: number;
 }
 
 // The subset of BookingResponse (POST /api/admin/bookings, 201) this screen reads.
