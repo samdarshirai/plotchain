@@ -582,15 +582,17 @@ class BookingServiceTest {
     }
 
     @Test
-    void recordPaymentMarksInstallmentPaidStampsFieldsWritesEventAndReturnsUpdatedBooking() {
-        stubConfig("MANUAL", null);
+    void recordPaymentEntersInstallmentStampsFieldsWritesEventAndDoesNotReduceDue() {
         EmiInstallment i1 = installment(1, "100000.00", LocalDate.of(2026, 7, 15), InstallmentStatus.PENDING);
         EmiInstallment i2 = installment(2, "100000.00", LocalDate.of(2026, 8, 15), InstallmentStatus.PENDING);
         PlotBooking booking = lockedBookingWith(i1, i2);
 
         BookingResponse response = bookingService.recordPayment(booking.getId(), 1, pay("100000"), ACTOR_ID);
 
-        assertThat(i1.getStatus()).isEqualTo(InstallmentStatus.PAID);
+        assertThat(i1.getStatus()).isEqualTo(InstallmentStatus.ENTERED);
+        assertThat(i1.getPaymentMode()).isEqualTo(PaymentMode.CASH);
+        assertThat(i1.getConfirmedAt()).isNull();
+        verify(bookingEmiConfigRepository, never()).findBySingletonGuardTrue();
         assertThat(i1.getPaidAt()).isEqualTo(NOW);              // paidAt omitted -> Clock now
         assertThat(i1.getPaymentRef()).isEqualTo("UTR-1");
         assertThat(i1.getRecordedBy()).isEqualTo(ACTOR_ID);
@@ -605,14 +607,14 @@ class BookingServiceTest {
         assertThat(event.getValue().getCreatedAt()).isEqualTo(NOW);
         assertThat(event.getValue().getDetail()).contains("1").contains("100000").contains("UTR-1");
 
-        assertThat(response.paidAmount()).isEqualByComparingTo("100000.00");
-        assertThat(response.dueAmount()).isEqualByComparingTo("100000.00");
-        assertThat(response.installments().get(0).status()).isEqualTo(InstallmentStatus.PAID);
+        assertThat(response.paidAmount()).isEqualByComparingTo("0");
+        assertThat(response.dueAmount()).isEqualByComparingTo("200000.00");   // ENTERED must not reduce due
+        assertThat(response.installments().get(0).status()).isEqualTo(InstallmentStatus.ENTERED);
+        assertThat(response.installments().get(0).paymentMode()).isEqualTo(PaymentMode.CASH);
     }
 
     @Test
     void recordPaymentUsesSuppliedPaidAtAndTrimsPaymentRef() {
-        stubConfig("MANUAL", null);
         EmiInstallment i1 = installment(1, "100.00", LocalDate.of(2026, 7, 15), InstallmentStatus.PENDING);
         PlotBooking booking = lockedBookingWith(i1);
         Instant earlier = Instant.parse("2026-06-10T08:00:00Z");
@@ -628,7 +630,6 @@ class BookingServiceTest {
     // (backdating and post-dating are both legitimate for cheque/UTR reconciliation). Pins that.
     @Test
     void recordPaymentAcceptsAPaidAtLaterThanTheClock() {
-        stubConfig("MANUAL", null);
         EmiInstallment i1 = installment(1, "100.00", LocalDate.of(2026, 7, 15), InstallmentStatus.PENDING);
         PlotBooking booking = lockedBookingWith(i1);
         Instant future = NOW.plusSeconds(30L * 24 * 3600);
@@ -636,26 +637,24 @@ class BookingServiceTest {
         bookingService.recordPayment(booking.getId(), 1,
             new RecordPaymentRequest(new BigDecimal("100.00"), "UTR-F", PaymentMode.CASH, future), ACTOR_ID);
 
-        assertThat(i1.getStatus()).isEqualTo(InstallmentStatus.PAID);
+        assertThat(i1.getStatus()).isEqualTo(InstallmentStatus.ENTERED);
         assertThat(i1.getPaidAt()).isEqualTo(future);
     }
 
     @Test
     void recordPaymentDoesNotRequireEarlierInstallmentsToBePaid() {
-        stubConfig("MANUAL", null);
         EmiInstallment i1 = installment(1, "100.00", LocalDate.of(2026, 7, 15), InstallmentStatus.PENDING);
         EmiInstallment i3 = installment(3, "100.00", LocalDate.of(2026, 9, 15), InstallmentStatus.PENDING);
         PlotBooking booking = lockedBookingWith(i1, i3);
 
         bookingService.recordPayment(booking.getId(), 3, pay("100.00"), ACTOR_ID);
 
-        assertThat(i3.getStatus()).isEqualTo(InstallmentStatus.PAID);
+        assertThat(i3.getStatus()).isEqualTo(InstallmentStatus.ENTERED);
         assertThat(i1.getStatus()).isEqualTo(InstallmentStatus.PENDING);
     }
 
     @Test
     void recordPaymentOnAPastDueInstallmentClearsItsOverdueFlag() {
-        stubConfig("MANUAL", null);
         EmiInstallment i1 = installment(1, "100.00", LocalDate.of(2026, 6, 1), InstallmentStatus.PENDING); // before NOW
         PlotBooking booking = lockedBookingWith(i1);
 
@@ -861,15 +860,14 @@ class BookingServiceTest {
     }
 
     @Test
-    void autoThresholdAtExactlyTheThresholdConfirmsInTheSameCallAndWritesPaidThenConfirmedEvents() {
+    void autoThresholdAtExactlyTheThresholdConfirmsInTheSameCallAndWritesPayConfirmedThenConfirmedEvents() {
         stubConfig("AUTO_THRESHOLD", 50);
         UUID saleId = UUID.randomUUID();
-        EmiInstallment[] rows = fourInstallments(InstallmentStatus.PAID, InstallmentStatus.PENDING,
-            InstallmentStatus.PENDING, InstallmentStatus.PENDING);
+        EmiInstallment[] rows = fourInstallments(InstallmentStatus.PAID, InstallmentStatus.ENTERED, InstallmentStatus.PENDING, InstallmentStatus.PENDING);
         PlotBooking booking = lockedBookingWith(rows);
         stubPlotAndSale(PlotStatus.BOOKED, saleId);
 
-        BookingResponse response = bookingService.recordPayment(booking.getId(), 2, pay("150000.00"), ACTOR_ID);
+        BookingResponse response = bookingService.confirmPayment(booking.getId(), 2, ACTOR_ID);
 
         // 150000 (prior) + 150000 (just paid) = 300000 = 50% of 600000: the just-paid row counts.
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
@@ -879,55 +877,53 @@ class BookingServiceTest {
         ArgumentCaptor<BookingEvent> events = ArgumentCaptor.forClass(BookingEvent.class);
         verify(bookingEventRepository, times(2)).save(events.capture());
         assertThat(events.getAllValues()).extracting(BookingEvent::getType)
-            .containsExactlyInAnyOrder(BookingEventType.PAID, BookingEventType.CONFIRMED);
+            .containsExactly(BookingEventType.PAY_CONFIRMED, BookingEventType.CONFIRMED);
         assertThat(events.getAllValues()).allMatch(e -> ACTOR_ID.equals(e.getActorId()));
     }
 
     @Test
     void autoThresholdBelowTheThresholdDoesNotConfirmAndNeverTouchesPlotOrSale() {
         stubConfig("AUTO_THRESHOLD", 50);
-        EmiInstallment[] rows = fourInstallments(InstallmentStatus.PENDING, InstallmentStatus.PENDING,
-            InstallmentStatus.PENDING, InstallmentStatus.PENDING);
+        EmiInstallment[] rows = fourInstallments(InstallmentStatus.ENTERED, InstallmentStatus.PENDING, InstallmentStatus.PENDING, InstallmentStatus.PENDING);
         PlotBooking booking = lockedBookingWith(rows);
 
-        BookingResponse response = bookingService.recordPayment(booking.getId(), 1, pay("150000.00"), ACTOR_ID);
+        BookingResponse response = bookingService.confirmPayment(booking.getId(), 1, ACTOR_ID);
 
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.ACTIVE);
         assertThat(response.status()).isEqualTo(BookingStatus.ACTIVE);
         verifyNoInteractions(saleService);
         verify(plotRepository, never()).findByIdForUpdate(any());
         verify(plotRepository, never()).save(any());
-        verify(bookingEventRepository, times(1)).save(any(BookingEvent.class)); // PAID only
+        verify(bookingEventRepository, times(1)).save(any(BookingEvent.class)); // PAY_CONFIRMED only
     }
 
     @Test
     void oneCentBelowTheThresholdDoesNotConfirmAndTheCentAboveDoes() {
         // total 600000.00 at 50% -> needs >= 300000.00
         stubConfig("AUTO_THRESHOLD", 50);
-        EmiInstallment low = installment(1, "299999.99", LocalDate.of(2026, 7, 15), InstallmentStatus.PENDING);
-        EmiInstallment high = installment(2, "300000.01", LocalDate.of(2026, 8, 15), InstallmentStatus.PENDING);
+        EmiInstallment low = installment(1, "299999.99", LocalDate.of(2026, 7, 15), InstallmentStatus.ENTERED);
+        EmiInstallment high = installment(2, "300000.01", LocalDate.of(2026, 8, 15), InstallmentStatus.ENTERED);
         PlotBooking booking = lockedBookingWith(low, high);
 
-        bookingService.recordPayment(booking.getId(), 1, pay("299999.99"), ACTOR_ID);
+        bookingService.confirmPayment(booking.getId(), 1, ACTOR_ID);
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.ACTIVE);
 
         stubPlotAndSale(PlotStatus.BOOKED, UUID.randomUUID());
         PlotBooking booking2 = lockedBookingWith(
-            installment(1, "299999.99", LocalDate.of(2026, 7, 15), InstallmentStatus.PENDING),
-            installment(2, "300000.01", LocalDate.of(2026, 8, 15), InstallmentStatus.PENDING));
-        bookingService.recordPayment(booking2.getId(), 2, pay("300000.01"), ACTOR_ID);
+            installment(1, "299999.99", LocalDate.of(2026, 7, 15), InstallmentStatus.ENTERED),
+            installment(2, "300000.01", LocalDate.of(2026, 8, 15), InstallmentStatus.ENTERED));
+        bookingService.confirmPayment(booking2.getId(), 2, ACTOR_ID);
         assertThat(booking2.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
     }
 
     @Test
     void oneHundredPercentThresholdConfirmsOnlyWhenTheLastInstallmentIsPaid() {
         stubConfig("AUTO_THRESHOLD", 100);
-        EmiInstallment[] rows = fourInstallments(InstallmentStatus.PAID, InstallmentStatus.PAID,
-            InstallmentStatus.PAID, InstallmentStatus.PENDING);
+        EmiInstallment[] rows = fourInstallments(InstallmentStatus.PAID, InstallmentStatus.PAID, InstallmentStatus.PAID, InstallmentStatus.ENTERED);
         PlotBooking booking = lockedBookingWith(rows);
         stubPlotAndSale(PlotStatus.BOOKED, UUID.randomUUID());
 
-        bookingService.recordPayment(booking.getId(), 4, pay("150000.00"), ACTOR_ID);
+        bookingService.confirmPayment(booking.getId(), 4, ACTOR_ID);
 
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
     }
@@ -935,11 +931,10 @@ class BookingServiceTest {
     @Test
     void oneHundredPercentThresholdDoesNotConfirmWithOneInstallmentStillPending() {
         stubConfig("AUTO_THRESHOLD", 100);
-        EmiInstallment[] rows = fourInstallments(InstallmentStatus.PAID, InstallmentStatus.PAID,
-            InstallmentStatus.PENDING, InstallmentStatus.PENDING);
+        EmiInstallment[] rows = fourInstallments(InstallmentStatus.PAID, InstallmentStatus.PAID, InstallmentStatus.ENTERED, InstallmentStatus.PENDING);
         PlotBooking booking = lockedBookingWith(rows);
 
-        bookingService.recordPayment(booking.getId(), 3, pay("150000.00"), ACTOR_ID);
+        bookingService.confirmPayment(booking.getId(), 3, ACTOR_ID);
 
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.ACTIVE);
     }
@@ -947,12 +942,11 @@ class BookingServiceTest {
     @Test
     void onePercentThresholdConfirmsOnTheFirstPayment() {
         stubConfig("AUTO_THRESHOLD", 1);
-        EmiInstallment[] rows = fourInstallments(InstallmentStatus.PENDING, InstallmentStatus.PENDING,
-            InstallmentStatus.PENDING, InstallmentStatus.PENDING);
+        EmiInstallment[] rows = fourInstallments(InstallmentStatus.ENTERED, InstallmentStatus.PENDING, InstallmentStatus.PENDING, InstallmentStatus.PENDING);
         PlotBooking booking = lockedBookingWith(rows);
         stubPlotAndSale(PlotStatus.BOOKED, UUID.randomUUID());
 
-        bookingService.recordPayment(booking.getId(), 1, pay("150000.00"), ACTOR_ID);   // 25% >= 1%
+        bookingService.confirmPayment(booking.getId(), 1, ACTOR_ID);   // 25% >= 1%
 
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
     }
@@ -960,11 +954,10 @@ class BookingServiceTest {
     @Test
     void thresholdAboveOneHundredIsNeverReachedEvenWhenFullyPaid() {
         stubConfig("AUTO_THRESHOLD", 101);
-        EmiInstallment[] rows = fourInstallments(InstallmentStatus.PAID, InstallmentStatus.PAID,
-            InstallmentStatus.PAID, InstallmentStatus.PENDING);
+        EmiInstallment[] rows = fourInstallments(InstallmentStatus.PAID, InstallmentStatus.PAID, InstallmentStatus.PAID, InstallmentStatus.ENTERED);
         PlotBooking booking = lockedBookingWith(rows);
 
-        bookingService.recordPayment(booking.getId(), 4, pay("150000.00"), ACTOR_ID);
+        bookingService.confirmPayment(booking.getId(), 4, ACTOR_ID);
 
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.ACTIVE);
         verifyNoInteractions(saleService);
@@ -977,11 +970,10 @@ class BookingServiceTest {
         for (String rule : List.of("MANUAL", "KYC_GATED")) {
             reset(bookingEmiConfigRepository, plotBookingRepository, emiInstallmentRepository);
             stubConfig(rule, null);
-            EmiInstallment[] rows = fourInstallments(InstallmentStatus.PAID, InstallmentStatus.PAID,
-                InstallmentStatus.PAID, InstallmentStatus.PENDING);
+            EmiInstallment[] rows = fourInstallments(InstallmentStatus.PAID, InstallmentStatus.PAID, InstallmentStatus.PAID, InstallmentStatus.ENTERED);
             PlotBooking booking = lockedBookingWith(rows);
 
-            bookingService.recordPayment(booking.getId(), 4, pay("150000.00"), ACTOR_ID);
+            bookingService.confirmPayment(booking.getId(), 4, ACTOR_ID);
 
             assertThat(booking.getStatus()).as(rule).isEqualTo(BookingStatus.ACTIVE);
         }
@@ -995,11 +987,10 @@ class BookingServiceTest {
         for (Integer bad : new Integer[] {null, 0, -5}) {
             reset(bookingEmiConfigRepository, plotBookingRepository, emiInstallmentRepository);
             stubConfig("AUTO_THRESHOLD", bad);
-            EmiInstallment[] rows = fourInstallments(InstallmentStatus.PAID, InstallmentStatus.PAID,
-                InstallmentStatus.PAID, InstallmentStatus.PENDING);
+            EmiInstallment[] rows = fourInstallments(InstallmentStatus.PAID, InstallmentStatus.PAID, InstallmentStatus.PAID, InstallmentStatus.ENTERED);
             PlotBooking booking = lockedBookingWith(rows);
 
-            BookingResponse response = bookingService.recordPayment(booking.getId(), 4, pay("150000.00"), ACTOR_ID);
+            BookingResponse response = bookingService.confirmPayment(booking.getId(), 4, ACTOR_ID);
 
             assertThat(response.status()).as("threshold " + bad).isEqualTo(BookingStatus.ACTIVE);
             assertThat(rows[3].getStatus()).isEqualTo(InstallmentStatus.PAID);
@@ -1012,12 +1003,11 @@ class BookingServiceTest {
     @Test
     void autoConfirmLocksTheBookingBeforeThePlot() {
         stubConfig("AUTO_THRESHOLD", 25);
-        EmiInstallment[] rows = fourInstallments(InstallmentStatus.PENDING, InstallmentStatus.PENDING,
-            InstallmentStatus.PENDING, InstallmentStatus.PENDING);
+        EmiInstallment[] rows = fourInstallments(InstallmentStatus.ENTERED, InstallmentStatus.PENDING, InstallmentStatus.PENDING, InstallmentStatus.PENDING);
         PlotBooking booking = lockedBookingWith(rows);
         stubPlotAndSale(PlotStatus.BOOKED, UUID.randomUUID());
 
-        bookingService.recordPayment(booking.getId(), 1, pay("150000.00"), ACTOR_ID);
+        bookingService.confirmPayment(booking.getId(), 1, ACTOR_ID);
 
         InOrder order = inOrder(plotBookingRepository, plotRepository);
         order.verify(plotBookingRepository).findByIdForUpdate(booking.getId());
@@ -1027,12 +1017,11 @@ class BookingServiceTest {
     @Test
     void autoConfirmOnAPlotThatIsNoLongerBookedThrowsPlotNotAvailable() {
         stubConfig("AUTO_THRESHOLD", 25);
-        EmiInstallment[] rows = fourInstallments(InstallmentStatus.PENDING, InstallmentStatus.PENDING,
-            InstallmentStatus.PENDING, InstallmentStatus.PENDING);
+        EmiInstallment[] rows = fourInstallments(InstallmentStatus.ENTERED, InstallmentStatus.PENDING, InstallmentStatus.PENDING, InstallmentStatus.PENDING);
         PlotBooking booking = lockedBookingWith(rows);
         when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
 
-        assertThatThrownBy(() -> bookingService.recordPayment(booking.getId(), 1, pay("150000.00"), ACTOR_ID))
+        assertThatThrownBy(() -> bookingService.confirmPayment(booking.getId(), 1, ACTOR_ID))
             .isInstanceOf(PlotNotAvailableException.class);
 
         verifyNoInteractions(saleService);     // fails fast; rollback itself is proven on the real DB in Task 2
@@ -1041,15 +1030,234 @@ class BookingServiceTest {
     @Test
     void aSaleFailureDuringAutoConfirmPropagatesSoTheTransactionRollsBack() {
         stubConfig("AUTO_THRESHOLD", 25);
-        EmiInstallment[] rows = fourInstallments(InstallmentStatus.PENDING, InstallmentStatus.PENDING,
-            InstallmentStatus.PENDING, InstallmentStatus.PENDING);
+        EmiInstallment[] rows = fourInstallments(InstallmentStatus.ENTERED, InstallmentStatus.PENDING, InstallmentStatus.PENDING, InstallmentStatus.PENDING);
         PlotBooking booking = lockedBookingWith(rows);
         when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.BOOKED)));
         when(saleService.recordConfirmedBooking(any(), any(), any(), any(), any(), any()))
             .thenThrow(new IllegalStateException("simulated sale failure"));
 
-        assertThatThrownBy(() -> bookingService.recordPayment(booking.getId(), 1, pay("150000.00"), ACTOR_ID))
+        assertThatThrownBy(() -> bookingService.confirmPayment(booking.getId(), 1, ACTOR_ID))
             .isInstanceOf(IllegalStateException.class).hasMessageContaining("simulated");
+    }
+
+    // ---- U2: confirmPayment (single) ----
+
+    private List<BookingEvent> savedEvents(int times) {
+        ArgumentCaptor<BookingEvent> events = ArgumentCaptor.forClass(BookingEvent.class);
+        verify(bookingEventRepository, times(times)).save(events.capture());
+        return events.getAllValues();
+    }
+
+    @Test
+    void confirmPaymentMarksEnteredInstallmentPaidStampsConfirmedAtAndByAndWritesPayConfirmedEvent() {
+        stubConfig("MANUAL", null);
+        EmiInstallment i1 = installment(1, "100000.00", LocalDate.of(2026, 7, 15), InstallmentStatus.ENTERED);
+        i1.setPaymentRef("UTR-1");
+        EmiInstallment i2 = installment(2, "100000.00", LocalDate.of(2026, 8, 15), InstallmentStatus.PENDING);
+        PlotBooking booking = lockedBookingWith(i1, i2);
+
+        BookingResponse response = bookingService.confirmPayment(booking.getId(), 1, ACTOR_ID);
+
+        assertThat(i1.getStatus()).isEqualTo(InstallmentStatus.PAID);
+        assertThat(i1.getConfirmedAt()).isEqualTo(NOW);
+        assertThat(i1.getConfirmedBy()).isEqualTo(ACTOR_ID);
+        verify(emiInstallmentRepository).save(i1);
+        List<BookingEvent> events = savedEvents(1);
+        assertThat(events.get(0).getType()).isEqualTo(BookingEventType.PAY_CONFIRMED);
+        assertThat(events.get(0).getActorId()).isEqualTo(ACTOR_ID);
+        assertThat(events.get(0).getDetail()).contains("1").contains("100000").contains("UTR-1");
+        assertThat(response.paidAmount()).isEqualByComparingTo("100000.00");
+        assertThat(response.dueAmount()).isEqualByComparingTo("100000.00");
+    }
+
+    @Test
+    void confirmPaymentOnAnUnenteredInstallmentIs409() {
+        for (InstallmentStatus status : List.of(InstallmentStatus.PENDING, InstallmentStatus.PAID, InstallmentStatus.VOID)) {
+            EmiInstallment i1 = installment(1, "100.00", LocalDate.of(2026, 7, 15), status);
+            PlotBooking booking = lockedBookingWith(i1);
+
+            assertThatThrownBy(() -> bookingService.confirmPayment(booking.getId(), 1, ACTOR_ID))
+                .isInstanceOf(InstallmentNotEnteredException.class);
+            assertThat(i1.getStatus()).isEqualTo(status);
+        }
+        verify(bookingEventRepository, never()).save(any());
+        verify(emiInstallmentRepository, never()).save(any());
+    }
+
+    @Test
+    void confirmPaymentOnACancelledBookingIs409AndUnknownBookingOrInstallmentIs404() {
+        PlotBooking cancelled = bookingWithBuyer();
+        cancelled.setStatus(BookingStatus.CANCELLED);
+        when(plotBookingRepository.findByIdForUpdate(cancelled.getId())).thenReturn(Optional.of(cancelled));
+        assertThatThrownBy(() -> bookingService.confirmPayment(cancelled.getId(), 1, ACTOR_ID))
+            .isInstanceOf(BookingNotActiveException.class);
+
+        UUID missing = UUID.randomUUID();
+        when(plotBookingRepository.findByIdForUpdate(missing)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> bookingService.confirmPayment(missing, 1, ACTOR_ID))
+            .isInstanceOf(BookingNotFoundException.class);
+
+        PlotBooking booking = lockedBookingWith(
+            installment(1, "100.00", LocalDate.of(2026, 7, 15), InstallmentStatus.ENTERED));
+        assertThatThrownBy(() -> bookingService.confirmPayment(booking.getId(), 9, ACTOR_ID))
+            .isInstanceOf(InstallmentNotFoundException.class);
+
+        verify(bookingEventRepository, never()).save(any());
+        verify(emiInstallmentRepository, never()).save(any());
+    }
+
+    @Test
+    void confirmPaymentOnAConfirmedBookingPromotesToPaidWithoutReconfirming() {
+        EmiInstallment i2 = installment(2, "100.00", LocalDate.of(2026, 8, 15), InstallmentStatus.ENTERED);
+        PlotBooking booking = lockedBookingWith(i2);
+        booking.setStatus(BookingStatus.CONFIRMED);
+
+        bookingService.confirmPayment(booking.getId(), 2, ACTOR_ID);
+
+        assertThat(i2.getStatus()).isEqualTo(InstallmentStatus.PAID);
+        assertThat(savedEvents(1).get(0).getType()).isEqualTo(BookingEventType.PAY_CONFIRMED);
+        verifyNoInteractions(saleService);
+        verify(plotRepository, never()).findByIdForUpdate(any());
+        verify(bookingEmiConfigRepository, never()).findBySingletonGuardTrue();
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+    }
+
+    @Test
+    void confirmPaymentCrossingTheThresholdAutoConfirmsTheBooking() {
+        stubConfig("AUTO_THRESHOLD", 50);
+        EmiInstallment[] rows = fourInstallments(InstallmentStatus.PAID, InstallmentStatus.ENTERED,
+            InstallmentStatus.PENDING, InstallmentStatus.PENDING);
+        PlotBooking booking = lockedBookingWith(rows);
+        stubPlotAndSale(PlotStatus.BOOKED, UUID.randomUUID());
+
+        BookingResponse response = bookingService.confirmPayment(booking.getId(), 2, ACTOR_ID);
+
+        assertThat(response.status()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(savedEvents(2)).extracting(BookingEvent::getType)
+            .containsExactly(BookingEventType.PAY_CONFIRMED, BookingEventType.CONFIRMED);
+    }
+
+    @Test
+    void enteredPaymentsDoNotCountTowardTheThreshold() {
+        stubConfig("AUTO_THRESHOLD", 50);
+        EmiInstallment token = installment(1, "60000.00", LocalDate.of(2026, 7, 15), InstallmentStatus.PAID);
+        EmiInstallment entered = installment(2, "300000.00", LocalDate.of(2026, 8, 15), InstallmentStatus.ENTERED);
+        EmiInstallment pending = installment(3, "240000.00", LocalDate.of(2026, 9, 15), InstallmentStatus.PENDING);
+        PlotBooking booking = bookingWithBuyer();
+
+        bookingService.afterInstallmentPaid(booking, List.of(token, entered, pending), ACTOR_ID);   // 10% PAID only
+
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.ACTIVE);
+        verifyNoInteractions(saleService);
+
+        entered.setStatus(InstallmentStatus.PAID);   // 60% PAID
+        stubPlotAndSale(PlotStatus.BOOKED, UUID.randomUUID());
+        bookingService.afterInstallmentPaid(booking, List.of(token, entered, pending), ACTOR_ID);
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+    }
+
+    @Test
+    void toResponseTreatsEnteredAsDueNotOverdueAndPendingPastDueAsOverdue() {
+        PlotBooking booking = bookingWithBuyer();
+        LocalDate past = LocalDate.of(2026, 6, 1);
+
+        BookingResponse r = bookingService.toResponse(booking, List.of(
+            installment(1, "100.00", past, InstallmentStatus.ENTERED),
+            installment(2, "100.00", past, InstallmentStatus.PENDING)));
+
+        assertThat(r.installments()).extracting(EmiInstallmentResponse::overdue).containsExactly(false, true);
+        assertThat(r.dueAmount()).isEqualByComparingTo("200.00");
+        assertThat(r.paidAmount()).isEqualByComparingTo("0");
+    }
+
+    // ---- U2: confirmPayments (bulk) ----
+
+    private PlotBooking lockedBookingWithId(UUID id, EmiInstallment... installments) {
+        PlotBooking booking = bookingWithBuyer();
+        booking.setId(id);
+        when(plotBookingRepository.findByIdForUpdate(id)).thenReturn(Optional.of(booking));
+        when(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(id)).thenReturn(List.of(installments));
+        return booking;
+    }
+
+    private static UUID[] twoIdsLowHigh() {
+        UUID a = UUID.randomUUID();
+        UUID b = UUID.randomUUID();
+        return a.compareTo(b) < 0 ? new UUID[] {a, b} : new UUID[] {b, a};
+    }
+
+    private EmiInstallment entered(int n) {
+        return installment(n, "100.00", LocalDate.of(2026, 7, 15), InstallmentStatus.ENTERED);
+    }
+
+    @Test
+    void bulkConfirmLocksBookingsInAscendingIdOrderRegardlessOfRequestOrderAndReturnsOneResponsePerBooking() {
+        stubConfig("MANUAL", null);
+        UUID[] ids = twoIdsLowHigh();
+        lockedBookingWithId(ids[0], entered(1));
+        lockedBookingWithId(ids[1], entered(1), entered(2));
+
+        List<BookingResponse> out = bookingService.confirmPayments(List.of(
+            new PaymentRef(ids[1], 2), new PaymentRef(ids[0], 1), new PaymentRef(ids[1], 1)), ACTOR_ID);
+
+        InOrder order = inOrder(plotBookingRepository);
+        order.verify(plotBookingRepository).findByIdForUpdate(ids[0]);
+        order.verify(plotBookingRepository).findByIdForUpdate(ids[1]);
+        verify(plotBookingRepository, times(1)).findByIdForUpdate(ids[0]);
+        verify(plotBookingRepository, times(1)).findByIdForUpdate(ids[1]);
+        assertThat(out).extracting(BookingResponse::id).containsExactly(ids[0], ids[1]);
+        assertThat(savedEvents(3)).allMatch(e -> e.getType() == BookingEventType.PAY_CONFIRMED);
+    }
+
+    @Test
+    void bulkConfirmTwoInstallmentsOfOneBookingThatTogetherCrossTheThresholdSucceeds() {
+        stubConfig("AUTO_THRESHOLD", 50);
+        EmiInstallment[] rows = fourInstallments(InstallmentStatus.ENTERED, InstallmentStatus.ENTERED,
+            InstallmentStatus.PENDING, InstallmentStatus.PENDING);
+        PlotBooking booking = lockedBookingWith(rows);
+        stubPlotAndSale(PlotStatus.BOOKED, UUID.randomUUID());
+
+        List<BookingResponse> out = bookingService.confirmPayments(
+            List.of(new PaymentRef(booking.getId(), 1), new PaymentRef(booking.getId(), 2)), ACTOR_ID);
+
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).status()).isEqualTo(BookingStatus.CONFIRMED);
+        verify(saleService, times(1)).recordConfirmedBooking(any(), any(), any(), any(), any(), any());
+        assertThat(savedEvents(3)).extracting(BookingEvent::getType)
+            .containsExactly(BookingEventType.PAY_CONFIRMED, BookingEventType.PAY_CONFIRMED, BookingEventType.CONFIRMED);
+    }
+
+    @Test
+    void bulkConfirmFailsOnFirstOffendingItemAndMessageNamesIt() {
+        stubConfig("MANUAL", null);
+        UUID[] ids = twoIdsLowHigh();
+        lockedBookingWithId(ids[0], entered(1));
+        lockedBookingWithId(ids[1], installment(3, "100.00", LocalDate.of(2026, 7, 15), InstallmentStatus.PENDING));
+
+        assertThatThrownBy(() -> bookingService.confirmPayments(
+                List.of(new PaymentRef(ids[0], 1), new PaymentRef(ids[1], 3)), ACTOR_ID))
+            .isInstanceOf(InstallmentNotEnteredException.class)
+            .hasMessageContaining(ids[1].toString()).hasMessageContaining("3");
+    }
+
+    @Test
+    void bulkConfirmRejectsDuplicateItemsBeforeTouchingAnyRepository() {
+        UUID id = UUID.randomUUID();
+
+        assertThatThrownBy(() -> bookingService.confirmPayments(
+                List.of(new PaymentRef(id, 1), new PaymentRef(id, 1)), ACTOR_ID))
+            .isInstanceOf(DuplicatePaymentRefException.class);
+
+        verifyNoInteractions(plotBookingRepository, emiInstallmentRepository, bookingEventRepository);
+    }
+
+    @Test
+    void bulkConfirmOfAMissingBookingIs404() {
+        UUID id = UUID.randomUUID();
+        when(plotBookingRepository.findByIdForUpdate(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> bookingService.confirmPayments(List.of(new PaymentRef(id, 1)), ACTOR_ID))
+            .isInstanceOf(BookingNotFoundException.class);
     }
 
     @Test
