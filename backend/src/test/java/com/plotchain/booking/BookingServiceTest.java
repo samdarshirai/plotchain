@@ -578,7 +578,7 @@ class BookingServiceTest {
     }
 
     private RecordPaymentRequest pay(String amount) {
-        return new RecordPaymentRequest(new BigDecimal(amount), "UTR-1", null);
+        return new RecordPaymentRequest(new BigDecimal(amount), "UTR-1", PaymentMode.CASH, null);
     }
 
     @Test
@@ -618,7 +618,7 @@ class BookingServiceTest {
         Instant earlier = Instant.parse("2026-06-10T08:00:00Z");
 
         bookingService.recordPayment(booking.getId(), 1,
-            new RecordPaymentRequest(new BigDecimal("100.00"), "  UTR-9  ", earlier), ACTOR_ID);
+            new RecordPaymentRequest(new BigDecimal("100.00"), "  UTR-9  ", PaymentMode.CASH, earlier), ACTOR_ID);
 
         assertThat(i1.getPaidAt()).isEqualTo(earlier);
         assertThat(i1.getPaymentRef()).isEqualTo("UTR-9");
@@ -634,7 +634,7 @@ class BookingServiceTest {
         Instant future = NOW.plusSeconds(30L * 24 * 3600);
 
         bookingService.recordPayment(booking.getId(), 1,
-            new RecordPaymentRequest(new BigDecimal("100.00"), "UTR-F", future), ACTOR_ID);
+            new RecordPaymentRequest(new BigDecimal("100.00"), "UTR-F", PaymentMode.CASH, future), ACTOR_ID);
 
         assertThat(i1.getStatus()).isEqualTo(InstallmentStatus.PAID);
         assertThat(i1.getPaidAt()).isEqualTo(future);

@@ -160,7 +160,7 @@ class BookingControllerTest {
     }
 
     private static final String PAY_BODY = """
-        {"amount":100000.00,"paymentRef":"UTR-1"}
+        {"amount":100000.00,"paymentRef":"UTR-1","paymentMode":"CASH"}
         """;
 
     private org.springframework.test.web.servlet.ResultActions pay(UUID bookingId, int n, String body) throws Exception {

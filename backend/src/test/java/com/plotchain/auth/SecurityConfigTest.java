@@ -638,15 +638,48 @@ class SecurityConfigTest {
         mockMvc.perform(patch("/api/admin/bookings/{id}/installments/1/pay", UUID.randomUUID())
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
-                .content("{\"amount\":100.00,\"paymentRef\":\"UTR-1\"}"))
+                .content("{\"amount\":100.00,\"paymentRef\":\"UTR-1\",\"paymentMode\":\"CASH\"}"))
             .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+    }
+
+    // U2: single and bulk payment confirmation ride the same blanket ADMIN write rule.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminBookingConfirmPaymentIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(post("/api/admin/bookings/{id}/installments/1/confirm", UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+    }
+
+    @Test
+    void adminBookingConfirmPaymentIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(post("/api/admin/bookings/{id}/installments/1/confirm", UUID.randomUUID()))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminBulkConfirmPaymentsIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(post("/api/admin/payments/confirm")
+                .header("Authorization", "Bearer " + tokenFor(role))
+                .contentType("application/json")
+                .content("{\"items\":[{\"bookingId\":\"" + UUID.randomUUID() + "\",\"installmentNumber\":1}]}"))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+    }
+
+    @Test
+    void adminBulkConfirmPaymentsIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(post("/api/admin/payments/confirm")
+                .contentType("application/json")
+                .content("{\"items\":[{\"bookingId\":\"" + UUID.randomUUID() + "\",\"installmentNumber\":1}]}"))
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
     void adminBookingPayIsUnauthorizedWithoutAToken() throws Exception {
         mockMvc.perform(patch("/api/admin/bookings/{id}/installments/1/pay", UUID.randomUUID())
                 .contentType("application/json")
-                .content("{\"amount\":100.00,\"paymentRef\":\"UTR-1\"}"))
+                .content("{\"amount\":100.00,\"paymentRef\":\"UTR-1\",\"paymentMode\":\"CASH\"}"))
             .andExpect(status().isUnauthorized());
     }
 

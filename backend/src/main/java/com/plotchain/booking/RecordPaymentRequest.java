@@ -12,8 +12,10 @@ import java.time.Instant;
 // source of truth, only checks it equals the installment's own amount (Decision 6, resolved
 // decision 1). paidAt is optional: absent means "now" per the injected Clock. @Size(max = 100)
 // matches emi_installment.payment_ref VARCHAR(100) so an oversized ref is a 400, not a 500.
+// paymentMode is required: recording only ENTERS the payment (admin confirms it later, U2).
 public record RecordPaymentRequest(
     @NotNull @DecimalMin(value = "0.00", inclusive = false) BigDecimal amount,
     @NotBlank @Size(max = 100) String paymentRef,
+    @NotNull PaymentMode paymentMode,
     Instant paidAt
 ) {}

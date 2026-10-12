@@ -170,7 +170,7 @@ class BookingTransferIntegrationTest {
         UUID admin = seedAssociate(AssociateStatus.ACTIVE);
         BookingResponse b = seedBooking(from);
         BigDecimal amt = b.installments().get(0).amount();
-        bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(amt, "UTR-1", null), admin);
+        bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(amt, "UTR-1", PaymentMode.CASH, null), admin);
 
         BookingResponse after = bookingService.transferBooking(b.id(), to, admin);
 
@@ -461,7 +461,7 @@ class BookingTransferIntegrationTest {
             Future<?> t = pool.submit(() -> { awaitQuietly(start); return bookingService.transferBooking(b.id(), to, from); });
             Future<?> p = pool.submit(() -> {
                 awaitQuietly(start);
-                return bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(amt, "UTR-X", null), from);
+                return bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(amt, "UTR-X", PaymentMode.CASH, null), from);
             });
             start.countDown();
             t.get(10, TimeUnit.SECONDS);

@@ -161,7 +161,7 @@ class BookingAutoConfirmIntegrationTest {
 
     private BookingResponse payInstallment(BookingResponse b, int n) {
         BigDecimal amount = b.installments().get(n - 1).amount();
-        return bookingService.recordPayment(b.id(), n, new RecordPaymentRequest(amount, "UTR-" + n, null), associateId);
+        return bookingService.recordPayment(b.id(), n, new RecordPaymentRequest(amount, "UTR-" + n, PaymentMode.CASH, null), associateId);
     }
 
     private int count(String sql, Object... args) {
@@ -378,7 +378,7 @@ class BookingAutoConfirmIntegrationTest {
         ExecutorService pool = Executors.newFixedThreadPool(2);
         Future<BookingResponse> pay = pool.submit(() -> {
             awaitQuietly(start);
-            return bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(total, "UTR-R", null), associateId);
+            return bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(total, "UTR-R", PaymentMode.CASH, null), associateId);
         });
         Future<BookingResponse> confirm = pool.submit(() -> {
             awaitQuietly(start);

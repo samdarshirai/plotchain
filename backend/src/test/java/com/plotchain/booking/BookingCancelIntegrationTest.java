@@ -163,7 +163,7 @@ class BookingCancelIntegrationTest {
 
     private BookingResponse payInstallment(BookingResponse b, int n) {
         BigDecimal amount = b.installments().get(n - 1).amount();
-        return bookingService.recordPayment(b.id(), n, new RecordPaymentRequest(amount, "UTR-" + n, null), associateId);
+        return bookingService.recordPayment(b.id(), n, new RecordPaymentRequest(amount, "UTR-" + n, PaymentMode.CASH, null), associateId);
     }
 
     private int count(String sql, Object... args) {
@@ -498,7 +498,7 @@ class BookingCancelIntegrationTest {
 
         List<Throwable> r = race(
             () -> bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId),
-            () -> bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(total, "UTR-R", null), associateId));
+            () -> bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(total, "UTR-R", PaymentMode.CASH, null), associateId));
 
         boolean cancelWon = r.get(0) == null;
         boolean payWon = r.get(1) == null;
@@ -530,7 +530,7 @@ class BookingCancelIntegrationTest {
 
         List<Throwable> r = race(
             () -> bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId),
-            () -> bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(amount, "UTR-R", null), associateId));
+            () -> bookingService.recordPayment(b.id(), 1, new RecordPaymentRequest(amount, "UTR-R", PaymentMode.CASH, null), associateId));
 
         assertThat(r.get(0)).as("cancel always succeeds on an ACTIVE booking").isNull();
         if (r.get(1) != null) {

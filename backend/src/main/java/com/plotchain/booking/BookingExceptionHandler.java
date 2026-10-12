@@ -65,4 +65,14 @@ public class BookingExceptionHandler {
     public ResponseEntity<Map<String, String>> handlePaymentAmountMismatch(PaymentAmountMismatchException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(InstallmentNotEnteredException.class)
+    public ResponseEntity<Map<String, String>> handleInstallmentNotEntered(InstallmentNotEnteredException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(DuplicatePaymentRefException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicatePaymentRef(DuplicatePaymentRefException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
+    }
 }
