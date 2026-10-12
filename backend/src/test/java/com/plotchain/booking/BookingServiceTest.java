@@ -224,6 +224,65 @@ class BookingServiceTest {
             .allMatch(i -> i.getConfirmedAt() == null && i.getConfirmedBy() == null);
     }
 
+    @Test
+    void createBookingWithDiscountStoresListPriceDiscountAndReducedTotalAndSplitsTheReducedBalance() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        BookingResponse response = bookingService.createBooking(requestWithDiscount("100000", "100000"));
+
+        ArgumentCaptor<PlotBooking> bc = ArgumentCaptor.forClass(PlotBooking.class);
+        verify(plotBookingRepository).save(bc.capture());
+        PlotBooking b = bc.getValue();
+        assertThat(b.getListPrice()).isEqualByComparingTo("600000.00");
+        assertThat(b.getDiscount()).isEqualByComparingTo("100000.00");
+        assertThat(b.getTotalAmount()).isEqualByComparingTo("500000.00");
+        assertThat(response.installments()).extracting(EmiInstallmentResponse::amount)
+            .usingComparatorForType(BigDecimal::compareTo, BigDecimal.class)
+            .containsExactly(new BigDecimal("100000"), new BigDecimal("133333.33"),
+                new BigDecimal("133333.33"), new BigDecimal("133333.34"));
+        assertThat(response.totalAmount()).isEqualByComparingTo("500000.00");
+    }
+
+    @Test
+    void createBookingRejectsADiscountEqualToOrAboveThePlotPriceAndDoesNotBookThePlot() {
+        when(plotRepository.findByIdForUpdate(PLOT_ID))
+            .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, "600000.00")));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
+
+        assertThatThrownBy(() -> bookingService.createBooking(requestWithDiscount("1000", "600000")))
+            .isInstanceOf(InvalidDiscountException.class);
+        assertThatThrownBy(() -> bookingService.createBooking(requestWithDiscount("1000", "700000")))
+            .isInstanceOf(InvalidDiscountException.class);
+        verify(plotRepository, never()).save(any());
+        verify(plotBookingRepository, never()).save(any());
+    }
+
+    @Test
+    void createBookingChecksTheTokenAgainstTheDiscountedTotalNotTheListPrice() {
+        when(plotRepository.findByIdForUpdate(PLOT_ID))
+            .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, "600000.00")));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
+
+        assertThatThrownBy(() -> bookingService.createBooking(requestWithDiscount("100000", "500000")))
+            .isInstanceOf(InvalidTokenAmountException.class);
+        verify(plotBookingRepository, never()).save(any());
+    }
+
+    @Test
+    void createBookingWithNullDiscountKeepsTotalEqualToListPriceAndDiscountZero() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+        bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "100000"));
+        ArgumentCaptor<PlotBooking> bc = ArgumentCaptor.forClass(PlotBooking.class);
+        verify(plotBookingRepository).save(bc.capture());
+        assertThat(bc.getValue().getDiscount()).isEqualByComparingTo("0");
+        assertThat(bc.getValue().getTotalAmount()).isEqualByComparingTo("600000.00");
+    }
+
+    private CreateBookingRequest requestWithDiscount(String token, String discount) {
+        return new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "9999999999",
+            new BigDecimal(token), new BigDecimal(discount));
+    }
+
     private Plot plotWithStatusAndPrice(PlotStatus status, String price) {
         return new Plot(PLOT_ID, UUID.randomUUID(), "A-101", PlotType.NORMAL,
             new BigDecimal("1200.00"), new BigDecimal("500.00"), new BigDecimal(price), status);

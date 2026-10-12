@@ -83,9 +83,16 @@ public class BookingService {
         Associate associate = associateRepository.findById(request.associateId())
             .orElseThrow(() -> new AssociateNotFoundException(request.associateId()));
 
+        BigDecimal listPrice = plot.getPrice();
+        BigDecimal discount = request.discount() == null ? BigDecimal.ZERO
+            : request.discount().setScale(2, RoundingMode.HALF_UP);
+        if (discount.signum() < 0 || discount.compareTo(listPrice) >= 0) {
+            throw new InvalidDiscountException(discount, listPrice);
+        }
+        BigDecimal total = listPrice.subtract(discount);
         BigDecimal token = request.tokenAmount();
-        if (token.compareTo(plot.getPrice()) >= 0) {
-            throw new InvalidTokenAmountException(token, plot.getPrice());
+        if (token.compareTo(total) >= 0) {
+            throw new InvalidTokenAmountException(token, total);
         }
 
         // Plot -> BOOKED, not SOLD: a booking reserves the plot under an installment plan, it
@@ -101,15 +108,15 @@ public class BookingService {
                 "booking_emi_config row missing - V14 migration seeds it"));
 
         Instant bookedAt = clock.instant();
-        List<EmiInstallment> schedule = computeSchedule(plot.getPrice(), token, config, bookedAt, associate.getId());
+        List<EmiInstallment> schedule = computeSchedule(total, token, config, bookedAt, associate.getId());
 
         PlotBooking booking = new PlotBooking();
         booking.setId(UUID.randomUUID());
         booking.setPlotId(plot.getId());
         booking.setAssociateId(associate.getId());
-        booking.setTotalAmount(plot.getPrice());
-        booking.setListPrice(plot.getPrice());
-        booking.setDiscount(BigDecimal.ZERO);
+        booking.setTotalAmount(total);
+        booking.setListPrice(listPrice);
+        booking.setDiscount(discount);
         booking.setAreaSqft(plot.getAreaSqft());
         booking.setRate(plot.getRate());
         booking.setInstallmentCount(schedule.size());

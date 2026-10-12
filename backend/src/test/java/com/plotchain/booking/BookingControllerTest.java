@@ -159,6 +159,47 @@ class BookingControllerTest {
             .andExpect(jsonPath("$.installments[0].installmentNumber").value(1));
     }
 
+    @Test
+    void postWithoutDiscountFieldStillBindsAndForwardsNullDiscount() throws Exception {
+        when(bookingService.createBooking(any(CreateBookingRequest.class)))
+            .thenReturn(new BookingResponse(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), BookingStatus.ACTIVE,
+                "Jane Buyer", BigDecimal.TEN, 1, Instant.now(), BigDecimal.ZERO, BigDecimal.TEN, List.of()));
+
+        mockMvc.perform(post("/api/admin/bookings")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(REQUEST_BODY.formatted(UUID.randomUUID(), UUID.randomUUID())))
+            .andExpect(status().isCreated());
+        org.mockito.Mockito.verify(bookingService).createBooking(
+            org.mockito.ArgumentMatchers.argThat(r -> r.discount() == null));
+    }
+
+    @Test
+    void postWithDiscountIsForwardedToTheService() throws Exception {
+        when(bookingService.createBooking(any(CreateBookingRequest.class)))
+            .thenReturn(new BookingResponse(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), BookingStatus.ACTIVE,
+                "Jane Buyer", BigDecimal.TEN, 1, Instant.now(), BigDecimal.ZERO, BigDecimal.TEN, List.of()));
+
+        mockMvc.perform(post("/api/admin/bookings")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"plotId\":\"%s\",\"associateId\":\"%s\",\"buyerName\":\"Jane\",\"tokenAmount\":1000,\"discount\":25000}"
+                    .formatted(UUID.randomUUID(), UUID.randomUUID())))
+            .andExpect(status().isCreated());
+        org.mockito.Mockito.verify(bookingService).createBooking(
+            org.mockito.ArgumentMatchers.argThat(r -> r.discount() != null && r.discount().compareTo(new BigDecimal("25000")) == 0));
+    }
+
+    @Test
+    void postWithNegativeDiscountIs400() throws Exception {
+        mockMvc.perform(post("/api/admin/bookings")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content("{\"plotId\":\"%s\",\"associateId\":\"%s\",\"buyerName\":\"Jane\",\"tokenAmount\":1000,\"discount\":-1}"
+                    .formatted(UUID.randomUUID(), UUID.randomUUID())))
+            .andExpect(status().isBadRequest());
+    }
+
     private static final String PAY_BODY = """
         {"amount":100000.00,"paymentRef":"UTR-1","paymentMode":"CASH"}
         """;
