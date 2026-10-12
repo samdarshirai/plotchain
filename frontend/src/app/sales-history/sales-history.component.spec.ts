@@ -115,6 +115,41 @@ describe('SalesHistoryComponent', () => {
       expect(q('.my-sales__table thead').textContent).toContain('Acheteur');
     });
 
+    it('ignores a stale response for a page that is no longer requested', () => {
+      const comp = fixture.componentInstance;
+      comp.goToPage(1);
+      comp.goToPage(2);
+      const reqs = httpMock.match(r => r.url === '/api/associates/me/sales');
+      reqs[1].flush({ sales: [sale({ buyerName: 'Two' })], page: 2, size: 20, totalElements: 60 });
+      reqs[0].flush({ sales: [sale({ buyerName: 'One' })], page: 1, size: 20, totalElements: 60 });
+      expect(comp.page?.page).toBe(2);
+      expect(comp.loading).toBe(false);
+    });
+
+    it('disables the pager while loading and re-enables after an error', () => {
+      fixture.componentInstance.goToPage(1);
+      fixture.detectChanges();
+      expect(fixture.debugElement.query(By.directive(PagerComponent)).componentInstance.disabled).toBe(true);
+      httpMock.expectOne('/api/associates/me/sales?page=1&size=20').flush({}, { status: 500, statusText: 'x' });
+      fixture.detectChanges();
+      expect(fixture.componentInstance.loading).toBe(false);
+      expect(fixture.debugElement.query(By.directive(PagerComponent)).componentInstance.disabled).toBe(false);
+    });
+
+    it('is view-only: no button, select or input in the table', () => {
+      expect(q('.my-sales__table')).toBeTruthy();
+      expect(fixture.nativeElement.querySelectorAll('.my-sales__table button, .my-sales__table select, .my-sales__table input').length).toBe(0);
+    });
+
+    it('renders an em dash when the buyer name is missing', () => {
+      fixture.componentInstance.goToPage(0);
+      httpMock.expectOne('/api/associates/me/sales?page=0&size=20').flush({
+        sales: [sale({ buyerName: '' })], page: 0, size: 20, totalElements: 1
+      });
+      fixture.detectChanges();
+      expect(q('td[data-label="Buyer"]').textContent!.trim()).toBe('—');
+    });
+
     it('renders an em dash when the associate ID or name is missing', () => {
       fixture.componentInstance.goToPage(0);
       httpMock.expectOne('/api/associates/me/sales?page=0&size=20').flush({

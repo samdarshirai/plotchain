@@ -34,7 +34,7 @@ const PAGE_SIZE = 20;
           </tr></thead>
           <tbody>
             <tr *ngFor="let s of page!.sales">
-              <td [attr.data-label]="'salesHistory.columnBuyerName' | translate">{{ s.buyerName }}</td>
+              <td [attr.data-label]="'salesHistory.columnBuyerName' | translate">{{ s.buyerName || '—' }}</td>
               <td class="my-sales__mono" [attr.data-label]="'salesHistory.columnBuyerPhone' | translate">{{ s.buyerPhone || '—' }}</td>
               <td class="my-sales__num" [attr.data-label]="'salesHistory.columnAmount' | translate">{{ money(s.amount) }}</td>
               <td class="my-sales__mono my-sales__id" [attr.data-label]="'salesHistory.columnAssociateId' | translate">{{ s.associateUserId || '—' }}</td>
@@ -46,7 +46,7 @@ const PAGE_SIZE = 20;
           </tbody>
         </table>
       </div>
-      <app-pager *ngIf="page" [page]="page.page" [size]="page.size" [total]="page.totalElements" (pageChange)="goToPage($event)"></app-pager>
+      <app-pager *ngIf="page" [page]="page.page" [size]="page.size" [total]="page.totalElements" [disabled]="loading" (pageChange)="goToPage($event)"></app-pager>
     </div>
   `
 })
@@ -55,6 +55,8 @@ export class SalesHistoryComponent implements OnInit {
 
   page: AssociateSalePage | null = null;
   loadError = false;
+  loading = false;
+  private requestedPage = 0;
   money = formatInr;
 
   ngOnInit(): void {
@@ -66,10 +68,20 @@ export class SalesHistoryComponent implements OnInit {
   }
 
   private loadPage(page: number): void {
+    this.requestedPage = page;
+    this.loading = true;
     this.loadError = false;
     this.salesHistoryService.getMySales(page, PAGE_SIZE).subscribe({
-      next: res => (this.page = res),
-      error: () => (this.loadError = true)
+      next: res => {
+        if (page !== this.requestedPage) { return; }
+        this.loading = false;
+        this.page = res;
+      },
+      error: () => {
+        if (page !== this.requestedPage) { return; }
+        this.loading = false;
+        this.loadError = true;
+      }
     });
   }
 }
