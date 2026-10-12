@@ -248,7 +248,10 @@ public class SecurityConfig {
                 // GET /api/admin/bookings matcher directly above -- no blanket GET /api/admin/**.
                 .requestMatchers(HttpMethod.GET, "/api/admin/emi-reports/overdue")
                     .hasAuthority("ADMIN")
-                // Generate a batch of e-PINs: ADMIN-only, per epin-domain unit 1
+                // Admin payments list (plot-booking ref-gap U3): no blanket GET /api/admin/**; this path is exact,
+                // the POST /confirm sub-path rides the blanket POST rule.
+                .requestMatchers(HttpMethod.GET, "/api/admin/payments")
+                    .hasAuthority("ADMIN")                // Generate a batch of e-PINs: ADMIN-only, per epin-domain unit 1
                 // (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
                 // Decision 12: "POST/GET /api/admin/epins* require hasAuthority("ADMIN")...
                 // via the blanket write rule (for the POSTs)"), same target-role-model
