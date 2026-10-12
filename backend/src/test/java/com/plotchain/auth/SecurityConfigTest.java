@@ -808,6 +808,19 @@ class SecurityConfigTest {
             .andExpect(status().isForbidden());
     }
 
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminLastEmiReportIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/admin/emi-reports/last-emi")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+    }
+
+    @Test
+    void adminLastEmiReportIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/admin/emi-reports/last-emi")).andExpect(status().isUnauthorized());
+    }
+
     @Test
     void adminBookingRegisterWithOverdueFilterIsAlsoAdminOnly() throws Exception {
         mockMvc.perform(get("/api/admin/bookings").param("overdue", "true")

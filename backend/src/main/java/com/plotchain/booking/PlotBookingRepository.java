@@ -143,4 +143,27 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         """
         + BookingOverdue.INSTALLMENT_CONDITION)
     Page<OverdueReportRow> findOverdueReport(@Param("today") LocalDate today, Pageable pageable);
+
+    // Admin "EMI by last date" (U3): bookings whose LAST instalment due date (MAX over non-void rows) is in
+    // [from, to]. CANCELLED excluded (all rows VOID). Inner join on installments => a booking with none never
+    // appears. `paid` is added by LastEmiReportService from a second query (PAID only) to keep this JPQL simple.
+    @Query("""
+        SELECT new com.plotchain.booking.LastEmiHead(
+            b.id, b.bookedAt, a.userId, a.name, b.buyerName, b.buyerPhone, pl.plotNo, pr.name,
+            MAX(i.dueDate), b.discount, b.totalAmount)
+        FROM PlotBooking b
+        JOIN EmiInstallment i ON i.bookingId = b.id
+        JOIN Associate a ON a.id = b.associateId
+        JOIN Plot pl ON pl.id = b.plotId
+        JOIN Project pr ON pr.id = pl.projectId
+        WHERE b.status <> com.plotchain.booking.BookingStatus.CANCELLED
+        AND i.status <> com.plotchain.booking.InstallmentStatus.VOID
+        AND (:projectId IS NULL OR pl.projectId = :projectId)
+        GROUP BY b.id, b.bookedAt, a.userId, a.name, b.buyerName, b.buyerPhone, pl.plotNo, pr.name,
+            b.discount, b.totalAmount
+        HAVING MAX(i.dueDate) >= :from AND MAX(i.dueDate) <= :to
+        ORDER BY MAX(i.dueDate) ASC, b.id ASC
+        """)
+    List<LastEmiHead> findLastEmiHeads(@Param("from") LocalDate from, @Param("to") LocalDate to,
+        @Param("projectId") UUID projectId);
 }
