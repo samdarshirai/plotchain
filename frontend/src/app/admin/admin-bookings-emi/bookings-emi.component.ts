@@ -6,6 +6,10 @@ import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { BookingRegisterComponent } from './booking-register.component';
 import { OverdueReportComponent } from './overdue-report.component';
+import { PaymentQueueComponent } from './payment-queue.component';
+import { PaymentLedgerComponent } from './payment-ledger.component';
+import { CancelledBookingsComponent } from './cancelled-bookings.component';
+import { LastEmiComponent } from './last-emi.component';
 import { BookingsEmiService } from './bookings-emi.service';
 import { BookingEmiConfig, FlashMessage } from './bookings-emi.model';
 
@@ -14,7 +18,8 @@ import { BookingEmiConfig, FlashMessage } from './bookings-emi.model';
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['./bookings-emi.component.scss'],
-  imports: [CommonModule, TranslateModule, TabBarComponent, InlineBannerComponent, BookingRegisterComponent, OverdueReportComponent],
+  imports: [CommonModule, TranslateModule, TabBarComponent, InlineBannerComponent, BookingRegisterComponent, OverdueReportComponent,
+    PaymentQueueComponent, PaymentLedgerComponent, CancelledBookingsComponent, LastEmiComponent],
   template: `
     <div class="bookings-emi">
       <div class="bookings-emi__head">
@@ -32,6 +37,10 @@ import { BookingEmiConfig, FlashMessage } from './bookings-emi.model';
       <app-booking-register *ngIf="activeTab === 'register'" [config]="config" [focusBookingId]="focusBookingId"
         (flash)="flash = $event" (changed)="loadOverdueTotal()"></app-booking-register>
       <app-overdue-report *ngIf="activeTab === 'overdue'" (openBooking)="openFromOverdue($event)" (total)="overdueTotal = $event"></app-overdue-report>
+      <app-payment-queue *ngIf="activeTab === 'unconfirmed'"></app-payment-queue>
+      <app-payment-ledger *ngIf="activeTab === 'confirmed'"></app-payment-ledger>
+      <app-cancelled-bookings *ngIf="activeTab === 'cancelled'"></app-cancelled-bookings>
+      <app-last-emi *ngIf="activeTab === 'lastEmi'"></app-last-emi>
     </div>
   `
 })
@@ -39,7 +48,7 @@ export class BookingsEmiComponent implements OnInit {
   private service = inject(BookingsEmiService);
   private translate = inject(TranslateService);
   private route = inject(ActivatedRoute);
-  activeTab: 'register' | 'overdue' = 'register';
+  activeTab: 'register' | 'unconfirmed' | 'confirmed' | 'overdue' | 'cancelled' | 'lastEmi' = 'register';
   config: BookingEmiConfig | null = null;
   flash: FlashMessage | null = null;
   overdueTotal: number | null = null;
@@ -56,7 +65,11 @@ export class BookingsEmiComponent implements OnInit {
     const od = this.overdueTotal == null ? '' : ` (${this.overdueTotal})`;
     return [
       { id: 'register', label: this.translate.instant('admin.bookingsEmi.tab.register') },
-      { id: 'overdue', label: this.translate.instant('admin.bookingsEmi.tab.overdue') + od }
+      { id: 'unconfirmed', label: this.translate.instant('admin.bookingsEmi.tab.unconfirmed') },
+      { id: 'confirmed', label: this.translate.instant('admin.bookingsEmi.tab.confirmed') },
+      { id: 'overdue', label: this.translate.instant('admin.bookingsEmi.tab.overdue') + od },
+      { id: 'cancelled', label: this.translate.instant('admin.bookingsEmi.tab.cancelled') },
+      { id: 'lastEmi', label: this.translate.instant('admin.bookingsEmi.tab.lastEmi') }
     ];
   }
   ngOnInit(): void {
