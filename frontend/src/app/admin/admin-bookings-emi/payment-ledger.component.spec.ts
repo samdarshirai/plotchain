@@ -113,6 +113,29 @@ describe('PaymentLedgerComponent', () => {
     expect(el().querySelector('app-payment-receipt')).toBeNull();
   });
 
+  it('closes the receipt when paging or filters change', () => {
+    loaded([row('b1', 1)]);
+    (el().querySelector('.payment-ledger__receipt-btn') as HTMLButtonElement).click(); fixture.detectChanges();
+    expect(el().querySelector('app-payment-receipt')).not.toBeNull();
+    filters().filtersChange.emit({ from: '', to: '', projectId: 'p1' }); fixture.detectChanges();
+    expect(el().querySelector('app-payment-receipt')).toBeNull();
+    listReq().flush(pageOf([row('b1', 1)])); fixture.detectChanges();
+    (el().querySelector('.payment-ledger__receipt-btn') as HTMLButtonElement).click(); fixture.detectChanges();
+    fixture.componentInstance.load(1); fixture.detectChanges();
+    expect(el().querySelector('app-payment-receipt')).toBeNull();
+    listReq().flush(pageOf([]));
+  });
+
+  it('returns focus to the Print receipt button on Close', () => {
+    loaded([row('b1', 1)]);
+    document.body.appendChild(fixture.nativeElement);
+    const btn = el().querySelector('.payment-ledger__receipt-btn') as HTMLButtonElement;
+    btn.click(); fixture.detectChanges();
+    (el().querySelector('.payment-receipt__close') as HTMLButtonElement).click(); fixture.detectChanges();
+    expect(document.activeElement).toBe(btn);
+    fixture.nativeElement.remove();
+  });
+
   describe('export', () => {
     let blobs: Blob[];
     beforeEach(() => {
@@ -147,6 +170,23 @@ describe('PaymentLedgerComponent', () => {
       fixture.detectChanges();
       expect(exportBtn().disabled).toBeFalse();
       expect(el().textContent).toContain('admin.bookingsEmi.err.export');
+    });
+
+    it('locks the filters during export and uses one filter snapshot for every page', () => {
+      loaded([row('b1', 1)]);
+      filters().filtersChange.emit({ from: '2026-03-01', to: '', projectId: 'p1' });
+      listReq().flush(pageOf([]));
+      exportBtn().click(); fixture.detectChanges();
+      expect(filters().locked).toBeTrue();
+      const mk = Array.from({ length: 100 }, (_, i) => row('b' + i, 1));
+      exportReq(0).flush(pageOf(mk, { size: 100, totalElements: 150 }));
+      fixture.componentInstance.filters = { from: '2027-01-01', to: '', projectId: 'p2' };
+      const r1 = exportReq(1);
+      expect(r1.request.params.get('from')).toBe('2026-03-01');
+      expect(r1.request.params.get('projectId')).toBe('p1');
+      r1.flush(pageOf([], { page: 1, size: 100, totalElements: 150 }));
+      fixture.detectChanges();
+      expect(filters().locked).toBeFalse();
     });
 
     it('exports a header-only file on an empty result', async () => {

@@ -14,7 +14,6 @@ import { formatMoney } from './bookings-emi.util';
   template: `
     <div class="payment-receipt">
       <article #sheet class="payment-receipt__sheet">
-        <div class="payment-receipt__rule">── {{ 'admin.bookingsEmi.receipt.title' | translate | uppercase }} ──</div>
         <h2 #title tabindex="-1" class="payment-receipt__title">{{ 'admin.bookingsEmi.receipt.title' | translate }}</h2>
         <dl class="payment-receipt__meta">
           <dt>{{ 'admin.bookingsEmi.receipt.no' | translate }}</dt><dd>{{ receiptNo }}</dd>
