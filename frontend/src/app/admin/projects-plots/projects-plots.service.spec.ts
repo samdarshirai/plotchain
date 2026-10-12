@@ -38,4 +38,31 @@ describe('ProjectsPlotsService', () => {
     service.getEmiConfig().subscribe();
     http.expectOne('/api/company/booking-emi').flush({ emiEnabled: true, defaultInstallmentCount: 6 });
   });
+
+  const isPage = (n: string) => (r: any) =>
+    r.url === '/api/company/projects/p1/plots' && r.params.get('page') === n && r.params.get('size') === '500';
+
+  it('getPlotRates reads /api/company/projects/p1/plots with page=0&size=500 and maps id -> rate', () => {
+    let out: Record<string, number> | undefined;
+    service.getPlotRates('p1').subscribe(r => (out = r));
+    const req = http.expectOne(isPage('0'));
+    expect(req.request.method).toBe('GET');
+    req.flush({ plots: [{ id: 'x', rate: 2299 }, { id: 'y', rate: 1999 }], page: 0, size: 500, totalElements: 2 });
+    expect(out).toEqual({ x: 2299, y: 1999 });
+  });
+
+  it('getPlotRates walks every page', () => {
+    let out: Record<string, number> | undefined;
+    service.getPlotRates('p1').subscribe(r => (out = r));
+    http.expectOne(isPage('0')).flush({ plots: [{ id: 'x', rate: 1 }], page: 0, size: 500, totalElements: 501 });
+    http.expectOne(isPage('1')).flush({ plots: [{ id: 'z', rate: 3 }], page: 1, size: 500, totalElements: 501 });
+    expect(out).toEqual({ x: 1, z: 3 });
+  });
+
+  it('getPlotRates propagates an HTTP error', () => {
+    let status = 0;
+    service.getPlotRates('p1').subscribe({ error: e => (status = e.status) });
+    http.expectOne(isPage('0')).flush('boom', { status: 500, statusText: 'err' });
+    expect(status).toBe(500);
+  });
 });

@@ -1,8 +1,8 @@
-import { Component, HostListener, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnInit, ViewEncapsulation, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Observable, catchError, of } from 'rxjs';
 import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
@@ -13,6 +13,8 @@ import { PlotTileComponent } from '../../shared/components/plot-tile/plot-tile.c
 import {
   PlotBlock, PlotGridItem, StatusCounts, countByStatus, formatArea, formatInr, groupIntoBlocks
 } from '../../shared/utils/plot-grid.util';
+import { ExportColumn, exportCsv } from '../../shared/utils/table-export.util';
+import { filterPlotRows } from './projects-plots.util';
 import { CsvImportPanelComponent } from './csv-import-panel.component';
 import { PlotFormComponent } from './plot-form.component';
 import { ProjectFormComponent } from './project-form.component';
@@ -53,7 +55,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           <h1 class="projects-plots__title">{{ selectedProject ? selectedProject.name + ', ' + selectedProject.location : ('admin.projectsPlots.title' | translate) }}</h1>
         </div>
         <div class="projects-plots__views" *ngIf="selectedProject && grid" role="group" [attr.aria-label]="'admin.projectsPlots.viewLabel' | translate">
-          <button type="button" *ngFor="let v of views" [class.projects-plots__view--on]="view === v" [attr.aria-pressed]="view === v" (click)="view = v">
+          <button type="button" *ngFor="let v of views" [class.projects-plots__view--on]="view === v" [attr.aria-pressed]="view === v" (click)="setView(v)">
             {{ 'admin.projectsPlots.view.' + v | translate }}
           </button>
         </div>
@@ -146,25 +148,38 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             </div>
             <p class="projects-plots__empty" *ngIf="grid.length && !visibleBlocks.length">{{ 'admin.projectsPlots.empty.filter' | translate }}</p>
 
-            <div class="projects-plots__table-wrap" *ngIf="view === 'table' && visibleBlocks.length">
+            <div class="plot-table-tools" *ngIf="view === 'table' && grid.length && !readOnly">
+              <label class="plot-table-tools__label">
+                <span class="projects-plots__sr">{{ 'admin.projectsPlots.table.searchLabel' | translate }}</span>
+                <input type="search" class="plot-table-tools__search" [value]="search" [placeholder]="'admin.projectsPlots.table.searchPlaceholder' | translate" (input)="onSearch($any($event.target).value)">
+              </label>
+              <span class="plot-table-tools__count" role="status">{{ 'admin.projectsPlots.table.count' | translate: { shown: tableRows.length, total: visibleCount } }}</span>
+              <button type="button" class="brand-button brand-button--secondary plot-table-tools__export" [disabled]="!rates || !tableRows.length" (click)="exportPlots()">{{ 'admin.projectsPlots.table.exportCsv' | translate }}</button>
+              <span class="plot-table-tools__error" role="alert" *ngIf="ratesError">
+                {{ 'admin.projectsPlots.table.rateError' | translate }}
+                <button type="button" class="projects-plots__retry" (click)="loadRates()">{{ 'admin.projectsPlots.retry' | translate }}</button>
+              </span>
+            </div>
+            <p class="projects-plots__empty" role="status" *ngIf="view === 'table' && !readOnly && grid.length && visibleBlocks.length && !tableRows.length">{{ 'admin.projectsPlots.table.noMatch' | translate }}</p>
+            <div class="projects-plots__table-wrap" *ngIf="view === 'table' && tableRows.length">
               <table class="projects-plots__table">
                 <thead><tr>
                   <th scope="col">{{ 'admin.projectsPlots.table.plot' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.area' | translate }}</th>
+                  <th scope="col" class="projects-plots__num" *ngIf="!readOnly">{{ 'admin.projectsPlots.rateLabel' | translate }}</th>
                   <th scope="col" class="projects-plots__num">{{ 'admin.projectsPlots.table.total' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.status' | translate }}</th>
                 </tr></thead>
                 <tbody>
-                  <ng-container *ngFor="let b of visibleBlocks; trackBy: trackBlock">
-                    <tr *ngFor="let p of b.plots; trackBy: trackPlot" [attr.data-plot-id]="p.plotId" class="projects-plots__row"
-                      [class.projects-plots__row--selected]="p.plotId === selectedPlotId">
-                      <td><button type="button" class="projects-plots__row-btn" [attr.aria-pressed]="p.plotId === selectedPlotId" (click)="selectPlot(p)">{{ p.plotNo }}</button>
-                        <span class="projects-plots__corner" *ngIf="p.type === 'CORNER'">{{ 'plotTile.corner' | translate }}</span></td>
-                      <td>{{ areaText(p.area) }} {{ 'plotTile.sqft' | translate }}</td>
-                      <td class="projects-plots__num">{{ priceText(p.price) }}</td>
-                      <td><span class="projects-plots__pill projects-plots__pill--{{ p.status.toLowerCase() }}">{{ 'plotTile.status.' + p.status | translate }}</span></td>
-                    </tr>
-                  </ng-container>
+                  <tr *ngFor="let p of tableRows; trackBy: trackPlot" [attr.data-plot-id]="p.plotId" class="projects-plots__row"
+                    [class.projects-plots__row--selected]="p.plotId === selectedPlotId">
+                    <td><button type="button" class="projects-plots__row-btn" [attr.aria-pressed]="p.plotId === selectedPlotId" (click)="selectPlot(p)">{{ p.plotNo }}</button>
+                      <span class="projects-plots__corner" *ngIf="p.type === 'CORNER'">{{ 'plotTile.corner' | translate }}</span></td>
+                    <td>{{ areaText(p.area) }} {{ 'plotTile.sqft' | translate }}</td>
+                    <td class="projects-plots__num" *ngIf="!readOnly">{{ rateText(p.plotId) }}</td>
+                    <td class="projects-plots__num">{{ priceText(p.price) }}</td>
+                    <td><span class="projects-plots__pill projects-plots__pill--{{ p.status.toLowerCase() }}">{{ 'plotTile.status.' + p.status | translate }}</span></td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -239,12 +254,15 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
         </aside>
       </div>
     </div>
-  `
+  `,
+  styleUrl: './plot-table-tools.scss',
+  encapsulation: ViewEncapsulation.None
 })
 export class ProjectsPlotsComponent implements OnInit {
   protected projectsService = inject(ProjectsService);
   protected plotsService = inject(ProjectsPlotsService);
   private adminService = inject(AdminService);
+  private translate = inject(TranslateService);
   // Associate "View Plot" reuses this screen with route data { readOnly: true }: no admin-only calls, no write actions.
   readonly readOnly = inject(ActivatedRoute).snapshot.data['readOnly'] === true;
 
@@ -269,6 +287,13 @@ export class ProjectsPlotsComponent implements OnInit {
   duplicatePlotNo = false;
   associates: AssociateSummary[] = [];
   emiConfig: BookingEmiConfig | null = null;
+  rates: Record<string, number> | null = null;
+  ratesError = false;
+  private ratesLoading = false;
+  search = '';
+  private ratesSeq = 0;
+  tableRows: PlotGridItem[] = [];
+  visibleCount = 0;
   private opener: HTMLElement | null = null;
 
   get selectedPlot(): PlotGridItem | null {
@@ -318,9 +343,16 @@ export class ProjectsPlotsComponent implements OnInit {
     this.aside = { kind: 'none' };
     this.banner = null;
     this.filter.clear();
+    this.rates = null;
+    this.ratesError = false;
+    this.ratesLoading = false;
+    this.ratesSeq++;
+    this.search = '';
+    this.tableRows = [];
     this.grid = null;
     this.gridError = false;
     this.loadGrid();
+    if (this.view === 'table') { this.loadRates(); }
   }
 
   // Keeps the last good grid on a failed refresh (DESIGN: "Grid refresh failure").
@@ -340,6 +372,55 @@ export class ProjectsPlotsComponent implements OnInit {
     });
   }
 
+  setView(v: View): void {
+    this.view = v;
+    if (v === 'table') { this.loadRates(); }
+  }
+
+  // Lazy, admin-only: associates never see or request rates. Cached per project (cleared in selectProject).
+  loadRates(): void {
+    const project = this.selectedProject;
+    if (!project || this.readOnly || this.rates || this.ratesLoading) { return; }
+    this.ratesLoading = true;
+    this.ratesError = false;
+    const seq = ++this.ratesSeq;
+    this.plotsService.getPlotRates(project.id).subscribe({
+      next: r => {
+        if (seq !== this.ratesSeq) { return; }
+        this.ratesLoading = false;
+        this.rates = r;
+      },
+      error: () => {
+        if (seq !== this.ratesSeq) { return; }
+        this.ratesLoading = false;
+        this.ratesError = true;
+      }
+    });
+  }
+
+  onSearch(q: string): void {
+    this.search = q;
+    this.rebuild();
+  }
+
+  rateText(plotId: string): string {
+    const r = this.rates?.[plotId];
+    return r != null ? r.toLocaleString('en-IN') : '—';
+  }
+
+  exportPlots(): void {
+    const t = (k: string) => this.translate.instant(k);
+    const cols: ExportColumn<PlotGridItem>[] = [
+      { header: t('admin.projectsPlots.table.plot'), value: p => p.plotNo },
+      { header: t('admin.projectsPlots.table.area'), value: p => p.area },
+      { header: t('admin.projectsPlots.rateLabel'), value: p => this.rates?.[p.plotId] },
+      { header: t('admin.projectsPlots.table.total'), value: p => p.price },
+      { header: t('admin.projectsPlots.table.status'), value: p => t('plotTile.status.' + p.status) }
+    ];
+    const slug = (this.selectedProject?.name ?? 'project').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    exportCsv(this.tableRows, cols, `plots-${slug}.csv`);
+  }
+
   toggleFilter(s: PlotStatus): void {
     this.filter.has(s) ? this.filter.delete(s) : this.filter.add(s);
     this.rebuild();
@@ -356,6 +437,9 @@ export class ProjectsPlotsComponent implements OnInit {
     this.visibleBlocks = whole
       .map(b => ({ block: b.block, plots: this.filter.size ? b.plots.filter(p => this.filter.has(p.status)) : b.plots }))
       .filter(b => b.plots.length);
+    const flat = this.visibleBlocks.flatMap(b => b.plots);
+    this.visibleCount = flat.length;
+    this.tableRows = this.readOnly ? flat : filterPlotRows(flat, this.search, s => this.translate.instant('plotTile.status.' + s));
   }
 
   // Stable identity so a grid refresh updates tiles in place and a focused tile keeps focus.
@@ -483,7 +567,8 @@ export class ProjectsPlotsComponent implements OnInit {
     const projectId = this.selectedProject!.id;
     this.bookingBusy = true;
     this.plotsService.createBooking({
-      plotId, associateId: v.associateId, buyerName: v.buyerName, buyerPhone: v.buyerPhone || undefined, tokenAmount: v.tokenAmount
+      plotId, associateId: v.associateId, buyerName: v.buyerName, buyerPhone: v.buyerPhone || undefined, tokenAmount: v.tokenAmount,
+      ...(v.discount > 0 ? { discount: v.discount } : {})
     }).subscribe({
       next: booking => {
         this.bookingBusy = false;

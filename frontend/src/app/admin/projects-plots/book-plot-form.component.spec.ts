@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { BookPlotFormComponent } from './book-plot-form.component';
 import { BookingFormValue } from './projects-plots.model';
+import { formatInr } from '../../shared/utils/plot-grid.util';
 
 describe('BookPlotFormComponent', () => {
   let fixture: ComponentFixture<BookPlotFormComponent>;
@@ -62,7 +63,7 @@ describe('BookPlotFormComponent', () => {
     typeInto('buyerPhone', ' 9876543210 ');
     typeInto('tokenAmount', '100000');
     submitForm();
-    expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit Kulkarni', buyerPhone: '9876543210', tokenAmount: 100000 }]);
+    expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit Kulkarni', buyerPhone: '9876543210', tokenAmount: 100000, discount: 0 }]);
   });
 
   it('blocks submit without a token amount and flags the field', async () => {
@@ -146,5 +147,137 @@ describe('BookPlotFormComponent', () => {
     fixture.componentInstance.tokenAmount = 100000;
     submitForm();
     expect(out.length).toBe(0);
+  });
+
+  describe('discount', () => {
+    const K = 'admin.projectsPlots.';
+    async function ready() {
+      setup();
+      const out: BookingFormValue[] = [];
+      fixture.componentInstance.submitted.subscribe(v => out.push(v));
+      fixture.componentInstance.associateId = 'a1';
+      await fixture.whenStable();
+      typeInto('buyerName', 'Rohit');
+      return out;
+    }
+    const settle = async () => { await fixture.whenStable(); fixture.detectChanges(); };
+
+    it('shows no summary and emits discount 0 when the discount is blank', async () => {
+      const out = await ready();
+      typeInto('tokenAmount', '100000');
+      submitForm(); await settle();
+      expect(el().querySelector('.book-totals')).toBeNull();
+      expect(out[0].discount).toBe(0);
+    });
+
+    it('live total: typing 130000 shows Plot price, Discount and Total after discount = 5,000,000', async () => {
+      await ready();
+      typeInto('discount', '130000'); await settle();
+      const box = el().querySelector('.book-totals')!;
+      expect(box.getAttribute('aria-live')).toBe('polite');
+      expect(box.textContent).toContain(K + 'summary.price');
+      expect(box.textContent).toContain(K + 'summary.discount');
+      expect(box.textContent).toContain(K + 'summary.total');
+      expect(box.textContent).toContain(formatInr(5000000));
+    });
+
+    it('rejects a negative discount (flags field, focuses it, no emit)', async () => {
+      const out = await ready();
+      typeInto('discount', '-1'); typeInto('tokenAmount', '100000');
+      submitForm(); await settle();
+      const f = el().querySelector<HTMLInputElement>('[name="discount"]')!;
+      expect(out.length).toBe(0);
+      expect(f.getAttribute('aria-invalid')).toBe('true');
+      expect(el().textContent).toContain(K + 'discount.negative');
+      expect(document.activeElement).toBe(f);
+    });
+
+    it('rejects a discount equal to the plot price; accepts price - 0.01', async () => {
+      const out = await ready();
+      typeInto('tokenAmount', '0.005');
+      typeInto('discount', String(plot.price));
+      submitForm(); await settle();
+      expect(el().textContent).toContain(K + 'discount.tooHigh');
+      expect(out.length).toBe(0);
+      typeInto('discount', String(plot.price - 0.01));
+      submitForm(); await settle();
+      expect(el().textContent).not.toContain(K + 'discount.tooHigh');
+      expect(out.length).toBe(1);
+    });
+
+    it('rounds the discount to 2dp before validating and emitting', async () => {
+      const out = await ready();
+      typeInto('discount', '1000.005'); typeInto('tokenAmount', '100000');
+      submitForm();
+      expect(out[0].discount).toBe(1000.01);
+    });
+
+    it('token must be below the discounted total', async () => {
+      const out = await ready();
+      typeInto('discount', '130000'); typeInto('tokenAmount', '5000000');
+      submitForm(); await settle();
+      expect(el().textContent).toContain(K + 'token.tooHigh');
+      expect(out.length).toBe(0);
+      typeInto('tokenAmount', '4999999.99');
+      submitForm(); await settle();
+      expect(out.length).toBe(1);
+    });
+
+    it('changing the discount after the token re-validates the token', async () => {
+      const out = await ready();
+      typeInto('tokenAmount', '5100000');
+      typeInto('discount', '130000');
+      submitForm(); await settle();
+      expect(out.length).toBe(0);
+      expect(el().textContent).toContain(K + 'token.tooHigh');
+    });
+
+    it('instalment preview uses the discounted total', async () => {
+      await ready();
+      typeInto('discount', '130000'); typeInto('tokenAmount', '500000'); await settle();
+      expect(fixture.componentInstance.previewParams.amount).toBe(formatInr(900000));
+    });
+
+    it('rounds half-up at 2dp on boundaries (matches server BigDecimal HALF_UP)', async () => {
+      await ready();
+      const c = fixture.componentInstance;
+      for (const [raw, want] of [[1.005, 1.01], [1000.005, 1000.01], [0.005, 0.01], [-0.005, -0.01]]) {
+        c.discountRaw = raw;
+        expect(c.discount).toBe(want);
+      }
+    });
+
+    it('treats -0.005 as a negative discount, not zero', async () => {
+      const out = await ready();
+      typeInto('discount', '-0.005'); typeInto('tokenAmount', '100000');
+      submitForm(); await settle();
+      expect(el().textContent).toContain(K + 'discount.negative');
+      expect(out.length).toBe(0);
+    });
+
+    it('shows no summary before submit when the discount is >= the price or negative', async () => {
+      await ready();
+      typeInto('discount', String(plot.price)); await settle();
+      expect(el().querySelector('.book-totals')).toBeNull();
+      expect(el().textContent).not.toContain(K + 'discount.tooHigh'); // error still waits for submit
+      typeInto('discount', String(plot.price + 1000)); await settle();
+      expect(el().querySelector('.book-totals')).toBeNull();
+      typeInto('discount', '-5'); await settle();
+      expect(el().querySelector('.book-totals')).toBeNull();
+    });
+
+    it('with an invalid discount the instalment preview falls back to the list price and no summary shows', async () => {
+      await ready();
+      typeInto('discount', String(plot.price + 1)); typeInto('tokenAmount', '500000'); await settle();
+      expect(el().querySelector('.book-totals')).toBeNull();
+      expect(fixture.componentInstance.previewParams.amount).toBe(formatInr(Math.round((plot.price - 500000) / 5)));
+    });
+
+    it('emits discount alongside associate, buyer and token on a valid submit', async () => {
+      const out = await ready();
+      typeInto('discount', '130000'); typeInto('tokenAmount', '100000');
+      submitForm();
+      expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit', buyerPhone: '', tokenAmount: 100000, discount: 130000 }]);
+    });
   });
 });

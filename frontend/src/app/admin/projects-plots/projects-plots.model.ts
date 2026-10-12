@@ -9,6 +9,7 @@ export interface BookingFormValue {
   buyerName: string;
   buyerPhone: string;
   tokenAmount: number;
+  discount: number; // always emitted by the form (0 when blank)
 }
 
 export interface CreateBookingRequest {
@@ -17,6 +18,7 @@ export interface CreateBookingRequest {
   buyerName: string;
   buyerPhone?: string;
   tokenAmount: number;
+  discount?: number;
 }
 
 // The subset of BookingResponse (POST /api/admin/bookings, 201) this screen reads.
