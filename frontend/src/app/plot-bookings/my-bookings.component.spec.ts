@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { Router, provideRouter } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { MyBookingsComponent } from './my-bookings.component';
 
@@ -24,13 +25,44 @@ describe('MyBookingsComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MyBookingsComponent, HttpClientTestingModule, TranslateModule.forRoot()]
+      imports: [MyBookingsComponent, HttpClientTestingModule, TranslateModule.forRoot()],
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(MyBookingsComponent);
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
   });
   afterEach(() => http.verify());
+
+  it('renders a single page heading when routed (heading defaults on)', () => {
+    boot([]);
+    const h1 = el().querySelectorAll('h1.my-bookings__title');
+    expect(h1.length).toBe(1);
+    expect(h1[0].textContent).toContain('plotBookings.myBookings.title');
+  });
+
+  it('omits the heading when a host owns it', () => {
+    fixture.componentInstance.heading = false;
+    boot([]);
+    expect(el().querySelector('h1')).toBeNull();
+  });
+
+  it('navigates to View Plot from the empty state when nothing listens to viewAvailability', () => {
+    boot([]);
+    const nav = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    el().querySelector<HTMLButtonElement>('.my-bookings__view-availability')!.click();
+    expect(nav).toHaveBeenCalledWith(['/plot-bookings']);
+  });
+
+  it('emits viewAvailability instead of navigating when a host subscribes', () => {
+    boot([]);
+    const nav = spyOn(TestBed.inject(Router), 'navigate');
+    let emitted = 0;
+    fixture.componentInstance.viewAvailability.subscribe(() => emitted++);
+    el().querySelector<HTMLButtonElement>('.my-bookings__view-availability')!.click();
+    expect(emitted).toBe(1);
+    expect(nav).not.toHaveBeenCalled();
+  });
 
   it('renders a card per booking in server order with the plot label fallback', () => {
     boot();

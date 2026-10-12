@@ -20,7 +20,7 @@ type Tab = 'availability' | 'myBookings';
       <p class="plot-bookings__subtitle">{{ 'plotBookings.subtitle' | translate }}</p>
       <app-tab-bar [tabs]="tabs" [activeTabId]="activeTab" (tabChange)="onTabChange($event)"></app-tab-bar>
       <app-plot-availability *ngIf="activeTab === 'availability'"></app-plot-availability>
-      <app-my-bookings *ngIf="activeTab === 'myBookings'" (viewAvailability)="onTabChange('availability')"></app-my-bookings>
+      <app-my-bookings [heading]="false" *ngIf="activeTab === 'myBookings'" (viewAvailability)="onTabChange('availability')"></app-my-bookings>
     </div>
   `
 })
