@@ -1,8 +1,9 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
+import { PagerComponent } from '../shared/components/pager/pager.component';
 import { formatInr } from '../shared/utils/plot-grid.util';
 import { AssociateBookingPage } from './models/associate-booking-page.model';
 import { PlotBookingsService } from './plot-bookings.service';
@@ -16,7 +17,7 @@ const LEG: Record<Scope, 'ALL' | 'L' | 'R'> = { TEAM: 'ALL', LEFT: 'L', RIGHT: '
 @Component({
   selector: 'app-team-plot-bookings',
   standalone: true,
-  imports: [CommonModule, TranslateModule, InlineBannerComponent],
+  imports: [CommonModule, TranslateModule, InlineBannerComponent, PagerComponent],
   template: `
     <div class="team-bookings" [attr.aria-busy]="loading">
       <h1>{{ 'plotBookings.team.title.' + scope | translate }}</h1>
@@ -31,51 +32,39 @@ const LEG: Record<Scope, 'ALL' | 'L' | 'R'> = { TEAM: 'ALL', LEFT: 'L', RIGHT: '
 
       <ng-container *ngIf="page?.bookings?.length">
         <div class="team-bookings__scroll">
-          <table class="team-bookings__table">
+          <table class="team-bookings__table" [attr.aria-label]="'plotBookings.team.title.' + scope | translate">
             <thead>
               <tr>
-                <th>{{ 'plotBookings.team.column.plot' | translate }}</th>
-                <th>{{ 'plotBookings.team.column.project' | translate }}</th>
-                <th>{{ 'plotBookings.team.column.associate' | translate }}</th>
-                <th>{{ 'plotBookings.team.column.buyer' | translate }}</th>
-                <th>{{ 'plotBookings.team.column.bookedOn' | translate }}</th>
-                <th>{{ 'plotBookings.team.column.total' | translate }}</th>
-                <th>{{ 'plotBookings.team.column.paid' | translate }}</th>
-                <th>{{ 'plotBookings.team.column.status' | translate }}</th>
+                <th scope="col">{{ 'plotBookings.team.column.plot' | translate }}</th>
+                <th scope="col">{{ 'plotBookings.team.column.project' | translate }}</th>
+                <th scope="col">{{ 'plotBookings.team.column.associate' | translate }}</th>
+                <th scope="col">{{ 'plotBookings.team.column.buyer' | translate }}</th>
+                <th scope="col">{{ 'plotBookings.team.column.bookedOn' | translate }}</th>
+                <th scope="col" class="team-bookings__num">{{ 'plotBookings.team.column.total' | translate }}</th>
+                <th scope="col" class="team-bookings__num">{{ 'plotBookings.team.column.paid' | translate }}</th>
+                <th scope="col">{{ 'plotBookings.team.column.status' | translate }}</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let b of page!.bookings">
-                <td>{{ b.plotNo || '—' }}</td>
-                <td>{{ b.projectName || '—' }}</td>
-                <td>{{ b.associateName || '—' }}</td>
-                <td>{{ b.buyerName }}</td>
-                <td>{{ b.bookedAt | date: 'mediumDate' }}</td>
-                <td>{{ money(b.totalAmount) }}</td>
-                <td>{{ money(b.paidAmount) }}</td>
-                <td>{{ 'plotBookings.bookingStatus.' + b.status | translate }}</td>
+                <td class="team-bookings__mono" [attr.data-label]="'plotBookings.team.column.plot' | translate">{{ b.plotNo || '—' }}</td>
+                <td [attr.data-label]="'plotBookings.team.column.project' | translate">{{ b.projectName || '—' }}</td>
+                <td [attr.data-label]="'plotBookings.team.column.associate' | translate">{{ b.associateName || '—' }}</td>
+                <td [attr.data-label]="'plotBookings.team.column.buyer' | translate"><strong>{{ b.buyerName }}</strong></td>
+                <td class="team-bookings__mono" [attr.data-label]="'plotBookings.team.column.bookedOn' | translate">{{ b.bookedAt | date: 'mediumDate' }}</td>
+                <td class="team-bookings__num" [attr.data-label]="'plotBookings.team.column.total' | translate">{{ money(b.totalAmount) }}</td>
+                <td class="team-bookings__num" [attr.data-label]="'plotBookings.team.column.paid' | translate">{{ money(b.paidAmount) }}</td>
+                <td [attr.data-label]="'plotBookings.team.column.status' | translate">{{ 'plotBookings.bookingStatus.' + b.status | translate }}</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div class="team-bookings__pager">
-          <button type="button" class="brand-button brand-button--secondary" [disabled]="page!.page === 0" (click)="load(page!.page - 1)">
-            {{ 'plotBookings.previousPageAction' | translate }}
-          </button>
-          <span>{{ 'plotBookings.pageIndicator' | translate: { page: page!.page + 1, totalPages: totalPages } }}</span>
-          <button type="button" class="brand-button brand-button--secondary" [disabled]="page!.page + 1 >= totalPages" (click)="load(page!.page + 1)">
-            {{ 'plotBookings.nextPageAction' | translate }}
-          </button>
-        </div>
+        <app-pager [page]="page!.page" [size]="page!.size" [total]="page!.totalElements" [disabled]="loading" (pageChange)="load($event)"></app-pager>
       </ng-container>
     </div>
   `,
-  styles: [`
-    .team-bookings__scroll { overflow-x: auto; }
-    .team-bookings__table { width: 100%; border-collapse: collapse; }
-    .team-bookings__table th, .team-bookings__table td { padding: 0.5rem 0.75rem; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--border-color, #e5e5e5); }
-    .team-bookings__pager { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; }
-  `]
+  encapsulation: ViewEncapsulation.None,
+  styleUrl: './team-plot-bookings.component.scss'
 })
 export class TeamPlotBookingsComponent implements OnInit {
   private service = inject(PlotBookingsService);
@@ -87,11 +76,6 @@ export class TeamPlotBookingsComponent implements OnInit {
   error = false;
   requestedPage = 0;
   money = formatInr;
-
-  get totalPages(): number {
-    if (!this.page || this.page.size === 0) { return 1; }
-    return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
-  }
 
   // Sibling routes reuse this instance, so scope is read reactively and the list reloaded.
   ngOnInit(): void {
