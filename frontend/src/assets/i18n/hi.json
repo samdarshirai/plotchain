@@ -189,7 +189,7 @@
     "bookingsLoadError": "Couldn't load your bookings. Check your connection and try again.",
     "retryAction": "Try again",
     "bookingsEmptyTitle": "No bookings yet",
-    "bookingsEmptyBody": "When the company books a plot for you, it appears here with its EMI schedule. Check the Availability tab to see which plots are open.",
+    "bookingsEmptyBody": "When the company books a plot for you, it appears here with its EMI schedule. Use View Plot to see which plots are open.",
     "viewAvailability": "View availability",
     "bookingsNote": "Bookings are shown newest first.",
     "bookingStatus": { "ACTIVE": "Active", "CONFIRMED": "Confirmed", "CANCELLED": "Cancelled" },
