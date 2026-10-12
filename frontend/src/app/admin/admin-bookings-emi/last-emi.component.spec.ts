@@ -123,6 +123,31 @@ describe('LastEmiComponent', () => {
     http.expectNone(URL);
   });
 
+  const exportBtn = () => el().querySelector('.last-emi__export') as HTMLButtonElement;
+
+  it('Export is disabled while loading', () => {
+    expect(exportBtn().disabled).toBeTrue();
+    req().flush([row('b1')]);
+    fixture.detectChanges();
+    expect(exportBtn().disabled).toBeFalse();
+  });
+
+  it('Export stays disabled after a failed filter reload', () => {
+    req().flush([row('b1')]);
+    fixture.componentInstance.onFilters({ from: '2026-01-01', to: '', projectId: '' });
+    req().flush('x', { status: 500, statusText: 'err' });
+    fixture.detectChanges();
+    expect(exportBtn().disabled).toBeTrue();
+  });
+
+  it('associate id and mobile cells use the num class', () => {
+    req().flush([row('b1')]);
+    fixture.detectChanges();
+    const tds = rowEls()[0].querySelectorAll('td');
+    expect(tds[1].classList).toContain('booking-register__num');
+    expect(tds[4].classList).toContain('booking-register__num');
+  });
+
   it('Export CSV is header-only when empty', async () => {
     const t = trapDownload();
     req().flush([]);
