@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { Plot } from '../../setup/models/project.model';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
+import { Plot, PlotPageResponse } from '../../setup/models/project.model';
+import { collectPages } from '../admin-bookings-emi/bookings-emi.util';
 import { PlotGridItem } from '../../shared/utils/plot-grid.util';
 import { BookingEmiConfig, CreateBookingRequest, CreatedBooking } from './projects-plots.model';
 
@@ -19,6 +20,17 @@ export class ProjectsPlotsService {
 
   getPlot(projectId: string, plotId: string): Observable<Plot> {
     return this.http.get<Plot>(`/api/company/projects/${projectId}/plots/${plotId}`);
+  }
+
+  // Rates are not on the grid; walk the paged company endpoint once and key by plot id.
+  getPlotRates(projectId: string): Observable<Record<string, number>> {
+    const size = 500;
+    return collectPages(
+      page => this.http
+        .get<PlotPageResponse>(`/api/company/projects/${projectId}/plots`, { params: new HttpParams().set('page', page).set('size', size) })
+        .pipe(map(r => ({ rows: r.plots, totalElements: r.totalElements }))),
+      size
+    ).pipe(map(plots => Object.fromEntries(plots.map(p => [p.id, p.rate]))));
   }
 
   createBooking(request: CreateBookingRequest): Observable<CreatedBooking> {
