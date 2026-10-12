@@ -20,7 +20,7 @@
 - `EmiInstallmentResponse`: `installmentNumber, amount, dueDate, status, paidAt, overdue, paymentMode (nullable), confirmedAt (nullable)`. `InstallmentStatus = PENDING|ENTERED|PAID|VOID` (`PAID` = confirmed).
 - `PaymentMode = CASH|CHEQUE|UPI|BANK_TRANSFER|OTHER`.
 - `PATCH /api/admin/bookings/{id}/installments/{n}/pay` body `{amount, paymentRef, paymentMode (REQUIRED), paidAt?}` — only ENTERS the payment (booking stays ACTIVE; never auto-confirms). Returns `BookingResponse`.
-- `POST /api/admin/bookings/{id}/installments/{n}/confirm` (single confirm; body empty) -> `BookingResponse`. (Path per parent plan U2; verify with `grep -n "installments/{n}/confirm\|installments/{" backend/src/main/java/com/plotchain/booking/BookingController.java` — if the mapping differs, follow the controller and note it in the report.)
+- `POST /api/admin/bookings/{id}/installments/{n}/confirm` (single confirm; body empty) -> `BookingResponse`. (Verified in `BookingController`: `@PostMapping("/{id}/installments/{n}/confirm")`.)
 - `POST /api/admin/payments/confirm` body `{items:[{bookingId, installmentNumber}]}` (1..200 items, all-or-nothing) -> `BookingResponse[]` **ordered by ascending bookingId, NOT request order**.
 - `GET /api/admin/payments?status=ENTERED|PAID(default ENTERED)&from&to&projectId&page&size` (dates `YYYY-MM-DD`; size clamped 1..100) -> `PaymentPageResponse {payments: PaymentRow[], page, size, totalElements, pageTotal, grandTotal}`; `PaymentRow {bookingId, installmentNumber, paymentDate, associateCode, associateName, projectName, plotNo, amount, paymentMode|null, paymentRef|null, entryBy|null, confirmBy|null, confirmedAt|null}`.
 - `GET /api/admin/emi-reports/last-emi?from&to&projectId` -> plain **array** `LastEmiRow[] {bookingId, bookedAt, associateCode, associateName, buyerName, buyerPhone, plotNo, projectName, lastDueDate, discount, total, paid, rest}` (not paged).
@@ -192,7 +192,7 @@ Expect both "missing" lists empty (if pre-existing drift exists, only the keys a
 - [ ] **7.1** `npx ng test --watch=false --browsers=ChromeHeadless` -> all green (record counts; baseline is whatever master gives, expect zero failures — frontend has no known spurious failures).
 - [ ] **7.2** `npx ng build` -> succeeds with no new budget warnings (check output for `_admin`/styles budget; the pager SCSS is component-level and small). If a budget warning appears that master does not have, move the pager styles to be leaner; never grow `_admin.scss`.
 - [ ] **7.3** `git status` -> only files listed in the File map changed. Do not touch tracking files.
-- [ ] **7.4** Report: commits, test counts, build result, the contract-path check from Backend contract (single-confirm URL), and any pre-existing i18n drift.
+- [ ] **7.4** Report: commits, test counts, build result, and any pre-existing i18n drift.
 
 ## Out of scope (belongs to later units)
 Payment-mode select, Enter/Confirm button split and dead auto-confirm cleanup (U6); all new tab components, register columns, receipt (U6); plots table/discount form (U7); associate defects and `plotBookings.*`/`salesHistory.*` keys (U7/U8); Add-EMI reschedule (U4).
