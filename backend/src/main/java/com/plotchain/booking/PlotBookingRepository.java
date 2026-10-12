@@ -40,6 +40,11 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
     // EPinRepository.search. project_id lives on plot, so projectId is an EXISTS (no join => no
     // duplicate rows); overdue is EXISTS too, restricted to ACTIVE bookings (Resolved decision #5).
     // `today` is always non-null; `overdueOnly` is a primitive so no null-typed boolean binding.
+    // Date and q filters (U3): Instant/String params are never null (service passes sentinels and ""), since
+    // Postgres cannot type a null parameter. q = lowercased substring of associate login id or plot no;
+    // ponytail: % and _ in q act as LIKE wildcards (unescaped), escape if exact matching ever matters.
+    // TEXT-BLOCK TRAP: the first text block ends mid-clause and is concatenated with BookingOverdue below,
+    // so new predicates go ABOVE the :overdueOnly line, never after the concatenation.
     // Sort comes from the Pageable (booked_at DESC, id DESC); the count query is derived from this one.
     @Query("""
         SELECT b FROM PlotBooking b
@@ -47,6 +52,10 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         AND (:associateId IS NULL OR b.associateId = :associateId)
         AND (:plotId IS NULL OR b.plotId = :plotId)
         AND (:projectId IS NULL OR EXISTS (SELECT 1 FROM Plot p WHERE p.id = b.plotId AND p.projectId = :projectId))
+        AND b.bookedAt >= :bookedFrom AND b.bookedAt < :bookedTo
+        AND (:cancelledFilter = false OR (b.cancelledAt >= :cancelledFrom AND b.cancelledAt < :cancelledTo))
+        AND (:q = '' OR EXISTS (SELECT 1 FROM Associate qa WHERE qa.id = b.associateId AND LOWER(qa.userId) LIKE CONCAT('%', :q, '%'))
+             OR EXISTS (SELECT 1 FROM Plot qp WHERE qp.id = b.plotId AND LOWER(qp.plotNo) LIKE CONCAT('%', :q, '%')))
         AND (:overdueOnly = false OR (b.status = com.plotchain.booking.BookingStatus.ACTIVE
         """
         + " AND " + BookingOverdue.EXISTS_OVERDUE + "))")
@@ -57,6 +66,12 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         @Param("projectId") UUID projectId,
         @Param("overdueOnly") boolean overdueOnly,
         @Param("today") LocalDate today,
+        @Param("bookedFrom") Instant bookedFrom,
+        @Param("bookedTo") Instant bookedTo,
+        @Param("cancelledFilter") boolean cancelledFilter,
+        @Param("cancelledFrom") Instant cancelledFrom,
+        @Param("cancelledTo") Instant cancelledTo,
+        @Param("q") String q,
         Pageable pageable);
 
     // Associate "Team / Left / Right plot bookings": bookings made by anyone in the caller's downline.
@@ -128,4 +143,27 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         """
         + BookingOverdue.INSTALLMENT_CONDITION)
     Page<OverdueReportRow> findOverdueReport(@Param("today") LocalDate today, Pageable pageable);
+
+    // Admin "EMI by last date" (U3): bookings whose LAST instalment due date (MAX over non-void rows) is in
+    // [from, to]. CANCELLED excluded (all rows VOID). Inner join on installments => a booking with none never
+    // appears. `paid` is added by LastEmiReportService from a second query (PAID only) to keep this JPQL simple.
+    @Query("""
+        SELECT new com.plotchain.booking.LastEmiHead(
+            b.id, b.bookedAt, a.userId, a.name, b.buyerName, b.buyerPhone, pl.plotNo, pr.name,
+            MAX(i.dueDate), b.discount, b.totalAmount)
+        FROM PlotBooking b
+        JOIN EmiInstallment i ON i.bookingId = b.id
+        JOIN Associate a ON a.id = b.associateId
+        JOIN Plot pl ON pl.id = b.plotId
+        JOIN Project pr ON pr.id = pl.projectId
+        WHERE b.status <> com.plotchain.booking.BookingStatus.CANCELLED
+        AND i.status <> com.plotchain.booking.InstallmentStatus.VOID
+        AND (:projectId IS NULL OR pl.projectId = :projectId)
+        GROUP BY b.id, b.bookedAt, a.userId, a.name, b.buyerName, b.buyerPhone, pl.plotNo, pr.name,
+            b.discount, b.totalAmount
+        HAVING MAX(i.dueDate) >= :from AND MAX(i.dueDate) <= :to
+        ORDER BY MAX(i.dueDate) ASC, b.id ASC
+        """)
+    List<LastEmiHead> findLastEmiHeads(@Param("from") LocalDate from, @Param("to") LocalDate to,
+        @Param("projectId") UUID projectId);
 }

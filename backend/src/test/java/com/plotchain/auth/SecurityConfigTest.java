@@ -788,6 +788,39 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/admin/emi-reports/overdue")).andExpect(status().isUnauthorized());
     }
 
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminPaymentsListIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/admin/payments")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+    }
+
+    @Test
+    void adminPaymentsListIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/admin/payments")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void adminPaymentsListWithStatusPaidIsStillAdminOnly() throws Exception {
+        mockMvc.perform(get("/api/admin/payments").param("status", "PAID")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminLastEmiReportIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(get("/api/admin/emi-reports/last-emi")
+                .header("Authorization", "Bearer " + tokenFor(role)))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+    }
+
+    @Test
+    void adminLastEmiReportIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(get("/api/admin/emi-reports/last-emi")).andExpect(status().isUnauthorized());
+    }
+
     @Test
     void adminBookingRegisterWithOverdueFilterIsAlsoAdminOnly() throws Exception {
         mockMvc.perform(get("/api/admin/bookings").param("overdue", "true")

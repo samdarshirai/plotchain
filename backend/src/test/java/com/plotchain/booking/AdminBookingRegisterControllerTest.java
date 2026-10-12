@@ -50,7 +50,7 @@ class AdminBookingRegisterControllerTest {
 
     @Test
     void noParamsUsesDefaultsAndReturnsTheEnvelope() throws Exception {
-        when(registerService.list(any(), any(), any(), any(), eq(false), eq(0), eq(20)))
+        when(registerService.list(any(), any(), any(), any(), eq(false), any(), any(), any(), any(), any(), eq(0), eq(20)))
             .thenReturn(new AdminBookingPageResponse(List.of(), 0, 20, 0));
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin()))
             .andExpect(status().isOk())
@@ -63,41 +63,41 @@ class AdminBookingRegisterControllerTest {
     @Test
     void filtersAreBoundAndForwarded() throws Exception {
         UUID assoc = UUID.randomUUID(), plot = UUID.randomUUID(), project = UUID.randomUUID();
-        when(registerService.list(any(), any(), any(), any(), anyBoolean(), anyInt(), anyInt()))
+        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(new AdminBookingPageResponse(List.of(), 2, 5, 0));
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin())
                 .param("status", "ACTIVE").param("associateId", assoc.toString())
                 .param("plotId", plot.toString()).param("projectId", project.toString())
                 .param("overdue", "true").param("page", "2").param("size", "5"))
             .andExpect(status().isOk());
-        verify(registerService).list(BookingStatus.ACTIVE, assoc, plot, project, true, 2, 5);
+        verify(registerService).list(BookingStatus.ACTIVE, assoc, plot, project, true, null, null, null, null, null, 2, 5);
     }
 
     @Test
     void overdueFalseOrOmittedMeansNoOverdueFilter() throws Exception {
-        when(registerService.list(any(), any(), any(), any(), anyBoolean(), anyInt(), anyInt()))
+        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(new AdminBookingPageResponse(List.of(), 0, 20, 0));
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin()).param("overdue", "false"))
             .andExpect(status().isOk());
-        verify(registerService).list(null, null, null, null, false, 0, 20);
+        verify(registerService).list(null, null, null, null, false, null, null, null, null, null, 0, 20);
     }
 
     @Test
     void pageAndSizeAreClamped() throws Exception {
-        when(registerService.list(any(), any(), any(), any(), anyBoolean(), anyInt(), anyInt()))
+        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(new AdminBookingPageResponse(List.of(), 0, 100, 0));
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin())
             .param("page", "-3").param("size", "1000")).andExpect(status().isOk());
-        verify(registerService).list(null, null, null, null, false, 0, 100);
+        verify(registerService).list(null, null, null, null, false, null, null, null, null, null, 0, 100);
     }
 
     @Test
     void sizeZeroOrNegativeIsClampedToOneNotA500() throws Exception {
-        when(registerService.list(any(), any(), any(), any(), anyBoolean(), anyInt(), anyInt()))
+        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(new AdminBookingPageResponse(List.of(), 0, 1, 0));
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin()).param("size", "0"))
             .andExpect(status().isOk());
-        verify(registerService).list(null, null, null, null, false, 0, 1);
+        verify(registerService).list(null, null, null, null, false, null, null, null, null, null, 0, 1);
     }
 
     @Test
@@ -133,5 +133,62 @@ class AdminBookingRegisterControllerTest {
         mockMvc.perform(post("/api/admin/bookings").header("Authorization", admin())
                 .contentType("application/json").content("{}"))
             .andExpect(status().isBadRequest());
+    }
+
+    private void stubAnyList() {
+        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
+            .thenReturn(new AdminBookingPageResponse(List.of(), 0, 20, 0));
+    }
+
+    @Test
+    void datesAndQAreBoundAndForwarded() throws Exception {
+        stubAnyList();
+        mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin())
+                .param("bookedFrom", "2026-06-01").param("bookedTo", "2026-06-30")
+                .param("cancelledFrom", "2026-07-01").param("cancelledTo", "2026-07-31").param("q", "VP00"))
+            .andExpect(status().isOk());
+        verify(registerService).list(null, null, null, null, false, java.time.LocalDate.of(2026, 6, 1),
+            java.time.LocalDate.of(2026, 6, 30), java.time.LocalDate.of(2026, 7, 1),
+            java.time.LocalDate.of(2026, 7, 31), "VP00", 0, 20);
+    }
+
+    @Test
+    void bookedFromAfterBookedToIs400() throws Exception {
+        mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin())
+                .param("bookedFrom", "2026-06-30").param("bookedTo", "2026-06-01"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void cancelledFromAfterCancelledToIs400() throws Exception {
+        mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin())
+                .param("cancelledFrom", "2026-07-30").param("cancelledTo", "2026-07-01"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void malformedDateIs400() throws Exception {
+        mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin()).param("bookedFrom", "not-a-date"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void listSerialisesTheNewFields() throws Exception {
+        BookingResponse row = new BookingResponse(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+            BookingStatus.ACTIVE, "Jane", new java.math.BigDecimal("550000.00"), 1, java.time.Instant.now(),
+            java.math.BigDecimal.ZERO, new java.math.BigDecimal("550000.00"), List.of(), "A-1", "Proj", "Assoc",
+            "9999999999", new java.math.BigDecimal("600000.00"), new java.math.BigDecimal("50000.00"),
+            new java.math.BigDecimal("1200.00"), new java.math.BigDecimal("500.00"), null, "VP00001");
+        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
+            .thenReturn(new AdminBookingPageResponse(List.of(row), 0, 20, 1));
+        mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.bookings[0].buyerPhone").value("9999999999"))
+            .andExpect(jsonPath("$.bookings[0].listPrice").value(600000.00))
+            .andExpect(jsonPath("$.bookings[0].discount").value(50000.00))
+            .andExpect(jsonPath("$.bookings[0].areaSqft").value(1200.00))
+            .andExpect(jsonPath("$.bookings[0].rate").value(500.00))
+            .andExpect(jsonPath("$.bookings[0].associateCode").value("VP00001"))
+            .andExpect(jsonPath("$.bookings[0].cancelledAt").value(org.hamcrest.Matchers.nullValue()));
     }
 }

@@ -36,7 +36,7 @@ public class AssociateSaleController {
             @RequestParam(defaultValue = "20") int size
     ) {
         page = Math.max(page, 0);
-        size = Math.min(size, 100);
+        size = Math.min(Math.max(size, 1), 100);
         return saleService.getMySales(associateId, page, size);
     }
 }

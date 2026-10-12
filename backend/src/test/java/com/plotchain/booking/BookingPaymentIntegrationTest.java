@@ -135,6 +135,23 @@ class BookingPaymentIntegrationTest {
     }
 
     @Test
+    void discountedBookingPersistsSnapshotAndTotalAndAutoConfirmUsesTheDiscountedTotal() {
+        plotId = seedAvailablePlot();
+        associateId = seedAssociate();
+
+        BookingResponse b = bookingService.createBooking(new CreateBookingRequest(
+            plotId, associateId, "Jane Buyer", null, new BigDecimal("100000"), new BigDecimal("100000")));
+
+        PlotBooking saved = plotBookingRepository.findById(b.id()).orElseThrow();
+        assertThat(saved.getListPrice()).isEqualByComparingTo("600000.00");
+        assertThat(saved.getDiscount()).isEqualByComparingTo("100000.00");
+        assertThat(saved.getTotalAmount()).isEqualByComparingTo("500000.00");
+        assertThat(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(b.id()).stream()
+            .map(EmiInstallment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add))
+            .isEqualByComparingTo(saved.getTotalAmount());
+    }
+
+    @Test
     void payEntersInstallmentWithoutConfirmingAndWritesExactlyOnePaidEventInTheDatabase() {
         BookingResponse b = seedBooking();
         int n = lastInstallmentNumber(b);   // last first: proves out-of-order against the real DB

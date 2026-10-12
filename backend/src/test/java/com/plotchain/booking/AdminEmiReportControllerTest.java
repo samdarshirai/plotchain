@@ -35,6 +35,7 @@ class AdminEmiReportControllerTest {
 
     @MockBean AssociateRepository associateRepository;
     @MockBean OverdueReportService overdueReportService;
+    @MockBean LastEmiReportService lastEmiReportService;
 
     private String adminToken() {
         UUID id = UUID.randomUUID();
@@ -89,5 +90,41 @@ class AdminEmiReportControllerTest {
                 .header("Authorization", adminToken()))
             .andExpect(status().isOk());
         verify(overdueReportService).getOverdueReport(0, 1);
+    }
+
+    @Test
+    void lastEmiForwardsDatesAndProjectAndReturnsTheList() throws Exception {
+        UUID bookingId = UUID.randomUUID(), project = UUID.randomUUID();
+        LastEmiRow row = new LastEmiRow(bookingId, java.time.Instant.parse("2026-06-01T00:00:00Z"), "VP1", "Asha",
+            "Jane", "9999999999", "A-1", "Green", LocalDate.of(2026, 7, 1), new BigDecimal("50000.00"),
+            new BigDecimal("550000.00"), new BigDecimal("100000.00"), new BigDecimal("450000.00"));
+        when(lastEmiReportService.report(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 7, 31), project))
+            .thenReturn(List.of(row));
+
+        mockMvc.perform(get("/api/admin/emi-reports/last-emi").param("from", "2026-06-01").param("to", "2026-07-31")
+                .param("projectId", project.toString()).header("Authorization", adminToken()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].bookingId").value(bookingId.toString()))
+            .andExpect(jsonPath("$[0].associateCode").value("VP1"))
+            .andExpect(jsonPath("$[0].buyerPhone").value("9999999999"))
+            .andExpect(jsonPath("$[0].lastDueDate").value("2026-07-01"))
+            .andExpect(jsonPath("$[0].paid").value(100000.00))
+            .andExpect(jsonPath("$[0].rest").value(450000.00));
+    }
+
+    @Test
+    void lastEmiWithNoParamsForwardsNulls() throws Exception {
+        when(lastEmiReportService.report(null, null, null)).thenReturn(List.of());
+        mockMvc.perform(get("/api/admin/emi-reports/last-emi").header("Authorization", adminToken()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isEmpty());
+        verify(lastEmiReportService).report(null, null, null);
+    }
+
+    @Test
+    void lastEmiFromAfterToIs400() throws Exception {
+        mockMvc.perform(get("/api/admin/emi-reports/last-emi").param("from", "2026-07-31").param("to", "2026-06-01")
+                .header("Authorization", adminToken()))
+            .andExpect(status().isBadRequest());
     }
 }

@@ -58,4 +58,12 @@ class BookingExceptionHandlerTest {
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(r.getBody().get("error")).contains("100000.00");
     }
+
+    @Test
+    void invalidDiscountIs400WithMessage() {
+        var r = handler.handleInvalidDiscount(
+            new InvalidDiscountException(new java.math.BigDecimal("700000"), new java.math.BigDecimal("600000")));
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(r.getBody().get("error")).contains("700000").contains("600000");
+    }
 }

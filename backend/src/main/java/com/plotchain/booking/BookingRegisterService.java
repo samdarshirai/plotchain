@@ -41,10 +41,16 @@ public class BookingRegisterService {
     // page/size must already be clamped by the caller (controller).
     @Transactional(readOnly = true)
     public AdminBookingPageResponse list(BookingStatus status, UUID associateId, UUID plotId, UUID projectId,
-                                         boolean overdue, int page, int size) {
+                                         boolean overdue, LocalDate bookedFrom, LocalDate bookedTo,
+                                         LocalDate cancelledFrom, LocalDate cancelledTo, String q,
+                                         int page, int size) {
+        boolean cancelledFilter = cancelledFrom != null || cancelledTo != null;
+        String needle = q == null ? "" : q.trim().toLowerCase(java.util.Locale.ROOT);
         Page<PlotBooking> result = plotBookingRepository.search(
             status, associateId, plotId, projectId, overdue, LocalDate.now(clock),
-            PageRequest.of(page, size, NEWEST_FIRST));
+            BookingService.fromInstant(bookedFrom), BookingService.toInstant(bookedTo),
+            cancelledFilter, BookingService.fromInstant(cancelledFrom), BookingService.toInstant(cancelledTo),
+            needle, PageRequest.of(page, size, NEWEST_FIRST));
 
         List<UUID> bookingIds = result.getContent().stream().map(PlotBooking::getId).toList();
         Map<UUID, List<EmiInstallment>> byBooking = bookingIds.isEmpty() ? Map.of()

@@ -69,6 +69,42 @@ class AssociateBookingControllerTest {
     }
 
     @Test
+    void getMyBookingsSizeZeroIsClampedToOneNotA500() throws Exception {
+        UUID associateId = UUID.randomUUID();
+        when(bookingService.getMyBookings(eq(associateId), eq(0), eq(1)))
+            .thenReturn(new AssociateBookingPageResponse(List.of(), 0, 1, 0));
+
+        mockMvc.perform(get("/api/associates/me/bookings").param("size", "0")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.size").value(1));
+    }
+
+    @Test
+    void getMyBookingsNegativeSizeIsClampedToOne() throws Exception {
+        UUID associateId = UUID.randomUUID();
+        when(bookingService.getMyBookings(eq(associateId), eq(0), eq(1)))
+            .thenReturn(new AssociateBookingPageResponse(List.of(), 0, 1, 0));
+
+        mockMvc.perform(get("/api/associates/me/bookings").param("size", "-5")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.size").value(1));
+    }
+
+    @Test
+    void getTeamBookingsSizeZeroIsClampedToOne() throws Exception {
+        UUID associateId = UUID.randomUUID();
+        when(bookingService.getTeamBookings(eq(associateId), eq(null), eq(0), eq(1)))
+            .thenReturn(new AssociateBookingPageResponse(List.of(), 0, 1, 0));
+
+        mockMvc.perform(get("/api/associates/me/team-bookings").param("size", "0")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.size").value(1));
+    }
+
+    @Test
     void getMyBookingsClampsPageAndSizeTheSameWayOtherAssociateMeEndpointsDo() throws Exception {
         UUID associateId = UUID.randomUUID();
         AssociateBookingPageResponse page = new AssociateBookingPageResponse(List.of(), 0, 100, 0);

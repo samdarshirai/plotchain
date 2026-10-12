@@ -19,8 +19,31 @@ public record BookingResponse(
     List<EmiInstallmentResponse> installments,
     String plotNo,
     String projectName,
-    String associateName
+    String associateName,
+    String buyerPhone,
+    BigDecimal listPrice,
+    BigDecimal discount,
+    BigDecimal areaSqft,
+    BigDecimal rate,
+    Instant cancelledAt,
+    String associateCode
 ) {
+    public BookingResponse(UUID id, UUID plotId, UUID associateId, BookingStatus status, String buyerName,
+                           BigDecimal totalAmount, int installmentCount, Instant bookedAt,
+                           BigDecimal paidAmount, BigDecimal dueAmount, List<EmiInstallmentResponse> installments,
+                           String plotNo, String projectName, String associateName) {
+        this(id, plotId, associateId, status, buyerName, totalAmount, installmentCount, bookedAt,
+            paidAmount, dueAmount, installments, plotNo, projectName, associateName,
+            null, null, null, null, null, null, null);
+    }
+
+    // Team (upline) view must not carry the buyer's phone or the plot rate.
+    public BookingResponse withoutBuyerPhoneAndRate() {
+        return new BookingResponse(id, plotId, associateId, status, buyerName, totalAmount, installmentCount, bookedAt,
+            paidAmount, dueAmount, installments, plotNo, projectName, associateName,
+            null, null, discount, null, null, cancelledAt, associateCode);
+    }
+
     // Labels are additive (unit 14b); null when the referent is gone or the caller has no lookup.
     public BookingResponse(UUID id, UUID plotId, UUID associateId, BookingStatus status, String buyerName,
                            BigDecimal totalAmount, int installmentCount, Instant bookedAt,

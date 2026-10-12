@@ -83,9 +83,16 @@ public class BookingService {
         Associate associate = associateRepository.findById(request.associateId())
             .orElseThrow(() -> new AssociateNotFoundException(request.associateId()));
 
+        BigDecimal listPrice = plot.getPrice();
+        BigDecimal discount = request.discount() == null ? BigDecimal.ZERO
+            : request.discount().setScale(2, RoundingMode.HALF_UP);
+        if (discount.signum() < 0 || discount.compareTo(listPrice) >= 0) {
+            throw new InvalidDiscountException(discount, listPrice);
+        }
+        BigDecimal total = listPrice.subtract(discount);
         BigDecimal token = request.tokenAmount();
-        if (token.compareTo(plot.getPrice()) >= 0) {
-            throw new InvalidTokenAmountException(token, plot.getPrice());
+        if (token.compareTo(total) >= 0) {
+            throw new InvalidTokenAmountException(token, total);
         }
 
         // Plot -> BOOKED, not SOLD: a booking reserves the plot under an installment plan, it
@@ -101,15 +108,15 @@ public class BookingService {
                 "booking_emi_config row missing - V14 migration seeds it"));
 
         Instant bookedAt = clock.instant();
-        List<EmiInstallment> schedule = computeSchedule(plot.getPrice(), token, config, bookedAt, associate.getId());
+        List<EmiInstallment> schedule = computeSchedule(total, token, config, bookedAt, associate.getId());
 
         PlotBooking booking = new PlotBooking();
         booking.setId(UUID.randomUUID());
         booking.setPlotId(plot.getId());
         booking.setAssociateId(associate.getId());
-        booking.setTotalAmount(plot.getPrice());
-        booking.setListPrice(plot.getPrice());
-        booking.setDiscount(BigDecimal.ZERO);
+        booking.setTotalAmount(total);
+        booking.setListPrice(listPrice);
+        booking.setDiscount(discount);
         booking.setAreaSqft(plot.getAreaSqft());
         booking.setRate(plot.getRate());
         booking.setInstallmentCount(schedule.size());
@@ -443,13 +450,14 @@ public class BookingService {
         List<BookingResponse> bookings = toResponses(result.getContent(), emiInstallmentRepository
             .findByBookingIdInOrderByInstallmentNumberAsc(
                 result.getContent().stream().map(PlotBooking::getId).toList()).stream()
-            .collect(java.util.stream.Collectors.groupingBy(EmiInstallment::getBookingId)));
+            .collect(java.util.stream.Collectors.groupingBy(EmiInstallment::getBookingId)))
+            .stream().map(BookingResponse::withoutBuyerPhoneAndRate).toList();
         return new AssociateBookingPageResponse(bookings, page, size, result.getTotalElements());
     }
 
     // Dates are inclusive calendar days (UTC, as elsewhere); null bound = unbounded.
-    private static Instant fromInstant(LocalDate d) { return d == null ? Instant.EPOCH : d.atStartOfDay().toInstant(ZoneOffset.UTC); }
-    private static Instant toInstant(LocalDate d) { return d == null ? Instant.parse("9999-01-01T00:00:00Z") : d.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC); }
+    static Instant fromInstant(LocalDate d) { return d == null ? Instant.EPOCH : d.atStartOfDay().toInstant(ZoneOffset.UTC); }
+    static Instant toInstant(LocalDate d) { return d == null ? Instant.parse("9999-01-01T00:00:00Z") : d.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC); }
 
     public BusinessReportResponse getMyBusiness(UUID associateId, LocalDate from, LocalDate to) {
         return new BusinessReportResponse(
@@ -572,7 +580,9 @@ public class BookingService {
                 rows,
                 plot == null ? null : plot.getPlotNo(),
                 project == null ? null : project.getName(),
-                associate == null ? null : associate.getName());
+                associate == null ? null : associate.getName(),
+                booking.getBuyerPhone(), booking.getListPrice(), booking.getDiscount(), booking.getAreaSqft(),
+                booking.getRate(), booking.getCancelledAt(), associate == null ? null : associate.getUserId());
         }).toList();
     }
 

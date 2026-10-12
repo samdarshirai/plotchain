@@ -141,6 +141,66 @@ class BookingServiceTest {
         assertThat(r.installments().get(0).paidAt()).isEqualTo(NOW);
     }
 
+    private PlotBooking richBooking() {
+        PlotBooking booking = bookingWithBuyer();
+        booking.setBuyerPhone("9999999999");
+        booking.setListPrice(new BigDecimal("650000.00"));
+        booking.setDiscount(new BigDecimal("50000.00"));
+        booking.setAreaSqft(new BigDecimal("1200.00"));
+        booking.setRate(new BigDecimal("541.67"));
+        booking.setCancelledAt(NOW);
+        Associate a = associateWithId(ASSOCIATE_ID);
+        a.setUserId("VP00042");
+        when(associateRepository.findAllById(any())).thenReturn(List.of(a));
+        return booking;
+    }
+
+    @Test
+    void getMyBookingsExposesBuyerPhonePriceSnapshotDiscountCancelledAtAndAssociateCode() {
+        PlotBooking booking = richBooking();
+        stubOwnPage(booking, List.of(installment(1, "100.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PAID)));
+
+        BookingResponse r = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20).bookings().get(0);
+
+        assertThat(r.buyerPhone()).isEqualTo("9999999999");
+        assertThat(r.listPrice()).isEqualByComparingTo("650000.00");
+        assertThat(r.discount()).isEqualByComparingTo("50000.00");
+        assertThat(r.areaSqft()).isEqualByComparingTo("1200.00");
+        assertThat(r.rate()).isEqualByComparingTo("541.67");
+        assertThat(r.cancelledAt()).isEqualTo(NOW);
+        assertThat(r.associateCode()).isEqualTo("VP00042");
+    }
+
+    @Test
+    void getTeamBookingsBlanksBuyerPhoneRateListPriceAndAreaButKeepsDiscountAndAssociateCode() {
+        PlotBooking booking = richBooking();
+        when(plotBookingRepository.findByDownline(eq(ASSOCIATE_ID), eq(null), any()))
+            .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
+        when(emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(any()))
+            .thenReturn(forBooking(booking, List.of()));
+
+        BookingResponse r = bookingService.getTeamBookings(ASSOCIATE_ID, null, 0, 20).bookings().get(0);
+
+        assertThat(r.buyerPhone()).isNull();
+        assertThat(r.rate()).isNull();
+        assertThat(r.listPrice()).isNull();
+        assertThat(r.areaSqft()).isNull();
+        assertThat(r.discount()).isEqualByComparingTo("50000.00");
+        assertThat(r.associateCode()).isEqualTo("VP00042");
+    }
+
+    @Test
+    void adminGetBookingStillExposesBuyerPhoneAndRate() {
+        PlotBooking booking = richBooking();
+        when(plotBookingRepository.findById(booking.getId())).thenReturn(Optional.of(booking));
+        when(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId())).thenReturn(List.of());
+
+        BookingResponse r = bookingService.getBooking(booking.getId());
+
+        assertThat(r.buyerPhone()).isEqualTo("9999999999");
+        assertThat(r.rate()).isEqualByComparingTo("541.67");
+    }
+
     @Test
     void getMyBookingsDueAmountOfACancelledBookingIsZeroBecauseVoidInstallmentsDoNotCount() {
         PlotBooking booking = bookingWithBuyer();
@@ -222,6 +282,65 @@ class BookingServiceTest {
         assertThat(schedule.get(0).getConfirmedBy()).isEqualTo(ASSOCIATE_ID);
         assertThat(schedule.subList(1, schedule.size()))
             .allMatch(i -> i.getConfirmedAt() == null && i.getConfirmedBy() == null);
+    }
+
+    @Test
+    void createBookingWithDiscountStoresListPriceDiscountAndReducedTotalAndSplitsTheReducedBalance() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        BookingResponse response = bookingService.createBooking(requestWithDiscount("100000", "100000"));
+
+        ArgumentCaptor<PlotBooking> bc = ArgumentCaptor.forClass(PlotBooking.class);
+        verify(plotBookingRepository).save(bc.capture());
+        PlotBooking b = bc.getValue();
+        assertThat(b.getListPrice()).isEqualByComparingTo("600000.00");
+        assertThat(b.getDiscount()).isEqualByComparingTo("100000.00");
+        assertThat(b.getTotalAmount()).isEqualByComparingTo("500000.00");
+        assertThat(response.installments()).extracting(EmiInstallmentResponse::amount)
+            .usingComparatorForType(BigDecimal::compareTo, BigDecimal.class)
+            .containsExactly(new BigDecimal("100000"), new BigDecimal("133333.33"),
+                new BigDecimal("133333.33"), new BigDecimal("133333.34"));
+        assertThat(response.totalAmount()).isEqualByComparingTo("500000.00");
+    }
+
+    @Test
+    void createBookingRejectsADiscountEqualToOrAboveThePlotPriceAndDoesNotBookThePlot() {
+        when(plotRepository.findByIdForUpdate(PLOT_ID))
+            .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, "600000.00")));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
+
+        assertThatThrownBy(() -> bookingService.createBooking(requestWithDiscount("1000", "600000")))
+            .isInstanceOf(InvalidDiscountException.class);
+        assertThatThrownBy(() -> bookingService.createBooking(requestWithDiscount("1000", "700000")))
+            .isInstanceOf(InvalidDiscountException.class);
+        verify(plotRepository, never()).save(any());
+        verify(plotBookingRepository, never()).save(any());
+    }
+
+    @Test
+    void createBookingChecksTheTokenAgainstTheDiscountedTotalNotTheListPrice() {
+        when(plotRepository.findByIdForUpdate(PLOT_ID))
+            .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, "600000.00")));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
+
+        assertThatThrownBy(() -> bookingService.createBooking(requestWithDiscount("100000", "500000")))
+            .isInstanceOf(InvalidTokenAmountException.class);
+        verify(plotBookingRepository, never()).save(any());
+    }
+
+    @Test
+    void createBookingWithNullDiscountKeepsTotalEqualToListPriceAndDiscountZero() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+        bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "100000"));
+        ArgumentCaptor<PlotBooking> bc = ArgumentCaptor.forClass(PlotBooking.class);
+        verify(plotBookingRepository).save(bc.capture());
+        assertThat(bc.getValue().getDiscount()).isEqualByComparingTo("0");
+        assertThat(bc.getValue().getTotalAmount()).isEqualByComparingTo("600000.00");
+    }
+
+    private CreateBookingRequest requestWithDiscount(String token, String discount) {
+        return new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "9999999999",
+            new BigDecimal(token), new BigDecimal(discount));
     }
 
     private Plot plotWithStatusAndPrice(PlotStatus status, String price) {

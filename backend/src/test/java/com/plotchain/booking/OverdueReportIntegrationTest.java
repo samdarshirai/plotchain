@@ -183,7 +183,7 @@ class OverdueReportIntegrationTest {
             .stream().map(PlotBooking::getId).toList();
         List<UUID> report = repo.findOverdueReport(TODAY, PageRequest.of(0, 1000)).getContent().stream()
             .map(OverdueReportRow::bookingId).filter(seededIds::contains).sorted().toList();
-        List<UUID> register = repo.search(null, null, null, null, true, TODAY, PageRequest.of(0, 1000)).getContent().stream()
+        List<UUID> register = repo.search(null, null, null, null, true, TODAY, java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), false, java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), "", PageRequest.of(0, 1000)).getContent().stream()
             .map(PlotBooking::getId).filter(seededIds::contains).sorted().toList();
         assertThat(report).isEqualTo(register);
         assertThat(report).containsExactlyInAnyOrder(s.b1.getId(), s.b6.getId());
