@@ -48,7 +48,7 @@ import { BookingEmiConfig, BookingFormValue } from './projects-plots.model';
           [attr.aria-invalid]="discountError ? 'true' : null" [attr.aria-describedby]="discountError ? 'book-discount-err' : null" />
         <app-field-error id="book-discount-err" [message]="(discountError ? 'admin.projectsPlots.discount.' + discountError : '') | translate"></app-field-error>
       </label>
-      <div class="book-totals" *ngIf="discount > 0 && !discountError" aria-live="polite">
+      <div class="book-totals" *ngIf="discount > 0 && !discountInvalid" aria-live="polite">
         <div class="book-totals__row"><span>{{ 'admin.projectsPlots.summary.price' | translate }}</span><span class="book-totals__value">{{ priceText }}</span></div>
         <div class="book-totals__row"><span>{{ 'admin.projectsPlots.summary.discount' | translate }}</span><span class="book-totals__value">&minus;{{ discountText }}</span></div>
         <div class="book-totals__row book-totals__row--total"><span>{{ 'admin.projectsPlots.summary.total' | translate }}</span><span class="book-totals__value">{{ netText }}</span></div>
@@ -97,12 +97,14 @@ export class BookPlotFormComponent {
 
   // Mirrors the server: 2dp HALF_UP, 0 <= discount < price; token in (0, price - discount).
   get discount(): number { return round2(this.discountRaw ?? 0); }
+  // Validity is independent of `tried` so the live summary never shows a bogus total.
+  get discountInvalid(): boolean { return this.discount < 0 || this.discount >= this.plot.price; }
   get discountError(): 'negative' | 'tooHigh' | null {
-    if (!this.tried) { return null; }
-    if (this.discount < 0) { return 'negative'; }
-    return this.discount >= this.plot.price ? 'tooHigh' : null;
+    if (!this.tried || !this.discountInvalid) { return null; }
+    return this.discount < 0 ? 'negative' : 'tooHigh';
   }
-  get net(): number { return this.discount >= 0 && this.discount < this.plot.price ? round2(this.plot.price - this.discount) : this.plot.price; }
+  // An invalid discount falls back to the list price (preview only; submit is blocked and no summary shows).
+  get net(): number { return this.discountInvalid ? this.plot.price : round2(this.plot.price - this.discount); }
   get discountText(): string { return formatInr(this.discount); }
   get netText(): string { return formatInr(this.net); }
 
@@ -154,4 +156,5 @@ export class BookPlotFormComponent {
   }
 }
 
-const round2 = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100;
+// Half-up at 2dp via decimal-string shift (float *100 mis-rounds 1.005); sign handled apart so -0.005 -> -0.01, not 0.
+const round2 = (n: number): number => Math.sign(n) * Number(Math.round(Number(Math.abs(n) + 'e2')) + 'e-2');

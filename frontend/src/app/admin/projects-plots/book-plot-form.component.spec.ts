@@ -238,6 +238,41 @@ describe('BookPlotFormComponent', () => {
       expect(fixture.componentInstance.previewParams.amount).toBe(formatInr(900000));
     });
 
+    it('rounds half-up at 2dp on boundaries (matches server BigDecimal HALF_UP)', async () => {
+      await ready();
+      const c = fixture.componentInstance;
+      for (const [raw, want] of [[1.005, 1.01], [1000.005, 1000.01], [0.005, 0.01], [-0.005, -0.01]]) {
+        c.discountRaw = raw;
+        expect(c.discount).toBe(want);
+      }
+    });
+
+    it('treats -0.005 as a negative discount, not zero', async () => {
+      const out = await ready();
+      typeInto('discount', '-0.005'); typeInto('tokenAmount', '100000');
+      submitForm(); await settle();
+      expect(el().textContent).toContain(K + 'discount.negative');
+      expect(out.length).toBe(0);
+    });
+
+    it('shows no summary before submit when the discount is >= the price or negative', async () => {
+      await ready();
+      typeInto('discount', String(plot.price)); await settle();
+      expect(el().querySelector('.book-totals')).toBeNull();
+      expect(el().textContent).not.toContain(K + 'discount.tooHigh'); // error still waits for submit
+      typeInto('discount', String(plot.price + 1000)); await settle();
+      expect(el().querySelector('.book-totals')).toBeNull();
+      typeInto('discount', '-5'); await settle();
+      expect(el().querySelector('.book-totals')).toBeNull();
+    });
+
+    it('with an invalid discount the instalment preview falls back to the list price and no summary shows', async () => {
+      await ready();
+      typeInto('discount', String(plot.price + 1)); typeInto('tokenAmount', '500000'); await settle();
+      expect(el().querySelector('.book-totals')).toBeNull();
+      expect(fixture.componentInstance.previewParams.amount).toBe(formatInr(Math.round((plot.price - 500000) / 5)));
+    });
+
     it('emits discount alongside associate, buyer and token on a valid submit', async () => {
       const out = await ready();
       typeInto('discount', '130000'); typeInto('tokenAmount', '100000');
