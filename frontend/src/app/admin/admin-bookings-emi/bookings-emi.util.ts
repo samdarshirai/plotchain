@@ -1,10 +1,21 @@
+import { EMPTY, Observable, expand, reduce } from 'rxjs';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { Booking } from '../../plot-bookings/models/associate-booking-page.model';
 import { BookingEmiConfig } from './bookings-emi.model';
 
 export type ErrorKind =
   | 'amountMismatch' | 'notActive' | 'notPayable' | 'plotDrift' | 'notFound'
-  | 'sameAssociate' | 'invalidTarget' | 'validation' | 'network' | 'generic';
+  | 'sameAssociate' | 'invalidTarget' | 'validation' | 'network' | 'generic' | 'notEntered';
+
+// Walks every page (for exports); `size` must match the page size `load` requests.
+export function collectPages<T>(
+  load: (page: number) => Observable<{ rows: T[]; totalElements: number }>, size = 100
+): Observable<T[]> {
+  return load(0).pipe(
+    expand((res, i) => ((i + 1) * size < res.totalElements ? load(i + 1) : EMPTY)),
+    reduce((acc, res) => acc.concat(res.rows), [] as T[])
+  );
+}
 
 // Whole rupees stay clean ("₹15,00,000"); paise appear only when present, so 333333.33 is never shown as 333333.
 const inr2 = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -29,7 +40,7 @@ export function willAutoConfirm(b: Booking, installmentAmount: number, cfg: Book
 // from the backend would replace these substring checks.
 export function classifyError(
   err: { status: number; error?: { error?: string; code?: string } },
-  op: 'pay' | 'confirm' | 'cancel' | 'transfer'
+  op: 'pay' | 'confirm' | 'confirmPayment' | 'cancel' | 'transfer'
 ): { kind: ErrorKind; serverText?: string } {
   const text = err.error?.error;
   const done = (kind: ErrorKind) => ({ kind, serverText: text });
@@ -39,6 +50,7 @@ export function classifyError(
     // code is authoritative; the substring stays as a fallback for one release (unit 14c)
     if (err.error?.code === 'PLOT_NOT_AVAILABLE' || text?.includes('Plot is not available')) { return done('plotDrift'); }
     if (text?.includes('not payable')) { return done('notPayable'); }
+    if (text?.includes('no entered payment')) { return done('notEntered'); }
     if (text?.includes('not ACTIVE')) { return done('notActive'); }
     return done('generic');
   }

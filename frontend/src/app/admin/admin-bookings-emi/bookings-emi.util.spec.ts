@@ -1,6 +1,7 @@
 import { Booking } from '../../plot-bookings/models/associate-booking-page.model';
 import { BookingEmiConfig } from './bookings-emi.model';
-import { formatMoney, associateLabel, classifyError, meterPercent, plotText, willAutoConfirm } from './bookings-emi.util';
+import { of, throwError } from 'rxjs';
+import { formatMoney, associateLabel, classifyError, collectPages, meterPercent, plotText, willAutoConfirm } from './bookings-emi.util';
 
 const b = (over: Partial<Booking> = {}): Booking => ({
   id: 'b', plotId: '123e4567-89ab', associateId: 'a1', status: 'ACTIVE', buyerName: 'R', totalAmount: 1000,
@@ -96,5 +97,37 @@ describe('bookings-emi.util', () => {
     expect(formatMoney(333333.33)).toBe('₹3,33,333.33');
     expect(formatMoney(333333.34)).toBe('₹3,33,333.34');
     expect(formatMoney(0)).toBe('₹0');
+  });
+});
+
+describe('collectPages', () => {
+  it('walks every page of size 100 and concatenates rows in order', (done) => {
+    const calls: number[] = [];
+    const load = (p: number) => { calls.push(p); return of({ rows: [`r${p}`], totalElements: 250 }); };
+    collectPages(load, 100).subscribe(rows => { expect(rows).toEqual(['r0', 'r1', 'r2']); expect(calls).toEqual([0, 1, 2]); done(); });
+  });
+  it('makes one call when everything fits on the first page', (done) => {
+    let n = 0;
+    collectPages(() => { n++; return of({ rows: ['a'], totalElements: 1 }); }, 100).subscribe(rows => { expect(rows).toEqual(['a']); expect(n).toBe(1); done(); });
+  });
+  it('returns an empty array for an empty result', (done) => {
+    collectPages(() => of({ rows: [] as string[], totalElements: 0 }), 100).subscribe(rows => { expect(rows).toEqual([]); done(); });
+  });
+  it('propagates a failure on a later page', (done) => {
+    collectPages(p => (p === 1 ? throwError(() => new Error('x')) : of({ rows: ['a'], totalElements: 150 })), 100)
+      .subscribe({ error: e => { expect(e.message).toBe('x'); done(); } });
+  });
+});
+
+describe('classifyError confirmPayment', () => {
+  const e = (status: number, error?: string, code?: string) => ({ status, error: { error, code } });
+  it('maps "no entered payment to confirm" 409 to notEntered', () => {
+    expect(classifyError(e(409, 'Installment 2 of booking b has no entered payment to confirm'), 'confirmPayment').kind).toBe('notEntered');
+  });
+  it('maps plot drift, not ACTIVE, 404 and network like the other ops', () => {
+    expect(classifyError(e(409, 'x', 'PLOT_NOT_AVAILABLE'), 'confirmPayment').kind).toBe('plotDrift');
+    expect(classifyError(e(409, 'Booking b is not ACTIVE'), 'confirmPayment').kind).toBe('notActive');
+    expect(classifyError(e(404, 'gone'), 'confirmPayment').kind).toBe('notFound');
+    expect(classifyError({ status: 0 }, 'confirmPayment').kind).toBe('network');
   });
 });
