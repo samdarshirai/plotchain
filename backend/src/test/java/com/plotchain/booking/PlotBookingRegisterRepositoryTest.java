@@ -13,6 +13,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -47,7 +49,70 @@ class PlotBookingRegisterRepositoryTest {
     private Page<PlotBooking> search(BookingStatus status, UUID associateId, UUID plotId, UUID projectId,
                                      boolean overdue, int page, int size) {
         return repo.search(status, associateId, plotId, projectId, overdue, TODAY,
-            PageRequest.of(page, size, NEWEST_FIRST));
+            Instant.EPOCH, MAX, false, Instant.EPOCH, MAX, "", PageRequest.of(page, size, NEWEST_FIRST));
+    }
+
+    static final Instant MAX = Instant.parse("9999-01-01T00:00:00Z");
+
+    private Page<PlotBooking> searchWith(UUID projectId, Instant bookedFrom, Instant bookedTo,
+                                         boolean cancelledFilter, Instant cancelledFrom, Instant cancelledTo, String q) {
+        return repo.search(null, null, null, projectId, false, TODAY, bookedFrom, bookedTo,
+            cancelledFilter, cancelledFrom, cancelledTo, q, PageRequest.of(0, 50, NEWEST_FIRST));
+    }
+
+    @Test
+    void bookedRangeIncludesTheToDayUntil235959AndExcludesTheNextMidnight() {
+        Instant from = Instant.parse("2026-06-03T00:00:00Z");
+        Instant to = BookingService.toInstant(LocalDate.of(2026, 6, 3));   // 06-04T00:00Z, exclusive
+        assertThat(ids(searchWith(d.p1, from, to, false, Instant.EPOCH, MAX, ""))).containsExactly(d.b2.getId());
+
+        d.b1.setBookedAt(Instant.parse("2026-06-03T23:59:59Z"));
+        repo.saveAndFlush(d.b1);
+        assertThat(ids(searchWith(d.p1, from, to, false, Instant.EPOCH, MAX, "")))
+            .containsExactlyInAnyOrder(d.b1.getId(), d.b2.getId());
+    }
+
+    @Test
+    void cancelledRangeReturnsOnlyBookingsCancelledInsideIt() {
+        d.b5.setCancelledAt(Instant.parse("2026-06-10T12:00:00Z"));
+        repo.saveAndFlush(d.b5);
+        assertThat(ids(searchWith(d.p2, Instant.EPOCH, MAX, true,
+            Instant.parse("2026-06-10T00:00:00Z"), Instant.parse("2026-06-11T00:00:00Z"), "")))
+            .containsExactly(d.b5.getId());
+        assertThat(searchWith(d.p2, Instant.EPOCH, MAX, true,
+            Instant.parse("2026-06-11T00:00:00Z"), MAX, "").getTotalElements()).isZero();
+    }
+
+    @Test
+    void omittingTheCancelledFilterKeepsBookingsWithNullCancelledAt() {
+        assertThat(searchWith(d.p1, Instant.EPOCH, MAX, false, Instant.EPOCH, MAX, "").getTotalElements()).isEqualTo(4);
+    }
+
+    @Test
+    void qMatchesAssociateLoginIdCaseInsensitivelyAsSubstring() {
+        String userId = associates.findById(d.a1).orElseThrow().getUserId();
+        String needle = userId.substring(3, 15).toUpperCase();   // mixed case input is lowercased by the service
+        assertThat(ids(searchWith(d.p1, Instant.EPOCH, MAX, false, Instant.EPOCH, MAX, needle.toLowerCase())))
+            .containsExactlyInAnyOrder(d.b1.getId(), d.b2.getId(), d.b8.getId());
+    }
+
+    @Test
+    void qMatchesPlotNoSubstring() {
+        String plotNo = plots.findById(d.b2.getPlotId()).orElseThrow().getPlotNo().toLowerCase();
+        assertThat(ids(searchWith(d.p1, Instant.EPOCH, MAX, false, Instant.EPOCH, MAX, plotNo))).contains(d.b2.getId());
+    }
+
+    @Test
+    void blankQMeansNoFilterAndNoMatchReturnsEmpty() {
+        assertThat(searchWith(d.p1, Instant.EPOCH, MAX, false, Instant.EPOCH, MAX, "").getTotalElements()).isEqualTo(4);
+        assertThat(searchWith(d.p1, Instant.EPOCH, MAX, false, Instant.EPOCH, MAX, "zzzz-nope").getTotalElements()).isZero();
+    }
+
+    @Test
+    void qCombinesWithProjectFilterUsingAnd() {
+        String userId = associates.findById(d.a1).orElseThrow().getUserId();
+        assertThat(ids(searchWith(d.p2, Instant.EPOCH, MAX, false, Instant.EPOCH, MAX, userId.substring(3, 15))))
+            .containsExactly(d.b5.getId());
     }
 
     private static List<UUID> ids(Page<PlotBooking> p) { return p.getContent().stream().map(PlotBooking::getId).toList(); }
@@ -106,9 +171,9 @@ class PlotBookingRegisterRepositoryTest {
     @Test
     void overdueBoundaryUsesStrictlyBeforeToday() {
         // b2's only installment is due 06-15. today=06-15 -> not overdue; today=06-16 -> overdue.
-        assertThat(repo.search(null, null, null, d.p1, true, TODAY.plusDays(1), PageRequest.of(0, 50, NEWEST_FIRST))
+        assertThat(repo.search(null, null, null, d.p1, true, TODAY.plusDays(1), java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), false, java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), "", PageRequest.of(0, 50, NEWEST_FIRST))
             .getContent()).extracting(PlotBooking::getId).contains(d.b2.getId());
-        assertThat(repo.search(null, null, null, d.p1, true, TODAY, PageRequest.of(0, 50, NEWEST_FIRST))
+        assertThat(repo.search(null, null, null, d.p1, true, TODAY, java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), false, java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), "", PageRequest.of(0, 50, NEWEST_FIRST))
             .getContent()).extracting(PlotBooking::getId).doesNotContain(d.b2.getId());
     }
 

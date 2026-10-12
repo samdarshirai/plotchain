@@ -456,8 +456,8 @@ public class BookingService {
     }
 
     // Dates are inclusive calendar days (UTC, as elsewhere); null bound = unbounded.
-    private static Instant fromInstant(LocalDate d) { return d == null ? Instant.EPOCH : d.atStartOfDay().toInstant(ZoneOffset.UTC); }
-    private static Instant toInstant(LocalDate d) { return d == null ? Instant.parse("9999-01-01T00:00:00Z") : d.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC); }
+    static Instant fromInstant(LocalDate d) { return d == null ? Instant.EPOCH : d.atStartOfDay().toInstant(ZoneOffset.UTC); }
+    static Instant toInstant(LocalDate d) { return d == null ? Instant.parse("9999-01-01T00:00:00Z") : d.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC); }
 
     public BusinessReportResponse getMyBusiness(UUID associateId, LocalDate from, LocalDate to) {
         return new BusinessReportResponse(
