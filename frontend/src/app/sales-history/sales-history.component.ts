@@ -1,133 +1,75 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Component, OnInit, ViewEncapsulation, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { TranslateModule } from '@ngx-translate/core';
 import { SalesHistoryService } from './sales-history.service';
 import { AssociateSalePage } from './models/associate-sale-page.model';
-import { EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
+import { PagerComponent } from '../shared/components/pager/pager.component';
+import { formatInr } from '../shared/utils/plot-grid.util';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-sales-history',
   standalone: true,
-  imports: [CommonModule, TranslateModule, EditableTableComponent],
-  providers: [DatePipe],
+  imports: [CommonModule, TranslateModule, PagerComponent],
+  encapsulation: ViewEncapsulation.None,
+  styleUrl: './sales-history.component.scss',
   template: `
-    <div class="sales-history card">
+    <div class="my-sales card" [attr.aria-busy]="!page && !loadError">
       <h1 class="card-title">{{ 'salesHistory.title' | translate }}</h1>
-      <p class="sales-history__subtitle">{{ 'salesHistory.subtitle' | translate }}</p>
-
-      <p *ngIf="loadError" class="sales-history__load-error">{{ 'salesHistory.loadError' | translate }}</p>
-
-      <app-editable-table
-        [readOnly]="true"
-        [columns]="historyColumns"
-        [rows]="historyRows"
-        [emptyStateLabel]="'salesHistory.emptyState' | translate"
-      ></app-editable-table>
-
-      <div class="sales-history__pagination" *ngIf="page">
-        <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
-          {{ 'salesHistory.previousPageAction' | translate }}
-        </button>
-        <span class="sales-history__page-indicator">
-          {{ 'salesHistory.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
-        </span>
-        <button type="button" [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="goToPage(page.page + 1)">
-          {{ 'salesHistory.nextPageAction' | translate }}
-        </button>
+      <p class="my-sales__subtitle">{{ 'salesHistory.subtitle' | translate }}</p>
+      <p *ngIf="loadError" class="my-sales__load-error" role="alert">{{ 'salesHistory.loadError' | translate }}</p>
+      <p *ngIf="page && !page.sales.length" class="my-sales__empty" role="status">{{ 'salesHistory.emptyState' | translate }}</p>
+      <div class="my-sales__scroll" *ngIf="page?.sales?.length">
+        <table class="my-sales__table" [attr.aria-label]="'salesHistory.title' | translate">
+          <thead><tr>
+            <th scope="col">{{ 'salesHistory.columnBuyerName' | translate }}</th>
+            <th scope="col">{{ 'salesHistory.columnBuyerPhone' | translate }}</th>
+            <th scope="col" class="my-sales__num">{{ 'salesHistory.columnAmount' | translate }}</th>
+            <th scope="col">{{ 'salesHistory.columnAssociateId' | translate }}</th>
+            <th scope="col">{{ 'salesHistory.columnAssociateName' | translate }}</th>
+            <th scope="col">{{ 'salesHistory.columnLegCredited' | translate }}</th>
+            <th scope="col">{{ 'salesHistory.columnStatus' | translate }}</th>
+            <th scope="col">{{ 'salesHistory.columnRecordedAt' | translate }}</th>
+          </tr></thead>
+          <tbody>
+            <tr *ngFor="let s of page!.sales">
+              <td [attr.data-label]="'salesHistory.columnBuyerName' | translate">{{ s.buyerName }}</td>
+              <td class="my-sales__mono" [attr.data-label]="'salesHistory.columnBuyerPhone' | translate">{{ s.buyerPhone || '—' }}</td>
+              <td class="my-sales__num" [attr.data-label]="'salesHistory.columnAmount' | translate">{{ money(s.amount) }}</td>
+              <td class="my-sales__mono my-sales__id" [attr.data-label]="'salesHistory.columnAssociateId' | translate">{{ s.associateUserId || '—' }}</td>
+              <td class="my-sales__name" [attr.data-label]="'salesHistory.columnAssociateName' | translate">{{ s.associateName || '—' }}</td>
+              <td [attr.data-label]="'salesHistory.columnLegCredited' | translate">{{ s.legCredited }}</td>
+              <td [attr.data-label]="'salesHistory.columnStatus' | translate">{{ s.status }}</td>
+              <td class="my-sales__mono" [attr.data-label]="'salesHistory.columnRecordedAt' | translate">{{ s.recordedAt | date: 'medium' }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+      <app-pager *ngIf="page" [page]="page.page" [size]="page.size" [total]="page.totalElements" (pageChange)="goToPage($event)"></app-pager>
     </div>
   `
 })
-export class SalesHistoryComponent implements OnInit, OnDestroy {
+export class SalesHistoryComponent implements OnInit {
   private salesHistoryService = inject(SalesHistoryService);
-  private translate = inject(TranslateService);
-  private datePipe = inject(DatePipe);
-  private destroyed$ = new Subject<void>();
 
   page: AssociateSalePage | null = null;
   loadError = false;
-  historyColumns: EditableTableColumn[] = [];
-  historyRows: Record<string, string>[] = [];
-
-  get currentPage(): number {
-    return (this.page?.page ?? 0) + 1;
-  }
-
-  get totalPages(): number {
-    if (!this.page || this.page.size === 0) {
-      return 1;
-    }
-    return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
-  }
+  money = formatInr;
 
   ngOnInit(): void {
-    // buildColumns() uses translate.get() (reactive) rather than instant() -- instant() only
-    // resolves once the async translation file fetch (TranslateHttpLoader) completes, so a
-    // synchronous instant() call here would bake in the raw i18n key. onLangChange keeps the
-    // columns in sync if the user switches languages after initial load.
-    this.buildColumns();
-    this.translate.onLangChange.pipe(takeUntil(this.destroyed$)).subscribe(() => this.buildColumns());
     this.loadPage(0);
-  }
-
-  ngOnDestroy(): void {
-    this.destroyed$.next();
-    this.destroyed$.complete();
   }
 
   goToPage(page: number): void {
     this.loadPage(page);
   }
 
-  private buildColumns(): void {
-    this.translate
-      .get([
-        'salesHistory.columnBuyerName',
-        'salesHistory.columnBuyerPhone',
-        'salesHistory.columnAmount',
-        'salesHistory.columnAssociateId',
-        'salesHistory.columnLegCredited',
-        'salesHistory.columnStatus',
-        'salesHistory.columnRecordedAt'
-      ])
-      .pipe(takeUntil(this.destroyed$))
-      .subscribe(t => {
-        this.historyColumns = [
-          { key: 'buyerName', label: t['salesHistory.columnBuyerName'], type: 'text' },
-          { key: 'buyerPhone', label: t['salesHistory.columnBuyerPhone'], type: 'text' },
-          { key: 'amount', label: t['salesHistory.columnAmount'], type: 'text' },
-          { key: 'associateId', label: t['salesHistory.columnAssociateId'], type: 'text' },
-          { key: 'legCredited', label: t['salesHistory.columnLegCredited'], type: 'text' },
-          { key: 'status', label: t['salesHistory.columnStatus'], type: 'text' },
-          { key: 'recordedAt', label: t['salesHistory.columnRecordedAt'], type: 'text' }
-        ];
-      });
-  }
-
   private loadPage(page: number): void {
     this.loadError = false;
     this.salesHistoryService.getMySales(page, PAGE_SIZE).subscribe({
-      next: res => {
-        this.page = res;
-        this.updateTableRows();
-      },
+      next: res => (this.page = res),
       error: () => (this.loadError = true)
     });
-  }
-
-  private updateTableRows(): void {
-    this.historyRows = (this.page?.sales ?? []).map(sale => ({
-      buyerName: sale.buyerName,
-      buyerPhone: sale.buyerPhone ?? '',
-      amount: String(sale.amount),
-      associateId: sale.associateId,
-      legCredited: sale.legCredited,
-      status: sale.status,
-      recordedAt: this.datePipe.transform(sale.recordedAt, 'medium') ?? sale.recordedAt
-    }));
   }
 }
