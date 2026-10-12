@@ -41,7 +41,7 @@ public record BookingResponse(
     public BookingResponse withoutBuyerPhoneAndRate() {
         return new BookingResponse(id, plotId, associateId, status, buyerName, totalAmount, installmentCount, bookedAt,
             paidAmount, dueAmount, installments, plotNo, projectName, associateName,
-            null, listPrice, discount, areaSqft, null, cancelledAt, associateCode);
+            null, null, discount, null, null, cancelledAt, associateCode);
     }
 
     // Labels are additive (unit 14b); null when the referent is gone or the caller has no lookup.

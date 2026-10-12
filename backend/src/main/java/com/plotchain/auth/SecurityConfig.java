@@ -254,7 +254,8 @@ public class SecurityConfig {
                     .hasAuthority("ADMIN")
                 // Admin "EMI by last date" report (U3): exact path, the /overdue matcher does not cover it.
                 .requestMatchers(HttpMethod.GET, "/api/admin/emi-reports/last-emi")
-                    .hasAuthority("ADMIN")                // Generate a batch of e-PINs: ADMIN-only, per epin-domain unit 1
+                    .hasAuthority("ADMIN")
+                // Generate a batch of e-PINs: ADMIN-only, per epin-domain unit 1
                 // (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
                 // Decision 12: "POST/GET /api/admin/epins* require hasAuthority("ADMIN")...
                 // via the blanket write rule (for the POSTs)"), same target-role-model

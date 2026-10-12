@@ -172,7 +172,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void getTeamBookingsBlanksBuyerPhoneAndRateButKeepsDiscountAndAssociateCode() {
+    void getTeamBookingsBlanksBuyerPhoneRateListPriceAndAreaButKeepsDiscountAndAssociateCode() {
         PlotBooking booking = richBooking();
         when(plotBookingRepository.findByDownline(eq(ASSOCIATE_ID), eq(null), any()))
             .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
@@ -183,6 +183,8 @@ class BookingServiceTest {
 
         assertThat(r.buyerPhone()).isNull();
         assertThat(r.rate()).isNull();
+        assertThat(r.listPrice()).isNull();
+        assertThat(r.areaSqft()).isNull();
         assertThat(r.discount()).isEqualByComparingTo("50000.00");
         assertThat(r.associateCode()).isEqualTo("VP00042");
     }

@@ -25,11 +25,13 @@ public class PaymentLedgerService {
                                     int page, int size) {
         var fromInstant = BookingService.fromInstant(from);
         var toInstant = BookingService.toInstant(to);
+        // No date bounds: skip the paid_at predicate so legacy PAID rows with NULL paid_at still list.
+        boolean unbounded = from == null && to == null;
         Page<PaymentRow> result = emiInstallmentRepository.findPayments(
-            status, fromInstant, toInstant, projectId, PageRequest.of(page, size));
+            status, fromInstant, toInstant, unbounded, projectId, PageRequest.of(page, size));
         BigDecimal pageTotal = result.getContent().stream().map(PaymentRow::amount)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal sum = emiInstallmentRepository.sumPayments(status, fromInstant, toInstant, projectId);
+        BigDecimal sum = emiInstallmentRepository.sumPayments(status, fromInstant, toInstant, unbounded, projectId);
         return new PaymentPageResponse(result.getContent(), page, size, result.getTotalElements(),
             pageTotal, sum == null ? BigDecimal.ZERO : sum);
     }

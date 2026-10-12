@@ -57,7 +57,7 @@ class PaymentLedgerRepositoryTest {
     }
 
     private Page<PaymentRow> find(InstallmentStatus s, Instant from, Instant to, UUID project, int page, int size) {
-        return installments.findPayments(s, from, to, project, PageRequest.of(page, size));
+        return installments.findPayments(s, from, to, false, project, PageRequest.of(page, size));
     }
 
     @Test
@@ -102,11 +102,23 @@ class PaymentLedgerRepositoryTest {
     }
 
     @Test
+    void unboundedQueryIncludesLegacyRowsWithNullPaidAtButADateRangeExcludesThem() {
+        EmiInstallment legacy = installments.findByBookingIdOrderByInstallmentNumberAsc(d.b7.getId()).get(0);
+        legacy.setPaidAt(null);
+        installments.saveAndFlush(legacy);
+
+        assertThat(installments.findPayments(InstallmentStatus.PAID, Instant.EPOCH, MAX, true, null,
+            PageRequest.of(0, 500)).getContent()).extracting(PaymentRow::bookingId).contains(d.b7.getId());
+        assertThat(installments.findPayments(InstallmentStatus.PAID, Instant.EPOCH, MAX, false, null,
+            PageRequest.of(0, 500)).getContent()).extracting(PaymentRow::bookingId).doesNotContain(d.b7.getId());
+    }
+
+    @Test
     void grandTotalSumsEveryFilteredRowNotJustThePage() {
         Page<PaymentRow> p = find(InstallmentStatus.ENTERED, Instant.EPOCH, MAX, d.p1, 0, 1);
         assertThat(p.getContent()).hasSize(1);
         assertThat(p.getTotalElements()).isEqualTo(2);
-        assertThat(installments.sumPayments(InstallmentStatus.ENTERED, Instant.EPOCH, MAX, d.p1))
+        assertThat(installments.sumPayments(InstallmentStatus.ENTERED, Instant.EPOCH, MAX, false, d.p1))
             .isEqualByComparingTo(new BigDecimal("400000.00"));
     }
 

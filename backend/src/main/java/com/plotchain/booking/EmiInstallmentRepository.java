@@ -46,29 +46,36 @@ public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, 
         JOIN Project pr ON pr.id = pl.projectId
         LEFT JOIN Associate eb ON eb.id = i.recordedBy
         LEFT JOIN Associate cb ON cb.id = i.confirmedBy
-        WHERE i.status = :status AND i.paidAt >= :from AND i.paidAt < :to
+        WHERE i.status = :status
+        AND (:unbounded = true OR (i.paidAt >= :from AND i.paidAt < :to))
         AND (:projectId IS NULL OR pl.projectId = :projectId)
-        ORDER BY i.paidAt DESC, i.id DESC
+        ORDER BY i.paidAt DESC NULLS LAST, i.id DESC
         """,
         countQuery = """
         SELECT COUNT(i)
         FROM EmiInstallment i
         JOIN PlotBooking b ON b.id = i.bookingId
+        JOIN Associate a ON a.id = b.associateId
         JOIN Plot pl ON pl.id = b.plotId
-        WHERE i.status = :status AND i.paidAt >= :from AND i.paidAt < :to
+        JOIN Project pr ON pr.id = pl.projectId
+        WHERE i.status = :status
+        AND (:unbounded = true OR (i.paidAt >= :from AND i.paidAt < :to))
         AND (:projectId IS NULL OR pl.projectId = :projectId)
         """)
     Page<PaymentRow> findPayments(@Param("status") InstallmentStatus status, @Param("from") Instant from,
-        @Param("to") Instant to, @Param("projectId") UUID projectId, Pageable pageable);
+        @Param("to") Instant to, @Param("unbounded") boolean unbounded,
+        @Param("projectId") UUID projectId, Pageable pageable);
 
     @Query("""
         SELECT SUM(i.amount)
         FROM EmiInstallment i
         JOIN PlotBooking b ON b.id = i.bookingId
         JOIN Plot pl ON pl.id = b.plotId
-        WHERE i.status = :status AND i.paidAt >= :from AND i.paidAt < :to
+        WHERE i.status = :status
+        AND (:unbounded = true OR (i.paidAt >= :from AND i.paidAt < :to))
         AND (:projectId IS NULL OR pl.projectId = :projectId)
         """)
     BigDecimal sumPayments(@Param("status") InstallmentStatus status, @Param("from") Instant from,
-        @Param("to") Instant to, @Param("projectId") UUID projectId);
+        @Param("to") Instant to, @Param("unbounded") boolean unbounded,
+        @Param("projectId") UUID projectId);
 }

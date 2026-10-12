@@ -17,6 +17,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,21 +36,21 @@ class PaymentLedgerServiceTest {
 
     @Test
     void listConvertsDatesToHalfOpenUtcInstantsAndUnboundedWhenNull() {
-        when(repo.findPayments(any(), any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
+        when(repo.findPayments(any(), any(), any(), anyBoolean(), any(), any())).thenReturn(new PageImpl<>(List.of()));
         service().list(InstallmentStatus.ENTERED, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 3), null, 0, 20);
         verify(repo).findPayments(eq(InstallmentStatus.ENTERED), eq(Instant.parse("2026-06-02T00:00:00Z")),
-            eq(Instant.parse("2026-06-04T00:00:00Z")), eq(null), any());
+            eq(Instant.parse("2026-06-04T00:00:00Z")), eq(false), eq(null), any());
 
         service().list(InstallmentStatus.PAID, null, null, null, 0, 20);
         verify(repo).findPayments(eq(InstallmentStatus.PAID), eq(Instant.EPOCH),
-            eq(Instant.parse("9999-01-01T00:00:00Z")), eq(null), any());
+            eq(Instant.parse("9999-01-01T00:00:00Z")), eq(true), eq(null), any());
     }
 
     @Test
     void pageTotalSumsOnlyTheRowsOnThePageAndGrandTotalComesFromTheSumQuery() {
-        when(repo.findPayments(any(), any(), any(), any(), any()))
+        when(repo.findPayments(any(), any(), any(), anyBoolean(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(row("100"), row("50")), PageRequest.of(0, 2), 5));
-        when(repo.sumPayments(any(), any(), any(), any())).thenReturn(new BigDecimal("400"));
+        when(repo.sumPayments(any(), any(), any(), anyBoolean(), any())).thenReturn(new BigDecimal("400"));
 
         PaymentPageResponse r = service().list(InstallmentStatus.ENTERED, null, null, null, 0, 2);
 
@@ -60,8 +61,8 @@ class PaymentLedgerServiceTest {
 
     @Test
     void grandTotalIsZeroWhenSumQueryReturnsNull() {
-        when(repo.findPayments(any(), any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
-        when(repo.sumPayments(any(), any(), any(), any())).thenReturn(null);
+        when(repo.findPayments(any(), any(), any(), anyBoolean(), any(), any())).thenReturn(new PageImpl<>(List.of()));
+        when(repo.sumPayments(any(), any(), any(), anyBoolean(), any())).thenReturn(null);
 
         PaymentPageResponse r = service().list(InstallmentStatus.PAID, null, null, null, 0, 20);
 
@@ -71,10 +72,10 @@ class PaymentLedgerServiceTest {
 
     @Test
     void listPassesAnUnsortedPageableWithPageAndSize() {
-        when(repo.findPayments(any(), any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
+        when(repo.findPayments(any(), any(), any(), anyBoolean(), any(), any())).thenReturn(new PageImpl<>(List.of()));
         service().list(InstallmentStatus.ENTERED, null, null, null, 3, 7);
         ArgumentCaptor<Pageable> c = ArgumentCaptor.forClass(Pageable.class);
-        verify(repo).findPayments(any(), any(), any(), any(), c.capture());
+        verify(repo).findPayments(any(), any(), any(), anyBoolean(), any(), c.capture());
         assertThat(c.getValue().getPageNumber()).isEqualTo(3);
         assertThat(c.getValue().getPageSize()).isEqualTo(7);
         assertThat(c.getValue().getSort().isUnsorted()).isTrue();
