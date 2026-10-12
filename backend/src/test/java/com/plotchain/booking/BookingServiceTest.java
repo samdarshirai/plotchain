@@ -141,6 +141,64 @@ class BookingServiceTest {
         assertThat(r.installments().get(0).paidAt()).isEqualTo(NOW);
     }
 
+    private PlotBooking richBooking() {
+        PlotBooking booking = bookingWithBuyer();
+        booking.setBuyerPhone("9999999999");
+        booking.setListPrice(new BigDecimal("650000.00"));
+        booking.setDiscount(new BigDecimal("50000.00"));
+        booking.setAreaSqft(new BigDecimal("1200.00"));
+        booking.setRate(new BigDecimal("541.67"));
+        booking.setCancelledAt(NOW);
+        Associate a = associateWithId(ASSOCIATE_ID);
+        a.setUserId("VP00042");
+        when(associateRepository.findAllById(any())).thenReturn(List.of(a));
+        return booking;
+    }
+
+    @Test
+    void getMyBookingsExposesBuyerPhonePriceSnapshotDiscountCancelledAtAndAssociateCode() {
+        PlotBooking booking = richBooking();
+        stubOwnPage(booking, List.of(installment(1, "100.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PAID)));
+
+        BookingResponse r = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20).bookings().get(0);
+
+        assertThat(r.buyerPhone()).isEqualTo("9999999999");
+        assertThat(r.listPrice()).isEqualByComparingTo("650000.00");
+        assertThat(r.discount()).isEqualByComparingTo("50000.00");
+        assertThat(r.areaSqft()).isEqualByComparingTo("1200.00");
+        assertThat(r.rate()).isEqualByComparingTo("541.67");
+        assertThat(r.cancelledAt()).isEqualTo(NOW);
+        assertThat(r.associateCode()).isEqualTo("VP00042");
+    }
+
+    @Test
+    void getTeamBookingsBlanksBuyerPhoneAndRateButKeepsDiscountAndAssociateCode() {
+        PlotBooking booking = richBooking();
+        when(plotBookingRepository.findByDownline(eq(ASSOCIATE_ID), eq(null), any()))
+            .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
+        when(emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(any()))
+            .thenReturn(forBooking(booking, List.of()));
+
+        BookingResponse r = bookingService.getTeamBookings(ASSOCIATE_ID, null, 0, 20).bookings().get(0);
+
+        assertThat(r.buyerPhone()).isNull();
+        assertThat(r.rate()).isNull();
+        assertThat(r.discount()).isEqualByComparingTo("50000.00");
+        assertThat(r.associateCode()).isEqualTo("VP00042");
+    }
+
+    @Test
+    void adminGetBookingStillExposesBuyerPhoneAndRate() {
+        PlotBooking booking = richBooking();
+        when(plotBookingRepository.findById(booking.getId())).thenReturn(Optional.of(booking));
+        when(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId())).thenReturn(List.of());
+
+        BookingResponse r = bookingService.getBooking(booking.getId());
+
+        assertThat(r.buyerPhone()).isEqualTo("9999999999");
+        assertThat(r.rate()).isEqualByComparingTo("541.67");
+    }
+
     @Test
     void getMyBookingsDueAmountOfACancelledBookingIsZeroBecauseVoidInstallmentsDoNotCount() {
         PlotBooking booking = bookingWithBuyer();

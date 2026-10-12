@@ -450,7 +450,8 @@ public class BookingService {
         List<BookingResponse> bookings = toResponses(result.getContent(), emiInstallmentRepository
             .findByBookingIdInOrderByInstallmentNumberAsc(
                 result.getContent().stream().map(PlotBooking::getId).toList()).stream()
-            .collect(java.util.stream.Collectors.groupingBy(EmiInstallment::getBookingId)));
+            .collect(java.util.stream.Collectors.groupingBy(EmiInstallment::getBookingId)))
+            .stream().map(BookingResponse::withoutBuyerPhoneAndRate).toList();
         return new AssociateBookingPageResponse(bookings, page, size, result.getTotalElements());
     }
 
@@ -579,7 +580,9 @@ public class BookingService {
                 rows,
                 plot == null ? null : plot.getPlotNo(),
                 project == null ? null : project.getName(),
-                associate == null ? null : associate.getName());
+                associate == null ? null : associate.getName(),
+                booking.getBuyerPhone(), booking.getListPrice(), booking.getDiscount(), booking.getAreaSqft(),
+                booking.getRate(), booking.getCancelledAt(), associate == null ? null : associate.getUserId());
         }).toList();
     }
 
