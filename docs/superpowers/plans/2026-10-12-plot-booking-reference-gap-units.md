@@ -8,7 +8,7 @@ Shared-file warning (sequence, never parallelize): `BookingService.java`, `Secur
 |---|---|---|---|---|---|---|
 | U1 | backend | V45 migration + entities (ENTERED, confirm cols, payment mode, discount/snapshots, PAY_CONFIRMED) | — | merged | docs/superpowers/plans/2026-10-12-plot-booking-ref-gap-unit-1-v45-migration.md | ab49ae8..fde192e |
 | U2 | backend | Two-step payment logic (enter / confirm / bulk confirm, threshold on PAID only, cancel voids ENTERED) | U1 | merged | docs/superpowers/plans/2026-10-12-plot-booking-ref-gap-unit-2-two-step-payments.md | 1df65f6..636a7fc (merge ebc6745) |
-| U3 | backend | Discount on create, register filters (dates, q, cancelled range), payments list, last-EMI report, sales-history associate fields, size=0 fix | U1, U2 | pending | | |
+| U3 | backend | Discount on create, register filters (dates, q, cancelled range), payments list, last-EMI report, sales-history associate fields, size=0 fix | U1, U2 | planned | docs/superpowers/plans/2026-10-12-plot-booking-ref-gap-unit-3-discount-filters-lists.md | |
 | U4 | backend | Reschedule instalments (Add Plot EMI) — optional, confirm wording first | U2 | pending | | |
 | U5 | frontend | Foundations: shared pager, CSV/print util, models, services, i18n | U2, U3 | pending | | |
 | U6 | screen | Bookings & EMI tabs: Register upgrade, Unconfirmed, Confirmed(+receipt), Cancelled, EMI-by-last-date, seal enter/confirm | U5 | pending | | |
