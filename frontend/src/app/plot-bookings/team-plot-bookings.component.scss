@@ -1,0 +1,37 @@
+.team-bookings__scroll { overflow-x: auto; }
+
+.team-bookings__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+
+  th, td {
+    padding: 0.625rem 0.75rem;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    background: var(--surface-raised);
+  }
+
+  td { color: var(--text-primary); }
+}
+
+.team-bookings__num { text-align: right !important; font-variant-numeric: tabular-nums; }
+.team-bookings__mono { font-family: var(--font-mono); }
+
+@media (max-width: 767px) {
+  .team-bookings__table {
+    thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    tr { display: block; padding: 0.5rem 0; border-bottom: 1px solid var(--border-subtle); }
+    td { display: flex; justify-content: space-between; gap: 1rem; border: 0; padding: 0.25rem 0.75rem; white-space: normal; }
+    td::before { content: attr(data-label); color: var(--text-muted); font-size: 0.75rem; }
+    .team-bookings__num { text-align: left !important; }
+  }
+}
