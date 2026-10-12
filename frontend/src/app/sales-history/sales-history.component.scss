@@ -1,4 +1,6 @@
 .my-sales {
+  // Page gutter: shell adds none; the card is the page, so inset it with margin.
+  width: min(1480px, 100% - 4rem); margin: 1.5rem auto;
   &__subtitle { color: var(--text-muted); margin: 0 0 1rem; }
   &__load-error { color: var(--status-danger); }
   &__empty { padding: 2rem 1rem; text-align: center; color: var(--text-muted); }
@@ -10,6 +12,7 @@
   &__mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 }
 @media (max-width: 767px) {
+  .my-sales { width: calc(100% - 2rem); }
   .my-sales__table thead { display: none; }
   .my-sales__table tr { display: block; padding: 0.5rem 0; border-top: 1px solid var(--border-subtle); }
   .my-sales__table td { display: flex; justify-content: space-between; gap: 1rem; border: 0; padding: 0.25rem 0; text-align: right; }
