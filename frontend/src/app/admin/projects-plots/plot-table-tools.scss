@@ -29,3 +29,12 @@
     &__label { flex-basis: 100%; max-width: none; }
   }
 }
+
+@media (min-width: 768px) {
+  .projects-plots .projects-plots__table {
+    th, td { white-space: nowrap; }
+    th:not(:first-child), td:not(:first-child) { width: 1%; padding-inline: 1rem; }
+    th:nth-child(2), td:nth-child(2) { text-align: right; }
+    th:last-child, td:last-child { width: auto; text-align: left; padding-inline-start: 1.5rem; }
+  }
+}

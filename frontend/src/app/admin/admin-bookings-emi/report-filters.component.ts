@@ -11,6 +11,7 @@ export interface ReportFilterValue { from: string; to: string; projectId: string
   selector: 'app-report-filters',
   standalone: true,
   encapsulation: ViewEncapsulation.None,
+  styleUrls: ['./report-filters.component.scss'],
   imports: [CommonModule, TranslateModule, FieldErrorComponent],
   template: `
     <div class="booking-register__filters report-filters">

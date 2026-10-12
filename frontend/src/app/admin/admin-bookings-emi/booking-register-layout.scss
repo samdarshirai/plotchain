@@ -1,0 +1,6 @@
+.booking-register__list { min-width: 0; overflow-x: auto; }
+.booking-register__num { white-space: nowrap; text-align: right; }
+@media (min-width: 769px) {
+  .booking-register__table { min-width: 64rem; th, td { white-space: nowrap; } th:first-child, td:first-child { min-width: 12rem; white-space: normal; } }
+}
+@media (max-width: 1500px) { .booking-register__grid { grid-template-columns: minmax(0, 1fr); } }

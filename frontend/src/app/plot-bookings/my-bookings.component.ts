@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, ViewEncapsulation, EventEmitter, HostListener, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
@@ -13,6 +13,8 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-my-bookings',
   standalone: true,
+  encapsulation: ViewEncapsulation.None,
+  styleUrl: './my-bookings.component.scss',
   imports: [CommonModule, TranslateModule, InlineBannerComponent],
   template: `
     <div class="my-bookings" [attr.aria-busy]="loading">

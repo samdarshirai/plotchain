@@ -25,7 +25,7 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
 
 @Component({
   encapsulation: ViewEncapsulation.None,
-  styleUrls: ['./booking-register.component.scss'],
+  styleUrls: ['./booking-register.component.scss', './booking-register-layout.scss'],
   selector: 'app-booking-register',
   standalone: true,
   imports: [CommonModule, RouterLink, TranslateModule, AssociateLookupComponent, InlineBannerComponent, FieldErrorComponent, BookingSealComponent],
@@ -145,7 +145,7 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
 
           <div class="booking-register__pager" *ngIf="page?.bookings?.length">
             <button type="button" class="brand-button brand-button--secondary booking-register__prev" [disabled]="frozen || page!.page === 0" (click)="goTo(page!.page - 1)">{{ 'admin.bookingsEmi.previous' | translate }}</button>
-            <span>{{ 'admin.bookingsEmi.pager' | translate: { page: page!.page + 1, totalPages: totalPages, count: page!.totalElements } }}</span>
+            <span>{{ (page!.totalElements === 1 ? 'admin.bookingsEmi.pagerOne' : 'admin.bookingsEmi.pager') | translate: { page: page!.page + 1, totalPages: totalPages, count: page!.totalElements } }}</span>
             <button type="button" class="brand-button brand-button--secondary booking-register__next" [disabled]="frozen || page!.page + 1 >= totalPages" (click)="goTo(page!.page + 1)">{{ 'admin.bookingsEmi.next' | translate }}</button>
           </div>
         </div>
