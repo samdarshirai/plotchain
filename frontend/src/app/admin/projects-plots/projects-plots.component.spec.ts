@@ -869,6 +869,41 @@ describe('ProjectsPlotsComponent', () => {
       flush();
     }));
 
+    it('ignores a stale first-A rates response after A->B->A', fakeAsync(() => {
+      boot([project(), project({ id: 'p2', name: 'Other' })]);
+      openTable();
+      const firstA = rateReq();
+      const c = fixture.componentInstance;
+      c.selectProject(c.projects![1]);
+      http.expectOne('/api/projects/p2/plots/grid').flush([cell('Z-1')]);
+      const b = http.expectOne(r => r.url === '/api/company/projects/p2/plots');
+      c.selectProject(c.projects![0]);
+      http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-1', 'AVAILABLE', { plotId: 'id-A-1' })]);
+      const secondA = rateReq();
+      firstA.flush(rateBody([{ id: 'id-A-1', rate: 9999 }]));
+      b.flush(rateBody([]));
+      fixture.detectChanges();
+      expect(c.rates).toBeNull();
+      expect((c as any).ratesLoading).toBeTrue();
+      secondA.flush(rateBody([{ id: 'id-A-1', rate: 1111 }]));
+      fixture.detectChanges();
+      expect(el().textContent).toContain('1,111');
+      expect(el().textContent).not.toContain('9,999');
+      flush();
+    }));
+
+    it('count and noMatch are polite live regions', fakeAsync(() => {
+      boot();
+      openTable(); rateReq().flush(rateBody([]));
+      fixture.detectChanges();
+      expect(el().querySelector('.plot-table-tools__count')!.getAttribute('role')).toBe('status');
+      type('zzz');
+      const nm = el().querySelector('p.projects-plots__empty[role="status"]');
+      expect(nm).not.toBeNull();
+      expect(nm!.textContent).toContain('admin.projectsPlots.table.noMatch');
+      flush();
+    }));
+
     it('rates failure shows rateError, em dashes and disabled Export; Retry refetches', fakeAsync(() => {
       boot();
       openTable();

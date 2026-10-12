@@ -153,14 +153,14 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
                 <span class="projects-plots__sr">{{ 'admin.projectsPlots.table.searchLabel' | translate }}</span>
                 <input type="search" class="plot-table-tools__search" [value]="search" [placeholder]="'admin.projectsPlots.table.searchPlaceholder' | translate" (input)="onSearch($any($event.target).value)">
               </label>
-              <span class="plot-table-tools__count">{{ 'admin.projectsPlots.table.count' | translate: { shown: tableRows.length, total: visibleCount } }}</span>
+              <span class="plot-table-tools__count" role="status">{{ 'admin.projectsPlots.table.count' | translate: { shown: tableRows.length, total: visibleCount } }}</span>
               <button type="button" class="brand-button brand-button--secondary plot-table-tools__export" [disabled]="!rates || !tableRows.length" (click)="exportPlots()">{{ 'admin.projectsPlots.table.exportCsv' | translate }}</button>
               <span class="plot-table-tools__error" role="alert" *ngIf="ratesError">
                 {{ 'admin.projectsPlots.table.rateError' | translate }}
                 <button type="button" class="projects-plots__retry" (click)="loadRates()">{{ 'admin.projectsPlots.retry' | translate }}</button>
               </span>
             </div>
-            <p class="projects-plots__empty" *ngIf="view === 'table' && !readOnly && grid.length && visibleBlocks.length && !tableRows.length">{{ 'admin.projectsPlots.table.noMatch' | translate }}</p>
+            <p class="projects-plots__empty" role="status" *ngIf="view === 'table' && !readOnly && grid.length && visibleBlocks.length && !tableRows.length">{{ 'admin.projectsPlots.table.noMatch' | translate }}</p>
             <div class="projects-plots__table-wrap" *ngIf="view === 'table' && tableRows.length">
               <table class="projects-plots__table">
                 <thead><tr>
@@ -291,6 +291,7 @@ export class ProjectsPlotsComponent implements OnInit {
   ratesError = false;
   private ratesLoading = false;
   search = '';
+  private ratesSeq = 0;
   tableRows: PlotGridItem[] = [];
   visibleCount = 0;
   private opener: HTMLElement | null = null;
@@ -345,6 +346,7 @@ export class ProjectsPlotsComponent implements OnInit {
     this.rates = null;
     this.ratesError = false;
     this.ratesLoading = false;
+    this.ratesSeq++;
     this.search = '';
     this.tableRows = [];
     this.grid = null;
@@ -381,14 +383,15 @@ export class ProjectsPlotsComponent implements OnInit {
     if (!project || this.readOnly || this.rates || this.ratesLoading) { return; }
     this.ratesLoading = true;
     this.ratesError = false;
+    const seq = ++this.ratesSeq;
     this.plotsService.getPlotRates(project.id).subscribe({
       next: r => {
-        if (project.id !== this.selectedProject?.id) { return; }
+        if (seq !== this.ratesSeq) { return; }
         this.ratesLoading = false;
         this.rates = r;
       },
       error: () => {
-        if (project.id !== this.selectedProject?.id) { return; }
+        if (seq !== this.ratesSeq) { return; }
         this.ratesLoading = false;
         this.ratesError = true;
       }
