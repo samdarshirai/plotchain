@@ -6,7 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
 import { AssociateSummary } from '../models/associate-summary.model';
-import { Booking, EmiInstallment } from '../../plot-bookings/models/associate-booking-page.model';
+import { Booking, EmiInstallment, PAYMENT_MODES, PaymentMode } from '../../plot-bookings/models/associate-booking-page.model';
 import { AssociateLookupComponent } from '../../shared/components/associate-lookup/associate-lookup.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
@@ -71,7 +71,7 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
                 <td>
                   <button type="button" class="brand-button brand-button--secondary booking-seal__pay"
                     *ngIf="b.status === 'ACTIVE' && i.status === 'PENDING'" [disabled]="busy"
-                    [attr.aria-label]="('admin.bookingsEmi.action.pay' | translate) + ' ' + i.installmentNumber" [attr.data-opener]="'pay-' + i.installmentNumber" (click)="open('pay', i)">{{ 'admin.bookingsEmi.action.pay' | translate }}</button>
+                    [attr.aria-label]="('admin.bookingsEmi.action.enterPayment' | translate) + ' ' + i.installmentNumber" [attr.data-opener]="'pay-' + i.installmentNumber" (click)="open('pay', i)">{{ 'admin.bookingsEmi.action.enterPayment' | translate }}</button>
                 </td>
               </tr>
             </tbody>
@@ -96,7 +96,6 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
               <ng-container *ngSwitchCase="'payNetwork'">{{ 'admin.bookingsEmi.err.payNetwork' | translate: { n: payTarget?.installmentNumber } }}
                 <button type="button" class="brand-button brand-button--secondary booking-seal__reload" (click)="reloadRequested.emit()">{{ 'admin.bookingsEmi.action.reload' | translate }}</button>
               </ng-container>
-              <ng-container *ngSwitchCase="'plotDriftPay'">{{ 'admin.bookingsEmi.err.plotDriftPay' | translate: { n: payTarget?.installmentNumber } }}</ng-container>
               <ng-container *ngSwitchCase="'amountMismatch'">{{ 'admin.bookingsEmi.err.amountMismatch' | translate: { amount: money(payTarget?.amount ?? 0) } }}</ng-container>
               <ng-container *ngSwitchCase="'notPayable'">{{ 'admin.bookingsEmi.err.notPayable' | translate: { n: payTarget?.installmentNumber } }}</ng-container>
               <ng-container *ngSwitchDefault>{{ 'admin.bookingsEmi.err.' + bannerKey | translate }}</ng-container>
@@ -110,14 +109,16 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
           </app-inline-banner>
 
           <ng-container *ngIf="mode === 'pay' && payTarget">
-            <app-inline-banner tone="warning" role="status" *ngIf="predicts">
-              <strong>{{ 'admin.bookingsEmi.warn.autoConfirm' | translate }}</strong>
-              {{ 'admin.bookingsEmi.warn.autoConfirmDetail' | translate: { before: money(b.paidAmount), after: money(b.paidAmount + payTarget.amount) } }}
-            </app-inline-banner>
             <fieldset class="booking-seal__fields" [disabled]="busy">
               <label>{{ 'admin.bookingsEmi.field.amount' | translate }}
                 <input name="amount" type="text" readonly [value]="money(payTarget.amount)" aria-describedby="seal-amount-hint" /></label>
               <small id="seal-amount-hint">{{ 'admin.bookingsEmi.field.amountHint' | translate }}</small>
+              <label>{{ 'admin.bookingsEmi.paymentMode.label' | translate }}
+                <select name="paymentMode" [attr.aria-invalid]="modeInvalid ? 'true' : null" aria-describedby="seal-mode-error" (change)="paymentMode = $any($event.target).value">
+                  <option value="" disabled [selected]="!paymentMode">{{ 'admin.bookingsEmi.paymentMode.label' | translate }}</option>
+                  <option *ngFor="let m of modes" [value]="m" [selected]="paymentMode === m">{{ 'admin.bookingsEmi.paymentMode.' + m | translate }}</option>
+                </select></label>
+              <app-field-error id="seal-mode-error" [message]="modeInvalid ? ('admin.bookingsEmi.validation.mode' | translate) : undefined"></app-field-error>
               <label>{{ 'admin.bookingsEmi.field.ref' | translate }}
                 <input name="paymentRef" type="text" maxlength="200" autocomplete="off" [attr.aria-invalid]="refInvalid ? 'true' : null" aria-describedby="seal-ref-count seal-ref-error" [value]="paymentRef" (input)="paymentRef = $any($event.target).value" /></label>
               <small id="seal-ref-count">{{ 'admin.bookingsEmi.field.refCount' | translate: { n: paymentRef.trim().length } }}</small>
@@ -185,6 +186,7 @@ export class BookingSealComponent implements OnChanges {
   private opener = '';
   mode: Mode = 'detail';
   payTarget: EmiInstallment | null = null;
+  readonly modes = PAYMENT_MODES; paymentMode: PaymentMode | '' = '';
   paymentRef = ''; receivedOn = ''; reason = ''; targetId = '';
   tried = false; busy = false;
   netUnknown = false; // a pay request died with no response: outcome unknown, no resubmit until the booking is refreshed
@@ -197,6 +199,7 @@ export class BookingSealComponent implements OnChanges {
   get threshold(): number | null {
     return this.config?.confirmRule === 'AUTO_THRESHOLD' ? this.config.confirmThresholdPercent : null;
   }
+  get modeInvalid(): boolean { return this.tried && !this.paymentMode; }
   get refInvalid(): boolean { const n = this.paymentRef.trim().length; return this.tried && (n === 0 || n > 100); }
   get reasonInvalid(): boolean { const n = this.reason.trim().length; return this.tried && (n === 0 || n > 255); }
   get transferChoices(): AssociateSummary[] { return this.directory.filter(a => a.status === 'ACTIVE' && a.id !== this.booking?.associateId); }
@@ -204,7 +207,7 @@ export class BookingSealComponent implements OnChanges {
   get bannerKey(): string {
     const k = this.error?.kind;
     if (k === 'network') { return this.mode === 'pay' ? 'payNetwork' : 'generic'; }
-    if (k === 'plotDrift') { return this.mode === 'pay' ? 'plotDriftPay' : 'plotDriftConfirm'; }
+    if (k === 'plotDrift') { return 'plotDriftConfirm'; }
     if (k === 'validation' || !k) { return 'generic'; }
     return k;
   }
@@ -233,7 +236,7 @@ export class BookingSealComponent implements OnChanges {
     if (this.busy) { return; }
     this.opener = mode === 'pay' ? 'pay-' + i!.installmentNumber : mode;
     this.mode = mode; this.payTarget = i ?? null; this.error = this.netUnknown && mode === 'pay' ? { kind: 'network' } : null; this.tried = false;
-    this.paymentRef = ''; this.receivedOn = ''; this.reason = ''; this.targetId = '';
+    this.paymentRef = ''; this.paymentMode = ''; this.receivedOn = ''; this.reason = ''; this.targetId = '';
     setTimeout(() => this.title?.nativeElement.focus());
   }
   private reset(): void { this.mode = 'detail'; this.payTarget = null; this.error = null; this.tried = false; this.opener = ''; }
@@ -277,16 +280,12 @@ export class BookingSealComponent implements OnChanges {
     this.tried = true;
     const ref = this.paymentRef.trim();
     if (!ref || ref.length > 100) { return; }
+    if (!this.paymentMode) { return; }
     const target = this.payTarget;
-    // ponytail: U6 replaces this default with the payment-mode select
-    const req: PayRequest = { amount: target.amount, paymentRef: ref, paymentMode: 'CASH' };
+    const req: PayRequest = { amount: target.amount, paymentRef: ref, paymentMode: this.paymentMode };
     if (this.receivedOn) { req.paidAt = new Date(this.receivedOn).toISOString(); }
-    this.run('pay', this.service.pay(this.booking.id, target.installmentNumber, req), (res, before) => {
-      const buyer = res.buyerName;
-      return before.status === 'ACTIVE' && res.status === 'CONFIRMED'
-        ? { key: 'admin.bookingsEmi.ok.autoConfirm', params: { n: target.installmentNumber, buyer, pct: this.pct(res.paidAmount, res.totalAmount) } }
-        : { key: 'admin.bookingsEmi.ok.pay', params: { n: target.installmentNumber, buyer, amount: this.money(target.amount) } };
-    });
+    this.run('pay', this.service.pay(this.booking.id, target.installmentNumber, req), res =>
+      ({ key: 'admin.bookingsEmi.ok.pay', params: { n: target.installmentNumber, buyer: res.buyerName, amount: this.money(target.amount) } }));
   }
   submitConfirm(): void {
     if (!this.booking) { return; }
