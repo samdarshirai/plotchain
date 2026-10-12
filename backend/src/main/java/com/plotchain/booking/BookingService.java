@@ -421,6 +421,70 @@ public class BookingService {
         return toResponse(booking, emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
     }
 
+    // Reference "Add Plot EMI" (reference-gap U4): re-split the unpaid balance of an ACTIVE booking over
+    // `count` new monthly PENDING instalments. PAID and ENTERED rows (and the token) stay; old PENDING rows
+    // become VOID. Booking lock first (Decision 8); the plot is not touched, so no plot lock. Every 4xx
+    // happens before the first write. Not idempotent by design: a repeat call re-splits again (audited).
+    @Transactional
+    public BookingResponse rescheduleBooking(UUID bookingId, RescheduleRequest request, UUID actorId) {
+        PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)
+            .orElseThrow(() -> new BookingNotFoundException(bookingId));
+        if (booking.getStatus() != BookingStatus.ACTIVE) {
+            throw new BookingNotActiveException(bookingId);
+        }
+        List<EmiInstallment> installments = new ArrayList<>(
+            emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
+
+        BigDecimal committed = sumByStatus(installments, InstallmentStatus.PAID)
+            .add(sumByStatus(installments, InstallmentStatus.ENTERED));
+        BigDecimal balance = booking.getTotalAmount().subtract(committed).setScale(2, RoundingMode.HALF_UP);
+        if (balance.signum() <= 0) {
+            throw new NothingToRescheduleException(bookingId);
+        }
+        int count = request.installmentCount();
+        LocalDate firstDue = request.firstDueDate();
+        if (firstDue.isBefore(LocalDate.now(clock))) {
+            throw new InvalidRescheduleException("First due date must be today or later");
+        }
+        BigDecimal base = balance.divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
+        if (base.signum() <= 0) {
+            throw new InvalidRescheduleException("Remaining balance " + balance.toPlainString()
+                + " is too small to split into " + count + " instalments");
+        }
+
+        int nextNumber = installments.stream().mapToInt(EmiInstallment::getInstallmentNumber).max().orElse(0) + 1;
+        int firstVoided = 0, lastVoided = 0, voided = 0;
+        for (EmiInstallment i : installments) {
+            if (i.getStatus() == InstallmentStatus.PENDING) {
+                i.setStatus(InstallmentStatus.VOID);
+                if (voided++ == 0) { firstVoided = i.getInstallmentNumber(); }
+                lastVoided = i.getInstallmentNumber();
+            }
+        }
+        BigDecimal running = BigDecimal.ZERO;
+        for (int k = 0; k < count; k++) {
+            EmiInstallment n = new EmiInstallment();
+            n.setId(UUID.randomUUID());
+            n.setBookingId(bookingId);
+            n.setInstallmentNumber(nextNumber + k);
+            n.setDueDate(firstDue.plusMonths(k)); // from the first date, never cumulative: no month-end drift
+            n.setAmount(k == count - 1 ? balance.subtract(running) : base); // last absorbs the DOWN remainder
+            running = running.add(base);
+            installments.add(n);
+        }
+        emiInstallmentRepository.saveAll(installments);
+
+        booking.setInstallmentCount((int) installments.stream()
+            .filter(i -> i.getStatus() != InstallmentStatus.VOID).count());
+        plotBookingRepository.save(booking);
+
+        bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.RESCHEDULED, actorId,
+            "voided " + voided + " pending" + (voided > 0 ? " (#" + firstVoided + "-#" + lastVoided + ")" : "")
+                + "; balance " + balance.toPlainString() + " over " + count + " from " + firstDue, clock.instant()));
+
+        return toResponse(booking, installments);
+    }
+
     // Plot-booking unit 14a: admin reads one booking (any status) with installments and derived overdue.
     public BookingResponse getBooking(UUID bookingId) {
         PlotBooking booking = plotBookingRepository.findById(bookingId)
