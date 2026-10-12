@@ -290,4 +290,48 @@ describe('PaymentQueueComponent', () => {
       expect(el().textContent).not.toContain('empty.queueTitle');
     });
   });
+  describe('singular / plural copy', () => {
+    const click = (sel: string) => { (el().querySelector(sel) as HTMLButtonElement).click(); fixture.detectChanges(); };
+    const k = 'admin.bookingsEmi.';
+
+    it('hides the seal card at 0 payments', () => {
+      boot(pageOf([]));
+      expect(el().querySelector('app-seal-card')).toBeNull();
+    });
+
+    [[1, 'sealCaptionOne', 'sealCaption'], [2, 'sealCaption', 'sealCaptionOne']].forEach(([n, want, not]) => {
+      it(`seal caption uses ${want} for ${n} pending`, () => {
+        boot(pageOf(Array.from({ length: n as number }, (_, i) => row('b' + i, 1))));
+        const t = el().querySelector('app-seal-card')!.textContent!;
+        expect(t).toContain(k + 'queue.' + want);
+        expect(t).not.toMatch(new RegExp(`queue\\.${not}(?!\\w)`));
+      });
+    });
+
+    [[1, 'promptOne', 'yesOne', 'confirmedOne', 'confirmedOneAuto'], [2, 'prompt', 'yes', 'confirmedMany', 'confirmedManyAuto']].forEach(([n, prompt, yes, ok, okAuto]) => {
+      describe(`${n} selected`, () => {
+        const open = () => {
+          boot(pageOf(Array.from({ length: n as number }, (_, i) => row('b' + i, 1))));
+          click('.payment-queue__check-all'); click('.payment-queue__confirm');
+        };
+        it('prompt and confirm button use the matching keys', () => {
+          open();
+          expect(el().querySelector('#payment-queue-prompt')!.textContent).toBe(k + 'queue.' + prompt);
+          expect(el().querySelector('.payment-queue__yes')!.textContent!.trim()).toBe(k + 'queue.' + yes);
+        });
+        it('success banner uses the matching key', () => {
+          open(); click('.payment-queue__yes');
+          confirmReq().flush([]);
+          listReq().flush(pageOf([])); fixture.detectChanges();
+          expect(component.banner!.msg.key).toBe(k + 'ok.' + ok);
+        });
+        it('auto-confirm banner uses the matching key', () => {
+          open(); click('.payment-queue__yes');
+          confirmReq().flush([{ id: 'b0', status: 'CONFIRMED' }]);
+          listReq().flush(pageOf([])); fixture.detectChanges();
+          expect(component.banner!.msg.key).toBe(k + 'ok.' + okAuto);
+        });
+      });
+    });
+  });
 });

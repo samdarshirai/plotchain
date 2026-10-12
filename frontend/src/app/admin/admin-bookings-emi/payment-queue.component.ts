@@ -23,7 +23,7 @@ export const rowKey = (r: { bookingId: string; installmentNumber: number }): str
       <app-report-filters [locked]="busy" (filtersChange)="onFilters($event)"></app-report-filters>
 
       <app-seal-card *ngIf="page && page.totalElements > 0" [label]="'admin.bookingsEmi.pendingTotal' | translate"
-        [value]="money(page.grandTotal)" [caption]="('admin.bookingsEmi.queue.sealCaption' | translate: { count: page.totalElements }) + ' ' + ('admin.bookingsEmi.queue.note' | translate)"></app-seal-card>
+        [value]="money(page.grandTotal)" [caption]="((page.totalElements === 1 ? 'admin.bookingsEmi.queue.sealCaptionOne' : 'admin.bookingsEmi.queue.sealCaption') | translate: { count: page.totalElements }) + ' ' + ('admin.bookingsEmi.queue.note' | translate)"></app-seal-card>
 
       <app-inline-banner *ngIf="banner" [tone]="banner.tone" [dismissible]="true" (dismissed)="banner = null">
         <span [attr.role]="banner.tone === 'danger' ? 'alert' : 'status'">{{ banner.msg.key | translate: banner.msg.params }}</span>
@@ -43,9 +43,9 @@ export const rowKey = (r: { bookingId: string; installmentNumber: number }): str
         <button type="button" #confirmBtn class="brand-button payment-queue__confirm" [disabled]="busy || !selected.size" (click)="ask()">{{ 'admin.bookingsEmi.action.confirmSelected' | translate }}</button>
       </div>
       <div class="payment-queue__prompt" role="alertdialog" aria-labelledby="payment-queue-prompt" *ngIf="asking">
-        <span id="payment-queue-prompt">{{ 'admin.bookingsEmi.queue.prompt' | translate: { count: selected.size, amount: money(selectedTotal) } }}</span>
+        <span id="payment-queue-prompt">{{ (selected.size === 1 ? 'admin.bookingsEmi.queue.promptOne' : 'admin.bookingsEmi.queue.prompt') | translate: { count: selected.size, amount: money(selectedTotal) } }}</span>
         <button type="button" class="brand-button payment-queue__yes" [disabled]="busy" [attr.aria-busy]="busy" (click)="doConfirm()">
-          {{ (busy ? 'admin.bookingsEmi.action.confirming' : 'admin.bookingsEmi.queue.yes') | translate: { count: selected.size } }}</button>
+          {{ (busy ? 'admin.bookingsEmi.action.confirming' : selected.size === 1 ? 'admin.bookingsEmi.queue.yesOne' : 'admin.bookingsEmi.queue.yes') | translate: { count: selected.size } }}</button>
         <button type="button" class="brand-button brand-button--secondary payment-queue__back" #backBtn [disabled]="busy" (click)="back()">{{ 'admin.bookingsEmi.action.back' | translate }}</button>
       </div>
 
@@ -138,9 +138,10 @@ export class PaymentQueueComponent implements OnInit {
         // The response is ordered by bookingId, not request order: only count it, never zip it with the request.
         const auto = res.filter(b => b.status === 'CONFIRMED').length;
         this.busy = false;
+        const one = items.length === 1 ? 'One' : 'Many';
         this.banner = { tone: 'success', msg: auto
-          ? { key: 'admin.bookingsEmi.ok.confirmedManyAuto', params: { count: items.length, auto } }
-          : { key: 'admin.bookingsEmi.ok.confirmedMany', params: { count: items.length } } };
+          ? { key: `admin.bookingsEmi.ok.confirmed${one}Auto`, params: { count: items.length, auto } }
+          : { key: `admin.bookingsEmi.ok.confirmed${one}`, params: { count: items.length } } };
         this.changed.emit();
         this.load(this.currentPage);
       },
