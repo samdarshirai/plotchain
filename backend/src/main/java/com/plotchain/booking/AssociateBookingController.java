@@ -34,7 +34,7 @@ public class AssociateBookingController {
             @RequestParam(defaultValue = "20") int size
     ) {
         page = Math.max(page, 0);
-        size = Math.min(size, 100);
+        size = Math.min(Math.max(size, 1), 100);
         return bookingService.getMyBookings(associateId, page, size);
     }
 
@@ -52,7 +52,7 @@ public class AssociateBookingController {
             default -> throw new org.springframework.web.server.ResponseStatusException(
                 org.springframework.http.HttpStatus.BAD_REQUEST, "leg must be ALL, L or R");
         };
-        return bookingService.getTeamBookings(associateId, position, Math.max(page, 0), Math.min(size, 100));
+        return bookingService.getTeamBookings(associateId, position, Math.max(page, 0), Math.min(Math.max(size, 1), 100));
     }
 
     // Report endpoints: from/to are inclusive calendar days, both optional.

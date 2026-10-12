@@ -78,4 +78,16 @@ class AssociateSaleControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.size").value(100));
     }
+
+    @Test
+    void getMySalesSizeZeroIsClampedToOne() throws Exception {
+        UUID associateId = UUID.randomUUID();
+        when(saleService.getMySales(eq(associateId), eq(0), eq(1)))
+            .thenReturn(new AssociateSalePageResponse(List.of(), 0, 1, 0));
+
+        mockMvc.perform(get("/api/associates/me/sales").param("size", "0")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.size").value(1));
+    }
 }
