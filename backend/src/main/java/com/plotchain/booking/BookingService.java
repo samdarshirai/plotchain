@@ -322,7 +322,7 @@ public class BookingService {
     // Plot-booking unit 6 (spec Flow "Cancel", Decisions 4, 8). Locks the booking FIRST so a concurrent
     // pay / confirm / cancel serializes on it (the loser re-reads CANCELLED/CONFIRMED and gets 409),
     // then the plot. LOCK ORDER IS BOOKING -> PLOT EVERYWHERE (Decision 8), same as confirmLocked.
-    // PAID installments are untouched; PENDING -> VOID; amounts retained as a note only (no refunds).
+    // PAID installments are untouched; PENDING and ENTERED (unconfirmed) -> VOID; amounts retained as a note only (no refunds).
     // The plot goes BOOKED -> AVAILABLE only if it is BOOKED and no other ACTIVE/CONFIRMED booking
     // holds it (see the stale-booking guard below). Any other plot state is drift: cancel must stay
     // possible (it is the repair tool, unlike confirm which 409s on drift), and flipping a SOLD plot
@@ -341,8 +341,12 @@ public class BookingService {
 
         List<EmiInstallment> installments =
             emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId);
+        int voidedEntered = 0;
         for (EmiInstallment installment : installments) {
-            if (installment.getStatus() == InstallmentStatus.PENDING) {
+            if (installment.getStatus() == InstallmentStatus.ENTERED) {
+                voidedEntered++;
+            }
+            if (installment.getStatus() == InstallmentStatus.PENDING || installment.getStatus() == InstallmentStatus.ENTERED) {
                 installment.setStatus(InstallmentStatus.VOID);
             }
         }
@@ -373,7 +377,8 @@ public class BookingService {
 
         BigDecimal paid = sumByStatus(installments, InstallmentStatus.PAID).setScale(2, RoundingMode.HALF_UP);
         bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.CANCELLED, actorId,
-            "reason: " + reason + "; paid: " + paid.toPlainString() + plotNote, now));
+            "reason: " + reason + "; paid: " + paid.toPlainString()
+                + "; unconfirmed payments voided: " + voidedEntered + plotNote, now));
 
         return toResponse(booking, installments);
     }
