@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, ViewEncapsulation, inject } from '@angular/core';
+import { Component, EventEmitter, ElementRef, OnInit, Output, ViewChild, ViewEncapsulation, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
@@ -23,7 +23,7 @@ export const rowKey = (r: { bookingId: string; installmentNumber: number }): str
       <app-report-filters [locked]="busy" (filtersChange)="onFilters($event)"></app-report-filters>
 
       <app-seal-card *ngIf="page && page.totalElements > 0" [label]="'admin.bookingsEmi.pendingTotal' | translate"
-        [value]="money(page.grandTotal)" [caption]="'admin.bookingsEmi.queue.sealCaption' | translate: { count: page.totalElements }"></app-seal-card>
+        [value]="money(page.grandTotal)" [caption]="('admin.bookingsEmi.queue.sealCaption' | translate: { count: page.totalElements }) + ' ' + ('admin.bookingsEmi.queue.note' | translate)"></app-seal-card>
 
       <app-inline-banner *ngIf="banner" [tone]="banner.tone" [dismissible]="true" (dismissed)="banner = null">
         <span [attr.role]="banner.tone === 'danger' ? 'alert' : 'status'">{{ banner.msg.key | translate: banner.msg.params }}</span>
@@ -40,13 +40,13 @@ export const rowKey = (r: { bookingId: string; installmentNumber: number }): str
           <button type="button" class="brand-button brand-button--secondary payment-queue__uncheck-all" [disabled]="busy || !selected.size" (click)="uncheckAll()">{{ 'admin.bookingsEmi.action.uncheckAll' | translate }}</button>
         </span>
         <span class="payment-queue__selected" role="status">{{ 'admin.bookingsEmi.queue.selected' | translate: { count: selected.size, amount: money(selectedTotal) } }}</span>
-        <button type="button" class="brand-button payment-queue__confirm" [disabled]="busy || !selected.size" (click)="ask()">{{ 'admin.bookingsEmi.action.confirmSelected' | translate }}</button>
+        <button type="button" #confirmBtn class="brand-button payment-queue__confirm" [disabled]="busy || !selected.size" (click)="ask()">{{ 'admin.bookingsEmi.action.confirmSelected' | translate }}</button>
       </div>
       <div class="payment-queue__prompt" role="alertdialog" aria-labelledby="payment-queue-prompt" *ngIf="asking">
         <span id="payment-queue-prompt">{{ 'admin.bookingsEmi.queue.prompt' | translate: { count: selected.size, amount: money(selectedTotal) } }}</span>
         <button type="button" class="brand-button payment-queue__yes" [disabled]="busy" [attr.aria-busy]="busy" (click)="doConfirm()">
           {{ (busy ? 'admin.bookingsEmi.action.confirming' : 'admin.bookingsEmi.queue.yes') | translate: { count: selected.size } }}</button>
-        <button type="button" class="brand-button brand-button--secondary payment-queue__back" [disabled]="busy" (click)="asking = false">{{ 'admin.bookingsEmi.action.back' | translate }}</button>
+        <button type="button" class="brand-button brand-button--secondary payment-queue__back" #backBtn [disabled]="busy" (click)="back()">{{ 'admin.bookingsEmi.action.back' | translate }}</button>
       </div>
 
       <div class="booking-register__list">
@@ -72,7 +72,7 @@ export const rowKey = (r: { bookingId: string; installmentNumber: number }): str
           <tbody>
             <tr *ngFor="let r of page!.payments">
               <td class="payment-queue__check" [attr.data-label]="'admin.bookingsEmi.col.select' | translate">
-                <input type="checkbox" [checked]="selected.has(key(r))" [disabled]="busy" (change)="toggle(r)"
+                <input type="checkbox" [checked]="selected.has(key(r))" [disabled]="busy || loading" (change)="toggle(r)"
                   [attr.aria-label]="('admin.bookingsEmi.col.select' | translate) + ' ' + (r.associateCode || '') + ' ' + (r.plotNo || '') + ' #' + r.installmentNumber" /></td>
               <td [attr.data-label]="'admin.bookingsEmi.col.paymentDate' | translate">{{ r.paymentDate | date: 'mediumDate' }}</td>
               <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.associateId' | translate">{{ r.associateCode || '—' }}</td>
@@ -103,6 +103,12 @@ export class PaymentQueueComponent implements OnInit {
   loading = false; loadError = false; busy = false; asking = false;
   banner: { tone: 'success' | 'danger'; msg: FlashMessage; serverText?: string } | null = null;
   selected = new Set<string>();
+  private refocusTrigger = false;
+  // Focus follows the *ngIf'd buttons as they render: Back on open, the trigger on close.
+  @ViewChild('backBtn') set backBtn(e: ElementRef<HTMLElement> | undefined) { e?.nativeElement.focus(); }
+  @ViewChild('confirmBtn') set confirmBtn(e: ElementRef<HTMLElement> | undefined) {
+    if (e && this.refocusTrigger) { this.refocusTrigger = false; e.nativeElement.focus(); }
+  }
   private seq = 0; private currentPage = 0;
 
   ngOnInit(): void { this.load(0); }
@@ -120,6 +126,7 @@ export class PaymentQueueComponent implements OnInit {
     if (!this.selected.delete(k)) { this.selected.add(k); }
     if (!this.selected.size) { this.asking = false; }
   }
+  back(): void { this.asking = false; this.refocusTrigger = true; }
   ask(): void { if (!this.busy && this.selected.size) { this.asking = true; } }
 
   doConfirm(): void {
@@ -152,7 +159,12 @@ export class PaymentQueueComponent implements OnInit {
     this.currentPage = p; this.loading = true; this.loadError = false;
     this.selected.clear(); this.asking = false;
     this.service.payments('ENTERED', this.filters, p, PAGE_SIZE).subscribe({
-      next: res => { if (mine === this.seq) { this.loading = false; this.page = res; } },
+      next: res => {
+        if (mine !== this.seq) { return; }
+        // A bulk confirm can empty the last page: step back to the last page that still exists.
+        if (!res.payments.length && res.totalElements > 0 && p > 0) { this.load(Math.min(p - 1, Math.ceil(res.totalElements / PAGE_SIZE) - 1)); return; }
+        this.loading = false; this.page = res; this.selected.clear();
+      },
       error: () => { if (mine === this.seq) { this.loading = false; this.loadError = true; } }
     });
   }

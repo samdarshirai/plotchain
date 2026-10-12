@@ -248,5 +248,46 @@ describe('PaymentQueueComponent', () => {
       reload(pageOf([row('b1', 1)]));
       expect((el().querySelector('.payment-queue__confirm') as HTMLButtonElement).disabled).toBeTrue();
     });
+
+    it('checkboxes are disabled while a reload is in flight and a key checked then is dropped when the response lands', () => {
+      bootRows(); click('.payment-queue__check-all');
+      component.reload(); fixture.detectChanges();
+      el().querySelectorAll('tbody input[type=checkbox]').forEach(c => expect((c as HTMLInputElement).disabled).toBeTrue());
+      component.selected.add('b1#1'); // simulates a check that slipped into the window
+      reload(pageOf(rows3()));
+      expect(component.selected.size).toBe(0);
+    });
+
+    it('renders the pending-total note in the seal caption', () => {
+      bootRows();
+      expect(el().querySelector('app-seal-card')!.textContent).toContain('admin.bookingsEmi.queue.note');
+    });
+
+    it('moves focus to Back when the prompt opens and back to Confirm selected on Back', () => {
+      openPrompt();
+      expect(document.activeElement).toBe(el().querySelector('.payment-queue__back'));
+      click('.payment-queue__back');
+      expect(document.activeElement).toBe(el().querySelector('.payment-queue__confirm'));
+      const labelled = (el().querySelector('.payment-queue__prompt') as HTMLElement | null);
+      expect(labelled).toBeNull();
+    });
+
+    it('prompt aria-labelledby points at an existing element', () => {
+      openPrompt();
+      const id = el().querySelector('.payment-queue__prompt')!.getAttribute('aria-labelledby')!;
+      expect(el().querySelector('#' + id)).not.toBeNull();
+    });
+
+    it('an empty page past the end reloads the last valid page instead of showing the empty state', () => {
+      boot(pageOf(rows3(), { totalElements: 41 }));
+      pager().pageChange.emit(2);
+      listReq().flush(pageOf([], { page: 2, totalElements: 20 }));
+      const r = listReq();
+      expect(r.request.params.get('page')).toBe('0');
+      r.flush(pageOf(rows3(), { totalElements: 20 }));
+      fixture.detectChanges();
+      expect(el().querySelectorAll('tbody tr').length).toBe(3);
+      expect(el().textContent).not.toContain('empty.queueTitle');
+    });
   });
 });
