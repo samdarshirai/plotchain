@@ -962,4 +962,89 @@ describe('ProjectsPlotsComponent (associate read-only)', () => {
     http.verify();
     flush();
   }));
+
+  describe('empty states and project placeholder', () => {
+    const proj = (id: string) => ({ id, name: 'Proj ' + id, location: 'H', hasThumbnail: false, totalPlots: 1, availablePlots: 1, soldPlots: 0, createdAt: '2026-01-01T00:00:00Z' });
+    let fixture: ComponentFixture<ProjectsPlotsComponent>;
+    let http: HttpTestingController;
+    const el = () => fixture.nativeElement as HTMLElement;
+    const select = () => el().querySelector('.projects-plots__project-select select') as HTMLSelectElement;
+
+    function boot(projects: unknown[]) {
+      TestBed.configureTestingModule({
+        imports: [ProjectsPlotsComponent, HttpClientTestingModule, TranslateModule.forRoot()],
+        providers: [provideRouter([]), { provide: ActivatedRoute, useValue: { snapshot: { data: { readOnly: true } } } }]
+      });
+      fixture = TestBed.createComponent(ProjectsPlotsComponent);
+      http = TestBed.inject(HttpTestingController);
+      fixture.detectChanges();
+      http.expectOne('/api/company/projects').flush(projects);
+      fixture.detectChanges();
+    }
+
+    it('uses associate wording when there are no plots in the project', () => {
+      boot([proj('p1')]);
+      http.expectOne('/api/projects/p1/plots/grid').flush([]);
+      fixture.detectChanges();
+      const text = el().textContent!;
+      expect(text).toContain('admin.projectsPlots.empty.assocNoPlotsTitle');
+      expect(text).toContain('admin.projectsPlots.empty.assocNoPlotsBody');
+      expect(text).not.toContain('admin.projectsPlots.empty.noPlotsTitle');
+      expect(text).not.toContain('admin.projectsPlots.empty.noPlotsBody');
+    });
+
+    it('uses associate wording when there are no projects', () => {
+      boot([]);
+      const text = el().textContent!;
+      expect(text).toContain('admin.projectsPlots.empty.assocNoProjectsTitle');
+      expect(text).toContain('admin.projectsPlots.empty.assocNoProjectsBody');
+      expect(text).not.toContain('admin.projectsPlots.empty.noProjectsTitle');
+      expect(text).not.toContain('admin.projectsPlots.empty.noProjectsBody');
+    });
+
+    it('with several projects shows a Select project placeholder and loads nothing until chosen', () => {
+      boot([proj('p1'), proj('p2')]);
+      expect(select().options[0].value).toBe('');
+      expect(select().options[0].disabled).toBe(true);
+      expect(select().options[0].textContent).toContain('admin.projectsPlots.projectPlaceholder');
+      expect(select().value).toBe('');
+      expect(el().textContent).toContain('admin.projectsPlots.empty.selectProjectPrompt');
+      http.expectNone(r => r.url.includes('/plots/grid'));
+      select().value = 'p2';
+      select().dispatchEvent(new Event('change'));
+      http.expectOne('/api/projects/p2/plots/grid').flush([]);
+      fixture.detectChanges();
+      expect(Array.from(select().options).some(o => o.value === '')).toBe(false);
+      http.verify();
+    });
+
+    it('auto-selects the only project and renders no placeholder', () => {
+      boot([proj('p1')]);
+      http.expectOne('/api/projects/p1/plots/grid').flush([]);
+      fixture.detectChanges();
+      expect(Array.from(select().options).some(o => o.value === '')).toBe(false);
+      expect(el().textContent).not.toContain('selectProjectPrompt');
+    });
+  });
+});
+
+describe('ProjectsPlotsComponent (admin project selection)', () => {
+  it('auto-selects the first of several projects and has no placeholder option', () => {
+    TestBed.configureTestingModule({
+      imports: [ProjectsPlotsComponent, HttpClientTestingModule, TranslateModule.forRoot()],
+      providers: [provideRouter([])]
+    });
+    const fixture = TestBed.createComponent(ProjectsPlotsComponent);
+    const http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    http.expectOne('/api/associates').flush([]);
+    http.expectOne('/api/company/booking-emi').flush({ emiEnabled: true, defaultInstallmentCount: 4 });
+    const p = (id: string) => ({ id, name: id, location: 'H', hasThumbnail: false, totalPlots: 1, availablePlots: 1, soldPlots: 0, createdAt: '2026-01-01T00:00:00Z' });
+    http.expectOne('/api/company/projects').flush([p('p1'), p('p2')]);
+    http.expectOne('/api/projects/p1/plots/grid').flush([]);
+    fixture.detectChanges();
+    const select = (fixture.nativeElement as HTMLElement).querySelector('.projects-plots__project-select select') as HTMLSelectElement;
+    expect(Array.from(select.options).some(o => o.value === '')).toBe(false);
+    http.verify();
+  });
 });

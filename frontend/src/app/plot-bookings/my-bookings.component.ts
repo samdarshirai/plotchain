@@ -1,5 +1,6 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnInit, Output, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { formatInr } from '../shared/utils/plot-grid.util';
@@ -15,6 +16,7 @@ const PAGE_SIZE = 20;
   imports: [CommonModule, TranslateModule, InlineBannerComponent],
   template: `
     <div class="my-bookings" [attr.aria-busy]="loading">
+      <h1 class="my-bookings__title" *ngIf="heading">{{ 'plotBookings.myBookings.title' | translate }}</h1>
       <app-inline-banner *ngIf="error" tone="danger">
         {{ 'plotBookings.bookingsLoadError' | translate }}
         <button type="button" class="my-bookings__retry" (click)="load(requestedPage)">{{ 'plotBookings.retryAction' | translate }}</button>
@@ -28,7 +30,7 @@ const PAGE_SIZE = 20;
       <div class="my-bookings__empty" *ngIf="page && !page.bookings.length">
         <h2>{{ 'plotBookings.bookingsEmptyTitle' | translate }}</h2>
         <p>{{ 'plotBookings.bookingsEmptyBody' | translate }}</p>
-        <button type="button" class="brand-button brand-button--secondary my-bookings__view-availability" (click)="viewAvailability.emit()">
+        <button type="button" class="brand-button brand-button--secondary my-bookings__view-availability" (click)="onViewAvailability()">
           {{ 'plotBookings.viewAvailability' | translate }}
         </button>
       </div>
@@ -116,6 +118,8 @@ const PAGE_SIZE = 20;
 })
 export class MyBookingsComponent implements OnInit {
   private service = inject(PlotBookingsService);
+  private router = inject(Router);
+  @Input() heading = true;
   @Output() viewAvailability = new EventEmitter<void>();
 
   @ViewChild('backBtn') backBtn?: ElementRef<HTMLButtonElement>;
@@ -157,6 +161,10 @@ export class MyBookingsComponent implements OnInit {
         this.loading = false; this.error = true;
       }
     });
+  }
+
+  onViewAvailability(): void {
+    if (this.viewAvailability.observed) { this.viewAvailability.emit(); } else { void this.router.navigate(['/plot-bookings']); }
   }
 
   goTo(p: number): void { this.load(p); }

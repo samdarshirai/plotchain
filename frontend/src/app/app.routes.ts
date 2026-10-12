@@ -52,6 +52,7 @@ export const routes: Routes = [
   { path: 'plot-bookings', loadComponent: () => import('./admin/projects-plots/projects-plots.component').then(m => m.ProjectsPlotsComponent), data: { readOnly: true }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'plot-bookings/team', loadComponent: () => import('./plot-bookings/team-plot-bookings.component').then(m => m.TeamPlotBookingsComponent), data: { scope: 'TEAM' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'plot-bookings/left', loadComponent: () => import('./plot-bookings/team-plot-bookings.component').then(m => m.TeamPlotBookingsComponent), data: { scope: 'LEFT' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'plot-bookings/mine', loadComponent: () => import('./plot-bookings/my-bookings.component').then(m => m.MyBookingsComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'plot-bookings/right', loadComponent: () => import('./plot-bookings/team-plot-bookings.component').then(m => m.TeamPlotBookingsComponent), data: { scope: 'RIGHT' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'e-pins', component: EPinsComponent, canActivate: [authGuard, associateOnlyGuard] },
   // Merged into one "My Account" screen (Account Consolidation.dc.html) -- /rewards and

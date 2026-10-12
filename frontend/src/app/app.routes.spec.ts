@@ -23,6 +23,15 @@ describe('routes', () => {
     expect(route!.canActivate).toContain(associateOnlyGuard);
   });
 
+  it('guards the my-bookings route with authGuard and associateOnlyGuard, lazily', () => {
+    const route = routes.find(r => r.path === 'plot-bookings/mine');
+
+    expect(route).toBeTruthy();
+    expect(route!.canActivate).toContain(authGuard);
+    expect(route!.canActivate).toContain(associateOnlyGuard);
+    expect(route!.loadComponent).toBeDefined();
+  });
+
   it('guards the my-tree route with authGuard and associateOnlyGuard', () => {
     const route = routes.find(r => r.path === 'my-tree');
 
