@@ -65,6 +65,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
         <label class="projects-plots__project-select" *ngIf="projects?.length">
           <span class="projects-plots__sr">{{ 'admin.projectsPlots.projectSelectLabel' | translate }}</span>
           <select (change)="selectProjectById($any($event.target).value)">
+            <option value="" disabled [selected]="!selectedProject" *ngIf="!selectedProject">{{ 'admin.projectsPlots.projectPlaceholder' | translate }}</option>
             <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === selectedProject?.id">{{ p.name }}</option>
           </select>
         </label>
@@ -92,8 +93,8 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
       <app-inline-banner *ngIf="projectsError" tone="danger">{{ 'admin.projectsPlots.error.loadProjects' | translate }}</app-inline-banner>
 
       <div class="projects-plots__empty" *ngIf="projects && !projects.length">
-        <h2>{{ 'admin.projectsPlots.empty.noProjectsTitle' | translate }}</h2>
-        <p>{{ 'admin.projectsPlots.empty.noProjectsBody' | translate }}</p>
+        <h2>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoProjectsTitle' : 'admin.projectsPlots.empty.noProjectsTitle') | translate }}</h2>
+        <p>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoProjectsBody' : 'admin.projectsPlots.empty.noProjectsBody') | translate }}</p>
       </div>
 
       <div class="projects-plots__layout" [class.projects-plots__layout--aside]="aside.kind !== 'none'" *ngIf="projects">
@@ -114,6 +115,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           </button>
         </nav>
         <!-- (b) project header + legend + grid -->
+        <p class="projects-plots__empty" role="status" *ngIf="readOnly && !selectedProject && projects.length">{{ 'admin.projectsPlots.empty.selectProjectPrompt' | translate }}</p>
         <section class="projects-plots__main" *ngIf="selectedProject as sp">
           <app-inline-banner *ngIf="gridError" tone="danger">
             {{ 'admin.projectsPlots.error.loadGrid' | translate }}
@@ -143,8 +145,8 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             </ng-template>
 
             <div class="projects-plots__empty" *ngIf="!grid.length">
-              <h2>{{ 'admin.projectsPlots.empty.noPlotsTitle' | translate }}</h2>
-              <p>{{ 'admin.projectsPlots.empty.noPlotsBody' | translate }}</p>
+              <h2>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoPlotsTitle' : 'admin.projectsPlots.empty.noPlotsTitle') | translate }}</h2>
+              <p>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoPlotsBody' : 'admin.projectsPlots.empty.noPlotsBody') | translate }}</p>
             </div>
             <p class="projects-plots__empty" *ngIf="grid.length && !visibleBlocks.length">{{ 'admin.projectsPlots.empty.filter' | translate }}</p>
 
@@ -316,7 +318,7 @@ export class ProjectsPlotsComponent implements OnInit {
         this.projects = list;
         this.projectsError = false;
         const keep = selectId ?? this.selectedProject?.id;
-        const next = list.find(p => p.id === keep) ?? list[0] ?? null;
+        const next = list.find(p => p.id === keep) ?? (this.readOnly && list.length > 1 ? null : list[0]) ?? null;
         if (next && next.id !== this.selectedProject?.id) {
           this.selectProject(next);
         } else {
