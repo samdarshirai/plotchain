@@ -1,0 +1,15 @@
+.pager {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  padding-block: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.pager__summary {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}

@@ -1075,7 +1075,7 @@
       "eyebrow": "Inventory & Bookings",
       "title": "Bookings & EMI",
       "subtitle": "Track every plot booking, record instalments as they are collected, and chase the ones that are overdue.",
-      "tab": { "register": "Register", "overdue": "Overdue report" },
+      "tab": { "register": "Register", "overdue": "Overdue report", "unconfirmed": "Unconfirmed", "confirmed": "Confirmed", "cancelled": "Cancelled", "lastEmi": "EMI by last date" },
       "rule": {
         "manual": "Confirm rule: Manual",
         "auto": "Confirm rule: Auto at {{percent}}%"
@@ -1083,15 +1083,24 @@
       "filter": {
         "status": "Status", "allStatuses": "All statuses", "associate": "Associate", "anyAssociate": "Any associate",
         "project": "Project", "allProjects": "All projects", "plot": "Plot", "anyPlot": "Any plot", "plotNeedsProject": "Choose a project first",
-        "overdueOnly": "Overdue only", "reset": "Reset filters"
+        "overdueOnly": "Overdue only", "reset": "Reset filters",
+        "bookedFrom": "Booked from", "bookedTo": "Booked to", "cancelledFrom": "Cancelled from", "cancelledTo": "Cancelled to",
+        "from": "From", "to": "To", "search": "Search", "searchPlaceholder": "Associate ID or plot no"
       },
       "status": { "ACTIVE": "Active", "CONFIRMED": "Confirmed", "CANCELLED": "Cancelled" },
       "col": { "buyer": "Buyer", "associate": "Associate", "status": "Status", "total": "Total", "paid": "Paid", "due": "Due",
                "overdue": "Overdue", "amountOverdue": "Amount overdue", "oldestDue": "Oldest due", "plot": "Plot",
-               "no": "#", "dueDate": "Due", "amount": "Amount", "installmentStatus": "Status" },
+               "no": "#", "dueDate": "Due", "amount": "Amount", "installmentStatus": "Status",
+               "mobile": "Mobile", "area": "Area", "rate": "Rate", "discount": "Discount", "listPrice": "List price", "bookedOn": "Booked on",
+               "cancelledOn": "Cancelled on", "associateId": "Associate ID", "project": "Project", "paymentDate": "Payment date", "mode": "Mode",
+               "reference": "Reference", "entryBy": "Entry by", "confirmBy": "Confirm by", "confirmDate": "Confirm date",
+               "lastDueDate": "Last EMI date", "rest": "Rest", "select": "Select" },
       "overduePill": "{{count}} overdue",
       "overdueBadge": "Overdue",
-      "installment": { "PENDING": "Pending", "PAID": "Paid", "VOID": "Void" },
+      "installment": { "PENDING": "Pending", "ENTERED": "Entered", "PAID": "Paid", "VOID": "Void" },
+      "paymentMode": { "label": "Payment mode", "CASH": "Cash", "CHEQUE": "Cheque", "UPI": "UPI", "BANK_TRANSFER": "Bank transfer", "OTHER": "Other" },
+      "totalRow": "Total",
+      "pendingTotal": "Pending confirmation",
       "seal": {
         "detail": "Booking detail", "pay": "Record payment", "confirm": "Confirm booking", "cancel": "Cancel booking", "transfer": "Transfer booking",
         "none": "Select a booking to see its instalments and take action.",
@@ -1102,7 +1111,9 @@
       "action": {
         "pay": "Pay", "payBtn": "Record {{amount}}", "confirm": "Confirm", "transfer": "Transfer", "cancel": "Cancel",
         "cancelBtn": "Cancel booking", "keep": "Keep booking", "back": "Back", "confirmBtn": "Confirm booking", "transferBtn": "Transfer booking",
-        "recording": "Recording…", "confirming": "Confirming…", "cancelling": "Cancelling…", "transferring": "Transferring…", "reload": "Reload booking"
+        "recording": "Recording…", "confirming": "Confirming…", "cancelling": "Cancelling…", "transferring": "Transferring…", "reload": "Reload booking",
+        "enterPayment": "Enter payment", "confirmPayment": "Confirm", "confirmSelected": "Confirm selected", "checkAll": "Check all",
+        "uncheckAll": "Uncheck all", "exportCsv": "Export CSV", "print": "Print"
       },
       "field": {
         "amount": "Amount received", "amountHint": "Fixed to the instalment amount. Part payments aren't supported.",
@@ -1648,5 +1659,12 @@
     "corner": "Corner",
     "status": { "AVAILABLE": "Available", "BOOKED": "Booked", "SOLD": "Sold" },
     "type": { "NORMAL": "Normal", "CORNER": "Corner" }
+  },
+  "shared": {
+    "pager": {
+      "previous": "Previous",
+      "next": "Next",
+      "summary": "{{from}}–{{to}} of {{total}} · Page {{page}} of {{totalPages}}"
+    }
   }
 }
