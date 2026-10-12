@@ -253,4 +253,132 @@ class BookingControllerTest {
         mockMvc.perform(post("/api/admin/bookings/{id}/confirm", plotGone).header("Authorization", admin))
             .andExpect(status().isConflict());
     }
+
+    // ---- U2: payment confirmation endpoints ----
+
+    private static final String BULK_PATH = "/api/admin/payments/confirm";
+
+    private org.springframework.test.web.servlet.ResultActions bulk(String bearer, String body) throws Exception {
+        return mockMvc.perform(post(BULK_PATH).header("Authorization", bearer)
+            .contentType("application/json").content(body));
+    }
+
+    private static String bulkBody(UUID id) {
+        return "{\"items\":[{\"bookingId\":\"" + id + "\",\"installmentNumber\":1}]}";
+    }
+
+    @Test
+    void confirmPaymentReturns200AndPassesAdminAsActor() throws Exception {
+        UUID bookingId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        BookingResponse updated = new BookingResponse(bookingId, UUID.randomUUID(), UUID.randomUUID(),
+            BookingStatus.ACTIVE, "Jane Buyer", new BigDecimal("200000.00"), 2, Instant.now(),
+            new BigDecimal("100000.00"), new BigDecimal("100000.00"), List.of());
+        when(bookingService.confirmPayment(bookingId, 2, adminId)).thenReturn(updated);
+
+        mockMvc.perform(post("/api/admin/bookings/{id}/installments/{n}/confirm", bookingId, 2)
+                .header("Authorization", "Bearer " + tokenFor(adminId, AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(bookingId.toString()));
+    }
+
+    @Test
+    void confirmPaymentMapsExceptions() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(bookingService.confirmPayment(eq(id), eq(1), any())).thenThrow(new BookingNotFoundException(id));
+        when(bookingService.confirmPayment(eq(id), eq(2), any())).thenThrow(new InstallmentNotFoundException(id, 2));
+        when(bookingService.confirmPayment(eq(id), eq(3), any())).thenThrow(new BookingNotActiveException(id));
+        when(bookingService.confirmPayment(eq(id), eq(4), any())).thenThrow(new InstallmentNotEnteredException(id, 4));
+        String admin = "Bearer " + tokenFor(AssociateRole.ADMIN);
+
+        int[] expected = {404, 404, 409, 409};
+        for (int n = 1; n <= 4; n++) {
+            mockMvc.perform(post("/api/admin/bookings/{id}/installments/{n}/confirm", id, n).header("Authorization", admin))
+                .andExpect(status().is(expected[n - 1]));
+        }
+    }
+
+    @Test
+    void confirmPaymentIsForbiddenForAnAssociateTokenAndUnauthorizedWithoutOne() throws Exception {
+        UUID id = UUID.randomUUID();
+        mockMvc.perform(post("/api/admin/bookings/{id}/installments/1/confirm", id)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/admin/bookings/{id}/installments/1/confirm", id))
+            .andExpect(status().isUnauthorized());
+        org.mockito.Mockito.verifyNoInteractions(bookingService);
+    }
+
+    @Test
+    void bulkConfirmReturns200WithBookingsAndPassesActor() throws Exception {
+        UUID bookingId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        BookingResponse updated = new BookingResponse(bookingId, UUID.randomUUID(), UUID.randomUUID(),
+            BookingStatus.ACTIVE, "Jane Buyer", new BigDecimal("200000.00"), 2, Instant.now(),
+            new BigDecimal("100000.00"), new BigDecimal("100000.00"), List.of());
+        when(bookingService.confirmPayments(eq(List.of(new PaymentRef(bookingId, 1))), eq(adminId)))
+            .thenReturn(List.of(updated));
+
+        bulk("Bearer " + tokenFor(adminId, AssociateRole.ADMIN), bulkBody(bookingId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(bookingId.toString()));
+    }
+
+    @Test
+    void bulkConfirmMapsExceptions() throws Exception {
+        UUID conflict = UUID.randomUUID();
+        UUID missing = UUID.randomUUID();
+        UUID dup = UUID.randomUUID();
+        when(bookingService.confirmPayments(eq(List.of(new PaymentRef(conflict, 1))), any()))
+            .thenThrow(new InstallmentNotEnteredException(conflict, 1));
+        when(bookingService.confirmPayments(eq(List.of(new PaymentRef(missing, 1))), any()))
+            .thenThrow(new BookingNotFoundException(missing));
+        when(bookingService.confirmPayments(eq(List.of(new PaymentRef(dup, 1))), any()))
+            .thenThrow(new DuplicatePaymentRefException(dup, 1));
+        String admin = "Bearer " + tokenFor(AssociateRole.ADMIN);
+
+        bulk(admin, bulkBody(conflict)).andExpect(status().isConflict());
+        bulk(admin, bulkBody(missing)).andExpect(status().isNotFound());
+        bulk(admin, bulkBody(dup)).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void bulkConfirmIsForbiddenForAnAssociateToken() throws Exception {
+        bulk("Bearer " + tokenFor(AssociateRole.ASSOCIATE), bulkBody(UUID.randomUUID()))
+            .andExpect(status().isForbidden());
+        org.mockito.Mockito.verifyNoInteractions(bookingService);
+    }
+
+    @Test
+    void bulkConfirmRejectsInvalidBodiesWith400WithoutCallingTheService() throws Exception {
+        String admin = "Bearer " + tokenFor(AssociateRole.ADMIN);
+        String item = "{\"bookingId\":\"" + UUID.randomUUID() + "\",\"installmentNumber\":1}";
+        String tooMany = "{\"items\":[" + String.join(",", java.util.Collections.nCopies(201, item)) + "]}";
+        for (String body : List.of(
+                "{}", "{\"items\":[]}", "{\"items\":null}", tooMany,
+                "{\"items\":[{\"installmentNumber\":1}]}",
+                "{\"items\":[{\"bookingId\":\"" + UUID.randomUUID() + "\",\"installmentNumber\":0}]}",
+                "{\"items\":[{\"bookingId\":\"not-a-uuid\",\"installmentNumber\":1}]}")) {
+            bulk(admin, body).andExpect(status().isBadRequest());
+        }
+        org.mockito.Mockito.verifyNoInteractions(bookingService);
+    }
+
+    @Test
+    void payRejectsMissingOrInvalidPaymentModeAndAcceptsUpi() throws Exception {
+        UUID id = UUID.randomUUID();
+        pay(id, 1, "{\"amount\":100.00,\"paymentRef\":\"UTR-1\"}").andExpect(status().isBadRequest());
+        pay(id, 1, "{\"amount\":100.00,\"paymentRef\":\"UTR-1\",\"paymentMode\":\"BITCOIN\"}")
+            .andExpect(status().isBadRequest());
+        org.mockito.Mockito.verifyNoInteractions(bookingService);
+
+        when(bookingService.recordPayment(eq(id), eq(1), any(RecordPaymentRequest.class), any()))
+            .thenReturn(new BookingResponse(id, UUID.randomUUID(), UUID.randomUUID(), BookingStatus.ACTIVE, "J",
+                new BigDecimal("1.00"), 1, Instant.now(), BigDecimal.ZERO, BigDecimal.ONE, List.of()));
+        pay(id, 1, "{\"amount\":100.00,\"paymentRef\":\"UTR-1\",\"paymentMode\":\"UPI\"}").andExpect(status().isOk());
+        org.mockito.ArgumentCaptor<RecordPaymentRequest> captor =
+            org.mockito.ArgumentCaptor.forClass(RecordPaymentRequest.class);
+        org.mockito.Mockito.verify(bookingService).recordPayment(eq(id), eq(1), captor.capture(), any());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().paymentMode()).isEqualTo(PaymentMode.UPI);
+    }
 }
