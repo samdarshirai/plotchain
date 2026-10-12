@@ -117,6 +117,7 @@ describe('BookingSealComponent', () => {
     setup(bk({ installments: [inst(1, { status: 'PAID', paidAt: '2026-02-05T00:00:00Z' }), inst(2, { status: 'ENTERED', paidAt: '2026-03-02T00:00:00Z' }), inst(3), inst(4, { status: 'VOID' })] }));
     expect(el().textContent).toContain('admin.bookingsEmi.installment.ENTERED');
     expect(el().querySelectorAll('.booking-seal__pay').length).toBe(1);
+    expect(el().querySelectorAll('.booking-seal__confirm-pay').length).toBe(1);
   });
 
   it('success without a status flip emits the plain payment flash', async () => {
@@ -426,5 +427,114 @@ describe('BookingSealComponent', () => {
   it('the Pay row button reads "Enter payment"', () => {
     setup();
     expect(el().querySelector('.booking-seal__pay')!.textContent).toContain('admin.bookingsEmi.action.enterPayment');
+  });
+
+  const entered = (n: number) => inst(n, { status: 'ENTERED', paidAt: '2026-03-02T00:00:00Z', paymentMode: 'UPI' });
+  const withEntered = (over: Record<string, unknown> = {}) =>
+    bk({ paidAmount: 250, installments: [inst(1, { status: 'PAID', paidAt: '2026-02-05T00:00:00Z' }), entered(2), inst(3), inst(4, { status: 'VOID' })], ...over });
+
+  it('ENTERED rows get a Confirm button on an ACTIVE booking', () => {
+    setup(withEntered());
+    expect(el().querySelectorAll('.booking-seal__confirm-pay').length).toBe(1);
+  });
+  it('ENTERED rows still get Confirm on a CONFIRMED booking', () => {
+    setup(withEntered({ status: 'CONFIRMED' }));
+    expect(el().querySelectorAll('.booking-seal__confirm-pay').length).toBe(1);
+  });
+  it('no Confirm button on a CANCELLED booking', () => {
+    setup(withEntered({ status: 'CANCELLED', dueAmount: 0 }));
+    expect(el().querySelectorAll('.booking-seal__confirm-pay').length).toBe(0);
+  });
+
+  it('shows the ENTERED status as a warning chip with its mode and date', () => {
+    setup(withEntered());
+    const chip = el().querySelector('.booking-register__chip--entered')!;
+    expect(chip.textContent).toContain('admin.bookingsEmi.installment.ENTERED');
+    expect(el().textContent).toContain('admin.bookingsEmi.paymentMode.UPI');
+  });
+  it('confirm-payment form states the effect and posts to the single-confirm endpoint', () => {
+    setup(withEntered(), { ...auto, confirmThresholdPercent: 90 });
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    expect(el().textContent).toContain('admin.bookingsEmi.confirmPayEffects.0');
+    submit();
+    const req = http.expectOne('/api/admin/bookings/b1/installments/2/confirm');
+    expect(req.request.method).toBe('POST');
+    req.flush(withEntered({ paidAmount: 500, installments: [inst(1, { status: 'PAID' }), inst(2, { status: 'PAID', confirmedAt: '2026-03-03T00:00:00Z' }), inst(3), inst(4, { status: 'VOID' })] }));
+  });
+  it('warns before confirming when this payment will auto-confirm the booking', () => {
+    setup(withEntered(), { ...auto, confirmThresholdPercent: 50 }); // 250 paid + 250 = 50%
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    expect(el().textContent).toContain('admin.bookingsEmi.warn.autoConfirm');
+    expect(el().textContent).toContain('admin.bookingsEmi.warn.autoConfirmDetail');
+  });
+  it('does not warn under MANUAL or when the threshold is not reached', () => {
+    setup(withEntered(), { ...auto, confirmRule: 'MANUAL' });
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    expect(el().textContent).not.toContain('admin.bookingsEmi.warn.autoConfirm');
+  });
+  it('does not warn on a CONFIRMED booking (no second auto-confirm)', () => {
+    setup(withEntered({ status: 'CONFIRMED' }), { ...auto, confirmThresholdPercent: 50 });
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    expect(el().textContent).not.toContain('admin.bookingsEmi.warn.autoConfirm');
+  });
+  it('emits the auto-confirm flash when confirming flips ACTIVE to CONFIRMED', () => {
+    setup(withEntered(), { ...auto, confirmThresholdPercent: 50 });
+    const flashes: { key: string; params?: any }[] = []; c().flash.subscribe(f => flashes.push(f));
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    submit();
+    http.expectOne('/api/admin/bookings/b1/installments/2/confirm').flush(withEntered({ status: 'CONFIRMED', paidAmount: 500 }));
+    expect(flashes[0].key).toBe('admin.bookingsEmi.ok.autoConfirm');
+    expect(flashes[0].params.n).toBe(2);
+  });
+  it('emits the plain confirm-payment flash when the status does not flip', () => {
+    setup(withEntered(), { ...auto, confirmThresholdPercent: 90 });
+    const flashes: { key: string }[] = []; c().flash.subscribe(f => flashes.push(f));
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    submit();
+    http.expectOne('/api/admin/bookings/b1/installments/2/confirm').flush(withEntered({ paidAmount: 500 }));
+    expect(flashes[0].key).toBe('admin.bookingsEmi.ok.confirmPay');
+  });
+  it('409 "no entered payment" shows notEntered and asks the register to reload', () => {
+    setup(withEntered());
+    let reloads = 0; c().reloadRequested.subscribe(() => reloads++);
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    submit();
+    http.expectOne('/api/admin/bookings/b1/installments/2/confirm').flush({ error: 'Installment 2 of booking b1 has no entered payment to confirm' }, { status: 409, statusText: 'Conflict' });
+    fixture.detectChanges();
+    expect(el().textContent).toContain('admin.bookingsEmi.err.notEntered');
+    expect(reloads).toBe(1);
+  });
+  it('409 plot drift on confirm-payment says NOT confirmed and links to the fix pages', () => {
+    setup(withEntered());
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    submit();
+    http.expectOne('/api/admin/bookings/b1/installments/2/confirm').flush({ error: 'Plot is not available for booking: x', code: 'PLOT_NOT_AVAILABLE' }, { status: 409, statusText: 'Conflict' });
+    fixture.detectChanges();
+    expect(el().textContent).toContain('admin.bookingsEmi.err.plotDriftConfirmPay');
+    expect(el().querySelector('a[href="/settings/projects-plots"]')).not.toBeNull();
+    expect(el().querySelector('a[href="/settings/payments-kyc"]')).not.toBeNull();
+  });
+  it('network error on confirm-payment hides submit until the booking refreshes', () => {
+    setup(withEntered());
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    submit();
+    http.expectOne('/api/admin/bookings/b1/installments/2/confirm').error(new ProgressEvent('error'));
+    fixture.detectChanges();
+    expect(el().textContent).toContain('admin.bookingsEmi.err.confirmNetwork');
+    expect(el().querySelector('.booking-seal__submit')).toBeNull();
+  });
+  it('closes the confirm-payment form when the booking becomes CANCELLED or the instalment is no longer ENTERED', () => {
+    setup(withEntered());
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    fixture.componentRef.setInput('booking', withEntered({ installments: [inst(1, { status: 'PAID' }), inst(2, { status: 'PAID' }), inst(3), inst(4, { status: 'VOID' })] }));
+    fixture.detectChanges();
+    expect(c().mode).toBe('detail');
+  });
+  it('a CONFIRMED booking keeps the confirm-payment form open when refreshed', () => {
+    setup(withEntered({ status: 'CONFIRMED' }));
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    fixture.componentRef.setInput('booking', withEntered({ status: 'CONFIRMED' }));
+    fixture.detectChanges();
+    expect(c().mode).toBe('confirmPayment');
   });
 });

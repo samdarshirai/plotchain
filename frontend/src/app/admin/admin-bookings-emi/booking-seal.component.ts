@@ -14,7 +14,7 @@ import { BookingEmiConfig, FlashMessage, PayRequest } from './bookings-emi.model
 import { BookingsEmiService } from './bookings-emi.service';
 import { ErrorKind, associateLabel, formatMoney, classifyError, meterPercent, plotText, willAutoConfirm } from './bookings-emi.util';
 
-type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
+type Mode = 'detail' | 'pay' | 'confirmPayment' | 'confirm' | 'cancel' | 'transfer';
 
 @Component({
   encapsulation: ViewEncapsulation.None,
@@ -67,11 +67,16 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
                 <td>{{ i.dueDate | date: 'mediumDate' }}
                   <span class="booking-seal__overdue" *ngIf="i.overdue && i.status === 'PENDING'">{{ 'admin.bookingsEmi.overdueBadge' | translate }}</span></td>
                 <td>{{ money(i.amount) }}</td>
-                <td>{{ 'admin.bookingsEmi.installment.' + i.status | translate }}<ng-container *ngIf="i.status === 'PAID' && i.paidAt"> · {{ i.paidAt | date: 'mediumDate' }}</ng-container></td>
+                <td><span class="booking-register__chip booking-register__chip--{{ i.status | lowercase }}">{{ 'admin.bookingsEmi.installment.' + i.status | translate }}</span>
+                  <ng-container *ngIf="(i.status === 'ENTERED' || i.status === 'PAID') && i.paidAt"> · {{ i.paidAt | date: 'mediumDate' }}</ng-container>
+                  <ng-container *ngIf="i.paymentMode"> · {{ 'admin.bookingsEmi.paymentMode.' + i.paymentMode | translate }}</ng-container></td>
                 <td>
                   <button type="button" class="brand-button brand-button--secondary booking-seal__pay"
                     *ngIf="b.status === 'ACTIVE' && i.status === 'PENDING'" [disabled]="busy"
                     [attr.aria-label]="('admin.bookingsEmi.action.enterPayment' | translate) + ' ' + i.installmentNumber" [attr.data-opener]="'pay-' + i.installmentNumber" (click)="open('pay', i)">{{ 'admin.bookingsEmi.action.enterPayment' | translate }}</button>
+                  <button type="button" class="brand-button booking-seal__confirm-pay" *ngIf="b.status !== 'CANCELLED' && i.status === 'ENTERED'" [disabled]="busy"
+                    [attr.aria-label]="('admin.bookingsEmi.action.confirmPayment' | translate) + ' ' + i.installmentNumber"
+                    [attr.data-opener]="'confirmPayment-' + i.installmentNumber" (click)="open('confirmPayment', i)">{{ 'admin.bookingsEmi.action.confirmPayment' | translate }}</button>
                 </td>
               </tr>
             </tbody>
@@ -96,14 +101,19 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
               <ng-container *ngSwitchCase="'payNetwork'">{{ 'admin.bookingsEmi.err.payNetwork' | translate: { n: payTarget?.installmentNumber } }}
                 <button type="button" class="brand-button brand-button--secondary booking-seal__reload" (click)="reloadRequested.emit()">{{ 'admin.bookingsEmi.action.reload' | translate }}</button>
               </ng-container>
+              <ng-container *ngSwitchCase="'confirmNetwork'">{{ 'admin.bookingsEmi.err.confirmNetwork' | translate: { n: payTarget?.installmentNumber } }}
+                <button type="button" class="brand-button brand-button--secondary booking-seal__reload" (click)="reloadRequested.emit()">{{ 'admin.bookingsEmi.action.reload' | translate }}</button>
+              </ng-container>
+              <ng-container *ngSwitchCase="'plotDriftConfirmPay'">{{ 'admin.bookingsEmi.err.plotDriftConfirmPay' | translate }}</ng-container>
+              <ng-container *ngSwitchCase="'notEntered'">{{ 'admin.bookingsEmi.err.notEntered' | translate: { n: payTarget?.installmentNumber } }}</ng-container>
               <ng-container *ngSwitchCase="'amountMismatch'">{{ 'admin.bookingsEmi.err.amountMismatch' | translate: { amount: money(payTarget?.amount ?? 0) } }}</ng-container>
               <ng-container *ngSwitchCase="'notPayable'">{{ 'admin.bookingsEmi.err.notPayable' | translate: { n: payTarget?.installmentNumber } }}</ng-container>
               <ng-container *ngSwitchDefault>{{ 'admin.bookingsEmi.err.' + bannerKey | translate }}</ng-container>
             </ng-container>
             <ng-container *ngIf="error.kind === 'plotDrift'">
-              <br />{{ (mode === 'pay' ? 'admin.bookingsEmi.err.plotDriftFix' : 'admin.bookingsEmi.err.plotDriftFixConfirm') | translate }}
+              <br />{{ (mode === 'confirmPayment' ? 'admin.bookingsEmi.err.plotDriftFix' : 'admin.bookingsEmi.err.plotDriftFixConfirm') | translate }}
               <a routerLink="/settings/projects-plots">{{ 'admin.bookingsEmi.linkProjectsPlots' | translate }}</a>
-              <ng-container *ngIf="mode === 'pay'"> · <a routerLink="/settings/payments-kyc">{{ 'admin.bookingsEmi.linkSettings' | translate }}</a></ng-container>
+              <ng-container *ngIf="mode === 'confirmPayment'"> · <a routerLink="/settings/payments-kyc">{{ 'admin.bookingsEmi.linkSettings' | translate }}</a></ng-container>
             </ng-container>
             <div class="booking-seal__server" *ngIf="error.serverText">{{ 'admin.bookingsEmi.err.serverSaid' | translate: { text: error.serverText } }}</div>
           </app-inline-banner>
@@ -126,6 +136,14 @@ type Mode = 'detail' | 'pay' | 'confirm' | 'cancel' | 'transfer';
               <label>{{ 'admin.bookingsEmi.field.receivedOn' | translate }}
                 <input name="receivedOn" type="datetime-local" [value]="receivedOn" (input)="receivedOn = $any($event.target).value" /></label>
             </fieldset>
+          </ng-container>
+
+          <ng-container *ngIf="mode === 'confirmPayment' && payTarget">
+            <app-inline-banner tone="warning" role="status" *ngIf="predicts">
+              <strong>{{ 'admin.bookingsEmi.warn.autoConfirm' | translate }}</strong>
+              {{ 'admin.bookingsEmi.warn.autoConfirmDetail' | translate: { before: money(b.paidAmount), after: money(b.paidAmount + payTarget.amount) } }}
+            </app-inline-banner>
+            <ul class="booking-seal__effects"><li>{{ 'admin.bookingsEmi.confirmPayEffects.0' | translate: { amount: money(payTarget.amount) } }}</li></ul>
           </ng-container>
 
           <ng-container *ngIf="mode === 'confirm'">
@@ -195,7 +213,7 @@ export class BookingSealComponent implements OnChanges {
   money = formatMoney; pct = meterPercent; plot = plotText;
   assoc = (b: Booking) => associateLabel(b, this.directory);
   get pendingCount(): number { return this.booking?.installments.filter(i => i.status === 'PENDING').length ?? 0; }
-  get predicts(): boolean { return !!(this.booking && this.payTarget && willAutoConfirm(this.booking, this.payTarget.amount, this.config)); }
+  get predicts(): boolean { return !!(this.booking && this.payTarget && this.mode === 'confirmPayment' && willAutoConfirm(this.booking, this.payTarget.amount, this.config)); }
   get threshold(): number | null {
     return this.config?.confirmRule === 'AUTO_THRESHOLD' ? this.config.confirmThresholdPercent : null;
   }
@@ -206,13 +224,13 @@ export class BookingSealComponent implements OnChanges {
   get isLookupError(): boolean { return this.mode === 'transfer' && (this.error?.kind === 'sameAssociate' || this.error?.kind === 'invalidTarget'); }
   get bannerKey(): string {
     const k = this.error?.kind;
-    if (k === 'network') { return this.mode === 'pay' ? 'payNetwork' : 'generic'; }
-    if (k === 'plotDrift') { return 'plotDriftConfirm'; }
+    if (k === 'network') { return this.mode === 'pay' ? 'payNetwork' : this.mode === 'confirmPayment' ? 'confirmNetwork' : 'generic'; }
+    if (k === 'plotDrift') { return this.mode === 'confirmPayment' ? 'plotDriftConfirmPay' : 'plotDriftConfirm'; }
     if (k === 'validation' || !k) { return 'generic'; }
     return k;
   }
   get submitLabel(): string {
-    const labels = { pay: ['payBtn', 'recording'], confirm: ['confirmBtn', 'confirming'], cancel: ['cancelBtn', 'cancelling'], transfer: ['transferBtn', 'transferring'], detail: ['', ''] }[this.mode];
+    const labels = { pay: ['payBtn', 'recording'], confirmPayment: ['confirmPaymentBtn', 'confirmingPayment'], confirm: ['confirmBtn', 'confirming'], cancel: ['cancelBtn', 'cancelling'], transfer: ['transferBtn', 'transferring'], detail: ['', ''] }[this.mode];
     return 'admin.bookingsEmi.action.' + labels[this.busy ? 1 : 0];
   }
 
@@ -222,20 +240,22 @@ export class BookingSealComponent implements OnChanges {
     // same booking refreshed (e.g. after Reload): the outcome of an unknown request is now visible
     if (this.netUnknown) { this.netUnknown = false; this.error = null; }
     if (this.mode === 'detail' || this.busy) { return; }
-    const fresh = this.mode === 'pay' ? this.booking?.installments.find(i => i.installmentNumber === this.payTarget?.installmentNumber) : null;
-    if (this.booking?.status !== 'ACTIVE' || (this.mode === 'pay' && fresh?.status !== 'PENDING')) {
+    const payish = this.mode === 'pay' || this.mode === 'confirmPayment';
+    const fresh = payish ? this.booking?.installments.find(i => i.installmentNumber === this.payTarget?.installmentNumber) : null;
+    const gone = this.mode === 'confirmPayment' ? this.booking?.status === 'CANCELLED' : this.booking?.status !== 'ACTIVE';
+    if (gone || (payish && fresh?.status !== (this.mode === 'pay' ? 'PENDING' : 'ENTERED'))) {
       const e = this.error;
       const n = this.payTarget?.installmentNumber;
       this.close();
       // the form (and its explanation) is going away because state changed: keep the explanation visible
-      if (e && (e.kind === 'notActive' || e.kind === 'notPayable')) { this.flash.emit({ key: 'admin.bookingsEmi.err.' + e.kind, params: { n } }); }
+      if (e && (e.kind === 'notActive' || e.kind === 'notPayable' || e.kind === 'notEntered')) { this.flash.emit({ key: 'admin.bookingsEmi.err.' + e.kind, params: { n } }); }
     } else if (fresh) { this.payTarget = fresh; }
   }
 
-  open(mode: 'pay' | 'confirm' | 'cancel' | 'transfer', i?: EmiInstallment): void {
+  open(mode: 'pay' | 'confirmPayment' | 'confirm' | 'cancel' | 'transfer', i?: EmiInstallment): void {
     if (this.busy) { return; }
-    this.opener = mode === 'pay' ? 'pay-' + i!.installmentNumber : mode;
-    this.mode = mode; this.payTarget = i ?? null; this.error = this.netUnknown && mode === 'pay' ? { kind: 'network' } : null; this.tried = false;
+    this.opener = mode === 'pay' || mode === 'confirmPayment' ? `${mode}-${i!.installmentNumber}` : mode;
+    this.mode = mode; this.payTarget = i ?? null; this.error = this.netUnknown && (mode === 'pay' || mode === 'confirmPayment') ? { kind: 'network' } : null; this.tried = false;
     this.paymentRef = ''; this.paymentMode = ''; this.receivedOn = ''; this.reason = ''; this.targetId = '';
     setTimeout(() => this.title?.nativeElement.focus());
   }
@@ -254,12 +274,13 @@ export class BookingSealComponent implements OnChanges {
 
   onSubmit(): void {
     if (this.mode === 'pay') { this.submitPay(); }
+    else if (this.mode === 'confirmPayment') { this.submitConfirmPayment(); }
     else if (this.mode === 'confirm') { this.submitConfirm(); }
     else if (this.mode === 'cancel') { this.submitCancel(); }
     else if (this.mode === 'transfer') { this.submitTransfer(); }
   }
 
-  private run(op: 'pay' | 'confirm' | 'cancel' | 'transfer', call: Observable<Booking>, okKey: (res: Booking, before: Booking) => FlashMessage): void {
+  private run(op: 'pay' | 'confirmPayment' | 'confirm' | 'cancel' | 'transfer', call: Observable<Booking>, okKey: (res: Booking, before: Booking) => FlashMessage): void {
     if (this.busy || !this.booking) { return; }
     const before = this.booking;
     this.setBusy(true); this.error = null;
@@ -268,8 +289,8 @@ export class BookingSealComponent implements OnChanges {
       error: (err: HttpErrorResponse) => {
         this.setBusy(false);
         this.error = classifyError(err, op);
-        if (this.error.kind === 'network' && op === 'pay') { this.netUnknown = true; }
-        if (['notActive', 'notPayable', 'notFound'].includes(this.error.kind)) { this.reloadRequested.emit(); }
+        if (this.error.kind === 'network' && (op === 'pay' || op === 'confirmPayment')) { this.netUnknown = true; }
+        if (['notActive', 'notPayable', 'notEntered', 'notFound'].includes(this.error.kind)) { this.reloadRequested.emit(); }
       }
     });
   }
@@ -286,6 +307,14 @@ export class BookingSealComponent implements OnChanges {
     if (this.receivedOn) { req.paidAt = new Date(this.receivedOn).toISOString(); }
     this.run('pay', this.service.pay(this.booking.id, target.installmentNumber, req), res =>
       ({ key: 'admin.bookingsEmi.ok.pay', params: { n: target.installmentNumber, buyer: res.buyerName, amount: this.money(target.amount) } }));
+  }
+  submitConfirmPayment(): void {
+    if (this.busy || this.netUnknown || !this.booking || !this.payTarget) { return; }
+    const target = this.payTarget;
+    this.run('confirmPayment', this.service.confirmPayment(this.booking.id, target.installmentNumber), (res, before) =>
+      before.status === 'ACTIVE' && res.status === 'CONFIRMED'
+        ? { key: 'admin.bookingsEmi.ok.autoConfirm', params: { n: target.installmentNumber, buyer: res.buyerName, pct: this.pct(res.paidAmount, res.totalAmount) } }
+        : { key: 'admin.bookingsEmi.ok.confirmPay', params: { n: target.installmentNumber, buyer: res.buyerName, amount: this.money(target.amount) } });
   }
   submitConfirm(): void {
     if (!this.booking) { return; }
