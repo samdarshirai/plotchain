@@ -355,7 +355,7 @@ class BookingControllerTest {
         String item = "{\"bookingId\":\"" + UUID.randomUUID() + "\",\"installmentNumber\":1}";
         String tooMany = "{\"items\":[" + String.join(",", java.util.Collections.nCopies(201, item)) + "]}";
         for (String body : List.of(
-                "{}", "{\"items\":[]}", "{\"items\":null}", tooMany,
+                "{}", "{\"items\":[]}", "{\"items\":null}", "{\"items\":[null]}", tooMany,
                 "{\"items\":[{\"installmentNumber\":1}]}",
                 "{\"items\":[{\"bookingId\":\"" + UUID.randomUUID() + "\",\"installmentNumber\":0}]}",
                 "{\"items\":[{\"bookingId\":\"not-a-uuid\",\"installmentNumber\":1}]}")) {

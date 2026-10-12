@@ -583,6 +583,7 @@ class BookingAutoConfirmIntegrationTest {
         assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAY_CONFIRMED'", b.id())).isZero();
     }
 
+    // Smoke test: service sorts items by bookingId, so both threads lock in one order whatever the request order.
     @Test
     void bulkConfirmAcrossBookingsInOpposingRequestOrdersCompletesWithoutDeadlock() throws Exception {
         setConfig(true, 4, "MANUAL", null);

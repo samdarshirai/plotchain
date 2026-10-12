@@ -699,8 +699,8 @@ class BookingServiceTest {
     }
 
     @Test
-    void recordPaymentOnPaidOrVoidInstallmentIs409AndLeavesItUntouched() {
-        for (InstallmentStatus status : List.of(InstallmentStatus.PAID, InstallmentStatus.VOID)) {
+    void recordPaymentOnEnteredPaidOrVoidInstallmentIs409AndLeavesItUntouched() {
+        for (InstallmentStatus status : List.of(InstallmentStatus.PAID, InstallmentStatus.VOID, InstallmentStatus.ENTERED)) {
             EmiInstallment i1 = installment(1, "100.00", LocalDate.of(2026, 7, 15), status);
             i1.setPaymentRef("original");
             PlotBooking booking = lockedBookingWith(i1);
