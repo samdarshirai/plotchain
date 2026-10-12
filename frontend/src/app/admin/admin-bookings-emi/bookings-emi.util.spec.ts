@@ -1,7 +1,7 @@
 import { Booking } from '../../plot-bookings/models/associate-booking-page.model';
 import { BookingEmiConfig } from './bookings-emi.model';
 import { of, throwError } from 'rxjs';
-import { formatMoney, associateLabel, classifyError, collectPages, meterPercent, plotText, previewSchedule, willAutoConfirm } from './bookings-emi.util';
+import { formatMoney, associateLabel, classifyError, collectPages, meterPercent, plotText, previewSchedule, utcDate, willAutoConfirm } from './bookings-emi.util';
 
 const b = (over: Partial<Booking> = {}): Booking => ({
   id: 'b', plotId: '123e4567-89ab', associateId: 'a1', status: 'ACTIVE', buyerName: 'R', totalAmount: 1000,
@@ -132,7 +132,17 @@ describe('classifyError confirmPayment', () => {
   });
 });
 
+describe('utcDate', () => {
+  it('returns the UTC calendar date regardless of local zone', () => {
+    expect(utcDate(new Date('2026-03-01T23:30:00-05:00'))).toBe('2026-03-02');
+    expect(utcDate(new Date('2026-03-01T00:30:00+05:30'))).toBe('2026-02-28');
+  });
+});
+
 describe('previewSchedule', () => {
+  it('numbers rows from the given start', () => {
+    expect(previewSchedule(100, 2, '2026-11-05', 5).map(r => r.n)).toEqual([5, 6]);
+  });
   it('splits in cents with the remainder on the last row', () => {
     expect(previewSchedule(70000, 3, '2026-11-05')).toEqual([
       { n: 1, dueDate: '2026-11-05', amount: 23333.33 },

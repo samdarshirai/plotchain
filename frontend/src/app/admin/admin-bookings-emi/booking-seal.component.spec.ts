@@ -562,6 +562,25 @@ describe('BookingSealComponent', () => {
       c().busy = false;
     });
 
+    it('previews numbers continuing after the highest row incl. VOID', () => {
+      setup(bk({ installments: [inst(1, { status: 'PAID' }), inst(2, { status: 'VOID' }), inst(3, { status: 'VOID' }), inst(4, { amount: 100 })] }));
+      open(); fill('2', FUT);
+      const rows = Array.from(el().querySelectorAll('.booking-reschedule__preview tbody tr')).map(r => r.querySelector('td,th')!.textContent!.trim());
+      expect(rows[0]).toContain('5');
+      expect(rows[1]).toContain('6');
+    });
+
+    it('ACTIVE with no PENDING rows shows a visible hint wired to the disabled button', () => {
+      setup(bk({ installments: [inst(1, { status: 'PAID' }), inst(2, { status: 'ENTERED' })] }));
+      const btn = el().querySelector<HTMLButtonElement>('[data-opener="reschedule"]')!;
+      const hint = el().querySelector('#seal-reschedule-hint')!;
+      expect(hint.textContent).toContain('admin.bookingsEmi.err.noBalance');
+      expect(btn.getAttribute('aria-describedby')).toBe('seal-reschedule-hint');
+      TestBed.resetTestingModule();
+      setup();
+      expect(el().querySelector('#seal-reschedule-hint')).toBeNull();
+    });
+
     it('opens the form with number and date inputs and the effects list', () => {
       setup(); open();
       const n = el().querySelector<HTMLInputElement>('[name="installmentCount"]')!;
@@ -630,6 +649,7 @@ describe('BookingSealComponent', () => {
       http.expectOne('/api/admin/bookings/b1/reschedule').flush({ error: 'none', code: 'NO_REMAINING_BALANCE' }, { status: 409, statusText: 'x' });
       fixture.detectChanges();
       expect(el().textContent).toContain('admin.bookingsEmi.err.noBalance');
+      expect(reloads).toBe(2);
       submit();
       http.expectOne('/api/admin/bookings/b1/reschedule').flush({ error: 'too small' }, { status: 400, statusText: 'x' });
       fixture.detectChanges();

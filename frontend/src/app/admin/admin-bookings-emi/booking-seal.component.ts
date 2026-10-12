@@ -12,7 +12,7 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { BookingEmiConfig, FlashMessage, PayRequest } from './bookings-emi.model';
 import { BookingsEmiService } from './bookings-emi.service';
-import { ErrorKind, associateLabel, formatMoney, classifyError, meterPercent, plotText, previewSchedule, willAutoConfirm } from './bookings-emi.util';
+import { ErrorKind, associateLabel, formatMoney, classifyError, meterPercent, plotText, previewSchedule, utcDate, willAutoConfirm } from './bookings-emi.util';
 
 type Mode = 'detail' | 'pay' | 'confirmPayment' | 'confirm' | 'cancel' | 'transfer' | 'reschedule';
 
@@ -87,13 +87,14 @@ type Mode = 'detail' | 'pay' | 'confirmPayment' | 'confirm' | 'cancel' | 'transf
               [attr.aria-describedby]="b.status !== 'ACTIVE' ? 'seal-locked-reason' : null" data-opener="confirm" (click)="open('confirm')">{{ 'admin.bookingsEmi.action.confirm' | translate }}</button>
             <button type="button" class="brand-button brand-button--secondary booking-seal__action"
               [disabled]="b.status !== 'ACTIVE' || busy || pendingCount === 0"
-              [attr.aria-describedby]="b.status !== 'ACTIVE' ? 'seal-locked-reason' : null"
+              [attr.aria-describedby]="b.status !== 'ACTIVE' ? 'seal-locked-reason' : pendingCount === 0 ? 'seal-reschedule-hint' : null"
               data-opener="reschedule" (click)="open('reschedule')">{{ 'admin.bookingsEmi.action.reschedule' | translate }}</button>
             <button type="button" class="brand-button brand-button--secondary booking-seal__action" [disabled]="b.status !== 'ACTIVE' || busy"
               [attr.aria-describedby]="b.status !== 'ACTIVE' ? 'seal-locked-reason' : null" data-opener="transfer" (click)="open('transfer')">{{ 'admin.bookingsEmi.action.transfer' | translate }}</button>
             <button type="button" class="brand-button brand-button--secondary booking-seal__action" [disabled]="b.status !== 'ACTIVE' || busy"
               [attr.aria-describedby]="b.status !== 'ACTIVE' ? 'seal-locked-reason' : null" data-opener="cancel" (click)="open('cancel')">{{ 'admin.bookingsEmi.action.cancel' | translate }}</button>
           </div>
+          <p id="seal-reschedule-hint" class="booking-seal__locked" *ngIf="b.status === 'ACTIVE' && pendingCount === 0">{{ 'admin.bookingsEmi.err.noBalance' | translate }}</p>
           <p id="seal-locked-reason" class="booking-seal__locked" *ngIf="b.status !== 'ACTIVE'">
             {{ 'admin.bookingsEmi.locked.' + (b.status === 'CANCELLED' ? 'cancelled' : 'active') | translate }}
           </p>
@@ -246,10 +247,12 @@ export class BookingSealComponent implements OnChanges {
   assoc = (b: Booking) => associateLabel(b, this.directory);
   get pendingCount(): number { return this.booking?.installments.filter(i => i.status === 'PENDING').length ?? 0; }
   get pendingSum(): number { return this.booking?.installments.filter(i => i.status === 'PENDING').reduce((s, i) => s + i.amount, 0) ?? 0; }
-  // local calendar date, not UTC: a late-evening IST user must not be a day off
-  get today(): string { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+  // UTC calendar date: the server validates the first due date against today in UTC
+  get today(): string { return utcDate(); }
   private get rsCountValue(): number | null { const n = Number(this.rsCount); return this.rsCount !== '' && Number.isInteger(n) && n >= 1 && n <= 60 ? n : null; }
-  get rsPreview() { const n = this.rsCountValue; return n ? previewSchedule(this.pendingSum, n, this.rsFirstDue) : []; }
+  // the server numbers new instalments after the highest existing row, VOID included
+  private get nextNumber(): number { return Math.max(0, ...(this.booking?.installments.map(i => i.installmentNumber) ?? [])) + 1; }
+  get rsPreview() { const n = this.rsCountValue; return n ? previewSchedule(this.pendingSum, n, this.rsFirstDue, this.nextNumber) : []; }
   get rsCountInvalid(): boolean { return this.tried && this.rsCountValue === null; }
   get rsDateInvalid(): boolean { return this.tried && (!this.rsFirstDue || this.rsFirstDue < this.today); }
   get predicts(): boolean { return !!(this.booking && this.payTarget && this.mode === 'confirmPayment' && willAutoConfirm(this.booking, this.payTarget.amount, this.config)); }
@@ -330,7 +333,7 @@ export class BookingSealComponent implements OnChanges {
         this.setBusy(false);
         this.error = classifyError(err, op);
         if (this.error.kind === 'network' && (op === 'pay' || op === 'confirmPayment')) { this.netUnknown = true; }
-        if (['notActive', 'notPayable', 'notEntered', 'notFound'].includes(this.error.kind)) { this.reloadRequested.emit(); }
+        if (['notActive', 'notPayable', 'notEntered', 'notFound', 'noBalance'].includes(this.error.kind)) { this.reloadRequested.emit(); }
       }
     });
   }

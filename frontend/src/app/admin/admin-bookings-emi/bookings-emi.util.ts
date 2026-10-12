@@ -64,8 +64,11 @@ export function classifyError(
   return done('generic');
 }
 
+// The server compares dates against UTC today, so the client must too.
+export const utcDate = (d: Date = new Date()): string => d.toISOString().slice(0, 10);
+
 // Mirrors the server split: integer cents, remainder on the last row, dates from the first date (day clamped like plusMonths).
-export function previewSchedule(balance: number, count: number, firstDue: string): { n: number; dueDate: string; amount: number }[] {
+export function previewSchedule(balance: number, count: number, firstDue: string, startNumber = 1): { n: number; dueDate: string; amount: number }[] {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(firstDue);
   const cents = Math.round(balance * 100);
   if (!m || !Number.isInteger(count) || count < 1 || cents <= 0) { return []; }
@@ -75,7 +78,7 @@ export function previewSchedule(balance: number, count: number, firstDue: string
   return Array.from({ length: count }, (_, i) => {
     const last = new Date(Date.UTC(y, mo + i + 1, 0)).getUTCDate();
     const dt = new Date(Date.UTC(y, mo + i, Math.min(d, last)));
-    return { n: i + 1, dueDate: dt.toISOString().slice(0, 10), amount: (i === count - 1 ? cents - base * (count - 1) : base) / 100 };
+    return { n: startNumber + i, dueDate: dt.toISOString().slice(0, 10), amount: (i === count - 1 ? cents - base * (count - 1) : base) / 100 };
   });
 }
 
