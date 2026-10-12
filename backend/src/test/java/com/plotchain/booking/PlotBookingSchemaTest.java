@@ -163,11 +163,60 @@ class PlotBookingSchemaTest {
     @Test
     void bookingEventAcceptsEveryValidType() {
         PlotBooking b = persistBooking();
-        for (String type : List.of("PAID", "CONFIRMED", "CANCELLED", "TRANSFERRED")) {
+        for (String type : List.of("PAID", "CONFIRMED", "CANCELLED", "TRANSFERRED", "PAY_CONFIRMED")) {
             jdbc.update("INSERT INTO booking_event (id, booking_id, type, actor_id, detail, created_at) VALUES (?, ?, ?, ?, NULL, CURRENT_TIMESTAMP)",
                 UUID.randomUUID(), b.getId(), type, b.getAssociateId());
         }
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM booking_event WHERE booking_id = ?", Integer.class, b.getId())).isEqualTo(4);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM booking_event WHERE booking_id = ?", Integer.class, b.getId())).isEqualTo(5);
+    }
+
+    @Test
+    void emiInstallmentAcceptsEnteredStatus() {
+        EmiInstallment i = persistInstallment(persistBooking().getId());
+        jdbc.update("UPDATE emi_installment SET status = 'ENTERED' WHERE id = ?", i.getId());
+        assertThat(jdbc.queryForObject("SELECT status FROM emi_installment WHERE id = ?", String.class, i.getId())).isEqualTo("ENTERED");
+    }
+
+    @Test
+    void dbRejectsAnInvalidPaymentMode() {
+        EmiInstallment i = persistInstallment(persistBooking().getId());
+        assertThatThrownBy(() -> jdbc.update("UPDATE emi_installment SET payment_mode = 'BOGUS' WHERE id = ?", i.getId()))
+            .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void emiInstallmentAcceptsEveryPaymentModeAndNull() {
+        EmiInstallment i = persistInstallment(persistBooking().getId());
+        for (String mode : List.of("CASH", "CHEQUE", "UPI", "BANK_TRANSFER", "OTHER")) {
+            jdbc.update("UPDATE emi_installment SET payment_mode = ? WHERE id = ?", mode, i.getId());
+        }
+        jdbc.update("UPDATE emi_installment SET payment_mode = NULL WHERE id = ?", i.getId());
+    }
+
+    @Test
+    void dbRejectsANegativeDiscount() {
+        PlotBooking b = persistBooking();
+        assertThatThrownBy(() -> jdbc.update("UPDATE plot_booking SET discount = -1 WHERE id = ?", b.getId()))
+            .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void discountDefaultsToZeroWhenOmittedFromTheInsert() {
+        UUID plotId = persistPlot(persistProject());
+        UUID associateId = persistAssociate();
+        entityManager.flush();
+        UUID bookingId = UUID.randomUUID();
+        jdbc.update("INSERT INTO plot_booking (id, plot_id, associate_id, buyer_name, total_amount, installment_count, booked_at) "
+            + "VALUES (?, ?, ?, 'Jane Buyer', 600000, 1, CURRENT_TIMESTAMP)", bookingId, plotId, associateId);
+        assertThat(jdbc.queryForObject("SELECT discount FROM plot_booking WHERE id = ?", BigDecimal.class, bookingId))
+            .isEqualByComparingTo("0");
+    }
+
+    @Test
+    void confirmedByMustReferenceAnExistingAssociate() {
+        EmiInstallment i = persistInstallment(persistBooking().getId());
+        assertThatThrownBy(() -> jdbc.update("UPDATE emi_installment SET confirmed_by = ? WHERE id = ?", UUID.randomUUID(), i.getId()))
+            .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
