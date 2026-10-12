@@ -466,6 +466,44 @@ describe('BookingRegisterComponent', () => {
       expect(lines[1]).toContain('1200');
     });
 
+    it('an inverted date range is not stored: export and later filters send the last valid range', () => {
+      boot();
+      const c = fixture.componentInstance;
+      c.applyDate({ bookedFrom: '2026-03-01' });
+      listReq().flush(pageOf([]));
+      c.applyDate({ bookedTo: '2026-01-01' });
+      expect(c.rangeError).toBeTrue();
+      expect(c.filters.bookedTo).toBeFalsy();
+      c.exportAll();
+      const r = listReq();
+      expect(r.request.params.get('bookedTo')).toBeNull();
+      expect(r.request.params.get('bookedFrom')).toBe('2026-03-01');
+      r.flush({ bookings: [], page: 0, size: 100, totalElements: 0 });
+    });
+
+    it('export uses one filter snapshot for every page and locks filters while exporting', () => {
+      boot();
+      const c = fixture.componentInstance;
+      c.exportAll();
+      c.applyFilter({ status: 'CONFIRMED' }); // ignored while exporting
+      expect(c.filters.status).toBeFalsy();
+      let r = listReq();
+      r.flush({ bookings: [bk('b1')], page: 0, size: 100, totalElements: 101 });
+      r = listReq();
+      expect(r.request.params.get('page')).toBe('1');
+      expect(r.request.params.get('status')).toBeNull();
+      r.flush({ bookings: [], page: 1, size: 100, totalElements: 101 });
+    });
+
+    it('CSV Associate ID prefers booking.associateCode over the directory/UUID', async () => {
+      boot();
+      btn('.booking-register__export').click();
+      listReq().flush({ bookings: [bk('b1', { associateCode: 'VA-99' })], page: 0, size: 100, totalElements: 1 });
+      const lines = (await csvText()).split('\r\n');
+      expect(lines[1]).toContain('VA-99');
+      expect(lines[1]).not.toContain('a1');
+    });
+
     it('a failed export shows err.export', () => {
       boot();
       btn('.booking-register__export').click();
