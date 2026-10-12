@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, provideRouter } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { By } from '@angular/platform-browser';
 import { ProjectsPlotsComponent } from './projects-plots.component';
@@ -757,4 +757,149 @@ describe('ProjectsPlotsComponent', () => {
       flush();
     }));
   });
+
+  describe('Table view rates, search and export', () => {
+    const RATES = (r: any) => r.url === '/api/company/projects/p1/plots' && r.params.get('size') === '500';
+    const rateReq = () => http.expectOne(RATES);
+    const rateBody = (rows: { id: string; rate: number }[]) => ({ plots: rows, page: 0, size: 500, totalElements: rows.length });
+    const openTable = () => {
+      const btns = Array.from(el().querySelectorAll<HTMLButtonElement>('.projects-plots__views button'));
+      btns[2].click();
+      fixture.detectChanges();
+    };
+    const bodyRows = () => Array.from(el().querySelectorAll('.projects-plots__table tbody tr'));
+    const type = (v: string) => {
+      const i = el().querySelector<HTMLInputElement>('.plot-table-tools__search')!;
+      i.value = v; i.dispatchEvent(new Event('input')); fixture.detectChanges();
+    };
+
+    it('fires no rates request when switching to Grid/Site', fakeAsync(() => {
+      boot();
+      const btns = Array.from(el().querySelectorAll<HTMLButtonElement>('.projects-plots__views button'));
+      btns[1].click(); fixture.detectChanges();
+      btns[0].click(); fixture.detectChanges();
+      http.expectNone(RATES);
+      expect(fixture.componentInstance.rates).toBeNull();
+      flush();
+    }));
+
+    it('opening Table requests rates once and shows the Rate column', fakeAsync(() => {
+      boot();
+      openTable();
+      rateReq().flush(rateBody([{ id: 'id-A-2', rate: 3750 }]));
+      fixture.detectChanges();
+      expect(el().querySelector('.projects-plots__table thead')!.textContent).toContain('admin.projectsPlots.rateLabel');
+      const a2 = el().querySelector('[data-plot-id="id-A-2"]')!;
+      expect(a2.textContent).toContain('3,750');
+      expect(el().querySelector('[data-plot-id="id-A-1"]')!.textContent).toContain('—');
+      const btns = Array.from(el().querySelectorAll<HTMLButtonElement>('.projects-plots__views button'));
+      btns[0].click(); fixture.detectChanges();
+      openTable();
+      http.expectNone(RATES);
+      flush();
+    }));
+
+    it('search narrows by plot number and status, composes with the legend chip, shows noMatch', fakeAsync(() => {
+      boot();
+      openTable(); rateReq().flush(rateBody([]));
+      fixture.detectChanges();
+      type('a-1');
+      expect(bodyRows().length).toBe(1);
+      type('');
+      el().querySelectorAll<HTMLButtonElement>('.projects-plots__key')[1].click(); // BOOKED chip
+      fixture.detectChanges();
+      type('a');
+      expect(bodyRows().length).toBe(1);
+      type('zzz');
+      expect(bodyRows().length).toBe(0);
+      expect(el().textContent).toContain('admin.projectsPlots.table.noMatch');
+      flush();
+    }));
+
+    it('search is cleared when another project is selected', fakeAsync(() => {
+      boot([project(), project({ id: 'p2', name: 'Other' })]);
+      openTable(); rateReq().flush(rateBody([]));
+      fixture.detectChanges();
+      type('a-1');
+      fixture.componentInstance.selectProject(fixture.componentInstance.projects![1]);
+      http.expectOne('/api/projects/p2/plots/grid').flush([cell('Z-1')]);
+      fixture.detectChanges();
+      expect(fixture.componentInstance.search).toBe('');
+      expect(el().querySelector<HTMLInputElement>('.plot-table-tools__search')!.value).toBe('');
+      http.expectOne(r => r.url === '/api/company/projects/p2/plots').flush(rateBody([]));
+      flush();
+    }));
+
+    it('ignores a late rates response for the previously selected project', fakeAsync(() => {
+      boot([project(), project({ id: 'p2', name: 'Other' })]);
+      openTable();
+      const late = rateReq();
+      fixture.componentInstance.selectProject(fixture.componentInstance.projects![1]);
+      http.expectOne('/api/projects/p2/plots/grid').flush([cell('Z-1', 'AVAILABLE', { plotId: 'id-A-2' })]);
+      fixture.detectChanges();
+      late.flush(rateBody([{ id: 'id-A-2', rate: 9999 }]));
+      fixture.detectChanges();
+      expect(el().textContent).not.toContain('9,999');
+      http.expectOne(r => r.url === '/api/company/projects/p2/plots').flush(rateBody([]));
+      flush();
+    }));
+
+    it('rates failure shows rateError, em dashes and disabled Export; Retry refetches', fakeAsync(() => {
+      boot();
+      openTable();
+      rateReq().flush('boom', { status: 500, statusText: 'err' });
+      fixture.detectChanges();
+      expect(el().textContent).toContain('admin.projectsPlots.table.rateError');
+      expect(el().querySelector<HTMLButtonElement>('.plot-table-tools__export')!.disabled).toBeTrue();
+      el().querySelector<HTMLButtonElement>('.plot-table-tools .projects-plots__retry')!.click();
+      rateReq().flush(rateBody([{ id: 'id-A-2', rate: 3750 }]));
+      fixture.detectChanges();
+      expect(el().textContent).not.toContain('admin.projectsPlots.table.rateError');
+      expect(el().querySelector<HTMLButtonElement>('.plot-table-tools__export')!.disabled).toBeFalse();
+      flush();
+    }));
+
+    it('Export CSV is disabled until rates load and exports exactly the filtered rows', async () => {
+      boot();
+      openTable();
+      const exp = () => el().querySelector<HTMLButtonElement>('.plot-table-tools__export')!;
+      expect(exp().disabled).toBeTrue();
+      rateReq().flush(rateBody([{ id: 'id-A-2', rate: 3750 }]));
+      fixture.detectChanges();
+      type('a-');
+      let blob: Blob | undefined; let name = '';
+      spyOn(URL, 'createObjectURL').and.callFake((b: any) => { blob = b; return 'blob:x'; });
+      spyOn(URL, 'revokeObjectURL');
+      spyOn(HTMLAnchorElement.prototype, 'click').and.callFake(function (this: HTMLAnchorElement) { name = this.download; });
+      exp().click();
+      expect(name).toBe('plots-green-valley.csv');
+      const text = await blob!.text();
+      expect(text).toContain('admin.projectsPlots.table.plot,admin.projectsPlots.table.area,admin.projectsPlots.rateLabel,admin.projectsPlots.table.total,admin.projectsPlots.table.status');
+      expect(text).toContain('A-2');
+      expect(text).not.toContain('B-1');
+    });
+  });
+});
+
+describe('ProjectsPlotsComponent (associate read-only)', () => {
+  it('Table view has no Rate column, search or export and makes no rates request', fakeAsync(() => {
+    TestBed.configureTestingModule({
+      imports: [ProjectsPlotsComponent, HttpClientTestingModule, TranslateModule.forRoot()],
+      providers: [provideRouter([]), { provide: ActivatedRoute, useValue: { snapshot: { data: { readOnly: true } } } }]
+    });
+    const fixture = TestBed.createComponent(ProjectsPlotsComponent);
+    const http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    http.expectOne('/api/company/projects').flush([{ id: 'p1', name: 'G', location: 'H', hasThumbnail: false, totalPlots: 1, availablePlots: 1, soldPlots: 0, createdAt: '2026-01-01T00:00:00Z' }]);
+    http.expectOne('/api/projects/p1/plots/grid').flush([{ plotId: 'id-A-1', plotNo: 'A-1', type: 'NORMAL', area: 1200, price: 4500000, status: 'AVAILABLE' }]);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    el.querySelectorAll<HTMLButtonElement>('.projects-plots__views button')[2].click();
+    fixture.detectChanges();
+    expect(el.querySelector('.projects-plots__table')).not.toBeNull();
+    expect(el.textContent).not.toContain('admin.projectsPlots.rateLabel');
+    expect(el.querySelector('.plot-table-tools')).toBeNull();
+    http.verify();
+    flush();
+  }));
 });
