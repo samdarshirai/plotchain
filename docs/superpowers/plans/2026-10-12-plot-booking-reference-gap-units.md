@@ -11,6 +11,6 @@ Shared-file warning (sequence, never parallelize): `BookingService.java`, `Secur
 | U3 | backend | Discount on create, register filters (dates, q, cancelled range), payments list, last-EMI report, sales-history associate fields, size=0 fix | U1, U2 | merged | docs/superpowers/plans/2026-10-12-plot-booking-ref-gap-unit-3-discount-filters-lists.md | 5119f10..564443d (merge 619dc91) |
 | U4 | backend | Reschedule instalments (Add Plot EMI) — optional, confirm wording first | U2 | skipped | | |
 | U5 | frontend | Foundations: shared pager, CSV/print util, models, services, i18n | U2, U3 | merged | docs/superpowers/plans/2026-10-12-plot-booking-ref-gap-unit-5-fe-foundations.md | 117a472..69b41db (merge 3743add) |
-| U6 | screen | Bookings & EMI tabs: Register upgrade, Unconfirmed, Confirmed(+receipt), Cancelled, EMI-by-last-date, seal enter/confirm | U5 | pending | | |
+| U6 | screen | Bookings & EMI tabs: Register upgrade, Unconfirmed, Confirmed(+receipt), Cancelled, EMI-by-last-date, seal enter/confirm | U5 | planned | docs/superpowers/plans/2026-10-12-plot-booking-ref-gap-unit-6-bookings-emi-tabs.md | |
 | U7 | screen | Projects & Plots: Rate column/search/export, discount in book form | U3, U5 | pending | | |
 | U8 | screen | Associate defects #21-24 (empty-state copy, My Sales, Team pages style, My Bookings route, project placeholder) | U3, U5 | pending | | |
