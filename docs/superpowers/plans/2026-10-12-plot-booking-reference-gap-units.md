@@ -7,7 +7,7 @@ Shared-file warning (sequence, never parallelize): `BookingService.java`, `Secur
 | Unit | Type | Title | Depends on | Status | Plan file | Merged commits |
 |---|---|---|---|---|---|---|
 | U1 | backend | V45 migration + entities (ENTERED, confirm cols, payment mode, discount/snapshots, PAY_CONFIRMED) | — | merged | docs/superpowers/plans/2026-10-12-plot-booking-ref-gap-unit-1-v45-migration.md | ab49ae8..fde192e |
-| U2 | backend | Two-step payment logic (enter / confirm / bulk confirm, threshold on PAID only, cancel voids ENTERED) | U1 | pending | | |
+| U2 | backend | Two-step payment logic (enter / confirm / bulk confirm, threshold on PAID only, cancel voids ENTERED) | U1 | planned | docs/superpowers/plans/2026-10-12-plot-booking-ref-gap-unit-2-two-step-payments.md | |
 | U3 | backend | Discount on create, register filters (dates, q, cancelled range), payments list, last-EMI report, sales-history associate fields, size=0 fix | U1, U2 | pending | | |
 | U4 | backend | Reschedule instalments (Add Plot EMI) — optional, confirm wording first | U2 | pending | | |
 | U5 | frontend | Foundations: shared pager, CSV/print util, models, services, i18n | U2, U3 | pending | | |
