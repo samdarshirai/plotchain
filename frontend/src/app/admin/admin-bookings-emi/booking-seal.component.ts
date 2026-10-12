@@ -12,13 +12,13 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { BookingEmiConfig, FlashMessage, PayRequest } from './bookings-emi.model';
 import { BookingsEmiService } from './bookings-emi.service';
-import { ErrorKind, associateLabel, formatMoney, classifyError, meterPercent, plotText, willAutoConfirm } from './bookings-emi.util';
+import { ErrorKind, associateLabel, formatMoney, classifyError, meterPercent, plotText, previewSchedule, willAutoConfirm } from './bookings-emi.util';
 
-type Mode = 'detail' | 'pay' | 'confirmPayment' | 'confirm' | 'cancel' | 'transfer';
+type Mode = 'detail' | 'pay' | 'confirmPayment' | 'confirm' | 'cancel' | 'transfer' | 'reschedule';
 
 @Component({
   encapsulation: ViewEncapsulation.None,
-  styleUrls: ['./booking-seal.component.scss'],
+  styleUrls: ['./booking-seal.component.scss', './booking-seal-reschedule.scss'],
   selector: 'app-booking-seal',
   standalone: true,
   imports: [CommonModule, RouterLink, TranslateModule, AssociateLookupComponent, InlineBannerComponent, FieldErrorComponent],
@@ -85,6 +85,10 @@ type Mode = 'detail' | 'pay' | 'confirmPayment' | 'confirm' | 'cancel' | 'transf
           <div class="booking-seal__actions">
             <button type="button" class="brand-button booking-seal__action" [disabled]="b.status !== 'ACTIVE' || busy"
               [attr.aria-describedby]="b.status !== 'ACTIVE' ? 'seal-locked-reason' : null" data-opener="confirm" (click)="open('confirm')">{{ 'admin.bookingsEmi.action.confirm' | translate }}</button>
+            <button type="button" class="brand-button brand-button--secondary booking-seal__action"
+              [disabled]="b.status !== 'ACTIVE' || busy || pendingCount === 0"
+              [attr.aria-describedby]="b.status !== 'ACTIVE' ? 'seal-locked-reason' : null"
+              data-opener="reschedule" (click)="open('reschedule')">{{ 'admin.bookingsEmi.action.reschedule' | translate }}</button>
             <button type="button" class="brand-button brand-button--secondary booking-seal__action" [disabled]="b.status !== 'ACTIVE' || busy"
               [attr.aria-describedby]="b.status !== 'ACTIVE' ? 'seal-locked-reason' : null" data-opener="transfer" (click)="open('transfer')">{{ 'admin.bookingsEmi.action.transfer' | translate }}</button>
             <button type="button" class="brand-button brand-button--secondary booking-seal__action" [disabled]="b.status !== 'ACTIVE' || busy"
@@ -178,6 +182,34 @@ type Mode = 'detail' | 'pay' | 'confirmPayment' | 'confirm' | 'cancel' | 'transf
             </fieldset>
           </ng-container>
 
+          <ng-container *ngIf="mode === 'reschedule'">
+            <ul class="booking-seal__effects">
+              <li>{{ 'admin.bookingsEmi.rescheduleEffects.0' | translate: { count: pendingCount, amount: money(pendingSum) } }}</li>
+              <li>{{ 'admin.bookingsEmi.rescheduleEffects.1' | translate }}</li>
+              <li>{{ 'admin.bookingsEmi.rescheduleEffects.2' | translate }}</li>
+            </ul>
+            <fieldset class="booking-seal__fields" [disabled]="busy">
+              <label>{{ 'admin.bookingsEmi.field.installmentCount' | translate }}
+                <input name="installmentCount" type="number" inputmode="numeric" min="1" max="60" step="1"
+                  [attr.aria-invalid]="rsCountInvalid ? 'true' : null" aria-describedby="seal-count-hint seal-count-error"
+                  [value]="rsCount" (input)="rsCount = $any($event.target).value" /></label>
+              <small id="seal-count-hint">{{ 'admin.bookingsEmi.field.installmentCountHint' | translate }}</small>
+              <app-field-error id="seal-count-error" [message]="rsCountInvalid ? ('admin.bookingsEmi.validation.count' | translate) : undefined"></app-field-error>
+              <label>{{ 'admin.bookingsEmi.field.firstDueDate' | translate }}
+                <input name="firstDueDate" type="date" [min]="today" [attr.aria-invalid]="rsDateInvalid ? 'true' : null"
+                  aria-describedby="seal-date-error" [value]="rsFirstDue" (input)="rsFirstDue = $any($event.target).value" /></label>
+              <app-field-error id="seal-date-error" [message]="rsDateInvalid ? ('admin.bookingsEmi.validation.firstDue' | translate) : undefined"></app-field-error>
+            </fieldset>
+            <div class="booking-reschedule__preview" *ngIf="rsPreview.length" role="status" aria-live="polite">
+              <h3 class="booking-reschedule__heading">{{ 'admin.bookingsEmi.reschedulePreview' | translate }}</h3>
+              <table class="booking-seal__table">
+                <thead><tr><th>{{ 'admin.bookingsEmi.col.no' | translate }}</th><th>{{ 'admin.bookingsEmi.col.dueDate' | translate }}</th><th>{{ 'admin.bookingsEmi.col.amount' | translate }}</th></tr></thead>
+                <tbody><tr *ngFor="let p of rsPreview"><td>{{ p.n }}</td><td>{{ p.dueDate | date: 'mediumDate' }}</td><td>{{ money(p.amount) }}</td></tr></tbody>
+                <tfoot><tr><th colspan="2">{{ 'admin.bookingsEmi.col.total' | translate }}</th><td>{{ money(pendingSum) }}</td></tr></tfoot>
+              </table>
+            </div>
+          </ng-container>
+
           <div class="booking-seal__form-actions">
             <button type="submit" class="brand-button booking-seal__submit" *ngIf="!netUnknown" [disabled]="busy" [attr.aria-busy]="busy">{{ submitLabel | translate: { amount: money(payTarget?.amount ?? 0) } }}</button>
             <button type="button" class="brand-button brand-button--secondary booking-seal__back" [disabled]="busy" (click)="close()">{{ (mode === 'cancel' ? 'admin.bookingsEmi.action.keep' : 'admin.bookingsEmi.action.back') | translate }}</button>
@@ -205,7 +237,7 @@ export class BookingSealComponent implements OnChanges {
   mode: Mode = 'detail';
   payTarget: EmiInstallment | null = null;
   readonly modes = PAYMENT_MODES; paymentMode: PaymentMode | '' = '';
-  paymentRef = ''; receivedOn = ''; reason = ''; targetId = '';
+  paymentRef = ''; receivedOn = ''; reason = ''; targetId = ''; rsCount = ''; rsFirstDue = '';
   tried = false; busy = false;
   netUnknown = false; // a pay request died with no response: outcome unknown, no resubmit until the booking is refreshed
   error: { kind: ErrorKind; serverText?: string } | null = null;
@@ -213,6 +245,13 @@ export class BookingSealComponent implements OnChanges {
   money = formatMoney; pct = meterPercent; plot = plotText;
   assoc = (b: Booking) => associateLabel(b, this.directory);
   get pendingCount(): number { return this.booking?.installments.filter(i => i.status === 'PENDING').length ?? 0; }
+  get pendingSum(): number { return this.booking?.installments.filter(i => i.status === 'PENDING').reduce((s, i) => s + i.amount, 0) ?? 0; }
+  // local calendar date, not UTC: a late-evening IST user must not be a day off
+  get today(): string { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+  private get rsCountValue(): number | null { const n = Number(this.rsCount); return this.rsCount !== '' && Number.isInteger(n) && n >= 1 && n <= 60 ? n : null; }
+  get rsPreview() { const n = this.rsCountValue; return n ? previewSchedule(this.pendingSum, n, this.rsFirstDue) : []; }
+  get rsCountInvalid(): boolean { return this.tried && this.rsCountValue === null; }
+  get rsDateInvalid(): boolean { return this.tried && (!this.rsFirstDue || this.rsFirstDue < this.today); }
   get predicts(): boolean { return !!(this.booking && this.payTarget && this.mode === 'confirmPayment' && willAutoConfirm(this.booking, this.payTarget.amount, this.config)); }
   get threshold(): number | null {
     return this.config?.confirmRule === 'AUTO_THRESHOLD' ? this.config.confirmThresholdPercent : null;
@@ -230,7 +269,7 @@ export class BookingSealComponent implements OnChanges {
     return k;
   }
   get submitLabel(): string {
-    const labels = { pay: ['payBtn', 'recording'], confirmPayment: ['confirmPaymentBtn', 'confirmingPayment'], confirm: ['confirmBtn', 'confirming'], cancel: ['cancelBtn', 'cancelling'], transfer: ['transferBtn', 'transferring'], detail: ['', ''] }[this.mode];
+    const labels = { pay: ['payBtn', 'recording'], confirmPayment: ['confirmPaymentBtn', 'confirmingPayment'], confirm: ['confirmBtn', 'confirming'], cancel: ['cancelBtn', 'cancelling'], transfer: ['transferBtn', 'transferring'], reschedule: ['rescheduleBtn', 'rescheduling'], detail: ['', ''] }[this.mode];
     return 'admin.bookingsEmi.action.' + labels[this.busy ? 1 : 0];
   }
 
@@ -252,11 +291,11 @@ export class BookingSealComponent implements OnChanges {
     } else if (fresh) { this.payTarget = fresh; }
   }
 
-  open(mode: 'pay' | 'confirmPayment' | 'confirm' | 'cancel' | 'transfer', i?: EmiInstallment): void {
+  open(mode: 'pay' | 'confirmPayment' | 'confirm' | 'cancel' | 'transfer' | 'reschedule', i?: EmiInstallment): void {
     if (this.busy) { return; }
     this.opener = mode === 'pay' || mode === 'confirmPayment' ? `${mode}-${i!.installmentNumber}` : mode;
     this.mode = mode; this.payTarget = i ?? null; this.error = this.netUnknown && (mode === 'pay' || mode === 'confirmPayment') ? { kind: 'network' } : null; this.tried = false;
-    this.paymentRef = ''; this.paymentMode = ''; this.receivedOn = ''; this.reason = ''; this.targetId = '';
+    this.paymentRef = ''; this.paymentMode = ''; this.receivedOn = ''; this.reason = ''; this.targetId = ''; this.rsCount = ''; this.rsFirstDue = '';
     setTimeout(() => this.title?.nativeElement.focus());
   }
   private reset(): void { this.mode = 'detail'; this.payTarget = null; this.error = null; this.tried = false; this.opener = ''; }
@@ -278,9 +317,10 @@ export class BookingSealComponent implements OnChanges {
     else if (this.mode === 'confirm') { this.submitConfirm(); }
     else if (this.mode === 'cancel') { this.submitCancel(); }
     else if (this.mode === 'transfer') { this.submitTransfer(); }
+    else if (this.mode === 'reschedule') { this.submitReschedule(); }
   }
 
-  private run(op: 'pay' | 'confirmPayment' | 'confirm' | 'cancel' | 'transfer', call: Observable<Booking>, okKey: (res: Booking, before: Booking) => FlashMessage): void {
+  private run(op: 'pay' | 'confirmPayment' | 'confirm' | 'cancel' | 'transfer' | 'reschedule', call: Observable<Booking>, okKey: (res: Booking, before: Booking) => FlashMessage): void {
     if (this.busy || !this.booking) { return; }
     const before = this.booking;
     this.setBusy(true); this.error = null;
@@ -334,5 +374,13 @@ export class BookingSealComponent implements OnChanges {
     if (this.targetId === this.booking.associateId) { this.error = { kind: 'sameAssociate' }; return; }
     const name = this.directory.find(a => a.id === this.targetId)?.name ?? '';
     this.run('transfer', this.service.transfer(this.booking.id, this.targetId), () => ({ key: 'admin.bookingsEmi.ok.transfer', params: { associate: name } }));
+  }
+  submitReschedule(): void {
+    if (this.busy || !this.booking) { return; }
+    this.tried = true;
+    const n = this.rsCountValue;
+    if (n === null || !this.rsFirstDue || this.rsFirstDue < this.today) { return; }
+    this.run('reschedule', this.service.reschedule(this.booking.id, { installmentCount: n, firstDueDate: this.rsFirstDue }),
+      r => ({ key: 'admin.bookingsEmi.ok.reschedule', params: { buyer: r.buyerName, count: n } }));
   }
 }

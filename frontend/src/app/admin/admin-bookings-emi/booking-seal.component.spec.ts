@@ -46,11 +46,11 @@ describe('BookingSealComponent', () => {
     expect(el().querySelectorAll('.booking-seal__row--void').length).toBe(1);
   });
 
-  it('non-ACTIVE booking: no Pay buttons, three actions disabled with a visible reason', () => {
+  it('non-ACTIVE booking: no Pay buttons, four actions disabled with a visible reason', () => {
     setup(bk({ status: 'CONFIRMED' }));
     expect(el().querySelectorAll('.booking-seal__pay').length).toBe(0);
     const btns = el().querySelectorAll<HTMLButtonElement>('.booking-seal__action');
-    expect(btns.length).toBe(3);
+    expect(btns.length).toBe(4);
     btns.forEach(b => { expect(b.disabled).toBeTrue(); expect(b.getAttribute('aria-describedby')).toBe('seal-locked-reason'); });
     expect(el().querySelector('#seal-locked-reason')!.textContent).toContain('admin.bookingsEmi.locked.active');
   });
@@ -287,7 +287,7 @@ describe('BookingSealComponent', () => {
     c().busy = true; c().mode = 'detail'; // simulate the detail view while a write is pending
     fixture.detectChanges();
     const btns = el().querySelectorAll<HTMLButtonElement>('.booking-seal__action, .booking-seal__pay');
-    expect(btns.length).toBe(5);
+    expect(btns.length).toBe(6);
     btns.forEach(b => expect(b.disabled).toBeTrue());
     c().busy = false;
     http.expectOne('/api/admin/bookings/b1/confirm');
@@ -536,5 +536,119 @@ describe('BookingSealComponent', () => {
     fixture.componentRef.setInput('booking', withEntered({ status: 'CONFIRMED' }));
     fixture.detectChanges();
     expect(c().mode).toBe('confirmPayment');
+  });
+
+  describe('reschedule', () => {
+    const big = () => bk({ installments: [inst(1, { status: 'PAID' }), inst(2, { amount: 35000 }), inst(3, { amount: 35000 })], totalAmount: 70000 });
+    const FUT = '2099-01-05';
+    const open = () => { c().open('reschedule'); fixture.detectChanges(); };
+    const fill = (n: string, d: string) => { type('installmentCount', n); type('firstDueDate', d); fixture.detectChanges(); };
+
+    it('button is disabled unless ACTIVE with PENDING rows and sits between Confirm and Transfer', () => {
+      setup();
+      const order = Array.from(el().querySelectorAll<HTMLElement>('[data-opener]')).map(b => b.dataset['opener']).filter(o => ['confirm', 'reschedule', 'transfer'].includes(o!));
+      expect(order).toEqual(['confirm', 'reschedule', 'transfer']);
+      expect(el().querySelector<HTMLButtonElement>('[data-opener="reschedule"]')!.disabled).toBeFalse();
+      TestBed.resetTestingModule();
+      setup(bk({ status: 'CONFIRMED' }));
+      expect(el().querySelector<HTMLButtonElement>('[data-opener="reschedule"]')!.disabled).toBeTrue();
+      TestBed.resetTestingModule();
+      setup(bk({ installments: [inst(1, { status: 'PAID' }), inst(2, { status: 'ENTERED' })] }));
+      expect(el().querySelector<HTMLButtonElement>('[data-opener="reschedule"]')!.disabled).toBeTrue();
+      TestBed.resetTestingModule();
+      setup();
+      c().busy = true; fixture.detectChanges();
+      expect(el().querySelector<HTMLButtonElement>('[data-opener="reschedule"]')!.disabled).toBeTrue();
+      c().busy = false;
+    });
+
+    it('opens the form with number and date inputs and the effects list', () => {
+      setup(); open();
+      const n = el().querySelector<HTMLInputElement>('[name="installmentCount"]')!;
+      expect([n.type, n.min, n.max]).toEqual(['number', '1', '60']);
+      const d = el().querySelector<HTMLInputElement>('[name="firstDueDate"]')!;
+      expect(d.type).toBe('date');
+      expect(d.min).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(el().querySelectorAll('.booking-seal__effects li').length).toBe(3);
+    });
+
+    it('invalid count or date shows errors and sends nothing', () => {
+      setup(); open();
+      for (const [n, d, key] of [['', FUT, 'count'], ['0', FUT, 'count'], ['61', FUT, 'count'], ['3', '2000-01-01', 'firstDue'], ['3', '', 'firstDue']]) {
+        fill(n, d); submit(); fixture.detectChanges();
+        expect(el().textContent).toContain('admin.bookingsEmi.validation.' + key);
+        const field = key === 'count' ? 'installmentCount' : 'firstDueDate';
+        expect(el().querySelector(`[name="${field}"]`)!.getAttribute('aria-invalid')).toBe('true');
+        http.expectNone(r => r.url.includes('/reschedule'));
+      }
+    });
+
+    it('previews the new schedule with a total', () => {
+      setup(big()); open(); fill('3', '2026-11-05');
+      const rows = Array.from(el().querySelectorAll('.booking-reschedule__preview tbody tr')).map(r => r.textContent);
+      expect(rows.length).toBe(3);
+      expect(rows[0]).toContain(c().money(23333.33));
+      expect(rows[2]).toContain(c().money(23333.34));
+      expect(el().querySelector('.booking-reschedule__preview')!.textContent).toContain(c().money(70000));
+    });
+
+    it('submits, emits updated + flash, returns to detail and refocuses the opener', async () => {
+      setup(); document.body.appendChild(el());
+      const flashes: unknown[] = []; const ups: unknown[] = [];
+      c().flash.subscribe(f => flashes.push(f)); c().updated.subscribe(u => ups.push(u));
+      el().querySelector<HTMLButtonElement>('[data-opener="reschedule"]')!.click(); fixture.detectChanges();
+      fill('3', FUT); submit();
+      const req = http.expectOne('/api/admin/bookings/b1/reschedule');
+      expect(req.request.body).toEqual({ installmentCount: 3, firstDueDate: FUT });
+      req.flush(bk());
+      expect((flashes[0] as { key: string }).key).toBe('admin.bookingsEmi.ok.reschedule');
+      expect(ups.length).toBe(1);
+      expect(c().mode).toBe('detail');
+      await new Promise(r => setTimeout(r));
+      expect((document.activeElement as HTMLElement).dataset['opener']).toBe('reschedule');
+      el().remove();
+    });
+
+    it('double submit sends one request; busy locks the fieldset', () => {
+      setup(); open(); fill('3', FUT);
+      const busy: boolean[] = []; c().busyChange.subscribe(b => busy.push(b));
+      c().submitReschedule(); c().submitReschedule(); fixture.detectChanges();
+      expect(el().querySelector<HTMLFieldSetElement>('fieldset')!.disabled).toBeTrue();
+      http.match(r => r.url.endsWith('/reschedule')).forEach(r => r.flush(bk()));
+      expect(busy).toEqual([true, false]);
+    });
+
+    it('maps errors: not ACTIVE reloads, no balance, 400 shows server text, network keeps the form open', () => {
+      setup(); open(); fill('3', FUT);
+      let reloads = 0; c().reloadRequested.subscribe(() => reloads++);
+      submit();
+      http.expectOne('/api/admin/bookings/b1/reschedule').flush({ error: 'Booking is not ACTIVE: b1' }, { status: 409, statusText: 'x' });
+      fixture.detectChanges();
+      expect(reloads).toBe(1);
+      expect(el().textContent).toContain('admin.bookingsEmi.err.notActive');
+      submit();
+      http.expectOne('/api/admin/bookings/b1/reschedule').flush({ error: 'none', code: 'NO_REMAINING_BALANCE' }, { status: 409, statusText: 'x' });
+      fixture.detectChanges();
+      expect(el().textContent).toContain('admin.bookingsEmi.err.noBalance');
+      submit();
+      http.expectOne('/api/admin/bookings/b1/reschedule').flush({ error: 'too small' }, { status: 400, statusText: 'x' });
+      fixture.detectChanges();
+      expect(el().textContent).toContain('admin.bookingsEmi.err.generic');
+      expect(el().textContent).toContain('admin.bookingsEmi.err.serverSaid');
+      submit();
+      http.expectOne('/api/admin/bookings/b1/reschedule').error(new ProgressEvent('error'));
+      fixture.detectChanges();
+      expect(el().textContent).toContain('admin.bookingsEmi.err.generic');
+      expect(c().mode).toBe('reschedule');
+      expect(c().netUnknown).toBeFalse();
+      expect(el().querySelector('button[type="submit"]')).not.toBeNull();
+    });
+
+    it('closes when a refreshed booking is no longer ACTIVE', () => {
+      setup(); open();
+      fixture.componentRef.setInput('booking', bk({ status: 'CANCELLED' }));
+      fixture.detectChanges();
+      expect(c().mode).toBe('detail');
+    });
   });
 });
