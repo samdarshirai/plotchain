@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Booking } from '../../plot-bookings/models/associate-booking-page.model';
 import {
-  BookingEmiConfig, BookingPage, LastEmiFilters, LastEmiRow, OverdueReportPage, PayRequest, PaymentFilters, PaymentPage, PaymentRef, RegisterFilters
+  BookingEmiConfig, BookingPage, LastEmiFilters, LastEmiRow, OverdueReportPage, PayRequest, PaymentFilters, PaymentPage, PaymentRef, RegisterFilters, RescheduleRequest
 } from './bookings-emi.model';
 
 @Injectable({ providedIn: 'root' })
@@ -68,6 +68,10 @@ export class BookingsEmiService {
 
   transfer(id: string, associateId: string): Observable<Booking> {
     return this.http.post<Booking>(`/api/admin/bookings/${id}/transfer`, { associateId });
+  }
+
+  reschedule(id: string, req: RescheduleRequest): Observable<Booking> {
+    return this.http.post<Booking>(`/api/admin/bookings/${id}/reschedule`, req);
   }
 
   overdue(page: number, size: number): Observable<OverdueReportPage> {

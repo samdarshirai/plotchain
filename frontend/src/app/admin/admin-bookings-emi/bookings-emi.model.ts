@@ -31,6 +31,8 @@ export interface RegisterFilters {
 
 export interface PayRequest { amount: number; paymentRef: string; paymentMode: PaymentMode; paidAt?: string; }
 
+export interface RescheduleRequest { installmentCount: number; firstDueDate: string; }
+
 export interface PaymentRow {
   bookingId: string; installmentNumber: number; paymentDate: string;
   associateCode: string | null; associateName: string | null; projectName: string | null; plotNo: string | null;
