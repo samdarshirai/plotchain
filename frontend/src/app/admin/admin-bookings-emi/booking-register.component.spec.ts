@@ -357,4 +357,149 @@ describe('BookingRegisterComponent', () => {
       expect(fixture.componentInstance.selected?.id).toBe('b1');
     });
   });
+
+  describe('upgrade: columns, filters, export, print', () => {
+    const full = (id: string) => bk(id, { buyerPhone: '9876543210', areaSqft: 1200, rate: 800, discount: 5000, bookedAt: '2026-02-01T00:00:00Z', projectName: 'Green', plotNo: 'A-1' });
+    const set = (name: string, v: string, evt = 'change') => {
+      const i = el().querySelector<HTMLInputElement>(`[name="${name}"]`)!;
+      i.value = v; i.dispatchEvent(new Event(evt)); fixture.detectChanges();
+    };
+    const btn = (cls: string) => el().querySelector<HTMLButtonElement>(cls)!;
+    let blob: Blob;
+    const csvText = () => blob.text();
+    beforeEach(() => {
+      spyOn(URL, 'createObjectURL').and.callFake((b: Blob | MediaSource) => { blob = b as Blob; return 'blob:x'; });
+      spyOn(URL, 'revokeObjectURL');
+      spyOn(HTMLAnchorElement.prototype, 'click');
+    });
+
+    it('renders Mobile, Area, Rate and Discount, with dashes when null', () => {
+      boot([full('b1'), bk('b2')]);
+      const rows = el().querySelectorAll('tbody tr.booking-register__row');
+      const t1 = rows[0].textContent!;
+      expect(t1).toContain('9876543210');
+      expect(t1).toContain('1200');
+      expect(t1).toContain('₹800');
+      expect(t1).toContain('₹5,000');
+      expect(rows[1].querySelector('[data-label="admin.bookingsEmi.col.mobile"]')!.textContent!.trim()).toBe('—');
+      expect(rows[1].querySelector('[data-label="admin.bookingsEmi.col.area"]')!.textContent!.trim()).toBe('—');
+      expect(rows[1].querySelector('[data-label="admin.bookingsEmi.col.rate"]')!.textContent!.trim()).toBe('—');
+      expect(rows[1].querySelector('[data-label="admin.bookingsEmi.col.discount"]')!.textContent!.trim()).toBe('—');
+    });
+
+    it('Booked from / to reload page 0 with bookedFrom and bookedTo', () => {
+      boot();
+      set('bookedFrom', '2026-01-01');
+      let r = listReq();
+      expect(r.request.params.get('bookedFrom')).toBe('2026-01-01');
+      expect(r.request.params.get('page')).toBe('0');
+      r.flush(pageOf([]));
+      set('bookedTo', '2026-02-01');
+      r = listReq();
+      expect(r.request.params.get('bookedTo')).toBe('2026-02-01');
+      r.flush(pageOf([]));
+    });
+
+    it('search sends trimmed q on change and on Enter; empty clears it', () => {
+      boot();
+      set('q', '  VA-1 ');
+      let r = listReq();
+      expect(r.request.params.get('q')).toBe('VA-1');
+      expect(r.request.params.get('page')).toBe('0');
+      r.flush(pageOf([]));
+      const i = el().querySelector<HTMLInputElement>('[name="q"]')!;
+      i.value = 'A-1'; i.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      r = listReq();
+      expect(r.request.params.get('q')).toBe('A-1');
+      r.flush(pageOf([]));
+      set('q', '');
+      r = listReq();
+      expect(r.request.params.has('q')).toBeFalse();
+      r.flush(pageOf([]));
+    });
+
+    it('From after To shows the range error and sends no request', () => {
+      boot();
+      set('bookedFrom', '2026-03-10');
+      listReq().flush(pageOf([]));
+      set('bookedTo', '2026-03-01');
+      http.expectNone(r => r.url === '/api/admin/bookings');
+      expect(el().textContent).toContain('admin.bookingsEmi.validation.range');
+    });
+
+    it('Reset clears dates and search; hasFilters covers dates and q', () => {
+      boot();
+      set('q', 'x');
+      listReq().flush(pageOf([]));
+      fixture.detectChanges();
+      expect(fixture.componentInstance.hasFilters).toBeTrue();
+      expect(el().textContent).toContain('admin.bookingsEmi.empty.noMatchTitle');
+      fixture.componentInstance.resetFilters();
+      const r = listReq();
+      expect(r.request.params.has('q')).toBeFalse();
+      r.flush(pageOf([]));
+      expect(fixture.componentInstance.filters.bookedFrom).toBe('');
+      set('bookedFrom', '2026-01-01');
+      listReq().flush(pageOf([]));
+      expect(fixture.componentInstance.hasFilters).toBeTrue();
+    });
+
+    it('Export CSV walks all pages (size 100) and downloads bookings.csv', async () => {
+      boot();
+      btn('.booking-register__export').click();
+      fixture.detectChanges();
+      expect(btn('.booking-register__export').disabled).toBeTrue();
+      let r = listReq();
+      expect(r.request.params.get('size')).toBe('100');
+      expect(r.request.params.get('page')).toBe('0');
+      r.flush({ bookings: [full('b1')], page: 0, size: 100, totalElements: 101 });
+      r = listReq();
+      expect(r.request.params.get('page')).toBe('1');
+      r.flush({ bookings: [bk('b2')], page: 1, size: 100, totalElements: 101 });
+      fixture.detectChanges();
+      expect(btn('.booking-register__export').disabled).toBeFalse();
+      const csv = await csvText();
+      const lines = csv.split('\r\n');
+      expect(lines.length).toBe(3);
+      expect(lines[0]).toContain('Mobile');
+      expect(lines[1]).toContain('9876543210');
+      expect(lines[1]).toContain('1200');
+    });
+
+    it('a failed export shows err.export', () => {
+      boot();
+      btn('.booking-register__export').click();
+      listReq().flush('x', { status: 500, statusText: 'err' });
+      fixture.detectChanges();
+      expect(el().textContent).toContain('admin.bookingsEmi.err.export');
+      expect(btn('.booking-register__export').disabled).toBeFalse();
+    });
+
+    it('an empty result exports a header-only file', async () => {
+      boot();
+      btn('.booking-register__export').click();
+      listReq().flush({ bookings: [], page: 0, size: 100, totalElements: 0 });
+      const csv = await csvText();
+      expect(csv.split('\r\n').length).toBe(1);
+      expect(csv).toContain('Mobile');
+    });
+
+    it('Print marks the register table for printing', () => {
+      boot();
+      let during = false;
+      spyOn(window, 'print').and.callFake(() => { during = !!el().querySelector('table.table-export-print'); });
+      btn('.booking-register__print').click();
+      expect(window.print).toHaveBeenCalled();
+      expect(during).toBeTrue();
+    });
+
+    it('filters, search, export and print are disabled while a seal write locks the register', () => {
+      boot();
+      fixture.componentInstance.locked = true;
+      fixture.detectChanges();
+      ['bookedFrom', 'bookedTo', 'q'].forEach(n => expect(el().querySelector<HTMLInputElement>(`[name="${n}"]`)!.disabled).toBeTrue());
+      expect(btn('.booking-register__export').disabled).toBeTrue();
+      expect(btn('.booking-register__print').disabled).toBeTrue();
+    });
+  });
 });

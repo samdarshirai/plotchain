@@ -1,7 +1,8 @@
 // booking-register.component.ts
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject, ViewEncapsulation } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild, inject, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { map } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
 import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
@@ -9,23 +10,25 @@ import { ProjectsService } from '../../setup/steps/projects/projects.service';
 import { Project } from '../../setup/models/project.model';
 import { Booking } from '../../plot-bookings/models/associate-booking-page.model';
 import { AssociateLookupComponent } from '../../shared/components/associate-lookup/associate-lookup.component';
+import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { exportCsv, ExportColumn, printTable } from '../../shared/utils/table-export.util';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { PlotGridItem } from '../../shared/utils/plot-grid.util';
 import { ProjectsPlotsService } from '../projects-plots/projects-plots.service';
 import { BookingEmiConfig, BookingPage, FlashMessage, RegisterFilters } from './bookings-emi.model';
 import { BookingSealComponent } from './booking-seal.component';
 import { BookingsEmiService } from './bookings-emi.service';
-import { formatMoney, associateLabel, meterPercent, plotText } from './bookings-emi.util';
+import { collectPages, formatMoney, associateLabel, meterPercent, plotText } from './bookings-emi.util';
 
 const PAGE_SIZE = 20;
-const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', projectId: '', overdue: false };
+const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', projectId: '', overdue: false, bookedFrom: '', bookedTo: '', q: '' };
 
 @Component({
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['./booking-register.component.scss'],
   selector: 'app-booking-register',
   standalone: true,
-  imports: [CommonModule, RouterLink, TranslateModule, AssociateLookupComponent, InlineBannerComponent, BookingSealComponent],
+  imports: [CommonModule, RouterLink, TranslateModule, AssociateLookupComponent, InlineBannerComponent, FieldErrorComponent, BookingSealComponent],
   template: `
     <div class="booking-register">
       <div class="booking-register__filters">
@@ -52,12 +55,26 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
             <option *ngFor="let g of plotOptions" [value]="g.plotId" [selected]="filters.plotId === g.plotId">{{ g.plotNo }}</option>
           </select>
         </label>
+        <label class="booking-register__field">{{ 'admin.bookingsEmi.filter.bookedFrom' | translate }}
+          <input name="bookedFrom" type="date" [disabled]="locked" [value]="filters.bookedFrom || ''" [attr.max]="filters.bookedTo || null" (change)="applyDate({ bookedFrom: $any($event.target).value })" />
+        </label>
+        <label class="booking-register__field">{{ 'admin.bookingsEmi.filter.bookedTo' | translate }}
+          <input name="bookedTo" type="date" [disabled]="locked" [value]="filters.bookedTo || ''" [attr.min]="filters.bookedFrom || null" (change)="applyDate({ bookedTo: $any($event.target).value })" />
+        </label>
+        <label class="booking-register__field">{{ 'admin.bookingsEmi.filter.search' | translate }}
+          <input name="q" type="search" [disabled]="locked" [value]="filters.q || ''" [placeholder]="'admin.bookingsEmi.filter.searchPlaceholder' | translate"
+            (change)="applyFilter({ q: $any($event.target).value.trim() })" (keydown.enter)="applyFilter({ q: $any($event.target).value.trim() })" />
+        </label>
         <button type="button" class="booking-register__toggle" [class.booking-register__toggle--on]="filters.overdue"
           [attr.aria-pressed]="filters.overdue" [disabled]="locked" (click)="applyFilter({ overdue: !filters.overdue })">
           {{ 'admin.bookingsEmi.filter.overdueOnly' | translate }}
         </button>
         <button type="button" class="brand-button brand-button--secondary" [disabled]="locked" (click)="resetFilters()">{{ 'admin.bookingsEmi.filter.reset' | translate }}</button>
+        <button type="button" class="brand-button brand-button--secondary booking-register__export" [disabled]="locked || exporting" (click)="exportAll()">{{ 'admin.bookingsEmi.action.exportCsv' | translate }}</button>
+        <button type="button" class="brand-button brand-button--secondary booking-register__print" [disabled]="locked || !page?.bookings?.length" (click)="print()">{{ 'admin.bookingsEmi.action.print' | translate }}</button>
       </div>
+      <app-field-error [message]="rangeError ? ('admin.bookingsEmi.validation.range' | translate) : undefined"></app-field-error>
+      <app-inline-banner *ngIf="exportError" tone="danger">{{ 'admin.bookingsEmi.err.export' | translate }}</app-inline-banner>
 
       <app-inline-banner *ngIf="loadError" tone="danger">
         {{ 'admin.bookingsEmi.err.load' | translate }}
@@ -85,12 +102,16 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
             </ng-template>
           </div>
 
-          <table class="booking-register__table" *ngIf="page?.bookings?.length" [attr.aria-label]="'admin.bookingsEmi.title' | translate">
+          <table #regTable class="booking-register__table" *ngIf="page?.bookings?.length" [attr.aria-label]="'admin.bookingsEmi.title' | translate">
             <thead>
               <tr>
                 <th scope="col">{{ 'admin.bookingsEmi.col.buyer' | translate }}</th>
+                <th scope="col">{{ 'admin.bookingsEmi.col.mobile' | translate }}</th>
                 <th scope="col">{{ 'admin.bookingsEmi.col.associate' | translate }}</th>
                 <th scope="col">{{ 'admin.bookingsEmi.col.status' | translate }}</th>
+                <th scope="col">{{ 'admin.bookingsEmi.col.area' | translate }}</th>
+                <th scope="col">{{ 'admin.bookingsEmi.col.rate' | translate }}</th>
+                <th scope="col">{{ 'admin.bookingsEmi.col.discount' | translate }}</th>
                 <th scope="col">{{ 'admin.bookingsEmi.col.total' | translate }}</th>
                 <th scope="col">{{ 'admin.bookingsEmi.col.paid' | translate }}</th>
                 <th scope="col">{{ 'admin.bookingsEmi.col.due' | translate }}</th>
@@ -103,11 +124,15 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
                 <td [attr.data-label]="'admin.bookingsEmi.col.buyer' | translate">
                   <strong>{{ b.buyerName }}</strong><br /><span class="booking-register__sub">{{ plot(b) }}<ng-container *ngIf="b.projectName"> · {{ b.projectName }}</ng-container></span>
                 </td>
+                <td [attr.data-label]="'admin.bookingsEmi.col.mobile' | translate">{{ b.buyerPhone || '—' }}</td>
                 <td [attr.data-label]="'admin.bookingsEmi.col.associate' | translate">{{ assoc(b) }}</td>
                 <td [attr.data-label]="'admin.bookingsEmi.col.status' | translate">
                   <span class="booking-register__chip booking-register__chip--{{ b.status | lowercase }}">{{ 'admin.bookingsEmi.status.' + b.status | translate }}</span>
                   <span class="booking-register__pill" *ngIf="overdueIn(b) as n">{{ 'admin.bookingsEmi.overduePill' | translate: { count: n } }}</span>
                 </td>
+                <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.area' | translate">{{ b.areaSqft != null ? b.areaSqft : '—' }}</td>
+                <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.rate' | translate">{{ b.rate != null ? money(b.rate) : '—' }}</td>
+                <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.discount' | translate">{{ b.discount != null ? money(b.discount) : '—' }}</td>
                 <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.total' | translate">{{ money(b.totalAmount) }}</td>
                 <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.paid' | translate">
                   {{ money(b.paidAmount) }}
@@ -157,6 +182,27 @@ export class BookingRegisterComponent implements OnInit, OnChanges {
   private focusSeq = 0;
   focusError = false;
   private currentPage = 0;
+  rangeError = false;
+  exporting = false;
+  exportError = false;
+  @ViewChild('regTable') regTable?: ElementRef<HTMLElement>;
+
+  private readonly exportColumns: ExportColumn<Booking>[] = [
+    { header: 'Booked on', value: b => b.bookedAt?.slice(0, 10) },
+    { header: 'Associate ID', value: b => this.directory.find(a => a.id === b.associateId)?.userId ?? b.associateId },
+    { header: 'Associate', value: b => b.associateName },
+    { header: 'Buyer', value: b => b.buyerName },
+    { header: 'Mobile', value: b => b.buyerPhone },
+    { header: 'Project', value: b => b.projectName },
+    { header: 'Plot', value: b => plotText(b) },
+    { header: 'Area', value: b => b.areaSqft },
+    { header: 'Rate', value: b => b.rate },
+    { header: 'Discount', value: b => b.discount },
+    { header: 'Total', value: b => b.totalAmount },
+    { header: 'Paid', value: b => b.paidAmount },
+    { header: 'Due', value: b => (b.status === 'CANCELLED' ? null : b.dueAmount) },
+    { header: 'Status', value: b => b.status }
+  ];
 
   money = formatMoney;
   pct = (b: Booking) => meterPercent(b.paidAmount, b.totalAmount);
@@ -166,7 +212,7 @@ export class BookingRegisterComponent implements OnInit, OnChanges {
 
   get hasFilters(): boolean {
     const f = this.filters;
-    return !!(f.status || f.associateId || f.plotId || f.projectId || f.overdue);
+    return !!(f.status || f.associateId || f.plotId || f.projectId || f.overdue || f.bookedFrom || f.bookedTo || f.q);
   }
   get totalPages(): number {
     return !this.page || !this.page.size ? 1 : Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
@@ -211,8 +257,30 @@ export class BookingRegisterComponent implements OnInit, OnChanges {
     this.load(0);
   }
 
+  // Inverted range: show the error and send nothing (one-sided ranges are fine).
+  applyDate(partial: Partial<RegisterFilters>): void {
+    if (this.locked) { return; }
+    const m = { ...this.filters, ...partial };
+    this.rangeError = !!m.bookedFrom && !!m.bookedTo && m.bookedFrom > m.bookedTo;
+    if (this.rangeError) { this.filters = m; return; }
+    this.applyFilter(partial);
+  }
+
+  exportAll(): void {
+    if (this.locked || this.exporting) { return; }
+    this.exporting = true;
+    this.exportError = false;
+    collectPages<Booking>(p => this.service.list(this.filters, p, 100).pipe(map(r => ({ rows: r.bookings, totalElements: r.totalElements })))).subscribe({
+      next: rows => { this.exporting = false; exportCsv(rows, this.exportColumns, 'bookings.csv'); },
+      error: () => { this.exporting = false; this.exportError = true; }
+    });
+  }
+
+  print(): void { if (this.regTable) { printTable(this.regTable.nativeElement); } }
+
   resetFilters(): void {
     if (this.locked) { return; }
+    this.rangeError = false;
     this.filterMismatch = false;
     this.filters = { ...NO_FILTERS };
     this.plotOptions = [];
