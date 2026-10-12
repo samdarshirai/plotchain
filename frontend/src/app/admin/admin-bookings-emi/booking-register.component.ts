@@ -25,7 +25,7 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
 
 @Component({
   encapsulation: ViewEncapsulation.None,
-  styleUrls: ['./booking-register.component.scss'],
+  styleUrls: ['./booking-register.component.scss', './booking-register-layout.scss'],
   selector: 'app-booking-register',
   standalone: true,
   imports: [CommonModule, RouterLink, TranslateModule, AssociateLookupComponent, InlineBannerComponent, FieldErrorComponent, BookingSealComponent],
