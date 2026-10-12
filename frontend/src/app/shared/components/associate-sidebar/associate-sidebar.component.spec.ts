@@ -116,6 +116,19 @@ describe('AssociateSidebarComponent', () => {
     expect(fixture.nativeElement.querySelectorAll('.associate-sidebar__sublink').length).toBe(0);
   });
 
+  it('renders the Plot Bookings sub-items including My Bookings when expanded', () => {
+    const fixture = TestBed.createComponent(AssociateSidebarComponent);
+    fixture.componentInstance.toggle('plotBookings');
+    fixture.detectChanges();
+
+    const hrefs = Array.from(fixture.nativeElement.querySelectorAll('.associate-sidebar__sublink') as NodeListOf<HTMLAnchorElement>)
+      .map(a => a.getAttribute('href'));
+    expect(hrefs).toEqual([
+      '/plot-bookings', '/plot-bookings/team', '/plot-bookings/left', '/plot-bookings/right',
+      '/plot-bookings/mine', '/plot-bookings/my-sales'
+    ]);
+  });
+
   it('emits logout when the Log Out control is clicked', () => {
     const fixture = TestBed.createComponent(AssociateSidebarComponent);
     fixture.detectChanges();

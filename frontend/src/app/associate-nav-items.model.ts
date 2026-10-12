@@ -47,6 +47,7 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
       { key: 'teamPlots', labelKey: 'nav.teamPlots', path: '/plot-bookings/team' },
       { key: 'leftPlots', labelKey: 'nav.leftPlots', path: '/plot-bookings/left' },
       { key: 'rightPlots', labelKey: 'nav.rightPlots', path: '/plot-bookings/right' },
+      { key: 'myBookings', labelKey: 'nav.myBookings', path: '/plot-bookings/mine' },
       { key: 'mySales', labelKey: 'nav.mySales', path: '/plot-bookings/my-sales' }
     ]
   },
