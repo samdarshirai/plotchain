@@ -71,4 +71,11 @@ public class BookingController {
                                     @AuthenticationPrincipal UUID actorId) {
         return bookingService.transferBooking(id, request.associateId(), actorId);
     }
+
+    // Reference "Add Plot EMI": admin re-splits the unpaid balance of an ACTIVE booking. Returns the updated booking (200).
+    @PostMapping("/{id}/reschedule")
+    public BookingResponse reschedule(@PathVariable UUID id, @Valid @RequestBody RescheduleRequest request,
+                                      @AuthenticationPrincipal UUID actorId) {
+        return bookingService.rescheduleBooking(id, request, actorId);
+    }
 }
