@@ -165,4 +165,12 @@ describe('BookingsEmiService', () => {
     expect(r2.request.params.has('projectId')).toBeFalse();
     r2.flush([]);
   });
+
+  it('reschedule POSTs the count and first due date', () => {
+    s.reschedule('b1', { installmentCount: 3, firstDueDate: '2026-11-05' }).subscribe();
+    const r = http.expectOne('/api/admin/bookings/b1/reschedule');
+    expect(r.request.method).toBe('POST');
+    expect(r.request.body).toEqual({ installmentCount: 3, firstDueDate: '2026-11-05' });
+    r.flush({});
+  });
 });

@@ -1,0 +1,3 @@
+// Reschedule mode of the booking seal (plot-booking reference gap unit 4); kept apart so booking-seal.component.scss does not grow
+.booking-reschedule__preview { margin-top: 0.5rem; max-height: 14rem; overflow-y: auto; }
+.booking-reschedule__heading { margin: 0 0 0.25rem; font: 600 0.875rem var(--font-sans); }

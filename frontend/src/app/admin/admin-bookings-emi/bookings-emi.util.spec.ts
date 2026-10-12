@@ -1,7 +1,7 @@
 import { Booking } from '../../plot-bookings/models/associate-booking-page.model';
 import { BookingEmiConfig } from './bookings-emi.model';
 import { of, throwError } from 'rxjs';
-import { formatMoney, associateLabel, classifyError, collectPages, meterPercent, plotText, willAutoConfirm } from './bookings-emi.util';
+import { formatMoney, associateLabel, classifyError, collectPages, meterPercent, plotText, previewSchedule, utcDate, willAutoConfirm } from './bookings-emi.util';
 
 const b = (over: Partial<Booking> = {}): Booking => ({
   id: 'b', plotId: '123e4567-89ab', associateId: 'a1', status: 'ACTIVE', buyerName: 'R', totalAmount: 1000,
@@ -129,5 +129,45 @@ describe('classifyError confirmPayment', () => {
     expect(classifyError(e(409, 'Booking b is not ACTIVE'), 'confirmPayment').kind).toBe('notActive');
     expect(classifyError(e(404, 'gone'), 'confirmPayment').kind).toBe('notFound');
     expect(classifyError({ status: 0 }, 'confirmPayment').kind).toBe('network');
+  });
+});
+
+describe('utcDate', () => {
+  it('returns the UTC calendar date regardless of local zone', () => {
+    expect(utcDate(new Date('2026-03-01T23:30:00-05:00'))).toBe('2026-03-02');
+    expect(utcDate(new Date('2026-03-01T00:30:00+05:30'))).toBe('2026-02-28');
+  });
+});
+
+describe('previewSchedule', () => {
+  it('numbers rows from the given start', () => {
+    expect(previewSchedule(100, 2, '2026-11-05', 5).map(r => r.n)).toEqual([5, 6]);
+  });
+  it('splits in cents with the remainder on the last row', () => {
+    expect(previewSchedule(70000, 3, '2026-11-05')).toEqual([
+      { n: 1, dueDate: '2026-11-05', amount: 23333.33 },
+      { n: 2, dueDate: '2026-12-05', amount: 23333.33 },
+      { n: 3, dueDate: '2027-01-05', amount: 23333.34 }
+    ]);
+  });
+  it('clamps month-end dates without drifting', () => {
+    expect(previewSchedule(100, 3, '2026-01-31').map(r => r.dueDate)).toEqual(['2026-01-31', '2026-02-28', '2026-03-31']);
+  });
+  it('returns [] for a sub-cent base, bad count, zero balance or bad date', () => {
+    expect(previewSchedule(0.05, 60, '2026-11-05')).toEqual([]);
+    expect(previewSchedule(100, 0, '2026-11-05')).toEqual([]);
+    expect(previewSchedule(0, 3, '2026-11-05')).toEqual([]);
+    expect(previewSchedule(100, 3, '')).toEqual([]);
+  });
+});
+
+describe('classifyError reschedule', () => {
+  it('maps the reschedule outcomes', () => {
+    expect(classifyError({ status: 409, error: { code: 'NO_REMAINING_BALANCE' } }, 'reschedule').kind).toBe('noBalance');
+    const v = classifyError({ status: 400, error: { error: 'too small' } }, 'reschedule');
+    expect(v.kind).toBe('validation');
+    expect(v.serverText).toBe('too small');
+    expect(classifyError({ status: 409, error: { error: 'Booking is not ACTIVE: x' } }, 'reschedule').kind).toBe('notActive');
+    expect(classifyError({ status: 0 }, 'reschedule').kind).toBe('network');
   });
 });

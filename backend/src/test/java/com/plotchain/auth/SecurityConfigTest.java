@@ -741,6 +741,25 @@ class SecurityConfigTest {
             .andExpect(status().isUnauthorized());
     }
 
+    // reference-gap U4: POST .../reschedule rides the blanket ADMIN write rule; no SecurityConfig edit.
+    @ParameterizedTest
+    @EnumSource(AssociateRole.class)
+    void adminBookingRescheduleIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
+        mockMvc.perform(post("/api/admin/bookings/{id}/reschedule", UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(role))
+                .contentType("application/json")
+                .content("{\"installmentCount\":3,\"firstDueDate\":\"2099-01-01\"}"))
+            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+    }
+
+    @Test
+    void adminBookingRescheduleIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(post("/api/admin/bookings/{id}/reschedule", UUID.randomUUID())
+                .contentType("application/json")
+                .content("{\"installmentCount\":3,\"firstDueDate\":\"2099-01-01\"}"))
+            .andExpect(status().isUnauthorized());
+    }
+
     // plot-booking unit 8 (Decision 12): GET /api/admin/bookings needs its OWN ADMIN matcher --
     // SecurityConfig has no blanket GET /api/admin/**, so without it any authenticated associate
     // would fall through to anyRequest().authenticated() and read every booking. ADMIN reaches the

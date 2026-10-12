@@ -1071,7 +1071,7 @@
       "totalRow": "Total",
       "pendingTotal": "Pending confirmation",
       "seal": {
-        "detail": "Booking detail", "pay": "Enter payment", "confirm": "Confirm booking", "cancel": "Cancel booking", "transfer": "Transfer booking", "confirmPayment": "Confirm payment",
+        "detail": "Booking detail", "pay": "Enter payment", "confirm": "Confirm booking", "cancel": "Cancel booking", "transfer": "Transfer booking", "confirmPayment": "Confirm payment", "reschedule": "Reschedule instalments",
         "none": "Select a booking to see its instalments and take action.",
         "booked": "Booked", "plan": "Plan", "planValue": "{{count}} × {{amount}}",
         "meter": "Paid {{pct}}% of {{threshold}}% needed to auto-confirm", "meterPlain": "Paid {{pct}}%",
@@ -1079,6 +1079,7 @@
       },
       "action": {
         "pay": "Pay", "payBtn": "Enter {{amount}}", "confirm": "Confirm", "transfer": "Transfer", "cancel": "Cancel",
+        "reschedule": "Reschedule", "rescheduleBtn": "Reschedule instalments", "rescheduling": "Rescheduling…",
         "cancelBtn": "Cancel booking", "keep": "Keep booking", "back": "Back", "confirmBtn": "Confirm booking", "transferBtn": "Transfer booking",
         "recording": "Saving…", "confirming": "Confirming…", "cancelling": "Cancelling…", "transferring": "Transferring…", "reload": "Reload booking",
         "enterPayment": "Enter payment", "confirmPayment": "Confirm", "confirmPaymentBtn": "Confirm payment", "confirmingPayment": "Confirming…", "receipt": "Print receipt", "close": "Close", "confirmSelected": "Confirm selected", "checkAll": "Check all",
@@ -1087,17 +1088,21 @@
       "field": {
         "amount": "Amount received", "amountHint": "Fixed to the instalment amount. Part payments aren't supported.",
         "ref": "Payment reference", "refCount": "{{n}}/100", "receivedOn": "Received on (optional)",
-        "reason": "Reason", "reasonCount": "{{n}}/255", "target": "Transfer to"
+        "reason": "Reason", "reasonCount": "{{n}}/255", "target": "Transfer to",
+        "installmentCount": "New number of instalments", "installmentCountHint": "Between 1 and 60, billed monthly.", "firstDueDate": "First due date"
       },
       "validation": {
         "ref": "Enter a payment reference.", "refMax": "Keep the reference to 100 characters.",
         "reason": "Enter a reason for cancelling.", "reasonMax": "Keep the reason to 255 characters.", "target": "Choose an associate.",
-        "range": "From date must be on or before To date.", "mode": "Choose a payment mode."
+        "range": "From date must be on or before To date.", "mode": "Choose a payment mode.",
+        "count": "Enter a whole number from 1 to 60.", "firstDue": "Pick today or a later date."
       },
       "warn": { "autoConfirm": "This payment will confirm the booking.", "autoConfirmDetail": "Paid goes from {{before}} to {{after}}. If confirming fails, the payment is rolled back." },
       "confirmEffects": ["Sale amount equals the booking total.", "The plot moves from Booked to Sold and the sale credits the associate's ledger.", "Remaining instalments stay pending. To undo, void the sale in the Sales Register."],
       "confirmPayEffects": ["Moves {{amount}} from Entered to Paid."],
       "cancelEffects": ["{{count}} pending instalments will be voided.", "Amounts already paid stay on record; no refund is handled here.", "The plot becomes Available unless another live booking holds it."],
+      "rescheduleEffects": ["{{count}} pending instalments ({{amount}}) will be voided and replaced by the new schedule.", "Paid and entered payments and the token stay as they are.", "The booking stays Active. The remaining balance is split evenly; the last instalment takes any rounding."],
+      "reschedulePreview": "New schedule",
       "transferHint": "Only active associates can receive a booking. Buyer, plan and paid instalments move with it.",
       "locked": {
         "active": "Actions are only available while a booking is Active. To reverse a confirmed booking, void its sale in the Sales Register.",
@@ -1111,7 +1116,8 @@
         "autoConfirm": "Booking auto-confirmed. Confirming instalment {{n}} took {{buyer}} to {{pct}}% paid. The plot is now Sold and the sale is in the Sales Register.",
         "confirm": "Booking confirmed for {{buyer}}.",
         "cancel": "Booking cancelled for {{buyer}}.",
-        "transfer": "Booking transferred to {{associate}}."
+        "transfer": "Booking transferred to {{associate}}.",
+        "reschedule": "{{buyer}}: remaining balance rescheduled over {{count}} instalments."
       },
       "err": {
         "amountMismatch": "The amount must be exactly {{amount}}, the instalment amount. Reload the booking in case the plan changed.",
@@ -1123,6 +1129,7 @@
         "plotDriftFixConfirm": "To fix it, set the plot back to Booked in Projects & Plots, then try again.",
         "sameAssociate": "Choose a different associate. This booking already belongs to that associate.",
         "invalidTarget": "Only active associates can receive a booking.",
+        "noBalance": "Nothing is left to reschedule. Every instalment is already paid or entered.",
         "notEntered": "Instalment {{n}} has no entered payment to confirm. Reload to see its current status.",
         "plotDriftConfirmPay": "Payment not confirmed. The plot is no longer marked Booked, and confirming this payment would take the booking past the auto-confirm threshold. Nothing was saved.",
         "confirmNetwork": "We couldn't confirm whether the payment was confirmed. Reload to check instalment {{n}} before you try again.",
