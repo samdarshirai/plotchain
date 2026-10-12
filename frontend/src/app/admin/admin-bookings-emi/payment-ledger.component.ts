@@ -22,7 +22,7 @@ const col = (k: string) => `admin.bookingsEmi.col.${k}`;
   imports: [CommonModule, TranslateModule, InlineBannerComponent, PagerComponent, ReportFiltersComponent, PaymentReceiptComponent],
   template: `
     <div class="payment-ledger" [attr.aria-busy]="loading || exporting">
-      <app-report-filters (filtersChange)="onFilters($event)"></app-report-filters>
+      <app-report-filters [locked]="exporting" (filtersChange)="onFilters($event)"></app-report-filters>
 
       <div class="payment-ledger__bar">
         <button type="button" class="brand-button brand-button--secondary payment-ledger__export" [disabled]="exporting" (click)="exportCsv_()">{{ 'admin.bookingsEmi.action.exportCsv' | translate }}</button>
@@ -35,7 +35,7 @@ const col = (k: string) => `admin.bookingsEmi.col.${k}`;
         <button type="button" class="booking-register__retry" (click)="load(currentPage)">{{ 'admin.bookingsEmi.err.retry' | translate }}</button>
       </app-inline-banner>
 
-      <app-payment-receipt *ngIf="receipt" [row]="receipt" (closed)="receipt = null"></app-payment-receipt>
+      <app-payment-receipt *ngIf="receipt" [row]="receipt" (closed)="closeReceipt()"></app-payment-receipt>
 
       <div class="booking-register__list">
         <div class="booking-register__skeleton" role="status" *ngIf="!page && !loadError">
@@ -63,7 +63,7 @@ const col = (k: string) => `admin.bookingsEmi.col.${k}`;
               <td [attr.data-label]="col('confirmBy') | translate">{{ r.confirmBy || '—' }}</td>
               <td [attr.data-label]="col('confirmDate') | translate">{{ r.confirmedAt ? (r.confirmedAt | date: 'mediumDate') : '—' }}</td>
               <td>
-                <button type="button" class="booking-register__retry payment-ledger__receipt-btn" (click)="receipt = r">{{ 'admin.bookingsEmi.action.receipt' | translate }}</button>
+                <button type="button" class="booking-register__retry payment-ledger__receipt-btn" (click)="openReceipt(r, $event)">{{ 'admin.bookingsEmi.action.receipt' | translate }}</button>
               </td>
             </tr>
           </tbody>
@@ -87,6 +87,7 @@ export class PaymentLedgerComponent implements OnInit {
   filters: PaymentFilters = {};
   loading = false; loadError = false; exporting = false; exportError = false;
   receipt: PaymentRow | null = null;
+  private trigger: HTMLElement | null = null;
   currentPage = 0;
   private seq = 0;
 
@@ -107,9 +108,13 @@ export class PaymentLedgerComponent implements OnInit {
   ngOnInit(): void { this.load(0); }
   onFilters(f: ReportFilterValue): void { this.filters = { from: f.from, to: f.to, projectId: f.projectId }; this.load(0); }
 
+  openReceipt(r: PaymentRow, e: Event): void { this.receipt = r; this.trigger = e.currentTarget as HTMLElement; }
+  closeReceipt(): void { this.receipt = null; this.trigger?.focus(); this.trigger = null; }
+
   // Latest-request-wins.
   load(p: number): void {
     const mine = ++this.seq;
+    this.receipt = null; this.trigger = null;
     this.currentPage = p; this.loading = true; this.loadError = false;
     this.service.payments('PAID', this.filters, p, PAGE_SIZE).subscribe({
       next: res => { if (mine === this.seq) { this.loading = false; this.page = res; } },
@@ -120,7 +125,8 @@ export class PaymentLedgerComponent implements OnInit {
   exportCsv_(): void {
     if (this.exporting) { return; }
     this.exporting = true; this.exportError = false;
-    collectPages<PaymentRow>(p => this.service.payments('PAID', this.filters, p, 100).pipe(map(r => ({ rows: r.payments, totalElements: r.totalElements }))))
+    const f = this.filters;
+    collectPages<PaymentRow>(p => this.service.payments('PAID', f, p, 100).pipe(map(r => ({ rows: r.payments, totalElements: r.totalElements }))))
       .subscribe({
         next: rows => { exportCsv(rows, this.columns, 'payments-confirmed.csv'); this.exporting = false; },
         error: () => { this.exporting = false; this.exportError = true; }

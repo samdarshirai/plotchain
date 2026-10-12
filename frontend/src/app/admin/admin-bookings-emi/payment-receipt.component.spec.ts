@@ -56,6 +56,12 @@ describe('PaymentReceiptComponent', () => {
     expect(document.activeElement).toBe(el().querySelector('.payment-receipt__title'));
   });
 
+  it('shows the title once', () => {
+    make(row);
+    expect(el().querySelector('.payment-receipt__rule')).toBeNull();
+    expect(el().textContent!.split('admin.bookingsEmi.receipt.title').length - 1).toBe(1);
+  });
+
   it('renders dashes for null entry/confirm fields', () => {
     make({ ...row, entryBy: null, confirmBy: null, confirmedAt: null, paymentRef: null });
     const dds = Array.from(el().querySelectorAll('dd')).map(d => d.textContent!.trim());
