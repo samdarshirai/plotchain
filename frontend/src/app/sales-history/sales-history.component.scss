@@ -9,7 +9,7 @@
   &__num { text-align: right; white-space: nowrap; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
   &__mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 }
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .my-sales__table thead { display: none; }
   .my-sales__table tr { display: block; padding: 0.5rem 0; border-top: 1px solid var(--border-subtle); }
   .my-sales__table td { display: flex; justify-content: space-between; gap: 1rem; border: 0; padding: 0.25rem 0; text-align: right; }
