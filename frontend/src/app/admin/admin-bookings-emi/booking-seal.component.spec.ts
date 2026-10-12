@@ -31,6 +31,7 @@ describe('BookingSealComponent', () => {
   afterEach(() => http.verify());
   const c = () => fixture.componentInstance;
   const type = (name: string, v: string) => { const i = el().querySelector<HTMLInputElement>(`[name="${name}"]`)!; i.value = v; i.dispatchEvent(new Event('input')); };
+  const pick = (name: string, v: string) => { const s = el().querySelector<HTMLSelectElement>(`[name="${name}"]`)!; s.value = v; s.dispatchEvent(new Event('change')); };
   const submit = () => el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
 
   it('shows the empty prompt without a booking', () => {
@@ -85,28 +86,15 @@ describe('BookingSealComponent', () => {
     fixture.detectChanges();
     type('paymentRef', ' UPI-1 ');
     type('receivedOn', '2026-03-02T10:30');
+    pick('paymentMode', 'UPI');
     await fixture.whenStable();
     submit();
     const req = http.expectOne('/api/admin/bookings/b1/installments/2/pay');
     expect(req.request.body.amount).toBe(250);
     expect(req.request.body.paymentRef).toBe('UPI-1');
-    expect(req.request.body.paymentMode).toBe('CASH');
+    expect(req.request.body.paymentMode).toBe('UPI');
     expect(req.request.body.paidAt).toMatch(/^2026-03-02T/);
     req.flush(bk());
-  });
-
-  it('warns before paying when the payment will auto-confirm', () => {
-    setup(bk({ paidAmount: 250 }), { ...auto, confirmThresholdPercent: 50 });
-    c().open('pay', c().booking!.installments[1]); // 250+250 = 50%
-    fixture.detectChanges();
-    expect(el().textContent).toContain('admin.bookingsEmi.warn.autoConfirm');
-  });
-
-  it('does not warn under MANUAL', () => {
-    setup(bk(), { ...auto, confirmRule: 'MANUAL' });
-    c().open('pay', c().booking!.installments[1]);
-    fixture.detectChanges();
-    expect(el().textContent).not.toContain('admin.bookingsEmi.warn.autoConfirm');
   });
 
   it('success emits the updated booking and the plain payment flash; pay only enters the payment', async () => {
@@ -115,7 +103,7 @@ describe('BookingSealComponent', () => {
     c().flash.subscribe(f => flashes.push(f)); c().updated.subscribe(u => updates.push(u));
     c().open('pay', c().booking!.installments[1]);
     fixture.detectChanges();
-    type('paymentRef', 'R'); await fixture.whenStable(); submit();
+    type('paymentRef', 'R'); pick('paymentMode', 'CASH'); await fixture.whenStable(); submit();
     http.expectOne('/api/admin/bookings/b1/installments/2/pay').flush(bk({
       paidAmount: 250,
       installments: [inst(1, { status: 'PAID', paidAt: '2026-02-05T00:00:00Z' }), inst(2, { status: 'ENTERED', paidAt: '2026-03-02T00:00:00Z', paymentMode: 'CASH' }), inst(3), inst(4, { status: 'VOID' })]
@@ -129,6 +117,7 @@ describe('BookingSealComponent', () => {
     setup(bk({ installments: [inst(1, { status: 'PAID', paidAt: '2026-02-05T00:00:00Z' }), inst(2, { status: 'ENTERED', paidAt: '2026-03-02T00:00:00Z' }), inst(3), inst(4, { status: 'VOID' })] }));
     expect(el().textContent).toContain('admin.bookingsEmi.installment.ENTERED');
     expect(el().querySelectorAll('.booking-seal__pay').length).toBe(1);
+    expect(el().querySelectorAll('.booking-seal__confirm-pay').length).toBe(1);
   });
 
   it('success without a status flip emits the plain payment flash', async () => {
@@ -137,29 +126,16 @@ describe('BookingSealComponent', () => {
     c().flash.subscribe(f => flashes.push(f));
     c().open('pay', c().booking!.installments[1]);
     fixture.detectChanges();
-    type('paymentRef', 'R'); await fixture.whenStable(); submit();
+    type('paymentRef', 'R'); pick('paymentMode', 'CASH'); await fixture.whenStable(); submit();
     http.expectOne('/api/admin/bookings/b1/installments/2/pay').flush(bk({ paidAmount: 500 }));
     expect(flashes[0].key).toBe('admin.bookingsEmi.ok.pay');
-  });
-
-  it('409 plot drift on pay shows the not-recorded copy, keeps the form, re-enables submit', async () => {
-    setup();
-    c().open('pay', c().booking!.installments[1]);
-    fixture.detectChanges();
-    type('paymentRef', 'R'); await fixture.whenStable(); submit();
-    http.expectOne('/api/admin/bookings/b1/installments/2/pay').flush({ error: 'Plot is not available for booking: x' }, { status: 409, statusText: 'Conflict' });
-    fixture.detectChanges();
-    expect(el().textContent).toContain('admin.bookingsEmi.err.plotDriftPay');
-    expect(el().textContent).toContain('admin.bookingsEmi.err.serverSaid');
-    expect(c().mode).toBe('pay');
-    expect(c().busy).toBeFalse();
   });
 
   it('network error on pay hides submit and offers reload instead of a blind retry', async () => {
     setup();
     c().open('pay', c().booking!.installments[1]);
     fixture.detectChanges();
-    type('paymentRef', 'R'); await fixture.whenStable(); submit();
+    type('paymentRef', 'R'); pick('paymentMode', 'CASH'); await fixture.whenStable(); submit();
     http.expectOne('/api/admin/bookings/b1/installments/2/pay').error(new ProgressEvent('error'));
     fixture.detectChanges();
     expect(el().textContent).toContain('admin.bookingsEmi.err.payNetwork');
@@ -174,7 +150,7 @@ describe('BookingSealComponent', () => {
     let reloads = 0; c().reloadRequested.subscribe(() => reloads++);
     c().open('pay', c().booking!.installments[1]);
     fixture.detectChanges();
-    type('paymentRef', 'R'); await fixture.whenStable(); submit();
+    type('paymentRef', 'R'); pick('paymentMode', 'CASH'); await fixture.whenStable(); submit();
     http.expectOne('/api/admin/bookings/b1/installments/2/pay').flush({ error: 'Booking is not ACTIVE' }, { status: 409, statusText: 'Conflict' });
     expect(reloads).toBe(1);
   });
@@ -184,7 +160,7 @@ describe('BookingSealComponent', () => {
     const busy: boolean[] = []; c().busyChange.subscribe(b => busy.push(b));
     c().open('pay', c().booking!.installments[1]);
     fixture.detectChanges();
-    type('paymentRef', 'R'); await fixture.whenStable();
+    type('paymentRef', 'R'); pick('paymentMode', 'CASH'); await fixture.whenStable();
     c().submitPay(); c().submitPay();
     expect(http.match(r => r.url.includes('/pay')).length).toBe(1);
     expect(busy).toEqual([true]);
@@ -266,7 +242,7 @@ describe('BookingSealComponent', () => {
     setup();
     c().open('pay', c().booking!.installments[1]);
     fixture.detectChanges();
-    type('paymentRef', 'R'); await fixture.whenStable(); submit();
+    type('paymentRef', 'R'); pick('paymentMode', 'CASH'); await fixture.whenStable(); submit();
     http.expectOne('/api/admin/bookings/b1/installments/2/pay').error(new ProgressEvent('error'));
     fixture.detectChanges();
     expect(c().netUnknown).toBeTrue();
@@ -278,32 +254,12 @@ describe('BookingSealComponent', () => {
     expect(c().netUnknown).toBeFalse();
   });
 
-  it('the warning appears before submit with before/after amounts and states the rollback', () => {
-    setup();
-    c().open('pay', c().booking!.installments[1]);
-    fixture.detectChanges();
-    expect(el().textContent).toContain('admin.bookingsEmi.warn.autoConfirmDetail');
-  });
-
-  it('409 plot drift on pay states the payment is NOT recorded and links to the fix pages', async () => {
-    setup();
-    c().open('pay', c().booking!.installments[1]);
-    fixture.detectChanges();
-    type('paymentRef', 'R'); await fixture.whenStable(); submit();
-    http.expectOne('/api/admin/bookings/b1/installments/2/pay').flush({ error: 'Plot is not available for booking: x' }, { status: 409, statusText: 'Conflict' });
-    fixture.detectChanges();
-    expect(el().textContent).toContain('admin.bookingsEmi.err.plotDriftFix');
-    expect(el().querySelector('a[href="/settings/projects-plots"]')).not.toBeNull();
-    expect(el().querySelector('a[href="/settings/payments-kyc"]')).not.toBeNull();
-    expect(el().querySelector('a[href="/settings/compensation"]')).toBeNull();
-  });
-
   it('submit is disabled while a write is in flight and busy returns to false afterwards', async () => {
     setup();
     const busy: boolean[] = []; c().busyChange.subscribe(b => busy.push(b));
     c().open('pay', c().booking!.installments[1]);
     fixture.detectChanges();
-    type('paymentRef', 'R'); await fixture.whenStable(); submit();
+    type('paymentRef', 'R'); pick('paymentMode', 'CASH'); await fixture.whenStable(); submit();
     fixture.detectChanges();
     expect(el().querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBeTrue();
     expect(el().querySelectorAll<HTMLButtonElement>('.booking-seal__pay').length).toBe(0); // form replaces the table
@@ -361,7 +317,7 @@ describe('BookingSealComponent', () => {
     setup();
     const flashes: { key: string }[] = []; c().flash.subscribe(f => flashes.push(f));
     c().open('pay', c().booking!.installments[1]); fixture.detectChanges();
-    type('paymentRef', 'R'); await fixture.whenStable(); submit();
+    type('paymentRef', 'R'); pick('paymentMode', 'CASH'); await fixture.whenStable(); submit();
     http.expectOne('/api/admin/bookings/b1/installments/2/pay').flush({ error: 'Booking is not ACTIVE' }, { status: 409, statusText: 'Conflict' });
     fixture.componentRef.setInput('booking', bk({ status: 'CANCELLED', dueAmount: 0 }));
     fixture.detectChanges();
@@ -398,11 +354,10 @@ describe('BookingSealComponent', () => {
     expect(el().querySelector('#seal-ref-error')!.textContent).toContain('admin.bookingsEmi.validation.ref');
   });
 
-  it('auto-confirm warning and meter tick do not depend on emiEnabled', () => {
+  it('meter tick does not depend on emiEnabled', () => {
     setup(bk({ paidAmount: 250 }), { ...auto, emiEnabled: false });
     c().open('pay', c().booking!.installments[1]);
     fixture.detectChanges();
-    expect(el().textContent).toContain('admin.bookingsEmi.warn.autoConfirm');
     c().close();
     fixture.detectChanges();
     expect(el().querySelector('.booking-seal__meter-tick')).not.toBeNull();
@@ -418,7 +373,7 @@ describe('BookingSealComponent', () => {
     fixture.detectChanges();
     expect(el().querySelector<HTMLInputElement>('[name="amount"]')!.value).toBe('₹3,33,333.34');
     expect(el().querySelector('.booking-seal__submit')!.textContent).toContain('admin.bookingsEmi.action.payBtn');
-    type('paymentRef', 'R'); await fixture.whenStable(); submit();
+    type('paymentRef', 'R'); pick('paymentMode', 'CASH'); await fixture.whenStable(); submit();
     const req = http.expectOne('/api/admin/bookings/b1/installments/3/pay');
     expect(req.request.body.amount).toBe(333333.34);
     req.flush(third);
@@ -430,7 +385,7 @@ describe('BookingSealComponent', () => {
     const pays = el().querySelectorAll<HTMLButtonElement>('.booking-seal__pay');
     pays[pays.length - 1].click();
     fixture.detectChanges();
-    type('paymentRef', 'R'); await fixture.whenStable(); submit();
+    type('paymentRef', 'R'); pick('paymentMode', 'CASH'); await fixture.whenStable(); submit();
     const req = http.expectOne('/api/admin/bookings/b1/installments/4/pay');
     expect(req.request.body.amount).toBe(225);
     req.flush(b);
@@ -452,5 +407,134 @@ describe('BookingSealComponent', () => {
     setup();
     c().open('transfer'); fixture.detectChanges();
     expect(el().querySelector('input[role="combobox"]')!.getAttribute('placeholder')).toContain('admin.bookingsEmi.field.target');
+  });
+
+  it('pay form lists the five payment modes behind a placeholder and starts unset', () => {
+    setup();
+    c().open('pay', c().booking!.installments[1]); fixture.detectChanges();
+    const opts = Array.from(el().querySelectorAll<HTMLOptionElement>('select[name="paymentMode"] option')).map(o => o.value);
+    expect(opts).toEqual(['', 'CASH', 'CHEQUE', 'UPI', 'BANK_TRANSFER', 'OTHER']);
+    expect(el().querySelector<HTMLSelectElement>('select[name="paymentMode"]')!.value).toBe('');
+  });
+  it('pay requires a payment mode: error shown, aria-invalid set, nothing sent', async () => {
+    setup();
+    c().open('pay', c().booking!.installments[1]); fixture.detectChanges();
+    type('paymentRef', 'R'); await fixture.whenStable(); submit(); fixture.detectChanges();
+    expect(el().textContent).toContain('admin.bookingsEmi.validation.mode');
+    expect(el().querySelector('select[name="paymentMode"]')!.getAttribute('aria-invalid')).toBe('true');
+    http.expectNone(r => r.url.includes('/pay'));
+  });
+  it('the Pay row button reads "Enter payment"', () => {
+    setup();
+    expect(el().querySelector('.booking-seal__pay')!.textContent).toContain('admin.bookingsEmi.action.enterPayment');
+  });
+
+  const entered = (n: number) => inst(n, { status: 'ENTERED', paidAt: '2026-03-02T00:00:00Z', paymentMode: 'UPI' });
+  const withEntered = (over: Record<string, unknown> = {}) =>
+    bk({ paidAmount: 250, installments: [inst(1, { status: 'PAID', paidAt: '2026-02-05T00:00:00Z' }), entered(2), inst(3), inst(4, { status: 'VOID' })], ...over });
+
+  it('ENTERED rows get a Confirm button on an ACTIVE booking', () => {
+    setup(withEntered());
+    expect(el().querySelectorAll('.booking-seal__confirm-pay').length).toBe(1);
+  });
+  it('ENTERED rows still get Confirm on a CONFIRMED booking', () => {
+    setup(withEntered({ status: 'CONFIRMED' }));
+    expect(el().querySelectorAll('.booking-seal__confirm-pay').length).toBe(1);
+  });
+  it('no Confirm button on a CANCELLED booking', () => {
+    setup(withEntered({ status: 'CANCELLED', dueAmount: 0 }));
+    expect(el().querySelectorAll('.booking-seal__confirm-pay').length).toBe(0);
+  });
+
+  it('shows the ENTERED status as a warning chip with its mode and date', () => {
+    setup(withEntered());
+    const chip = el().querySelector('.booking-register__chip--entered')!;
+    expect(chip.textContent).toContain('admin.bookingsEmi.installment.ENTERED');
+    expect(el().textContent).toContain('admin.bookingsEmi.paymentMode.UPI');
+  });
+  it('confirm-payment form states the effect and posts to the single-confirm endpoint', () => {
+    setup(withEntered(), { ...auto, confirmThresholdPercent: 90 });
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    expect(el().textContent).toContain('admin.bookingsEmi.confirmPayEffects.0');
+    submit();
+    const req = http.expectOne('/api/admin/bookings/b1/installments/2/confirm');
+    expect(req.request.method).toBe('POST');
+    req.flush(withEntered({ paidAmount: 500, installments: [inst(1, { status: 'PAID' }), inst(2, { status: 'PAID', confirmedAt: '2026-03-03T00:00:00Z' }), inst(3), inst(4, { status: 'VOID' })] }));
+  });
+  it('warns before confirming when this payment will auto-confirm the booking', () => {
+    setup(withEntered(), { ...auto, confirmThresholdPercent: 50 }); // 250 paid + 250 = 50%
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    expect(el().textContent).toContain('admin.bookingsEmi.warn.autoConfirm');
+    expect(el().textContent).toContain('admin.bookingsEmi.warn.autoConfirmDetail');
+  });
+  it('does not warn under MANUAL or when the threshold is not reached', () => {
+    setup(withEntered(), { ...auto, confirmRule: 'MANUAL' });
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    expect(el().textContent).not.toContain('admin.bookingsEmi.warn.autoConfirm');
+  });
+  it('does not warn on a CONFIRMED booking (no second auto-confirm)', () => {
+    setup(withEntered({ status: 'CONFIRMED' }), { ...auto, confirmThresholdPercent: 50 });
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    expect(el().textContent).not.toContain('admin.bookingsEmi.warn.autoConfirm');
+  });
+  it('emits the auto-confirm flash when confirming flips ACTIVE to CONFIRMED', () => {
+    setup(withEntered(), { ...auto, confirmThresholdPercent: 50 });
+    const flashes: { key: string; params?: any }[] = []; c().flash.subscribe(f => flashes.push(f));
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    submit();
+    http.expectOne('/api/admin/bookings/b1/installments/2/confirm').flush(withEntered({ status: 'CONFIRMED', paidAmount: 500 }));
+    expect(flashes[0].key).toBe('admin.bookingsEmi.ok.autoConfirm');
+    expect(flashes[0].params.n).toBe(2);
+  });
+  it('emits the plain confirm-payment flash when the status does not flip', () => {
+    setup(withEntered(), { ...auto, confirmThresholdPercent: 90 });
+    const flashes: { key: string }[] = []; c().flash.subscribe(f => flashes.push(f));
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    submit();
+    http.expectOne('/api/admin/bookings/b1/installments/2/confirm').flush(withEntered({ paidAmount: 500 }));
+    expect(flashes[0].key).toBe('admin.bookingsEmi.ok.confirmPay');
+  });
+  it('409 "no entered payment" shows notEntered and asks the register to reload', () => {
+    setup(withEntered());
+    let reloads = 0; c().reloadRequested.subscribe(() => reloads++);
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    submit();
+    http.expectOne('/api/admin/bookings/b1/installments/2/confirm').flush({ error: 'Installment 2 of booking b1 has no entered payment to confirm' }, { status: 409, statusText: 'Conflict' });
+    fixture.detectChanges();
+    expect(el().textContent).toContain('admin.bookingsEmi.err.notEntered');
+    expect(reloads).toBe(1);
+  });
+  it('409 plot drift on confirm-payment says NOT confirmed and links to the fix pages', () => {
+    setup(withEntered());
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    submit();
+    http.expectOne('/api/admin/bookings/b1/installments/2/confirm').flush({ error: 'Plot is not available for booking: x', code: 'PLOT_NOT_AVAILABLE' }, { status: 409, statusText: 'Conflict' });
+    fixture.detectChanges();
+    expect(el().textContent).toContain('admin.bookingsEmi.err.plotDriftConfirmPay');
+    expect(el().querySelector('a[href="/settings/projects-plots"]')).not.toBeNull();
+    expect(el().querySelector('a[href="/settings/payments-kyc"]')).not.toBeNull();
+  });
+  it('network error on confirm-payment hides submit until the booking refreshes', () => {
+    setup(withEntered());
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    submit();
+    http.expectOne('/api/admin/bookings/b1/installments/2/confirm').error(new ProgressEvent('error'));
+    fixture.detectChanges();
+    expect(el().textContent).toContain('admin.bookingsEmi.err.confirmNetwork');
+    expect(el().querySelector('.booking-seal__submit')).toBeNull();
+  });
+  it('closes the confirm-payment form when the booking becomes CANCELLED or the instalment is no longer ENTERED', () => {
+    setup(withEntered());
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    fixture.componentRef.setInput('booking', withEntered({ installments: [inst(1, { status: 'PAID' }), inst(2, { status: 'PAID' }), inst(3), inst(4, { status: 'VOID' })] }));
+    fixture.detectChanges();
+    expect(c().mode).toBe('detail');
+  });
+  it('a CONFIRMED booking keeps the confirm-payment form open when refreshed', () => {
+    setup(withEntered({ status: 'CONFIRMED' }));
+    c().open('confirmPayment', c().booking!.installments[1]); fixture.detectChanges();
+    fixture.componentRef.setInput('booking', withEntered({ status: 'CONFIRMED' }));
+    fixture.detectChanges();
+    expect(c().mode).toBe('confirmPayment');
   });
 });
