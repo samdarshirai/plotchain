@@ -353,7 +353,7 @@ describe('ProjectsPlotsComponent', () => {
 
   describe('booking', () => {
     const detail = { id: 'id-A-2', plotNo: 'A-2', plotType: 'NORMAL', areaSqft: 1200, rate: 3750, price: 4500000, status: 'AVAILABLE' };
-    const form = { associateId: 'a1', buyerName: 'Rohit', buyerPhone: '', tokenAmount: 100000 };
+    const form = { associateId: 'a1', buyerName: 'Rohit', buyerPhone: '', tokenAmount: 100000, discount: 0 };
 
     function openBookForm(status = 'AVAILABLE') {
       boot([project()], [cell('A-2', status)]);
@@ -415,6 +415,31 @@ describe('ProjectsPlotsComponent', () => {
       expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'warning', key: 'admin.projectsPlots.error.conflict' }));
       expect(fixture.componentInstance.selectedPlot!.status).toBe('BOOKED');
       expect(el().querySelector<HTMLButtonElement>('.projects-plots__book')!.disabled).toBeTrue();
+      flush();
+    }));
+
+    it('submitBooking sends discount when positive', fakeAsync(() => {
+      openBookForm();
+      fixture.componentInstance.submitBooking({ ...form, discount: 130000 });
+      const post = http.expectOne('/api/admin/bookings');
+      expect(post.request.body).toEqual({ plotId: 'id-A-2', associateId: 'a1', buyerName: 'Rohit', buyerPhone: undefined, tokenAmount: 100000, discount: 130000 });
+      flush();
+    }));
+
+    it('submitBooking omits discount when 0', fakeAsync(() => {
+      openBookForm();
+      fixture.componentInstance.submitBooking(form);
+      expect('discount' in http.expectOne('/api/admin/bookings').request.body).toBeFalse();
+      flush();
+    }));
+
+    it('a 400 invalid-discount response shows the server text and keeps the form open', fakeAsync(() => {
+      openBookForm();
+      fixture.componentInstance.openAside({ kind: 'book' });
+      fixture.componentInstance.submitBooking({ ...form, discount: 9e9 });
+      http.expectOne('/api/admin/bookings').flush({ error: 'Discount must be less than the list price' }, { status: 400, statusText: 'Bad Request' });
+      expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'danger', text: 'Discount must be less than the list price' }));
+      expect(fixture.componentInstance.aside.kind).toBe('book');
       flush();
     }));
 
@@ -575,7 +600,7 @@ describe('ProjectsPlotsComponent', () => {
     const detail = (over: Record<string, unknown> = {}) =>
       ({ id: 'id-A-2', plotNo: 'A-2', plotType: 'NORMAL', areaSqft: 1200, rate: 3750, price: 4500000, status: 'AVAILABLE', ...over });
     const newPlot = { plotNo: 'C-1', plotType: 'NORMAL', areaSqft: 1, rate: 1, price: 1, status: 'AVAILABLE' } as const;
-    const form = { associateId: 'a1', buyerName: 'Rohit', buyerPhone: '', tokenAmount: 100000 };
+    const form = { associateId: 'a1', buyerName: 'Rohit', buyerPhone: '', tokenAmount: 100000, discount: 0 };
     const actions = () => el().querySelectorAll<HTMLButtonElement>('.projects-plots__project-actions button');
 
     function openDetail() {

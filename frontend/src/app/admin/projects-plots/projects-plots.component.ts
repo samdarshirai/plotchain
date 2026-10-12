@@ -564,7 +564,8 @@ export class ProjectsPlotsComponent implements OnInit {
     const projectId = this.selectedProject!.id;
     this.bookingBusy = true;
     this.plotsService.createBooking({
-      plotId, associateId: v.associateId, buyerName: v.buyerName, buyerPhone: v.buyerPhone || undefined, tokenAmount: v.tokenAmount
+      plotId, associateId: v.associateId, buyerName: v.buyerName, buyerPhone: v.buyerPhone || undefined, tokenAmount: v.tokenAmount,
+      ...(v.discount > 0 ? { discount: v.discount } : {})
     }).subscribe({
       next: booking => {
         this.bookingBusy = false;

@@ -9,7 +9,7 @@ export interface BookingFormValue {
   buyerName: string;
   buyerPhone: string;
   tokenAmount: number;
-  discount?: number; // form always emits it (0 when blank); optional so the container spec compiles until Task 4
+  discount: number; // always emitted by the form (0 when blank)
 }
 
 export interface CreateBookingRequest {
