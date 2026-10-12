@@ -81,7 +81,7 @@ describe('BookingsEmiComponent', () => {
   it('shows the overdue count on the tab from a size=1 report call, and hides it when that call fails', () => {
     boot();
     expect(fixture.componentInstance.overdueTotal).toBe(7);
-    expect(fixture.componentInstance.tabs[1].label.endsWith(' (7)')).toBeTrue();
+    expect(fixture.componentInstance.tabs[3].label.endsWith(' (7)')).toBeTrue();
     expect(fixture.componentInstance.tabs[0].label).not.toContain('(');
     expect(el().querySelector('app-tab-bar')!.textContent).toContain('7');
 
@@ -90,7 +90,7 @@ describe('BookingsEmiComponent', () => {
     fixture.detectChanges();
     boot({ overdueFail: true });
     expect(fixture.componentInstance.overdueTotal).toBeNull();
-    expect(fixture.componentInstance.tabs[1].label).not.toContain('(');
+    expect(fixture.componentInstance.tabs[3].label).not.toContain('(');
     expect(el().querySelector('app-tab-bar')!.textContent).not.toMatch(/\(\d+\)/);
   });
 
@@ -170,6 +170,50 @@ describe('BookingsEmiComponent', () => {
     reqs[0].flush(od(3));
     fixture.detectChanges();
     expect(fixture.componentInstance.overdueTotal).toBe(3);
-    expect(fixture.componentInstance.tabs[1].label.endsWith(' (3)')).toBeTrue();
+    expect(fixture.componentInstance.tabs[3].label.endsWith(' (3)')).toBeTrue();
+  });
+  describe('six-tab shell', () => {
+    const tabIds = () => fixture.debugElement.query(By.directive(TabBarComponent)).componentInstance.tabs.map((t: { id: string }) => t.id);
+    const present = () => ['app-booking-register', 'app-payment-queue', 'app-payment-ledger', 'app-overdue-report', 'app-cancelled-bookings', 'app-last-emi']
+      .filter(s => el().querySelector(s) !== null);
+    const flushProjects = () => http.expectOne('/api/company/projects').flush([]);
+    const payments = (status: string) => http.expectOne(r => r.url === '/api/admin/payments' && r.params.get('status') === status)
+      .flush({ payments: [], page: 0, size: 20, totalElements: 0, pageTotal: 0, grandTotal: 0 });
+
+    it('shows six tabs in order', () => {
+      boot();
+      expect(tabIds()).toEqual(['register', 'unconfirmed', 'confirmed', 'overdue', 'cancelled', 'lastEmi']);
+    });
+    it('Unconfirmed mounts the queue only; Register remounts', () => {
+      boot();
+      switchTab('unconfirmed');
+      expect(present()).toEqual(['app-payment-queue']);
+      flushProjects(); payments('ENTERED');
+      switchTab('register');
+      expect(present()).toEqual(['app-booking-register']);
+      flushRegister();
+    });
+    it('Confirmed requests status=PAID', () => {
+      boot();
+      switchTab('confirmed');
+      expect(present()).toEqual(['app-payment-ledger']);
+      http.match('/api/company/projects').forEach(r => r.flush([]));
+      payments('PAID');
+    });
+    it('Cancelled requests status=CANCELLED', () => {
+      boot();
+      switchTab('cancelled');
+      expect(present()).toEqual(['app-cancelled-bookings']);
+      http.match('/api/company/projects').forEach(r => r.flush([]));
+      http.expectOne(r => r.url === '/api/admin/bookings' && r.params.get('status') === 'CANCELLED')
+        .flush({ bookings: [], page: 0, size: 20, totalElements: 0 });
+    });
+    it('EMI by last date requests last-emi', () => {
+      boot();
+      switchTab('lastEmi');
+      expect(present()).toEqual(['app-last-emi']);
+      http.match('/api/company/projects').forEach(r => r.flush([]));
+      http.expectOne(r => r.url === '/api/admin/emi-reports/last-emi').flush([]);
+    });
   });
 });

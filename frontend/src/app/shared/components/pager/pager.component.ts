@@ -9,7 +9,7 @@ import { TranslateModule } from '@ngx-translate/core';
   styleUrl: './pager.component.scss',
   encapsulation: ViewEncapsulation.None,
   template: `
-    <nav class="pager" *ngIf="total > 0" [attr.aria-label]="'shared.pager.summary' | translate: { from: from, to: to, total: total, page: page + 1, totalPages: totalPages }">
+    <nav class="pager" *ngIf="total > 0" [attr.aria-label]="'shared.pager.label' | translate">
       <button type="button" class="pager__prev brand-button brand-button--secondary" [disabled]="disabled || page <= 0" (click)="go(page - 1)">
         {{ 'shared.pager.previous' | translate }}
       </button>

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { PagerComponent } from './pager.component';
 
 describe('PagerComponent', () => {
@@ -15,6 +15,14 @@ describe('PagerComponent', () => {
     TestBed.configureTestingModule({ imports: [PagerComponent, TranslateModule.forRoot()] });
     fixture = TestBed.createComponent(PagerComponent);
     c = fixture.componentInstance;
+  });
+
+  it('labels the nav with the short pager label, not the summary text', () => {
+    const t = TestBed.inject(TranslateService);
+    t.setTranslation('en', { shared: { pager: { label: 'Pagination', summary: 'S {{from}}' } } });
+    t.use('en');
+    set({ page: 0, size: 20, total: 45 });
+    expect(el().querySelector('nav.pager')!.getAttribute('aria-label')).toBe('Pagination');
   });
 
   it('renders nothing when total is 0', () => {
