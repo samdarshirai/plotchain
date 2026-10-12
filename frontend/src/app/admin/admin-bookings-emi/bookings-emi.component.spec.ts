@@ -178,7 +178,7 @@ describe('BookingsEmiComponent', () => {
       .filter(s => el().querySelector(s) !== null);
     const flushProjects = () => http.expectOne('/api/company/projects').flush([]);
     const payments = (status: string) => http.expectOne(r => r.url === '/api/admin/payments' && r.params.get('status') === status)
-      .flush({ rows: [], page: 0, size: 20, totalElements: 0, pendingTotal: 0 });
+      .flush({ payments: [], page: 0, size: 20, totalElements: 0, pageTotal: 0, grandTotal: 0 });
 
     it('shows six tabs in order', () => {
       boot();
