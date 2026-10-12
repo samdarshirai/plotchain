@@ -156,6 +156,8 @@ class CycleCloseCompensationReferenceIntegrationTest {
         Sale sale = new Sale();
         sale.setId(UUID.randomUUID());
         sale.setPlotId(plotId);
+        sale.setProjectId(projectId);
+        sale.setNote("seed");
         sale.setAssociateId(associateId);
         sale.setBuyerName("Jane Buyer");
         sale.setBuyerPhone("9999999999");
