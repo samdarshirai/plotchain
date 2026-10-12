@@ -1,0 +1,8 @@
+.cancelled-bookings {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  &__bar { display: flex; justify-content: flex-end; }
+  .brand-button { min-height: 44px; }
+}
