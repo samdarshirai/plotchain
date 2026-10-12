@@ -1,7 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { By } from '@angular/platform-browser';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SalesHistoryComponent } from './sales-history.component';
+import { PagerComponent } from '../shared/components/pager/pager.component';
+import { formatInr } from '../shared/utils/plot-grid.util';
 
 describe('SalesHistoryComponent', () => {
   let fixture: ComponentFixture<SalesHistoryComponent>;
@@ -13,25 +16,31 @@ describe('SalesHistoryComponent', () => {
       columnBuyerName: 'Buyer',
       columnBuyerPhone: 'Phone',
       columnAmount: 'Amount',
-      columnAssociateId: 'Associate',
+      columnAssociateId: 'Associate ID',
+      columnAssociateName: 'Associate',
       columnLegCredited: 'Leg',
       columnStatus: 'Status',
       columnRecordedAt: 'Recorded At',
       loadError: 'Something went wrong loading your sales history. Please try again.',
-      emptyState: 'No sales to show yet.',
-      previousPageAction: 'Previous',
-      nextPageAction: 'Next',
-      pageIndicator: 'Page {{page}} of {{totalPages}}'
-    }
+      emptyState: 'No sales to show yet.'
+    },
+    shared: { pager: { label: 'Pagination', previous: 'Previous', next: 'Next', summary: '{{from}}-{{to}} of {{total}}' } }
   };
 
   const frTranslations = {
-    salesHistory: {
-      ...enTranslations.salesHistory,
-      columnBuyerName: 'Acheteur',
-      columnBuyerPhone: 'Téléphone'
-    }
+    ...enTranslations,
+    salesHistory: { ...enTranslations.salesHistory, columnBuyerName: 'Acheteur', columnBuyerPhone: 'Téléphone' }
   };
+
+  const sale = (over: object = {}) => ({
+    id: 's1', plotId: 'p1', associateId: '11111111-uuid', associateUserId: 'VP00001', associateName: 'Ravi Kumar',
+    buyerName: 'Jane', buyerPhone: '9999999999', buyerEmail: null, amount: 1500000, cycleId: 'c1',
+    legCredited: 'L', status: 'RECORDED', voidReason: null, recordedAt: '2026-01-01T00:00:00Z',
+    plotNo: null, projectName: null, note: '', ...over
+  });
+
+  const flushFirst = (sales: object[], totalElements = sales.length) =>
+    httpMock.expectOne('/api/associates/me/sales?page=0&size=20').flush({ sales, page: 0, size: 20, totalElements });
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -40,88 +49,87 @@ describe('SalesHistoryComponent', () => {
 
     fixture = TestBed.createComponent(SalesHistoryComponent);
     httpMock = TestBed.inject(HttpTestingController);
-
-    // Real translations registered explicitly (same pattern IncomeStatementComponent's spec
-    // uses) -- without this, translate.get() calls resolve to their raw key rather than actual
-    // copy, since TranslateModule.forRoot() loads no translation file in tests.
     translateService = TestBed.inject(TranslateService);
     translateService.setDefaultLang('en');
     translateService.setTranslation('en', enTranslations);
     translateService.setTranslation('fr', frTranslations);
     translateService.use('en');
-
     fixture.detectChanges();
-
-    httpMock.expectOne('/api/associates/me/sales?page=0&size=20').flush({
-      sales: [
-        {
-          id: 's1', plotId: 'p1', associateId: 'a1', buyerName: 'Jane', buyerPhone: '9999999999',
-          buyerEmail: null, amount: 100000, cycleId: 'c1', legCredited: 'L', status: 'RECORDED',
-          voidReason: null, recordedAt: '2026-01-01T00:00:00Z'
-        }
-      ],
-      page: 0, size: 20, totalElements: 1
-    });
   });
 
   afterEach(() => httpMock.verify());
 
-  it('loads the first page of my sales on init', () => {
-    expect(fixture.componentInstance.page?.sales.length).toBe(1);
+  const q = (sel: string): HTMLElement => fixture.nativeElement.querySelector(sel);
+
+  describe('with a sale', () => {
+    beforeEach(() => {
+      flushFirst([sale()], 25);
+      fixture.detectChanges();
+    });
+
+    it('loads the first page of my sales on init', () => {
+      expect(fixture.componentInstance.page?.sales.length).toBe(1);
+    });
+
+    it('shows the associate login ID and name, never the row UUID', () => {
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('VP00001');
+      expect(text).toContain('Ravi Kumar');
+      expect(text).not.toContain('11111111-uuid');
+    });
+
+    it('formats the amount with the app INR formatter', () => {
+      const cell = q('.my-sales__num[data-label="Amount"]');
+      expect(cell.textContent!.trim()).toBe(formatInr(1500000));
+      expect(cell.textContent).not.toBe('1500000');
+    });
+
+    it('gives every cell a translated data-label for the stacked mobile layout', () => {
+      const cells = fixture.nativeElement.querySelectorAll('.my-sales__table tbody td');
+      expect(cells.length).toBe(8);
+      cells.forEach((td: HTMLElement) => expect(td.getAttribute('data-label')).toBeTruthy());
+    });
+
+    it('uses the shared pager and no hand-rolled one', () => {
+      expect(q('app-pager')).toBeTruthy();
+      expect(q('.sales-history__pagination')).toBeNull();
+    });
+
+    it('requests the next page when the pager emits', () => {
+      fixture.debugElement.query(By.directive(PagerComponent)).componentInstance.pageChange.emit(1);
+      httpMock.expectOne('/api/associates/me/sales?page=1&size=20').flush({ sales: [], page: 1, size: 20, totalElements: 25 });
+      expect(fixture.componentInstance.page?.page).toBe(1);
+    });
+
+    it('shows a load error when a later load fails', () => {
+      fixture.componentInstance.goToPage(1);
+      httpMock.expectOne('/api/associates/me/sales?page=1&size=20').flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+      fixture.detectChanges();
+      expect(q('.my-sales__load-error')?.textContent?.trim()).toBeTruthy();
+    });
+
+    it('renders real translated headers and follows a language switch', () => {
+      expect(q('.my-sales__table thead').textContent).toContain('Buyer');
+      translateService.use('fr');
+      fixture.detectChanges();
+      expect(q('.my-sales__table thead').textContent).toContain('Acheteur');
+    });
+
+    it('renders an em dash when the associate ID or name is missing', () => {
+      fixture.componentInstance.goToPage(0);
+      httpMock.expectOne('/api/associates/me/sales?page=0&size=20').flush({
+        sales: [sale({ associateUserId: null, associateName: null })], page: 0, size: 20, totalElements: 1
+      });
+      fixture.detectChanges();
+      expect(q('.my-sales__id').textContent!.trim()).toBe('—');
+      expect(q('.my-sales__name').textContent!.trim()).toBe('—');
+    });
   });
 
-  it('includes an Associate ID column so descendant sales are distinguishable from my own', () => {
-    expect(fixture.componentInstance.historyColumns.some(c => c.key === 'associateId')).toBeTrue();
-    expect(fixture.componentInstance.historyRows[0]['associateId']).toBe('a1');
-  });
-
-  it('shows a load error when the initial load fails, without silently doing nothing', () => {
-    fixture.componentInstance.goToPage(1);
-    httpMock.expectOne('/api/associates/me/sales?page=1&size=20').flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+  it('shows the empty state when there are no sales', () => {
+    flushFirst([]);
     fixture.detectChanges();
-
-    expect(fixture.componentInstance.loadError).toBe(true);
-    const errorEl: HTMLElement | null = fixture.nativeElement.querySelector('.sales-history__load-error');
-    expect(errorEl?.textContent?.trim()).toBeTruthy();
-  });
-
-  it('shows an empty-state row when there are no sales yet', () => {
-    fixture.componentInstance.goToPage(1);
-    httpMock.expectOne('/api/associates/me/sales?page=1&size=20').flush({ sales: [], page: 1, size: 20, totalElements: 0 });
-    fixture.detectChanges();
-
-    const emptyCell: HTMLElement | null = fixture.nativeElement.querySelector('.editable-table__empty');
-    expect(emptyCell?.textContent?.trim()).toBeTruthy();
-  });
-
-  it('clicking Next loads the next page', () => {
-    fixture.componentInstance.goToPage(1);
-    const req = httpMock.expectOne('/api/associates/me/sales?page=1&size=20');
-    req.flush({ sales: [], page: 1, size: 20, totalElements: 21 });
-
-    expect(fixture.componentInstance.page?.page).toBe(1);
-  });
-
-  it('renders no action column and no filter controls (view-only)', () => {
-    expect(fixture.componentInstance.historyColumns.some(c => c.type === 'action')).toBeFalse();
-    expect(fixture.nativeElement.querySelector('select')).toBeFalsy();
-  });
-
-  it('resolves real translated column header text, not raw i18n keys', () => {
-    expect(fixture.componentInstance.historyColumns.map(c => c.label)).toEqual([
-      'Buyer', 'Phone', 'Amount', 'Associate', 'Leg', 'Status', 'Recorded At'
-    ]);
-    const headerText: string = fixture.nativeElement.querySelector('.editable-table thead tr').textContent;
-    expect(headerText).toContain('Buyer');
-    expect(headerText).not.toContain('salesHistory.columnBuyerName');
-  });
-
-  it('rebuilds the column headers when the active language changes', () => {
-    translateService.use('fr');
-    fixture.detectChanges();
-
-    expect(fixture.componentInstance.historyColumns.map(c => c.label)).toEqual([
-      'Acheteur', 'Téléphone', 'Amount', 'Associate', 'Leg', 'Status', 'Recorded At'
-    ]);
+    expect(q('.my-sales__empty').textContent!.trim()).toBe('No sales to show yet.');
+    expect(q('table')).toBeNull();
   });
 });
