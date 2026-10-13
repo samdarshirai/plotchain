@@ -3,6 +3,7 @@ package com.plotchain.stats;
 import com.plotchain.sales.SaleResponse;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -29,8 +30,12 @@ public record AdminStatsResponse(
     // carries the unsold count (countByStatusNot(SOLD)).
     long plotsSold,
     long plotsTotal,
-    NetworkHealth networkHealth
+    NetworkHealth networkHealth,
+    long unrepliedMessagesCount,
+    List<UnrepliedMessage> unrepliedMessages
 ) {
+    public record UnrepliedMessage(UUID id, String associateName, String associateUserId, String subject, Instant createdAt) {}
+
     public record KycBreakdown(long pending, long verified, long rejected) {}
 
     // Admin Dashboard redesign 1a's Network Health card. activeThisCycle = distinct associates

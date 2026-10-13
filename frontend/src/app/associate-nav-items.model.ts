@@ -67,6 +67,12 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
     ]
   },
   { key: 'payoutHistory', labelKey: 'nav.payoutHistory', icon: 'payments', path: '/payout-history' },
-  { key: 'supportTickets', labelKey: 'nav.supportTickets', icon: 'support_agent', path: '/support-tickets' },
+  {
+    key: 'messages', labelKey: 'nav.messages', icon: 'mail', path: '/messages',
+    children: [
+      { key: 'viewMessages', labelKey: 'nav.viewMessages', path: '/messages' },
+      { key: 'newMessage', labelKey: 'nav.newMessage', path: '/messages/new' }
+    ]
+  },
   { key: 'announcements', labelKey: 'nav.announcements', icon: 'campaign', path: '/announcements' }
 ];

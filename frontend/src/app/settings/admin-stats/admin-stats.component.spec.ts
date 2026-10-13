@@ -23,7 +23,9 @@ describe('AdminStatsComponent', () => {
     oldestPendingWithdrawalAgeDays: null,
     plotsSold: 0,
     plotsTotal: 4,
-    networkHealth: { activeThisCycle: 0, joinedThisCycle: 0, deepestLeg: 0 }
+    networkHealth: { activeThisCycle: 0, joinedThisCycle: 0, deepestLeg: 0 },
+    unrepliedMessagesCount: 0,
+    unrepliedMessages: []
   };
 
   function flushInitialLoad(response: AdminStatsResponse = stats): void {

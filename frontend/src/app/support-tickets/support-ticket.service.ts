@@ -24,6 +24,10 @@ export class SupportTicketService {
     return this.http.post<SupportTicket>(`/api/admin/support-tickets/${id}/respond`, req);
   }
 
+  createMine(req: { subject: string; description: string }): Observable<SupportTicket> {
+    return this.http.post<SupportTicket>('/api/associates/me/support-tickets', req);
+  }
+
   listMine(status: SupportTicketStatus | '', page: number, size: number): Observable<SupportTicketPage> {
     let params = new HttpParams().set('page', page).set('size', size);
     if (status) { params = params.set('status', status); }

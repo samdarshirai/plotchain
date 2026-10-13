@@ -153,6 +153,19 @@ import { AdminRecentSalesTableComponent } from './widgets/recent-sales-table/rec
             </div>
           </section>
         </div>
+
+        <section class="admin-dashboard__panel admin-dashboard__messages">
+          <div class="admin-dashboard__panel-head">
+            <span class="admin-dashboard__panel-rule"></span>
+            <span class="admin-dashboard__panel-eyebrow">{{ 'adminDashboard.messagesEyebrow' | translate }}<ng-container *ngIf="s.unrepliedMessagesCount"> ({{ s.unrepliedMessagesCount }})</ng-container></span>
+            <span class="admin-dashboard__panel-rule"></span>
+          </div>
+          <p class="admin-dashboard__empty" *ngIf="!s.unrepliedMessages.length">{{ 'adminDashboard.messagesEmpty' | translate }}</p>
+          <a *ngFor="let m of s.unrepliedMessages" [routerLink]="['/settings', 'support-tickets']" class="admin-dashboard__message">
+            <span class="admin-dashboard__message-subject">{{ m.subject }}</span>
+            <span class="admin-dashboard__message-meta">{{ m.associateName }} ({{ m.associateUserId }}) &middot; {{ m.createdAt | date: 'medium' }}</span>
+          </a>
+        </section>
       </ng-container>
     </div>
   `

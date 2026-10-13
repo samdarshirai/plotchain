@@ -52,6 +52,7 @@ class AdminStatsServiceTest {
     @Mock WithdrawalRequestRepository withdrawalRequestRepository;
     @Mock PlotRepository plotRepository;
     @Mock SaleService saleService;
+    @Mock com.plotchain.supportticket.SupportTicketRepository supportTicketRepository;
 
     AdminStatsService adminStatsService;
 
@@ -61,7 +62,10 @@ class AdminStatsServiceTest {
     void setUp() {
         adminStatsService = new AdminStatsService(
             associateRepository, walletRepository, ledgerEntryRepository, cycleRepository,
-            saleRepository, withdrawalRequestRepository, plotRepository, saleService);
+            saleRepository, withdrawalRequestRepository, plotRepository, saleService,
+            supportTicketRepository);
+        org.mockito.Mockito.lenient().when(supportTicketRepository.findByResponseIsNullOrderByCreatedAtDescIdDesc(org.mockito.ArgumentMatchers.any()))
+            .thenReturn(org.springframework.data.domain.Page.empty());
     }
 
     @Test

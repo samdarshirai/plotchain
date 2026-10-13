@@ -1,7 +1,12 @@
 package com.plotchain.supportticket;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -30,5 +35,12 @@ public class AssociateSupportTicketController {
         page = Math.max(page, 0);
         size = Math.max(Math.min(size, 100), 1);
         return associateSupportTicketService.myTickets(associateId, status, page, size);
+    }
+
+    @PostMapping("/api/associates/me/support-tickets")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SupportTicketResponse send(@AuthenticationPrincipal UUID associateId,
+                                      @Valid @RequestBody CreateMyMessageRequest request) {
+        return associateSupportTicketService.send(associateId, request);
     }
 }

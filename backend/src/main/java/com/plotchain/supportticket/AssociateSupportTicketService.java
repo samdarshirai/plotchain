@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.UUID;
 
 // Read-only, self-scoped history. Reuses the unit-2 searchQueue query (status + associateId
@@ -34,5 +35,21 @@ public class AssociateSupportTicketService {
         return new SupportTicketPageResponse(
             result.getContent().stream().map(t -> SupportTicketResponse.of(t, associate)).toList(),
             page, size, result.getTotalElements());
+    }
+
+    @Transactional
+    public SupportTicketResponse send(UUID associateId, CreateMyMessageRequest request) {
+        Associate associate = associateRepository.findById(associateId)
+            .orElseThrow(() -> new AssociateNotFoundException(associateId));
+        Instant now = Instant.now();
+        SupportTicket ticket = new SupportTicket();
+        ticket.setId(UUID.randomUUID());
+        ticket.setAssociateId(associateId);
+        ticket.setSubject(request.subject());
+        ticket.setDescription(request.description());
+        ticket.setStatus(SupportTicketStatus.OPEN);
+        ticket.setCreatedAt(now);
+        ticket.setUpdatedAt(now);
+        return SupportTicketResponse.of(supportTicketRepository.save(ticket), associate);
     }
 }

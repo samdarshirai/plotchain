@@ -5098,3 +5098,24 @@ button.tree-explorer__vacant-card {
   .announcement-feed__content { padding: 1.125rem 1.25rem; }
   .announcement-feed__pagination .brand-button--secondary { min-height: 44px; }
 }
+
+// ---- Messages: New Message (associate) ----
+.new-message { display: flex; flex-direction: column; gap: 1.5rem; max-width: 720px; margin: 0 auto; padding: 1.5rem 2rem; }
+.new-message__title { @extend %admin-screen-title; margin: 0; }
+.new-message__subtitle { margin: 0; font-size: 0.875rem; color: var(--text-muted); }
+.new-message__form {
+  display: flex; flex-direction: column; gap: 1rem; padding: 1.25rem 1.5rem;
+  label { display: flex; flex-direction: column; gap: 0.375rem; }
+  input, textarea { font: inherit; padding: 0.5rem 0.75rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
+}
+.new-message__error { font-size: 0.75rem; color: var(--danger, #b3261e); }
+.new-message__send { align-self: flex-start; }
+
+// ---- Admin dashboard: unreplied messages ----
+.admin-dashboard__messages { display: flex; flex-direction: column; gap: 0.5rem; }
+.admin-dashboard__message {
+  display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-subtle); text-decoration: none; color: var(--text-primary);
+}
+.admin-dashboard__message-subject { font-weight: 500; }
+.admin-dashboard__message-meta { font-size: 0.75rem; color: var(--text-muted); }

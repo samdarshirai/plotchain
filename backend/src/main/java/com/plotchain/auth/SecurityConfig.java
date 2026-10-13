@@ -75,6 +75,8 @@ public class SecurityConfig {
                 // blanket ADMIN write rules below (first-match-wins) or associates could never
                 // clear their must-change-password state. SecurityConfigTest locks this.
                 .requestMatchers(HttpMethod.POST, "/api/associates/me/password").authenticated()
+                // Associate sends a message (support ticket) to admin: self-scoped via JWT principal.
+                .requestMatchers(HttpMethod.POST, "/api/associates/me/support-tickets").authenticated()
                 // Self-service KYC document submission: an associate-reachable POST, same
                 // shape as the password-change matcher directly above (role-capability unit 8,
                 // docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,

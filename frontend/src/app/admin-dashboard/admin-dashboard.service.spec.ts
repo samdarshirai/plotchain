@@ -35,7 +35,9 @@ describe('AdminDashboardService', () => {
     oldestPendingWithdrawalAgeDays: 4,
     plotsSold: 119,
     plotsTotal: 140,
-    networkHealth: { activeThisCycle: 18, joinedThisCycle: 5, deepestLeg: 7 }
+    networkHealth: { activeThisCycle: 18, joinedThisCycle: 5, deepestLeg: 7 },
+    unrepliedMessagesCount: 0,
+    unrepliedMessages: []
   };
 
   beforeEach(() => {

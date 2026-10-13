@@ -26,4 +26,9 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, UU
         @Param("status") SupportTicketStatus status,
         @Param("associateId") UUID associateId,
         Pageable pageable);
+
+    // Admin dashboard "new messages" widget: tickets with no admin reply yet, newest first.
+    Page<SupportTicket> findByResponseIsNullOrderByCreatedAtDescIdDesc(Pageable pageable);
+
+    long countByResponseIsNull();
 }

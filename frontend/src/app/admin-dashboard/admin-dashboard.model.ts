@@ -38,6 +38,14 @@ export interface NetworkHealth {
   deepestLeg: number;
 }
 
+export interface UnrepliedMessage {
+  id: string;
+  associateName: string;
+  associateUserId: string;
+  subject: string;
+  createdAt: string;
+}
+
 export interface AdminStatsResponse {
   totalAssociates: number;
   kycBreakdown: KycBreakdown;
@@ -57,4 +65,6 @@ export interface AdminStatsResponse {
   plotsSold: number;
   plotsTotal: number;
   networkHealth: NetworkHealth;
+  unrepliedMessagesCount: number;
+  unrepliedMessages: UnrepliedMessage[];
 }

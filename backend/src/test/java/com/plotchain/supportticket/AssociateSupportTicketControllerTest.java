@@ -162,10 +162,25 @@ class AssociateSupportTicketControllerTest {
     }
 
     @Test
-    void thereIsNoWriteRouteForAssociatesOnTheirTicketHistory() throws Exception {
+    void aBlankMessageIsRejectedAndNothingIsSaved() throws Exception {
         Associate me = associate(UUID.randomUUID(), AssociateRole.ASSOCIATE, "VP00001", "Jane Doe");
         mockMvc.perform(post(URL).contentType("application/json").content("{}").header("Authorization", tokenFor(me)))
             .andExpect(status().is4xxClientError());
         verify(supportTicketRepository, never()).save(any());
+    }
+
+    @Test
+    void anAssociateCanSendAMessageScopedToTheirOwnId() throws Exception {
+        UUID id = UUID.randomUUID();
+        Associate me = associate(id, AssociateRole.ASSOCIATE, "VP00001", "Jane Doe");
+        when(supportTicketRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        mockMvc.perform(post(URL).contentType("application/json")
+                .content("{\"subject\":\"Hi\",\"description\":\"Need help\"}")
+                .header("Authorization", tokenFor(me)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.associateId").value(id.toString()))
+            .andExpect(jsonPath("$.status").value("OPEN"))
+            .andExpect(jsonPath("$.subject").value("Hi"));
     }
 }

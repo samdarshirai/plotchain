@@ -96,6 +96,8 @@
     "legNote": "मैचिंग आय तभी शुरू होगी जब दोनों लेग एक ही साइकिल में वॉल्यूम रखें।"
   },
   "adminDashboard": {
+    "messagesEyebrow": "New messages",
+    "messagesEmpty": "No unreplied messages.",
     "heading": "डैशबोर्ड",
     "subtitle": "वापसी पर स्वागत है। इस चक्र में आपके नेटवर्क का प्रदर्शन यहाँ देखें।",
     "totalAssociatesLabel": "कुल एसोसिएट्स",
@@ -523,10 +525,10 @@
     "columnMatchingIncome": "Matching Income"
   },
   "supportTickets": {
-    "eyebrow": "Associate · Support Tickets",
-    "title": "Support Tickets",
-    "subtitle": "Requests our team has logged for you.",
-    "loading": "Loading support tickets",
+    "eyebrow": "Associate · Messages",
+    "title": "View Messages",
+    "subtitle": "Messages you sent and replies from our team.",
+    "loading": "Loading messages",
     "statusFilterLabel": "Status",
     "statusFilterAllOption": "All statuses",
     "status": {
@@ -537,16 +539,26 @@
     },
     "columnSubject": "Subject",
     "columnStatus": "Status",
-    "columnCreatedAt": "Created",
-    "columnResponse": "Admin response",
+    "columnCreatedAt": "Sent",
+    "columnResponse": "Admin reply",
     "awaitingReply": "Awaiting a reply",
-    "loadError": "Couldn't load your support tickets. Check your connection and try again.",
+    "loadError": "Couldn't load your messages. Check your connection and try again.",
     "retryAction": "Retry",
-    "emptyState": "No support tickets yet. When our team logs a request for you, it will appear here with any reply.",
-    "emptyStateFiltered": "No tickets with this status. Try another status, or choose All statuses.",
+    "emptyState": "No messages yet. Use New Message to write to our team; replies will appear here.",
+    "emptyStateFiltered": "No messages with this status. Try another status, or choose All statuses.",
     "previousPageAction": "Previous",
     "nextPageAction": "Next",
-    "pageIndicator": "Page {{page}} of {{totalPages}}"
+    "pageIndicator": "Page {{page}} of {{totalPages}}",
+    "new": {
+      "title": "New Message",
+      "subtitle": "Write to our team. Replies appear under View Messages.",
+      "subjectLabel": "Subject",
+      "messageLabel": "Message",
+      "sendAction": "Send",
+      "sending": "Sending…",
+      "sendError": "Couldn't send your message. Check your connection and try again.",
+      "required": "This field is required."
+    }
   },
   "announcements": {
     "composer": {
@@ -665,6 +677,9 @@
     "incomeStatement": "आय विवरण",
     "payoutHistory": "भुगतान इतिहास",
     "supportTickets": "सहायता टिकट",
+    "messages": "Messages",
+    "viewMessages": "View Messages",
+    "newMessage": "New Message",
     "announcements": "घोषणाएँ",
     "categories": {
       "setup": "सेटअप",

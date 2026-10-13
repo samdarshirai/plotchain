@@ -83,6 +83,8 @@
     "legNote": "Matching income starts once both legs carry volume in the same cycle."
   },
   "adminDashboard": {
+    "messagesEyebrow": "New messages",
+    "messagesEmpty": "No unreplied messages.",
     "heading": "Dashboard",
     "subtitle": "Welcome back. Here's how your network is performing this cycle.",
     "totalAssociatesLabel": "Total Associates",
@@ -551,10 +553,10 @@
     "pendingBanner": "Your account is pending activation. Ask your sponsor for an e-pin."
   },
   "supportTickets": {
-    "eyebrow": "Associate · Support Tickets",
-    "title": "Support Tickets",
-    "subtitle": "Requests our team has logged for you.",
-    "loading": "Loading support tickets",
+    "eyebrow": "Associate · Messages",
+    "title": "View Messages",
+    "subtitle": "Messages you sent and replies from our team.",
+    "loading": "Loading messages",
     "statusFilterLabel": "Status",
     "statusFilterAllOption": "All statuses",
     "status": {
@@ -565,16 +567,26 @@
     },
     "columnSubject": "Subject",
     "columnStatus": "Status",
-    "columnCreatedAt": "Created",
-    "columnResponse": "Admin response",
+    "columnCreatedAt": "Sent",
+    "columnResponse": "Admin reply",
     "awaitingReply": "Awaiting a reply",
-    "loadError": "Couldn't load your support tickets. Check your connection and try again.",
+    "loadError": "Couldn't load your messages. Check your connection and try again.",
     "retryAction": "Retry",
-    "emptyState": "No support tickets yet. When our team logs a request for you, it will appear here with any reply.",
-    "emptyStateFiltered": "No tickets with this status. Try another status, or choose All statuses.",
+    "emptyState": "No messages yet. Use New Message to write to our team; replies will appear here.",
+    "emptyStateFiltered": "No messages with this status. Try another status, or choose All statuses.",
     "previousPageAction": "Previous",
     "nextPageAction": "Next",
-    "pageIndicator": "Page {{page}} of {{totalPages}}"
+    "pageIndicator": "Page {{page}} of {{totalPages}}",
+    "new": {
+      "title": "New Message",
+      "subtitle": "Write to our team. Replies appear under View Messages.",
+      "subjectLabel": "Subject",
+      "messageLabel": "Message",
+      "sendAction": "Send",
+      "sending": "Sending…",
+      "sendError": "Couldn't send your message. Check your connection and try again.",
+      "required": "This field is required."
+    }
   },
   "announcements": {
     "composer": {
@@ -694,6 +706,9 @@
     "incomeStatement": "Income Statement",
     "payoutHistory": "Payout History",
     "supportTickets": "Support Tickets",
+    "messages": "Messages",
+    "viewMessages": "View Messages",
+    "newMessage": "New Message",
     "announcements": "Announcements",
     "categories": {
       "setup": "Setup",

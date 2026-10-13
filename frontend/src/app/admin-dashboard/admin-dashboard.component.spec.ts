@@ -46,7 +46,9 @@ describe('AdminDashboardComponent', () => {
     oldestPendingWithdrawalAgeDays: 4,
     plotsSold: 119,
     plotsTotal: 140,
-    networkHealth: { activeThisCycle: 168, joinedThisCycle: 19, deepestLeg: 7 }
+    networkHealth: { activeThisCycle: 168, joinedThisCycle: 19, deepestLeg: 7 },
+    unrepliedMessagesCount: 0,
+    unrepliedMessages: []
   };
 
   const statsWithoutCycle: AdminStatsResponse = {
@@ -64,7 +66,9 @@ describe('AdminDashboardComponent', () => {
     oldestPendingWithdrawalAgeDays: null,
     plotsSold: 0,
     plotsTotal: 0,
-    networkHealth: { activeThisCycle: 0, joinedThisCycle: 0, deepestLeg: 0 }
+    networkHealth: { activeThisCycle: 0, joinedThisCycle: 0, deepestLeg: 0 },
+    unrepliedMessagesCount: 0,
+    unrepliedMessages: []
   };
 
   function flushInitialLoad(response: AdminStatsResponse = statsWithCycle): void {

@@ -1,5 +1,6 @@
 package com.plotchain.stats;
 
+import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.associate.KycStatus;
@@ -14,6 +15,8 @@ import com.plotchain.sales.SaleRepository;
 import com.plotchain.sales.SaleResponse;
 import com.plotchain.sales.SaleService;
 import com.plotchain.sales.SaleStatus;
+import com.plotchain.supportticket.SupportTicket;
+import com.plotchain.supportticket.SupportTicketRepository;
 import com.plotchain.wallet.WalletRepository;
 import com.plotchain.withdrawal.WithdrawalRequestRepository;
 import com.plotchain.withdrawal.WithdrawalRequestStatus;
@@ -28,6 +31,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -47,6 +54,7 @@ public class AdminStatsService {
     private final WithdrawalRequestRepository withdrawalRequestRepository;
     private final PlotRepository plotRepository;
     private final SaleService saleService;
+    private final SupportTicketRepository supportTicketRepository;
 
     public AdminStatsService(
         AssociateRepository associateRepository,
@@ -56,7 +64,8 @@ public class AdminStatsService {
         SaleRepository saleRepository,
         WithdrawalRequestRepository withdrawalRequestRepository,
         PlotRepository plotRepository,
-        SaleService saleService
+        SaleService saleService,
+        SupportTicketRepository supportTicketRepository
     ) {
         this.associateRepository = associateRepository;
         this.walletRepository = walletRepository;
@@ -66,6 +75,7 @@ public class AdminStatsService {
         this.withdrawalRequestRepository = withdrawalRequestRepository;
         this.plotRepository = plotRepository;
         this.saleService = saleService;
+        this.supportTicketRepository = supportTicketRepository;
     }
 
     // Unlike DashboardService.getDashboard, this does NOT throw/409 when there's no OPEN cycle:
@@ -129,10 +139,22 @@ public class AdminStatsService {
         AdminStatsResponse.NetworkHealth networkHealth = new AdminStatsResponse.NetworkHealth(
             activeThisCycle, joinedThisCycle, associateRepository.findDeepestLegDepth());
 
+        List<SupportTicket> unreplied = supportTicketRepository
+            .findByResponseIsNullOrderByCreatedAtDescIdDesc(PageRequest.of(0, 5)).getContent();
+        Map<UUID, Associate> senders = associateRepository
+            .findAllById(unreplied.stream().map(SupportTicket::getAssociateId).toList()).stream()
+            .collect(Collectors.toMap(Associate::getId, Function.identity()));
+        List<AdminStatsResponse.UnrepliedMessage> unrepliedMessages = unreplied.stream()
+            .map(t -> new AdminStatsResponse.UnrepliedMessage(t.getId(),
+                senders.get(t.getAssociateId()).getName(), senders.get(t.getAssociateId()).getUserId(),
+                t.getSubject(), t.getCreatedAt()))
+            .toList();
+
         return new AdminStatsResponse(
             totalAssociates, kycBreakdown, totalWalletBalance, pendingWithdrawals, currentCycle,
             activePlots, totalSalesRecorded, cyclesCompleted, networkGrowth, recentSales,
-            pendingWithdrawalsValue, oldestPendingWithdrawalAgeDays, plotsSold, plotsTotal, networkHealth);
+            pendingWithdrawalsValue, oldestPendingWithdrawalAgeDays, plotsSold, plotsTotal, networkHealth,
+            supportTicketRepository.countByResponseIsNull(), unrepliedMessages);
     }
 
     private AdminStatsResponse.CurrentCycleStats currentCycleStats(Cycle cycle, List<Cycle> lastCycles) {
