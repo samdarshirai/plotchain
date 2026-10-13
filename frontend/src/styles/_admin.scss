@@ -5017,6 +5017,29 @@ button.tree-explorer__vacant-card {
 }
 .ticket-history__awaiting { font-size: 0.8125rem; font-style: italic; color: var(--text-muted); }
 
+// Rows are compact previews; the full text lives in the details dialog.
+.ticket-history__row--clickable {
+  cursor: pointer;
+  &:hover, &:focus-visible { background: var(--surface-raised); outline: none; }
+  .ticket-history__description, .ticket-history__reply-text {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+}
+.ticket-history__dialog {
+  width: min(560px, calc(100vw - 2rem)); padding: 0; border: 1px solid var(--border-subtle);
+  border-radius: 12px; background: var(--surface-card); color: var(--text-primary);
+  &::backdrop { background: rgba(0, 0, 0, 0.45); }
+}
+.ticket-history__dialog-body { display: flex; flex-direction: column; gap: 0.5rem; padding: 1.5rem; max-height: 80vh; overflow-y: auto; }
+.ticket-history__detail-subject { margin: 0; font-family: var(--font-display); font-size: 1.25rem; overflow-wrap: anywhere; }
+.ticket-history__detail-meta { margin: 0; font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-muted); }
+.ticket-history__detail-heading {
+  margin: 0.75rem 0 0; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.ticket-history__detail-text { margin: 0; font-size: 0.875rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ticket-history__detail-close { align-self: flex-end; margin-top: 1rem; }
+
 .ticket-history__skeleton-row {
   height: 3.5rem; margin: 0.75rem 1.25rem; border-radius: 8px; background: var(--surface-raised);
   animation: ticket-history-pulse 1.2s ease-in-out infinite;

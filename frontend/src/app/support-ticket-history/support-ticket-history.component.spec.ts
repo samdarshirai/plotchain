@@ -195,4 +195,38 @@ describe('SupportTicketHistoryComponent', () => {
     expect(fixture.nativeElement.querySelectorAll('input').length).toBe(0);
     expect(fixture.nativeElement.querySelectorAll('table button').length).toBe(0);
   });
+
+  describe('details dialog', () => {
+    const dialog = () => fixture.nativeElement.querySelector('dialog') as HTMLDialogElement;
+    const row = (i: number) => fixture.nativeElement.querySelectorAll('tbody tr')[i] as HTMLElement;
+
+    it('clicking a row opens a dialog with the full message and the admin reply', () => {
+      flushPage();
+      row(0).click();
+      fixture.detectChanges();
+      expect(dialog().open).toBeTrue();
+      expect(dialog().querySelector('.ticket-history__detail-subject')!.textContent).toBe('Cannot see my invoice');
+      const texts = Array.from(dialog().querySelectorAll('.ticket-history__detail-text')).map(e => e.textContent);
+      expect(texts).toEqual(['Line one\nLine two', 'Fixed it']);
+    });
+
+    it('shows "Awaiting a reply" in the dialog when there is no reply', () => {
+      flushPage();
+      row(1).click();
+      fixture.detectChanges();
+      expect(dialog().querySelector('.ticket-history__awaiting')!.textContent).toContain('Awaiting a reply');
+      expect(dialog().querySelector('.ticket-history__reply')).toBeNull();
+    });
+
+    it('Enter on a row opens the dialog; Close dismisses it and clears the selection', () => {
+      flushPage();
+      row(0).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      fixture.detectChanges();
+      expect(dialog().open).toBeTrue();
+      (dialog().querySelector('.ticket-history__detail-close') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(dialog().open).toBeFalse();
+      expect(fixture.componentInstance.selected).toBeNull();
+    });
+  });
 });
