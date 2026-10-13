@@ -1,6 +1,10 @@
 package com.plotchain.income;
 
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,5 +41,11 @@ public class LedgerController {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
         return ledgerService.adminList(associateId, incomeType, cycleId, status, page, size);
+    }
+
+    // Admin marks a REWARD entry's cash + perk as handed over (Rewards screen "Pay Status").
+    @PostMapping("/{id}/fulfil")
+    public AdminLedgerEntryResponse fulfil(@PathVariable UUID id, @Valid @RequestBody RewardFulfilmentRequest request) {
+        return ledgerService.fulfilReward(id, request.fulfilledAt(), request.remark());
     }
 }

@@ -28,4 +28,6 @@ public record AdminLedgerEntryResponse(
     BigDecimal netAmount,
     LedgerEntryStatus status,
     UUID sourceRef,
-    Instant createdAt) {}
+    Instant createdAt,
+    Instant fulfilledAt,
+    String fulfilmentRemark) {}

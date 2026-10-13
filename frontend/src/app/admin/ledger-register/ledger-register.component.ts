@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { LedgerRegisterService } from './ledger-register.service';
 import { AdminLedgerPage, AdminLedgerFilters } from '../models/admin-ledger-page.model';
@@ -37,7 +38,7 @@ const INCOME_TYPE_TABS = [
 @Component({
   selector: 'app-ledger-register',
   standalone: true,
-  imports: [CommonModule, TranslateModule, EditableTableComponent, InlineBannerComponent, TabBarComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, TabBarComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="ledger-register">
@@ -97,9 +98,30 @@ const INCOME_TYPE_TABS = [
           [readOnly]="true"
           [columns]="registerColumns"
           [rows]="registerRows"
+          [actionTemplate]="fulfilCell"
           [emptyStateLabel]="'admin.ledgerRegister.emptyState' | translate"
         ></app-editable-table>
+        <ng-template #fulfilCell let-row>
+          <span *ngIf="row['fulfilled'] === '1'">{{ row['fulfilledLabel'] }}</span>
+          <button *ngIf="row['fulfilled'] !== '1'" type="button" class="brand-button brand-button--secondary" (click)="openFulfil(row['id'])">
+            {{ 'admin.ledgerRegister.markPaidAction' | translate }}
+          </button>
+        </ng-template>
       </div>
+
+      <form class="card ledger-register__fulfil" *ngIf="fulfilEntryId" (ngSubmit)="saveFulfil()">
+        <label>
+          {{ 'admin.ledgerRegister.fulfilDateLabel' | translate }}
+          <input type="date" name="fulfilDate" [(ngModel)]="fulfilDate" required />
+        </label>
+        <label>
+          {{ 'admin.ledgerRegister.fulfilRemarkLabel' | translate }}
+          <input type="text" name="fulfilRemark" [(ngModel)]="fulfilRemark" maxlength="500" />
+        </label>
+        <app-inline-banner *ngIf="fulfilError" tone="danger">{{ 'admin.ledgerRegister.fulfilError' | translate }}</app-inline-banner>
+        <button type="submit" class="brand-button" [disabled]="!fulfilDate">{{ 'admin.ledgerRegister.fulfilSaveAction' | translate }}</button>
+        <button type="button" class="brand-button brand-button--secondary" (click)="fulfilEntryId = ''">{{ 'admin.ledgerRegister.fulfilCancelAction' | translate }}</button>
+      </form>
 
       <div class="ledger-register__pagination" *ngIf="page">
         <span class="ledger-register__page-indicator">
@@ -133,6 +155,10 @@ export class LedgerRegisterComponent implements OnInit {
   incomeType = '';
   private cycleId = '';
   private status = '';
+  fulfilEntryId = '';
+  fulfilDate = '';
+  fulfilRemark = '';
+  fulfilError = false;
 
   get tabs(): TabDefinition[] {
     return INCOME_TYPE_TABS.map(t => ({ id: t.id, label: this.translate.instant(t.labelKey) }));
@@ -150,7 +176,14 @@ export class LedgerRegisterComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.registerColumns = [
+    this.registerColumns = this.buildColumns();
+    this.adminService.listAssociates().subscribe(associates => (this.associates = associates));
+    this.cycleManagementService.list('', 0, CYCLE_LOOKUP_SIZE).subscribe(res => (this.cycles = res.cycles));
+    this.loadPage(0);
+  }
+
+  private buildColumns(): EditableTableColumn[] {
+    const columns: EditableTableColumn[] = [
       { key: 'associate', label: this.translate.instant('admin.ledgerRegister.columnAssociate'), type: 'text' },
       { key: 'cyclePeriod', label: this.translate.instant('admin.ledgerRegister.columnCyclePeriod'), type: 'text' },
       { key: 'incomeType', label: this.translate.instant('admin.ledgerRegister.columnIncomeType'), type: 'text' },
@@ -164,9 +197,10 @@ export class LedgerRegisterComponent implements OnInit {
       { key: 'sourceRef', label: this.translate.instant('admin.ledgerRegister.columnSourceRef'), type: 'text' },
       { key: 'createdAt', label: this.translate.instant('admin.ledgerRegister.columnCreatedAt'), type: 'text' }
     ];
-    this.adminService.listAssociates().subscribe(associates => (this.associates = associates));
-    this.cycleManagementService.list('', 0, CYCLE_LOOKUP_SIZE).subscribe(res => (this.cycles = res.cycles));
-    this.loadPage(0);
+    if (this.incomeType === 'REWARD') {
+      columns.push({ key: 'fulfil', label: this.translate.instant('admin.ledgerRegister.columnFulfilment'), type: 'action' });
+    }
+    return columns;
   }
 
   onAssociateIdChange(value: string): void {
@@ -176,6 +210,8 @@ export class LedgerRegisterComponent implements OnInit {
 
   onIncomeTypeChange(value: string): void {
     this.incomeType = value;
+    this.fulfilEntryId = '';
+    this.registerColumns = this.buildColumns();
     this.loadPage(0);
   }
 
@@ -187,6 +223,23 @@ export class LedgerRegisterComponent implements OnInit {
   onStatusChange(value: string): void {
     this.status = value;
     this.loadPage(0);
+  }
+
+  openFulfil(id: string | number): void {
+    this.fulfilEntryId = String(id);
+    this.fulfilDate = new Date().toISOString().slice(0, 10);
+    this.fulfilRemark = '';
+    this.fulfilError = false;
+  }
+
+  saveFulfil(): void {
+    this.ledgerRegisterService.fulfil(this.fulfilEntryId, new Date(this.fulfilDate).toISOString(), this.fulfilRemark).subscribe({
+      next: () => {
+        this.fulfilEntryId = '';
+        this.loadPage(this.page?.page ?? 0);
+      },
+      error: () => (this.fulfilError = true)
+    });
   }
 
   goToPage(page: number): void {
@@ -211,6 +264,11 @@ export class LedgerRegisterComponent implements OnInit {
 
   private updateTableRows(): void {
     this.registerRows = (this.page?.entries ?? []).map(entry => ({
+      id: entry.id,
+      fulfilled: entry.fulfilledAt ? '1' : '0',
+      fulfilledLabel: entry.fulfilledAt
+        ? this.translate.instant('admin.ledgerRegister.fulfilledOn', { date: this.datePipe.transform(entry.fulfilledAt, 'mediumDate') })
+        : '',
       associate: `${entry.associateUserId} — ${entry.associateName}`,
       cyclePeriod: `${this.datePipe.transform(entry.cyclePeriodStart, 'mediumDate')} – ${this.datePipe.transform(entry.cyclePeriodEnd, 'mediumDate')}`,
       incomeType: titleCase(entry.incomeType),

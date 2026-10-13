@@ -2219,8 +2219,6 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1180px;
-  margin: 0 auto;
   padding: 1.5rem 2rem;
   font-family: 'Inter', var(--font-sans);
 }
@@ -2348,8 +2346,10 @@
 // live render at 1512px: the table already stays contained inside the card -- overflow-x: auto
 // correctly wins over %admin-screen-card's overflow: hidden for the x-axis -- so the page itself
 // never overflows; what's missing is purely the discoverability affordance).
-.income-statement .card {
-  @extend %admin-screen-card;
+// No card chrome (border/shadow/padding): the table sits directly on the page and takes the full
+// screen width on every /income-statement tab.
+.income-statement__table {
+  width: 100%;
   overflow-x: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border-subtle) transparent;
@@ -2555,14 +2555,15 @@
 
 .income-statement--reward .editable-table thead th,
 .income-statement--reward .editable-table tbody td:not(.editable-table__empty) {
-  padding: 0.875rem 1rem;
+  padding: 0.875rem 0.625rem;
   white-space: nowrap;
   text-align: left;
 }
 
-.income-statement--reward .editable-table thead th:nth-child(-n + 4),
-.income-statement--reward .editable-table tbody td:nth-child(-n + 4):not(.editable-table__empty) {
-  text-align: right;
+// Long headers ("Required Left Business") wrap so all 8 columns fit without horizontal scroll.
+.income-statement--reward .editable-table thead th {
+  white-space: normal;
+  vertical-align: bottom;
 }
 
 .income-statement--reward .editable-table tbody td:not(.editable-table__empty):nth-child(n) {
@@ -2575,12 +2576,63 @@
   font-variant-numeric: tabular-nums;
 }
 
-.income-statement--reward .editable-table tbody td:nth-child(5):not(.editable-table__empty) {
-  font-size: 0.75rem;
+// Tier table columns: 1 Sr, 2 Matching Business, 3 Designation, 4 Reward, 5 Required Left,
+// 6 Required Right, 7 Status, 8 Achieved Date. Numeric columns right-aligned, text left.
+.income-statement--reward .income-statement__table:not(.income-statement__table--achieved) .editable-table {
+  thead th:nth-child(2),
+  thead th:nth-child(5),
+  thead th:nth-child(6),
+  tbody td:nth-child(2):not(.editable-table__empty),
+  tbody td:nth-child(5):not(.editable-table__empty),
+  tbody td:nth-child(6):not(.editable-table__empty) {
+    text-align: right;
+  }
+
+  tbody td:nth-child(7):not(.editable-table__empty) {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+}
+
+// Achieved-details table: 1 Sr, 2 Date, 3 Reward, 4 Designation, 5 Pay Status, 6 Payment Date,
+// 7 Remarks. All text columns; Remarks may wrap.
+.income-statement--reward .income-statement__table--achieved .editable-table {
+  tbody td:nth-child(5):not(.editable-table__empty) {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  // Remarks: plain wrapping text. Resets the generic ledger "Net Amount" pill (td:nth-child(7) span).
+  tbody td:nth-child(7):not(.editable-table__empty) {
+    white-space: normal;
+    min-width: 12rem;
+
+    span {
+      background: none;
+      padding: 0;
+      border-radius: 0;
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 400;
+    }
+  }
+}
+
+.income-statement--reward .income-statement__table--achieved .editable-table tbody td:nth-child(n):not(.editable-table__empty) {
+  font-family: inherit;
+}
+
+.income-statement__subtitle-heading {
+  margin: 0.5rem 0 0;
+  font-size: 1.125rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-primary);
 }
 
 .income-statement__pagination {

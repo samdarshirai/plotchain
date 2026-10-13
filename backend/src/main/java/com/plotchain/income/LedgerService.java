@@ -10,9 +10,13 @@ import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -118,7 +122,9 @@ public class LedgerService {
             entry.getNetAmount(),
             entry.getStatus(),
             entry.getSourceRef(),
-            entry.getCreatedAt());
+            entry.getCreatedAt(),
+            entry.getFulfilledAt(),
+            entry.getFulfilmentRemark());
     }
 
     // Same "leave field null on a lookup miss" behavior as toAdminResponse above (Flow step 6)
@@ -168,23 +174,65 @@ public class LedgerService {
     }
 
     // Full reward ladder for the caller, each tier joined to its REWARD ledger row (sourceRef =
-    // reward_tier.id, CycleService#creditReward). Required left/right = volumeThreshold: matched
-    // business is min(left, right), so each leg must reach the threshold. No row = NOT_ACHIEVED.
+    // reward_tier.id, CycleService#creditReward). Required left/right = volume still missing per
+    // leg: max(0, threshold - cumulative leg business). No row = NOT_ACHIEVED.
     public List<AssociateRewardTierRow> myRewardTiers(UUID associateId) {
-        Map<UUID, LedgerEntry> bySourceRef = new HashMap<>();
-        for (LedgerEntry e : ledgerEntryRepository.findByAssociateIdAndIncomeType(associateId, IncomeType.REWARD)) {
-            if (e.getSourceRef() != null) bySourceRef.put(e.getSourceRef(), e);
-        }
+        Map<UUID, LedgerEntry> bySourceRef = rewardEntriesBySourceRef(associateId);
+        LegVolumeRepository.LegBusinessTotals totals = legVolumeRepository.totalBusiness(associateId);
         return compensationPlanService.currentRewardTiers().stream().map(t -> {
             LedgerEntry e = bySourceRef.get(t.getId());
             return new AssociateRewardTierRow(
                 t.getTierLevel(),
                 t.getVolumeThreshold(),
-                t.getVolumeThreshold(),
-                t.getVolumeThreshold(),
+                t.getDesignation(),
+                remaining(t.getVolumeThreshold(), totals.left()),
+                remaining(t.getVolumeThreshold(), totals.right()),
                 t.getCashReward(),
+                t.getPerkDescription(),
                 e == null ? null : e.getStatus(),
                 e == null ? null : e.getCreatedAt());
         }).toList();
+    }
+
+    // Achieved rewards in tier order, with admin fulfilment (pay status/date/remark).
+    public List<AssociateRewardAchievedRow> myRewardsAchieved(UUID associateId) {
+        Map<UUID, LedgerEntry> bySourceRef = rewardEntriesBySourceRef(associateId);
+        return compensationPlanService.currentRewardTiers().stream()
+            .filter(t -> bySourceRef.containsKey(t.getId()))
+            .map(t -> {
+                LedgerEntry e = bySourceRef.get(t.getId());
+                return new AssociateRewardAchievedRow(
+                    e.getCreatedAt(), t.getDesignation(), t.getCashReward(), t.getPerkDescription(),
+                    e.getFulfilledAt() != null, e.getFulfilledAt(), e.getFulfilmentRemark());
+            }).toList();
+    }
+
+    // Admin marks a reward handed over. Re-marking just updates date/remark.
+    @Transactional
+    public AdminLedgerEntryResponse fulfilReward(UUID ledgerEntryId, Instant fulfilledAt, String remark) {
+        LedgerEntry entry = ledgerEntryRepository.findById(ledgerEntryId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ledger entry not found"));
+        if (entry.getIncomeType() != IncomeType.REWARD) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only REWARD entries can be marked paid");
+        }
+        entry.setFulfilledAt(fulfilledAt);
+        entry.setFulfilmentRemark(remark);
+        ledgerEntryRepository.save(entry);
+        return toAdminResponse(
+            entry,
+            associateRepository.findById(entry.getAssociateId()).orElse(null),
+            cycleRepository.findById(entry.getCycleId()).orElse(null));
+    }
+
+    private Map<UUID, LedgerEntry> rewardEntriesBySourceRef(UUID associateId) {
+        Map<UUID, LedgerEntry> bySourceRef = new HashMap<>();
+        for (LedgerEntry e : ledgerEntryRepository.findByAssociateIdAndIncomeType(associateId, IncomeType.REWARD)) {
+            if (e.getSourceRef() != null) bySourceRef.put(e.getSourceRef(), e);
+        }
+        return bySourceRef;
+    }
+
+    private static BigDecimal remaining(BigDecimal threshold, BigDecimal achieved) {
+        return threshold.subtract(achieved).max(BigDecimal.ZERO);
     }
 }

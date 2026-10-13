@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { AdminLedgerEntry } from '../models/ledger-entry.model';
 import { AdminLedgerFilters, AdminLedgerPage } from '../models/admin-ledger-page.model';
 
 @Injectable({ providedIn: 'root' })
@@ -15,5 +16,9 @@ export class LedgerRegisterService {
       }
     }
     return this.http.get<AdminLedgerPage>('/api/admin/ledger', { params });
+  }
+
+  fulfil(id: string, fulfilledAt: string, remark: string): Observable<AdminLedgerEntry> {
+    return this.http.post<AdminLedgerEntry>(`/api/admin/ledger/${id}/fulfil`, { fulfilledAt, remark });
   }
 }

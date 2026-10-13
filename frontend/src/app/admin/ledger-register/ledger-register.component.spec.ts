@@ -22,7 +22,9 @@ describe('LedgerRegisterComponent', () => {
     netAmount: 9300,
     status: 'PAID',
     sourceRef: 's1',
-    createdAt: '2026-01-05T00:00:00Z'
+    createdAt: '2026-01-05T00:00:00Z',
+    fulfilledAt: null,
+    fulfilmentRemark: null
   };
 
   beforeEach(async () => {
@@ -190,5 +192,34 @@ describe('LedgerRegisterComponent', () => {
     const cells = fixture.nativeElement.querySelectorAll('.editable-table tbody tr td');
     expect(cells[2].textContent.trim()).toBe('Sponsor Matching');
     expect(cells[2].textContent).not.toContain('SPONSOR_MATCHING');
+  });
+
+  it('REWARD tab shows a Mark paid action that posts the fulfilment and reloads', () => {
+    fixture.componentInstance.onIncomeTypeChange('REWARD');
+    httpMock.expectOne(r => r.params.get('incomeType') === 'REWARD').flush({
+      entries: [{ ...sampleEntry, id: 'r1', incomeType: 'REWARD' }],
+      page: 0,
+      size: 20,
+      totalElements: 1
+    });
+    fixture.detectChanges();
+
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.editable-table tbody button');
+    expect(button).toBeTruthy();
+    button.click();
+    fixture.componentInstance.fulfilDate = '2026-07-01';
+    fixture.componentInstance.fulfilRemark = 'Cash chosen';
+    fixture.componentInstance.saveFulfil();
+
+    const req = httpMock.expectOne('/api/admin/ledger/r1/fulfil');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body.remark).toBe('Cash chosen');
+    req.flush({ ...sampleEntry, id: 'r1', incomeType: 'REWARD', fulfilledAt: '2026-07-01T00:00:00Z' });
+    httpMock.expectOne(r => r.url === '/api/admin/ledger').flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('non-REWARD tabs have no Mark paid action', () => {
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.editable-table tbody button')).toBeNull();
   });
 });
