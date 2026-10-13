@@ -54,11 +54,7 @@ export const rowKey = (r: { bookingId: string; installmentNumber: number }): str
           <span class="booking-register__sr">{{ 'admin.bookingsEmi.loading' | translate }}</span>
           <span class="booking-register__skeleton-row" *ngFor="let i of [1,2,3,4]"></span>
         </div>
-        <div class="booking-register__empty" *ngIf="page && !page.payments.length">
-          <h2>{{ 'admin.bookingsEmi.empty.queueTitle' | translate }}</h2>
-          <p>{{ 'admin.bookingsEmi.empty.queueBody' | translate }}</p>
-        </div>
-        <table class="booking-register__table payment-queue__table" *ngIf="page?.payments?.length" [attr.aria-label]="'admin.bookingsEmi.tab.unconfirmed' | translate">
+        <table class="booking-register__table payment-queue__table" *ngIf="page" [attr.aria-label]="'admin.bookingsEmi.tab.unconfirmed' | translate">
           <thead><tr>
             <th scope="col" class="payment-queue__check">{{ 'admin.bookingsEmi.col.select' | translate }}</th>
             <th scope="col">{{ 'admin.bookingsEmi.col.paymentDate' | translate }}</th>
@@ -88,6 +84,10 @@ export const rowKey = (r: { bookingId: string; installmentNumber: number }): str
             <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.amount' | translate">{{ money(page!.pageTotal) }}</td>
           </tr></tfoot>
         </table>
+        <div class="booking-register__empty" *ngIf="page && !page.payments.length">
+          <h2>{{ 'admin.bookingsEmi.empty.queueTitle' | translate }}</h2>
+          <p>{{ 'admin.bookingsEmi.empty.queueBody' | translate }}</p>
+        </div>
         <app-pager [page]="page?.page ?? 0" [size]="PAGE_SIZE" [total]="page?.totalElements ?? 0" [disabled]="busy" (pageChange)="goTo($event)"></app-pager>
       </div>
     </div>

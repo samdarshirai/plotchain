@@ -74,7 +74,8 @@ describe('OverdueReportComponent', () => {
     fixture.detectChanges();
     expect(el().textContent).toContain('admin.bookingsEmi.empty.overdueTitle');
     expect(el().textContent).toContain('admin.bookingsEmi.empty.overdueBody');
-    expect(el().querySelector('table')).toBeNull();
+    expect(el().querySelector('table thead')).not.toBeNull();
+    expect(el().querySelectorAll('table tbody tr').length).toBe(0);
     expect(el().querySelector('.overdue-report__retry')).toBeNull();
   });
 

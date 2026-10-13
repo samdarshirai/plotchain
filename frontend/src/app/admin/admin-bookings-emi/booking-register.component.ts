@@ -90,19 +90,7 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
             <span class="booking-register__skeleton-row" *ngFor="let i of [1,2,3,4,5,6]"></span>
           </div>
 
-          <div class="booking-register__empty" *ngIf="page && !page.bookings.length">
-            <ng-container *ngIf="hasFilters; else firstRun">
-              <h2>{{ 'admin.bookingsEmi.empty.noMatchTitle' | translate }}</h2>
-              <button type="button" class="brand-button brand-button--secondary" [disabled]="frozen" (click)="resetFilters()">{{ 'admin.bookingsEmi.filter.reset' | translate }}</button>
-            </ng-container>
-            <ng-template #firstRun>
-              <h2>{{ 'admin.bookingsEmi.empty.noBookingsTitle' | translate }}</h2>
-              <p>{{ 'admin.bookingsEmi.empty.noBookingsBody' | translate }}</p>
-              <a class="brand-button" routerLink="/settings/projects-plots">{{ 'admin.bookingsEmi.empty.goToPlots' | translate }}</a>
-            </ng-template>
-          </div>
-
-          <table #regTable class="booking-register__table" *ngIf="page?.bookings?.length" [attr.aria-label]="'admin.bookingsEmi.title' | translate">
+          <table #regTable class="booking-register__table" *ngIf="page" [attr.aria-label]="'admin.bookingsEmi.title' | translate">
             <thead>
               <tr>
                 <th scope="col">{{ 'admin.bookingsEmi.col.buyer' | translate }}</th>
@@ -142,6 +130,18 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
               </tr>
             </tbody>
           </table>
+          <div class="booking-register__empty" *ngIf="page && !page.bookings.length">
+            <ng-container *ngIf="hasFilters; else firstRun">
+              <h2>{{ 'admin.bookingsEmi.empty.noMatchTitle' | translate }}</h2>
+              <button type="button" class="brand-button brand-button--secondary" [disabled]="frozen" (click)="resetFilters()">{{ 'admin.bookingsEmi.filter.reset' | translate }}</button>
+            </ng-container>
+            <ng-template #firstRun>
+              <h2>{{ 'admin.bookingsEmi.empty.noBookingsTitle' | translate }}</h2>
+              <p>{{ 'admin.bookingsEmi.empty.noBookingsBody' | translate }}</p>
+              <a class="brand-button" routerLink="/settings/projects-plots">{{ 'admin.bookingsEmi.empty.goToPlots' | translate }}</a>
+            </ng-template>
+          </div>
+
 
           <div class="booking-register__pager" *ngIf="page?.bookings?.length">
             <button type="button" class="brand-button brand-button--secondary booking-register__prev" [disabled]="frozen || page!.page === 0" (click)="goTo(page!.page - 1)">{{ 'admin.bookingsEmi.previous' | translate }}</button>

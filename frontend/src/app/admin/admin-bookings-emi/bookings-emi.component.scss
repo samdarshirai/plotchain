@@ -9,7 +9,7 @@
   &__row { cursor: pointer; &--selected { background: var(--brand-primary-soft); box-shadow: inset 4px 0 0 var(--brand-primary); }
     &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: -2px; } }
   &__sub { font-size: 0.8125rem; color: var(--text-muted); }
-  &__num { text-align: right; white-space: nowrap; font-size: 0.8125rem; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  &__num { text-align: left; white-space: nowrap; font-size: 0.8125rem; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
   &__pager { display: flex; justify-content: center; align-items: center; gap: 1rem; padding: 1rem; .brand-button { min-height: 44px; } }
   &__empty { padding: 2.5rem 1rem; text-align: center; h2 { margin: 0 0 0.5rem; font: 600 1.125rem var(--font-sans); } p { margin: 0 0 1rem; color: var(--text-muted); } }
   &__retry { margin-left: 0.75rem; background: none; border: 0; text-decoration: underline; cursor: pointer; color: inherit; font-weight: 600; min-height: 44px; }
