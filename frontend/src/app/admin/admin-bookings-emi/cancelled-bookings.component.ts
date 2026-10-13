@@ -59,8 +59,8 @@ const day = (s?: string | null): string => (s ? s.slice(0, 10) : '');
             <tr *ngFor="let b of page!.bookings">
               <td [attr.data-label]="'admin.bookingsEmi.col.bookedOn' | translate">{{ b.bookedAt | date: 'mediumDate' }}</td>
               <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.associateId' | translate">{{ b.associateCode || '—' }}</td>
-              <td [attr.data-label]="'admin.bookingsEmi.col.associate' | translate">{{ b.associateName || '—' }}</td>
-              <td [attr.data-label]="'admin.bookingsEmi.col.buyer' | translate"><strong>{{ b.buyerName }}</strong><br /><span class="booking-register__sub">{{ plot(b) }}<ng-container *ngIf="b.projectName"> · {{ b.projectName }}</ng-container></span></td>
+              <td class="booking-register__wrap" [attr.data-label]="'admin.bookingsEmi.col.associate' | translate"><span class="booking-register__clamp">{{ b.associateName || '—' }}</span></td>
+              <td class="booking-register__wrap" [attr.data-label]="'admin.bookingsEmi.col.buyer' | translate"><strong>{{ b.buyerName }}</strong><br /><span class="booking-register__sub">{{ plot(b) }}<ng-container *ngIf="b.projectName"> · {{ b.projectName }}</ng-container></span></td>
               <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.mobile' | translate">{{ b.buyerPhone || '—' }}</td>
               <td [attr.data-label]="'admin.bookingsEmi.col.cancelledOn' | translate">{{ b.cancelledAt ? (b.cancelledAt | date: 'mediumDate') : '—' }}</td>
               <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.discount' | translate">{{ b.discount != null ? money(b.discount) : '—' }}</td>

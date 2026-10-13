@@ -51,8 +51,8 @@ const col = (k: string) => `admin.bookingsEmi.col.${k}`;
             <tr *ngFor="let r of page!.payments">
               <td [attr.data-label]="col('paymentDate') | translate">{{ r.paymentDate | date: 'mediumDate' }}</td>
               <td class="booking-register__num" [attr.data-label]="col('associateId') | translate">{{ r.associateCode || '—' }}</td>
-              <td [attr.data-label]="col('associate') | translate">{{ r.associateName || '—' }}</td>
-              <td [attr.data-label]="col('project') | translate">{{ r.projectName || '—' }}</td>
+              <td class="booking-register__wrap" [attr.data-label]="col('associate') | translate"><span class="booking-register__clamp">{{ r.associateName || '—' }}</span></td>
+              <td class="booking-register__wrap" [attr.data-label]="col('project') | translate"><span class="booking-register__clamp">{{ r.projectName || '—' }}</span></td>
               <td class="booking-register__num" [attr.data-label]="col('plot') | translate">{{ r.plotNo || '—' }}</td>
               <td class="booking-register__num" [attr.data-label]="col('amount') | translate">{{ money(r.amount) }}</td>
               <td [attr.data-label]="col('mode') | translate">{{ r.paymentMode ? ('admin.bookingsEmi.paymentMode.' + r.paymentMode | translate) : '—' }}</td>

@@ -36,10 +36,10 @@ const PAGE_SIZE = 20;
         </thead>
         <tbody>
           <tr *ngFor="let r of page!.rows" class="overdue-report__row">
-            <td [attr.data-label]="'admin.bookingsEmi.col.buyer' | translate">
+            <td class="booking-register__wrap" [attr.data-label]="'admin.bookingsEmi.col.buyer' | translate">
               <button type="button" class="booking-register__retry overdue-report__open" (click)="openBooking.emit(r.bookingId)"><strong>{{ r.buyerName }}</strong></button><br /><span class="booking-register__sub">{{ plot(r) }}</span>
             </td>
-            <td [attr.data-label]="'admin.bookingsEmi.col.associate' | translate">{{ r.associateName }}</td>
+            <td class="booking-register__wrap" [attr.data-label]="'admin.bookingsEmi.col.associate' | translate"><span class="booking-register__clamp">{{ r.associateName }}</span></td>
             <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.overdue' | translate">{{ r.overdueCount }}</td>
             <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.amountOverdue' | translate">{{ money(r.overdueAmount) }}</td>
             <td [attr.data-label]="'admin.bookingsEmi.col.oldestDue' | translate">{{ r.oldestDueDate | date: 'mediumDate' }}</td>

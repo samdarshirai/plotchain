@@ -72,8 +72,8 @@ export const rowKey = (r: { bookingId: string; installmentNumber: number }): str
                   [attr.aria-label]="('admin.bookingsEmi.col.select' | translate) + ' ' + (r.associateCode || '') + ' ' + (r.plotNo || '') + ' #' + r.installmentNumber" /></td>
               <td [attr.data-label]="'admin.bookingsEmi.col.paymentDate' | translate">{{ r.paymentDate | date: 'mediumDate' }}</td>
               <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.associateId' | translate">{{ r.associateCode || '—' }}</td>
-              <td [attr.data-label]="'admin.bookingsEmi.col.associate' | translate">{{ r.associateName || '—' }}</td>
-              <td [attr.data-label]="'admin.bookingsEmi.col.project' | translate">{{ r.projectName || '—' }}</td>
+              <td class="booking-register__wrap" [attr.data-label]="'admin.bookingsEmi.col.associate' | translate"><span class="booking-register__clamp">{{ r.associateName || '—' }}</span></td>
+              <td class="booking-register__wrap" [attr.data-label]="'admin.bookingsEmi.col.project' | translate"><span class="booking-register__clamp">{{ r.projectName || '—' }}</span></td>
               <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.plot' | translate">{{ r.plotNo || '—' }}</td>
               <td [attr.data-label]="'admin.bookingsEmi.col.mode' | translate">{{ r.paymentMode ? ('admin.bookingsEmi.paymentMode.' + r.paymentMode | translate) : '—' }}</td>
               <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.amount' | translate">{{ money(r.amount) }}</td>

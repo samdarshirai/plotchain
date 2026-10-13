@@ -47,11 +47,11 @@ const COLS: [string, (r: LastEmiRow) => string | number | null][] = [
           <tr *ngFor="let r of rows">
             <td [attr.data-label]="K + 'bookedOn' | translate">{{ r.bookedAt | date: 'mediumDate' }}</td>
             <td class="booking-register__num" [attr.data-label]="K + 'associateId' | translate">{{ r.associateCode || '—' }}</td>
-            <td [attr.data-label]="K + 'associate' | translate">{{ r.associateName || '—' }}</td>
-            <td [attr.data-label]="K + 'buyer' | translate">{{ r.buyerName }}</td>
+            <td class="booking-register__wrap" [attr.data-label]="K + 'associate' | translate"><span class="booking-register__clamp">{{ r.associateName || '—' }}</span></td>
+            <td class="booking-register__wrap" [attr.data-label]="K + 'buyer' | translate"><span class="booking-register__clamp">{{ r.buyerName }}</span></td>
             <td class="booking-register__num" [attr.data-label]="K + 'mobile' | translate">{{ r.buyerPhone || '—' }}</td>
             <td [attr.data-label]="K + 'plot' | translate">{{ r.plotNo || '—' }}</td>
-            <td [attr.data-label]="K + 'project' | translate">{{ r.projectName || '—' }}</td>
+            <td class="booking-register__wrap" [attr.data-label]="K + 'project' | translate"><span class="booking-register__clamp">{{ r.projectName || '—' }}</span></td>
             <td [attr.data-label]="K + 'lastDueDate' | translate">{{ r.lastDueDate | date: 'mediumDate' }}</td>
             <td class="booking-register__num" [attr.data-label]="K + 'discount' | translate">{{ r.discount != null ? money(r.discount) : '—' }}</td>
             <td class="booking-register__num" [attr.data-label]="K + 'total' | translate">{{ money(r.total) }}</td>
