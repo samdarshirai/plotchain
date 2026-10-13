@@ -1,7 +1,1 @@
-.booking-register__list { min-width: 0; overflow-x: auto; }
-.booking-register__num { white-space: nowrap; text-align: left; }
-.booking-register__table { table-layout: auto; th, td { text-align: left; vertical-align: middle; padding: 0.75rem 1rem; box-sizing: border-box; } th:first-child, td:first-child { padding-left: 1.5rem; } th:last-child, td:last-child { padding-right: 1.5rem; } td { font-variant-numeric: tabular-nums; } tfoot td { font-weight: 600; border-top: 2px solid var(--brand-primary); } }
-@media (min-width: 769px) {
-  .booking-register__table { min-width: 100%; th, td { white-space: nowrap; } th:first-child, td:first-child { min-width: 12rem; white-space: normal; } }
-}
-@media (max-width: 1200px) { .booking-register__grid { grid-template-columns: minmax(0, 1fr); } }
+.booking-register__grid { grid-template-columns: minmax(0, 1fr); }
