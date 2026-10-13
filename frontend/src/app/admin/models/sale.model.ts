@@ -18,4 +18,9 @@ export interface Sale {
   associateUserId: string | null;
   associateName: string | null;
   note: string;
+  plotType?: string | null;
+  areaSqft?: number | null;
+  rate?: number | null;
+  listPrice?: number | null;
+  extraPrice?: number | null;
 }

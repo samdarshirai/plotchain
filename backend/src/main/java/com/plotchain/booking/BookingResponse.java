@@ -29,8 +29,20 @@ public record BookingResponse(
     BigDecimal rate,
     Instant cancelledAt,
     String associateCode,
-    PlotType plotType
+    PlotType plotType,
+    BigDecimal extraPrice
 ) {
+    public BookingResponse(UUID id, UUID plotId, UUID associateId, BookingStatus status, String buyerName,
+                           BigDecimal totalAmount, int installmentCount, Instant bookedAt,
+                           BigDecimal paidAmount, BigDecimal dueAmount, List<EmiInstallmentResponse> installments,
+                           String plotNo, String projectName, String associateName,
+                           String buyerPhone, BigDecimal listPrice, BigDecimal discount, BigDecimal areaSqft,
+                           BigDecimal rate, Instant cancelledAt, String associateCode, PlotType plotType) {
+        this(id, plotId, associateId, status, buyerName, totalAmount, installmentCount, bookedAt,
+            paidAmount, dueAmount, installments, plotNo, projectName, associateName,
+            buyerPhone, listPrice, discount, areaSqft, rate, cancelledAt, associateCode, plotType, null);
+    }
+
     public BookingResponse(UUID id, UUID plotId, UUID associateId, BookingStatus status, String buyerName,
                            BigDecimal totalAmount, int installmentCount, Instant bookedAt,
                            BigDecimal paidAmount, BigDecimal dueAmount, List<EmiInstallmentResponse> installments,
@@ -51,11 +63,11 @@ public record BookingResponse(
             null, null, null, null, null, null, null, null);
     }
 
-    // Team (upline) view must not carry the buyer's phone or the plot rate.
-    public BookingResponse withoutBuyerPhoneAndRate() {
+    // Team (upline) view must not carry the buyer's phone; rate and prices are shown.
+    public BookingResponse withoutBuyerPhone() {
         return new BookingResponse(id, plotId, associateId, status, buyerName, totalAmount, installmentCount, bookedAt,
             paidAmount, dueAmount, installments, plotNo, projectName, associateName,
-            null, null, discount, null, null, cancelledAt, associateCode, plotType);
+            null, listPrice, discount, areaSqft, rate, cancelledAt, associateCode, plotType, extraPrice);
     }
 
     // Labels are additive (unit 14b); null when the referent is gone or the caller has no lookup.

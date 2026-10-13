@@ -178,6 +178,7 @@
     }
   },
   "plotBookings": {
+    "table": {"bookingDate": "बुकिंग तिथि", "associateId": "एसोसिएट आईडी", "name": "नाम", "project": "प्रोजेक्ट", "plotType": "प्लॉट प्रकार", "plotNo": "प्लॉट नं.", "rate": "दर", "area": "क्षेत्रफल", "price": "मूल्य", "extraPrice": "अतिरिक्त मूल्य", "totalPrice": "कुल मूल्य", "paid": "भुगतान राशि", "rest": "शेष राशि", "details": "विवरण", "detailsAction": "देखें"},
     "myBookings": { "title": "My Bookings" },
     "team": {
       "title": { "TEAM": "टीम द्वारा खरीदे गए प्लॉट", "LEFT": "लेफ्ट प्लॉट बुकिंग", "RIGHT": "राइट प्लॉट बुकिंग" },
@@ -1273,7 +1274,9 @@
       "token": { "required": "Enter a token amount above zero.", "tooHigh": "The token must be less than the total after discount." },
       "discountLabel": "Discount",
       "discount": { "negative": "The discount can't be negative.", "tooHigh": "The discount must be less than the plot price." },
-      "summary": { "price": "Plot price", "discount": "Discount", "total": "Total after discount" },
+      "extraPriceLabel": "अतिरिक्त मूल्य",
+      "extraPriceHint": "मूल्य में जुड़ने वाली वैकल्पिक राशि। हर बुकिंग पर बदली जा सकती है।",
+      "summary": { "price": "Plot price", "extraPrice": "अतिरिक्त मूल्य", "discount": "Discount", "total": "Total after discount" },
       "schedulePreview": "Token {{token}} paid now, then {{count}} installments of {{amount}} each",
       "scheduleSingle": "Token {{token}} paid now, then {{amount}} in one installment",
       "confirmBookingAction": "Confirm booking",

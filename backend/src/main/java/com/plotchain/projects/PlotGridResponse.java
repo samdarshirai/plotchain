@@ -11,5 +11,10 @@ public record PlotGridResponse(
     PlotType type,
     BigDecimal area,   // square feet (plot.area_sqft)
     BigDecimal price,
-    PlotStatus status
-) {}
+    PlotStatus status,
+    BigDecimal extraPrice
+) {
+    public PlotGridResponse(UUID plotId, String plotNo, PlotType type, BigDecimal area, BigDecimal price, PlotStatus status) {
+        this(plotId, plotNo, type, area, price, status, BigDecimal.ZERO);
+    }
+}

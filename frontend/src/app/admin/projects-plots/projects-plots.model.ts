@@ -10,6 +10,7 @@ export interface BookingFormValue {
   buyerPhone: string;
   tokenAmount: number;
   discount: number; // always emitted by the form (0 when blank)
+  extraPrice?: number; // prefilled from the plot, editable; omitted = plot default
 }
 
 export interface CreateBookingRequest {
@@ -19,6 +20,7 @@ export interface CreateBookingRequest {
   buyerPhone?: string;
   tokenAmount: number;
   discount?: number;
+  extraPrice?: number;
 }
 
 // The subset of BookingResponse (POST /api/admin/bookings, 201) this screen reads.

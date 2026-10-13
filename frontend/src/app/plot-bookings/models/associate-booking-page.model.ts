@@ -38,6 +38,7 @@ export interface Booking {
   rate?: number | null;
   cancelledAt?: string | null;
   associateCode?: string | null;
+  extraPrice?: number | null;
 }
 
 export interface AssociateBookingPage {

@@ -117,7 +117,7 @@ class PlotGridControllerTest {
     // Data-leak guard (Decision 10: "and nothing else"). Exact key set: a field added to the DTO later
     // (rate, thumbnail, buyerName, bookingId, associateId, ...) fails this test.
     @Test
-    void eachRowHasExactlyTheSixAllowedKeysAndNothingElse() throws Exception {
+    void eachRowHasExactlyTheSevenAllowedKeysAndNothingElse() throws Exception {
         stubProject(List.of(plot("A-1", PlotStatus.BOOKED)));
 
         String body = mockMvc.perform(get("/api/projects/" + PROJECT_ID + "/plots/grid")
@@ -127,7 +127,7 @@ class PlotGridControllerTest {
         JsonNode row = objectMapper.readTree(body).get(0);
         Set<String> keys = new HashSet<>();
         row.fieldNames().forEachRemaining(keys::add);
-        assertThat(keys).containsExactlyInAnyOrder("plotId", "plotNo", "type", "area", "price", "status");
+        assertThat(keys).containsExactlyInAnyOrder("plotId", "plotNo", "type", "area", "price", "status", "extraPrice");
         assertThat(body).doesNotContain("rate").doesNotContain("buyer").doesNotContain("booking")
             .doesNotContain("associate").doesNotContain("thumbnail");
     }

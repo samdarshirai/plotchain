@@ -13,7 +13,7 @@ import java.util.UUID;
 // as Sales' CreateSaleRequest omitting amount), and the installment split always derives from the
 // singleton BookingEmiConfig policy. The one client-supplied amount is tokenAmount: it is recorded
 // as installment 1, already PAID, and the rest of the price is split across the other installments.
-// Optional discount (null = 0) comes off the list price. The upper bounds (discount below the plot price,
+// Optional extraPrice (null = the plot's default) is added to the list price. Optional discount (null = 0) comes off the list price. The upper bounds (discount below the plot price,
 // token below the discounted total) need the plot, so BookingService checks them.
 public record CreateBookingRequest(
     @NotNull UUID plotId,
@@ -21,9 +21,15 @@ public record CreateBookingRequest(
     @NotBlank @Size(max = 200) String buyerName,
     @Size(max = 20) String buyerPhone,
     @NotNull @Positive BigDecimal tokenAmount,
-    @PositiveOrZero BigDecimal discount
+    @PositiveOrZero BigDecimal discount,
+    @PositiveOrZero BigDecimal extraPrice
 ) {
+    public CreateBookingRequest(UUID plotId, UUID associateId, String buyerName, String buyerPhone,
+                                BigDecimal tokenAmount, BigDecimal discount) {
+        this(plotId, associateId, buyerName, buyerPhone, tokenAmount, discount, null);
+    }
+
     public CreateBookingRequest(UUID plotId, UUID associateId, String buyerName, String buyerPhone, BigDecimal tokenAmount) {
-        this(plotId, associateId, buyerName, buyerPhone, tokenAmount, null);
+        this(plotId, associateId, buyerName, buyerPhone, tokenAmount, null, null);
     }
 }

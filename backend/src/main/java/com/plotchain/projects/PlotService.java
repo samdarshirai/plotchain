@@ -44,6 +44,7 @@ public class PlotService {
             request.price(),
             resolveStatus(request.status())
         );
+        plot.setExtraPrice(request.extraPrice());
         plotRepository.save(plot);
         PlotResponse response = toResponse(plot);
         settingsAuditService.record("PROJECTS", "Created plot " + request.plotNo(), response, actorId);
@@ -71,6 +72,7 @@ public class PlotService {
         plot.setAreaSqft(request.areaSqft());
         plot.setRate(request.rate());
         plot.setPrice(request.price());
+        plot.setExtraPrice(request.extraPrice());
         plot.setStatus(newStatus);
         plotRepository.save(plot);
         PlotResponse after = toResponse(plot);
@@ -110,7 +112,8 @@ public class PlotService {
             plot.getAreaSqft(),
             plot.getRate(),
             plot.getPrice(),
-            plot.getStatus().name()
+            plot.getStatus().name(),
+            plot.getExtraPrice()
         );
     }
 }

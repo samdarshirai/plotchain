@@ -570,6 +570,7 @@ export class ProjectsPlotsComponent implements OnInit {
     this.bookingBusy = true;
     this.plotsService.createBooking({
       plotId, associateId: v.associateId, buyerName: v.buyerName, buyerPhone: v.buyerPhone || undefined, tokenAmount: v.tokenAmount,
+      ...(v.extraPrice !== undefined ? { extraPrice: v.extraPrice } : {}),
       ...(v.discount > 0 ? { discount: v.discount } : {})
     }).subscribe({
       next: booking => {

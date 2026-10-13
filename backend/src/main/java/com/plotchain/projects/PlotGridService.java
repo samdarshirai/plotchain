@@ -33,7 +33,7 @@ public class PlotGridService {
         return plotRepository.findByProjectId(projectId).stream()
             .sorted(Comparator.comparing(Plot::getPlotNo, PlotGridService::compareNatural))
             .map(p -> new PlotGridResponse(p.getId(), p.getPlotNo(), p.getPlotType(),
-                p.getAreaSqft(), p.getPrice(), p.getStatus()))
+                p.getAreaSqft(), p.getPrice(), p.getStatus(), p.getExtraPrice()))
             .toList();
     }
 

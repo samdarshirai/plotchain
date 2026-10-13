@@ -4,14 +4,14 @@ import { TranslateModule } from '@ngx-translate/core';
 import { SalesHistoryService } from './sales-history.service';
 import { AssociateSalePage } from './models/associate-sale-page.model';
 import { PagerComponent } from '../shared/components/pager/pager.component';
-import { formatInr } from '../shared/utils/plot-grid.util';
+import { BookingTableComponent, saleRow } from '../plot-bookings/booking-table.component';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-sales-history',
   standalone: true,
-  imports: [CommonModule, TranslateModule, PagerComponent],
+  imports: [CommonModule, TranslateModule, PagerComponent, BookingTableComponent],
   encapsulation: ViewEncapsulation.None,
   styleUrl: './sales-history.component.scss',
   template: `
@@ -20,32 +20,7 @@ const PAGE_SIZE = 20;
       <p class="my-sales__subtitle">{{ 'salesHistory.subtitle' | translate }}</p>
       <p *ngIf="loadError" class="my-sales__load-error" role="alert">{{ 'salesHistory.loadError' | translate }}</p>
       <p *ngIf="page && !page.sales.length" class="my-sales__empty" role="status">{{ 'salesHistory.emptyState' | translate }}</p>
-      <div class="my-sales__scroll" *ngIf="page?.sales?.length">
-        <table class="my-sales__table" [attr.aria-label]="'salesHistory.title' | translate">
-          <thead><tr>
-            <th scope="col">{{ 'salesHistory.columnBuyerName' | translate }}</th>
-            <th scope="col">{{ 'salesHistory.columnBuyerPhone' | translate }}</th>
-            <th scope="col" class="my-sales__num">{{ 'salesHistory.columnAmount' | translate }}</th>
-            <th scope="col">{{ 'salesHistory.columnAssociateId' | translate }}</th>
-            <th scope="col">{{ 'salesHistory.columnAssociateName' | translate }}</th>
-            <th scope="col">{{ 'salesHistory.columnLegCredited' | translate }}</th>
-            <th scope="col">{{ 'salesHistory.columnStatus' | translate }}</th>
-            <th scope="col">{{ 'salesHistory.columnRecordedAt' | translate }}</th>
-          </tr></thead>
-          <tbody>
-            <tr *ngFor="let s of page!.sales">
-              <td [attr.data-label]="'salesHistory.columnBuyerName' | translate">{{ s.buyerName || '—' }}</td>
-              <td class="my-sales__mono" [attr.data-label]="'salesHistory.columnBuyerPhone' | translate">{{ s.buyerPhone || '—' }}</td>
-              <td class="my-sales__num" [attr.data-label]="'salesHistory.columnAmount' | translate">{{ money(s.amount) }}</td>
-              <td class="my-sales__mono my-sales__id" [attr.data-label]="'salesHistory.columnAssociateId' | translate">{{ s.associateUserId || '—' }}</td>
-              <td class="my-sales__name" [attr.data-label]="'salesHistory.columnAssociateName' | translate">{{ s.associateName || '—' }}</td>
-              <td [attr.data-label]="'salesHistory.columnLegCredited' | translate">{{ s.legCredited }}</td>
-              <td [attr.data-label]="'salesHistory.columnStatus' | translate">{{ s.status }}</td>
-              <td class="my-sales__mono" [attr.data-label]="'salesHistory.columnRecordedAt' | translate">{{ s.recordedAt | date: 'medium' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <app-booking-table *ngIf="page?.sales?.length" [rows]="rows" [label]="'salesHistory.title' | translate"></app-booking-table>
       <app-pager *ngIf="page" [page]="page.page" [size]="page.size" [total]="page.totalElements" [disabled]="loading" (pageChange)="goToPage($event)"></app-pager>
     </div>
   `
@@ -57,7 +32,7 @@ export class SalesHistoryComponent implements OnInit {
   loadError = false;
   loading = false;
   private requestedPage = 0;
-  money = formatInr;
+  get rows() { return (this.page?.sales ?? []).map(saleRow); }
 
   ngOnInit(): void {
     this.loadPage(0);

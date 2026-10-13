@@ -42,6 +42,11 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
           <small>{{ 'admin.projectsPlots.priceHint' | translate }}</small>
           <app-field-error [message]="(positive(price) || !submitted_ ? '' : 'admin.projectsPlots.error.generic') | translate"></app-field-error>
         </label>
+        <label>{{ 'admin.projectsPlots.extraPriceLabel' | translate }}
+          <input type="number" name="extraPrice" min="0" step="any" [(ngModel)]="extraPrice" />
+          <small>{{ 'admin.projectsPlots.extraPriceHint' | translate }}</small>
+          <app-field-error [message]="(validExtra || !submitted_ ? '' : 'admin.projectsPlots.error.generic') | translate"></app-field-error>
+        </label>
         <p *ngIf="plot" class="plot-form__status">{{ 'admin.projectsPlots.statusLabel' | translate }}: {{ 'plotTile.status.' + plot.status | translate }} — {{ 'admin.projectsPlots.statusReadonlyHint' | translate }}</p>
         <div class="projects-plots__form-actions">
           <button type="submit" class="brand-button" [disabled]="busy">{{ 'admin.projectsPlots.savePlotAction' | translate }}</button>
@@ -65,15 +70,19 @@ export class PlotFormComponent implements OnChanges {
   areaSqft: number | null = null;
   rate: number | null = null;
   price: number | null = null;
+  extraPrice: number | null = 0;
   submitted_ = false;
 
   ngOnChanges(c: SimpleChanges): void {
     if (c['plot'] && this.plot) {
       ({ plotNo: this.plotNo, plotType: this.plotType, areaSqft: this.areaSqft, rate: this.rate, price: this.price } = this.plot);
+      this.extraPrice = this.plot.extraPrice ?? 0;
     }
   }
 
   get plotNoInvalid(): boolean { return this.duplicatePlotNo || (this.submitted_ && !this.plotNo.trim()); }
+
+  get validExtra(): boolean { return this.extraPrice == null || this.extraPrice >= 0; }
 
   positive(v: number | null): boolean { return typeof v === 'number' && v > 0; }
 
@@ -85,10 +94,10 @@ export class PlotFormComponent implements OnChanges {
   submit(e: Event): void {
     e.preventDefault();
     this.submitted_ = true;
-    if (!this.plotNo.trim() || !this.positive(this.areaSqft) || !this.positive(this.rate) || !this.positive(this.price)) { return; }
+    if (!this.plotNo.trim() || !this.positive(this.areaSqft) || !this.positive(this.rate) || !this.positive(this.price) || !this.validExtra) { return; }
     this.submitted.emit({
       plotNo: this.plotNo.trim(), plotType: this.plotType,
-      areaSqft: this.areaSqft!, rate: this.rate!, price: this.price!,
+      areaSqft: this.areaSqft!, rate: this.rate!, price: this.price!, extraPrice: this.extraPrice ?? 0,
       status: this.plot?.status ?? 'AVAILABLE' // status is not editable here; echo the current one
     });
   }

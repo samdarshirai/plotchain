@@ -89,7 +89,10 @@ public class BookingService {
         if (discount.signum() < 0 || discount.compareTo(listPrice) >= 0) {
             throw new InvalidDiscountException(discount, listPrice);
         }
-        BigDecimal total = listPrice.subtract(discount);
+        // Booking's extraPrice overrides the plot's default; null = use the plot's.
+        BigDecimal extraPrice = (request.extraPrice() != null ? request.extraPrice() : plot.getExtraPrice())
+            .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal total = listPrice.add(extraPrice).subtract(discount);
         BigDecimal token = request.tokenAmount();
         if (token.compareTo(total) >= 0) {
             throw new InvalidTokenAmountException(token, total);
@@ -117,6 +120,7 @@ public class BookingService {
         booking.setTotalAmount(total);
         booking.setListPrice(listPrice);
         booking.setDiscount(discount);
+        booking.setExtraPrice(extraPrice);
         booking.setAreaSqft(plot.getAreaSqft());
         booking.setRate(plot.getRate());
         booking.setInstallmentCount(schedule.size());
@@ -515,7 +519,7 @@ public class BookingService {
             .findByBookingIdInOrderByInstallmentNumberAsc(
                 result.getContent().stream().map(PlotBooking::getId).toList()).stream()
             .collect(java.util.stream.Collectors.groupingBy(EmiInstallment::getBookingId)))
-            .stream().map(BookingResponse::withoutBuyerPhoneAndRate).toList();
+            .stream().map(BookingResponse::withoutBuyerPhone).toList();
         return new AssociateBookingPageResponse(bookings, page, size, result.getTotalElements());
     }
 
@@ -647,7 +651,8 @@ public class BookingService {
                 associate == null ? null : associate.getName(),
                 booking.getBuyerPhone(), booking.getListPrice(), booking.getDiscount(), booking.getAreaSqft(),
                 booking.getRate(), booking.getCancelledAt(), associate == null ? null : associate.getUserId(),
-                plot == null ? null : plot.getPlotType());
+                plot == null ? null : plot.getPlotType(),
+                booking.getExtraPrice());
         }).toList();
     }
 

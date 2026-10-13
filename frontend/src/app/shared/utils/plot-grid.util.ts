@@ -9,6 +9,7 @@ export interface PlotGridItem {
   area: number;
   price: number;
   status: PlotStatus;
+  extraPrice?: number;
 }
 
 export interface PlotBlock {

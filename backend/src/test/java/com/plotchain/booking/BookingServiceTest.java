@@ -172,7 +172,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void getTeamBookingsBlanksBuyerPhoneRateListPriceAndAreaButKeepsDiscountAndAssociateCode() {
+    void getTeamBookingsBlanksBuyerPhoneButKeepsRatePricesAreaDiscountAndAssociateCode() {
         PlotBooking booking = richBooking();
         when(plotBookingRepository.findByDownline(eq(ASSOCIATE_ID), eq(null), any()))
             .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
@@ -182,9 +182,9 @@ class BookingServiceTest {
         BookingResponse r = bookingService.getTeamBookings(ASSOCIATE_ID, null, 0, 20).bookings().get(0);
 
         assertThat(r.buyerPhone()).isNull();
-        assertThat(r.rate()).isNull();
-        assertThat(r.listPrice()).isNull();
-        assertThat(r.areaSqft()).isNull();
+        assertThat(r.rate()).isNotNull();
+        assertThat(r.listPrice()).isNotNull();
+        assertThat(r.areaSqft()).isNotNull();
         assertThat(r.discount()).isEqualByComparingTo("50000.00");
         assertThat(r.associateCode()).isEqualTo("VP00042");
     }
@@ -336,6 +336,30 @@ class BookingServiceTest {
         verify(plotBookingRepository).save(bc.capture());
         assertThat(bc.getValue().getDiscount()).isEqualByComparingTo("0");
         assertThat(bc.getValue().getTotalAmount()).isEqualByComparingTo("600000.00");
+    }
+
+    @Test
+    void createBookingAddsTheBookingExtraPriceToTheTotalAndOverridesThePlotDefault() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        bookingService.createBooking(new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "9999999999",
+            new BigDecimal("100000"), new BigDecimal("50000"), new BigDecimal("25000")));
+
+        ArgumentCaptor<PlotBooking> bc = ArgumentCaptor.forClass(PlotBooking.class);
+        verify(plotBookingRepository).save(bc.capture());
+        assertThat(bc.getValue().getExtraPrice()).isEqualByComparingTo("25000.00");
+        assertThat(bc.getValue().getTotalAmount()).isEqualByComparingTo("575000.00");
+    }
+
+    @Test
+    void createBookingWithoutExtraPriceUsesThePlotDefault() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        BookingResponse response = bookingService.createBooking(requestWithDiscount("100000", "0"));
+
+        // test plots default to extra price 0
+        assertThat(response.extraPrice()).isEqualByComparingTo("0");
+        assertThat(response.totalAmount()).isEqualByComparingTo("600000.00");
     }
 
     private CreateBookingRequest requestWithDiscount(String token, String discount) {

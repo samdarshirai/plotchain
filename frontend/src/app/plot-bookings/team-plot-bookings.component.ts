@@ -4,8 +4,8 @@ import { ActivatedRoute } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { PagerComponent } from '../shared/components/pager/pager.component';
-import { formatInr } from '../shared/utils/plot-grid.util';
 import { AssociateBookingPage } from './models/associate-booking-page.model';
+import { BookingTableComponent, bookingRow } from './booking-table.component';
 import { PlotBookingsService } from './plot-bookings.service';
 
 const PAGE_SIZE = 20;
@@ -17,7 +17,7 @@ const LEG: Record<Scope, 'ALL' | 'L' | 'R'> = { TEAM: 'ALL', LEFT: 'L', RIGHT: '
 @Component({
   selector: 'app-team-plot-bookings',
   standalone: true,
-  imports: [CommonModule, TranslateModule, InlineBannerComponent, PagerComponent],
+  imports: [CommonModule, TranslateModule, InlineBannerComponent, PagerComponent, BookingTableComponent],
   template: `
     <div class="team-bookings" [attr.aria-busy]="loading">
       <h1>{{ 'plotBookings.team.title.' + scope | translate }}</h1>
@@ -31,34 +31,7 @@ const LEG: Record<Scope, 'ALL' | 'L' | 'R'> = { TEAM: 'ALL', LEFT: 'L', RIGHT: '
       <p *ngIf="page && !page.bookings.length">{{ 'plotBookings.team.empty' | translate }}</p>
 
       <ng-container *ngIf="page?.bookings?.length">
-        <div class="team-bookings__scroll">
-          <table class="team-bookings__table" [attr.aria-label]="'plotBookings.team.title.' + scope | translate">
-            <thead>
-              <tr>
-                <th scope="col">{{ 'plotBookings.team.column.plot' | translate }}</th>
-                <th scope="col">{{ 'plotBookings.team.column.project' | translate }}</th>
-                <th scope="col">{{ 'plotBookings.team.column.associate' | translate }}</th>
-                <th scope="col">{{ 'plotBookings.team.column.buyer' | translate }}</th>
-                <th scope="col">{{ 'plotBookings.team.column.bookedOn' | translate }}</th>
-                <th scope="col" class="team-bookings__num">{{ 'plotBookings.team.column.total' | translate }}</th>
-                <th scope="col" class="team-bookings__num">{{ 'plotBookings.team.column.paid' | translate }}</th>
-                <th scope="col">{{ 'plotBookings.team.column.status' | translate }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let b of page!.bookings">
-                <td class="team-bookings__mono" [attr.data-label]="'plotBookings.team.column.plot' | translate">{{ b.plotNo || '—' }}</td>
-                <td [attr.data-label]="'plotBookings.team.column.project' | translate">{{ b.projectName || '—' }}</td>
-                <td [attr.data-label]="'plotBookings.team.column.associate' | translate">{{ b.associateName || '—' }}</td>
-                <td [attr.data-label]="'plotBookings.team.column.buyer' | translate"><strong>{{ b.buyerName }}</strong></td>
-                <td class="team-bookings__mono" [attr.data-label]="'plotBookings.team.column.bookedOn' | translate">{{ b.bookedAt | date: 'mediumDate' }}</td>
-                <td class="team-bookings__num" [attr.data-label]="'plotBookings.team.column.total' | translate">{{ money(b.totalAmount) }}</td>
-                <td class="team-bookings__num" [attr.data-label]="'plotBookings.team.column.paid' | translate">{{ money(b.paidAmount) }}</td>
-                <td [attr.data-label]="'plotBookings.team.column.status' | translate">{{ 'plotBookings.bookingStatus.' + b.status | translate }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <app-booking-table [rows]="rows" [inline]="true" [label]="'plotBookings.team.title.' + scope | translate"></app-booking-table>
         <app-pager [page]="page!.page" [size]="page!.size" [total]="page!.totalElements" [disabled]="loading" (pageChange)="load($event)"></app-pager>
       </ng-container>
     </div>
@@ -75,7 +48,7 @@ export class TeamPlotBookingsComponent implements OnInit {
   loading = false;
   error = false;
   requestedPage = 0;
-  money = formatInr;
+  get rows() { return (this.page?.bookings ?? []).map(bookingRow); }
 
   // Sibling routes reuse this instance, so scope is read reactively and the list reloaded.
   ngOnInit(): void {

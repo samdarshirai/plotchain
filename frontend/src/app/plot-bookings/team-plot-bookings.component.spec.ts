@@ -58,9 +58,9 @@ describe('TeamPlotBookingsComponent', () => {
 
   it('renders the register-style table with labeled cells', () => {
     const fixture = boot();
-    const table = fixture.nativeElement.querySelector('table.team-bookings__table');
+    const table = fixture.nativeElement.querySelector('table.booking-table');
     expect(table).toBeTruthy();
-    expect(table.querySelectorAll('thead th[scope="col"]').length).toBe(8);
+    expect(table.querySelectorAll('thead th[scope="col"]').length).toBe(14);
     table.querySelectorAll('tbody td').forEach((td: HTMLElement) => expect(td.getAttribute('data-label')).toBeTruthy());
   });
 
@@ -72,10 +72,13 @@ describe('TeamPlotBookingsComponent', () => {
     expect(fixture.nativeElement.textContent).not.toMatch(/undefined|null/);
   });
 
-  it('exposes no buyer phone or rate column (the endpoint blanks them)', () => {
+  it('exposes the 14 booking columns including rate and extra price, but no buyer phone', () => {
     const fixture = boot();
-    expect(fixture.nativeElement.textContent).not.toContain('plotBookings.team.column.phone');
-    expect(fixture.nativeElement.querySelectorAll('thead th').length).toBe(8);
+    const text = fixture.nativeElement.querySelector('thead').textContent;
+    expect(text).toContain('plotBookings.table.rate');
+    expect(text).toContain('plotBookings.table.extraPrice');
+    expect(text).not.toContain('phone');
+    expect(fixture.nativeElement.querySelectorAll('thead th').length).toBe(14);
   });
 
   it('uses the shared pager and loads the requested page', () => {

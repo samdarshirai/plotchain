@@ -6,7 +6,7 @@ import { Plot, PlotRequest } from '../../setup/models/project.model';
 describe('PlotFormComponent', () => {
   let fixture: ComponentFixture<PlotFormComponent>;
   const el = () => fixture.nativeElement as HTMLElement;
-  const plot: Plot = { id: 'x', plotNo: 'A-1', plotType: 'CORNER', areaSqft: 1800, rate: 2850, price: 5130000, status: 'AVAILABLE' };
+  const plot: Plot = { id: 'x', plotNo: 'A-1', plotType: 'CORNER', areaSqft: 1800, rate: 2850, price: 5130000, extraPrice: 0, status: 'AVAILABLE' };
 
   function setup(inputs: Record<string, unknown> = {}) {
     TestBed.configureTestingModule({ imports: [PlotFormComponent, TranslateModule.forRoot()] });
@@ -30,7 +30,7 @@ describe('PlotFormComponent', () => {
     type('plotNo', 'C-9'); type('areaSqft', '1200'); type('rate', '3000'); type('price', '3600000');
     await fixture.whenStable();
     el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
-    expect(out).toEqual([{ plotNo: 'C-9', plotType: 'NORMAL', areaSqft: 1200, rate: 3000, price: 3600000, status: 'AVAILABLE' }]);
+    expect(out).toEqual([{ plotNo: 'C-9', plotType: 'NORMAL', areaSqft: 1200, rate: 3000, price: 3600000, extraPrice: 0, status: 'AVAILABLE' }]);
   });
 
   it('blocks submit and shows required errors when fields are empty or non-positive', async () => {
@@ -52,7 +52,7 @@ describe('PlotFormComponent', () => {
     fixture.componentInstance.submitted.subscribe(r => out.push(r));
     await fixture.whenStable();
     el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
-    expect(out[0]).toEqual({ plotNo: 'A-1', plotType: 'CORNER', areaSqft: 1800, rate: 2850, price: 5130000, status: 'AVAILABLE' });
+    expect(out[0]).toEqual({ plotNo: 'A-1', plotType: 'CORNER', areaSqft: 1800, rate: 2850, price: 5130000, extraPrice: 0, status: 'AVAILABLE' });
   });
 
   it('keeps typed edits when busy or duplicatePlotNo inputs change', async () => {

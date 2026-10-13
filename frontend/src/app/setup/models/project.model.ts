@@ -24,6 +24,7 @@ export interface Plot {
   areaSqft: number;
   rate: number;
   price: number;
+  extraPrice?: number;
   status: PlotStatus;
 }
 
@@ -33,6 +34,7 @@ export interface PlotRequest {
   areaSqft: number;
   rate: number;
   price: number;
+  extraPrice?: number;
   status?: PlotStatus | null;
 }
 

@@ -48,17 +48,28 @@ describe('MyBookingsComponent', () => {
     expect(nav).toHaveBeenCalledWith(['/plot-bookings']);
   });
 
-  it('renders a card per booking in server order with the plot label fallback', () => {
+  it('renders a table row per booking in server order with the plot label fallback in the detail', () => {
     boot();
-    const cards = el().querySelectorAll('.my-bookings__card');
-    expect(cards.length).toBe(2);
-    expect(cards[0].textContent).toContain('123e4567');
-    expect(cards[0].textContent).toContain('Rohit Kulkarni');
+    const rows = el().querySelectorAll('.booking-table tbody tr');
+    expect(rows.length).toBe(2);
+    expect(el().querySelector('thead')!.querySelectorAll('th').length).toBe(14);
+    expect(el().querySelector('.my-bookings__detail-title')!.textContent).toContain('123e4567');
+    expect(el().querySelector('.my-bookings__detail')!.textContent).toContain('plotBookings.buyerLabel');
+  });
+
+  it('shows rate, area, price, extra price, total, paid and rest in the row', () => {
+    boot([booking('b1', { plotNo: 'A-12', plotType: 'CORNER', rate: 500, areaSqft: 1200, listPrice: 375000, extraPrice: 25000, associateCode: 'VP1', associateName: 'Ravi' })]);
+    const cell = (label: string) => el().querySelector(`td[data-label="plotBookings.table.${label}"]`)!.textContent!.trim();
+    expect(cell('plotType')).toBe('CORNER');
+    expect(cell('plotNo')).toBe('A-12');
+    expect(cell('associateId')).toBe('VP1');
+    expect(cell('extraPrice')).toContain('25,000');
+    expect(cell('rest')).toContain('3,00,000');
   });
 
   it('uses plotNo and shows the project line when the response carries them', () => {
     boot([booking('b1', { plotNo: 'A-12', projectName: 'Green Valley' })]);
-    expect(el().querySelector('.my-bookings__card')!.textContent).toContain('A-12');
+    expect(el().querySelector('.booking-table tbody')!.textContent).toContain('A-12');
     expect(el().querySelector('.my-bookings__detail')!.textContent).toContain('Green Valley');
   });
 
@@ -67,14 +78,6 @@ describe('MyBookingsComponent', () => {
     const bar = el().querySelector('.my-bookings__bar')!;
     expect(bar.getAttribute('role')).toBe('img');
     expect(bar.getAttribute('aria-label')).toContain('plotBookings.progressLabel');
-    expect(el().querySelector('.my-bookings__card')!.textContent).toContain('plotBookings.paidOfTotal');
-  });
-
-  it('shows an overdue-count badge only when there are overdue installments', () => {
-    boot();
-    const cards = el().querySelectorAll('.my-bookings__card');
-    expect(cards[0].querySelector('.my-bookings__badge--overdue')).not.toBeNull();
-    expect(cards[1].querySelector('.my-bookings__badge--overdue')).toBeNull();
   });
 
   it('selects the first booking by default and shows its installments with overdue only on pending rows', () => {
@@ -87,32 +90,29 @@ describe('MyBookingsComponent', () => {
 
   it('selecting another booking swaps the detail without any HTTP call', () => {
     boot();
-    el().querySelectorAll<HTMLButtonElement>('.my-bookings__card')[1].click();
+    el().querySelectorAll<HTMLButtonElement>('.booking-table tbody button')[1].click();
     fixture.detectChanges();
     expect(fixture.componentInstance.selected!.id).toBe('b2');
     expect(el().querySelectorAll('.my-bookings__detail tbody tr')[1].classList).toContain('my-bookings__row--void');
     // afterEach http.verify() proves no request was issued
   });
 
-  it('a cancelled booking shows "no further dues", the retained-paid note and a struck plot label', () => {
+  it('a cancelled booking shows the retained-paid note and a struck plot label', () => {
     boot();
-    el().querySelectorAll<HTMLButtonElement>('.my-bookings__card')[1].click();
+    el().querySelectorAll<HTMLButtonElement>('.booking-table tbody button')[1].click();
     fixture.detectChanges();
-    expect(el().querySelector('.my-bookings__card--cancelled .my-bookings__plot--struck')).not.toBeNull();
-    expect(el().textContent).toContain('plotBookings.noFurtherDues');
+    expect(el().querySelector('.my-bookings__detail .my-bookings__plot--struck')).not.toBeNull();
     expect(el().textContent).toContain('plotBookings.cancelledNote');
-    expect(el().querySelector('.my-bookings__card--cancelled')!.textContent).not.toContain('plotBookings.dueAmount');
   });
 
-  it('a fully paid confirmed booking shows "fully paid" and the confirmed note', () => {
+  it('a confirmed booking shows the confirmed note', () => {
     boot([booking('b1', { status: 'CONFIRMED', paidAmount: 400000, dueAmount: 0, installments: [inst(1, { status: 'PAID' })] })]);
-    expect(el().textContent).toContain('plotBookings.fullyPaid');
     expect(el().textContent).toContain('plotBookings.confirmedNote');
   });
 
   it('opens the detail as a sheet on select and Back closes it', () => {
     boot();
-    el().querySelectorAll<HTMLButtonElement>('.my-bookings__card')[1].click();
+    el().querySelectorAll<HTMLButtonElement>('.booking-table tbody button')[1].click();
     fixture.detectChanges();
     expect(el().querySelector('.my-bookings__detail')!.classList).toContain('my-bookings__detail--open');
     el().querySelector<HTMLButtonElement>('.my-bookings__back')!.click();
@@ -141,7 +141,7 @@ describe('MyBookingsComponent', () => {
     expect(req.request.params.get('page')).toBe('1');
     req.flush('x', { status: 500, statusText: 'err' });
     fixture.detectChanges();
-    expect(el().querySelectorAll('.my-bookings__card').length).toBe(1);
+    expect(el().querySelectorAll('.booking-table tbody tr').length).toBe(1);
     expect(el().textContent).toContain('plotBookings.bookingsLoadError');
   });
 
@@ -153,16 +153,20 @@ describe('MyBookingsComponent', () => {
     expect(rows[2].classList).toContain('my-bookings__row--overdue');
     expect(el().querySelectorAll('.my-bookings__detail tbody .my-bookings__badge--overdue').length).toBe(1);
     expect(el().querySelectorAll('.my-bookings__detail tbody tr .my-bookings__badge--overdue')[0].closest('tr')).toBe(rows[2] as HTMLTableRowElement);
-    expect(el().querySelector('.my-bookings__card .my-bookings__badge--overdue')!.textContent).toContain('plotBookings.overdueCount');
   });
 
   it('never renders NaN or >100% bars (zero total, overpaid)', () => {
-    boot([booking('b1', { totalAmount: 0, paidAmount: 5, dueAmount: 0 }), booking('b2', { totalAmount: 100, paidAmount: 500, dueAmount: 0 })]);
-    const fills = el().querySelectorAll<HTMLElement>('.my-bookings__card .my-bookings__bar-fill');
-    expect(fills[0].style.width).toBe('0%');
-    expect(fills[1].style.width).toBe('100%');
-    expect(el().querySelector('.my-bookings__cards')!.textContent).not.toContain('NaN');
+    boot([booking('b1', { totalAmount: 0, paidAmount: 5, dueAmount: 0 })]);
+    expect(el().querySelector<HTMLElement>('.my-bookings__bar-fill')!.style.width).toBe('0%');
+    boot2Overpaid();
   });
+
+  function boot2Overpaid() {
+    fixture.componentInstance.select(booking('b2', { totalAmount: 100, paidAmount: 500, dueAmount: 0 }) as never);
+    fixture.detectChanges();
+    expect(el().querySelector<HTMLElement>('.my-bookings__bar-fill')!.style.width).toBe('100%');
+    expect(el().textContent).not.toContain('NaN');
+  }
 
   it('Retry after a failed page-N load re-requests that page and keeps page 1 visible', () => {
     http.expectOne(r => r.url === '/api/associates/me/bookings').flush(pageOf([booking('b1')], 0, 25));
@@ -170,7 +174,7 @@ describe('MyBookingsComponent', () => {
     el().querySelector<HTMLButtonElement>('.my-bookings__next')!.click();
     http.expectOne(r => r.url === '/api/associates/me/bookings').flush('x', { status: 500, statusText: 'err' });
     fixture.detectChanges();
-    expect(el().querySelectorAll('.my-bookings__card').length).toBe(1);
+    expect(el().querySelectorAll('.booking-table tbody tr').length).toBe(1);
     el().querySelector<HTMLButtonElement>('.my-bookings__retry')!.click();
     const retry = http.expectOne(r => r.url === '/api/associates/me/bookings');
     expect(retry.request.params.get('page')).toBe('1');
@@ -180,7 +184,7 @@ describe('MyBookingsComponent', () => {
   it('moves focus to Back when the sheet opens and returns it to the originating card on Back and Esc', async () => {
     document.body.appendChild(fixture.nativeElement);
     boot();
-    const card = el().querySelector<HTMLButtonElement>('[data-booking-id="b2"]')!;
+    const card = el().querySelector<HTMLButtonElement>('[data-booking-id="b2"] button')!;
     card.click();
     fixture.detectChanges();
     await new Promise(r => setTimeout(r));

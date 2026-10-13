@@ -13,23 +13,16 @@ describe('SalesHistoryComponent', () => {
 
   const enTranslations = {
     salesHistory: {
-      columnBuyerName: 'Buyer',
-      columnBuyerPhone: 'Phone',
-      columnAmount: 'Amount',
-      columnAssociateId: 'Associate ID',
-      columnAssociateName: 'Associate',
-      columnLegCredited: 'Leg',
-      columnStatus: 'Status',
-      columnRecordedAt: 'Recorded At',
       loadError: 'Something went wrong loading your sales history. Please try again.',
       emptyState: 'No sales to show yet.'
     },
+    plotBookings: { table: { bookingDate: 'Booking Date', associateId: 'Associate ID', name: 'Name', project: 'Project', plotType: 'Plot Type', plotNo: 'Plot No.', rate: 'Rate', area: 'Area', price: 'Price', extraPrice: 'Extra Price', totalPrice: 'Total Price', paid: 'Paid Amount', rest: 'Rest Amount', details: 'Details' } },
     shared: { pager: { label: 'Pagination', previous: 'Previous', next: 'Next', summary: '{{from}}-{{to}} of {{total}}' } }
   };
 
   const frTranslations = {
     ...enTranslations,
-    salesHistory: { ...enTranslations.salesHistory, columnBuyerName: 'Acheteur', columnBuyerPhone: 'Téléphone' }
+    plotBookings: { table: { ...enTranslations.plotBookings.table, name: 'Nom' } }
   };
 
   const sale = (over: object = {}) => ({
@@ -79,14 +72,14 @@ describe('SalesHistoryComponent', () => {
     });
 
     it('formats the amount with the app INR formatter', () => {
-      const cell = q('.my-sales__num[data-label="Amount"]');
+      const cell = q('.booking-table__num[data-label="Total Price"]');
       expect(cell.textContent!.trim()).toBe(formatInr(1500000));
       expect(cell.textContent).not.toBe('1500000');
     });
 
     it('gives every cell a translated data-label for the stacked mobile layout', () => {
-      const cells = fixture.nativeElement.querySelectorAll('.my-sales__table tbody td');
-      expect(cells.length).toBe(8);
+      const cells = fixture.nativeElement.querySelectorAll('.booking-table tbody td');
+      expect(cells.length).toBe(14);
       cells.forEach((td: HTMLElement) => expect(td.getAttribute('data-label')).toBeTruthy());
     });
 
@@ -109,10 +102,10 @@ describe('SalesHistoryComponent', () => {
     });
 
     it('renders real translated headers and follows a language switch', () => {
-      expect(q('.my-sales__table thead').textContent).toContain('Buyer');
+      expect(q('.booking-table thead').textContent).toContain('Name');
       translateService.use('fr');
       fixture.detectChanges();
-      expect(q('.my-sales__table thead').textContent).toContain('Acheteur');
+      expect(q('.booking-table thead').textContent).toContain('Nom');
     });
 
     it('ignores a stale response for a page that is no longer requested', () => {
@@ -137,17 +130,8 @@ describe('SalesHistoryComponent', () => {
     });
 
     it('is view-only: no button, select or input in the table', () => {
-      expect(q('.my-sales__table')).toBeTruthy();
-      expect(fixture.nativeElement.querySelectorAll('.my-sales__table button, .my-sales__table select, .my-sales__table input').length).toBe(0);
-    });
-
-    it('renders an em dash when the buyer name is missing', () => {
-      fixture.componentInstance.goToPage(0);
-      httpMock.expectOne('/api/associates/me/sales?page=0&size=20').flush({
-        sales: [sale({ buyerName: '' })], page: 0, size: 20, totalElements: 1
-      });
-      fixture.detectChanges();
-      expect(q('td[data-label="Buyer"]').textContent!.trim()).toBe('—');
+      expect(q('.booking-table')).toBeTruthy();
+      expect(fixture.nativeElement.querySelectorAll('.booking-table button, .booking-table select, .booking-table input').length).toBe(0);
     });
 
     it('renders an em dash when the associate ID or name is missing', () => {
@@ -156,8 +140,8 @@ describe('SalesHistoryComponent', () => {
         sales: [sale({ associateUserId: null, associateName: null })], page: 0, size: 20, totalElements: 1
       });
       fixture.detectChanges();
-      expect(q('.my-sales__id').textContent!.trim()).toBe('—');
-      expect(q('.my-sales__name').textContent!.trim()).toBe('—');
+      expect(q('td[data-label="Associate ID"]').textContent!.trim()).toBe('—');
+      expect(q('td[data-label="Name"]').textContent!.trim()).toBe('—');
     });
   });
 

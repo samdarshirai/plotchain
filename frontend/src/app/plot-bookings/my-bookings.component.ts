@@ -6,6 +6,7 @@ import { InlineBannerComponent } from '../shared/components/inline-banner/inline
 import { formatInr } from '../shared/utils/plot-grid.util';
 import { AssociateBookingPage, Booking } from './models/associate-booking-page.model';
 import { isOverdueRow, overdueCount, paidPercent, plotLabel } from './booking-view.util';
+import { BookingTableComponent, bookingRow } from './booking-table.component';
 import { PlotBookingsService } from './plot-bookings.service';
 
 const PAGE_SIZE = 20;
@@ -15,7 +16,7 @@ const PAGE_SIZE = 20;
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrl: './my-bookings.component.scss',
-  imports: [CommonModule, TranslateModule, InlineBannerComponent],
+  imports: [CommonModule, TranslateModule, InlineBannerComponent, BookingTableComponent],
   template: `
     <div class="my-bookings" [attr.aria-busy]="loading">
       <h1 class="my-bookings__title">{{ 'plotBookings.myBookings.title' | translate }}</h1>
@@ -40,25 +41,7 @@ const PAGE_SIZE = 20;
       <ng-container *ngIf="page?.bookings?.length">
         <p class="my-bookings__note">{{ 'plotBookings.bookingsNote' | translate }}</p>
         <div class="my-bookings__split">
-          <ul class="my-bookings__cards">
-            <li *ngFor="let b of page!.bookings">
-              <button type="button" class="my-bookings__card" [class.my-bookings__card--selected]="b.id === selected?.id"
-                [class.my-bookings__card--cancelled]="b.status === 'CANCELLED'" [class.my-bookings__card--confirmed]="b.status === 'CONFIRMED'"
-                [attr.data-booking-id]="b.id" [attr.aria-pressed]="b.id === selected?.id" (click)="select(b)">
-                <span class="my-bookings__card-head">
-                  <span class="my-bookings__plot" [class.my-bookings__plot--struck]="b.status === 'CANCELLED'">{{ label(b) }}</span>
-                  <span class="my-bookings__badge my-bookings__badge--{{ b.status | lowercase }}">{{ 'plotBookings.bookingStatus.' + b.status | translate }}</span>
-                  <span class="my-bookings__badge my-bookings__badge--overdue" *ngIf="overdue(b) as n">{{ 'plotBookings.overdueCount' | translate: { count: n } }}</span>
-                </span>
-                <span class="my-bookings__buyer">{{ b.buyerName }} · {{ b.bookedAt | date: 'mediumDate' }}</span>
-                <span class="my-bookings__bar" role="img" [attr.aria-label]="'plotBookings.progressLabel' | translate: { percent: percent(b) }">
-                  <span class="my-bookings__bar-fill" [style.width.%]="percent(b)"></span>
-                </span>
-                <span class="my-bookings__paid">{{ 'plotBookings.paidOfTotal' | translate: { paid: money(b.paidAmount), total: money(b.totalAmount) } }}</span>
-                <span class="my-bookings__due">{{ dueKey(b) | translate: { amount: money(b.dueAmount) } }}</span>
-              </button>
-            </li>
-          </ul>
+          <app-booking-table [rows]="rows" [selectedKey]="selected?.id ?? null" [label]="'plotBookings.myBookings.title' | translate" (details)="selectById($event)"></app-booking-table>
 
           <article class="my-bookings__detail" [class.my-bookings__detail--open]="sheetOpen" *ngIf="selected as s">
             <button #backBtn type="button" class="brand-button brand-button--secondary my-bookings__back" (click)="back()">
@@ -136,6 +119,13 @@ export class MyBookingsComponent implements OnInit {
   label = plotLabel;
   isOverdue = isOverdueRow;
 
+  get rows() { return (this.page?.bookings ?? []).map(bookingRow); }
+
+  selectById(id: string): void {
+    const b = this.page?.bookings.find(x => x.id === id);
+    if (b) { this.select(b); }
+  }
+
   get totalPages(): number {
     if (!this.page || this.page.size === 0) { return 1; }
     return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
@@ -178,7 +168,7 @@ export class MyBookingsComponent implements OnInit {
   back(): void {
     const id = this.selected?.id;
     this.sheetOpen = false;
-    setTimeout(() => document.querySelector<HTMLElement>(`[data-booking-id="${id}"]`)?.focus());
+    setTimeout(() => document.querySelector<HTMLElement>(`[data-booking-id="${id}"] button`)?.focus());
   }
 
   @HostListener('document:keydown.escape')

@@ -1,4 +1,4 @@
-import { Component, ViewEncapsulation, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -42,14 +42,20 @@ import { BookingEmiConfig, BookingFormValue } from './projects-plots.model';
       <label><span>{{ 'admin.projectsPlots.buyerPhoneLabel' | translate }} <span>{{ 'admin.projectsPlots.optional' | translate }}</span></span>
         <input type="tel" name="buyerPhone" maxlength="20" [disabled]="busy" [(ngModel)]="buyerPhone" />
       </label>
+      <label class="book-form__extra"><span>{{ 'admin.projectsPlots.extraPriceLabel' | translate }} <span>{{ 'admin.projectsPlots.optional' | translate }}</span></span>
+        <input #extraInput type="number" name="extraPrice" inputmode="decimal" min="0" step="any" autocomplete="off"
+          [disabled]="busy" [(ngModel)]="extraRaw" [attr.aria-invalid]="extraError ? 'true' : null" />
+        <app-field-error [message]="(extraError ? 'admin.projectsPlots.error.generic' : '') | translate"></app-field-error>
+      </label>
       <label class="book-form__discount"><span>{{ 'admin.projectsPlots.discountLabel' | translate }} <span>{{ 'admin.projectsPlots.optional' | translate }}</span></span>
         <input #discountInput type="number" name="discount" inputmode="decimal" min="0" step="any" autocomplete="off"
           [disabled]="busy" [(ngModel)]="discountRaw"
           [attr.aria-invalid]="discountError ? 'true' : null" [attr.aria-describedby]="discountError ? 'book-discount-err' : null" />
         <app-field-error id="book-discount-err" [message]="(discountError ? 'admin.projectsPlots.discount.' + discountError : '') | translate"></app-field-error>
       </label>
-      <div class="book-totals" *ngIf="discount > 0 && !discountInvalid" aria-live="polite">
+      <div class="book-totals" *ngIf="(discount > 0 || extra > 0) && !discountInvalid && !extraInvalid" aria-live="polite">
         <div class="book-totals__row"><span>{{ 'admin.projectsPlots.summary.price' | translate }}</span><span class="book-totals__value">{{ priceText }}</span></div>
+        <div class="book-totals__row" *ngIf="extra > 0"><span>{{ 'admin.projectsPlots.summary.extraPrice' | translate }}</span><span class="book-totals__value">+{{ extraText }}</span></div>
         <div class="book-totals__row"><span>{{ 'admin.projectsPlots.summary.discount' | translate }}</span><span class="book-totals__value">&minus;{{ discountText }}</span></div>
         <div class="book-totals__row book-totals__row--total"><span>{{ 'admin.projectsPlots.summary.total' | translate }}</span><span class="book-totals__value">{{ netText }}</span></div>
       </div>
@@ -71,7 +77,7 @@ import { BookingEmiConfig, BookingFormValue } from './projects-plots.model';
     </form>
   `
 })
-export class BookPlotFormComponent {
+export class BookPlotFormComponent implements OnInit {
   @Input({ required: true }) plot!: PlotGridItem;
   @Input() associates: AssociateSummary[] = [];
   @Input() emiConfig: BookingEmiConfig | null = null;
@@ -79,6 +85,7 @@ export class BookPlotFormComponent {
   @Output() submitted = new EventEmitter<BookingFormValue>();
   @Output() cancelled = new EventEmitter<void>();
   @ViewChild('buyerNameInput') buyerNameInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('extraInput') extraInput?: ElementRef<HTMLInputElement>;
   @ViewChild('discountInput') discountInput?: ElementRef<HTMLInputElement>;
   @ViewChild('tokenInput') tokenInput?: ElementRef<HTMLInputElement>;
 
@@ -86,8 +93,17 @@ export class BookPlotFormComponent {
   buyerName = '';
   buyerPhone = '';
   tokenAmount: number | null = null;
+  extraRaw: number | null = null;
   discountRaw: number | null = null;
   tried = false;
+
+  // Prefilled from the plot's default Extra Price; the booking's own value overrides it.
+  ngOnInit(): void { this.extraRaw = this.plot.extraPrice ?? 0; }
+
+  get extra(): number { return round2(this.extraRaw ?? 0); }
+  get extraInvalid(): boolean { return this.extra < 0; }
+  get extraError(): boolean { return this.tried && this.extraInvalid; }
+  get extraText(): string { return formatInr(this.extra); }
 
   get nameInvalid(): boolean { return this.tried && !this.buyerName.trim(); }
   get priceText(): string { return formatInr(this.plot.price); }
@@ -98,13 +114,16 @@ export class BookPlotFormComponent {
   // Mirrors the server: 2dp HALF_UP, 0 <= discount < price; token in (0, price - discount).
   get discount(): number { return round2(this.discountRaw ?? 0); }
   // Validity is independent of `tried` so the live summary never shows a bogus total.
-  get discountInvalid(): boolean { return this.discount < 0 || this.discount >= this.plot.price; }
+  get discountInvalid(): boolean { return this.discount < 0 || this.discount >= this.plot.price + this.extra; }
   get discountError(): 'negative' | 'tooHigh' | null {
     if (!this.tried || !this.discountInvalid) { return null; }
     return this.discount < 0 ? 'negative' : 'tooHigh';
   }
   // An invalid discount falls back to the list price (preview only; submit is blocked and no summary shows).
-  get net(): number { return this.discountInvalid ? this.plot.price : round2(this.plot.price - this.discount); }
+  get net(): number {
+    const gross = round2(this.plot.price + (this.extraInvalid ? 0 : this.extra));
+    return this.discountInvalid ? gross : round2(gross - this.discount);
+  }
   get discountText(): string { return formatInr(this.discount); }
   get netText(): string { return formatInr(this.net); }
 
@@ -143,6 +162,10 @@ export class BookPlotFormComponent {
       this.buyerNameInput?.nativeElement.focus();
       return;
     }
+    if (this.extraInvalid) {
+      this.extraInput?.nativeElement.focus();
+      return;
+    }
     if (this.discountError) {
       this.discountInput?.nativeElement.focus();
       return;
@@ -152,7 +175,7 @@ export class BookPlotFormComponent {
       return;
     }
     if (!this.associateId) { return; }
-    this.submitted.emit({ associateId: this.associateId, buyerName: this.buyerName.trim(), buyerPhone: this.buyerPhone.trim(), tokenAmount: this.tokenAmount!, discount: this.discount });
+    this.submitted.emit({ associateId: this.associateId, buyerName: this.buyerName.trim(), buyerPhone: this.buyerPhone.trim(), tokenAmount: this.tokenAmount!, discount: this.discount, extraPrice: this.extra });
   }
 }
 

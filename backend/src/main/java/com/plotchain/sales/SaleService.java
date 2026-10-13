@@ -373,7 +373,7 @@ public class SaleService {
             Associate associate = associatesById.get(sale.getAssociateId());
             String associateUserId = associate != null ? associate.getUserId() : null;
             String associateName = associate != null ? associate.getName() : null;
-            return buildResponse(sale, plotNo, projectName, associateUserId, associateName);
+            return buildResponse(sale, plot, plotNo, projectName, associateUserId, associateName);
         }).toList();
     }
 
@@ -386,17 +386,20 @@ public class SaleService {
         String projectName = project != null ? project.getName() : null;
         String associateUserId = associate != null ? associate.getUserId() : null;
         String associateName = associate != null ? associate.getName() : null;
-        return buildResponse(sale, plotNo, projectName, associateUserId, associateName);
+        return buildResponse(sale, plot, plotNo, projectName, associateUserId, associateName);
     }
 
     private SaleResponse buildResponse(
-            Sale sale, String plotNo, String projectName, String associateUserId, String associateName) {
+            Sale sale, Plot plot, String plotNo, String projectName, String associateUserId, String associateName) {
         return new SaleResponse(
             sale.getId(), sale.getPlotId(), sale.getAssociateId(),
             sale.getBuyerName(), sale.getBuyerPhone(), sale.getBuyerEmail(),
             sale.getAmount(), sale.getCycleId(), sale.getLegCredited(),
             sale.getStatus().name(), sale.getVoidReason(), sale.getRecordedAt(),
-            plotNo, projectName, associateUserId, associateName, sale.getNote());
+            plotNo, projectName, associateUserId, associateName, sale.getNote(),
+            plot != null ? plot.getPlotType().name() : null, plot != null ? plot.getAreaSqft() : null,
+            plot != null ? plot.getRate() : null, plot != null ? plot.getPrice() : null,
+            plot != null ? plot.getExtraPrice() : null);
     }
 
     // Duplicates CycleService.kycGatedStatus()'s one-line logic rather than extracting a shared

@@ -33,6 +33,9 @@ public class PlotBooking {
     @Column(nullable = false)
     private BigDecimal discount = BigDecimal.ZERO;
 
+    @Column(name = "extra_price", nullable = false)
+    private BigDecimal extraPrice = BigDecimal.ZERO;
+
     @Column(name = "area_sqft")
     private BigDecimal areaSqft;
 
@@ -89,6 +92,8 @@ public class PlotBooking {
     public void setAssociateId(UUID associateId) { this.associateId = associateId; }
     public BigDecimal getListPrice() { return listPrice; }
     public void setListPrice(BigDecimal listPrice) { this.listPrice = listPrice; }
+    public BigDecimal getExtraPrice() { return extraPrice; }
+    public void setExtraPrice(BigDecimal extraPrice) { this.extraPrice = extraPrice; }
     public BigDecimal getDiscount() { return discount; }
     public void setDiscount(BigDecimal discount) { this.discount = discount; }
     public BigDecimal getAreaSqft() { return areaSqft; }

@@ -10,5 +10,6 @@ public record PlotResponse(
     BigDecimal areaSqft,
     BigDecimal rate,
     BigDecimal price,
-    String status
+    String status,
+    BigDecimal extraPrice
 ) {}
