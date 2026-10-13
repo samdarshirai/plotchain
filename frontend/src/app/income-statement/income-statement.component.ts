@@ -4,6 +4,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { AssociateProfileService } from '../profile-kyc/associate-profile.service';
+import { AssociateProfileResponse } from '../profile-kyc/models/associate-profile.model';
 import { IncomeStatementService } from './income-statement.service';
 import { AssociateLedgerPage, AssociateLedgerFilters } from './models/associate-ledger-page.model';
 import { TabBarComponent, TabDefinition } from '../shared/components/tab-bar/tab-bar.component';
@@ -121,6 +123,8 @@ const REWARD_DATE_FORMAT = 'dd-MM-yyyy HH:mm:ss';
 })
 export class IncomeStatementComponent implements OnInit, OnDestroy {
   private incomeStatementService = inject(IncomeStatementService);
+  private profileService = inject(AssociateProfileService);
+  private profile: AssociateProfileResponse | null = null;
   private translate = inject(TranslateService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -164,6 +168,13 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     this.buildColumns();
     this.translate.onLangChange.pipe(takeUntil(this.destroyed$)).subscribe(() => this.buildColumns());
     this.loadCycleOptions();
+    this.profileService.getProfile().pipe(takeUntil(this.destroyed$)).subscribe({
+      next: p => {
+        this.profile = p;
+        this.updateTableRows();
+      },
+      error: () => {}
+    });
     // Angular reuses this instance across the sibling /income-statement/* routes (see
     // app.routes.ts), so data must be subscribed to, not read once. Fires on init too.
     this.route.data.pipe(takeUntil(this.destroyed$)).subscribe(data => {
@@ -185,6 +196,10 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     }
     if (this.activeIncomeType === 'REWARD') {
       this.buildRewardColumns();
+      return;
+    }
+    if (this.activeIncomeType === 'DIRECT') {
+      this.buildDirectColumns();
       return;
     }
     this.translate
@@ -212,6 +227,17 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
           { key: 'sourceRef', label: t['incomeStatement.columnSourceRef'], type: 'text' },
           { key: 'createdAt', label: t['incomeStatement.columnCreatedAt'], type: 'text' }
         ];
+      });
+  }
+
+  private buildDirectColumns(): void {
+    const keys = ['DateTime', 'AssociateId', 'AssociateName', 'Amount', 'DirectIncome'];
+    const rowKeys = ['dateTime', 'associateId', 'name', 'amount', 'directIncome'];
+    this.translate
+      .get(keys.map(k => 'incomeStatement.column' + k))
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(t => {
+        this.statementColumns = rowKeys.map((key, i) => ({ key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const }));
       });
   }
 
@@ -396,6 +422,16 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   private updateTableRows(): void {
     if (this.activeIncomeType === 'MATCHING') {
       this.updateMatchingRows();
+      return;
+    }
+    if (this.activeIncomeType === 'DIRECT') {
+      this.statementRows = (this.page?.entries ?? []).map(entry => ({
+        dateTime: this.datePipe.transform(entry.createdAt, REWARD_DATE_FORMAT) ?? entry.createdAt,
+        associateId: this.profile?.userId ?? '',
+        name: this.profile?.name ?? '',
+        amount: this.formatCurrency(entry.grossAmount),
+        directIncome: this.formatCurrency(entry.netAmount)
+      }));
       return;
     }
     this.statementRows = (this.page?.entries ?? []).map(entry => ({
