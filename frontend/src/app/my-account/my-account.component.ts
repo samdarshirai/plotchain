@@ -182,12 +182,12 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
                   </div>
                 </div>
 
-                <div class="reward-tiers" *ngIf="rp.rewardTiers.length > 0">
+                <div class="reward-tiers" *ngIf="currentRewardTier as tier">
                   <div class="reward-tiers__header">
                     <span class="reward-tiers__rule"></span>
                     <span class="reward-tiers__label">{{ 'myAccount.rank.rewardTiersEyebrow' | translate }}</span>
                   </div>
-                  <div class="reward-tiers__row" *ngFor="let tier of rp.rewardTiers" [class.reward-tiers__row--achieved]="tier.achieved">
+                  <div class="reward-tiers__row" [class.reward-tiers__row--achieved]="tier.achieved">
                     <span class="material-symbols-outlined reward-tiers__icon">{{ tier.achieved ? 'check_circle' : 'radio_button_unchecked' }}</span>
                     <span class="reward-tiers__tier">{{ 'myAccount.rank.tierLabel' | translate: { level: tier.tierLevel } }}</span>
                     <span class="reward-tiers__threshold">{{ formatCurrency(tier.volumeThreshold) }}</span>
@@ -588,6 +588,11 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   companyLetterhead: CompanyLetterheadResponse | null = null;
   transactionPasswordStatus: TransactionPasswordStatusResponse | null = null;
   photoObjectUrl: string | null = null;
+
+  /** Highest reward tier the associate has reached (tiers arrive sorted by tierLevel). */
+  get currentRewardTier() {
+    return this.rankProgress?.rewardTiers.filter(t => t.achieved).pop() ?? null;
+  }
 
   profileLoadError = false;
   kycLoadError = false;
