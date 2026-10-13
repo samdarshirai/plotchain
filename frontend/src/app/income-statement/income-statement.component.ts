@@ -42,7 +42,7 @@ const REWARD_DATE_FORMAT = 'dd-MM-yyyy HH:mm:ss';
   imports: [CommonModule, TranslateModule, TabBarComponent, EditableTableComponent, InlineBannerComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
-    <div class="income-statement" [class.income-statement--matching]="activeIncomeType === 'MATCHING'" [class.income-statement--reward]="activeIncomeType === 'REWARD'">
+    <div class="income-statement" [class.income-statement--matching]="activeIncomeType === 'MATCHING'" [class.income-statement--reward]="activeIncomeType === 'REWARD'" [class.income-statement--direct]="activeIncomeType === 'DIRECT'">
       <div class="income-statement__intro">
         <h1 class="income-statement__title">{{ 'incomeStatement.title' | translate }}</h1>
         <p class="income-statement__subtitle">{{ 'incomeStatement.subtitle' | translate }}</p>
@@ -208,9 +208,6 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         'incomeStatement.columnCyclePeriod',
         'incomeStatement.columnStatus',
         'incomeStatement.columnGrossAmount',
-        'incomeStatement.columnTdsDeduction',
-        'incomeStatement.columnAdminDeduction',
-        'incomeStatement.columnNetAmount',
         'incomeStatement.columnSourceRef',
         'incomeStatement.columnCreatedAt'
       ])
@@ -221,9 +218,6 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
           { key: 'cyclePeriod', label: t['incomeStatement.columnCyclePeriod'], type: 'text' },
           { key: 'status', label: t['incomeStatement.columnStatus'], type: 'text' },
           { key: 'grossAmount', label: t['incomeStatement.columnGrossAmount'], type: 'text' },
-          { key: 'tdsDeduction', label: t['incomeStatement.columnTdsDeduction'], type: 'text' },
-          { key: 'adminDeduction', label: t['incomeStatement.columnAdminDeduction'], type: 'text' },
-          { key: 'netAmount', label: t['incomeStatement.columnNetAmount'], type: 'text' },
           { key: 'sourceRef', label: t['incomeStatement.columnSourceRef'], type: 'text' },
           { key: 'createdAt', label: t['incomeStatement.columnCreatedAt'], type: 'text' }
         ];
@@ -242,17 +236,17 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   private buildRewardColumns(): void {
-    const cols = ['columnSerial', 'columnMatchingBusiness', 'columnDesignation', 'columnReward', 'columnRequiredLeft', 'columnRequiredRight', 'columnStatus', 'columnAchievedDate'];
-    const achievedCols = ['columnSerial', 'columnDate', 'columnReward', 'columnDesignation', 'columnPayStatus', 'columnPaymentDate', 'columnRemarks'];
+    const cols = ['columnMatchingBusiness', 'columnDesignation', 'columnReward', 'columnRequiredLeft', 'columnRequiredRight', 'columnStatus', 'columnAchievedDate'];
+    const achievedCols = ['columnDate', 'columnReward', 'columnDesignation', 'columnPayStatus', 'columnPaymentDate', 'columnRemarks'];
     const keys = [...cols, ...achievedCols].map(k => 'incomeStatement.' + k);
     this.translate
       .get(keys)
       .pipe(takeUntil(this.destroyed$))
       .subscribe(t => {
         const label = (k: string) => t['incomeStatement.' + k];
-        const rowKeys = ['sn', 'matchingBusiness', 'designation', 'reward', 'requiredLeft', 'requiredRight', 'status', 'achievedDate'];
+        const rowKeys = ['matchingBusiness', 'designation', 'reward', 'requiredLeft', 'requiredRight', 'status', 'achievedDate'];
         this.statementColumns = rowKeys.map((key, i) => ({ key, label: label(cols[i]), type: 'text' as const }));
-        const achievedKeys = ['sn', 'date', 'reward', 'designation', 'payStatus', 'paymentDate', 'remarks'];
+        const achievedKeys = ['date', 'reward', 'designation', 'payStatus', 'paymentDate', 'remarks'];
         this.achievedColumns = achievedKeys.map((key, i) => ({ key, label: label(achievedCols[i]), type: 'text' as const }));
       });
   }
@@ -269,7 +263,6 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         const pending = this.translate.instant('incomeStatement.statusPending');
         const achieved = this.translate.instant('incomeStatement.statusAchieved');
         this.statementRows = tiers.map(t => ({
-          sn: String(t.tierLevel),
           matchingBusiness: this.formatCurrency(t.matchingBusiness),
           designation: t.designation ?? '—',
           reward: this.rewardText(t.reward, t.perkDescription),
@@ -286,7 +279,6 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         const paid = this.translate.instant('incomeStatement.payStatusPaid');
         const unpaid = this.translate.instant('incomeStatement.payStatusUnpaid');
         this.achievedRows = rows.map((r, i) => ({
-          sn: String(i + 1),
           date: this.datePipe.transform(r.achievedDate, REWARD_DATE_FORMAT) ?? r.achievedDate,
           reward: this.rewardText(r.reward, r.perkDescription),
           designation: r.designation ?? '—',
@@ -300,13 +292,13 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   private buildMatchingColumns(): void {
-    const keys = ['columnSerial', 'columnPeriod', ...MATCHING_KEYS.map(k => k + 'Abbr'), 'columnMatchingBusiness', 'columnMatchingIncome']
+    const keys = ['columnPeriod', ...MATCHING_KEYS.map(k => k + 'Abbr'), 'columnMatchingBusiness', 'columnMatchingIncome']
       .map(k => 'incomeStatement.' + k);
     this.translate
       .get(keys)
       .pipe(takeUntil(this.destroyed$))
       .subscribe(t => {
-        const cols = ['sn', 'period', ...MATCHING_KEYS, 'matchingBusiness', 'matchingIncome'];
+        const cols = ['period', ...MATCHING_KEYS, 'matchingBusiness', 'matchingIncome'];
         this.statementColumns = cols.map((key, i) => ({ key, label: t[keys[i]], type: 'text' as const }));
       });
   }
@@ -393,17 +385,11 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     return this.currencyPipe.transform(amount, 'INR', 'symbol', '1.0-2') ?? String(amount);
   }
 
-  private formatDeduction(amount: number): string {
-    return `−${this.formatCurrency(amount)}`;
-  }
-
   private updateMatchingRows(): void {
-    const offset = (this.page?.page ?? 0) * (this.page?.size ?? 0);
     const n = (v: number | undefined) => String(v ?? 0);
     this.statementRows = (this.page?.entries ?? []).map((entry, i) => {
       const b = entry.legBreakdown;
       return {
-        sn: String(offset + i + 1),
         period: `${this.datePipe.transform(entry.cyclePeriodStart, 'dd-MM-yyyy')} / ${this.datePipe.transform(entry.cyclePeriodEnd, 'dd-MM-yyyy')}`,
         bflb: n(b?.bfLeft),
         bfrb: n(b?.bfRight),
@@ -430,7 +416,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         associateId: this.profile?.userId ?? '',
         name: this.profile?.name ?? '',
         amount: this.formatCurrency(entry.grossAmount),
-        directIncome: this.formatCurrency(entry.netAmount)
+        directIncome: this.formatCurrency(entry.grossAmount)
       }));
       return;
     }
@@ -439,9 +425,6 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       cyclePeriod: `${this.datePipe.transform(entry.cyclePeriodStart, 'mediumDate')} – ${this.datePipe.transform(entry.cyclePeriodEnd, 'mediumDate')}`,
       status: entry.status,
       grossAmount: this.formatCurrency(entry.grossAmount),
-      tdsDeduction: this.formatDeduction(entry.tdsDeduction),
-      adminDeduction: this.formatDeduction(entry.adminDeduction),
-      netAmount: this.formatCurrency(entry.netAmount),
       sourceRef: entry.sourceRef ?? this.translate.instant('incomeStatement.noSourceRef'),
       createdAt: this.datePipe.transform(entry.createdAt, 'medium') ?? entry.createdAt
     }));

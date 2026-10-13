@@ -55,6 +55,7 @@ describe('IncomeStatementComponent', () => {
     httpMock
       .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('size') === '20')
       .flush({ entries: [sampleEntry], page: 0, size: 20, totalElements: 1 });
+    httpMock.expectOne('/api/associates/me/profile').flush({ id: 'a1', userId: 'AS001', name: 'Test Associate' });
   }
 
   beforeEach(async () => {
@@ -102,7 +103,7 @@ describe('IncomeStatementComponent', () => {
         columnNetAmount: 'Net Amount',
         columnSourceRef: 'Source Ref',
         columnCreatedAt: 'Created At',
-        columnSerial: 'S.N.', columnPeriod: 'Period', columnMatchingBusiness: 'Matching Business', columnMatchingIncome: 'Matching Income',
+        columnPeriod: 'Period', columnMatchingBusiness: 'Matching Business', columnMatchingIncome: 'Matching Income',
         columnReward: 'Reward', columnRequiredLeft: 'Required Left Business', columnRequiredRight: 'Required Right Business',
         columnAchievedDate: 'Achieved Date', statusNotAchieved: 'Not Achieved',
         columnDesignation: 'Designation', columnDate: 'Date', columnPayStatus: 'Pay Status',
@@ -124,7 +125,11 @@ describe('IncomeStatementComponent', () => {
     fixture.detectChanges();
   });
 
-  afterEach(() => httpMock.verify());
+  afterEach(() => {
+    // Tests that stop before flushInitialRequests() leave the profile lookup open.
+    httpMock.match('/api/associates/me/profile').forEach(r => r.flush({ id: 'a1', userId: 'AS001', name: 'Test Associate' }));
+    httpMock.verify();
+  });
 
   it('loads the first unfiltered page of my ledger on init, with the All tab active', () => {
     flushInitialRequests();
@@ -269,33 +274,19 @@ describe('IncomeStatementComponent', () => {
     expect(fixture.nativeElement.querySelectorAll('input').length).toBe(0);
   });
 
-  it('formats gross amount and net amount as currency with thousands separators, not raw numbers', () => {
+  it('formats gross amount as currency, with no net amount shown with thousands separators, not raw numbers', () => {
     flushInitialRequests();
     fixture.detectChanges();
     const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
     expect(rowText).toContain('10,000');
     expect(rowText).not.toContain('10000');
-    expect(rowText).toContain('9,300');
-    expect(rowText).not.toContain('9300');
-  });
-
-  it('prefixes TDS Deduction and Admin Deduction with a leading minus sign in the formatted value itself', () => {
-    flushInitialRequests();
-    fixture.detectChanges();
-    const cells: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'));
-    const tdsCell = cells[4];
-    const adminCell = cells[5];
-    expect(tdsCell.textContent).toContain('−');
-    expect(tdsCell.textContent).toContain('500');
-    expect(adminCell.textContent).toContain('−');
-    expect(adminCell.textContent).toContain('200');
+    expect(rowText).not.toContain('9,300');
   });
 
   it('resolves real translated column header text, not raw i18n keys', () => {
     flushInitialRequests();
     expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
-      'Income Type', 'Cycle Period', 'Status', 'Gross Amount', 'TDS Deduction',
-      'Admin Deduction', 'Net Amount', 'Source Ref', 'Created At'
+      'Income Type', 'Cycle Period', 'Status', 'Gross Amount', 'Source Ref', 'Created At'
     ]);
     const headerText: string = fixture.nativeElement.querySelector('.editable-table thead tr').textContent;
     expect(headerText).toContain('Gross Amount');
@@ -309,12 +300,11 @@ describe('IncomeStatementComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
-      'Type de revenu', 'Période', 'Statut', 'Montant brut', 'Déduction TDS',
-      'Déduction admin', 'Montant net', 'Réf. source', 'Créé le'
+      'Type de revenu', 'Période', 'Statut', 'Montant brut', 'Réf. source', 'Créé le'
     ]);
   });
 
-  it('Matching tab shows the leg-business columns, legend and a running S.N.', () => {
+  it('Matching tab shows the leg-business columns, legend and no S.N.', () => {
     flushInitialRequests();
     routeData$.next({ incomeType: 'MATCHING' });
     httpMock
@@ -330,12 +320,12 @@ describe('IncomeStatementComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
-      'S.N.', 'Period', 'BFLB', 'BFRB', 'NLB', 'NRB', 'TLB', 'TRB', 'CLB', 'CRB', 'Matching Business', 'Matching Income'
+      'Period', 'BFLB', 'BFRB', 'NLB', 'NRB', 'TLB', 'TRB', 'CLB', 'CRB', 'Matching Business', 'Matching Income'
     ]);
     expect(fixture.nativeElement.querySelector('.income-statement__legend').textContent).toContain('Calculate Right Business');
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
-    expect(cells).toEqual(jasmine.arrayContaining(['1', '02-06-2026 / 16-06-2026', '1000000', '500000', '35000']));
+    expect(cells).toEqual(jasmine.arrayContaining(['02-06-2026 / 16-06-2026', '1000000', '500000', '35000']));
   });
 
   it('Reward tab lists every tier with designation, perk, remaining business and achieved-details table', () => {
@@ -354,7 +344,7 @@ describe('IncomeStatementComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
-      'S.N.', 'Matching Business', 'Designation', 'Reward', 'Required Left Business', 'Required Right Business', 'Status', 'Achieved Date'
+      'Matching Business', 'Designation', 'Reward', 'Required Left Business', 'Required Right Business', 'Status', 'Achieved Date'
     ]);
     const rows = fixture.componentInstance.statementRows;
     expect(rows.length).toBe(2);
@@ -369,7 +359,7 @@ describe('IncomeStatementComponent', () => {
     expect(achieved[0]['payStatus']).toBe('Unpaid');
     expect(achieved[0]['paymentDate']).toBe('—');
     expect(fixture.componentInstance.achievedColumns.map(c => c.label)).toEqual([
-      'S.N.', 'Date', 'Reward', 'Designation', 'Pay Status', 'Payment Date', 'Remarks'
+      'Date', 'Reward', 'Designation', 'Pay Status', 'Payment Date', 'Remarks'
     ]);
   });
 });
