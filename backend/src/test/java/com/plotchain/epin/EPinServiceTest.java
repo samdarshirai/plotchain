@@ -42,6 +42,8 @@ class EPinServiceTest {
     @Mock AssociateRepository associateRepository;
     @Mock EPinEventRepository epinEventRepository;
     @Mock AssociateStatusCache associateStatusCache;
+    @Mock com.plotchain.associate.AssociateProvisioningService provisioningService;
+    @Mock com.plotchain.associate.AssociateNomineeRepository nomineeRepository;
 
     static final Instant NOW = Instant.parse("2026-10-01T00:00:00Z");
     final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
@@ -54,7 +56,8 @@ class EPinServiceTest {
 
     @BeforeEach
     void setUp() {
-        epinService = new EPinService(epinRepository, associateRepository, epinEventRepository, clock, associateStatusCache);
+        epinService = new EPinService(epinRepository, associateRepository, epinEventRepository, clock, associateStatusCache,
+            provisioningService, nomineeRepository);
     }
 
     @Test

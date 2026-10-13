@@ -28,6 +28,7 @@ import { toFieldErrors } from '../core/api/field-errors.model';
 import { BrandingBootstrapService } from '../core/theme/branding-bootstrap.service';
 import { CompanyProfileService } from '../setup/steps/company-profile/company-profile.service';
 import { CompanyLetterheadResponse } from '../setup/models/company-profile.model';
+import { INDIA_STATE_OPTIONS } from '../shared/india-states';
 
 const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 
@@ -533,12 +534,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   ];
   readonly genderOptions = ['MALE', 'FEMALE', 'OTHER'];
   readonly maritalStatusOptions = ['SINGLE', 'MARRIED', 'OTHER'];
-  // ponytail: short hardcoded list, not a full India states/districts dataset -- add a real geo
-  // dataset (and wire District as a dependent select) if the product needs full coverage later.
-  readonly stateOptions = [
-    'Andhra Pradesh', 'Bihar', 'Delhi', 'Gujarat', 'Karnataka', 'Maharashtra',
-    'Punjab', 'Rajasthan', 'Tamil Nadu', 'Uttar Pradesh', 'West Bengal'
-  ];
+  readonly stateOptions = INDIA_STATE_OPTIONS;
 
   activeTab: 'welcomeLetter' | 'profile' | 'bankDetails' | 'kyc' = 'profile';
   profileSubTab: 'profile' | 'loginPassword' | 'transactionPassword' = 'profile';

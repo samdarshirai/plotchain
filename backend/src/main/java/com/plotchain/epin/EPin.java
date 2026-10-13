@@ -80,6 +80,17 @@ public class EPin {
     @Column(name = "block_reason")
     private String blockReason;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pin_type", nullable = false)
+    private EPinType pinType = EPinType.REGISTRATION;
+
+    @Column(name = "pin_value", nullable = false)
+    private java.math.BigDecimal pinValue = java.math.BigDecimal.ZERO;
+
+    public EPinType getPinType() { return pinType; }
+    public void setPinType(EPinType pinType) { this.pinType = pinType; }
+    public java.math.BigDecimal getPinValue() { return pinValue; }
+    public void setPinValue(java.math.BigDecimal pinValue) { this.pinValue = pinValue; }
     public Instant getExpiresAt() { return expiresAt; }
     public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
     public UUID getAllocatedTo() { return allocatedTo; }

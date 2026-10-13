@@ -131,6 +131,9 @@ public class SecurityConfig {
                 // downline checks are in EPinService, not here.
                 .requestMatchers(HttpMethod.POST, "/api/associates/me/epins/*/redeem").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/associates/me/epins/*/transfer").authenticated()
+                                .requestMatchers(HttpMethod.POST, "/api/associates/me/epins/*/join").authenticated()
+.requestMatchers(HttpMethod.POST, "/api/associates/me/epins/unlock").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/associates/me/epins/transfer-bulk").authenticated()
                 // Deny-by-default for writes: product policy is "ADMIN can write; associates
                 // are read-only except their own profile". Without this, any future
                 // POST/PUT/PATCH/DELETE endpoint would be reachable by every authenticated

@@ -36,7 +36,7 @@ import { MyAccountComponent } from './my-account/my-account.component';
 import { IncomeStatementComponent } from './income-statement/income-statement.component';
 import { PayoutHistoryComponent } from './payout-history/payout-history.component';
 import { ProjectsPlotsComponent } from './admin/projects-plots/projects-plots.component';
-import { EPinsComponent } from './epins/epins.component';
+import { epinUnlockGuard } from './epins/register/epin-unlock.guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [loginRedirectGuard] },
@@ -54,7 +54,14 @@ export const routes: Routes = [
   { path: 'plot-bookings/left', loadComponent: () => import('./plot-bookings/team-plot-bookings.component').then(m => m.TeamPlotBookingsComponent), data: { scope: 'LEFT' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'plot-bookings/mine', loadComponent: () => import('./plot-bookings/my-bookings.component').then(m => m.MyBookingsComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'plot-bookings/right', loadComponent: () => import('./plot-bookings/team-plot-bookings.component').then(m => m.TeamPlotBookingsComponent), data: { scope: 'RIGHT' }, canActivate: [authGuard, associateOnlyGuard] },
-  { path: 'e-pins', component: EPinsComponent, canActivate: [authGuard, associateOnlyGuard] },
+  // e-Pin Register: three screens sharing one component (data.mode), each behind the transaction
+  // password via epinUnlockGuard (token from POST /api/associates/me/epins/unlock).
+  { path: 'e-pins', pathMatch: 'full', redirectTo: 'e-pins/view-new' },
+  { path: 'e-pins/unlock', loadComponent: () => import('./epins/register/epin-unlock.component').then(m => m.EPinUnlockComponent), canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'e-pins/join/:pinId', loadComponent: () => import('./epins/register/epin-join.component').then(m => m.EPinJoinComponent), canActivate: [authGuard, associateOnlyGuard, epinUnlockGuard] },
+  { path: 'e-pins/view-new', loadComponent: () => import('./epins/register/epin-register.component').then(m => m.EPinRegisterComponent), data: { mode: 'new' }, canActivate: [authGuard, associateOnlyGuard, epinUnlockGuard] },
+  { path: 'e-pins/transfer', loadComponent: () => import('./epins/register/epin-register.component').then(m => m.EPinRegisterComponent), data: { mode: 'transfer' }, canActivate: [authGuard, associateOnlyGuard, epinUnlockGuard] },
+  { path: 'e-pins/view-used', loadComponent: () => import('./epins/register/epin-register.component').then(m => m.EPinRegisterComponent), data: { mode: 'used' }, canActivate: [authGuard, associateOnlyGuard, epinUnlockGuard] },
   // Merged into one "My Account" screen (Account Consolidation.dc.html) -- /rewards and
   // /digital-id-card redirect here so old bookmarks/links keep working. Split into 4 sibling
   // routes (Welcome Letter, Profile, Bank Details, KYC Details), all rendering the same

@@ -329,4 +329,26 @@ class EPinRepositoryTest {
             .setParameter("id", pins.get(0).getId()).getSingleResult();
         assertThat(events).isEqualTo(EPinEventType.values().length);
     }
+
+    @Test
+    void registerQueriesFilterByHolderTypeCodeAndStatus() {
+        UUID admin = persistAdmin();
+        UUID me = persistAdmin();
+        EPin reg = newEPin("AAA111", UUID.randomUUID(), admin);
+        reg.setStatus(EPinStatus.ALLOCATED); reg.setAllocatedTo(me); reg.setAllocatedAt(Instant.now());
+        EPin top = newEPin("BBB222", UUID.randomUUID(), admin);
+        top.setStatus(EPinStatus.ALLOCATED); top.setAllocatedTo(me); top.setAllocatedAt(Instant.now());
+        top.setPinType(EPinType.TOPUP);
+        EPin used = newEPin("CCC333", UUID.randomUUID(), admin);
+        used.setStatus(EPinStatus.USED); used.setAllocatedTo(me); used.setRedeemedBy(me); used.setRedeemedAt(Instant.now());
+        epinRepository.saveAllAndFlush(List.of(reg, top, used));
+        PageRequest pr = PageRequest.of(0, 20);
+        Instant now = Instant.now();
+
+        assertThat(epinRepository.searchUnused(me, null, "", now, pr).getTotalElements()).isEqualTo(2);
+        assertThat(epinRepository.searchUnused(me, EPinType.TOPUP, "", now, pr).getContent()).extracting(EPin::getCode).containsExactly("BBB222");
+        assertThat(epinRepository.searchUnused(me, null, "aaa", now, pr).getContent()).extracting(EPin::getCode).containsExactly("AAA111");
+        assertThat(epinRepository.searchUsed(me, null, "", pr).getContent()).extracting(EPin::getCode).containsExactly("CCC333");
+        assertThat(epinRepository.findHeldForUpdate(me, null, now, PageRequest.of(0, 1))).hasSize(1);
+    }
 }

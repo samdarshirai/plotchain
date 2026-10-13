@@ -30,9 +30,19 @@ public class AssociateProvisioningService {
     }
 
     public CreateAssociateResponse create(CreateAssociateRequest request) {
-        if (associateRepository.existsByEmail(request.email())) {
-            throw new EmailAlreadyRegisteredException(request.email());
+        Associate associate = createPending(request.name(), request.email(), request.phone(),
+            request.sponsorId(), request.parentId(), request.position());
+        return new CreateAssociateResponse(associate.getId(), associate.getUserId(), associate.getTemporaryPassword());
+    }
+
+    // Shared by admin create and the associate e-Pin Join: validates email + placement, then saves
+    // a PENDING associate. The caller may set extra profile fields on the returned entity and save
+    // again in the same transaction. The one-time temporary password rides on a transient field.
+    public Associate createPending(String name, String email, String phone, UUID sponsorId, UUID parentId, String position) {
+        if (email != null && associateRepository.existsByEmail(email)) {
+            throw new EmailAlreadyRegisteredException(email);
         }
+        CreateAssociateRequest request = new CreateAssociateRequest(name, email, sponsorId, parentId, position, phone);
 
         if (request.parentId() != null) {
             associateRepository.findById(request.parentId())
@@ -74,8 +84,8 @@ public class AssociateProvisioningService {
         associate.setJoinedAt(Instant.now());
         associate.setCumulativeMatchedVolume(BigDecimal.ZERO);
         associate.setMustChangePassword(true);
+        associate.setTemporaryPassword(temporaryPassword);
         associateRepository.save(associate);
-
-        return new CreateAssociateResponse(associate.getId(), userId, temporaryPassword);
+        return associate;
     }
 }
