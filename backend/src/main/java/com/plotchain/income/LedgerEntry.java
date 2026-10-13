@@ -32,6 +32,12 @@ public class LedgerEntry {
     private Instant createdAt;
     @Column(name = "source_ref")
     private UUID sourceRef;
+    // REWARD rows only: admin marks the reward (cash + perk) handed over. Independent of status,
+    // which only means the cash was credited to the wallet.
+    @Column(name = "fulfilled_at")
+    private Instant fulfilledAt;
+    @Column(name = "fulfilment_remark")
+    private String fulfilmentRemark;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -55,4 +61,8 @@ public class LedgerEntry {
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public UUID getSourceRef() { return sourceRef; }
     public void setSourceRef(UUID sourceRef) { this.sourceRef = sourceRef; }
+    public Instant getFulfilledAt() { return fulfilledAt; }
+    public void setFulfilledAt(Instant fulfilledAt) { this.fulfilledAt = fulfilledAt; }
+    public String getFulfilmentRemark() { return fulfilmentRemark; }
+    public void setFulfilmentRemark(String fulfilmentRemark) { this.fulfilmentRemark = fulfilmentRemark; }
 }

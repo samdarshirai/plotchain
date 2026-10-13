@@ -428,6 +428,8 @@ public class SecurityConfig {
                 // one spot.
                 .requestMatchers(HttpMethod.GET, "/api/admin/ledger")
                     .hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/admin/ledger/*/fulfil")
+                    .hasAuthority("ADMIN")
                 // Admin withdrawal approval queue: ADMIN-only, Wallet/withdrawal unit 6
                 // (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
                 // "Approval queue -- GET /api/admin/withdrawals, ADMIN-only"), same

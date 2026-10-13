@@ -105,6 +105,9 @@ describe('IncomeStatementComponent', () => {
         columnSerial: 'S.N.', columnPeriod: 'Period', columnMatchingBusiness: 'Matching Business', columnMatchingIncome: 'Matching Income',
         columnReward: 'Reward', columnRequiredLeft: 'Required Left Business', columnRequiredRight: 'Required Right Business',
         columnAchievedDate: 'Achieved Date', statusNotAchieved: 'Not Achieved',
+        columnDesignation: 'Designation', columnDate: 'Date', columnPayStatus: 'Pay Status',
+        columnPaymentDate: 'Payment Date', columnRemarks: 'Remarks', statusAchieved: 'Achieved', statusPending: 'Pending',
+        payStatusPaid: 'Paid', payStatusUnpaid: 'Unpaid',
         bflbAbbr: 'BFLB', bfrbAbbr: 'BFRB', nlbAbbr: 'NLB', nrbAbbr: 'NRB', tlbAbbr: 'TLB', trbAbbr: 'TRB', clbAbbr: 'CLB', crbAbbr: 'CRB',
         bflbLegend: 'Back Forward Left Business', bfrbLegend: 'Back Forward Right Business', nlbLegend: 'New Left Business', nrbLegend: 'New Right Business',
         tlbLegend: 'Total Left Business', trbLegend: 'Total Right Business', clbLegend: 'Calculate Left Business', crbLegend: 'Calculate Right Business',
@@ -335,23 +338,38 @@ describe('IncomeStatementComponent', () => {
     expect(cells).toEqual(jasmine.arrayContaining(['1', '02-06-2026 / 16-06-2026', '1000000', '500000', '35000']));
   });
 
-  it('Reward tab lists every tier with status and achieved date', () => {
+  it('Reward tab lists every tier with designation, perk, remaining business and achieved-details table', () => {
     flushInitialRequests();
     routeData$.next({ incomeType: 'REWARD' });
     httpMock.expectOne('/api/associates/me/reward-tiers').flush([
-      { tierLevel: 1, matchingBusiness: 500000, requiredLeftBusiness: 500000, requiredRightBusiness: 500000,
-        reward: 5000, status: 'PAID', achievedDate: '2026-01-05T00:00:00Z' },
-      { tierLevel: 2, matchingBusiness: 1500000, requiredLeftBusiness: 1500000, requiredRightBusiness: 1500000,
-        reward: 15000, status: null, achievedDate: null }
+      { tierLevel: 1, matchingBusiness: 500000, designation: 'Sales Associate', requiredLeftBusiness: 0, requiredRightBusiness: 0,
+        reward: 15000, perkDescription: '+ Smart Watch', status: 'PAID', achievedDate: '2026-01-05T00:00:00Z' },
+      { tierLevel: 2, matchingBusiness: 2000000, designation: 'Sr. Sales Executive', requiredLeftBusiness: 400000, requiredRightBusiness: 1700000,
+        reward: 45000, perkDescription: '+ Goa Tour (3N/4D)', status: null, achievedDate: null }
+    ]);
+    httpMock.expectOne('/api/associates/me/rewards-achieved').flush([
+      { achievedDate: '2026-01-05T00:00:00Z', designation: 'Sales Associate', reward: 15000, perkDescription: '+ Smart Watch',
+        paid: false, paymentDate: null, remarks: null }
     ]);
     fixture.detectChanges();
 
     expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
-      'Matching Business', 'Reward', 'Required Left Business', 'Required Right Business', 'Status', 'Achieved Date'
+      'S.N.', 'Matching Business', 'Designation', 'Reward', 'Required Left Business', 'Required Right Business', 'Status', 'Achieved Date'
     ]);
-    expect(fixture.componentInstance.statementRows.length).toBe(2);
-    expect(fixture.componentInstance.statementRows[0]['status']).toBe('PAID');
-    expect(fixture.componentInstance.statementRows[1]['status']).toBe('Not Achieved');
-    expect(fixture.componentInstance.statementRows[1]['achievedDate']).toBe('—');
+    const rows = fixture.componentInstance.statementRows;
+    expect(rows.length).toBe(2);
+    expect(rows[0]['designation']).toBe('Sales Associate');
+    expect(rows[0]['reward']).toContain('+ Smart Watch');
+    expect(rows[0]['status']).toBe('Achieved');
+    expect(rows[1]['status']).toBe('Pending');
+    expect(rows[1]['achievedDate']).toBe('—');
+
+    const achieved = fixture.componentInstance.achievedRows;
+    expect(achieved.length).toBe(1);
+    expect(achieved[0]['payStatus']).toBe('Unpaid');
+    expect(achieved[0]['paymentDate']).toBe('—');
+    expect(fixture.componentInstance.achievedColumns.map(c => c.label)).toEqual([
+      'S.N.', 'Date', 'Reward', 'Designation', 'Pay Status', 'Payment Date', 'Remarks'
+    ]);
   });
 });

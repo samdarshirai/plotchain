@@ -301,14 +301,84 @@ class LedgerServiceTest {
         LedgerEntry e = newEntry(UUID.randomUUID(), me, UUID.randomUUID(), t1);
         e.setIncomeType(IncomeType.REWARD);
         when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(e));
+        when(legVolumeRepository.totalBusiness(me)).thenReturn(
+            new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("1600000"), new BigDecimal("300000")));
 
         List<AssociateRewardTierRow> rows = service.myRewardTiers(me);
 
         assertThat(rows).hasSize(2);
         assertThat(rows.get(0).status()).isEqualTo(LedgerEntryStatus.PAID);
         assertThat(rows.get(0).achievedDate()).isEqualTo(Instant.parse("2026-01-15T00:00:00Z"));
-        assertThat(rows.get(0).requiredLeftBusiness()).isEqualByComparingTo("500000");
+        assertThat(rows.get(0).requiredLeftBusiness()).isZero();
+        assertThat(rows.get(0).requiredRightBusiness()).isEqualByComparingTo("200000");
+        assertThat(rows.get(1).requiredLeftBusiness()).isZero();
+        assertThat(rows.get(1).requiredRightBusiness()).isEqualByComparingTo("1200000");
         assertThat(rows.get(1).status()).isNull();
         assertThat(rows.get(1).achievedDate()).isNull();
+    }
+
+    @Test
+    void myRewardTiers_carriesDesignationAndPerk() {
+        UUID me = UUID.randomUUID();
+        when(compensationPlanService.currentRewardTiers()).thenReturn(List.of(
+            new com.plotchain.compensation.RewardTier(UUID.randomUUID(), UUID.randomUUID(), 1,
+                new BigDecimal("500000"), new BigDecimal("15000"), "+ Smart Watch", "Sales Associate")));
+        when(legVolumeRepository.totalBusiness(me)).thenReturn(
+            new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
+
+        AssociateRewardTierRow row = service.myRewardTiers(me).get(0);
+
+        assertThat(row.designation()).isEqualTo("Sales Associate");
+        assertThat(row.perkDescription()).isEqualTo("+ Smart Watch");
+        assertThat(row.requiredLeftBusiness()).isEqualByComparingTo("500000");
+    }
+
+    @Test
+    void myRewardsAchieved_reflectsFulfilment() {
+        UUID me = UUID.randomUUID();
+        UUID t1 = UUID.randomUUID();
+        UUID t2 = UUID.randomUUID();
+        UUID planId = UUID.randomUUID();
+        when(compensationPlanService.currentRewardTiers()).thenReturn(List.of(
+            new com.plotchain.compensation.RewardTier(t1, planId, 1, new BigDecimal("500000"), new BigDecimal("15000"), "+ Smart Watch", "Sales Associate"),
+            new com.plotchain.compensation.RewardTier(t2, planId, 2, new BigDecimal("1000000"), new BigDecimal("20000"), "+ Manali", "Sales Executive")));
+        LedgerEntry paid = newEntry(UUID.randomUUID(), me, UUID.randomUUID(), t1);
+        paid.setIncomeType(IncomeType.REWARD);
+        paid.setFulfilledAt(Instant.parse("2026-06-20T00:00:00Z"));
+        paid.setFulfilmentRemark("Watch couriered");
+        when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(paid));
+
+        List<AssociateRewardAchievedRow> rows = service.myRewardsAchieved(me);
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).paid()).isTrue();
+        assertThat(rows.get(0).remarks()).isEqualTo("Watch couriered");
+        assertThat(rows.get(0).designation()).isEqualTo("Sales Associate");
+    }
+
+    @Test
+    void fulfilReward_setsFieldsOnRewardEntry() {
+        UUID id = UUID.randomUUID();
+        LedgerEntry e = newEntry(id, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        e.setIncomeType(IncomeType.REWARD);
+        when(ledgerEntryRepository.findById(id)).thenReturn(java.util.Optional.of(e));
+        Instant when = Instant.parse("2026-07-01T00:00:00Z");
+
+        AdminLedgerEntryResponse res = service.fulfilReward(id, when, "Cash chosen");
+
+        assertThat(res.fulfilledAt()).isEqualTo(when);
+        assertThat(e.getFulfilmentRemark()).isEqualTo("Cash chosen");
+        verify(ledgerEntryRepository).save(e);
+    }
+
+    @Test
+    void fulfilReward_rejectsNonRewardEntry() {
+        UUID id = UUID.randomUUID();
+        LedgerEntry e = newEntry(id, UUID.randomUUID(), UUID.randomUUID(), null);
+        e.setIncomeType(IncomeType.DIRECT);
+        when(ledgerEntryRepository.findById(id)).thenReturn(java.util.Optional.of(e));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.fulfilReward(id, Instant.now(), null))
+            .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
 }

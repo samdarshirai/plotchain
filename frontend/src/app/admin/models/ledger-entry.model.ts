@@ -21,4 +21,6 @@ export interface AdminLedgerEntry {
   status: LedgerEntryStatus;
   sourceRef: string | null;
   createdAt: string;
+  fulfilledAt: string | null;
+  fulfilmentRemark: string | null;
 }

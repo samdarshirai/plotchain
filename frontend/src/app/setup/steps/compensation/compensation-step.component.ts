@@ -438,7 +438,7 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
         this.royaltyRows = res.royaltyBonusRates.map(r => ({ volumeThreshold: r.volumeThreshold, royaltyPct: r.royaltyPct }));
         this.rewardTierRows = [...res.rewardTiers]
           .sort((a, b) => a.tierLevel - b.tierLevel)
-          .map(t => ({ volumeThreshold: t.volumeThreshold, cashReward: t.cashReward, perkDescription: t.perkDescription }));
+          .map(t => ({ volumeThreshold: t.volumeThreshold, cashReward: t.cashReward, perkDescription: t.perkDescription, designation: t.designation ?? '' }));
         // patchValue with emitEvent:false suppresses both the preview and the debounced-save
         // arms below -- so the initial preview needs this explicit one-time call.
         this.recomputeSampleEarnings();
@@ -533,7 +533,8 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     return (this.rewardTierColumnsCache ??= [
       { key: 'volumeThreshold', label: this.translate.instant('setup.compensation.volumeThresholdColumnLabel'), type: 'number' },
       { key: 'cashReward', label: this.translate.instant('setup.compensation.cashRewardColumnLabel'), type: 'number' },
-      { key: 'perkDescription', label: this.translate.instant('setup.compensation.perkDescriptionColumnLabel'), type: 'text' }
+      { key: 'perkDescription', label: this.translate.instant('setup.compensation.perkDescriptionColumnLabel'), type: 'text' },
+      { key: 'designation', label: this.translate.instant('setup.compensation.designationColumnLabel'), type: 'text' }
     ]);
   }
 
@@ -695,7 +696,8 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
         tierLevel: index + 1,
         volumeThreshold: Number(row['volumeThreshold']),
         cashReward: Number(row['cashReward']),
-        perkDescription: String(row['perkDescription'])
+        perkDescription: String(row['perkDescription']),
+        designation: row['designation'] ? String(row['designation']) : null
       }))
     };
 

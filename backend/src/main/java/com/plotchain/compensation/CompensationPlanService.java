@@ -283,7 +283,8 @@ public class CompensationPlanService {
                 input.tierLevel(),
                 input.volumeThreshold(),
                 input.cashReward(),
-                input.perkDescription()))
+                input.perkDescription(),
+                input.designation()))
             .collect(Collectors.toList());
         entities.forEach(rewardTierRepository::save);
         return entities;
@@ -329,7 +330,7 @@ public class CompensationPlanService {
             .collect(Collectors.toList());
 
         List<RewardTierDto> tierDtos = tiers.stream()
-            .map(t -> new RewardTierDto(t.getTierLevel(), t.getVolumeThreshold(), t.getCashReward(), t.getPerkDescription()))
+            .map(t -> new RewardTierDto(t.getTierLevel(), t.getVolumeThreshold(), t.getCashReward(), t.getPerkDescription(), t.getDesignation()))
             .collect(Collectors.toList());
 
         List<RankOptionDto> availableRanks = rankTiers.stream()

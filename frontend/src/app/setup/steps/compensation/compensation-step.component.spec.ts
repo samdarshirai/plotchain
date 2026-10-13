@@ -30,7 +30,7 @@ describe('CompensationStepComponent', () => {
     settlementCycle: 'SEMI_MONTHLY',
     royaltyBonusRates: [{ volumeThreshold: 2000000, royaltyPct: 1 }],
     rewardTiers: [
-      { tierLevel: 1, volumeThreshold: 100000, cashReward: 1000, perkDescription: 'Certificate' },
+      { tierLevel: 1, volumeThreshold: 100000, cashReward: 1000, perkDescription: 'Certificate', designation: '' },
       { tierLevel: 2, volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy' }
     ],
     availableRanks: [
@@ -88,8 +88,8 @@ describe('CompensationStepComponent', () => {
     expect(component.form.value.settlementCycle).toBe('SEMI_MONTHLY');
     expect(component.royaltyRows).toEqual([{ volumeThreshold: 2000000, royaltyPct: 1 }]);
     expect(component.rewardTierRows).toEqual([
-      { volumeThreshold: 100000, cashReward: 1000, perkDescription: 'Certificate' },
-      { volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy' }
+      { volumeThreshold: 100000, cashReward: 1000, perkDescription: 'Certificate', designation: '' },
+      { volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy', designation: '' }
     ]);
 
     tick(500);
@@ -175,7 +175,7 @@ describe('CompensationStepComponent', () => {
     expect(req.request.method).toBe('PUT');
     expect(req.request.body.royaltyBonusRates).toEqual([{ volumeThreshold: 4000000, royaltyPct: 3 }]);
     expect(req.request.body.rewardTiers).toEqual([
-      { tierLevel: 1, volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy' }
+      { tierLevel: 1, volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy', designation: null }
     ]);
     req.flush(emptyPlan);
     httpMock.expectOne('/api/company/setup-state').flush(setupState);

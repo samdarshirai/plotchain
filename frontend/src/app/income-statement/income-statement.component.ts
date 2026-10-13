@@ -31,6 +31,9 @@ export interface CycleOption {
   cyclePeriodEnd: string;
 }
 
+// Matches the reference rewards screen: 31-05-2026 16:36:01
+const REWARD_DATE_FORMAT = 'dd-MM-yyyy HH:mm:ss';
+
 @Component({
   selector: 'app-income-statement',
   standalone: true,
@@ -81,7 +84,7 @@ export interface CycleOption {
         {{ 'incomeStatement.loadError' | translate }}
       </app-inline-banner>
 
-      <div class="card">
+      <div class="income-statement__table">
         <app-editable-table
           [readOnly]="true"
           [columns]="statementColumns"
@@ -89,6 +92,18 @@ export interface CycleOption {
           [emptyStateLabel]="'incomeStatement.emptyState' | translate"
         ></app-editable-table>
       </div>
+
+      <ng-container *ngIf="activeIncomeType === 'REWARD'">
+        <h2 class="income-statement__subtitle-heading">{{ 'incomeStatement.achievedDetailsTitle' | translate }}</h2>
+        <div class="income-statement__table income-statement__table--achieved">
+          <app-editable-table
+            [readOnly]="true"
+            [columns]="achievedColumns"
+            [rows]="achievedRows"
+            [emptyStateLabel]="'incomeStatement.achievedEmptyState' | translate"
+          ></app-editable-table>
+        </div>
+      </ng-container>
 
       <div class="income-statement__pagination" *ngIf="page">
         <span class="income-statement__page-indicator">
@@ -121,6 +136,8 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   activeIncomeType = 'ALL';
   statementColumns: EditableTableColumn[] = [];
   statementRows: Record<string, string>[] = [];
+  achievedColumns: EditableTableColumn[] = [];
+  achievedRows: Record<string, string>[] = [];
   private cycleId = '';
   private status = '';
 
@@ -199,15 +216,23 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   private buildRewardColumns(): void {
-    const cols = ['columnMatchingBusiness', 'columnReward', 'columnRequiredLeft', 'columnRequiredRight', 'columnStatus', 'columnAchievedDate'];
-    const keys = cols.map(k => 'incomeStatement.' + k);
+    const cols = ['columnSerial', 'columnMatchingBusiness', 'columnDesignation', 'columnReward', 'columnRequiredLeft', 'columnRequiredRight', 'columnStatus', 'columnAchievedDate'];
+    const achievedCols = ['columnSerial', 'columnDate', 'columnReward', 'columnDesignation', 'columnPayStatus', 'columnPaymentDate', 'columnRemarks'];
+    const keys = [...cols, ...achievedCols].map(k => 'incomeStatement.' + k);
     this.translate
       .get(keys)
       .pipe(takeUntil(this.destroyed$))
       .subscribe(t => {
-        const rowKeys = ['matchingBusiness', 'reward', 'requiredLeft', 'requiredRight', 'status', 'achievedDate'];
-        this.statementColumns = rowKeys.map((key, i) => ({ key, label: t[keys[i]], type: 'text' as const }));
+        const label = (k: string) => t['incomeStatement.' + k];
+        const rowKeys = ['sn', 'matchingBusiness', 'designation', 'reward', 'requiredLeft', 'requiredRight', 'status', 'achievedDate'];
+        this.statementColumns = rowKeys.map((key, i) => ({ key, label: label(cols[i]), type: 'text' as const }));
+        const achievedKeys = ['sn', 'date', 'reward', 'designation', 'payStatus', 'paymentDate', 'remarks'];
+        this.achievedColumns = achievedKeys.map((key, i) => ({ key, label: label(achievedCols[i]), type: 'text' as const }));
       });
+  }
+
+  private rewardText(amount: number, perk: string | null): string {
+    return [this.formatCurrency(amount), perk].filter(Boolean).join(' ');
   }
 
   private loadRewardTiers(): void {
@@ -215,14 +240,33 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     this.page = null;
     this.incomeStatementService.rewardTiers().subscribe({
       next: tiers => {
-        const notAchieved = this.translate.instant('incomeStatement.statusNotAchieved');
+        const pending = this.translate.instant('incomeStatement.statusPending');
+        const achieved = this.translate.instant('incomeStatement.statusAchieved');
         this.statementRows = tiers.map(t => ({
+          sn: String(t.tierLevel),
           matchingBusiness: this.formatCurrency(t.matchingBusiness),
-          reward: this.formatCurrency(t.reward),
+          designation: t.designation ?? '—',
+          reward: this.rewardText(t.reward, t.perkDescription),
           requiredLeft: this.formatCurrency(t.requiredLeftBusiness),
           requiredRight: this.formatCurrency(t.requiredRightBusiness),
-          status: t.status ?? notAchieved,
-          achievedDate: t.achievedDate ? (this.datePipe.transform(t.achievedDate, 'mediumDate') ?? t.achievedDate) : '—'
+          status: t.status ? achieved : pending,
+          achievedDate: t.achievedDate ? (this.datePipe.transform(t.achievedDate, REWARD_DATE_FORMAT) ?? t.achievedDate) : '—'
+        }));
+      },
+      error: () => (this.loadError = true)
+    });
+    this.incomeStatementService.rewardsAchieved().subscribe({
+      next: rows => {
+        const paid = this.translate.instant('incomeStatement.payStatusPaid');
+        const unpaid = this.translate.instant('incomeStatement.payStatusUnpaid');
+        this.achievedRows = rows.map((r, i) => ({
+          sn: String(i + 1),
+          date: this.datePipe.transform(r.achievedDate, REWARD_DATE_FORMAT) ?? r.achievedDate,
+          reward: this.rewardText(r.reward, r.perkDescription),
+          designation: r.designation ?? '—',
+          payStatus: r.paid ? paid : unpaid,
+          paymentDate: r.paymentDate ? (this.datePipe.transform(r.paymentDate, REWARD_DATE_FORMAT) ?? r.paymentDate) : '—',
+          remarks: r.remarks ?? '—'
         }));
       },
       error: () => (this.loadError = true)

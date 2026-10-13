@@ -60,7 +60,7 @@ class LedgerControllerTest {
             entryId, associateId, "VP00001", "Jane Doe", IncomeType.DIRECT, cycleId,
             LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 15),
             new BigDecimal("100.00"), new BigDecimal("5.00"), new BigDecimal("4.00"), new BigDecimal("91.00"),
-            LedgerEntryStatus.PAID, UUID.randomUUID(), Instant.now());
+            LedgerEntryStatus.PAID, UUID.randomUUID(), Instant.now(), null, null);
         AdminLedgerPageResponse page = new AdminLedgerPageResponse(List.of(row), 0, 20, 1);
         when(ledgerService.adminList(
             eq(associateId), eq(IncomeType.DIRECT), eq(cycleId), eq(LedgerEntryStatus.PAID), eq(0), eq(20)))
@@ -144,5 +144,42 @@ class LedgerControllerTest {
     void listIsUnauthorizedWithoutAToken() throws Exception {
         mockMvc.perform(get("/api/admin/ledger"))
             .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void fulfilReturns200ForAdmin() throws Exception {
+        UUID id = UUID.randomUUID();
+        Instant when = Instant.parse("2026-07-01T00:00:00Z");
+        AdminLedgerEntryResponse row = new AdminLedgerEntryResponse(
+            id, UUID.randomUUID(), "VP00001", "Jane Doe", IncomeType.REWARD, UUID.randomUUID(),
+            LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 15),
+            new BigDecimal("100.00"), new BigDecimal("5.00"), new BigDecimal("4.00"), new BigDecimal("91.00"),
+            LedgerEntryStatus.PAID, UUID.randomUUID(), Instant.now(), when, "Cash chosen");
+        when(ledgerService.fulfilReward(eq(id), eq(when), eq("Cash chosen"))).thenReturn(row);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/ledger/" + id + "/fulfil")
+                .contentType("application/json")
+                .content("{\"fulfilledAt\":\"2026-07-01T00:00:00Z\",\"remark\":\"Cash chosen\"}")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.fulfilmentRemark").value("Cash chosen"));
+    }
+
+    @Test
+    void fulfilIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/ledger/" + UUID.randomUUID() + "/fulfil")
+                .contentType("application/json")
+                .content("{\"fulfilledAt\":\"2026-07-01T00:00:00Z\"}")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void fulfilReturns400WhenDateMissing() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/ledger/" + UUID.randomUUID() + "/fulfil")
+                .contentType("application/json")
+                .content("{}")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isBadRequest());
     }
 }

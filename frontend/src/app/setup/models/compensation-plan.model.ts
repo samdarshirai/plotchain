@@ -8,6 +8,7 @@ export interface RewardTier {
   volumeThreshold: number;
   cashReward: number;
   perkDescription: string;
+  designation?: string | null;
 }
 
 export interface RankOption {
