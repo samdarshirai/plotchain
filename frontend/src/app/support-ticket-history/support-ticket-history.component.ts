@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
@@ -59,7 +59,7 @@ const PAGE_SIZE = 20;
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let t of page.entries; trackBy: trackById">
+            <tr *ngFor="let t of page.entries; trackBy: trackById" class="ticket-history__row--clickable" tabindex="0" role="button" [attr.aria-label]="('supportTickets.openDetails' | translate) + ': ' + t.subject" (click)="open(t)" (keydown.enter)="open(t)" (keydown.space)="$event.preventDefault(); open(t)">
               <td><span class="ticket-history__subject">{{ t.subject }}</span><span class="ticket-history__description">{{ t.description }}</span></td>
               <td [attr.data-label]="'supportTickets.columnStatus' | translate">{{ 'supportTickets.status.' + t.status | translate }}</td>
               <td [attr.data-label]="'supportTickets.columnCreatedAt' | translate">{{ t.createdAt | date: 'medium' }}</td>
@@ -83,6 +83,24 @@ const PAGE_SIZE = 20;
           {{ 'supportTickets.nextPageAction' | translate }}
         </button>
       </div>
+
+      <dialog #dlg class="ticket-history__dialog" aria-labelledby="ticket-history-dialog-title" (close)="selected = null" (click)="onDialogClick($event)">
+        <div class="ticket-history__dialog-body" *ngIf="selected as t">
+          <h2 id="ticket-history-dialog-title" class="ticket-history__detail-subject">{{ t.subject }}</h2>
+          <p class="ticket-history__detail-meta">
+            {{ 'supportTickets.status.' + t.status | translate }} &middot; {{ 'supportTickets.detailsSent' | translate }} {{ t.createdAt | date: 'medium' }}
+          </p>
+          <h3 class="ticket-history__detail-heading">{{ 'supportTickets.detailsMessage' | translate }}</h3>
+          <p class="ticket-history__detail-text">{{ t.description }}</p>
+          <h3 class="ticket-history__detail-heading">{{ 'supportTickets.detailsReply' | translate }}</h3>
+          <div class="ticket-history__reply" *ngIf="t.response?.trim(); else detailAwaiting">
+            <p class="ticket-history__detail-text">{{ t.response }}</p>
+            <span class="ticket-history__reply-stamp" *ngIf="t.respondedAt">{{ t.respondedAt | date: 'medium' }}</span>
+          </div>
+          <ng-template #detailAwaiting><span class="ticket-history__awaiting">{{ 'supportTickets.awaitingReply' | translate }}</span></ng-template>
+          <button type="button" class="brand-button brand-button--secondary ticket-history__detail-close" (click)="closeDetails()">{{ 'supportTickets.detailsClose' | translate }}</button>
+        </div>
+      </dialog>
     </div>
   `
 })
@@ -107,6 +125,23 @@ export class SupportTicketHistoryComponent implements OnInit, OnDestroy {
       return 1;
     }
     return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
+  }
+
+  @ViewChild('dlg', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
+  selected: SupportTicket | null = null;
+
+  open(t: SupportTicket): void {
+    this.selected = t;
+    this.dialog.nativeElement.showModal();
+  }
+
+  closeDetails(): void {
+    this.dialog.nativeElement.close();
+    this.selected = null; // (close) also clears it for Esc, but that event is async
+  }
+
+  onDialogClick(e: MouseEvent): void {
+    if (e.target === this.dialog.nativeElement) { this.closeDetails(); } // backdrop click
   }
 
   trackById = (_: number, t: SupportTicket) => t.id;
