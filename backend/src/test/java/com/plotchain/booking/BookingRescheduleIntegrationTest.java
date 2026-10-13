@@ -242,7 +242,7 @@ class BookingRescheduleIntegrationTest {
         BookingResponse after = bookingService.rescheduleBooking(b.id(), req(2, utcToday()), admin);
         BigDecimal amt = after.installments().stream().filter(i -> i.installmentNumber() == 5).findFirst().orElseThrow().amount();
 
-        bookingService.recordPayment(b.id(), 5, new RecordPaymentRequest(amt, "UTR-NEW", PaymentMode.UPI, null), admin);
+        bookingService.recordPayment(b.id(), 5, new RecordPaymentRequest(amt, "UTR-NEW", PaymentMode.BANK_TRANSFER, null), admin);
 
         assertThat(jdbc.queryForObject("SELECT status FROM emi_installment WHERE booking_id = ? AND installment_number = 5",
             String.class, b.id())).isEqualTo("ENTERED");

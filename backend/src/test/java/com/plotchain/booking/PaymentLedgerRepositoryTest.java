@@ -39,7 +39,7 @@ class PaymentLedgerRepositoryTest {
         d = new BookingRegisterTestData(associates, projects, plots, bookings, installments).seed();
         // b1 inst1 ENTERED 06-10 CASH by a1; b2 inst1 ENTERED 06-12 UPI by a2; b7 inst1 PAID 06-05 confirmed by a1 at 06-06
         update(d.b1, InstallmentStatus.ENTERED, "2026-06-10T10:00:00Z", PaymentMode.CASH, "R1", d.a1, null, null);
-        update(d.b2, InstallmentStatus.ENTERED, "2026-06-12T10:00:00Z", PaymentMode.UPI, "R2", d.a2, null, null);
+        update(d.b2, InstallmentStatus.ENTERED, "2026-06-12T10:00:00Z", PaymentMode.BANK_TRANSFER, "R2", d.a2, null, null);
         update(d.b7, InstallmentStatus.PAID, "2026-06-05T10:00:00Z", PaymentMode.CASH, "R7", d.a2, "2026-06-06T10:00:00Z", d.a1);
     }
 

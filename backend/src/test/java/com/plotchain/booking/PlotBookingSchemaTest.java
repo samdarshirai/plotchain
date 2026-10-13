@@ -187,7 +187,7 @@ class PlotBookingSchemaTest {
     @Test
     void emiInstallmentAcceptsEveryPaymentModeAndNull() {
         EmiInstallment i = persistInstallment(persistBooking().getId());
-        for (String mode : List.of("CASH", "CHEQUE", "UPI", "BANK_TRANSFER", "OTHER")) {
+        for (String mode : List.of("CASH", "CHEQUE", "BANK_TRANSFER")) {
             jdbc.update("UPDATE emi_installment SET payment_mode = ? WHERE id = ?", mode, i.getId());
             assertThat(jdbc.queryForObject("SELECT payment_mode FROM emi_installment WHERE id = ?", String.class, i.getId()))
                 .isEqualTo(mode);

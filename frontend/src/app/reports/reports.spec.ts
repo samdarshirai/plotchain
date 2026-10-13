@@ -42,10 +42,20 @@ describe('Reports screens', () => {
     const fixture = TestBed.createComponent(EmiReportComponent);
     fixture.detectChanges();
     http.expectOne(r => r.url === '/api/associates/me/reports/emi').flush([
-      { associateId: 'VP00002', name: 'Sita', paymentDate: '2026-06-05T00:00:00Z', amount: 5000, mode: 'UPI' }
+      { associateId: 'VP00002', name: 'Sita', paymentDate: '2026-06-05T00:00:00Z', amount: 5000, mode: 'BANK_TRANSFER' }
     ]);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Sita');
-    expect(fixture.nativeElement.textContent).toContain('UPI');
+    expect(fixture.nativeElement.textContent).toContain('admin.bookingsEmi.paymentMode.BANK_TRANSFER');
+  });
+
+  it('emi: empty data still renders the table with no rows', () => {
+    const fixture = TestBed.createComponent(EmiReportComponent);
+    fixture.detectChanges();
+    http.expectOne(r => r.url === '/api/associates/me/reports/emi').flush([]);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('table')).toBeTruthy();
+    expect(el.querySelectorAll('tbody tr').length).toBe(0);
   });
 });

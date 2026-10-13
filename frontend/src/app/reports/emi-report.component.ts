@@ -27,8 +27,7 @@ import { EmiReportRow, ReportsService } from './reports.service';
         <button type="button" (click)="load()">{{ 'plotBookings.retryAction' | translate }}</button>
       </app-inline-banner>
       <p role="status" *ngIf="!rows && !error">{{ 'plotBookings.loading' | translate }}</p>
-      <p *ngIf="rows && !rows.length">{{ 'reports.empty' | translate }}</p>
-      <div class="report__scroll" *ngIf="rows?.length">
+      <div class="report__scroll">
         <table class="report__table">
           <thead>
             <tr>
@@ -47,7 +46,7 @@ import { EmiReportRow, ReportsService } from './reports.service';
               <td>{{ r.name }}</td>
               <td>{{ r.paymentDate | date: 'mediumDate' }}</td>
               <td>{{ money(r.amount) }}</td>
-              <td>{{ r.mode || '—' }}</td>
+              <td>{{ r.mode ? ('admin.bookingsEmi.paymentMode.' + r.mode | translate) : '—' }}</td>
             </tr>
           </tbody>
         </table>

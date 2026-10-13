@@ -416,10 +416,10 @@ class BookingControllerTest {
         when(bookingService.recordPayment(eq(id), eq(1), any(RecordPaymentRequest.class), any()))
             .thenReturn(new BookingResponse(id, UUID.randomUUID(), UUID.randomUUID(), BookingStatus.ACTIVE, "J",
                 new BigDecimal("1.00"), 1, Instant.now(), BigDecimal.ZERO, BigDecimal.ONE, List.of()));
-        pay(id, 1, "{\"amount\":100.00,\"paymentRef\":\"UTR-1\",\"paymentMode\":\"UPI\"}").andExpect(status().isOk());
+        pay(id, 1, "{\"amount\":100.00,\"paymentRef\":\"UTR-1\",\"paymentMode\":\"BANK_TRANSFER\"}").andExpect(status().isOk());
         org.mockito.ArgumentCaptor<RecordPaymentRequest> captor =
             org.mockito.ArgumentCaptor.forClass(RecordPaymentRequest.class);
         org.mockito.Mockito.verify(bookingService).recordPayment(eq(id), eq(1), captor.capture(), any());
-        org.assertj.core.api.Assertions.assertThat(captor.getValue().paymentMode()).isEqualTo(PaymentMode.UPI);
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().paymentMode()).isEqualTo(PaymentMode.BANK_TRANSFER);
     }
 }

@@ -61,24 +61,24 @@ class ReportsRepositoryTest {
         UUID me = d.associate(), other = d.associate();
         PlotBooking mine = d.booking(me, project, BookingStatus.ACTIVE, 1);
         PlotBooking theirs = d.booking(other, project, BookingStatus.ACTIVE, 1);
-        paid(d, mine, 1, "2026-06-05T10:00:00Z", "UPI");
-        paid(d, mine, 2, "2026-07-05T10:00:00Z", "CASH");   // out of range
+        paid(d, mine, 1, "2026-06-05T10:00:00Z", PaymentMode.BANK_TRANSFER);
+        paid(d, mine, 2, "2026-07-05T10:00:00Z", PaymentMode.CASH);   // out of range
         d.inst(mine, 3, InstallmentStatus.PENDING, "2026-06-20");
-        paid(d, theirs, 1, "2026-06-05T10:00:00Z", "UPI");
+        paid(d, theirs, 1, "2026-06-05T10:00:00Z", PaymentMode.BANK_TRANSFER);
 
         List<EmiReportRow> rows = installments.findEmiReport(me,
             Instant.parse("2026-06-01T00:00:00Z"), Instant.parse("2026-07-01T00:00:00Z"));
         assertThat(rows).hasSize(1);
-        assertThat(rows.get(0).mode()).isEqualTo("UPI");
+        assertThat(rows.get(0).mode()).isEqualTo(PaymentMode.BANK_TRANSFER);
         assertThat(rows.get(0).associateId()).isEqualTo("u-" + me);
     }
 
-    private void paid(BookingRegisterTestData d, PlotBooking b, int n, String paidAt, String ref) {
+    private void paid(BookingRegisterTestData d, PlotBooking b, int n, String paidAt, PaymentMode mode) {
         d.inst(b, n, InstallmentStatus.PAID, "2026-06-01");
         EmiInstallment i = installments.findByBookingIdOrderByInstallmentNumberAsc(b.getId()).stream()
             .filter(x -> x.getInstallmentNumber() == n).findFirst().orElseThrow();
         i.setPaidAt(Instant.parse(paidAt));
-        i.setPaymentRef(ref);
+        i.setPaymentMode(mode);
         installments.saveAndFlush(i);
     }
 }

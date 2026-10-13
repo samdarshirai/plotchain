@@ -12,7 +12,7 @@ describe('PaymentLedgerComponent', () => {
   const el = () => fixture.nativeElement as HTMLElement;
   const row = (b: string, n: number, amount = 250, over: Record<string, unknown> = {}) => ({
     bookingId: b, installmentNumber: n, paymentDate: '2026-03-02T00:00:00Z', associateCode: 'VA-1', associateName: 'Jane', projectName: 'Alpha',
-    plotNo: 'A-1', amount, paymentMode: 'UPI', paymentRef: 'R', entryBy: 'staff', confirmBy: 'admin', confirmedAt: '2026-03-03T00:00:00Z', ...over });
+    plotNo: 'A-1', amount, paymentMode: 'BANK_TRANSFER', paymentRef: 'R', entryBy: 'staff', confirmBy: 'admin', confirmedAt: '2026-03-03T00:00:00Z', ...over });
   const pageOf = (rows: any[], over: Record<string, unknown> = {}) => ({
     payments: rows, page: 0, size: 20, totalElements: rows.length, pageTotal: rows.reduce((s, r) => s + r.amount, 0), grandTotal: 9999, ...over });
   const flushProjects = () => http.expectOne('/api/company/projects').flush([]);

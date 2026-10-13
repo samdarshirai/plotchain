@@ -1,7 +1,7 @@
 export type BookingStatus = 'ACTIVE' | 'CONFIRMED' | 'CANCELLED';
 export type InstallmentStatus = 'PENDING' | 'ENTERED' | 'PAID' | 'VOID';
-export type PaymentMode = 'CASH' | 'CHEQUE' | 'UPI' | 'BANK_TRANSFER' | 'OTHER';
-export const PAYMENT_MODES: PaymentMode[] = ['CASH', 'CHEQUE', 'UPI', 'BANK_TRANSFER', 'OTHER'];
+export type PaymentMode = 'CASH' | 'CHEQUE' | 'BANK_TRANSFER';
+export const PAYMENT_MODES: PaymentMode[] = ['CASH', 'CHEQUE', 'BANK_TRANSFER'];
 
 export interface EmiInstallment {
   installmentNumber: number;
