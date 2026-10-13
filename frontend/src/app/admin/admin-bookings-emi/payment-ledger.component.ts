@@ -42,10 +42,7 @@ const col = (k: string) => `admin.bookingsEmi.col.${k}`;
           <span class="booking-register__sr">{{ 'admin.bookingsEmi.loading' | translate }}</span>
           <span class="booking-register__skeleton-row" *ngFor="let i of [1,2,3,4]"></span>
         </div>
-        <div class="booking-register__empty" *ngIf="page && !page.payments.length">
-          <h2>{{ 'admin.bookingsEmi.empty.ledgerTitle' | translate }}</h2>
-        </div>
-        <table class="booking-register__table payment-ledger__table" *ngIf="page?.payments?.length" [attr.aria-label]="'admin.bookingsEmi.tab.confirmed' | translate">
+        <table class="booking-register__table payment-ledger__table" *ngIf="page" [attr.aria-label]="'admin.bookingsEmi.tab.confirmed' | translate">
           <thead><tr>
             <th scope="col" *ngFor="let k of heads">{{ col(k) | translate }}</th>
             <th scope="col"><span class="booking-register__sr">{{ 'admin.bookingsEmi.action.receipt' | translate }}</span></th>
@@ -73,6 +70,9 @@ const col = (k: string) => `admin.bookingsEmi.col.${k}`;
             <td colspan="5"></td>
           </tr></tfoot>
         </table>
+        <div class="booking-register__empty" *ngIf="page && !page.payments.length">
+          <h2>{{ 'admin.bookingsEmi.empty.ledgerTitle' | translate }}</h2>
+        </div>
         <app-pager [page]="page?.page ?? 0" [size]="PAGE_SIZE" [total]="page?.totalElements ?? 0" [disabled]="loading" (pageChange)="load($event)"></app-pager>
       </div>
     </div>

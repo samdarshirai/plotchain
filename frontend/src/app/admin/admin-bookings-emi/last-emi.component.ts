@@ -39,12 +39,7 @@ const COLS: [string, (r: LastEmiRow) => string | number | null][] = [
         <span class="booking-register__skeleton-row" *ngFor="let i of [1,2,3]"></span>
       </div>
 
-      <div class="booking-register__empty" *ngIf="rows && !rows.length">
-        <span class="material-symbols-outlined" aria-hidden="true">event_busy</span>
-        <h2>{{ 'admin.bookingsEmi.empty.lastEmiTitle' | translate }}</h2>
-      </div>
-
-      <table class="booking-register__table" *ngIf="rows?.length" [attr.aria-label]="'admin.bookingsEmi.tab.lastEmi' | translate">
+      <table class="booking-register__table" *ngIf="rows" [attr.aria-label]="'admin.bookingsEmi.tab.lastEmi' | translate">
         <thead>
           <tr><th scope="col" *ngFor="let c of cols">{{ K + c[0] | translate }}</th></tr>
         </thead>
@@ -73,6 +68,11 @@ const COLS: [string, (r: LastEmiRow) => string | number | null][] = [
           </tr>
         </tfoot>
       </table>
+      <div class="booking-register__empty" *ngIf="rows && !rows.length">
+        <span class="material-symbols-outlined" aria-hidden="true">event_busy</span>
+        <h2>{{ 'admin.bookingsEmi.empty.lastEmiTitle' | translate }}</h2>
+      </div>
+
     </div>
   `
 })

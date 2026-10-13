@@ -4713,7 +4713,7 @@ button.tree-explorer__vacant-card {
 // ---- Projects & Plots (plot-booking unit 11) -------------------------------------------------
 .projects-plots {
   display: flex; flex-direction: column; gap: 1.5rem;
-  max-width: 1480px; margin: 0 auto; padding: 1.5rem 2rem;
+  width: 100%; max-width: none; margin: 0; padding: 1.5rem 2rem; box-sizing: border-box;
   font-family: 'Inter', var(--font-sans);
 
   &__head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1.25rem; }

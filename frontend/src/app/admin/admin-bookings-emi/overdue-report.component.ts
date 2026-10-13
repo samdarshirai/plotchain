@@ -24,13 +24,7 @@ const PAGE_SIZE = 20;
         <span class="booking-register__skeleton-row overdue-report__skeleton-row" *ngFor="let i of [1,2,3]"></span>
       </div>
 
-      <div class="booking-register__empty" *ngIf="page && !page.rows.length">
-        <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
-        <h2>{{ 'admin.bookingsEmi.empty.overdueTitle' | translate }}</h2>
-        <p>{{ 'admin.bookingsEmi.empty.overdueBody' | translate }}</p>
-      </div>
-
-      <table class="booking-register__table" *ngIf="page?.rows?.length" [attr.aria-label]="'admin.bookingsEmi.tab.overdue' | translate">
+      <table class="booking-register__table" *ngIf="page" [attr.aria-label]="'admin.bookingsEmi.tab.overdue' | translate">
         <thead>
           <tr>
             <th scope="col">{{ 'admin.bookingsEmi.col.buyer' | translate }}</th>
@@ -52,6 +46,12 @@ const PAGE_SIZE = 20;
           </tr>
         </tbody>
       </table>
+      <div class="booking-register__empty" *ngIf="page && !page.rows.length">
+        <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
+        <h2>{{ 'admin.bookingsEmi.empty.overdueTitle' | translate }}</h2>
+        <p>{{ 'admin.bookingsEmi.empty.overdueBody' | translate }}</p>
+      </div>
+
 
       <div class="booking-register__pager" *ngIf="page?.rows?.length">
         <button type="button" class="brand-button brand-button--secondary overdue-report__prev" [disabled]="page!.page === 0" (click)="goTo(page!.page - 1)">{{ 'admin.bookingsEmi.previous' | translate }}</button>

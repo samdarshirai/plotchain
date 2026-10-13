@@ -41,12 +41,7 @@ const day = (s?: string | null): string => (s ? s.slice(0, 10) : '');
           <span class="booking-register__skeleton-row" *ngFor="let i of [1,2,3]"></span>
         </div>
 
-        <div class="booking-register__empty" *ngIf="page && !page.bookings.length">
-          <span class="material-symbols-outlined" aria-hidden="true">event_busy</span>
-          <h2>{{ 'admin.bookingsEmi.empty.cancelledTitle' | translate }}</h2>
-        </div>
-
-        <table class="booking-register__table" *ngIf="page?.bookings?.length" [attr.aria-label]="'admin.bookingsEmi.tab.cancelled' | translate">
+        <table class="booking-register__table" *ngIf="page" [attr.aria-label]="'admin.bookingsEmi.tab.cancelled' | translate">
           <thead>
             <tr>
               <th scope="col">{{ 'admin.bookingsEmi.col.bookedOn' | translate }}</th>
@@ -74,6 +69,11 @@ const day = (s?: string | null): string => (s ? s.slice(0, 10) : '');
             </tr>
           </tbody>
         </table>
+        <div class="booking-register__empty" *ngIf="page && !page.bookings.length">
+          <span class="material-symbols-outlined" aria-hidden="true">event_busy</span>
+          <h2>{{ 'admin.bookingsEmi.empty.cancelledTitle' | translate }}</h2>
+        </div>
+
         <app-pager *ngIf="page" [page]="page.page" [size]="page.size" [total]="page.totalElements" [disabled]="loading || exporting" (pageChange)="load($event)"></app-pager>
       </div>
 
