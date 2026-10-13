@@ -30,8 +30,7 @@ import { BusinessReport, BusinessReportRow, ReportsService } from './reports.ser
       <ng-container *ngIf="report">
         <ng-container *ngFor="let leg of legs()">
           <h2>{{ 'reports.myBusiness.' + leg.key | translate }}</h2>
-          <p *ngIf="!leg.rows.length">{{ 'reports.empty' | translate }}</p>
-          <div class="report__scroll" *ngIf="leg.rows.length">
+          <div class="report__scroll">
             <table class="report__table">
               <thead>
                 <tr>

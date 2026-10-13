@@ -25,7 +25,10 @@ describe('Reports screens', () => {
     });
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Ravi');
-    expect(fixture.nativeElement.querySelectorAll('table').length).toBe(1);
+    const tables = fixture.nativeElement.querySelectorAll('table');
+    expect(tables.length).toBe(2);
+    expect(tables[0].querySelectorAll('tbody tr').length).toBe(1);
+    expect(tables[1].querySelectorAll('tbody tr').length).toBe(0);
 
     const input = fixture.nativeElement.querySelectorAll('input[type=date]')[0] as HTMLInputElement;
     input.value = '2026-06-01';
