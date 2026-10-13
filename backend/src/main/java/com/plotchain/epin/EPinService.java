@@ -4,6 +4,9 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotActiveException;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateNotPendingException;
+import com.plotchain.associate.AssociateNominee;
+import com.plotchain.associate.AssociateNomineeRepository;
+import com.plotchain.associate.AssociateProvisioningService;
 import com.plotchain.associate.AssociateStatusCache;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateStatus;
@@ -15,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,10 +30,16 @@ public class EPinService {
     private final EPinEventRepository epinEventRepository;
     private final Clock clock;
     private final AssociateStatusCache associateStatusCache;
+    private final AssociateProvisioningService provisioningService;
+    private final AssociateNomineeRepository nomineeRepository;
 
     public EPinService(EPinRepository epinRepository, AssociateRepository associateRepository,
                        EPinEventRepository epinEventRepository, Clock clock,
-                       AssociateStatusCache associateStatusCache) {
+                       AssociateStatusCache associateStatusCache,
+                       AssociateProvisioningService provisioningService,
+                       AssociateNomineeRepository nomineeRepository) {
+        this.provisioningService = provisioningService;
+        this.nomineeRepository = nomineeRepository;
         this.epinRepository = epinRepository;
         this.associateRepository = associateRepository;
         this.epinEventRepository = epinEventRepository;
@@ -61,6 +71,8 @@ public class EPinService {
             epin.setGeneratedBy(actorId);
             epin.setGeneratedAt(generatedAt);
             epin.setExpiresAt(request.expiresAt());
+            if (request.pinType() != null) epin.setPinType(request.pinType());
+            if (request.pinValue() != null) epin.setPinValue(request.pinValue());
             epinRepository.save(epin);
             recordEvent(epin.getId(), EPinEventType.GENERATED, actorId, null, null, null);
             codes.add(code);
@@ -241,6 +253,73 @@ public class EPinService {
         return toResponse(epin);
     }
 
+    // Associate Join screen: create the member under the sponsor's chosen leg and activate them with
+    // a held REGISTRATION pin, all in one transaction (any failure rolls back member + pin).
+    @Transactional
+    public JoinEPinResponse join(UUID epinId, JoinEPinRequest req, UUID callerId) {
+        EPin epin = loadHeldPin(epinId, callerId);
+        if (epin.getPinType() != EPinType.REGISTRATION) {
+            throw new EPinInvalidStateException("Only a REGISTRATION e-PIN can register a member: " + epinId);
+        }
+
+        Associate sponsor = associateRepository.findByUserId(req.sponsorUserId())
+            .orElseThrow(() -> new AssociateNotFoundException(req.sponsorUserId()));
+        // Sponsor must be me or in my downline; anything else is reported as not-found (no leak).
+        if (!associateRepository.findSelfAndDownline(callerId).contains(sponsor.getId())) {
+            throw new AssociateNotFoundException(req.sponsorUserId());
+        }
+        if (associateRepository.existsByPanNumber(req.panNumber())) {
+            throw new EPinDuplicateIdentityException("PAN_TAKEN");
+        }
+        if (associateRepository.existsByAadhaarNumber(req.aadhaarNumber())) {
+            throw new EPinDuplicateIdentityException("AADHAAR_TAKEN");
+        }
+
+        // Walk down the chosen leg to its first free slot.
+        // ponytail: O(leg depth) lookups; the unique (parent, position) index is the race guard.
+        Associate parent = sponsor;
+        for (Associate next = associateRepository.findFirstByParentIdAndPosition(parent.getId(), req.position()).orElse(null);
+             next != null;
+             next = associateRepository.findFirstByParentIdAndPosition(parent.getId(), req.position()).orElse(null)) {
+            parent = next;
+        }
+
+        String email = req.email() == null || req.email().isBlank() ? null : req.email().trim();
+        Associate member = provisioningService.createPending(req.name().trim(), email, req.phone(),
+            sponsor.getId(), parent.getId(), req.position());
+        member.setFatherHusbandName(req.fatherHusbandName());
+        member.setPanNumber(req.panNumber());
+        member.setAadhaarNumber(req.aadhaarNumber());
+        member.setDateOfBirth(req.dateOfBirth());
+        member.setGender(req.gender());
+        member.setMaritalStatus(req.maritalStatus());
+        member.setState(req.state());
+        member.setDistrict(req.district());
+        member.setAddress(req.address());
+        member.setPostalCode(req.postalCode());
+        associateRepository.save(member);
+
+        activateOrThrow(member.getId());
+        // After the activation UPDATE: its clearAutomatically would drop a still-unflushed insert.
+        if (req.nomineeName() != null && !req.nomineeName().isBlank()) {
+            AssociateNominee nominee = new AssociateNominee();
+            nominee.setId(UUID.randomUUID());
+            nominee.setAssociateId(member.getId());
+            nominee.setNomineeName(req.nomineeName().trim());
+            nominee.setRelation(req.nomineeRelation());
+            nominee.setUpdatedAt(clock.instant());
+            nomineeRepository.save(nominee);
+        }
+        epin.setStatus(EPinStatus.USED);
+        epin.setRedeemedTo(member.getId());
+        epin.setRedeemedBy(callerId);
+        epin.setRedeemedAt(clock.instant());
+        epin.setRedemptionType(RedemptionType.ACTIVATION);
+        epinRepository.save(epin);
+        recordEvent(epinId, EPinEventType.REDEEMED, callerId, callerId, member.getId(), null);
+        return new JoinEPinResponse(member.getUserId(), member.getName(), member.getTemporaryPassword());
+    }
+
     // Conditional PENDING -> ACTIVE flip: 0 rows means a concurrent activation or an admin status
     // change got there first. Runs before the pin is mutated because clearAutomatically detaches
     // the (already-loaded) pin entity; the throw rolls the whole transaction back.
@@ -268,6 +347,71 @@ public class EPinService {
         epinRepository.save(epin);
         recordEvent(epinId, EPinEventType.TRANSFERRED, callerId, callerId, to.getId(), null);
         return toResponse(epin);
+    }
+
+    public EPinRowPage<EPinUnusedRow> unused(UUID me, EPinType type, String q, boolean maskCode, int page, int size) {
+        Page<EPin> result = epinRepository.searchUnused(me, type, q, clock.instant(), PageRequest.of(page, size));
+        // ponytail: one event lookup per row (N+1, size capped at 100); batch the query if lists get hot.
+        List<EPinUnusedRow> rows = result.getContent().stream().map(e -> {
+            EPinEvent ev = lastTransferTo(e.getId(), me);
+            return new EPinUnusedRow(e.getId(), maskCode ? "xxxxxxxxxxxx" : e.getCode(), e.getPinType(),
+                e.getPinValue(), ev != null ? ev.getAt() : e.getAllocatedAt(), transferBy(ev));
+        }).toList();
+        return new EPinRowPage<>(rows, page, size, result.getTotalElements());
+    }
+
+    public EPinRowPage<EPinUsedRow> used(UUID me, EPinType type, String q, int page, int size) {
+        Page<EPin> result = epinRepository.searchUsed(me, type, q, PageRequest.of(page, size));
+        List<EPinUsedRow> rows = result.getContent().stream().map(e -> {
+            EPinEvent ev = lastTransferTo(e.getId(), me);
+            Associate usedBy = e.getRedeemedTo() == null ? null
+                : associateRepository.findById(e.getRedeemedTo()).orElse(null);
+            return new EPinUsedRow(e.getId(), e.getCode(), e.getPinType(), e.getPinValue(),
+                ev != null ? ev.getAt() : e.getAllocatedAt(), e.getRedeemedAt(),
+                usedBy == null ? null : usedBy.getUserId(), usedBy == null ? null : usedBy.getName());
+        }).toList();
+        return new EPinRowPage<>(rows, page, size, result.getTotalElements());
+    }
+
+    private EPinEvent lastTransferTo(UUID epinId, UUID me) {
+        return epinEventRepository.findFirstByEpinIdAndEventTypeInAndToAssociateIdOrderByAtDesc(
+            epinId, Set.of(EPinEventType.ALLOCATED, EPinEventType.TRANSFERRED), me).orElse(null);
+    }
+
+    private String transferBy(EPinEvent ev) {
+        if (ev == null || ev.getFromAssociateId() == null) return "Company";
+        return associateRepository.findById(ev.getFromAssociateId()).map(Associate::getUserId).orElse("Company");
+    }
+
+    public EPinRecipientResponse recipient(String userId, UUID callerId) {
+        Associate a = associateRepository.findByUserId(userId)
+            .orElseThrow(() -> new AssociateNotFoundException(userId));
+        return new EPinRecipientResponse(a.getUserId(), a.getName());
+    }
+
+    // All-or-nothing: the oldest `count` live pins I hold (optionally of one type) are locked and
+    // moved to the recipient in one transaction; fewer than `count` held means nothing moves.
+    @Transactional
+    public BulkTransferEPinResponse transferBulk(BulkTransferEPinRequest request, UUID callerId) {
+        Associate to = associateRepository.findByUserId(request.toUserId())
+            .orElseThrow(() -> new AssociateNotFoundException(request.toUserId()));
+        if (to.getId().equals(callerId)) {
+            throw new EPinInvalidStateException("Cannot transfer e-PINs to yourself");
+        }
+        if (to.getStatus() != AssociateStatus.ACTIVE) {
+            throw new AssociateNotActiveException(to.getId());
+        }
+        List<EPin> pins = epinRepository.findHeldForUpdate(callerId, request.pinType(), clock.instant(),
+            PageRequest.of(0, request.count()));
+        if (pins.size() < request.count()) {
+            throw new EPinInsufficientPoolException(request.count(), pins.size());
+        }
+        for (EPin epin : pins) {
+            epin.setAllocatedTo(to.getId());
+            epinRepository.save(epin);
+            recordEvent(epin.getId(), EPinEventType.TRANSFERRED, callerId, callerId, to.getId(), null);
+        }
+        return new BulkTransferEPinResponse(pins.size(), to.getUserId(), to.getName());
     }
 
     private void recordEvent(UUID epinId, EPinEventType type, UUID actorId, UUID from, UUID to, String note) {

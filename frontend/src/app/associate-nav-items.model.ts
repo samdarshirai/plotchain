@@ -32,7 +32,14 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
       { key: 'kyc', labelKey: 'myAccount.tabs.kyc', path: '/profile/kyc' }
     ]
   },
-  { key: 'epins', labelKey: 'nav.epins', icon: 'confirmation_number', path: '/e-pins' },
+  {
+    key: 'epinRegister', labelKey: 'nav.epinRegister', icon: 'confirmation_number', path: '/e-pins',
+    children: [
+      { key: 'epinViewNew', labelKey: 'nav.epinViewNew', path: '/e-pins/view-new' },
+      { key: 'epinTransfer', labelKey: 'nav.epinTransfer', path: '/e-pins/transfer' },
+      { key: 'epinViewUsed', labelKey: 'nav.epinViewUsed', path: '/e-pins/view-used' }
+    ]
+  },
   {
     key: 'myTree', labelKey: 'nav.myTree', icon: 'account_tree', path: '/my-tree',
     children: [

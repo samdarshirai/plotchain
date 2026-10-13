@@ -62,4 +62,15 @@ public class EPinExceptionHandler {
             com.plotchain.associate.AssociateNotActiveException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(EPinLockedException.class)
+    public ResponseEntity<Map<String, String>> handleEPinLocked(EPinLockedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .body(Map.of("error", ex.getMessage(), "code", "EPIN_LOCKED"));
+    }
+
+    @ExceptionHandler(EPinDuplicateIdentityException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicateIdentity(EPinDuplicateIdentityException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage(), "code", ex.getCode()));
+    }
 }

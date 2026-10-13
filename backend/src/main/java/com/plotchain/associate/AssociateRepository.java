@@ -100,6 +100,12 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
 
     boolean existsByParentIdAndPosition(UUID parentId, String position);
 
+    Optional<Associate> findFirstByParentIdAndPosition(UUID parentId, String position);
+
+    boolean existsByPanNumber(String panNumber);
+
+    boolean existsByAadhaarNumber(String aadhaarNumber);
+
     Optional<Associate> findByUserId(String userId);
 
     boolean existsByUserId(String userId);

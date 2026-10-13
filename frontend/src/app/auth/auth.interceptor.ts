@@ -18,7 +18,9 @@ const EXPECTED_401_ROUTES: { method: string; path: string | RegExp }[] = [
   { method: 'PUT', path: '/api/associates/me/profile' },
   { method: 'PUT', path: '/api/associates/me/nominee' },
   { method: 'POST', path: '/api/associates/me/transaction-password' },
-  { method: 'POST', path: /\/api\/associates\/me\/epins\/[^/]+\/(redeem|transfer)$/ }
+  { method: 'POST', path: /\/api\/associates\/me\/epins\/[^/]+\/(redeem|transfer|join)$/ },
+  { method: 'POST', path: '/api/associates/me/epins/unlock' },
+  { method: 'POST', path: '/api/associates/me/epins/transfer-bulk' }
 ];
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {

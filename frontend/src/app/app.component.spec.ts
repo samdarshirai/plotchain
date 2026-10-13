@@ -127,7 +127,7 @@ describe('AppComponent', () => {
         'nav.myTree': 'Genealogy',
         'nav.mySales': 'My Sales',
         'nav.plotBookings': 'Plot Bookings',
-        'nav.epins': 'e-Pins',
+        'nav.epinRegister': 'e-Pin Register',
         'nav.myAccount': 'My Account',
         'nav.incomeStatement': 'Income Statement',
         'nav.reports': 'Reports',
@@ -144,7 +144,7 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('app-admin-sidebar')).toBeFalsy();
     const links = Array.from(compiled.querySelectorAll('.associate-sidebar__link-label')).map(el => el.textContent?.trim());
     expect(links).toEqual([
-      'Dashboard', 'My Account', 'e-Pins', 'Genealogy', 'Plot Bookings', 'Income Statement', 'Reports', 'Payout History', 'Support Tickets', 'Announcements'
+      'Dashboard', 'My Account', 'e-Pin Register', 'Genealogy', 'Plot Bookings', 'Income Statement', 'Reports', 'Payout History', 'Support Tickets', 'Announcements'
     ]);
   });
 

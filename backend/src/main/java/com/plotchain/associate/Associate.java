@@ -119,6 +119,23 @@ public class Associate {
     public void setDistrict(String district) { this.district = district; }
     public String getPostalCode() { return postalCode; }
     public void setPostalCode(String postalCode) { this.postalCode = postalCode; }
+    // Never persisted: carries the one-time plaintext from createPending to the response.
+    @jakarta.persistence.Transient
+    private String temporaryPassword;
+
+    public String getTemporaryPassword() { return temporaryPassword; }
+    public void setTemporaryPassword(String temporaryPassword) { this.temporaryPassword = temporaryPassword; }
+
+    @Column(name = "pan_number")
+    private String panNumber;
+
+    @Column(name = "aadhaar_number")
+    private String aadhaarNumber;
+
+    public String getPanNumber() { return panNumber; }
+    public void setPanNumber(String panNumber) { this.panNumber = panNumber; }
+    public String getAadhaarNumber() { return aadhaarNumber; }
+    public void setAadhaarNumber(String aadhaarNumber) { this.aadhaarNumber = aadhaarNumber; }
     public String getTransactionPasswordHash() { return transactionPasswordHash; }
     public void setTransactionPasswordHash(String transactionPasswordHash) { this.transactionPasswordHash = transactionPasswordHash; }
     public int getTransactionPasswordFailedAttempts() { return transactionPasswordFailedAttempts; }

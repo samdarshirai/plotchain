@@ -67,4 +67,39 @@ public interface EPinRepository extends JpaRepository<EPin, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM EPin e WHERE e.id = :id")
     Optional<EPin> findByIdForUpdate(@Param("id") UUID id);
+
+    // View New Pin / Transfer Pin: live pins I currently hold. q is never null ("" matches all): a null String param breaks LOWER() on Postgres.
+    @Query("""
+        SELECT e FROM EPin e
+        WHERE e.allocatedTo = :me AND e.status = com.plotchain.epin.EPinStatus.ALLOCATED
+        AND (e.expiresAt IS NULL OR e.expiresAt > :now)
+        AND (:type IS NULL OR e.pinType = :type)
+        AND LOWER(e.code) LIKE CONCAT('%', LOWER(:q), '%')
+        ORDER BY e.allocatedAt DESC, e.id
+        """)
+    Page<EPin> searchUnused(@Param("me") UUID me, @Param("type") EPinType type, @Param("q") String q,
+                            @Param("now") Instant now, Pageable pageable);
+
+    // View Used Pin: pins I held or redeemed that are now USED.
+    @Query("""
+        SELECT e FROM EPin e
+        WHERE e.status = com.plotchain.epin.EPinStatus.USED
+        AND (e.allocatedTo = :me OR e.redeemedBy = :me)
+        AND (:type IS NULL OR e.pinType = :type)
+        AND LOWER(e.code) LIKE CONCAT('%', LOWER(:q), '%')
+        ORDER BY e.redeemedAt DESC, e.id
+        """)
+    Page<EPin> searchUsed(@Param("me") UUID me, @Param("type") EPinType type, @Param("q") String q,
+                          Pageable pageable);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT e FROM EPin e
+        WHERE e.allocatedTo = :me AND e.status = com.plotchain.epin.EPinStatus.ALLOCATED
+        AND (e.expiresAt IS NULL OR e.expiresAt > :now)
+        AND (:type IS NULL OR e.pinType = :type)
+        ORDER BY e.allocatedAt, e.id
+        """)
+    List<EPin> findHeldForUpdate(@Param("me") UUID me, @Param("type") EPinType type,
+                                 @Param("now") Instant now, Pageable pageable);
 }
