@@ -1082,7 +1082,7 @@
       "overduePill": "{{count}} overdue",
       "overdueBadge": "Overdue",
       "installment": { "PENDING": "Pending", "ENTERED": "Entered", "PAID": "Paid", "VOID": "Void" },
-      "paymentMode": { "label": "Payment mode", "CASH": "Cash", "CHEQUE": "Cheque", "UPI": "UPI", "BANK_TRANSFER": "Bank transfer", "OTHER": "Other" },
+      "paymentMode": { "label": "Payment mode", "CASH": "Cash", "CHEQUE": "Check", "BANK_TRANSFER": "Account Transfer" },
       "totalRow": "Total",
       "pendingTotal": "Pending confirmation",
       "seal": {

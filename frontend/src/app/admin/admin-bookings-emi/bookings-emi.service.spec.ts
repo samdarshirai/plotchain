@@ -107,10 +107,10 @@ describe('BookingsEmiService', () => {
   });
 
   it('pays with paymentMode in the PATCH body', () => {
-    s.pay('b1', 1, { amount: 100, paymentRef: 'R1', paymentMode: 'UPI' }).subscribe();
+    s.pay('b1', 1, { amount: 100, paymentRef: 'R1', paymentMode: 'BANK_TRANSFER' }).subscribe();
     const r = http.expectOne('/api/admin/bookings/b1/installments/1/pay');
     expect(r.request.method).toBe('PATCH');
-    expect(r.request.body).toEqual({ amount: 100, paymentRef: 'R1', paymentMode: 'UPI' });
+    expect(r.request.body).toEqual({ amount: 100, paymentRef: 'R1', paymentMode: 'BANK_TRANSFER' });
     r.flush({});
   });
 

@@ -86,13 +86,13 @@ describe('BookingSealComponent', () => {
     fixture.detectChanges();
     type('paymentRef', ' UPI-1 ');
     type('receivedOn', '2026-03-02T10:30');
-    pick('paymentMode', 'UPI');
+    pick('paymentMode', 'BANK_TRANSFER');
     await fixture.whenStable();
     submit();
     const req = http.expectOne('/api/admin/bookings/b1/installments/2/pay');
     expect(req.request.body.amount).toBe(250);
     expect(req.request.body.paymentRef).toBe('UPI-1');
-    expect(req.request.body.paymentMode).toBe('UPI');
+    expect(req.request.body.paymentMode).toBe('BANK_TRANSFER');
     expect(req.request.body.paidAt).toMatch(/^2026-03-02T/);
     req.flush(bk());
   });
@@ -413,7 +413,7 @@ describe('BookingSealComponent', () => {
     setup();
     c().open('pay', c().booking!.installments[1]); fixture.detectChanges();
     const opts = Array.from(el().querySelectorAll<HTMLOptionElement>('select[name="paymentMode"] option')).map(o => o.value);
-    expect(opts).toEqual(['', 'CASH', 'CHEQUE', 'UPI', 'BANK_TRANSFER', 'OTHER']);
+    expect(opts).toEqual(['', 'CASH', 'CHEQUE', 'BANK_TRANSFER']);
     expect(el().querySelector<HTMLSelectElement>('select[name="paymentMode"]')!.value).toBe('');
   });
   it('pay requires a payment mode: error shown, aria-invalid set, nothing sent', async () => {
@@ -429,7 +429,7 @@ describe('BookingSealComponent', () => {
     expect(el().querySelector('.booking-seal__pay')!.textContent).toContain('admin.bookingsEmi.action.enterPayment');
   });
 
-  const entered = (n: number) => inst(n, { status: 'ENTERED', paidAt: '2026-03-02T00:00:00Z', paymentMode: 'UPI' });
+  const entered = (n: number) => inst(n, { status: 'ENTERED', paidAt: '2026-03-02T00:00:00Z', paymentMode: 'BANK_TRANSFER' });
   const withEntered = (over: Record<string, unknown> = {}) =>
     bk({ paidAmount: 250, installments: [inst(1, { status: 'PAID', paidAt: '2026-02-05T00:00:00Z' }), entered(2), inst(3), inst(4, { status: 'VOID' })], ...over });
 
@@ -450,7 +450,7 @@ describe('BookingSealComponent', () => {
     setup(withEntered());
     const chip = el().querySelector('.booking-register__chip--entered')!;
     expect(chip.textContent).toContain('admin.bookingsEmi.installment.ENTERED');
-    expect(el().textContent).toContain('admin.bookingsEmi.paymentMode.UPI');
+    expect(el().textContent).toContain('admin.bookingsEmi.paymentMode.BANK_TRANSFER');
   });
   it('confirm-payment form states the effect and posts to the single-confirm endpoint', () => {
     setup(withEntered(), { ...auto, confirmThresholdPercent: 90 });

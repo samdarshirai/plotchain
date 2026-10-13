@@ -22,7 +22,7 @@ public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, 
 
     // Associate EMI report: PAID installments on the caller's own bookings, paid_at in [from, to).
     @Query("""
-        SELECT new com.plotchain.booking.EmiReportRow(a.userId, a.name, i.paidAt, i.amount, i.paymentRef)
+        SELECT new com.plotchain.booking.EmiReportRow(a.userId, a.name, i.paidAt, i.amount, i.paymentMode)
         FROM EmiInstallment i
         JOIN PlotBooking b ON b.id = i.bookingId
         JOIN Associate a ON a.id = b.associateId
