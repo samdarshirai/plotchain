@@ -1,5 +1,6 @@
 // Shared by both report screens (inline styles, same convention as team-plot-bookings).
 export const REPORT_STYLES = `
+  .report { padding: 1.5rem; }
   .report__filters { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; margin-bottom: 1rem; }
   .report__filters label { display: flex; flex-direction: column; gap: 0.25rem; }
   .report__scroll { overflow-x: auto; margin-bottom: 1.5rem; }
