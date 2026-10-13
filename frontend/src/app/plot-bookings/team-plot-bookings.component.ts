@@ -28,9 +28,8 @@ const LEG: Record<Scope, 'ALL' | 'L' | 'R'> = { TEAM: 'ALL', LEFT: 'L', RIGHT: '
         <button type="button" (click)="load(requestedPage)">{{ 'plotBookings.retryAction' | translate }}</button>
       </app-inline-banner>
       <p role="status" *ngIf="!page && !error">{{ 'plotBookings.loading' | translate }}</p>
-      <p *ngIf="page && !page.bookings.length">{{ 'plotBookings.team.empty' | translate }}</p>
 
-      <ng-container *ngIf="page?.bookings?.length">
+      <ng-container *ngIf="page">
         <app-booking-table [rows]="rows" [inline]="true" [label]="'plotBookings.team.title.' + scope | translate"></app-booking-table>
         <app-pager [page]="page!.page" [size]="page!.size" [total]="page!.totalElements" [disabled]="loading" (pageChange)="load($event)"></app-pager>
       </ng-container>

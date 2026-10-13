@@ -92,7 +92,22 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
 
       <app-inline-banner *ngIf="projectsError" tone="danger">{{ 'admin.projectsPlots.error.loadProjects' | translate }}</app-inline-banner>
 
-      <div class="projects-plots__empty" *ngIf="projects && !projects.length">
+      <ng-template #emptyPlotTable>
+        <div class="projects-plots__table-wrap">
+          <table class="projects-plots__table">
+            <thead><tr>
+              <th scope="col">{{ 'admin.projectsPlots.table.plot' | translate }}</th>
+              <th scope="col">{{ 'admin.projectsPlots.table.area' | translate }}</th>
+              <th scope="col" class="projects-plots__num">{{ 'admin.projectsPlots.table.total' | translate }}</th>
+              <th scope="col">{{ 'admin.projectsPlots.table.status' | translate }}</th>
+            </tr></thead>
+            <tbody><tr><td colspan="4" class="projects-plots__empty-row">{{ 'plotBookings.table.empty' | translate }}</td></tr></tbody>
+          </table>
+        </div>
+      </ng-template>
+
+      <ng-container *ngIf="projects && !projects.length && readOnly"><ng-container *ngTemplateOutlet="emptyPlotTable"></ng-container></ng-container>
+      <div class="projects-plots__empty" *ngIf="projects && !projects.length && !readOnly">
         <h2>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoProjectsTitle' : 'admin.projectsPlots.empty.noProjectsTitle') | translate }}</h2>
         <p>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoProjectsBody' : 'admin.projectsPlots.empty.noProjectsBody') | translate }}</p>
       </div>
@@ -144,7 +159,8 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
               </div>
             </ng-template>
 
-            <div class="projects-plots__empty" *ngIf="!grid.length">
+            <ng-container *ngIf="!grid.length && readOnly"><ng-container *ngTemplateOutlet="emptyPlotTable"></ng-container></ng-container>
+            <div class="projects-plots__empty" *ngIf="!grid.length && !readOnly">
               <h2>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoPlotsTitle' : 'admin.projectsPlots.empty.noPlotsTitle') | translate }}</h2>
               <p>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoPlotsBody' : 'admin.projectsPlots.empty.noPlotsBody') | translate }}</p>
             </div>

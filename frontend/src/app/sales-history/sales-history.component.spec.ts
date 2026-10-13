@@ -148,7 +148,7 @@ describe('SalesHistoryComponent', () => {
   it('shows the empty state when there are no sales', () => {
     flushFirst([]);
     fixture.detectChanges();
-    expect(q('.my-sales__empty').textContent!.trim()).toBe('No sales to show yet.');
-    expect(q('table')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.booking-table thead th').length).toBe(14);
+    expect(q('.booking-table__empty')).toBeTruthy();
   });
 });

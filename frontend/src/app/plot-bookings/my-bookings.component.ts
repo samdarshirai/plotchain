@@ -1,6 +1,5 @@
 import { Component, ElementRef, ViewEncapsulation, HostListener, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { formatInr } from '../shared/utils/plot-grid.util';
@@ -30,15 +29,7 @@ const PAGE_SIZE = 20;
         <span class="my-bookings__skeleton-card" *ngFor="let i of [1,2,3]"></span>
       </div>
 
-      <div class="my-bookings__empty" *ngIf="page && !page.bookings.length">
-        <h2>{{ 'plotBookings.bookingsEmptyTitle' | translate }}</h2>
-        <p>{{ 'plotBookings.bookingsEmptyBody' | translate }}</p>
-        <button type="button" class="brand-button brand-button--secondary my-bookings__view-availability" (click)="viewAvailability()">
-          {{ 'plotBookings.viewAvailability' | translate }}
-        </button>
-      </div>
-
-      <ng-container *ngIf="page?.bookings?.length">
+      <ng-container *ngIf="page">
         <p class="my-bookings__note">{{ 'plotBookings.bookingsNote' | translate }}</p>
         <div class="my-bookings__split">
           <app-booking-table [rows]="rows" [selectedKey]="selected?.id ?? null" [label]="'plotBookings.myBookings.title' | translate" (details)="selectById($event)"></app-booking-table>
@@ -103,7 +94,6 @@ const PAGE_SIZE = 20;
 })
 export class MyBookingsComponent implements OnInit {
   private service = inject(PlotBookingsService);
-  private router = inject(Router);
 
   @ViewChild('backBtn') backBtn?: ElementRef<HTMLButtonElement>;
   page: AssociateBookingPage | null = null;
@@ -152,8 +142,6 @@ export class MyBookingsComponent implements OnInit {
       }
     });
   }
-
-  viewAvailability(): void { void this.router.navigate(['/plot-bookings']); }
 
   goTo(p: number): void { this.load(p); }
 

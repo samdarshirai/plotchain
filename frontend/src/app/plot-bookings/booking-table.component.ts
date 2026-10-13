@@ -66,12 +66,15 @@ export const saleRow = (s: Sale): BookingRow => ({
           </tr>
         </thead>
         <tbody>
+          <tr class="booking-table__empty" *ngIf="!rows.length">
+            <td colspan="14">{{ 'plotBookings.table.empty' | translate }}</td>
+          </tr>
           <ng-container *ngFor="let r of rows; trackBy: trackKey">
             <tr [class.booking-table__row--selected]="r.key === selectedKey" [attr.data-booking-id]="r.key">
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.bookingDate' | translate">{{ r.bookedAt | date: 'mediumDate' }}</td>
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.associateId' | translate">{{ r.associateCode || '—' }}</td>
               <td [attr.data-label]="'plotBookings.table.name' | translate">{{ r.associateName || '—' }}</td>
-              <td [attr.data-label]="'plotBookings.table.project' | translate">{{ r.projectName || '—' }}</td>
+              <td class="booking-table__wrap" [attr.data-label]="'plotBookings.table.project' | translate">{{ r.projectName || '—' }}</td>
               <td [attr.data-label]="'plotBookings.table.plotType' | translate">{{ r.plotType || '—' }}</td>
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.plotNo' | translate">{{ r.plotNo || '—' }}</td>
               <td class="booking-table__num" [attr.data-label]="'plotBookings.table.rate' | translate">{{ money(r.rate) }}</td>

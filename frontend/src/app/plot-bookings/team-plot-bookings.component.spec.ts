@@ -104,6 +104,7 @@ describe('TeamPlotBookingsComponent', () => {
     reqs[0].flush({ ...bookings, page: 1 });
     reqs[1].flush({ bookings: [], page: 0, size: 20, totalElements: 0 });
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('table')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('tbody tr[data-booking-id]').length).toBe(0);
+    expect(fixture.nativeElement.querySelector('.booking-table__empty')).toBeTruthy();
   });
 });

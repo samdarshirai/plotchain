@@ -178,7 +178,7 @@
     }
   },
   "plotBookings": {
-    "table": {"bookingDate": "बुकिंग तिथि", "associateId": "एसोसिएट आईडी", "name": "नाम", "project": "प्रोजेक्ट", "plotType": "प्लॉट प्रकार", "plotNo": "प्लॉट नं.", "rate": "दर", "area": "क्षेत्रफल", "price": "मूल्य", "extraPrice": "अतिरिक्त मूल्य", "totalPrice": "कुल मूल्य", "paid": "भुगतान राशि", "rest": "शेष राशि", "details": "विवरण", "detailsAction": "देखें"},
+    "table": {"empty": "दिखाने के लिए कोई डेटा नहीं।", "bookingDate": "बुकिंग तिथि", "associateId": "एसोसिएट आईडी", "name": "नाम", "project": "प्रोजेक्ट", "plotType": "प्लॉट प्रकार", "plotNo": "प्लॉट नं.", "rate": "दर", "area": "क्षेत्रफल", "price": "मूल्य", "extraPrice": "अतिरिक्त मूल्य", "totalPrice": "कुल मूल्य", "paid": "भुगतान राशि", "rest": "शेष राशि", "details": "विवरण", "detailsAction": "देखें"},
     "myBookings": { "title": "My Bookings" },
     "team": {
       "title": { "TEAM": "टीम द्वारा खरीदे गए प्लॉट", "LEFT": "लेफ्ट प्लॉट बुकिंग", "RIGHT": "राइट प्लॉट बुकिंग" },

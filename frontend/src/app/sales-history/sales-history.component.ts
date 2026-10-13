@@ -19,8 +19,7 @@ const PAGE_SIZE = 20;
       <h1 class="card-title">{{ 'salesHistory.title' | translate }}</h1>
       <p class="my-sales__subtitle">{{ 'salesHistory.subtitle' | translate }}</p>
       <p *ngIf="loadError" class="my-sales__load-error" role="alert">{{ 'salesHistory.loadError' | translate }}</p>
-      <p *ngIf="page && !page.sales.length" class="my-sales__empty" role="status">{{ 'salesHistory.emptyState' | translate }}</p>
-      <app-booking-table *ngIf="page?.sales?.length" [rows]="rows" [label]="'salesHistory.title' | translate"></app-booking-table>
+      <app-booking-table *ngIf="page" [rows]="rows" [label]="'salesHistory.title' | translate"></app-booking-table>
       <app-pager *ngIf="page" [page]="page.page" [size]="page.size" [total]="page.totalElements" [disabled]="loading" (pageChange)="goToPage($event)"></app-pager>
     </div>
   `

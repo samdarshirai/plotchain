@@ -982,24 +982,20 @@ describe('ProjectsPlotsComponent (associate read-only)', () => {
       fixture.detectChanges();
     }
 
-    it('uses associate wording when there are no plots in the project', () => {
+    it('shows an empty table when there are no plots in the project', () => {
       boot([proj('p1')]);
       http.expectOne('/api/projects/p1/plots/grid').flush([]);
       fixture.detectChanges();
-      const text = el().textContent!;
-      expect(text).toContain('admin.projectsPlots.empty.assocNoPlotsTitle');
-      expect(text).toContain('admin.projectsPlots.empty.assocNoPlotsBody');
-      expect(text).not.toContain('admin.projectsPlots.empty.noPlotsTitle');
-      expect(text).not.toContain('admin.projectsPlots.empty.noPlotsBody');
+      expect(el().querySelectorAll('table.projects-plots__table thead th').length).toBe(4);
+      expect(el().querySelector('.projects-plots__empty-row')).toBeTruthy();
+      expect(el().textContent).not.toContain('admin.projectsPlots.empty.noPlotsTitle');
     });
 
-    it('uses associate wording when there are no projects', () => {
+    it('shows an empty table when there are no projects', () => {
       boot([]);
-      const text = el().textContent!;
-      expect(text).toContain('admin.projectsPlots.empty.assocNoProjectsTitle');
-      expect(text).toContain('admin.projectsPlots.empty.assocNoProjectsBody');
-      expect(text).not.toContain('admin.projectsPlots.empty.noProjectsTitle');
-      expect(text).not.toContain('admin.projectsPlots.empty.noProjectsBody');
+      expect(el().querySelectorAll('table.projects-plots__table thead th').length).toBe(4);
+      expect(el().querySelector('.projects-plots__empty-row')).toBeTruthy();
+      expect(el().textContent).not.toContain('admin.projectsPlots.empty.noProjectsTitle');
     });
 
     it('with several projects shows a Select project placeholder and loads nothing until chosen', () => {

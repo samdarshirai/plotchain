@@ -165,7 +165,7 @@
     }
   },
   "plotBookings": {
-    "table": {"bookingDate": "Booking Date", "associateId": "Associate ID", "name": "Name", "project": "Project", "plotType": "Plot Type", "plotNo": "Plot No.", "rate": "Rate", "area": "Area", "price": "Price", "extraPrice": "Extra Price", "totalPrice": "Total Price", "paid": "Paid Amount", "rest": "Rest Amount", "details": "Details", "detailsAction": "View"},
+    "table": {"empty": "No data to show.", "bookingDate": "Booking Date", "associateId": "Associate ID", "name": "Name", "project": "Project", "plotType": "Plot Type", "plotNo": "Plot No.", "rate": "Rate", "area": "Area", "price": "Price", "extraPrice": "Extra Price", "totalPrice": "Total Price", "paid": "Paid Amount", "rest": "Rest Amount", "details": "Details", "detailsAction": "View"},
     "myBookings": { "title": "My Bookings" },
     "team": {
       "title": { "TEAM": "Team Purchase Plots", "LEFT": "Left Plot Booking", "RIGHT": "Right Plot Booking" },

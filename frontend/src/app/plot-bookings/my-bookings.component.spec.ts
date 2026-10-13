@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { Router, provideRouter } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { MyBookingsComponent } from './my-bookings.component';
 
@@ -39,13 +39,6 @@ describe('MyBookingsComponent', () => {
     const h1 = el().querySelectorAll('h1.my-bookings__title');
     expect(h1.length).toBe(1);
     expect(h1[0].textContent).toContain('plotBookings.myBookings.title');
-  });
-
-  it('navigates to View Plot from the empty state', () => {
-    boot([]);
-    const nav = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
-    el().querySelector<HTMLButtonElement>('.my-bookings__view-availability')!.click();
-    expect(nav).toHaveBeenCalledWith(['/plot-bookings']);
   });
 
   it('renders a table row per booking in server order with the plot label fallback in the detail', () => {
@@ -120,9 +113,11 @@ describe('MyBookingsComponent', () => {
     expect(el().querySelector('.my-bookings__detail')!.classList).not.toContain('my-bookings__detail--open');
   });
 
-  it('shows the empty state', () => {
+  it('shows an empty table (headers, no rows) when there are no bookings', () => {
     boot([]);
-    expect(el().textContent).toContain('plotBookings.bookingsEmptyTitle');
+    expect(el().querySelectorAll('.booking-table thead th').length).toBe(14);
+    expect(el().querySelector('.booking-table__empty')).toBeTruthy();
+    expect(el().querySelectorAll('.booking-table tbody tr[data-booking-id]').length).toBe(0);
   });
 
   it('shows an error banner with Retry when the first load fails', () => {
