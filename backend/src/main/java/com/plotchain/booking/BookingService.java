@@ -646,7 +646,8 @@ public class BookingService {
                 project == null ? null : project.getName(),
                 associate == null ? null : associate.getName(),
                 booking.getBuyerPhone(), booking.getListPrice(), booking.getDiscount(), booking.getAreaSqft(),
-                booking.getRate(), booking.getCancelledAt(), associate == null ? null : associate.getUserId());
+                booking.getRate(), booking.getCancelledAt(), associate == null ? null : associate.getUserId(),
+                plot == null ? null : plot.getPlotType());
         }).toList();
     }
 

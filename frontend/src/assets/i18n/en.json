@@ -1075,7 +1075,7 @@
       "col": { "buyer": "Buyer", "associate": "Associate", "status": "Status", "total": "Total", "paid": "Paid", "due": "Due",
                "overdue": "Overdue", "amountOverdue": "Amount overdue", "oldestDue": "Oldest due", "plot": "Plot",
                "no": "#", "dueDate": "Due", "amount": "Amount", "installmentStatus": "Status",
-               "mobile": "Mobile", "area": "Area", "rate": "Rate", "discount": "Discount", "listPrice": "List price", "bookedOn": "Booked on",
+               "mobile": "Mobile", "plotType": "Plot type", "area": "Area", "rate": "Rate", "discount": "Discount", "listPrice": "List price", "bookedOn": "Booked on",
                "cancelledOn": "Cancelled on", "associateId": "Associate ID", "project": "Project", "paymentDate": "Payment date", "mode": "Mode",
                "reference": "Reference", "entryBy": "Entry by", "confirmBy": "Confirm by", "confirmDate": "Confirm date",
                "lastDueDate": "Last EMI date", "rest": "Rest", "select": "Select" },

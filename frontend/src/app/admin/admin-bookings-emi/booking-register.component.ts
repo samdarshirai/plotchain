@@ -93,12 +93,18 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
           <table #regTable class="booking-register__table" *ngIf="page" [attr.aria-label]="'admin.bookingsEmi.title' | translate">
             <thead>
               <tr>
+                <th scope="col">{{ 'admin.bookingsEmi.col.bookedOn' | translate }}</th>
+                <th scope="col">{{ 'admin.bookingsEmi.col.associateId' | translate }}</th>
+                <th scope="col">{{ 'admin.bookingsEmi.col.associate' | translate }}</th>
                 <th scope="col">{{ 'admin.bookingsEmi.col.buyer' | translate }}</th>
                 <th scope="col">{{ 'admin.bookingsEmi.col.mobile' | translate }}</th>
-                <th scope="col">{{ 'admin.bookingsEmi.col.associate' | translate }}</th>
+                <th scope="col">{{ 'admin.bookingsEmi.col.project' | translate }}</th>
+                <th scope="col">{{ 'admin.bookingsEmi.col.plot' | translate }}</th>
                 <th scope="col">{{ 'admin.bookingsEmi.col.status' | translate }}</th>
+                <th scope="col">{{ 'admin.bookingsEmi.col.plotType' | translate }}</th>
                 <th scope="col">{{ 'admin.bookingsEmi.col.area' | translate }}</th>
                 <th scope="col">{{ 'admin.bookingsEmi.col.rate' | translate }}</th>
+                <th scope="col">{{ 'admin.bookingsEmi.col.listPrice' | translate }}</th>
                 <th scope="col">{{ 'admin.bookingsEmi.col.discount' | translate }}</th>
                 <th scope="col">{{ 'admin.bookingsEmi.col.total' | translate }}</th>
                 <th scope="col">{{ 'admin.bookingsEmi.col.paid' | translate }}</th>
@@ -109,17 +115,21 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
               <tr *ngFor="let b of page!.bookings" class="booking-register__row" tabindex="0"
                 [class.booking-register__row--selected]="b.id === selected?.id" [attr.aria-current]="b.id === selected?.id ? 'true' : null"
                 (click)="selectBooking(b)" (keydown.enter)="selectBooking(b)" (keydown.space)="selectBooking(b); $event.preventDefault()">
-                <td [attr.data-label]="'admin.bookingsEmi.col.buyer' | translate">
-                  <strong>{{ b.buyerName }}</strong><br /><span class="booking-register__sub">{{ plot(b) }}<ng-container *ngIf="b.projectName"> · {{ b.projectName }}</ng-container></span>
-                </td>
+                <td [attr.data-label]="'admin.bookingsEmi.col.bookedOn' | translate">{{ b.bookedAt ? b.bookedAt.slice(0, 10) : '—' }}</td>
+                <td [attr.data-label]="'admin.bookingsEmi.col.associateId' | translate">{{ assocCode(b) || '—' }}</td>
+                <td class="booking-register__wrap" [attr.data-label]="'admin.bookingsEmi.col.associate' | translate"><span class="booking-register__clamp" [title]="assocName(b) || ''">{{ assocName(b) || '—' }}</span></td>
+                <td class="booking-register__wrap" [attr.data-label]="'admin.bookingsEmi.col.buyer' | translate"><strong class="booking-register__clamp" [title]="b.buyerName">{{ b.buyerName }}</strong></td>
                 <td [attr.data-label]="'admin.bookingsEmi.col.mobile' | translate">{{ b.buyerPhone || '—' }}</td>
-                <td [attr.data-label]="'admin.bookingsEmi.col.associate' | translate">{{ assoc(b) }}</td>
+                <td class="booking-register__wrap" [attr.data-label]="'admin.bookingsEmi.col.project' | translate"><span class="booking-register__clamp" [title]="b.projectName || ''">{{ b.projectName || '—' }}</span></td>
+                <td [attr.data-label]="'admin.bookingsEmi.col.plot' | translate">{{ plot(b) }}</td>
                 <td [attr.data-label]="'admin.bookingsEmi.col.status' | translate">
                   <span class="booking-register__chip booking-register__chip--{{ b.status | lowercase }}">{{ 'admin.bookingsEmi.status.' + b.status | translate }}</span>
                   <span class="booking-register__pill" *ngIf="overdueIn(b) as n">{{ 'admin.bookingsEmi.overduePill' | translate: { count: n } }}</span>
                 </td>
+                <td [attr.data-label]="'admin.bookingsEmi.col.plotType' | translate">{{ b.plotType ? ('admin.projectsPlots.type.' + b.plotType | translate) : '—' }}</td>
                 <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.area' | translate">{{ b.areaSqft != null ? b.areaSqft : '—' }}</td>
                 <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.rate' | translate">{{ b.rate != null ? money(b.rate) : '—' }}</td>
+                <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.listPrice' | translate">{{ b.listPrice != null ? money(b.listPrice) : '—' }}</td>
                 <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.discount' | translate">{{ b.discount != null ? money(b.discount) : '—' }}</td>
                 <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.total' | translate">{{ money(b.totalAmount) }}</td>
                 <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.paid' | translate">
@@ -196,6 +206,7 @@ export class BookingRegisterComponent implements OnInit, OnChanges {
     { header: 'Mobile', value: b => b.buyerPhone },
     { header: 'Project', value: b => b.projectName },
     { header: 'Plot', value: b => plotText(b) },
+    { header: 'Plot type', value: b => b.plotType },
     { header: 'Area', value: b => b.areaSqft },
     { header: 'Rate', value: b => b.rate },
     { header: 'Discount', value: b => b.discount },
@@ -209,6 +220,8 @@ export class BookingRegisterComponent implements OnInit, OnChanges {
   pct = (b: Booking) => meterPercent(b.paidAmount, b.totalAmount);
   plot = plotText;
   assoc = (b: Booking) => associateLabel(b, this.directory);
+  assocName = (b: Booking) => b.associateName ?? this.directory.find(a => a.id === b.associateId)?.name;
+  assocCode =(b: Booking) => b.associateCode ?? this.directory.find(a => a.id === b.associateId)?.userId;
   overdueIn = (b: Booking) => b.installments.filter(i => i.overdue && i.status === 'PENDING').length;
 
   get hasFilters(): boolean {

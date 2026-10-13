@@ -34,6 +34,7 @@ export interface Booking {
   listPrice?: number | null;
   discount?: number | null;
   areaSqft?: number | null;
+  plotType?: 'NORMAL' | 'CORNER' | null;
   rate?: number | null;
   cancelledAt?: string | null;
   associateCode?: string | null;

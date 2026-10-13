@@ -44,7 +44,8 @@ describe('BookingRegisterComponent', () => {
     boot();
     const rows = el().querySelectorAll('tbody tr.booking-register__row');
     expect(rows.length).toBe(2);
-    expect(rows[0].textContent).toContain('Jane (VA-1)');
+    expect(rows[0].textContent).toContain('Jane');
+    expect(rows[0].textContent).toContain('VA-1');
     expect(rows[0].textContent).toContain('admin.bookingsEmi.overduePill');
   });
 
@@ -385,6 +386,14 @@ describe('BookingRegisterComponent', () => {
       expect(rows[1].querySelector('[data-label="admin.bookingsEmi.col.area"]')!.textContent!.trim()).toBe('—');
       expect(rows[1].querySelector('[data-label="admin.bookingsEmi.col.rate"]')!.textContent!.trim()).toBe('—');
       expect(rows[1].querySelector('[data-label="admin.bookingsEmi.col.discount"]')!.textContent!.trim()).toBe('—');
+    });
+
+    it('renders plot type key, dash when null', () => {
+      boot([bk('b1', { plotType: 'CORNER' }), bk('b2')]);
+      const rows = el().querySelectorAll('tbody tr.booking-register__row');
+      const cell = (i: number) => rows[i].querySelector('[data-label="admin.bookingsEmi.col.plotType"]')!.textContent!.trim();
+      expect(cell(0)).toBe('admin.projectsPlots.type.CORNER');
+      expect(cell(1)).toBe('—');
     });
 
     it('Booked from / to reload page 0 with bookedFrom and bookedTo', () => {
