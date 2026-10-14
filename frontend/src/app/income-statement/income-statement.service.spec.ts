@@ -19,7 +19,7 @@ describe('IncomeStatementService', () => {
   afterEach(() => httpMock.verify());
 
   it('fetches my ledger entries with filters and pagination as query params', () => {
-    const mockResponse: AssociateLedgerPage = { entries: [], page: 0, size: 20, totalElements: 0 };
+    const mockResponse: AssociateLedgerPage = { entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 };
 
     service
       .list({ incomeType: 'PERK', cycleId: 'c1', status: 'PAID' }, 0, 20)
@@ -42,6 +42,6 @@ describe('IncomeStatementService', () => {
     service.list({}, 1, 100).subscribe();
 
     const req = httpMock.expectOne('/api/associates/me/ledger?page=1&size=100');
-    req.flush({ entries: [], page: 1, size: 100, totalElements: 0 });
+    req.flush({ entries: [], page: 1, size: 100, totalElements: 0, totalGrossAmount: 0 });
   });
 });

@@ -522,6 +522,8 @@
     "matchingSuffix": "matching",
     "scrollAllLevels": "Scroll for all {{count}} levels",
     "achievedRewardsTitle": "Achieved Rewards",
+    "totalIncome": "Total income",
+    "entriesCount": "Entries",
     "columnAchieved": "Achieved",
     "statusNotAchieved": "Not Achieved",
     "columnMatchingIncome": "Matching Income",

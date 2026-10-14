@@ -51,10 +51,10 @@ describe('IncomeStatementComponent', () => {
   function flushInitialRequests(lookupEntries: unknown[] = [sampleEntry, otherCycleEntry]): void {
     httpMock
       .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('size') === '100')
-      .flush({ entries: lookupEntries, page: 0, size: 100, totalElements: lookupEntries.length });
+      .flush({ entries: lookupEntries, page: 0, size: 100, totalElements: lookupEntries.length, totalGrossAmount: 0 });
     httpMock
       .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('size') === '20')
-      .flush({ entries: [sampleEntry], page: 0, size: 20, totalElements: 1 });
+      .flush({ entries: [sampleEntry], page: 0, size: 20, totalElements: 1, totalGrossAmount: 0 });
     httpMock.expectOne('/api/associates/me/profile').flush({ id: 'a1', userId: 'AS001', name: 'Test Associate' });
   }
 
@@ -156,7 +156,7 @@ describe('IncomeStatementComponent', () => {
       .flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
     httpMock
       .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('size') === '20')
-      .flush({ entries: [sampleEntry], page: 0, size: 20, totalElements: 1 });
+      .flush({ entries: [sampleEntry], page: 0, size: 20, totalElements: 1, totalGrossAmount: 0 });
 
     expect(fixture.componentInstance.cycles).toEqual([]);
     expect(fixture.componentInstance.loadError).toBe(false);
@@ -169,7 +169,7 @@ describe('IncomeStatementComponent', () => {
     const req = httpMock.expectOne(
       r => r.url === '/api/associates/me/ledger' && r.params.get('incomeType') === 'PERK' && r.params.get('page') === '0'
     );
-    req.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    req.flush({ entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 });
     expect(fixture.componentInstance.activeIncomeType).toBe('PERK');
   });
 
@@ -178,7 +178,7 @@ describe('IncomeStatementComponent', () => {
     fixture.componentInstance.onCycleIdChange('c2');
 
     const req = httpMock.expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('cycleId') === 'c2');
-    req.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    req.flush({ entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 });
   });
 
   it('reloads with the status filter when the status dropdown changes', () => {
@@ -186,29 +186,29 @@ describe('IncomeStatementComponent', () => {
     fixture.componentInstance.onStatusChange('REVERSED');
 
     const req = httpMock.expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('status') === 'REVERSED');
-    req.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    req.flush({ entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 });
   });
 
   it('combines tab, cycle, and status filters into one request', () => {
     flushInitialRequests();
     routeData$.next({ incomeType: 'MATCHING' });
-    httpMock.expectOne(r => r.params.get('incomeType') === 'MATCHING').flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne(r => r.params.get('incomeType') === 'MATCHING').flush({ entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 });
 
     fixture.componentInstance.onCycleIdChange('c1');
-    httpMock.expectOne(r => r.params.get('cycleId') === 'c1').flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne(r => r.params.get('cycleId') === 'c1').flush({ entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 });
 
     fixture.componentInstance.onStatusChange('PAID');
     const req = httpMock.expectOne(
       r => r.params.get('incomeType') === 'MATCHING' && r.params.get('cycleId') === 'c1' && r.params.get('status') === 'PAID'
     );
-    req.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    req.flush({ entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 });
   });
 
   it('shows the resolved cycle period dates in each row, not a raw cycle UUID', () => {
     flushInitialRequests();
     fixture.detectChanges();
     const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
-    expect(rowText).toContain('Jan 1, 2026');
+    expect(rowText).toContain('01 Jan 2026');
     expect(rowText).not.toContain('c1');
   });
 
@@ -219,7 +219,8 @@ describe('IncomeStatementComponent', () => {
       entries: [{ ...sampleEntry, id: 'l3', sourceRef: null, status: 'PENDING' }],
       page: 0,
       size: 20,
-      totalElements: 1
+      totalElements: 1,
+      totalGrossAmount: 0
     });
     fixture.detectChanges();
 
@@ -228,7 +229,7 @@ describe('IncomeStatementComponent', () => {
   });
 
   it('shows a load error when the initial page load fails, without silently doing nothing', () => {
-    httpMock.expectOne(r => r.params.get('size') === '100').flush({ entries: [], page: 0, size: 100, totalElements: 0 });
+    httpMock.expectOne(r => r.params.get('size') === '100').flush({ entries: [], page: 0, size: 100, totalElements: 0, totalGrossAmount: 0 });
     httpMock
       .expectOne(r => r.params.get('size') === '20')
       .flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
@@ -240,7 +241,7 @@ describe('IncomeStatementComponent', () => {
   });
 
   it('renders the load error through InlineBannerComponent with tone danger, not a plain paragraph', () => {
-    httpMock.expectOne(r => r.params.get('size') === '100').flush({ entries: [], page: 0, size: 100, totalElements: 0 });
+    httpMock.expectOne(r => r.params.get('size') === '100').flush({ entries: [], page: 0, size: 100, totalElements: 0, totalGrossAmount: 0 });
     httpMock
       .expectOne(r => r.params.get('size') === '20')
       .flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
@@ -255,7 +256,7 @@ describe('IncomeStatementComponent', () => {
   it('shows an empty-state row when no entries match', () => {
     flushInitialRequests();
     fixture.componentInstance.onStatusChange('REVERSED');
-    httpMock.expectOne(r => r.params.get('status') === 'REVERSED').flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne(r => r.params.get('status') === 'REVERSED').flush({ entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 });
     fixture.detectChanges();
 
     const emptyCell: HTMLElement | null = fixture.nativeElement.querySelector('.editable-table__empty');
@@ -266,7 +267,7 @@ describe('IncomeStatementComponent', () => {
     flushInitialRequests();
     fixture.componentInstance.goToPage(1);
     const req = httpMock.expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('page') === '1' && r.params.get('size') === '20');
-    req.flush({ entries: [], page: 1, size: 20, totalElements: 21 });
+    req.flush({ entries: [], page: 1, size: 20, totalElements: 21, totalGrossAmount: 0 });
 
     expect(fixture.componentInstance.page?.page).toBe(1);
   });
@@ -318,7 +319,7 @@ describe('IncomeStatementComponent', () => {
           legBreakdown: { bfLeft: 1000000, bfRight: 0, newLeft: 0, newRight: 500000, totalLeft: 1000000, totalRight: 500000,
             calcLeft: 500000, calcRight: 500000, matchingBusiness: 500000 }
         }],
-        page: 0, size: 20, totalElements: 1
+        page: 0, size: 20, totalElements: 1, totalGrossAmount: 0
       });
     fixture.detectChanges();
 
@@ -328,7 +329,7 @@ describe('IncomeStatementComponent', () => {
     expect(fixture.nativeElement.querySelector('.income-statement__legend').textContent).toContain('Calculate Right Business');
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
-    expect(cells).toEqual(jasmine.arrayContaining(['02-06-2026 / 16-06-2026', '1000000', '500000', '35000']));
+    expect(cells).toEqual(jasmine.arrayContaining(['02 Jun 2026 – 16 Jun 2026', '1000000', '500000', '35000']));
   });
 
   it('Royalty tab shows date, new left/right/matching business and royalty bonus', () => {
@@ -342,7 +343,7 @@ describe('IncomeStatementComponent', () => {
           legBreakdown: { bfLeft: 1000000, bfRight: 0, newLeft: 0, newRight: 500000, totalLeft: 1000000, totalRight: 500000,
             calcLeft: 500000, calcRight: 500000, matchingBusiness: 500000 }
         }],
-        page: 0, size: 20, totalElements: 1
+        page: 0, size: 20, totalElements: 1, totalGrossAmount: 0
       });
     fixture.detectChanges();
 
@@ -351,7 +352,7 @@ describe('IncomeStatementComponent', () => {
     ]);
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
-    expect(cells).toEqual(jasmine.arrayContaining(['02-06-2026 / 16-06-2026', '0', '500000']));
+    expect(cells).toEqual(jasmine.arrayContaining(['02 Jun 2026 – 16 Jun 2026', '0', '500000']));
   });
 
   it('Sponsor Matching tab shows Date, Member ID, Matching Income and Sponsor Matching Income', () => {
@@ -361,7 +362,7 @@ describe('IncomeStatementComponent', () => {
       .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('incomeType') === 'SPONSOR_MATCHING')
       .flush({
         entries: [{ ...sampleEntry, incomeType: 'SPONSOR_MATCHING', grossAmount: 3500, sponseeUserId: 'PC200', sponseeMatchingAmount: 35000 }],
-        page: 0, size: 20, totalElements: 1
+        page: 0, size: 20, totalElements: 1, totalGrossAmount: 0
       });
     fixture.detectChanges();
 
@@ -386,6 +387,30 @@ describe('IncomeStatementComponent', () => {
     fixture.detectChanges();
     return fixture.componentInstance;
   }
+
+  it('shows total income and entry count cards from the whole filtered set, and a toned status badge', () => {
+    flushInitialRequests();
+    fixture.componentInstance.onStatusChange('PAID');
+    httpMock.expectOne(r => r.params.get('status') === 'PAID').flush({
+      entries: [{ ...sampleEntry, status: 'PAID' }], page: 0, size: 20, totalElements: 42, totalGrossAmount: 1250
+    });
+    fixture.detectChanges();
+
+    const values: string[] = Array.from(fixture.nativeElement.querySelectorAll('.income-statement__card-value'))
+      .map((e: any) => e.textContent.trim());
+    expect(values).toEqual(['₹1,250', '42']);
+    expect(fixture.nativeElement.querySelector('.editable-table__badge--success').textContent.trim()).toBe('PAID');
+  });
+
+  it('hides the summary cards on the Reward tab', () => {
+    flushInitialRequests();
+    routeData$.next({ incomeType: 'REWARD' });
+    httpMock.expectOne('/api/associates/me/reward-tiers').flush([]);
+    httpMock.expectOne('/api/associates/me/rewards-achieved').flush([]);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.income-statement__cards--summary')).toBeNull();
+  });
 
   it('Reward tab derives totals, rank, 3-state status and bars from remaining business', () => {
     // left total 1.3M (500k-0, 2M-700k), right total 300k (2M-1.7M)

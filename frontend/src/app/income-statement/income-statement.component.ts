@@ -10,7 +10,7 @@ import { IncomeStatementService } from './income-statement.service';
 import { RewardTierRow } from './models/reward-tier-row.model';
 import { AssociateLedgerPage, AssociateLedgerFilters } from './models/associate-ledger-page.model';
 import { TabBarComponent, TabDefinition } from '../shared/components/tab-bar/tab-bar.component';
-import { EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
+import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 
 const PAGE_SIZE = 20;
@@ -28,16 +28,19 @@ const TAB_ROUTES = [
 
 const MATCHING_KEYS = ['bflb', 'bfrb', 'nlb', 'nrb', 'tlb', 'trb', 'clb', 'crb'];
 
+const ledgerStatusTone = (value: string | number): BadgeTone =>
+  value === 'PAID' ? 'success' : value === 'REVERSED' ? 'danger' : 'warning';
+
 export interface CycleOption {
   cycleId: string;
   cyclePeriodStart: string;
   cyclePeriodEnd: string;
 }
 
-// Matches the reference rewards screen: 31-05-2026 16:36:01
-const REWARD_DATE_FORMAT = 'dd-MM-yyyy HH:mm:ss';
-// Reward Statement design: "12 Aug 2026"
-const REWARD_DAY_FORMAT = 'dd MMM yyyy';
+// One date style across every income-statement tab (Reward Statement design): "12 Aug 2026",
+// date-times "12 Aug 2026, 14:32", ranges "01 Aug 2026 – 15 Aug 2026".
+const DATE_FORMAT = 'dd MMM yyyy';
+const DATE_TIME_FORMAT = 'dd MMM yyyy, HH:mm';
 
 interface RewardTierView {
   n: number;
@@ -70,7 +73,7 @@ interface RewardAchievedView {
   imports: [CommonModule, TranslateModule, TabBarComponent, EditableTableComponent, InlineBannerComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
-    <div class="income-statement" [class.income-statement--matching]="activeIncomeType === 'MATCHING'" [class.income-statement--reward]="activeIncomeType === 'REWARD'" [class.income-statement--direct]="activeIncomeType === 'DIRECT'">
+    <div class="income-statement" [attr.data-income-type]="activeIncomeType" [class.income-statement--matching]="activeIncomeType === 'MATCHING'" [class.income-statement--reward]="activeIncomeType === 'REWARD'" [class.income-statement--direct]="activeIncomeType === 'DIRECT'">
       <div class="income-statement__head">
         <div class="income-statement__intro">
           <h1 class="income-statement__title">{{ 'incomeStatement.title' | translate }}</h1>
@@ -86,6 +89,17 @@ interface RewardAchievedView {
         <div *ngFor="let key of legendKeys"><dt>{{ 'incomeStatement.' + key + 'Abbr' | translate }}</dt><dd>{{ 'incomeStatement.' + key + 'Legend' | translate }}</dd></div>
       </dl>
 
+      <div class="income-statement__cards income-statement__cards--summary" *ngIf="activeIncomeType !== 'REWARD' && page">
+        <div class="income-statement__card">
+          <span class="income-statement__card-label">{{ 'incomeStatement.totalIncome' | translate }}</span>
+          <span class="income-statement__card-value">{{ formatCurrency(page.totalGrossAmount) }}</span>
+        </div>
+        <div class="income-statement__card">
+          <span class="income-statement__card-label">{{ 'incomeStatement.entriesCount' | translate }}</span>
+          <span class="income-statement__card-value">{{ page.totalElements }}</span>
+        </div>
+      </div>
+
       <div class="income-statement__filters" *ngIf="activeIncomeType !== 'REWARD'">
         <div class="income-statement__filter-field">
           <label>
@@ -93,7 +107,7 @@ interface RewardAchievedView {
             <select (change)="onCycleIdChange($any($event.target).value)">
               <option value="">{{ 'incomeStatement.cycleFilterAllOption' | translate }}</option>
               <option *ngFor="let cycle of cycles" [value]="cycle.cycleId">
-                {{ datePipe.transform(cycle.cyclePeriodStart, 'mediumDate') }} – {{ datePipe.transform(cycle.cyclePeriodEnd, 'mediumDate') }}
+                {{ formatDate(cycle.cyclePeriodStart) }} – {{ formatDate(cycle.cyclePeriodEnd) }}
               </option>
             </select>
           </label>
@@ -126,14 +140,14 @@ interface RewardAchievedView {
       </div>
 
       <ng-container *ngIf="activeIncomeType === 'REWARD'">
-        <div class="income-statement__reward-cards">
+        <div class="income-statement__cards">
           <div class="income-statement__reward-seal">
             <span class="income-statement__reward-eyebrow"><i></i>{{ 'incomeStatement.currentRank' | translate }}<i></i></span>
             <span class="income-statement__reward-rank">{{ currentRank }}</span>
           </div>
-          <div class="income-statement__reward-card" *ngFor="let c of rewardCards">
-            <span class="income-statement__reward-card-label">{{ c.labelKey | translate }}</span>
-            <span class="income-statement__reward-card-value">{{ c.value }}</span>
+          <div class="income-statement__card" *ngFor="let c of rewardCards">
+            <span class="income-statement__card-label">{{ c.labelKey | translate }}</span>
+            <span class="income-statement__card-value">{{ c.value }}</span>
           </div>
         </div>
 
@@ -320,7 +334,7 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
         this.statementColumns = [
           { key: 'incomeType', label: t['incomeStatement.columnIncomeType'], type: 'text' },
           { key: 'cyclePeriod', label: t['incomeStatement.columnCyclePeriod'], type: 'text' },
-          { key: 'status', label: t['incomeStatement.columnStatus'], type: 'text' },
+          { key: 'status', label: t['incomeStatement.columnStatus'], type: 'badge', badgeTone: ledgerStatusTone },
           { key: 'grossAmount', label: t['incomeStatement.columnGrossAmount'], type: 'text' },
           { key: 'sourceRef', label: t['incomeStatement.columnSourceRef'], type: 'text' },
           { key: 'createdAt', label: t['incomeStatement.columnCreatedAt'], type: 'text' }
@@ -420,12 +434,12 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
     this.incomeStatementService.rewardsAchieved().subscribe({
       next: rows => {
         this.achievedViews = rows.map(r => ({
-          date: this.datePipe.transform(r.achievedDate, REWARD_DAY_FORMAT) ?? r.achievedDate,
+          date: this.formatDate(r.achievedDate, DATE_FORMAT) ?? r.achievedDate,
           designation: r.designation ?? '—',
           reward: this.rewardText(r.reward, r.perkDescription),
           paid: r.paid,
           payStatus: this.translate.instant(r.paid ? 'incomeStatement.payStatusPaid' : 'incomeStatement.payStatusUnpaid'),
-          paymentDate: r.paymentDate ? (this.datePipe.transform(r.paymentDate, REWARD_DAY_FORMAT) ?? r.paymentDate) : '—',
+          paymentDate: r.paymentDate ? (this.formatDate(r.paymentDate, DATE_FORMAT) ?? r.paymentDate) : '—',
           remarks: r.remarks ?? '—'
         }));
       },
@@ -523,7 +537,12 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
   // deduction columns carry a literal leading minus sign in the mapped string itself -- not a
   // CSS-only ::before -- since the value should carry its own sign rather than relying on CSS to
   // imply arithmetic the data doesn't literally contain.
-  private formatCurrency(amount: number): string {
+  // en-US pinned: the app locale abbreviates September to "Sept", breaking the 3-letter month.
+  protected formatDate(value: string | null | undefined, format: string = DATE_FORMAT): string | null {
+    return this.datePipe.transform(value, format, undefined, 'en-US');
+  }
+
+  protected formatCurrency(amount: number): string {
     return this.currencyPipe.transform(amount, 'INR', 'symbol', '1.0-2') ?? String(amount);
   }
 
@@ -532,7 +551,7 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
     this.statementRows = (this.page?.entries ?? []).map((entry, i) => {
       const b = entry.legBreakdown;
       return {
-        period: `${this.datePipe.transform(entry.cyclePeriodStart, 'dd-MM-yyyy')} / ${this.datePipe.transform(entry.cyclePeriodEnd, 'dd-MM-yyyy')}`,
+        period: `${this.formatDate(entry.cyclePeriodStart, DATE_FORMAT)} – ${this.formatDate(entry.cyclePeriodEnd, DATE_FORMAT)}`,
         bflb: n(b?.bfLeft),
         bfrb: n(b?.bfRight),
         nlb: n(b?.newLeft),
@@ -555,7 +574,7 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
     if (this.activeIncomeType === 'ROYALTY') {
       const n = (v: number | undefined) => String(v ?? 0);
       this.statementRows = (this.page?.entries ?? []).map(entry => ({
-        date: `${this.datePipe.transform(entry.cyclePeriodStart, 'dd-MM-yyyy')} / ${this.datePipe.transform(entry.cyclePeriodEnd, 'dd-MM-yyyy')}`,
+        date: `${this.formatDate(entry.cyclePeriodStart, DATE_FORMAT)} – ${this.formatDate(entry.cyclePeriodEnd, DATE_FORMAT)}`,
         newLeft: n(entry.legBreakdown?.newLeft),
         newRight: n(entry.legBreakdown?.newRight),
         newMatching: n(entry.legBreakdown?.matchingBusiness),
@@ -565,7 +584,7 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
     }
     if (this.activeIncomeType === 'DIRECT') {
       this.statementRows = (this.page?.entries ?? []).map(entry => ({
-        dateTime: this.datePipe.transform(entry.createdAt, REWARD_DATE_FORMAT) ?? entry.createdAt,
+        dateTime: this.formatDate(entry.createdAt, DATE_TIME_FORMAT) ?? entry.createdAt,
         associateId: this.profile?.userId ?? '',
         name: this.profile?.name ?? '',
         amount: this.formatCurrency(entry.grossAmount),
@@ -575,7 +594,7 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
     }
     if (this.activeIncomeType === 'SPONSOR_MATCHING') {
       this.statementRows = (this.page?.entries ?? []).map(entry => ({
-        date: this.datePipe.transform(entry.createdAt, REWARD_DATE_FORMAT) ?? entry.createdAt,
+        date: this.formatDate(entry.createdAt, DATE_TIME_FORMAT) ?? entry.createdAt,
         memberId: entry.sponseeUserId ?? '',
         matchingIncome: entry.sponseeMatchingAmount == null ? '' : this.formatCurrency(entry.sponseeMatchingAmount),
         sponsorMatchingIncome: this.formatCurrency(entry.grossAmount)
@@ -584,11 +603,11 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
     }
     this.statementRows = (this.page?.entries ?? []).map(entry => ({
       incomeType: entry.incomeType,
-      cyclePeriod: `${this.datePipe.transform(entry.cyclePeriodStart, 'mediumDate')} – ${this.datePipe.transform(entry.cyclePeriodEnd, 'mediumDate')}`,
+      cyclePeriod: `${this.formatDate(entry.cyclePeriodStart, DATE_FORMAT)} – ${this.formatDate(entry.cyclePeriodEnd, DATE_FORMAT)}`,
       status: entry.status,
       grossAmount: this.formatCurrency(entry.grossAmount),
       sourceRef: entry.sourceRef ?? this.translate.instant('incomeStatement.noSourceRef'),
-      createdAt: this.datePipe.transform(entry.createdAt, 'medium') ?? entry.createdAt
+      createdAt: this.formatDate(entry.createdAt, DATE_TIME_FORMAT) ?? entry.createdAt
     }));
   }
 }

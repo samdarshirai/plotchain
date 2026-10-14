@@ -5,6 +5,8 @@ export interface AssociateLedgerPage {
   page: number;
   size: number;
   totalElements: number;
+  // Sum of gross amounts over the whole filtered set (not just this page).
+  totalGrossAmount: number;
 }
 
 export interface AssociateLedgerFilters {
