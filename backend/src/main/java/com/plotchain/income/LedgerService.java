@@ -147,14 +147,15 @@ public class LedgerService {
             legBreakdown);
     }
 
-    // MATCHING rows' sourceRef is the leg_volume.id (CycleService#creditMatchingIncome). Brought-forward
+    // MATCHING and ROYALTY rows' sourceRef is the leg_volume.id (CycleService#creditMatchingIncome/creditRoyalty). Brought-forward
     // is the previous cycle's carriedForward on the caller's own history, same walk as
     // LegVolumeRepository#totalBusiness; total = leg volume (already includes the carry-in).
     // Keyed by leg_volume.id; empty when the page has no MATCHING rows.
     private Map<UUID, AssociateLedgerEntryResponse.LegBreakdown> legBreakdowns(
             UUID associateId, List<LedgerEntry> entries) {
         boolean anyMatching = entries.stream()
-            .anyMatch(e -> e.getIncomeType() == IncomeType.MATCHING && e.getSourceRef() != null);
+            .anyMatch(e -> (e.getIncomeType() == IncomeType.MATCHING || e.getIncomeType() == IncomeType.ROYALTY)
+                && e.getSourceRef() != null);
         Map<UUID, AssociateLedgerEntryResponse.LegBreakdown> result = new HashMap<>();
         if (!anyMatching) return result;
 

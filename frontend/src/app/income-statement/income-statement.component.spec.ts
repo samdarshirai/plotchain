@@ -103,6 +103,8 @@ describe('IncomeStatementComponent', () => {
         columnNetAmount: 'Net Amount',
         columnSourceRef: 'Source Ref',
         columnCreatedAt: 'Created At',
+        columnNewLeftBusiness: 'New Left Business', columnNewRightBusiness: 'New Right Business',
+        columnNewMatchingBusiness: 'New Matching Business', columnRoyaltyBonus: 'Royalty Bonus',
         columnPeriod: 'Period', columnMatchingBusiness: 'Matching Business', columnMatchingIncome: 'Matching Income',
         columnReward: 'Reward', columnRequiredLeft: 'Required Left Business', columnRequiredRight: 'Required Right Business',
         columnAchievedDate: 'Achieved Date', statusNotAchieved: 'Not Achieved',
@@ -326,6 +328,29 @@ describe('IncomeStatementComponent', () => {
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
     expect(cells).toEqual(jasmine.arrayContaining(['02-06-2026 / 16-06-2026', '1000000', '500000', '35000']));
+  });
+
+  it('Royalty tab shows date, new left/right/matching business and royalty bonus', () => {
+    flushInitialRequests();
+    routeData$.next({ incomeType: 'ROYALTY' });
+    httpMock
+      .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('incomeType') === 'ROYALTY')
+      .flush({
+        entries: [{
+          ...sampleEntry, incomeType: 'ROYALTY', cyclePeriodStart: '2026-06-02', cyclePeriodEnd: '2026-06-16', grossAmount: 5000,
+          legBreakdown: { bfLeft: 1000000, bfRight: 0, newLeft: 0, newRight: 500000, totalLeft: 1000000, totalRight: 500000,
+            calcLeft: 500000, calcRight: 500000, matchingBusiness: 500000 }
+        }],
+        page: 0, size: 20, totalElements: 1
+      });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
+      'Date', 'New Left Business', 'New Right Business', 'New Matching Business', 'Royalty Bonus'
+    ]);
+    const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
+      .map((td: any) => td.textContent.trim());
+    expect(cells).toEqual(jasmine.arrayContaining(['02-06-2026 / 16-06-2026', '0', '500000']));
   });
 
   it('Reward tab lists every tier with designation, perk, remaining business and achieved-details table', () => {
