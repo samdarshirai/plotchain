@@ -345,7 +345,7 @@ describe('IncomeStatementComponent', () => {
     ]);
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
-    expect(cells).toEqual(jasmine.arrayContaining(['PC200', '₹35,000.00', '₹3,500.00']));
+    expect(cells).toEqual(jasmine.arrayContaining(['PC200', '₹35,000', '₹3,500']));
   });
 
   it('Reward tab lists every tier with designation, perk, remaining business and achieved-details table', () => {
