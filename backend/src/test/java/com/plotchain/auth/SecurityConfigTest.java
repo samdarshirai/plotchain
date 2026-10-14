@@ -1,7 +1,6 @@
 package com.plotchain.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.plotchain.announcement.AnnouncementRepository;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
@@ -63,7 +62,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SecurityConfigTest {
 
     @Autowired MockMvc mockMvc;
-    @Autowired AnnouncementRepository announcementRepository;
     @Autowired JwtService jwtService;
     @Autowired PasswordEncoder passwordEncoder;
 
@@ -1389,55 +1387,5 @@ class SecurityConfigTest {
                 .contentType("application/json")
                 .content("{\"decision\":\"VERIFIED\"}"))
             .andExpect(status().isForbidden());
-    }
-
-    // announcements unit 1 (Decision 4): POST /api/admin/announcements rides the blanket ADMIN write
-    // rule plus @PreAuthorize; no dedicated matcher. ADMIN reaches the real controller and the real
-    // (H2) announcement table and gets 201, proving the request passed the security layer. Every
-    // other role is 403 at the filter.
-    @ParameterizedTest
-    @EnumSource(AssociateRole.class)
-    void adminAnnouncementComposeIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/admin/announcements")
-                .header("Authorization", "Bearer " + tokenFor(role))
-                .contentType("application/json")
-                .content("{\"title\":\"Hello\",\"body\":\"World\"}"))
-            .andReturn();
-        try {
-            assertEquals(role == AssociateRole.ADMIN ? 201 : 403, result.getResponse().getStatus());
-        } finally {
-            // Real repository / shared in-memory H2: remove the committed row even if an assertion
-            // above fails, so it does not leak into other tests (announcements unit 2 feed tests).
-            if (result.getResponse().getStatus() == 201) {
-                String id = new ObjectMapper().readTree(result.getResponse().getContentAsString()).get("id").asText();
-                announcementRepository.deleteById(UUID.fromString(id));
-            }
-        }
-    }
-
-    // announcements unit 2 (Decision 4): GET /api/announcements has no matcher and falls to
-    // anyRequest().authenticated(), so EVERY role is 200. Real controller + real H2; the table's
-    // contents are not asserted (shared across test classes), only that the request is allowed
-    // and the page shape is returned.
-    @ParameterizedTest
-    @EnumSource(AssociateRole.class)
-    void announcementFeedIsReachableForEveryRole(AssociateRole role) throws Exception {
-        mockMvc.perform(get("/api/announcements")
-                .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.entries").isArray());
-    }
-
-    @Test
-    void announcementFeedIsUnauthorizedWithoutAToken() throws Exception {
-        mockMvc.perform(get("/api/announcements")).andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void adminAnnouncementComposeIsUnauthorizedWithoutAToken() throws Exception {
-        mockMvc.perform(post("/api/admin/announcements")
-                .contentType("application/json")
-                .content("{\"title\":\"Hello\",\"body\":\"World\"}"))
-            .andExpect(status().isUnauthorized());
     }
 }

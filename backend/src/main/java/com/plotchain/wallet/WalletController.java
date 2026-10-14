@@ -9,7 +9,7 @@ import java.util.UUID;
 // Wallet/Withdrawal unit 2 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
 // Decision 13, Flow "GET /api/associates/me/wallet"): a small dedicated endpoint, deliberately NOT
 // folded into DashboardController/DashboardService -- the dashboard is a large aggregate query
-// (rank progress, team snapshot, announcements, cycle income, leg volume) that a wallet/
+// (rank progress, team snapshot, cycle income, leg volume) that a wallet/
 // withdrawal-history screen shouldn't have to pull in full just to show a balance next to a
 // withdrawal list. DashboardService.getDashboard()'s own WalletSummary read path is untouched by
 // this controller -- both simply read WalletRepository independently via the same trivial

@@ -55,8 +55,7 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     labelKey: 'nav.categories.communication',
     icon: 'forum',
     items: [
-      { key: 'supportTickets', labelKey: 'settings.sections.supportTickets', path: '/settings/support-tickets' },
-      { key: 'announcements', labelKey: 'settings.sections.announcements', path: '/settings/announcements' }
+      { key: 'supportTickets', labelKey: 'settings.sections.supportTickets', path: '/settings/support-tickets' }
     ]
   },
   {

@@ -91,7 +91,6 @@ export const routes: Routes = [
   { path: 'support-tickets', redirectTo: 'messages', pathMatch: 'full' },
   { path: 'messages/new', loadComponent: () => import('./support-ticket-history/new-message.component').then(m => m.NewMessageComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'messages', loadComponent: () => import('./support-ticket-history/support-ticket-history.component').then(m => m.SupportTicketHistoryComponent), canActivate: [authGuard, associateOnlyGuard] },
-  { path: 'announcements', loadComponent: () => import('./announcements/announcement-feed.component').then(m => m.AnnouncementFeedComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
   { path: 'admin/sales/new', component: RecordSaleComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/dashboard', component: AdminDashboardComponent, canActivate: [authGuard, adminGuard, launchedModeGuard] },
@@ -131,7 +130,6 @@ export const routes: Routes = [
       { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } },
       { path: 'admin-stats', component: AdminStatsComponent, data: { sectionKey: 'adminStats' } },
       { path: 'support-tickets', loadComponent: () => import('./admin/admin-support-tickets/admin-support-tickets.component').then(m => m.AdminSupportTicketsComponent), data: { sectionKey: 'supportTickets' } },
-      { path: 'announcements', loadComponent: () => import('./admin/admin-announcements/admin-announcements.component').then(m => m.AdminAnnouncementsComponent), data: { sectionKey: 'announcements' } },
       // There is no settings hub screen any more -- every entry point (a header category tab, an
       // item pill) targets a specific screen. Bare /settings is only reachable from an old
       // bookmark, so it lands on the first category's first item, the same shape /setup uses.

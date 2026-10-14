@@ -40,7 +40,6 @@ The authoritative answer to "who sees what," organized by domain. This is what e
 | Compensation rules | Configure direct/matching/sponsor %, royalty table, reward thresholds (versioned) | View own rank progress / reward tiers (read-only) |
 | Cycle management | Trigger/monitor/re-run settlement cycle close | Own cycle-scoped reports only, no control over cycle state |
 | e-PIN | Generate/allocate batches, redeems on an associate's behalf | Own PIN/activation status, view-only |
-| Announcements | Compose/publish | Read-only feed |
 | Support tickets | Queue — logs and responds to tickets on any associate's behalf | Own ticket history, view-only |
 | Audit log | Full log, every actor and action | No access |
 | Digital ID card | No dedicated screen (not the persona this serves) | Own ID card only (photo, ID number, rank, QR) |
@@ -50,11 +49,11 @@ The authoritative answer to "who sees what," organized by domain. This is what e
 
 Every associate-initiated action beyond editing their own profile — recording a sale, placing a new associate (L/R), requesting a withdrawal, booking a plot, redeeming an e-PIN, raising a support ticket — is performed by Admin on the associate's behalf, not self-serve in the associate app. This is a deliberate v1 narrowing (matches how the manual back-office reference process already works), not an oversight; the associate app is a reporting/visibility surface plus profile management, full stop.
 
-**Admin (back-office, web)**: Company Dashboard, Associate Directory + profile drill-down + add new associate (choose parent + L/R), Tree Explorer (full org), Sales Register + record new sale (for any associate), Project & Plot Management + book a plot (against any associate), Cycle Management, Compensation Rules Config, Withdrawal/Payout Approval Queue + submit a withdrawal request (on an associate's behalf), KYC Review Queue, e-PIN Generation + redemption (on an associate's behalf), Announcement Composer, Support Ticket Queue + log a ticket (on an associate's behalf), Reports & Exports, Audit Log.
+**Admin (back-office, web)**: Company Dashboard, Associate Directory + profile drill-down + add new associate (choose parent + L/R), Tree Explorer (full org), Sales Register + record new sale (for any associate), Project & Plot Management + book a plot (against any associate), Cycle Management, Compensation Rules Config, Withdrawal/Payout Approval Queue + submit a withdrawal request (on an associate's behalf), KYC Review Queue, e-PIN Generation + redemption (on an associate's behalf), Support Ticket Queue + log a ticket (on an associate's behalf), Reports & Exports, Audit Log.
 
-**Associate (responsive web, view + own-profile-edit only)**: Dashboard/Home, My Tree (own subtree, view-only), Sales History (own + descendant, view-only), Income Statement (per income type, view-only), Payout/Withdrawal History (view-only), Rewards & Perks progress (view-only), Plot Bookings + EMI schedule (view-only), Digital ID Card (view-only), Support Ticket history (view-only), Announcements feed (view-only), Notifications (view-only), **Profile & Bank/KYC Details (the one editable screen)**.
+**Associate (responsive web, view + own-profile-edit only)**: Dashboard/Home, My Tree (own subtree, view-only), Sales History (own + descendant, view-only), Income Statement (per income type, view-only), Payout/Withdrawal History (view-only), Rewards & Perks progress (view-only), Plot Bookings + EMI schedule (view-only), Digital ID Card (view-only), Support Ticket history (view-only), Notifications (view-only), **Profile & Bank/KYC Details (the one editable screen)**.
 
-No screen is admin-family-conditional anymore (no "Finance sees this tab, Support doesn't") — a screen is either Admin-only, Associate-only, or (rare — e.g. Announcements feed content) the same data both can read. Within Associate-only screens, exactly one (Profile) accepts writes; the rest are pure reports.
+No screen is admin-family-conditional anymore (no "Finance sees this tab, Support doesn't") — a screen is either Admin-only, Associate-only, or the same data both can read. Within Associate-only screens, exactly one (Profile) accepts writes; the rest are pure reports.
 
 ## Out of scope / removed (not deferred)
 
@@ -91,7 +90,6 @@ Audited all 21 backend `@RestController` classes against the matrix. Status per 
 | Compensation rules | **Aligned (Admin)** / **Not built (Associate)** | `CompensationPlanController` (get/history/put) exists, admin-only, versioned. No associate-facing "my rank progress / reward tiers" endpoint — `rank` package is entity+repo only. |
 | Cycle management | **Not built** | `cycle` package is entity/repo/exception only — no controller to trigger, monitor, or view cycle state, for either role. |
 | e-PIN | **Not built** | No entity, no package, nothing — full stop. |
-| Announcements | **Not built** | `announcement` package is entity+repo only, no controller (neither compose nor read-feed). |
 | Support tickets | **Not built** | No package/entity/controller exists anywhere. |
 | Audit log | **Likely aligned, verify** | `SettingsAuditController`/`SettingsAuditService` exist and are referenced as the write path for config changes; confirm coverage extends to KYC decisions and suspend/reactivate actions when those controllers are touched during implementation, don't assume. |
 | Digital ID card | **Not built** | No endpoint (spec always described this as render-on-demand, not persisted — consistent with not having started). |

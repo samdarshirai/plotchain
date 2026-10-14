@@ -73,6 +73,5 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
       { key: 'viewMessages', labelKey: 'nav.viewMessages', path: '/messages' },
       { key: 'newMessage', labelKey: 'nav.newMessage', path: '/messages/new' }
     ]
-  },
-  { key: 'announcements', labelKey: 'nav.announcements', icon: 'campaign', path: '/announcements' }
+  }
 ];

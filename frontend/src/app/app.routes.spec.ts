@@ -69,15 +69,6 @@ describe('routes', () => {
     expect(route!.component).toBeUndefined();
   });
 
-  it('guards the announcements route with authGuard and associateOnlyGuard and lazy-loads it', () => {
-    const route = routes.find(r => r.path === 'announcements');
-    expect(route).toBeTruthy();
-    expect(route!.canActivate).toContain(authGuard);
-    expect(route!.canActivate).toContain(associateOnlyGuard);
-    expect(route!.loadComponent).toBeDefined();
-    expect(route!.component).toBeUndefined();
-  });
-
   it('guards the profile route with authGuard and associateOnlyGuard', () => {
     const route = routes.find(r => r.path === 'profile');
 
@@ -254,15 +245,6 @@ describe('routes', () => {
       expect(child!.component).toBeUndefined();
       expect(child!.loadComponent).toBeDefined();
       expect(child!.data).toEqual({ sectionKey: 'supportTickets' });
-    });
-
-    it('has a lazy announcements child stamped with sectionKey announcements', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
-      const child = settingsRoute!.children!.find(c => c.path === 'announcements');
-      expect(child).toBeDefined();
-      expect(child!.component).toBeUndefined();
-      expect(child!.loadComponent).toBeDefined();
-      expect(child!.data).toEqual({ sectionKey: 'announcements' });
     });
   });
 

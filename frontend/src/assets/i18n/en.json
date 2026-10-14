@@ -599,65 +599,6 @@
       "required": "This field is required."
     }
   },
-  "announcements": {
-    "composer": {
-      "eyebrow": "System",
-      "title": "Announcements",
-      "subtitle": "Publish a notice that every associate sees in their feed straight away. Below is everything you have published so far.",
-      "form": {
-        "heading": "New announcement",
-        "warnTitle": "Goes live immediately and can't be changed.",
-        "warnBody": "Every associate sees it as soon as you publish. There is no edit, delete or scheduling, so check the text first.",
-        "title": "Title",
-        "body": "Announcement",
-        "bodyPlaceholder": "Write what associates need to know.",
-        "publish": "Publish announcement",
-        "publishing": "Publishing…",
-        "clear": "Clear"
-      },
-      "list": {
-        "heading": "Published",
-        "loading": "Loading announcements",
-        "loadingCount": "Loading…",
-        "count": "{{count}} announcements",
-        "countOne": "{{count}} announcement",
-        "pagination": "Pagination",
-        "pager": "Page {{page}} of {{totalPages}} · {{count}} announcements",
-        "previous": "Previous",
-        "next": "Next",
-        "showFull": "Show full text",
-        "showLess": "Show less",
-        "published": "Published {{date}}",
-        "justPublished": "Just published",
-        "empty": {
-          "title": "Nothing published yet",
-          "body": "Your first announcement will appear here, newest first, and in every associate's feed."
-        }
-      },
-      "ok": { "published": "Announcement published. \"{{title}}\" is now live in every associate's feed." },
-      "err": {
-        "titleRequired": "Add a title.",
-        "titleTooLong": "Title must be 300 characters or fewer. Shorten it by {{over}}.",
-        "bodyRequired": "Add the announcement text.",
-        "publish": "The announcement wasn't published. Check your connection and try again. Nothing was sent to associates.",
-        "load": "The published list didn't load. Check your connection and try again. You can still publish a new announcement.",
-        "retry": "Retry"
-      }
-    },
-    "feed": {
-      "eyebrow": "Associate · Announcements",
-      "title": "Announcements",
-      "subtitle": "Company updates",
-      "loading": "Loading announcements",
-      "loadError": "Couldn't load announcements. Check your connection and try again.",
-      "retryAction": "Retry",
-      "emptyTitle": "No announcements yet",
-      "emptyBody": "When the company posts an update, it will appear here.",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
-      "pageIndicator": "Page {{page}} of {{totalPages}}"
-    }
-  },
   "payoutHistory": {
     "title": "Payout History",
     "subtitle": "Your wallet balance and withdrawal request history.",
@@ -720,7 +661,6 @@
     "messages": "Messages",
     "viewMessages": "View Messages",
     "newMessage": "New Message",
-    "announcements": "Announcements",
     "categories": {
       "setup": "Setup",
       "network": "Genealogy",
@@ -1784,8 +1724,7 @@
       "payoutApproval": "Payout Approval",
       "projectsPlots": "Projects & Plots",
       "bookingsEmi": "Bookings & EMI",
-      "supportTickets": "Support Tickets",
-      "announcements": "Announcements"
+      "supportTickets": "Support Tickets"
     },
     "auditLog": {
       "sectionFilterLabel": "Section",

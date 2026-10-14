@@ -71,7 +71,6 @@ Land-selling companies (starting with a Patna-based reference client) recruit a 
    - Withdrawal status tracking
 10. **Digital ID Card** *(found in video)* — associate ID card with photo, ID number, rank, QR code (likely encodes referral/placement link)
 11. **Support tickets** *(found in video)* — raise/track a support request
-12. **Announcements feed** *(found in video)* — company-pushed updates
 13. Messaging (inbox seen in nav)
 14. Language toggle (English/Hindi) — cross-cutting, not a screen
 
@@ -89,7 +88,6 @@ Land-selling companies (starting with a Patna-based reference client) recruit a 
 10. Ledger/payout approval queue, including **withdrawal request approvals** — new, matching the associate wallet feature
 11. KYC review queue
 12. Support ticket queue — **new**
-13. Announcement composer — **new**
 14. Reports & exports (TDS summary, admin-charge revenue, rank distribution)
 15. Audit log
 
@@ -115,7 +113,6 @@ New/updated entities based on video findings:
 - **PlotBooking** (id, plot_id, associate_id/buyer, booking_date, total_price, paid_amount, rest_amount, EMI schedule ref)
 - **EMISchedule** / **EMIPayment** (booking_id, installment_no, due_date, amount, paid_date, status)
 - **SupportTicket** (id, associate_id, subject, status, assigned_to, thread)
-- **Announcement** (id, title, body, published_at, audience) *(no `tenant_id` — see `docs/superpowers/specs/2026-07-29-remove-tenant-id-design.md`)*
 - **IDCard** — likely generated on-demand (render, don't persist) from Associate + Rank + QR data
 
 (All prior entities — Associate, Sale, LedgerEntry, Cycle, LegVolume — carry over as previously specified.)

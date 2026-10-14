@@ -17,7 +17,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
       ['ledgerRegister', 'salesRegister', 'cycleManagement', 'epinRegister', 'payoutApproval'],
       ['projectsPlots', 'bookingsEmi'],
-      ['supportTickets', 'announcements'],
+      ['supportTickets'],
       ['companyProfile', 'branding', 'compensation', 'paymentsKyc'],
       ['auditLog', 'adminStats']
     ]);
@@ -37,10 +37,6 @@ describe('ADMIN_NAV_CATEGORIES', () => {
 describe('findNavCategoryForUrl', () => {
   it('resolvesTheSupportTicketsScreenToTheCommunicationCategory', () => {
     expect(findNavCategoryForUrl('/settings/support-tickets')?.key).toBe('communication');
-  });
-
-  it('resolvesTheAnnouncementsScreenToTheCommunicationCategory', () => {
-    expect(findNavCategoryForUrl('/settings/announcements')?.key).toBe('communication');
   });
 
   it('resolvesTheProjectsPlotsScreenToTheInventoryCategory', () => {
