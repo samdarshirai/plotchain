@@ -239,6 +239,30 @@ class LedgerServiceTest {
         assertThat(b.matchingBusiness()).isEqualByComparingTo("500000");
     }
 
+    @Test
+    void myListAddsLegBreakdownToRoyaltyRowsToo() {
+        UUID associateId = UUID.randomUUID();
+        UUID c1 = UUID.randomUUID();
+        com.plotchain.legvolume.LegVolume lv1 = new com.plotchain.legvolume.LegVolume(
+            UUID.randomUUID(), associateId, c1, new BigDecimal("2000000"), new BigDecimal("1000000"),
+            new BigDecimal("1000000"), BigDecimal.ZERO);
+        LedgerEntry e1 = newEntry(UUID.randomUUID(), associateId, c1, lv1.getId());
+        e1.setIncomeType(IncomeType.ROYALTY);
+
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(e1), PageRequest.of(0, 20), 1));
+        when(cycleRepository.findAllById(List.of(c1)))
+            .thenReturn(List.of(newCycle(c1, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
+        when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId))
+            .thenReturn(List.of(lv1));
+
+        var b = service.myList(associateId, null, null, null, 0, 20).entries().get(0).legBreakdown();
+
+        assertThat(b.newLeft()).isEqualByComparingTo("2000000");
+        assertThat(b.newRight()).isEqualByComparingTo("1000000");
+        assertThat(b.matchingBusiness()).isEqualByComparingTo("1000000");
+    }
+
     // Proves associateId is always passed through non-null (the caller's own id) alongside the
     // other three filters -- this is the "own entries only" guarantee at the service layer,
     // matching Decision 3 (contrast with Sales' self+downline query, which this endpoint does

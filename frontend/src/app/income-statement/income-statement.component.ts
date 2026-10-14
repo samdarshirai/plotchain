@@ -202,6 +202,10 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       this.buildDirectColumns();
       return;
     }
+    if (this.activeIncomeType === 'ROYALTY') {
+      this.buildRoyaltyColumns();
+      return;
+    }
     this.translate
       .get([
         'incomeStatement.columnIncomeType',
@@ -227,6 +231,17 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   private buildDirectColumns(): void {
     const keys = ['DateTime', 'AssociateId', 'AssociateName', 'Amount', 'DirectIncome'];
     const rowKeys = ['dateTime', 'associateId', 'name', 'amount', 'directIncome'];
+    this.translate
+      .get(keys.map(k => 'incomeStatement.column' + k))
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(t => {
+        this.statementColumns = rowKeys.map((key, i) => ({ key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const }));
+      });
+  }
+
+  private buildRoyaltyColumns(): void {
+    const keys = ['Date', 'NewLeftBusiness', 'NewRightBusiness', 'NewMatchingBusiness', 'RoyaltyBonus'];
+    const rowKeys = ['date', 'newLeft', 'newRight', 'newMatching', 'royaltyBonus'];
     this.translate
       .get(keys.map(k => 'incomeStatement.column' + k))
       .pipe(takeUntil(this.destroyed$))
@@ -408,6 +423,17 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   private updateTableRows(): void {
     if (this.activeIncomeType === 'MATCHING') {
       this.updateMatchingRows();
+      return;
+    }
+    if (this.activeIncomeType === 'ROYALTY') {
+      const n = (v: number | undefined) => String(v ?? 0);
+      this.statementRows = (this.page?.entries ?? []).map(entry => ({
+        date: `${this.datePipe.transform(entry.cyclePeriodStart, 'dd-MM-yyyy')} / ${this.datePipe.transform(entry.cyclePeriodEnd, 'dd-MM-yyyy')}`,
+        newLeft: n(entry.legBreakdown?.newLeft),
+        newRight: n(entry.legBreakdown?.newRight),
+        newMatching: n(entry.legBreakdown?.matchingBusiness),
+        royaltyBonus: this.formatCurrency(entry.grossAmount)
+      }));
       return;
     }
     if (this.activeIncomeType === 'DIRECT') {
