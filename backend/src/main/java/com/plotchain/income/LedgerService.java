@@ -83,10 +83,28 @@ public class LedgerService {
 
         Map<UUID, AssociateLedgerEntryResponse.LegBreakdown> breakdowns = legBreakdowns(associateId, content);
 
+        Map<UUID, LedgerEntry> sponseeEntries = sponseeMatchingEntries(content);
+        Map<UUID, Associate> sponsees = associatesById(List.copyOf(sponseeEntries.values()));
+
         List<AssociateLedgerEntryResponse> entries = content.stream()
-            .map(e -> toAssociateResponse(e, cyclesById.get(e.getCycleId()), breakdowns.get(e.getSourceRef())))
+            .map(e -> {
+                LedgerEntry src = sponseeEntries.get(e.getSourceRef());
+                Associate sponsee = src == null ? null : sponsees.get(src.getAssociateId());
+                return toAssociateResponse(e, cyclesById.get(e.getCycleId()), breakdowns.get(e.getSourceRef()),
+                    sponsee == null ? null : sponsee.getUserId(), src == null ? null : src.getGrossAmount());
+            })
             .toList();
         return new AssociateLedgerPageResponse(entries, page, size, result.getTotalElements());
+    }
+
+    // SPONSOR_MATCHING rows' sourceRef is the sponsee's MATCHING ledger entry id (CycleService#creditSponsorMatching).
+    // Keyed by that id; empty when the page has no SPONSOR_MATCHING rows.
+    private Map<UUID, LedgerEntry> sponseeMatchingEntries(List<LedgerEntry> entries) {
+        List<UUID> ids = entries.stream()
+            .filter(e -> e.getIncomeType() == IncomeType.SPONSOR_MATCHING && e.getSourceRef() != null)
+            .map(LedgerEntry::getSourceRef).distinct().toList();
+        return ledgerEntryRepository.findAllById(ids).stream()
+            .collect(Collectors.toMap(LedgerEntry::getId, l -> l));
     }
 
     // Shared with (a follow-up unit's) GET /api/associates/me/ledger: every ledger row needs its
@@ -130,7 +148,8 @@ public class LedgerService {
     // Same "leave field null on a lookup miss" behavior as toAdminResponse above (Flow step 6)
     // -- a read-only view, not a strict-consistency write path.
     private AssociateLedgerEntryResponse toAssociateResponse(
-            LedgerEntry entry, Cycle cycle, AssociateLedgerEntryResponse.LegBreakdown legBreakdown) {
+            LedgerEntry entry, Cycle cycle, AssociateLedgerEntryResponse.LegBreakdown legBreakdown,
+            String sponseeUserId, BigDecimal sponseeMatchingAmount) {
         return new AssociateLedgerEntryResponse(
             entry.getId(),
             entry.getIncomeType(),
@@ -144,7 +163,9 @@ public class LedgerService {
             entry.getStatus(),
             entry.getSourceRef(),
             entry.getCreatedAt(),
-            legBreakdown);
+            legBreakdown,
+            sponseeUserId,
+            sponseeMatchingAmount);
     }
 
     // MATCHING rows' sourceRef is the leg_volume.id (CycleService#creditMatchingIncome). Brought-forward

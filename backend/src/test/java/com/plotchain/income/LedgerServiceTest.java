@@ -209,6 +209,29 @@ class LedgerServiceTest {
     }
 
     @Test
+    void myListAddsSponseeUserIdAndMatchingAmountToSponsorMatchingRows() {
+        UUID associateId = UUID.randomUUID(), sponseeId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        LedgerEntry matching = newEntry(UUID.randomUUID(), sponseeId, cycleId, UUID.randomUUID());
+        matching.setIncomeType(IncomeType.MATCHING);
+        LedgerEntry sm = newEntry(UUID.randomUUID(), associateId, cycleId, matching.getId());
+        sm.setIncomeType(IncomeType.SPONSOR_MATCHING);
+
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(sm), PageRequest.of(0, 20), 1));
+        when(cycleRepository.findAllById(List.of(cycleId)))
+            .thenReturn(List.of(newCycle(cycleId, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
+        when(ledgerEntryRepository.findAllById(List.of(matching.getId()))).thenReturn(List.of(matching));
+        when(associateRepository.findAllById(List.of(sponseeId)))
+            .thenReturn(List.of(newAssociate(sponseeId, "PC200", "Sponsee")));
+
+        AssociateLedgerEntryResponse row = service.myList(associateId, null, null, null, 0, 20).entries().get(0);
+
+        assertThat(row.sponseeUserId()).isEqualTo("PC200");
+        assertThat(row.sponseeMatchingAmount()).isEqualByComparingTo("100.00");
+    }
+
+    @Test
     void myListAddsLegBreakdownToMatchingRowsUsingPriorCyclesCarryAsBroughtForward() {
         UUID associateId = UUID.randomUUID();
         UUID c1 = UUID.randomUUID(), c2 = UUID.randomUUID();
