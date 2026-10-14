@@ -34,4 +34,6 @@ export interface AssociateLedgerEntry {
   sourceRef: string | null;
   createdAt: string;
   legBreakdown?: LegBreakdown | null;
+  sponseeUserId?: string | null;
+  sponseeMatchingAmount?: number | null;
 }

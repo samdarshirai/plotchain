@@ -206,6 +206,10 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       this.buildRoyaltyColumns();
       return;
     }
+    if (this.activeIncomeType === 'SPONSOR_MATCHING') {
+      this.buildSponsorMatchingColumns();
+      return;
+    }
     this.translate
       .get([
         'incomeStatement.columnIncomeType',
@@ -242,6 +246,17 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   private buildRoyaltyColumns(): void {
     const keys = ['Date', 'NewLeftBusiness', 'NewRightBusiness', 'NewMatchingBusiness', 'RoyaltyBonus'];
     const rowKeys = ['date', 'newLeft', 'newRight', 'newMatching', 'royaltyBonus'];
+    this.translate
+      .get(keys.map(k => 'incomeStatement.column' + k))
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(t => {
+        this.statementColumns = rowKeys.map((key, i) => ({ key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const }));
+      });
+  }
+
+  private buildSponsorMatchingColumns(): void {
+    const keys = ['Date', 'MemberId', 'MatchingIncome', 'SponsorMatchingIncome'];
+    const rowKeys = ['date', 'memberId', 'matchingIncome', 'sponsorMatchingIncome'];
     this.translate
       .get(keys.map(k => 'incomeStatement.column' + k))
       .pipe(takeUntil(this.destroyed$))
@@ -443,6 +458,15 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         name: this.profile?.name ?? '',
         amount: this.formatCurrency(entry.grossAmount),
         directIncome: this.formatCurrency(entry.grossAmount)
+      }));
+      return;
+    }
+    if (this.activeIncomeType === 'SPONSOR_MATCHING') {
+      this.statementRows = (this.page?.entries ?? []).map(entry => ({
+        date: this.datePipe.transform(entry.createdAt, REWARD_DATE_FORMAT) ?? entry.createdAt,
+        memberId: entry.sponseeUserId ?? '',
+        matchingIncome: entry.sponseeMatchingAmount == null ? '' : this.formatCurrency(entry.sponseeMatchingAmount),
+        sponsorMatchingIncome: this.formatCurrency(entry.grossAmount)
       }));
       return;
     }

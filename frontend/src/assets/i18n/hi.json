@@ -526,7 +526,9 @@
     "achievedDetailsTitle": "प्राप्त पुरस्कार विवरण",
     "achievedEmptyState": "अभी तक कोई पुरस्कार प्राप्त नहीं हुआ।",
     "statusNotAchieved": "Not Achieved",
-    "columnMatchingIncome": "Matching Income"
+    "columnMatchingIncome": "Matching Income",
+    "columnMemberId": "Member ID",
+    "columnSponsorMatchingIncome": "Sponsor Matching Income"
   },
   "supportTickets": {
     "eyebrow": "Associate · Messages",

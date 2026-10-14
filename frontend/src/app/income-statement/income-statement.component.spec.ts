@@ -106,6 +106,7 @@ describe('IncomeStatementComponent', () => {
         columnNewLeftBusiness: 'New Left Business', columnNewRightBusiness: 'New Right Business',
         columnNewMatchingBusiness: 'New Matching Business', columnRoyaltyBonus: 'Royalty Bonus',
         columnPeriod: 'Period', columnMatchingBusiness: 'Matching Business', columnMatchingIncome: 'Matching Income',
+        columnMemberId: 'Member ID', columnSponsorMatchingIncome: 'Sponsor Matching Income',
         columnReward: 'Reward', columnRequiredLeft: 'Required Left Business', columnRequiredRight: 'Required Right Business',
         columnAchievedDate: 'Achieved Date', statusNotAchieved: 'Not Achieved',
         columnDesignation: 'Designation', columnDate: 'Date', columnPayStatus: 'Pay Status',
@@ -351,6 +352,25 @@ describe('IncomeStatementComponent', () => {
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
     expect(cells).toEqual(jasmine.arrayContaining(['02-06-2026 / 16-06-2026', '0', '500000']));
+  });
+
+  it('Sponsor Matching tab shows Date, Member ID, Matching Income and Sponsor Matching Income', () => {
+    flushInitialRequests();
+    routeData$.next({ incomeType: 'SPONSOR_MATCHING' });
+    httpMock
+      .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('incomeType') === 'SPONSOR_MATCHING')
+      .flush({
+        entries: [{ ...sampleEntry, incomeType: 'SPONSOR_MATCHING', grossAmount: 3500, sponseeUserId: 'PC200', sponseeMatchingAmount: 35000 }],
+        page: 0, size: 20, totalElements: 1
+      });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
+      'Date', 'Member ID', 'Matching Income', 'Sponsor Matching Income'
+    ]);
+    const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
+      .map((td: any) => td.textContent.trim());
+    expect(cells).toEqual(jasmine.arrayContaining(['PC200', '₹35,000', '₹3,500']));
   });
 
   it('Reward tab lists every tier with designation, perk, remaining business and achieved-details table', () => {

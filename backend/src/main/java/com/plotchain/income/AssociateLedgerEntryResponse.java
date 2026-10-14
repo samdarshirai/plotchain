@@ -27,7 +27,10 @@ public record AssociateLedgerEntryResponse(
     LedgerEntryStatus status,
     UUID sourceRef,
     Instant createdAt,
-    LegBreakdown legBreakdown) {
+    LegBreakdown legBreakdown,
+    // SPONSOR_MATCHING rows only (null otherwise): the sponsee whose MATCHING entry (= sourceRef) earned this credit.
+    String sponseeUserId,
+    BigDecimal sponseeMatchingAmount) {
 
     // MATCHING rows only (null otherwise). calc* == matchingBusiness == min(total left, total right).
     public record LegBreakdown(
