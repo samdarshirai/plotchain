@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { AfterViewChecked, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -7,6 +7,7 @@ import { takeUntil } from 'rxjs/operators';
 import { AssociateProfileService } from '../profile-kyc/associate-profile.service';
 import { AssociateProfileResponse } from '../profile-kyc/models/associate-profile.model';
 import { IncomeStatementService } from './income-statement.service';
+import { RewardTierRow } from './models/reward-tier-row.model';
 import { AssociateLedgerPage, AssociateLedgerFilters } from './models/associate-ledger-page.model';
 import { TabBarComponent, TabDefinition } from '../shared/components/tab-bar/tab-bar.component';
 import { EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
@@ -35,6 +36,33 @@ export interface CycleOption {
 
 // Matches the reference rewards screen: 31-05-2026 16:36:01
 const REWARD_DATE_FORMAT = 'dd-MM-yyyy HH:mm:ss';
+// Reward Statement design: "12 Aug 2026"
+const REWARD_DAY_FORMAT = 'dd MMM yyyy';
+
+interface RewardTierView {
+  n: number;
+  designation: string;
+  matching: string;
+  reward: string;
+  leftPct: number;
+  rightPct: number;
+  leftLevel: string;
+  rightLevel: string;
+  leftText: string;
+  rightText: string;
+  state: 'achieved' | 'progress' | 'pending';
+  statusKey: string;
+}
+
+interface RewardAchievedView {
+  date: string;
+  designation: string;
+  reward: string;
+  paid: boolean;
+  payStatus: string;
+  paymentDate: string;
+  remarks: string;
+}
 
 @Component({
   selector: 'app-income-statement',
@@ -43,13 +71,15 @@ const REWARD_DATE_FORMAT = 'dd-MM-yyyy HH:mm:ss';
   providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="income-statement" [class.income-statement--matching]="activeIncomeType === 'MATCHING'" [class.income-statement--reward]="activeIncomeType === 'REWARD'" [class.income-statement--direct]="activeIncomeType === 'DIRECT'">
-      <div class="income-statement__intro">
-        <h1 class="income-statement__title">{{ 'incomeStatement.title' | translate }}</h1>
-        <p class="income-statement__subtitle">{{ 'incomeStatement.subtitle' | translate }}</p>
-      </div>
+      <div class="income-statement__head">
+        <div class="income-statement__intro">
+          <h1 class="income-statement__title">{{ 'incomeStatement.title' | translate }}</h1>
+          <p class="income-statement__subtitle">{{ 'incomeStatement.subtitle' | translate }}</p>
+        </div>
 
-      <div class="income-statement__tabs">
-        <app-tab-bar [tabs]="tabs" [activeTabId]="activeIncomeType" (tabChange)="onTabChange($event)"></app-tab-bar>
+        <div class="income-statement__tabs">
+          <app-tab-bar [tabs]="tabs" [activeTabId]="activeIncomeType" (tabChange)="onTabChange($event)"></app-tab-bar>
+        </div>
       </div>
 
       <dl class="income-statement__legend" *ngIf="activeIncomeType === 'MATCHING'">
@@ -86,7 +116,7 @@ const REWARD_DATE_FORMAT = 'dd-MM-yyyy HH:mm:ss';
         {{ 'incomeStatement.loadError' | translate }}
       </app-inline-banner>
 
-      <div class="income-statement__table">
+      <div class="income-statement__table" *ngIf="activeIncomeType !== 'REWARD'">
         <app-editable-table
           [readOnly]="true"
           [columns]="statementColumns"
@@ -96,14 +126,67 @@ const REWARD_DATE_FORMAT = 'dd-MM-yyyy HH:mm:ss';
       </div>
 
       <ng-container *ngIf="activeIncomeType === 'REWARD'">
-        <h2 class="income-statement__subtitle-heading">{{ 'incomeStatement.achievedDetailsTitle' | translate }}</h2>
-        <div class="income-statement__table income-statement__table--achieved">
-          <app-editable-table
-            [readOnly]="true"
-            [columns]="achievedColumns"
-            [rows]="achievedRows"
-            [emptyStateLabel]="'incomeStatement.achievedEmptyState' | translate"
-          ></app-editable-table>
+        <div class="income-statement__reward-cards">
+          <div class="income-statement__reward-seal">
+            <span class="income-statement__reward-eyebrow"><i></i>{{ 'incomeStatement.currentRank' | translate }}<i></i></span>
+            <span class="income-statement__reward-rank">{{ currentRank }}</span>
+          </div>
+          <div class="income-statement__reward-card" *ngFor="let c of rewardCards">
+            <span class="income-statement__reward-card-label">{{ c.labelKey | translate }}</span>
+            <span class="income-statement__reward-card-value">{{ c.value }}</span>
+          </div>
+        </div>
+
+        <div class="income-statement__reward-panel">
+          <div class="income-statement__reward-row income-statement__reward-row--head">
+            <span>#</span>
+            <span>{{ 'incomeStatement.columnDesignation' | translate }}</span>
+            <span>{{ 'incomeStatement.columnReward' | translate }}</span>
+            <span>{{ 'incomeStatement.leftLeg' | translate }}</span>
+            <span>{{ 'incomeStatement.rightLeg' | translate }}</span>
+            <span>{{ 'incomeStatement.columnStatus' | translate }}</span>
+          </div>
+          <div class="income-statement__reward-scroll" #rewardScroll>
+            <div class="income-statement__reward-row" *ngFor="let t of rewardTierViews" [class.income-statement__reward-row--current]="t.state === 'progress'">
+              <span class="income-statement__reward-index">{{ t.n }}</span>
+              <div class="income-statement__reward-name">
+                <strong>{{ t.designation }}</strong>
+                <small>{{ t.matching }} {{ 'incomeStatement.matchingSuffix' | translate }}</small>
+              </div>
+              <span>{{ t.reward }}</span>
+              <div class="income-statement__reward-leg">
+                <div class="income-statement__reward-bar"><div [style.width.%]="t.leftPct" [attr.data-level]="t.leftLevel"></div></div>
+                <small [attr.data-level]="t.leftLevel">{{ t.leftText }}</small>
+              </div>
+              <div class="income-statement__reward-leg">
+                <div class="income-statement__reward-bar"><div [style.width.%]="t.rightPct" [attr.data-level]="t.rightLevel"></div></div>
+                <small [attr.data-level]="t.rightLevel">{{ t.rightText }}</small>
+              </div>
+              <span><span class="income-statement__reward-chip" [attr.data-state]="t.state">{{ t.statusKey | translate }}</span></span>
+            </div>
+          </div>
+          <div class="income-statement__reward-foot">{{ 'incomeStatement.scrollAllLevels' | translate: { count: rewardTierViews.length } }}</div>
+        </div>
+
+        <h2 class="income-statement__reward-heading">{{ 'incomeStatement.achievedRewardsTitle' | translate }}</h2>
+        <div class="income-statement__reward-panel">
+          <div class="income-statement__reward-row income-statement__reward-row--achieved income-statement__reward-row--head">
+            <span>{{ 'incomeStatement.columnAchieved' | translate }}</span>
+            <span>{{ 'incomeStatement.columnDesignation' | translate }}</span>
+            <span>{{ 'incomeStatement.columnReward' | translate }}</span>
+            <span>{{ 'incomeStatement.columnPayStatus' | translate }}</span>
+            <span>{{ 'incomeStatement.columnPaymentDate' | translate }}</span>
+            <span>{{ 'incomeStatement.columnRemarks' | translate }}</span>
+          </div>
+          <div class="income-statement__reward-row income-statement__reward-row--achieved" *ngFor="let a of achievedViews">
+            <span>{{ a.date }}</span>
+            <strong>{{ a.designation }}</strong>
+            <span>{{ a.reward }}</span>
+            <span><span class="income-statement__reward-chip" [attr.data-state]="a.paid ? 'achieved' : 'pending'">{{ a.payStatus }}</span></span>
+            <span>{{ a.paymentDate }}</span>
+            <span class="income-statement__reward-remarks">{{ a.remarks }}</span>
+          </div>
+          <div class="income-statement__reward-foot" *ngIf="!achievedViews.length">{{ 'incomeStatement.achievedEmptyState' | translate }}</div>
         </div>
       </ng-container>
 
@@ -121,7 +204,7 @@ const REWARD_DATE_FORMAT = 'dd-MM-yyyy HH:mm:ss';
     </div>
   `
 })
-export class IncomeStatementComponent implements OnInit, OnDestroy {
+export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDestroy {
   private incomeStatementService = inject(IncomeStatementService);
   private profileService = inject(AssociateProfileService);
   private profile: AssociateProfileResponse | null = null;
@@ -140,8 +223,13 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   activeIncomeType = 'ALL';
   statementColumns: EditableTableColumn[] = [];
   statementRows: Record<string, string>[] = [];
-  achievedColumns: EditableTableColumn[] = [];
-  achievedRows: Record<string, string>[] = [];
+  @ViewChild('rewardScroll') private rewardScroll?: ElementRef<HTMLElement>;
+  // Row index to scroll to once the tier rows are in the DOM (design: last achieved tier on top).
+  private rewardScrollTo: number | null = null;
+  currentRank = '—';
+  rewardCards: { labelKey: string; value: string }[] = [];
+  rewardTierViews: RewardTierView[] = [];
+  achievedViews: RewardAchievedView[] = [];
   private cycleId = '';
   private status = '';
 
@@ -184,6 +272,15 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     });
   }
 
+  ngAfterViewChecked(): void {
+    const el = this.rewardScroll?.nativeElement;
+    const row = el?.firstElementChild as HTMLElement | null;
+    if (this.rewardScrollTo !== null && el && row) {
+      el.scrollTop = this.rewardScrollTo * row.offsetHeight;
+      this.rewardScrollTo = null;
+    }
+  }
+
   ngOnDestroy(): void {
     this.destroyed$.next();
     this.destroyed$.complete();
@@ -195,7 +292,6 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       return;
     }
     if (this.activeIncomeType === 'REWARD') {
-      this.buildRewardColumns();
       return;
     }
     if (this.activeIncomeType === 'DIRECT') {
@@ -265,24 +361,13 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       });
   }
 
-  private buildRewardColumns(): void {
-    const cols = ['columnMatchingBusiness', 'columnDesignation', 'columnReward', 'columnRequiredLeft', 'columnRequiredRight', 'columnStatus', 'columnAchievedDate'];
-    const achievedCols = ['columnDate', 'columnReward', 'columnDesignation', 'columnPayStatus', 'columnPaymentDate', 'columnRemarks'];
-    const keys = [...cols, ...achievedCols].map(k => 'incomeStatement.' + k);
-    this.translate
-      .get(keys)
-      .pipe(takeUntil(this.destroyed$))
-      .subscribe(t => {
-        const label = (k: string) => t['incomeStatement.' + k];
-        const rowKeys = ['matchingBusiness', 'designation', 'reward', 'requiredLeft', 'requiredRight', 'status', 'achievedDate'];
-        this.statementColumns = rowKeys.map((key, i) => ({ key, label: label(cols[i]), type: 'text' as const }));
-        const achievedKeys = ['date', 'reward', 'designation', 'payStatus', 'paymentDate', 'remarks'];
-        this.achievedColumns = achievedKeys.map((key, i) => ({ key, label: label(achievedCols[i]), type: 'text' as const }));
-      });
-  }
-
   private rewardText(amount: number, perk: string | null): string {
     return [this.formatCurrency(amount), perk].filter(Boolean).join(' ');
+  }
+
+  // Compact INR for bar labels: 1,500,000 -> "₹15 L", 120,000,000 -> "₹12 Cr".
+  private shortInr(n: number): string {
+    return n >= 1e7 ? `₹${+(n / 1e7).toFixed(2)} Cr` : `₹${+(n / 1e5).toFixed(2)} L`;
   }
 
   private loadRewardTiers(): void {
@@ -290,30 +375,57 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     this.page = null;
     this.incomeStatementService.rewardTiers().subscribe({
       next: tiers => {
-        const pending = this.translate.instant('incomeStatement.statusPending');
-        const achieved = this.translate.instant('incomeStatement.statusAchieved');
-        this.statementRows = tiers.map(t => ({
-          matchingBusiness: this.formatCurrency(t.matchingBusiness),
-          designation: t.designation ?? '—',
-          reward: this.rewardText(t.reward, t.perkDescription),
-          requiredLeft: this.formatCurrency(t.requiredLeftBusiness),
-          requiredRight: this.formatCurrency(t.requiredRightBusiness),
-          status: t.status ? achieved : pending,
-          achievedDate: t.achievedDate ? (this.datePipe.transform(t.achievedDate, REWARD_DATE_FORMAT) ?? t.achievedDate) : '—'
-        }));
+        // API only exposes remaining volume per leg (max(0, threshold - total)), so recover the
+        // total from the first tier still short on that leg; if none, the leg already covers the
+        // top tier -- use its threshold as a lower bound.
+        const top = tiers.length ? Math.max(...tiers.map(t => t.matchingBusiness)) : 0;
+        const legTotal = (req: (t: RewardTierRow) => number): number => {
+          const short = tiers.find(t => req(t) > 0);
+          return short ? short.matchingBusiness - req(short) : top;
+        };
+        const left = legTotal(t => t.requiredLeftBusiness);
+        const right = legTotal(t => t.requiredRightBusiness);
+        const level = (pct: number) => (pct >= 100 ? 'ok' : pct >= 50 ? 'warn' : 'low');
+        const firstOpen = tiers.findIndex(t => !t.status);
+        this.rewardTierViews = tiers.map((t, i) => {
+          const leftPct = Math.min(100, (left / t.matchingBusiness) * 100);
+          const rightPct = Math.min(100, (right / t.matchingBusiness) * 100);
+          const state = t.status ? 'achieved' : i === firstOpen ? 'progress' : 'pending';
+          return {
+            n: t.tierLevel,
+            designation: t.designation ?? '—',
+            matching: this.formatCurrency(t.matchingBusiness),
+            reward: this.rewardText(t.reward, t.perkDescription),
+            leftPct,
+            rightPct,
+            leftLevel: level(leftPct),
+            rightLevel: level(rightPct),
+            leftText: `${this.shortInr(Math.min(left, t.matchingBusiness))} / ${this.shortInr(t.matchingBusiness)}`,
+            rightText: `${this.shortInr(Math.min(right, t.matchingBusiness))} / ${this.shortInr(t.matchingBusiness)}`,
+            state,
+            statusKey: state === 'achieved' ? 'incomeStatement.statusAchieved' : state === 'progress' ? 'incomeStatement.statusInProgress' : 'incomeStatement.statusPending'
+          };
+        });
+        const achievedTiers = tiers.filter(t => t.status);
+        this.currentRank = achievedTiers.length ? (achievedTiers[achievedTiers.length - 1].designation ?? '—') : '—';
+        this.rewardCards = [
+          { labelKey: 'incomeStatement.leftBusiness', value: this.formatCurrency(left) },
+          { labelKey: 'incomeStatement.rightBusiness', value: this.formatCurrency(right) },
+          { labelKey: 'incomeStatement.matchingBusiness', value: this.formatCurrency(Math.min(left, right)) }
+        ];
+        this.rewardScrollTo = Math.max(0, achievedTiers.length - 1);
       },
       error: () => (this.loadError = true)
     });
     this.incomeStatementService.rewardsAchieved().subscribe({
       next: rows => {
-        const paid = this.translate.instant('incomeStatement.payStatusPaid');
-        const unpaid = this.translate.instant('incomeStatement.payStatusUnpaid');
-        this.achievedRows = rows.map((r, i) => ({
-          date: this.datePipe.transform(r.achievedDate, REWARD_DATE_FORMAT) ?? r.achievedDate,
-          reward: this.rewardText(r.reward, r.perkDescription),
+        this.achievedViews = rows.map(r => ({
+          date: this.datePipe.transform(r.achievedDate, REWARD_DAY_FORMAT) ?? r.achievedDate,
           designation: r.designation ?? '—',
-          payStatus: r.paid ? paid : unpaid,
-          paymentDate: r.paymentDate ? (this.datePipe.transform(r.paymentDate, REWARD_DATE_FORMAT) ?? r.paymentDate) : '—',
+          reward: this.rewardText(r.reward, r.perkDescription),
+          paid: r.paid,
+          payStatus: this.translate.instant(r.paid ? 'incomeStatement.payStatusPaid' : 'incomeStatement.payStatusUnpaid'),
+          paymentDate: r.paymentDate ? (this.datePipe.transform(r.paymentDate, REWARD_DAY_FORMAT) ?? r.paymentDate) : '—',
           remarks: r.remarks ?? '—'
         }));
       },

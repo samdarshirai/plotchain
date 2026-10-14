@@ -373,38 +373,47 @@ describe('IncomeStatementComponent', () => {
     expect(cells).toEqual(jasmine.arrayContaining(['PC200', '₹35,000', '₹3,500']));
   });
 
-  it('Reward tab lists every tier with designation, perk, remaining business and achieved-details table', () => {
+  const tier = (n: number, threshold: number, reqL: number, reqR: number, achieved: boolean) => ({
+    tierLevel: n, matchingBusiness: threshold, designation: 'T' + n, requiredLeftBusiness: reqL, requiredRightBusiness: reqR,
+    reward: 15000, perkDescription: '+ Smart Watch', status: achieved ? 'PAID' : null, achievedDate: achieved ? '2026-01-05T00:00:00Z' : null
+  });
+
+  function loadReward(tiers: unknown[], achieved: unknown[] = []) {
     flushInitialRequests();
     routeData$.next({ incomeType: 'REWARD' });
-    httpMock.expectOne('/api/associates/me/reward-tiers').flush([
-      { tierLevel: 1, matchingBusiness: 500000, designation: 'Sales Associate', requiredLeftBusiness: 0, requiredRightBusiness: 0,
-        reward: 15000, perkDescription: '+ Smart Watch', status: 'PAID', achievedDate: '2026-01-05T00:00:00Z' },
-      { tierLevel: 2, matchingBusiness: 2000000, designation: 'Sr. Sales Executive', requiredLeftBusiness: 400000, requiredRightBusiness: 1700000,
-        reward: 45000, perkDescription: '+ Goa Tour (3N/4D)', status: null, achievedDate: null }
-    ]);
-    httpMock.expectOne('/api/associates/me/rewards-achieved').flush([
-      { achievedDate: '2026-01-05T00:00:00Z', designation: 'Sales Associate', reward: 15000, perkDescription: '+ Smart Watch',
-        paid: false, paymentDate: null, remarks: null }
-    ]);
+    httpMock.expectOne('/api/associates/me/reward-tiers').flush(tiers);
+    httpMock.expectOne('/api/associates/me/rewards-achieved').flush(achieved);
     fixture.detectChanges();
+    return fixture.componentInstance;
+  }
 
-    expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
-      'Matching Business', 'Designation', 'Reward', 'Required Left Business', 'Required Right Business', 'Status', 'Achieved Date'
-    ]);
-    const rows = fixture.componentInstance.statementRows;
-    expect(rows.length).toBe(2);
-    expect(rows[0]['designation']).toBe('Sales Associate');
-    expect(rows[0]['reward']).toContain('+ Smart Watch');
-    expect(rows[0]['status']).toBe('Achieved');
-    expect(rows[1]['status']).toBe('Pending');
-    expect(rows[1]['achievedDate']).toBe('—');
+  it('Reward tab derives totals, rank, 3-state status and bars from remaining business', () => {
+    // left total 1.3M (500k-0, 2M-700k), right total 300k (2M-1.7M)
+    const c = loadReward(
+      [tier(1, 500000, 0, 200000, true), tier(2, 2000000, 700000, 1700000, false), tier(3, 4000000, 2700000, 3700000, false)],
+      [{ achievedDate: '2026-01-05T00:00:00Z', designation: 'T1', reward: 15000, perkDescription: '+ Smart Watch', paid: false, paymentDate: null, remarks: null }]
+    );
+    expect(c.currentRank).toBe('T1');
+    expect(c.rewardCards.map(x => x.value)).toEqual(['₹1,300,000', '₹300,000', '₹300,000']);
+    expect(c.rewardTierViews.map(t => t.state)).toEqual(['achieved', 'progress', 'pending']);
+    expect(c.rewardTierViews[1].leftPct).toBe(65);
+    expect(c.rewardTierViews[1].rightPct).toBe(15);
+    expect(c.rewardTierViews[1].rightLevel).toBe('low');
+    expect(c.achievedViews[0].payStatus).toBe('Unpaid');
+    expect(c.achievedViews[0].paymentDate).toBe('—');
+    expect(fixture.nativeElement.querySelectorAll('.income-statement__reward-scroll .income-statement__reward-row').length).toBe(3);
+  });
 
-    const achieved = fixture.componentInstance.achievedRows;
-    expect(achieved.length).toBe(1);
-    expect(achieved[0]['payStatus']).toBe('Unpaid');
-    expect(achieved[0]['paymentDate']).toBe('—');
-    expect(fixture.componentInstance.achievedColumns.map(c => c.label)).toEqual([
-      'Date', 'Reward', 'Designation', 'Pay Status', 'Payment Date', 'Remarks'
-    ]);
+  it('Reward tab with no achieved tier shows em-dash rank and first tier in progress', () => {
+    const c = loadReward([tier(1, 500000, 500000, 500000, false), tier(2, 1000000, 1000000, 1000000, false)]);
+    expect(c.currentRank).toBe('—');
+    expect(c.rewardTierViews.map(t => t.state)).toEqual(['progress', 'pending']);
+    expect(c.rewardTierViews[0].leftPct).toBe(0);
+  });
+
+  it('Reward tab with every tier met caps bars at 100% using top threshold as total', () => {
+    const c = loadReward([tier(1, 500000, 0, 0, true), tier(2, 1000000, 0, 0, true)]);
+    expect(c.currentRank).toBe('T2');
+    expect(c.rewardTierViews.every(t => t.state === 'achieved' && t.leftPct === 100 && t.rightLevel === 'ok')).toBeTrue();
   });
 });

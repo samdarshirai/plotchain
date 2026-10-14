@@ -2240,6 +2240,41 @@
 
 // Tab bar wrapper -- horizontal scroll, hidden scrollbar, so the seven tabs never wrap or
 // overflow the viewport (TabBarComponent itself is unchanged).
+// Title left, tab strip right on one row (Reward Statement design); wraps on narrow screens.
+.income-statement__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1.25rem;
+}
+
+// Square strip with a maroon active tab, per the design.
+.income-statement__tabs .tab-bar {
+  gap: 2px;
+  padding: 3px;
+  background: #f0e9d6;
+  border: 1px solid #d9cfbc;
+  border-radius: 0;
+}
+
+.income-statement__tabs .tab-bar__tab {
+  padding: 9px 16px;
+  border-radius: 0;
+  font-size: 0.8125rem;
+  line-height: 1;
+  color: #6b6153;
+
+  &:hover:not(.tab-bar__tab--active) {
+    color: #201a15;
+  }
+}
+
+.income-statement__tabs .tab-bar__tab--active {
+  background: #5c1a2a;
+  color: #ead07d;
+}
+
 .income-statement__tabs {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -2527,91 +2562,223 @@
   text-align: right;
 }
 
-.income-statement--reward .editable-table {
-  min-width: 0;
-  width: 100%;
+// Reward tab (Reward Statement design): seal + business cards, tier grid with leg progress bars,
+// achieved-rewards grid. Palette literals follow the design file.
+.income-statement__reward-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  align-items: stretch;
 }
 
-.income-statement--reward .editable-table thead th,
-.income-statement--reward .editable-table tbody td:not(.editable-table__empty) {
-  padding: 0.875rem 0.625rem;
-  white-space: nowrap;
-  text-align: left;
+.income-statement__reward-seal {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.375rem;
+  margin: 4px;
+  padding: 1rem 1.25rem;
+  background: #0c0a0b;
+  border: 1px solid #c6a227;
+  outline: 1px solid #c6a227;
+  outline-offset: 3px;
+  border-radius: 2px;
 }
 
-// Long headers ("Required Left Business") wrap so all 8 columns fit without horizontal scroll.
-.income-statement--reward .editable-table thead th {
-  white-space: normal;
-  vertical-align: bottom;
+.income-statement__reward-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+
+  i {
+    width: 18px;
+    height: 1px;
+    background: #c6a227;
+  }
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c6a227;
 }
 
-.income-statement--reward .editable-table tbody td:not(.editable-table__empty):nth-child(n) {
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  font-weight: 400;
-  letter-spacing: normal;
-  text-transform: none;
-  color: var(--text-primary);
+.income-statement__reward-rank {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 500;
+  line-height: 1.1;
+  color: #ead07d;
+}
+
+.income-statement__reward-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.25rem 1.5rem;
+  background: #fcfaf5;
+  border: 1px solid #d9cfbc;
+}
+
+.income-statement__reward-card-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b6153;
+}
+
+.income-statement__reward-card-value {
+  font-size: 1.375rem;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+  color: #201a15;
 }
 
-// Tier table columns: 1 Matching Business, 2 Designation, 3 Reward, 4 Required Left,
-// 5 Required Right, 6 Status, 7 Achieved Date. Numeric columns right-aligned, text left.
-.income-statement--reward .income-statement__table:not(.income-statement__table--achieved) .editable-table {
-  thead th:nth-child(1),
-  thead th:nth-child(4),
-  thead th:nth-child(5),
-  tbody td:nth-child(1):not(.editable-table__empty),
-  tbody td:nth-child(4):not(.editable-table__empty),
-  tbody td:nth-child(5):not(.editable-table__empty) {
-    text-align: right;
-  }
-
-  tbody td:nth-child(6):not(.editable-table__empty) {
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-  }
+.income-statement__reward-panel {
+  background: #fcfaf5;
+  border: 1px solid #d9cfbc;
+  overflow: hidden;
 }
 
-// Achieved-details table: 1 Date, 2 Reward, 3 Designation, 4 Pay Status, 5 Payment Date,
-// 6 Remarks. All text columns; Remarks may wrap.
-.income-statement--reward .income-statement__table--achieved .editable-table {
-  tbody td:nth-child(4):not(.editable-table__empty) {
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--text-muted);
+.income-statement__reward-scroll {
+  max-height: 288px;
+  overflow-y: auto;
+}
+
+.income-statement__reward-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) 96px;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.875rem 1.375rem;
+  border-bottom: 1px solid #eae2d0;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  color: #201a15;
+
+  &:hover {
+    background: #f0e9d6;
   }
 
-  // Remarks: plain wrapping text.
-  tbody td:nth-child(6):not(.editable-table__empty) {
-    white-space: normal;
-    min-width: 12rem;
+  &--current {
+    background: #f3ecda;
+  }
 
-    span {
+  &--achieved {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1.4fr) 88px minmax(0, 0.9fr) minmax(0, 1fr);
+  }
+
+  &--head {
+    border-bottom-color: #d9cfbc;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6b6153;
+
+    &:hover {
       background: none;
-      padding: 0;
-      border-radius: 0;
-      font-family: inherit;
-      font-size: 0.8125rem;
-      font-weight: 400;
     }
   }
 }
 
-.income-statement--reward .income-statement__table--achieved .editable-table tbody td:nth-child(n):not(.editable-table__empty) {
-  font-family: inherit;
+.income-statement__reward-index {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #6b6153;
 }
 
-.income-statement__subtitle-heading {
-  margin: 0.5rem 0 0;
-  font-size: 1.125rem;
+.income-statement__reward-name {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  small {
+    font-size: 0.75rem;
+    color: #6b6153;
+  }
+}
+
+.income-statement__reward-leg {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  small {
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+}
+
+.income-statement__reward-bar {
+  height: 4px;
+  background: #e6ddc8;
+
+  div {
+    height: 4px;
+  }
+}
+
+.income-statement__reward-bar div,
+.income-statement__reward-leg small {
+  &[data-level='ok'] { background-color: #4b7a52; }
+  &[data-level='warn'] { background-color: #b4790e; }
+  &[data-level='low'] { background-color: #b23b32; }
+}
+
+.income-statement__reward-leg small {
+  background: none !important;
+
+  &[data-level='ok'] { color: #4b7a52; }
+  &[data-level='warn'] { color: #b4790e; }
+  &[data-level='low'] { color: #b23b32; }
+}
+
+.income-statement__reward-chip {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 2px;
+  font-size: 0.625rem;
   font-weight: 600;
-  color: var(--text-primary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b6153;
+  background: #ede6d6;
+
+  &[data-state='achieved'] { color: #4b7a52; background: #e3ebdd; }
+  &[data-state='progress'] { color: #ead07d; background: #5c1a2a; }
+}
+
+.income-statement__reward-remarks {
+  color: #6b6153;
+  overflow-wrap: anywhere;
+}
+
+.income-statement__reward-foot {
+  padding: 0.625rem 1.375rem;
+  border-top: 1px solid #d9cfbc;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b6153;
+}
+
+.income-statement__reward-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5c1a2a;
+
+  &::before,
+  &::after {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: #5c1a2a;
+  }
 }
 
 .income-statement__pagination {
