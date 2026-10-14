@@ -189,10 +189,13 @@ class LedgerServiceTest {
         when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(entry), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(cycleId))).thenReturn(List.of(cycle));
+        when(ledgerEntryRepository.sumGrossAmount(eq(associateId), isNull(), isNull(), isNull()))
+            .thenReturn(new BigDecimal("250.00"));
 
         AssociateLedgerPageResponse response = service.myList(associateId, null, null, null, 0, 20);
 
         assertThat(response.totalElements()).isEqualTo(1);
+        assertThat(response.totalGrossAmount()).isEqualByComparingTo("250.00");
         assertThat(response.page()).isEqualTo(0);
         assertThat(response.size()).isEqualTo(20);
         assertThat(response.entries()).hasSize(1);

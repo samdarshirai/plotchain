@@ -94,7 +94,8 @@ public class LedgerService {
                     sponsee == null ? null : sponsee.getUserId(), src == null ? null : src.getGrossAmount());
             })
             .toList();
-        return new AssociateLedgerPageResponse(entries, page, size, result.getTotalElements());
+        BigDecimal totalGross = ledgerEntryRepository.sumGrossAmount(associateId, incomeType, cycleId, status);
+        return new AssociateLedgerPageResponse(entries, page, size, result.getTotalElements(), totalGross);
     }
 
     // SPONSOR_MATCHING rows' sourceRef is the sponsee's MATCHING ledger entry id (CycleService#creditSponsorMatching).

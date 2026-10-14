@@ -122,4 +122,19 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         @Param("cycleId") UUID cycleId,
         @Param("status") LedgerEntryStatus status,
         Pageable pageable);
+
+    // Same null-safe filter as search(), summed over the whole filtered set (not one page) -- feeds
+    // the associate Income Statement's "Total income" card.
+    @Query("""
+        SELECT COALESCE(SUM(l.grossAmount), 0) FROM LedgerEntry l
+        WHERE (:associateId IS NULL OR l.associateId = :associateId)
+        AND (:incomeType IS NULL OR l.incomeType = :incomeType)
+        AND (:cycleId IS NULL OR l.cycleId = :cycleId)
+        AND (:status IS NULL OR l.status = :status)
+        """)
+    BigDecimal sumGrossAmount(
+        @Param("associateId") UUID associateId,
+        @Param("incomeType") IncomeType incomeType,
+        @Param("cycleId") UUID cycleId,
+        @Param("status") LedgerEntryStatus status);
 }

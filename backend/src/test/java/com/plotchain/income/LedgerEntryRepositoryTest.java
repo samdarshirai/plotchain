@@ -261,6 +261,26 @@ class LedgerEntryRepositoryTest {
     }
 
     @Test
+    void sumGrossAmountHonoursEachFilterAndIsZeroWhenNothingMatches() {
+        Associate associateA = seedAssociate();
+        Associate associateB = seedAssociate();
+        Cycle cycle = seedCycle();
+        LedgerEntry paid = newEntry(associateA.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID());
+        paid.setStatus(LedgerEntryStatus.PAID);
+        ledgerEntryRepository.saveAndFlush(paid);
+        ledgerEntryRepository.saveAndFlush(
+            newEntry(associateA.getId(), cycle.getId(), IncomeType.MATCHING, UUID.randomUUID()));
+        ledgerEntryRepository.saveAndFlush(
+            newEntry(associateB.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID()));
+
+        assertThat(ledgerEntryRepository.sumGrossAmount(associateA.getId(), null, null, null)).isEqualByComparingTo("200.00");
+        assertThat(ledgerEntryRepository.sumGrossAmount(associateA.getId(), IncomeType.DIRECT, null, null)).isEqualByComparingTo("100.00");
+        assertThat(ledgerEntryRepository.sumGrossAmount(associateA.getId(), null, null, LedgerEntryStatus.PAID)).isEqualByComparingTo("100.00");
+        assertThat(ledgerEntryRepository.sumGrossAmount(null, null, null, null)).isEqualByComparingTo("300.00");
+        assertThat(ledgerEntryRepository.sumGrossAmount(associateA.getId(), IncomeType.ROYALTY, null, null)).isEqualByComparingTo("0");
+    }
+
+    @Test
     void searchOrdersByCreatedAtDescendingAndPaginatesCorrectly() {
         Associate associate = seedAssociate();
         Cycle cycle = seedCycle();

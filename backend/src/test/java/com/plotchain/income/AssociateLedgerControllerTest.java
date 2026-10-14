@@ -65,7 +65,7 @@ class AssociateLedgerControllerTest {
             LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 15),
             new BigDecimal("100.00"), new BigDecimal("5.00"), new BigDecimal("4.00"), new BigDecimal("91.00"),
             LedgerEntryStatus.PAID, UUID.randomUUID(), Instant.now(), null, null, null);
-        AssociateLedgerPageResponse page = new AssociateLedgerPageResponse(List.of(row), 0, 20, 1);
+        AssociateLedgerPageResponse page = new AssociateLedgerPageResponse(List.of(row), 0, 20, 1, java.math.BigDecimal.TEN);
         when(ledgerService.myList(
             eq(associateId), eq(IncomeType.DIRECT), eq(cycleId), eq(LedgerEntryStatus.PAID), eq(0), eq(20)))
             .thenReturn(page);
@@ -81,14 +81,15 @@ class AssociateLedgerControllerTest {
             .andExpect(jsonPath("$.entries[0].cyclePeriodEnd").value("2026-01-15"))
             .andExpect(jsonPath("$.entries[0].associateId").doesNotExist())
             .andExpect(jsonPath("$.entries[0].associateName").doesNotExist())
-            .andExpect(jsonPath("$.totalElements").value(1));
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.totalGrossAmount").value(10));
     }
 
     @Test
     void getMyLedgerReturns200WithAnEmptyPageWhenUnfiltered() throws Exception {
         UUID associateId = UUID.randomUUID();
         when(ledgerService.myList(eq(associateId), isNull(), isNull(), isNull(), eq(0), eq(20)))
-            .thenReturn(new AssociateLedgerPageResponse(List.of(), 0, 20, 0));
+            .thenReturn(new AssociateLedgerPageResponse(List.of(), 0, 20, 0, java.math.BigDecimal.ZERO));
 
         mockMvc.perform(get("/api/associates/me/ledger")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
@@ -105,7 +106,7 @@ class AssociateLedgerControllerTest {
         UUID callerId = UUID.randomUUID();
         UUID otherAssociateId = UUID.randomUUID();
         when(ledgerService.myList(eq(callerId), isNull(), isNull(), isNull(), eq(0), eq(20)))
-            .thenReturn(new AssociateLedgerPageResponse(List.of(), 0, 20, 0));
+            .thenReturn(new AssociateLedgerPageResponse(List.of(), 0, 20, 0, java.math.BigDecimal.ZERO));
 
         mockMvc.perform(get("/api/associates/me/ledger")
                 .param("associateId", otherAssociateId.toString())
@@ -119,7 +120,7 @@ class AssociateLedgerControllerTest {
     void getMyLedgerClampsAnOversizedPageSizeToTheServerSideMaximum() throws Exception {
         UUID associateId = UUID.randomUUID();
         when(ledgerService.myList(eq(associateId), isNull(), isNull(), isNull(), eq(0), eq(100)))
-            .thenReturn(new AssociateLedgerPageResponse(List.of(), 0, 100, 0));
+            .thenReturn(new AssociateLedgerPageResponse(List.of(), 0, 100, 0, java.math.BigDecimal.ZERO));
 
         mockMvc.perform(get("/api/associates/me/ledger").param("size", "999999")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
@@ -132,7 +133,7 @@ class AssociateLedgerControllerTest {
     void getMyLedgerClampsANegativePageToZeroInsteadOfThrowing() throws Exception {
         UUID associateId = UUID.randomUUID();
         when(ledgerService.myList(eq(associateId), isNull(), isNull(), isNull(), eq(0), eq(20)))
-            .thenReturn(new AssociateLedgerPageResponse(List.of(), 0, 20, 0));
+            .thenReturn(new AssociateLedgerPageResponse(List.of(), 0, 20, 0, java.math.BigDecimal.ZERO));
 
         mockMvc.perform(get("/api/associates/me/ledger").param("page", "-5")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
