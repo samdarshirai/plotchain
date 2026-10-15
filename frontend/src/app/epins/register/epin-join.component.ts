@@ -17,134 +17,157 @@ import { INDIA_STATE_OPTIONS } from '../../shared/india-states';
   styleUrl: './epin-join.component.scss',
   template: `
     <div class="epin-join">
-      <h1 class="epin-join__title">{{ 'epinRegister.join.title' | translate }}</h1>
+      <h1 class="epin-join__title" *ngIf="!result">{{ 'epinRegister.join.title' | translate }}</h1>
 
-      <div class="epin-join__card" *ngIf="result as r">
-        <app-inline-banner tone="success">{{ 'epinRegister.join.success' | translate }}</app-inline-banner>
-        <dl class="epin-join__result">
-          <dt>{{ 'epinRegister.join.userId' | translate }}</dt><dd>{{ r.userId }}</dd>
-          <dt>{{ 'epinRegister.join.name' | translate }}</dt><dd>{{ r.name }}</dd>
-          <dt>{{ 'epinRegister.join.tempPassword' | translate }}</dt><dd>{{ r.temporaryPassword }}</dd>
+      <div class="epin-join__done" *ngIf="result as r">
+        <div class="epin-join__done-seal">
+          <span class="epin-join__eyebrow">{{ 'epinRegister.join.welcome' | translate }}</span>
+          <h2 class="epin-join__done-title">{{ 'epinRegister.join.congrats' | translate }}</h2>
+          <p class="epin-join__done-name">{{ r.name }}</p>
+          <p class="epin-join__done-sub">{{ 'epinRegister.join.congratsSub' | translate }}</p>
+        </div>
+        <dl class="epin-join__creds">
+          <div class="epin-join__cred"><dt>{{ 'epinRegister.join.resultName' | translate }}</dt><dd>{{ r.name }}</dd></div>
+          <div class="epin-join__cred"><dt>{{ 'epinRegister.join.userId' | translate }}</dt><dd class="epin-join__mono">{{ r.userId }}</dd>
+            <button type="button" class="epin-join__copy" (click)="copy('id', r.userId)">{{ (copied === 'id' ? 'epinRegister.join.copied' : 'epinRegister.join.copy') | translate }}</button></div>
+          <div class="epin-join__cred"><dt>{{ 'epinRegister.join.tempPassword' | translate }}</dt><dd class="epin-join__mono">{{ r.temporaryPassword }}</dd>
+            <button type="button" class="epin-join__copy" (click)="copy('login', r.temporaryPassword)">{{ (copied === 'login' ? 'epinRegister.join.copied' : 'epinRegister.join.copy') | translate }}</button></div>
+          <div class="epin-join__cred"><dt>{{ 'epinRegister.join.txnPassword' | translate }}</dt><dd class="epin-join__mono">{{ r.transactionPassword }}</dd>
+            <button type="button" class="epin-join__copy" (click)="copy('txn', r.transactionPassword)">{{ (copied === 'txn' ? 'epinRegister.join.copied' : 'epinRegister.join.copy') | translate }}</button></div>
         </dl>
-        <p class="epin-join__hint">{{ 'epinRegister.join.tempPasswordHint' | translate }}</p>
-        <button type="button" class="brand-button" (click)="back()">{{ 'epinRegister.join.backToPins' | translate }}</button>
+        <app-inline-banner tone="warning">{{ 'epinRegister.join.tempPasswordHint' | translate }}</app-inline-banner>
+        <button type="button" class="epin-join__submit" (click)="back()">{{ 'epinRegister.join.backToPins' | translate }}</button>
       </div>
 
-      <form class="epin-join__card" [formGroup]="form" (ngSubmit)="submit()" *ngIf="!result" novalidate>
-        <h2 class="epin-join__section">{{ 'epinRegister.join.package' | translate }}</h2>
-        <div class="epin-join__grid">
-          <label class="epin-join__field">{{ 'epinRegister.join.pinNo' | translate }} *
-            <input class="epin-join__input" [value]="pin?.code ?? ''" readonly />
-          </label>
-          <label class="epin-join__field">{{ 'epinRegister.join.package' | translate }}
-            <input class="epin-join__input" [value]="packageLabel" readonly />
-          </label>
+      <form class="epin-join__form" [formGroup]="form" (ngSubmit)="submit()" *ngIf="!result" novalidate>
+        <div class="epin-join__toolbar">
+          <span class="epin-join__crumb">{{ 'epinRegister.join.breadcrumb' | translate }}</span>
+          <div class="epin-join__actions">
+            <button type="button" class="epin-join__cancel" (click)="back()">{{ 'epinRegister.join.cancel' | translate }}</button>
+            <button type="submit" class="epin-join__submit" [disabled]="busy">{{ 'epinRegister.submit' | translate }}</button>
+          </div>
         </div>
 
-        <h2 class="epin-join__section">{{ 'epinRegister.join.sponsor' | translate }}</h2>
-        <div class="epin-join__grid">
-          <label class="epin-join__field">{{ 'epinRegister.join.sponsorId' | translate }} *
-            <input class="epin-join__input" formControlName="sponsorUserId" (blur)="lookupSponsor()" />
-            <app-field-error [message]="err('sponsorUserId')"></app-field-error>
-          </label>
-          <label class="epin-join__field">{{ 'epinRegister.join.sponsorName' | translate }}
-            <input class="epin-join__input" [value]="sponsorName" readonly />
-          </label>
-          <label class="epin-join__field">{{ 'epinRegister.join.position' | translate }} *
-            <select class="epin-join__input" formControlName="position">
-              <option value="">{{ 'epinRegister.join.selectPosition' | translate }}</option>
-              <option value="L">{{ 'epinRegister.join.left' | translate }}</option>
-              <option value="R">{{ 'epinRegister.join.right' | translate }}</option>
-            </select>
-            <app-field-error [message]="err('position')"></app-field-error>
-          </label>
-        </div>
+        <div class="epin-join__card">
+          <div class="epin-join__seal">
+            <div class="epin-join__seal-row">
+              <span class="epin-join__eyebrow">{{ 'epinRegister.join.pinNo' | translate }}</span>
+              <span class="epin-join__pin">{{ pin?.code ?? '' }}</span>
+            </div>
+            <div class="epin-join__seal-row epin-join__seal-row--rule">
+              <span class="epin-join__eyebrow">{{ 'epinRegister.join.package' | translate }}</span>
+              <span class="epin-join__package"><span class="epin-join__package-name">{{ packageName }}</span> INR {{ pin?.pinValue }}</span>
+            </div>
+          </div>
 
-        <h2 class="epin-join__section">{{ 'epinRegister.join.personal' | translate }}</h2>
-        <div class="epin-join__grid">
-          <label class="epin-join__field">{{ 'epinRegister.join.name' | translate }} *
-            <input class="epin-join__input" formControlName="name" />
-            <app-field-error [message]="err('name')"></app-field-error>
-          </label>
-          <label class="epin-join__field">{{ 'epinRegister.join.fatherHusband' | translate }}
-            <input class="epin-join__input" formControlName="fatherHusbandName" />
-          </label>
-          <label class="epin-join__field">PAN *
-            <input class="epin-join__input" formControlName="panNumber" maxlength="10" />
-            <app-field-error [message]="err('panNumber')"></app-field-error>
-          </label>
-          <label class="epin-join__field">{{ 'epinRegister.join.aadhaar' | translate }} *
-            <input class="epin-join__input" formControlName="aadhaarNumber" maxlength="12" inputmode="numeric" />
-            <app-field-error [message]="err('aadhaarNumber')"></app-field-error>
-          </label>
-          <label class="epin-join__field">{{ 'epinRegister.join.dob' | translate }}
-            <input class="epin-join__input" type="date" formControlName="dateOfBirth" />
-          </label>
-          <label class="epin-join__field">{{ 'epinRegister.join.gender' | translate }}
-            <select class="epin-join__input" formControlName="gender">
-              <option *ngFor="let g of genders" [value]="g">{{ 'epinRegister.join.genders.' + g | translate }}</option>
-            </select>
-          </label>
-          <label class="epin-join__field">{{ 'epinRegister.join.marital' | translate }}
-            <select class="epin-join__input" formControlName="maritalStatus">
-              <option *ngFor="let m of maritals" [value]="m">{{ 'epinRegister.join.maritals.' + m | translate }}</option>
-            </select>
-          </label>
-        </div>
+          <section class="epin-join__section epin-join__section--7">
+            <h2 class="epin-join__heading">{{ 'epinRegister.join.sponsor' | translate }}</h2>
+            <div class="epin-join__grid">
+              <label class="epin-join__field"><span>{{ 'epinRegister.join.sponsorId' | translate }} <span class="epin-join__req">*</span></span>
+                <input class="epin-join__input" formControlName="sponsorUserId" (blur)="lookupSponsor()" />
+                <app-field-error [message]="err('sponsorUserId')"></app-field-error>
+              </label>
+              <label class="epin-join__field">{{ 'epinRegister.join.sponsorName' | translate }}
+                <input class="epin-join__input" [value]="sponsorName" readonly />
+              </label>
+              <label class="epin-join__field"><span>{{ 'epinRegister.join.position' | translate }} <span class="epin-join__req">*</span></span>
+                <select class="epin-join__input" formControlName="position">
+                  <option value="">{{ 'epinRegister.join.selectPosition' | translate }}</option>
+                  <option value="L">{{ 'epinRegister.join.left' | translate }}</option>
+                  <option value="R">{{ 'epinRegister.join.right' | translate }}</option>
+                </select>
+                <app-field-error [message]="err('position')"></app-field-error>
+              </label>
+            </div>
+          </section>
 
-        <h2 class="epin-join__section">{{ 'epinRegister.join.contact' | translate }}</h2>
-        <div class="epin-join__grid">
-          <label class="epin-join__field">{{ 'epinRegister.join.email' | translate }}
-            <input class="epin-join__input" type="email" formControlName="email" />
-            <app-field-error [message]="err('email')"></app-field-error>
-          </label>
-          <label class="epin-join__field">{{ 'epinRegister.join.mobile' | translate }} *
-            <input class="epin-join__input" formControlName="phone" inputmode="tel" />
-            <app-field-error [message]="err('phone')"></app-field-error>
-          </label>
-          <label class="epin-join__field">{{ 'epinRegister.join.state' | translate }} *
-            <select class="epin-join__input" formControlName="state">
-              <option value="">{{ 'epinRegister.join.selectState' | translate }}</option>
-              <option *ngFor="let s of states" [value]="s">{{ s }}</option>
-            </select>
-            <app-field-error [message]="err('state')"></app-field-error>
-          </label>
-          <label class="epin-join__field">{{ 'epinRegister.join.district' | translate }} *
-            <input class="epin-join__input" formControlName="district" />
-            <app-field-error [message]="err('district')"></app-field-error>
-          </label>
-          <label class="epin-join__field">{{ 'epinRegister.join.address' | translate }} *
-            <input class="epin-join__input" formControlName="address" />
-            <app-field-error [message]="err('address')"></app-field-error>
-          </label>
-          <label class="epin-join__field">{{ 'epinRegister.join.postalCode' | translate }}
-            <input class="epin-join__input" formControlName="postalCode" placeholder="Zip Code" />
-          </label>
-        </div>
+          <section class="epin-join__section epin-join__section--12">
+            <h2 class="epin-join__heading">{{ 'epinRegister.join.personal' | translate }}</h2>
+            <div class="epin-join__grid epin-join__grid--4">
+              <label class="epin-join__field"><span>{{ 'epinRegister.join.name' | translate }} <span class="epin-join__req">*</span></span>
+                <input class="epin-join__input" formControlName="name" />
+                <app-field-error [message]="err('name')"></app-field-error>
+              </label>
+              <label class="epin-join__field">{{ 'epinRegister.join.fatherHusband' | translate }}
+                <input class="epin-join__input" formControlName="fatherHusbandName" />
+              </label>
+              <label class="epin-join__field"><span>PAN <span class="epin-join__req">*</span></span>
+                <input class="epin-join__input" formControlName="panNumber" maxlength="10" />
+                <app-field-error [message]="err('panNumber')"></app-field-error>
+              </label>
+              <label class="epin-join__field"><span>{{ 'epinRegister.join.aadhaar' | translate }} <span class="epin-join__req">*</span></span>
+                <input class="epin-join__input" formControlName="aadhaarNumber" maxlength="12" inputmode="numeric" />
+                <app-field-error [message]="err('aadhaarNumber')"></app-field-error>
+              </label>
+              <label class="epin-join__field">{{ 'epinRegister.join.dob' | translate }}
+                <input class="epin-join__input" type="date" formControlName="dateOfBirth" />
+              </label>
+              <label class="epin-join__field">{{ 'epinRegister.join.gender' | translate }}
+                <select class="epin-join__input" formControlName="gender">
+                  <option *ngFor="let g of genders" [value]="g">{{ 'epinRegister.join.genders.' + g | translate }}</option>
+                </select>
+              </label>
+              <label class="epin-join__field">{{ 'epinRegister.join.marital' | translate }}
+                <select class="epin-join__input" formControlName="maritalStatus">
+                  <option *ngFor="let m of maritals" [value]="m">{{ 'epinRegister.join.maritals.' + m | translate }}</option>
+                </select>
+              </label>
+            </div>
+          </section>
 
-        <h2 class="epin-join__section">{{ 'epinRegister.join.nominee' | translate }}</h2>
-        <div class="epin-join__grid">
-          <label class="epin-join__field">{{ 'epinRegister.join.nomineeName' | translate }}
-            <input class="epin-join__input" formControlName="nomineeName" />
-          </label>
-          <label class="epin-join__field">{{ 'epinRegister.join.relation' | translate }}
-            <input class="epin-join__input" formControlName="nomineeRelation" />
-          </label>
-        </div>
+          <section class="epin-join__section epin-join__section--12">
+            <h2 class="epin-join__heading">{{ 'epinRegister.join.contact' | translate }}</h2>
+            <div class="epin-join__grid epin-join__grid--4">
+              <label class="epin-join__field">{{ 'epinRegister.join.email' | translate }}
+                <input class="epin-join__input" type="email" formControlName="email" />
+                <app-field-error [message]="err('email')"></app-field-error>
+              </label>
+              <label class="epin-join__field"><span>{{ 'epinRegister.join.mobile' | translate }} <span class="epin-join__req">*</span></span>
+                <input class="epin-join__input" formControlName="phone" inputmode="tel" />
+                <app-field-error [message]="err('phone')"></app-field-error>
+              </label>
+              <label class="epin-join__field"><span>{{ 'epinRegister.join.state' | translate }} <span class="epin-join__req">*</span></span>
+                <select class="epin-join__input" formControlName="state">
+                  <option value="">{{ 'epinRegister.join.selectState' | translate }}</option>
+                  <option *ngFor="let s of states" [value]="s">{{ s }}</option>
+                </select>
+                <app-field-error [message]="err('state')"></app-field-error>
+              </label>
+              <label class="epin-join__field"><span>{{ 'epinRegister.join.district' | translate }} <span class="epin-join__req">*</span></span>
+                <input class="epin-join__input" formControlName="district" />
+                <app-field-error [message]="err('district')"></app-field-error>
+              </label>
+              <label class="epin-join__field epin-join__field--wide"><span>{{ 'epinRegister.join.address' | translate }} <span class="epin-join__req">*</span></span>
+                <input class="epin-join__input" formControlName="address" />
+                <app-field-error [message]="err('address')"></app-field-error>
+              </label>
+              <label class="epin-join__field">{{ 'epinRegister.join.postalCode' | translate }}
+                <input class="epin-join__input" formControlName="postalCode" placeholder="Zip Code" />
+              </label>
+            </div>
+          </section>
 
-        <h2 class="epin-join__section">{{ 'epins.passwordLabel' | translate }}</h2>
-        <div class="epin-join__grid">
-          <label class="epin-join__field">{{ 'epins.passwordLabel' | translate }} *
-            <input class="epin-join__input" type="password" autocomplete="off" formControlName="transactionPassword" />
-            <app-field-error [message]="err('transactionPassword')"></app-field-error>
-          </label>
-        </div>
+          <section class="epin-join__section epin-join__section--7">
+            <h2 class="epin-join__heading">{{ 'epinRegister.join.nominee' | translate }}</h2>
+            <div class="epin-join__grid">
+              <label class="epin-join__field">{{ 'epinRegister.join.nomineeName' | translate }}
+                <input class="epin-join__input" formControlName="nomineeName" />
+              </label>
+              <label class="epin-join__field">{{ 'epinRegister.join.relation' | translate }}
+                <input class="epin-join__input" formControlName="nomineeRelation" />
+              </label>
+            </div>
+          </section>
 
-        <app-inline-banner *ngIf="error" tone="danger">{{ error | translate }}</app-inline-banner>
+          <section class="epin-join__section epin-join__section--5">
+            <h2 class="epin-join__heading">{{ 'epins.passwordLabel' | translate }}</h2>
+            <label class="epin-join__field"><span>{{ 'epins.passwordLabel' | translate }} <span class="epin-join__req">*</span></span>
+              <input class="epin-join__input" type="password" autocomplete="off" formControlName="transactionPassword" />
+              <app-field-error [message]="err('transactionPassword')"></app-field-error>
+            </label>
+          </section>
 
-        <div class="epin-join__actions">
-          <button type="submit" class="epin-join__submit" [disabled]="busy">{{ 'epinRegister.submit' | translate }}</button>
-          <button type="button" class="epin-join__cancel" (click)="back()">{{ 'epinRegister.join.cancel' | translate }}</button>
+          <app-inline-banner *ngIf="error" class="epin-join__banner" tone="danger">{{ error | translate }}</app-inline-banner>
         </div>
       </form>
     </div>
@@ -190,8 +213,10 @@ export class EPinJoinComponent implements OnInit {
     transactionPassword: ['', Validators.required]
   });
 
-  get packageLabel(): string {
-    return this.pin ? `${this.pin.pinType === 'TOPUP' ? 'Top-up' : 'Registration'} (INR ${this.pin.pinValue})` : '';
+  get packageLabel(): string { return this.pin ? `${this.packageName} (INR ${this.pin.pinValue})` : ''; }
+
+  get packageName(): string {
+    return this.pin ? (this.pin.pinType === 'TOPUP' ? 'Top-up' : 'Registration') : '';
   }
 
   ngOnInit(): void {
@@ -218,6 +243,11 @@ export class EPinJoinComponent implements OnInit {
     this.sponsorName = '';
     const id = this.form.controls.sponsorUserId.value.trim();
     if (id) { this.service.recipient(id).subscribe({ next: r => (this.sponsorName = r.name), error: () => undefined }); }
+  }
+
+  copied = '';
+  copy(key: string, text: string): void {
+    navigator.clipboard?.writeText(text).then(() => { this.copied = key; setTimeout(() => (this.copied = ''), 1500); }, () => undefined);
   }
 
   back(): void { this.router.navigate(['/e-pins/view-new']); }

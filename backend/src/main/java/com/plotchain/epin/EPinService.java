@@ -297,6 +297,7 @@ public class EPinService {
         member.setDistrict(req.district());
         member.setAddress(req.address());
         member.setPostalCode(req.postalCode());
+        String transactionPassword = provisioningService.assignGeneratedTransactionPassword(member);
         associateRepository.save(member);
 
         activateOrThrow(member.getId());
@@ -317,7 +318,7 @@ public class EPinService {
         epin.setRedemptionType(RedemptionType.ACTIVATION);
         epinRepository.save(epin);
         recordEvent(epinId, EPinEventType.REDEEMED, callerId, callerId, member.getId(), null);
-        return new JoinEPinResponse(member.getUserId(), member.getName(), member.getTemporaryPassword());
+        return new JoinEPinResponse(member.getUserId(), member.getName(), member.getTemporaryPassword(), transactionPassword);
     }
 
     // Conditional PENDING -> ACTIVE flip: 0 rows means a concurrent activation or an admin status

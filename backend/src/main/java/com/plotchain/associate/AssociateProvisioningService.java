@@ -88,4 +88,11 @@ public class AssociateProvisioningService {
         associateRepository.save(associate);
         return associate;
     }
+
+    /** Generates a one-time transaction password, stores only its hash, and returns the plaintext. */
+    public String assignGeneratedTransactionPassword(Associate associate) {
+        String plain = TemporaryPasswordGenerator.generate();
+        associate.setTransactionPasswordHash(passwordEncoder.encode(plain));
+        return plain;
+    }
 }

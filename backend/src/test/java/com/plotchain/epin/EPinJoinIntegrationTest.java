@@ -93,6 +93,8 @@ class EPinJoinIntegrationTest {
         assertThat(created.getSponsorId()).isEqualTo(me.getId());
         assertThat(created.getPanNumber()).isEqualTo("ABCDE1234F");
         assertThat(res.temporaryPassword()).isNotBlank();
+        assertThat(res.transactionPassword()).isNotBlank();
+        assertThat(created.getTransactionPasswordHash()).isNotBlank().isNotEqualTo(res.transactionPassword());
         assertThat(nomineeRepository.findByAssociateId(created.getId())).isPresent();
         EPin spent = epinRepository.findById(pin.getId()).orElseThrow();
         assertThat(spent.getStatus()).isEqualTo(EPinStatus.USED);

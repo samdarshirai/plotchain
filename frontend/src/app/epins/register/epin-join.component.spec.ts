@@ -55,9 +55,10 @@ describe('EPinJoinComponent', () => {
     expect(req.request.headers.get('X-Epin-Unlock')).toBe('tok');
     expect(req.request.body.sponsorUserId).toBe('SDI1');
     expect(req.request.body.dateOfBirth).toBeNull();
-    req.flush({ userId: 'VP00009', name: 'New Person', temporaryPassword: 'tmp-pass' });
+    req.flush({ userId: 'VP00009', name: 'New Person', temporaryPassword: 'tmp-pass', transactionPassword: 'txn-pass' });
     fixture.detectChanges();
     expect(c.result?.temporaryPassword).toBe('tmp-pass');
+    expect(c.result?.transactionPassword).toBe('txn-pass');
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('VP00009');
   });
 

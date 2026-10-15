@@ -15,7 +15,7 @@ export interface JoinRequest {
   phone: string; state: string; district: string; address: string; postalCode: string;
   nomineeName: string; nomineeRelation: string; transactionPassword: string;
 }
-export interface JoinResult { userId: string; name: string; temporaryPassword: string; }
+export interface JoinResult { userId: string; name: string; temporaryPassword: string; transactionPassword: string; }
 export interface EPinRowPage<T> { rows: T[]; page: number; size: number; totalElements: number; }
 
 const BASE = '/api/associates/me/epins';
