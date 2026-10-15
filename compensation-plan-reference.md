@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Ground-truth Direct/Matching/Sponsor's Matching/Royalty/Self-Performance/Reward math, transcribed directly from Samvardhani Infra's official income-plan PDFs — not from `mlm-land-platform-spec.md`'s independently-authored §3 sketch, and not from whatever the already-implemented Cycle Management batch currently does. Use this doc to:
+Ground-truth Direct/Matching/Sponsor's Matching/Royalty/Self-Performance/Reward math, transcribed directly from the company's official income-plan PDFs — not from `mlm-land-platform-spec.md`'s independently-authored §3 sketch, and not from whatever the already-implemented Cycle Management batch currently does. Use this doc to:
 
 - Write/verify backend unit tests (`SettlementServiceTest` and friends) against real numbers, not invented ones.
 - Cross-check `compensation-calculator.xlsx` (same directory) — a spreadsheet with live formulas for manually verifying the app's calculated payouts.

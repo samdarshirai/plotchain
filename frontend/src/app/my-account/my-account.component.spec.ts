@@ -446,6 +446,7 @@ describe('MyAccountComponent', () => {
     expect(letter.textContent).toContain('Left Kumar');
     expect(letter.textContent).toContain('myAccount.welcomeLetter.note1');
     expect(letter.textContent).toContain('myAccount.welcomeLetter.note9');
+    expect(letter.textContent).not.toContain('Samvardhani');
   });
 
   it('shows an em-dash for the associate\'s address on the Welcome Letter when none is on file', () => {

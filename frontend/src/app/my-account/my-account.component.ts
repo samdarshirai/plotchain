@@ -481,10 +481,10 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
           <img *ngIf="showSquareLogo" class="letter-card__logo" [src]="logoSrc" alt="" />
         </div>
         <p class="letter-card__greeting">{{ 'myAccount.welcomeLetter.greeting' | translate: { name: p.name } }}</p>
-        <p class="letter-card__intro">{{ 'myAccount.welcomeLetter.intro' | translate }}</p>
+        <p class="letter-card__intro">{{ 'myAccount.welcomeLetter.intro' | translate: letterParams }}</p>
         <p class="letter-card__notes-title">{{ 'myAccount.welcomeLetter.notesTitle' | translate }}</p>
         <ol class="letter-card__notes">
-          <li *ngFor="let key of welcomeLetterNoteKeys">{{ key | translate }}</li>
+          <li *ngFor="let key of welcomeLetterNoteKeys">{{ key | translate: letterParams }}</li>
         </ol>
         <p class="letter-card__signoff">{{ 'myAccount.welcomeLetter.signoff' | translate }}</p>
         <p class="letter-card__regards">{{ 'myAccount.welcomeLetter.regards' | translate }}</p>
@@ -586,6 +586,11 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   kycStatus: AssociateKycStatusResponse | null = null;
   rankProgress: AssociateRankProgress | null = null;
   companyLetterhead: CompanyLetterheadResponse | null = null;
+
+  get letterParams(): { company: string } {
+    return { company: this.companyLetterhead?.displayName?.trim() || this.translate.instant('myAccount.welcomeLetter.companyFallback') };
+  }
+
   transactionPasswordStatus: TransactionPasswordStatusResponse | null = null;
   photoObjectUrl: string | null = null;
 
