@@ -17,7 +17,7 @@ const PAGE_SIZE = 20;
   styleUrl: './my-bookings.component.scss',
   imports: [CommonModule, TranslateModule, InlineBannerComponent, BookingTableComponent],
   template: `
-    <div class="my-bookings" [attr.aria-busy]="loading">
+    <div class="my-bookings booking-page" [attr.aria-busy]="loading">
       <h1 class="my-bookings__title">{{ 'plotBookings.myBookings.title' | translate }}</h1>
       <app-inline-banner *ngIf="error" tone="danger">
         {{ 'plotBookings.bookingsLoadError' | translate }}

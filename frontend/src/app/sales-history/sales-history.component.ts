@@ -15,8 +15,8 @@ const PAGE_SIZE = 20;
   encapsulation: ViewEncapsulation.None,
   styleUrl: './sales-history.component.scss',
   template: `
-    <div class="my-sales card" [attr.aria-busy]="!page && !loadError">
-      <h1 class="card-title">{{ 'salesHistory.title' | translate }}</h1>
+    <div class="my-sales booking-page" [attr.aria-busy]="!page && !loadError">
+      <h1>{{ 'salesHistory.title' | translate }}</h1>
       <p class="my-sales__subtitle">{{ 'salesHistory.subtitle' | translate }}</p>
       <p *ngIf="loadError" class="my-sales__load-error" role="alert">{{ 'salesHistory.loadError' | translate }}</p>
       <app-booking-table *ngIf="page" [rows]="rows" [label]="'salesHistory.title' | translate"></app-booking-table>

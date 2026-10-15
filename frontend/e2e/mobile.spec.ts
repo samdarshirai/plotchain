@@ -55,6 +55,29 @@ for (const role of ROLES) for (const width of [360, 390]) {
       });
     }
 
+    if (role.name === 'admin') {
+      test('book-plot table with plots does not widen the page', async ({ page }) => {
+        await page.goto('/settings/book-plot', { waitUntil: 'networkidle' });
+        const select = page.locator('.projects-plots__project-select select');
+        const count = await select.locator('option').count();
+        for (let i = 0; i < count; i++) {
+          await select.selectOption({ index: i });
+          await page.waitForTimeout(500);
+          if (await page.locator('.projects-plots__table').count()) break;
+        }
+        const w = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+        expect(w[0]).toBeLessThanOrEqual(w[1]);
+      });
+
+      test('compensation reward tier inputs stay usable', async ({ page }) => {
+        await page.goto('/settings/compensation', { waitUntil: 'networkidle' });
+        await page.getByText('Reward Tiers').first().click();
+        const input = page.locator('.compensation-step .editable-table tbody tr input').first();
+        await expect(input).toBeVisible();
+        expect((await input.boundingBox())!.width).toBeGreaterThan(150);
+      });
+    }
+
     test('sidebar is an off-canvas drawer opened by the menu button', async ({ page }) => {
       await page.goto(role.home, { waitUntil: 'networkidle' });
       const sidebar = page.locator('.mobile-drawer .associate-sidebar');

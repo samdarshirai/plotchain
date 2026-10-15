@@ -4897,10 +4897,10 @@ button.tree-explorer__vacant-card {
     button { padding: 0.375rem 0.75rem; border: 0; border-radius: 3px; background: transparent; color: var(--text-muted); font: 500 0.8125rem var(--font-sans); cursor: pointer; }
     button:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; } }
   &__view--on { background: var(--surface-card) !important; color: var(--text-primary) !important; box-shadow: 0 0 0 1px var(--border-subtle); }
-  &__table-wrap { overflow-x: auto; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 4px; }
+  &__table-wrap { position: relative; overflow-x: auto; background: #fcfaf5; border: 1px solid #d9cfbc; border-radius: 0; }
   &__table { width: 100%; border-collapse: collapse; font-size: 0.8125rem;
-    th { padding: 0.875rem 0.3125rem; text-align: left; background: var(--surface-card); border-bottom: 1px solid var(--border-subtle); font: 600 0.75rem var(--font-sans); letter-spacing: 0.02em; color: var(--text-muted); }
-    td { padding: 0.8125rem 0.3125rem; border-bottom: 1px solid color-mix(in srgb, var(--border-subtle) 55%, transparent); line-height: 1.25; font-family: var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    th { padding: 0.875rem 0.3125rem; text-align: left; background: #0c0a0b; border-bottom: none; font: 600 0.6875rem var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: #ead07d; }
+    td { padding: 0.8125rem 0.3125rem; border-bottom: 1px solid #eae2d0; color: #201a15; line-height: 1.25; font-family: var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
     tbody tr:last-child td { border-bottom: 0; }
     td.projects-plots__num, td:nth-child(2) { font-family: var(--font-mono); }
     th:first-child, td:first-child { padding-left: 1.25rem; width: 5.25rem; box-sizing: content-box; }
@@ -4908,7 +4908,7 @@ button.tree-explorer__vacant-card {
     th:nth-child(3), td:nth-child(3) { width: 6rem; padding-right: 0.625rem; } }
   &__num { text-align: right !important; }
   &__empty-row { text-align: center; color: var(--text-muted); padding: 1.5rem 0.5rem; }
-  &__table tbody tr:hover { background: #F7F2E7; }
+  &__table tbody tr:hover { background: #f0e9d6; }
   &__row--selected, &__table tbody &__row--selected:hover { background: #F6EFDD; box-shadow: inset 3px 0 0 var(--brand-secondary); }
   &__row-btn { background: none; border: 0; padding: 0; line-height: 1.25; font: 600 0.875rem var(--font-mono); color: var(--text-primary); cursor: pointer; text-decoration: none;
     &:hover { text-decoration: underline; }
@@ -5044,7 +5044,7 @@ button.tree-explorer__vacant-card {
 }
 @media (prefers-reduced-motion: reduce) { .my-bookings__skeleton-card { animation: none; } }
 @media (max-width: 959px) {
-  .my-bookings__split { grid-template-columns: 1fr; }
+  .my-bookings__split { grid-template-columns: minmax(0, 1fr); }
   .my-bookings__detail { display: none; }
   .my-bookings__detail--open { display: flex; position: fixed; inset: 0; z-index: 50; overflow-y: auto; border-radius: 0; }
   .my-bookings__back { display: inline-flex; }

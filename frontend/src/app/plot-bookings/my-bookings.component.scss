@@ -1,7 +1,1 @@
-// Page gutter: the app shell adds none (only margin-left for the sidebar); mirrors .projects-plots.
-.my-bookings {
-  max-width: 1480px; margin: 0 auto; padding: 1.5rem 2rem;
-}
-@media (max-width: 767px) {
-  .my-bookings { padding-inline: 1rem; }
-}
+// Page chrome and table look live in booking-table.component.scss (.booking-page).

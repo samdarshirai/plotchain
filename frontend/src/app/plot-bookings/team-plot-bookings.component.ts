@@ -19,7 +19,7 @@ const LEG: Record<Scope, 'ALL' | 'L' | 'R'> = { TEAM: 'ALL', LEFT: 'L', RIGHT: '
   standalone: true,
   imports: [CommonModule, TranslateModule, InlineBannerComponent, PagerComponent, BookingTableComponent],
   template: `
-    <div class="team-bookings" [attr.aria-busy]="loading">
+    <div class="team-bookings booking-page" [attr.aria-busy]="loading">
       <h1>{{ 'plotBookings.team.title.' + scope | translate }}</h1>
       <p>{{ 'plotBookings.team.subtitle.' + scope | translate }}</p>
 

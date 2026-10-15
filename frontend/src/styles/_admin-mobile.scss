@@ -98,3 +98,92 @@
     flex: none;
   }
 }
+
+// Projects & Plots / Book plot (admin) and the read-only associate view.
+@media (max-width: 767px) {
+  .projects-plots {
+    padding-inline: 1rem;
+  }
+
+  .projects-plots__head {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .projects-plots__intro {
+    flex: 1 1 100%;
+  }
+
+  .projects-plots .projects-plots__toolbar .plot-table-tools {
+    flex-wrap: wrap;
+  }
+
+  // Table scrolls sideways inside its panel, same as Income Statement.
+  .projects-plots .projects-plots__table--book {
+    table-layout: auto;
+    min-width: 760px;
+  }
+
+  .projects-plots .projects-plots__table th,
+  .projects-plots .projects-plots__table td {
+    white-space: nowrap;
+  }
+}
+
+// Compensation reward-tier / royalty-slab editors: four inputs per row don't fit a phone, so each
+// row becomes a stacked card with a label above every field.
+@media (max-width: 767px) {
+  .compensation-step .editable-table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+
+    thead {
+      display: none;
+    }
+
+    tbody {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    tr {
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+      padding: 0.875rem;
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+    }
+
+    td {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 0;
+      border: 0;
+
+      &[data-label]::before {
+        content: attr(data-label);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      input,
+      select {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+    }
+
+    .editable-table__remove-row {
+      align-self: flex-start;
+      min-height: 44px;
+    }
+  }
+}
