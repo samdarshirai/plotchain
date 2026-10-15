@@ -1,9 +1,27 @@
+<header class="mobile-topbar" *ngIf="showSidebar">
+  <button
+    type="button"
+    class="mobile-topbar__menu"
+    [attr.aria-label]="(navOpen ? 'nav.closeMenu' : 'nav.openMenu') | translate"
+    [attr.aria-expanded]="navOpen"
+    (click)="navOpen = !navOpen"
+  >
+    <span class="material-symbols-outlined" aria-hidden="true">{{ navOpen ? 'close' : 'menu' }}</span>
+  </button>
+  <span class="mobile-topbar__brand">{{ 'brand.wordmark' | translate }}</span>
+</header>
+<div class="mobile-drawer-backdrop" *ngIf="showSidebar && navOpen" (click)="navOpen = false"></div>
 <app-admin-sidebar
-  *ngIf="authService.isAuthenticated() && !isChromelessRoute && isAdminFamily"
+  *ngIf="showAdminChrome"
+  class="mobile-drawer"
+  [class.mobile-drawer--open]="navOpen"
   (logout)="onLogout()"
 ></app-admin-sidebar>
 <app-associate-sidebar
   *ngIf="authService.isAuthenticated() && !isChromelessRoute && !isAdminFamily"
+  class="mobile-drawer"
+  [class.mobile-drawer--open]="navOpen"
+  [forceExpanded]="isMobile"
   [(pinned)]="associateSidebarPinned"
   (logout)="onLogout()"
 ></app-associate-sidebar>

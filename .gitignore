@@ -2,3 +2,4 @@
 .idea/
 target/
 .worktrees/
+test-results/

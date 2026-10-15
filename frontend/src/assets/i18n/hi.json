@@ -620,6 +620,8 @@
     "unpin": "साइडबार अनपिन करें"
   },
   "nav": {
+    "openMenu": "मेनू खोलें",
+    "closeMenu": "मेनू बंद करें",
     "plotBooking": {
       "bookNewPlot": "नया प्लॉट बुक करें",
       "addPlotEmi": "प्लॉट ईएमआई जोड़ें",

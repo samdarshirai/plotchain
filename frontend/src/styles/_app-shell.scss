@@ -219,6 +219,74 @@
   margin-left: var(--sidebar-expanded-width);
 }
 
+// Admin mobile chrome: under 768px the sidebar becomes an off-canvas drawer opened from a sticky
+// top bar, and the content column drops its sidebar margin to use the full width.
+.mobile-topbar,
+.mobile-drawer-backdrop {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .mobile-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 18;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    height: 56px;
+    padding: 0 0.5rem;
+    background: var(--ink);
+    border-bottom: 1px solid rgba(198, 162, 39, 0.22);
+  }
+
+  .mobile-topbar__menu {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    background: transparent;
+    border: 0;
+    color: var(--brand-primary-bright);
+    cursor: pointer;
+  }
+
+  .mobile-topbar__brand {
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--brand-primary-bright);
+  }
+
+  .mobile-drawer-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 19;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .mobile-drawer .associate-sidebar {
+    width: min(var(--sidebar-expanded-width), 85vw);
+    transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .mobile-drawer:not(.mobile-drawer--open) .associate-sidebar {
+    transform: translateX(-100%);
+    visibility: hidden;
+  }
+
+  .app-content,
+  .app-content--sidebar-rail,
+  .app-content--sidebar-expanded {
+    margin-left: 0;
+  }
+
+  .app-content {
+    min-width: 0;
+  }
+}
+
 .dashboard-error {
   margin: 1.5rem;
   padding: 1.5rem;

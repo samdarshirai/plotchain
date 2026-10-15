@@ -1,0 +1,100 @@
+// Admin phone-width overrides (<768px), loaded last in styles.scss so they win on equal specificity.
+// Shell drawer lives in _app-shell.scss; per-screen layout overrides that don't already have a
+// breakpoint of their own belong here. Guarded by admin-mobile.spec.ts (no horizontal page overflow).
+@media (max-width: 767px) {
+  // 16px stops iOS Safari auto-zooming on focus; 44px is the minimum touch target.
+  .app-content {
+    input:not([type='checkbox']):not([type='radio']),
+    select,
+    textarea {
+      font-size: 1rem;
+    }
+
+    input:not([type='checkbox']):not([type='radio']),
+    select,
+    .brand-button {
+      min-height: 44px;
+    }
+  }
+
+  // Pill tab strips scroll sideways inside themselves instead of widening the page.
+  .tab-bar,
+  .associate-directory__list .tab-bar {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .tab-bar__tab {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  .associate-directory__header {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .associate-directory__search-wrap {
+    display: flex;
+    width: 100%;
+  }
+
+  // Wide tables scroll inside their card.
+  .admin-recent-sales-table,
+  .epin-register__table-wrap {
+    overflow-x: auto;
+  }
+}
+
+// Associate screens share the same breakpoint.
+@media (max-width: 767px) {
+  .seal-card__split {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .letter-card__top {
+    flex-wrap: wrap;
+  }
+
+  .letter-card__logo {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .profile-card__row-label {
+    flex: none;
+    min-width: 72px;
+  }
+}
+
+// Reward ladder / achieved rewards are div-grid "tables": keep desktop column widths and let the
+// panel scroll sideways as one unit (header row + body stay aligned).
+@media (max-width: 767px) {
+  .income-statement__reward-panel {
+    overflow-x: auto;
+  }
+
+  .income-statement__reward-row,
+  .income-statement__reward-scroll,
+  .income-statement__reward-foot {
+    min-width: 680px;
+  }
+
+  .income-statement__reward-foot {
+    position: sticky;
+    left: 0;
+  }
+}
+
+// These filter bars stack into a column under 768px, where their desktop `flex: 1 1 220px` basis
+// becomes a 220px *height* (big empty gaps). Size to content instead.
+@media (max-width: 767px) {
+  .income-statement__filter-field,
+  .ledger-register__filter-field,
+  .payout-approval__filter-field,
+  .payout-history__filter-field {
+    flex: none;
+  }
+}

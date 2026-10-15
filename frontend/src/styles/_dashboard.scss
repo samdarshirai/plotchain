@@ -608,11 +608,11 @@
 
 @media (max-width: 960px) {
   .dashboard__hero {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .dashboard__panels {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -690,7 +690,7 @@
 }
 
 @media (max-width: 960px) {
-  .epins { grid-template-columns: 1fr; }
+  .epins { grid-template-columns: minmax(0, 1fr); }
   .epins { grid-template-rows: none; }
   .epins__rail { display: none; }
   .epins__top, .epins__lists, .epins__detail { grid-column: 1; grid-row: auto; padding-inline: 1rem; }

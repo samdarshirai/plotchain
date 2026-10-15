@@ -183,4 +183,37 @@ describe('AppComponent', () => {
       fixture.destroy();
     }
   });
+  describe('admin mobile drawer', () => {
+    function adminFixture() {
+      const authService = TestBed.inject(AuthService);
+      spyOn(authService, 'isAuthenticated').and.returnValue(true);
+      spyOn(authService, 'getRole').and.returnValue('ADMIN');
+      const fixture = TestBed.createComponent(AppComponent);
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    it('renders a menu button that toggles the drawer and shows a backdrop while open', () => {
+      const fixture = adminFixture();
+      const el = fixture.nativeElement as HTMLElement;
+      const drawer = el.querySelector('app-admin-sidebar') as HTMLElement;
+      expect(drawer.classList).not.toContain('mobile-drawer--open');
+      expect(el.querySelector('.mobile-drawer-backdrop')).toBeFalsy();
+
+      (el.querySelector('.mobile-topbar__menu') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(drawer.classList).toContain('mobile-drawer--open');
+
+      (el.querySelector('.mobile-drawer-backdrop') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(drawer.classList).not.toContain('mobile-drawer--open');
+    });
+
+    it('closes the drawer on navigation', async () => {
+      const fixture = adminFixture();
+      fixture.componentInstance.navOpen = true;
+      await TestBed.inject(Router).navigateByUrl('/admin/dashboard');
+      expect(fixture.componentInstance.navOpen).toBeFalse();
+    });
+  });
 });

@@ -1,0 +1,68 @@
+import { expect, test } from '@playwright/test';
+
+// Every screen each role can reach. Add new admin routes here so they are checked at phone width.
+const ADMIN_ROUTES = [
+  '/admin/dashboard', '/admin/sales/new', '/change-password',
+  ...[
+    'company-profile', 'branding', 'compensation', 'payments-kyc', 'associate-directory', 'tree-explorer',
+    'kyc-queue', 'sales-register', 'cycle-management', 'ledger-register', 'e-pin-register', 'payout-approval',
+    'projects-plots', 'book-plot', 'bookings-emi', 'audit-log', 'admin-stats', 'support-tickets'
+  ].map(s => `/settings/${s}`)
+];
+
+const ASSOCIATE_ROUTES = [
+  '/dashboard', '/my-tree', '/my-tree/team', '/plot-bookings', '/plot-bookings/team', '/plot-bookings/left',
+  '/plot-bookings/mine', '/plot-bookings/right', '/plot-bookings/my-sales', '/e-pins/unlock', '/profile',
+  '/profile/welcome-letter', '/profile/bank-details', '/profile/kyc', '/income-statement', '/income-statement/direct',
+  '/income-statement/matching', '/income-statement/sponsor-matching', '/income-statement/royalty',
+  '/income-statement/reward', '/income-statement/perk', '/reports/my-business', '/reports/emi', '/payout-history',
+  '/messages', '/messages/new', '/change-password'
+];
+
+const ROLES = [
+  { name: 'admin', user: 'ADMIN_USER', pass: 'ADMIN_PASSWORD', defaults: ['admin', 'ChangeMe123!'], routes: ADMIN_ROUTES, home: '/admin/dashboard' },
+  { name: 'associate', user: 'ASSOCIATE_USER', pass: 'ASSOCIATE_PASSWORD', defaults: ['VP00001', 'ChangeMe123!'], routes: ASSOCIATE_ROUTES, home: '/dashboard' }
+];
+
+for (const role of ROLES) for (const width of [360, 390]) {
+  test.describe(`${role.name} at ${width}px`, () => {
+    test.use({ viewport: { width, height: 800 }, isMobile: true, hasTouch: true });
+
+    test.beforeEach(async ({ page, request }) => {
+      const res = await request.post('/api/auth/login', {
+        data: {
+          userId: process.env[role.user] ?? role.defaults[0],
+          password: process.env[role.pass] ?? role.defaults[1]
+        }
+      });
+      const login = await res.json();
+      await page.addInitScript(l => {
+        localStorage.setItem('plotchain.auth.token', l.token);
+        localStorage.setItem('plotchain.auth.mustChangePassword', 'false');
+        localStorage.setItem('plotchain.auth.role', l.role);
+      }, login);
+    });
+
+    for (const route of role.routes) {
+      test(`${route} has no horizontal page overflow`, async ({ page }) => {
+        await page.goto(route, { waitUntil: 'networkidle' });
+        expect(new URL(page.url()).pathname).toBe(route);
+        const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+          scrollWidth: document.documentElement.scrollWidth,
+          clientWidth: document.documentElement.clientWidth
+        }));
+        expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+      });
+    }
+
+    test('sidebar is an off-canvas drawer opened by the menu button', async ({ page }) => {
+      await page.goto(role.home, { waitUntil: 'networkidle' });
+      const sidebar = page.locator('.mobile-drawer .associate-sidebar');
+      await expect(sidebar).toBeHidden();
+      await page.locator('.mobile-topbar__menu').click();
+      await expect(sidebar).toBeVisible();
+      await page.locator('.mobile-drawer-backdrop').click({ position: { x: width - 5, y: 400 } });
+      await expect(sidebar).toBeHidden();
+    });
+  });
+}

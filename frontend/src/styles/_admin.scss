@@ -2825,72 +2825,16 @@
     min-width: 0;
   }
 
+  // Same phone behaviour as the Reward ladder: keep the table, scroll it sideways inside its panel
+  // (.income-statement__table has overflow-x:auto) instead of collapsing rows into stacked cards.
   .income-statement .editable-table {
-    table-layout: fixed;
-    width: 100%;
-    min-width: 0;
+    width: max-content;
+    min-width: 100%;
   }
 
-  .income-statement .editable-table thead {
-    display: none;
-  }
-
-  .income-statement .editable-table tbody tr {
-    display: block;
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--border-subtle);
-  }
-
-  .income-statement .editable-table tbody td {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.375rem 0;
-    border-bottom: none;
-    text-align: right;
-    min-width: 0;
-    white-space: normal;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-
-    > * {
-      min-width: 0;
-    }
-
-    &::before {
-      content: attr(data-label);
-      flex: 0 0 auto;
-      font-family: var(--font-mono);
-      font-size: 0.6875rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      text-align: left;
-    }
-  }
-
-  .income-statement .editable-table tbody td:first-child {
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 600;
-    text-transform: none;
-    letter-spacing: normal;
-    white-space: normal;
-    color: var(--text-primary);
-  }
-
-  .income-statement .editable-table td:nth-child(2),
-  .income-statement .editable-table td:nth-child(3),
-  .income-statement .editable-table td:nth-child(4),
-  .income-statement .editable-table td:nth-child(5),
-  .income-statement .editable-table td:nth-child(6),
-  .income-statement .editable-table td:nth-child(7),
-  .income-statement .editable-table td:nth-child(8),
-  .income-statement .editable-table td:nth-child(9) {
-    text-align: right;
-    white-space: normal;
+  .income-statement .editable-table th,
+  .income-statement .editable-table td {
+    white-space: nowrap;
   }
 
   .income-statement__pagination .brand-button--secondary,
@@ -4738,7 +4682,7 @@ button.tree-explorer__vacant-card {
 
 @media (max-width: 960px) {
   .admin-dashboard__row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .admin-dashboard__seal-strip {
@@ -4874,7 +4818,7 @@ button.tree-explorer__vacant-card {
 
 @media (max-width: 960px) {
   .epin-register { padding-inline: 1rem; }
-  .epin-register__grid { grid-template-columns: 1fr; }
+  .epin-register__grid { grid-template-columns: minmax(0, 1fr); }
   .epin-register__detail { position: static; }
 }
 

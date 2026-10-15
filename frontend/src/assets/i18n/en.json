@@ -648,6 +648,8 @@
     "unpin": "Unpin sidebar"
   },
   "nav": {
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
     "plotBooking": {
       "bookNewPlot": "Book new Plot",
       "addPlotEmi": "Add Plot EMI",

@@ -92,6 +92,7 @@ import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap
       <div class="associate-sidebar__footer">
         <div class="associate-sidebar__divider associate-sidebar__divider--tight"></div>
         <button
+          *ngIf="!forceExpanded"
           type="button"
           class="associate-sidebar__pin"
           [class.associate-sidebar__pin--pinned]="pinned"
@@ -114,6 +115,8 @@ export class AssociateSidebarComponent {
   private brandingBootstrap = inject(BrandingBootstrapService);
 
   @Input() pinned = true;
+  // Phone drawer: always full width with labels, and pinning is meaningless.
+  @Input() forceExpanded = false;
   @Output() pinnedChange = new EventEmitter<boolean>();
   @Output() logout = new EventEmitter<void>();
 
@@ -148,7 +151,7 @@ export class AssociateSidebarComponent {
   }
 
   get expanded(): boolean {
-    return this.pinned || this.hovering;
+    return this.forceExpanded || this.pinned || this.hovering;
   }
 
   get showSquareLogo(): boolean {
