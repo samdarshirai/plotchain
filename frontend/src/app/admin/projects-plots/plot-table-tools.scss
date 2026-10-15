@@ -1,3 +1,19 @@
+.projects-plots__toolbar {
+  .projects-plots__project-select select, .plot-table-tools__search, .plot-table-tools__export {
+    box-sizing: border-box; height: 40px; min-height: 40px; padding-block: 0; font-size: 0.875rem; line-height: 1.25;
+  }
+  .projects-plots__project-select select, .plot-table-tools__search { padding-inline: 0.75rem; }
+  .plot-table-tools__export { padding-inline: 1rem; }
+}
+
+.projects-plots__toolbar .plot-table-tools {
+  margin: 0; flex: 1 1 auto; flex-wrap: nowrap; min-width: 0; align-items: flex-start;
+  .plot-table-tools__count { line-height: 40px; }
+  .plot-table-tools__export { margin-inline-start: auto; }
+  .plot-table-tools__label { display: flex; flex: 1 1 10rem; max-width: 18rem; min-width: 8rem; }
+  .plot-table-tools__count, .plot-table-tools__export { white-space: nowrap; flex: none; }
+}
+
 .plot-table-tools {
   display: flex;
   flex-wrap: wrap;
@@ -36,5 +52,26 @@
     th:not(:first-child), td:not(:first-child) { width: 1%; padding-inline: 1rem; }
     th:nth-child(2), td:nth-child(2) { text-align: right; }
     th:last-child, td:last-child { width: auto; text-align: left; padding-inline-start: 1.5rem; }
+  }
+  .projects-plots .projects-plots__table--book {
+    table-layout: fixed;
+    th, td { width: auto; padding-inline: 1.25rem; box-sizing: border-box; }
+    th:nth-child(1) { width: 17%; }
+    th:nth-child(2), th:nth-child(3), th:nth-child(4) { width: 15%; }
+    th:nth-child(5) { width: 20%; }
+    th:last-child { width: 18%; }
+    th:first-child, td:first-child { padding-inline-start: 1.5rem; }
+    th:nth-child(5), td:nth-child(5) { padding-inline-start: 3rem; text-align: left; }
+    th:last-child, td:last-child { text-align: right; padding-inline-end: 1.5rem; }
+    .projects-plots__row-book {
+      min-width: 4.5rem; padding: 0.375rem 1rem; min-height: 0; font: 600 0.8125rem var(--font-sans);
+      background: transparent; color: var(--brand-secondary); border: 1px solid var(--brand-secondary); box-shadow: none;
+      transition: background-color 0.15s, color 0.15s;
+      &:disabled { opacity: 1; background: transparent; color: var(--text-muted); border-color: var(--border-subtle); cursor: not-allowed; }
+    }
+    tr:hover .projects-plots__row-book:not(:disabled), .projects-plots__row-book:not(:disabled):focus-visible {
+      background: var(--brand-secondary); color: var(--brand-secondary-contrast);
+    }
+    tr:has(.projects-plots__pill--sold) td:not(:last-child) { color: var(--text-muted); }
   }
 }

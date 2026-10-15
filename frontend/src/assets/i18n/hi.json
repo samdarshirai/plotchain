@@ -1248,6 +1248,7 @@
       "photoLabel": "Project photo",
       "saveProjectAction": "Save project",
       "bookAction": "Book this plot",
+      "bookShort": "Book",
       "bookDisabledBooked": "Already booked. Open it in Bookings & EMI to pay, confirm or cancel.",
       "bookDisabledSold": "Already sold.",
       "bookTitle": "Book plot {{no}}",

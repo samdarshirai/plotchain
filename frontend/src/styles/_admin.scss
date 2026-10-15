@@ -4955,8 +4955,10 @@ button.tree-explorer__vacant-card {
   &__view--on { background: var(--surface-card) !important; color: var(--text-primary) !important; box-shadow: 0 0 0 1px var(--border-subtle); }
   &__table-wrap { overflow-x: auto; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 4px; }
   &__table { width: 100%; border-collapse: collapse; font-size: 0.8125rem;
-    th { padding: 0.75rem 0.3125rem; text-align: left; background: var(--surface-raised); border-bottom: 1px solid var(--border-subtle); font: 600 0.6875rem var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
-    td { padding: 0.5625rem 0.3125rem; border-bottom: 1px solid #EAE2D1; line-height: 1.25; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    th { padding: 0.875rem 0.3125rem; text-align: left; background: var(--surface-card); border-bottom: 1px solid var(--border-subtle); font: 600 0.75rem var(--font-sans); letter-spacing: 0.02em; color: var(--text-muted); }
+    td { padding: 0.8125rem 0.3125rem; border-bottom: 1px solid color-mix(in srgb, var(--border-subtle) 55%, transparent); line-height: 1.25; font-family: var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    tbody tr:last-child td { border-bottom: 0; }
+    td.projects-plots__num, td:nth-child(2) { font-family: var(--font-mono); }
     th:first-child, td:first-child { padding-left: 1.25rem; width: 5.25rem; box-sizing: content-box; }
     th:nth-child(2), td:nth-child(2) { width: 6rem; }
     th:nth-child(3), td:nth-child(3) { width: 6rem; padding-right: 0.625rem; } }
@@ -4964,11 +4966,12 @@ button.tree-explorer__vacant-card {
   &__empty-row { text-align: center; color: var(--text-muted); padding: 1.5rem 0.5rem; }
   &__table tbody tr:hover { background: #F7F2E7; }
   &__row--selected, &__table tbody &__row--selected:hover { background: #F6EFDD; box-shadow: inset 3px 0 0 var(--brand-secondary); }
-  &__row-btn { background: none; border: 0; padding: 0; line-height: 1.25; font: 500 0.8125rem var(--font-mono); color: var(--text-primary); cursor: pointer; text-decoration: none;
+  &__row-btn { background: none; border: 0; padding: 0; line-height: 1.25; font: 600 0.875rem var(--font-mono); color: var(--text-primary); cursor: pointer; text-decoration: none;
     &:hover { text-decoration: underline; }
     &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; } }
   &__corner { margin-left: 0.375rem; font: 600 0.5938rem var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
-  &__pill { padding: 0.1875rem 0.5625rem; border-radius: 999px; font: 600 0.71875rem var(--font-sans);
+  &__pill { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.1875rem 0.625rem 0.1875rem 0.5rem; border-radius: 999px; font: 600 0.75rem var(--font-sans);
+    &::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
     &--available { background: color-mix(in srgb, var(--status-success) 18%, var(--surface-card)); color: var(--status-success-text); }
     &--booked { background: color-mix(in srgb, var(--status-warning) 18%, var(--surface-card)); color: var(--status-warning-text); }
     &--sold { background: #CFC6B6; color: #3E372E; } }

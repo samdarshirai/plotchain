@@ -70,7 +70,7 @@ describe('findNavCategoryForUrl', () => {
   });
 
   it('resolvesBookNewPlotToPlotBookingButBareProjectsPlotsToSetup', () => {
-    expect(findNavCategoryForUrl('/settings/projects-plots?book=1')?.key).toBe('inventory');
+    expect(findNavCategoryForUrl('/settings/book-plot')?.key).toBe('inventory');
     expect(findNavCategoryForUrl('/settings/projects-plots')?.key).toBe('setup');
   });
 

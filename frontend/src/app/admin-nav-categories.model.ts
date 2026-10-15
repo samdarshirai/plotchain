@@ -62,7 +62,7 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     labelKey: 'nav.categories.inventory',
     icon: 'domain',
     items: [
-      { key: 'bookNewPlot', labelKey: 'nav.plotBooking.bookNewPlot', path: '/settings/projects-plots', query: { book: '1' } },
+      { key: 'bookNewPlot', labelKey: 'nav.plotBooking.bookNewPlot', path: '/settings/book-plot' },
       { key: 'addPlotEmi', labelKey: 'nav.plotBooking.addPlotEmi', path: BOOKINGS_EMI, query: { tab: 'register', action: 'reschedule' } },
       { key: 'viewBookedPlot', labelKey: 'nav.plotBooking.viewBookedPlot', path: BOOKINGS_EMI, query: { tab: 'register' } },
       { key: 'viewConfirmedPlot', labelKey: 'nav.plotBooking.viewConfirmedPlot', path: BOOKINGS_EMI, query: { tab: 'unconfirmed' } },

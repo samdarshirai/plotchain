@@ -69,12 +69,24 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === selectedProject?.id">{{ p.name }}</option>
           </select>
         </label>
-        <div class="projects-plots__project-actions" *ngIf="selectedProject && !readOnly">
+        <div class="projects-plots__project-actions" *ngIf="selectedProject && !readOnly && !bookMode">
           <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'project', mode: 'edit' })">{{ 'admin.projectsPlots.editProjectAction' | translate }}</button>
           <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'csv' })">{{ 'admin.projectsPlots.importCsvAction' | translate }}</button>
           <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'addPlot' })">{{ 'admin.projectsPlots.addPlotAction' | translate }}</button>
         </div>
-        <button type="button" *ngIf="!readOnly" class="brand-button projects-plots__add-project" (click)="openAside({ kind: 'project', mode: 'add' })">
+        <div class="plot-table-tools" *ngIf="view === 'table' && grid?.length && !readOnly">
+          <label class="plot-table-tools__label">
+            <span class="projects-plots__sr">{{ 'admin.projectsPlots.table.searchLabel' | translate }}</span>
+            <input type="search" class="plot-table-tools__search" [value]="search" [placeholder]="'admin.projectsPlots.table.searchPlaceholder' | translate" (input)="onSearch($any($event.target).value)">
+          </label>
+          <span class="plot-table-tools__count" role="status">{{ 'admin.projectsPlots.table.count' | translate: { shown: tableRows.length, total: visibleCount } }}</span>
+          <button type="button" class="brand-button plot-table-tools__export" [disabled]="!rates || !tableRows.length" (click)="exportPlots()">{{ 'admin.projectsPlots.table.exportCsv' | translate }}</button>
+          <span class="plot-table-tools__error" role="alert" *ngIf="ratesError">
+            {{ 'admin.projectsPlots.table.rateError' | translate }}
+            <button type="button" class="projects-plots__retry" (click)="loadRates()">{{ 'admin.projectsPlots.retry' | translate }}</button>
+          </span>
+        </div>
+        <button type="button" *ngIf="!readOnly && !bookMode" class="brand-button projects-plots__add-project" (click)="openAside({ kind: 'project', mode: 'add' })">
           {{ 'admin.projectsPlots.addProjectAction' | translate }}
         </button>
       </div>
@@ -166,27 +178,16 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             </div>
             <p class="projects-plots__empty" *ngIf="grid.length && !visibleBlocks.length">{{ 'admin.projectsPlots.empty.filter' | translate }}</p>
 
-            <div class="plot-table-tools" *ngIf="view === 'table' && grid.length && !readOnly">
-              <label class="plot-table-tools__label">
-                <span class="projects-plots__sr">{{ 'admin.projectsPlots.table.searchLabel' | translate }}</span>
-                <input type="search" class="plot-table-tools__search" [value]="search" [placeholder]="'admin.projectsPlots.table.searchPlaceholder' | translate" (input)="onSearch($any($event.target).value)">
-              </label>
-              <span class="plot-table-tools__count" role="status">{{ 'admin.projectsPlots.table.count' | translate: { shown: tableRows.length, total: visibleCount } }}</span>
-              <button type="button" class="brand-button brand-button--secondary plot-table-tools__export" [disabled]="!rates || !tableRows.length" (click)="exportPlots()">{{ 'admin.projectsPlots.table.exportCsv' | translate }}</button>
-              <span class="plot-table-tools__error" role="alert" *ngIf="ratesError">
-                {{ 'admin.projectsPlots.table.rateError' | translate }}
-                <button type="button" class="projects-plots__retry" (click)="loadRates()">{{ 'admin.projectsPlots.retry' | translate }}</button>
-              </span>
-            </div>
             <p class="projects-plots__empty" role="status" *ngIf="view === 'table' && !readOnly && grid.length && visibleBlocks.length && !tableRows.length">{{ 'admin.projectsPlots.table.noMatch' | translate }}</p>
             <div class="projects-plots__table-wrap" *ngIf="view === 'table' && tableRows.length">
-              <table class="projects-plots__table">
+              <table class="projects-plots__table" [class.projects-plots__table--book]="bookMode">
                 <thead><tr>
                   <th scope="col">{{ 'admin.projectsPlots.table.plot' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.area' | translate }}</th>
                   <th scope="col" class="projects-plots__num" *ngIf="!readOnly">{{ 'admin.projectsPlots.rateLabel' | translate }}</th>
                   <th scope="col" class="projects-plots__num">{{ 'admin.projectsPlots.table.total' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.status' | translate }}</th>
+                  <th scope="col" *ngIf="bookMode"><span class="projects-plots__sr">{{ 'admin.projectsPlots.bookAction' | translate }}</span></th>
                 </tr></thead>
                 <tbody>
                   <tr *ngFor="let p of tableRows; trackBy: trackPlot" [attr.data-plot-id]="p.plotId" class="projects-plots__row"
@@ -197,6 +198,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
                     <td class="projects-plots__num" *ngIf="!readOnly">{{ rateText(p.plotId) }}</td>
                     <td class="projects-plots__num">{{ priceText(p.price) }}</td>
                     <td><span class="projects-plots__pill projects-plots__pill--{{ p.status.toLowerCase() }}">{{ 'plotTile.status.' + p.status | translate }}</span></td>
+                    <td *ngIf="bookMode"><button type="button" class="brand-button projects-plots__row-book" [disabled]="p.status !== 'AVAILABLE'" (click)="selectPlot(p); openAside({ kind: 'book' })">{{ 'admin.projectsPlots.bookShort' | translate }}</button></td>
                   </tr>
                 </tbody>
               </table>
@@ -282,9 +284,10 @@ export class ProjectsPlotsComponent implements OnInit {
   private adminService = inject(AdminService);
   private translate = inject(TranslateService);
   // Associate "View Plot" reuses this screen with route data { readOnly: true }: no admin-only calls, no write actions.
-  readonly readOnly = inject(ActivatedRoute).snapshot.data['readOnly'] === true;
+  private route = inject(ActivatedRoute);
+  readonly readOnly = this.route.snapshot.data['readOnly'] === true;
   // Entered from the Plot Booking > "Book new Plot" sidebar item (?book=1): pick an available plot, then Book.
-  readonly bookMode = inject(ActivatedRoute).snapshot.queryParamMap?.get('book') === '1';
+  readonly bookMode = this.route.snapshot.data['bookMode'] === true || this.route.snapshot.queryParamMap?.get('book') === '1';
 
   readonly statuses = STATUSES;
   readonly views: View[] = ['grid', 'site', 'table'];
