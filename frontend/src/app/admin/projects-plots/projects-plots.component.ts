@@ -182,21 +182,27 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             <div class="projects-plots__table-wrap" *ngIf="view === 'table' && tableRows.length">
               <table class="projects-plots__table" [class.projects-plots__table--book]="bookMode">
                 <thead><tr>
+                  <th scope="col" *ngIf="bookMode">{{ 'admin.projectsPlots.table.sNo' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.plot' | translate }}</th>
+                  <th scope="col" *ngIf="bookMode">{{ 'admin.projectsPlots.table.type' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.area' | translate }}</th>
                   <th scope="col" class="projects-plots__num" *ngIf="!readOnly">{{ 'admin.projectsPlots.rateLabel' | translate }}</th>
                   <th scope="col" class="projects-plots__num">{{ 'admin.projectsPlots.table.total' | translate }}</th>
+                  <th scope="col" class="projects-plots__num" *ngIf="bookMode">{{ 'admin.projectsPlots.extraPriceLabel' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.status' | translate }}</th>
                   <th scope="col" *ngIf="bookMode"><span class="projects-plots__sr">{{ 'admin.projectsPlots.bookAction' | translate }}</span></th>
                 </tr></thead>
                 <tbody>
-                  <tr *ngFor="let p of tableRows; trackBy: trackPlot" [attr.data-plot-id]="p.plotId" class="projects-plots__row"
+                  <tr *ngFor="let p of tableRows; trackBy: trackPlot; let i = index" [attr.data-plot-id]="p.plotId" class="projects-plots__row"
                     [class.projects-plots__row--selected]="p.plotId === selectedPlotId">
+                    <td *ngIf="bookMode">{{ i + 1 }}</td>
                     <td><button type="button" class="projects-plots__row-btn" [attr.aria-pressed]="p.plotId === selectedPlotId" (click)="selectPlot(p)">{{ p.plotNo }}</button>
-                      <span class="projects-plots__corner" *ngIf="p.type === 'CORNER'">{{ 'plotTile.corner' | translate }}</span></td>
+                      <span class="projects-plots__corner" *ngIf="p.type === 'CORNER' && !bookMode">{{ 'plotTile.corner' | translate }}</span></td>
+                    <td *ngIf="bookMode">{{ 'plotTile.type.' + p.type | translate }}</td>
                     <td>{{ areaText(p.area) }} {{ 'plotTile.sqft' | translate }}</td>
                     <td class="projects-plots__num" *ngIf="!readOnly">{{ rateText(p.plotId) }}</td>
                     <td class="projects-plots__num">{{ priceText(p.price) }}</td>
+                    <td class="projects-plots__num" *ngIf="bookMode">{{ priceText(p.extraPrice ?? 0) }}</td>
                     <td><span class="projects-plots__pill projects-plots__pill--{{ p.status.toLowerCase() }}">{{ 'plotTile.status.' + p.status | translate }}</span></td>
                     <td *ngIf="bookMode"><button type="button" class="brand-button projects-plots__row-book" [disabled]="p.status !== 'AVAILABLE'" (click)="selectPlot(p); openAside({ kind: 'book' })">{{ 'admin.projectsPlots.bookShort' | translate }}</button></td>
                   </tr>
