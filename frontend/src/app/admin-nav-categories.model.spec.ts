@@ -3,22 +3,22 @@ import { ADMIN_NAV_CATEGORIES, findNavCategoryForUrl } from './admin-nav-categor
 describe('ADMIN_NAV_CATEGORIES', () => {
   it('listsTheMockupCategoriesInOrderWithTheirIcons', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => [category.key, category.icon])).toEqual([
+      ['setup', 'tune'],
       ['network', 'group'],
       ['finance', 'point_of_sale'],
       ['inventory', 'domain'],
       ['communication', 'forum'],
-      ['setup', 'tune'],
       ['system', 'admin_panel_settings']
     ]);
   });
 
   it('groupsEverySettingsScreenUnderTheirCategory', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => category.items.map(item => item.key))).toEqual([
+      ['companyProfile', 'branding', 'compensation', 'paymentsKyc', 'projectsPlots'],
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
       ['ledgerRegister', 'salesRegister', 'cycleManagement', 'epinRegister', 'payoutApproval'],
-      ['projectsPlots', 'bookingsEmi'],
+      ['bookNewPlot', 'addPlotEmi', 'viewBookedPlot', 'viewConfirmedPlot', 'plotTransfer', 'viewPlotEmi', 'viewTransferredPlots', 'viewCancelledPlot'],
       ['supportTickets'],
-      ['companyProfile', 'branding', 'compensation', 'paymentsKyc'],
       ['auditLog', 'adminStats']
     ]);
   });
@@ -28,7 +28,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
       expect(category.labelKey).toBe('nav.categories.' + category.key);
       for (const item of category.items) {
         expect(item.path.startsWith('/settings/')).toBe(true);
-        expect(item.labelKey).toBe('settings.sections.' + item.key);
+        expect(item.labelKey).toBe((category.key === 'inventory' ? 'nav.plotBooking.' : 'settings.sections.') + item.key);
       }
     }
   });
@@ -40,7 +40,7 @@ describe('findNavCategoryForUrl', () => {
   });
 
   it('resolvesTheProjectsPlotsScreenToTheInventoryCategory', () => {
-    expect(findNavCategoryForUrl('/settings/projects-plots')?.key).toBe('inventory');
+    expect(findNavCategoryForUrl('/settings/projects-plots')?.key).toBe('setup');
   });
 
   it('returnsTheCategoryOwningTheCurrentSettingsScreen', () => {
@@ -67,5 +67,15 @@ describe('findNavCategoryForUrl', () => {
 
   it('resolvesTheBookingsEmiScreenToTheInventoryCategory', () => {
     expect(findNavCategoryForUrl('/settings/bookings-emi')?.key).toBe('inventory');
+  });
+
+  it('resolvesBookNewPlotToPlotBookingButBareProjectsPlotsToSetup', () => {
+    expect(findNavCategoryForUrl('/settings/projects-plots?book=1')?.key).toBe('inventory');
+    expect(findNavCategoryForUrl('/settings/projects-plots')?.key).toBe('setup');
+  });
+
+  it('resolvesEveryPlotBookingDeepLinkToTheInventoryCategory', () => {
+    expect(findNavCategoryForUrl('/settings/bookings-emi?tab=transferred')?.key).toBe('inventory');
+    expect(findNavCategoryForUrl('/settings/bookings-emi?tab=register&action=transfer')?.key).toBe('inventory');
   });
 });

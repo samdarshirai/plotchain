@@ -41,7 +41,7 @@ describe('AdminSidebarComponent', () => {
 
   it('opens a group on click to show its links, and closes it on a second click', () => {
     const { fixture, el } = render();
-    const setup = el.querySelectorAll('.associate-sidebar__group-toggle')[4] as HTMLButtonElement;
+    const setup = el.querySelectorAll('.associate-sidebar__group-toggle')[0] as HTMLButtonElement;
 
     setup.click();
     fixture.detectChanges();
@@ -50,7 +50,8 @@ describe('AdminSidebarComponent', () => {
       '/settings/company-profile',
       '/settings/branding',
       '/settings/compensation',
-      '/settings/payments-kyc'
+      '/settings/payments-kyc',
+      '/settings/projects-plots'
     ]);
     expect(setup.getAttribute('aria-expanded')).toBe('true');
 
@@ -62,12 +63,12 @@ describe('AdminSidebarComponent', () => {
   it('keeps only one group open: opening a second closes the first', () => {
     const { fixture, el } = render();
     const toggles = el.querySelectorAll('.associate-sidebar__group-toggle');
-    (toggles[0] as HTMLButtonElement).click();
-    (toggles[3] as HTMLButtonElement).click();
+    (toggles[1] as HTMLButtonElement).click();
+    (toggles[4] as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(el.querySelectorAll('.associate-sidebar__subnav').length).toBe(1);
-    expect(toggles[0].getAttribute('aria-expanded')).toBe('false');
-    expect(toggles[3].getAttribute('aria-expanded')).toBe('true');
+    expect(toggles[1].getAttribute('aria-expanded')).toBe('false');
+    expect(toggles[4].getAttribute('aria-expanded')).toBe('true');
   });
 
   it('auto-opens the group that owns the current route, and follows navigation', async () => {

@@ -245,7 +245,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
               <dt>{{ 'admin.projectsPlots.statusLabel' | translate }}</dt><dd>{{ 'plotTile.status.' + sel.status | translate }}</dd>
             </dl>
             <div class="projects-plots__aside-actions" *ngIf="!readOnly">
-              <button type="button" class="brand-button projects-plots__book" [disabled]="sel.status !== 'AVAILABLE'"
+              <button type="button" *ngIf="bookMode" class="brand-button projects-plots__book" [disabled]="sel.status !== 'AVAILABLE'"
                 [attr.aria-describedby]="sel.status !== 'AVAILABLE' ? 'book-disabled-reason' : null" (click)="openAside({ kind: 'book' })">
                 {{ 'admin.projectsPlots.bookAction' | translate }}
               </button>
@@ -253,7 +253,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
                 {{ 'admin.projectsPlots.editPlotAction' | translate }}
               </button>
             </div>
-            <p id="book-disabled-reason" class="projects-plots__reason" *ngIf="!readOnly && sel.status !== 'AVAILABLE'">
+            <p id="book-disabled-reason" class="projects-plots__reason" *ngIf="bookMode && sel.status !== 'AVAILABLE'">
               {{ (sel.status === 'BOOKED' ? 'admin.projectsPlots.bookDisabledBooked' : 'admin.projectsPlots.bookDisabledSold') | translate }}
             </p>
           </ng-container>
@@ -283,10 +283,12 @@ export class ProjectsPlotsComponent implements OnInit {
   private translate = inject(TranslateService);
   // Associate "View Plot" reuses this screen with route data { readOnly: true }: no admin-only calls, no write actions.
   readonly readOnly = inject(ActivatedRoute).snapshot.data['readOnly'] === true;
+  // Entered from the Plot Booking > "Book new Plot" sidebar item (?book=1): pick an available plot, then Book.
+  readonly bookMode = inject(ActivatedRoute).snapshot.queryParamMap?.get('book') === '1';
 
   readonly statuses = STATUSES;
   readonly views: View[] = ['grid', 'site', 'table'];
-  view: View = 'grid';
+  view: View = 'table';
   projects: Project[] | null = null;
   projectsError = false;
   selectedProject: Project | null = null;

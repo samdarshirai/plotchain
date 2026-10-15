@@ -2,6 +2,8 @@ export interface AdminNavItem {
   key: string;
   labelKey: string;
   path: string;
+  // Items that share one screen (Plot Booking tabs) are told apart by query params.
+  query?: Record<string, string>;
 }
 
 export interface AdminNavCategory {
@@ -18,7 +20,21 @@ export interface AdminNavCategory {
 // findNavCategoryForUrl below. The icons are Material Symbols names, purely decorative, so they
 // carry no i18n key. Dashboard is not a category: it lives beside these tabs in the header and
 // collapses the item row entirely.
+const BOOKINGS_EMI = '/settings/bookings-emi';
+
 export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
+  {
+    key: 'setup',
+    labelKey: 'nav.categories.setup',
+    icon: 'tune',
+    items: [
+      { key: 'companyProfile', labelKey: 'settings.sections.companyProfile', path: '/settings/company-profile' },
+      { key: 'branding', labelKey: 'settings.sections.branding', path: '/settings/branding' },
+      { key: 'compensation', labelKey: 'settings.sections.compensation', path: '/settings/compensation' },
+      { key: 'paymentsKyc', labelKey: 'settings.sections.paymentsKyc', path: '/settings/payments-kyc' },
+      { key: 'projectsPlots', labelKey: 'settings.sections.projectsPlots', path: '/settings/projects-plots' }
+    ]
+  },
   {
     key: 'network',
     labelKey: 'nav.categories.network',
@@ -46,8 +62,14 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     labelKey: 'nav.categories.inventory',
     icon: 'domain',
     items: [
-      { key: 'projectsPlots', labelKey: 'settings.sections.projectsPlots', path: '/settings/projects-plots' },
-      { key: 'bookingsEmi', labelKey: 'settings.sections.bookingsEmi', path: '/settings/bookings-emi' }
+      { key: 'bookNewPlot', labelKey: 'nav.plotBooking.bookNewPlot', path: '/settings/projects-plots', query: { book: '1' } },
+      { key: 'addPlotEmi', labelKey: 'nav.plotBooking.addPlotEmi', path: BOOKINGS_EMI, query: { tab: 'register', action: 'reschedule' } },
+      { key: 'viewBookedPlot', labelKey: 'nav.plotBooking.viewBookedPlot', path: BOOKINGS_EMI, query: { tab: 'register' } },
+      { key: 'viewConfirmedPlot', labelKey: 'nav.plotBooking.viewConfirmedPlot', path: BOOKINGS_EMI, query: { tab: 'unconfirmed' } },
+      { key: 'plotTransfer', labelKey: 'nav.plotBooking.plotTransfer', path: BOOKINGS_EMI, query: { tab: 'register', action: 'transfer' } },
+      { key: 'viewPlotEmi', labelKey: 'nav.plotBooking.viewPlotEmi', path: BOOKINGS_EMI, query: { tab: 'lastEmi' } },
+      { key: 'viewTransferredPlots', labelKey: 'nav.plotBooking.viewTransferredPlots', path: BOOKINGS_EMI, query: { tab: 'transferred' } },
+      { key: 'viewCancelledPlot', labelKey: 'nav.plotBooking.viewCancelledPlot', path: BOOKINGS_EMI, query: { tab: 'cancelled' } }
     ]
   },
   {
@@ -56,17 +78,6 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     icon: 'forum',
     items: [
       { key: 'supportTickets', labelKey: 'settings.sections.supportTickets', path: '/settings/support-tickets' }
-    ]
-  },
-  {
-    key: 'setup',
-    labelKey: 'nav.categories.setup',
-    icon: 'tune',
-    items: [
-      { key: 'companyProfile', labelKey: 'settings.sections.companyProfile', path: '/settings/company-profile' },
-      { key: 'branding', labelKey: 'settings.sections.branding', path: '/settings/branding' },
-      { key: 'compensation', labelKey: 'settings.sections.compensation', path: '/settings/compensation' },
-      { key: 'paymentsKyc', labelKey: 'settings.sections.paymentsKyc', path: '/settings/payments-kyc' }
     ]
   },
   {
@@ -85,8 +96,14 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
 // tab the item row is showing. Returns undefined for anything outside /settings (e.g.
 // /admin/dashboard), which is what collapses the item row.
 export function findNavCategoryForUrl(url: string): AdminNavCategory | undefined {
-  const path = url.split('?')[0].split('#')[0];
-  return ADMIN_NAV_CATEGORIES.find(category =>
-    category.items.some(item => path === item.path || path.startsWith(item.path + '/'))
-  );
+  const [pathAndQuery] = url.split('#');
+  const [path, queryString = ''] = pathAndQuery.split('?');
+  const params = new URLSearchParams(queryString);
+  const onPath = (item: AdminNavItem) => path === item.path || path.startsWith(item.path + '/');
+  const queryMatches = (item: AdminNavItem) => Object.entries(item.query ?? {}).every(([k, v]) => params.get(k) === v);
+  // Items sharing a path (Plot Booking) are told apart by query; a query-matching item wins over a bare path match.
+  const items = ADMIN_NAV_CATEGORIES.flatMap(category => category.items.map(item => ({ category, item })));
+  return (items.find(({ item }) => item.query && onPath(item) && queryMatches(item))
+    ?? items.find(({ item }) => onPath(item))
+  )?.category;
 }

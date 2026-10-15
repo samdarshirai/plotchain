@@ -620,6 +620,16 @@
     "unpin": "साइडबार अनपिन करें"
   },
   "nav": {
+    "plotBooking": {
+      "bookNewPlot": "नया प्लॉट बुक करें",
+      "addPlotEmi": "प्लॉट ईएमआई जोड़ें",
+      "viewBookedPlot": "बुक किए गए प्लॉट देखें",
+      "viewConfirmedPlot": "कन्फर्म/अनकन्फर्म प्लॉट देखें",
+      "plotTransfer": "प्लॉट ट्रांसफर",
+      "viewPlotEmi": "प्लॉट ईएमआई देखें",
+      "viewTransferredPlots": "ट्रांसफर किए गए प्लॉट देखें",
+      "viewCancelledPlot": "रद्द प्लॉट देखें"
+    },
     "reports": "रिपोर्ट",
     "myBusinessDatewise": "मेरा व्यवसाय (तिथि अनुसार)",
     "emiReport": "EMI रिपोर्ट",
@@ -646,10 +656,10 @@
     "viewMessages": "View Messages",
     "newMessage": "New Message",
     "categories": {
-      "setup": "सेटअप",
+      "setup": "मास्टर डेटा",
       "network": "वंशावली",
       "finance": "वित्त और चक्र",
-      "inventory": "इन्वेंटरी और बुकिंग",
+      "inventory": "प्लॉट बुकिंग",
       "communication": "संवाद",
       "system": "सिस्टम"
     }
@@ -1055,10 +1065,11 @@
       }
     },
     "bookingsEmi": {
-      "eyebrow": "Inventory & Bookings",
+      "eyebrow": "Plot Booking",
       "title": "Bookings & EMI",
       "subtitle": "Track every plot booking, record instalments as they are collected, and chase the ones that are overdue.",
-      "tab": { "register": "Register", "overdue": "Overdue report", "unconfirmed": "Unconfirmed", "confirmed": "Confirmed", "cancelled": "Cancelled", "lastEmi": "EMI by last date" },
+      "tab": { "register": "Register", "overdue": "Overdue report", "unconfirmed": "Unconfirmed", "confirmed": "Confirmed", "cancelled": "Cancelled", "lastEmi": "EMI by last date", "transferred": "Transferred" },
+      "hint": { "reschedule": "Select a booking below, then choose Add EMI to re-split its unpaid balance.", "transfer": "Select a booking below, then choose Transfer to move it to another associate." },
       "rule": {
         "manual": "Confirm rule: Manual",
         "auto": "Confirm rule: Auto at {{percent}}%"
@@ -1163,7 +1174,7 @@
         "goToPlots": "Go to Projects & Plots",
         "noMatchTitle": "No bookings match these filters.",
         "queueTitle": "Nothing waiting for confirmation", "queueBody": "Entered payments appear here until an admin confirms them.",
-        "ledgerTitle": "No confirmed payments in this range", "cancelledTitle": "No cancelled bookings in this range",
+        "ledgerTitle": "No confirmed payments in this range", "cancelledTitle": "No cancelled bookings in this range", "transferredTitle": "No transferred plots yet",
         "lastEmiTitle": "No bookings have their last EMI in this range",
         "overdueTitle": "Nothing overdue", "overdueBody": "Every active booking is paid up to date. This list fills in on its own when an instalment passes its due date."
       },

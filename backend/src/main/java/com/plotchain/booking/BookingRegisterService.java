@@ -52,12 +52,19 @@ public class BookingRegisterService {
             cancelledFilter, BookingService.fromInstant(cancelledFrom), BookingService.toInstant(cancelledTo),
             needle, PageRequest.of(page, size, NEWEST_FIRST));
 
+        return toPage(result, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public AdminBookingPageResponse listTransferred(int page, int size) {
+        return toPage(plotBookingRepository.findTransferred(PageRequest.of(page, size, NEWEST_FIRST)), page, size);
+    }
+
+    private AdminBookingPageResponse toPage(Page<PlotBooking> result, int page, int size) {
         List<UUID> bookingIds = result.getContent().stream().map(PlotBooking::getId).toList();
         Map<UUID, List<EmiInstallment>> byBooking = bookingIds.isEmpty() ? Map.of()
             : emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(bookingIds).stream()
                 .collect(Collectors.groupingBy(EmiInstallment::getBookingId));
-
-        List<BookingResponse> rows = bookingService.toResponses(result.getContent(), byBooking);
-        return new AdminBookingPageResponse(rows, page, size, result.getTotalElements());
+        return new AdminBookingPageResponse(bookingService.toResponses(result.getContent(), byBooking), page, size, result.getTotalElements());
     }
 }

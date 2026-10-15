@@ -56,7 +56,9 @@ import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap
               *ngFor="let item of category.items"
               class="associate-sidebar__sublink"
               routerLinkActive="associate-sidebar__sublink--active"
+              [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'exact', fragment: 'ignored', matrixParams: 'ignored' }"
               [routerLink]="item.path"
+              [queryParams]="item.query"
             >
               <span class="associate-sidebar__sublink-label">{{ item.labelKey | translate }}</span>
             </a>

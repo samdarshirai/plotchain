@@ -25,6 +25,11 @@ export class BookingsEmiService {
     return this.http.get<BookingPage>('/api/admin/bookings', { params });
   }
 
+  transferred(page: number, size: number): Observable<BookingPage> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<BookingPage>('/api/admin/bookings/transferred', { params });
+  }
+
   get(id: string): Observable<Booking> {
     return this.http.get<Booking>(`/api/admin/bookings/${id}`);
   }
