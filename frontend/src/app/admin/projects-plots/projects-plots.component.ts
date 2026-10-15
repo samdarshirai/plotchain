@@ -187,8 +187,9 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
                   <th scope="col" *ngIf="bookMode">{{ 'admin.projectsPlots.table.type' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.area' | translate }}</th>
                   <th scope="col" class="projects-plots__num" *ngIf="!readOnly">{{ 'admin.projectsPlots.rateLabel' | translate }}</th>
-                  <th scope="col" class="projects-plots__num">{{ 'admin.projectsPlots.table.total' | translate }}</th>
+                  <th scope="col" class="projects-plots__num">{{ (bookMode ? 'admin.projectsPlots.table.price' : 'admin.projectsPlots.table.total') | translate }}</th>
                   <th scope="col" class="projects-plots__num" *ngIf="bookMode">{{ 'admin.projectsPlots.extraPriceLabel' | translate }}</th>
+                  <th scope="col" class="projects-plots__num" *ngIf="bookMode">{{ 'admin.projectsPlots.table.totalPrice' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.status' | translate }}</th>
                   <th scope="col" *ngIf="bookMode"><span class="projects-plots__sr">{{ 'admin.projectsPlots.bookAction' | translate }}</span></th>
                 </tr></thead>
@@ -201,8 +202,9 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
                     <td *ngIf="bookMode">{{ 'plotTile.type.' + p.type | translate }}</td>
                     <td>{{ areaText(p.area) }} {{ 'plotTile.sqft' | translate }}</td>
                     <td class="projects-plots__num" *ngIf="!readOnly">{{ rateText(p.plotId) }}</td>
-                    <td class="projects-plots__num">{{ priceText(p.price) }}</td>
+                    <td class="projects-plots__num">{{ priceText(bookMode ? basePrice(p) : p.price) }}</td>
                     <td class="projects-plots__num" *ngIf="bookMode">{{ priceText(p.extraPrice ?? 0) }}</td>
+                    <td class="projects-plots__num" *ngIf="bookMode">{{ priceText(basePrice(p) + (p.extraPrice ?? 0)) }}</td>
                     <td><span class="projects-plots__pill projects-plots__pill--{{ p.status.toLowerCase() }}">{{ 'plotTile.status.' + p.status | translate }}</span></td>
                     <td *ngIf="bookMode"><button type="button" class="brand-button projects-plots__row-book" [disabled]="p.status !== 'AVAILABLE'" (click)="selectPlot(p); openAside({ kind: 'book' })">{{ 'admin.projectsPlots.bookShort' | translate }}</button></td>
                   </tr>
@@ -435,6 +437,12 @@ export class ProjectsPlotsComponent implements OnInit {
   rateText(plotId: string): string {
     const r = this.rates?.[plotId];
     return r != null ? r.toLocaleString('en-IN') : '—';
+  }
+
+  // Rate × size; falls back to the stored price until rates load.
+  basePrice(p: PlotGridItem): number {
+    const r = this.rates?.[p.plotId];
+    return r != null ? r * p.area : p.price;
   }
 
   exportPlots(): void {

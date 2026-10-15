@@ -729,6 +729,16 @@ describe('ProjectsPlotsComponent', () => {
       i.value = v; i.dispatchEvent(new Event('input')); fixture.detectChanges();
     };
 
+    it('basePrice is rate x area, falling back to the stored price until rates load', fakeAsync(() => {
+      boot();
+      const c = fixture.componentInstance;
+      const p: any = { plotId: 'id-A-2', area: 1500, price: 99 };
+      expect(c.basePrice(p)).toBe(99);
+      c.rates = { 'id-A-2': 1000 };
+      expect(c.basePrice(p)).toBe(1_500_000);
+      flush();
+    }));
+
     it('fires no rates request when switching to Grid/Site', fakeAsync(() => {
       boot();
       const btns = Array.from(el().querySelectorAll<HTMLButtonElement>('.projects-plots__views button'));

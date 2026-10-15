@@ -1211,7 +1211,7 @@
       "viewLabel": "Plot view",
       "view": { "grid": "Grid", "site": "Site plan", "table": "Table" },
       "table": {
-        "sNo": "क्र.सं.", "type": "प्रकार", "plot": "Plot", "area": "Area", "total": "Total", "status": "Status",
+        "sNo": "क्र.सं.", "type": "प्रकार", "plot": "Plot", "area": "Area", "total": "Total", "price": "मूल्य", "totalPrice": "कुल मूल्य", "status": "Status",
         "searchLabel": "Search plots", "searchPlaceholder": "Plot no or status", "exportCsv": "Export CSV",
         "noMatch": "No plots match your search.", "count": "{{shown}} of {{total}} plots", "rateError": "Couldn't load rates."
       },

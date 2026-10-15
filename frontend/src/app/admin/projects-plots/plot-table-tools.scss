@@ -56,20 +56,21 @@
   .projects-plots .projects-plots__table--book {
     table-layout: fixed;
     th, td { width: auto; padding-inline: 1.25rem; box-sizing: border-box; }
-    // S No, Plot, Type, Area, Rate, Total, Extra Price, Status, Book
-    th:nth-child(1) { width: 6%; }
-    th:nth-child(2) { width: 9%; }
-    th:nth-child(3) { width: 9%; }
-    th:nth-child(4) { width: 11%; }
-    th:nth-child(5) { width: 13%; }
-    th:nth-child(6) { width: 13%; }
-    th:nth-child(7) { width: 13%; }
-    th:nth-child(8) { width: 14%; }
-    th:last-child { width: 12%; }
-    th:nth-child(-n+4), td:nth-child(-n+4), th:nth-child(8), td:nth-child(8) { text-align: left; }
-    th:nth-child(n+5):nth-child(-n+7), td:nth-child(n+5):nth-child(-n+7) { text-align: right; }
+    // S No, Plot, Type, Area, Rate, Price, Extra Price, Total Price, Status, Book
+    th:nth-child(1) { width: 5%; }
+    th:nth-child(2) { width: 8%; }
+    th:nth-child(3) { width: 8%; }
+    th:nth-child(4) { width: 10%; }
+    th:nth-child(5) { width: 11%; }
+    th:nth-child(6) { width: 12%; }
+    th:nth-child(7) { width: 11%; }
+    th:nth-child(8) { width: 13%; }
+    th:nth-child(9) { width: 12%; }
+    th:last-child { width: 10%; }
+    th:nth-child(-n+4), td:nth-child(-n+4), th:nth-child(9), td:nth-child(9) { text-align: left; }
+    th:nth-child(n+5):nth-child(-n+8), td:nth-child(n+5):nth-child(-n+8) { text-align: right; }
     th:first-child, td:first-child { padding-inline-start: 1.5rem; }
-    th:nth-child(8), td:nth-child(8) { padding-inline-start: 2.5rem; }
+    th:nth-child(9), td:nth-child(9) { padding-inline-start: 2.5rem; }
     th:last-child, td:last-child { text-align: right; padding-inline-end: 1.5rem; }
     .projects-plots__row-book {
       min-width: 4.5rem; padding: 0.375rem 1rem; min-height: 0; font: 600 0.8125rem var(--font-sans);

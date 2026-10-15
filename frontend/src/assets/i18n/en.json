@@ -1196,7 +1196,7 @@
       "viewLabel": "Plot view",
       "view": { "grid": "Grid", "site": "Site plan", "table": "Table" },
       "table": {
-        "sNo": "S No", "type": "Type", "plot": "Plot", "area": "Area", "total": "Total", "status": "Status",
+        "sNo": "S No", "type": "Type", "plot": "Plot", "area": "Area", "total": "Total", "price": "Price", "totalPrice": "Total Price", "status": "Status",
         "searchLabel": "Search plots", "searchPlaceholder": "Plot no or status", "exportCsv": "Export CSV",
         "noMatch": "No plots match your search.", "count": "{{shown}} of {{total}} plots", "rateError": "Couldn't load rates."
       },
