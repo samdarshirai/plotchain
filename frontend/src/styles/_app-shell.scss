@@ -523,6 +523,63 @@
   font-size: 1.1875rem;
 }
 
+// Mobile: stack the Ink brand band above the form panel instead of a 400px side aside.
+@media (max-width: 767px) {
+  .login-page {
+    flex-direction: column;
+  }
+
+  .login-brand {
+    flex: none;
+    gap: 0.75rem;
+    padding: 1.5rem 1rem;
+  }
+
+  .login-brand .login-logo {
+    width: 64px;
+    height: 64px;
+  }
+
+  .login-panel {
+    padding: 1.5rem 1.25rem 2rem;
+  }
+
+  .login-form {
+    max-width: 420px;
+    justify-content: flex-start;
+    padding-top: 1rem;
+  }
+
+  .login-heading {
+    font-size: 1.75rem;
+  }
+
+  .login-subheading {
+    margin-bottom: 1.5rem;
+  }
+
+  // 16px stops iOS Safari auto-zooming on focus; tall targets for touch.
+  .login-form input[type='text'],
+  .login-form input[type='password'] {
+    font-size: 1rem;
+    min-height: 44px;
+  }
+
+  .login-lang {
+    font-size: 1rem;
+    min-height: 40px;
+  }
+
+  .login-form .login-password-toggle {
+    padding: 0.625rem;
+  }
+
+  .login-row-between {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+}
+
 // /change-password carries the Viraj Acres "Legacy Living" identity onto a plain authenticated
 // content page (the real global .app-header/.app-nav already wraps this route -- see
 // app.component.html -- so unlike /login there's no bespoke Ink brand aside here, just the
