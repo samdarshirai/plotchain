@@ -11,7 +11,7 @@ import { EligibleWithdrawalAssociate } from '../models/eligible-withdrawal-assoc
 import { toFieldErrors } from '../../core/api/field-errors.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
-import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.component';
+import { SealCardComponent } from '../../shared/components/seal-card/seal-card.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { AdminDashboardService } from '../../admin-dashboard/admin-dashboard.service';
 import { titleCase } from '../../shared/utils/title-case';
@@ -26,7 +26,7 @@ const PAGE_SIZE = 20;
   standalone: true,
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule, TranslateModule,
-    EditableTableComponent, InlineBannerComponent, StatTileComponent, FieldErrorComponent
+    EditableTableComponent, InlineBannerComponent, SealCardComponent, FieldErrorComponent
   ],
   providers: [DatePipe, CurrencyPipe],
   template: `
@@ -43,12 +43,10 @@ const PAGE_SIZE = 20;
       </div>
 
       <div class="payout-approval__stats" *ngIf="pendingWithdrawals !== null">
-        <app-stat-tile
-          icon="account_balance_wallet"
-          tone="accent"
+        <app-seal-card
           [label]="'admin.payoutApproval.pendingWithdrawalsLabel' | translate"
           [value]="pendingWithdrawals.toString()"
-        ></app-stat-tile>
+        ></app-seal-card>
       </div>
 
       <div class="payout-approval__filters">

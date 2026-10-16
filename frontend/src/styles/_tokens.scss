@@ -5,8 +5,8 @@
 
   // Antique Gold -> Bright Gold, per DESIGN.md SS8 -- NOT --brand-secondary (Oxblood), which is a
   // separate sparing-use accent (chips/badges/selected states, see DESIGN.md SS2), not a gradient
-  // partner. ThemeService.apply() overrides this per-tenant with a literal primary->secondary
-  // interpolation instead; this default only governs the un-themed/Viraj-Acres-default case.
+  // partner. ThemeService.apply() preserves Bright Gold for the saved default primary and
+  // derives a lighter highlight for custom company colors.
   --brand-gradient: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-bright));
   --brand-primary-soft: color-mix(in srgb, var(--brand-primary) 14%, transparent);
   --brand-primary-hover: color-mix(in srgb, var(--brand-primary) 85%, white);
@@ -25,6 +25,20 @@
   --border-subtle: #D9CFBC;
   --text-primary: #201A15;
   --text-muted: #6B6153;
+  --surface-selected: color-mix(in srgb, var(--brand-primary) 12%, var(--surface-card));
+  --status-warning-text: #805309;
+  --status-success-text: #3B6341;
+  --status-on-fill: #FFFFFF;
+  --action-foreground: #EAD07D;
+  --brand-on-ink: #EAD07D;
+  --brand-on-surface: #5C1A2A;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --table-cell-padding: 0.75rem 1rem;
   --status-success: #4B7A52;
   --status-warning: #B4790E;
   --status-danger: #B23B32;

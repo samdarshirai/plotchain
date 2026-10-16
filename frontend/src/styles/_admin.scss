@@ -1,3 +1,5 @@
+@use 'seal';
+
 // ============================================================
 // Shared placeholders for the admin/associate operational-screen family
 // (Sales Register, Cycle Management, Ledger Register, Payout Approval,
@@ -39,25 +41,22 @@
 }
 
 %admin-screen-card {
-  border: none;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
   padding: 0;
   overflow: hidden;
 }
 
-// Horizontal padding matters here specifically because %admin-screen-card (above) zeroes the
-// card's own padding and clips to its 20px border-radius -- without it, header/cell text sits
-// flush against that rounded corner and the first column's text visibly clips (found in the
-// mockup-parity sweep, V1: confirmed on Sales Register's "BUYER" header rendering as "UYER").
+// Tables own their horizontal cell padding inside the shared border.
 %admin-screen-table-head {
   padding: 0.75rem 1rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  background: var(--surface-card);
+  background: var(--surface-raised);
 }
 
 %admin-screen-table-cell {
@@ -132,7 +131,7 @@
   gap: 1.25rem;
   padding: 1.25rem 1.5rem;
   background: var(--surface-raised);
-  border-radius: 16px;
+  border-radius: var(--radius-sm);
 
   label {
     display: flex;
@@ -140,7 +139,7 @@
     gap: 0.375rem;
     min-width: 168px;
     margin-bottom: 0;
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-size: 0.6875rem;
     font-weight: 500;
     letter-spacing: 0.04em;
@@ -165,6 +164,12 @@
   gap: 1.5rem;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.associate-directory__list { min-width: 0; }
+
+@media (max-width: 1100px) {
+  .associate-directory .associate-directory__header { grid-template-columns: minmax(0, 1fr); }
 }
 
 // The mockup gives every screen the same h1 (Fraunces 28px/600 -- Viraj_Acres_Settings.dc.html
@@ -209,13 +214,13 @@
 
 // Network seal: gold double-border card with the headline associate count.
 .associate-directory__seal {
+  @include seal.frame;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 20px 24px;
-  border: 1px solid var(--brand-primary);
-  border-radius: 3px;
-  box-shadow: inset 0 0 0 3px var(--surface-page), inset 0 0 0 4px var(--brand-primary);
+
 }
 
 .associate-directory__seal-label {
@@ -379,7 +384,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: 999px;
   font-size: 13.5px;
-  background: #fff;
+  background: var(--surface-card);
 }
 
 // Fields flow inline in the same flex row as the search box.
@@ -429,26 +434,28 @@
   border: 1px solid var(--border-subtle);
   border-top: none;
   border-radius: 0 0 6px 6px;
-  overflow: hidden;
+  overflow-x: auto;
 
   .editable-table {
     width: 100%;
     border-collapse: collapse;
   }
 
-  // Table-to-grid: the shared editable-table component renders a real <table>, but the mockup's
-  // column proportions (1.3fr 1.8fr 1fr 1.2fr 1fr) aren't expressible as table-layout widths, so
-  // thead/tbody rows are put in CSS grid mode here, scoped to this screen only.
-  thead tr,
-  tbody tr {
-    display: grid;
-    grid-template-columns: 1.3fr 1.8fr 1fr 1.2fr 1fr 1fr;
-    column-gap: 12px;
-    align-items: center;
+  // Native table layout keeps header and body columns aligned, including long values.
+  .editable-table {
+    min-width: 48rem;
+    table-layout: fixed;
   }
 
+  th:nth-child(1) { width: 16%; }
+  th:nth-child(2) { width: 28%; }
+  th:nth-child(3) { width: 16%; }
+  th:nth-child(4) { width: 10%; }
+  th:nth-child(5) { width: 12%; }
+  th:nth-child(6) { width: 18%; }
+
   thead th {
-    padding: 16px 24px;
+    padding: 8px 12px;
     font-size: 11.5px;
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -458,32 +465,46 @@
     border-bottom: none;
   }
 
-  // Borders live on the grid <tr> (not th/td) so the line is continuous across column-gap.
+  // Native collapsed borders run continuously across the row.
   thead tr {
     border-bottom: 1px solid var(--border-subtle);
   }
 
   tbody td {
-    padding: 16px 24px;
+    padding: 8px 12px;
     font-size: 14px;
     border-bottom: none;
   }
 
   tbody tr {
-    border-bottom: 1px solid #EFE9DA;
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   tbody tr:last-child {
     border-bottom: none;
   }
 
-  // Empty-state row: its single colspan cell must span every grid column (colspan is ignored in grid).
+  // The empty-state colspan spans the native table columns.
   td.editable-table__empty {
-    grid-column: 1 / -1;
     font-family: inherit;
     font-size: 14px;
     color: var(--text-muted);
     text-align: center;
+  }
+
+  tbody td > span {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  tbody td:nth-child(2) > span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   // Associate ID (1st column) -- mono, muted, smaller than the rest of the row.
@@ -569,7 +590,7 @@
   display: inline-flex;
   align-items: center;
   padding: 4px 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   font-weight: 700;
@@ -579,17 +600,17 @@
 
 .associate-detail__status-badge--success {
   background: color-mix(in srgb, var(--status-success) 18%, var(--surface-card));
-  color: #146c43;
+  color: var(--status-success);
 }
 
 .associate-detail__status-badge--warning {
   background: color-mix(in srgb, var(--status-warning) 22%, var(--surface-card));
-  color: #8a5a0a;
+  color: var(--status-warning-text);
 }
 
 .associate-detail__status-badge--danger {
   background: color-mix(in srgb, var(--status-danger) 16%, var(--surface-card));
-  color: #b42318;
+  color: var(--status-danger);
 }
 
 .associate-detail__status-badge--default {
@@ -712,7 +733,7 @@
 .new-associate-panel__modal-submit {
   background: var(--brand-secondary);
   border: none;
-  color: var(--brand-primary-bright);
+  color: var(--action-foreground);
   font-weight: 700;
   font-size: 14px;
   padding: 10px 18px;
@@ -799,10 +820,11 @@
 
 // Actions column (9th) -- lays out the inline void-reason input + Void button (or the
 // Voided tag) in a row without needing to restructure the component's markup.
-.sales-register .editable-table td:nth-child(9) {
+.sales-register__actions {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
   flex-wrap: wrap;
 }
 
@@ -815,7 +837,7 @@
 .sales-register__void-action {
   padding: 0.5rem 0.875rem;
   font-size: 0.8125rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .sales-register__voided-tag {
@@ -843,6 +865,47 @@
 
 .sales-register__page-indicator {
   @extend %admin-screen-page-indicator;
+}
+
+@media (min-width: 769px) {
+  .sales-register .card { overflow-x: auto; }
+
+  .sales-register .editable-table {
+    min-width: 64rem;
+    table-layout: fixed;
+
+    thead th, tbody td { padding: 0.5rem; }
+    th { white-space: nowrap; }
+    th:nth-child(1) { width: 16%; }
+    th:nth-child(2) { width: 12%; }
+    th:nth-child(3) { width: 11%; }
+    th:nth-child(4) { width: 12%; text-align: right; }
+    th:nth-child(5) { width: 4%; text-align: center; }
+    th:nth-child(6) { width: 7%; }
+    th:nth-child(7) { width: 8%; }
+    th:nth-child(8) { width: 12%; }
+    th:nth-child(9) { width: 18%; }
+
+    td > span {
+      display: block;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    td:nth-child(1) > span, td:nth-child(2) > span, td:nth-child(8) > span {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .sales-register__actions { flex-wrap: nowrap; }
+  .sales-register__void-reason-input { flex: 1 1 0; min-width: 0; width: auto; }
+  .sales-register__void-action { flex: none; }
+  .sales-register__voided-tag { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 @media (max-width: 768px) {
@@ -982,8 +1045,9 @@
 
 .record-sale .card {
   border: none;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  border: 1px solid var(--border-subtle);
 }
 
 .record-sale__form {
@@ -1010,7 +1074,7 @@
   flex-direction: column;
 
   label {
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-size: 0.75rem;
     font-weight: 500;
     letter-spacing: 0.02em;
@@ -1020,7 +1084,7 @@
 
   input,
   select {
-    border-radius: 12px;
+    border-radius: var(--radius-sm);
     padding: 0.75rem 1rem;
     margin-top: 0.5rem;
   }
@@ -1121,7 +1185,7 @@
   padding: 1.5rem 1.75rem;
   background: var(--surface-raised);
   border: 1px solid var(--brand-primary-soft);
-  border-radius: 16px;
+  border-radius: var(--radius-sm);
 }
 
 .cycle-management__current-meta {
@@ -1131,7 +1195,7 @@
 }
 
 .cycle-management__current-eyebrow {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -1272,11 +1336,11 @@
   gap: 0.75rem;
   padding: 1.25rem 1.5rem;
   background: var(--surface-raised);
-  border-radius: 16px;
+  border-radius: var(--radius-sm);
 
   label {
     margin: 0;
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-size: 0.6875rem;
     font-weight: 500;
     letter-spacing: 0.04em;
@@ -1383,7 +1447,7 @@
 }
 
 .cycle-detail__row-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.03em;
@@ -1540,7 +1604,7 @@
   gap: 1.25rem;
   padding: 1.25rem 1.5rem;
   background: var(--surface-raised);
-  border-radius: 16px;
+  border-radius: var(--radius-sm);
 }
 
 .ledger-register__filter-field {
@@ -1559,14 +1623,14 @@
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #6b6153;
+    color: var(--text-muted);
   }
 
   select {
     font-family: inherit;
-    background: #fff;
+    background: var(--surface-card);
     border-radius: 0;
-    border-color: #d9cfbc;
+    border-color: var(--border-subtle);
   }
 }
 
@@ -1794,7 +1858,7 @@
 // previously had no stat display at all. A single tile, so it's capped rather than stretched
 // across the full content width the way a multi-tile grid would be.
 .payout-approval__stats {
-  max-width: 260px;
+  max-width: 320px;
 }
 
 .payout-approval__filters {
@@ -1804,7 +1868,7 @@
   gap: 1.25rem;
   padding: 1.25rem 1.5rem;
   background: var(--surface-raised);
-  border-radius: 16px;
+  border-radius: var(--radius-sm);
 }
 
 // This class sits directly on the <label> (unlike ledger-register__filter-field, which wraps a
@@ -1971,7 +2035,7 @@
   .brand-button {
     padding: 0.5rem 0.875rem;
     font-size: 0.8125rem;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     white-space: nowrap;
   }
 }
@@ -1991,12 +2055,12 @@
 
 .payout-approval__status-tag--rejected {
   background: color-mix(in srgb, var(--status-danger) 16%, var(--surface-card));
-  color: #b42318;
+  color: var(--status-danger);
 }
 
 .payout-approval__status-tag--disbursed {
   background: color-mix(in srgb, var(--status-success) 18%, var(--surface-card));
-  color: #146c43;
+  color: var(--status-success);
 }
 
 .payout-approval .editable-table__empty {
@@ -2105,7 +2169,7 @@
 .payout-approval__modal-submit {
   background: var(--brand-secondary);
   border: none;
-  color: var(--brand-primary-bright);
+  color: var(--action-foreground);
   font-weight: 700;
   font-size: 14px;
   padding: 10px 18px;
@@ -2255,8 +2319,8 @@
 .income-statement__tabs .tab-bar {
   gap: 2px;
   padding: 3px;
-  background: #f0e9d6;
-  border: 1px solid #d9cfbc;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
   border-radius: 0;
 }
 
@@ -2265,16 +2329,16 @@
   border-radius: 0;
   font-size: 0.8125rem;
   line-height: 1;
-  color: #6b6153;
+  color: var(--text-muted);
 
   &:hover:not(.tab-bar__tab--active) {
-    color: #201a15;
+    color: var(--text-primary);
   }
 }
 
 .income-statement__tabs .tab-bar__tab--active {
-  background: #5c1a2a;
-  color: #ead07d;
+  background: var(--brand-secondary);
+  color: var(--action-foreground);
 }
 
 .income-statement__tabs {
@@ -2311,8 +2375,8 @@
   gap: 0.5rem 1.5rem;
   margin: 0;
   padding: 1rem 1.5rem;
-  background: #fcfaf5;
-  border: 1px solid #d9cfbc;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
   border-radius: 0;
   font-size: 0.8125rem;
 
@@ -2324,7 +2388,7 @@
   dt {
     font-weight: 600;
     min-width: 3rem;
-    color: #5c1a2a;
+    color: var(--brand-secondary);
   }
 
   dd {
@@ -2342,8 +2406,8 @@
   flex-wrap: wrap;
   gap: 1.25rem;
   padding: 1.25rem 1.5rem;
-  background: #fcfaf5;
-  border: 1px solid #d9cfbc;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
   border-radius: 0;
 }
 
@@ -2359,7 +2423,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.375rem;
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-size: 0.6875rem;
     font-weight: 500;
     letter-spacing: 0.04em;
@@ -2390,8 +2454,8 @@
 // screen width on every /income-statement tab.
 .income-statement__table {
   width: 100%;
-  background: #fcfaf5;
-  border: 1px solid #d9cfbc;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
   overflow-x: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border-subtle) transparent;
@@ -2420,21 +2484,21 @@
   white-space: nowrap;
   font-family: inherit;
   letter-spacing: 0.06em;
-  color: #ead07d;
-  background: #0c0a0b;
+  color: var(--text-muted);
+  background: var(--surface-raised);
   border-bottom: none;
 }
 
 .income-statement .editable-table tbody td {
   @extend %admin-screen-table-cell;
   font-variant-numeric: tabular-nums;
-  color: #201a15;
-  border-bottom: 1px solid #eae2d0;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
   white-space: nowrap;
 }
 
 .income-statement .editable-table tbody tr:hover td {
-  background: #f0e9d6;
+  background: var(--surface-raised);
 }
 
 .income-statement .editable-table tbody tr:last-child td {
@@ -2476,17 +2540,17 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #6b6153;
+  color: var(--text-muted);
   background: #ede6d6;
 }
 
 .income-statement .editable-table__badge--success {
-  color: #4b7a52;
+  color: var(--status-success);
   background: #e3ebdd;
 }
 
 .income-statement .editable-table__badge--danger {
-  color: #b23b32;
+  color: var(--status-danger);
   background: #f4e1de;
 }
 
@@ -2559,7 +2623,7 @@
   font-weight: 400;
   letter-spacing: normal;
   text-transform: none;
-  color: #201a15;
+  color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2568,7 +2632,7 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #ead07d;
+  color: var(--text-muted);
 }
 
 // Columns: 1 Date & Time, 2 Associate ID, 3 Name, 4 Amount, 5 Direct Income. Amounts right-aligned.
@@ -2587,17 +2651,16 @@
 }
 
 .income-statement__reward-seal {
+  @include seal.frame;
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 0.375rem;
   margin: 4px;
   padding: 1rem 1.25rem;
-  background: #0c0a0b;
-  border: 1px solid #c6a227;
-  outline: 1px solid #c6a227;
-  outline-offset: 3px;
-  border-radius: 2px;
+  background: var(--surface-card);
+
 }
 
 .income-statement__reward-eyebrow {
@@ -2608,13 +2671,13 @@
   i {
     width: 18px;
     height: 1px;
-    background: #c6a227;
+    background: var(--brand-primary);
   }
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #c6a227;
+  color: var(--brand-primary);
 }
 
 .income-statement__reward-rank {
@@ -2622,7 +2685,7 @@
   font-size: 1.375rem;
   font-weight: 500;
   line-height: 1.1;
-  color: #ead07d;
+  color: var(--text-primary);
 }
 
 .income-statement__cards--summary {
@@ -2635,26 +2698,26 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 1.25rem 1.5rem;
-  background: #fcfaf5;
-  border: 1px solid #d9cfbc;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
 }
 
 .income-statement__card-label {
   font-size: 0.75rem;
   font-weight: 500;
-  color: #6b6153;
+  color: var(--text-muted);
 }
 
 .income-statement__card-value {
   font-size: 1.375rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: #201a15;
+  color: var(--text-primary);
 }
 
 .income-statement__reward-panel {
-  background: #fcfaf5;
-  border: 1px solid #d9cfbc;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
   overflow: hidden;
 }
 
@@ -2669,17 +2732,17 @@
   gap: 1rem;
   align-items: center;
   padding: 0.875rem 1.375rem;
-  border-bottom: 1px solid #eae2d0;
+  border-bottom: 1px solid var(--border-subtle);
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
-  color: #201a15;
+  color: var(--text-primary);
 
   &:hover {
-    background: #f0e9d6;
+    background: var(--surface-raised);
   }
 
   &--current {
-    background: #f3ecda;
+    background: var(--surface-selected);
   }
 
   &--achieved {
@@ -2687,16 +2750,16 @@
   }
 
   &--head {
-    border-bottom-color: #0c0a0b;
+    border-bottom-color: var(--border-subtle);
     font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #ead07d;
-    background: #0c0a0b;
+    color: var(--text-muted);
+    background: var(--surface-raised);
 
     &:hover {
-      background: #0c0a0b;
+      background: var(--surface-raised);
     }
   }
 }
@@ -2704,7 +2767,7 @@
 .income-statement__reward-index {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #6b6153;
+  color: var(--text-muted);
 }
 
 .income-statement__reward-name {
@@ -2714,7 +2777,7 @@
 
   small {
     font-size: 0.75rem;
-    color: #6b6153;
+    color: var(--text-muted);
   }
 }
 
@@ -2740,17 +2803,17 @@
 
 .income-statement__reward-bar div,
 .income-statement__reward-leg small {
-  &[data-level='ok'] { background-color: #4b7a52; }
-  &[data-level='warn'] { background-color: #b4790e; }
-  &[data-level='low'] { background-color: #b23b32; }
+  &[data-level='ok'] { background-color: var(--status-success); }
+  &[data-level='warn'] { background-color: var(--status-warning-text); }
+  &[data-level='low'] { background-color: var(--status-danger); }
 }
 
 .income-statement__reward-leg small {
   background: none !important;
 
-  &[data-level='ok'] { color: #4b7a52; }
-  &[data-level='warn'] { color: #b4790e; }
-  &[data-level='low'] { color: #b23b32; }
+  &[data-level='ok'] { color: var(--status-success); }
+  &[data-level='warn'] { color: var(--status-warning-text); }
+  &[data-level='low'] { color: var(--status-danger); }
 }
 
 .income-statement__reward-chip {
@@ -2761,24 +2824,24 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #6b6153;
+  color: var(--text-muted);
   background: #ede6d6;
 
-  &[data-state='achieved'] { color: #4b7a52; background: #e3ebdd; }
-  &[data-state='progress'] { color: #ead07d; background: #5c1a2a; }
+  &[data-state='achieved'] { color: var(--status-success); background: #e3ebdd; }
+  &[data-state='progress'] { color: var(--action-foreground); background: var(--brand-secondary); }
 }
 
 .income-statement__reward-remarks {
-  color: #6b6153;
+  color: var(--text-muted);
   overflow-wrap: anywhere;
 }
 
 .income-statement__reward-foot {
   padding: 0.625rem 1.375rem;
-  border-top: 1px solid #d9cfbc;
+  border-top: 1px solid var(--border-subtle);
   font-size: 0.75rem;
   font-weight: 500;
-  color: #6b6153;
+  color: var(--text-muted);
 }
 
 .income-statement__reward-heading {
@@ -2790,14 +2853,14 @@
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #5c1a2a;
+  color: var(--brand-secondary);
 
   &::before,
   &::after {
     content: '';
     width: 24px;
     height: 1px;
-    background: #5c1a2a;
+    background: var(--brand-secondary);
   }
 }
 
@@ -2877,28 +2940,21 @@
 
 // ---- Signature element: the Balance Ribbon ----
 .payout-history__wallet-balance.card {
+  @include seal.frame;
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
   padding: 1.75rem 2rem 1.75rem 2.25rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 20px;
-  background: linear-gradient(135deg, var(--brand-primary-soft), var(--surface-card) 60%);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+
+  background: var(--surface-card);
+
   overflow: hidden;
 
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 5px;
-    background: var(--brand-gradient);
-  }
 }
 
 .payout-history__balance-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -2947,7 +3003,7 @@
   gap: 1.25rem;
   padding: 1.25rem 1.5rem;
   background: var(--surface-raised);
-  border-radius: 16px;
+  border-radius: var(--radius-sm);
 }
 
 .payout-history__filter-field {
@@ -2963,7 +3019,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.375rem;
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-size: 0.6875rem;
     font-weight: 500;
     letter-spacing: 0.04em;
@@ -3234,7 +3290,7 @@
     border-radius: var(--radius-sm);
     border: none;
     background: var(--brand-secondary);
-    color: var(--brand-primary-bright);
+    color: var(--action-foreground);
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
@@ -3304,7 +3360,7 @@
   position: relative;
   height: min(70vh, 640px);
   min-height: 420px;
-  border-radius: 18px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   border: 1px solid var(--border-subtle);
   cursor: grab;
@@ -3385,15 +3441,16 @@
   width: 220px;
   height: 158px;
   padding: 0.875rem 1rem;
-  border-radius: 16px;
+  border-radius: var(--radius-sm);
   border: 1.5px solid var(--border-subtle);
   background: var(--surface-card);
-  box-shadow: 0 6px 18px rgba(45, 29, 120, 0.08);
+  box-shadow: none;
+  border: 1px solid var(--border-subtle);
 }
 
 .tree-explorer__node-card--highlight {
   border-color: var(--brand-primary);
-  box-shadow: 0 0 0 4px var(--brand-primary-soft), 0 12px 26px rgba(45, 29, 120, 0.2);
+  box-shadow: 0 0 0 2px var(--brand-primary-soft);
 }
 
 .tree-explorer__result-tag {
@@ -3420,7 +3477,8 @@
   font-size: 0.625rem;
   font-weight: 800;
   color: #fff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+  box-shadow: none;
+  border: 1px solid var(--border-subtle);
 }
 
 .tree-explorer__leg-badge--l {
@@ -3446,7 +3504,8 @@
   border-radius: 14px;
   border: 1.5px solid var(--border-subtle);
   background: var(--surface-card);
-  box-shadow: 0 10px 28px rgba(45, 29, 120, 0.22);
+  box-shadow: none;
+  border: 1px solid var(--border-subtle);
   font-size: 0.8rem;
   line-height: 1.5;
   pointer-events: none;
@@ -3545,7 +3604,7 @@
 }
 
 .tree-explorer__flag-icon--skewed {
-  color: var(--status-warning);
+  color: var(--status-warning-text);
 }
 
 .tree-explorer__flag-icon--stagnant {
@@ -3563,7 +3622,7 @@
   padding: 0.15rem 0.55rem;
   border-radius: 999px;
   background: var(--brand-secondary);
-  color: var(--brand-primary-bright);
+  color: var(--action-foreground);
   font-size: 0.65rem;
   font-weight: 700;
 }
@@ -3593,7 +3652,7 @@
   position: absolute;
   width: 220px;
   height: 92px;
-  border-radius: 16px;
+  border-radius: var(--radius-sm);
   border: 1.6px dashed var(--border-subtle);
   display: flex;
   flex-direction: column;
@@ -3639,11 +3698,12 @@ button.tree-explorer__vacant-card {
   z-index: 10;
   display: flex;
   flex-direction: column;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   border: 1px solid var(--border-subtle);
   background: var(--surface-card);
-  box-shadow: 0 6px 16px rgba(45, 29, 120, 0.14);
+  box-shadow: none;
+  border: 1px solid var(--border-subtle);
 
   button {
     display: flex;
@@ -3685,12 +3745,13 @@ button.tree-explorer__vacant-card {
   display: flex;
   gap: 0.85rem;
   padding: 0.55rem 0.85rem;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
   background: var(--surface-card);
   color: var(--text-muted);
   font-size: 0.7rem;
-  box-shadow: 0 6px 16px rgba(45, 29, 120, 0.08);
+  box-shadow: none;
+  border: 1px solid var(--border-subtle);
 
   span {
     display: flex;
@@ -3806,20 +3867,16 @@ button.tree-explorer__vacant-card {
   }
 }
 
-// Seal Card -- Parchment variant (DESIGN.md SS5): the double gold hairline is drawn with an
-// inset box-shadow rather than the animated _setup.scss `.seal-card` hairline; this is one
-// static figure, no motion budget spent here.
+// Parchment seal uses the shared first-paint hairline treatment.
 .kyc-queue__seal {
+  @include seal.frame;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
   padding: 1.25rem 1.375rem 1.125rem;
   background: var(--surface-card);
-  border: 1px solid var(--brand-primary);
-  border-radius: var(--radius-sm);
-  box-shadow:
-    inset 0 0 0 3px var(--surface-card),
-    inset 0 0 0 4px color-mix(in srgb, var(--brand-primary) 55%, transparent);
+
 }
 
 .kyc-queue__seal-label {
@@ -3900,7 +3957,7 @@ button.tree-explorer__vacant-card {
   // Rounded top corners only (sits flush against the table card directly below it).
   .tab-bar__tab--active {
     background: var(--brand-secondary);
-    color: var(--brand-primary-bright);
+    color: var(--action-foreground);
     font-weight: 700;
     border-radius: 4px 4px 0 0;
   }
@@ -3954,7 +4011,7 @@ button.tree-explorer__vacant-card {
   tbody td {
     padding: 1rem 1.5rem;
     font-size: 0.875rem;
-    border-bottom: 1px solid #efe9da;
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   tbody tr:last-child td {
@@ -4046,7 +4103,7 @@ button.tree-explorer__vacant-card {
 .kyc-queue__approve-action {
   padding: 0.5rem 0.9375rem;
   background: var(--brand-secondary);
-  color: var(--brand-primary-bright);
+  color: var(--action-foreground);
   font-weight: 600;
 }
 
@@ -4091,7 +4148,7 @@ button.tree-explorer__vacant-card {
 }
 
 .kyc-queue__chip--active {
-  color: var(--brand-primary-bright);
+  color: var(--action-foreground);
   background: var(--brand-secondary);
   border-color: var(--brand-secondary);
 }
@@ -4206,7 +4263,7 @@ button.tree-explorer__vacant-card {
 }
 
 .admin-dashboard__cycle-closes {
-  color: var(--status-warning);
+  color: var(--status-warning-text);
   font-weight: 500;
 }
 
@@ -4228,7 +4285,7 @@ button.tree-explorer__vacant-card {
 .admin-dashboard__action--primary {
   background: var(--brand-secondary);
   border: 1px solid var(--brand-secondary);
-  color: var(--brand-primary-bright);
+  color: var(--action-foreground);
 }
 
 .admin-dashboard__action--secondary {
@@ -4251,22 +4308,10 @@ button.tree-explorer__vacant-card {
   align-items: start;
 }
 
-// Ink Seal Card override: 1a drops the all-round gold border + radius for a gold top/bottom rule
-// plus an inset gold glow, full column width, and adds the metrics strip.
+// The dashboard uses the shared Ink frame at full column width.
 .admin-dashboard__seal .seal-card-panel {
   max-width: none;
-  border: 0;
-  border-top: 1px solid var(--brand-primary);
-  border-bottom: 1px solid var(--brand-primary);
-  border-radius: 0;
-  padding: 1.375rem 1.625rem;
-  box-shadow:
-    inset 0 3px 0 -1px rgba(198, 162, 39, 0.35),
-    inset 0 -3px 0 -1px rgba(198, 162, 39, 0.35);
-}
-
-.admin-dashboard__seal .seal-card-panel__hairline {
-  display: none;
+  padding: 1.5rem;
 }
 
 .admin-dashboard__seal .seal-card-panel__label {
@@ -4281,14 +4326,14 @@ button.tree-explorer__vacant-card {
   grid-template-columns: repeat(3, 1fr);
   margin: 0 -1.625rem;
   padding: 0 1.625rem;
-  border-top: 1px solid rgba(198, 162, 39, 0.22);
+  border-top: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent);
 
   > div {
     padding: 0.9375rem 0;
 
     &:not(:first-child) {
       padding-left: 1.25rem;
-      border-left: 1px solid rgba(198, 162, 39, 0.22);
+      border-left: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent);
     }
   }
 }
@@ -4439,7 +4484,7 @@ button.tree-explorer__vacant-card {
 .admin-dashboard__panel-rule {
   flex: 1;
   height: 1px;
-  background: rgba(92, 26, 42, 0.35);
+  background: color-mix(in srgb, var(--brand-secondary) 35%, transparent);
 }
 
 .admin-dashboard__panel-eyebrow {
@@ -4475,7 +4520,7 @@ button.tree-explorer__vacant-card {
       flex: 1;
       order: 2;
       border-bottom: 1px dotted #c9bea8;
-      transform: translateY(-3px);
+
     }
   }
 
@@ -4565,7 +4610,7 @@ button.tree-explorer__vacant-card {
 .admin-recent-sales-table__rule {
   flex: 1;
   height: 1px;
-  background: rgba(92, 26, 42, 0.22);
+  background: color-mix(in srgb, var(--brand-secondary) 22%, transparent);
 }
 
 .admin-recent-sales-table__label {
@@ -4648,7 +4693,7 @@ button.tree-explorer__vacant-card {
 .admin-network-growth-chart__rule {
   flex: 1;
   height: 1px;
-  background: rgba(92, 26, 42, 0.22);
+  background: color-mix(in srgb, var(--brand-secondary) 22%, transparent);
 }
 
 .admin-network-growth-chart__label {
@@ -4691,7 +4736,7 @@ button.tree-explorer__vacant-card {
     > div:not(:first-child) {
       padding-left: 0;
       border-left: 0;
-      border-top: 1px solid rgba(198, 162, 39, 0.22);
+      border-top: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent);
     }
   }
 }
@@ -4719,7 +4764,7 @@ button.tree-explorer__vacant-card {
 
   &__filters {
     display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1.25rem;
-    padding: 1.25rem 1.5rem; background: var(--surface-raised); border-radius: 16px;
+    padding: 1.25rem 1.5rem; background: var(--surface-raised); border-radius: var(--radius-sm);
   }
   &__search { min-width: 200px; flex: 1 1 200px; }
   &__filter {
@@ -4727,13 +4772,14 @@ button.tree-explorer__vacant-card {
     font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted);
   }
   &__toggle {
-    padding: 0.6875rem 1.5rem; border: 1px dashed var(--status-warning); color: var(--status-warning); background: transparent;
+    padding: 0.6875rem 1.5rem; border: 1px dashed var(--status-warning); color: var(--status-warning-text); background: transparent;
     font-size: 0.875rem; font-weight: 600;
     &--on { background: var(--status-warning); color: var(--surface-card); border-style: solid; }
   }
 
   &__panel, &__codes {
-    padding: 1.5rem; border-radius: 20px; background: var(--surface-card); box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem; border-radius: var(--radius-sm); background: var(--surface-card); box-shadow: none;
+  border: 1px solid var(--border-subtle);
     form { display: flex; flex-direction: column; gap: 1rem; max-width: 26rem; }
     h2 { margin: 0; font: 600 1.125rem var(--font-sans); }
     label, .epin-register__field { display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.875rem; font-weight: 500; margin: 0; }
@@ -4773,7 +4819,7 @@ button.tree-explorer__vacant-card {
   }
 
   &__detail { position: sticky; top: 1.25rem; padding: 3px; border: 1px solid var(--brand-primary); border-radius: var(--radius-sm); }
-  &__seal { display: flex; flex-direction: column; gap: 1.125rem; padding: 1.375rem; border: 1px solid var(--brand-primary); background: var(--surface-card); }
+  &__seal { @include seal.frame; position: relative; display: flex; flex-direction: column; gap: 1.125rem; padding: 1.5rem; background: var(--surface-card); }
   &__seal-title {
     display: flex; align-items: center; gap: 0.625rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brand-secondary);
     &::before, &::after { content: ''; flex: 1; height: 1px; background: var(--brand-primary); }
@@ -4807,7 +4853,8 @@ button.tree-explorer__vacant-card {
 .associate-lookup {
   position: relative;
   &__input { width: 100%; box-sizing: border-box; }
-  &__list { position: absolute; z-index: 5; inset-inline: 0; margin: 0.25rem 0 0; padding: 0.25rem 0; list-style: none; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12); text-transform: none; letter-spacing: 0; font-weight: 400; }
+  &__list { position: absolute; z-index: 5; inset-inline: 0; margin: 0.25rem 0 0; padding: 0.25rem 0; list-style: none; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); box-shadow: none;
+  border: 1px solid var(--border-subtle); text-transform: none; letter-spacing: 0; font-weight: 400; }
   &__option { padding: 0.45rem 0.75rem; font-size: 0.875rem; cursor: pointer; color: var(--text-primary); &--active, &:hover { background: var(--brand-primary-soft); } }
   &__empty { padding: 0.45rem 0.75rem; font-size: 0.78rem; color: var(--text-muted); }
   &__chosen { display: flex; align-items: center; gap: 0.5rem; padding: 0.4375rem 0.5rem 0.4375rem 0.75rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--surface-page); font-size: 0.875rem; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text-primary); }
@@ -4847,7 +4894,7 @@ button.tree-explorer__vacant-card {
   &__list-heading { display: none; }
   &__project {
     display: flex; flex-direction: column; gap: 0.25rem; padding: 0.625rem 1rem; text-align: left; flex: 0 0 260px; min-width: 0;
-    background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 16px; cursor: pointer;
+    background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer;
     &--selected { background: var(--surface-raised); border-color: var(--brand-primary); box-shadow: inset 4px 0 0 var(--brand-primary); }
     &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
   }
@@ -4863,7 +4910,7 @@ button.tree-explorer__vacant-card {
   &__project-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   &__retry { margin-left: 0.75rem; background: none; border: 0; text-decoration: underline; cursor: pointer; color: inherit; font-weight: 600; }
 
-  &__panel { display: flex; flex-direction: column; gap: 1.5rem; min-height: 36rem; padding: 1.75rem; background: #FCFAF5; border: 1px solid var(--border-subtle); border-radius: 4px; }
+  &__panel { display: flex; flex-direction: column; gap: 1.5rem; min-height: 36rem; padding: 1.75rem; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 4px; }
   &__legend { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.25rem; font-size: 0.75rem; color: var(--text-muted); }
   &__panel &__legend { margin-top: auto; }
   &__key { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.125rem 0; background: none; border: 0; color: inherit; font: inherit; cursor: pointer;
@@ -4872,10 +4919,10 @@ button.tree-explorer__vacant-card {
     &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; } }
   &__key-count { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
   &__swatch { width: 12px; height: 12px; border: 1px solid; box-sizing: border-box;
-    &--available { background: #DCE8D6; border-color: #4B7A52; }
-    &--booked { background: #F1D9A6; border-color: #B4790E; }
+    &--available { background: #DCE8D6; border-color: var(--status-success); }
+    &--booked { background: #F1D9A6; border-color: var(--status-warning-text); }
     &--sold { background: #CFC6B6; border-color: #8C8172; }
-    &--selected { background: #5C1A2A; border-color: #C6A227; }
+    &--selected { background: var(--brand-secondary); border-color: var(--brand-primary); }
     &--corner { background: #8C8172; border: 0; clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 0 100%); } }
 
   &__block-heading { display: flex; gap: 0.75rem; align-items: baseline; margin: 0 0 0.625rem; font: 600 0.6875rem var(--font-sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted);
@@ -4891,16 +4938,16 @@ button.tree-explorer__vacant-card {
     .projects-plots__block { display: flex; flex-direction: column; gap: 0.875rem; }
     .projects-plots__block:not(.projects-plots__block--road-below) { flex-direction: column-reverse; }
     .projects-plots__block-heading { margin: 0; font: 400 0.75rem var(--font-sans); letter-spacing: 0; text-transform: none; span { display: none; } } }
-  &__main-road { margin-top: auto; height: 52px; display: flex; align-items: center; justify-content: center; background: #D9CFBC; font: 600 0.6875rem var(--font-sans); letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-primary); }
+  &__main-road { margin-top: auto; height: 52px; display: flex; align-items: center; justify-content: center; background: var(--border-subtle); font: 600 0.6875rem var(--font-sans); letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-primary); }
   &__road { height: 40px; display: flex; align-items: center; justify-content: center; background: #E4DCCB; border-block: 1px dashed #B5A887; font: 500 0.6875rem var(--font-sans); letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); }
   &__views { display: inline-flex; align-self: flex-start; gap: 2px; padding: 3px; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 4px;
     button { padding: 0.375rem 0.75rem; border: 0; border-radius: 3px; background: transparent; color: var(--text-muted); font: 500 0.8125rem var(--font-sans); cursor: pointer; }
     button:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; } }
   &__view--on { background: var(--surface-card) !important; color: var(--text-primary) !important; box-shadow: 0 0 0 1px var(--border-subtle); }
-  &__table-wrap { position: relative; overflow-x: auto; background: #fcfaf5; border: 1px solid #d9cfbc; border-radius: 0; }
+  &__table-wrap { position: relative; overflow-x: auto; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 0; }
   &__table { width: 100%; border-collapse: collapse; font-size: 0.8125rem;
-    th { padding: 0.875rem 0.3125rem; text-align: left; background: #0c0a0b; border-bottom: none; font: 600 0.6875rem var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: #ead07d; }
-    td { padding: 0.8125rem 0.3125rem; border-bottom: 1px solid #eae2d0; color: #201a15; line-height: 1.25; font-family: var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    th { padding: 0.875rem 0.3125rem; text-align: left; background: var(--surface-raised); border-bottom: none; font: 600 0.6875rem var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+    td { padding: 0.8125rem 0.3125rem; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); line-height: 1.25; font-family: var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
     tbody tr:last-child td { border-bottom: 0; }
     td.projects-plots__num, td:nth-child(2) { font-family: var(--font-mono); }
     th:first-child, td:first-child { padding-left: 1.25rem; width: 5.25rem; box-sizing: content-box; }
@@ -4908,8 +4955,8 @@ button.tree-explorer__vacant-card {
     th:nth-child(3), td:nth-child(3) { width: 6rem; padding-right: 0.625rem; } }
   &__num { text-align: right !important; }
   &__empty-row { text-align: center; color: var(--text-muted); padding: 1.5rem 0.5rem; }
-  &__table tbody tr:hover { background: #f0e9d6; }
-  &__row--selected, &__table tbody &__row--selected:hover { background: #F6EFDD; box-shadow: inset 3px 0 0 var(--brand-secondary); }
+  &__table tbody tr:hover { background: var(--surface-raised); }
+  &__row--selected, &__table tbody &__row--selected:hover { background: var(--surface-selected); box-shadow: inset 3px 0 0 var(--brand-secondary); }
   &__row-btn { background: none; border: 0; padding: 0; line-height: 1.25; font: 600 0.875rem var(--font-mono); color: var(--text-primary); cursor: pointer; text-decoration: none;
     &:hover { text-decoration: underline; }
     &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; } }
@@ -4920,13 +4967,13 @@ button.tree-explorer__vacant-card {
     &--booked { background: color-mix(in srgb, var(--status-warning) 18%, var(--surface-card)); color: var(--status-warning-text); }
     &--sold { background: #CFC6B6; color: #3E372E; } }
 
-  &__empty { padding: 2.5rem 1rem; text-align: center; background: var(--surface-card); border: 1px dashed var(--border-subtle); border-radius: 16px;
+  &__empty { padding: 2.5rem 1rem; text-align: center; background: var(--surface-card); border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm);
     h2 { margin: 0 0 0.5rem; font: 600 1.125rem var(--font-sans); } p { margin: 0; color: var(--text-muted); } }
 
   &__skeleton { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 0.625rem; }
-  &__skeleton-tile { height: 88px; border-radius: 10px; background: linear-gradient(90deg, var(--surface-raised), var(--surface-card), var(--surface-raised)); background-size: 200% 100%; animation: projects-plots-shimmer 1.4s linear infinite; }
+  &__skeleton-tile { height: 88px; border-radius: var(--radius-sm); background: linear-gradient(90deg, var(--surface-raised), var(--surface-card), var(--surface-raised)); background-size: 200% 100%; animation: none; }
 
-  &__aside { grid-column: 2; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1.125rem; padding: 1.75rem; background: #FCFAF5; border: 1px solid var(--border-subtle); border-radius: 4px; }
+  &__aside { grid-column: 2; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1.125rem; padding: 1.75rem; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 4px; }
   &__aside-head { display: flex; justify-content: space-between; align-items: center; }
   &__aside-eyebrow { font: 600 0.6875rem var(--font-sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand-secondary); }
   &__aside-close { display: inline-flex; padding: 0.125rem; background: none; border: 0; color: var(--text-muted); cursor: pointer; &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; } }
@@ -4947,14 +4994,14 @@ button.tree-explorer__vacant-card {
   .book-form__plot-sub { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
   .book-form__plot-total { font: 500 1rem var(--font-mono); }
   .book-form label, .book-form__label { display: flex; flex-direction: column; gap: 0.375rem; margin: 0; font: 500 0.75rem var(--font-sans); letter-spacing: 0; text-transform: none; color: var(--text-muted); }
-  .book-form input { box-sizing: border-box; width: 100%; padding: 0.625rem 0.75rem; background: #fff; border: 1px solid var(--border-subtle); border-radius: 3px; font: 400 0.875rem var(--font-sans); color: var(--text-primary); }
+  .book-form input { box-sizing: border-box; width: 100%; padding: 0.625rem 0.75rem; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 3px; font: 400 0.875rem var(--font-sans); color: var(--text-primary); }
   .book-form input[name='buyerPhone'], .book-form input[name='tokenAmount'] { font-family: var(--font-mono); }
-  .book-form .associate-lookup__input { padding: 0.625rem 0.75rem; background: #fff; border: 1px solid var(--border-subtle); border-radius: 3px; font: 400 0.875rem var(--font-sans); }
+  .book-form .associate-lookup__input { padding: 0.625rem 0.75rem; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 3px; font: 400 0.875rem var(--font-sans); }
   .book-form__actions { margin-top: auto; flex-wrap: nowrap; gap: 0.625rem; .brand-button { min-height: 0; padding: 0.6875rem; font-size: 0.875rem; border-radius: 3px; justify-content: center; }
     .book-form__cancel { flex: 1; background: transparent; border: 1px solid var(--border-subtle); color: var(--text-primary); font-weight: 500; }
     button[type='submit'] { flex: 2; } }
   .book-form__field, .book-form__total { display: flex; flex-direction: column; gap: 0.375rem; }
-  .book-form__preview { margin: 0; padding: 0.75rem 0.875rem; background: #F0E9D6; border-radius: 3px; font: 400 0.8125rem/1.5 var(--font-sans); color: var(--text-primary); }
+  .book-form__preview { margin: 0; padding: 0.75rem 0.875rem; background: var(--surface-raised); border-radius: 3px; font: 400 0.8125rem/1.5 var(--font-sans); color: var(--text-primary); }
   .book-form input[aria-invalid='true'] { border-color: var(--status-danger); }
   &__reason { margin: 0; font-size: 0.875rem; color: var(--text-muted); }
   &__facts { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1rem; margin: 0;
@@ -4994,7 +5041,7 @@ button.tree-explorer__vacant-card {
   &__cards { display: flex; flex-direction: column; gap: 0.75rem; list-style: none; margin: 0; padding: 0; }
   &__card {
     display: flex; flex-direction: column; gap: 0.375rem; width: 100%; padding: 1rem 1.125rem; text-align: left; cursor: pointer;
-    background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 16px;
+    background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
     &--selected { border-color: var(--brand-primary); box-shadow: inset 4px 0 0 var(--brand-primary); }
     &--cancelled { box-shadow: inset 4px 0 0 var(--text-muted); .my-bookings__bar-fill { background: var(--text-muted); } }
     &--confirmed { box-shadow: inset 4px 0 0 var(--status-success); }
@@ -5018,29 +5065,30 @@ button.tree-explorer__vacant-card {
   &__bar { display: block; height: 8px; border-radius: 999px; overflow: hidden; background: var(--border-subtle); &--large { height: 12px; } }
   &__bar-fill { display: block; height: 100%; background: var(--status-success); }
 
-  &__detail { display: flex; flex-direction: column; gap: 0.75rem; padding: 1.5rem; background: var(--surface-card); border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); }
+  &__detail { display: flex; flex-direction: column; gap: 0.75rem; padding: 1.5rem; background: var(--surface-card); border-radius: var(--radius-sm); box-shadow: none;
+  border: 1px solid var(--border-subtle); }
   &__detail-title { margin: 0; font: 700 1.25rem var(--font-mono); }
   &__detail-sub { margin: 0; color: var(--text-muted); }
   &__facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin: 0;
     dt { font: 500 0.6875rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
     dd { margin: 0; font: 600 0.9375rem var(--font-mono); font-variant-numeric: tabular-nums; } }
-  &__status-note { margin: 0; padding: 0.75rem 1rem; background: var(--surface-raised); border-radius: 10px; font-size: 0.875rem; }
+  &__status-note { margin: 0; padding: 0.75rem 1rem; background: var(--surface-raised); border-radius: var(--radius-sm); font-size: 0.875rem; }
   &__back { display: none; min-height: 44px; align-self: flex-start; }
 
   &__table { width: 100%; border-collapse: collapse;
-    th { text-align: left; font: 500 0.6875rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); padding: 0.5rem; }
+    th { text-align: left; font: 500 0.6875rem var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); padding: 0.5rem; }
     td { padding: 0.625rem 0.5rem; border-top: 1px solid var(--border-subtle); } }
   &__amount { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
   &__cell-label { display: none; }
   &__row--overdue { box-shadow: inset 3px 0 0 var(--status-danger); background: color-mix(in srgb, var(--status-danger) 8%, transparent); }
   &__row--void { background: repeating-linear-gradient(45deg, var(--surface-raised) 0 6px, transparent 6px 12px); .my-bookings__amount { text-decoration: line-through; } }
 
-  &__empty { padding: 2.5rem 1rem; text-align: center; background: var(--surface-card); border: 1px dashed var(--border-subtle); border-radius: 16px;
+  &__empty { padding: 2.5rem 1rem; text-align: center; background: var(--surface-card); border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm);
     h2 { margin: 0 0 0.5rem; font: 600 1.125rem var(--font-sans); } p { margin: 0 0 1rem; color: var(--text-muted); } }
   &__retry { margin-left: 0.75rem; background: none; border: 0; text-decoration: underline; cursor: pointer; color: inherit; font-weight: 600; min-height: 44px; }
   &__pager { display: flex; align-items: center; justify-content: center; gap: 1rem; .brand-button { min-height: 44px; } }
   &__skeleton { display: flex; flex-direction: column; gap: 0.75rem; }
-  &__skeleton-card { height: 112px; border-radius: 16px; background: linear-gradient(90deg, var(--surface-raised), var(--surface-card), var(--surface-raised)); background-size: 200% 100%; animation: plot-availability-shimmer 1.4s linear infinite; }
+  &__skeleton-card { height: 112px; border-radius: var(--radius-sm); background: linear-gradient(90deg, var(--surface-raised), var(--surface-card), var(--surface-raised)); background-size: 200% 100%; animation: none; }
 }
 @media (prefers-reduced-motion: reduce) { .my-bookings__skeleton-card { animation: none; } }
 @media (max-width: 959px) {
@@ -5054,7 +5102,7 @@ button.tree-explorer__vacant-card {
   .my-bookings__table thead { display: none; }
   .my-bookings__table tr { display: block; padding: 0.5rem 0; border-top: 1px solid var(--border-subtle); }
   .my-bookings__table td { display: flex; justify-content: space-between; gap: 1rem; border: 0; padding: 0.25rem 0.5rem; }
-  .my-bookings__cell-label { display: inline; font: 500 0.6875rem var(--font-mono); text-transform: uppercase; color: var(--text-muted); }
+  .my-bookings__cell-label { display: inline; font: 500 0.6875rem var(--font-sans); text-transform: uppercase; color: var(--text-muted); }
 }
 
 // Bookings & EMI: only the host header lives here (it @extends global placeholders); register/seal/overdue styles are in admin-bookings-emi/*.component.scss (lazy)
@@ -5086,20 +5134,20 @@ button.tree-explorer__vacant-card {
 }
 .ticket-history__intro { display: flex; flex-direction: column; gap: 0.25rem; }
 .ticket-history__eyebrow {
-  font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.04em;
+  font-family: var(--font-sans); font-size: 0.6875rem; letter-spacing: 0.04em;
   text-transform: uppercase; color: var(--text-muted);
 }
 .ticket-history__title { @extend %admin-screen-title; margin: 0; }
 .ticket-history__subtitle { margin: 0; font-size: 0.875rem; color: var(--text-muted); }
 
 .ticket-history__filters {
-  display: flex; padding: 1.25rem 1.5rem; background: var(--surface-raised); border-radius: 16px;
+  display: flex; padding: 1.25rem 1.5rem; background: var(--surface-raised); border-radius: var(--radius-sm);
 }
 .ticket-history__filter-field {
   display: flex; flex-direction: column; min-width: 220px; max-width: 280px; flex: 1 1 220px;
   label {
     margin: 0; display: flex; flex-direction: column; gap: 0.375rem;
-    font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500;
+    font-family: var(--font-sans); font-size: 0.6875rem; font-weight: 500;
     letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted);
   }
   select { background: var(--surface-card); }
@@ -5163,7 +5211,7 @@ button.tree-explorer__vacant-card {
 }
 .ticket-history__dialog {
   width: min(560px, calc(100vw - 2rem)); padding: 0; border: 1px solid var(--border-subtle);
-  border-radius: 12px; background: var(--surface-card); color: var(--text-primary);
+  border-radius: var(--radius-sm); background: var(--surface-card); color: var(--text-primary);
   &::backdrop { background: rgba(0, 0, 0, 0.45); }
 }
 .ticket-history__dialog-body { display: flex; flex-direction: column; gap: 0.5rem; padding: 1.5rem; max-height: 80vh; overflow-y: auto; }
@@ -5177,8 +5225,8 @@ button.tree-explorer__vacant-card {
 .ticket-history__detail-close { align-self: flex-end; margin-top: 1rem; }
 
 .ticket-history__skeleton-row {
-  height: 3.5rem; margin: 0.75rem 1.25rem; border-radius: 8px; background: var(--surface-raised);
-  animation: ticket-history-pulse 1.2s ease-in-out infinite;
+  height: 3.5rem; margin: 0.75rem 1.25rem; border-radius: var(--radius-sm); background: var(--surface-raised);
+  animation: none;
 }
 @keyframes ticket-history-pulse { 50% { opacity: 0.45; } }
 @media (prefers-reduced-motion: reduce) { .ticket-history__skeleton-row { animation: none; } }
@@ -5229,7 +5277,7 @@ button.tree-explorer__vacant-card {
   label { display: flex; flex-direction: column; gap: 0.375rem; }
   input, textarea { font: inherit; padding: 0.5rem 0.75rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
 }
-.new-message__error { font-size: 0.75rem; color: var(--danger, #b3261e); }
+.new-message__error { font-size: 0.75rem; color: var(--status-danger); }
 .new-message__send { align-self: flex-start; }
 
 // ---- Admin dashboard: unreplied messages ----

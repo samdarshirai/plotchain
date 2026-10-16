@@ -30,13 +30,15 @@ describe('EditableTableComponent', () => {
     fixture.componentInstance.emptyStateLabel = 'No rows yet';
   });
 
-  it('renders one tr per row and one th per column', () => {
+  it('renders each data column and an accessible header for the remove action', () => {
     fixture.detectChanges();
     const headers = fixture.nativeElement.querySelectorAll('thead th');
-    expect(headers.length).toBe(columns.length);
+    expect(headers.length).toBe(columns.length + 1);
     expect(headers[0].textContent).toContain('Rank');
     expect(headers[1].textContent).toContain('Percent');
     expect(headers[2].textContent).toContain('Note');
+    expect(headers[3].textContent).toContain('Remove');
+    expect(headers[3].getAttribute('scope')).toBe('col');
 
     const bodyRows = fixture.nativeElement.querySelectorAll('tbody tr');
     expect(bodyRows.length).toBe(rows.length);

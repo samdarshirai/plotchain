@@ -1,24 +1,43 @@
 table {
   width: 100%;
   border-collapse: collapse;
+  background: var(--surface-card);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
 }
 
 th {
-  padding: 0.375rem 0;
-  font-size: 0.75rem;
+  padding: var(--table-cell-padding);
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
   font-weight: 600;
   text-align: left;
   color: var(--text-muted);
+  background: var(--surface-raised);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   border-bottom: 1px solid var(--border-subtle);
 }
 
 td {
-  padding: 0.375rem 0;
+  padding: var(--table-cell-padding);
+  vertical-align: middle;
   border-bottom: 1px solid var(--border-subtle);
 }
 
 tr:hover td {
   background: var(--surface-raised);
+}
+
+tr[aria-selected='true'] td {
+  background: var(--surface-selected);
+}
+
+.table-number {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .editable-table__add-row {
@@ -64,7 +83,7 @@ tr:hover td {
 }
 
 .editable-table__badge--warning {
-  color: var(--status-warning);
+  color: var(--status-warning-text);
 }
 
 .editable-table__badge--danger {
@@ -81,9 +100,9 @@ tr:hover td {
 .editable-table__rank-badge {
   display: inline-block;
   background: var(--brand-secondary);
-  color: var(--brand-primary-bright);
+  color: var(--action-foreground);
   font-size: 11.5px;
   font-weight: 600;
   padding: 4px 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }

@@ -34,6 +34,27 @@ describe('ThemeService', () => {
     document.documentElement.style.removeProperty('--brand-secondary');
     document.documentElement.style.removeProperty('--brand-primary-bright');
     document.documentElement.style.removeProperty('--brand-primary-contrast');
+    for (const token of ['--brand-secondary-contrast', '--action-foreground', '--brand-on-ink', '--brand-on-surface',
+      '--surface-selected', '--brand-gradient', '--brand-primary-soft', '--brand-primary-hover', '--brand-secondary-soft']) {
+      document.documentElement.style.removeProperty(token);
+    }
+  });
+
+  it('preserves the exact Viraj Acres highlight when saved defaults are applied', () => {
+    const target = document.createElement('div');
+    service.apply('#c6a227', '#5c1a2a', target);
+    expect(target.style.getPropertyValue('--brand-primary-bright')).toBe('#EAD07D');
+    expect(target.style.getPropertyValue('--action-foreground')).toBe('#EAD07D');
+  });
+
+  it('keeps custom primary actions and chrome readable for light and dark colors', () => {
+    for (const [primary, secondary] of [['#101010', '#FFFF00'], ['#FFFFFF', '#123456'], ['#000000', '#999999']]) {
+      const target = document.createElement('div');
+      service.apply(primary, secondary, target);
+      expect(contrastRatio(target.style.getPropertyValue('--action-foreground'), secondary)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(target.style.getPropertyValue('--brand-on-ink'), '#0C0A0B')).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(target.style.getPropertyValue('--brand-on-surface'), '#F7F2E7')).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
   it('applies theme properties to a detached target without touching document.documentElement', () => {

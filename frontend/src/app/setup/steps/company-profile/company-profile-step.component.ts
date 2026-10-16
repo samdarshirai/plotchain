@@ -125,7 +125,7 @@ const GSTIN_PATTERN = /^[0-9A-Z]{15}$/;
         </div>
 
         <div class="company-profile-step__preview">
-          <div class="seal-card">
+          <div class="seal-card seal-card--parchment">
             <div class="seal-card__hairline seal-card__hairline--top"></div>
             <div class="seal-card__body">
               <div class="seal-card__header">

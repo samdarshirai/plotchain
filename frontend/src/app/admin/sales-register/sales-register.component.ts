@@ -75,22 +75,25 @@ const PAGE_SIZE = 20;
         ></app-editable-table>
       </div>
       <ng-template #actionsTpl let-i="index">
-        <ng-container *ngIf="page!.sales[i].status === 'RECORDED'; else voidedTpl">
-          <input
-            type="text"
-            class="sales-register__void-reason-input"
-            [(ngModel)]="voidReasons[page!.sales[i].id]"
-            [placeholder]="'admin.salesRegister.voidReasonPlaceholder' | translate"
-          />
-          <button type="button" class="sales-register__void-action brand-button brand-button--danger" (click)="voidSale(page!.sales[i].id)">
-            {{ 'admin.salesRegister.voidAction' | translate }}
-          </button>
-        </ng-container>
-        <ng-template #voidedTpl>
-          <span class="sales-register__voided-tag">
-            {{ 'admin.salesRegister.voidedTag' | translate }}: {{ page!.sales[i].voidReason }}
-          </span>
-        </ng-template>
+        <div class="sales-register__actions">
+          <ng-container *ngIf="page!.sales[i].status === 'RECORDED'; else voidedTpl">
+            <input
+              type="text"
+              class="sales-register__void-reason-input"
+              [attr.aria-label]="'admin.salesRegister.voidReasonPlaceholder' | translate"
+              [(ngModel)]="voidReasons[page!.sales[i].id]"
+              [placeholder]="'admin.salesRegister.voidReasonPlaceholder' | translate"
+            />
+            <button type="button" class="sales-register__void-action brand-button brand-button--danger" (click)="voidSale(page!.sales[i].id)">
+              {{ 'admin.salesRegister.voidAction' | translate }}
+            </button>
+          </ng-container>
+          <ng-template #voidedTpl>
+            <span class="sales-register__voided-tag" [attr.title]="page!.sales[i].voidReason">
+              {{ 'admin.salesRegister.voidedTag' | translate }}: {{ page!.sales[i].voidReason }}
+            </span>
+          </ng-template>
+        </div>
       </ng-template>
 
       <div class="sales-register__pagination" *ngIf="page">

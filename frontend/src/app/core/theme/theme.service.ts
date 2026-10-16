@@ -35,6 +35,11 @@ export function contrastRatio(foreground: string, background: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+function readableForeground(preferred: string, background: string): string {
+  if (contrastRatio(preferred, background) >= 4.5) { return preferred; }
+  return contrastRatio(WHITE, background) >= contrastRatio(INK, background) ? WHITE : INK;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
   // Sets brand custom properties on `target` (defaulting to the document root). Setting
@@ -52,12 +57,20 @@ export class ThemeService {
     // captures primary/secondary), so one is derived here the same way _tokens.scss derives
     // --brand-primary-hover, just lighter, so it reads as a highlight step rather than a
     // hover-only nudge.
-    const primaryBright = `color-mix(in srgb, ${primary} 60%, white)`;
+    const isDefaultPrimary = primary.toUpperCase() === '#C6A227';
+    const primaryBright = isDefaultPrimary ? '#EAD07D' : `color-mix(in srgb, ${primary} 60%, white)`;
+    const brightHex = isDefaultPrimary ? '#EAD07D' : '#' + hexToRgb(primary)
+      .map(channel => Math.round(channel * 0.6 + 255 * 0.4).toString(16).padStart(2, '0')).join('');
 
     target.style.setProperty('--brand-primary', primary);
     target.style.setProperty('--brand-secondary', secondary);
     target.style.setProperty('--brand-primary-bright', primaryBright);
     target.style.setProperty('--brand-primary-contrast', primaryContrast);
+    target.style.setProperty('--brand-secondary-contrast', readableForeground('#F7F2E7', secondary));
+    target.style.setProperty('--action-foreground', readableForeground(brightHex, secondary));
+    target.style.setProperty('--brand-on-ink', readableForeground(brightHex, '#0C0A0B'));
+    target.style.setProperty('--brand-on-surface', readableForeground(secondary, '#F7F2E7'));
+    target.style.setProperty('--surface-selected', `color-mix(in srgb, ${primary} 12%, var(--surface-card))`);
 
     // `--brand-gradient`/`--brand-primary-soft`/`--brand-primary-hover`/`--brand-secondary-soft`
     // are declared once at :root in _tokens.scss, each referencing var(--brand-primary)/

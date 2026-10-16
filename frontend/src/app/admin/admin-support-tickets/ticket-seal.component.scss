@@ -1,8 +1,11 @@
+@use '../../../styles/seal';
+
 // Ticket seal (support-tickets unit 5): double-ruled sticky panel, same look as the booking seal. Live tokens only.
 .ticket-seal {
+  @include seal.frame;
   position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; padding: 1.25rem 1.5rem;
-  background: var(--surface-card); border: 1px solid var(--brand-primary); border-radius: 4px;
-  box-shadow: 0 0 0 4px var(--surface-card), 0 0 0 5px var(--brand-primary);
+  background: var(--surface-card);
+
   &__none, &__muted, &__hint, &__replied { margin: 0; color: var(--text-muted); }
   &__hint, &__replied { font-size: 0.8125rem; }
   &__title { margin: 0 0 0.75rem; font: 600 1.125rem var(--font-sans); &:focus { outline: none; } &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; } }
@@ -12,7 +15,7 @@
   &__meta { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; margin: 1rem 0;
     dt { font: 500 0.6875rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
     dd { margin: 0; text-align: right; } }
-  &__label { margin: 1rem 0 0.375rem; font: 500 0.6875rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  &__label { margin: 1rem 0 0.375rem; font: 500 0.6875rem var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
   &__text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
   &__reply-quote { margin: 0; padding: 0.5rem 0.75rem; border-left: 3px solid var(--brand-secondary); background: var(--surface-raised); white-space: pre-wrap; overflow-wrap: anywhere; }
   &__form { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
@@ -25,4 +28,4 @@
   &__submit[aria-disabled='true'], &__cancel[aria-disabled='true'] { opacity: 0.6; cursor: not-allowed; }
   &__form-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem; .brand-button { min-height: 44px; padding-inline: 0.875rem; } }
 }
-@media (max-width: 960px) { .ticket-seal { position: static; max-height: none; } }
+@media (max-width: 960px) { .ticket-seal { position: relative; max-height: none; } }

@@ -1,0 +1,22 @@
+// One border treatment for summary seals and interactive detail seals.
+@mixin frame {
+  border: 1px solid var(--brand-primary);
+  border-radius: 4px;
+  outline: none;
+  box-shadow: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1px solid var(--brand-primary);
+    border-radius: 1px;
+    pointer-events: none;
+    animation: seal-engrave 400ms ease-out both;
+  }
+}
+
+@keyframes seal-engrave {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0); }
+}

@@ -30,10 +30,10 @@ button:disabled {
   // that's now reversed to match the mockup exactly, so Oxblood/Bright-Gold is every primary
   // button's color and there's no exception left).
   background: var(--brand-secondary);
-  color: var(--brand-primary-bright);
+  color: var(--action-foreground);
   font-weight: 600;
   text-decoration: none;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 
 .brand-button:hover:not(:disabled) {
@@ -54,7 +54,7 @@ button:disabled {
 
 .brand-button--danger {
   background: var(--status-danger);
-  color: var(--brand-primary-contrast);
+  color: var(--status-on-fill);
 }
 
 .brand-button--full {

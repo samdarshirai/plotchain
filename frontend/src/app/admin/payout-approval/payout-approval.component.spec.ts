@@ -51,7 +51,7 @@ describe('PayoutApprovalComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.pendingWithdrawals).toBe(7);
-    const stat: HTMLElement = fixture.nativeElement.querySelector('.payout-approval__stats .stat-tile__value');
+    const stat: HTMLElement = fixture.nativeElement.querySelector('.payout-approval__stats .seal-card-panel__figure');
     expect(stat.textContent).toContain('7');
   });
 

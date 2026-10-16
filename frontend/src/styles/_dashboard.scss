@@ -24,7 +24,7 @@
 %panel-header-eyebrow-rule {
   flex: 1;
   height: 1px;
-  background: rgba(92, 26, 42, 0.22);
+  background: color-mix(in srgb, var(--brand-secondary) 22%, transparent);
 }
 
 %panel-header-eyebrow-label {
@@ -67,7 +67,7 @@
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--status-warning);
+  color: var(--status-warning-text);
 }
 
 .dashboard__cycle-range {
@@ -279,7 +279,7 @@
   flex-direction: column;
   padding: 0.5rem 0.75rem;
   border: 1px solid rgba(232, 223, 201, 0.15);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.8125rem;
   color: #E8DFC9;
   text-decoration: none;
@@ -424,6 +424,8 @@
 
 // Recent Sales table.
 .recent-sales-table {
+  min-width: 0;
+  overflow-x: auto;
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -635,12 +637,12 @@
     font-size: 0.84rem; color: var(--text-muted);
     strong { color: var(--text-primary); font-variant-numeric: tabular-nums; }
   }
-  &__summary--warn, &__summary--warn strong { color: var(--status-warning); }
+  &__summary--warn, &__summary--warn strong { color: var(--status-warning-text); }
   &__section { display: flex; flex-direction: column; gap: 0.5rem; }
   &__section-title { margin: 0; padding: 0 0.25rem; font: 600 0.6875rem var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
   &__empty { margin: 0; padding: 0 0.25rem; font-size: 0.84rem; color: var(--text-muted); }
   &__code { font-family: var(--font-mono, monospace); }
-  &__left { font-size: 0.78rem; font-weight: 500; color: var(--status-warning); }
+  &__left { font-size: 0.78rem; font-weight: 500; color: var(--status-warning-text); }
   &__expiry { width: 6.5rem; text-align: right; font-size: 0.78rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
   &__available-row {

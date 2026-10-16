@@ -4,17 +4,17 @@
   &__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   &__list { overflow-x: auto; }
   &__table { width: 100%; border-collapse: collapse;
-    th { text-align: left; padding: 0.75rem 0.5rem; font: 500 0.6875rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+    th { text-align: left; padding: 0.75rem 0.5rem; font: 500 0.6875rem var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
     td { padding: 0.75rem 0.5rem; border-top: 1px solid var(--border-subtle); vertical-align: top; } }
   &__row { cursor: pointer; &--selected { background: var(--brand-primary-soft); box-shadow: inset 4px 0 0 var(--brand-primary); }
     &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: -2px; } }
   &__sub { font-size: 0.8125rem; color: var(--text-muted); }
-  &__num { text-align: left; white-space: nowrap; font-size: 0.8125rem; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  &__num { text-align: right; white-space: nowrap; font-size: 0.8125rem; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
   &__pager { display: flex; justify-content: center; align-items: center; gap: 1rem; padding: 1rem; .brand-button { min-height: 44px; } }
   &__empty { padding: 2.5rem 1rem; text-align: center; h2 { margin: 0 0 0.5rem; font: 600 1.125rem var(--font-sans); } p { margin: 0 0 1rem; color: var(--text-muted); } }
   &__retry { margin-left: 0.75rem; background: none; border: 0; text-decoration: underline; cursor: pointer; color: inherit; font-weight: 600; min-height: 44px; }
   &__skeleton { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; }
-  &__skeleton-row { height: 44px; border-radius: 8px; background: linear-gradient(90deg, var(--surface-raised), var(--surface-card), var(--surface-raised)); background-size: 200% 100%; animation: booking-register-shimmer 1.4s linear infinite; }
+  &__skeleton-row { height: 44px; border-radius: var(--radius-sm); background: linear-gradient(90deg, var(--surface-raised), var(--surface-card), var(--surface-raised)); background-size: 200% 100%; animation: none; }
 }
 @keyframes booking-register-shimmer { to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .booking-register__skeleton-row { animation: none; } }
@@ -32,18 +32,18 @@
 
 // Shared table layout for every tab (full width, aligned columns)
 .booking-register__list { min-width: 0; overflow-x: auto; }
-.booking-register__num { white-space: nowrap; text-align: left; }
+.booking-register__num { white-space: nowrap; text-align: right; }
 .booking-register__table { table-layout: auto; th, td { text-align: left; vertical-align: middle; padding: 0.75rem 0.625rem; box-sizing: border-box; } th:first-child, td:first-child { padding-left: 1.5rem; } th:last-child, td:last-child { padding-right: 1.5rem; } td { font-variant-numeric: tabular-nums; } tfoot td { font-weight: 600; border-top: 2px solid var(--brand-primary); } }
 @media (min-width: 769px) {
-  .booking-register__table { min-width: 100%; th { white-space: nowrap; } td { white-space: normal; } td.booking-register__num { white-space: nowrap; } td button { white-space: nowrap; } }
+  .booking-register__table { min-width: 100%; th { white-space: nowrap; } td { white-space: normal; } td.booking-register__num { text-align: right; white-space: nowrap; } td button { white-space: nowrap; } }
 }
 
 // Compact single-line cells for every tab; cells marked __wrap may wrap (capped at 2 lines).
 @media (min-width: 769px) {
   .booking-register__table {
     font-size: 0.75rem;
-    th { font-size: 0.625rem; letter-spacing: 0; }
-    th, td { padding: 0.5rem 0.1875rem; white-space: nowrap; }
+    th { font-size: 0.6875rem; letter-spacing: 0.06em; }
+    th, td { padding: 0.75rem 0.5rem; white-space: nowrap; }
     th:first-child, td:first-child { padding-left: 0.75rem; }
     th:last-child, td:last-child { padding-right: 0.75rem; }
     td.booking-register__num { font-size: 0.75rem; }

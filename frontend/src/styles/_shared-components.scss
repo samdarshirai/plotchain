@@ -1,3 +1,5 @@
+@use 'seal';
+
 .inline-banner {
   display: flex;
   align-items: center;
@@ -37,9 +39,9 @@
 }
 
 .inline-banner--warning {
-  border-color: var(--status-warning);
+  border-color: var(--status-warning-text);
   background: color-mix(in srgb, var(--status-warning) 14%, var(--surface-card));
-  color: var(--status-warning);
+  color: var(--status-warning-text);
 }
 
 .inline-banner--success {
@@ -60,7 +62,7 @@
   padding: 1.25rem;
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
 }
 
 .stat-tile__body {
@@ -121,7 +123,7 @@
 // color -- see the KYC Review Queue's Pending/Rejected cards), unlike accent/success above which
 // recolor the value.
 .stat-tile--warning .stat-tile__icon {
-  color: var(--status-warning);
+  color: var(--status-warning-text);
 }
 
 .stat-tile--danger .stat-tile__icon {
@@ -150,41 +152,27 @@
   font-size: 2rem; // 32px
 }
 
-// Seal Card panel -- Viraj_Acres_Settings.dc.html lines 52-58, transcribed exactly (see
-// seal-card.component.ts's header comment for why this doesn't reuse _setup.scss's `.seal-card`).
+// Shared summary seal: Parchment by default, with an explicit Ink dashboard variant.
 .seal-card-panel {
+  @include seal.frame;
   position: relative;
   display: block;
   max-width: 32.5rem; // 520px
   padding: 2.25rem 2.5rem; // 36px 40px
-  background: var(--ink);
-  border: 1px solid var(--brand-primary);
-  border-radius: 0.25rem; // 4px
+  background: var(--surface-card);
+
 }
 
-.seal-card-panel__hairline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--brand-primary), var(--brand-primary-bright), var(--brand-primary));
-}
-
-.seal-card-panel__hairline--top {
-  top: 0;
-}
-
-.seal-card-panel__hairline--bottom {
-  bottom: 0;
-}
+.seal-card-panel__hairline { display: none; }
 
 .seal-card-panel__label {
   margin-bottom: 1.125rem; // 18px
   font-size: 0.75rem; // 12px
   font-weight: 700;
   letter-spacing: 0.14em;
+  text-transform: uppercase;
   text-align: center;
-  color: var(--brand-primary);
+  color: var(--brand-on-surface);
 }
 
 .seal-card-panel__figure {
@@ -193,7 +181,7 @@
   font-weight: 600;
   line-height: 1;
   text-align: center;
-  color: var(--brand-primary-bright);
+  color: var(--text-primary);
 }
 
 .seal-card-panel__delta {
@@ -212,7 +200,7 @@
   width: 100%;
   height: 44px;
   margin-top: 0.75rem;
-  color: var(--brand-primary-bright);
+  color: var(--brand-on-surface);
 
   polyline {
     fill: none;
@@ -225,7 +213,17 @@
   margin-top: 0.625rem; // 10px
   font-size: 0.8125rem; // 13px
   text-align: center;
-  color: var(--ink-surface-muted);
+  color: var(--text-muted);
+}
+
+.seal-card-panel--ink {
+  background: var(--ink);
+  box-shadow: none;
+
+  .seal-card-panel__label,
+  .seal-card-panel__figure,
+  .seal-card-panel__trend { color: var(--brand-on-ink); }
+  .seal-card-panel__caption { color: var(--ink-surface-muted); }
 }
 
 .toggle-group {
@@ -243,8 +241,12 @@
   padding: 0.25rem;
   background: var(--surface-raised);
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
+  max-width: 100%;
+  overflow-x: auto;
 }
+
+app-tab-bar { display: block; min-width: 0; }
 
 .toggle-group__option {
   border-radius: 0;
@@ -257,7 +259,9 @@
 }
 
 .tab-bar__tab {
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
+  flex: none;
+  white-space: nowrap;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -275,12 +279,12 @@
 // (Approval Mode, Account Type, KYC Strictness), same as every primary button.
 .toggle-group__option--active {
   background: var(--brand-secondary);
-  color: var(--brand-primary-bright);
+  color: var(--action-foreground);
 }
 
 .tab-bar__tab--active {
-  background: var(--brand-gradient);
-  color: var(--brand-primary-contrast);
+  background: var(--brand-secondary);
+  color: var(--action-foreground);
 }
 
 .side-panel__backdrop {
@@ -300,7 +304,8 @@
   flex-direction: column;
   background: var(--surface-card);
   border-left: 1px solid var(--border-subtle);
-  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.32);
+  box-shadow: none;
+  border: 1px solid var(--border-subtle);
   overflow-x: hidden;
   transform: translateX(100%);
   transition: transform 0.2s ease;
@@ -513,7 +518,7 @@ input[type='file'].logo-uploader__input {
   position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 0.125rem;
   width: 100%; min-width: 88px; min-height: 88px; padding: 0.5rem 0.625rem; text-align: left;
   background: var(--surface-card); color: var(--text-primary);
-  border: 2px solid var(--border-subtle); border-radius: 10px; cursor: pointer;
+  border: 2px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer;
   font-family: var(--font-sans);
 
   &__no { font: 700 0.9375rem var(--font-mono); font-variant-numeric: tabular-nums; }
@@ -528,7 +533,7 @@ input[type='file'].logo-uploader__input {
 
   &--available { background: color-mix(in srgb, var(--status-success) 12%, var(--surface-card)); border-color: var(--status-success);
     .plot-tile__status { color: var(--status-success-text); } }
-  &--booked { background: color-mix(in srgb, var(--status-warning) 12%, var(--surface-card)); border-color: var(--status-warning);
+  &--booked { background: color-mix(in srgb, var(--status-warning) 12%, var(--surface-card)); border-color: var(--status-warning-text);
     .plot-tile__status { color: var(--status-warning-text); } }
   &--sold { border-style: dashed; border-color: var(--text-muted);
     background: repeating-linear-gradient(45deg, var(--surface-raised) 0 6px, var(--surface-card) 6px 12px);
@@ -542,15 +547,15 @@ input[type='file'].logo-uploader__input {
     .plot-tile__meta { font: 400 0.71875rem var(--font-sans); color: inherit; opacity: 0.8; }
     &.plot-tile--corner, &.plot-tile--corner .plot-tile__face { clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
     &.plot-tile--corner .plot-tile__face { clip-path: polygon(0 0, calc(100% - 13.5px) 0, 100% 13.5px, 100% 100%, 0 100%); }
-    &.plot-tile--available { background: #4B7A52; color: #23402A; .plot-tile__face { background: #DCE8D6; } }
-    &.plot-tile--booked { background: #B4790E; color: #5A3D07; .plot-tile__face { background: #F1D9A6; } }
+    &.plot-tile--available { background: var(--status-success); color: #23402A; .plot-tile__face { background: #DCE8D6; } }
+    &.plot-tile--booked { background: var(--status-warning); color: #5A3D07; .plot-tile__face { background: #F1D9A6; } }
     &.plot-tile--sold { background: #8C8172; color: #3E372E; .plot-tile__face { background: #CFC6B6; } }
-    &.plot-tile--selected { padding: 2px; background: #C6A227; color: #EAD07D; .plot-tile__face { background: #5C1A2A; }
+    &.plot-tile--selected { padding: 2px; background: var(--brand-primary); color: var(--action-foreground); .plot-tile__face { background: var(--brand-secondary); }
       &.plot-tile--corner .plot-tile__face { clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 0 100%); } }
   }
 
   &--selected { border-width: 3px; border-color: var(--brand-primary); }
-  &--selected, &--selected .plot-tile__meta, &--selected .plot-tile__status { background: var(--brand-secondary); color: #EAD07D; }
+  &--selected, &--selected .plot-tile__meta, &--selected .plot-tile__status { background: var(--brand-secondary); color: var(--action-foreground); }
   &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
   // After the generic rule, and clipped tiles hide an outside outline, so draw it inside the box, 2px clear of the 3px selected border.
   &.plot-tile--corner:focus-visible { outline-offset: -7px; }

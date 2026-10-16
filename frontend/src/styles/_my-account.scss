@@ -1,9 +1,4 @@
-// My Account (Account Consolidation.dc.html): merges the old /profile, /rewards, and
-// /digital-id-card screens. Reuses .seal-card (_setup.scss) for the one Ink card per screen
-// (.profile-hero, profile screen redesign -- absorbs the old .verification-card's associate-ID
-// content) and the %panel-header-eyebrow placeholders (_dashboard.scss) for every
-// Oxblood-on-Parchment card header. The Rank card's double gold hairline border is a new
-// pattern the mockup introduces -- not a Seal Card (that's Ink-only, one per screen).
+// My Account uses one Parchment profile seal and shared operational controls.
 
 .my-account {
   display: flex;
@@ -140,7 +135,7 @@
 .profile-hero__name {
   font-family: var(--font-display);
   font-size: clamp(0.7rem, 1.3vw, 0.9rem);
-  color: var(--brand-primary-bright);
+  color: var(--brand-on-surface);
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
@@ -156,13 +151,13 @@
   font-family: var(--font-mono);
   font-size: 0.75rem;
   letter-spacing: 0.14em;
-  color: rgba(247, 242, 231, 0.65);
+  color: var(--text-muted);
 }
 
 .profile-hero__copy-button {
-  border: 1px solid rgba(198, 162, 39, 0.5);
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 50%, transparent);
   background: transparent;
-  color: var(--brand-primary-bright);
+  color: var(--brand-on-surface);
   font-size: 0.65625rem;
   font-weight: 500;
   padding: 0.1875rem 0.5rem;
@@ -174,7 +169,7 @@
   align-items: center;
   gap: 0.4375rem;
   font-size: 0.8125rem;
-  color: var(--surface-page);
+  color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 
   .material-symbols-outlined {
@@ -189,12 +184,12 @@
 .profile-hero__meta--secondary {
   margin-top: 0.21rem;
   font-size: 0.71875rem;
-  color: rgba(247, 242, 231, 0.65);
+  color: var(--text-muted);
 }
 
 .profile-hero__kyc {
   font-weight: 600;
-  color: rgba(247, 242, 231, 0.65);
+  color: var(--text-muted);
 }
 
 .profile-hero__kyc--verified {
@@ -214,7 +209,7 @@
 .profile-hero__divider {
   height: 1px;
   margin: 0 1.25rem;
-  background: rgba(198, 162, 39, 0.12);
+  background: color-mix(in srgb, var(--brand-primary) 12%, transparent);
 }
 
 .profile-hero__rank-body {
@@ -256,9 +251,9 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.28rem 0;
-  border-top: 1px solid rgba(198, 162, 39, 0.15);
+  border-top: 1px solid color-mix(in srgb, var(--brand-primary) 15%, transparent);
   font-size: 0.75rem;
-  color: rgba(247, 242, 231, 0.55);
+  color: var(--text-muted);
 
   &:first-of-type {
     border-top: none;
@@ -266,12 +261,12 @@
 }
 
 .reward-tiers__row--achieved {
-  color: var(--surface-page);
+  color: var(--text-primary);
 }
 
 .reward-tiers__icon {
   font-size: 1.0625rem;
-  color: rgba(247, 242, 231, 0.35);
+  color: var(--text-muted);
 }
 
 .reward-tiers__row--achieved .reward-tiers__icon {
@@ -280,7 +275,7 @@
 
 .reward-tiers__tier {
   font-weight: 600;
-  color: var(--brand-primary-bright);
+  color: var(--brand-on-surface);
 }
 
 .reward-tiers__threshold,
@@ -292,8 +287,8 @@
 .profile-hero__print-button {
   padding: 0.625rem 1.125rem;
   background: transparent;
-  border: 1px solid rgba(198, 162, 39, 0.4);
-  color: var(--brand-primary-bright);
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 40%, transparent);
+  color: var(--brand-on-surface);
   font-size: 0.78125rem;
   font-weight: 500;
   cursor: pointer;
@@ -304,7 +299,7 @@
   padding: 0.625rem 1.125rem;
   background: var(--brand-secondary);
   border: 1px solid var(--brand-secondary);
-  color: var(--brand-primary-bright);
+  color: var(--action-foreground);
   font-size: 0.78125rem;
   font-weight: 600;
   cursor: pointer;
@@ -322,8 +317,8 @@
 .profile-hero__remove-button {
   padding: 0.625rem 1.125rem;
   background: transparent;
-  border: 1px solid rgba(198, 162, 39, 0.4);
-  color: rgba(247, 242, 231, 0.65);
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 40%, transparent);
+  color: var(--text-muted);
   font-size: 0.78125rem;
   font-weight: 500;
   cursor: pointer;
@@ -386,13 +381,13 @@
   font-family: var(--font-display);
   font-size: 1.2rem;
   font-weight: 600;
-  color: var(--brand-primary-bright);
+  color: var(--brand-on-surface);
 }
 
 .rank-card__next {
   margin-top: 0.28rem;
   font-size: 0.75rem;
-  color: rgba(247, 242, 231, 0.65);
+  color: var(--text-muted);
 }
 
 .rank-card__stat {
@@ -403,23 +398,23 @@
 
 .rank-card__stat-label {
   font-size: 0.71875rem;
-  color: rgba(247, 242, 231, 0.65);
+  color: var(--text-muted);
 }
 
 .rank-card__stat-value {
   font-family: var(--font-display);
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--brand-primary-bright);
+  color: var(--brand-on-surface);
 }
 
 .rank-card__stat-value--accent {
-  color: var(--brand-primary);
+  color: var(--brand-on-surface);
 }
 
 .rank-card__bar {
   height: 6px;
-  background: rgba(247, 242, 231, 0.12);
+  background: var(--text-muted);
   margin: 0;
 }
 
@@ -432,10 +427,10 @@
   display: flex;
   justify-content: space-between;
   padding: 0.245rem 0 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 0.65625rem;
   font-weight: 500;
-  color: rgba(247, 242, 231, 0.65);
+  color: var(--text-muted);
 }
 
 // -- Profile tab's Personal Detail / Contact Detail / Nominee Detail / Authorisation sections
@@ -487,7 +482,7 @@
 
 .detail-card__missing-chip {
   font-size: 0.71875rem;
-  color: var(--status-warning);
+  color: var(--status-warning-text);
 }
 
 .detail-card__fields {
@@ -511,7 +506,7 @@
   input,
   select {
     border: 1px solid var(--border-subtle);
-    background: #fff;
+    background: var(--surface-card);
     padding: 0.625rem 0.75rem;
     font-size: 0.84375rem;
     color: var(--text-primary);
@@ -603,7 +598,7 @@
   input,
   select {
     border: 1px solid var(--border-subtle);
-    background: #fff;
+    background: var(--surface-card);
     padding: 0.625rem 0.75rem;
     font-size: 0.84375rem;
     color: var(--text-primary);
@@ -743,7 +738,7 @@
   font-family: var(--font-mono);
   font-size: 0.71875rem;
   font-weight: 500;
-  color: var(--status-warning);
+  color: var(--status-warning-text);
 }
 
 .kyc-card__row {

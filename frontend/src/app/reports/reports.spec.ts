@@ -28,7 +28,7 @@ describe('Reports screens', () => {
     const tables = fixture.nativeElement.querySelectorAll('table');
     expect(tables.length).toBe(2);
     expect(tables[0].querySelectorAll('tbody tr').length).toBe(1);
-    expect(tables[1].querySelectorAll('tbody tr').length).toBe(0);
+    expect(tables[1].querySelector('[role="status"]').textContent).toContain('plotBookings.table.empty');
 
     const input = fixture.nativeElement.querySelectorAll('input[type=date]')[0] as HTMLInputElement;
     input.value = '2026-06-01';
@@ -49,13 +49,13 @@ describe('Reports screens', () => {
     expect(fixture.nativeElement.textContent).toContain('admin.bookingsEmi.paymentMode.BANK_TRANSFER');
   });
 
-  it('emi: empty data still renders the table with no rows', () => {
+  it('emi: empty data renders an explicit empty state inside the table', () => {
     const fixture = TestBed.createComponent(EmiReportComponent);
     fixture.detectChanges();
     http.expectOne(r => r.url === '/api/associates/me/reports/emi').flush([]);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('table')).toBeTruthy();
-    expect(el.querySelectorAll('tbody tr').length).toBe(0);
+    expect(el.querySelector('tbody [role="status"]')?.textContent).toContain('plotBookings.table.empty');
   });
 });

@@ -34,7 +34,8 @@ export interface EditableTableColumn {
     <table class="editable-table">
       <thead>
         <tr>
-          <th *ngFor="let column of columns">{{ column.label }}</th>
+          <th scope="col" *ngFor="let column of columns">{{ column.label }}</th>
+          <th scope="col" *ngIf="!readOnly">{{ removeRowLabel }}</th>
         </tr>
       </thead>
       <tbody *ngIf="rows.length > 0; else emptyState">
@@ -57,7 +58,7 @@ export interface EditableTableColumn {
                   row[column.key]
                 }}</span>
                 <ng-container *ngSwitchDefault>
-                  <span>{{ row[column.key] }}</span>
+                  <span [attr.title]="row[column.key]">{{ row[column.key] }}</span>
                   <span
                     *ngIf="column.badgeKey"
                     class="editable-table__badge"
@@ -68,6 +69,7 @@ export interface EditableTableColumn {
               </ng-container>
               <ng-container *ngIf="!readOnly">
                 <select
+                  [attr.aria-label]="column.label"
                   *ngIf="column.type === 'select'; else textOrNumberCell"
                   [value]="row[column.key]"
                   (change)="onCellInput($event, i, column.key)"
@@ -78,6 +80,7 @@ export interface EditableTableColumn {
                 </select>
                 <ng-template #textOrNumberCell>
                   <input
+                    [attr.aria-label]="column.label"
                     [type]="column.type === 'number' ? 'number' : 'text'"
                     [value]="row[column.key]"
                     (input)="onCellInput($event, i, column.key)"

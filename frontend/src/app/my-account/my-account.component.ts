@@ -101,7 +101,7 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
         </div>
 
         <ng-container *ngIf="activeTab === 'profile' && profile">
-          <div class="profile-hero seal-card">
+          <div class="profile-hero seal-card seal-card--parchment">
             <div class="seal-card__hairline seal-card__hairline--top"></div>
             <div class="seal-card__body profile-hero__body">
               <span class="profile-hero__avatar" *ngIf="!photoObjectUrl">{{ initials }}</span>

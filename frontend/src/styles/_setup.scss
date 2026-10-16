@@ -1,3 +1,5 @@
+@use 'seal';
+
 // Loads the admin operational-screen shared placeholders (%admin-screen-title, ...) so the
 // screens in this file can share the same page-heading typography. Sass loads each module once,
 // so this adds no duplicate CSS -- styles.scss already @uses 'styles/admin' ahead of this file.
@@ -137,7 +139,7 @@
 .setup-header__progress-bar {
   width: 100%;
   height: 4px;
-  background: rgba(198, 162, 39, 0.2);
+  background: color-mix(in srgb, var(--brand-primary) 20%, transparent);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -234,7 +236,7 @@ app-setup-progress-rail {
 
 .setup-progress-rail__bar {
   height: 6px;
-  background: rgba(198, 162, 39, 0.2);
+  background: color-mix(in srgb, var(--brand-primary) 20%, transparent);
   border-radius: 999px;
   overflow: hidden;
   margin-bottom: 2rem;
@@ -264,7 +266,7 @@ app-setup-progress-rail {
   align-items: center;
   gap: 0.75rem;
   padding: 0.625rem 0.75rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: #9A907B;
   text-decoration: none;
   transition: background 0.15s ease, color 0.15s ease;
@@ -417,42 +419,14 @@ app-setup-progress-rail {
 // badge, a payout total -- can adopt it without new CSS; only company-profile-step's Company
 // Card Preview uses it today.
 .seal-card {
+  @include seal.frame;
   position: relative;
   display: block;
   background: var(--ink);
   border-radius: 4px;
 }
 
-.seal-card__hairline {
-  height: 2px;
-  background: var(--brand-gradient);
-  transform-origin: left;
-}
-
-.seal-card__hairline--top {
-  animation: sealDrawTop 500ms ease-out both;
-}
-
-.seal-card__hairline--bottom {
-  animation: sealDrawBottom 500ms ease-out 80ms both;
-}
-
-@keyframes sealDrawTop {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}
-
-@keyframes sealDrawBottom {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .seal-card__hairline--top,
-  .seal-card__hairline--bottom {
-    animation: none;
-  }
-}
+.seal-card__hairline { display: none; }
 
 .seal-card__body {
   padding: 1.125rem 1.25rem 1rem;
@@ -511,7 +485,7 @@ app-setup-progress-rail {
 
 .seal-card__divider {
   height: 1px;
-  background: rgba(198, 162, 39, 0.25);
+  background: color-mix(in srgb, var(--brand-primary) 25%, transparent);
   margin-bottom: 0.625rem;
 }
 
@@ -1046,7 +1020,7 @@ app-setup-progress-rail {
     flex-shrink: 0;
     border-radius: 50%;
     background: var(--brand-secondary);
-    color: var(--brand-primary-bright);
+    color: var(--action-foreground);
     font-size: 18px;
   }
 }
@@ -1218,7 +1192,7 @@ app-setup-progress-rail {
   border-left: 3px solid var(--status-warning);
 
   .material-symbols-outlined:first-child {
-    color: var(--status-warning);
+    color: var(--status-warning-text);
   }
 
   &.is-expanded {
@@ -1379,7 +1353,7 @@ app-setup-progress-rail {
 // Admin Charge / TDS are deductions, not income lines -- the mockup reads them in the bronze
 // status-warning color so they visually separate from the income/bonus lines above them.
 .compensation-step__simulator-line--deduction dd {
-  color: var(--status-warning);
+  color: var(--status-warning-text);
 }
 
 .compensation-step__simulator-total {
@@ -1609,13 +1583,14 @@ app-setup-progress-rail {
   padding: 18px;
   border-radius: 4px;
   border: 2px solid var(--border-subtle);
-  background: var(--surface-base, #fff);
+  background: var(--surface-card);
   cursor: pointer;
   transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 
   &:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    transform: translateY(-1px);
+    box-shadow: none;
+  border: 1px solid var(--border-subtle);
+
   }
 }
 
@@ -1819,7 +1794,7 @@ app-setup-progress-rail {
   justify-content: center;
   background: transparent;
   border: 1px solid var(--border-subtle);
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   padding: 5px 10px;
   text-align: center;
   font-size: 11.5px;
@@ -1918,7 +1893,7 @@ app-setup-progress-rail {
   gap: 0.5rem;
   padding: 0.25rem 0.4rem;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: transparent;
   font-size: 13.5px;
   color: var(--text-primary);
@@ -1985,7 +1960,7 @@ app-setup-progress-rail {
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.875rem;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   background: var(--surface-raised);
   border: 1px solid var(--border-subtle);
 }
@@ -2016,8 +1991,8 @@ app-setup-progress-rail {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  border-radius: 10px;
-  background: var(--surface-base, #fff);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
   border: 1px solid var(--border-subtle);
 
   .material-symbols-outlined {
@@ -2075,8 +2050,8 @@ app-setup-progress-rail {
   align-items: center;
   gap: 0.2rem;
   padding: 0.5rem;
-  border-radius: 10px;
-  background: var(--surface-base, #fff);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   text-align: center;
 
@@ -2389,7 +2364,7 @@ app-setup-progress-rail {
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 
   &:hover {
     color: var(--status-danger);
@@ -2452,7 +2427,7 @@ app-setup-progress-rail {
   flex: 1;
   height: 6px;
   // Not a token -- no existing surface/border token matches this value.
-  background: #EFE9DA;
+  background: var(--border-subtle);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -2563,7 +2538,7 @@ app-setup-progress-rail {
 
 .projects-step__status-pill--booked {
   background: color-mix(in srgb, var(--status-warning) 16%, var(--surface-card));
-  color: var(--status-warning);
+  color: var(--status-warning-text);
 }
 
 .projects-step__status-pill--sold {
@@ -2631,4 +2606,14 @@ app-setup-progress-rail {
 
 .setup-step-nav__spacer {
   flex: 1;
+}
+
+.seal-card--parchment {
+  background: var(--surface-card);
+  color: var(--text-primary);
+  .seal-card__figure, .seal-card__footer-value { color: var(--text-primary); }
+  .seal-card__header-label { color: var(--brand-on-surface); }
+  .seal-card__legal, .seal-card__details, .seal-card__footer-note { color: var(--text-muted); }
+  .seal-card__header-rule { background: var(--brand-secondary); }
+  .seal-card__divider { background: var(--border-subtle); }
 }

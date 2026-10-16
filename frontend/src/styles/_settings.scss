@@ -95,7 +95,7 @@
   height: 38px;
   border-radius: 50%;
   background: var(--brand-secondary);
-  color: var(--brand-primary-bright);
+  color: var(--action-foreground);
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -116,7 +116,7 @@
 .audit-log__section-tag {
   flex-shrink: 0;
   padding: 0.25rem 0.625rem;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--brand-secondary) 8%, transparent);
   color: var(--brand-secondary);
   font-size: 11.5px;

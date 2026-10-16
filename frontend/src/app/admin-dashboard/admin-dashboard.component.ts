@@ -56,6 +56,7 @@ import { AdminRecentSalesTableComponent } from './widgets/recent-sales-table/rec
         <div class="admin-dashboard__row admin-dashboard__row--top">
           <ng-container *ngIf="s.currentCycle as cycle; else noCycle">
             <app-seal-card
+              surface="ink"
               class="admin-dashboard__seal"
               [label]="'adminDashboard.payoutLiabilityLabel' | translate"
               [value]="formatCurrency(cycle.totalIncome)"

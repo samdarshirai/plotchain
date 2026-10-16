@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { formatInr } from '../shared/utils/plot-grid.util';
-import { REPORT_STYLES } from './report-styles';
 import { EmiReportRow, ReportsService } from './reports.service';
 
 // EMI payments received on my own bookings, filtered by payment date.
@@ -31,21 +30,22 @@ import { EmiReportRow, ReportsService } from './reports.service';
         <table class="report__table">
           <thead>
             <tr>
-              <th>{{ 'reports.column.number' | translate }}</th>
-              <th>{{ 'reports.column.associateId' | translate }}</th>
-              <th>{{ 'reports.column.name' | translate }}</th>
-              <th>{{ 'reports.column.paymentDate' | translate }}</th>
-              <th>{{ 'reports.column.amount' | translate }}</th>
-              <th>{{ 'reports.column.mode' | translate }}</th>
+              <th scope="col">{{ 'reports.column.number' | translate }}</th>
+              <th scope="col">{{ 'reports.column.associateId' | translate }}</th>
+              <th scope="col">{{ 'reports.column.name' | translate }}</th>
+              <th scope="col">{{ 'reports.column.paymentDate' | translate }}</th>
+              <th scope="col" class="table-number">{{ 'reports.column.amount' | translate }}</th>
+              <th scope="col">{{ 'reports.column.mode' | translate }}</th>
             </tr>
           </thead>
           <tbody>
+            <tr *ngIf="rows && !rows.length && !loading && !error"><td colspan="6" class="report__empty" role="status">{{ 'plotBookings.table.empty' | translate }}</td></tr>
             <tr *ngFor="let r of rows; let i = index">
               <td>{{ i + 1 }}</td>
               <td>{{ r.associateId }}</td>
               <td>{{ r.name }}</td>
               <td>{{ r.paymentDate | date: 'mediumDate' }}</td>
-              <td>{{ money(r.amount) }}</td>
+              <td class="table-number">{{ money(r.amount) }}</td>
               <td>{{ r.mode ? ('admin.bookingsEmi.paymentMode.' + r.mode | translate) : '—' }}</td>
             </tr>
           </tbody>
@@ -53,7 +53,7 @@ import { EmiReportRow, ReportsService } from './reports.service';
       </div>
     </div>
   `,
-  styles: [REPORT_STYLES]
+  styleUrl: './reports.scss'
 })
 export class EmiReportComponent {
   private service = inject(ReportsService);

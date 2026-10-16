@@ -1,3 +1,5 @@
+@use '../../../styles/seal';
+
 .epin-join {
   max-width: 1480px; margin: 0 auto; padding: 1.5rem 2rem;
 
@@ -9,14 +11,15 @@
   &__crumb { font-size: 0.75rem; font-weight: 500; color: var(--text-muted); }
   &__actions { display: flex; gap: 0.625rem; }
   &__submit, &__cancel { height: 38px; padding: 0 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.875rem; transition: background-color 150ms, border-color 150ms; }
-  &__submit { background: var(--brand-secondary); color: #EAD07D; border: 0; &:hover:not(:disabled) { background: #4a1422; } &:disabled { opacity: 0.6; cursor: default; } }
+  &__submit { background: var(--brand-secondary); color: var(--action-foreground); border: 0; &:hover:not(:disabled) { background: color-mix(in srgb, var(--brand-secondary) 90%, black); } &:disabled { opacity: 0.6; cursor: default; } }
   &__cancel { background: transparent; color: var(--text-primary); border: 1px solid var(--border-subtle); font-weight: 500; &:hover { border-color: var(--text-muted); } }
 
   // Seal card: double gold hairline, E-PIN + package
   &__seal {
+    @include seal.frame;
+    position: relative;
     grid-column: span 5; align-self: stretch; display: flex; flex-direction: column; justify-content: center; gap: 0.625rem;
-    padding: 0.75rem 1.125rem; border: 1px solid var(--brand-primary); border-radius: 2px;
-    box-shadow: inset 0 0 0 3px var(--surface-card), inset 0 0 0 4px var(--brand-primary);
+    padding: 1rem 1.25rem;
   }
   &__seal-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; &--rule { border-top: 1px solid var(--border-subtle); padding-top: 0.625rem; } }
   &__eyebrow {
@@ -25,7 +28,7 @@
     &::after { content: ''; width: 22px; height: 1px; background: var(--brand-secondary); }
   }
   &__pin { font-family: var(--font-display); font-size: 1.625rem; letter-spacing: 0.04em; color: var(--text-primary); line-height: 1; }
-  &__package { display: flex; align-items: baseline; gap: 0.75rem; font-family: 'IBM Plex Mono', monospace; font-size: 0.9375rem; color: #8a6f12; }
+  &__package { display: flex; align-items: baseline; gap: 0.75rem; font-family: 'IBM Plex Mono', monospace; font-size: 0.9375rem; color: var(--status-warning-text); }
   &__package-name { font-family: var(--font-display); font-size: 1.125rem; color: var(--text-primary); }
 
   &__section { min-width: 0; display: flex; flex-direction: column; gap: 0.625rem; grid-column: span 12; &--7 { grid-column: span 7; } &--5 { grid-column: span 5; } }
@@ -41,8 +44,8 @@
   &__input {
     width: 100%; box-sizing: border-box; height: 36px; padding: 0 0.75rem; border: 1px solid var(--border-subtle); border-radius: 4px;
     background: var(--surface-raised); color: var(--text-primary); font-family: inherit; font-size: 0.84rem; transition: border-color 150ms;
-    &:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px rgba(198, 162, 39, 0.18); }
-    &[readonly] { background: #EDE5D2; color: var(--text-muted); }
+    &:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 18%, transparent); }
+    &[readonly] { background: var(--surface-raised); color: var(--text-muted); }
   }
   &__banner { grid-column: span 12; }
 
@@ -62,14 +65,16 @@
 
   &__done { max-width: 44rem; margin: 1rem auto; display: flex; flex-direction: column; gap: 1.25rem; }
   &__done-seal {
+    @include seal.frame;
+    position: relative;
     display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.5rem; padding: 2rem 1.5rem;
-    background: var(--ink); border: 1px solid var(--brand-primary); border-radius: 2px;
+    background: var(--surface-card); border: 1px solid var(--brand-primary); border-radius: 2px;
     box-shadow: inset 0 0 0 3px var(--ink), inset 0 0 0 4px var(--brand-primary);
     .epin-join__eyebrow { color: var(--brand-primary); &::before, &::after { background: var(--brand-primary); } }
   }
-  &__done-title { margin: 0.25rem 0 0; font-family: var(--font-display); font-weight: 500; font-size: 1.875rem; line-height: 1.2; color: #EAD07D; }
-  &__done-name { margin: 0; font-family: var(--font-display); font-size: 1.25rem; color: #F7F2E7; }
-  &__done-sub { margin: 0.25rem 0 0; max-width: 32rem; color: var(--ink-surface-muted); font-size: 0.875rem; }
+  &__done-title { margin: 0.25rem 0 0; font-family: var(--font-display); font-weight: 500; font-size: 1.875rem; line-height: 1.2; color: var(--text-primary); }
+  &__done-name { margin: 0; font-family: var(--font-display); font-size: 1.25rem; color: var(--text-primary); }
+  &__done-sub { margin: 0.25rem 0 0; max-width: 32rem; color: var(--text-muted); font-size: 0.875rem; }
   &__creds { margin: 0; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 4px; }
   &__cred {
     display: grid; grid-template-columns: 11rem 1fr auto; align-items: center; gap: 0.75rem; padding: 0.75rem 1.25rem; border-top: 1px solid var(--border-subtle);

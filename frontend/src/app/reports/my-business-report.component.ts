@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { formatInr } from '../shared/utils/plot-grid.util';
-import { REPORT_STYLES } from './report-styles';
 import { BusinessReport, BusinessReportRow, ReportsService } from './reports.service';
 
 // Left and Right business tables for a booked-date range.
@@ -34,17 +33,18 @@ import { BusinessReport, BusinessReportRow, ReportsService } from './reports.ser
             <table class="report__table">
               <thead>
                 <tr>
-                  <th>{{ 'reports.column.number' | translate }}</th>
-                  <th>{{ 'reports.column.paymentDate' | translate }}</th>
-                  <th>{{ 'reports.column.confirmDate' | translate }}</th>
-                  <th>{{ 'reports.column.associateId' | translate }}</th>
-                  <th>{{ 'reports.column.name' | translate }}</th>
-                  <th>{{ 'reports.column.project' | translate }}</th>
-                  <th>{{ 'reports.column.plotNumber' | translate }}</th>
-                  <th>{{ 'reports.column.business' | translate }}</th>
+                  <th scope="col">{{ 'reports.column.number' | translate }}</th>
+                  <th scope="col">{{ 'reports.column.paymentDate' | translate }}</th>
+                  <th scope="col">{{ 'reports.column.confirmDate' | translate }}</th>
+                  <th scope="col">{{ 'reports.column.associateId' | translate }}</th>
+                  <th scope="col">{{ 'reports.column.name' | translate }}</th>
+                  <th scope="col">{{ 'reports.column.project' | translate }}</th>
+                  <th scope="col">{{ 'reports.column.plotNumber' | translate }}</th>
+                  <th scope="col" class="table-number">{{ 'reports.column.business' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
+                <tr *ngIf="!leg.rows.length && !loading && !error"><td colspan="8" class="report__empty" role="status">{{ 'plotBookings.table.empty' | translate }}</td></tr>
                 <tr *ngFor="let r of leg.rows; let i = index">
                   <td>{{ i + 1 }}</td>
                   <td>{{ r.paymentDate | date: 'mediumDate' }}</td>
@@ -53,7 +53,7 @@ import { BusinessReport, BusinessReportRow, ReportsService } from './reports.ser
                   <td>{{ r.name }}</td>
                   <td>{{ r.project }}</td>
                   <td>{{ r.plotNumber }}</td>
-                  <td>{{ money(r.business) }}</td>
+                  <td class="table-number">{{ money(r.business) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -62,7 +62,7 @@ import { BusinessReport, BusinessReportRow, ReportsService } from './reports.ser
       </ng-container>
     </div>
   `,
-  styles: [REPORT_STYLES]
+  styleUrl: './reports.scss'
 })
 export class MyBusinessReportComponent {
   private service = inject(ReportsService);

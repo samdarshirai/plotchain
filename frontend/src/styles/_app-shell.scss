@@ -14,7 +14,7 @@
   flex-direction: column;
   width: var(--sidebar-rail-width);
   background: var(--ink);
-  border-right: 1px solid rgba(198, 162, 39, 0.22);
+  border-right: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent);
   overflow: hidden;
   transition: width 180ms cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -47,7 +47,7 @@
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 15px;
-  color: var(--brand-primary-bright);
+  color: var(--action-foreground);
   letter-spacing: 0.02em;
 }
 
@@ -62,7 +62,7 @@
   font-size: 13.5px;
   font-weight: 700;
   letter-spacing: 0.14em;
-  color: var(--brand-primary-bright);
+  color: var(--brand-on-ink);
 }
 
 .associate-sidebar__wordmark-tagline {
@@ -75,12 +75,12 @@
 .associate-sidebar__divider {
   height: 1px;
   flex-shrink: 0;
-  background: linear-gradient(90deg, rgba(198, 162, 39, 0.35), rgba(198, 162, 39, 0));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--brand-primary) 35%, transparent), rgba(198, 162, 39, 0));
   margin: 0 0 10px;
 }
 
 .associate-sidebar__divider--tight {
-  background: rgba(198, 162, 39, 0.18);
+  background: color-mix(in srgb, var(--brand-primary) 18%, transparent);
   margin: 0 4px 10px;
 }
 
@@ -119,13 +119,13 @@
 .associate-sidebar__link:hover,
 .associate-sidebar__pin:hover,
 .associate-sidebar__logout:hover {
-  background: rgba(198, 162, 39, 0.09);
-  color: var(--brand-primary-bright);
+  background: color-mix(in srgb, var(--brand-primary) 9%, transparent);
+  color: var(--brand-on-ink);
 }
 
 .associate-sidebar__link--active {
   background: var(--nav-active-fill);
-  color: var(--brand-primary-bright);
+  color: var(--brand-on-ink);
 }
 
 .associate-sidebar__subnav {
@@ -148,17 +148,17 @@
 }
 
 .associate-sidebar__sublink:hover {
-  background: rgba(198, 162, 39, 0.09);
-  color: var(--brand-primary-bright);
+  background: color-mix(in srgb, var(--brand-primary) 9%, transparent);
+  color: var(--brand-on-ink);
 }
 
 .associate-sidebar__sublink--active {
   background: var(--nav-active-fill);
-  color: var(--brand-primary-bright);
+  color: var(--brand-on-ink);
 }
 
 .associate-sidebar__logout:hover {
-  color: var(--brand-primary-bright);
+  color: var(--brand-on-ink);
 }
 
 .associate-sidebar__link-icon,
@@ -237,7 +237,7 @@
     height: 56px;
     padding: 0 0.5rem;
     background: var(--ink);
-    border-bottom: 1px solid rgba(198, 162, 39, 0.22);
+    border-bottom: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent);
   }
 
   .mobile-topbar__menu {
@@ -247,7 +247,7 @@
     height: 44px;
     background: transparent;
     border: 0;
-    color: var(--brand-primary-bright);
+    color: var(--brand-on-ink);
     cursor: pointer;
   }
 
@@ -255,7 +255,7 @@
     font-size: 13.5px;
     font-weight: 700;
     letter-spacing: 0.14em;
-    color: var(--brand-primary-bright);
+    color: var(--brand-on-ink);
   }
 
   .mobile-drawer-backdrop {
@@ -292,7 +292,7 @@
   padding: 1.5rem;
   background: var(--surface-card);
   border: 1px solid var(--status-danger);
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   color: var(--status-danger);
 }
 
@@ -300,7 +300,7 @@
   padding: 1.5rem;
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   margin-bottom: 1.5rem;
 }
 
@@ -397,7 +397,7 @@
 
 .login-brand .login-tagline {
   text-align: center;
-  color: var(--text-muted);
+  color: var(--ink-surface-muted);
   font-size: 0.875rem;
 }
 
@@ -426,7 +426,7 @@
 
 .login-wordmark__caption {
   margin: 0.5rem 0 0;
-  color: var(--brand-primary-bright);
+  color: var(--brand-on-ink);
   font-family: var(--font-sans);
   font-size: 0.6875rem;
   font-weight: 500;
@@ -498,7 +498,7 @@
 .login-form input[type='password'] {
   margin-top: 0.375rem;
   background: var(--surface-card);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 0.75rem 0.875rem;
 }
 
@@ -531,7 +531,7 @@
 }
 
 .login-forgot:hover {
-  color: var(--brand-primary-bright);
+  color: var(--brand-on-ink);
 }
 
 .login-error {
@@ -539,7 +539,7 @@
   padding: 0.75rem 1rem;
   background: color-mix(in srgb, var(--status-danger) 14%, var(--surface-card));
   border: 1px solid var(--status-danger);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--status-danger);
   font-size: 0.875rem;
 }
@@ -557,7 +557,7 @@
 }
 
 .login-request-access a:hover {
-  color: var(--brand-primary-bright);
+  color: var(--brand-on-ink);
 }
 
 .login-form .login-password-field {

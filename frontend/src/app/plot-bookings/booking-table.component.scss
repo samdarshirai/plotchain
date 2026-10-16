@@ -1,15 +1,15 @@
 .booking-table {
   width: 100%; border-collapse: collapse; font-size: 0.8125rem;
-  &__scroll { overflow-x: auto; background: #fcfaf5; border: 1px solid #d9cfbc; scrollbar-width: thin; }
-  th { text-align: left; padding: 0.75rem 0.875rem; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #ead07d; background: #0c0a0b; white-space: nowrap; }
-  td { padding: 0.75rem 0.875rem; white-space: nowrap; border-bottom: 1px solid #eae2d0; vertical-align: top; color: #201a15; font-variant-numeric: tabular-nums; }
-  tbody tr:hover td { background: #f0e9d6; }
+  &__scroll { overflow-x: auto; background: var(--surface-card); border: 1px solid var(--border-subtle); scrollbar-width: thin; }
+  th { text-align: left; padding: 0.75rem 0.875rem; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); background: var(--surface-raised); white-space: nowrap; }
+  td { padding: 0.75rem 0.875rem; white-space: nowrap; border-bottom: 1px solid var(--border-subtle); vertical-align: top; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  tbody tr:hover td { background: var(--surface-raised); }
   tbody tr:last-child td { border-bottom: 0; }
   .booking-table__num { text-align: right; white-space: nowrap; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
   .booking-table__wrap { white-space: normal; min-width: 13rem; max-width: 16rem; }
   &__mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
   &__empty td { text-align: center; color: var(--text-muted); padding: 1.5rem 0.5rem; }
-  &__row--selected td { background: #f3ecda; }
+  &__row--selected td { background: var(--surface-selected); }
   &__details { background: none; border: 0; padding: 0; color: var(--brand, inherit); text-decoration: underline; cursor: pointer; font: inherit; }
   &__installments { width: 100%; border-collapse: collapse; }
 }
