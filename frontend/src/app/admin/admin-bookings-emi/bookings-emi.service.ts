@@ -80,6 +80,10 @@ export class BookingsEmiService {
     return this.http.post<Booking>(`/api/admin/bookings/${id}/transfer`, { associateId });
   }
 
+  transferPlot(id: string, plotId: string): Observable<Booking> {
+    return this.http.post<Booking>(`/api/admin/bookings/${id}/transfer-plot`, { plotId });
+  }
+
   reschedule(id: string, req: RescheduleRequest): Observable<Booking> {
     return this.http.post<Booking>(`/api/admin/bookings/${id}/reschedule`, req);
   }

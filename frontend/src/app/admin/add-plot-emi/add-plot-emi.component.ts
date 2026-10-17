@@ -9,6 +9,8 @@ import { Booking, EmiInstallment, PAYMENT_MODES, PaymentMode } from '../../plot-
 import { BookingsEmiService } from '../admin-bookings-emi/bookings-emi.service';
 import { BookingPage, RegisterFilters } from '../admin-bookings-emi/bookings-emi.model';
 import { collectPages, formatMoney, plotText, utcDate } from '../admin-bookings-emi/bookings-emi.util';
+import { ProjectsPlotsService } from '../projects-plots/projects-plots.service';
+import { PlotGridItem } from '../../shared/utils/plot-grid.util';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { ExportColumn, copyTable, exportCsv, exportExcel, printTable } from '../../shared/utils/table-export.util';
@@ -106,6 +108,7 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
                 <td class="add-plot-emi__actions add-plot-emi__noprint">
                   <button type="button" class="brand-button add-plot-emi__btn" (click)="openPay(b)">{{ 'admin.addPlotEmi.addPayment' | translate }}</button>
                   <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" (click)="historyOf = b">{{ 'admin.addPlotEmi.history' | translate }}</button>
+                  <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" *ngIf="b.status === 'ACTIVE'" (click)="openTransfer(b)">{{ 'admin.addPlotEmi.transfer.button' | translate }}</button>
                 </td>
               </tr>
             </tbody>
@@ -172,6 +175,58 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
       </form>
     </div>
 
+    <div class="add-plot-emi__overlay" *ngIf="transferFor as b" (keydown.escape)="closeTransfer()">
+      <div class="add-plot-emi__modal add-plot-emi__modal--wide" role="dialog" aria-modal="true" aria-labelledby="ape-tr-title">
+        <h2 class="add-plot-emi__modal-title" id="ape-tr-title">{{ 'admin.addPlotEmi.transfer.title' | translate }}</h2>
+        <app-inline-banner *ngIf="transferError" tone="danger">{{ transferError }}</app-inline-banner>
+
+        <h3 class="add-plot-emi__section">{{ 'admin.addPlotEmi.transfer.overview' | translate }}</h3>
+        <dl class="add-plot-emi__facts">
+          <div><dt>{{ 'admin.addPlotEmi.col.project' | translate }}</dt><dd>{{ b.projectName || '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.transfer.currentPlot' | translate }}</dt><dd>{{ plot(b) }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.buyer' | translate }}</dt><dd>{{ b.buyerName }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.associate' | translate }}</dt><dd>{{ b.associateName || '—' }} ({{ b.associateCode || '—' }})</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.area' | translate }}</dt><dd>{{ b.areaSqft != null ? b.areaSqft : '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.discount' | translate }}</dt><dd>{{ money(b.discount || 0) }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.total' | translate }}</dt><dd>{{ money(b.totalAmount) }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.paidAmount' | translate }}</dt><dd>{{ money(b.paidAmount) }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.remainingAmount' | translate }}</dt><dd>{{ money(b.dueAmount) }}</dd></div>
+        </dl>
+
+        <h3 class="add-plot-emi__section">{{ 'admin.addPlotEmi.transfer.pickPlot' | translate }}</h3>
+        <label class="add-plot-emi__field">{{ 'admin.addPlotEmi.transfer.search' | translate }}
+          <input type="search" name="plotQ" [(ngModel)]="plotQ" [placeholder]="'admin.addPlotEmi.transfer.searchPlaceholder' | translate" />
+        </label>
+        <p class="add-plot-emi__hint" *ngIf="plotsLoading">{{ 'admin.addPlotEmi.transfer.loading' | translate }}</p>
+        <p class="add-plot-emi__hint" *ngIf="!plotsLoading && !matchingPlots().length">{{ 'admin.addPlotEmi.transfer.none' | translate }}</p>
+        <ul class="add-plot-emi__plots" role="listbox" *ngIf="matchingPlots().length">
+          <li *ngFor="let p of matchingPlots()" role="option" [attr.aria-selected]="p.plotId === selectedPlot?.plotId">
+            <button type="button" class="add-plot-emi__plot" [class.add-plot-emi__plot--on]="p.plotId === selectedPlot?.plotId" (click)="selectedPlot = p">
+              <strong>{{ p.plotNo }}</strong>
+              <span>{{ 'admin.projectsPlots.type.' + p.type | translate }} · {{ p.area }}</span>
+              <span>{{ money(p.price + (p.extraPrice || 0)) }}</span>
+            </button>
+          </li>
+        </ul>
+
+        <ng-container *ngIf="selectedPlot as np">
+          <h3 class="add-plot-emi__section">{{ 'admin.addPlotEmi.transfer.confirmTitle' | translate }}</h3>
+          <dl class="add-plot-emi__facts">
+            <div><dt>{{ 'admin.addPlotEmi.transfer.from' | translate }}</dt><dd>{{ plot(b) }}</dd></div>
+            <div><dt>{{ 'admin.addPlotEmi.transfer.to' | translate }}</dt><dd>{{ np.plotNo }}</dd></div>
+            <div><dt>{{ 'admin.addPlotEmi.transfer.newTotal' | translate }}</dt><dd>{{ money(newTotal(b, np)) }}</dd></div>
+            <div><dt>{{ 'admin.addPlotEmi.transfer.newBalance' | translate }}</dt><dd>{{ money(newTotal(b, np) - b.paidAmount) }}</dd></div>
+          </dl>
+          <p class="add-plot-emi__hint">{{ 'admin.addPlotEmi.transfer.effects' | translate }}</p>
+        </ng-container>
+
+        <div class="add-plot-emi__footer">
+          <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="saving" (click)="closeTransfer()">{{ 'admin.addPlotEmi.cancel' | translate }}</button>
+          <button type="button" class="brand-button add-plot-emi__btn" [disabled]="saving || !selectedPlot" (click)="confirmTransfer()">{{ (saving ? 'admin.addPlotEmi.saving' : 'admin.addPlotEmi.transfer.confirm') | translate }}</button>
+        </div>
+      </div>
+    </div>
+
     <div class="add-plot-emi__overlay" *ngIf="historyOf as b" (keydown.escape)="historyOf = null">
       <div class="add-plot-emi__modal add-plot-emi__modal--wide" role="dialog" aria-modal="true" aria-labelledby="ape-hist-title">
         <h2 class="add-plot-emi__modal-title" id="ape-hist-title">{{ 'admin.addPlotEmi.historyTitle' | translate }} · {{ plot(b) }}</h2>
@@ -222,6 +277,7 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
   private service = inject(BookingsEmiService);
   private projectsService = inject(ProjectsService);
   private translate = inject(TranslateService);
+  private plotsService = inject(ProjectsPlotsService);
 
   @ViewChild('tbl') tbl?: ElementRef<HTMLElement>;
 
@@ -247,6 +303,12 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
 
   payFor: Booking | null = null;
   historyOf: Booking | null = null;
+  transferFor: Booking | null = null;
+  availablePlots: PlotGridItem[] = [];
+  selectedPlot: PlotGridItem | null = null;
+  plotQ = '';
+  plotsLoading = false;
+  transferError = '';
   amount: number | null = null;
   mode: PaymentMode | '' = '';
   bankName = '';
@@ -372,6 +434,58 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
 
   // ponytail: PDF = the browser's print-to-PDF of the visible page; a full-set PDF needs a PDF lib.
   print(): void { if (this.tbl) { printTable(this.tbl.nativeElement); } }
+
+  // ---- transfer plot ----------------------------------------------------
+
+  openTransfer(b: Booking): void {
+    this.transferFor = b;
+    this.availablePlots = [];
+    this.selectedPlot = null;
+    this.plotQ = '';
+    this.transferError = '';
+    this.plotsLoading = true;
+    this.plotsService.getGrid(this.projectId).subscribe({
+      next: g => {
+        if (this.transferFor !== b) { return; }
+        this.availablePlots = g.filter(p => p.status === 'AVAILABLE' && p.plotId !== b.plotId);
+        this.plotsLoading = false;
+      },
+      error: () => {
+        this.plotsLoading = false;
+        this.transferError = this.translate.instant('admin.addPlotEmi.transfer.loadError');
+      }
+    });
+  }
+
+  closeTransfer(): void { if (!this.saving) { this.transferFor = null; } }
+
+  matchingPlots(): PlotGridItem[] {
+    const q = this.plotQ.trim().toLowerCase();
+    return q ? this.availablePlots.filter(p => p.plotNo.toLowerCase().includes(q)) : this.availablePlots;
+  }
+
+  // Mirrors BookingService.transferPlot: the new plot's price + extra, minus the booking's kept discount.
+  newTotal(b: Booking, p: PlotGridItem): number { return round2(p.price + (p.extraPrice || 0) - (b.discount || 0)); }
+
+  confirmTransfer(): void {
+    const b = this.transferFor, p = this.selectedPlot;
+    if (!b || !p || this.saving) { return; }
+    this.saving = true;
+    this.transferError = '';
+    this.service.transferPlot(b.id, p.plotId).subscribe({
+      next: () => {
+        this.saving = false;
+        this.transferFor = null;
+        this.flash = this.translate.instant('admin.addPlotEmi.transfer.success', { from: plotText(b), to: p.plotNo });
+        this.load();
+      },
+      error: err => {
+        this.saving = false;
+        this.transferError = err.error?.error ?? this.translate.instant('admin.addPlotEmi.err.server');
+        if (err.status === 409) { this.load(); }
+      }
+    });
+  }
 
   // ---- add payment ------------------------------------------------------
 
