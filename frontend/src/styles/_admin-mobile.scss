@@ -188,347 +188,153 @@
   }
 }
 
-// Admin Users (Master Data).
-@media (max-width: 767px) {
-  .admin-users {
-    padding-inline: 1rem;
-  }
+// The four management lists share the same compact card layout. Tablets use it too:
+// the pinned sidebar leaves too little room for a full-width ledger at 768–1023px.
+@each $screen in admin-users, master-projects, news, expense-types {
+  .#{$screen} {
+    min-width: 0;
 
-  .admin-users__intro {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .admin-users__modal {
-    padding: 20px;
-  }
-
-  .admin-users__modal-footer {
-    flex-direction: column-reverse;
-
-    button {
-      min-height: 44px;
-    }
-  }
-
-  .admin-users__add {
-    min-height: 44px;
-  }
-
-  // Table collapses to one card per user (same idiom as .payout-approval): header hidden,
-  // each cell shows its data-label, the Details cell (Edit/Delete) goes full width at the end.
-  .admin-users .editable-table {
-    table-layout: fixed;
-    width: 100%;
-
-    thead {
-      display: none;
-    }
-
-    tbody tr {
-      display: block;
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    tbody td {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 0.375rem 0;
-      border-bottom: none;
-      text-align: right;
+    .card {
       min-width: 0;
-      width: auto !important;
-      overflow-wrap: anywhere;
-
-      &::before {
-        content: attr(data-label);
-        flex: 0 0 auto;
-        font-family: var(--font-mono);
-        font-size: 0.6875rem;
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        text-align: left;
-      }
-    }
-
-    td:last-child {
-      display: block;
-      text-align: left;
-      padding-top: 0.75rem;
-
-      &::before {
-        display: none;
-      }
+      overflow-x: auto;
     }
   }
 
-  .admin-users__actions {
-    .brand-button {
-      flex: 1 1 0;
+  .#{$screen}__intro-copy,
+  .#{$screen}__modal-field {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  @media (min-width: 1024px) {
+    .#{$screen} .editable-table {
+      th { white-space: nowrap; }
+      td { overflow-wrap: anywhere; }
+    }
+  }
+
+  .#{$screen}__modal {
+    max-height: calc(100dvh - 2rem);
+    overscroll-behavior: contain;
+    overflow-wrap: anywhere;
+  }
+
+  .#{$screen}__modal-field {
+    input, select, textarea {
+      min-width: 0;
+      max-width: 100%;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .#{$screen} {
+      padding-inline: 1rem;
+    }
+
+    .#{$screen}__intro {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .#{$screen} .editable-table {
+      display: block;
+      width: 100%;
+
+      thead { display: none; }
+      tbody { display: block; }
+
+      tbody tr {
+        display: block;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+
+      tbody td {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+        align-items: baseline;
+        gap: 1rem;
+        padding: 0.5rem 0;
+        border-bottom: none;
+        text-align: right;
+        min-width: 0;
+        width: auto;
+        max-width: none;
+        white-space: normal;
+        overflow-wrap: anywhere;
+
+        > * { min-width: 0; }
+
+        &::before {
+          content: attr(data-label);
+          font-family: var(--font-mono);
+          font-size: 0.6875rem;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          color: var(--text-muted);
+          text-align: left;
+        }
+      }
+
+      .editable-table__empty {
+        display: block;
+        text-align: center;
+        &::before { display: none; }
+      }
+
+      // Action cells span the card; each button can wrap onto a new line.
+      td[data-label]:has([class$='__actions']) {
+        display: block;
+        text-align: left;
+        padding-top: 0.75rem;
+        &::before { display: none; }
+      }
+    }
+
+    .#{$screen}__actions .brand-button {
+      flex: 1 1 8rem;
+      min-width: 0;
       min-height: 44px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .#{$screen}__add { min-height: 44px; }
+  }
+
+  @media (max-width: 767px) {
+    .#{$screen}__modal { padding: 1.25rem; }
+
+    .#{$screen}__modal-field {
+      input, select, textarea { font-size: 1rem; min-height: 44px; }
+    }
+
+    .#{$screen}__modal-footer {
+      flex-direction: column-reverse;
+      button { min-height: 44px; }
     }
   }
 }
 
-// Master Projects (Master Data).
 @media (max-width: 767px) {
-  .master-projects {
-    padding-inline: 1rem;
-  }
+  .master-projects__modal-fields { grid-template-columns: minmax(0, 1fr); }
 
-  .master-projects__intro {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .master-projects__modal {
-    padding: 20px;
-  }
-
-  .master-projects__modal-footer {
-    flex-direction: column-reverse;
-
-    button {
-      min-height: 44px;
-    }
-  }
-
-  .master-projects__add {
-    min-height: 44px;
-  }
-
-  // Table collapses to one card per user (same idiom as .payout-approval): header hidden,
-  // each cell shows its data-label, the Details cell (Edit/Delete) goes full width at the end.
-  .master-projects .editable-table {
-    table-layout: fixed;
-    width: 100%;
-
-    thead {
-      display: none;
-    }
-
-    tbody tr {
-      display: block;
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    tbody td {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 0.375rem 0;
-      border-bottom: none;
-      text-align: right;
-      min-width: 0;
-      width: auto !important;
-      overflow-wrap: anywhere;
-
-      &::before {
-        content: attr(data-label);
-        flex: 0 0 auto;
-        font-family: var(--font-mono);
-        font-size: 0.6875rem;
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        text-align: left;
-      }
-    }
-
-    td:last-child {
-      display: block;
-      text-align: left;
-      padding-top: 0.75rem;
-
-      &::before {
-        display: none;
-      }
-    }
-  }
-
-  .master-projects__actions {
-    .brand-button {
-      flex: 1 1 0;
-      min-height: 44px;
-    }
-  }
-
-  .master-projects__modal-fields {
-    grid-template-columns: 1fr;
-  }
+  .projects-plots__head { flex-direction: column; }
+  .projects-plots__intro { flex-basis: auto; }
+  .projects-plots__views button,
+  .projects-plots__row-btn,
+  .projects-plots__actions .brand-button { min-height: 44px; }
 }
 
-// News (Communication).
-@media (max-width: 767px) {
-  .news {
-    padding-inline: 1rem;
-  }
-
-  .news__intro {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .news__add {
-    min-height: 44px;
-  }
-
-  .news__modal {
-    padding: 20px;
-  }
-
-  .news__modal-field {
-    input,
-    textarea {
-      min-height: 44px;
-    }
-  }
-
-  .news__modal-footer {
-    flex-direction: column-reverse;
-
-    button {
-      min-height: 44px;
-    }
-  }
-
-  // Table collapses to one card per item: header hidden, each cell shows its data-label.
-  .news .editable-table {
-    table-layout: fixed;
-    width: 100%;
-
-    thead {
-      display: none;
-    }
-
-    tbody tr {
-      display: block;
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    tbody td {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 0.375rem 0;
-      border-bottom: none;
-      text-align: right;
-      min-width: 0;
-      width: auto !important;
-      overflow-wrap: anywhere;
-
-      &::before {
-        content: attr(data-label);
-        flex: 0 0 auto;
-        font-family: var(--font-mono);
-        font-size: 0.6875rem;
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        text-align: left;
-      }
-    }
-  }
+// Dense desktop ledgers retain readable columns and scroll within their cards on tablets.
+@media (min-width: 1024px) {
+  .admin-users .editable-table { min-width: 56rem; }
+  .master-projects .editable-table { min-width: 68rem; }
+  .news .editable-table { min-width: 48rem; }
 }
 
-// Expense Types (Finance & Cycles).
-@media (max-width: 767px) {
-  .expense-types {
-    padding-inline: 1rem;
-  }
-
-  .expense-types__intro {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .expense-types__add {
-    min-height: 44px;
-  }
-
-  .expense-types__modal {
-    padding: 20px;
-  }
-
-  .expense-types__modal-field {
-    input,
-    select {
-      min-height: 44px;
-    }
-  }
-
-  .expense-types__modal-footer {
-    flex-direction: column-reverse;
-
-    button {
-      min-height: 44px;
-    }
-  }
-
-  // Table collapses to one card per item: header hidden, each cell shows its data-label.
-  .expense-types .editable-table {
-    table-layout: fixed;
-    width: 100%;
-
-    thead {
-      display: none;
-    }
-
-    tbody tr {
-      display: block;
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    tbody td {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 0.375rem 0;
-      border-bottom: none;
-      text-align: right;
-      min-width: 0;
-      width: auto !important;
-      overflow-wrap: anywhere;
-
-      &::before {
-        content: attr(data-label);
-        flex: 0 0 auto;
-        font-family: var(--font-mono);
-        font-size: 0.6875rem;
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        text-align: left;
-      }
-    }
-
-    tbody td:last-child {
-      display: block;
-      text-align: left;
-      padding-top: 0.75rem;
-
-      &::before {
-        display: none;
-      }
-    }
-  }
-
-  .expense-types__actions .brand-button {
-    flex: 1 1 0;
-    min-height: 44px;
-  }
+// Give long project names the full content width beside a pinned tablet sidebar.
+@media (min-width: 768px) and (max-width: 1023px) {
+  .projects-plots__head { flex-direction: column; }
 }

@@ -54,7 +54,9 @@
     th:last-child, td:last-child { width: auto; text-align: left; padding-inline-start: 1.5rem; }
   }
   .projects-plots .projects-plots__table--book {
-    table-layout: fixed;
+    // Size columns to their contents and scroll the panel before cells overlap.
+    table-layout: auto;
+    min-width: 72rem;
     th, td { width: auto; padding-inline: 1.25rem; box-sizing: border-box; }
     // S No, Plot, Type, Road Size, Area, Rate, Price, Extra Price, Total Price, Status, Action|Book
     th:nth-child(1) { width: 4%; }
