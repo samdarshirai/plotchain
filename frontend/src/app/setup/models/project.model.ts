@@ -7,6 +7,7 @@ export interface Project {
   availablePlots: number;
   soldPlots: number;
   createdAt: string;
+  masterProjectId?: string | null;
 }
 
 export interface ProjectRequest {

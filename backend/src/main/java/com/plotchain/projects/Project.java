@@ -32,6 +32,9 @@ public class Project {
     @Column(name = "thumbnail_content_type")
     private String thumbnailContentType;
 
+    @Column(name = "master_project_id")
+    private UUID masterProjectId;
+
     @Column(name = "created_at")
     private Instant createdAt;
 
@@ -59,6 +62,9 @@ public class Project {
 
     public String getThumbnailContentType() { return thumbnailContentType; }
     public void setThumbnailContentType(String thumbnailContentType) { this.thumbnailContentType = thumbnailContentType; }
+
+    public UUID getMasterProjectId() { return masterProjectId; }
+    public void setMasterProjectId(UUID masterProjectId) { this.masterProjectId = masterProjectId; }
 
     public Instant getCreatedAt() { return createdAt; }
 }

@@ -399,7 +399,7 @@ describe('BookingSealComponent', () => {
     fixture.detectChanges();
     expect(el().textContent).toContain('admin.bookingsEmi.err.plotDriftFixConfirm');
     expect(el().textContent).not.toContain('admin.bookingsEmi.err.plotDriftFix' + ' ');
-    expect(el().querySelector('a[href="/settings/projects-plots"]')).not.toBeNull();
+    expect(el().querySelector('a[href="/settings/plots"]')).not.toBeNull();
     expect(el().querySelector('a[href="/settings/payments-kyc"]')).toBeNull();
   });
 
@@ -511,7 +511,7 @@ describe('BookingSealComponent', () => {
     http.expectOne('/api/admin/bookings/b1/installments/2/confirm').flush({ error: 'Plot is not available for booking: x', code: 'PLOT_NOT_AVAILABLE' }, { status: 409, statusText: 'Conflict' });
     fixture.detectChanges();
     expect(el().textContent).toContain('admin.bookingsEmi.err.plotDriftConfirmPay');
-    expect(el().querySelector('a[href="/settings/projects-plots"]')).not.toBeNull();
+    expect(el().querySelector('a[href="/settings/plots"]')).not.toBeNull();
     expect(el().querySelector('a[href="/settings/payments-kyc"]')).not.toBeNull();
   });
   it('network error on confirm-payment hides submit until the booking refreshes', () => {

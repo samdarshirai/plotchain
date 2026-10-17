@@ -7,7 +7,7 @@ import { Observable, catchError, of } from 'rxjs';
 import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { ProjectsService } from '../../setup/steps/projects/projects.service';
-import { Plot, PlotRequest, PlotStatus, Project, ProjectRequest } from '../../setup/models/project.model';
+import { Plot, PlotRequest, PlotStatus, Project } from '../../setup/models/project.model';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { PlotTileComponent } from '../../shared/components/plot-tile/plot-tile.component';
 import {
@@ -16,8 +16,8 @@ import {
 import { ExportColumn, exportCsv } from '../../shared/utils/table-export.util';
 import { filterPlotRows } from './projects-plots.util';
 import { CsvImportPanelComponent } from './csv-import-panel.component';
+import { MasterProject, MasterProjectsService } from '../master-projects/master-projects.service';
 import { PlotFormComponent } from './plot-form.component';
-import { ProjectFormComponent } from './project-form.component';
 import { ProjectsPlotsService } from './projects-plots.service';
 import { BookPlotFormComponent } from './book-plot-form.component';
 import { BookingEmiConfig, BookingFormValue } from './projects-plots.model';
@@ -28,7 +28,6 @@ type Aside =
   | { kind: 'book' }
   | { kind: 'editPlot' }
   | { kind: 'addPlot' }
-  | { kind: 'project'; mode: 'add' | 'edit' }
   | { kind: 'csv' };
 
 interface Banner {
@@ -46,7 +45,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
 @Component({
   selector: 'app-projects-plots',
   standalone: true,
-  imports: [CommonModule, RouterLink, TranslateModule, InlineBannerComponent, PlotTileComponent, PlotFormComponent, ProjectFormComponent, CsvImportPanelComponent, BookPlotFormComponent],
+  imports: [CommonModule, RouterLink, TranslateModule, InlineBannerComponent, PlotTileComponent, PlotFormComponent, CsvImportPanelComponent, BookPlotFormComponent],
   template: `
     <div class="projects-plots">
       <div class="projects-plots__head">
@@ -70,7 +69,6 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           </select>
         </label>
         <div class="projects-plots__project-actions" *ngIf="selectedProject && !readOnly && !bookMode">
-          <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'project', mode: 'edit' })">{{ 'admin.projectsPlots.editProjectAction' | translate }}</button>
           <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'csv' })">{{ 'admin.projectsPlots.importCsvAction' | translate }}</button>
           <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'addPlot' })">{{ 'admin.projectsPlots.addPlotAction' | translate }}</button>
         </div>
@@ -86,9 +84,6 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             <button type="button" class="projects-plots__retry" (click)="loadRates()">{{ 'admin.projectsPlots.retry' | translate }}</button>
           </span>
         </div>
-        <button type="button" *ngIf="!readOnly && !bookMode" class="brand-button projects-plots__add-project" (click)="openAside({ kind: 'project', mode: 'add' })">
-          {{ 'admin.projectsPlots.addProjectAction' | translate }}
-        </button>
       </div>
 
       <!-- Shared by the aside and the page level; only one is rendered at a time. -->
@@ -273,10 +268,8 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           <app-plot-form *ngIf="aside.kind === 'editPlot' && selectedPlot && plotDetail"
             [plot]="plotDetail" [locked]="plotDetail.status !== 'AVAILABLE' || selectedPlot.status !== 'AVAILABLE'" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
             (submitted)="saveEditedPlot($event)" (cancelled)="backToDetail('.projects-plots__edit-plot')"></app-plot-form>
-          <app-plot-form *ngIf="aside.kind === 'addPlot'" [plot]="null" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
+          <app-plot-form *ngIf="aside.kind === 'addPlot'" [plot]="null" [defaultRate]="defaultRate" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
             (submitted)="saveNewPlot($event)" (cancelled)="closeAside()"></app-plot-form>
-          <app-project-form *ngIf="aside.kind === 'project'" [project]="aside.mode === 'edit' ? selectedProject : null" [busy]="busy"
-            (submitted)="saveProject($event)" (cancelled)="closeAside()"></app-project-form>
           <app-csv-import-panel *ngIf="aside.kind === 'csv' && selectedProject" [projectId]="selectedProject.id"
             (imported)="onCsvImported()" (cancelled)="closeAside()"></app-csv-import-panel>
         </aside>
@@ -290,6 +283,8 @@ export class ProjectsPlotsComponent implements OnInit {
   protected projectsService = inject(ProjectsService);
   protected plotsService = inject(ProjectsPlotsService);
   private adminService = inject(AdminService);
+  private masterProjectsService = inject(MasterProjectsService);
+  masters: MasterProject[] = [];
   private translate = inject(TranslateService);
   // Associate "View Plot" reuses this screen with route data { readOnly: true }: no admin-only calls, no write actions.
   private route = inject(ActivatedRoute);
@@ -333,7 +328,13 @@ export class ProjectsPlotsComponent implements OnInit {
     return this.grid?.find(p => p.plotId === this.selectedPlotId) ?? null;
   }
 
+  get defaultRate(): number | null {
+    return this.masters.find(m => m.id === this.selectedProject?.masterProjectId)?.ratePerSqft ?? null;
+  }
+
   ngOnInit(): void {
+    // Admin-only endpoint; associates (readOnly) and any failure just mean no master picker/rate prefill.
+    if (!this.readOnly) { this.masterProjectsService.list().subscribe({ next: m => (this.masters = m), error: () => {} }); }
     if (this.readOnly) { this.reloadProjects(); return; }
     // Only role ASSOCIATE can sell; the summary has no status field (see plan Deviation 2).
     this.adminService.listAssociates().pipe(catchError(() => of([] as AssociateSummary[])))
@@ -578,22 +579,6 @@ export class ProjectsPlotsComponent implements OnInit {
         this.focusDetail('.projects-plots__edit-plot');
       }
       this.fetchDetail(projectId, plotId); // keeps the prior detail on failure
-    });
-  }
-
-  saveProject(v: { request: ProjectRequest; photo: File | null }): void {
-    const editing = this.aside.kind === 'project' && this.aside.mode === 'edit' && this.selectedProject;
-    const save$ = editing
-      ? this.projectsService.updateProject(this.selectedProject!.id, v.request)
-      : this.projectsService.createProject(v.request);
-    this.mutate(save$, p => {
-      if (this.aside.kind === 'project') { this.closeAside(); } // the admin may have moved on mid-save
-      if (!v.photo) { this.reloadProjects(p.id); return; }
-      // The project is saved; a failed upload must not keep the form open (a retry would duplicate it).
-      this.projectsService.uploadThumbnail(p.id, v.photo).subscribe({
-        next: () => this.reloadProjects(p.id),
-        error: () => this.reloadProjects(p.id, { tone: 'warning', key: 'admin.projectsPlots.error.photoUploadFailed' })
-      });
     });
   }
 

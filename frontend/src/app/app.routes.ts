@@ -26,6 +26,7 @@ import { SalesRegisterComponent } from './admin/sales-register/sales-register.co
 import { RecordSaleComponent } from './admin/sales-register/record-sale.component';
 import { CycleManagementComponent } from './admin/cycle-management/cycle-management.component';
 import { LedgerRegisterComponent } from './admin/ledger-register/ledger-register.component';
+import { MasterProjectsComponent } from './admin/master-projects/master-projects.component';
 import { AdminUsersComponent } from './admin/admin-users/admin-users.component';
 import { EPinRegisterComponent } from './admin/epin-register/epin-register.component';
 import { PayoutApprovalComponent } from './admin/payout-approval/payout-approval.component';
@@ -127,7 +128,9 @@ export const routes: Routes = [
       { path: 'e-pin-register', component: EPinRegisterComponent, data: { sectionKey: 'epinRegister' } },
       { path: 'payout-approval', component: PayoutApprovalComponent, data: { sectionKey: 'payoutApproval' } },
       { path: 'admin-users', component: AdminUsersComponent, data: { sectionKey: 'adminUsers' } },
-      { path: 'projects-plots', component: ProjectsPlotsComponent, data: { sectionKey: 'projectsPlots' } },
+      { path: 'master-projects', component: MasterProjectsComponent, data: { sectionKey: 'masterProjects' } },
+      { path: 'projects-plots', redirectTo: 'plots', pathMatch: 'full' },
+      { path: 'plots', component: ProjectsPlotsComponent, data: { sectionKey: 'projectsPlots' } },
       { path: 'book-plot', component: ProjectsPlotsComponent, data: { sectionKey: 'projectsPlots', bookMode: true } },
       { path: 'bookings-emi', loadComponent: () => import('./admin/admin-bookings-emi/bookings-emi.component').then(m => m.BookingsEmiComponent), data: { sectionKey: 'bookingsEmi' } },
       { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } },

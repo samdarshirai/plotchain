@@ -32,7 +32,8 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
       { key: 'branding', labelKey: 'settings.sections.branding', path: '/settings/branding' },
       { key: 'compensation', labelKey: 'settings.sections.compensation', path: '/settings/compensation' },
       { key: 'paymentsKyc', labelKey: 'settings.sections.paymentsKyc', path: '/settings/payments-kyc' },
-      { key: 'projectsPlots', labelKey: 'settings.sections.projectsPlots', path: '/settings/projects-plots' },
+      { key: 'masterProjects', labelKey: 'settings.sections.masterProjects', path: '/settings/master-projects' },
+      { key: 'projectsPlots', labelKey: 'settings.sections.projectsPlots', path: '/settings/plots' },
       { key: 'adminUsers', labelKey: 'settings.sections.adminUsers', path: '/settings/admin-users' }
     ]
   },

@@ -117,7 +117,7 @@ type Mode = 'detail' | 'pay' | 'confirmPayment' | 'confirm' | 'cancel' | 'transf
             </ng-container>
             <ng-container *ngIf="error.kind === 'plotDrift'">
               <br />{{ (mode === 'confirmPayment' ? 'admin.bookingsEmi.err.plotDriftFix' : 'admin.bookingsEmi.err.plotDriftFixConfirm') | translate }}
-              <a routerLink="/settings/projects-plots">{{ 'admin.bookingsEmi.linkProjectsPlots' | translate }}</a>
+              <a routerLink="/settings/plots">{{ 'admin.bookingsEmi.linkProjectsPlots' | translate }}</a>
               <ng-container *ngIf="mode === 'confirmPayment'"> · <a routerLink="/settings/payments-kyc">{{ 'admin.bookingsEmi.linkSettings' | translate }}</a></ng-container>
             </ng-container>
             <div class="booking-seal__server" *ngIf="error.serverText">{{ 'admin.bookingsEmi.err.serverSaid' | translate: { text: error.serverText } }}</div>

@@ -14,7 +14,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
 
   it('groupsEverySettingsScreenUnderTheirCategory', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => category.items.map(item => item.key))).toEqual([
-      ['companyProfile', 'branding', 'compensation', 'paymentsKyc', 'projectsPlots', 'adminUsers'],
+      ['companyProfile', 'branding', 'compensation', 'paymentsKyc', 'masterProjects', 'projectsPlots', 'adminUsers'],
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
       ['ledgerRegister', 'salesRegister', 'cycleManagement', 'epinRegister', 'payoutApproval'],
       ['bookNewPlot', 'addPlotEmi', 'viewBookedPlot', 'viewConfirmedPlot', 'plotTransfer', 'viewPlotEmi', 'viewTransferredPlots', 'viewCancelledPlot'],
@@ -40,7 +40,7 @@ describe('findNavCategoryForUrl', () => {
   });
 
   it('resolvesTheProjectsPlotsScreenToTheInventoryCategory', () => {
-    expect(findNavCategoryForUrl('/settings/projects-plots')?.key).toBe('setup');
+    expect(findNavCategoryForUrl('/settings/plots')?.key).toBe('setup');
   });
 
   it('returnsTheCategoryOwningTheCurrentSettingsScreen', () => {
@@ -71,7 +71,7 @@ describe('findNavCategoryForUrl', () => {
 
   it('resolvesBookNewPlotToPlotBookingButBareProjectsPlotsToSetup', () => {
     expect(findNavCategoryForUrl('/settings/book-plot')?.key).toBe('inventory');
-    expect(findNavCategoryForUrl('/settings/projects-plots')?.key).toBe('setup');
+    expect(findNavCategoryForUrl('/settings/plots')?.key).toBe('setup');
   });
 
   it('resolvesEveryPlotBookingDeepLinkToTheInventoryCategory', () => {

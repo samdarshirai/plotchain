@@ -121,7 +121,8 @@ public class ProjectService {
             plotRepository.countByProjectId(id),
             plotRepository.countByProjectIdAndStatus(id, PlotStatus.AVAILABLE),
             plotRepository.countByProjectIdAndStatus(id, PlotStatus.SOLD),
-            project.getCreatedAt()
+            project.getCreatedAt(),
+            project.getMasterProjectId()
         );
     }
 }

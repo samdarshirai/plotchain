@@ -59,6 +59,8 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
 export class PlotFormComponent implements OnChanges {
   @Input() plot: Plot | null = null;
   @Input() locked = false;
+  // Master project's rate per sqft; prefills Rate when adding a plot.
+  @Input() defaultRate: number | null = null;
   @Input() busy = false;
   @Input() duplicatePlotNo = false;
   @Output() submitted = new EventEmitter<PlotRequest>();
@@ -74,6 +76,7 @@ export class PlotFormComponent implements OnChanges {
   submitted_ = false;
 
   ngOnChanges(c: SimpleChanges): void {
+    if (!this.plot && this.rate == null && this.defaultRate) { this.rate = this.defaultRate; }
     if (c['plot'] && this.plot) {
       ({ plotNo: this.plotNo, plotType: this.plotType, areaSqft: this.areaSqft, rate: this.rate, price: this.price } = this.plot);
       this.extraPrice = this.plot.extraPrice ?? 0;

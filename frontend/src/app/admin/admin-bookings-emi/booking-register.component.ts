@@ -148,7 +148,7 @@ const NO_FILTERS: RegisterFilters = { status: '', associateId: '', plotId: '', p
             <ng-template #firstRun>
               <h2>{{ 'admin.bookingsEmi.empty.noBookingsTitle' | translate }}</h2>
               <p>{{ 'admin.bookingsEmi.empty.noBookingsBody' | translate }}</p>
-              <a class="brand-button" routerLink="/settings/projects-plots">{{ 'admin.bookingsEmi.empty.goToPlots' | translate }}</a>
+              <a class="brand-button" routerLink="/settings/plots">{{ 'admin.bookingsEmi.empty.goToPlots' | translate }}</a>
             </ng-template>
           </div>
 

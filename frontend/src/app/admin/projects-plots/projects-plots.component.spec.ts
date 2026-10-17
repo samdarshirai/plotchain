@@ -26,6 +26,7 @@ describe('ProjectsPlotsComponent', () => {
 
   // Initial burst: associates, EMI config, projects; then the first project's grid.
   function boot(projects: unknown[] = [project()], grid: unknown[] = [cell('A-2'), cell('A-1', 'BOOKED'), cell('B-1', 'SOLD')]) {
+    http.expectOne('/api/admin/master-projects').flush([]);
     http.expectOne('/api/associates').flush(associates);
     http.expectOne('/api/company/booking-emi').flush({ emiEnabled: true, defaultInstallmentCount: 4 });
     http.expectOne('/api/company/projects').flush(projects);
@@ -146,14 +147,6 @@ describe('ProjectsPlotsComponent', () => {
     flush();
   }));
 
-  it('Add project is usable with zero projects', fakeAsync(() => {
-    boot([]);
-    fixture.componentInstance.openAside({ kind: 'project', mode: 'add' });
-    fixture.detectChanges();
-    expect(el().querySelector('.projects-plots__aside')).not.toBeNull();
-    flush();
-  }));
-
   it('block summary shows whole-block counts while a status filter is active', fakeAsync(() => {
     boot([project()], [cell('A-1'), cell('A-2', 'BOOKED'), cell('A-3', 'SOLD')]);
     el().querySelectorAll<HTMLButtonElement>('.projects-plots__key:not(.projects-plots__key--static)')[1].click(); // BOOKED
@@ -175,7 +168,7 @@ describe('ProjectsPlotsComponent', () => {
   describe('plot and project mutations', () => {
     it('opens the CSV panel and refreshes grid and counts after a successful import', fakeAsync(() => {
       boot();
-      el().querySelectorAll<HTMLButtonElement>('.projects-plots__project-actions button')[1].click();
+      el().querySelectorAll<HTMLButtonElement>('.projects-plots__project-actions button')[0].click();
       fixture.detectChanges();
       expect(el().querySelector('app-csv-import-panel')).not.toBeNull();
       fixture.componentInstance.onCsvImported();
@@ -254,35 +247,6 @@ describe('ProjectsPlotsComponent', () => {
       flush();
     }));
 
-    it('create ok + photo upload fail: closes aside, reloads list, warns, and only one POST was made', fakeAsync(() => {
-      boot();
-      fixture.componentInstance.openAside({ kind: 'project', mode: 'add' });
-      fixture.componentInstance.saveProject({ request: { name: 'New', location: 'Goa' }, photo: new File(['x'], 'p.png') });
-      http.expectOne({ method: 'POST', url: '/api/company/projects' }).flush(project({ id: 'p9', name: 'New' }));
-      http.expectOne('/api/company/projects/p9/thumbnail').flush('bad', { status: 400, statusText: 'Bad' });
-      http.expectOne('/api/company/projects').flush([project(), project({ id: 'p9', name: 'New' })]);
-      http.expectOne('/api/projects/p9/plots/grid').flush([]);
-      fixture.detectChanges();
-      expect(fixture.componentInstance.aside.kind).toBe('none');
-      expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'warning', key: 'admin.projectsPlots.error.photoUploadFailed' }));
-      expect(el().textContent).toContain('admin.projectsPlots.error.photoUploadFailed');
-      flush();
-    }));
-
-    it('edit ok + photo upload fail: list is reloaded with the new name', fakeAsync(() => {
-      boot();
-      fixture.componentInstance.openAside({ kind: 'project', mode: 'edit' });
-      fixture.componentInstance.saveProject({ request: { name: 'Renamed', location: 'Goa' }, photo: new File(['x'], 'p.png') });
-      http.expectOne({ method: 'PUT', url: '/api/company/projects/p1' }).flush(project({ name: 'Renamed' }));
-      http.expectOne('/api/company/projects/p1/thumbnail').flush('bad', { status: 500, statusText: 'err' });
-      http.expectOne('/api/company/projects').flush([project({ name: 'Renamed' })]);
-      fixture.detectChanges();
-      expect(fixture.componentInstance.projects![0].name).toBe('Renamed');
-      expect(fixture.componentInstance.aside.kind).toBe('none');
-      expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'warning' }));
-      flush();
-    }));
-
     it('edit-save then selecting plot B before the response does not overwrite detail or force the aside', fakeAsync(() => {
       boot([project()], [cell('A-2'), cell('B-2')]);
       selectFirstAvailable();
@@ -340,25 +304,14 @@ describe('ProjectsPlotsComponent', () => {
       boot();
       const btns = el().querySelectorAll<HTMLButtonElement>('.projects-plots__project-actions button');
       document.body.appendChild(el());
-      btns[2].focus();
-      btns[2].click();
+      btns[1].focus();
+      btns[1].click();
       fixture.detectChanges();
       fixture.componentInstance.closeAside();
       tick();
-      expect(document.activeElement).toBe(btns[2]);
+      expect(document.activeElement).toBe(btns[1]);
     }));
 
-    it('creates a project, uploads its photo, and selects it', fakeAsync(() => {
-      boot();
-      const photo = new File(['x'], 'p.png');
-      fixture.componentInstance.saveProject({ request: { name: 'New', location: 'Goa' }, photo });
-      http.expectOne({ method: 'POST', url: '/api/company/projects' }).flush(project({ id: 'p9', name: 'New' }));
-      http.expectOne('/api/company/projects/p9/thumbnail').flush(null);
-      http.expectOne('/api/company/projects').flush([project(), project({ id: 'p9', name: 'New' })]);
-      http.expectOne('/api/projects/p9/plots/grid').flush([]);
-      expect(fixture.componentInstance.selectedProject!.id).toBe('p9');
-      flush();
-    }));
   });
 
   describe('booking', () => {
@@ -585,7 +538,7 @@ describe('ProjectsPlotsComponent', () => {
     it('a successful plot save returns focus to the opener', fakeAsync(() => {
       boot();
       document.body.appendChild(el());
-      const add = actions()[2];
+      const add = actions()[1];
       add.focus(); add.click(); fixture.detectChanges();
       fixture.componentInstance.saveNewPlot({ ...newPlot });
       http.expectOne('/api/company/projects/p1/plots').flush(detail());
@@ -593,24 +546,24 @@ describe('ProjectsPlotsComponent', () => {
       http.expectOne('/api/company/projects').flush([project()]);
       fixture.detectChanges(); tick();
       expect(fixture.componentInstance.aside.kind).toBe('none');
-      expect(document.activeElement).toBe(actions()[2]);
+      expect(document.activeElement).toBe(actions()[1]);
     }));
 
     it('a successful CSV import returns focus to the opener', fakeAsync(() => {
       boot();
       document.body.appendChild(el());
-      const csv = actions()[1];
+      const csv = actions()[0];
       csv.focus(); csv.click(); fixture.detectChanges();
       fixture.componentInstance.onCsvImported();
       http.expectOne('/api/projects/p1/plots/grid').flush([cell('C-1')]);
       http.expectOne('/api/company/projects').flush([project()]);
       fixture.detectChanges(); tick();
-      expect(document.activeElement).toBe(actions()[1]);
+      expect(document.activeElement).toBe(actions()[0]);
     }));
 
     it('an opener clicked while the detail aside is open gets focus back on close', fakeAsync(() => {
       openDetail();
-      const add = actions()[2];
+      const add = actions()[1];
       add.focus(); add.click(); fixture.detectChanges();
       expect(fixture.componentInstance.aside.kind).toBe('addPlot');
       fixture.componentInstance.closeAside();
@@ -655,18 +608,6 @@ describe('ProjectsPlotsComponent', () => {
       expect(document.activeElement).toBe(el().querySelector(`[data-plot-id="${fixture.componentInstance.selectedPlotId}"] button`));
     }));
 
-    it('a project save finishing after the admin opened a plot detail leaves that detail open', fakeAsync(() => {
-      boot();
-      fixture.componentInstance.openAside({ kind: 'project', mode: 'add' });
-      fixture.componentInstance.saveProject({ request: { name: 'New', location: 'Goa' }, photo: null });
-      fixture.componentInstance.selectPlot(fixture.componentInstance.grid![0]);
-      http.expectOne(r => /\/api\/company\/projects\/p1\/plots\//.test(r.url)).flush(detail());
-      http.expectOne({ method: 'POST', url: '/api/company/projects' }).flush(project({ id: 'p1' }));
-      http.expectOne('/api/company/projects').flush([project()]);
-      tick();
-      expect(fixture.componentInstance.aside.kind).toBe('detail');
-    }));
-
     it('a plot save in flight does not put the book form into the busy state', fakeAsync(() => {
       openDetail();
       fixture.componentInstance.saveNewPlot({ ...newPlot });
@@ -700,18 +641,6 @@ describe('ProjectsPlotsComponent', () => {
       flush();
     }));
 
-    it('keeps the photo-upload warning when the project list reload fails', fakeAsync(() => {
-      boot();
-      fixture.componentInstance.openAside({ kind: 'project', mode: 'add' });
-      fixture.componentInstance.saveProject({ request: { name: 'New', location: 'Goa' }, photo: new File(['x'], 'p.png') });
-      http.expectOne({ method: 'POST', url: '/api/company/projects' }).flush(project({ id: 'p9', name: 'New' }));
-      http.expectOne('/api/company/projects/p9/thumbnail').flush('bad', { status: 400, statusText: 'Bad' });
-      http.expectOne('/api/company/projects').error(new ProgressEvent('error'));
-      fixture.detectChanges();
-      expect(fixture.componentInstance.projectsError).toBeTrue();
-      expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'warning', key: 'admin.projectsPlots.error.photoUploadFailed' }));
-      flush();
-    }));
   });
 
   describe('Table view rates, search and export', () => {
@@ -975,6 +904,7 @@ describe('ProjectsPlotsComponent (admin project selection)', () => {
     const http = TestBed.inject(HttpTestingController);
     fixture.componentInstance.view = 'grid';
     fixture.detectChanges();
+    http.expectOne('/api/admin/master-projects').flush([]);
     http.expectOne('/api/associates').flush([]);
     http.expectOne('/api/company/booking-emi').flush({ emiEnabled: true, defaultInstallmentCount: 4 });
     const p = (id: string) => ({ id, name: id, location: 'H', hasThumbnail: false, totalPlots: 1, availablePlots: 1, soldPlots: 0, createdAt: '2026-01-01T00:00:00Z' });

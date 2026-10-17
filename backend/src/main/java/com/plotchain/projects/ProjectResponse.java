@@ -11,5 +11,6 @@ public record ProjectResponse(
     long totalPlots,
     long availablePlots,
     long soldPlots,
-    Instant createdAt
+    Instant createdAt,
+    UUID masterProjectId
 ) {}
