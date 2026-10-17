@@ -1333,6 +1333,11 @@
       "columnSNo": "क्र.सं.", "expenseType": "व्यय प्रकार", "status": "स्थिति", "columnAction": "कार्रवाई", "statusActive": "सक्रिय", "statusInactive": "निष्क्रिय",
       "emptyState": "अभी कोई व्यय प्रकार नहीं।", "loadError": "व्यय प्रकार लोड नहीं हो सके।", "saveError": "व्यय प्रकार सहेजा नहीं जा सका।", "requiredError": "आवश्यक"
     },
+    "viewBookedPlot": {
+      "title": "बुक किए गए प्लॉट देखें", "subtitle": "तारीख और प्रोजेक्ट के अनुसार सक्रिय बुकिंग। पूरी बुकिंग और भुगतान इतिहास के लिए विवरण खोलें।",
+      "detailTitle": "बुकिंग विवरण", "buyerPhone": "खरीदार मोबाइल",
+      "col": { "sNo": "क्र.सं.", "rate": "दर मूल्य", "extra": "अतिरिक्त मूल्य", "detail": "विवरण" }
+    },
     "addPlotEmi": {
       "eyebrow": "प्लॉट बुकिंग",
       "title": "प्लॉट ईएमआई जोड़ें",
@@ -1814,7 +1819,8 @@
       "supportTickets": "सहायता टिकट",
       "news": "समाचार",
       "expenseTypes": "व्यय प्रकार",
-      "addPlotEmi": "प्लॉट ईएमआई जोड़ें"
+      "addPlotEmi": "प्लॉट ईएमआई जोड़ें",
+      "viewBookedPlot": "बुक किए गए प्लॉट देखें"
     },
     "auditLog": {
       "sectionFilterLabel": "अनुभाग",

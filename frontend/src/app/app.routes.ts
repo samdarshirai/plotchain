@@ -137,6 +137,7 @@ export const routes: Routes = [
       { path: 'admin-stats', component: AdminStatsComponent, data: { sectionKey: 'adminStats' } },
       { path: 'support-tickets', loadComponent: () => import('./admin/admin-support-tickets/admin-support-tickets.component').then(m => m.AdminSupportTicketsComponent), data: { sectionKey: 'supportTickets' } },
       { path: 'add-plot-emi', loadComponent: () => import('./admin/add-plot-emi/add-plot-emi.component').then(m => m.AddPlotEmiComponent), data: { sectionKey: 'addPlotEmi' } },
+      { path: 'view-booked-plot', loadComponent: () => import('./admin/view-booked-plot/view-booked-plot.component').then(m => m.ViewBookedPlotComponent), data: { sectionKey: 'viewBookedPlot' } },
       { path: 'expense-types', loadComponent: () => import('./admin/expense-types/expense-types.component').then(m => m.ExpenseTypesComponent), data: { sectionKey: 'expenseTypes' } },
       { path: 'news', loadComponent: () => import('./admin/news/news.component').then(m => m.NewsComponent), data: { sectionKey: 'news' } },
       // There is no settings hub screen any more -- every entry point (a header category tab, an
