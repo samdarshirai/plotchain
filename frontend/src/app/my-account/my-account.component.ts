@@ -70,7 +70,7 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
   ],
   providers: [CurrencyPipe],
   template: `
-    <div class="my-account">
+    <div class="my-account" [class.my-account--profile]="activeTab === 'profile'">
       <p *ngIf="profileLoadError" class="my-account__load-error">{{ 'myAccount.profileLoadError' | translate }}</p>
 
       <div class="my-account__header" *ngIf="profile && activeTab !== 'profile'">

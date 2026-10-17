@@ -3799,6 +3799,7 @@ button.tree-explorer__vacant-card {
 // page (stats, tabs, table) sat inside one shared .card, reading as a single flat box instead of
 // the mockup's layered composition.
 .kyc-queue {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -3970,6 +3971,10 @@ button.tree-explorer__vacant-card {
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: 0 var(--radius-sm) var(--radius-sm) var(--radius-sm);
+  overflow: hidden;
+}
+
+.kyc-queue__table-scroll {
   overflow-x: auto;
 }
 
@@ -3979,26 +3984,21 @@ button.tree-explorer__vacant-card {
   padding: 0.75rem 1.5rem 0;
 }
 
-// Table-to-grid, same technique as .associate-directory__table-wrap: the shared
-// editable-table renders a real <table>, but the mockup's column proportions aren't
-// expressible as table-layout widths, so thead/tbody rows go into CSS grid mode here,
-// scoped to this screen. Four columns on PENDING (trailing Actions); Verified/Rejected
-// drop that trailing column -- their status pill rides inline in the Name cell instead
-// (see .kyc-queue--compact-table below).
+// Native columns align headers and cells, including wrapped names. Only the ledger
+// scrolls on narrow screens so review controls and pagination remain in view.
 .kyc-queue .editable-table {
   width: 100%;
+  min-width: 800px;
+  table-layout: fixed;
   border-collapse: collapse;
 
-  thead tr,
-  tbody tr {
-    display: grid;
-    grid-template-columns: 160px minmax(0, 1.6fr) 200px minmax(0, 1fr);
-    column-gap: 1rem;
-    align-items: center;
-  }
+  th:nth-child(1) { width: 18%; }
+  th:nth-child(2) { width: 30%; }
+  th:nth-child(3) { width: 26%; }
+  th:nth-child(4) { width: 26%; }
 
   thead th {
-    padding: 0.75rem 1.5rem;
+    padding: 0.75rem 1rem;
     font-size: 0.6875rem;
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -4009,8 +4009,10 @@ button.tree-explorer__vacant-card {
   }
 
   tbody td {
-    padding: 1rem 1.5rem;
+    padding: 0.75rem 1rem;
     font-size: 0.875rem;
+    overflow-wrap: anywhere;
+    transition: background-color 150ms ease;
     border-bottom: 1px solid var(--border-subtle);
   }
 
@@ -4023,9 +4025,13 @@ button.tree-explorer__vacant-card {
     background: var(--surface-page);
   }
 
+  tbody tr:hover td {
+    background: var(--surface-raised);
+  }
+
   // Associate ID + Joined -- mono, muted, per DESIGN.md SS3 / settings-parity spec (ledger
   // ID and date columns are IBM Plex Mono).
-  td:nth-child(1),
+  td:not(.editable-table__empty):nth-child(1),
   td:nth-child(3) {
     font-family: var(--font-mono);
     font-size: 0.8125rem;
@@ -4045,9 +4051,8 @@ button.tree-explorer__vacant-card {
     text-align: right;
   }
 
-  // Empty-state cell is a lone <td colspan> -- span the whole grid row.
+  // The empty state spans every native table column.
   .editable-table__empty {
-    grid-column: 1 / -1;
     text-align: center;
     padding: 1.5rem;
   }
@@ -4059,8 +4064,8 @@ button.tree-explorer__vacant-card {
   .editable-table__badge {
     display: inline-block;
     margin-left: 0.5rem;
-    padding: 3px 8px;
-    font-size: 0.65rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6875rem;
     font-weight: 500;
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
@@ -4077,23 +4082,25 @@ button.tree-explorer__vacant-card {
   }
 }
 
-// Verified/Rejected: 3-column row (no trailing Actions/Status column -- the pill now rides
-// inline in Name, see kyc-queue.component.ts). Joined keeps growing to fill the row instead
-// of stopping at its PENDING-tab fixed width.
-.kyc-queue--compact-table .editable-table thead tr,
-.kyc-queue--compact-table .editable-table tbody tr {
-  grid-template-columns: 160px minmax(0, 1.6fr) minmax(200px, 1fr);
+// Reviewed rows leave more room for the name and inline status pill.
+.kyc-queue--compact-table .editable-table {
+  min-width: 640px;
+
+  th:nth-child(1) { width: 24%; }
+  th:nth-child(2) { width: 44%; }
+  th:nth-child(3) { width: 32%; }
 }
 
 // Per-row action stack (KYC Review Queue.dc.html -- View/Reject/Approve, right-aligned).
 .kyc-queue__row-actions {
   display: flex;
+  white-space: nowrap;
   justify-content: flex-end;
   gap: 0.5rem;
 }
 
 .kyc-queue__reject-action {
-  padding: 0.5rem 0.8125rem;
+  padding: 0.5rem 0.75rem;
   font-weight: 500;
   color: var(--status-danger);
   background: transparent;
@@ -4101,7 +4108,7 @@ button.tree-explorer__vacant-card {
 }
 
 .kyc-queue__approve-action {
-  padding: 0.5rem 0.9375rem;
+  padding: 0.5rem 1rem;
   background: var(--brand-secondary);
   color: var(--action-foreground);
   font-weight: 600;
@@ -4180,7 +4187,8 @@ button.tree-explorer__vacant-card {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.875rem 1.5rem;
+  padding: 1rem;
+  flex-wrap: wrap;
   border-top: 1px solid var(--border-subtle);
 }
 
@@ -4191,6 +4199,7 @@ button.tree-explorer__vacant-card {
 
 .kyc-queue__pagination {
   @extend %admin-screen-pagination;
+  flex-wrap: wrap;
 }
 
 .kyc-queue__page-indicator {
@@ -4198,6 +4207,17 @@ button.tree-explorer__vacant-card {
 }
 
 @media (max-width: 700px) {
+  .kyc-queue__pagination {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.5rem;
+
+    button {
+      padding: 0.5rem;
+      font-size: 0.75rem;
+    }
+  }
+
   .kyc-queue__stats {
     grid-template-columns: 1fr;
   }

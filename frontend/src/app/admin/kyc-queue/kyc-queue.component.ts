@@ -69,13 +69,16 @@ const MS_PER_DAY = 86_400_000;
         <p *ngIf="loadError" class="kyc-queue__load-error">{{ 'admin.kycQueue.loadError' | translate }}</p>
         <p *ngIf="decisionError" class="kyc-queue__decision-error">{{ 'admin.kycQueue.decisionError' | translate }}</p>
 
-        <app-editable-table
-          [readOnly]="true"
-          [columns]="kycColumns"
-          [rows]="kycRows"
-          [actionTemplate]="actionsTpl"
-          [emptyStateLabel]="'admin.kycQueue.emptyState' | translate"
-        ></app-editable-table>
+        <div class="kyc-queue__table-scroll" role="region" tabindex="0"
+          [attr.aria-label]="'admin.kycQueue.title' | translate">
+          <app-editable-table
+            [readOnly]="true"
+            [columns]="kycColumns"
+            [rows]="kycRows"
+            [actionTemplate]="actionsTpl"
+            [emptyStateLabel]="'admin.kycQueue.emptyState' | translate"
+          ></app-editable-table>
+        </div>
         <ng-template #actionsTpl let-i="index">
           <div class="kyc-queue__row-actions">
             <button type="button" class="kyc-queue__reject-action" (click)="openReject(page!.entries[i].id)">
