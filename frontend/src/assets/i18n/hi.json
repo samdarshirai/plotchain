@@ -1122,7 +1122,6 @@
       "validation": {
         "ref": "Enter a payment reference.", "refMax": "Keep the reference to 100 characters.",
         "reason": "Enter a reason for cancelling.", "reasonMax": "Keep the reason to 255 characters.", "target": "Choose an associate.",
-        "range": "From date must be on or before To date.", "mode": "Choose a payment mode.",
         "count": "Enter a whole number from 1 to 60.", "firstDue": "Pick today or a later date."
       },
       "warn": { "autoConfirm": "This payment will confirm the booking.", "autoConfirmDetail": "Paid goes from {{before}} to {{after}}. If confirming fails, the payment is rolled back." },
@@ -1497,7 +1496,6 @@
       "finalEarningsLineLabel": "अंतिम आय",
       "validation": {
         "required": "यह फ़ील्ड आवश्यक है।",
-        "range": "0 और 100 के बीच एक मान दर्ज करें।",
         "genericSaveError": "आपके परिवर्तन सहेजते समय कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
         "loadFailed": "हम आपकी वर्तमान कमीशन योजना लोड नहीं कर सके, इसलिए उसे अधिलेखित होने से बचाने के लिए संपादन अक्षम कर दिया गया है। पुनः प्रयास करने के लिए पृष्ठ पुनः लोड करें।"
       }
@@ -1703,6 +1701,16 @@
     "type": { "NORMAL": "Normal", "CORNER": "Corner" }
   },
   "epinRegister": {
+    "eyebrow": "ई-पिन रजिस्टर",
+    "subtitle": {
+      "new": "आपको जारी किए गए अनुपयोगी पिन। नए एसोसिएट को जोड़ने के लिए जॉइन दबाएँ।",
+      "transfer": "अपने नेटवर्क के एसोसिएट को पिन भेजें। सबसे पुराने पिन पहले जाते हैं।",
+      "used": "उपयोग हो चुके पिन और उनसे जुड़ने वाला एसोसिएट।"
+    },
+    "transferTo": "एसोसिएट को ट्रांसफर",
+    "transferHint": "संख्या दर्ज करें; सबसे पुराने पिन पहले भेजे जाएँगे।",
+    "transferN": "{{count}} पिन ट्रांसफर करें",
+    "enterAssociateId": "एसोसिएट आईडी दर्ज करें",
     "unlockTitle": "ई-पिन रजिस्टर",
     "unlockHint": "ई-पिन रजिस्टर खोलने के लिए अपना ट्रांज़ैक्शन पासवर्ड दर्ज करें।",
     "unlock": "अनलॉक",

@@ -1107,7 +1107,6 @@
       "validation": {
         "ref": "Enter a payment reference.", "refMax": "Keep the reference to 100 characters.",
         "reason": "Enter a reason for cancelling.", "reasonMax": "Keep the reason to 255 characters.", "target": "Choose an associate.",
-        "range": "From date must be on or before To date.", "mode": "Choose a payment mode.",
         "count": "Enter a whole number from 1 to 60.", "firstDue": "Pick today or a later date."
       },
       "warn": { "autoConfirm": "This payment will confirm the booking.", "autoConfirmDetail": "Paid goes from {{before}} to {{after}}. If confirming fails, the payment is rolled back." },
@@ -1585,7 +1584,6 @@
       "finalEarningsLineLabel": "Final Earnings",
       "validation": {
         "required": "This field is required.",
-        "range": "Enter a value between 0 and 100.",
         "genericSaveError": "Something went wrong saving your changes. Please try again.",
         "loadFailed": "We could not load your current compensation plan, so editing is disabled to avoid overwriting it. Reload the page to try again."
       }
@@ -1792,6 +1790,16 @@
     "type": { "NORMAL": "Normal", "CORNER": "Corner" }
   },
   "epinRegister": {
+    "eyebrow": "E-PIN REGISTER",
+    "subtitle": {
+      "new": "Unused PINs issued to you. Use Join to register a new associate with a PIN.",
+      "transfer": "Send PINs to an associate in your network. Oldest PINs go first.",
+      "used": "PINs that have been redeemed, with the associate who joined using each one."
+    },
+    "transferTo": "Transfer to associate",
+    "transferHint": "Enter a count to send the oldest PINs first.",
+    "transferN": "Transfer {{count}} PIN(s)",
+    "enterAssociateId": "Enter an Associate ID",
     "unlockTitle": "e-Pin Register",
     "unlockHint": "Enter your transaction password to open the e-Pin Register.",
     "unlock": "Unlock",

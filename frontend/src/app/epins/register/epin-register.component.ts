@@ -11,7 +11,7 @@ import { ExportColumn, exportCsv, printTable, toCsv } from '../../shared/utils/t
 
 type Mode = 'new' | 'transfer' | 'used';
 type Row = EPinUnusedRow & EPinUsedRow;
-interface Col { key: string; labelKey: string; value: (r: Row, i: number) => string; visible: boolean; }
+interface Col { key: string; labelKey: string; value: (r: Row, i: number) => string; visible: boolean; mono?: boolean; chip?: boolean; }
 
 const PAGE_SIZE = 20;
 
@@ -24,7 +24,38 @@ const PAGE_SIZE = 20;
   styleUrl: './epin-register.component.scss',
   template: `
     <div class="epin-reg">
-      <h1 class="epin-reg__title">{{ 'epinRegister.title.' + mode | translate }}</h1>
+      <header class="epin-reg__header">
+        <div class="epin-reg__heading">
+          <span class="epin-reg__eyebrow">{{ 'epinRegister.eyebrow' | translate }}</span>
+          <h1 class="epin-reg__title">{{ 'epinRegister.title.' + mode | translate }}</h1>
+          <p class="epin-reg__subtitle">{{ 'epinRegister.subtitle.' + mode | translate }}</p>
+        </div>
+      </header>
+
+      <form class="epin-reg__card" *ngIf="mode === 'transfer'" (ngSubmit)="transfer()">
+        <div class="epin-reg__card-head">
+          <strong>{{ 'epinRegister.transferTo' | translate }}</strong>
+          <span>{{ 'epinRegister.transferHint' | translate }}</span>
+        </div>
+        <div class="epin-reg__form">
+          <label class="epin-reg__label">{{ 'epinRegister.noOfPin' | translate }}
+            <input class="epin-reg__input epin-reg__mono" type="number" min="1" name="count" [(ngModel)]="count" /></label>
+          <label class="epin-reg__label">{{ 'epinRegister.associateId' | translate }}
+            <input class="epin-reg__input epin-reg__mono" name="toUser" [(ngModel)]="userId" (blur)="lookup()" /></label>
+          <div class="epin-reg__label">{{ 'epinRegister.associateName' | translate }}
+            <div class="epin-reg__name" [class.epin-reg__name--ok]="recipientName" [class.epin-reg__name--bad]="lookupFailed">
+              {{ recipientName || ((lookupFailed ? 'epins.errorNotFound' : 'epinRegister.enterAssociateId') | translate) }}
+            </div>
+          </div>
+          <label class="epin-reg__label">{{ 'epins.passwordLabel' | translate }}
+            <input class="epin-reg__input" type="password" autocomplete="off" name="pw" [(ngModel)]="password" /></label>
+          <button type="submit" class="brand-button epin-reg__submit" [disabled]="busy">
+            {{ count && count > 0 ? ('epinRegister.transferN' | translate: { count: count }) : ('epinRegister.submit' | translate) }}
+          </button>
+        </div>
+        <app-inline-banner *ngIf="error" tone="danger">{{ error | translate }}</app-inline-banner>
+        <app-inline-banner *ngIf="success" tone="success">{{ 'epinRegister.transferred' | translate: { count: success } }}</app-inline-banner>
+      </form>
 
       <div class="epin-reg__card">
         <div class="epin-reg__bar">
@@ -41,9 +72,9 @@ const PAGE_SIZE = 20;
           </label>
           </div>
           <div class="epin-reg__tools">
-            <button type="button" class="brand-button brand-button--secondary" (click)="copy()">{{ 'epinRegister.copy' | translate }}</button>
-            <button type="button" class="brand-button brand-button--secondary" (click)="csv()">{{ 'epinRegister.excelCsv' | translate }}</button>
-            <button type="button" class="brand-button brand-button--secondary" (click)="print()">{{ 'epinRegister.printPdf' | translate }}</button>
+            <button type="button" class="brand-button brand-button--secondary epin-reg__tool" (click)="copy()">{{ 'epinRegister.copy' | translate }}</button>
+            <button type="button" class="brand-button brand-button--secondary epin-reg__tool" (click)="csv()">{{ 'epinRegister.excelCsv' | translate }}</button>
+            <button type="button" class="brand-button brand-button--secondary epin-reg__tool" (click)="print()">{{ 'epinRegister.printPdf' | translate }}</button>
             <details class="epin-reg__cols">
               <summary class="brand-button brand-button--secondary">{{ 'epinRegister.columns' | translate }}</summary>
               <div class="epin-reg__column-menu">
@@ -65,7 +96,7 @@ const PAGE_SIZE = 20;
             </thead>
             <tbody>
               <tr *ngFor="let r of rows; let i = index">
-                <ng-container *ngFor="let c of cols"><td *ngIf="c.visible">{{ c.value(r, i) }}</td></ng-container>
+                <ng-container *ngFor="let c of cols"><td *ngIf="c.visible" [class.epin-reg__mono]="c.mono" [class.epin-reg__muted]="c.key === 'sl'"><span *ngIf="c.chip; else plain" class="epin-reg__chip" [class.epin-reg__chip--used]="mode === 'used'">{{ c.value(r, i) }}</span><ng-template #plain>{{ c.value(r, i) }}</ng-template></td></ng-container>
                 <td *ngIf="mode === 'new'"><button type="button" class="brand-button" (click)="startJoin(r)">{{ 'epinRegister.join.label' | translate }}</button></td>
               </tr>
               <tr *ngIf="!rows.length"><td [attr.colspan]="cols.length + 1" class="epin-reg__empty">{{ 'epinRegister.empty' | translate }}</td></tr>
@@ -73,22 +104,11 @@ const PAGE_SIZE = 20;
           </table>
         </div>
 
-        <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="go($event)"></app-pager>
+        <div class="epin-reg__foot">
+          <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="go($event)"></app-pager>
+        </div>
       </div>
 
-      <form class="epin-reg__card epin-reg__form" *ngIf="mode === 'transfer'" (ngSubmit)="transfer()">
-        <label class="epin-reg__label">{{ 'epinRegister.noOfPin' | translate }}
-          <input class="epin-reg__input" type="number" min="1" name="count" [(ngModel)]="count" /></label>
-        <label class="epin-reg__label">{{ 'epinRegister.associateId' | translate }}
-          <input class="epin-reg__input" name="toUser" [(ngModel)]="userId" (blur)="lookup()" /></label>
-        <label class="epin-reg__label">{{ 'epinRegister.associateName' | translate }}
-          <input class="epin-reg__input" name="toName" [value]="recipientName" readonly /></label>
-        <label class="epin-reg__label">{{ 'epins.passwordLabel' | translate }}
-          <input class="epin-reg__input" type="password" autocomplete="off" name="pw" [(ngModel)]="password" /></label>
-        <app-inline-banner *ngIf="error" tone="danger">{{ error | translate }}</app-inline-banner>
-        <app-inline-banner *ngIf="success" tone="success">{{ 'epinRegister.transferred' | translate: { count: success } }}</app-inline-banner>
-        <button type="submit" class="brand-button" [disabled]="busy">{{ 'epinRegister.submit' | translate }}</button>
-      </form>
     </div>
   `
 })
@@ -116,6 +136,7 @@ export class EPinRegisterComponent implements OnInit {
   password = '';
   count: number | null = null;
   recipientName = '';
+  lookupFailed = false;
   error = '';
   success = 0;
   busy = false;
@@ -124,13 +145,13 @@ export class EPinRegisterComponent implements OnInit {
     this.mode = this.route.snapshot.data['mode'] as Mode;
     const d = (s: string | null) => (s ? this.date.transform(s, 'dd-MM-yyyy') ?? '' : '');
     const dt = (s: string | null) => (s ? this.date.transform(s, 'dd-MM-yyyy HH:mm') ?? '' : '');
-    const c = (key: string, value: Col['value']): Col => ({ key, labelKey: `epinRegister.col.${key}`, value, visible: true });
-    const sl = c('sl', (_r, i) => String(this.page * this.size + i + 1));
-    const val = c('pinValue', r => `${r.pinValue} INR`);
+    const c = (key: string, value: Col['value'], o: Partial<Col> = {}): Col => ({ key, labelKey: `epinRegister.col.${key}`, value, visible: true, ...o });
+    const sl = c('sl', (_r, i) => String(this.page * this.size + i + 1), { mono: true });
+    const val = c('pinValue', r => `${r.pinValue} INR`, { mono: true });
     this.cols = this.mode === 'used'
-      ? [sl, c('pinId', r => r.id.slice(0, 8)), c('pinNo', r => r.code), val, c('transferDate', r => d(r.transferDate)),
-         c('usedDate', r => dt(r.usedDate)), c('usedBy', r => r.usedByUserId ?? ''), c('associateName', r => r.usedByName ?? '')]
-      : [sl, c('pinNo', r => r.code), val, c('transferDate', r => d(r.transferDate)), c('transferBy', r => r.transferBy)];
+      ? [sl, c('pinId', r => r.id.slice(0, 8)), c('pinNo', r => r.code, { mono: true }), val, c('transferDate', r => d(r.transferDate), { mono: true }),
+         c('usedDate', r => dt(r.usedDate), { mono: true }), c('usedBy', r => r.usedByUserId ?? '', { chip: true }), c('associateName', r => r.usedByName ?? '')]
+      : [sl, c('pinNo', r => r.code, { mono: true }), val, c('transferDate', r => d(r.transferDate), { mono: true }), c('transferBy', r => r.transferBy, { chip: true })];
     this.load();
   }
 
@@ -188,9 +209,10 @@ export class EPinRegisterComponent implements OnInit {
 
   lookup(): void {
     this.recipientName = '';
+    this.lookupFailed = false;
     const id = this.userId.trim();
     if (!id) { return; }
-    this.service.recipient(id).subscribe({ next: r => (this.recipientName = r.name), error: () => undefined });
+    this.service.recipient(id).subscribe({ next: r => (this.recipientName = r.name), error: () => (this.lookupFailed = true) });
   }
 
   transfer(): void {

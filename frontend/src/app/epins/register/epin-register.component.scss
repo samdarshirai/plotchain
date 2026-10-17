@@ -66,10 +66,13 @@
     flex-wrap: wrap;
     gap: var(--space-2);
     align-items: center;
+    &:has(.epin-reg__tool) { gap: 0; border: 1px solid var(--border-subtle); background: var(--surface-raised);
+      .brand-button { border: 0; border-right: 1px solid var(--border-subtle); border-radius: 0; background: transparent; } }
     .brand-button { min-height: 44px; padding: var(--space-2) var(--space-4); font-size: 0.875rem; }
   }
   &__cols { position: relative; }
   &__cols summary { list-style: none; }
+  &__tools &__cols summary { border-right: 0; }
   &__cols summary::-webkit-details-marker { display: none; }
   &__cols summary::after {
     content: '';
@@ -106,12 +109,40 @@
   &__scroll { max-width: 100%; overflow-x: auto; border: 1px solid var(--border-subtle); }
   // Reuse the shared table palette, Inter typography and cell padding.
   &__table {
+    th { font-size: 0.6875rem; letter-spacing: 0.1em; text-transform: uppercase; }
     th, td { white-space: nowrap; }
+    td { height: 56px; }
     tbody tr:last-child td { border-bottom: 0; }
-    .brand-button { min-height: 44px; padding: var(--space-2) var(--space-4); font-size: 0.875rem; }
+    .brand-button { min-height: 44px; padding: var(--space-2) var(--space-4); font-size: 0.875rem; background: var(--brand-secondary); color: var(--brand-primary); }
   }
   &__table &__empty { padding: var(--space-8) var(--space-4); text-align: center; color: var(--text-muted); }
-  &__form { display: grid; gap: var(--space-4); width: 100%; max-width: 28rem; }
+  &__header { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: flex-end; }
+  &__heading { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; flex: 1 1 20rem; }
+  &__eyebrow { font-family: var(--font-display); font-size: 0.75rem; font-weight: 500; letter-spacing: 0.12em; color: var(--brand-secondary); }
+  &__subtitle { margin: 0; max-width: 36rem; font-size: 0.875rem; color: var(--text-muted); }
+  &__card-head {
+    display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: baseline;
+    margin-bottom: var(--space-4);
+    span { margin-left: auto; font-size: 0.8125rem; color: var(--text-muted); }
+  }
+  &__form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: var(--space-4); align-items: end; }
+  &__submit { min-height: 44px; }
+  &__mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  &__muted { color: var(--text-muted); }
+  &__name {
+    display: flex; align-items: center; min-height: 44px; padding: 0 var(--space-3);
+    border: 1px dashed var(--border-subtle); background: var(--surface-page);
+    font-weight: 400; font-size: 0.875rem; color: var(--text-muted);
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    &--ok { color: var(--status-success); }
+    &--bad { color: var(--status-danger); }
+  }
+  &__chip {
+    display: inline-block; padding: 2px var(--space-2); border-radius: 2px;
+    font-size: 0.75rem; font-weight: 500; background: var(--surface-raised); color: var(--text-primary);
+    &--used { background: var(--brand-secondary); color: var(--brand-primary); }
+  }
+  &__foot { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; justify-content: flex-end; padding-top: var(--space-3); }
 }
 
 @media (max-width: 767px) {
@@ -120,6 +151,7 @@
     &__card { padding: var(--space-4); }
     &__filters, &__tools { width: 100%; }
     &__tools > * { flex: 1 1 auto; }
+      &__card-head span { margin-left: 0; }
     &__cols summary { width: 100%; }
   }
 }
