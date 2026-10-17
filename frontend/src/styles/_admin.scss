@@ -551,10 +551,10 @@
 .associate-directory__login {
   min-height: 40px;
   padding: 0 14px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--brand-secondary);
   border-radius: 6px;
-  background: var(--surface-card);
-  color: inherit;
+  background: var(--brand-secondary);
+  color: var(--action-foreground);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
