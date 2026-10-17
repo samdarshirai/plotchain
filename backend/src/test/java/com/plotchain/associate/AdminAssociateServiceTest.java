@@ -92,6 +92,7 @@ class AdminAssociateServiceTest {
         assertThat(response.associates()).hasSize(1);
         assertThat(response.associates().get(0).userId()).isEqualTo("VP00001");
         assertThat(response.associates().get(0).rankName()).isEqualTo("Sales Associate");
+        assertThat(response.associates().get(0).role()).isEqualTo(AssociateRole.ASSOCIATE);
     }
 
     @Test

@@ -190,7 +190,7 @@ public class AdminAssociateService {
         return new AdminAssociateSummaryResponse(
             a.getId(), a.getUserId(), a.getName(), rank == null ? null : rank.getName(),
             a.getKycStatus(), a.getStatus(), a.getJoinedAt(), a.getLastActiveAt(), sponsorUserId,
-            a.getPosition());
+            a.getPosition(), a.getRole());
     }
 
     private AdminAssociateDetailResponse toDetail(Associate a) {
