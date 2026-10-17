@@ -12,9 +12,14 @@ public record PlotGridResponse(
     BigDecimal area,   // square feet (plot.area_sqft)
     BigDecimal price,
     PlotStatus status,
-    BigDecimal extraPrice
+    BigDecimal extraPrice,
+    BigDecimal roadSizeFt
 ) {
+    public PlotGridResponse(UUID plotId, String plotNo, PlotType type, BigDecimal area, BigDecimal price, PlotStatus status, BigDecimal extraPrice) {
+        this(plotId, plotNo, type, area, price, status, extraPrice, null);
+    }
+
     public PlotGridResponse(UUID plotId, String plotNo, PlotType type, BigDecimal area, BigDecimal price, PlotStatus status) {
-        this(plotId, plotNo, type, area, price, status, BigDecimal.ZERO);
+        this(plotId, plotNo, type, area, price, status, BigDecimal.ZERO, null);
     }
 }

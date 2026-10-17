@@ -39,6 +39,9 @@ public class Plot {
     @Column(name = "extra_price")
     private BigDecimal extraPrice = BigDecimal.ZERO;
 
+    @Column(name = "road_size_ft")
+    private BigDecimal roadSizeFt;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private PlotStatus status;
@@ -75,6 +78,8 @@ public class Plot {
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
 
+    public BigDecimal getRoadSizeFt() { return roadSizeFt; }
+    public void setRoadSizeFt(BigDecimal roadSizeFt) { this.roadSizeFt = roadSizeFt; }
     public BigDecimal getExtraPrice() { return extraPrice; }
     public void setExtraPrice(BigDecimal extraPrice) { this.extraPrice = extraPrice == null ? BigDecimal.ZERO : extraPrice; }
 

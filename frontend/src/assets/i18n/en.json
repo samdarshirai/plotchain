@@ -1196,7 +1196,7 @@
       "viewLabel": "Plot view",
       "view": { "grid": "Grid", "site": "Site plan", "table": "Table" },
       "table": {
-        "sNo": "S No", "type": "Type", "plot": "Plot", "area": "Area", "total": "Total", "price": "Price", "totalPrice": "Total Price", "status": "Status",
+        "sNo": "S No", "type": "Type", "plot": "Plot", "area": "Area", "total": "Total", "price": "Price", "totalPrice": "Total Price", "status": "Status", "actions": "Action", "roadSize": "Road Size", "edit": "Edit", "delete": "Delete", "deleteConfirm": "Delete plot {{no}}? This cannot be undone.", "deleteError": "Couldn't delete the plot. It may have bookings.",
         "searchLabel": "Search plots", "searchPlaceholder": "Plot no or status", "exportCsv": "Export CSV",
         "noMatch": "No plots match your search.", "count": "{{shown}} of {{total}} plots", "rateError": "Couldn't load rates."
       },
@@ -1251,6 +1251,8 @@
       "discountLabel": "Discount",
       "discount": { "negative": "The discount can't be negative.", "tooHigh": "The discount must be less than the plot price." },
       "extraPriceLabel": "Extra Price",
+      "roadSizeLabel": "Road Size (ft)",
+      "roadSizeHint": "Optional. Width of the road the plot faces, in feet.",
       "extraPriceHint": "Optional free-form amount added to the price. Can be changed per booking.",
       "summary": { "price": "Plot price", "extraPrice": "Extra Price", "discount": "Discount", "total": "Total after discount" },
       "schedulePreview": "Token {{token}} paid now, then {{count}} installments of {{amount}} each",

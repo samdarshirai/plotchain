@@ -37,15 +37,15 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
           <input type="number" name="rate" min="0" step="any" [(ngModel)]="rate" />
           <app-field-error [message]="(positive(rate) || !submitted_ ? '' : 'admin.projectsPlots.error.generic') | translate"></app-field-error>
         </label>
-        <label>{{ 'admin.projectsPlots.priceLabel' | translate }}
-          <input type="number" name="price" min="0" step="any" [(ngModel)]="price" />
-          <small>{{ 'admin.projectsPlots.priceHint' | translate }}</small>
-          <app-field-error [message]="(positive(price) || !submitted_ ? '' : 'admin.projectsPlots.error.generic') | translate"></app-field-error>
-        </label>
         <label>{{ 'admin.projectsPlots.extraPriceLabel' | translate }}
           <input type="number" name="extraPrice" min="0" step="any" [(ngModel)]="extraPrice" />
           <small>{{ 'admin.projectsPlots.extraPriceHint' | translate }}</small>
           <app-field-error [message]="(validExtra || !submitted_ ? '' : 'admin.projectsPlots.error.generic') | translate"></app-field-error>
+        </label>
+        <label>{{ 'admin.projectsPlots.roadSizeLabel' | translate }}
+          <input type="number" name="roadSizeFt" min="0" step="any" [(ngModel)]="roadSizeFt" />
+          <small>{{ 'admin.projectsPlots.roadSizeHint' | translate }}</small>
+          <app-field-error [message]="(validRoad || !submitted_ ? '' : 'admin.projectsPlots.error.generic') | translate"></app-field-error>
         </label>
         <p *ngIf="plot" class="plot-form__status">{{ 'admin.projectsPlots.statusLabel' | translate }}: {{ 'plotTile.status.' + plot.status | translate }} — {{ 'admin.projectsPlots.statusReadonlyHint' | translate }}</p>
         <div class="projects-plots__form-actions">
@@ -71,21 +71,24 @@ export class PlotFormComponent implements OnChanges {
   plotType: PlotType = 'NORMAL';
   areaSqft: number | null = null;
   rate: number | null = null;
-  price: number | null = null;
   extraPrice: number | null = 0;
+  roadSizeFt: number | null = null;
   submitted_ = false;
 
   ngOnChanges(c: SimpleChanges): void {
     if (!this.plot && this.rate == null && this.defaultRate) { this.rate = this.defaultRate; }
     if (c['plot'] && this.plot) {
-      ({ plotNo: this.plotNo, plotType: this.plotType, areaSqft: this.areaSqft, rate: this.rate, price: this.price } = this.plot);
+      ({ plotNo: this.plotNo, plotType: this.plotType, areaSqft: this.areaSqft, rate: this.rate } = this.plot);
       this.extraPrice = this.plot.extraPrice ?? 0;
+      this.roadSizeFt = this.plot.roadSizeFt ?? null;
     }
   }
 
   get plotNoInvalid(): boolean { return this.duplicatePlotNo || (this.submitted_ && !this.plotNo.trim()); }
 
   get validExtra(): boolean { return this.extraPrice == null || this.extraPrice >= 0; }
+
+  get validRoad(): boolean { return this.roadSizeFt == null || this.roadSizeFt >= 0; }
 
   positive(v: number | null): boolean { return typeof v === 'number' && v > 0; }
 
@@ -97,10 +100,10 @@ export class PlotFormComponent implements OnChanges {
   submit(e: Event): void {
     e.preventDefault();
     this.submitted_ = true;
-    if (!this.plotNo.trim() || !this.positive(this.areaSqft) || !this.positive(this.rate) || !this.positive(this.price) || !this.validExtra) { return; }
+    if (!this.plotNo.trim() || !this.positive(this.areaSqft) || !this.positive(this.rate) || !this.validExtra || !this.validRoad) { return; }
     this.submitted.emit({
       plotNo: this.plotNo.trim(), plotType: this.plotType,
-      areaSqft: this.areaSqft!, rate: this.rate!, price: this.price!, extraPrice: this.extraPrice ?? 0,
+      areaSqft: this.areaSqft!, rate: this.rate!, price: this.areaSqft! * this.rate!, extraPrice: this.extraPrice ?? 0, roadSizeFt: this.roadSizeFt ?? null,
       status: this.plot?.status ?? 'AVAILABLE' // status is not editable here; echo the current one
     });
   }

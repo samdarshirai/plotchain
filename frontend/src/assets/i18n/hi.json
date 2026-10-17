@@ -1211,7 +1211,7 @@
       "viewLabel": "Plot view",
       "view": { "grid": "Grid", "site": "Site plan", "table": "Table" },
       "table": {
-        "sNo": "क्र.सं.", "type": "प्रकार", "plot": "Plot", "area": "Area", "total": "Total", "price": "मूल्य", "totalPrice": "कुल मूल्य", "status": "Status",
+        "sNo": "क्र.सं.", "type": "प्रकार", "plot": "Plot", "area": "Area", "total": "Total", "price": "मूल्य", "totalPrice": "कुल मूल्य", "status": "Status", "actions": "कार्रवाई", "roadSize": "सड़क की चौड़ाई", "edit": "संपादित करें", "delete": "हटाएं", "deleteConfirm": "प्लॉट {{no}} हटाएं? इसे वापस नहीं किया जा सकता।", "deleteError": "प्लॉट हटाया नहीं जा सका। इसमें बुकिंग हो सकती है।",
         "searchLabel": "Search plots", "searchPlaceholder": "Plot no or status", "exportCsv": "Export CSV",
         "noMatch": "No plots match your search.", "count": "{{shown}} of {{total}} plots", "rateError": "Couldn't load rates."
       },
@@ -1266,6 +1266,8 @@
       "discountLabel": "Discount",
       "discount": { "negative": "The discount can't be negative.", "tooHigh": "The discount must be less than the plot price." },
       "extraPriceLabel": "अतिरिक्त मूल्य",
+      "roadSizeLabel": "सड़क की चौड़ाई (फीट)",
+      "roadSizeHint": "वैकल्पिक। प्लॉट के सामने की सड़क की चौड़ाई, फीट में।",
       "extraPriceHint": "मूल्य में जुड़ने वाली वैकल्पिक राशि। हर बुकिंग पर बदली जा सकती है।",
       "summary": { "price": "Plot price", "extraPrice": "अतिरिक्त मूल्य", "discount": "Discount", "total": "Total after discount" },
       "schedulePreview": "Token {{token}} paid now, then {{count}} installments of {{amount}} each",

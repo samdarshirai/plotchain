@@ -119,7 +119,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
         <p>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoProjectsBody' : 'admin.projectsPlots.empty.noProjectsBody') | translate }}</p>
       </div>
 
-      <div class="projects-plots__layout" [class.projects-plots__layout--aside]="aside.kind !== 'none'" *ngIf="projects">
+      <div class="projects-plots__layout" [class.projects-plots__layout--aside]="asideOpen" *ngIf="projects">
         <!-- (a) master list; a <select> stands in below 1024px -->
         <nav class="projects-plots__list" *ngIf="projects.length" [attr.aria-label]="'admin.projectsPlots.projectsHeading' | translate">
           <h2 class="projects-plots__list-heading">{{ 'admin.projectsPlots.projectsHeading' | translate }}</h2>
@@ -180,12 +180,14 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
                   <th scope="col" *ngIf="fullTable">{{ 'admin.projectsPlots.table.sNo' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.plot' | translate }}</th>
                   <th scope="col" *ngIf="fullTable">{{ 'admin.projectsPlots.table.type' | translate }}</th>
+                  <th scope="col" class="projects-plots__num" *ngIf="fullTable">{{ 'admin.projectsPlots.table.roadSize' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.area' | translate }}</th>
                   <th scope="col" class="projects-plots__num" *ngIf="!readOnly">{{ 'admin.projectsPlots.rateLabel' | translate }}</th>
                   <th scope="col" class="projects-plots__num">{{ (fullTable ? 'admin.projectsPlots.table.price' : 'admin.projectsPlots.table.total') | translate }}</th>
                   <th scope="col" class="projects-plots__num" *ngIf="fullTable">{{ 'admin.projectsPlots.extraPriceLabel' | translate }}</th>
                   <th scope="col" class="projects-plots__num" *ngIf="fullTable">{{ 'admin.projectsPlots.table.totalPrice' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.status' | translate }}</th>
+                  <th scope="col" *ngIf="canManage">{{ 'admin.projectsPlots.table.actions' | translate }}</th>
                   <th scope="col" *ngIf="bookMode"><span class="projects-plots__sr">{{ 'admin.projectsPlots.bookAction' | translate }}</span></th>
                 </tr></thead>
                 <tbody>
@@ -195,12 +197,17 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
                     <td><button type="button" class="projects-plots__row-btn" [attr.aria-pressed]="p.plotId === selectedPlotId" (click)="selectPlot(p)">{{ p.plotNo }}</button>
                       <span class="projects-plots__corner" *ngIf="p.type === 'CORNER' && !fullTable">{{ 'plotTile.corner' | translate }}</span></td>
                     <td *ngIf="fullTable">{{ 'plotTile.type.' + p.type | translate }}</td>
+                    <td class="projects-plots__num" *ngIf="fullTable">{{ p.roadSizeFt != null ? p.roadSizeFt + ' ft' : '—' }}</td>
                     <td>{{ areaText(p.area) }} {{ 'plotTile.sqft' | translate }}</td>
                     <td class="projects-plots__num" *ngIf="!readOnly">{{ rateText(p.plotId) }}</td>
                     <td class="projects-plots__num">{{ priceText(fullTable ? basePrice(p) : p.price) }}</td>
                     <td class="projects-plots__num" *ngIf="fullTable">{{ priceText(p.extraPrice ?? 0) }}</td>
                     <td class="projects-plots__num" *ngIf="fullTable">{{ priceText(basePrice(p) + (p.extraPrice ?? 0)) }}</td>
                     <td><span class="projects-plots__pill projects-plots__pill--{{ p.status.toLowerCase() }}">{{ 'plotTile.status.' + p.status | translate }}</span></td>
+                    <td *ngIf="canManage" class="projects-plots__actions">
+                      <button type="button" class="brand-button brand-button--secondary projects-plots__row-edit" (click)="editRow(p)">{{ 'admin.projectsPlots.table.edit' | translate }}</button>
+                      <button type="button" class="brand-button brand-button--secondary projects-plots__row-delete" [disabled]="p.status !== 'AVAILABLE'" (click)="deleteRow(p)">{{ 'admin.projectsPlots.table.delete' | translate }}</button>
+                    </td>
                     <td *ngIf="bookMode"><button type="button" class="brand-button projects-plots__row-book" [disabled]="p.status !== 'AVAILABLE'" (click)="selectPlot(p); openAside({ kind: 'book' })">{{ 'admin.projectsPlots.bookShort' | translate }}</button></td>
                   </tr>
                 </tbody>
@@ -231,8 +238,8 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
         </section>
 
         <!-- (c/d) aside: one region, swapped content. Task 5-7 add the form cases. -->
-        <div class="projects-plots__scrim" *ngIf="aside.kind !== 'none'" (click)="closeAside()"></div>
-        <aside class="projects-plots__aside" *ngIf="aside.kind !== 'none'" [attr.aria-label]="'admin.projectsPlots.title' | translate">
+        <div class="projects-plots__scrim" *ngIf="asideOpen" (click)="closeAside()"></div>
+        <aside class="projects-plots__aside" *ngIf="asideOpen" [attr.aria-label]="'admin.projectsPlots.title' | translate">
           <ng-container *ngTemplateOutlet="bannerTpl"></ng-container>
           <div class="projects-plots__aside-head" *ngIf="aside.kind === 'detail' || aside.kind === 'book'">
             <span class="projects-plots__aside-eyebrow">{{ (aside.kind === 'book' ? 'admin.projectsPlots.drawerBook' : 'admin.projectsPlots.drawerDetail') | translate }}</span>
@@ -265,14 +272,20 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
 
           <app-book-plot-form *ngIf="aside.kind === 'book' && selectedPlot" [plot]="selectedPlot" [associates]="associates"
             [emiConfig]="emiConfig" [busy]="bookingBusy" (submitted)="submitBooking($event)" (cancelled)="backToDetail('.projects-plots__book')"></app-book-plot-form>
-          <app-plot-form *ngIf="aside.kind === 'editPlot' && selectedPlot && plotDetail"
-            [plot]="plotDetail" [locked]="plotDetail.status !== 'AVAILABLE' || selectedPlot.status !== 'AVAILABLE'" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
-            (submitted)="saveEditedPlot($event)" (cancelled)="backToDetail('.projects-plots__edit-plot')"></app-plot-form>
-          <app-plot-form *ngIf="aside.kind === 'addPlot'" [plot]="null" [defaultRate]="defaultRate" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
-            (submitted)="saveNewPlot($event)" (cancelled)="closeAside()"></app-plot-form>
           <app-csv-import-panel *ngIf="aside.kind === 'csv' && selectedProject" [projectId]="selectedProject.id"
             (imported)="onCsvImported()" (cancelled)="closeAside()"></app-csv-import-panel>
         </aside>
+      </div>
+
+      <div class="projects-plots__modal-overlay" *ngIf="modalOpen" (click)="closeAside()">
+        <div class="projects-plots__modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+          <ng-container *ngTemplateOutlet="bannerTpl"></ng-container>
+          <app-plot-form *ngIf="aside.kind === 'editPlot' && selectedPlot && plotDetail"
+            [plot]="plotDetail" [locked]="plotDetail.status !== 'AVAILABLE' || selectedPlot.status !== 'AVAILABLE'" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
+            (submitted)="saveEditedPlot($event)" (cancelled)="closeAside()"></app-plot-form>
+          <app-plot-form *ngIf="aside.kind === 'addPlot'" [plot]="null" [defaultRate]="defaultRate" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
+            (submitted)="saveNewPlot($event)" (cancelled)="closeAside()"></app-plot-form>
+        </div>
       </div>
     </div>
   `,
@@ -327,6 +340,10 @@ export class ProjectsPlotsComponent implements OnInit {
   get selectedPlot(): PlotGridItem | null {
     return this.grid?.find(p => p.plotId === this.selectedPlotId) ?? null;
   }
+
+  get modalOpen(): boolean { return this.aside.kind === 'addPlot' || this.aside.kind === 'editPlot'; }
+  get asideOpen(): boolean { return this.aside.kind !== 'none' && !this.modalOpen; }
+  get canManage(): boolean { return !this.readOnly && !this.bookMode; }
 
   get defaultRate(): number | null {
     return this.masters.find(m => m.id === this.selectedProject?.masterProjectId)?.ratePerSqft ?? null;
@@ -499,6 +516,29 @@ export class ProjectsPlotsComponent implements OnInit {
     this.fetchDetail(this.selectedProject!.id, p.plotId);
   }
 
+  editRow(p: PlotGridItem): void {
+    this.opener = document.activeElement as HTMLElement | null;
+    this.selectedPlotId = p.plotId;
+    this.plotDetail = null;
+    this.banner = null;
+    this.duplicatePlotNo = false;
+    this.aside = { kind: 'editPlot' };
+    this.fetchDetail(this.selectedProject!.id, p.plotId);
+  }
+
+  deleteRow(p: PlotGridItem): void {
+    if (p.status !== 'AVAILABLE' || !window.confirm(this.translate.instant('admin.projectsPlots.table.deleteConfirm', { no: p.plotNo }))) { return; }
+    const projectId = this.selectedProject!.id;
+    this.projectsService.deletePlot(projectId, p.plotId).subscribe({
+      next: () => {
+        if (this.selectedPlotId === p.plotId) { this.selectedPlotId = null; this.plotDetail = null; }
+        this.banner = null;
+        this.refreshAfterPlotChange(projectId);
+      },
+      error: () => (this.banner = { tone: 'danger', key: 'admin.projectsPlots.table.deleteError' })
+    });
+  }
+
   // Only lands if the admin is still on that plot; on failure the rate shows "—" and Edit stays hidden.
   private fetchDetail(projectId: string, plotId: string): void {
     this.plotsService.getPlot(projectId, plotId).subscribe({
@@ -574,10 +614,7 @@ export class ProjectsPlotsComponent implements OnInit {
     this.mutate(this.projectsService.updatePlot(projectId, plotId, req), () => {
       this.refreshAfterPlotChange(projectId);
       if (!this.stillOn(projectId, plotId)) { return; }
-      if (this.aside.kind === 'editPlot') {
-        this.aside = { kind: 'detail' };
-        this.focusDetail('.projects-plots__edit-plot');
-      }
+      if (this.aside.kind === 'editPlot') { this.closeAside(); }
       this.fetchDetail(projectId, plotId); // keeps the prior detail on failure
     });
   }
@@ -641,7 +678,14 @@ export class ProjectsPlotsComponent implements OnInit {
 
   // Grid and the project list's counts both change when plots are added/edited.
   private refreshAfterPlotChange(projectId: string): void {
-    if (this.selectedProject?.id === projectId) { this.loadGrid(); }
+    if (this.selectedProject?.id === projectId) {
+      // Rates are cached per project; a new/edited plot is missing from (or stale in) the cache.
+      this.rates = null;
+      this.ratesLoading = false;
+      this.ratesSeq++;
+      this.loadGrid();
+      if (this.view === 'table') { this.loadRates(); }
+    }
     this.reloadProjects();
   }
 

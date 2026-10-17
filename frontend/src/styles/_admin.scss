@@ -4970,9 +4970,10 @@ button.tree-explorer__vacant-card {
     td { padding: 0.8125rem 0.3125rem; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); line-height: 1.25; font-family: var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
     tbody tr:last-child td { border-bottom: 0; }
     td.projects-plots__num, td:nth-child(2) { font-family: var(--font-mono); }
-    th:first-child, td:first-child { padding-left: 1.25rem; width: 5.25rem; box-sizing: content-box; }
-    th:nth-child(2), td:nth-child(2) { width: 6rem; }
-    th:nth-child(3), td:nth-child(3) { width: 6rem; padding-right: 0.625rem; } }
+    th:first-child, td:first-child { padding-left: 1rem; width: 2.5rem; box-sizing: content-box; }
+    th:nth-child(2), td:nth-child(2) { width: 4rem; }
+    th:nth-child(3), td:nth-child(3) { width: 5rem; padding-right: 0.625rem; }
+    th { white-space: nowrap; padding-inline: 0.5rem; } td { padding-inline: 0.5rem; } }
   &__num { text-align: right !important; }
   &__empty-row { text-align: center; color: var(--text-muted); padding: 1.5rem 0.5rem; }
   &__table tbody tr:hover { background: var(--surface-raised); }
@@ -5049,6 +5050,25 @@ button.tree-explorer__vacant-card {
   .projects-plots__tiles, .projects-plots__skeleton { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .projects-plots__aside { width: 100vw; border-radius: 0; }
   .projects-plots .brand-button, .projects-plots__key { min-height: 44px; }
+}
+
+.projects-plots__modal-overlay {
+  position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+  background: rgba(12, 10, 11, 0.55);
+}
+.projects-plots__modal {
+  width: 560px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box;
+  background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 5px; padding: 32px;
+  .plot-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .plot-form > .plot-form__title, .plot-form > .plot-form__type, .plot-form > .plot-form__status, .plot-form > .projects-plots__form-actions { grid-column: 1 / -1; }
+  .plot-form label { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+  .plot-form__type { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; label { flex-direction: row; align-items: center; gap: 0.5rem; } input { width: auto; margin: 0; } }
+  .projects-plots__form-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+}
+.projects-plots__actions { display: flex; gap: 0.375rem; .brand-button { min-height: 0; padding: 0.3125rem 0.75rem; font-size: 0.75rem; } }
+@media (max-width: 639px) {
+  .projects-plots__modal { padding: 20px; .plot-form { grid-template-columns: 1fr; } .projects-plots__form-actions { flex-direction: column-reverse; .brand-button { width: 100%; min-height: 44px; } } }
+  .projects-plots__actions .brand-button { min-height: 44px; }
 }
 
 @keyframes plot-availability-shimmer { to { background-position: -200% 0; } }

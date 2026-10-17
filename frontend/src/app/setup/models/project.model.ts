@@ -26,6 +26,7 @@ export interface Plot {
   rate: number;
   price: number;
   extraPrice?: number;
+  roadSizeFt?: number | null;
   status: PlotStatus;
 }
 
@@ -36,6 +37,7 @@ export interface PlotRequest {
   rate: number;
   price: number;
   extraPrice?: number;
+  roadSizeFt?: number | null;
   status?: PlotStatus | null;
 }
 

@@ -18,9 +18,14 @@ public record PlotRequest(
     @NotNull @DecimalMin("0.01") BigDecimal rate,
     @NotNull @DecimalMin("0.01") BigDecimal price,
     @Pattern(regexp = "AVAILABLE|BOOKED|SOLD") String status,
-    @PositiveOrZero BigDecimal extraPrice
+    @PositiveOrZero BigDecimal extraPrice,
+    @PositiveOrZero BigDecimal roadSizeFt
 ) {
+    public PlotRequest(String plotNo, String plotType, BigDecimal areaSqft, BigDecimal rate, BigDecimal price, String status, BigDecimal extraPrice) {
+        this(plotNo, plotType, areaSqft, rate, price, status, extraPrice, null);
+    }
+
     public PlotRequest(String plotNo, String plotType, BigDecimal areaSqft, BigDecimal rate, BigDecimal price, String status) {
-        this(plotNo, plotType, areaSqft, rate, price, status, null);
+        this(plotNo, plotType, areaSqft, rate, price, status, null, null);
     }
 }

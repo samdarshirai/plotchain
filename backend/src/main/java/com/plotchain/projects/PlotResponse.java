@@ -11,5 +11,6 @@ public record PlotResponse(
     BigDecimal rate,
     BigDecimal price,
     String status,
-    BigDecimal extraPrice
+    BigDecimal extraPrice,
+    BigDecimal roadSizeFt
 ) {}

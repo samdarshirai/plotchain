@@ -45,6 +45,7 @@ public class PlotService {
             resolveStatus(request.status())
         );
         plot.setExtraPrice(request.extraPrice());
+        plot.setRoadSizeFt(request.roadSizeFt());
         plotRepository.save(plot);
         PlotResponse response = toResponse(plot);
         settingsAuditService.record("PROJECTS", "Created plot " + request.plotNo(), response, actorId);
@@ -73,6 +74,7 @@ public class PlotService {
         plot.setRate(request.rate());
         plot.setPrice(request.price());
         plot.setExtraPrice(request.extraPrice());
+        plot.setRoadSizeFt(request.roadSizeFt());
         plot.setStatus(newStatus);
         plotRepository.save(plot);
         PlotResponse after = toResponse(plot);
@@ -113,7 +115,8 @@ public class PlotService {
             plot.getRate(),
             plot.getPrice(),
             plot.getStatus().name(),
-            plot.getExtraPrice()
+            plot.getExtraPrice(),
+            plot.getRoadSizeFt()
         );
     }
 }

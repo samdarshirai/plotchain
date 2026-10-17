@@ -27,10 +27,21 @@ describe('PlotFormComponent', () => {
     const out: PlotRequest[] = [];
     fixture.componentInstance.submitted.subscribe(r => out.push(r));
     await fixture.whenStable(); // let ngModel finish its async init so it doesn't overwrite typed values
-    type('plotNo', 'C-9'); type('areaSqft', '1200'); type('rate', '3000'); type('price', '3600000');
+    type('plotNo', 'C-9'); type('areaSqft', '1200'); type('rate', '3000');
     await fixture.whenStable();
     el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
-    expect(out).toEqual([{ plotNo: 'C-9', plotType: 'NORMAL', areaSqft: 1200, rate: 3000, price: 3600000, extraPrice: 0, status: 'AVAILABLE' }]);
+    expect(out).toEqual([{ plotNo: 'C-9', plotType: 'NORMAL', areaSqft: 1200, rate: 3000, price: 3600000, extraPrice: 0, roadSizeFt: null, status: 'AVAILABLE' }]);
+  });
+
+  it('includes the optional road size when entered', async () => {
+    setup();
+    const out: PlotRequest[] = [];
+    fixture.componentInstance.submitted.subscribe(r => out.push(r));
+    await fixture.whenStable();
+    type('plotNo', 'C-9'); type('areaSqft', '1200'); type('rate', '3000'); type('roadSizeFt', '30');
+    await fixture.whenStable();
+    el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
+    expect(out[0].roadSizeFt).toBe(30);
   });
 
   it('blocks submit and shows required errors when fields are empty or non-positive', async () => {
@@ -52,7 +63,7 @@ describe('PlotFormComponent', () => {
     fixture.componentInstance.submitted.subscribe(r => out.push(r));
     await fixture.whenStable();
     el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
-    expect(out[0]).toEqual({ plotNo: 'A-1', plotType: 'CORNER', areaSqft: 1800, rate: 2850, price: 5130000, extraPrice: 0, status: 'AVAILABLE' });
+    expect(out[0]).toEqual({ plotNo: 'A-1', plotType: 'CORNER', areaSqft: 1800, rate: 2850, price: 5130000, extraPrice: 0, roadSizeFt: null, status: 'AVAILABLE' });
   });
 
   it('keeps typed edits when busy or duplicatePlotNo inputs change', async () => {

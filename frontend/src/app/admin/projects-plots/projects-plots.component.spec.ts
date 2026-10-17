@@ -202,7 +202,34 @@ describe('ProjectsPlotsComponent', () => {
       http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2')]);
       http.expectOne('/api/company/projects').flush([project()]);
       http.expectOne('/api/company/projects/p1/plots/id-A-2').flush(detail({ areaSqft: 1300 }));
-      expect(fixture.componentInstance.aside.kind).toBe('detail');
+      expect(fixture.componentInstance.aside.kind).toBe('none');
+      flush();
+    }));
+
+    it('row Edit opens the modal prefilled; row Delete confirms, DELETEs and refreshes', fakeAsync(() => {
+      fixture.componentInstance.view = 'table';
+      boot();
+      http.expectOne(r => r.url === '/api/company/projects/p1/plots' && r.params.get('size') === '500').flush({ plots: [], page: 0, size: 500, totalElements: 0 });
+      fixture.detectChanges();
+      const row = () => el().querySelector('[data-plot-id="id-A-2"]')!;
+      row().querySelector<HTMLButtonElement>('.projects-plots__row-edit')!.click();
+      fixture.detectChanges();
+      http.expectOne('/api/company/projects/p1/plots/id-A-2').flush(detail({ id: 'id-A-2' }));
+      fixture.detectChanges();
+      expect(el().querySelector('.projects-plots__modal app-plot-form form')).not.toBeNull();
+      expect(el().querySelector('.projects-plots__aside')).toBeNull();
+      fixture.componentInstance.closeAside();
+      flush();
+      fixture.detectChanges();
+      spyOn(window, 'confirm').and.returnValue(true);
+      row().querySelector<HTMLButtonElement>('.projects-plots__row-delete')!.click();
+      const del = http.expectOne('/api/company/projects/p1/plots/id-A-2');
+      expect(del.request.method).toBe('DELETE');
+      del.flush(null);
+      http.expectOne('/api/projects/p1/plots/grid').flush([]);
+      // rates cache is dropped and refetched so a new/changed plot shows its Rate without a reload
+      http.expectOne(r => r.url === '/api/company/projects/p1/plots' && r.params.get('size') === '500').flush({ plots: [], page: 0, size: 500, totalElements: 0 });
+      http.expectOne('/api/company/projects').flush([project()]);
       flush();
     }));
 
