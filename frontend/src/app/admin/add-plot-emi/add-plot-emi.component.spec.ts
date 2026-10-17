@@ -114,4 +114,50 @@ describe('AddPlotEmiComponent', () => {
       expect(c.transferError).toBe('nope');
     });
   });
+
+  describe('cancel booking', () => {
+    beforeEach(() => {
+      c.onProject('proj1');
+      http.expectOne(r => r.url === '/api/admin/bookings').flush({ bookings: [], page: 0, size: 20, totalElements: 0 });
+      c.openCancel(booking());
+    });
+
+    it('opens on the detail step; Cancel Plot only moves to the warning (no API call)', () => {
+      expect(c.cancelStep).toBe('detail');
+      c.cancelStep = 'confirm';
+      http.expectNone('/api/admin/bookings/b1/cancel');
+    });
+
+    it('dismiss closes without calling the API', () => {
+      c.closeCancel();
+      expect(c.cancelFor).toBeNull();
+      http.expectNone('/api/admin/bookings/b1/cancel');
+    });
+
+    it('requires a reason before posting', () => {
+      c.cancelStep = 'confirm';
+      c.cancelReason = '   ';
+      c.confirmCancel();
+      expect(c.cancelTried).toBeTrue();
+      http.expectNone('/api/admin/bookings/b1/cancel');
+    });
+
+    it('posts the trimmed reason, closes and reloads', () => {
+      c.cancelReason = ' double booked ';
+      c.confirmCancel();
+      const req = http.expectOne('/api/admin/bookings/b1/cancel');
+      expect(req.request.body).toEqual({ reason: 'double booked' });
+      req.flush(booking({ status: 'CANCELLED' }));
+      expect(c.cancelFor).toBeNull();
+      http.expectOne(r => r.url === '/api/admin/bookings').flush({ bookings: [], page: 0, size: 20, totalElements: 0 });
+    });
+
+    it('keeps the popup open and shows the server error on failure', () => {
+      c.cancelReason = 'x';
+      c.confirmCancel();
+      http.expectOne('/api/admin/bookings/b1/cancel').flush({ error: 'nope' }, { status: 400, statusText: 'Bad Request' });
+      expect(c.cancelFor).not.toBeNull();
+      expect(c.cancelError).toBe('nope');
+    });
+  });
 });

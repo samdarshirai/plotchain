@@ -1495,6 +1495,19 @@
         "confirm": "Confirm transfer",
         "success": "Booking moved from {{from}} to {{to}}."
       },
+      "cancelBooking": {
+        "button": "Cancel",
+        "title": "Cancel Plot Booking",
+        "dismiss": "Dismiss",
+        "cancelPlot": "Cancel Plot",
+        "warningTitle": "Cancel the booking on {{plot}}? This cannot be undone.",
+        "effects": ["Pending instalments will be voided.", "Amounts already paid stay on record; no refund is handled here.", "The plot becomes Available unless another live booking holds it."],
+        "reason": "Reason for cancellation",
+        "reasonRequired": "Enter a reason (up to 255 characters).",
+        "back": "Back",
+        "confirm": "Yes, cancel booking",
+        "success": "Booking on {{plot}} cancelled."
+      },
       "payTitle": "Add Payment",
       "historyTitle": "Payment History",
       "close": "Close",
