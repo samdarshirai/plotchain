@@ -741,7 +741,7 @@ public class BookingService {
     // installment for the full amount, still due one month out -- the same formula as every
     // other case below, deliberately not special-cased to a due-today date, so there's one
     // schedule shape for a future payment-recording unit to reason about, not two.
-    // Installment 1 is the token, PAID at booking time. The rest of the price (total - token) splits
+    // Installment 1 is the token, ENTERED (unconfirmed) at booking time; admin confirms it like any payment. The rest of the price (total - token) splits
     // equally across the other installments: the configured count less the token's slot, and at
     // least one (so with EMI off the schedule is token + one balance installment).
     private List<EmiInstallment> computeSchedule(BigDecimal totalAmount, BigDecimal token,
@@ -767,14 +767,13 @@ public class BookingService {
         tokenInstallment.setInstallmentNumber(1);
         tokenInstallment.setAmount(token);
         tokenInstallment.setDueDate(bookedDate);
-        tokenInstallment.setStatus(InstallmentStatus.PAID);
+        tokenInstallment.setStatus(InstallmentStatus.ENTERED);
         tokenInstallment.setPaidAt(request.txnDate() == null ? bookedAt : request.txnDate().atStartOfDay(ZoneOffset.UTC).toInstant());
         tokenInstallment.setPaymentRef(request.txnNo() == null || request.txnNo().isBlank() ? "TOKEN" : request.txnNo().trim());
         tokenInstallment.setPaymentMode(request.paymentMode());
         tokenInstallment.setBankName(request.bankName() == null || request.bankName().isBlank() ? null : request.bankName().trim());
-        tokenInstallment.setConfirmedAt(bookedAt);
         tokenInstallment.setRecordedAt(bookedAt);
-        tokenInstallment.setConfirmedBy(tokenConfirmedBy);
+        tokenInstallment.setRecordedBy(tokenConfirmedBy);
         schedule.add(tokenInstallment);
 
         // Amounts for installments 2..balanceCount+1; the last absorbs rounding so the total is exact.

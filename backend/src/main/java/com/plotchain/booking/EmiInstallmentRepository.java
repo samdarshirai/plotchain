@@ -38,7 +38,13 @@ public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, 
     @Query(value = """
         SELECT new com.plotchain.booking.PaymentRow(
             b.id, i.installmentNumber, i.paidAt, a.userId, a.name, pr.name, pl.plotNo,
-            i.amount, i.paymentMode, i.paymentRef, eb.name, cb.name, i.confirmedAt)
+            i.amount, i.paymentMode, i.paymentRef, eb.name, cb.name, i.confirmedAt,
+            b.bookedAt, a.phone, pl.plotType, b.areaSqft, b.rate, b.extraPrice, b.discount, b.totalAmount,
+            (SELECT COALESCE(SUM(x.amount), 0) FROM EmiInstallment x
+                WHERE x.bookingId = b.id AND x.status = com.plotchain.booking.InstallmentStatus.PAID),
+            (SELECT COALESCE(SUM(y.amount), 0) FROM EmiInstallment y
+                WHERE y.bookingId = b.id AND y.status IN (com.plotchain.booking.InstallmentStatus.PENDING,
+                    com.plotchain.booking.InstallmentStatus.ENTERED)))
         FROM EmiInstallment i
         JOIN PlotBooking b ON b.id = i.bookingId
         JOIN Associate a ON a.id = b.associateId

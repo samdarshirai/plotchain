@@ -41,6 +41,9 @@ export interface PaymentRow {
   associateCode: string | null; associateName: string | null; projectName: string | null; plotNo: string | null;
   amount: number; paymentMode: PaymentMode | null; paymentRef: string | null;
   entryBy: string | null; confirmBy: string | null; confirmedAt: string | null;
+  bookedAt?: string | null; associatePhone?: string | null; plotType?: string | null; areaSqft?: number | null;
+  rate?: number | null; extraPrice?: number | null; discount?: number | null;
+  totalAmount?: number | null; paidAmount?: number | null; dueAmount?: number | null;
 }
 export interface PaymentPage { payments: PaymentRow[]; page: number; size: number; totalElements: number; pageTotal: number; grandTotal: number; }
 export interface PaymentFilters { from?: string; to?: string; projectId?: string; }

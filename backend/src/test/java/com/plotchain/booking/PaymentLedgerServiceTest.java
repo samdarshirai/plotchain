@@ -31,7 +31,7 @@ class PaymentLedgerServiceTest {
 
     private static PaymentRow row(String amount) {
         return new PaymentRow(UUID.randomUUID(), 1, Instant.now(), "VP1", "A", "P", "1", new BigDecimal(amount),
-            PaymentMode.CASH, "R", "E", null, null);
+            PaymentMode.CASH, "R", "E", null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     @Test
