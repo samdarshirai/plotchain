@@ -160,6 +160,8 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
 
     Optional<Associate> findByIdAndRole(UUID id, AssociateRole role);
 
+    List<Associate> findByRoleOrderByUserIdAsc(AssociateRole role);
+
     // KYC-queue list query for KycReviewService.list(). Every PENDING associate belongs in the
     // review queue, including freshly-provisioned ones who have not uploaded a document yet --
     // the queue is the admin's to-do list of who still needs verifying. (An earlier revision

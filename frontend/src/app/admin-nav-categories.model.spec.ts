@@ -14,7 +14,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
 
   it('groupsEverySettingsScreenUnderTheirCategory', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => category.items.map(item => item.key))).toEqual([
-      ['companyProfile', 'branding', 'compensation', 'paymentsKyc', 'projectsPlots'],
+      ['companyProfile', 'branding', 'compensation', 'paymentsKyc', 'projectsPlots', 'adminUsers'],
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
       ['ledgerRegister', 'salesRegister', 'cycleManagement', 'epinRegister', 'payoutApproval'],
       ['bookNewPlot', 'addPlotEmi', 'viewBookedPlot', 'viewConfirmedPlot', 'plotTransfer', 'viewPlotEmi', 'viewTransferredPlots', 'viewCancelledPlot'],

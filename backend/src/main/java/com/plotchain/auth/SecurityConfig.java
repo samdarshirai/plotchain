@@ -368,6 +368,7 @@ public class SecurityConfig {
                 // narrowed further per-role by @PreAuthorize on the controller methods
                 // themselves (AdminAssociateController, KycReviewController) -- the first use
                 // of real per-role narrowing in this codebase.
+                .requestMatchers(HttpMethod.GET, "/api/admin/users").hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/admin/associates", "/api/admin/associates/*")
                     .hasAuthority("ADMIN")
                 // "/api/admin/tree" (no segment) is the whole-company tree rooted at the
