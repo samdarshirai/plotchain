@@ -76,15 +76,6 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         @Param("pendingOnly") boolean pendingOnly,
         Pageable pageable);
 
-    // Admin "View Transferred Plots": bookings that have at least one TRANSFERRED audit event. The booking
-    // keeps its (new) owner, so the event row is the only durable record of a transfer.
-    @Query("""
-        SELECT b FROM PlotBooking b
-        WHERE EXISTS (SELECT 1 FROM BookingEvent e
-                      WHERE e.bookingId = b.id AND e.type = com.plotchain.booking.BookingEventType.TRANSFERRED)
-        """)
-    Page<PlotBooking> findTransferred(Pageable pageable);
-
     // Associate "Team / Left / Right plot bookings": bookings made by anyone in the caller's downline.
     // position null = whole team, 'L'/'R' = that leg only (CTE seeded at the immediate child on that
     // leg, same shape as AssociateRepository.countDownlineByPosition). Order is fixed in SQL, so the

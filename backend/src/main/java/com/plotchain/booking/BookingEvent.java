@@ -1,6 +1,7 @@
 package com.plotchain.booking;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -26,6 +27,19 @@ public class BookingEvent {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    // Plot-transfer snapshot (V62); null on every other event type.
+    @Column(name = "old_plot_id")
+    private UUID oldPlotId;
+
+    @Column(name = "new_plot_id")
+    private UUID newPlotId;
+
+    @Column(name = "paid_amount")
+    private BigDecimal paidAmount;
+
+    @Column(name = "rest_amount")
+    private BigDecimal restAmount;
+
     protected BookingEvent() {}
 
     public static BookingEvent of(UUID bookingId, BookingEventType type, UUID actorId, String detail, Instant createdAt) {
@@ -36,6 +50,16 @@ public class BookingEvent {
         e.actorId = actorId;
         e.detail = detail;
         e.createdAt = createdAt;
+        return e;
+    }
+
+    public static BookingEvent plotTransfer(UUID bookingId, UUID actorId, String detail, Instant createdAt,
+                                            UUID oldPlotId, UUID newPlotId, BigDecimal paid, BigDecimal rest) {
+        BookingEvent e = of(bookingId, BookingEventType.PLOT_TRANSFERRED, actorId, detail, createdAt);
+        e.oldPlotId = oldPlotId;
+        e.newPlotId = newPlotId;
+        e.paidAmount = paid;
+        e.restAmount = rest;
         return e;
     }
 

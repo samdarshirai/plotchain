@@ -172,9 +172,9 @@ describe('BookingsEmiComponent', () => {
     expect(fixture.componentInstance.overdueTotal).toBe(3);
     expect(fixture.componentInstance.tabs[3].label.endsWith(' (3)')).toBeTrue();
   });
-  describe('seven-tab shell', () => {
+  describe('six-tab shell', () => {
     const tabIds = () => fixture.debugElement.query(By.directive(TabBarComponent)).componentInstance.tabs.map((t: { id: string }) => t.id);
-    const present = () => ['app-booking-register', 'app-payment-queue', 'app-payment-ledger', 'app-overdue-report', 'app-cancelled-bookings', 'app-last-emi', 'app-transferred-bookings']
+    const present = () => ['app-booking-register', 'app-payment-queue', 'app-payment-ledger', 'app-overdue-report', 'app-cancelled-bookings', 'app-last-emi']
       .filter(s => el().querySelector(s) !== null);
     const flushProjects = () => http.expectOne('/api/company/projects').flush([]);
     const payments = (status: string) => http.expectOne(r => r.url === '/api/admin/payments' && r.params.get('status') === status)
@@ -182,13 +182,7 @@ describe('BookingsEmiComponent', () => {
 
     it('shows seven tabs in order', () => {
       boot();
-      expect(tabIds()).toEqual(['register', 'unconfirmed', 'confirmed', 'overdue', 'cancelled', 'lastEmi', 'transferred']);
-    });
-    it('Transferred requests the transferred list', () => {
-      boot();
-      switchTab('transferred');
-      expect(present()).toEqual(['app-transferred-bookings']);
-      http.expectOne(r => r.url === '/api/admin/bookings/transferred').flush({ bookings: [], page: 0, size: 20, totalElements: 0 });
+      expect(tabIds()).toEqual(['register', 'unconfirmed', 'confirmed', 'overdue', 'cancelled', 'lastEmi']);
     });
     it('Unconfirmed mounts the queue only; Register remounts', () => {
       boot();

@@ -191,12 +191,4 @@ class AdminBookingRegisterControllerTest {
             .andExpect(jsonPath("$.bookings[0].associateCode").value("VP00001"))
             .andExpect(jsonPath("$.bookings[0].cancelledAt").value(org.hamcrest.Matchers.nullValue()));
     }
-
-    @Test
-    void transferredRouteIsNotSwallowedByTheIdPath() throws Exception {
-        when(registerService.listTransferred(0, 20)).thenReturn(new AdminBookingPageResponse(List.of(), 0, 20, 0));
-        mockMvc.perform(get("/api/admin/bookings/transferred").header("Authorization", admin()))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.totalElements").value(0));
-    }
 }

@@ -33,12 +33,6 @@ public class AdminBookingRegisterController {
         return bookingService.getBooking(id);
     }
 
-    @GetMapping("/api/admin/bookings/transferred")
-    public AdminBookingPageResponse transferred(@RequestParam(defaultValue = "0") int page,
-                                                @RequestParam(defaultValue = "20") int size) {
-        return registerService.listTransferred(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
-    }
-
     @GetMapping("/api/admin/bookings")
     public AdminBookingPageResponse list(
             @RequestParam(required = false) BookingStatus status,

@@ -659,9 +659,10 @@ public class BookingService {
             }
         }
 
-        bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.PLOT_TRANSFERRED, actorId,
+        bookingEventRepository.save(BookingEvent.plotTransfer(bookingId, actorId,
             "from " + oldPlot.getPlotNo() + " to " + newPlot.getPlotNo() + "; total " + oldTotal.toPlainString()
-                + " -> " + newTotal.toPlainString() + plotNote, clock.instant()));
+                + " -> " + newTotal.toPlainString() + plotNote, clock.instant(),
+            oldPlotId, newPlotId, committed, balance));
 
         return toResponse(booking, installments);
     }

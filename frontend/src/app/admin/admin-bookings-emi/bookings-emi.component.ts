@@ -10,12 +10,11 @@ import { PaymentQueueComponent } from './payment-queue.component';
 import { PaymentLedgerComponent } from './payment-ledger.component';
 import { CancelledBookingsComponent } from './cancelled-bookings.component';
 import { LastEmiComponent } from './last-emi.component';
-import { TransferredBookingsComponent } from './transferred-bookings.component';
 import { BookingsEmiService } from './bookings-emi.service';
 import { BookingEmiConfig, FlashMessage } from './bookings-emi.model';
 
-type Tab = 'register' | 'unconfirmed' | 'confirmed' | 'overdue' | 'cancelled' | 'lastEmi' | 'transferred';
-const TABS: Tab[] = ['register', 'unconfirmed', 'confirmed', 'overdue', 'cancelled', 'lastEmi', 'transferred'];
+type Tab = 'register' | 'unconfirmed' | 'confirmed' | 'overdue' | 'cancelled' | 'lastEmi';
+const TABS: Tab[] = ['register', 'unconfirmed', 'confirmed', 'overdue', 'cancelled', 'lastEmi'];
 
 @Component({
   selector: 'app-bookings-emi',
@@ -23,7 +22,7 @@ const TABS: Tab[] = ['register', 'unconfirmed', 'confirmed', 'overdue', 'cancell
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['./bookings-emi.component.scss'],
   imports: [CommonModule, TranslateModule, TabBarComponent, InlineBannerComponent, BookingRegisterComponent, OverdueReportComponent,
-    PaymentQueueComponent, PaymentLedgerComponent, CancelledBookingsComponent, LastEmiComponent, TransferredBookingsComponent],
+    PaymentQueueComponent, PaymentLedgerComponent, CancelledBookingsComponent, LastEmiComponent],
   template: `
     <div class="bookings-emi">
       <div class="bookings-emi__head">
@@ -46,7 +45,6 @@ const TABS: Tab[] = ['register', 'unconfirmed', 'confirmed', 'overdue', 'cancell
       <app-payment-ledger *ngIf="activeTab === 'confirmed'"></app-payment-ledger>
       <app-cancelled-bookings *ngIf="activeTab === 'cancelled'"></app-cancelled-bookings>
       <app-last-emi *ngIf="activeTab === 'lastEmi'"></app-last-emi>
-      <app-transferred-bookings *ngIf="activeTab === 'transferred'"></app-transferred-bookings>
     </div>
   `
 })
@@ -77,8 +75,7 @@ export class BookingsEmiComponent implements OnInit {
       { id: 'confirmed', label: this.translate.instant('admin.bookingsEmi.tab.confirmed') },
       { id: 'overdue', label: this.translate.instant('admin.bookingsEmi.tab.overdue') + od },
       { id: 'cancelled', label: this.translate.instant('admin.bookingsEmi.tab.cancelled') },
-      { id: 'lastEmi', label: this.translate.instant('admin.bookingsEmi.tab.lastEmi') },
-      { id: 'transferred', label: this.translate.instant('admin.bookingsEmi.tab.transferred') }
+      { id: 'lastEmi', label: this.translate.instant('admin.bookingsEmi.tab.lastEmi') }
     ];
   }
   ngOnInit(): void {

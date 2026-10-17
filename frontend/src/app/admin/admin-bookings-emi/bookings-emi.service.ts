@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Booking } from '../../plot-bookings/models/associate-booking-page.model';
 import {
-  BookingEmiConfig, BookingPage, LastEmiFilters, LastEmiRow, OverdueReportPage, PayRequest, PaymentFilters, PaymentPage, PaymentRef, RegisterFilters, RescheduleRequest, TopUpRequest
+  BookingEmiConfig, BookingPage, LastEmiFilters, LastEmiRow, OverdueReportPage, PayRequest, PaymentFilters, PaymentPage, PaymentRef, PlotTransferPage, RegisterFilters, RescheduleRequest, TopUpRequest
 } from './bookings-emi.model';
 
 @Injectable({ providedIn: 'root' })
@@ -26,9 +26,12 @@ export class BookingsEmiService {
     return this.http.get<BookingPage>('/api/admin/bookings', { params });
   }
 
-  transferred(page: number, size: number): Observable<BookingPage> {
-    const params = new HttpParams().set('page', page).set('size', size);
-    return this.http.get<BookingPage>('/api/admin/bookings/transferred', { params });
+  plotTransfers(f: PaymentFilters, page: number, size: number): Observable<PlotTransferPage> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (f.from) { params = params.set('from', f.from); }
+    if (f.to) { params = params.set('to', f.to); }
+    if (f.projectId) { params = params.set('projectId', f.projectId); }
+    return this.http.get<PlotTransferPage>('/api/admin/plot-transfers', { params });
   }
 
   get(id: string): Observable<Booking> {

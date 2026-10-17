@@ -6,7 +6,7 @@ CREATE TABLE expense_type (
     updated_at TIMESTAMP NOT NULL DEFAULT now(),
     CONSTRAINT chk_expense_type_status CHECK (status IN ('ACTIVE', 'INACTIVE'))
 );
-CREATE UNIQUE INDEX uq_expense_type_name ON expense_type (lower(name));
+CREATE UNIQUE INDEX uq_expense_type_name ON expense_type (name);
 
 ALTER TABLE settings_audit_log DROP CONSTRAINT chk_settings_audit_log_section;
 ALTER TABLE settings_audit_log ADD CONSTRAINT chk_settings_audit_log_section CHECK (section IN (

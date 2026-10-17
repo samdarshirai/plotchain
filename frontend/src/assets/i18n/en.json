@@ -1421,6 +1421,10 @@
       "columnSNo": "S No", "expenseType": "Expense Type", "status": "Status", "columnAction": "Action", "statusActive": "Active", "statusInactive": "Inactive",
       "emptyState": "No expense types yet.", "loadError": "Could not load expense types.", "saveError": "Could not save expense type.", "requiredError": "Required"
     },
+    "viewTransferredPlot": {
+      "title": "View Transferred Plots", "subtitle": "Plot transfers by transfer date and project. Paid and rest amounts are as at the time of transfer.", "empty": "No plot transfers for these filters.",
+      "col": { "transferDate": "Transfer Date", "oldPlot": "Old Plot No", "paid": "Paid Amount", "rest": "Transfer Rest Amount" }
+    },
     "viewConfirmedPlot": {
       "title": "View Plot Payments", "subtitle": "Payments by payment date and project. Switch between Unconfirmed and Confirmed; select Unconfirmed payments to confirm them together.",
       "pending": "Unconfirmed", "confirmed": "Confirmed", "emptyPending": "No unconfirmed payments for these filters.", "emptyConfirmed": "No confirmed payments for these filters.",
@@ -1951,7 +1955,8 @@
       "expenseTypes": "Expense Types",
       "addPlotEmi": "Add Plot EMI",
       "viewBookedPlot": "View Booked Plot",
-      "viewConfirmedPlot": "View Plot Payments"
+      "viewConfirmedPlot": "View Plot Payments",
+      "viewTransferredPlot": "View Transferred Plots"
     },
     "auditLog": {
       "sectionFilterLabel": "Section",

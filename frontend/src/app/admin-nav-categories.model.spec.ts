@@ -75,7 +75,7 @@ describe('findNavCategoryForUrl', () => {
   });
 
   it('resolvesEveryPlotBookingDeepLinkToTheInventoryCategory', () => {
-    expect(findNavCategoryForUrl('/settings/bookings-emi?tab=transferred')?.key).toBe('inventory');
+    expect(findNavCategoryForUrl('/settings/view-transferred-plot')?.key).toBe('inventory');
     expect(findNavCategoryForUrl('/settings/bookings-emi?tab=register&action=transfer')?.key).toBe('inventory');
   });
 });
