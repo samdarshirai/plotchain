@@ -16,7 +16,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => category.items.map(item => item.key))).toEqual([
       ['companyProfile', 'branding', 'compensation', 'paymentsKyc', 'masterProjects', 'projectsPlots', 'adminUsers'],
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
-      ['ledgerRegister', 'salesRegister', 'cycleManagement', 'epinRegister', 'payoutApproval'],
+      ['ledgerRegister', 'salesRegister', 'cycleManagement', 'epinRegister', 'payoutApproval', 'expenseTypes'],
       ['bookNewPlot', 'addPlotEmi', 'viewBookedPlot', 'viewConfirmedPlot', 'plotTransfer', 'viewPlotEmi', 'viewTransferredPlots', 'viewCancelledPlot'],
       ['supportTickets', 'news'],
       ['auditLog', 'adminStats']

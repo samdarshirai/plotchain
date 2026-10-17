@@ -247,6 +247,14 @@ describe('routes', () => {
       expect(child!.data).toEqual({ sectionKey: 'supportTickets' });
     });
 
+    it('has a lazy expense-types child stamped with sectionKey expenseTypes', () => {
+      const settingsRoute = routes.find(r => r.path === 'settings');
+      const child = settingsRoute!.children!.find(c => c.path === 'expense-types');
+      expect(child).toBeDefined();
+      expect(child!.loadComponent).toBeDefined();
+      expect(child!.data).toEqual({ sectionKey: 'expenseTypes' });
+    });
+
     it('has a lazy news child stamped with sectionKey news', () => {
       const settingsRoute = routes.find(r => r.path === 'settings');
       const child = settingsRoute!.children!.find(c => c.path === 'news');

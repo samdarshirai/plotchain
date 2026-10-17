@@ -3,7 +3,7 @@ export const ADMIN_ROUTES = [
   ...[
     'company-profile', 'branding', 'compensation', 'payments-kyc', 'associate-directory', 'tree-explorer',
     'kyc-queue', 'sales-register', 'cycle-management', 'ledger-register', 'e-pin-register', 'payout-approval',
-    'master-projects', 'plots', 'book-plot', 'bookings-emi', 'audit-log', 'admin-stats', 'support-tickets', 'news'
+    'master-projects', 'plots', 'book-plot', 'bookings-emi', 'audit-log', 'admin-stats', 'support-tickets', 'news', 'expense-types'
   ].map(s => `/settings/${s}`)
 ];
 

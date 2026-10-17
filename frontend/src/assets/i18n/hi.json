@@ -1311,6 +1311,12 @@
       "location": "Location", "city": "City", "state": "State", "cityState": "City/State", "business": "Business Count (%)", "businessPercentage": "Business Count (%)",
       "rate": "Rate (Price per Sqft)", "locationMap": "Location Map", "projectMap": "Project Map", "uploaded": "Uploaded", "mapAlt": "Map", "status": "Status", "statusActive": "Active", "statusSuspended": "Suspended"
     },
+    "expenseTypes": {
+      "eyebrow": "वित्त और चक्र", "title": "व्यय प्रकार", "subtitle": "व्यय को वर्गीकृत करने की श्रेणियाँ। उपयोग रोकने के लिए प्रकार को निष्क्रिय करें।",
+      "addAction": "व्यय प्रकार जोड़ें", "editAction": "संपादित करें", "addTitle": "व्यय प्रकार जोड़ें", "editTitle": "व्यय प्रकार संपादित करें", "cancelAction": "रद्द करें", "saveAction": "सहेजें",
+      "columnSNo": "क्र.सं.", "expenseType": "व्यय प्रकार", "status": "स्थिति", "columnAction": "कार्रवाई", "statusActive": "सक्रिय", "statusInactive": "निष्क्रिय",
+      "emptyState": "अभी कोई व्यय प्रकार नहीं।", "loadError": "व्यय प्रकार लोड नहीं हो सके।", "saveError": "व्यय प्रकार सहेजा नहीं जा सका।", "requiredError": "आवश्यक"
+    },
     "news": {
       "eyebrow": "संवाद", "title": "समाचार", "subtitle": "तारीख, शीर्षक और विवरण के साथ समाचार प्रकाशित करें।",
       "addAction": "समाचार जोड़ें", "addTitle": "समाचार जोड़ें", "cancelAction": "रद्द करें", "saveAction": "सहेजें",
@@ -1708,7 +1714,8 @@
       "projectsPlots": "प्रोजेक्ट्स और प्लॉट्स",
       "bookingsEmi": "बुकिंग और ईएमआई",
       "supportTickets": "सहायता टिकट",
-      "news": "समाचार"
+      "news": "समाचार",
+      "expenseTypes": "व्यय प्रकार"
     },
     "auditLog": {
       "sectionFilterLabel": "अनुभाग",

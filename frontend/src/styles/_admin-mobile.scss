@@ -441,3 +441,94 @@
     }
   }
 }
+
+// Expense Types (Finance & Cycles).
+@media (max-width: 767px) {
+  .expense-types {
+    padding-inline: 1rem;
+  }
+
+  .expense-types__intro {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .expense-types__add {
+    min-height: 44px;
+  }
+
+  .expense-types__modal {
+    padding: 20px;
+  }
+
+  .expense-types__modal-field {
+    input,
+    select {
+      min-height: 44px;
+    }
+  }
+
+  .expense-types__modal-footer {
+    flex-direction: column-reverse;
+
+    button {
+      min-height: 44px;
+    }
+  }
+
+  // Table collapses to one card per item: header hidden, each cell shows its data-label.
+  .expense-types .editable-table {
+    table-layout: fixed;
+    width: 100%;
+
+    thead {
+      display: none;
+    }
+
+    tbody tr {
+      display: block;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    tbody td {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.375rem 0;
+      border-bottom: none;
+      text-align: right;
+      min-width: 0;
+      width: auto !important;
+      overflow-wrap: anywhere;
+
+      &::before {
+        content: attr(data-label);
+        flex: 0 0 auto;
+        font-family: var(--font-mono);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        text-align: left;
+      }
+    }
+
+    tbody td:last-child {
+      display: block;
+      text-align: left;
+      padding-top: 0.75rem;
+
+      &::before {
+        display: none;
+      }
+    }
+  }
+
+  .expense-types__actions .brand-button {
+    flex: 1 1 0;
+    min-height: 44px;
+  }
+}

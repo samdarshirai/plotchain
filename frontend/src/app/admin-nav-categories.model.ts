@@ -56,7 +56,8 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
       { key: 'salesRegister', labelKey: 'settings.sections.salesRegister', path: '/settings/sales-register' },
       { key: 'cycleManagement', labelKey: 'settings.sections.cycleManagement', path: '/settings/cycle-management' },
       { key: 'epinRegister', labelKey: 'settings.sections.epinRegister', path: '/settings/e-pin-register' },
-      { key: 'payoutApproval', labelKey: 'settings.sections.payoutApproval', path: '/settings/payout-approval' }
+      { key: 'payoutApproval', labelKey: 'settings.sections.payoutApproval', path: '/settings/payout-approval' },
+      { key: 'expenseTypes', labelKey: 'settings.sections.expenseTypes', path: '/settings/expense-types' }
     ]
   },
   {

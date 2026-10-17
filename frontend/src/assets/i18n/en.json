@@ -1399,6 +1399,12 @@
       "location": "Location", "city": "City", "state": "State", "cityState": "City/State", "business": "Business Count (%)", "businessPercentage": "Business Count (%)",
       "rate": "Rate (Price per Sqft)", "locationMap": "Location Map", "projectMap": "Project Map", "uploaded": "Uploaded", "mapAlt": "Map", "status": "Status", "statusActive": "Active", "statusSuspended": "Suspended"
     },
+    "expenseTypes": {
+      "eyebrow": "Finance & Cycles", "title": "Expense Types", "subtitle": "Categories used to classify expenses. Set a type to Inactive to stop using it.",
+      "addAction": "Add Expense Type", "editAction": "Edit", "addTitle": "Add Expense Type", "editTitle": "Edit Expense Type", "cancelAction": "Cancel", "saveAction": "Save",
+      "columnSNo": "S No", "expenseType": "Expense Type", "status": "Status", "columnAction": "Action", "statusActive": "Active", "statusInactive": "Inactive",
+      "emptyState": "No expense types yet.", "loadError": "Could not load expense types.", "saveError": "Could not save expense type.", "requiredError": "Required"
+    },
     "news": {
       "eyebrow": "Communication", "title": "News", "subtitle": "Publish news with a date, title and details.",
       "addAction": "Add News", "addTitle": "Add News", "cancelAction": "Cancel", "saveAction": "Save",
@@ -1797,7 +1803,8 @@
       "projectsPlots": "Projects & Plots",
       "bookingsEmi": "Bookings & EMI",
       "supportTickets": "Support Tickets",
-      "news": "News"
+      "news": "News",
+      "expenseTypes": "Expense Types"
     },
     "auditLog": {
       "sectionFilterLabel": "Section",
