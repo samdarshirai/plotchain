@@ -71,50 +71,6 @@ describe('AddPlotEmiComponent', () => {
     http.expectOne(r => r.url === '/api/admin/bookings').flush({ bookings: [], page: 0, size: 20, totalElements: 0 });
   });
 
-  describe('transfer plot', () => {
-    const grid = [
-      { plotId: 'p1', plotNo: 'A-1', type: 'NORMAL', area: 1000, price: 100000, status: 'BOOKED' },
-      { plotId: 'p2', plotNo: 'A-2', type: 'NORMAL', area: 1200, price: 150000, extraPrice: 5000, status: 'AVAILABLE' },
-      { plotId: 'p3', plotNo: 'B-7', type: 'CORNER', area: 900, price: 90000, status: 'AVAILABLE' },
-      { plotId: 'p4', plotNo: 'A-4', type: 'NORMAL', area: 900, price: 90000, status: 'SOLD' }
-    ];
-
-    beforeEach(() => {
-      c.onProject('proj1');
-      http.expectOne(r => r.url === '/api/admin/bookings').flush({ bookings: [], page: 0, size: 20, totalElements: 0 });
-      c.openTransfer(booking({ discount: 1000 }));
-      http.expectOne('/api/projects/proj1/plots/grid').flush(grid);
-    });
-
-    it('lists only AVAILABLE plots and filters by plot no', () => {
-      expect(c.matchingPlots().map(p => p.plotNo)).toEqual(['A-2', 'B-7']);
-      c.plotQ = 'b-';
-      expect(c.matchingPlots().map(p => p.plotNo)).toEqual(['B-7']);
-    });
-
-    it('previews the new total as price + extra - kept discount', () => {
-      expect(c.newTotal(c.transferFor as Booking, c.availablePlots[0])).toBe(154000);
-    });
-
-    it('posts the selected plot, closes and reloads', () => {
-      c.selectedPlot = c.availablePlots[0];
-      c.confirmTransfer();
-      const req = http.expectOne('/api/admin/bookings/b1/transfer-plot');
-      expect(req.request.body).toEqual({ plotId: 'p2' });
-      req.flush(booking());
-      expect(c.transferFor).toBeNull();
-      http.expectOne(r => r.url === '/api/admin/bookings').flush({ bookings: [], page: 0, size: 20, totalElements: 0 });
-    });
-
-    it('keeps the popup open and shows the server error on failure', () => {
-      c.selectedPlot = c.availablePlots[0];
-      c.confirmTransfer();
-      http.expectOne('/api/admin/bookings/b1/transfer-plot').flush({ error: 'nope' }, { status: 400, statusText: 'Bad Request' });
-      expect(c.transferFor).not.toBeNull();
-      expect(c.transferError).toBe('nope');
-    });
-  });
-
   describe('cancel booking', () => {
     beforeEach(() => {
       c.onProject('proj1');

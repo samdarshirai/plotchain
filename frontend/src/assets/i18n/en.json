@@ -653,13 +653,13 @@
     "closeMenu": "Close menu",
     "plotBooking": {
       "bookNewPlot": "Book new Plot",
-      "addPlotEmi": "Add Plot EMI",
+      "addPlotEmi": "Plot Payments",
       "viewBookedPlot": "View Booked Plot",
-      "viewConfirmedPlot": "View Plot Payments",
+      "viewConfirmedPlot": "Confirm Payments",
       "plotTransfer": "Plot Transfer",
-      "viewPlotEmi": "View Plot EMI",
+      "viewPlotEmi": "Pending EMI",
       "viewTransferredPlots": "View Transferred Plots",
-      "viewCancelledPlot": "View Cancelled Plot"
+      "viewCancelledPlot": "View Cancelled Plots"
     },
     "reports": "Reports",
     "myBusinessDatewise": "My Business Datewise",
@@ -1226,7 +1226,7 @@
       "col": { "transferDate": "Transfer Date", "oldPlot": "Old Plot No", "paid": "Paid Amount", "rest": "Transfer Rest Amount" }
     },
     "viewConfirmedPlot": {
-      "title": "View Plot Payments", "subtitle": "Payments by payment date and project. Switch between Unconfirmed and Confirmed; select Unconfirmed payments to confirm them together.",
+      "title": "Confirm Payments", "subtitle": "Payments by payment date and project. Switch between Unconfirmed and Confirmed; select Unconfirmed payments to confirm them together.",
       "pending": "Unconfirmed", "confirmed": "Confirmed", "emptyPending": "No unconfirmed payments for these filters.", "emptyConfirmed": "No confirmed payments for these filters.",
       "col": { "paymentDate": "Payment Date", "amount": "Amount", "mode": "Mode", "status": "Status", "select": "Select" }
     },
@@ -1235,7 +1235,7 @@
       "col": { "actions": "Actions" }
     },
     "viewPlotEmi": {
-      "title": "View Plot EMI", "subtitle": "Active bookings with pending EMI money, by date and project. Open Detail for the full booking and payment history."
+      "title": "Pending EMI", "subtitle": "Active bookings with pending EMI money, by date and project. Open Detail for the full booking and payment history."
     },
     "viewBookedPlot": {
       "title": "View Booked Plot", "subtitle": "Active bookings by date and project. Open Detail for the full booking and payment history.",
@@ -1244,8 +1244,8 @@
     },
     "addPlotEmi": {
       "eyebrow": "Plot Booking",
-      "title": "Add Plot EMI",
-      "subtitle": "Pick a project to see bookings with pending payments, then add a payment or review past ones.",
+      "title": "Plot Payments",
+      "subtitle": "Pick a project to see bookings with pending payments, then add a payment, review past ones or cancel a booking.",
       "project": "Project",
       "selectProject": "Select project",
       "searchLabel": "Plot No / Associate Id",
@@ -1757,9 +1757,9 @@
       "supportTickets": "Support Tickets",
       "news": "News",
       "expenseTypes": "Expense Types",
-      "addPlotEmi": "Add Plot EMI",
+      "addPlotEmi": "Plot Payments",
       "viewBookedPlot": "View Booked Plot",
-      "viewConfirmedPlot": "View Plot Payments",
+      "viewConfirmedPlot": "Confirm Payments",
       "viewTransferredPlot": "View Transferred Plots"
     },
     "auditLog": {
