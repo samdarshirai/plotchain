@@ -837,7 +837,8 @@ public class BookingService {
                 booking.getRate(), booking.getCancelledAt(), associate == null ? null : associate.getUserId(),
                 plot == null ? null : plot.getPlotType(),
                 booking.getExtraPrice(),
-                associate == null ? null : associate.getPhone());
+                associate == null ? null : associate.getPhone(),
+                booking.getCancelReason());
         }).toList();
     }
 

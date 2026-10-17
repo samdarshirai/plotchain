@@ -139,6 +139,7 @@ export const routes: Routes = [
       { path: 'add-plot-emi', loadComponent: () => import('./admin/add-plot-emi/add-plot-emi.component').then(m => m.AddPlotEmiComponent), data: { sectionKey: 'addPlotEmi' } },
       { path: 'view-booked-plot', loadComponent: () => import('./admin/view-booked-plot/view-booked-plot.component').then(m => m.ViewBookedPlotComponent), data: { sectionKey: 'viewBookedPlot' } },
       { path: 'view-plot-emi', loadComponent: () => import('./admin/view-plot-emi/view-plot-emi.component').then(m => m.ViewPlotEmiComponent), data: { sectionKey: 'viewPlotEmi' } },
+      { path: 'view-cancelled-plot', loadComponent: () => import('./admin/view-cancelled-plot/view-cancelled-plot.component').then(m => m.ViewCancelledPlotComponent), data: { sectionKey: 'viewCancelledPlot' } },
       { path: 'view-transferred-plot', loadComponent: () => import('./admin/view-transferred-plot/view-transferred-plot.component').then(m => m.ViewTransferredPlotComponent), data: { sectionKey: 'viewTransferredPlot' } },
       { path: 'view-confirmed-plot', loadComponent: () => import('./admin/view-confirmed-plot/view-confirmed-plot.component').then(m => m.ViewConfirmedPlotComponent), data: { sectionKey: 'viewConfirmedPlot' } },
       { path: 'expense-types', loadComponent: () => import('./admin/expense-types/expense-types.component').then(m => m.ExpenseTypesComponent), data: { sectionKey: 'expenseTypes' } },

@@ -44,33 +44,48 @@ const day = (s?: string | null): string => (s ? s.slice(0, 10) : '');
         <table class="booking-register__table" *ngIf="page" [attr.aria-label]="'admin.bookingsEmi.tab.cancelled' | translate">
           <thead>
             <tr>
-              <th scope="col">{{ 'admin.bookingsEmi.col.bookedOn' | translate }}</th>
-              <th scope="col">{{ 'admin.bookingsEmi.col.associateId' | translate }}</th>
-              <th scope="col">{{ 'admin.bookingsEmi.col.associate' | translate }}</th>
+              <th scope="col">{{ 'admin.viewBookedPlot.col.sNo' | translate }}</th>
+              <th scope="col">{{ 'admin.addPlotEmi.col.bookedOn' | translate }}</th>
+              <th scope="col">{{ 'admin.addPlotEmi.col.associateId' | translate }}</th>
+              <th scope="col">{{ 'admin.addPlotEmi.col.associate' | translate }}</th>
+              <th scope="col">{{ 'admin.addPlotEmi.col.mobile' | translate }}</th>
               <th scope="col">{{ 'admin.bookingsEmi.col.buyer' | translate }}</th>
-              <th scope="col">{{ 'admin.bookingsEmi.col.mobile' | translate }}</th>
+              <th scope="col">{{ 'admin.bookingsEmi.col.buyerMobile' | translate }}</th>
+              <th scope="col">{{ 'admin.addPlotEmi.col.project' | translate }}</th>
+              <th scope="col">{{ 'admin.addPlotEmi.col.plot' | translate }}</th>
+              <th scope="col">{{ 'admin.addPlotEmi.col.plotType' | translate }}</th>
+              <th scope="col">{{ 'admin.addPlotEmi.col.area' | translate }}</th>
+              <th scope="col">{{ 'admin.viewBookedPlot.col.rate' | translate }}</th>
+              <th scope="col">{{ 'admin.viewBookedPlot.col.extra' | translate }}</th>
+              <th scope="col">{{ 'admin.addPlotEmi.col.discount' | translate }}</th>
+              <th scope="col">{{ 'admin.addPlotEmi.col.total' | translate }}</th>
+              <th scope="col">{{ 'admin.addPlotEmi.col.paid' | translate }}</th>
+              <th scope="col">{{ 'admin.addPlotEmi.col.remaining' | translate }}</th>
               <th scope="col">{{ 'admin.bookingsEmi.col.cancelledOn' | translate }}</th>
-              <th scope="col">{{ 'admin.bookingsEmi.col.discount' | translate }}</th>
-              <th scope="col">{{ 'admin.bookingsEmi.col.total' | translate }}</th>
-              <th scope="col">{{ 'admin.bookingsEmi.col.paid' | translate }}</th>
+              <th scope="col">{{ 'admin.bookingsEmi.col.cancelReason' | translate }}</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let b of page!.bookings">
-              <td [attr.data-label]="'admin.bookingsEmi.col.bookedOn' | translate">{{ b.bookedAt | date: 'mediumDate' }}</td>
-              <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.associateId' | translate">{{ b.associateCode || '—' }}</td>
-              <td class="booking-register__wrap" [attr.data-label]="'admin.bookingsEmi.col.associate' | translate"><span class="booking-register__clamp">{{ b.associateName || '—' }}</span></td>
-              <td class="booking-register__wrap cancelled-bookings__buyer" [attr.data-label]="'admin.bookingsEmi.col.buyer' | translate">
-                <span class="cancelled-bookings__buyer-details">
-                  <strong class="cancelled-bookings__buyer-name" [attr.title]="b.buyerName">{{ b.buyerName }}</strong>
-                  <span class="booking-register__sub cancelled-bookings__plot" [attr.title]="plot(b) + (b.projectName ? ' · ' + b.projectName : '')">{{ plot(b) }}<ng-container *ngIf="b.projectName"> · {{ b.projectName }}</ng-container></span>
-                </span>
-              </td>
-              <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.mobile' | translate">{{ b.buyerPhone || '—' }}</td>
-              <td [attr.data-label]="'admin.bookingsEmi.col.cancelledOn' | translate">{{ b.cancelledAt ? (b.cancelledAt | date: 'mediumDate') : '—' }}</td>
-              <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.discount' | translate">{{ b.discount != null ? money(b.discount) : '—' }}</td>
-              <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.total' | translate">{{ money(b.totalAmount) }}</td>
-              <td class="booking-register__num" [attr.data-label]="'admin.bookingsEmi.col.paid' | translate">{{ money(b.paidAmount) }}</td>
+            <tr *ngFor="let b of page!.bookings; let i = index">
+              <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ page!.page * page!.size + i + 1 }}</td>
+              <td [attr.data-label]="'admin.addPlotEmi.col.bookedOn' | translate">{{ b.bookedAt ? b.bookedAt.slice(0, 10) : '—' }}</td>
+              <td [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ b.associateCode || '—' }}</td>
+              <td [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ b.associateName || '—' }}</td>
+              <td [attr.data-label]="'admin.addPlotEmi.col.mobile' | translate">{{ b.associatePhone || '—' }}</td>
+              <td [attr.data-label]="'admin.bookingsEmi.col.buyer' | translate">{{ b.buyerName || '—' }}</td>
+              <td [attr.data-label]="'admin.bookingsEmi.col.buyerMobile' | translate">{{ b.buyerPhone || '—' }}</td>
+              <td [attr.data-label]="'admin.addPlotEmi.col.project' | translate">{{ b.projectName || '—' }}</td>
+              <td [attr.data-label]="'admin.addPlotEmi.col.plot' | translate">{{ plot(b) }}</td>
+              <td [attr.data-label]="'admin.addPlotEmi.col.plotType' | translate">{{ b.plotType ? ('admin.projectsPlots.type.' + b.plotType | translate) : '—' }}</td>
+              <td class="booking-register__num" [attr.data-label]="'admin.addPlotEmi.col.area' | translate">{{ b.areaSqft != null ? b.areaSqft : '—' }}</td>
+              <td class="booking-register__num" [attr.data-label]="'admin.viewBookedPlot.col.rate' | translate">{{ b.rate != null ? money(b.rate) : '—' }}</td>
+              <td class="booking-register__num" [attr.data-label]="'admin.viewBookedPlot.col.extra' | translate">{{ b.extraPrice != null ? money(b.extraPrice) : '—' }}</td>
+              <td class="booking-register__num" [attr.data-label]="'admin.addPlotEmi.col.discount' | translate">{{ b.discount != null ? money(b.discount) : '—' }}</td>
+              <td class="booking-register__num" [attr.data-label]="'admin.addPlotEmi.col.total' | translate">{{ money(b.totalAmount) }}</td>
+              <td class="booking-register__num" [attr.data-label]="'admin.addPlotEmi.col.paid' | translate">{{ money(b.paidAmount) }}</td>
+              <td class="booking-register__num" [attr.data-label]="'admin.addPlotEmi.col.remaining' | translate">{{ money(b.dueAmount) }}</td>
+              <td [attr.data-label]="'admin.bookingsEmi.col.cancelledOn' | translate">{{ b.cancelledAt ? b.cancelledAt.slice(0, 10) : '—' }}</td>
+              <td class="booking-register__wrap" [attr.data-label]="'admin.bookingsEmi.col.cancelReason' | translate">{{ b.cancelReason || '—' }}</td>
             </tr>
           </tbody>
         </table>
@@ -103,15 +118,22 @@ export class CancelledBookingsComponent implements OnInit {
   private readonly columns: ExportColumn<Booking>[] = [
     { header: 'Booked on', value: b => day(b.bookedAt) },
     { header: 'Associate ID', value: b => b.associateCode },
-    { header: 'Name', value: b => b.associateName },
+    { header: 'Associate', value: b => b.associateName },
+    { header: 'Associate mobile', value: b => b.associatePhone },
     { header: 'Buyer', value: b => b.buyerName },
-    { header: 'Plot', value: b => plotText(b) },
+    { header: 'Buyer mobile', value: b => b.buyerPhone },
     { header: 'Project', value: b => b.projectName },
-    { header: 'Mobile', value: b => b.buyerPhone },
-    { header: 'Cancelled on', value: b => day(b.cancelledAt) },
+    { header: 'Plot', value: b => plotText(b) },
+    { header: 'Plot type', value: b => b.plotType },
+    { header: 'Area', value: b => b.areaSqft },
+    { header: 'Rate', value: b => b.rate },
+    { header: 'Extra', value: b => b.extraPrice },
     { header: 'Discount', value: b => b.discount },
     { header: 'Total', value: b => b.totalAmount },
-    { header: 'Paid', value: b => b.paidAmount }
+    { header: 'Paid', value: b => b.paidAmount },
+    { header: 'Remaining', value: b => b.dueAmount },
+    { header: 'Cancelled on', value: b => day(b.cancelledAt) },
+    { header: 'Cancel reason', value: b => b.cancelReason }
   ];
 
   ngOnInit(): void { this.load(0); }

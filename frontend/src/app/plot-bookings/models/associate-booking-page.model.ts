@@ -43,6 +43,7 @@ export interface Booking {
   associateCode?: string | null;
   extraPrice?: number | null;
   associatePhone?: string | null;
+  cancelReason?: string | null;
 }
 
 export interface AssociateBookingPage {

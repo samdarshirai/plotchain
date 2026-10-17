@@ -72,7 +72,7 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
       { key: 'plotTransfer', labelKey: 'nav.plotBooking.plotTransfer', path: BOOKINGS_EMI, query: { tab: 'register', action: 'transfer' } },
       { key: 'viewPlotEmi', labelKey: 'nav.plotBooking.viewPlotEmi', path: '/settings/view-plot-emi' },
       { key: 'viewTransferredPlots', labelKey: 'nav.plotBooking.viewTransferredPlots', path: '/settings/view-transferred-plot' },
-      { key: 'viewCancelledPlot', labelKey: 'nav.plotBooking.viewCancelledPlot', path: BOOKINGS_EMI, query: { tab: 'cancelled' } }
+      { key: 'viewCancelledPlot', labelKey: 'nav.plotBooking.viewCancelledPlot', path: '/settings/view-cancelled-plot' }
     ]
   },
   {

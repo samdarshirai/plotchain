@@ -1089,7 +1089,7 @@
                "overdue": "Overdue", "amountOverdue": "Amount overdue", "oldestDue": "Oldest due", "plot": "Plot",
                "no": "#", "dueDate": "Due", "amount": "Amount", "installmentStatus": "Status",
                "mobile": "Mobile", "plotType": "Plot type", "area": "Area", "rate": "Rate", "discount": "Discount", "listPrice": "List price", "bookedOn": "Booked on",
-               "cancelledOn": "Cancelled on", "associateId": "Associate ID", "project": "Project", "paymentDate": "Payment date", "mode": "Mode",
+               "cancelledOn": "Cancelled on", "cancelReason": "Cancel reason", "buyerMobile": "Buyer mobile", "associateId": "Associate ID", "project": "Project", "paymentDate": "Payment date", "mode": "Mode",
                "reference": "Reference", "entryBy": "Entry by", "confirmBy": "Confirm by", "confirmDate": "Confirm date",
                "lastDueDate": "Last EMI date", "rest": "Rest", "select": "Select" },
       "overduePill": "{{count}} overdue",
@@ -1332,6 +1332,10 @@
       "addAction": "व्यय प्रकार जोड़ें", "editAction": "संपादित करें", "addTitle": "व्यय प्रकार जोड़ें", "editTitle": "व्यय प्रकार संपादित करें", "cancelAction": "रद्द करें", "saveAction": "सहेजें",
       "columnSNo": "क्र.सं.", "expenseType": "व्यय प्रकार", "status": "स्थिति", "columnAction": "कार्रवाई", "statusActive": "सक्रिय", "statusInactive": "निष्क्रिय",
       "emptyState": "अभी कोई व्यय प्रकार नहीं।", "loadError": "व्यय प्रकार लोड नहीं हो सके।", "saveError": "व्यय प्रकार सहेजा नहीं जा सका।", "requiredError": "आवश्यक"
+    },
+    "viewCancelledPlot": {
+      "title": "View Cancelled Plots", "subtitle": "Cancelled bookings by cancel date and project, with the full booking details.", "empty": "No cancelled plots for these filters.",
+      "from": "Cancelled from", "to": "Cancelled to"
     },
     "viewTransferredPlot": {
       "title": "ट्रांसफर किए गए प्लॉट देखें", "subtitle": "ट्रांसफर तिथि और प्रोजेक्ट के अनुसार प्लॉट ट्रांसफर। भुगतान और शेष राशि ट्रांसफर के समय की है।", "empty": "इन फ़िल्टर के लिए कोई प्लॉट ट्रांसफर नहीं।",

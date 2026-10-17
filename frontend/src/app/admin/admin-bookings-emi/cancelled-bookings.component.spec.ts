@@ -53,16 +53,16 @@ describe('CancelledBookingsComponent', () => {
     listReq().flush(pageOf([b('1'), b('2', { buyerPhone: null, discount: null, cancelledAt: null, associateCode: null })]));
     fixture.detectChanges();
     const heads = Array.from(el().querySelectorAll('th')).map(h => h.textContent!.trim());
-    expect(heads.length).toBe(9);
+    expect(heads.length).toBe(19);
     expect(heads).not.toContain('admin.bookingsEmi.col.due');
     const rows = el().querySelectorAll('tbody tr');
     const c1 = Array.from(rows[0].querySelectorAll('td')).map(c => c.textContent!.trim());
-    expect(c1[1]).toBe('VA-1');
-    expect(c1[3]).toContain('Rohit');
-    expect(c1[4]).toBe('9999999999');
-    expect(c1[7]).toContain('10,00,000');
+    expect(c1[2]).toBe('VA-1');
+    expect(c1[5]).toContain('Rohit');
+    expect(c1[6]).toBe('9999999999');
+    expect(c1[14]).toContain('10,00,000');
     const c2 = Array.from(rows[1].querySelectorAll('td')).map(c => c.textContent!.trim());
-    expect([c2[1], c2[4], c2[5], c2[6]]).toEqual(['—', '—', '—', '—']);
+    expect([c2[2], c2[6], c2[13], c2[17]]).toEqual(['—', '—', '—', '—']);
     rows[0].querySelectorAll('td').forEach(td => expect(td.getAttribute('data-label')).toBeTruthy());
   });
 

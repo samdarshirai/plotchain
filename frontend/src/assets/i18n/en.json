@@ -1074,7 +1074,7 @@
                "overdue": "Overdue", "amountOverdue": "Amount overdue", "oldestDue": "Oldest due", "plot": "Plot",
                "no": "#", "dueDate": "Due", "amount": "Amount", "installmentStatus": "Status",
                "mobile": "Mobile", "plotType": "Plot type", "area": "Area", "rate": "Rate", "discount": "Discount", "listPrice": "List price", "bookedOn": "Booked on",
-               "cancelledOn": "Cancelled on", "associateId": "Associate ID", "project": "Project", "paymentDate": "Payment date", "mode": "Mode",
+               "cancelledOn": "Cancelled on", "cancelReason": "Cancel reason", "buyerMobile": "Buyer mobile", "associateId": "Associate ID", "project": "Project", "paymentDate": "Payment date", "mode": "Mode",
                "reference": "Reference", "entryBy": "Entry by", "confirmBy": "Confirm by", "confirmDate": "Confirm date",
                "lastDueDate": "Last EMI date", "rest": "Rest", "select": "Select" },
       "overduePill": "{{count}} overdue",
@@ -1420,6 +1420,10 @@
       "addAction": "Add Expense Type", "editAction": "Edit", "addTitle": "Add Expense Type", "editTitle": "Edit Expense Type", "cancelAction": "Cancel", "saveAction": "Save",
       "columnSNo": "S No", "expenseType": "Expense Type", "status": "Status", "columnAction": "Action", "statusActive": "Active", "statusInactive": "Inactive",
       "emptyState": "No expense types yet.", "loadError": "Could not load expense types.", "saveError": "Could not save expense type.", "requiredError": "Required"
+    },
+    "viewCancelledPlot": {
+      "title": "View Cancelled Plots", "subtitle": "Cancelled bookings by cancel date and project, with the full booking details.", "empty": "No cancelled plots for these filters.",
+      "from": "Cancelled from", "to": "Cancelled to"
     },
     "viewTransferredPlot": {
       "title": "View Transferred Plots", "subtitle": "Plot transfers by transfer date and project. Paid and rest amounts are as at the time of transfer.", "empty": "No plot transfers for these filters.",
