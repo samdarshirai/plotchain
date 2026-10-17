@@ -777,6 +777,8 @@
       "columnSponsorId": "Sponsor ID",
       "columnPosition": "Position",
       "columnRegistrationDate": "Registration Date",
+      "columnLogin": "Login",
+      "loginAction": "Login",
       "columnStatus": "Status",
       "previousPageAction": "Previous",
       "nextPageAction": "Next",
@@ -796,6 +798,7 @@
       "temporaryPasswordNotice": "New temporary password (shown once)",
       "loadError": "Something went wrong loading the associate directory. Try again.",
       "actionError": "Could not complete that action. Please try again.",
+      "loginError": "Could not log in as this associate. Please try again.",
       "rankLoadError": "Something went wrong loading rank options.",
       "rankFilterLabel": "Rank",
       "rankFilterAllOption": "All ranks",
@@ -2039,5 +2042,9 @@
       "next": "Next",
       "summary": "{{from}}–{{to}} of {{total}} · Page {{page}} of {{totalPages}}"
     }
+  },
+  "impersonation": {
+    "viewingAs": "Viewing as {{name}}",
+    "exit": "Exit"
   }
 }

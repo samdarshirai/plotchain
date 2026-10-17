@@ -67,7 +67,7 @@ class AuthControllerTest {
             // compensationPlanService/paymentConfigService/payoutBankAccountService/
             // withdrawalConfigService/projectService.
             null, null, null, null, null);
-        AuthService authService = new AuthService(associateRepository, passwordEncoder, jwtService, setupStateService);
+        AuthService authService = new AuthService(associateRepository, passwordEncoder, jwtService, setupStateService, settingsAuditService);
         mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService))
             .setControllerAdvice(new AuthExceptionHandler(), new ApiExceptionHandler())
             .build();

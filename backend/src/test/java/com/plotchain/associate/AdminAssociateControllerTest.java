@@ -1,6 +1,9 @@
 package com.plotchain.associate;
 
+import com.plotchain.auth.AuthService;
+import com.plotchain.auth.ImpersonationNotAllowedException;
 import com.plotchain.auth.JwtService;
+import com.plotchain.auth.LoginResponse;
 import com.plotchain.company.SettingsAuditLogRepository;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
@@ -32,6 +35,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -43,6 +47,7 @@ class AdminAssociateControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired JwtService jwtService;
 
+    @MockBean AuthService authService;
     @MockBean AssociateRepository associateRepository;
     @MockBean RankTierRepository rankTierRepository;
     @MockBean CycleRepository cycleRepository;
@@ -197,5 +202,38 @@ class AdminAssociateControllerTest {
         mockMvc.perform(get("/api/associates/me/dashboard")
                 .header("Authorization", "Bearer " + associateToken))
             .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void impersonateReturnsLoginResponseForAdmin() throws Exception {
+        UUID adminId = UUID.randomUUID();
+        Associate admin = new Associate();
+        admin.setId(adminId);
+        admin.setRole(AssociateRole.ADMIN);
+        when(associateRepository.findById(adminId)).thenReturn(Optional.of(admin));
+        when(authService.impersonate(ASSOCIATE_ID, adminId))
+            .thenReturn(new LoginResponse("tok", ASSOCIATE_ID, "ASSOCIATE", false));
+
+        mockMvc.perform(post("/api/admin/associates/" + ASSOCIATE_ID + "/impersonate")
+                .header("Authorization", "Bearer " + jwtService.generateToken(admin)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.token").value("tok"))
+            .andExpect(jsonPath("$.associateId").value(ASSOCIATE_ID.toString()))
+            .andExpect(jsonPath("$.role").value("ASSOCIATE"));
+    }
+
+    @Test
+    void impersonateMapsNotAllowedTo409() throws Exception {
+        UUID adminId = UUID.randomUUID();
+        Associate admin = new Associate();
+        admin.setId(adminId);
+        admin.setRole(AssociateRole.ADMIN);
+        when(associateRepository.findById(adminId)).thenReturn(Optional.of(admin));
+        when(authService.impersonate(ASSOCIATE_ID, adminId)).thenThrow(new ImpersonationNotAllowedException());
+
+        mockMvc.perform(post("/api/admin/associates/" + ASSOCIATE_ID + "/impersonate")
+                .header("Authorization", "Bearer " + jwtService.generateToken(admin)))
+            .andExpect(status().isConflict())
+            .andExpect(content().json("{\"error\":\"Only associate accounts can be impersonated\"}"));
     }
 }

@@ -216,4 +216,50 @@ describe('AppComponent', () => {
       expect(fixture.componentInstance.navOpen).toBeFalse();
     });
   });
+
+  describe('impersonation banner', () => {
+    it('is absent when not impersonating', () => {
+      const fixture = TestBed.createComponent(AppComponent);
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).querySelector('.impersonation-banner')).toBeFalsy();
+    });
+
+    it('is absent when the impersonating flag is set but the session is not authenticated', () => {
+      const authService = TestBed.inject(AuthService);
+      spyOn(authService, 'isAuthenticated').and.returnValue(false);
+      spyOn(authService, 'isImpersonating').and.returnValue(true);
+      const fixture = TestBed.createComponent(AppComponent);
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).querySelector('.impersonation-banner')).toBeFalsy();
+    });
+
+    it('shows the associate name while impersonating', () => {
+      const authService = TestBed.inject(AuthService);
+      spyOn(authService, 'isAuthenticated').and.returnValue(true);
+      spyOn(authService, 'isImpersonating').and.returnValue(true);
+      spyOn(authService, 'getImpersonatedName').and.returnValue('Asha Rao');
+      TestBed.inject(TranslateService).setTranslation('en', { impersonation: { viewingAs: 'Viewing as {{name}}', exit: 'Exit' } });
+      TestBed.inject(TranslateService).use('en');
+      const fixture = TestBed.createComponent(AppComponent);
+      fixture.detectChanges();
+      const banner = (fixture.nativeElement as HTMLElement).querySelector('.impersonation-banner') as HTMLElement;
+      expect(banner).toBeTruthy();
+      expect(banner.textContent).toContain('Viewing as Asha Rao');
+    });
+
+    it('Exit restores the admin session and returns to the associate directory', () => {
+      const authService = TestBed.inject(AuthService);
+      const router = TestBed.inject(Router);
+      spyOn(authService, 'isAuthenticated').and.returnValue(true);
+      spyOn(authService, 'isImpersonating').and.returnValue(true);
+      spyOn(authService, 'getImpersonatedName').and.returnValue('Asha Rao');
+      spyOn(authService, 'exitImpersonation');
+      spyOn(router, 'navigate');
+      const fixture = TestBed.createComponent(AppComponent);
+      fixture.detectChanges();
+      ((fixture.nativeElement as HTMLElement).querySelector('.impersonation-banner__exit') as HTMLButtonElement).click();
+      expect(authService.exitImpersonation).toHaveBeenCalled();
+      expect(router.navigate).toHaveBeenCalledWith(['/settings/associate-directory']);
+    });
+  });
 });

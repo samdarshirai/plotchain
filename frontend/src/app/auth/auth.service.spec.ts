@@ -86,6 +86,78 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBeTrue();
   });
 
+  describe('impersonation', () => {
+    function startImpersonation(id: string, name: string, token: string) {
+      service.impersonate(id, name).subscribe();
+      const req = httpMock.expectOne(`/api/admin/associates/${id}/impersonate`);
+      expect(req.request.method).toBe('POST');
+      req.flush({ token, associateId: id, role: 'ASSOCIATE', mustChangePassword: false } as LoginResponse);
+    }
+
+    beforeEach(() => {
+      localStorage.setItem('plotchain.auth.token', 'admin-token');
+      localStorage.setItem('plotchain.auth.role', 'ADMIN');
+      localStorage.setItem('plotchain.auth.mustChangePassword', 'false');
+    });
+
+    it('swaps in the impersonated token and stashes the admin session', () => {
+      startImpersonation('a-1', 'Jane Doe', 'imp-token');
+      expect(service.getToken()).toBe('imp-token');
+      expect(service.getRole()).toBe('ASSOCIATE');
+      expect(localStorage.getItem('plotchain.auth.admin.token')).toBe('admin-token');
+      expect(localStorage.getItem('plotchain.auth.admin.role')).toBe('ADMIN');
+      expect(localStorage.getItem('plotchain.auth.admin.mustChange')).toBe('false');
+      expect(service.isImpersonating()).toBeTrue();
+      expect(service.getImpersonatedName()).toBe('Jane Doe');
+    });
+
+    it('restores the admin session on exitImpersonation', () => {
+      startImpersonation('a-1', 'Jane Doe', 'imp-token');
+      service.exitImpersonation();
+      expect(service.getToken()).toBe('admin-token');
+      expect(service.getRole()).toBe('ADMIN');
+      expect(service.mustChangePassword()).toBeFalse();
+      expect(service.isImpersonating()).toBeFalse();
+      expect(service.getImpersonatedName()).toBeNull();
+      expect(localStorage.getItem('plotchain.auth.admin.token')).toBeNull();
+      expect(localStorage.getItem('plotchain.auth.admin.role')).toBeNull();
+      expect(localStorage.getItem('plotchain.auth.admin.mustChange')).toBeNull();
+    });
+
+    it('login discards a leftover impersonation stash', () => {
+      startImpersonation('a-1', 'Jane Doe', 'imp-token');
+      service.login('u', 'p').subscribe();
+      httpMock.expectOne('/api/auth/login').flush({ token: 'new-token', associateId: 'x', role: 'ASSOCIATE', mustChangePassword: false } as LoginResponse);
+      expect(service.isImpersonating()).toBeFalse();
+      expect(service.getToken()).toBe('new-token');
+      expect(localStorage.getItem('plotchain.auth.admin.token')).toBeNull();
+      expect(localStorage.getItem('plotchain.auth.admin.role')).toBeNull();
+      expect(localStorage.getItem('plotchain.auth.admin.mustChange')).toBeNull();
+    });
+
+    it('exitImpersonation is a no-op when not impersonating', () => {
+      localStorage.setItem('plotchain.auth.admin.token', 'stale');
+      service.exitImpersonation();
+      expect(service.getToken()).toBe('admin-token');
+      expect(service.getRole()).toBe('ADMIN');
+    });
+
+    it('clears everything on logout while impersonating', () => {
+      startImpersonation('a-1', 'Jane Doe', 'imp-token');
+      service.logout();
+      expect(localStorage.length).toBe(0);
+    });
+
+    it('does not overwrite the admin stash on a second impersonate', () => {
+      startImpersonation('a-1', 'Jane Doe', 'imp-token');
+      startImpersonation('a-2', 'John Roe', 'imp-token-2');
+      expect(service.getToken()).toBe('imp-token-2');
+      expect(service.getImpersonatedName()).toBe('John Roe');
+      expect(localStorage.getItem('plotchain.auth.admin.token')).toBe('admin-token');
+      expect(localStorage.getItem('plotchain.auth.admin.role')).toBe('ADMIN');
+    });
+  });
+
   it('reports not authenticated when the stored token is malformed', () => {
     localStorage.setItem('plotchain.auth.token', 'not-a-jwt');
     expect(service.isAuthenticated()).toBeFalse();

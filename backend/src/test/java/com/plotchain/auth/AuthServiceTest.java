@@ -55,10 +55,11 @@ class AuthServiceTest {
     JwtService jwtService = new JwtService("test-secret-key-at-least-32-bytes-long-for-hs256", 60);
     SetupStateService setupStateService;
     AuthService authService;
+    SettingsAuditService settingsAuditService;
 
     @BeforeEach
     void setUp() {
-        SettingsAuditService settingsAuditService = new SettingsAuditService(
+        settingsAuditService = new SettingsAuditService(
             settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
         setupStateService = new SetupStateService(
             setupStateRepository,
@@ -69,7 +70,7 @@ class AuthServiceTest {
             // compensationPlanService/paymentConfigService/payoutBankAccountService/
             // withdrawalConfigService/projectService.
             null, null, null, null, null);
-        authService = new AuthService(associateRepository, passwordEncoder, jwtService, setupStateService);
+        authService = new AuthService(associateRepository, passwordEncoder, jwtService, setupStateService, settingsAuditService);
     }
 
     private void stubLaunched(boolean launched) {
@@ -78,6 +79,77 @@ class AuthServiceTest {
             state.setLaunchedAt(Instant.now());
         }
         when(setupStateRepository.findAll()).thenReturn(List.of(state));
+    }
+
+    private Associate target(AssociateRole role, AssociateStatus status) {
+        Associate a = new Associate();
+        a.setId(UUID.randomUUID());
+        a.setUserId("jane");
+        a.setRole(role);
+        a.setStatus(status);
+        a.setMustChangePassword(true);
+        return a;
+    }
+
+    @Test
+    void impersonate_validAssociate_returnsTokenAndRecordsAudit() {
+        Associate t = target(AssociateRole.ASSOCIATE, AssociateStatus.ACTIVE);
+        UUID adminId = UUID.randomUUID();
+        when(associateRepository.findById(t.getId())).thenReturn(Optional.of(t));
+        stubLaunched(true);
+
+        LoginResponse r = authService.impersonate(t.getId(), adminId);
+
+        assertThat(r.token()).isNotBlank();
+        assertThat(r.associateId()).isEqualTo(t.getId());
+        assertThat(r.role()).isEqualTo("ASSOCIATE");
+        assertThat(r.mustChangePassword()).isFalse();
+        verify(associateRepository, never()).save(org.mockito.ArgumentMatchers.any());
+        ArgumentCaptor<com.plotchain.company.SettingsAuditLog> log =
+            ArgumentCaptor.forClass(com.plotchain.company.SettingsAuditLog.class);
+        verify(settingsAuditLogRepository).save(log.capture());
+        assertThat(log.getValue().getSection()).isEqualTo("IMPERSONATION");
+        assertThat(log.getValue().getSummary()).isEqualTo("Logged in as jane");
+        assertThat(log.getValue().getChangedByAssociateId()).isEqualTo(adminId);
+        assertThat(log.getValue().getDetail()).contains(t.getId().toString());
+    }
+
+    @Test
+    void impersonate_adminTarget_throwsAndNoAudit() {
+        Associate t = target(AssociateRole.ADMIN, AssociateStatus.ACTIVE);
+        when(associateRepository.findById(t.getId())).thenReturn(Optional.of(t));
+        assertThatThrownBy(() -> authService.impersonate(t.getId(), UUID.randomUUID()))
+            .isInstanceOf(ImpersonationNotAllowedException.class)
+            .hasMessage("Only associate accounts can be impersonated");
+        verify(settingsAuditLogRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void impersonate_suspended_throwsAndNoAudit() {
+        Associate t = target(AssociateRole.ASSOCIATE, AssociateStatus.SUSPENDED);
+        when(associateRepository.findById(t.getId())).thenReturn(Optional.of(t));
+        assertThatThrownBy(() -> authService.impersonate(t.getId(), UUID.randomUUID()))
+            .isInstanceOf(AssociateSuspendedException.class);
+        verify(settingsAuditLogRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void impersonate_platformNotLive_throwsAndNoAudit() {
+        Associate t = target(AssociateRole.ASSOCIATE, AssociateStatus.ACTIVE);
+        when(associateRepository.findById(t.getId())).thenReturn(Optional.of(t));
+        stubLaunched(false);
+        assertThatThrownBy(() -> authService.impersonate(t.getId(), UUID.randomUUID()))
+            .isInstanceOf(PlatformNotLiveException.class);
+        verify(settingsAuditLogRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void impersonate_unknownId_throwsNotFound() {
+        UUID id = UUID.randomUUID();
+        when(associateRepository.findById(id)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> authService.impersonate(id, UUID.randomUUID()))
+            .isInstanceOf(com.plotchain.associate.AssociateNotFoundException.class);
+        verify(settingsAuditLogRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 
     @Test

@@ -7,6 +7,10 @@ import { LoginResponse } from './models/login-response.model';
 const TOKEN_KEY = 'plotchain.auth.token';
 const MUST_CHANGE_KEY = 'plotchain.auth.mustChangePassword';
 const ROLE_KEY = 'plotchain.auth.role';
+const ADMIN_TOKEN_KEY = 'plotchain.auth.admin.token';
+const ADMIN_ROLE_KEY = 'plotchain.auth.admin.role';
+const ADMIN_MUST_CHANGE_KEY = 'plotchain.auth.admin.mustChange';
+const IMPERSONATING_KEY = 'plotchain.auth.impersonating';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -16,6 +20,7 @@ export class AuthService {
     const request: LoginRequest = { userId, password };
     return this.http.post<LoginResponse>('/api/auth/login', request).pipe(
       tap(response => {
+        this.clearImpersonation();
         localStorage.setItem(TOKEN_KEY, response.token);
         localStorage.setItem(MUST_CHANGE_KEY, String(response.mustChangePassword));
         localStorage.setItem(ROLE_KEY, response.role);
@@ -27,6 +32,55 @@ export class AuthService {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(MUST_CHANGE_KEY);
     localStorage.removeItem(ROLE_KEY);
+    this.clearImpersonation();
+  }
+
+  private clearImpersonation(): void {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_ROLE_KEY);
+    localStorage.removeItem(ADMIN_MUST_CHANGE_KEY);
+    localStorage.removeItem(IMPERSONATING_KEY);
+  }
+
+  impersonate(associateId: string, displayName: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`/api/admin/associates/${associateId}/impersonate`, {}).pipe(
+      tap(response => {
+        if (!this.isImpersonating()) {
+          this.stash(ADMIN_TOKEN_KEY, TOKEN_KEY);
+          this.stash(ADMIN_ROLE_KEY, ROLE_KEY);
+          this.stash(ADMIN_MUST_CHANGE_KEY, MUST_CHANGE_KEY);
+        }
+        localStorage.setItem(TOKEN_KEY, response.token);
+        localStorage.setItem(MUST_CHANGE_KEY, String(response.mustChangePassword));
+        localStorage.setItem(ROLE_KEY, response.role);
+        localStorage.setItem(IMPERSONATING_KEY, displayName);
+      })
+    );
+  }
+
+  isImpersonating(): boolean {
+    return localStorage.getItem(IMPERSONATING_KEY) !== null;
+  }
+
+  getImpersonatedName(): string | null {
+    return localStorage.getItem(IMPERSONATING_KEY);
+  }
+
+  exitImpersonation(): void {
+    if (!this.isImpersonating()) {
+      return;
+    }
+    this.stash(TOKEN_KEY, ADMIN_TOKEN_KEY);
+    this.stash(ROLE_KEY, ADMIN_ROLE_KEY);
+    this.stash(MUST_CHANGE_KEY, ADMIN_MUST_CHANGE_KEY);
+    this.clearImpersonation();
+  }
+
+  private stash(toKey: string, fromKey: string): void {
+    const value = localStorage.getItem(fromKey);
+    if (value !== null) {
+      localStorage.setItem(toKey, value);
+    }
   }
 
   getToken(): string | null {

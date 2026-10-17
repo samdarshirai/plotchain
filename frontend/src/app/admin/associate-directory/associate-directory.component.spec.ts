@@ -5,6 +5,8 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { AssociateDirectoryComponent } from './associate-directory.component';
+import { of, throwError } from 'rxjs';
+import { AuthService } from '../../auth/auth.service';
 import { NewAssociatePanelComponent } from '../new-associate-panel/new-associate-panel.component';
 
 // loadCounts() fires 8 size-1 queries (total/active/suspended/kyc pending/green/red/left/right); answer each with
@@ -36,7 +38,7 @@ describe('AssociateDirectoryComponent', () => {
     httpMock.expectOne('/api/associates')
       .flush([{ id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE', hasFreeSlot: true }]);
     httpMock.expectOne('/api/admin/associates?page=0&size=20')
-      .flush({ associates: [{ id: 'a1', userId: 'VP00001', name: 'Jane', rankName: 'Sales Associate', kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: 'VP00000', position: 'L', lastActiveAt: null }], page: 0, size: 20, totalElements: 1 });
+      .flush({ associates: [{ id: 'a1', userId: 'VP00001', name: 'Jane', rankName: 'Sales Associate', kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: 'VP00000', position: 'L', lastActiveAt: null, role: 'ASSOCIATE' }], page: 0, size: 20, totalElements: 1 });
     flushCounts(httpMock, { '': 168, 'status=ACTIVE': 142, 'status=SUSPENDED': 26, 'kycStatus=PENDING': 11, 'kycStatus=VERIFIED': 100, 'excludeKycStatus=VERIFIED': 68, 'leg=L': 90, 'leg=R': 78 });
   });
 
@@ -293,6 +295,56 @@ describe('AssociateDirectoryComponent', () => {
 
     expect(fixture.componentInstance.selected?.userId).toBe('VP00001');
     expect(fixture.componentInstance.panelOpen).toBeTrue();
+  });
+
+  describe('Login-as-associate column', () => {
+    const row = (id: string, name: string, role: string, status: string) =>
+      ({ id, userId: 'VP' + id, name, rankName: null, kycStatus: 'VERIFIED', status, joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: null, position: null, lastActiveAt: null, role });
+
+    function loadRows(): void {
+      fixture.componentInstance.goToPage(0);
+      httpMock.expectOne('/api/admin/associates?page=0&size=20').flush({
+        associates: [row('a1', 'Jane', 'ASSOCIATE', 'ACTIVE'), row('a2', 'Root', 'ADMIN', 'ACTIVE'), row('a3', 'Sam', 'ASSOCIATE', 'SUSPENDED')],
+        page: 0, size: 20, totalElements: 3
+      });
+      fixture.detectChanges();
+    }
+    const buttons = (): HTMLButtonElement[] => Array.from(fixture.nativeElement.querySelectorAll('.associate-directory__login'));
+
+    it('renders the button only for non-suspended associates, not admins', () => {
+      loadRows();
+      const bodyRows = fixture.nativeElement.querySelectorAll('tbody tr');
+      expect(buttons().length).toBe(1);
+      expect(bodyRows[0].querySelector('.associate-directory__login')).not.toBeNull();
+      expect(bodyRows[1].querySelector('.associate-directory__login')).toBeNull();
+      expect(bodyRows[2].querySelector('.associate-directory__login')).toBeNull();
+    });
+
+    it('impersonates that row, goes to /dashboard and does not open the side panel', () => {
+      loadRows();
+      const impersonate = spyOn(TestBed.inject(AuthService), 'impersonate').and.returnValue(of({} as any));
+      const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+      buttons()[0].click();
+
+      expect(impersonate).toHaveBeenCalledWith('a1', 'Jane');
+      expect(navigate).toHaveBeenCalledWith(['/dashboard']);
+      httpMock.expectNone('/api/admin/associates/a1');
+      expect(fixture.componentInstance.panelOpen).toBeFalse();
+    });
+
+    it('shows the error paragraph when impersonation fails', () => {
+      loadRows();
+      spyOn(TestBed.inject(AuthService), 'impersonate').and.returnValue(throwError(() => new Error('boom')));
+      const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+      buttons()[0].click();
+      fixture.detectChanges();
+
+      expect(navigate).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.loginError).toBeTrue();
+      expect(fixture.nativeElement.querySelector('.associate-directory__login-error')?.textContent?.trim()).toBeTruthy();
+    });
   });
 
   describe('New Associate panel wiring', () => {

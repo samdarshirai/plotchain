@@ -748,6 +748,8 @@
       "columnSponsorId": "Sponsor ID",
       "columnPosition": "Position",
       "columnRegistrationDate": "Registration Date",
+      "columnLogin": "लॉगिन",
+      "loginAction": "लॉगिन",
       "columnStatus": "Status",
       "previousPageAction": "Previous",
       "nextPageAction": "Next",
@@ -767,6 +769,7 @@
       "temporaryPasswordNotice": "New temporary password (shown once)",
       "loadError": "Something went wrong loading the associate directory. Try again.",
       "actionError": "Could not complete that action. Please try again.",
+      "loginError": "इस एसोसिएट के रूप में लॉगिन नहीं हो सका। कृपया पुनः प्रयास करें।",
       "rankLoadError": "Something went wrong loading rank options.",
       "rankFilterLabel": "Rank",
       "rankFilterAllOption": "All ranks",
@@ -1950,5 +1953,9 @@
       "next": "Next",
       "summary": "{{from}}–{{to}} of {{total}} · Page {{page}} of {{totalPages}}"
     }
+  },
+  "impersonation": {
+    "viewingAs": "{{name}} के रूप में देख रहे हैं",
+    "exit": "बाहर निकलें"
   }
 }

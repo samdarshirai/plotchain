@@ -1360,4 +1360,17 @@ class SecurityConfigTest {
                 .content("{\"decision\":\"VERIFIED\"}"))
             .andExpect(status().isForbidden());
     }
+
+    @Test
+    void impersonateIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(post("/api/admin/associates/" + UUID.randomUUID() + "/impersonate")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void impersonateIsUnauthorizedWithoutAToken() throws Exception {
+        mockMvc.perform(post("/api/admin/associates/" + UUID.randomUUID() + "/impersonate"))
+            .andExpect(status().isUnauthorized());
+    }
 }
