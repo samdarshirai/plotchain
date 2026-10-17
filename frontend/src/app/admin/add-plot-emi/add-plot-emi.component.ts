@@ -81,8 +81,8 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
                 <th scope="col">{{ 'admin.addPlotEmi.col.plotType' | translate }}</th>
                 <th scope="col">{{ 'admin.addPlotEmi.col.area' | translate }}</th>
                 <th scope="col">{{ 'admin.addPlotEmi.col.price' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.total' | translate }}</th>
                 <th scope="col">{{ 'admin.addPlotEmi.col.discount' | translate }}</th>
+                <th scope="col">{{ 'admin.addPlotEmi.col.total' | translate }}</th>
                 <th scope="col">{{ 'admin.addPlotEmi.col.paid' | translate }}</th>
                 <th scope="col">{{ 'admin.addPlotEmi.col.remaining' | translate }}</th>
                 <th scope="col" class="add-plot-emi__noprint">{{ 'admin.addPlotEmi.col.action' | translate }}</th>
@@ -99,8 +99,8 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
                 <td [attr.data-label]="'admin.addPlotEmi.col.plotType' | translate">{{ b.plotType ? ('admin.projectsPlots.type.' + b.plotType | translate) : '—' }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.area' | translate">{{ b.areaSqft != null ? b.areaSqft : '—' }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.price' | translate">{{ b.listPrice != null ? money(b.listPrice) : '—' }}</td>
-                <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.total' | translate">{{ money(b.totalAmount) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.discount' | translate">{{ b.discount != null ? money(b.discount) : '—' }}</td>
+                <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.total' | translate">{{ money(b.totalAmount) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.paid' | translate">{{ money(b.paidAmount) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.remaining' | translate">{{ money(b.dueAmount) }}</td>
                 <td class="add-plot-emi__actions add-plot-emi__noprint">
@@ -342,8 +342,8 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
       { header: t('plotType'), value: b => b.plotType },
       { header: t('area'), value: b => b.areaSqft },
       { header: t('price'), value: b => b.listPrice },
-      { header: t('total'), value: b => b.totalAmount },
       { header: t('discount'), value: b => b.discount },
+      { header: t('total'), value: b => b.totalAmount },
       { header: t('paid'), value: b => b.paidAmount },
       { header: t('remaining'), value: b => b.dueAmount }
     ];
