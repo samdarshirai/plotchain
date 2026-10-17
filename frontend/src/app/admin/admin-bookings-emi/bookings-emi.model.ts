@@ -27,9 +27,12 @@ export interface RegisterFilters {
   cancelledFrom?: string;
   cancelledTo?: string;
   q?: string;
+  hasPending?: boolean;
 }
 
 export interface PayRequest { amount: number; paymentRef: string; paymentMode: PaymentMode; paidAt?: string; }
+
+export interface TopUpRequest { amount: number; paymentMode: PaymentMode; bankName?: string; paymentRef: string; paidAt?: string; }
 
 export interface RescheduleRequest { installmentCount: number; firstDueDate: string; }
 

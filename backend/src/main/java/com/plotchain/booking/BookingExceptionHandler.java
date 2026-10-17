@@ -49,6 +49,11 @@ public class BookingExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(InvalidFirstInstallmentException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidFirstInstallment(InvalidFirstInstallmentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(InvalidDiscountException.class)
     public ResponseEntity<Map<String, String>> handleInvalidDiscount(InvalidDiscountException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
@@ -78,6 +83,11 @@ public class BookingExceptionHandler {
 
     @ExceptionHandler(PaymentAmountMismatchException.class)
     public ResponseEntity<Map<String, String>> handlePaymentAmountMismatch(PaymentAmountMismatchException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidTopUpException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidTopUp(InvalidTopUpException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
     }
 

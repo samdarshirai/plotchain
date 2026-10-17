@@ -50,7 +50,7 @@ class PlotBookingRegisterRepositoryTest {
     private Page<PlotBooking> search(BookingStatus status, UUID associateId, UUID plotId, UUID projectId,
                                      boolean overdue, int page, int size) {
         return repo.search(status, associateId, plotId, projectId, overdue, TODAY,
-            Instant.EPOCH, MAX, false, Instant.EPOCH, MAX, "", PageRequest.of(page, size, NEWEST_FIRST));
+            Instant.EPOCH, MAX, false, Instant.EPOCH, MAX, "", false, PageRequest.of(page, size, NEWEST_FIRST));
     }
 
     static final Instant MAX = Instant.parse("9999-01-01T00:00:00Z");
@@ -58,7 +58,7 @@ class PlotBookingRegisterRepositoryTest {
     private Page<PlotBooking> searchWith(UUID projectId, Instant bookedFrom, Instant bookedTo,
                                          boolean cancelledFilter, Instant cancelledFrom, Instant cancelledTo, String q) {
         return repo.search(null, null, null, projectId, false, TODAY, bookedFrom, bookedTo,
-            cancelledFilter, cancelledFrom, cancelledTo, q, PageRequest.of(0, 50, NEWEST_FIRST));
+            cancelledFilter, cancelledFrom, cancelledTo, q, false, PageRequest.of(0, 50, NEWEST_FIRST));
     }
 
     @Test
@@ -172,9 +172,9 @@ class PlotBookingRegisterRepositoryTest {
     @Test
     void overdueBoundaryUsesStrictlyBeforeToday() {
         // b2's only installment is due 06-15. today=06-15 -> not overdue; today=06-16 -> overdue.
-        assertThat(repo.search(null, null, null, d.p1, true, TODAY.plusDays(1), java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), false, java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), "", PageRequest.of(0, 50, NEWEST_FIRST))
+        assertThat(repo.search(null, null, null, d.p1, true, TODAY.plusDays(1), java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), false, java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), "", false, PageRequest.of(0, 50, NEWEST_FIRST))
             .getContent()).extracting(PlotBooking::getId).contains(d.b2.getId());
-        assertThat(repo.search(null, null, null, d.p1, true, TODAY, java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), false, java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), "", PageRequest.of(0, 50, NEWEST_FIRST))
+        assertThat(repo.search(null, null, null, d.p1, true, TODAY, java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), false, java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), "", false, PageRequest.of(0, 50, NEWEST_FIRST))
             .getContent()).extracting(PlotBooking::getId).doesNotContain(d.b2.getId());
     }
 

@@ -31,6 +31,39 @@ export function exportCsv<T>(rows: T[], columns: ExportColumn<T>[], filename: st
   try { a.click(); } finally { a.remove(); URL.revokeObjectURL(url); }
 }
 
+function download(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  try { a.click(); } finally { a.remove(); URL.revokeObjectURL(url); }
+}
+
+const flat = (v: string | number | null | undefined): string => (v === null || v === undefined ? '' : String(v).replace(/[\t\r\n]+/g, ' '));
+
+// Tab-separated, pastes into Excel / Sheets as columns.
+export function toTsv<T>(rows: T[], columns: ExportColumn<T>[]): string {
+  return [columns.map(c => flat(c.header)), ...rows.map(r => columns.map(c => flat(c.value(r))))]
+    .map(l => l.join('\t')).join('\n');
+}
+
+export function copyTable<T>(rows: T[], columns: ExportColumn<T>[]): Promise<void> {
+  return navigator.clipboard.writeText(toTsv(rows, columns));
+}
+
+const esc = (v: string | number | null | undefined): string =>
+  flat(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// ponytail: an HTML table saved as .xls -- Excel opens it (with a format warning); swap for a real .xlsx writer if that bothers anyone.
+export function exportExcel<T>(rows: T[], columns: ExportColumn<T>[], filename: string): void {
+  const head = `<tr>${columns.map(c => `<th>${esc(c.header)}</th>`).join('')}</tr>`;
+  const body = rows.map(r => `<tr>${columns.map(c => `<td>${esc(c.value(r))}</td>`).join('')}</tr>`).join('');
+  const html = `<html><head><meta charset="utf-8"></head><body><table>${head}${body}</table></body></html>`;
+  download(new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel;charset=utf-8' }),
+    /\.xls$/i.test(filename) ? filename : `${filename}.xls`);
+}
+
 export function printTable(target: HTMLElement): void {
   const style = document.createElement('style');
   style.setAttribute('data-table-export-print', '');

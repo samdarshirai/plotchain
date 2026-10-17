@@ -7,6 +7,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 // totalAmount is always a server-computed snapshot of Plot.price at booking time (same convention
@@ -22,14 +23,24 @@ public record CreateBookingRequest(
     @Size(max = 20) String buyerPhone,
     @NotNull @Positive BigDecimal tokenAmount,
     @PositiveOrZero BigDecimal discount,
-    @PositiveOrZero BigDecimal extraPrice
+    @PositiveOrZero BigDecimal extraPrice,
+    PaymentMode paymentMode,
+    @Size(max = 100) String txnNo,
+    @Size(max = 100) String bankName,
+    LocalDate txnDate,
+    @Positive BigDecimal firstInstallmentAmount
 ) {
     public CreateBookingRequest(UUID plotId, UUID associateId, String buyerName, String buyerPhone,
+                                BigDecimal tokenAmount, BigDecimal discount, BigDecimal extraPrice) {
+        this(plotId, associateId, buyerName, buyerPhone, tokenAmount, discount, extraPrice, null, null, null, null, null);
+    }
+
+    public CreateBookingRequest(UUID plotId, UUID associateId, String buyerName, String buyerPhone,
                                 BigDecimal tokenAmount, BigDecimal discount) {
-        this(plotId, associateId, buyerName, buyerPhone, tokenAmount, discount, null);
+        this(plotId, associateId, buyerName, buyerPhone, tokenAmount, discount, null, null, null, null, null, null);
     }
 
     public CreateBookingRequest(UUID plotId, UUID associateId, String buyerName, String buyerPhone, BigDecimal tokenAmount) {
-        this(plotId, associateId, buyerName, buyerPhone, tokenAmount, null, null);
+        this(plotId, associateId, buyerName, buyerPhone, tokenAmount, null, null, null, null, null, null, null);
     }
 }

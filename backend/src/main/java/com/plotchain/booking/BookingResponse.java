@@ -30,8 +30,22 @@ public record BookingResponse(
     Instant cancelledAt,
     String associateCode,
     PlotType plotType,
-    BigDecimal extraPrice
+    BigDecimal extraPrice,
+    String associatePhone
 ) {
+    public BookingResponse(UUID id, UUID plotId, UUID associateId, BookingStatus status, String buyerName,
+                           BigDecimal totalAmount, int installmentCount, Instant bookedAt,
+                           BigDecimal paidAmount, BigDecimal dueAmount, List<EmiInstallmentResponse> installments,
+                           String plotNo, String projectName, String associateName,
+                           String buyerPhone, BigDecimal listPrice, BigDecimal discount, BigDecimal areaSqft,
+                           BigDecimal rate, Instant cancelledAt, String associateCode, PlotType plotType,
+                           BigDecimal extraPrice) {
+        this(id, plotId, associateId, status, buyerName, totalAmount, installmentCount, bookedAt,
+            paidAmount, dueAmount, installments, plotNo, projectName, associateName,
+            buyerPhone, listPrice, discount, areaSqft, rate, cancelledAt, associateCode, plotType, extraPrice, null);
+    }
+
+
     public BookingResponse(UUID id, UUID plotId, UUID associateId, BookingStatus status, String buyerName,
                            BigDecimal totalAmount, int installmentCount, Instant bookedAt,
                            BigDecimal paidAmount, BigDecimal dueAmount, List<EmiInstallmentResponse> installments,

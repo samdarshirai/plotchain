@@ -3,36 +3,32 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { AssociateSummary } from '../models/associate-summary.model';
-import { AssociateLookupComponent } from '../../shared/components/associate-lookup/associate-lookup.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { PlotGridItem, formatArea, formatInr } from '../../shared/utils/plot-grid.util';
 import { BookingEmiConfig, BookingFormValue } from './projects-plots.model';
+import { PAYMENT_MODES } from '../../plot-bookings/models/associate-booking-page.model';
 
 @Component({
   selector: 'app-book-plot-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, AssociateLookupComponent, FieldErrorComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, FieldErrorComponent],
   encapsulation: ViewEncapsulation.None,
-  styleUrl: './book-plot-form.component.scss',
   template: `
     <form class="book-form" (submit)="submit($event)" novalidate>
-      <div class="book-form__head">
-        <div class="book-form__plot">
-          <span class="book-form__plot-no">{{ plot.plotNo }}</span>
-          <span class="book-form__plot-sub">
-            <ng-container *ngIf="block">{{ 'admin.projectsPlots.blockHeading' | translate: { block: block } }} · </ng-container>
-            <ng-container *ngIf="plot.type === 'CORNER'">{{ 'plotTile.type.CORNER' | translate }} · </ng-container>{{ areaText }} {{ 'plotTile.sqft' | translate }}
-          </span>
-        </div>
-        <span class="book-form__plot-total" [attr.aria-label]="'admin.projectsPlots.totalLabel' | translate">{{ priceText }}</span>
-      </div>
-      <div class="book-form__field">
-        <span class="book-form__label">{{ 'admin.projectsPlots.associateLabel' | translate }}</span>
-        <app-associate-lookup [associates]="associates" [value]="associateId"
-          [placeholder]="'admin.projectsPlots.lookupPlaceholder' | translate"
-          (selected)="associateId = $event?.id ?? ''"></app-associate-lookup>
-        <app-field-error [message]="(tried && !associateId ? 'admin.projectsPlots.associateRequired' : '') | translate"></app-field-error>
-      </div>
+      <h3 class="book-form__section">{{ 'admin.projectsPlots.plotDetailsHeading' | translate }}</h3>
+      <dl class="book-form__facts">
+        <div *ngIf="projectName"><dt>{{ 'admin.projectsPlots.factsProject' | translate }}</dt><dd>{{ projectName }}</dd></div>
+        <div *ngIf="location"><dt>{{ 'admin.projectsPlots.factsLocation' | translate }}</dt><dd>{{ location }}</dd></div>
+        <div><dt>{{ 'admin.projectsPlots.factsPlotNo' | translate }}</dt><dd>{{ plot.plotNo }}</dd></div>
+        <div *ngIf="block"><dt>{{ 'admin.projectsPlots.factsBlock' | translate }}</dt><dd>{{ block }}</dd></div>
+        <div><dt>{{ 'admin.projectsPlots.factsType' | translate }}</dt><dd>{{ 'plotTile.type.' + plot.type | translate }}</dd></div>
+        <div><dt>{{ 'admin.projectsPlots.factsArea' | translate }}</dt><dd>{{ areaText }} {{ 'plotTile.sqft' | translate }}</dd></div>
+        <div><dt>{{ 'admin.projectsPlots.factsRate' | translate }}</dt><dd>{{ rate != null ? formatInr(rate) : '—' }}</dd></div>
+        <div><dt>{{ 'admin.projectsPlots.roadSizeLabel' | translate }}</dt><dd>{{ plot.roadSizeFt != null ? plot.roadSizeFt : '—' }}</dd></div>
+        <div><dt>{{ 'admin.projectsPlots.factsPrice' | translate }}</dt><dd>{{ priceText }}</dd></div>
+        <div><dt>{{ 'admin.projectsPlots.extraPriceLabel' | translate }}</dt><dd>{{ formatInr(plot.extraPrice ?? 0) }}</dd></div>
+        <div><dt>{{ 'admin.projectsPlots.statusLabel' | translate }}</dt><dd>{{ 'plotTile.status.' + plot.status | translate }}</dd></div>
+      </dl>
       <label>{{ 'admin.projectsPlots.buyerNameLabel' | translate }}
         <input #buyerNameInput type="text" name="buyerName" maxlength="200" autocomplete="off"
           [placeholder]="'admin.projectsPlots.buyerNamePlaceholder' | translate" [disabled]="busy" [(ngModel)]="buyerName"
@@ -53,21 +49,57 @@ import { BookingEmiConfig, BookingFormValue } from './projects-plots.model';
           [attr.aria-invalid]="discountError ? 'true' : null" [attr.aria-describedby]="discountError ? 'book-discount-err' : null" />
         <app-field-error id="book-discount-err" [message]="(discountError ? 'admin.projectsPlots.discount.' + discountError : '') | translate"></app-field-error>
       </label>
-      <div class="book-totals" *ngIf="(discount > 0 || extra > 0) && !discountInvalid && !extraInvalid" aria-live="polite">
-        <div class="book-totals__row"><span>{{ 'admin.projectsPlots.summary.price' | translate }}</span><span class="book-totals__value">{{ priceText }}</span></div>
-        <div class="book-totals__row" *ngIf="extra > 0"><span>{{ 'admin.projectsPlots.summary.extraPrice' | translate }}</span><span class="book-totals__value">+{{ extraText }}</span></div>
-        <div class="book-totals__row"><span>{{ 'admin.projectsPlots.summary.discount' | translate }}</span><span class="book-totals__value">&minus;{{ discountText }}</span></div>
-        <div class="book-totals__row book-totals__row--total"><span>{{ 'admin.projectsPlots.summary.total' | translate }}</span><span class="book-totals__value">{{ netText }}</span></div>
+      <div class="book-form__total-line" aria-live="polite">
+        <span>{{ 'admin.projectsPlots.summary.total' | translate }}</span>
+        <span class="book-form__total-value">{{ netText }}</span>
       </div>
-      <label class="book-form__token">{{ 'admin.projectsPlots.tokenLabel' | translate }}
-        <input #tokenInput type="number" name="tokenAmount" inputmode="decimal" min="1" step="any" autocomplete="off"
-          [disabled]="busy" [(ngModel)]="tokenAmount"
-          [attr.aria-invalid]="tokenError ? 'true' : null" [attr.aria-describedby]="tokenError ? 'book-token-err' : null" />
-        <app-field-error id="book-token-err" [message]="(tokenError ? 'admin.projectsPlots.token.' + tokenError : '') | translate"></app-field-error>
-      </label>
       <p class="book-form__preview" *ngIf="previewKey as k">
         {{ k | translate: previewParams }}
       </p>
+      <h3 class="book-form__section">{{ 'admin.projectsPlots.referralHeading' | translate }}</h3>
+      <div class="book-form__grid">
+        <label>{{ 'admin.projectsPlots.associateIdLabel' | translate }}
+          <input type="text" name="associateUserId" autocomplete="off" [disabled]="busy" [(ngModel)]="associateUserId" (ngModelChange)="lookupAssociate()"
+            [attr.aria-invalid]="associateError || (tried && !associateId) ? 'true' : null" />
+          <app-field-error [message]="(associateError ? 'admin.projectsPlots.associateNotFound' : tried && !associateId ? 'admin.projectsPlots.associateRequired' : '') | translate"></app-field-error>
+        </label>
+        <label>{{ 'admin.projectsPlots.associateNameLabel' | translate }}
+          <input type="text" name="associateName" readonly tabindex="-1" [value]="associateName" />
+        </label>
+      </div>
+      <h3 class="book-form__section">{{ 'admin.projectsPlots.paymentHeading' | translate }}</h3>
+      <div class="book-form__grid">
+        <label>{{ 'admin.projectsPlots.firstInstallmentLabel' | translate }} <span>{{ 'admin.projectsPlots.optional' | translate }}</span>
+          <input #firstInput type="number" name="firstInstallmentAmount" inputmode="decimal" min="0" step="any" autocomplete="off"
+            [disabled]="busy" [(ngModel)]="firstInstallmentAmount" [attr.aria-invalid]="firstError ? 'true' : null" />
+          <app-field-error [message]="(firstError ? 'admin.projectsPlots.firstInstallmentInvalid' : '') | translate"></app-field-error>
+        </label>
+        <label class="book-form__token">{{ 'admin.projectsPlots.bookingAmountLabel' | translate }}
+          <input #tokenInput type="number" name="tokenAmount" inputmode="decimal" min="1" step="any" autocomplete="off"
+            [disabled]="busy" [(ngModel)]="tokenAmount"
+            [attr.aria-invalid]="tokenError ? 'true' : null" [attr.aria-describedby]="tokenError ? 'book-token-err' : null" />
+          <app-field-error id="book-token-err" [message]="(tokenError ? 'admin.projectsPlots.token.' + tokenError : '') | translate"></app-field-error>
+        </label>
+        <label>{{ 'admin.projectsPlots.paymentModeLabel' | translate }}
+          <select name="paymentMode" [disabled]="busy" [(ngModel)]="paymentMode" [attr.aria-invalid]="tried && !paymentMode ? 'true' : null">
+            <option value="" disabled>{{ 'admin.projectsPlots.paymentModeSelect' | translate }}</option>
+            <option *ngFor="let m of paymentModes" [value]="m">{{ 'admin.projectsPlots.paymentMode.' + m | translate }}</option>
+          </select>
+          <app-field-error [message]="(tried && !paymentMode ? 'admin.projectsPlots.fieldRequired' : '') | translate"></app-field-error>
+        </label>
+        <label>{{ 'admin.projectsPlots.txnNoLabel' | translate }}
+          <input type="text" name="txnNo" maxlength="100" autocomplete="off" [disabled]="busy" [(ngModel)]="txnNo" [attr.aria-invalid]="tried && !txnNo.trim() ? 'true' : null" />
+          <app-field-error [message]="(tried && !txnNo.trim() ? 'admin.projectsPlots.fieldRequired' : '') | translate"></app-field-error>
+        </label>
+        <label>{{ 'admin.projectsPlots.bankNameLabel' | translate }} <span *ngIf="!bankRequired">{{ 'admin.projectsPlots.optional' | translate }}</span>
+          <input type="text" name="bankName" maxlength="100" autocomplete="off" [disabled]="busy" [(ngModel)]="bankName" [attr.aria-invalid]="bankError ? 'true' : null" />
+          <app-field-error [message]="(bankError ? 'admin.projectsPlots.fieldRequired' : '') | translate"></app-field-error>
+        </label>
+        <label>{{ 'admin.projectsPlots.txnDateLabel' | translate }}
+          <input type="date" name="txnDate" [max]="today" [disabled]="busy" [(ngModel)]="txnDate" [attr.aria-invalid]="dateError ? 'true' : null" />
+          <app-field-error [message]="(dateError ? 'admin.projectsPlots.txnDateInvalid' : '') | translate"></app-field-error>
+        </label>
+      </div>
       <div class="projects-plots__form-actions book-form__actions">
         <button type="button" class="brand-button brand-button--secondary book-form__cancel" (click)="cancelled.emit()">{{ 'admin.projectsPlots.cancelAction' | translate }}</button>
         <button type="submit" class="brand-button" [disabled]="busy" [attr.aria-busy]="busy">
@@ -81,15 +113,30 @@ export class BookPlotFormComponent implements OnInit {
   @Input({ required: true }) plot!: PlotGridItem;
   @Input() associates: AssociateSummary[] = [];
   @Input() emiConfig: BookingEmiConfig | null = null;
+  @Input() projectName = '';
+  @Input() location = '';
+  @Input() rate: number | null = null;
+  readonly formatInr = formatInr;
   @Input() busy = false;
   @Output() submitted = new EventEmitter<BookingFormValue>();
   @Output() cancelled = new EventEmitter<void>();
   @ViewChild('buyerNameInput') buyerNameInput?: ElementRef<HTMLInputElement>;
   @ViewChild('extraInput') extraInput?: ElementRef<HTMLInputElement>;
   @ViewChild('discountInput') discountInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('firstInput') firstInput?: ElementRef<HTMLInputElement>;
   @ViewChild('tokenInput') tokenInput?: ElementRef<HTMLInputElement>;
 
   associateId = '';
+  associateUserId = '';
+  associateName = '';
+  associateError = false;
+  firstInstallmentAmount: number | null = null;
+  paymentModes = PAYMENT_MODES;
+  paymentMode = '';
+  txnNo = '';
+  bankName = '';
+  txnDate = '';
+  today = new Date().toISOString().slice(0, 10);
   buyerName = '';
   buyerPhone = '';
   tokenAmount: number | null = null;
@@ -99,6 +146,24 @@ export class BookPlotFormComponent implements OnInit {
 
   // Prefilled from the plot's default Extra Price; the booking's own value overrides it.
   ngOnInit(): void { this.extraRaw = this.plot.extraPrice ?? 0; }
+
+  // Associate is looked up client-side by its ID against the already-loaded list.
+  lookupAssociate(): void {
+    const id = this.associateUserId.trim().toLowerCase();
+    const found = id ? this.associates.find(a => a.userId.toLowerCase() === id) : undefined;
+    this.associateId = found?.id ?? '';
+    this.associateName = found?.name ?? '';
+    this.associateError = !!id && !found;
+  }
+
+  get bankRequired(): boolean { return !!this.paymentMode && this.paymentMode !== 'CASH'; }
+  get bankError(): boolean { return this.tried && this.bankRequired && !this.bankName.trim(); }
+  get dateError(): boolean { return this.tried && (!this.txnDate || this.txnDate > this.today); }
+  // Must fit in the balance left after the booking amount.
+  get firstError(): boolean {
+    const f = this.firstInstallmentAmount;
+    return f != null && (!(f > 0) || f > this.net - (this.tokenAmount ?? 0));
+  }
 
   get extra(): number { return round2(this.extraRaw ?? 0); }
   get extraInvalid(): boolean { return this.extra < 0; }
@@ -174,8 +239,13 @@ export class BookPlotFormComponent implements OnInit {
       this.tokenInput?.nativeElement.focus();
       return;
     }
-    if (!this.associateId) { return; }
-    this.submitted.emit({ associateId: this.associateId, buyerName: this.buyerName.trim(), buyerPhone: this.buyerPhone.trim(), tokenAmount: this.tokenAmount!, discount: this.discount, extraPrice: this.extra });
+    if (this.firstError) {
+      this.firstInput?.nativeElement.focus();
+      return;
+    }
+    if (!this.associateId || !this.paymentMode || !this.txnNo.trim() || this.bankError || this.dateError) { return; }
+    this.submitted.emit({ paymentMode: this.paymentMode, txnNo: this.txnNo.trim(), bankName: this.bankName.trim(), txnDate: this.txnDate,
+      firstInstallmentAmount: this.firstInstallmentAmount ?? undefined, associateId: this.associateId, buyerName: this.buyerName.trim(), buyerPhone: this.buyerPhone.trim(), tokenAmount: this.tokenAmount!, discount: this.discount, extraPrice: this.extra });
   }
 }
 

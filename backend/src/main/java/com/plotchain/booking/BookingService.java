@@ -111,7 +111,11 @@ public class BookingService {
                 "booking_emi_config row missing - V14 migration seeds it"));
 
         Instant bookedAt = clock.instant();
-        List<EmiInstallment> schedule = computeSchedule(total, token, config, bookedAt, associate.getId());
+        BigDecimal firstInstallment = request.firstInstallmentAmount();
+        if (firstInstallment != null && firstInstallment.compareTo(total.subtract(token)) > 0) {
+            throw new InvalidFirstInstallmentException(firstInstallment, total.subtract(token));
+        }
+        List<EmiInstallment> schedule = computeSchedule(total, token, config, bookedAt, associate.getId(), request, firstInstallment);
 
         PlotBooking booking = new PlotBooking();
         booking.setId(UUID.randomUUID());
@@ -174,10 +178,76 @@ public class BookingService {
         installment.setPaidAt(request.paidAt() != null ? request.paidAt() : now);
         installment.setPaymentRef(paymentRef);
         installment.setRecordedBy(actorId);
+        installment.setRecordedAt(now);
         emiInstallmentRepository.save(installment);
 
         bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.PAID, actorId,
             "entered: installment " + installmentNumber + ", amount " + installment.getAmount().toPlainString()
+                + ", ref " + paymentRef + ", mode " + request.paymentMode(), now));
+
+        return toResponse(booking, installments);
+    }
+
+    // Add Plot EMI top-up: one ENTERED row (the payment record, appended as the next number) is added and the
+    // oldest PENDING rows are consumed by the same amount (fully covered -> VOID, partly covered -> reduced), so the
+    // scheduled total is unchanged. Booking lock first (Decision 8); every 4xx happens before the first write.
+    // Confirmation stays the separate ENTERED -> PAID step.
+    @Transactional
+    public BookingResponse topUp(UUID bookingId, TopUpRequest request, UUID actorId) {
+        PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)
+            .orElseThrow(() -> new BookingNotFoundException(bookingId));
+        if (booking.getStatus() != BookingStatus.ACTIVE) {
+            throw new BookingNotActiveException(bookingId);
+        }
+        String bankName = request.bankName() == null ? "" : request.bankName().trim();
+        if (request.paymentMode() != PaymentMode.CASH && bankName.isEmpty()) {
+            throw new InvalidTopUpException("Bank name is required for " + request.paymentMode());
+        }
+        List<EmiInstallment> installments = new ArrayList<>(
+            emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
+        BigDecimal pending = sumByStatus(installments, InstallmentStatus.PENDING);
+        BigDecimal amount = request.amount().setScale(2, RoundingMode.HALF_UP);
+        if (amount.signum() <= 0 || amount.compareTo(pending) > 0) {
+            throw new InvalidTopUpException("Top up amount must be between 0.01 and the remaining pending amount "
+                + pending.toPlainString());
+        }
+
+        Instant now = clock.instant();
+        BigDecimal left = amount;
+        for (EmiInstallment i : installments) {
+            if (i.getStatus() != InstallmentStatus.PENDING || left.signum() == 0) { continue; }
+            if (left.compareTo(i.getAmount()) >= 0) {
+                left = left.subtract(i.getAmount());
+                i.setStatus(InstallmentStatus.VOID);
+            } else {
+                i.setAmount(i.getAmount().subtract(left));
+                left = BigDecimal.ZERO;
+            }
+        }
+        String paymentRef = request.paymentRef().trim();
+        EmiInstallment payment = new EmiInstallment();
+        payment.setId(UUID.randomUUID());
+        payment.setBookingId(bookingId);
+        payment.setInstallmentNumber(installments.stream().mapToInt(EmiInstallment::getInstallmentNumber).max().orElse(0) + 1);
+        Instant paidAt = request.paidAt() != null ? request.paidAt() : now;
+        payment.setDueDate(paidAt.atZone(java.time.ZoneOffset.UTC).toLocalDate());
+        payment.setAmount(amount);
+        payment.setStatus(InstallmentStatus.ENTERED);
+        payment.setPaymentMode(request.paymentMode());
+        payment.setBankName(bankName.isEmpty() ? null : bankName);
+        payment.setPaymentRef(paymentRef);
+        payment.setPaidAt(paidAt);
+        payment.setRecordedBy(actorId);
+        payment.setRecordedAt(now);
+        installments.add(payment);
+        emiInstallmentRepository.saveAll(installments);
+
+        booking.setInstallmentCount((int) installments.stream()
+            .filter(i -> i.getStatus() != InstallmentStatus.VOID).count());
+        plotBookingRepository.save(booking);
+
+        bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.PAID, actorId,
+            "entered: top-up #" + payment.getInstallmentNumber() + ", amount " + amount.toPlainString()
                 + ", ref " + paymentRef + ", mode " + request.paymentMode(), now));
 
         return toResponse(booking, installments);
@@ -569,12 +639,20 @@ public class BookingService {
     // least one (so with EMI off the schedule is token + one balance installment).
     private List<EmiInstallment> computeSchedule(BigDecimal totalAmount, BigDecimal token,
                                                  BookingEmiConfig config, Instant bookedAt,
-                                                 UUID tokenConfirmedBy) {
+                                                 UUID tokenConfirmedBy, CreateBookingRequest request,
+                                                 BigDecimal firstInstallment) {
         int count = config.isEmiEnabled() ? config.getDefaultInstallmentCount() : 1;
         int balanceCount = Math.max(count - 1, 1);
         LocalDate bookedDate = bookedAt.atZone(ZoneOffset.UTC).toLocalDate();
         BigDecimal balance = totalAmount.subtract(token);
-        BigDecimal base = balance.divide(BigDecimal.valueOf(balanceCount), 2, RoundingMode.DOWN);
+        // Optional explicit first EMI (installment 2); the rest of the balance splits over the others.
+        BigDecimal first = firstInstallment == null ? null : firstInstallment.setScale(2, RoundingMode.HALF_UP);
+        if (first != null && balanceCount == 1 && first.compareTo(balance) != 0) {
+            throw new InvalidFirstInstallmentException(first, balance);
+        }
+        BigDecimal rest = first == null ? balance : balance.subtract(first);
+        int restCount = first == null ? balanceCount : balanceCount - 1;
+        BigDecimal base = restCount == 0 ? BigDecimal.ZERO : rest.divide(BigDecimal.valueOf(restCount), 2, RoundingMode.DOWN);
 
         List<EmiInstallment> schedule = new ArrayList<>();
         EmiInstallment tokenInstallment = new EmiInstallment();
@@ -583,31 +661,30 @@ public class BookingService {
         tokenInstallment.setAmount(token);
         tokenInstallment.setDueDate(bookedDate);
         tokenInstallment.setStatus(InstallmentStatus.PAID);
-        tokenInstallment.setPaidAt(bookedAt);
-        tokenInstallment.setPaymentRef("TOKEN");
+        tokenInstallment.setPaidAt(request.txnDate() == null ? bookedAt : request.txnDate().atStartOfDay(ZoneOffset.UTC).toInstant());
+        tokenInstallment.setPaymentRef(request.txnNo() == null || request.txnNo().isBlank() ? "TOKEN" : request.txnNo().trim());
+        tokenInstallment.setPaymentMode(request.paymentMode());
+        tokenInstallment.setBankName(request.bankName() == null || request.bankName().isBlank() ? null : request.bankName().trim());
         tokenInstallment.setConfirmedAt(bookedAt);
+        tokenInstallment.setRecordedAt(bookedAt);
         tokenInstallment.setConfirmedBy(tokenConfirmedBy);
         schedule.add(tokenInstallment);
 
-        BigDecimal runningTotal = BigDecimal.ZERO;
-        for (int i = 1; i < balanceCount; i++) {
+        // Amounts for installments 2..balanceCount+1; the last absorbs rounding so the total is exact.
+        BigDecimal running = BigDecimal.ZERO;
+        for (int i = 1; i <= balanceCount; i++) {
+            BigDecimal amount;
+            if (i == 1 && first != null) { amount = first; }
+            else if (i == balanceCount) { amount = balance.subtract(running); }
+            else { amount = base; }
+            running = running.add(amount);
             EmiInstallment installment = new EmiInstallment();
             installment.setId(UUID.randomUUID());
             installment.setInstallmentNumber(i + 1);
-            installment.setAmount(base);
+            installment.setAmount(amount);
             installment.setDueDate(bookedDate.plusMonths(i));
             schedule.add(installment);
-            runningTotal = runningTotal.add(base);
         }
-
-        // Last installment absorbs whatever the DOWN rounding above left behind, so the
-        // schedule's total always equals totalAmount exactly, never a cent short or over.
-        EmiInstallment last = new EmiInstallment();
-        last.setId(UUID.randomUUID());
-        last.setInstallmentNumber(balanceCount + 1);
-        last.setAmount(balance.subtract(runningTotal));
-        last.setDueDate(bookedDate.plusMonths(balanceCount));
-        schedule.add(last);
 
         return schedule;
     }
@@ -633,7 +710,7 @@ public class BookingService {
                 .map(i -> new EmiInstallmentResponse(
                     i.getInstallmentNumber(), i.getAmount(), i.getDueDate(), i.getStatus(), i.getPaidAt(),
                     i.getStatus() == InstallmentStatus.PENDING && i.getDueDate().isBefore(today),
-                    i.getPaymentMode(), i.getConfirmedAt()))
+                    i.getPaymentMode(), i.getConfirmedAt(), i.getBankName(), i.getPaymentRef(), i.getRecordedAt()))
                 .toList();
             Plot plot = plots.get(booking.getPlotId());
             Project project = plot == null ? null : projects.get(plot.getProjectId());
@@ -652,7 +729,8 @@ public class BookingService {
                 booking.getBuyerPhone(), booking.getListPrice(), booking.getDiscount(), booking.getAreaSqft(),
                 booking.getRate(), booking.getCancelledAt(), associate == null ? null : associate.getUserId(),
                 plot == null ? null : plot.getPlotType(),
-                booking.getExtraPrice());
+                booking.getExtraPrice(),
+                associate == null ? null : associate.getPhone());
         }).toList();
     }
 

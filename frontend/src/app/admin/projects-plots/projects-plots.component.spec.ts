@@ -100,15 +100,15 @@ describe('ProjectsPlotsComponent', () => {
     flush();
   }));
 
-  it('selecting a plot fetches its rate and shows the detail aside', fakeAsync(() => {
+  it('selecting a plot fetches its rate and opens no aside', fakeAsync(() => {
     boot();
     el().querySelector<HTMLButtonElement>('app-plot-tile button')!.click();
     const req = http.expectOne('/api/company/projects/p1/plots/id-A-1');
     req.flush({ id: 'id-A-1', plotNo: 'A-1', plotType: 'NORMAL', areaSqft: 1200, rate: 3750, price: 4500000, status: 'BOOKED' });
     fixture.detectChanges();
-    const aside = el().querySelector('.projects-plots__aside')!;
-    expect(aside.textContent).toContain('A-1');
-    expect(aside.textContent).toContain('3,750');
+    expect(fixture.componentInstance.plotDetail!.rate).toBe(3750);
+    expect(fixture.componentInstance.aside.kind).toBe('none');
+    expect(el().querySelector('.projects-plots__aside')).toBeNull();
     flush();
   }));
 
@@ -156,15 +156,6 @@ describe('ProjectsPlotsComponent', () => {
     flush();
   }));
 
-  it('shows a dash when the plot detail has no rate', fakeAsync(() => {
-    boot();
-    el().querySelector<HTMLButtonElement>('app-plot-tile button')!.click();
-    http.expectOne('/api/company/projects/p1/plots/id-A-1').flush({ id: 'id-A-1' });
-    fixture.detectChanges();
-    expect(el().querySelector('.projects-plots__facts')!.textContent).toContain('—');
-    flush();
-  }));
-
   describe('plot and project mutations', () => {
     it('opens the CSV panel and refreshes grid and counts after a successful import', fakeAsync(() => {
       boot();
@@ -193,7 +184,7 @@ describe('ProjectsPlotsComponent', () => {
     it('offers Edit plot on an AVAILABLE plot and PUTs the change, then refreshes grid and project counts', fakeAsync(() => {
       boot();
       selectFirstAvailable();
-      el().querySelector<HTMLButtonElement>('.projects-plots__edit-plot')!.click();
+      fixture.componentInstance.openAside({ kind: 'editPlot' });
       fixture.detectChanges();
       fixture.componentInstance.saveEditedPlot({ plotNo: 'A-2', plotType: 'NORMAL', areaSqft: 1300, rate: 3750, price: 4875000, status: 'AVAILABLE' });
       const put = http.expectOne('/api/company/projects/p1/plots/id-A-2');
@@ -233,19 +224,10 @@ describe('ProjectsPlotsComponent', () => {
       flush();
     }));
 
-    it('hides Edit plot until the plot detail has loaded', fakeAsync(() => {
-      boot();
-      el().querySelector<HTMLButtonElement>('app-plot-tile button')!.click();
-      fixture.detectChanges();
-      expect(el().querySelector('.projects-plots__edit-plot')).toBeNull();
-      http.expectOne('/api/company/projects/p1/plots/id-A-1').flush(detail({ id: 'id-A-1' }));
-      flush();
-    }));
-
     it('shows the locked edit variant for a BOOKED plot', fakeAsync(() => {
       boot();
       selectFirstAvailable('BOOKED');
-      el().querySelector<HTMLButtonElement>('.projects-plots__edit-plot')!.click();
+      fixture.componentInstance.openAside({ kind: 'editPlot' });
       fixture.detectChanges();
       expect(el().textContent).toContain('admin.projectsPlots.editLockedTitle');
       expect(el().querySelector('app-plot-form input')).toBeNull();
@@ -285,7 +267,7 @@ describe('ProjectsPlotsComponent', () => {
       http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2'), cell('B-2')]);
       http.expectOne('/api/company/projects').flush([project()]);
       expect(fixture.componentInstance.plotDetail).toBeNull();
-      expect(fixture.componentInstance.aside.kind).toBe('detail');
+      expect(fixture.componentInstance.aside.kind).toBe('none');
       http.expectNone('/api/company/projects/p1/plots/id-A-2');
       bReq.flush(detail({ id: 'id-B-2', plotNo: 'B-2' }));
       flush();
@@ -352,7 +334,7 @@ describe('ProjectsPlotsComponent', () => {
       fixture.detectChanges();
     }
 
-    it('on 201 refreshes the grid, shows the success banner with a view-booking link, returns to detail', fakeAsync(() => {
+    it('on 201 refreshes the grid, shows the success banner with a view-booking link, closes the popup', fakeAsync(() => {
       openBookForm();
       fixture.componentInstance.openAside({ kind: 'book' });
       fixture.componentInstance.submitBooking(form);
@@ -363,9 +345,9 @@ describe('ProjectsPlotsComponent', () => {
       http.expectOne('/api/company/projects').flush([project()]);
       http.expectOne('/api/company/projects/p1/plots/id-A-2').flush({ ...detail, status: 'BOOKED' });
       fixture.detectChanges();
-      expect(fixture.componentInstance.aside.kind).toBe('detail');
+      expect(fixture.componentInstance.aside.kind).toBe('none');
       expect(fixture.componentInstance.banner).toEqual(jasmine.objectContaining({ tone: 'success', bookingId: 'b1' }));
-      expect(el().querySelector('.projects-plots__aside a')!.getAttribute('href')).toContain('booking=b1');
+      expect(el().querySelector('app-inline-banner a')!.getAttribute('href')).toContain('booking=b1');
       flush();
     }));
 
@@ -466,7 +448,7 @@ describe('ProjectsPlotsComponent', () => {
       flush();
     }));
 
-    it('after 201, Edit plot is hidden until the plot is re-fetched, then the form is locked and no PUT can be issued', fakeAsync(() => {
+    it('after 201, the plot is re-fetched, then the edit form is locked and no PUT can be issued', fakeAsync(() => {
       openBookForm();
       fixture.componentInstance.openAside({ kind: 'book' });
       fixture.componentInstance.submitBooking(form);
@@ -475,10 +457,9 @@ describe('ProjectsPlotsComponent', () => {
       http.expectOne('/api/company/projects').flush([project()]);
       fixture.detectChanges();
       expect(fixture.componentInstance.plotDetail).toBeNull();
-      expect(el().querySelector('.projects-plots__edit-plot')).toBeNull();
       http.expectOne('/api/company/projects/p1/plots/id-A-2').flush({ ...detail, status: 'BOOKED' });
       fixture.detectChanges();
-      el().querySelector<HTMLButtonElement>('.projects-plots__edit-plot')!.click();
+      fixture.componentInstance.openAside({ kind: 'editPlot' });
       fixture.detectChanges();
       expect(el().textContent).toContain('admin.projectsPlots.editLockedTitle');
       expect(el().querySelector('app-plot-form form')).toBeNull();
@@ -495,7 +476,7 @@ describe('ProjectsPlotsComponent', () => {
       expect(fixture.componentInstance.plotDetail).toBeNull();
       http.expectOne('/api/company/projects/p1/plots/id-A-2').flush({ ...detail, status: 'BOOKED' });
       fixture.detectChanges();
-      el().querySelector<HTMLButtonElement>('.projects-plots__edit-plot')!.click();
+      fixture.componentInstance.openAside({ kind: 'editPlot' });
       fixture.detectChanges();
       expect(el().querySelector('app-plot-form form')).toBeNull();
       flush();
@@ -598,11 +579,11 @@ describe('ProjectsPlotsComponent', () => {
       expect(document.activeElement).toBe(add);
     }));
 
-    it('a booking 201 puts focus on a live control in the re-rendered detail aside (tile when Book is disabled)', fakeAsync(() => {
+    it('a booking 201 puts focus on the plot tile', fakeAsync(() => {
       openDetail();
       fixture.componentInstance.openAside({ kind: 'book' });
       fixture.detectChanges();
-      el().querySelector<HTMLButtonElement>('.projects-plots__aside button')!.focus();
+      el().querySelector<HTMLButtonElement>('.projects-plots__modal button')!.focus();
       fixture.componentInstance.submitBooking(form);
       http.expectOne('/api/admin/bookings').flush({ id: 'b1', plotId: 'id-A-2', buyerName: 'Rohit', totalAmount: 1, installmentCount: 1 });
       fixture.detectChanges(); tick();
@@ -610,15 +591,6 @@ describe('ProjectsPlotsComponent', () => {
       http.expectOne('/api/projects/p1/plots/grid').flush([cell('A-2', 'BOOKED')]);
       http.expectOne('/api/company/projects').flush([project()]);
       http.expectOne('/api/company/projects/p1/plots/id-A-2').flush(detail({ status: 'BOOKED' }));
-    }));
-
-    it('cancel from the edit form focuses Edit plot in the detail aside', fakeAsync(() => {
-      openDetail();
-      fixture.componentInstance.openAside({ kind: 'editPlot' });
-      fixture.detectChanges();
-      fixture.componentInstance.backToDetail('.projects-plots__edit-plot');
-      fixture.detectChanges(); tick();
-      expect(document.activeElement).toBe(el().querySelector('.projects-plots__edit-plot'));
     }));
 
     it('with no focused opener (Safari leaves body active) close falls back to the tile', fakeAsync(() => {

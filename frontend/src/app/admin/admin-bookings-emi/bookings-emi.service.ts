@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Booking } from '../../plot-bookings/models/associate-booking-page.model';
 import {
-  BookingEmiConfig, BookingPage, LastEmiFilters, LastEmiRow, OverdueReportPage, PayRequest, PaymentFilters, PaymentPage, PaymentRef, RegisterFilters, RescheduleRequest
+  BookingEmiConfig, BookingPage, LastEmiFilters, LastEmiRow, OverdueReportPage, PayRequest, PaymentFilters, PaymentPage, PaymentRef, RegisterFilters, RescheduleRequest, TopUpRequest
 } from './bookings-emi.model';
 
 @Injectable({ providedIn: 'root' })
@@ -22,6 +22,7 @@ export class BookingsEmiService {
     if (f.cancelledFrom) { params = params.set('cancelledFrom', f.cancelledFrom); }
     if (f.cancelledTo) { params = params.set('cancelledTo', f.cancelledTo); }
     if (f.q) { params = params.set('q', f.q); }
+    if (f.hasPending) { params = params.set('hasPending', true); }
     return this.http.get<BookingPage>('/api/admin/bookings', { params });
   }
 
@@ -36,6 +37,10 @@ export class BookingsEmiService {
 
   pay(id: string, n: number, req: PayRequest): Observable<Booking> {
     return this.http.patch<Booking>(`/api/admin/bookings/${id}/installments/${n}/pay`, req);
+  }
+
+  topUp(id: string, req: TopUpRequest): Observable<Booking> {
+    return this.http.post<Booking>(`/api/admin/bookings/${id}/top-up`, req);
   }
 
   confirmPayment(id: string, n: number): Observable<Booking> {

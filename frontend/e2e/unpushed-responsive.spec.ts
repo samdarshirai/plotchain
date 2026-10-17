@@ -114,14 +114,14 @@ for (const width of [320, 390, 768, 1024, 1440]) {
       await expect(modal).toBeHidden();
     });
 
-    test('book plot table and booking drawer fit the viewport', async ({ page }) => {
+    test('book plot table and booking popup fit the viewport', async ({ page }) => {
       await page.goto('/settings/book-plot', { waitUntil: 'networkidle' });
       await expect(page.locator('.projects-plots__table tbody tr')).toHaveCount(1);
       await noPageOverflow(page);
       for (const cell of await page.locator('.projects-plots__table th, .projects-plots__table td').all()) await fitsInside(cell);
       await page.locator('.projects-plots__row-book').click();
       await expect(page.locator('.book-form')).toBeVisible();
-      await fitsInside(page.locator('.projects-plots__aside'));
+      await fitsInside(page.locator('.projects-plots__modal'));
       await noPageOverflow(page);
     });
   });

@@ -12,8 +12,24 @@ public record EmiInstallmentResponse(
     Instant paidAt,
     boolean overdue,
     PaymentMode paymentMode,
-    Instant confirmedAt
+    Instant confirmedAt,
+    String bankName,
+    String paymentRef,
+    Instant recordedAt
 ) {
+    public EmiInstallmentResponse(int installmentNumber, BigDecimal amount, LocalDate dueDate,
+                                  InstallmentStatus status, Instant paidAt, boolean overdue,
+                                  PaymentMode paymentMode, Instant confirmedAt, String bankName, String paymentRef) {
+        this(installmentNumber, amount, dueDate, status, paidAt, overdue, paymentMode, confirmedAt, bankName, paymentRef, null);
+    }
+
+    public EmiInstallmentResponse(int installmentNumber, BigDecimal amount, LocalDate dueDate,
+                                  InstallmentStatus status, Instant paidAt, boolean overdue,
+                                  PaymentMode paymentMode, Instant confirmedAt) {
+        this(installmentNumber, amount, dueDate, status, paidAt, overdue, paymentMode, confirmedAt, null, null, null);
+    }
+
+
     // Pre-U2 shape, kept so existing callers/tests compile.
     public EmiInstallmentResponse(int installmentNumber, BigDecimal amount, LocalDate dueDate,
                                   InstallmentStatus status, Instant paidAt, boolean overdue) {

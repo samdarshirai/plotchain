@@ -66,7 +66,7 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     icon: 'domain',
     items: [
       { key: 'bookNewPlot', labelKey: 'nav.plotBooking.bookNewPlot', path: '/settings/book-plot' },
-      { key: 'addPlotEmi', labelKey: 'nav.plotBooking.addPlotEmi', path: BOOKINGS_EMI, query: { tab: 'register', action: 'reschedule' } },
+      { key: 'addPlotEmi', labelKey: 'nav.plotBooking.addPlotEmi', path: '/settings/add-plot-emi' },
       { key: 'viewBookedPlot', labelKey: 'nav.plotBooking.viewBookedPlot', path: BOOKINGS_EMI, query: { tab: 'register' } },
       { key: 'viewConfirmedPlot', labelKey: 'nav.plotBooking.viewConfirmedPlot', path: BOOKINGS_EMI, query: { tab: 'unconfirmed' } },
       { key: 'plotTransfer', labelKey: 'nav.plotBooking.plotTransfer', path: BOOKINGS_EMI, query: { tab: 'register', action: 'transfer' } },
