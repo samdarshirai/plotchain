@@ -65,8 +65,8 @@ describe('findNavCategoryForUrl', () => {
     expect(findNavCategoryForUrl('/admin/sales/new')).toBeUndefined();
   });
 
-  it('resolvesTheBookingsEmiScreenToTheInventoryCategory', () => {
-    expect(findNavCategoryForUrl('/settings/bookings-emi')?.key).toBe('inventory');
+  it('resolvesThePlotTransferScreenToTheInventoryCategory', () => {
+    expect(findNavCategoryForUrl('/settings/plot-transfer')?.key).toBe('inventory');
   });
 
   it('resolvesBookNewPlotToPlotBookingButBareProjectsPlotsToSetup', () => {
@@ -76,6 +76,6 @@ describe('findNavCategoryForUrl', () => {
 
   it('resolvesEveryPlotBookingDeepLinkToTheInventoryCategory', () => {
     expect(findNavCategoryForUrl('/settings/view-transferred-plot')?.key).toBe('inventory');
-    expect(findNavCategoryForUrl('/settings/bookings-emi?tab=register&action=transfer')?.key).toBe('inventory');
+    expect(findNavCategoryForUrl('/settings/plot-transfer')?.key).toBe('inventory');
   });
 });

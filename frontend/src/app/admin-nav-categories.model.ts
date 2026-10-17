@@ -20,7 +20,6 @@ export interface AdminNavCategory {
 // findNavCategoryForUrl below. The icons are Material Symbols names, purely decorative, so they
 // carry no i18n key. Dashboard is not a category: it lives beside these tabs in the header and
 // collapses the item row entirely.
-const BOOKINGS_EMI = '/settings/bookings-emi';
 
 export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
   {
@@ -69,7 +68,7 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
       { key: 'addPlotEmi', labelKey: 'nav.plotBooking.addPlotEmi', path: '/settings/add-plot-emi' },
       { key: 'viewBookedPlot', labelKey: 'nav.plotBooking.viewBookedPlot', path: '/settings/view-booked-plot' },
       { key: 'viewConfirmedPlot', labelKey: 'nav.plotBooking.viewConfirmedPlot', path: '/settings/view-confirmed-plot' },
-      { key: 'plotTransfer', labelKey: 'nav.plotBooking.plotTransfer', path: BOOKINGS_EMI, query: { tab: 'register', action: 'transfer' } },
+      { key: 'plotTransfer', labelKey: 'nav.plotBooking.plotTransfer', path: '/settings/plot-transfer' },
       { key: 'viewPlotEmi', labelKey: 'nav.plotBooking.viewPlotEmi', path: '/settings/view-plot-emi' },
       { key: 'viewTransferredPlots', labelKey: 'nav.plotBooking.viewTransferredPlots', path: '/settings/view-transferred-plot' },
       { key: 'viewCancelledPlot', labelKey: 'nav.plotBooking.viewCancelledPlot', path: '/settings/view-cancelled-plot' }

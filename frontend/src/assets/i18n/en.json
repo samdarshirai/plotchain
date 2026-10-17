@@ -1434,6 +1434,10 @@
       "pending": "Unconfirmed", "confirmed": "Confirmed", "emptyPending": "No unconfirmed payments for these filters.", "emptyConfirmed": "No confirmed payments for these filters.",
       "col": { "paymentDate": "Payment Date", "amount": "Amount", "mode": "Mode", "status": "Status", "select": "Select" }
     },
+    "plotTransfer": {
+      "title": "Plot Transfer", "subtitle": "Active bookings eligible for plot transfer. Open Details for the full booking, or Transfer to move it to another available plot.", "transfer": "Transfer",
+      "col": { "actions": "Actions" }
+    },
     "viewPlotEmi": {
       "title": "View Plot EMI", "subtitle": "Active bookings with pending EMI money, by date and project. Open Detail for the full booking and payment history."
     },

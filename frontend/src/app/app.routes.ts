@@ -138,6 +138,7 @@ export const routes: Routes = [
       { path: 'support-tickets', loadComponent: () => import('./admin/admin-support-tickets/admin-support-tickets.component').then(m => m.AdminSupportTicketsComponent), data: { sectionKey: 'supportTickets' } },
       { path: 'add-plot-emi', loadComponent: () => import('./admin/add-plot-emi/add-plot-emi.component').then(m => m.AddPlotEmiComponent), data: { sectionKey: 'addPlotEmi' } },
       { path: 'view-booked-plot', loadComponent: () => import('./admin/view-booked-plot/view-booked-plot.component').then(m => m.ViewBookedPlotComponent), data: { sectionKey: 'viewBookedPlot' } },
+      { path: 'plot-transfer', loadComponent: () => import('./admin/plot-transfer/plot-transfer.component').then(m => m.PlotTransferComponent), data: { sectionKey: 'plotTransfer' } },
       { path: 'view-plot-emi', loadComponent: () => import('./admin/view-plot-emi/view-plot-emi.component').then(m => m.ViewPlotEmiComponent), data: { sectionKey: 'viewPlotEmi' } },
       { path: 'view-cancelled-plot', loadComponent: () => import('./admin/view-cancelled-plot/view-cancelled-plot.component').then(m => m.ViewCancelledPlotComponent), data: { sectionKey: 'viewCancelledPlot' } },
       { path: 'view-transferred-plot', loadComponent: () => import('./admin/view-transferred-plot/view-transferred-plot.component').then(m => m.ViewTransferredPlotComponent), data: { sectionKey: 'viewTransferredPlot' } },
