@@ -212,22 +212,6 @@ describe('IncomeStatementComponent', () => {
     expect(rowText).not.toContain('c1');
   });
 
-  it('renders a dash for a null sourceRef instead of blank or "null"', () => {
-    flushInitialRequests();
-    fixture.componentInstance.onStatusChange('PENDING');
-    httpMock.expectOne(r => r.params.get('status') === 'PENDING').flush({
-      entries: [{ ...sampleEntry, id: 'l3', sourceRef: null, status: 'PENDING' }],
-      page: 0,
-      size: 20,
-      totalElements: 1,
-      totalGrossAmount: 0
-    });
-    fixture.detectChanges();
-
-    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
-    expect(rowText).toContain('—');
-  });
-
   it('shows a load error when the initial page load fails, without silently doing nothing', () => {
     httpMock.expectOne(r => r.params.get('size') === '100').flush({ entries: [], page: 0, size: 100, totalElements: 0, totalGrossAmount: 0 });
     httpMock
@@ -290,7 +274,7 @@ describe('IncomeStatementComponent', () => {
   it('resolves real translated column header text, not raw i18n keys', () => {
     flushInitialRequests();
     expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
-      'Income Type', 'Cycle Period', 'Status', 'Gross Amount', 'Source Ref', 'Created At'
+      'Income Type', 'Cycle Period', 'Status', 'Gross Amount', 'Created At'
     ]);
     const headerText: string = fixture.nativeElement.querySelector('.editable-table thead tr').textContent;
     expect(headerText).toContain('Gross Amount');
@@ -304,7 +288,7 @@ describe('IncomeStatementComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
-      'Type de revenu', 'Période', 'Statut', 'Montant brut', 'Réf. source', 'Créé le'
+      'Type de revenu', 'Période', 'Statut', 'Montant brut', 'Créé le'
     ]);
   });
 

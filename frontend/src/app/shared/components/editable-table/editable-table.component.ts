@@ -34,12 +34,18 @@ export interface EditableTableColumn {
     <table class="editable-table">
       <thead>
         <tr>
+          <th scope="col" *ngIf="selectable" class="editable-table__select">
+            <input type="checkbox" aria-label="Select all" [checked]="allSelected" (change)="toggleAll($any($event.target).checked)" />
+          </th>
           <th scope="col" *ngFor="let column of columns">{{ column.label }}</th>
           <th scope="col" *ngIf="!readOnly">{{ removeRowLabel }}</th>
         </tr>
       </thead>
       <tbody *ngIf="rows.length > 0; else emptyState">
         <tr *ngFor="let row of rows; let i = index; trackBy: trackByIndex" (click)="onRowClick(i)">
+          <td *ngIf="selectable" class="editable-table__select">
+            <input type="checkbox" aria-label="Select row" [checked]="selectedIds.includes('' + row['id'])" (click)="$event.stopPropagation()" (change)="toggleRow('' + row['id'], $any($event.target).checked)" />
+          </td>
           <td *ngFor="let column of columns" [attr.data-label]="column.label">
             <ng-container *ngIf="column.type === 'action'; else dataCell">
               <ng-container
@@ -99,7 +105,7 @@ export interface EditableTableColumn {
       <ng-template #emptyState>
         <tbody>
           <tr>
-            <td class="editable-table__empty" [attr.colspan]="readOnly ? columns.length : columns.length + 1">
+            <td class="editable-table__empty" [attr.colspan]="(readOnly ? columns.length : columns.length + 1) + (selectable ? 1 : 0)">
               {{ emptyStateLabel }}
             </td>
           </tr>
@@ -119,8 +125,24 @@ export class EditableTableComponent {
   @Input() emptyStateLabel = '';
   @Input() readOnly = false;
   @Input() actionTemplate?: TemplateRef<ActionCellContext>;
+  // Optional row selection (rows must carry a string `id`). Parent owns the selected-ids list.
+  @Input() selectable = false;
+  @Input() selectedIds: string[] = [];
+  @Output() selectionChange = new EventEmitter<string[]>();
   @Output() rowsChange = new EventEmitter<Record<string, string | number>[]>();
   @Output() rowClick = new EventEmitter<number>();
+
+  get allSelected(): boolean {
+    return this.rows.length > 0 && this.rows.every((r) => this.selectedIds.includes('' + r['id']));
+  }
+
+  toggleRow(id: string, checked: boolean): void {
+    this.selectionChange.emit(checked ? [...this.selectedIds, id] : this.selectedIds.filter((x) => x !== id));
+  }
+
+  toggleAll(checked: boolean): void {
+    this.selectionChange.emit(checked ? this.rows.map((r) => '' + r['id']) : []);
+  }
 
   trackByIndex(index: number): number {
     return index;

@@ -11,12 +11,26 @@ import { CycleSummary } from '../models/cycle.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/tab-bar.component';
-import { titleCase } from '../../shared/utils/title-case';
+import { AdminLedgerEntry } from '../models/ledger-entry.model';
+import { AdminLedgerSummaryPage, AdminLedgerSummaryRow } from '../models/ledger-summary.model';
 
 const PAGE_SIZE = 20;
 const CYCLE_LOOKUP_SIZE = 100;
+const DATE_FORMAT = 'dd MMM yyyy';
+const DATE_TIME_FORMAT = 'dd MMM yyyy, HH:mm';
+const MATCHING_KEYS = ['bflb', 'bfrb', 'nlb', 'nrb', 'tlb', 'trb', 'clb', 'crb'];
+
+// One column of the per-income-type layout. Labels reuse the associate Income Statement's i18n
+// keys so both screens read the same.
+interface ColumnSpec {
+  key: string;
+  labelKey: string;
+  badge?: boolean;
+  value: (e: AdminLedgerEntry) => string;
+}
 
 const INCOME_TYPE_TABS = [
+  { id: 'SUMMARY', labelKey: 'admin.ledgerRegister.summaryTab' },
   { id: '', labelKey: 'admin.ledgerRegister.incomeTypeFilterAllOption' },
   { id: 'DIRECT', labelKey: 'admin.ledgerRegister.incomeTypeDirectOption' },
   { id: 'MATCHING', labelKey: 'admin.ledgerRegister.incomeTypeMatchingOption' },
@@ -26,14 +40,20 @@ const INCOME_TYPE_TABS = [
   { id: 'PERK', labelKey: 'admin.ledgerRegister.incomeTypePerkOption' }
 ];
 
-// The backend's LedgerEntryStatus and IncomeType enums are both shouty-uppercase
-// (PENDING/CARRIED_FORWARD/PAID/REVERSED; DIRECT_INCOME/MATCHING_INCOME/SPONSOR_BONUS/...).
-// The shared titleCase() converts to Title Case with spaces replacing underscores, matching the
-// mockup's own ledger data (Viraj_Acres_Settings.dc.html `ledgerRows`: `Direct Income`,
-// `Matching Income`, `Sponsor Bonus`; `l.statusColor` for the per-value colored status).
-// Since the editable-table badge cell renders the row's raw value verbatim, the row-building step
-// below title-cases before the value ever reaches the table, and statusBadgeTone matches on that
-// title-cased string.
+const SUMMARY_TYPES = [
+  { type: 'DIRECT', labelKey: 'incomeStatement.columnDirectIncome' },
+  { type: 'MATCHING', labelKey: 'incomeStatement.columnMatchingIncome' },
+  { type: 'SPONSOR_MATCHING', labelKey: 'incomeStatement.columnSponsorMatchingIncome' },
+  { type: 'ROYALTY', labelKey: 'incomeStatement.columnRoyaltyBonus' },
+  { type: 'REWARD', labelKey: 'incomeStatement.columnReward' },
+  { type: 'PERK', labelKey: 'incomeStatement.tabPerk' },
+  { type: 'SELF_PERFORMANCE', labelKey: 'admin.ledgerRegister.columnSelfPerformance' }
+];
+
+const LEG_FIELD: Record<string, string> = {
+  bflb: 'bfLeft', bfrb: 'bfRight', nlb: 'newLeft', nrb: 'newRight',
+  tlb: 'totalLeft', trb: 'totalRight', clb: 'calcLeft', crb: 'calcRight'
+};
 
 @Component({
   selector: 'app-ledger-register',
@@ -69,13 +89,13 @@ const INCOME_TYPE_TABS = [
             {{ 'admin.ledgerRegister.cycleFilterLabel' | translate }}
             <select (change)="onCycleIdChange($any($event.target).value)">
               <option value="">{{ 'admin.ledgerRegister.cycleFilterAllOption' | translate }}</option>
-              <option *ngFor="let cycle of cycles" [value]="cycle.id">
+              <option *ngFor="let cycle of cycles" [value]="cycle.id" [selected]="cycle.id === cycleId">
                 {{ datePipe.transform(cycle.periodStart, 'mediumDate') }} – {{ datePipe.transform(cycle.periodEnd, 'mediumDate') }}
               </option>
             </select>
           </label>
         </div>
-        <div class="ledger-register__filter-field">
+        <div class="ledger-register__filter-field" *ngIf="!isSummary">
           <label>
             {{ 'admin.ledgerRegister.statusFilterLabel' | translate }}
             <select (change)="onStatusChange($any($event.target).value)">
@@ -93,23 +113,35 @@ const INCOME_TYPE_TABS = [
         {{ 'admin.ledgerRegister.loadError' | translate }}
       </app-inline-banner>
 
+      <div class="ledger-register__toolbar">
+        <button type="button" class="brand-button" [disabled]="selectedIds.length === 0" (click)="openFulfil(selectedIds)">
+          {{ 'admin.ledgerRegister.markPaidAction' | translate }} ({{ selectedIds.length }})
+        </button>
+      </div>
+
+      <dl class="income-statement__legend" *ngIf="incomeType === 'MATCHING'">
+        <div *ngFor="let key of legendKeys"><dt>{{ 'incomeStatement.' + key + 'Abbr' | translate }}</dt><dd>{{ 'incomeStatement.' + key + 'Legend' | translate }}</dd></div>
+      </dl>
+
       <div class="card">
         <app-editable-table
           [readOnly]="true"
+          [selectable]="true"
+          [selectedIds]="selectedIds"
+          (selectionChange)="selectedIds = $event"
           [columns]="registerColumns"
           [rows]="registerRows"
-          [actionTemplate]="fulfilCell"
+          [actionTemplate]="editCell"
           [emptyStateLabel]="'admin.ledgerRegister.emptyState' | translate"
         ></app-editable-table>
-        <ng-template #fulfilCell let-row>
-          <span *ngIf="row['fulfilled'] === '1'">{{ row['fulfilledLabel'] }}</span>
-          <button *ngIf="row['fulfilled'] !== '1'" type="button" class="brand-button brand-button--secondary" (click)="openFulfil(row['id'])">
-            {{ 'admin.ledgerRegister.markPaidAction' | translate }}
+        <ng-template #editCell let-row>
+          <button type="button" class="brand-button brand-button--secondary" (click)="openEdit(row)">
+            {{ 'admin.ledgerRegister.editAction' | translate }}
           </button>
         </ng-template>
       </div>
 
-      <form class="card ledger-register__fulfil" *ngIf="fulfilEntryId" (ngSubmit)="saveFulfil()">
+      <form class="card ledger-register__fulfil" *ngIf="fulfilIds.length" (ngSubmit)="saveFulfil()">
         <label>
           {{ 'admin.ledgerRegister.fulfilDateLabel' | translate }}
           <input type="date" name="fulfilDate" [(ngModel)]="fulfilDate" required />
@@ -120,7 +152,7 @@ const INCOME_TYPE_TABS = [
         </label>
         <app-inline-banner *ngIf="fulfilError" tone="danger">{{ 'admin.ledgerRegister.fulfilError' | translate }}</app-inline-banner>
         <button type="submit" class="brand-button" [disabled]="!fulfilDate">{{ 'admin.ledgerRegister.fulfilSaveAction' | translate }}</button>
-        <button type="button" class="brand-button brand-button--secondary" (click)="fulfilEntryId = ''">{{ 'admin.ledgerRegister.fulfilCancelAction' | translate }}</button>
+        <button type="button" class="brand-button brand-button--secondary" (click)="fulfilIds = []">{{ 'admin.ledgerRegister.fulfilCancelAction' | translate }}</button>
       </form>
 
       <div class="ledger-register__pagination" *ngIf="page">
@@ -153,12 +185,19 @@ export class LedgerRegisterComponent implements OnInit {
   registerRows: Record<string, string>[] = [];
   private associateId = '';
   incomeType = '';
-  private cycleId = '';
+  cycleId = '';
   private status = '';
-  fulfilEntryId = '';
+  private summaryPage: AdminLedgerSummaryPage | null = null;
+  legendKeys = ['bflb', 'nlb', 'tlb', 'clb', 'bfrb', 'nrb', 'trb', 'crb'];
+  selectedIds: string[] = [];
+  fulfilIds: string[] = [];
   fulfilDate = '';
   fulfilRemark = '';
   fulfilError = false;
+
+  get isSummary(): boolean {
+    return this.incomeType === 'SUMMARY';
+  }
 
   get tabs(): TabDefinition[] {
     return INCOME_TYPE_TABS.map(t => ({ id: t.id, label: this.translate.instant(t.labelKey) }));
@@ -178,27 +217,116 @@ export class LedgerRegisterComponent implements OnInit {
   ngOnInit(): void {
     this.registerColumns = this.buildColumns();
     this.adminService.listAssociates().subscribe(associates => (this.associates = associates));
-    this.cycleManagementService.list('', 0, CYCLE_LOOKUP_SIZE).subscribe(res => (this.cycles = res.cycles));
-    this.loadPage(0);
+    // Default the cycle filter to the most recent cycle; first page loads once that's known.
+    this.cycleManagementService.list('', 0, CYCLE_LOOKUP_SIZE).subscribe({
+      next: res => {
+        this.cycles = res.cycles;
+        this.cycleId = res.cycles.reduce<CycleSummary | null>((a, c) => (!a || c.periodStart > a.periodStart ? c : a), null)?.id ?? '';
+        this.loadPage(0);
+      },
+      error: () => this.loadPage(0)
+    });
+  }
+
+  private fmtDate(value: string | null | undefined, format = DATE_FORMAT): string {
+    return (value && this.datePipe.transform(value, format)) || '';
+  }
+
+  private money(amount: number): string {
+    return this.currencyPipe.transform(amount, 'INR', 'symbol', '1.0-2') ?? String(amount);
+  }
+
+  private cyclePeriod(e: AdminLedgerEntry): string {
+    return `${this.fmtDate(e.cyclePeriodStart)} – ${this.fmtDate(e.cyclePeriodEnd)}`;
+  }
+
+  // Per-income-type layout, mirroring the associate Income Statement (income-statement.component.ts).
+  private specsFor(type: string): ColumnSpec[] {
+    const n = (v: number | undefined | null) => String(v ?? 0);
+    const text = (key: string, labelKey: string, value: ColumnSpec['value']): ColumnSpec => ({ key, labelKey, value });
+    switch (type) {
+      case 'DIRECT':
+        return [
+          text('dateTime', 'DateTime', e => this.fmtDate(e.createdAt, DATE_TIME_FORMAT)),
+          text('amount', 'Amount', e => this.money(e.grossAmount)),
+          text('directIncome', 'DirectIncome', e => this.money(e.grossAmount))
+        ];
+      case 'MATCHING':
+        return [
+          text('period', 'Period', e => this.cyclePeriod(e)),
+          ...MATCHING_KEYS.map(k => text(k, k + 'Abbr', e => n((e.legBreakdown as any)?.[LEG_FIELD[k]]))),
+          text('matchingBusiness', 'MatchingBusiness', e => n(e.legBreakdown?.matchingBusiness)),
+          text('matchingIncome', 'MatchingIncome', e => this.money(e.grossAmount))
+        ];
+      case 'SPONSOR_MATCHING':
+        return [
+          text('date', 'Date', e => this.fmtDate(e.createdAt, DATE_TIME_FORMAT)),
+          text('memberId', 'MemberId', e => e.sponseeUserId ?? ''),
+          text('matchingIncome', 'MatchingIncome', e => (e.sponseeMatchingAmount == null ? '' : this.money(e.sponseeMatchingAmount))),
+          text('sponsorMatchingIncome', 'SponsorMatchingIncome', e => this.money(e.grossAmount))
+        ];
+      case 'ROYALTY':
+        return [
+          text('date', 'Date', e => this.cyclePeriod(e)),
+          text('newLeft', 'NewLeftBusiness', e => n(e.legBreakdown?.newLeft)),
+          text('newRight', 'NewRightBusiness', e => n(e.legBreakdown?.newRight)),
+          text('newMatching', 'NewMatchingBusiness', e => n(e.legBreakdown?.matchingBusiness)),
+          text('royaltyBonus', 'RoyaltyBonus', e => this.money(e.grossAmount))
+        ];
+      case 'REWARD':
+        return [
+          text('achievedDate', 'AchievedDate', e => this.fmtDate(e.createdAt)),
+          text('reward', 'Reward', e => this.money(e.grossAmount))
+        ];
+      default:
+        return [
+          text('incomeType', 'IncomeType', e => e.incomeType),
+          text('cyclePeriod', 'CyclePeriod', e => this.cyclePeriod(e)),
+          { key: 'status', labelKey: 'Status', badge: true, value: e => e.status },
+          text('grossAmount', 'GrossAmount', e => this.money(e.grossAmount)),
+          text('createdAt', 'CreatedAt', e => this.fmtDate(e.createdAt, DATE_TIME_FORMAT))
+        ];
+    }
+  }
+
+  // Associate ID + Name first, then the associate-style columns, then payment tracking.
+  private allSpecs(): ColumnSpec[] {
+    return [
+      { key: 'associateId', labelKey: 'AssociateId', value: e => e.associateUserId },
+      { key: 'name', labelKey: 'AssociateName', value: e => e.associateName },
+      ...this.specsFor(this.incomeType),
+      { key: 'payStatus', labelKey: 'PayStatus', value: e => this.translate.instant(e.fulfilledAt ? 'incomeStatement.payStatusPaid' : 'incomeStatement.payStatusUnpaid') },
+      { key: 'paymentDate', labelKey: 'PaymentDate', value: e => this.fmtDate(e.fulfilledAt) },
+      { key: 'remarks', labelKey: 'Remarks', value: e => e.fulfilmentRemark ?? '' }
+    ];
+  }
+
+  private buildSummaryColumns(): EditableTableColumn[] {
+    const t = (k: string) => this.translate.instant(k);
+    const text = (key: string, label: string): EditableTableColumn => ({ key, label, type: 'text' });
+    return [
+      text('associateId', t('incomeStatement.columnAssociateId')),
+      text('name', t('incomeStatement.columnAssociateName')),
+      text('cyclePeriod', t('incomeStatement.columnCyclePeriod')),
+      ...SUMMARY_TYPES.map(c => text(c.type, t(c.labelKey))),
+      text('totalGross', t('admin.ledgerRegister.columnTotalIncome')),
+      text('tds', t('incomeStatement.columnTdsDeduction')),
+      text('adminCharges', t('admin.ledgerRegister.columnAdminCharges')),
+      text('totalNet', t('admin.ledgerRegister.columnNetIncome')),
+      { key: 'payStatus', label: t('incomeStatement.columnPayStatus'), type: 'badge', badgeTone: v => (v === t('incomeStatement.payStatusPaid') ? 'success' : 'warning') }
+    ];
   }
 
   private buildColumns(): EditableTableColumn[] {
-    const columns: EditableTableColumn[] = [
-      { key: 'associate', label: this.translate.instant('admin.ledgerRegister.columnAssociate'), type: 'text' },
-      { key: 'cyclePeriod', label: this.translate.instant('admin.ledgerRegister.columnCyclePeriod'), type: 'text' },
-      { key: 'incomeType', label: this.translate.instant('admin.ledgerRegister.columnIncomeType'), type: 'text' },
-      {
-        key: 'status',
-        label: this.translate.instant('admin.ledgerRegister.columnStatus'),
-        type: 'badge',
-        badgeTone: value => this.statusBadgeTone(value)
-      },
-      { key: 'netAmount', label: this.translate.instant('admin.ledgerRegister.columnNetAmount'), type: 'text' },
-      { key: 'sourceRef', label: this.translate.instant('admin.ledgerRegister.columnSourceRef'), type: 'text' },
-      { key: 'createdAt', label: this.translate.instant('admin.ledgerRegister.columnCreatedAt'), type: 'text' }
-    ];
+    if (this.isSummary) return this.buildSummaryColumns();
+    const columns: EditableTableColumn[] = this.allSpecs().map(c => ({
+      key: c.key,
+      label: this.translate.instant('incomeStatement.' + (c.labelKey.endsWith('Abbr') ? c.labelKey : 'column' + c.labelKey)),
+      type: c.badge ? 'badge' : 'text',
+      ...(c.badge ? { badgeTone: (v: string | number) => this.statusBadgeTone(v) } : {})
+    }));
     if (this.incomeType === 'REWARD') {
-      columns.push({ key: 'fulfil', label: this.translate.instant('admin.ledgerRegister.columnFulfilment'), type: 'action' });
+      columns.push({ key: 'edit', label: this.translate.instant('admin.ledgerRegister.columnFulfilment'), type: 'action' });
     }
     return columns;
   }
@@ -210,7 +338,8 @@ export class LedgerRegisterComponent implements OnInit {
 
   onIncomeTypeChange(value: string): void {
     this.incomeType = value;
-    this.fulfilEntryId = '';
+    this.fulfilIds = [];
+    this.selectedIds = [];
     this.registerColumns = this.buildColumns();
     this.loadPage(0);
   }
@@ -225,17 +354,34 @@ export class LedgerRegisterComponent implements OnInit {
     this.loadPage(0);
   }
 
-  openFulfil(id: string | number): void {
-    this.fulfilEntryId = String(id);
-    this.fulfilDate = new Date().toISOString().slice(0, 10);
-    this.fulfilRemark = '';
+  openFulfil(ids: string[], date = '', remark = ''): void {
+    this.fulfilIds = ids;
+    this.fulfilDate = date || new Date().toISOString().slice(0, 10);
+    this.fulfilRemark = remark;
     this.fulfilError = false;
   }
 
+  openEdit(row: Record<string, string>): void {
+    this.openFulfil([row['id']], row['fulfilledDate'], row['remarkRaw']);
+  }
+
   saveFulfil(): void {
-    this.ledgerRegisterService.fulfil(this.fulfilEntryId, new Date(this.fulfilDate).toISOString(), this.fulfilRemark).subscribe({
+    const paidAt = new Date(this.fulfilDate).toISOString();
+    // Summary rows are keyed "associateId|cycleId" (see updateSummaryRows).
+    const save$ = this.isSummary
+      ? this.ledgerRegisterService.markSummaryPaid(
+          this.fulfilIds.map(id => {
+            const [associateId, cycleId] = id.split('|');
+            return { associateId, cycleId };
+          }),
+          paidAt,
+          this.fulfilRemark
+        )
+      : this.ledgerRegisterService.markPaid(this.fulfilIds, paidAt, this.fulfilRemark);
+    save$.subscribe({
       next: () => {
-        this.fulfilEntryId = '';
+        this.fulfilIds = [];
+        this.selectedIds = [];
         this.loadPage(this.page?.page ?? 0);
       },
       error: () => (this.fulfilError = true)
@@ -243,11 +389,24 @@ export class LedgerRegisterComponent implements OnInit {
   }
 
   goToPage(page: number): void {
+    this.selectedIds = [];
     this.loadPage(page);
   }
 
   protected loadPage(page: number): void {
     this.loadError = false;
+    if (this.isSummary) {
+      this.ledgerRegisterService.summary(this.associateId, this.cycleId, page, PAGE_SIZE).subscribe({
+        next: res => {
+          this.summaryPage = res;
+          // Shared pagination footer reads page/size/totalElements only.
+          this.page = { entries: [], page: res.page, size: res.size, totalElements: res.totalElements };
+          this.updateSummaryRows();
+        },
+        error: () => (this.loadError = true)
+      });
+      return;
+    }
     const filters: AdminLedgerFilters = {};
     if (this.associateId) filters.associateId = this.associateId;
     if (this.incomeType) filters.incomeType = this.incomeType as AdminLedgerFilters['incomeType'];
@@ -262,39 +421,43 @@ export class LedgerRegisterComponent implements OnInit {
     });
   }
 
+  private paySummary(r: AdminLedgerSummaryRow): string {
+    const key = r.paidCount >= r.entryCount ? 'incomeStatement.payStatusPaid' : r.paidCount === 0 ? 'incomeStatement.payStatusUnpaid' : 'admin.ledgerRegister.partlyPaid';
+    return this.translate.instant(key);
+  }
+
+  private updateSummaryRows(): void {
+    this.registerRows = (this.summaryPage?.rows ?? []).map(r => {
+      const row: Record<string, string> = {
+        id: `${r.associateId}|${r.cycleId}`,
+        associateId: r.associateUserId ?? '',
+        name: r.associateName ?? '',
+        cyclePeriod: `${this.fmtDate(r.cyclePeriodStart)} – ${this.fmtDate(r.cyclePeriodEnd)}`,
+        totalGross: this.money(r.totalGross),
+        tds: this.money(r.tds),
+        adminCharges: this.money(r.adminCharges),
+        totalNet: this.money(r.totalNet),
+        payStatus: this.paySummary(r)
+      };
+      for (const c of SUMMARY_TYPES) row[c.type] = this.money(r.gross[c.type as keyof typeof r.gross] ?? 0);
+      return row;
+    });
+  }
+
   private updateTableRows(): void {
-    this.registerRows = (this.page?.entries ?? []).map(entry => ({
-      id: entry.id,
-      fulfilled: entry.fulfilledAt ? '1' : '0',
-      fulfilledLabel: entry.fulfilledAt
-        ? this.translate.instant('admin.ledgerRegister.fulfilledOn', { date: this.datePipe.transform(entry.fulfilledAt, 'mediumDate') })
-        : '',
-      associate: `${entry.associateUserId} — ${entry.associateName}`,
-      cyclePeriod: `${this.datePipe.transform(entry.cyclePeriodStart, 'mediumDate')} – ${this.datePipe.transform(entry.cyclePeriodEnd, 'mediumDate')}`,
-      incomeType: titleCase(entry.incomeType),
-      status: titleCase(entry.status),
-      netAmount: this.currencyPipe.transform(entry.netAmount, 'INR', 'symbol', '1.0-2') ?? String(entry.netAmount),
-      // Full UUID wraps 3-4 lines in this column's grid width (mockup-parity fix, D4: shows a
-      // short, still-copyable reference instead -- first 8 hex chars, matching how the mockup's
-      // own SALE-1042-style refs read at a glance without needing the whole id).
-      sourceRef: entry.sourceRef
-        ? entry.sourceRef.slice(0, 8)
-        : this.translate.instant('admin.ledgerRegister.noSourceRef'),
-      createdAt: this.datePipe.transform(entry.createdAt, 'medium') ?? entry.createdAt
-    }));
+    const specs = this.allSpecs();
+    this.registerRows = (this.page?.entries ?? []).map(entry => {
+      const row: Record<string, string> = {
+        id: entry.id,
+        fulfilledDate: entry.fulfilledAt ? entry.fulfilledAt.slice(0, 10) : '',
+        remarkRaw: entry.fulfilmentRemark ?? ''
+      };
+      for (const c of specs) row[c.key] = c.value(entry);
+      return row;
+    });
   }
 
   statusBadgeTone(value: string | number): BadgeTone {
-    switch (value) {
-      case 'Paid':
-        return 'success';
-      case 'Pending':
-      case 'Carried Forward':
-        return 'warning';
-      case 'Reversed':
-        return 'danger';
-      default:
-        return 'default';
-    }
+    return value === 'PAID' ? 'success' : value === 'REVERSED' ? 'danger' : 'warning';
   }
 }

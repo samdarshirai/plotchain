@@ -1584,7 +1584,7 @@
 // Structurally mirrors .sales-register / .cycle-management (eyebrow/
 // title/subtitle, surface-raised filter strip, zero-padding ledger
 // card, mono ledger typography, shared pagination-footer idiom) --
-// view-only, so there's no Actions column and no write-path styling.
+// rows are selectable; the toolbar + inline form record payment dates.
 // ============================================================
 
 .ledger-register {
@@ -1678,56 +1678,33 @@
   border-bottom: none;
 }
 
-// Cycle Period column (2nd) -- tabular-nums, matches Sales Register's date-column treatment
-.ledger-register .editable-table td:nth-child(2) {
+// Columns differ per income-type tab, so cells share one muted tabular treatment instead of
+// per-position rules. The wide tabs (Matching: 14 columns) scroll inside the card on desktop.
+.ledger-register .card {
+  overflow-x: auto;
+}
+
+.ledger-register .editable-table td {
   font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
   font-size: 0.8125rem;
   white-space: nowrap;
 }
 
-// Income Type column (3rd) -- raw enum text, mono uppercase (see DESIGN.md "raw ledger" signature)
-.ledger-register .editable-table td:nth-child(3) {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+.ledger-register .editable-table .editable-table__select {
+  width: 2rem;
+  padding-inline: 0.75rem 0;
 }
 
-// Status column (4th) -- same raw-enum, uniform treatment; no per-value color (see DESIGN.md)
-.ledger-register .editable-table td:nth-child(4) {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+.ledger-register__toolbar {
+  display: flex;
+  justify-content: flex-end;
 }
 
-// Net Amount column (5th) -- ledger typography, right-aligned
-.ledger-register .editable-table td:nth-child(5) {
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-  color: var(--text-primary);
-}
-
-// Source Ref column (6th) -- muted, mono, dash for null
-.ledger-register .editable-table td:nth-child(6) {
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-}
-
-// Created At column (7th) -- tabular-nums, muted
-.ledger-register .editable-table td:nth-child(7) {
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-  font-size: 0.8125rem;
-  white-space: nowrap;
+.ledger-register__fulfil {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
 }
 
 .ledger-register .editable-table__empty {
@@ -1747,6 +1724,15 @@
 }
 
 @media (max-width: 768px) {
+  .ledger-register__toolbar .brand-button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .ledger-register .editable-table td {
+    white-space: normal;
+  }
+
   .ledger-register__filters {
     flex-direction: column;
     align-items: stretch;
@@ -2416,6 +2402,10 @@
 
   @media (max-width: 1100px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

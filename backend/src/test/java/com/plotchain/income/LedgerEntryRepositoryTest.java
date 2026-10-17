@@ -391,4 +391,31 @@ class LedgerEntryRepositoryTest {
 
         assertThat(ledgerEntryRepository.findByAssociateIdAndStatus(associate.getId(), LedgerEntryStatus.CARRIED_FORWARD)).isEmpty();
     }
+
+    @Test
+    void summariseGroupsNetByAssociateAndCycleWithPerTypeColumns() {
+        Associate a = seedAssociate();
+        Associate b = seedAssociate();
+        Cycle cycle = seedCycle();
+        LedgerEntry direct = newEntry(a.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID());
+        direct.setFulfilledAt(Instant.now());
+        ledgerEntryRepository.save(direct);
+        ledgerEntryRepository.save(newEntry(a.getId(), cycle.getId(), IncomeType.MATCHING, UUID.randomUUID()));
+        ledgerEntryRepository.save(newEntry(b.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID()));
+        ledgerEntryRepository.flush();
+
+        List<LedgerSummaryRow> all = ledgerEntryRepository.summarise(null, null);
+        assertThat(all).hasSize(2);
+
+        LedgerSummaryRow rowA = ledgerEntryRepository.summarise(a.getId(), cycle.getId()).get(0);
+        assertThat(rowA.getDirect()).isEqualByComparingTo("100.00");
+        assertThat(rowA.getMatching()).isEqualByComparingTo("100.00");
+        assertThat(rowA.getTotalGross()).isEqualByComparingTo("200.00");
+        assertThat(rowA.getTds()).isEqualByComparingTo("10.00");
+        assertThat(rowA.getAdminCharges()).isEqualByComparingTo("8.00");
+        assertThat(rowA.getTotalNet()).isEqualByComparingTo("182.00");
+        assertThat(rowA.getRoyalty()).isEqualByComparingTo("0");
+        assertThat(rowA.getEntryCount()).isEqualTo(2);
+        assertThat(rowA.getPaidCount()).isEqualTo(1);
+    }
 }

@@ -289,3 +289,19 @@ describe('EditableTableComponent badge column', () => {
     expect(nameCell.textContent).toContain('Aarav Sharma');
   });
 });
+
+describe('EditableTableComponent selection', () => {
+  it('row and header checkboxes emit the selected ids', () => {
+    const c = new EditableTableComponent();
+    c.rows = [{ id: 'a' }, { id: 'b' }];
+    const emitted: string[][] = [];
+    c.selectionChange.subscribe((v: string[]) => emitted.push(v));
+
+    c.toggleRow('a', true);
+    c.selectedIds = ['a'];
+    c.toggleAll(true);
+    c.toggleAll(false);
+
+    expect(emitted).toEqual([['a'], ['a', 'b'], []]);
+  });
+});

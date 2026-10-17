@@ -62,10 +62,62 @@ public class LedgerService {
         Map<UUID, Associate> associatesById = associatesById(content);
         Map<UUID, Cycle> cyclesById = cyclesById(content);
 
+        // Leg breakdown is per-associate history; one lookup per distinct associate on the page
+        // (ponytail: <=100 rows/page, so bounded; batch query if pages grow).
+        Map<UUID, AssociateLedgerEntryResponse.LegBreakdown> breakdowns = new HashMap<>();
+        content.stream().collect(Collectors.groupingBy(LedgerEntry::getAssociateId))
+            .forEach((aid, rows) -> breakdowns.putAll(legBreakdowns(aid, rows)));
+
+        Map<UUID, LedgerEntry> sponseeEntries = sponseeMatchingEntries(content);
+        Map<UUID, Associate> sponsees = associatesById(List.copyOf(sponseeEntries.values()));
+
         List<AdminLedgerEntryResponse> entries = content.stream()
-            .map(e -> toAdminResponse(e, associatesById.get(e.getAssociateId()), cyclesById.get(e.getCycleId())))
+            .map(e -> {
+                LedgerEntry src = sponseeEntries.get(e.getSourceRef());
+                Associate sponsee = src == null ? null : sponsees.get(src.getAssociateId());
+                return toAdminResponse(e, associatesById.get(e.getAssociateId()), cyclesById.get(e.getCycleId()),
+                    breakdowns.get(e.getSourceRef()),
+                    sponsee == null ? null : sponsee.getUserId(), src == null ? null : src.getGrossAmount());
+            })
             .toList();
         return new AdminLedgerPageResponse(entries, page, size, result.getTotalElements());
+    }
+
+    // Admin Summary tab: one row per associate x cycle, net per income type. Newest cycle first,
+    // then associate id; paged in memory (see LedgerEntryRepository#summarise).
+    public AdminLedgerSummaryPageResponse adminSummary(UUID associateId, UUID cycleId, int page, int size) {
+        List<LedgerSummaryRow> all = ledgerEntryRepository.summarise(associateId, cycleId);
+        Map<UUID, Associate> associates = associateRepository
+            .findAllById(all.stream().map(LedgerSummaryRow::getAssociateId).distinct().toList()).stream()
+            .collect(Collectors.toMap(Associate::getId, a -> a));
+        Map<UUID, Cycle> cycles = cycleRepository
+            .findAllById(all.stream().map(LedgerSummaryRow::getCycleId).distinct().toList()).stream()
+            .collect(Collectors.toMap(Cycle::getId, c -> c));
+
+        List<AdminLedgerSummaryRow> rows = all.stream().map(r -> {
+            Associate a = associates.get(r.getAssociateId());
+            Cycle c = cycles.get(r.getCycleId());
+            Map<IncomeType, BigDecimal> gross = new java.util.EnumMap<>(IncomeType.class);
+            gross.put(IncomeType.DIRECT, r.getDirect());
+            gross.put(IncomeType.MATCHING, r.getMatching());
+            gross.put(IncomeType.SPONSOR_MATCHING, r.getSponsorMatching());
+            gross.put(IncomeType.ROYALTY, r.getRoyalty());
+            gross.put(IncomeType.REWARD, r.getReward());
+            gross.put(IncomeType.PERK, r.getPerk());
+            gross.put(IncomeType.SELF_PERFORMANCE, r.getSelfPerformance());
+            return new AdminLedgerSummaryRow(
+                r.getAssociateId(), a == null ? null : a.getUserId(), a == null ? null : a.getName(),
+                r.getCycleId(), c == null ? null : c.getPeriodStart(), c == null ? null : c.getPeriodEnd(),
+                gross, r.getTotalGross(), r.getTds(), r.getAdminCharges(), r.getTotalNet(),
+                r.getEntryCount(), r.getPaidCount());
+        }).sorted(java.util.Comparator
+            .comparing(AdminLedgerSummaryRow::cyclePeriodStart, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()))
+            .thenComparing(AdminLedgerSummaryRow::associateUserId, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+            .toList();
+
+        int from = Math.min(page * size, rows.size());
+        int to = Math.min(from + size, rows.size());
+        return new AdminLedgerSummaryPageResponse(rows.subList(from, to), page, size, rows.size());
     }
 
     // Flow "Associate own ledger" (same spec doc, steps 1-6): associateId is always the caller's
@@ -126,6 +178,13 @@ public class LedgerService {
     // corresponding fields null rather than failing the whole page -- this is a read-only audit
     // view, not a strict-consistency write path (Flow step 6).
     private AdminLedgerEntryResponse toAdminResponse(LedgerEntry entry, Associate associate, Cycle cycle) {
+        return toAdminResponse(entry, associate, cycle, null, null, null);
+    }
+
+    private AdminLedgerEntryResponse toAdminResponse(
+            LedgerEntry entry, Associate associate, Cycle cycle,
+            AssociateLedgerEntryResponse.LegBreakdown legBreakdown,
+            String sponseeUserId, BigDecimal sponseeMatchingAmount) {
         return new AdminLedgerEntryResponse(
             entry.getId(),
             entry.getAssociateId(),
@@ -143,7 +202,10 @@ public class LedgerService {
             entry.getSourceRef(),
             entry.getCreatedAt(),
             entry.getFulfilledAt(),
-            entry.getFulfilmentRemark());
+            entry.getFulfilmentRemark(),
+            legBreakdown,
+            sponseeUserId,
+            sponseeMatchingAmount);
     }
 
     // Same "leave field null on a lookup miss" behavior as toAdminResponse above (Flow step 6)
@@ -230,14 +292,11 @@ public class LedgerService {
             }).toList();
     }
 
-    // Admin marks a reward handed over. Re-marking just updates date/remark.
+    // Admin records the payment date/remark for any ledger row. Re-marking just updates date/remark.
     @Transactional
     public AdminLedgerEntryResponse fulfilReward(UUID ledgerEntryId, Instant fulfilledAt, String remark) {
         LedgerEntry entry = ledgerEntryRepository.findById(ledgerEntryId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ledger entry not found"));
-        if (entry.getIncomeType() != IncomeType.REWARD) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only REWARD entries can be marked paid");
-        }
         entry.setFulfilledAt(fulfilledAt);
         entry.setFulfilmentRemark(remark);
         ledgerEntryRepository.save(entry);
@@ -245,6 +304,38 @@ public class LedgerService {
             entry,
             associateRepository.findById(entry.getAssociateId()).orElse(null),
             cycleRepository.findById(entry.getCycleId()).orElse(null));
+    }
+
+    // Bulk: all-or-nothing. Payment date only; status/wallet untouched.
+    @Transactional
+    public void markPaid(List<UUID> ids, Instant paidAt, String remark) {
+        List<UUID> distinct = ids.stream().distinct().toList();
+        List<LedgerEntry> entries = ledgerEntryRepository.findAllById(distinct);
+        if (entries.size() != distinct.size()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ledger entry not found");
+        }
+        entries.forEach(e -> {
+            e.setFulfilledAt(paidAt);
+            e.setFulfilmentRemark(remark);
+        });
+        ledgerEntryRepository.saveAll(entries);
+    }
+
+    // Pays every still-unpaid entry of each associate x cycle (all income types). Already-paid
+    // entries keep their original date/remark. All-or-nothing: a pair with no entries is a 404.
+    @Transactional
+    public void markSummaryPaid(List<MarkSummaryPaidRequest.Row> rows, Instant paidAt, String remark) {
+        for (MarkSummaryPaidRequest.Row row : rows.stream().distinct().toList()) {
+            List<LedgerEntry> entries = ledgerEntryRepository.findByAssociateIdAndCycleId(row.associateId(), row.cycleId());
+            if (entries.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ledger entry not found");
+            }
+            entries.stream().filter(e -> e.getFulfilledAt() == null).forEach(e -> {
+                e.setFulfilledAt(paidAt);
+                e.setFulfilmentRemark(remark);
+            });
+            ledgerEntryRepository.saveAll(entries);
+        }
     }
 
     private Map<UUID, LedgerEntry> rewardEntriesBySourceRef(UUID associateId) {

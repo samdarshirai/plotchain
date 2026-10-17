@@ -30,4 +30,9 @@ public record AdminLedgerEntryResponse(
     UUID sourceRef,
     Instant createdAt,
     Instant fulfilledAt,
-    String fulfilmentRemark) {}
+    String fulfilmentRemark,
+    // MATCHING/ROYALTY rows only (null otherwise); same shape as the associate response.
+    AssociateLedgerEntryResponse.LegBreakdown legBreakdown,
+    // SPONSOR_MATCHING rows only (null otherwise).
+    String sponseeUserId,
+    BigDecimal sponseeMatchingAmount) {}

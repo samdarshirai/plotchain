@@ -422,13 +422,57 @@ class LedgerServiceTest {
     }
 
     @Test
-    void fulfilReward_rejectsNonRewardEntry() {
-        UUID id = UUID.randomUUID();
-        LedgerEntry e = newEntry(id, UUID.randomUUID(), UUID.randomUUID(), null);
-        e.setIncomeType(IncomeType.DIRECT);
-        when(ledgerEntryRepository.findById(id)).thenReturn(java.util.Optional.of(e));
+    void markPaid_setsDateOnAllEntriesAnyType() {
+        LedgerEntry a = newEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null);
+        a.setIncomeType(IncomeType.DIRECT);
+        LedgerEntry b = newEntry(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null);
+        b.setIncomeType(IncomeType.ROYALTY);
+        when(ledgerEntryRepository.findAllById(List.of(a.getId(), b.getId()))).thenReturn(List.of(a, b));
+        Instant when = Instant.parse("2026-07-01T00:00:00Z");
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.fulfilReward(id, Instant.now(), null))
+        service.markPaid(List.of(a.getId(), b.getId()), when, "NEFT");
+
+        assertThat(a.getFulfilledAt()).isEqualTo(when);
+        assertThat(b.getFulfilmentRemark()).isEqualTo("NEFT");
+    }
+
+    @Test
+    void markPaid_rejectsUnknownId() {
+        UUID id = UUID.randomUUID();
+        when(ledgerEntryRepository.findAllById(List.of(id))).thenReturn(List.of());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.markPaid(List.of(id), Instant.now(), null))
+            .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
+
+    @Test
+    void markSummaryPaid_paysOnlyUnpaidEntriesAndKeepsExistingDates() {
+        UUID a = UUID.randomUUID();
+        UUID c = UUID.randomUUID();
+        LedgerEntry paid = newEntry(UUID.randomUUID(), a, c, null);
+        Instant old = Instant.parse("2026-01-01T00:00:00Z");
+        paid.setFulfilledAt(old);
+        paid.setFulfilmentRemark("old");
+        LedgerEntry unpaid = newEntry(UUID.randomUUID(), a, c, null);
+        when(ledgerEntryRepository.findByAssociateIdAndCycleId(a, c)).thenReturn(List.of(paid, unpaid));
+        Instant when = Instant.parse("2026-07-01T00:00:00Z");
+
+        service.markSummaryPaid(List.of(new MarkSummaryPaidRequest.Row(a, c)), when, "NEFT");
+
+        assertThat(paid.getFulfilledAt()).isEqualTo(old);
+        assertThat(paid.getFulfilmentRemark()).isEqualTo("old");
+        assertThat(unpaid.getFulfilledAt()).isEqualTo(when);
+        assertThat(unpaid.getFulfilmentRemark()).isEqualTo("NEFT");
+    }
+
+    @Test
+    void markSummaryPaid_rejectsPairWithNoEntries() {
+        UUID a = UUID.randomUUID();
+        UUID c = UUID.randomUUID();
+        when(ledgerEntryRepository.findByAssociateIdAndCycleId(a, c)).thenReturn(List.of());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> service.markSummaryPaid(List.of(new MarkSummaryPaidRequest.Row(a, c)), Instant.now(), null))
             .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
 }

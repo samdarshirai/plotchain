@@ -137,4 +137,28 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         @Param("incomeType") IncomeType incomeType,
         @Param("cycleId") UUID cycleId,
         @Param("status") LedgerEntryStatus status);
+
+    // Admin Summary tab: gross income per type, plus gross/TDS/admin/net totals, one row per associate x cycle. Unpaged on purpose
+    // (ponytail: rows = associates x cycles; LedgerService pages in memory -- push paging into SQL
+    // if that count ever gets large).
+    @Query("""
+        SELECT l.associateId AS associateId, l.cycleId AS cycleId,
+          COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.DIRECT THEN l.grossAmount ELSE 0 END), 0) AS direct,
+          COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.MATCHING THEN l.grossAmount ELSE 0 END), 0) AS matching,
+          COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.SPONSOR_MATCHING THEN l.grossAmount ELSE 0 END), 0) AS sponsorMatching,
+          COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.ROYALTY THEN l.grossAmount ELSE 0 END), 0) AS royalty,
+          COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.REWARD THEN l.grossAmount ELSE 0 END), 0) AS reward,
+          COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.PERK THEN l.grossAmount ELSE 0 END), 0) AS perk,
+          COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.SELF_PERFORMANCE THEN l.grossAmount ELSE 0 END), 0) AS selfPerformance,
+          COALESCE(SUM(l.grossAmount), 0) AS totalGross, COALESCE(SUM(l.tdsDeduction), 0) AS tds,
+          COALESCE(SUM(l.adminDeduction), 0) AS adminCharges, COALESCE(SUM(l.netAmount), 0) AS totalNet,
+          COUNT(l) AS entryCount, COUNT(l.fulfilledAt) AS paidCount
+        FROM LedgerEntry l
+        WHERE (:associateId IS NULL OR l.associateId = :associateId)
+        AND (:cycleId IS NULL OR l.cycleId = :cycleId)
+        GROUP BY l.associateId, l.cycleId
+        """)
+    List<LedgerSummaryRow> summarise(@Param("associateId") UUID associateId, @Param("cycleId") UUID cycleId);
+
+    List<LedgerEntry> findByAssociateIdAndCycleId(UUID associateId, UUID cycleId);
 }

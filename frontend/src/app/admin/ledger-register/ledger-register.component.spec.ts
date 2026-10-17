@@ -79,16 +79,16 @@ describe('LedgerRegisterComponent', () => {
   it('renders income types as tabs and reloads when a tab is clicked', () => {
     const el: HTMLElement = fixture.nativeElement;
     const tabs = el.querySelectorAll<HTMLElement>('.ledger-register__tabs .tab-bar__tab');
-    expect(tabs.length).toBe(7);
-    expect(tabs[0].classList).toContain('tab-bar__tab--active');
+    expect(tabs.length).toBe(8);
+    expect(tabs[1].classList).toContain('tab-bar__tab--active');
 
-    tabs[6].click();
+    tabs[7].click();
     fixture.detectChanges();
 
     const req = httpMock.expectOne(r => r.url === '/api/admin/ledger' && r.params.get('incomeType') === 'PERK' && r.params.get('page') === '0');
     req.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
     fixture.detectChanges();
-    expect(el.querySelectorAll('.ledger-register__tabs .tab-bar__tab')[6].classList).toContain('tab-bar__tab--active');
+    expect(el.querySelectorAll('.ledger-register__tabs .tab-bar__tab')[7].classList).toContain('tab-bar__tab--active');
   });
 
   it('reloads with the cycleId filter when it changes', () => {
@@ -132,32 +132,18 @@ describe('LedgerRegisterComponent', () => {
     expect(emptyCell?.textContent?.trim()).toBeTruthy();
   });
 
-  it('renders a dash for a null sourceRef instead of blank or "null"', () => {
-    fixture.componentInstance.onStatusChange('PENDING');
-    httpMock.expectOne(r => r.params.get('status') === 'PENDING').flush({
-      entries: [{ ...sampleEntry, id: 'l2', sourceRef: null, status: 'PENDING' }],
-      page: 0,
-      size: 20,
-      totalElements: 1
-    });
-    fixture.detectChanges();
-
-    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
-    expect(rowText).toContain('—');
-  });
-
   it('has no action column and no row actions — this screen is view-only', () => {
     expect(fixture.componentInstance.registerColumns.some(c => c.type === 'action')).toBeFalse();
   });
 
-  it('formats netAmount as currency with thousands separators, not a raw number', () => {
+  it('formats gross amount as currency with thousands separators, not a raw number', () => {
     fixture.detectChanges();
     const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
-    expect(rowText).toContain('9,300');
-    expect(rowText).not.toContain('9300');
+    expect(rowText).toContain('10,000');
+    expect(rowText).not.toContain('10000');
   });
 
-  it('renders CARRIED_FORWARD status as "Carried Forward" (space, not underscore) with warning tone', () => {
+  it('renders CARRIED_FORWARD status with warning tone', () => {
     fixture.componentInstance.onStatusChange('CARRIED_FORWARD');
     httpMock.expectOne(r => r.params.get('status') === 'CARRIED_FORWARD').flush({
       entries: [{ ...sampleEntry, id: 'l3', status: 'CARRIED_FORWARD' }],
@@ -168,36 +154,51 @@ describe('LedgerRegisterComponent', () => {
     fixture.detectChanges();
 
     const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
-    expect(rowText).toContain('Carried Forward');
-    expect(rowText).not.toContain('Carried_forward');
+    expect(rowText).toContain('CARRIED_FORWARD');
 
-    // The status column is the 4th column (index 3); get its badge element
-    const statusColumnCells = fixture.nativeElement.querySelectorAll('.editable-table tbody tr td');
-    const statusCell = statusColumnCells[3];
-    const badgeElement = statusCell.querySelector('.editable-table__badge');
+    const badgeElement = fixture.nativeElement.querySelector('.editable-table tbody tr .editable-table__badge');
     expect(badgeElement?.classList.contains('editable-table__badge--warning')).toBeTrue();
   });
 
-  it('renders the Income Type enum in Title Case, matching the mockup ledger rows', () => {
+  it('SPONSOR_MATCHING tab mirrors the associate columns, prefixed with Associate ID and Name', () => {
     fixture.componentInstance.onIncomeTypeChange('SPONSOR_MATCHING');
     httpMock.expectOne(r => r.params.get('incomeType') === 'SPONSOR_MATCHING').flush({
-      entries: [{ ...sampleEntry, id: 'l4', incomeType: 'SPONSOR_MATCHING' }],
+      entries: [{ ...sampleEntry, id: 'l4', incomeType: 'SPONSOR_MATCHING', sponseeUserId: 'PC-0009', sponseeMatchingAmount: 500 }],
       page: 0,
       size: 20,
       totalElements: 1
     });
     fixture.detectChanges();
 
-    // Income Type is the 3rd column (index 2).
-    const cells = fixture.nativeElement.querySelectorAll('.editable-table tbody tr td');
-    expect(cells[2].textContent.trim()).toBe('Sponsor Matching');
-    expect(cells[2].textContent).not.toContain('SPONSOR_MATCHING');
+    const keys = fixture.componentInstance.registerColumns.map(c => c.key);
+    expect(keys).toEqual(['associateId', 'name', 'date', 'memberId', 'matchingIncome', 'sponsorMatchingIncome', 'payStatus', 'paymentDate', 'remarks']);
+    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
+    expect(rowText).toContain('PC-0001');
+    expect(rowText).toContain('PC-0009');
   });
 
-  it('REWARD tab shows a Mark paid action that posts the fulfilment and reloads', () => {
+  it('selecting rows and saving posts one bulk mark-paid with the date and remark, then clears selection', () => {
+    fixture.detectChanges();
+    const checkbox: HTMLInputElement = fixture.nativeElement.querySelector('tbody input[type=checkbox]');
+    checkbox.click();
+    expect(fixture.componentInstance.selectedIds).toEqual(['l1']);
+
+    fixture.componentInstance.openFulfil(fixture.componentInstance.selectedIds);
+    fixture.componentInstance.fulfilDate = '2026-07-01';
+    fixture.componentInstance.fulfilRemark = 'NEFT';
+    fixture.componentInstance.saveFulfil();
+
+    const req = httpMock.expectOne('/api/admin/ledger/mark-paid');
+    expect(req.request.body).toEqual({ ids: ['l1'], fulfilledAt: '2026-07-01T00:00:00.000Z', remark: 'NEFT' });
+    req.flush(null);
+    httpMock.expectOne(r => r.url === '/api/admin/ledger').flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    expect(fixture.componentInstance.selectedIds).toEqual([]);
+  });
+
+  it('REWARD tab shows an Edit action that prefills and re-posts date and remark', () => {
     fixture.componentInstance.onIncomeTypeChange('REWARD');
     httpMock.expectOne(r => r.params.get('incomeType') === 'REWARD').flush({
-      entries: [{ ...sampleEntry, id: 'r1', incomeType: 'REWARD' }],
+      entries: [{ ...sampleEntry, id: 'r1', incomeType: 'REWARD', fulfilledAt: '2026-06-01T00:00:00Z', fulfilmentRemark: 'Car' }],
       page: 0,
       size: 20,
       totalElements: 1
@@ -207,19 +208,84 @@ describe('LedgerRegisterComponent', () => {
     const button: HTMLButtonElement = fixture.nativeElement.querySelector('.editable-table tbody button');
     expect(button).toBeTruthy();
     button.click();
+    expect(fixture.componentInstance.fulfilDate).toBe('2026-06-01');
+    expect(fixture.componentInstance.fulfilRemark).toBe('Car');
     fixture.componentInstance.fulfilDate = '2026-07-01';
     fixture.componentInstance.fulfilRemark = 'Cash chosen';
     fixture.componentInstance.saveFulfil();
 
-    const req = httpMock.expectOne('/api/admin/ledger/r1/fulfil');
-    expect(req.request.method).toBe('POST');
+    const req = httpMock.expectOne('/api/admin/ledger/mark-paid');
+    expect(req.request.body.ids).toEqual(['r1']);
     expect(req.request.body.remark).toBe('Cash chosen');
-    req.flush({ ...sampleEntry, id: 'r1', incomeType: 'REWARD', fulfilledAt: '2026-07-01T00:00:00Z' });
+    req.flush(null);
     httpMock.expectOne(r => r.url === '/api/admin/ledger').flush({ entries: [], page: 0, size: 20, totalElements: 0 });
   });
 
-  it('non-REWARD tabs have no Mark paid action', () => {
+  it('non-REWARD tabs have no per-row Edit action', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.editable-table tbody button')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.ledger-register__toolbar button').disabled).toBeTrue();
+  });
+
+  it('Summary tab shows one row per associate x cycle with per-type net, total and pay status', () => {
+    fixture.componentInstance.onIncomeTypeChange('SUMMARY');
+    httpMock.expectOne(r => r.url === '/api/admin/ledger/summary').flush({
+      rows: [
+        {
+          associateId: 'a1', associateUserId: 'PC-0001', associateName: 'Jane Doe', cycleId: 'c1',
+          cyclePeriodStart: '2026-01-01', cyclePeriodEnd: '2026-01-31',
+          gross: { DIRECT: 1000, MATCHING: 2000 }, totalGross: 3000, tds: 150, adminCharges: 60, totalNet: 2790, entryCount: 3, paidCount: 1
+        }
+      ],
+      page: 0, size: 20, totalElements: 1
+    });
+    fixture.detectChanges();
+
+    const keys = fixture.componentInstance.registerColumns.map(c => c.key);
+    expect(keys.slice(0, 5)).toEqual(['associateId', 'name', 'cyclePeriod', 'DIRECT', 'MATCHING']);
+    expect(keys.slice(-5)).toEqual(['totalGross', 'tds', 'adminCharges', 'totalNet', 'payStatus']);
+    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
+    expect(rowText).toContain('Jane Doe');
+    expect(rowText).toContain('1,000');
+    expect(rowText).toContain('3,000');
+    expect(rowText).toContain('2,790');
+    expect(rowText).toContain('admin.ledgerRegister.partlyPaid');
+    expect(fixture.componentInstance.registerRows[0]['id']).toBe('a1|c1');
+  });
+
+  it('Summary mark paid posts associate/cycle pairs', () => {
+    fixture.componentInstance.onIncomeTypeChange('SUMMARY');
+    httpMock.expectOne(r => r.url === '/api/admin/ledger/summary').flush({ rows: [], page: 0, size: 20, totalElements: 0 });
+
+    fixture.componentInstance.openFulfil(['a1|c1', 'a2|c1']);
+    fixture.componentInstance.fulfilDate = '2026-07-01';
+    fixture.componentInstance.fulfilRemark = 'NEFT';
+    fixture.componentInstance.saveFulfil();
+
+    const req = httpMock.expectOne('/api/admin/ledger/summary/mark-paid');
+    expect(req.request.body).toEqual({
+      rows: [{ associateId: 'a1', cycleId: 'c1' }, { associateId: 'a2', cycleId: 'c1' }],
+      fulfilledAt: '2026-07-01T00:00:00.000Z',
+      remark: 'NEFT'
+    });
+    req.flush(null);
+    httpMock.expectOne(r => r.url === '/api/admin/ledger/summary').flush({ rows: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('defaults the cycle filter to the most recent cycle', () => {
+    const f = TestBed.createComponent(LedgerRegisterComponent);
+    f.detectChanges();
+    httpMock.expectOne(req => req.url === '/api/associates').flush([]);
+    httpMock.expectOne(req => req.url === '/api/admin/cycles').flush({
+      cycles: [
+        { id: 'old', periodStart: '2026-01-01', periodEnd: '2026-01-15' },
+        { id: 'new', periodStart: '2026-03-01', periodEnd: '2026-03-15' }
+      ],
+      page: 0, size: 100, totalElements: 2
+    });
+    httpMock.expectOne(r => r.url === '/api/admin/ledger' && r.params.get('cycleId') === 'new')
+      .flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+    f.detectChanges();
+    expect((f.nativeElement.querySelectorAll('select')[1] as HTMLSelectElement).value).toBe('new');
   });
 });

@@ -43,9 +43,29 @@ public class LedgerController {
         return ledgerService.adminList(associateId, incomeType, cycleId, status, page, size);
     }
 
-    // Admin marks a REWARD entry's cash + perk as handed over (Rewards screen "Pay Status").
+    @GetMapping("/summary")
+    public AdminLedgerSummaryPageResponse summary(
+            @RequestParam(required = false) UUID associateId,
+            @RequestParam(required = false) UUID cycleId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ledgerService.adminSummary(associateId, cycleId, Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+    }
+
+    @PostMapping("/summary/mark-paid")
+    public void markSummaryPaid(@Valid @RequestBody MarkSummaryPaidRequest request) {
+        ledgerService.markSummaryPaid(request.rows(), request.fulfilledAt(), request.remark());
+    }
+
+    // Admin records payment date + remark on one ledger entry (also the Reward edit).
     @PostMapping("/{id}/fulfil")
     public AdminLedgerEntryResponse fulfil(@PathVariable UUID id, @Valid @RequestBody RewardFulfilmentRequest request) {
         return ledgerService.fulfilReward(id, request.fulfilledAt(), request.remark());
+    }
+
+    @PostMapping("/mark-paid")
+    public void markPaid(@Valid @RequestBody MarkPaidRequest request) {
+        ledgerService.markPaid(request.ids(), request.fulfilledAt(), request.remark());
     }
 }

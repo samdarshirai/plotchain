@@ -23,4 +23,19 @@ export interface AdminLedgerEntry {
   createdAt: string;
   fulfilledAt: string | null;
   fulfilmentRemark: string | null;
+  legBreakdown?: LegBreakdown | null;
+  sponseeUserId?: string | null;
+  sponseeMatchingAmount?: number | null;
+}
+
+export interface LegBreakdown {
+  bfLeft: number;
+  bfRight: number;
+  newLeft: number;
+  newRight: number;
+  totalLeft: number;
+  totalRight: number;
+  calcLeft: number;
+  calcRight: number;
+  matchingBusiness: number;
 }

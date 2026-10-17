@@ -60,7 +60,7 @@ class LedgerControllerTest {
             entryId, associateId, "VP00001", "Jane Doe", IncomeType.DIRECT, cycleId,
             LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 15),
             new BigDecimal("100.00"), new BigDecimal("5.00"), new BigDecimal("4.00"), new BigDecimal("91.00"),
-            LedgerEntryStatus.PAID, UUID.randomUUID(), Instant.now(), null, null);
+            LedgerEntryStatus.PAID, UUID.randomUUID(), Instant.now(), null, null, null, null, null);
         AdminLedgerPageResponse page = new AdminLedgerPageResponse(List.of(row), 0, 20, 1);
         when(ledgerService.adminList(
             eq(associateId), eq(IncomeType.DIRECT), eq(cycleId), eq(LedgerEntryStatus.PAID), eq(0), eq(20)))
@@ -154,7 +154,7 @@ class LedgerControllerTest {
             id, UUID.randomUUID(), "VP00001", "Jane Doe", IncomeType.REWARD, UUID.randomUUID(),
             LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 15),
             new BigDecimal("100.00"), new BigDecimal("5.00"), new BigDecimal("4.00"), new BigDecimal("91.00"),
-            LedgerEntryStatus.PAID, UUID.randomUUID(), Instant.now(), when, "Cash chosen");
+            LedgerEntryStatus.PAID, UUID.randomUUID(), Instant.now(), when, "Cash chosen", null, null, null);
         when(ledgerService.fulfilReward(eq(id), eq(when), eq("Cash chosen"))).thenReturn(row);
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/ledger/" + id + "/fulfil")
@@ -180,6 +180,63 @@ class LedgerControllerTest {
                 .contentType("application/json")
                 .content("{}")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void markPaidReturns200ForAdmin() throws Exception {
+        UUID id = UUID.randomUUID();
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/ledger/mark-paid")
+                .contentType("application/json")
+                .content("{\"ids\":[\"" + id + "\"],\"fulfilledAt\":\"2026-07-01T00:00:00Z\"}")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk());
+        verify(ledgerService).markPaid(eq(List.of(id)), eq(Instant.parse("2026-07-01T00:00:00Z")), eq(null));
+    }
+
+    @Test
+    void markPaidIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/ledger/mark-paid")
+                .contentType("application/json")
+                .content("{\"ids\":[\"" + UUID.randomUUID() + "\"],\"fulfilledAt\":\"2026-07-01T00:00:00Z\"}")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void markPaidReturns400WhenIdsEmpty() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/ledger/mark-paid")
+                .contentType("application/json")
+                .content("{\"ids\":[],\"fulfilledAt\":\"2026-07-01T00:00:00Z\"}")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void summaryReturns200ForAdminAnd403ForAssociate() throws Exception {
+        when(ledgerService.adminSummary(eq(null), eq(null), eq(0), eq(20)))
+            .thenReturn(new AdminLedgerSummaryPageResponse(List.of(), 0, 20, 0));
+
+        mockMvc.perform(get("/api/admin/ledger/summary")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(0));
+        mockMvc.perform(get("/api/admin/ledger/summary")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void summaryMarkPaidValidatesAndIsAdminOnly() throws Exception {
+        String body = "{\"rows\":[{\"associateId\":\"" + UUID.randomUUID() + "\",\"cycleId\":\"" + UUID.randomUUID()
+            + "\"}],\"fulfilledAt\":\"2026-07-01T00:00:00Z\"}";
+        java.util.function.BiFunction<String, AssociateRole, org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder> post =
+            (content, role) -> org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/ledger/summary/mark-paid")
+                .contentType("application/json").content(content).header("Authorization", "Bearer " + tokenFor(role));
+
+        mockMvc.perform(post.apply(body, AssociateRole.ADMIN)).andExpect(status().isOk());
+        mockMvc.perform(post.apply(body, AssociateRole.ASSOCIATE)).andExpect(status().isForbidden());
+        mockMvc.perform(post.apply("{\"rows\":[],\"fulfilledAt\":\"2026-07-01T00:00:00Z\"}", AssociateRole.ADMIN))
             .andExpect(status().isBadRequest());
     }
 }

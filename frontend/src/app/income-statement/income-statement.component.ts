@@ -326,7 +326,6 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
         'incomeStatement.columnCyclePeriod',
         'incomeStatement.columnStatus',
         'incomeStatement.columnGrossAmount',
-        'incomeStatement.columnSourceRef',
         'incomeStatement.columnCreatedAt'
       ])
       .pipe(takeUntil(this.destroyed$))
@@ -336,7 +335,6 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
           { key: 'cyclePeriod', label: t['incomeStatement.columnCyclePeriod'], type: 'text' },
           { key: 'status', label: t['incomeStatement.columnStatus'], type: 'badge', badgeTone: ledgerStatusTone },
           { key: 'grossAmount', label: t['incomeStatement.columnGrossAmount'], type: 'text' },
-          { key: 'sourceRef', label: t['incomeStatement.columnSourceRef'], type: 'text' },
           { key: 'createdAt', label: t['incomeStatement.columnCreatedAt'], type: 'text' }
         ];
       });
@@ -606,7 +604,6 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
       cyclePeriod: `${this.formatDate(entry.cyclePeriodStart, DATE_FORMAT)} – ${this.formatDate(entry.cyclePeriodEnd, DATE_FORMAT)}`,
       status: entry.status,
       grossAmount: this.formatCurrency(entry.grossAmount),
-      sourceRef: entry.sourceRef ?? this.translate.instant('incomeStatement.noSourceRef'),
       createdAt: this.formatDate(entry.createdAt, DATE_TIME_FORMAT) ?? entry.createdAt
     }));
   }

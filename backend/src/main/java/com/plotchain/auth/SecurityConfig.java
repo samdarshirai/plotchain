@@ -425,9 +425,9 @@ public class SecurityConfig {
                 // never collides with the POST/PUT/PATCH/DELETE blanket rules above, so there's
                 // no first-match-wins ordering requirement forcing this matcher to live in any
                 // one spot.
-                .requestMatchers(HttpMethod.GET, "/api/admin/ledger")
+                .requestMatchers(HttpMethod.GET, "/api/admin/ledger", "/api/admin/ledger/summary")
                     .hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/admin/ledger/*/fulfil")
+                .requestMatchers(HttpMethod.POST, "/api/admin/ledger/*/fulfil", "/api/admin/ledger/mark-paid", "/api/admin/ledger/summary/mark-paid")
                     .hasAuthority("ADMIN")
                 // Admin withdrawal approval queue: ADMIN-only, Wallet/withdrawal unit 6
                 // (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
