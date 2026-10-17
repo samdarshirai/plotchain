@@ -559,6 +559,113 @@ public class BookingService {
         return toResponse(booking, installments);
     }
 
+    // Admin moves an ACTIVE booking to another AVAILABLE plot of the same project. Prices come from the
+    // new plot (booking discount is kept); PAID/ENTERED money stays, PENDING rows become VOID and the new
+    // balance is re-split over as many instalments, on the same due dates. Lock order: booking, then both
+    // plots by ascending id so two crossing transfers cannot deadlock. Every 4xx precedes the first write.
+    @Transactional
+    public BookingResponse transferPlot(UUID bookingId, UUID newPlotId, UUID actorId) {
+        PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)
+            .orElseThrow(() -> new BookingNotFoundException(bookingId));
+        if (booking.getStatus() != BookingStatus.ACTIVE) {
+            throw new BookingNotActiveException(bookingId);
+        }
+        UUID oldPlotId = booking.getPlotId();
+        if (oldPlotId.equals(newPlotId)) {
+            throw new InvalidPlotTransferException("Booking is already on plot " + newPlotId);
+        }
+        boolean oldFirst = oldPlotId.compareTo(newPlotId) < 0;
+        UUID firstId = oldFirst ? oldPlotId : newPlotId;
+        UUID secondId = oldFirst ? newPlotId : oldPlotId;
+        Plot first = plotRepository.findByIdForUpdate(firstId)
+            .orElseThrow(() -> new PlotNotFoundException(firstId));
+        Plot second = plotRepository.findByIdForUpdate(secondId)
+            .orElseThrow(() -> new PlotNotFoundException(secondId));
+        Plot oldPlot = oldFirst ? first : second;
+        Plot newPlot = oldFirst ? second : first;
+
+        if (!java.util.Objects.equals(oldPlot.getProjectId(), newPlot.getProjectId())) {
+            throw new InvalidPlotTransferException("Target plot must be in the same project");
+        }
+        if (newPlot.getStatus() != PlotStatus.AVAILABLE) {
+            throw new PlotNotAvailableException(newPlotId);
+        }
+
+        BigDecimal listPrice = newPlot.getPrice();
+        BigDecimal discount = booking.getDiscount() == null ? BigDecimal.ZERO : booking.getDiscount();
+        if (discount.compareTo(listPrice) >= 0) {
+            throw new InvalidDiscountException(discount, listPrice);
+        }
+        BigDecimal extraPrice = newPlot.getExtraPrice().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal newTotal = listPrice.add(extraPrice).subtract(discount);
+
+        List<EmiInstallment> installments = new ArrayList<>(
+            emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
+        BigDecimal committed = sumByStatus(installments, InstallmentStatus.PAID)
+            .add(sumByStatus(installments, InstallmentStatus.ENTERED));
+        BigDecimal balance = newTotal.subtract(committed).setScale(2, RoundingMode.HALF_UP);
+        if (balance.signum() <= 0) {
+            throw new InvalidPlotTransferException("New plot total " + newTotal.toPlainString()
+                + " does not exceed the amount already paid " + committed.toPlainString());
+        }
+
+        List<LocalDate> dueDates = new ArrayList<>();
+        for (EmiInstallment i : installments) {
+            if (i.getStatus() == InstallmentStatus.PENDING) {
+                i.setStatus(InstallmentStatus.VOID);
+                dueDates.add(i.getDueDate());
+            }
+        }
+        if (dueDates.isEmpty()) { dueDates.add(LocalDate.now(clock)); }
+        int count = dueDates.size();
+        BigDecimal base = balance.divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
+        int nextNumber = installments.stream().mapToInt(EmiInstallment::getInstallmentNumber).max().orElse(0) + 1;
+        BigDecimal running = BigDecimal.ZERO;
+        for (int k = 0; k < count; k++) {
+            EmiInstallment n = new EmiInstallment();
+            n.setId(UUID.randomUUID());
+            n.setBookingId(bookingId);
+            n.setInstallmentNumber(nextNumber + k);
+            n.setDueDate(dueDates.get(k));
+            n.setAmount(k == count - 1 ? balance.subtract(running) : base); // last absorbs the DOWN remainder
+            running = running.add(base);
+            installments.add(n);
+        }
+        emiInstallmentRepository.saveAll(installments);
+
+        BigDecimal oldTotal = booking.getTotalAmount();
+        booking.setPlotId(newPlotId);
+        booking.setListPrice(listPrice);
+        booking.setExtraPrice(extraPrice);
+        booking.setAreaSqft(newPlot.getAreaSqft());
+        booking.setRate(newPlot.getRate());
+        booking.setTotalAmount(newTotal);
+        booking.setInstallmentCount((int) installments.stream()
+            .filter(i -> i.getStatus() != InstallmentStatus.VOID).count());
+        plotBookingRepository.save(booking);
+
+        newPlot.setStatus(PlotStatus.BOOKED);
+        plotRepository.save(newPlot);
+        // Same stale-booking guard as cancel: never free a plot another live booking holds.
+        String plotNote = "";
+        if (oldPlot.getStatus() == PlotStatus.BOOKED) {
+            Optional<PlotBooking> holder = plotBookingRepository.findFirstByPlotIdAndIdNotAndStatusIn(
+                oldPlotId, bookingId, List.of(BookingStatus.ACTIVE, BookingStatus.CONFIRMED));
+            if (holder.isPresent()) {
+                plotNote = "; old plot kept: held by booking " + holder.get().getId();
+            } else {
+                oldPlot.setStatus(PlotStatus.AVAILABLE);
+                plotRepository.save(oldPlot);
+            }
+        }
+
+        bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.PLOT_TRANSFERRED, actorId,
+            "from " + oldPlot.getPlotNo() + " to " + newPlot.getPlotNo() + "; total " + oldTotal.toPlainString()
+                + " -> " + newTotal.toPlainString() + plotNote, clock.instant()));
+
+        return toResponse(booking, installments);
+    }
+
     // Plot-booking unit 14a: admin reads one booking (any status) with installments and derived overdue.
     public BookingResponse getBooking(UUID bookingId) {
         PlotBooking booking = plotBookingRepository.findById(bookingId)

@@ -79,6 +79,14 @@ public class BookingController {
         return bookingService.transferBooking(id, request.associateId(), actorId);
     }
 
+    // Admin moves an ACTIVE booking to another AVAILABLE plot of the same project; totals and the
+    // unpaid schedule are recalculated from the new plot. Returns the updated booking (200).
+    @PostMapping("/{id}/transfer-plot")
+    public BookingResponse transferPlot(@PathVariable UUID id, @Valid @RequestBody TransferPlotRequest request,
+                                        @AuthenticationPrincipal UUID actorId) {
+        return bookingService.transferPlot(id, request.plotId(), actorId);
+    }
+
     // Reference "Add Plot EMI": admin re-splits the unpaid balance of an ACTIVE booking. Returns the updated booking (200).
     @PostMapping("/{id}/reschedule")
     public BookingResponse reschedule(@PathVariable UUID id, @Valid @RequestBody RescheduleRequest request,
