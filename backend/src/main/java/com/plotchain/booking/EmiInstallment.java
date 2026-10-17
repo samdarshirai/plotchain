@@ -57,6 +57,12 @@ public class EmiInstallment {
     @Column(name = "bank_name")
     private String bankName;
 
+    @Column(name = "recorded_at")
+    private Instant recordedAt;
+
+    public Instant getRecordedAt() { return recordedAt; }
+    public void setRecordedAt(Instant recordedAt) { this.recordedAt = recordedAt; }
+
     public String getBankName() { return bankName; }
     public void setBankName(String bankName) { this.bankName = bankName; }
 

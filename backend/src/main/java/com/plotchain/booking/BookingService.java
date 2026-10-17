@@ -178,6 +178,7 @@ public class BookingService {
         installment.setPaidAt(request.paidAt() != null ? request.paidAt() : now);
         installment.setPaymentRef(paymentRef);
         installment.setRecordedBy(actorId);
+        installment.setRecordedAt(now);
         emiInstallmentRepository.save(installment);
 
         bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.PAID, actorId,
@@ -237,6 +238,7 @@ public class BookingService {
         payment.setPaymentRef(paymentRef);
         payment.setPaidAt(paidAt);
         payment.setRecordedBy(actorId);
+        payment.setRecordedAt(now);
         installments.add(payment);
         emiInstallmentRepository.saveAll(installments);
 
@@ -664,6 +666,7 @@ public class BookingService {
         tokenInstallment.setPaymentMode(request.paymentMode());
         tokenInstallment.setBankName(request.bankName() == null || request.bankName().isBlank() ? null : request.bankName().trim());
         tokenInstallment.setConfirmedAt(bookedAt);
+        tokenInstallment.setRecordedAt(bookedAt);
         tokenInstallment.setConfirmedBy(tokenConfirmedBy);
         schedule.add(tokenInstallment);
 
@@ -707,7 +710,7 @@ public class BookingService {
                 .map(i -> new EmiInstallmentResponse(
                     i.getInstallmentNumber(), i.getAmount(), i.getDueDate(), i.getStatus(), i.getPaidAt(),
                     i.getStatus() == InstallmentStatus.PENDING && i.getDueDate().isBefore(today),
-                    i.getPaymentMode(), i.getConfirmedAt(), i.getBankName(), i.getPaymentRef()))
+                    i.getPaymentMode(), i.getConfirmedAt(), i.getBankName(), i.getPaymentRef(), i.getRecordedAt()))
                 .toList();
             Plot plot = plots.get(booking.getPlotId());
             Project project = plot == null ? null : projects.get(plot.getProjectId());

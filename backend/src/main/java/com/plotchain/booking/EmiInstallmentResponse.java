@@ -14,12 +14,19 @@ public record EmiInstallmentResponse(
     PaymentMode paymentMode,
     Instant confirmedAt,
     String bankName,
-    String paymentRef
+    String paymentRef,
+    Instant recordedAt
 ) {
     public EmiInstallmentResponse(int installmentNumber, BigDecimal amount, LocalDate dueDate,
                                   InstallmentStatus status, Instant paidAt, boolean overdue,
+                                  PaymentMode paymentMode, Instant confirmedAt, String bankName, String paymentRef) {
+        this(installmentNumber, amount, dueDate, status, paidAt, overdue, paymentMode, confirmedAt, bankName, paymentRef, null);
+    }
+
+    public EmiInstallmentResponse(int installmentNumber, BigDecimal amount, LocalDate dueDate,
+                                  InstallmentStatus status, Instant paidAt, boolean overdue,
                                   PaymentMode paymentMode, Instant confirmedAt) {
-        this(installmentNumber, amount, dueDate, status, paidAt, overdue, paymentMode, confirmedAt, null, null);
+        this(installmentNumber, amount, dueDate, status, paidAt, overdue, paymentMode, confirmedAt, null, null, null);
     }
 
 

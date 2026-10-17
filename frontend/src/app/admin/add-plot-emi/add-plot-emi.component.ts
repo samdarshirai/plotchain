@@ -180,29 +180,33 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
           <table class="add-plot-emi__table add-plot-emi__table--history">
             <thead>
               <tr>
-                <th scope="col">{{ 'admin.addPlotEmi.hist.date' | translate }}</th>
+                <th scope="col">{{ 'admin.addPlotEmi.hist.sNo' | translate }}</th>
+                <th scope="col">{{ 'admin.addPlotEmi.hist.paymentDate' | translate }}</th>
                 <th scope="col">{{ 'admin.addPlotEmi.hist.amount' | translate }}</th>
                 <th scope="col">{{ 'admin.addPlotEmi.hist.mode' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.hist.bank' | translate }}</th>
                 <th scope="col">{{ 'admin.addPlotEmi.hist.txn' | translate }}</th>
+                <th scope="col">{{ 'admin.addPlotEmi.hist.txnDate' | translate }}</th>
                 <th scope="col">{{ 'admin.addPlotEmi.hist.status' | translate }}</th>
+                <th scope="col">{{ 'admin.addPlotEmi.hist.confirmedDate' | translate }}</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let i of history(b)">
-                <td [attr.data-label]="'admin.addPlotEmi.hist.date' | translate">{{ i.paidAt ? i.paidAt.slice(0, 10) : '—' }}</td>
+              <tr *ngFor="let i of history(b); let n = index">
+                <td [attr.data-label]="'admin.addPlotEmi.hist.sNo' | translate">{{ n + 1 }}</td>
+                <td [attr.data-label]="'admin.addPlotEmi.hist.paymentDate' | translate">{{ dateTime(i.recordedAt) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.hist.amount' | translate">{{ money(i.amount) }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.hist.mode' | translate">{{ i.paymentMode ? ('admin.bookingsEmi.paymentMode.' + i.paymentMode | translate) : '—' }}</td>
-                <td [attr.data-label]="'admin.addPlotEmi.hist.bank' | translate">{{ i.bankName || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.hist.txn' | translate">{{ i.paymentRef || '—' }}</td>
+                <td [attr.data-label]="'admin.addPlotEmi.hist.txnDate' | translate">{{ i.paidAt ? i.paidAt.slice(0, 10) : '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.hist.status' | translate">{{ 'admin.bookingsEmi.installment.' + i.status | translate }}</td>
+                <td [attr.data-label]="'admin.addPlotEmi.hist.confirmedDate' | translate">{{ dateTime(i.confirmedAt) }}</td>
               </tr>
             </tbody>
             <tfoot>
               <tr>
-                <td>{{ 'admin.addPlotEmi.hist.total' | translate }}</td>
+                <td colspan="2">{{ 'admin.addPlotEmi.hist.total' | translate }}</td>
                 <td class="add-plot-emi__num">{{ money(historyTotal(b)) }}</td>
-                <td colspan="4"></td>
+                <td colspan="5"></td>
               </tr>
             </tfoot>
           </table>
@@ -268,6 +272,14 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
   history(b: Booking): EmiInstallment[] {
     return b.installments.filter(i => (i.status === 'ENTERED' || i.status === 'PAID') && i.paidAt)
       .sort((a, c) => (c.paidAt ?? '').localeCompare(a.paidAt ?? ''));
+  }
+
+  // Local date + time (HH:mm); '—' when the row has no timestamp (e.g. not confirmed yet).
+  dateTime(iso?: string | null): string {
+    if (!iso) { return '—'; }
+    const d = new Date(iso);
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
   }
 
   historyTotal(b: Booking): number { return round2(this.history(b).reduce((s, i) => s + i.amount, 0)); }

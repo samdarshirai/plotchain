@@ -162,7 +162,7 @@
     "myBusiness": { "title": "My Business Datewise", "left": "Left Business", "right": "Right Business" },
     "emi": { "title": "EMI Report" },
     "column": {
-      "number": "Number", "paymentDate": "Payment Date", "confirmDate": "Confirm Date", "associateId": "Associate Id",
+      "number": "Number", "paymentDate": "Payment Date & Time", "confirmDate": "Confirm Date", "associateId": "Associate Id",
       "name": "Name", "project": "Project", "plotNumber": "Plot Number", "business": "Business", "amount": "Amount", "mode": "Mode"
     }
   },
@@ -1492,7 +1492,7 @@
         "notActive": "This booking is no longer active."
       },
       "success": "Payment of {{amount}} added for plot {{plot}}. Confirm it from the payments queue.",
-      "hist": {
+      "hist": { "sNo": "S No", "paymentDate": "Payment Date & Time", "txnDate": "TXN Date", "confirmedDate": "Confirmed Date", 
         "empty": "No payments yet.",
         "date": "Date",
         "amount": "Amount",

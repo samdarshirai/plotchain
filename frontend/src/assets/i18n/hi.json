@@ -175,7 +175,7 @@
     "myBusiness": { "title": "मेरा व्यवसाय (तिथि अनुसार)", "left": "बायाँ व्यवसाय", "right": "दायाँ व्यवसाय" },
     "emi": { "title": "EMI रिपोर्ट" },
     "column": {
-      "number": "क्रम", "paymentDate": "भुगतान तिथि", "confirmDate": "पुष्टि तिथि", "associateId": "एसोसिएट आईडी",
+      "number": "क्रम", "paymentDate": "भुगतान तिथि और समय", "confirmDate": "पुष्टि तिथि", "associateId": "एसोसिएट आईडी",
       "name": "नाम", "project": "प्रोजेक्ट", "plotNumber": "प्लॉट नंबर", "business": "व्यवसाय", "amount": "राशि", "mode": "माध्यम"
     }
   },
@@ -1404,7 +1404,7 @@
         "notActive": "यह बुकिंग अब सक्रिय नहीं है।"
       },
       "success": "प्लॉट {{plot}} के लिए {{amount}} का भुगतान जोड़ा गया। इसे भुगतान कतार से पुष्ट करें।",
-      "hist": {
+      "hist": { "sNo": "क्र.सं.", "paymentDate": "भुगतान तिथि और समय", "txnDate": "TXN तिथि", "confirmedDate": "पुष्टि तिथि", 
         "empty": "अभी कोई भुगतान नहीं।",
         "date": "तिथि",
         "amount": "राशि",
