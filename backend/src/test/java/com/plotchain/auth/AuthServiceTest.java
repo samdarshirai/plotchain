@@ -149,6 +149,7 @@ class AuthServiceTest {
         when(associateRepository.findById(id)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> authService.impersonate(id, UUID.randomUUID()))
             .isInstanceOf(com.plotchain.associate.AssociateNotFoundException.class);
+        verify(settingsAuditLogRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 
     @Test

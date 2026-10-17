@@ -124,6 +124,24 @@ describe('AuthService', () => {
       expect(localStorage.getItem('plotchain.auth.admin.mustChange')).toBeNull();
     });
 
+    it('login discards a leftover impersonation stash', () => {
+      startImpersonation('a-1', 'Jane Doe', 'imp-token');
+      service.login('u', 'p').subscribe();
+      httpMock.expectOne('/api/auth/login').flush({ token: 'new-token', associateId: 'x', role: 'ASSOCIATE', mustChangePassword: false } as LoginResponse);
+      expect(service.isImpersonating()).toBeFalse();
+      expect(service.getToken()).toBe('new-token');
+      expect(localStorage.getItem('plotchain.auth.admin.token')).toBeNull();
+      expect(localStorage.getItem('plotchain.auth.admin.role')).toBeNull();
+      expect(localStorage.getItem('plotchain.auth.admin.mustChange')).toBeNull();
+    });
+
+    it('exitImpersonation is a no-op when not impersonating', () => {
+      localStorage.setItem('plotchain.auth.admin.token', 'stale');
+      service.exitImpersonation();
+      expect(service.getToken()).toBe('admin-token');
+      expect(service.getRole()).toBe('ADMIN');
+    });
+
     it('clears everything on logout while impersonating', () => {
       startImpersonation('a-1', 'Jane Doe', 'imp-token');
       service.logout();

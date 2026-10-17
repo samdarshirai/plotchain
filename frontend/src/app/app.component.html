@@ -1,4 +1,4 @@
-<div class="impersonation-banner" role="status" *ngIf="authService.isImpersonating()">
+<div class="impersonation-banner" role="status" *ngIf="authService.isAuthenticated() && authService.isImpersonating()">
   <span class="impersonation-banner__text">{{ 'impersonation.viewingAs' | translate: { name: authService.getImpersonatedName() } }}</span>
   <button type="button" class="impersonation-banner__exit" (click)="onExitImpersonation()">{{ 'impersonation.exit' | translate }}</button>
 </div>

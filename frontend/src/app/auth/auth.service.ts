@@ -20,6 +20,7 @@ export class AuthService {
     const request: LoginRequest = { userId, password };
     return this.http.post<LoginResponse>('/api/auth/login', request).pipe(
       tap(response => {
+        this.clearImpersonation();
         localStorage.setItem(TOKEN_KEY, response.token);
         localStorage.setItem(MUST_CHANGE_KEY, String(response.mustChangePassword));
         localStorage.setItem(ROLE_KEY, response.role);
@@ -31,6 +32,10 @@ export class AuthService {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(MUST_CHANGE_KEY);
     localStorage.removeItem(ROLE_KEY);
+    this.clearImpersonation();
+  }
+
+  private clearImpersonation(): void {
     localStorage.removeItem(ADMIN_TOKEN_KEY);
     localStorage.removeItem(ADMIN_ROLE_KEY);
     localStorage.removeItem(ADMIN_MUST_CHANGE_KEY);
@@ -62,13 +67,13 @@ export class AuthService {
   }
 
   exitImpersonation(): void {
+    if (!this.isImpersonating()) {
+      return;
+    }
     this.stash(TOKEN_KEY, ADMIN_TOKEN_KEY);
     this.stash(ROLE_KEY, ADMIN_ROLE_KEY);
     this.stash(MUST_CHANGE_KEY, ADMIN_MUST_CHANGE_KEY);
-    localStorage.removeItem(ADMIN_TOKEN_KEY);
-    localStorage.removeItem(ADMIN_ROLE_KEY);
-    localStorage.removeItem(ADMIN_MUST_CHANGE_KEY);
-    localStorage.removeItem(IMPERSONATING_KEY);
+    this.clearImpersonation();
   }
 
   private stash(toKey: string, fromKey: string): void {
