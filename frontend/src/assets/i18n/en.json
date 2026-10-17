@@ -1426,6 +1426,9 @@
       "pending": "Unconfirmed", "confirmed": "Confirmed", "emptyPending": "No unconfirmed payments for these filters.", "emptyConfirmed": "No confirmed payments for these filters.",
       "col": { "paymentDate": "Payment Date", "amount": "Amount", "mode": "Mode", "status": "Status", "select": "Select" }
     },
+    "viewPlotEmi": {
+      "title": "View Plot EMI", "subtitle": "Active bookings with pending EMI money, by date and project. Open Detail for the full booking and payment history."
+    },
     "viewBookedPlot": {
       "title": "View Booked Plot", "subtitle": "Active bookings by date and project. Open Detail for the full booking and payment history.",
       "detailTitle": "Booking Details", "buyerPhone": "Buyer Mobile",
