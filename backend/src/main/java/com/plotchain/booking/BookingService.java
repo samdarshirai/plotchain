@@ -111,7 +111,11 @@ public class BookingService {
                 "booking_emi_config row missing - V14 migration seeds it"));
 
         Instant bookedAt = clock.instant();
-        List<EmiInstallment> schedule = computeSchedule(total, token, config, bookedAt, associate.getId());
+        BigDecimal firstInstallment = request.firstInstallmentAmount();
+        if (firstInstallment != null && firstInstallment.compareTo(total.subtract(token)) > 0) {
+            throw new InvalidFirstInstallmentException(firstInstallment, total.subtract(token));
+        }
+        List<EmiInstallment> schedule = computeSchedule(total, token, config, bookedAt, associate.getId(), request, firstInstallment);
 
         PlotBooking booking = new PlotBooking();
         booking.setId(UUID.randomUUID());
@@ -569,12 +573,20 @@ public class BookingService {
     // least one (so with EMI off the schedule is token + one balance installment).
     private List<EmiInstallment> computeSchedule(BigDecimal totalAmount, BigDecimal token,
                                                  BookingEmiConfig config, Instant bookedAt,
-                                                 UUID tokenConfirmedBy) {
+                                                 UUID tokenConfirmedBy, CreateBookingRequest request,
+                                                 BigDecimal firstInstallment) {
         int count = config.isEmiEnabled() ? config.getDefaultInstallmentCount() : 1;
         int balanceCount = Math.max(count - 1, 1);
         LocalDate bookedDate = bookedAt.atZone(ZoneOffset.UTC).toLocalDate();
         BigDecimal balance = totalAmount.subtract(token);
-        BigDecimal base = balance.divide(BigDecimal.valueOf(balanceCount), 2, RoundingMode.DOWN);
+        // Optional explicit first EMI (installment 2); the rest of the balance splits over the others.
+        BigDecimal first = firstInstallment == null ? null : firstInstallment.setScale(2, RoundingMode.HALF_UP);
+        if (first != null && balanceCount == 1 && first.compareTo(balance) != 0) {
+            throw new InvalidFirstInstallmentException(first, balance);
+        }
+        BigDecimal rest = first == null ? balance : balance.subtract(first);
+        int restCount = first == null ? balanceCount : balanceCount - 1;
+        BigDecimal base = restCount == 0 ? BigDecimal.ZERO : rest.divide(BigDecimal.valueOf(restCount), 2, RoundingMode.DOWN);
 
         List<EmiInstallment> schedule = new ArrayList<>();
         EmiInstallment tokenInstallment = new EmiInstallment();
@@ -583,31 +595,29 @@ public class BookingService {
         tokenInstallment.setAmount(token);
         tokenInstallment.setDueDate(bookedDate);
         tokenInstallment.setStatus(InstallmentStatus.PAID);
-        tokenInstallment.setPaidAt(bookedAt);
-        tokenInstallment.setPaymentRef("TOKEN");
+        tokenInstallment.setPaidAt(request.txnDate() == null ? bookedAt : request.txnDate().atStartOfDay(ZoneOffset.UTC).toInstant());
+        tokenInstallment.setPaymentRef(request.txnNo() == null || request.txnNo().isBlank() ? "TOKEN" : request.txnNo().trim());
+        tokenInstallment.setPaymentMode(request.paymentMode());
+        tokenInstallment.setBankName(request.bankName() == null || request.bankName().isBlank() ? null : request.bankName().trim());
         tokenInstallment.setConfirmedAt(bookedAt);
         tokenInstallment.setConfirmedBy(tokenConfirmedBy);
         schedule.add(tokenInstallment);
 
-        BigDecimal runningTotal = BigDecimal.ZERO;
-        for (int i = 1; i < balanceCount; i++) {
+        // Amounts for installments 2..balanceCount+1; the last absorbs rounding so the total is exact.
+        BigDecimal running = BigDecimal.ZERO;
+        for (int i = 1; i <= balanceCount; i++) {
+            BigDecimal amount;
+            if (i == 1 && first != null) { amount = first; }
+            else if (i == balanceCount) { amount = balance.subtract(running); }
+            else { amount = base; }
+            running = running.add(amount);
             EmiInstallment installment = new EmiInstallment();
             installment.setId(UUID.randomUUID());
             installment.setInstallmentNumber(i + 1);
-            installment.setAmount(base);
+            installment.setAmount(amount);
             installment.setDueDate(bookedDate.plusMonths(i));
             schedule.add(installment);
-            runningTotal = runningTotal.add(base);
         }
-
-        // Last installment absorbs whatever the DOWN rounding above left behind, so the
-        // schedule's total always equals totalAmount exactly, never a cent short or over.
-        EmiInstallment last = new EmiInstallment();
-        last.setId(UUID.randomUUID());
-        last.setInstallmentNumber(balanceCount + 1);
-        last.setAmount(balance.subtract(runningTotal));
-        last.setDueDate(bookedDate.plusMonths(balanceCount));
-        schedule.add(last);
 
         return schedule;
     }

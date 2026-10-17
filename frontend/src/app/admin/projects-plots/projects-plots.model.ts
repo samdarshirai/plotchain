@@ -11,6 +11,11 @@ export interface BookingFormValue {
   tokenAmount: number;
   discount: number; // always emitted by the form (0 when blank)
   extraPrice?: number; // prefilled from the plot, editable; omitted = plot default
+  paymentMode?: string; // payment fields are always set by the form; optional so callers/specs stay valid
+  txnNo?: string;
+  bankName?: string;
+  txnDate?: string; // yyyy-MM-dd
+  firstInstallmentAmount?: number;
 }
 
 export interface CreateBookingRequest {
@@ -21,6 +26,11 @@ export interface CreateBookingRequest {
   tokenAmount: number;
   discount?: number;
   extraPrice?: number;
+  paymentMode?: string;
+  txnNo?: string;
+  bankName?: string;
+  txnDate?: string;
+  firstInstallmentAmount?: number;
 }
 
 // The subset of BookingResponse (POST /api/admin/bookings, 201) this screen reads.

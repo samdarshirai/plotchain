@@ -4995,10 +4995,7 @@ button.tree-explorer__vacant-card {
   &__skeleton-tile { height: 88px; border-radius: var(--radius-sm); background: linear-gradient(90deg, var(--surface-raised), var(--surface-card), var(--surface-raised)); background-size: 200% 100%; animation: none; }
 
   &__aside { grid-column: 2; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1.125rem; padding: 1.75rem; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 4px; }
-  &__aside-head { display: flex; justify-content: space-between; align-items: center; }
-  &__aside-eyebrow { font: 600 0.6875rem var(--font-sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand-secondary); }
-  &__aside-close { display: inline-flex; padding: 0.125rem; background: none; border: 0; color: var(--text-muted); cursor: pointer; &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; } }
-  &__aside-actions, &__form-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  &__form-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   &__aside form, &__aside .plot-form, &__aside .project-form { display: flex; flex-direction: column; gap: 1rem; }
   &__aside label { display: flex; flex-direction: column; gap: 0.375rem; font-size: 0.875rem; font-weight: 500; margin: 0; }
   &__aside small, &__aside label span span { font-weight: 400; color: var(--text-muted); }
@@ -5006,7 +5003,6 @@ button.tree-explorer__vacant-card {
   &__aside fieldset { display: flex; gap: 1rem; border: 0; padding: 0; margin: 0;
     legend { font: 500 0.6875rem var(--font-mono); text-transform: uppercase; color: var(--text-muted); }
     label { flex-direction: row; align-items: center; } }
-  &__aside-title { margin: 0; font: 500 1.375rem var(--font-mono); }
   .book-form .book-form__token input { border-color: var(--brand-primary); }
   .book-form { display: flex; flex-direction: column; gap: 1.125rem; flex: 1; }
   .book-form__head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); }
@@ -5024,10 +5020,6 @@ button.tree-explorer__vacant-card {
   .book-form__field, .book-form__total { display: flex; flex-direction: column; gap: 0.375rem; }
   .book-form__preview { margin: 0; padding: 0.75rem 0.875rem; background: var(--surface-raised); border-radius: 3px; font: 400 0.8125rem/1.5 var(--font-sans); color: var(--text-primary); }
   .book-form input[aria-invalid='true'] { border-color: var(--status-danger); }
-  &__reason { margin: 0; font-size: 0.875rem; color: var(--text-muted); }
-  &__facts { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1rem; margin: 0;
-    dt { font: 500 0.6875rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); align-self: center; }
-    dd { margin: 0; font: 600 0.9375rem var(--font-mono); font-variant-numeric: tabular-nums; } }
   &__scrim { display: none; }
 }
 @keyframes projects-plots-shimmer { to { background-position: -200% 0; } }
@@ -5069,6 +5061,34 @@ button.tree-explorer__vacant-card {
 @media (max-width: 639px) {
   .projects-plots__modal { padding: 20px; .plot-form { grid-template-columns: 1fr; } .projects-plots__form-actions { flex-direction: column-reverse; .brand-button { width: 100%; min-height: 44px; } } }
   .projects-plots__actions .brand-button { min-height: 44px; }
+}
+
+// Book-plot popup: wide, three-column grid so the whole form fits without scrolling; one column on phones.
+.projects-plots__modal--wide { width: 920px; padding: 24px 28px; }
+.projects-plots__modal .book-form { gap: 1rem; }
+.projects-plots__modal .book-form__section { margin: 0.25rem 0 0; font: 600 0.6875rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.projects-plots__modal .book-form__facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.625rem 1rem; margin: 0; padding: 0.875rem 1rem; background: var(--surface-raised); border-radius: 3px; }
+.projects-plots__modal .book-form__facts > div { min-width: 0; }
+.projects-plots__modal .book-form__facts dt { font: 500 0.625rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.projects-plots__modal .book-form__facts dd { margin: 0.125rem 0 0; font: 600 0.875rem var(--font-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.projects-plots__modal .book-form__total-line { display: flex; justify-content: space-between; align-items: baseline; padding: 0.625rem 0.875rem; border: 1px solid var(--border-subtle); border-radius: 3px; font: 500 0.8125rem var(--font-sans); }
+.projects-plots__modal .book-form__total-value { font: 600 1.125rem var(--font-mono); font-variant-numeric: tabular-nums; }
+.projects-plots__modal .book-form__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.projects-plots__modal .book-form select { box-sizing: border-box; width: 100%; padding: 0.625rem 0.75rem; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 3px; font: 400 0.875rem var(--font-sans); color: var(--text-primary); }
+.projects-plots__modal .book-form input[readonly] { background: var(--surface-raised); }
+.projects-plots__modal .book-form input[name='txnNo'], .projects-plots__modal .book-form input[name='firstInstallmentAmount'] { font-family: var(--font-mono); }
+@media (min-width: 800px) {
+  .projects-plots__modal--wide .book-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.875rem 1rem; align-items: start; }
+  .projects-plots__modal--wide .book-form__grid { display: contents; }
+  .projects-plots__modal--wide .book-form > .book-form__head, .projects-plots__modal--wide .book-form > .book-form__section,
+  .projects-plots__modal--wide .book-form > .book-form__facts, .projects-plots__modal--wide .book-form > .book-form__preview, .projects-plots__modal--wide .book-form > .book-form__total-line,
+  .projects-plots__modal--wide .book-form > .book-form__actions { grid-column: 1 / -1; }
+  .projects-plots__modal--wide .book-form > .book-form__total-line { margin-block: 0; }
+}
+@media (max-width: 639px) {
+  .projects-plots__modal .book-form__grid { grid-template-columns: 1fr; }
+  .projects-plots__modal .book-form input, .projects-plots__modal .book-form select { min-height: 44px; }
+  .projects-plots__modal .book-form__actions { flex-direction: column-reverse; .brand-button { width: 100%; min-height: 44px; } }
 }
 
 @keyframes plot-availability-shimmer { to { background-position: -200% 0; } }

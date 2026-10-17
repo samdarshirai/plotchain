@@ -54,6 +54,12 @@ public class EmiInstallment {
     @Column(name = "payment_mode")
     private PaymentMode paymentMode;
 
+    @Column(name = "bank_name")
+    private String bankName;
+
+    public String getBankName() { return bankName; }
+    public void setBankName(String bankName) { this.bankName = bankName; }
+
     public InstallmentStatus getStatus() { return status; }
     public void setStatus(InstallmentStatus status) { this.status = status; }
     public Instant getPaidAt() { return paidAt; }

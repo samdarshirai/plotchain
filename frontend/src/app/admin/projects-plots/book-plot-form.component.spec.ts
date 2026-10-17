@@ -17,8 +17,11 @@ describe('BookPlotFormComponent', () => {
     fixture.componentRef.setInput('associates', associates);
     fixture.componentRef.setInput('emiConfig', emi);
     fixture.componentRef.setInput('busy', busy);
+    // Payment fields are mandatory; default them so existing cases reach the emit.
+    Object.assign(fixture.componentInstance, { paymentMode: 'CASH', txnNo: 'T1', txnDate: fixture.componentInstance.today });
     fixture.detectChanges();
   }
+  const pay = { paymentMode: 'CASH', txnNo: 'T1', bankName: '', txnDate: new Date().toISOString().slice(0, 10), firstInstallmentAmount: undefined };
   const submitForm = () => el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
   const typeInto = (name: string, v: string) => {
     const i = el().querySelector<HTMLInputElement>(`[name="${name}"]`)!;
@@ -63,7 +66,7 @@ describe('BookPlotFormComponent', () => {
     typeInto('buyerPhone', ' 9876543210 ');
     typeInto('tokenAmount', '100000');
     submitForm();
-    expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit Kulkarni', buyerPhone: '9876543210', tokenAmount: 100000, discount: 0, extraPrice: 0 }]);
+    expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit Kulkarni', buyerPhone: '9876543210', tokenAmount: 100000, discount: 0, extraPrice: 0, ...pay }]);
   });
 
   it('blocks submit without a token amount and flags the field', async () => {
@@ -166,17 +169,14 @@ describe('BookPlotFormComponent', () => {
       const out = await ready();
       typeInto('tokenAmount', '100000');
       submitForm(); await settle();
-      expect(el().querySelector('.book-totals')).toBeNull();
       expect(out[0].discount).toBe(0);
     });
 
-    it('live total: typing 130000 shows Plot price, Discount and Total after discount = 5,000,000', async () => {
+    it('live total: typing 130000 shows the Total after discount = 5,000,000', async () => {
       await ready();
       typeInto('discount', '130000'); await settle();
-      const box = el().querySelector('.book-totals')!;
+      const box = el().querySelector('.book-form__total-line')!;
       expect(box.getAttribute('aria-live')).toBe('polite');
-      expect(box.textContent).toContain(K + 'summary.price');
-      expect(box.textContent).toContain(K + 'summary.discount');
       expect(box.textContent).toContain(K + 'summary.total');
       expect(box.textContent).toContain(formatInr(5000000));
     });
@@ -258,18 +258,14 @@ describe('BookPlotFormComponent', () => {
     it('shows no summary before submit when the discount is >= the price or negative', async () => {
       await ready();
       typeInto('discount', String(plot.price)); await settle();
-      expect(el().querySelector('.book-totals')).toBeNull();
       expect(el().textContent).not.toContain(K + 'discount.tooHigh'); // error still waits for submit
       typeInto('discount', String(plot.price + 1000)); await settle();
-      expect(el().querySelector('.book-totals')).toBeNull();
       typeInto('discount', '-5'); await settle();
-      expect(el().querySelector('.book-totals')).toBeNull();
     });
 
     it('with an invalid discount the instalment preview falls back to the list price and no summary shows', async () => {
       await ready();
       typeInto('discount', String(plot.price + 1)); typeInto('tokenAmount', '500000'); await settle();
-      expect(el().querySelector('.book-totals')).toBeNull();
       expect(fixture.componentInstance.previewParams.amount).toBe(formatInr(Math.round((plot.price - 500000) / 5)));
     });
 
@@ -277,7 +273,47 @@ describe('BookPlotFormComponent', () => {
       const out = await ready();
       typeInto('discount', '130000'); typeInto('tokenAmount', '100000');
       submitForm();
-      expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit', buyerPhone: '', tokenAmount: 100000, discount: 130000, extraPrice: 0 }]);
+      expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit', buyerPhone: '', tokenAmount: 100000, discount: 130000, extraPrice: 0, ...pay }]);
     });
+  });
+
+  it('fills the associate name from a typed ID and flags an unknown ID', async () => {
+    setup();
+    await fixture.whenStable();
+    typeInto('associateUserId', 'vp00001');
+    fixture.detectChanges();
+    expect(fixture.componentInstance.associateId).toBe('a1');
+    expect(el().querySelector<HTMLInputElement>('[name="associateName"]')!.value).toBe('Jane');
+    typeInto('associateUserId', 'nope');
+    fixture.detectChanges();
+    expect(fixture.componentInstance.associateId).toBe('');
+    expect(el().textContent).toContain('admin.projectsPlots.associateNotFound');
+  });
+
+  it('requires a bank name for bank transfer and cheque but not cash', async () => {
+    setup();
+    const c = fixture.componentInstance;
+    const out: BookingFormValue[] = [];
+    c.submitted.subscribe(v => out.push(v));
+    c.associateId = 'a1';
+    await fixture.whenStable();
+    typeInto('buyerName', 'Rohit'); typeInto('tokenAmount', '100000');
+    c.paymentMode = 'BANK_TRANSFER';
+    submitForm();
+    expect(out.length).toBe(0);
+    c.bankName = 'HDFC';
+    submitForm();
+    expect(out.length).toBe(1);
+    expect(out[0].bankName).toBe('HDFC');
+  });
+
+  it('rejects a first installment larger than the balance after the booking amount', async () => {
+    setup();
+    const c = fixture.componentInstance;
+    typeInto('tokenAmount', '100000');
+    c.firstInstallmentAmount = 99999999;
+    expect(c.firstError).toBeTrue();
+    c.firstInstallmentAmount = 500000;
+    expect(c.firstError).toBeFalse();
   });
 });

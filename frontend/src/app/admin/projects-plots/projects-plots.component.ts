@@ -24,7 +24,6 @@ import { BookingEmiConfig, BookingFormValue } from './projects-plots.model';
 
 type Aside =
   | { kind: 'none' }
-  | { kind: 'detail' }
   | { kind: 'book' }
   | { kind: 'editPlot' }
   | { kind: 'addPlot' }
@@ -225,7 +224,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
               <ul class="projects-plots__tiles" [class.projects-plots__tiles--site]="view === 'site'">
                 <li *ngFor="let p of b.plots; trackBy: trackPlot">
                   <app-plot-tile [attr.data-plot-id]="p.plotId" [plotNo]="p.plotNo" [type]="p.type" [area]="p.area"
-                    [price]="p.price" [status]="p.status" [selected]="p.plotId === selectedPlotId" [plan]="true" (tileSelect)="selectPlot(p)"></app-plot-tile>
+                    [price]="p.price" [status]="p.status" [selected]="p.plotId === selectedPlotId" [plan]="true" (tileSelect)="onTileSelect(p)"></app-plot-tile>
                 </li>
               </ul>
             </section>
@@ -237,49 +236,21 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           </ng-container>
         </section>
 
-        <!-- (c/d) aside: one region, swapped content. Task 5-7 add the form cases. -->
+        <!-- aside: CSV import panel -->
         <div class="projects-plots__scrim" *ngIf="asideOpen" (click)="closeAside()"></div>
         <aside class="projects-plots__aside" *ngIf="asideOpen" [attr.aria-label]="'admin.projectsPlots.title' | translate">
           <ng-container *ngTemplateOutlet="bannerTpl"></ng-container>
-          <div class="projects-plots__aside-head" *ngIf="aside.kind === 'detail' || aside.kind === 'book'">
-            <span class="projects-plots__aside-eyebrow">{{ (aside.kind === 'book' ? 'admin.projectsPlots.drawerBook' : 'admin.projectsPlots.drawerDetail') | translate }}</span>
-            <button type="button" class="projects-plots__aside-close" [attr.aria-label]="'admin.projectsPlots.closeAction' | translate" (click)="closeAside()">
-              <span class="material-symbols-outlined" aria-hidden="true">close</span>
-            </button>
-          </div>
-          <ng-container *ngIf="aside.kind === 'detail' && selectedPlot as sel">
-            <h2 class="projects-plots__aside-title">{{ sel.plotNo }}</h2>
-            <dl class="projects-plots__facts">
-              <dt>{{ 'admin.projectsPlots.factsType' | translate }}</dt><dd>{{ 'plotTile.type.' + sel.type | translate }}</dd>
-              <dt>{{ 'admin.projectsPlots.factsArea' | translate }}</dt><dd>{{ areaText(sel.area) }}</dd>
-              <dt>{{ 'admin.projectsPlots.factsRate' | translate }}</dt><dd>{{ plotDetail?.rate != null ? plotDetail!.rate.toLocaleString('en-IN') : '—' }}</dd>
-              <dt>{{ 'admin.projectsPlots.factsPrice' | translate }}</dt><dd>{{ priceText(sel.price) }}</dd>
-              <dt>{{ 'admin.projectsPlots.statusLabel' | translate }}</dt><dd>{{ 'plotTile.status.' + sel.status | translate }}</dd>
-            </dl>
-            <div class="projects-plots__aside-actions" *ngIf="!readOnly">
-              <button type="button" *ngIf="bookMode" class="brand-button projects-plots__book" [disabled]="sel.status !== 'AVAILABLE'"
-                [attr.aria-describedby]="sel.status !== 'AVAILABLE' ? 'book-disabled-reason' : null" (click)="openAside({ kind: 'book' })">
-                {{ 'admin.projectsPlots.bookAction' | translate }}
-              </button>
-              <button type="button" *ngIf="plotDetail" class="brand-button brand-button--secondary projects-plots__edit-plot" (click)="openAside({ kind: 'editPlot' })">
-                {{ 'admin.projectsPlots.editPlotAction' | translate }}
-              </button>
-            </div>
-            <p id="book-disabled-reason" class="projects-plots__reason" *ngIf="bookMode && sel.status !== 'AVAILABLE'">
-              {{ (sel.status === 'BOOKED' ? 'admin.projectsPlots.bookDisabledBooked' : 'admin.projectsPlots.bookDisabledSold') | translate }}
-            </p>
-          </ng-container>
-
-          <app-book-plot-form *ngIf="aside.kind === 'book' && selectedPlot" [plot]="selectedPlot" [associates]="associates"
-            [emiConfig]="emiConfig" [busy]="bookingBusy" (submitted)="submitBooking($event)" (cancelled)="backToDetail('.projects-plots__book')"></app-book-plot-form>
           <app-csv-import-panel *ngIf="aside.kind === 'csv' && selectedProject" [projectId]="selectedProject.id"
             (imported)="onCsvImported()" (cancelled)="closeAside()"></app-csv-import-panel>
         </aside>
       </div>
 
       <div class="projects-plots__modal-overlay" *ngIf="modalOpen" (click)="closeAside()">
-        <div class="projects-plots__modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <div class="projects-plots__modal" [class.projects-plots__modal--wide]="aside.kind === 'book'" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
           <ng-container *ngTemplateOutlet="bannerTpl"></ng-container>
+          <app-book-plot-form *ngIf="aside.kind === 'book' && selectedPlot" [plot]="selectedPlot" [associates]="associates"
+            [projectName]="selectedProject?.name ?? ''" [location]="selectedProject?.location ?? ''" [rate]="plotDetail?.rate ?? null"
+            [emiConfig]="emiConfig" [busy]="bookingBusy" (submitted)="submitBooking($event)" (cancelled)="closeAside()"></app-book-plot-form>
           <app-plot-form *ngIf="aside.kind === 'editPlot' && selectedPlot && plotDetail"
             [plot]="plotDetail" [locked]="plotDetail.status !== 'AVAILABLE' || selectedPlot.status !== 'AVAILABLE'" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
             (submitted)="saveEditedPlot($event)" (cancelled)="closeAside()"></app-plot-form>
@@ -341,7 +312,7 @@ export class ProjectsPlotsComponent implements OnInit {
     return this.grid?.find(p => p.plotId === this.selectedPlotId) ?? null;
   }
 
-  get modalOpen(): boolean { return this.aside.kind === 'addPlot' || this.aside.kind === 'editPlot'; }
+  get modalOpen(): boolean { return this.aside.kind === 'addPlot' || this.aside.kind === 'editPlot' || this.aside.kind === 'book'; }
   get asideOpen(): boolean { return this.aside.kind !== 'none' && !this.modalOpen; }
   get canManage(): boolean { return !this.readOnly && !this.bookMode; }
 
@@ -511,9 +482,15 @@ export class ProjectsPlotsComponent implements OnInit {
     this.selectedPlotId = p.plotId;
     this.plotDetail = null;
     this.banner = null;
-    this.aside = { kind: 'detail' };
+    this.aside = { kind: 'none' };
     this.opener = null;
     this.fetchDetail(this.selectedProject!.id, p.plotId);
+  }
+
+  // Tile view has no Book column: in book mode a tile click on an available plot opens the booking popup.
+  onTileSelect(p: PlotGridItem): void {
+    this.selectPlot(p);
+    if (this.bookMode && !this.readOnly && p.status === 'AVAILABLE') { this.openAside({ kind: 'book' }); }
   }
 
   editRow(p: PlotGridItem): void {
@@ -554,28 +531,12 @@ export class ProjectsPlotsComponent implements OnInit {
   openAside(next: Aside): void {
     this.banner = null;
     this.duplicatePlotNo = false;
-    if (this.aside.kind === 'none' || this.aside.kind === 'detail') {
+    if (this.aside.kind === 'none') {
       // Safari doesn't focus buttons on click, leaving body: treat that as "no opener" so focus falls back to the tile.
       const active = document.activeElement as HTMLElement | null;
       this.opener = active && active !== document.body ? active : null;
     }
     this.aside = next;
-  }
-
-  // Leaves a form for the detail view; focus goes to the matching live control there (else the tile).
-  backToDetail(prefer: string): void {
-    this.aside = { kind: 'detail' };
-    this.banner = null;
-    this.focusDetail(prefer);
-  }
-
-  private focusDetail(prefer?: string): void {
-    const plotId = this.selectedPlotId;
-    setTimeout(() => {
-      const btn = prefer ? document.querySelector<HTMLButtonElement>(`.projects-plots__aside ${prefer}`) : null;
-      if (btn && !btn.disabled) { btn.focus(); }
-      else if (plotId) { document.querySelector<HTMLElement>(`[data-plot-id="${plotId}"] button`)?.focus(); }
-    });
   }
 
   // Focus goes back to whatever opened the aside; if that element is gone, to the selected tile.
@@ -629,6 +590,9 @@ export class ProjectsPlotsComponent implements OnInit {
     this.bookingBusy = true;
     this.plotsService.createBooking({
       plotId, associateId: v.associateId, buyerName: v.buyerName, buyerPhone: v.buyerPhone || undefined, tokenAmount: v.tokenAmount,
+      ...(v.paymentMode ? { paymentMode: v.paymentMode } : {}), ...(v.txnNo ? { txnNo: v.txnNo } : {}), ...(v.txnDate ? { txnDate: v.txnDate } : {}),
+      ...(v.bankName ? { bankName: v.bankName } : {}),
+      ...(v.firstInstallmentAmount ? { firstInstallmentAmount: v.firstInstallmentAmount } : {}),
       ...(v.extraPrice !== undefined ? { extraPrice: v.extraPrice } : {}),
       ...(v.discount > 0 ? { discount: v.discount } : {})
     }).subscribe({
@@ -636,14 +600,14 @@ export class ProjectsPlotsComponent implements OnInit {
         this.bookingBusy = false;
         this.markBooked(projectId, plotId);
         this.banner = { tone: 'success', key: 'admin.projectsPlots.banner.booked', params: { no: plot.plotNo, buyer: booking.buyerName }, bookingId: booking.id };
-        if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'detail' }; this.focusDetail('.projects-plots__book'); }
+        if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'none' }; this.restoreFocus(null, plotId); }
         this.refreshAfterBooking(projectId, plotId);
       },
       error: (err: HttpErrorResponse) => {
         this.bookingBusy = false;
         if (err.status === 409) {
           this.banner = { tone: 'warning', key: 'admin.projectsPlots.error.conflict', params: { no: plot.plotNo } };
-          if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'detail' }; this.focusDetail(); } // the refresh books the plot, so Book is about to be disabled: tile
+          if (this.aside.kind === 'book' && this.selectedPlotId === plotId) { this.aside = { kind: 'none' }; this.restoreFocus(null, plotId); }
           this.refreshAfterBooking(projectId, plotId);
         } else {
           this.banner = this.errorBanner(err);
