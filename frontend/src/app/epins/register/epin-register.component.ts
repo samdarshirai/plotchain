@@ -28,21 +28,27 @@ const PAGE_SIZE = 20;
 
       <div class="epin-reg__card">
         <div class="epin-reg__bar">
-          <label>{{ 'epinRegister.search' | translate }}
+          <div class="epin-reg__filters">
+          <label class="epin-reg__label epin-reg__search">{{ 'epinRegister.search' | translate }}
             <input class="epin-reg__input" type="search" [(ngModel)]="q" (ngModelChange)="reload()" />
           </label>
-          <select class="epin-reg__input epin-reg__type" [(ngModel)]="type" (ngModelChange)="reload()" [attr.aria-label]="'epinRegister.type' | translate">
+          <label class="epin-reg__label epin-reg__type">{{ 'epinRegister.type' | translate }}
+          <select class="epin-reg__input" [(ngModel)]="type" (ngModelChange)="reload()">
             <option value="">{{ 'epinRegister.typeAll' | translate }}</option>
             <option value="REGISTRATION">{{ 'epinRegister.typeRegistration' | translate }}</option>
             <option value="TOPUP">{{ 'epinRegister.typeTopup' | translate }}</option>
           </select>
+          </label>
+          </div>
           <div class="epin-reg__tools">
             <button type="button" class="brand-button brand-button--secondary" (click)="copy()">{{ 'epinRegister.copy' | translate }}</button>
             <button type="button" class="brand-button brand-button--secondary" (click)="csv()">{{ 'epinRegister.excelCsv' | translate }}</button>
             <button type="button" class="brand-button brand-button--secondary" (click)="print()">{{ 'epinRegister.printPdf' | translate }}</button>
             <details class="epin-reg__cols">
               <summary class="brand-button brand-button--secondary">{{ 'epinRegister.columns' | translate }}</summary>
-              <label *ngFor="let c of cols"><input type="checkbox" [(ngModel)]="c.visible" /> {{ c.labelKey | translate }}</label>
+              <div class="epin-reg__column-menu">
+                <label *ngFor="let c of cols"><input type="checkbox" [(ngModel)]="c.visible" /> {{ c.labelKey | translate }}</label>
+              </div>
             </details>
           </div>
         </div>
@@ -50,11 +56,11 @@ const PAGE_SIZE = 20;
         <app-inline-banner *ngIf="loadError" tone="danger">{{ 'epins.loadError' | translate }}</app-inline-banner>
 
         <div class="epin-reg__scroll" #tbl>
-          <table class="epin-reg__table">
+          <table class="epin-reg__table" [attr.aria-label]="'epinRegister.title.' + mode | translate">
             <thead>
               <tr>
-                <ng-container *ngFor="let c of cols"><th *ngIf="c.visible">{{ c.labelKey | translate }}</th></ng-container>
-                <th *ngIf="mode === 'new'">{{ 'epinRegister.col.action' | translate }}</th>
+                <ng-container *ngFor="let c of cols"><th *ngIf="c.visible" scope="col">{{ c.labelKey | translate }}</th></ng-container>
+                <th *ngIf="mode === 'new'" scope="col">{{ 'epinRegister.col.action' | translate }}</th>
               </tr>
             </thead>
             <tbody>
