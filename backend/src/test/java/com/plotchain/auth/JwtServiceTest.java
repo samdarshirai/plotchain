@@ -32,6 +32,25 @@ class JwtServiceTest {
     }
 
     @Test
+    void generateImpersonationToken_carriesImpersonatedByClaimAndThirtyMinuteExpiry() throws Exception {
+        JwtService jwtService = new JwtService(SECRET, 60);
+        Associate target = new Associate();
+        target.setId(UUID.randomUUID());
+        target.setRole(AssociateRole.ASSOCIATE);
+        UUID adminId = UUID.randomUUID();
+
+        String token = jwtService.generateImpersonationToken(target, adminId);
+
+        assertThat(jwtService.extractAssociateId(token)).isEqualTo(target.getId());
+        assertThat(jwtService.extractRole(token)).isEqualTo(AssociateRole.ASSOCIATE);
+        assertThat(jwtService.authenticate(token)).isPresent();
+        String payload = new String(java.util.Base64.getUrlDecoder().decode(token.split("\\.")[1]));
+        com.fasterxml.jackson.databind.JsonNode json = new com.fasterxml.jackson.databind.ObjectMapper().readTree(payload);
+        assertThat(json.get("impersonatedBy").asText()).isEqualTo(adminId.toString());
+        assertThat(json.get("exp").asLong() - json.get("iat").asLong()).isEqualTo(1800);
+    }
+
+    @Test
     void rejectsATokenSignedWithADifferentSecret() {
         JwtService signer = new JwtService(SECRET, 60);
         JwtService verifier = new JwtService("different-secret-key-at-least-32-bytes-long!!", 60);
