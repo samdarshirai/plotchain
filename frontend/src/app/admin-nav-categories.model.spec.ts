@@ -18,7 +18,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
       ['ledgerRegister', 'salesRegister', 'cycleManagement', 'epinRegister', 'payoutApproval'],
       ['bookNewPlot', 'addPlotEmi', 'viewBookedPlot', 'viewConfirmedPlot', 'plotTransfer', 'viewPlotEmi', 'viewTransferredPlots', 'viewCancelledPlot'],
-      ['supportTickets'],
+      ['supportTickets', 'news'],
       ['auditLog', 'adminStats']
     ]);
   });

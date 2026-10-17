@@ -1399,6 +1399,12 @@
       "location": "Location", "city": "City", "state": "State", "cityState": "City/State", "business": "Business Count (%)", "businessPercentage": "Business Count (%)",
       "rate": "Rate (Price per Sqft)", "locationMap": "Location Map", "projectMap": "Project Map", "uploaded": "Uploaded", "mapAlt": "Map", "status": "Status", "statusActive": "Active", "statusSuspended": "Suspended"
     },
+    "news": {
+      "eyebrow": "Communication", "title": "News", "subtitle": "Publish news with a date, title and details.",
+      "addAction": "Add News", "addTitle": "Add News", "cancelAction": "Cancel", "saveAction": "Save",
+      "columnSNo": "S No", "date": "Date", "newsTitle": "Title", "body": "News",
+      "emptyState": "No news yet.", "loadError": "Could not load news.", "saveError": "Could not save news.", "requiredError": "Required"
+    },
     "adminUsers": {
       "eyebrow": "Master Data",
       "title": "Admin Users",
@@ -1790,7 +1796,8 @@
       "adminUsers": "Admin Users",
       "projectsPlots": "Projects & Plots",
       "bookingsEmi": "Bookings & EMI",
-      "supportTickets": "Support Tickets"
+      "supportTickets": "Support Tickets",
+      "news": "News"
     },
     "auditLog": {
       "sectionFilterLabel": "Section",
