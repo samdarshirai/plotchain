@@ -180,31 +180,31 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
 
             <p class="projects-plots__empty" role="status" *ngIf="view === 'table' && !readOnly && grid.length && visibleBlocks.length && !tableRows.length">{{ 'admin.projectsPlots.table.noMatch' | translate }}</p>
             <div class="projects-plots__table-wrap" *ngIf="view === 'table' && tableRows.length">
-              <table class="projects-plots__table" [class.projects-plots__table--book]="bookMode">
+              <table class="projects-plots__table" [class.projects-plots__table--book]="fullTable">
                 <thead><tr>
-                  <th scope="col" *ngIf="bookMode">{{ 'admin.projectsPlots.table.sNo' | translate }}</th>
+                  <th scope="col" *ngIf="fullTable">{{ 'admin.projectsPlots.table.sNo' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.plot' | translate }}</th>
-                  <th scope="col" *ngIf="bookMode">{{ 'admin.projectsPlots.table.type' | translate }}</th>
+                  <th scope="col" *ngIf="fullTable">{{ 'admin.projectsPlots.table.type' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.area' | translate }}</th>
                   <th scope="col" class="projects-plots__num" *ngIf="!readOnly">{{ 'admin.projectsPlots.rateLabel' | translate }}</th>
-                  <th scope="col" class="projects-plots__num">{{ (bookMode ? 'admin.projectsPlots.table.price' : 'admin.projectsPlots.table.total') | translate }}</th>
-                  <th scope="col" class="projects-plots__num" *ngIf="bookMode">{{ 'admin.projectsPlots.extraPriceLabel' | translate }}</th>
-                  <th scope="col" class="projects-plots__num" *ngIf="bookMode">{{ 'admin.projectsPlots.table.totalPrice' | translate }}</th>
+                  <th scope="col" class="projects-plots__num">{{ (fullTable ? 'admin.projectsPlots.table.price' : 'admin.projectsPlots.table.total') | translate }}</th>
+                  <th scope="col" class="projects-plots__num" *ngIf="fullTable">{{ 'admin.projectsPlots.extraPriceLabel' | translate }}</th>
+                  <th scope="col" class="projects-plots__num" *ngIf="fullTable">{{ 'admin.projectsPlots.table.totalPrice' | translate }}</th>
                   <th scope="col">{{ 'admin.projectsPlots.table.status' | translate }}</th>
                   <th scope="col" *ngIf="bookMode"><span class="projects-plots__sr">{{ 'admin.projectsPlots.bookAction' | translate }}</span></th>
                 </tr></thead>
                 <tbody>
                   <tr *ngFor="let p of tableRows; trackBy: trackPlot; let i = index" [attr.data-plot-id]="p.plotId" class="projects-plots__row"
                     [class.projects-plots__row--selected]="p.plotId === selectedPlotId">
-                    <td *ngIf="bookMode">{{ i + 1 }}</td>
+                    <td *ngIf="fullTable">{{ i + 1 }}</td>
                     <td><button type="button" class="projects-plots__row-btn" [attr.aria-pressed]="p.plotId === selectedPlotId" (click)="selectPlot(p)">{{ p.plotNo }}</button>
-                      <span class="projects-plots__corner" *ngIf="p.type === 'CORNER' && !bookMode">{{ 'plotTile.corner' | translate }}</span></td>
-                    <td *ngIf="bookMode">{{ 'plotTile.type.' + p.type | translate }}</td>
+                      <span class="projects-plots__corner" *ngIf="p.type === 'CORNER' && !fullTable">{{ 'plotTile.corner' | translate }}</span></td>
+                    <td *ngIf="fullTable">{{ 'plotTile.type.' + p.type | translate }}</td>
                     <td>{{ areaText(p.area) }} {{ 'plotTile.sqft' | translate }}</td>
                     <td class="projects-plots__num" *ngIf="!readOnly">{{ rateText(p.plotId) }}</td>
-                    <td class="projects-plots__num">{{ priceText(bookMode ? basePrice(p) : p.price) }}</td>
-                    <td class="projects-plots__num" *ngIf="bookMode">{{ priceText(p.extraPrice ?? 0) }}</td>
-                    <td class="projects-plots__num" *ngIf="bookMode">{{ priceText(basePrice(p) + (p.extraPrice ?? 0)) }}</td>
+                    <td class="projects-plots__num">{{ priceText(fullTable ? basePrice(p) : p.price) }}</td>
+                    <td class="projects-plots__num" *ngIf="fullTable">{{ priceText(p.extraPrice ?? 0) }}</td>
+                    <td class="projects-plots__num" *ngIf="fullTable">{{ priceText(basePrice(p) + (p.extraPrice ?? 0)) }}</td>
                     <td><span class="projects-plots__pill projects-plots__pill--{{ p.status.toLowerCase() }}">{{ 'plotTile.status.' + p.status | translate }}</span></td>
                     <td *ngIf="bookMode"><button type="button" class="brand-button projects-plots__row-book" [disabled]="p.status !== 'AVAILABLE'" (click)="selectPlot(p); openAside({ kind: 'book' })">{{ 'admin.projectsPlots.bookShort' | translate }}</button></td>
                   </tr>
@@ -296,6 +296,8 @@ export class ProjectsPlotsComponent implements OnInit {
   readonly readOnly = this.route.snapshot.data['readOnly'] === true;
   // Entered from the Plot Booking > "Book new Plot" sidebar item (?book=1): pick an available plot, then Book.
   readonly bookMode = this.route.snapshot.data['bookMode'] === true || this.route.snapshot.queryParamMap?.get('book') === '1';
+  // Every mode shows the book-table columns; only book mode adds the Book button.
+  readonly fullTable = true;
 
   readonly statuses = STATUSES;
   readonly views: View[] = ['grid', 'site', 'table'];
