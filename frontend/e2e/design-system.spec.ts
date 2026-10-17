@@ -49,11 +49,6 @@ for (const role of ROLES) for (const width of [360, 390, 768, 1440]) {
       localStorage.setItem('plotchain.auth.role', login.role);
     }, await response.json());
     const routes = [...role.routes];
-    if (role.name === 'admin') {
-      for (const tab of ['unconfirmed', 'confirmed', 'overdue', 'cancelled', 'lastEmi', 'transferred']) {
-        routes.push(`/settings/bookings-emi?tab=${tab}`);
-      }
-    }
     for (const route of routes) {
       await test.step(route, async () => {
         await checkScreen(page, route, testInfo.outputPath(`${route.replace(/[^a-z0-9]/gi, '-')}.png`));

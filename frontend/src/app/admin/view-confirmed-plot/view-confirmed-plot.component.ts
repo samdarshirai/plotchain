@@ -5,7 +5,7 @@ import { Project } from '../../setup/models/project.model';
 import { ProjectsService } from '../../setup/steps/projects/projects.service';
 import { BookingsEmiService } from '../admin-bookings-emi/bookings-emi.service';
 import { FlashMessage, PaymentPage, PaymentRow } from '../admin-bookings-emi/bookings-emi.model';
-import { classifyError, formatMoney } from '../admin-bookings-emi/bookings-emi.util';
+import { formatMoney } from '../admin-bookings-emi/bookings-emi.util';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 
@@ -213,9 +213,8 @@ export class ViewConfirmedPlotComponent implements OnInit {
         this.load(this.page?.page ?? 0);
       },
       error: err => {
-        const e = classifyError(err, 'confirmPayment');
         this.busy = false;
-        this.banner = { tone: 'danger', msg: { key: 'admin.bookingsEmi.err.' + (e.kind === 'network' ? 'confirmManyNetwork' : 'confirmMany') } };
+        this.banner = { tone: 'danger', msg: { key: 'admin.bookingsEmi.err.' + (err.status === 0 ? 'confirmManyNetwork' : 'confirmMany') } };
         this.load(this.page?.page ?? 0); // stale rows are the usual cause; show the truth
       }
     });

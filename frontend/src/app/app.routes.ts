@@ -132,7 +132,6 @@ export const routes: Routes = [
       { path: 'projects-plots', redirectTo: 'plots', pathMatch: 'full' },
       { path: 'plots', component: ProjectsPlotsComponent, data: { sectionKey: 'projectsPlots' } },
       { path: 'book-plot', component: ProjectsPlotsComponent, data: { sectionKey: 'projectsPlots', bookMode: true } },
-      { path: 'bookings-emi', loadComponent: () => import('./admin/admin-bookings-emi/bookings-emi.component').then(m => m.BookingsEmiComponent), data: { sectionKey: 'bookingsEmi' } },
       { path: 'audit-log', component: AuditLogComponent, data: { sectionKey: 'auditLog' } },
       { path: 'admin-stats', component: AdminStatsComponent, data: { sectionKey: 'adminStats' } },
       { path: 'support-tickets', loadComponent: () => import('./admin/admin-support-tickets/admin-support-tickets.component').then(m => m.AdminSupportTicketsComponent), data: { sectionKey: 'supportTickets' } },

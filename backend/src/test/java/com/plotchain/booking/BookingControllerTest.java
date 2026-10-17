@@ -200,101 +200,6 @@ class BookingControllerTest {
             .andExpect(status().isBadRequest());
     }
 
-    private static final String PAY_BODY = """
-        {"amount":100000.00,"paymentRef":"UTR-1","paymentMode":"CASH"}
-        """;
-
-    private org.springframework.test.web.servlet.ResultActions pay(UUID bookingId, int n, String body) throws Exception {
-        return mockMvc.perform(patch("/api/admin/bookings/{id}/installments/{n}/pay", bookingId, n)
-            .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
-            .contentType("application/json").content(body));
-    }
-
-    @Test
-    void payReturns200WithTheUpdatedBookingAndPassesTheAdminAsActor() throws Exception {
-        UUID bookingId = UUID.randomUUID();
-        UUID adminId = UUID.randomUUID();
-        BookingResponse updated = new BookingResponse(bookingId, UUID.randomUUID(), UUID.randomUUID(),
-            BookingStatus.ACTIVE, "Jane Buyer", new BigDecimal("200000.00"), 2, Instant.now(),
-            new BigDecimal("100000.00"), new BigDecimal("100000.00"), List.of());
-        when(bookingService.recordPayment(eq(bookingId), eq(1), any(RecordPaymentRequest.class), eq(adminId)))
-            .thenReturn(updated);
-
-        mockMvc.perform(patch("/api/admin/bookings/{id}/installments/{n}/pay", bookingId, 1)
-                .header("Authorization", "Bearer " + tokenFor(adminId, AssociateRole.ADMIN))
-                .contentType("application/json").content(PAY_BODY))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(bookingId.toString()))
-            .andExpect(jsonPath("$.paidAmount").value(100000.00));
-    }
-
-    @Test
-    void payMapsServiceExceptionsToTheSpecStatuses() throws Exception {
-        UUID id = UUID.randomUUID();
-        when(bookingService.recordPayment(eq(id), eq(1), any(), any())).thenThrow(new BookingNotFoundException(id));
-        when(bookingService.recordPayment(eq(id), eq(2), any(), any())).thenThrow(new BookingNotActiveException(id));
-        when(bookingService.recordPayment(eq(id), eq(3), any(), any())).thenThrow(new InstallmentNotFoundException(id, 3));
-        when(bookingService.recordPayment(eq(id), eq(4), any(), any())).thenThrow(new InstallmentNotPayableException(id, 4));
-        when(bookingService.recordPayment(eq(id), eq(5), any(), any()))
-            .thenThrow(new PaymentAmountMismatchException(id, 5, new BigDecimal("1.00")));
-
-        pay(id, 1, PAY_BODY).andExpect(status().isNotFound());
-        pay(id, 2, PAY_BODY).andExpect(status().isConflict());
-        pay(id, 3, PAY_BODY).andExpect(status().isNotFound());
-        pay(id, 4, PAY_BODY).andExpect(status().isConflict());
-        pay(id, 5, PAY_BODY).andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void payRejectsInvalidBodiesWith400WithoutCallingTheService() throws Exception {
-        UUID id = UUID.randomUUID();
-        String longRef = "x".repeat(101);
-        for (String body : List.of(
-                "{\"paymentRef\":\"UTR-1\"}",                                  // amount missing
-                "{\"amount\":0,\"paymentRef\":\"UTR-1\"}",                     // zero
-                "{\"amount\":-5.00,\"paymentRef\":\"UTR-1\"}",                 // negative
-                "{\"amount\":100.00}",                                         // paymentRef missing
-                "{\"amount\":100.00,\"paymentRef\":\"   \"}",                  // blank
-                "{\"amount\":100.00,\"paymentRef\":\"" + longRef + "\"}")) {   // > 100
-            pay(id, 1, body).andExpect(status().isBadRequest());
-        }
-        org.mockito.Mockito.verifyNoInteractions(bookingService);
-    }
-
-    @Test
-    void confirmReturns200WithTheConfirmedBookingAndPassesTheAdminAsActor() throws Exception {
-        UUID bookingId = UUID.randomUUID();
-        UUID adminId = UUID.randomUUID();
-        BookingResponse confirmed = new BookingResponse(bookingId, UUID.randomUUID(), UUID.randomUUID(),
-            BookingStatus.CONFIRMED, "Jane Buyer", new BigDecimal("200000.00"), 2, Instant.now(),
-            BigDecimal.ZERO, new BigDecimal("200000.00"), List.of());
-        when(bookingService.confirmBooking(bookingId, adminId)).thenReturn(confirmed);
-
-        mockMvc.perform(post("/api/admin/bookings/{id}/confirm", bookingId)
-                .header("Authorization", "Bearer " + tokenFor(adminId, AssociateRole.ADMIN)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(bookingId.toString()))
-            .andExpect(jsonPath("$.status").value("CONFIRMED"));
-    }
-
-    @Test
-    void confirmMapsServiceExceptionsToTheSpecStatuses() throws Exception {
-        UUID missing = UUID.randomUUID();
-        UUID notActive = UUID.randomUUID();
-        UUID plotGone = UUID.randomUUID();
-        when(bookingService.confirmBooking(eq(missing), any())).thenThrow(new BookingNotFoundException(missing));
-        when(bookingService.confirmBooking(eq(notActive), any())).thenThrow(new BookingNotActiveException(notActive));
-        when(bookingService.confirmBooking(eq(plotGone), any())).thenThrow(new PlotNotAvailableException(UUID.randomUUID()));
-        String admin = "Bearer " + tokenFor(AssociateRole.ADMIN);
-
-        mockMvc.perform(post("/api/admin/bookings/{id}/confirm", missing).header("Authorization", admin))
-            .andExpect(status().isNotFound());
-        mockMvc.perform(post("/api/admin/bookings/{id}/confirm", notActive).header("Authorization", admin))
-            .andExpect(status().isConflict());
-        mockMvc.perform(post("/api/admin/bookings/{id}/confirm", plotGone).header("Authorization", admin))
-            .andExpect(status().isConflict());
-    }
-
     // ---- U2: payment confirmation endpoints ----
 
     private static final String BULK_PATH = "/api/admin/payments/confirm";
@@ -306,48 +211,6 @@ class BookingControllerTest {
 
     private static String bulkBody(UUID id) {
         return "{\"items\":[{\"bookingId\":\"" + id + "\",\"installmentNumber\":1}]}";
-    }
-
-    @Test
-    void confirmPaymentReturns200AndPassesAdminAsActor() throws Exception {
-        UUID bookingId = UUID.randomUUID();
-        UUID adminId = UUID.randomUUID();
-        BookingResponse updated = new BookingResponse(bookingId, UUID.randomUUID(), UUID.randomUUID(),
-            BookingStatus.ACTIVE, "Jane Buyer", new BigDecimal("200000.00"), 2, Instant.now(),
-            new BigDecimal("100000.00"), new BigDecimal("100000.00"), List.of());
-        when(bookingService.confirmPayment(bookingId, 2, adminId)).thenReturn(updated);
-
-        mockMvc.perform(post("/api/admin/bookings/{id}/installments/{n}/confirm", bookingId, 2)
-                .header("Authorization", "Bearer " + tokenFor(adminId, AssociateRole.ADMIN)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(bookingId.toString()));
-    }
-
-    @Test
-    void confirmPaymentMapsExceptions() throws Exception {
-        UUID id = UUID.randomUUID();
-        when(bookingService.confirmPayment(eq(id), eq(1), any())).thenThrow(new BookingNotFoundException(id));
-        when(bookingService.confirmPayment(eq(id), eq(2), any())).thenThrow(new InstallmentNotFoundException(id, 2));
-        when(bookingService.confirmPayment(eq(id), eq(3), any())).thenThrow(new BookingNotActiveException(id));
-        when(bookingService.confirmPayment(eq(id), eq(4), any())).thenThrow(new InstallmentNotEnteredException(id, 4));
-        String admin = "Bearer " + tokenFor(AssociateRole.ADMIN);
-
-        int[] expected = {404, 404, 409, 409};
-        for (int n = 1; n <= 4; n++) {
-            mockMvc.perform(post("/api/admin/bookings/{id}/installments/{n}/confirm", id, n).header("Authorization", admin))
-                .andExpect(status().is(expected[n - 1]));
-        }
-    }
-
-    @Test
-    void confirmPaymentIsForbiddenForAnAssociateTokenAndUnauthorizedWithoutOne() throws Exception {
-        UUID id = UUID.randomUUID();
-        mockMvc.perform(post("/api/admin/bookings/{id}/installments/1/confirm", id)
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
-            .andExpect(status().isForbidden());
-        mockMvc.perform(post("/api/admin/bookings/{id}/installments/1/confirm", id))
-            .andExpect(status().isUnauthorized());
-        org.mockito.Mockito.verifyNoInteractions(bookingService);
     }
 
     @Test
@@ -405,21 +268,4 @@ class BookingControllerTest {
         org.mockito.Mockito.verifyNoInteractions(bookingService);
     }
 
-    @Test
-    void payRejectsMissingOrInvalidPaymentModeAndAcceptsUpi() throws Exception {
-        UUID id = UUID.randomUUID();
-        pay(id, 1, "{\"amount\":100.00,\"paymentRef\":\"UTR-1\"}").andExpect(status().isBadRequest());
-        pay(id, 1, "{\"amount\":100.00,\"paymentRef\":\"UTR-1\",\"paymentMode\":\"BITCOIN\"}")
-            .andExpect(status().isBadRequest());
-        org.mockito.Mockito.verifyNoInteractions(bookingService);
-
-        when(bookingService.recordPayment(eq(id), eq(1), any(RecordPaymentRequest.class), any()))
-            .thenReturn(new BookingResponse(id, UUID.randomUUID(), UUID.randomUUID(), BookingStatus.ACTIVE, "J",
-                new BigDecimal("1.00"), 1, Instant.now(), BigDecimal.ZERO, BigDecimal.ONE, List.of()));
-        pay(id, 1, "{\"amount\":100.00,\"paymentRef\":\"UTR-1\",\"paymentMode\":\"BANK_TRANSFER\"}").andExpect(status().isOk());
-        org.mockito.ArgumentCaptor<RecordPaymentRequest> captor =
-            org.mockito.ArgumentCaptor.forClass(RecordPaymentRequest.class);
-        org.mockito.Mockito.verify(bookingService).recordPayment(eq(id), eq(1), captor.capture(), any());
-        org.assertj.core.api.Assertions.assertThat(captor.getValue().paymentMode()).isEqualTo(PaymentMode.BANK_TRANSFER);
-    }
 }

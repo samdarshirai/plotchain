@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Booking } from '../../plot-bookings/models/associate-booking-page.model';
 import {
-  BookingEmiConfig, BookingPage, LastEmiFilters, LastEmiRow, OverdueReportPage, PayRequest, PaymentFilters, PaymentPage, PaymentRef, PlotTransferPage, RegisterFilters, RescheduleRequest, TopUpRequest
+  BookingPage, PaymentFilters, PaymentPage, PaymentRef, PlotTransferPage, RegisterFilters, TopUpRequest
 } from './bookings-emi.model';
 
 @Injectable({ providedIn: 'root' })
@@ -38,16 +38,8 @@ export class BookingsEmiService {
     return this.http.get<Booking>(`/api/admin/bookings/${id}`);
   }
 
-  pay(id: string, n: number, req: PayRequest): Observable<Booking> {
-    return this.http.patch<Booking>(`/api/admin/bookings/${id}/installments/${n}/pay`, req);
-  }
-
   topUp(id: string, req: TopUpRequest): Observable<Booking> {
     return this.http.post<Booking>(`/api/admin/bookings/${id}/top-up`, req);
-  }
-
-  confirmPayment(id: string, n: number): Observable<Booking> {
-    return this.http.post<Booking>(`/api/admin/bookings/${id}/installments/${n}/confirm`, {});
   }
 
   // Response is ordered by bookingId, not request order: callers must key results by id.
@@ -63,40 +55,13 @@ export class BookingsEmiService {
     return this.http.get<PaymentPage>('/api/admin/payments', { params });
   }
 
-  lastEmi(f: LastEmiFilters): Observable<LastEmiRow[]> {
-    let params = new HttpParams();
-    if (f.from) { params = params.set('from', f.from); }
-    if (f.to) { params = params.set('to', f.to); }
-    if (f.projectId) { params = params.set('projectId', f.projectId); }
-    return this.http.get<LastEmiRow[]>('/api/admin/emi-reports/last-emi', { params });
-  }
-
-  confirm(id: string): Observable<Booking> {
-    return this.http.post<Booking>(`/api/admin/bookings/${id}/confirm`, {});
-  }
 
   cancel(id: string, reason: string): Observable<Booking> {
     return this.http.post<Booking>(`/api/admin/bookings/${id}/cancel`, { reason });
-  }
-
-  transfer(id: string, associateId: string): Observable<Booking> {
-    return this.http.post<Booking>(`/api/admin/bookings/${id}/transfer`, { associateId });
   }
 
   transferPlot(id: string, plotId: string): Observable<Booking> {
     return this.http.post<Booking>(`/api/admin/bookings/${id}/transfer-plot`, { plotId });
   }
 
-  reschedule(id: string, req: RescheduleRequest): Observable<Booking> {
-    return this.http.post<Booking>(`/api/admin/bookings/${id}/reschedule`, req);
-  }
-
-  overdue(page: number, size: number): Observable<OverdueReportPage> {
-    const params = new HttpParams().set('page', page).set('size', size);
-    return this.http.get<OverdueReportPage>('/api/admin/emi-reports/overdue', { params });
-  }
-
-  config(): Observable<BookingEmiConfig> {
-    return this.http.get<BookingEmiConfig>('/api/company/booking-emi');
-  }
 }

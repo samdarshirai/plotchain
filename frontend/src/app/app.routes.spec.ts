@@ -230,14 +230,6 @@ describe('routes', () => {
       expect(child!.data).toEqual({ sectionKey: 'projectsPlots' });
     });
 
-    it('has a lazy bookings-emi child stamped with sectionKey bookingsEmi', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
-      const child = settingsRoute!.children!.find(c => c.path === 'bookings-emi');
-      expect(child).toBeTruthy();
-      expect(child!.loadComponent).toBeDefined();
-      expect(child!.data).toEqual({ sectionKey: 'bookingsEmi' });
-    });
-
     it('has a lazy support-tickets child stamped with sectionKey supportTickets', () => {
       const settingsRoute = routes.find(r => r.path === 'settings');
       const child = settingsRoute!.children!.find(c => c.path === 'support-tickets');

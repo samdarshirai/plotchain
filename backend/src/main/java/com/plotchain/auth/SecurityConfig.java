@@ -249,19 +249,12 @@ public class SecurityConfig {
                 // shadows the exact-path list matcher above or the POST/PATCH sub-paths.
                 .requestMatchers(HttpMethod.GET, "/api/admin/bookings/*")
                     .hasAuthority("ADMIN")
-                // Admin overdue-EMI report (plot-booking unit 9, Decision 12): same reason as the
-                // GET /api/admin/bookings matcher directly above -- no blanket GET /api/admin/**.
-                .requestMatchers(HttpMethod.GET, "/api/admin/emi-reports/overdue")
-                    .hasAuthority("ADMIN")
                 // Admin payments list (plot-booking ref-gap U3): no blanket GET /api/admin/**; this path is exact,
                 // the POST /confirm sub-path rides the blanket POST rule.
                 .requestMatchers(HttpMethod.GET, "/api/admin/payments")
                     .hasAuthority("ADMIN")
                 // Admin plot-transfers list: exact path, same reason as payments above.
                 .requestMatchers(HttpMethod.GET, "/api/admin/plot-transfers")
-                    .hasAuthority("ADMIN")
-                // Admin "EMI by last date" report (U3): exact path, the /overdue matcher does not cover it.
-                .requestMatchers(HttpMethod.GET, "/api/admin/emi-reports/last-emi")
                     .hasAuthority("ADMIN")
                 // Generate a batch of e-PINs: ADMIN-only, per epin-domain unit 1
                 // (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,

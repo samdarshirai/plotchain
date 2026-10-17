@@ -790,21 +790,6 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/admin/bookings/{id}", UUID.randomUUID())).andExpect(status().isUnauthorized());
     }
 
-    // plot-booking unit 9 (Decision 12): GET /api/admin/emi-reports/overdue needs its OWN ADMIN
-    // matcher (no blanket GET /api/admin/**); without it any associate token would read the report.
-    @ParameterizedTest
-    @EnumSource(AssociateRole.class)
-    void adminOverdueEmiReportIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
-        mockMvc.perform(get("/api/admin/emi-reports/overdue")
-                .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
-    }
-
-    @Test
-    void adminOverdueEmiReportIsUnauthorizedWithoutAToken() throws Exception {
-        mockMvc.perform(get("/api/admin/emi-reports/overdue")).andExpect(status().isUnauthorized());
-    }
-
     @ParameterizedTest
     @EnumSource(AssociateRole.class)
     void adminPaymentsListIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
@@ -823,19 +808,6 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/admin/payments").param("status", "PAID")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
             .andExpect(status().isForbidden());
-    }
-
-    @ParameterizedTest
-    @EnumSource(AssociateRole.class)
-    void adminLastEmiReportIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
-        mockMvc.perform(get("/api/admin/emi-reports/last-emi")
-                .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
-    }
-
-    @Test
-    void adminLastEmiReportIsUnauthorizedWithoutAToken() throws Exception {
-        mockMvc.perform(get("/api/admin/emi-reports/last-emi")).andExpect(status().isUnauthorized());
     }
 
     @Test

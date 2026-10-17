@@ -59,28 +59,6 @@ public class BookingExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
     }
 
-    @ExceptionHandler(NothingToRescheduleException.class)
-    public ResponseEntity<Map<String, String>> handleNothingToReschedule(NothingToRescheduleException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage(), "code", "NO_REMAINING_BALANCE"));
-    }
-
-    @ExceptionHandler(InvalidRescheduleException.class)
-    public ResponseEntity<Map<String, String>> handleInvalidReschedule(InvalidRescheduleException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
-    }
-
-    @ExceptionHandler(SameAssociateTransferException.class)
-    public ResponseEntity<Map<String, String>> handleSameAssociateTransfer(SameAssociateTransferException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
-    }
-
-    // 400 per spec Resolved decision #4. Not AssociateNotActiveException: EPinExceptionHandler maps that
-    // type to 409 globally.
-    @ExceptionHandler(InvalidTransferTargetException.class)
-    public ResponseEntity<Map<String, String>> handleInvalidTransferTarget(InvalidTransferTargetException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
-    }
-
     @ExceptionHandler(InvalidPlotTransferException.class)
     public ResponseEntity<Map<String, String>> handleInvalidPlotTransfer(InvalidPlotTransferException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));

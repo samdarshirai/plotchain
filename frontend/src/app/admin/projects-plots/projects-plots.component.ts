@@ -90,7 +90,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
         <app-inline-banner *ngIf="banner as b" [tone]="b.tone" [dismissible]="true" (dismissed)="banner = null">
           <span [attr.role]="b.tone === 'success' ? 'status' : 'alert'">
             {{ b.key ? (b.key | translate: b.params) : b.text }}
-            <a *ngIf="b.bookingId" [routerLink]="['/settings/bookings-emi']" [queryParams]="{ booking: b.bookingId }">{{ 'admin.projectsPlots.banner.viewBooking' | translate }}</a>
+            <a *ngIf="b.bookingId" [routerLink]="['/settings/view-booked-plot']" [queryParams]="{ booking: b.bookingId }">{{ 'admin.projectsPlots.banner.viewBooking' | translate }}</a>
           </span>
         </app-inline-banner>
       </ng-template>

@@ -46,26 +46,6 @@ class BookingExceptionHandlerTest {
     }
 
     @Test
-    void sameAssociateTransferIs400() {
-        assertThat(handler.handleSameAssociateTransfer(new SameAssociateTransferException(id)).getStatusCode())
-            .isEqualTo(HttpStatus.BAD_REQUEST);
-    }
-
-    @Test
-    void nothingToRescheduleIs409WithNoRemainingBalanceCode() {
-        var r = handler.handleNothingToReschedule(new NothingToRescheduleException(id));
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-        assertThat(r.getBody()).containsEntry("code", "NO_REMAINING_BALANCE").containsKey("error");
-    }
-
-    @Test
-    void invalidRescheduleIs400WithMessage() {
-        var r = handler.handleInvalidReschedule(new InvalidRescheduleException("too small"));
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(r.getBody()).containsEntry("error", "too small");
-    }
-
-    @Test
     void paymentAmountMismatchIs400() {
         var r = handler.handlePaymentAmountMismatch(
             new PaymentAmountMismatchException(id, 2, new java.math.BigDecimal("100000.00")));
