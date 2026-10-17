@@ -47,6 +47,11 @@ export interface PaymentRow {
 }
 export interface PaymentPage { payments: PaymentRow[]; page: number; size: number; totalElements: number; pageTotal: number; grandTotal: number; }
 export interface PaymentFilters { from?: string; to?: string; projectId?: string; }
+export interface PlotTransferRow {
+  transferDate: string; associateCode: string | null; associateName: string | null; associatePhone: string | null;
+  projectName: string | null; plotNo: string | null; oldPlotNo: string | null; paidAmount: number; restAmount: number;
+}
+export interface PlotTransferPage { transfers: PlotTransferRow[]; page: number; size: number; totalElements: number; }
 export interface PaymentRef { bookingId: string; installmentNumber: number; }
 
 export interface LastEmiRow {

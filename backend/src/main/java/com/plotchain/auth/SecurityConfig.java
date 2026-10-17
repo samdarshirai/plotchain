@@ -257,6 +257,9 @@ public class SecurityConfig {
                 // the POST /confirm sub-path rides the blanket POST rule.
                 .requestMatchers(HttpMethod.GET, "/api/admin/payments")
                     .hasAuthority("ADMIN")
+                // Admin plot-transfers list: exact path, same reason as payments above.
+                .requestMatchers(HttpMethod.GET, "/api/admin/plot-transfers")
+                    .hasAuthority("ADMIN")
                 // Admin "EMI by last date" report (U3): exact path, the /overdue matcher does not cover it.
                 .requestMatchers(HttpMethod.GET, "/api/admin/emi-reports/last-emi")
                     .hasAuthority("ADMIN")

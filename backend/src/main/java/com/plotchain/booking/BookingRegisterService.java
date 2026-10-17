@@ -63,11 +63,6 @@ public class BookingRegisterService {
         return toPage(result, page, size);
     }
 
-    @Transactional(readOnly = true)
-    public AdminBookingPageResponse listTransferred(int page, int size) {
-        return toPage(plotBookingRepository.findTransferred(PageRequest.of(page, size, NEWEST_FIRST)), page, size);
-    }
-
     private AdminBookingPageResponse toPage(Page<PlotBooking> result, int page, int size) {
         List<UUID> bookingIds = result.getContent().stream().map(PlotBooking::getId).toList();
         Map<UUID, List<EmiInstallment>> byBooking = bookingIds.isEmpty() ? Map.of()

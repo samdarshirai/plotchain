@@ -208,12 +208,4 @@ class PlotBookingRegisterRepositoryTest {
         assertThat(beyond.getContent()).isEmpty();
         assertThat(beyond.getTotalElements()).isEqualTo(4);
     }
-
-    @Test
-    void findTransferredReturnsOnlyBookingsWithATransferredEvent() {
-        events.save(BookingEvent.of(d.b1.getId(), BookingEventType.TRANSFERRED, d.b1.getAssociateId(), "from a to b", Instant.now()));
-        events.save(BookingEvent.of(d.b2.getId(), BookingEventType.CANCELLED, d.b1.getAssociateId(), null, Instant.now()));
-        List<UUID> found = ids(repo.findTransferred(PageRequest.of(0, 1000, NEWEST_FIRST)));
-        assertThat(found).contains(d.b1.getId()).doesNotContain(d.b2.getId());
-    }
 }
