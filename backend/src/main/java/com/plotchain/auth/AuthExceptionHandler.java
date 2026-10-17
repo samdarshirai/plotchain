@@ -31,6 +31,11 @@ public class AuthExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(ImpersonationNotAllowedException.class)
+    public ResponseEntity<Map<String, String>> handleImpersonationNotAllowed(ImpersonationNotAllowedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
     // Bean-validation failures (MethodArgumentNotValidException) are handled application-wide
     // by com.plotchain.api.ApiExceptionHandler, which reports which field failed instead of a
     // login-specific message. Do not add a handler for it here: a second advice matching the
