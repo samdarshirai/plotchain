@@ -1953,5 +1953,9 @@
       "next": "Next",
       "summary": "{{from}}–{{to}} of {{total}} · Page {{page}} of {{totalPages}}"
     }
+  },
+  "impersonation": {
+    "viewingAs": "{{name}} के रूप में देख रहे हैं",
+    "exit": "बाहर निकलें"
   }
 }

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, HostBinding, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
@@ -22,6 +22,11 @@ export class AppComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);
   private router = inject(Router);
   private navigationSubscription?: Subscription;
+
+  // Offsets the fixed sidebar/topbar below the sticky banner (see _app-shell.scss).
+  @HostBinding('class.impersonation-active') get impersonating(): boolean {
+    return this.authService.isImpersonating();
+  }
 
   isSetupRoute = false;
   isChromelessRoute = false;
@@ -64,6 +69,11 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.mobileQuery?.removeEventListener('change', this.onMobileChange);
     this.navigationSubscription?.unsubscribe();
+  }
+
+  onExitImpersonation(): void {
+    this.authService.exitImpersonation();
+    this.router.navigate(['/settings/associate-directory']);
   }
 
   onLogout(): void {

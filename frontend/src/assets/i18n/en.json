@@ -2042,5 +2042,9 @@
       "next": "Next",
       "summary": "{{from}}–{{to}} of {{total}} · Page {{page}} of {{totalPages}}"
     }
+  },
+  "impersonation": {
+    "viewingAs": "Viewing as {{name}}",
+    "exit": "Exit"
   }
 }
