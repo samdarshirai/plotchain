@@ -32,10 +32,10 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
       </div>
 
       <div class="add-plot-emi__filters">
-        <label class="add-plot-emi__field">{{ 'admin.addPlotEmi.from' | translate }}
+        <label class="add-plot-emi__field">{{ 'admin.viewConfirmedPlot.from' | translate }}
           <input type="date" name="from" [value]="from" [attr.max]="to || null" (change)="onDate('from', $any($event.target).value)" />
         </label>
-        <label class="add-plot-emi__field">{{ 'admin.addPlotEmi.to' | translate }}
+        <label class="add-plot-emi__field">{{ 'admin.viewConfirmedPlot.to' | translate }}
           <input type="date" name="to" [value]="to" [attr.min]="from || null" (change)="onDate('to', $any($event.target).value)" />
         </label>
         <label class="add-plot-emi__field">{{ 'admin.addPlotEmi.project' | translate }}
