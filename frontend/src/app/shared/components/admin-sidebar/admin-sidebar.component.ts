@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { filter, Subscription } from 'rxjs';
-import { ADMIN_NAV_CATEGORIES, findNavCategoryForUrl } from '../../../admin-nav-categories.model';
+import { ADMIN_NAV_CATEGORIES, ADMIN_USERS_NAV_ITEM, findNavCategoryForUrl } from '../../../admin-nav-categories.model';
 import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap.service';
 
 // Admin-family left nav. Always full width (no rail/pin, unlike AssociateSidebarComponent) and
@@ -39,6 +39,10 @@ import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap
         <a class="associate-sidebar__link" routerLink="/admin/dashboard" routerLinkActive="associate-sidebar__link--active">
           <span class="material-symbols-outlined associate-sidebar__link-icon" aria-hidden="true">dashboard</span>
           <span class="associate-sidebar__link-label">{{ 'nav.dashboard' | translate }}</span>
+        </a>
+        <a class="associate-sidebar__link" [routerLink]="adminUsers.path" routerLinkActive="associate-sidebar__link--active">
+          <span class="material-symbols-outlined associate-sidebar__link-icon" aria-hidden="true">manage_accounts</span>
+          <span class="associate-sidebar__link-label">{{ adminUsers.labelKey | translate }}</span>
         </a>
         <ng-container *ngFor="let category of categories">
           <button
@@ -87,6 +91,7 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
   @Output() logout = new EventEmitter<void>();
 
   readonly categories = ADMIN_NAV_CATEGORIES;
+  readonly adminUsers = ADMIN_USERS_NAV_ITEM;
   private openKey: string | null = null;
 
   get showSquareLogo(): boolean {

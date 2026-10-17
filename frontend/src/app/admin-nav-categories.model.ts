@@ -29,11 +29,17 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     items: [
       { key: 'companyProfile', labelKey: 'settings.sections.companyProfile', path: '/settings/company-profile' },
       { key: 'branding', labelKey: 'settings.sections.branding', path: '/settings/branding' },
-      { key: 'compensation', labelKey: 'settings.sections.compensation', path: '/settings/compensation' },
       { key: 'paymentsKyc', labelKey: 'settings.sections.paymentsKyc', path: '/settings/payments-kyc' },
+      { key: 'compensation', labelKey: 'settings.sections.compensation', path: '/settings/compensation' }
+    ]
+  },
+  {
+    key: 'masterData',
+    labelKey: 'nav.categories.masterData',
+    icon: 'database',
+    items: [
       { key: 'masterProjects', labelKey: 'settings.sections.masterProjects', path: '/settings/master-projects' },
-      { key: 'projectsPlots', labelKey: 'settings.sections.projectsPlots', path: '/settings/plots' },
-      { key: 'adminUsers', labelKey: 'settings.sections.adminUsers', path: '/settings/admin-users' }
+      { key: 'projectsPlots', labelKey: 'settings.sections.projectsPlots', path: '/settings/plots' }
     ]
   },
   {
@@ -93,6 +99,13 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     ]
   }
 ];
+
+// Standalone sidebar link below Dashboard; not a category, so findNavCategoryForUrl ignores it.
+export const ADMIN_USERS_NAV_ITEM: AdminNavItem = {
+  key: 'adminUsers',
+  labelKey: 'settings.sections.adminUsers',
+  path: '/settings/admin-users'
+};
 
 // Which category owns a given URL. Derived from the router's URL on every navigation rather than
 // held as separate nav state, so a deep link, a browser Back, or a redirect all light up the same

@@ -31,10 +31,11 @@ describe('AdminSidebarComponent', () => {
   const groupLabels = (el: HTMLElement) =>
     Array.from(el.querySelectorAll('.associate-sidebar__group-toggle')).map(b => b.textContent?.trim());
 
-  it('lists Dashboard plus the six category groups, all closed by default', () => {
+  it('lists Dashboard, Admin Users plus the seven category groups, all closed by default', () => {
     const { el } = render();
     expect(el.querySelector('a[href="/admin/dashboard"]')).toBeTruthy();
-    expect(groupLabels(el).length).toBe(6);
+    expect(el.querySelector('a[href="/settings/admin-users"]')).toBeTruthy();
+    expect(groupLabels(el).length).toBe(7);
     expect(el.querySelectorAll('.associate-sidebar__subnav').length).toBe(0);
     expect(el.querySelectorAll('[aria-expanded="true"]').length).toBe(0);
   });
@@ -49,11 +50,8 @@ describe('AdminSidebarComponent', () => {
     expect(hrefs).toEqual([
       '/settings/company-profile',
       '/settings/branding',
-      '/settings/compensation',
       '/settings/payments-kyc',
-      '/settings/master-projects',
-      '/settings/plots',
-      '/settings/admin-users'
+      '/settings/compensation'
     ]);
     expect(setup.getAttribute('aria-expanded')).toBe('true');
 

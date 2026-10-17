@@ -19,7 +19,6 @@ import { titleCase } from '../../shared/utils/title-case';
     <div class="admin-users">
       <div class="admin-users__intro">
         <div class="admin-users__intro-copy">
-          <span class="admin-users__eyebrow">{{ 'admin.adminUsers.eyebrow' | translate }}</span>
           <h1 class="admin-users__title">{{ 'admin.adminUsers.title' | translate }}</h1>
           <p class="admin-users__subtitle">{{ 'admin.adminUsers.subtitle' | translate }}</p>
         </div>

@@ -54,9 +54,9 @@
     th:last-child, td:last-child { width: auto; text-align: left; padding-inline-start: 1.5rem; }
   }
   .projects-plots .projects-plots__table--book {
-    // Size columns to their contents and scroll the panel before cells overlap.
+    // Size columns to their contents; fit the panel on desktop, scroll only if content truly can't fit.
     table-layout: auto;
-    min-width: 72rem;
+    min-width: 0;
     th, td { width: auto; padding-inline: 1.25rem; box-sizing: border-box; }
     // S No, Plot, Type, Road Size, Area, Rate, Price, Extra Price, Total Price, Status, Action|Book
     th:nth-child(1) { width: 4%; }
@@ -70,7 +70,8 @@
     th:nth-child(9) { width: 12%; }
     th:nth-child(10) { width: 9%; }
     th:last-child { width: 14%; min-width: 9.5rem; }
-    th, td { padding-inline: 0.75rem; }
+    th, td { padding-inline: 0.5rem; }
+    thead th { white-space: normal; line-height: 1.3; }
     th:nth-child(-n+5), td:nth-child(-n+5), th:nth-child(10), td:nth-child(10) { text-align: left; }
     th:nth-child(n+6):nth-child(-n+9), td:nth-child(n+6):nth-child(-n+9) { text-align: right; }
     th:first-child, td:first-child { padding-inline-start: 1rem; }

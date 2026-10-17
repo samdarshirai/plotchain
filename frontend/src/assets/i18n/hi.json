@@ -659,7 +659,8 @@
     "viewMessages": "View Messages",
     "newMessage": "New Message",
     "categories": {
-      "setup": "मास्टर डेटा",
+      "setup": "सेटअप",
+      "masterData": "मास्टर डेटा",
       "network": "वंशावली",
       "finance": "वित्त और चक्र",
       "inventory": "प्लॉट बुकिंग",
@@ -1402,7 +1403,6 @@
       "emptyState": "अभी कोई समाचार नहीं।", "loadError": "समाचार लोड नहीं हो सके।", "saveError": "समाचार सहेजा नहीं जा सका।", "requiredError": "आवश्यक"
     },
     "adminUsers": {
-      "eyebrow": "मास्टर डेटा",
       "title": "एडमिन उपयोगकर्ता",
       "subtitle": "टीम के वे सदस्य जो एसोसिएट हुए बिना एडमिन पैनल में साइन इन कर सकते हैं।",
       "addAction": "एडमिन उपयोगकर्ता जोड़ें",
@@ -1789,7 +1789,7 @@
       "payoutApproval": "Payout Approval",
       "masterProjects": "प्रोजेक्ट्स",
       "adminUsers": "एडमिन उपयोगकर्ता",
-      "projectsPlots": "प्रोजेक्ट्स और प्लॉट्स",
+      "projectsPlots": "प्लॉट्स",
       "bookingsEmi": "बुकिंग और ईएमआई",
       "supportTickets": "सहायता टिकट",
       "news": "समाचार",

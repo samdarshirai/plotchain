@@ -688,7 +688,8 @@
     "viewMessages": "View Messages",
     "newMessage": "New Message",
     "categories": {
-      "setup": "Master Data",
+      "setup": "Setup",
+      "masterData": "Master Data",
       "network": "Genealogy",
       "finance": "Finance & Cycles",
       "inventory": "Plot Booking",
@@ -1490,7 +1491,6 @@
       "emptyState": "No news yet.", "loadError": "Could not load news.", "saveError": "Could not save news.", "requiredError": "Required"
     },
     "adminUsers": {
-      "eyebrow": "Master Data",
       "title": "Admin Users",
       "subtitle": "Team members who can sign in to the admin panel without being Associates.",
       "addAction": "Add Admin User",
@@ -1878,7 +1878,7 @@
       "payoutApproval": "Payout Approval",
       "masterProjects": "Projects",
       "adminUsers": "Admin Users",
-      "projectsPlots": "Projects & Plots",
+      "projectsPlots": "Plots",
       "bookingsEmi": "Bookings & EMI",
       "supportTickets": "Support Tickets",
       "news": "News",

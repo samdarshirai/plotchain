@@ -4,7 +4,7 @@ import { associateOnlyGuard } from './auth/associate-only.guard';
 import { rootRedirectGuard } from './auth/root-redirect.guard';
 import { adminGuard } from './admin/admin.guard';
 import { setupModeGuard, launchedModeGuard } from './setup/setup.guard';
-import { ADMIN_NAV_CATEGORIES } from './admin-nav-categories.model';
+import { ADMIN_NAV_CATEGORIES, ADMIN_USERS_NAV_ITEM } from './admin-nav-categories.model';
 
 describe('routes', () => {
   it('guards the dashboard route with authGuard and associateOnlyGuard', () => {
@@ -188,10 +188,9 @@ describe('routes', () => {
       const settingsRoute = routes.find(r => r.path === 'settings');
       const childPaths = settingsRoute!.children!.map(c => c.path);
 
-      for (const category of ADMIN_NAV_CATEGORIES) {
-        for (const item of category.items) {
-          expect(childPaths).toContain(item.path.replace('/settings/', ''));
-        }
+      const items = [ADMIN_USERS_NAV_ITEM, ...ADMIN_NAV_CATEGORIES.flatMap(c => c.items)];
+      for (const item of items) {
+        expect(childPaths).toContain(item.path.replace('/settings/', ''));
       }
     });
 

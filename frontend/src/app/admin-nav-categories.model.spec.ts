@@ -4,6 +4,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
   it('listsTheMockupCategoriesInOrderWithTheirIcons', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => [category.key, category.icon])).toEqual([
       ['setup', 'tune'],
+      ['masterData', 'database'],
       ['network', 'group'],
       ['finance', 'point_of_sale'],
       ['inventory', 'domain'],
@@ -14,7 +15,8 @@ describe('ADMIN_NAV_CATEGORIES', () => {
 
   it('groupsEverySettingsScreenUnderTheirCategory', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => category.items.map(item => item.key))).toEqual([
-      ['companyProfile', 'branding', 'compensation', 'paymentsKyc', 'masterProjects', 'projectsPlots', 'adminUsers'],
+      ['companyProfile', 'branding', 'paymentsKyc', 'compensation'],
+      ['masterProjects', 'projectsPlots'],
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
       ['ledgerRegister', 'salesRegister', 'cycleManagement', 'epinRegister', 'payoutApproval', 'expenseTypes'],
       ['bookNewPlot', 'addPlotEmi', 'viewBookedPlot', 'viewConfirmedPlot', 'plotTransfer', 'viewPlotEmi', 'viewTransferredPlots', 'viewCancelledPlot'],
@@ -39,8 +41,8 @@ describe('findNavCategoryForUrl', () => {
     expect(findNavCategoryForUrl('/settings/support-tickets')?.key).toBe('communication');
   });
 
-  it('resolvesTheProjectsPlotsScreenToTheInventoryCategory', () => {
-    expect(findNavCategoryForUrl('/settings/plots')?.key).toBe('setup');
+  it('resolvesThePlotsScreenToTheMasterDataCategory', () => {
+    expect(findNavCategoryForUrl('/settings/plots')?.key).toBe('masterData');
   });
 
   it('returnsTheCategoryOwningTheCurrentSettingsScreen', () => {
@@ -48,6 +50,10 @@ describe('findNavCategoryForUrl', () => {
     expect(findNavCategoryForUrl('/settings/tree-explorer')?.key).toBe('network');
     expect(findNavCategoryForUrl('/settings/ledger-register')?.key).toBe('finance');
     expect(findNavCategoryForUrl('/settings/admin-stats')?.key).toBe('system');
+  });
+
+  it('keepsAdminUsersOutOfEveryCategory', () => {
+    expect(findNavCategoryForUrl('/settings/admin-users')).toBeUndefined();
   });
 
   it('ignoresQueryStringsAndFragments', () => {
@@ -69,9 +75,9 @@ describe('findNavCategoryForUrl', () => {
     expect(findNavCategoryForUrl('/settings/plot-transfer')?.key).toBe('inventory');
   });
 
-  it('resolvesBookNewPlotToPlotBookingButBareProjectsPlotsToSetup', () => {
+  it('resolvesBookNewPlotToPlotBookingButBarePlotsToMasterData', () => {
     expect(findNavCategoryForUrl('/settings/book-plot')?.key).toBe('inventory');
-    expect(findNavCategoryForUrl('/settings/plots')?.key).toBe('setup');
+    expect(findNavCategoryForUrl('/settings/plots')?.key).toBe('masterData');
   });
 
   it('resolvesEveryPlotBookingDeepLinkToTheInventoryCategory', () => {
