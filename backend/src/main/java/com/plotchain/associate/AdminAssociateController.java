@@ -1,5 +1,7 @@
 package com.plotchain.associate;
 
+import com.plotchain.auth.AuthService;
+import com.plotchain.auth.LoginResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,8 +16,11 @@ public class AdminAssociateController {
 
     private final AdminAssociateService adminAssociateService;
 
-    public AdminAssociateController(AdminAssociateService adminAssociateService) {
+    private final AuthService authService;
+
+    public AdminAssociateController(AdminAssociateService adminAssociateService, AuthService authService) {
         this.adminAssociateService = adminAssociateService;
+        this.authService = authService;
     }
 
     @GetMapping
@@ -46,6 +51,12 @@ public class AdminAssociateController {
     @PreAuthorize("hasAuthority('ADMIN')")
     public AdminAssociateDetailResponse suspend(@PathVariable UUID id, @AuthenticationPrincipal UUID actorId) {
         return adminAssociateService.suspend(id, actorId);
+    }
+
+    @PostMapping("/{id}/impersonate")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public LoginResponse impersonate(@PathVariable UUID id, @AuthenticationPrincipal UUID actorId) {
+        return authService.impersonate(id, actorId);
     }
 
     @PostMapping("/{id}/reactivate")
