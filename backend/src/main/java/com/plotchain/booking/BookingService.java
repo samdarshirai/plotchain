@@ -187,6 +187,70 @@ public class BookingService {
         return toResponse(booking, installments);
     }
 
+    // Add Plot EMI top-up: one ENTERED row (the payment record, appended as the next number) is added and the
+    // oldest PENDING rows are consumed by the same amount (fully covered -> VOID, partly covered -> reduced), so the
+    // scheduled total is unchanged. Booking lock first (Decision 8); every 4xx happens before the first write.
+    // Confirmation stays the separate ENTERED -> PAID step.
+    @Transactional
+    public BookingResponse topUp(UUID bookingId, TopUpRequest request, UUID actorId) {
+        PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)
+            .orElseThrow(() -> new BookingNotFoundException(bookingId));
+        if (booking.getStatus() != BookingStatus.ACTIVE) {
+            throw new BookingNotActiveException(bookingId);
+        }
+        String bankName = request.bankName() == null ? "" : request.bankName().trim();
+        if (request.paymentMode() != PaymentMode.CASH && bankName.isEmpty()) {
+            throw new InvalidTopUpException("Bank name is required for " + request.paymentMode());
+        }
+        List<EmiInstallment> installments = new ArrayList<>(
+            emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
+        BigDecimal pending = sumByStatus(installments, InstallmentStatus.PENDING);
+        BigDecimal amount = request.amount().setScale(2, RoundingMode.HALF_UP);
+        if (amount.signum() <= 0 || amount.compareTo(pending) > 0) {
+            throw new InvalidTopUpException("Top up amount must be between 0.01 and the remaining pending amount "
+                + pending.toPlainString());
+        }
+
+        Instant now = clock.instant();
+        BigDecimal left = amount;
+        for (EmiInstallment i : installments) {
+            if (i.getStatus() != InstallmentStatus.PENDING || left.signum() == 0) { continue; }
+            if (left.compareTo(i.getAmount()) >= 0) {
+                left = left.subtract(i.getAmount());
+                i.setStatus(InstallmentStatus.VOID);
+            } else {
+                i.setAmount(i.getAmount().subtract(left));
+                left = BigDecimal.ZERO;
+            }
+        }
+        String paymentRef = request.paymentRef().trim();
+        EmiInstallment payment = new EmiInstallment();
+        payment.setId(UUID.randomUUID());
+        payment.setBookingId(bookingId);
+        payment.setInstallmentNumber(installments.stream().mapToInt(EmiInstallment::getInstallmentNumber).max().orElse(0) + 1);
+        Instant paidAt = request.paidAt() != null ? request.paidAt() : now;
+        payment.setDueDate(paidAt.atZone(java.time.ZoneOffset.UTC).toLocalDate());
+        payment.setAmount(amount);
+        payment.setStatus(InstallmentStatus.ENTERED);
+        payment.setPaymentMode(request.paymentMode());
+        payment.setBankName(bankName.isEmpty() ? null : bankName);
+        payment.setPaymentRef(paymentRef);
+        payment.setPaidAt(paidAt);
+        payment.setRecordedBy(actorId);
+        installments.add(payment);
+        emiInstallmentRepository.saveAll(installments);
+
+        booking.setInstallmentCount((int) installments.stream()
+            .filter(i -> i.getStatus() != InstallmentStatus.VOID).count());
+        plotBookingRepository.save(booking);
+
+        bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.PAID, actorId,
+            "entered: top-up #" + payment.getInstallmentNumber() + ", amount " + amount.toPlainString()
+                + ", ref " + paymentRef + ", mode " + request.paymentMode(), now));
+
+        return toResponse(booking, installments);
+    }
+
     // U2: admin confirms an ENTERED payment (ENTERED -> PAID). Allowed on ACTIVE or CONFIRMED bookings,
     // never CANCELLED. Booking lock first (Decision 8); the plot lock is taken only inside confirmLocked.
     @Transactional
@@ -643,7 +707,7 @@ public class BookingService {
                 .map(i -> new EmiInstallmentResponse(
                     i.getInstallmentNumber(), i.getAmount(), i.getDueDate(), i.getStatus(), i.getPaidAt(),
                     i.getStatus() == InstallmentStatus.PENDING && i.getDueDate().isBefore(today),
-                    i.getPaymentMode(), i.getConfirmedAt()))
+                    i.getPaymentMode(), i.getConfirmedAt(), i.getBankName(), i.getPaymentRef()))
                 .toList();
             Plot plot = plots.get(booking.getPlotId());
             Project project = plot == null ? null : projects.get(plot.getProjectId());
@@ -662,7 +726,8 @@ public class BookingService {
                 booking.getBuyerPhone(), booking.getListPrice(), booking.getDiscount(), booking.getAreaSqft(),
                 booking.getRate(), booking.getCancelledAt(), associate == null ? null : associate.getUserId(),
                 plot == null ? null : plot.getPlotType(),
-                booking.getExtraPrice());
+                booking.getExtraPrice(),
+                associate == null ? null : associate.getPhone());
         }).toList();
     }
 

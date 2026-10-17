@@ -50,7 +50,7 @@ class AdminBookingRegisterControllerTest {
 
     @Test
     void noParamsUsesDefaultsAndReturnsTheEnvelope() throws Exception {
-        when(registerService.list(any(), any(), any(), any(), eq(false), any(), any(), any(), any(), any(), eq(0), eq(20)))
+        when(registerService.list(any(), any(), any(), any(), eq(false), any(), any(), any(), any(), any(), eq(false), eq(0), eq(20)))
             .thenReturn(new AdminBookingPageResponse(List.of(), 0, 20, 0));
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin()))
             .andExpect(status().isOk())
@@ -63,7 +63,7 @@ class AdminBookingRegisterControllerTest {
     @Test
     void filtersAreBoundAndForwarded() throws Exception {
         UUID assoc = UUID.randomUUID(), plot = UUID.randomUUID(), project = UUID.randomUUID();
-        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
+        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyBoolean(), anyInt(), anyInt()))
             .thenReturn(new AdminBookingPageResponse(List.of(), 2, 5, 0));
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin())
                 .param("status", "ACTIVE").param("associateId", assoc.toString())
@@ -75,7 +75,7 @@ class AdminBookingRegisterControllerTest {
 
     @Test
     void overdueFalseOrOmittedMeansNoOverdueFilter() throws Exception {
-        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
+        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyBoolean(), anyInt(), anyInt()))
             .thenReturn(new AdminBookingPageResponse(List.of(), 0, 20, 0));
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin()).param("overdue", "false"))
             .andExpect(status().isOk());
@@ -84,7 +84,7 @@ class AdminBookingRegisterControllerTest {
 
     @Test
     void pageAndSizeAreClamped() throws Exception {
-        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
+        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyBoolean(), anyInt(), anyInt()))
             .thenReturn(new AdminBookingPageResponse(List.of(), 0, 100, 0));
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin())
             .param("page", "-3").param("size", "1000")).andExpect(status().isOk());
@@ -93,7 +93,7 @@ class AdminBookingRegisterControllerTest {
 
     @Test
     void sizeZeroOrNegativeIsClampedToOneNotA500() throws Exception {
-        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
+        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyBoolean(), anyInt(), anyInt()))
             .thenReturn(new AdminBookingPageResponse(List.of(), 0, 1, 0));
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin()).param("size", "0"))
             .andExpect(status().isOk());
@@ -136,7 +136,7 @@ class AdminBookingRegisterControllerTest {
     }
 
     private void stubAnyList() {
-        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
+        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyBoolean(), anyInt(), anyInt()))
             .thenReturn(new AdminBookingPageResponse(List.of(), 0, 20, 0));
     }
 
@@ -179,7 +179,7 @@ class AdminBookingRegisterControllerTest {
             java.math.BigDecimal.ZERO, new java.math.BigDecimal("550000.00"), List.of(), "A-1", "Proj", "Assoc",
             "9999999999", new java.math.BigDecimal("600000.00"), new java.math.BigDecimal("50000.00"),
             new java.math.BigDecimal("1200.00"), new java.math.BigDecimal("500.00"), null, "VP00001");
-        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
+        when(registerService.list(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any(), anyBoolean(), anyInt(), anyInt()))
             .thenReturn(new AdminBookingPageResponse(List.of(row), 0, 20, 1));
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin()))
             .andExpect(status().isOk())

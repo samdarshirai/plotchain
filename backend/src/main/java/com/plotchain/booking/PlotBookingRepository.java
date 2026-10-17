@@ -56,6 +56,7 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         AND (:cancelledFilter = false OR (b.cancelledAt >= :cancelledFrom AND b.cancelledAt < :cancelledTo))
         AND (:q = '' OR EXISTS (SELECT 1 FROM Associate qa WHERE qa.id = b.associateId AND LOWER(qa.userId) LIKE CONCAT('%', :q, '%'))
              OR EXISTS (SELECT 1 FROM Plot qp WHERE qp.id = b.plotId AND LOWER(qp.plotNo) LIKE CONCAT('%', :q, '%')))
+        AND (:pendingOnly = false OR (b.status = com.plotchain.booking.BookingStatus.ACTIVE AND EXISTS (SELECT 1 FROM EmiInstallment pi WHERE pi.bookingId = b.id AND pi.status = com.plotchain.booking.InstallmentStatus.PENDING)))
         AND (:overdueOnly = false OR (b.status = com.plotchain.booking.BookingStatus.ACTIVE
         """
         + " AND " + BookingOverdue.EXISTS_OVERDUE + "))")
@@ -72,6 +73,7 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         @Param("cancelledFrom") Instant cancelledFrom,
         @Param("cancelledTo") Instant cancelledTo,
         @Param("q") String q,
+        @Param("pendingOnly") boolean pendingOnly,
         Pageable pageable);
 
     // Admin "View Transferred Plots": bookings that have at least one TRANSFERRED audit event. The booking

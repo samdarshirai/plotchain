@@ -6,6 +6,7 @@ import { AssociateSummary } from '../models/associate-summary.model';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { PlotGridItem, formatArea, formatInr } from '../../shared/utils/plot-grid.util';
 import { BookingEmiConfig, BookingFormValue } from './projects-plots.model';
+import { PAYMENT_MODES } from '../../plot-bookings/models/associate-booking-page.model';
 
 @Component({
   selector: 'app-book-plot-form',
@@ -130,7 +131,7 @@ export class BookPlotFormComponent implements OnInit {
   associateName = '';
   associateError = false;
   firstInstallmentAmount: number | null = null;
-  paymentModes = ['CASH', 'CHEQUE', 'BANK_TRANSFER'];
+  paymentModes = PAYMENT_MODES;
   paymentMode = '';
   txnNo = '';
   bankName = '';
@@ -155,7 +156,7 @@ export class BookPlotFormComponent implements OnInit {
     this.associateError = !!id && !found;
   }
 
-  get bankRequired(): boolean { return this.paymentMode === 'CHEQUE' || this.paymentMode === 'BANK_TRANSFER'; }
+  get bankRequired(): boolean { return !!this.paymentMode && this.paymentMode !== 'CASH'; }
   get bankError(): boolean { return this.tried && this.bankRequired && !this.bankName.trim(); }
   get dateError(): boolean { return this.tried && (!this.txnDate || this.txnDate > this.today); }
   // Must fit in the balance left after the booking amount.

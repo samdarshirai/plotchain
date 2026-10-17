@@ -42,6 +42,13 @@ public class BookingController {
         return bookingService.recordPayment(id, installmentNumber, request, actorId);
     }
 
+    // Add Plot EMI: free-amount top-up applied to the oldest PENDING instalments. Returns the updated booking (200).
+    @PostMapping("/{id}/top-up")
+    public BookingResponse topUp(@PathVariable UUID id, @Valid @RequestBody TopUpRequest request,
+                                 @AuthenticationPrincipal UUID actorId) {
+        return bookingService.topUp(id, request, actorId);
+    }
+
     // U2: admin confirms an ENTERED payment (ENTERED -> PAID). Returns the updated booking (200).
     @PostMapping("/{id}/installments/{n}/confirm")
     public BookingResponse confirmPayment(@PathVariable UUID id, @PathVariable("n") int installmentNumber,

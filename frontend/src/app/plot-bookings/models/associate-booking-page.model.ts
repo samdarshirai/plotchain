@@ -1,7 +1,7 @@
 export type BookingStatus = 'ACTIVE' | 'CONFIRMED' | 'CANCELLED';
 export type InstallmentStatus = 'PENDING' | 'ENTERED' | 'PAID' | 'VOID';
-export type PaymentMode = 'CASH' | 'CHEQUE' | 'BANK_TRANSFER';
-export const PAYMENT_MODES: PaymentMode[] = ['CASH', 'CHEQUE', 'BANK_TRANSFER'];
+export type PaymentMode = 'CASH' | 'CHEQUE' | 'BANK_TRANSFER' | 'UPI' | 'DEMAND_DRAFT' | 'NEFT' | 'RTGS';
+export const PAYMENT_MODES: PaymentMode[] = ['CASH', 'CHEQUE', 'BANK_TRANSFER', 'UPI', 'DEMAND_DRAFT', 'NEFT', 'RTGS'];
 
 export interface EmiInstallment {
   installmentNumber: number;
@@ -12,6 +12,8 @@ export interface EmiInstallment {
   overdue: boolean;
   paymentMode?: PaymentMode | null;
   confirmedAt?: string | null;
+  bankName?: string | null;
+  paymentRef?: string | null;
 }
 
 export interface Booking {
@@ -39,6 +41,7 @@ export interface Booking {
   cancelledAt?: string | null;
   associateCode?: string | null;
   extraPrice?: number | null;
+  associatePhone?: string | null;
 }
 
 export interface AssociateBookingPage {

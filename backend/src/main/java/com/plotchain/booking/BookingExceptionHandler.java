@@ -86,6 +86,11 @@ public class BookingExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(InvalidTopUpException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidTopUp(InvalidTopUpException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(InstallmentNotEnteredException.class)
     public ResponseEntity<Map<String, String>> handleInstallmentNotEntered(InstallmentNotEnteredException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
