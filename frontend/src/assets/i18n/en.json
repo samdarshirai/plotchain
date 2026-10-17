@@ -655,7 +655,7 @@
       "bookNewPlot": "Book new Plot",
       "addPlotEmi": "Add Plot EMI",
       "viewBookedPlot": "View Booked Plot",
-      "viewConfirmedPlot": "View Confirmed/Unconfirmed Plot",
+      "viewConfirmedPlot": "View Plot Payments",
       "plotTransfer": "Plot Transfer",
       "viewPlotEmi": "View Plot EMI",
       "viewTransferredPlots": "View Transferred Plots",
@@ -1422,8 +1422,8 @@
       "emptyState": "No expense types yet.", "loadError": "Could not load expense types.", "saveError": "Could not save expense type.", "requiredError": "Required"
     },
     "viewConfirmedPlot": {
-      "title": "View Confirmed/Unconfirmed Plot", "subtitle": "Payments by payment date and project. Switch between Pending and Confirmed; select Pending payments to confirm them together.",
-      "pending": "Pending", "confirmed": "Confirmed", "emptyPending": "No pending payments for these filters.", "emptyConfirmed": "No confirmed payments for these filters.",
+      "title": "View Plot Payments", "subtitle": "Payments by payment date and project. Switch between Unconfirmed and Confirmed; select Unconfirmed payments to confirm them together.",
+      "pending": "Unconfirmed", "confirmed": "Confirmed", "emptyPending": "No unconfirmed payments for these filters.", "emptyConfirmed": "No confirmed payments for these filters.",
       "col": { "paymentDate": "Payment Date", "amount": "Amount", "mode": "Mode", "status": "Status", "select": "Select" }
     },
     "viewBookedPlot": {
@@ -1948,7 +1948,7 @@
       "expenseTypes": "Expense Types",
       "addPlotEmi": "Add Plot EMI",
       "viewBookedPlot": "View Booked Plot",
-      "viewConfirmedPlot": "View Confirmed/Unconfirmed Plot"
+      "viewConfirmedPlot": "View Plot Payments"
     },
     "auditLog": {
       "sectionFilterLabel": "Section",
