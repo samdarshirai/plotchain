@@ -109,6 +109,7 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
                   <button type="button" class="brand-button add-plot-emi__btn" (click)="openPay(b)">{{ 'admin.addPlotEmi.addPayment' | translate }}</button>
                   <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" (click)="historyOf = b">{{ 'admin.addPlotEmi.history' | translate }}</button>
                   <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" *ngIf="b.status === 'ACTIVE'" (click)="openTransfer(b)">{{ 'admin.addPlotEmi.transfer.button' | translate }}</button>
+                  <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" *ngIf="b.status === 'ACTIVE'" (click)="openCancel(b)">{{ 'admin.addPlotEmi.cancelBooking.button' | translate }}</button>
                 </td>
               </tr>
             </tbody>
@@ -227,6 +228,51 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
       </div>
     </div>
 
+    <div class="add-plot-emi__overlay" *ngIf="cancelFor as b" (keydown.escape)="closeCancel()">
+      <div class="add-plot-emi__modal" role="dialog" aria-modal="true" aria-labelledby="ape-cx-title">
+        <h2 class="add-plot-emi__modal-title" id="ape-cx-title">{{ 'admin.addPlotEmi.cancelBooking.title' | translate }}</h2>
+        <app-inline-banner *ngIf="cancelError" tone="danger">{{ cancelError }}</app-inline-banner>
+
+        <ng-container *ngIf="cancelStep === 'detail'">
+          <h3 class="add-plot-emi__section">{{ 'admin.addPlotEmi.transfer.overview' | translate }}</h3>
+          <dl class="add-plot-emi__facts">
+            <div><dt>{{ 'admin.addPlotEmi.col.project' | translate }}</dt><dd>{{ b.projectName || '—' }}</dd></div>
+            <div><dt>{{ 'admin.addPlotEmi.col.plot' | translate }}</dt><dd>{{ plot(b) }}</dd></div>
+            <div><dt>{{ 'admin.addPlotEmi.buyer' | translate }}</dt><dd>{{ b.buyerName }}</dd></div>
+            <div><dt>{{ 'admin.addPlotEmi.col.associate' | translate }}</dt><dd>{{ b.associateName || '—' }} ({{ b.associateCode || '—' }})</dd></div>
+            <div><dt>{{ 'admin.addPlotEmi.col.area' | translate }}</dt><dd>{{ b.areaSqft != null ? b.areaSqft : '—' }}</dd></div>
+            <div><dt>{{ 'admin.addPlotEmi.col.discount' | translate }}</dt><dd>{{ money(b.discount || 0) }}</dd></div>
+            <div><dt>{{ 'admin.addPlotEmi.col.total' | translate }}</dt><dd>{{ money(b.totalAmount) }}</dd></div>
+            <div><dt>{{ 'admin.addPlotEmi.paidAmount' | translate }}</dt><dd>{{ money(b.paidAmount) }}</dd></div>
+            <div><dt>{{ 'admin.addPlotEmi.remainingAmount' | translate }}</dt><dd>{{ money(b.dueAmount) }}</dd></div>
+          </dl>
+          <div class="add-plot-emi__footer">
+            <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" (click)="closeCancel()">{{ 'admin.addPlotEmi.cancelBooking.dismiss' | translate }}</button>
+            <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" (click)="cancelStep = 'confirm'">{{ 'admin.addPlotEmi.cancelBooking.cancelPlot' | translate }}</button>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="cancelStep === 'confirm'">
+          <app-inline-banner tone="warning">
+            <strong>{{ 'admin.addPlotEmi.cancelBooking.warningTitle' | translate: { plot: plot(b) } }}</strong>
+            <ul>
+              <li>{{ 'admin.addPlotEmi.cancelBooking.effects.0' | translate }}</li>
+              <li>{{ 'admin.addPlotEmi.cancelBooking.effects.1' | translate }}</li>
+              <li>{{ 'admin.addPlotEmi.cancelBooking.effects.2' | translate }}</li>
+            </ul>
+          </app-inline-banner>
+          <label class="add-plot-emi__field">{{ 'admin.addPlotEmi.cancelBooking.reason' | translate }}
+            <textarea name="cancelReason" rows="3" maxlength="255" [(ngModel)]="cancelReason"></textarea>
+            <app-field-error [message]="cancelTried && !cancelReason.trim() ? ('admin.addPlotEmi.cancelBooking.reasonRequired' | translate) : undefined"></app-field-error>
+          </label>
+          <div class="add-plot-emi__footer">
+            <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="saving" (click)="cancelStep = 'detail'">{{ 'admin.addPlotEmi.cancelBooking.back' | translate }}</button>
+            <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" [disabled]="saving" (click)="confirmCancel()">{{ (saving ? 'admin.addPlotEmi.saving' : 'admin.addPlotEmi.cancelBooking.confirm') | translate }}</button>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+
     <div class="add-plot-emi__overlay" *ngIf="historyOf as b" (keydown.escape)="historyOf = null">
       <div class="add-plot-emi__modal add-plot-emi__modal--wide" role="dialog" aria-modal="true" aria-labelledby="ape-hist-title">
         <h2 class="add-plot-emi__modal-title" id="ape-hist-title">{{ 'admin.addPlotEmi.historyTitle' | translate }} · {{ plot(b) }}</h2>
@@ -309,6 +355,11 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
   plotQ = '';
   plotsLoading = false;
   transferError = '';
+  cancelFor: Booking | null = null;
+  cancelStep: 'detail' | 'confirm' = 'detail';
+  cancelReason = '';
+  cancelTried = false;
+  cancelError = '';
   amount: number | null = null;
   mode: PaymentMode | '' = '';
   bankName = '';
@@ -482,6 +533,40 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
       error: err => {
         this.saving = false;
         this.transferError = err.error?.error ?? this.translate.instant('admin.addPlotEmi.err.server');
+        if (err.status === 409) { this.load(); }
+      }
+    });
+  }
+
+  // ---- cancel booking ---------------------------------------------------
+
+  openCancel(b: Booking): void {
+    this.cancelFor = b;
+    this.cancelStep = 'detail';
+    this.cancelReason = '';
+    this.cancelTried = false;
+    this.cancelError = '';
+  }
+
+  closeCancel(): void { if (!this.saving) { this.cancelFor = null; } }
+
+  confirmCancel(): void {
+    const b = this.cancelFor, reason = this.cancelReason.trim();
+    if (!b || this.saving) { return; }
+    this.cancelTried = true;
+    if (!reason) { return; }
+    this.saving = true;
+    this.cancelError = '';
+    this.service.cancel(b.id, reason).subscribe({
+      next: () => {
+        this.saving = false;
+        this.cancelFor = null;
+        this.flash = this.translate.instant('admin.addPlotEmi.cancelBooking.success', { plot: plotText(b) });
+        this.load();
+      },
+      error: err => {
+        this.saving = false;
+        this.cancelError = err.error?.error ?? this.translate.instant('admin.addPlotEmi.err.server');
         if (err.status === 409) { this.load(); }
       }
     });
