@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { AuthService } from '../../auth/auth.service';
 import { AssociateDirectoryService } from './associate-directory.service';
 import { AdminAssociatePage, AdminAssociateFilters } from '../models/admin-associate-page.model';
 import { AdminAssociateDetail } from '../models/admin-associate-detail.model';
@@ -58,6 +59,7 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
 
       <p *ngIf="loadError" class="associate-directory__load-error">{{ 'admin.associateDirectory.loadError' | translate }}</p>
       <p *ngIf="actionError" class="associate-directory__action-error">{{ 'admin.associateDirectory.actionError' | translate }}</p>
+      <p *ngIf="loginError" class="associate-directory__login-error">{{ 'admin.associateDirectory.loginError' | translate }}</p>
       <p *ngIf="rankLoadError" class="associate-directory__rank-load-error">{{ 'admin.associateDirectory.rankLoadError' | translate }}</p>
 
       <!-- Filter panel and table sit flush against each other (0 gap, table's border-top:none
@@ -108,9 +110,22 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
           [readOnly]="true"
           [columns]="directoryColumns"
           [rows]="directoryRows"
+          [actionTemplate]="loginTpl"
           [emptyStateLabel]="'admin.associateDirectory.emptyState' | translate"
           (rowClick)="selectAssociate(page!.associates[$event].id)"
         ></app-editable-table>
+        <!-- Row click opens the side panel, so the button stops propagation. Rows are built from
+             page.associates, so the template's index maps straight back to it. -->
+        <ng-template #loginTpl let-i="index">
+          <button
+            *ngIf="canLogin(i)"
+            type="button"
+            class="associate-directory__login"
+            (click)="$event.stopPropagation(); loginAs(page!.associates[i].id, page!.associates[i].name)"
+          >
+            {{ 'admin.associateDirectory.loginAction' | translate }}
+          </button>
+        </ng-template>
 
         <div class="associate-directory__pagination" *ngIf="page">
           <button
@@ -235,6 +250,7 @@ export class AssociateDirectoryComponent implements OnInit {
   private translate = inject(TranslateService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private authService = inject(AuthService);
 
   page: AdminAssociatePage | null = null;
   selected: AdminAssociateDetail | null = null;
@@ -243,6 +259,7 @@ export class AssociateDirectoryComponent implements OnInit {
   transactionPasswordResetDone = false;
   loadError = false;
   actionError = false;
+  loginError = false;
   rankLoadError = false;
   availableRanks: RankOption[] = [];
   directoryColumns: EditableTableColumn[] = [];
@@ -274,7 +291,8 @@ export class AssociateDirectoryComponent implements OnInit {
         type: 'badge',
         badgeTone: value => this.statusBadgeTone(value)
       },
-      { key: 'joinedAt', label: this.translate.instant('admin.associateDirectory.columnRegistrationDate'), type: 'text' }
+      { key: 'joinedAt', label: this.translate.instant('admin.associateDirectory.columnRegistrationDate'), type: 'text' },
+      { key: 'login', label: this.translate.instant('admin.associateDirectory.columnLogin'), type: 'action' }
     ];
     this.compensationPlanService.getCurrent().subscribe({
       next: res => (this.availableRanks = res.availableRanks),
@@ -329,6 +347,21 @@ export class AssociateDirectoryComponent implements OnInit {
     this.associateDirectoryService.get(id).subscribe(detail => {
       this.selected = detail;
       this.panelOpen = true;
+    });
+  }
+
+  // Defensive role guard (the directory only lists associates today); rows can briefly outlive page.associates.
+  canLogin(index: number): boolean {
+    const a = this.page?.associates[index];
+    return !!a && a.role === 'ASSOCIATE' && a.status !== 'SUSPENDED';
+  }
+
+  // Swaps the admin session for the associate's (AuthService stashes the admin token), then lands on their dashboard.
+  loginAs(id: string, name: string): void {
+    this.loginError = false;
+    this.authService.impersonate(id, name).subscribe({
+      next: () => this.router.navigate(['/dashboard']),
+      error: () => (this.loginError = true)
     });
   }
 
