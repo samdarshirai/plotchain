@@ -6219,6 +6219,20 @@ button.tree-explorer__vacant-card {
   cursor: pointer;
 }
 
+// Desktop register: 13 columns. Keep short values on one line; free text wraps within a cap.
+// The card scrolls horizontally as the fallback on narrow desktops.
+@media (min-width: 1024px) {
+  .invoice-loans .editable-table {
+    td:nth-child(-n + 3),
+    td:nth-child(n + 5):nth-child(-n + 9),
+    td:nth-child(13) { white-space: nowrap; overflow-wrap: normal; }
+    td:nth-child(4),
+    td:nth-child(n + 10):nth-child(-n + 12) { min-width: 7rem; max-width: 12rem; }
+    td:nth-child(13) { min-width: 6rem; }
+  }
+  .invoice-loans__repay { white-space: nowrap; min-width: 4.5rem; }
+}
+
 
 // Invoice > Payment Details register + receipt. Classes are prefixed `invoice-payments` / `invoice-receipt`.
 .invoice-payments {
