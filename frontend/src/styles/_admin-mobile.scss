@@ -190,7 +190,7 @@
 
 // The four management lists share the same compact card layout. Tablets use it too:
 // the pinned sidebar leaves too little room for a full-width ledger at 768–1023px.
-@each $screen in admin-users, master-projects, news, expense-types {
+@each $screen in admin-users, master-projects, news, expense-types, invoice-expenses {
   .#{$screen} {
     min-width: 0;
 
@@ -336,4 +336,17 @@
 // Give long project names the full content width beside a pinned tablet sidebar.
 @media (min-width: 768px) and (max-width: 1023px) {
   .projects-plots__head { flex-direction: column; }
+}
+
+// Invoice > Add / View Expense (card/table layout comes from the shared @each list above).
+.invoice-expenses__field { min-width: 0; }
+
+@media (max-width: 1023px) {
+  .invoice-expenses__form,
+  .invoice-expenses__filters { grid-template-columns: minmax(0, 1fr); }
+
+  .invoice-expenses__field input,
+  .invoice-expenses__field select { min-height: 44px; }
+
+  .invoice-expenses__submit .brand-button { min-height: 44px; width: 100%; }
 }

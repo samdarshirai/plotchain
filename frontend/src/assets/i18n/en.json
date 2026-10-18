@@ -1354,6 +1354,14 @@
       "columnSNo": "S No", "expenseType": "Expense Type", "status": "Status", "columnAction": "Action", "statusActive": "Active", "statusInactive": "Inactive",
       "emptyState": "No expense types yet.", "loadError": "Could not load expense types.", "saveError": "Could not save expense type.", "requiredError": "Required"
     },
+    "invoiceExpenses": {
+      "eyebrow": "Invoice", "title": "Add / View Expense", "subtitle": "Record company expenses and review them by date, type and project.",
+      "expenseDate": "Date", "expenseType": "Expense Type", "project": "Project", "payTo": "Pay To", "amount": "Amount", "payMode": "Pay Mode",
+      "bankName": "Bank Name", "txnNo": "TXN No", "remarks": "Remarks", "addAction": "Add Expense", "columnSNo": "S No",
+      "emptyState": "No expenses for these filters.", "loadError": "Could not load expenses.", "saveError": "Could not save expense.", "requiredError": "Required",
+      "filterFrom": "From", "filterTo": "To", "allTypes": "All types", "allProjects": "All projects",
+      "payModes": { "CASH": "Cash", "CHEQUE": "Cheque", "DD": "Demand Draft", "UPI": "UPI", "BANK_TRANSFER": "Bank Transfer" }
+    },
     "viewCancelledPlot": {
       "title": "View Cancelled Plots", "subtitle": "Cancelled bookings by cancel date and project, with the full booking details.", "empty": "No cancelled plots for these filters.",
       "from": "Cancelled from", "to": "Cancelled to"
