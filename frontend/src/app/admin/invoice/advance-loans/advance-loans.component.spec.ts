@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { AdvanceLoansComponent } from './advance-loans.component';
 
@@ -10,7 +11,7 @@ describe('AdvanceLoansComponent', () => {
   const loanRow = { id: 'l1', associateId: 'a1', associateUserId: 'VP00001', associateName: 'Asha', loanDate: '2026-10-01', amount: 500, previousDues: 0, repaid: 0, outstanding: 500, payMode: 'CASH' as const, bankName: null, instrumentNo: null, remarks: null };
 
   function init(rows: unknown[] = [loanRow]) {
-    TestBed.configureTestingModule({ imports: [AdvanceLoansComponent, HttpClientTestingModule, TranslateModule.forRoot()] });
+    TestBed.configureTestingModule({ imports: [AdvanceLoansComponent, HttpClientTestingModule, TranslateModule.forRoot()], providers: [provideRouter([])] });
     fixture = TestBed.createComponent(AdvanceLoansComponent);
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
@@ -99,6 +100,90 @@ describe('AdvanceLoansComponent', () => {
   it('showsRepayActionWhenOutstanding', () => {
     init();
     expect((fixture.nativeElement as HTMLElement).querySelector('.invoice-loans__repay')).not.toBeNull();
+  });
+
+  describe('detail popup', () => {
+    const rep = (id: string, no: string) => ({ id, loanId: 'l1', receiptNo: no, paymentDate: '2026-10-05', associateId: 'a1', associateUserId: 'VP00001', associateName: 'Asha', associatePhone: '999', amount: 100, payMode: 'UPI' as const, bankName: 'SBI', txnNo: 'T' + id });
+    const root = () => fixture.nativeElement as HTMLElement;
+    const detailBtns = () => Array.from(root().querySelectorAll('.invoice-loans__detail')) as HTMLButtonElement[];
+    const modal = () => root().querySelector('.invoice-loans__detail-modal') as HTMLElement | null;
+    const open = (id = 'l1') => {
+      detailBtns()[0].click();
+      fixture.detectChanges();
+      return httpMock.expectOne(`/api/admin/advance-loans/${id}`);
+    };
+
+    it('showsDetailForEveryRowWhileRepayStaysHiddenWhenFullyRepaid', () => {
+      init([loanRow, { ...loanRow, id: 'l2', repaid: 500, outstanding: 0 }]);
+      expect(detailBtns().length).toBe(2);
+      expect(root().querySelectorAll('.invoice-loans__repay').length).toBe(1);
+    });
+
+    it('detailAndRepayAreBothMaroonPrimaryButtons', () => {
+      init();
+      for (const b of [root().querySelector('.invoice-loans__repay')!, detailBtns()[0]]) {
+        expect(b.classList).toContain('brand-button');
+        expect(b.classList).not.toContain('brand-button--secondary');
+      }
+    });
+
+    it('fetchesAndRendersLoanFieldsAndRepaymentsInOrderWithReceiptLinks', () => {
+      init();
+      open().flush({ loan: { ...loanRow, remarks: 'Urgent' }, associatePhone: '9876543210', repayments: [rep('r2', 'RC2'), rep('r1', 'RC1')] });
+      fixture.detectChanges();
+      const text = modal()!.textContent!;
+      expect(text).toContain('VP00001');
+      expect(text).toContain('9876543210');
+      expect(text).toContain('Urgent');
+      const rows = modal()!.querySelectorAll('.invoice-loans__repayments tbody tr');
+      expect(rows.length).toBe(2);
+      expect(rows[0].textContent).toContain('RC2');
+      expect(rows[1].textContent).toContain('RC1');
+      const a = rows[0].querySelector('a')!;
+      expect(a.getAttribute('href')).toContain('/settings/payment-details/receipt/r2');
+      expect(a.getAttribute('target')).toBe('_blank');
+    });
+
+    it('showsEmptyStateWhenNoRepayments', () => {
+      init();
+      open().flush({ loan: loanRow, associatePhone: null, repayments: [] });
+      fixture.detectChanges();
+      expect(modal()!.querySelectorAll('.invoice-loans__repayments tbody tr').length).toBe(0);
+      expect(modal()!.textContent).toContain('admin.invoiceLoans.noRepayments');
+    });
+
+    it('showsBannerOnHttpError', () => {
+      init();
+      open().flush({ error: 'Loan not found' }, { status: 404, statusText: 'NF' });
+      fixture.detectChanges();
+      expect(modal()!.textContent).toContain('Loan not found');
+    });
+
+    it('escapeAndCloseButtonClose', () => {
+      init();
+      open().flush({ loan: loanRow, associatePhone: null, repayments: [] });
+      fixture.detectChanges();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      fixture.detectChanges();
+      expect(modal()).toBeNull();
+      open().flush({ loan: loanRow, associatePhone: null, repayments: [] });
+      fixture.detectChanges();
+      (modal()!.querySelector('.invoice-loans__modal-cancel') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(modal()).toBeNull();
+    });
+
+    it('ignoresLateResponseOfPreviouslyOpenedLoan', () => {
+      init([loanRow, { ...loanRow, id: 'l2', associateUserId: 'VP00002' }]);
+      const first = open('l1');
+      detailBtns()[1].click();
+      fixture.detectChanges();
+      const second = httpMock.expectOne('/api/admin/advance-loans/l2');
+      second.flush({ loan: { ...loanRow, id: 'l2', associateUserId: 'VP00002' }, associatePhone: null, repayments: [] });
+      first.flush({ loan: loanRow, associatePhone: null, repayments: [] });
+      fixture.detectChanges();
+      expect(fixture.componentInstance.detail!.loan.id).toBe('l2');
+    });
   });
 
   it('save twice synchronously posts once', () => {

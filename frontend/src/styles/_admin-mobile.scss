@@ -191,7 +191,7 @@
 // The Invoice registers (13 / 12 columns) only fit as a fixed-height table on wide desktops. Below each screen's
 // viewport width they use the stacked-card layout; at and above it, the fixed table (see the mixin block after the @each).
 // Sized from measurements: card width = viewport - 410px (248px sidebar + page padding).
-$invoice-loans-stack-max: 1499px;
+$invoice-loans-stack-max: 1511px;
 $invoice-payments-stack-max: 1439px;
 $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $invoice-payments-stack-max);
 
@@ -379,13 +379,13 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
     th:nth-child(3) { width: 80px; }
     th:nth-child(n + 5):nth-child(-n + 7) { width: 98px; }
     th:nth-child(8) { width: 100px; }
-    th:nth-child(9) { width: 84px; }
-    th:nth-child(13) { width: 84px; }
+    th:nth-child(9) { width: 76px; }
+    th:nth-child(13) { width: 108px; }
     th:nth-child(n + 5):nth-child(-n + 8),
     td:nth-child(n + 5):nth-child(-n + 8) { text-align: right; }
   }
 
-  .invoice-loans__repay { min-width: 0; min-height: 0; height: 32px; padding: 0 10px; font-size: 12px; }
+  .invoice-loans__repay, .invoice-loans__detail { min-width: 0; min-height: 0; height: 32px; padding: 0 8px; font-size: 12px; }
 }
 
 // Payment Details: 1 S No, 2 Date, 3 Id, 4 Name*, 5 Mobile, 6 Type, 7 Receipt, 8 Amount, 9 Mode, 10 Bank*, 11 TXN*, 12 Print
@@ -443,6 +443,12 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
   .invoice-expenses__modal-fields { grid-template-columns: minmax(0, 1fr); }
 }
 
+// Stacked-card layout: Repay and Detail sit side by side in the Action cell.
+@media (max-width: #{$invoice-loans-stack-max}) {
+  .invoice-loans__row-actions { display: flex; gap: 8px; }
+  .invoice-loans__row-actions > button { min-height: 44px; }
+}
+
 // Invoice > Add / View Advance Loan (card/table layout comes from the shared @each list above).
 @media (max-width: 1023px) {
   .invoice-loans__field input,
@@ -451,6 +457,7 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
   .invoice-loans__modal-field select { min-height: 44px; }
 
   .invoice-loans__repay,
+  .invoice-loans__detail,
   .invoice-loans__modal-cancel,
   .invoice-loans__modal-submit { min-height: 44px; }
 }
@@ -458,6 +465,14 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
 // The Add Loan popup's fields go single column on phones.
 @media (max-width: 767px) {
   .invoice-loans__add-fields { grid-template-columns: minmax(0, 1fr); }
+  .invoice-loans__detail-grid { grid-template-columns: minmax(0, 1fr); }
+
+  .invoice-loans__repayments {
+    thead { display: none; }
+    tr { display: block; padding: 8px 0; border-bottom: 1px solid var(--border-subtle); }
+    td { display: flex; justify-content: space-between; gap: 12px; border: 0; padding: 4px 0; text-align: right; overflow-wrap: anywhere; }
+    td::before { content: attr(data-label); color: var(--text-muted); font-weight: 600; text-align: left; }
+  }
 }
 
 

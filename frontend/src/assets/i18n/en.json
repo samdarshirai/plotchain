@@ -1384,6 +1384,7 @@
       "outstandingHint": "Outstanding balance", "paymentDate": "Payment Date", "txnNo": "TXN No", "saveAction": "Save", "cancelAction": "Cancel",
       "columnSNo": "S No", "repaid": "Repaid", "outstanding": "Outstanding", "columnAction": "Action",
       "emptyState": "No advance loans yet.", "loadError": "Could not load advance loans.", "saveError": "Could not save.", "requiredError": "Please fill all required fields.", "duesError": "Could not load previous dues.", "pickAssociateError": "Pick an associate from the list.",
+      "detailAction": "Detail", "detailTitle": "Loan Details", "mobileNo": "Mobile No", "repaymentsHeading": "Repayments", "receiptNo": "Receipt No", "noRepayments": "No repayments yet.", "detailLoading": "Loading…", "detailError": "Could not load loan details.", "closeAction": "Close", 
       "payModes": { "CASH": "Cash", "CHEQUE": "Cheque", "DD": "Demand Draft", "UPI": "UPI", "BANK_TRANSFER": "Bank Transfer" }
     },
     "viewCancelledPlot": {
