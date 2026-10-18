@@ -246,6 +246,38 @@ describe('routes', () => {
       expect(child!.data).toEqual({ sectionKey: 'expenseTypes' });
     });
 
+    it('has a lazy payment-details child stamped with sectionKey paymentDetails', () => {
+      const settingsRoute = routes.find(r => r.path === 'settings');
+      const child = settingsRoute!.children!.find(c => c.path === 'payment-details');
+      expect(child).toBeDefined();
+      expect(child!.loadComponent).toBeDefined();
+      expect(child!.data).toEqual({ sectionKey: 'paymentDetails' });
+    });
+
+    it('has a lazy invoice-expenses child stamped with sectionKey invoiceExpenses', () => {
+      const settingsRoute = routes.find(r => r.path === 'settings');
+      const child = settingsRoute!.children!.find(c => c.path === 'invoice-expenses');
+      expect(child).toBeDefined();
+      expect(child!.loadComponent).toBeDefined();
+      expect(child!.data).toEqual({ sectionKey: 'invoiceExpenses' });
+    });
+
+    it('has a lazy advance-loans child stamped with sectionKey advanceLoans', () => {
+      const settingsRoute = routes.find(r => r.path === 'settings');
+      const child = settingsRoute!.children!.find(c => c.path === 'advance-loans');
+      expect(child).toBeDefined();
+      expect(child!.loadComponent).toBeDefined();
+      expect(child!.data).toEqual({ sectionKey: 'advanceLoans' });
+    });
+
+    it('has a lazy payment-details/receipt/:id child stamped with sectionKey paymentDetails', () => {
+      const settingsRoute = routes.find(r => r.path === 'settings');
+      const child = settingsRoute!.children!.find(c => c.path === 'payment-details/receipt/:id');
+      expect(child).toBeDefined();
+      expect(child!.loadComponent).toBeDefined();
+      expect(child!.data).toEqual({ sectionKey: 'paymentDetails' });
+    });
+
     it('has a lazy news child stamped with sectionKey news', () => {
       const settingsRoute = routes.find(r => r.path === 'settings');
       const child = settingsRoute!.children!.find(c => c.path === 'news');

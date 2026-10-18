@@ -143,6 +143,10 @@ export const routes: Routes = [
       { path: 'view-transferred-plot', loadComponent: () => import('./admin/view-transferred-plot/view-transferred-plot.component').then(m => m.ViewTransferredPlotComponent), data: { sectionKey: 'viewTransferredPlot' } },
       { path: 'view-confirmed-plot', loadComponent: () => import('./admin/view-confirmed-plot/view-confirmed-plot.component').then(m => m.ViewConfirmedPlotComponent), data: { sectionKey: 'viewConfirmedPlot' } },
       { path: 'expense-types', loadComponent: () => import('./admin/expense-types/expense-types.component').then(m => m.ExpenseTypesComponent), data: { sectionKey: 'expenseTypes' } },
+      { path: 'payment-details/receipt/:id', loadComponent: () => import('./admin/invoice/payment-details/payment-receipt.component').then(m => m.PaymentReceiptComponent), data: { sectionKey: 'paymentDetails' } },
+      { path: 'payment-details', loadComponent: () => import('./admin/invoice/payment-details/payment-details.component').then(m => m.PaymentDetailsComponent), data: { sectionKey: 'paymentDetails' } },
+      { path: 'invoice-expenses', loadComponent: () => import('./admin/invoice/expenses/expenses.component').then(m => m.ExpensesComponent), data: { sectionKey: 'invoiceExpenses' } },
+      { path: 'advance-loans', loadComponent: () => import('./admin/invoice/advance-loans/advance-loans.component').then(m => m.AdvanceLoansComponent), data: { sectionKey: 'advanceLoans' } },
       { path: 'news', loadComponent: () => import('./admin/news/news.component').then(m => m.NewsComponent), data: { sectionKey: 'news' } },
       // There is no settings hub screen any more -- every entry point (a header category tab, an
       // item pill) targets a specific screen. Bare /settings is only reachable from an old

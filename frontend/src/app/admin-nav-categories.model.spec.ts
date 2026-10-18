@@ -7,6 +7,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
       ['masterData', 'database'],
       ['network', 'group'],
       ['finance', 'point_of_sale'],
+      ['invoice', 'receipt_long'],
       ['inventory', 'domain'],
       ['communication', 'forum'],
       ['system', 'admin_panel_settings']
@@ -19,6 +20,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
       ['masterProjects', 'projectsPlots'],
       ['associateDirectory', 'treeExplorer', 'kycQueue'],
       ['ledgerRegister', 'salesRegister', 'cycleManagement', 'epinRegister', 'payoutApproval', 'expenseTypes'],
+      ['paymentDetails', 'invoiceExpenses', 'advanceLoans'],
       ['bookNewPlot', 'addPlotEmi', 'viewBookedPlot', 'viewConfirmedPlot', 'plotTransfer', 'viewPlotEmi', 'viewTransferredPlots', 'viewCancelledPlot'],
       ['supportTickets', 'news'],
       ['auditLog', 'adminStats']
@@ -37,6 +39,11 @@ describe('ADMIN_NAV_CATEGORIES', () => {
 });
 
 describe('findNavCategoryForUrl', () => {
+  it('resolvesReceiptUrlToTheInvoiceCategory', () => {
+    expect(findNavCategoryForUrl('/settings/payment-details/receipt/abc')?.key).toBe('invoice');
+    expect(findNavCategoryForUrl('/settings/advance-loans')?.key).toBe('invoice');
+  });
+
   it('resolvesTheSupportTicketsScreenToTheCommunicationCategory', () => {
     expect(findNavCategoryForUrl('/settings/support-tickets')?.key).toBe('communication');
   });

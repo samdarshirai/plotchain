@@ -692,6 +692,7 @@
       "masterData": "Master Data",
       "network": "Genealogy",
       "finance": "Finance & Cycles",
+      "invoice": "Invoice",
       "inventory": "Plot Booking",
       "communication": "Communication",
       "system": "System"
@@ -1924,6 +1925,9 @@
       "supportTickets": "Support Tickets",
       "news": "News",
       "expenseTypes": "Expense Types",
+      "paymentDetails": "Payment Details",
+      "invoiceExpenses": "Add / View Expense",
+      "advanceLoans": "Add / View Advance Loan",
       "addPlotEmi": "Plot Payments",
       "viewBookedPlot": "View Booked Plot",
       "viewConfirmedPlot": "Confirm Payments",

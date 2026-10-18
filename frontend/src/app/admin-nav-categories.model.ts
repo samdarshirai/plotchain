@@ -66,6 +66,16 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     ]
   },
   {
+    key: 'invoice',
+    labelKey: 'nav.categories.invoice',
+    icon: 'receipt_long',
+    items: [
+      { key: 'paymentDetails', labelKey: 'settings.sections.paymentDetails', path: '/settings/payment-details' },
+      { key: 'invoiceExpenses', labelKey: 'settings.sections.invoiceExpenses', path: '/settings/invoice-expenses' },
+      { key: 'advanceLoans', labelKey: 'settings.sections.advanceLoans', path: '/settings/advance-loans' }
+    ]
+  },
+  {
     key: 'inventory',
     labelKey: 'nav.categories.inventory',
     icon: 'domain',

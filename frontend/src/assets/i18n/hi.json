@@ -663,6 +663,7 @@
       "masterData": "मास्टर डेटा",
       "network": "वंशावली",
       "finance": "वित्त और चक्र",
+      "invoice": "इनवॉइस",
       "inventory": "प्लॉट बुकिंग",
       "communication": "संवाद",
       "system": "सिस्टम"
@@ -1835,6 +1836,9 @@
       "supportTickets": "सहायता टिकट",
       "news": "समाचार",
       "expenseTypes": "व्यय प्रकार",
+      "paymentDetails": "भुगतान विवरण",
+      "invoiceExpenses": "खर्च जोड़ें / देखें",
+      "advanceLoans": "अग्रिम ऋण जोड़ें / देखें",
       "addPlotEmi": "प्लॉट भुगतान",
       "viewBookedPlot": "बुक किए गए प्लॉट देखें",
       "viewConfirmedPlot": "भुगतान पुष्टि",
