@@ -26,6 +26,15 @@ td {
   border-bottom: 1px solid var(--border-subtle);
 }
 
+// Vertical column dividers. Desktop only: below 1024px several tables restack into cards,
+// where a right border on every cell would draw a stray line down the card edge.
+@media (min-width: 1024px) {
+  th:not(:last-child),
+  td:not(:last-child) {
+    border-right: 1px solid var(--border-subtle);
+  }
+}
+
 tr:hover td {
   background: var(--surface-raised);
 }
