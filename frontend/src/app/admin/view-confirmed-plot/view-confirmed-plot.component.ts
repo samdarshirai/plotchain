@@ -79,26 +79,26 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
           <table class="add-plot-emi__table" [attr.aria-label]="'admin.viewConfirmedPlot.title' | translate" *ngIf="page.payments.length">
             <thead>
               <tr>
-                <th scope="col" *ngIf="status === 'ENTERED'">{{ 'admin.viewConfirmedPlot.col.select' | translate }}</th>
-                <th scope="col">{{ 'admin.viewBookedPlot.col.sNo' | translate }}</th>
-                <th scope="col">{{ 'admin.viewConfirmedPlot.col.paymentDate' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.bookedOn' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.associateId' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.associate' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.mobile' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.project' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.plot' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.plotType' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.area' | translate }}</th>
-                <th scope="col">{{ 'admin.viewBookedPlot.col.rate' | translate }}</th>
-                <th scope="col">{{ 'admin.viewBookedPlot.col.extra' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.discount' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.total' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.paid' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.remaining' | translate }}</th>
-                <th scope="col">{{ 'admin.viewConfirmedPlot.col.amount' | translate }}</th>
-                <th scope="col">{{ 'admin.viewConfirmedPlot.col.mode' | translate }}</th>
-                <th scope="col">{{ 'admin.viewConfirmedPlot.col.status' | translate }}</th>
+                <th scope="col" *ngIf="status === 'ENTERED'"><span class="material-symbols-outlined th-icon" aria-hidden="true">check_box</span>{{ 'admin.viewConfirmedPlot.col.select' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.viewBookedPlot.col.sNo' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.viewConfirmedPlot.col.paymentDate' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.addPlotEmi.col.bookedOn' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.addPlotEmi.col.associateId' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.addPlotEmi.col.associate' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">call</span>{{ 'admin.addPlotEmi.col.mobile' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">apartment</span>{{ 'admin.addPlotEmi.col.project' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'admin.addPlotEmi.col.plot' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'admin.addPlotEmi.col.plotType' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">square_foot</span>{{ 'admin.addPlotEmi.col.area' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">sell</span>{{ 'admin.viewBookedPlot.col.rate' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.viewBookedPlot.col.extra' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">percent</span>{{ 'admin.addPlotEmi.col.discount' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.addPlotEmi.col.total' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.addPlotEmi.col.paid' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">account_balance_wallet</span>{{ 'admin.addPlotEmi.col.remaining' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.viewConfirmedPlot.col.amount' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">credit_card</span>{{ 'admin.viewConfirmedPlot.col.mode' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'admin.viewConfirmedPlot.col.status' | translate }}</th>
               </tr>
             </thead>
             <tbody>

@@ -23,11 +23,11 @@ const RECENT_SALES_COUNT = 5;
       <table class="recent-sales-table__table" *ngIf="sales.length">
         <thead>
           <tr>
-            <th>{{ 'dashboard.recentSalesColumnPlot' | translate }}</th>
-            <th>{{ 'dashboard.recentSalesColumnProject' | translate }}</th>
-            <th>{{ 'dashboard.recentSalesColumnValue' | translate }}</th>
-            <th>{{ 'dashboard.recentSalesColumnDate' | translate }}</th>
-            <th>{{ 'dashboard.recentSalesColumnStatus' | translate }}</th>
+            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'dashboard.recentSalesColumnPlot' | translate }}</th>
+            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">apartment</span>{{ 'dashboard.recentSalesColumnProject' | translate }}</th>
+            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'dashboard.recentSalesColumnValue' | translate }}</th>
+            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'dashboard.recentSalesColumnDate' | translate }}</th>
+            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'dashboard.recentSalesColumnStatus' | translate }}</th>
           </tr>
         </thead>
         <tbody>

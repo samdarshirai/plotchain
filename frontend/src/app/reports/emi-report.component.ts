@@ -30,12 +30,12 @@ import { EmiReportRow, ReportsService } from './reports.service';
         <table class="report__table">
           <thead>
             <tr>
-              <th scope="col">{{ 'reports.column.number' | translate }}</th>
-              <th scope="col">{{ 'reports.column.associateId' | translate }}</th>
-              <th scope="col">{{ 'reports.column.name' | translate }}</th>
-              <th scope="col">{{ 'reports.column.paymentDate' | translate }}</th>
-              <th scope="col" class="table-number">{{ 'reports.column.amount' | translate }}</th>
-              <th scope="col">{{ 'reports.column.mode' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'reports.column.number' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'reports.column.associateId' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">person</span>{{ 'reports.column.name' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'reports.column.paymentDate' | translate }}</th>
+              <th scope="col" class="table-number"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'reports.column.amount' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">credit_card</span>{{ 'reports.column.mode' | translate }}</th>
             </tr>
           </thead>
           <tbody>

@@ -198,12 +198,12 @@ const PAGE_SIZE = 20;
           <table class="projects-step__plot-table">
             <thead>
               <tr>
-                <th>{{ 'setup.projects.plotNoLabel' | translate }}</th>
-                <th>{{ 'setup.projects.plotTypeLabel' | translate }}</th>
-                <th>{{ 'setup.projects.areaLabel' | translate }}</th>
-                <th>{{ 'setup.projects.rateLabel' | translate }}</th>
-                <th>{{ 'setup.projects.priceLabel' | translate }}</th>
-                <th>{{ 'setup.projects.statusLabel' | translate }}</th>
+                <th><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'setup.projects.plotNoLabel' | translate }}</th>
+                <th><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'setup.projects.plotTypeLabel' | translate }}</th>
+                <th><span class="material-symbols-outlined th-icon" aria-hidden="true">square_foot</span>{{ 'setup.projects.areaLabel' | translate }}</th>
+                <th><span class="material-symbols-outlined th-icon" aria-hidden="true">sell</span>{{ 'setup.projects.rateLabel' | translate }}</th>
+                <th><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'setup.projects.priceLabel' | translate }}</th>
+                <th><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'setup.projects.statusLabel' | translate }}</th>
                 <th></th>
               </tr>
             </thead>

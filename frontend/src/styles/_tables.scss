@@ -115,3 +115,16 @@ tr[aria-selected='true'] td {
   padding: 4px 10px;
   border-radius: var(--radius-sm);
 }
+
+// Leading icon inside a table header cell.
+.th-icon {
+  font-size: 1rem;
+  vertical-align: -0.2em;
+  margin-right: 0.375rem;
+  color: var(--text-muted);
+  opacity: 0.8;
+  font-variation-settings: 'FILL' 1;
+  // inline (not the icon font's inline-block): an atomic box allows a line break after it, which
+  // dropped the label under the icon. As text, the icon glues to the label's first word.
+  display: inline;
+}

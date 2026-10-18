@@ -1,4 +1,5 @@
 import { fitSize } from '../../../shared/utils/fit-text.util';
+import { headerIcon } from '../../../shared/utils/header-icon';
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, of, switchMap } from 'rxjs';
@@ -48,7 +49,7 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
         <table class="editable-table invoice-payments__table">
           <thead>
             <tr>
-              <th *ngFor="let c of columns">{{ 'admin.invoicePayments.' + c | translate }}</th>
+              <th *ngFor="let c of columns"><span class="material-symbols-outlined th-icon" aria-hidden="true">{{ headerIcon(c) }}</span>{{ 'admin.invoicePayments.' + c | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -83,6 +84,7 @@ export class PaymentDetailsComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private reload$ = new Subject<void>();
 
+  readonly headerIcon = headerIcon;
   readonly columns = ['columnSNo', 'paymentDate', 'associateId', 'associateName', 'mobileNo', 'paymentType', 'receiptNo', 'amount', 'payMode', 'bankName', 'txnNo', 'print'];
   rows: RepaymentRow[] = [];
   loadError = false;

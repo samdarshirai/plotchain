@@ -79,10 +79,10 @@ const NO_FILTERS: TicketFilters = { status: '', associateId: '' };
           <table class="support-tickets__table" *ngIf="page?.entries?.length" [attr.aria-label]="'admin.supportTickets.title' | translate">
             <thead>
               <tr>
-                <th scope="col">{{ 'admin.supportTickets.col.ticket' | translate }}</th>
-                <th scope="col">{{ 'admin.supportTickets.col.associate' | translate }}</th>
-                <th scope="col">{{ 'admin.supportTickets.col.status' | translate }}</th>
-                <th scope="col">{{ 'admin.supportTickets.col.logged' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.supportTickets.col.ticket' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.supportTickets.col.associate' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'admin.supportTickets.col.status' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.supportTickets.col.logged' | translate }}</th>
               </tr>
             </thead>
             <tbody>

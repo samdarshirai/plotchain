@@ -23,12 +23,12 @@ import { Sale } from '../../../admin/models/sale.model';
       <table class="admin-recent-sales-table__table" *ngIf="sales.length">
         <thead>
           <tr>
-            <th>{{ 'adminDashboard.recentSalesColumnPlot' | translate }}</th>
-            <th>{{ 'adminDashboard.recentSalesColumnProject' | translate }}</th>
-            <th>{{ 'adminDashboard.recentSalesColumnAssociate' | translate }}</th>
-            <th>{{ 'adminDashboard.recentSalesColumnValue' | translate }}</th>
-            <th>{{ 'adminDashboard.recentSalesColumnDate' | translate }}</th>
-            <th>{{ 'adminDashboard.recentSalesColumnStatus' | translate }}</th>
+            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'adminDashboard.recentSalesColumnPlot' | translate }}</th>
+            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">apartment</span>{{ 'adminDashboard.recentSalesColumnProject' | translate }}</th>
+            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'adminDashboard.recentSalesColumnAssociate' | translate }}</th>
+            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'adminDashboard.recentSalesColumnValue' | translate }}</th>
+            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'adminDashboard.recentSalesColumnDate' | translate }}</th>
+            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'adminDashboard.recentSalesColumnStatus' | translate }}</th>
           </tr>
         </thead>
         <tbody>

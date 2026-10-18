@@ -1,4 +1,5 @@
 import { Component, OnInit, ViewChild, ElementRef, inject } from '@angular/core';
+import { headerIcon } from '../../shared/utils/header-icon';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -90,8 +91,8 @@ const PAGE_SIZE = 20;
           <table class="epin-reg__table" [attr.aria-label]="'epinRegister.title.' + mode | translate">
             <thead>
               <tr>
-                <ng-container *ngFor="let c of cols"><th *ngIf="c.visible" scope="col">{{ c.labelKey | translate }}</th></ng-container>
-                <th *ngIf="mode === 'new'" scope="col">{{ 'epinRegister.col.action' | translate }}</th>
+                <ng-container *ngFor="let c of cols"><th *ngIf="c.visible" scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">{{ headerIcon(c.key) }}</span>{{ c.labelKey | translate }}</th></ng-container>
+                <th *ngIf="mode === 'new'" scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">more_horiz</span>{{ 'epinRegister.col.action' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -113,6 +114,7 @@ const PAGE_SIZE = 20;
   `
 })
 export class EPinRegisterComponent implements OnInit {
+  readonly headerIcon = headerIcon;
   private service = inject(EPinRegisterService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);

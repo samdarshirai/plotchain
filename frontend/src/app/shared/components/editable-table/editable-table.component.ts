@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { fitSize } from '../../utils/fit-text.util';
+import { headerIcon } from '../../utils/header-icon';
 
 export interface ActionCellContext {
   $implicit: Record<string, string | number>;
@@ -30,6 +31,8 @@ export interface EditableTableColumn {
   ellipsis?: boolean;
   // Optional, for number columns in fixed-height rows: long values get a smaller font (see fitSize) instead of being cut.
   fitText?: boolean;
+  // Optional header icon (Material Symbols name); defaults to a guess from `key`.
+  icon?: string;
 }
 
 @Component({
@@ -43,7 +46,7 @@ export interface EditableTableColumn {
           <th scope="col" *ngIf="selectable" class="editable-table__select">
             <input type="checkbox" aria-label="Select all" [checked]="allSelected" (change)="toggleAll($any($event.target).checked)" />
           </th>
-          <th scope="col" *ngFor="let column of columns">{{ column.label }}</th>
+          <th scope="col" *ngFor="let column of columns"><span class="material-symbols-outlined th-icon" aria-hidden="true">{{ column.icon ?? headerIcon(column.key) }}</span>{{ column.label }}</th>
           <th scope="col" *ngIf="!readOnly">{{ removeRowLabel }}</th>
         </tr>
       </thead>
@@ -131,6 +134,7 @@ export interface EditableTableColumn {
   `
 })
 export class EditableTableComponent {
+  readonly headerIcon = headerIcon;
   @Input({ required: true }) columns: EditableTableColumn[] = [];
   @Input({ required: true }) rows: Record<string, string | number>[] = [];
   @Input() addRowLabel = '';
