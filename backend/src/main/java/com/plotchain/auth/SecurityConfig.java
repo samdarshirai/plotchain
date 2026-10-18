@@ -453,6 +453,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/company/branding/public").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/company/branding/logo/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/company/branding/favicon").permitAll()
+                // Invoice > Expenses register: no blanket GET /api/admin/**, so the list needs its own matcher.
+                .requestMatchers(HttpMethod.GET, "/api/admin/expenses")
+                    .hasAuthority("ADMIN")
                 .anyRequest().authenticated())
             .exceptionHandling(ex -> ex.authenticationEntryPoint(
                 (request, response, authException) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
