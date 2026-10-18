@@ -36,7 +36,7 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
       </div>
 
       <ng-template #actionTemplate let-row let-i="index">
-        <button *ngIf="items[i] && items[i].outstanding > 0" type="button" class="invoice-loans__repay brand-button brand-button--secondary" (click)="openRepay(items[i])">{{ 'admin.invoiceLoans.repayAction' | translate }}</button>
+        <button *ngIf="items[i] && items[i].outstanding > 0" type="button" class="invoice-loans__repay brand-button" (click)="openRepay(items[i])">{{ 'admin.invoiceLoans.repayAction' | translate }}</button>
       </ng-template>
 
       <div class="invoice-loans__modal-overlay" *ngIf="addOpen">

@@ -68,4 +68,10 @@ describe('PaymentDetailsComponent', () => {
     const table = (fixture.nativeElement as HTMLElement).querySelector('table.invoice-payments__table')!;
     expect(table.parentElement!.classList).toContain('invoice-payments__table-card');
   });
+
+  it('printIsAMaroonPrimaryButtonNotTheGreySecondaryVariant', () => {
+    const link = (fixture.nativeElement as HTMLElement).querySelector('a.invoice-payments__print')!;
+    expect(link.classList).toContain('brand-button');
+    expect(link.classList).not.toContain('brand-button--secondary');
+  });
 });

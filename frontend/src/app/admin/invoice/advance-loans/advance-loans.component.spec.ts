@@ -84,6 +84,13 @@ describe('AdvanceLoansComponent', () => {
     expect(c.repayOpen).toBeTrue();
   });
 
+  it('repayIsAMaroonPrimaryButtonNotTheGreySecondaryVariant', () => {
+    init();
+    const btn = (fixture.nativeElement as HTMLElement).querySelector('.invoice-loans__repay')!;
+    expect(btn.classList).toContain('brand-button');
+    expect(btn.classList).not.toContain('brand-button--secondary');
+  });
+
   it('hidesRepayActionWhenFullyRepaid', () => {
     init([{ ...loanRow, repaid: 500, outstanding: 0 }]);
     expect((fixture.nativeElement as HTMLElement).querySelector('.invoice-loans__repay')).toBeNull();
