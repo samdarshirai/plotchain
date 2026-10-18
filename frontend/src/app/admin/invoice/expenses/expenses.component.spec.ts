@@ -56,4 +56,24 @@ describe('ExpensesComponent', () => {
     httpMock.expectOne({ method: 'POST', url: '/api/admin/expenses' }).flush({ error: 'Expense type is inactive: Old' }, { status: 409, statusText: 'Conflict' });
     expect(c.formError).toContain('inactive');
   });
+
+  it('guardsDoubleSubmitAndClearsFlag', () => {
+    const c = fixture.componentInstance;
+    c.form.patchValue({ expenseDate: '2026-10-02', expenseTypeId: 't1', payTo: 'V', amount: 50, payMode: 'CASH' });
+    c.save();
+    c.save();
+    const req = httpMock.expectOne({ method: 'POST', url: '/api/admin/expenses' });
+    expect(c.saving).toBeTrue();
+    req.flush(row);
+    httpMock.expectOne(r => r.url === '/api/admin/expenses').flush([row]);
+    expect(c.saving).toBeFalse();
+  });
+
+  it('clearsSavingFlagOnError', () => {
+    const c = fixture.componentInstance;
+    c.form.patchValue({ expenseDate: '2026-10-02', expenseTypeId: 't1', payTo: 'V', amount: 50, payMode: 'CASH' });
+    c.save();
+    httpMock.expectOne({ method: 'POST', url: '/api/admin/expenses' }).flush({ error: 'x' }, { status: 500, statusText: 'Err' });
+    expect(c.saving).toBeFalse();
+  });
 });

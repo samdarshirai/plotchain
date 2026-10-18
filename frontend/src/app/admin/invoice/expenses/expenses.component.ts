@@ -77,7 +77,7 @@ import { FieldErrorComponent } from '../../../shared/components/field-error/fiel
           <textarea rows="2" formControlName="remarks"></textarea>
         </div>
         <div class="invoice-expenses__submit">
-          <button type="submit" class="brand-button">{{ 'admin.invoiceExpenses.addAction' | translate }}</button>
+          <button type="submit" class="brand-button" [disabled]="saving">{{ 'admin.invoiceExpenses.addAction' | translate }}</button>
         </div>
       </form>
 
@@ -131,6 +131,7 @@ export class ExpensesComponent implements OnInit {
   rows: Record<string, string>[] = [];
   loadError = false;
   formError: string | null = null;
+  saving = false;
   private serverFieldErrors: Record<string, string> = {};
 
   private readonly defaults = { expenseDate: '', expenseTypeId: '', projectId: '', payTo: '', amount: 0, payMode: 'CASH' as PayMode, bankName: '', txnNo: '', remarks: '' };
@@ -185,6 +186,9 @@ export class ExpensesComponent implements OnInit {
   }
 
   save(): void {
+    if (this.saving) {
+      return;
+    }
     this.serverFieldErrors = {};
     this.formError = null;
     if (this.form.invalid) {
@@ -204,12 +208,15 @@ export class ExpensesComponent implements OnInit {
       txnNo: orNull(v.txnNo),
       remarks: orNull(v.remarks)
     };
+    this.saving = true;
     this.service.createExpense(body).subscribe({
       next: () => {
+        this.saving = false;
         this.form.reset(this.defaults);
         this.load();
       },
       error: (err: HttpErrorResponse) => {
+        this.saving = false;
         const fields = toFieldErrors(err);
         if (Object.keys(fields).length > 0) {
           this.serverFieldErrors = fields;
