@@ -6139,6 +6139,7 @@ button.tree-explorer__vacant-card {
 
 @media print {
   body:has(.invoice-receipt__card) * { visibility: hidden; }
-  .invoice-receipt__card, .invoice-receipt__card * { visibility: visible; }
-  .invoice-receipt__card { position: absolute; left: 0; top: 0; width: 100%; border: none; }
+  body:has(.invoice-receipt__card) .invoice-receipt__card,
+  body:has(.invoice-receipt__card) .invoice-receipt__card * { visibility: visible; }
+  body:has(.invoice-receipt__card) .invoice-receipt__card { position: absolute; left: 0; top: 0; width: 100%; border: none; }
 }
