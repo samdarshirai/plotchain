@@ -63,4 +63,9 @@ describe('PaymentDetailsComponent', () => {
     httpMock.expectNone(r => r.url === '/api/admin/loan-repayments');
     expect(c.filterError).toBeTrue();
   });
+
+  it('putsTheTableInAFlushCardSoItFillsTheBox', () => {
+    const table = (fixture.nativeElement as HTMLElement).querySelector('table.invoice-payments__table')!;
+    expect(table.parentElement!.classList).toContain('invoice-payments__table-card');
+  });
 });

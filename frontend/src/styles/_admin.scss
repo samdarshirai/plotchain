@@ -6338,6 +6338,12 @@ button.tree-explorer__vacant-card {
 
 .invoice-payments__field--wide { flex: 2 1 280px; }
 
+// Same as `.card:has(> app-editable-table)` above: the table runs edge to edge inside its card (this one is a plain <table>).
+.invoice-payments__table-card {
+  padding: 0;
+  overflow-x: auto;
+}
+
 .invoice-payments__table {
   width: 100%;
   border-collapse: collapse;

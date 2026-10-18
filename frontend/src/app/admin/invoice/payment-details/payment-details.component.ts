@@ -43,7 +43,7 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
         </div>
       </form>
 
-      <div class="card">
+      <div class="card invoice-payments__table-card">
         <table class="editable-table invoice-payments__table">
           <thead>
             <tr>
