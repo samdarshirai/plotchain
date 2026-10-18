@@ -259,4 +259,37 @@ describe('AdvanceLoansComponent add popup', () => {
     expect(popup()!.querySelector('app-inline-banner')).not.toBeNull();
     expect(c.loadError).toBeFalse();
   });
+
+  it('clearsThePickAssociateBannerOnceAnAssociateIsPicked', () => {
+    const c = fixture.componentInstance;
+    c.openAdd();
+    c.save();
+    expect(c.formError).toBeTruthy();
+    c.pickAssociate('VP00001 — Asha');
+    expect(c.formError).toBeNull();
+    httpMock.expectOne(r => r.url === '/api/admin/advance-loans/dues').flush({ associateId: 'a1', outstanding: 0 });
+    expect(c.formError).toBeNull();
+  });
+
+  it('clearsAStaleSaveErrorWhenADifferentAssociateIsPicked', () => {
+    const c = fixture.componentInstance;
+    c.openAdd();
+    fillValid();
+    c.save();
+    httpMock.expectOne({ method: 'POST', url: '/api/admin/advance-loans' })
+      .flush({ error: 'Associate not found' }, { status: 404, statusText: 'Not Found' });
+    expect(c.formError).toContain('Associate not found');
+    c.pickAssociate('VP00001 — Asha');
+    expect(c.formError).toBeNull();
+    httpMock.expectOne(r => r.url === '/api/admin/advance-loans/dues').flush({ associateId: 'a1', outstanding: 0 });
+  });
+
+  it('stillShowsTheDuesErrorAfterClearingTheOldBanner', () => {
+    const c = fixture.componentInstance;
+    c.openAdd();
+    c.save();
+    c.pickAssociate('VP00001 — Asha');
+    httpMock.expectOne(r => r.url === '/api/admin/advance-loans/dues').flush({}, { status: 500, statusText: 'Err' });
+    expect(c.formError).toBeTruthy();
+  });
 });

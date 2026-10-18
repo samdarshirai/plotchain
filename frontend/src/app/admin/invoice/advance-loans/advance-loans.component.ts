@@ -237,6 +237,8 @@ export class AdvanceLoansComponent implements OnInit {
 
   pickAssociate(text: string): void {
     const match = this.associates.find(a => this.label(a) === text.trim());
+    // A new pick supersedes any earlier message ("pick an associate", a failed save); a dues failure below sets its own.
+    this.formError = null;
     this.picked = match ?? null;
     this.form.patchValue({ associateId: match?.id ?? '' });
     this.previousDues = 0;
