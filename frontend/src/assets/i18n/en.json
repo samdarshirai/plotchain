@@ -1368,7 +1368,7 @@
       "bankName": "Bank Name", "instrumentNo": "DD / Cheque / TXN No", "remarks": "Remarks", "addAction": "Add Loan", "repayAction": "Repay", "repayTitle": "Loan Repayment",
       "outstandingHint": "Outstanding balance", "paymentDate": "Payment Date", "txnNo": "TXN No", "saveAction": "Save", "cancelAction": "Cancel",
       "columnSNo": "S No", "repaid": "Repaid", "outstanding": "Outstanding", "columnAction": "Action",
-      "emptyState": "No advance loans yet.", "loadError": "Could not load advance loans.", "saveError": "Could not save.", "requiredError": "Please fill all required fields.", "pickAssociateError": "Pick an associate from the list.",
+      "emptyState": "No advance loans yet.", "loadError": "Could not load advance loans.", "saveError": "Could not save.", "requiredError": "Please fill all required fields.", "duesError": "Could not load previous dues.", "pickAssociateError": "Pick an associate from the list.",
       "payModes": { "CASH": "Cash", "CHEQUE": "Cheque", "DD": "Demand Draft", "UPI": "UPI", "BANK_TRANSFER": "Bank Transfer" }
     },
     "viewCancelledPlot": {

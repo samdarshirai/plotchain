@@ -71,7 +71,7 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
           <textarea rows="2" formControlName="remarks"></textarea>
         </div>
         <div class="invoice-loans__submit">
-          <button type="submit" class="brand-button">{{ 'admin.invoiceLoans.addAction' | translate }}</button>
+          <button type="submit" class="brand-button" [disabled]="saving">{{ 'admin.invoiceLoans.addAction' | translate }}</button>
         </div>
       </form>
 
@@ -121,7 +121,7 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
             </div>
             <div class="invoice-loans__modal-footer">
               <button type="button" class="invoice-loans__modal-cancel" (click)="repayOpen = false">{{ 'admin.invoiceLoans.cancelAction' | translate }}</button>
-              <button type="submit" class="invoice-loans__modal-submit">{{ 'admin.invoiceLoans.saveAction' | translate }}</button>
+              <button type="submit" class="invoice-loans__modal-submit" [disabled]="repaySaving">{{ 'admin.invoiceLoans.saveAction' | translate }}</button>
             </div>
           </form>
         </div>
@@ -149,6 +149,8 @@ export class AdvanceLoansComponent implements OnInit {
   repayOpen = false;
   repayLoan: LoanRow | null = null;
   repayError: string | null = null;
+  saving = false;
+  repaySaving = false;
 
   private readonly defaults = { associateText: '', associateId: '', loanDate: '', amount: 0, payMode: 'CASH' as PayMode, bankName: '', instrumentNo: '', remarks: '' };
   form = this.fb.nonNullable.group({
@@ -202,13 +204,20 @@ export class AdvanceLoansComponent implements OnInit {
     this.previousDues = 0;
     if (match) {
       this.service.dues(match.id).subscribe({
-        next: d => (this.previousDues = d.outstanding),
-        error: () => (this.loadError = true)
+        next: d => {
+          if (this.form.value.associateId === match.id) {
+            this.previousDues = d.outstanding;
+          }
+        },
+        error: () => (this.formError = this.translate.instant('admin.invoiceLoans.duesError'))
       });
     }
   }
 
   save(): void {
+    if (this.saving) {
+      return;
+    }
     this.formError = null;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -226,14 +235,17 @@ export class AdvanceLoansComponent implements OnInit {
       instrumentNo: orNull(v.instrumentNo),
       remarks: orNull(v.remarks)
     };
+    this.saving = true;
     this.service.createLoan(body).subscribe({
       next: () => {
+        this.saving = false;
         this.form.reset(this.defaults);
         this.picked = null;
         this.previousDues = 0;
         this.load();
       },
       error: (err: HttpErrorResponse) => {
+        this.saving = false;
         this.formError = (err.error as { error?: string } | null)?.error ?? this.translate.instant('admin.invoiceLoans.saveError');
       }
     });
@@ -243,11 +255,12 @@ export class AdvanceLoansComponent implements OnInit {
     this.repayLoan = loan;
     this.repayError = null;
     this.repayForm.reset(this.repayDefaults);
+    this.repaySaving = false;
     this.repayOpen = true;
   }
 
   saveRepay(): void {
-    if (!this.repayLoan) {
+    if (!this.repayLoan || this.repaySaving) {
       return;
     }
     this.repayError = null;
@@ -258,6 +271,7 @@ export class AdvanceLoansComponent implements OnInit {
     }
     const v = this.repayForm.getRawValue();
     const orNull = (s: string) => s.trim() || null;
+    this.repaySaving = true;
     this.service.repay(this.repayLoan.id, {
       paymentDate: v.paymentDate,
       amount: v.amount,
@@ -266,10 +280,12 @@ export class AdvanceLoansComponent implements OnInit {
       txnNo: orNull(v.txnNo)
     }).subscribe({
       next: () => {
+        this.repaySaving = false;
         this.repayOpen = false;
         this.load();
       },
       error: (err: HttpErrorResponse) => {
+        this.repaySaving = false;
         this.repayError = (err.error as { error?: string } | null)?.error ?? this.translate.instant('admin.invoiceLoans.saveError');
       }
     });

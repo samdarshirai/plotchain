@@ -93,4 +93,51 @@ describe('AdvanceLoansComponent', () => {
     init();
     expect((fixture.nativeElement as HTMLElement).querySelector('.invoice-loans__repay')).not.toBeNull();
   });
+
+  it('save twice synchronously posts once', () => {
+    init();
+    const c = fixture.componentInstance;
+    c.pickAssociate('VP00001 — Asha');
+    httpMock.expectOne(r => r.url === '/api/admin/advance-loans/dues').flush({ associateId: 'a1', outstanding: 0 });
+    c.form.patchValue({ loanDate: '2026-10-02', amount: 500 });
+    c.save();
+    c.save();
+    httpMock.expectOne({ method: 'POST', url: '/api/admin/advance-loans' }).flush(loanRow);
+    httpMock.expectOne(r => r.url === '/api/admin/advance-loans').flush([loanRow]);
+    expect(c.saving).toBeFalse();
+  });
+
+  it('saveRepay twice synchronously posts once', () => {
+    init();
+    const c = fixture.componentInstance;
+    c.openRepay(loanRow);
+    c.repayForm.patchValue({ paymentDate: '2026-10-05', amount: 100 });
+    c.saveRepay();
+    c.saveRepay();
+    httpMock.expectOne({ method: 'POST', url: '/api/admin/advance-loans/l1/repayments' })
+      .flush({ error: 'x' }, { status: 409, statusText: 'Conflict' });
+    expect(c.repaySaving).toBeFalse();
+  });
+
+  it('ignores late dues response for a previously picked associate', () => {
+    init();
+    const c = fixture.componentInstance;
+    c.associates = [...assoc, { id: 'a2', userId: 'VP00002', name: 'Bela' }];
+    c.pickAssociate('VP00001 — Asha');
+    const first = httpMock.expectOne(r => r.url === '/api/admin/advance-loans/dues' && r.params.get('associateId') === 'a1');
+    c.pickAssociate('VP00002 — Bela');
+    httpMock.expectOne(r => r.url === '/api/admin/advance-loans/dues' && r.params.get('associateId') === 'a2')
+      .flush({ associateId: 'a2', outstanding: 20 });
+    first.flush({ associateId: 'a1', outstanding: 999 });
+    expect(c.previousDues).toBe(20);
+  });
+
+  it('dues failure does not set loadError', () => {
+    init();
+    const c = fixture.componentInstance;
+    c.pickAssociate('VP00001 — Asha');
+    httpMock.expectOne(r => r.url === '/api/admin/advance-loans/dues').flush('x', { status: 500, statusText: 'Err' });
+    expect(c.loadError).toBeFalse();
+    expect(c.formError).toBeTruthy();
+  });
 });
