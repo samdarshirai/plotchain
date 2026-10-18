@@ -188,10 +188,12 @@
   }
 }
 
-// The Invoice registers (13 / 12 columns) only fit as a fixed-height table on wide desktops. Below this
-// viewport width they use the stacked-card layout; at and above it, the fixed table (see the block after the @each).
-$invoice-table-stack-max: 1399px;
-$table-stack-max: (invoice-loans: $invoice-table-stack-max, invoice-payments: $invoice-table-stack-max);
+// The Invoice registers (13 / 12 columns) only fit as a fixed-height table on wide desktops. Below each screen's
+// viewport width they use the stacked-card layout; at and above it, the fixed table (see the mixin block after the @each).
+// Sized from measurements: card width = viewport - 410px (248px sidebar + page padding).
+$invoice-loans-stack-max: 1499px;
+$invoice-payments-stack-max: 1439px;
+$table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $invoice-payments-stack-max);
 
 // The four management lists share the same compact card layout. Tablets use it too:
 // the pinned sidebar leaves too little room for a full-width ledger at 768–1023px.
@@ -254,7 +256,7 @@ $table-stack-max: (invoice-loans: $invoice-table-stack-max, invoice-payments: $i
     .#{$screen}__add { min-height: 44px; }
   }
 
-  // Stacked cards: <=1023px for most screens; the wide Invoice registers switch at $invoice-table-stack-max.
+  // Stacked cards: <=1023px for most screens; the wide Invoice registers switch at their own $table-stack-max entry.
   $tbl-max: map-get($table-stack-max, $screen);
   @if $tbl-max == null { $tbl-max: 1023px; }
   @media (max-width: $tbl-max) {
@@ -330,17 +332,17 @@ $table-stack-max: (invoice-loans: $invoice-table-stack-max, invoice-payments: $i
 }
 
 // Invoice registers on wide desktops: one line per row at a fixed height, fixed column widths, no sideways scroll.
-// Long text (cells marked --ellipsis) is cut with "…" and carries the full text in a title tooltip.
-@media (min-width: #{$invoice-table-stack-max + 1}) {
-  .invoice-loans .editable-table,
-  .invoice-payments .editable-table {
+// Compact (12px text, 6px cell padding) so every date, id and amount fits. Long text (cells marked --ellipsis) is cut
+// with "…" and carries the full text in a title tooltip.
+@mixin invoice-fixed-table($screen) {
+  .#{$screen} .editable-table {
     table-layout: fixed;
     width: 100%;
 
     th, td {
       height: 48px;
-      padding: 0 8px;
-      font-size: 13px;
+      padding: 0 6px;
+      font-size: 12px;
       line-height: 1.25;
       vertical-align: middle;
       white-space: nowrap;
@@ -350,39 +352,56 @@ $table-stack-max: (invoice-loans: $invoice-table-stack-max, invoice-payments: $i
       font-variant-numeric: tabular-nums;
     }
 
-    th { white-space: normal; }
+    th {
+      white-space: normal;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+    }
+
     tbody tr { height: 48px; }
   }
 
-  // Advance Loans: 1 S No, 2 Date, 3 Id, 4 Name*, 5 Amount, 6 Prev Dues, 7 Repaid, 8 Outstanding, 9 Mode, 10 Bank*, 11 Ref*, 12 Remarks*, 13 Action
-  // (* = takes the leftover width, shared equally).
+  .#{$screen} .card { overflow-x: visible; }
+}
+
+// Advance Loans: 1 S No, 2 Date, 3 Id, 4 Name*, 5 Amount, 6 Prev Dues, 7 Repaid, 8 Outstanding, 9 Mode, 10 Bank*, 11 Ref*, 12 Remarks*, 13 Action
+// (* = takes the leftover width, shared equally; ~80px each at a 1512px viewport).
+@media (min-width: #{$invoice-loans-stack-max + 1}) {
+  @include invoice-fixed-table(invoice-loans);
+
   .invoice-loans .editable-table {
-    th:nth-child(1) { width: 40px; }
-    th:nth-child(2) { width: 88px; }
-    th:nth-child(3) { width: 76px; }
-    th:nth-child(n + 5):nth-child(-n + 8) { width: 84px; }
+    th:nth-child(1) { width: 36px; }
+    th:nth-child(2) { width: 84px; }
+    th:nth-child(3) { width: 80px; }
+    th:nth-child(n + 5):nth-child(-n + 7) { width: 96px; }
+    th:nth-child(8) { width: 100px; }
     th:nth-child(9) { width: 92px; }
-    th:nth-child(13) { width: 88px; }
+    th:nth-child(13) { width: 100px; }
     th:nth-child(n + 5):nth-child(-n + 8),
     td:nth-child(n + 5):nth-child(-n + 8) { text-align: right; }
   }
 
-  // Payment Details: 1 S No, 2 Date, 3 Id, 4 Name*, 5 Mobile, 6 Type, 7 Receipt, 8 Amount, 9 Mode, 10 Bank*, 11 TXN*, 12 Print
+  .invoice-loans__repay { min-width: 0; min-height: 0; height: 32px; padding: 0 10px; font-size: 12px; }
+}
+
+// Payment Details: 1 S No, 2 Date, 3 Id, 4 Name*, 5 Mobile, 6 Type, 7 Receipt, 8 Amount, 9 Mode, 10 Bank*, 11 TXN*, 12 Print
+@media (min-width: #{$invoice-payments-stack-max + 1}) {
+  @include invoice-fixed-table(invoice-payments);
+
   .invoice-payments .editable-table {
-    th:nth-child(1) { width: 40px; }
-    th:nth-child(2) { width: 88px; }
-    th:nth-child(3) { width: 76px; }
-    th:nth-child(5) { width: 96px; }
-    th:nth-child(6) { width: 110px; }
-    th:nth-child(7) { width: 96px; }
-    th:nth-child(8) { width: 92px; }
-    th:nth-child(9) { width: 100px; }
-    th:nth-child(12) { width: 84px; }
+    th:nth-child(1) { width: 36px; }
+    th:nth-child(2) { width: 84px; }
+    th:nth-child(3) { width: 80px; }
+    th:nth-child(5) { width: 88px; }
+    th:nth-child(6) { width: 108px; }
+    th:nth-child(7) { width: 92px; }
+    th:nth-child(8) { width: 96px; }
+    th:nth-child(9) { width: 92px; }
+    th:nth-child(12) { width: 92px; }
     th:nth-child(8), td:nth-child(8) { text-align: right; }
   }
 
-  .invoice-loans .card,
-  .invoice-payments .card { overflow-x: visible; }
+  .invoice-payments__print { min-height: 0; height: 32px; padding: 0 10px; font-size: 12px; }
 }
 
 @media (max-width: 767px) {
