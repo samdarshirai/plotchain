@@ -6156,13 +6156,6 @@ button.tree-explorer__vacant-card {
   max-width: 40rem;
 }
 
-.invoice-loans__form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  padding: 20px;
-}
-
 .invoice-loans__field {
   min-width: 0;
 
@@ -6191,10 +6184,15 @@ button.tree-explorer__vacant-card {
   grid-column: 1 / -1;
 }
 
-.invoice-loans__submit {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: flex-end;
+// Add Loan popup: the Repay popup's overlay/card/footer styles above, widened for the two-column form.
+.invoice-loans__add-modal {
+  width: 640px;
+}
+
+.invoice-loans__add-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .invoice-loans__modal-field {

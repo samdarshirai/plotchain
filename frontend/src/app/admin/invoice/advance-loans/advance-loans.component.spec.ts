@@ -141,3 +141,115 @@ describe('AdvanceLoansComponent', () => {
     expect(c.formError).toBeTruthy();
   });
 });
+
+describe('AdvanceLoansComponent add popup', () => {
+  let fixture: ComponentFixture<AdvanceLoansComponent>;
+  let httpMock: HttpTestingController;
+  let el: HTMLElement;
+  const assoc = [{ id: 'a1', userId: 'VP00001', name: 'Asha' }];
+  const listReq = (r: { url: string }) => r.url === '/api/admin/advance-loans';
+  const popup = () => el.querySelector('.invoice-loans__add-modal');
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ imports: [AdvanceLoansComponent, HttpClientTestingModule, TranslateModule.forRoot()] });
+    fixture = TestBed.createComponent(AdvanceLoansComponent);
+    httpMock = TestBed.inject(HttpTestingController);
+    el = fixture.nativeElement;
+    fixture.detectChanges();
+    httpMock.expectOne('/api/associates').flush(assoc);
+    httpMock.expectOne(listReq).flush([]);
+    fixture.detectChanges();
+  });
+
+  afterEach(() => httpMock.verify());
+
+  const pick = () => {
+    fixture.componentInstance.pickAssociate('VP00001 — Asha');
+    httpMock.expectOne(r => r.url === '/api/admin/advance-loans/dues').flush({ associateId: 'a1', outstanding: 200 });
+  };
+  const fillValid = () => {
+    pick();
+    fixture.componentInstance.form.patchValue({ loanDate: '2026-10-02', amount: 500 });
+  };
+
+  it('hidesTheFormUntilAddLoanIsClicked', () => {
+    expect(popup()).toBeNull();
+    expect(el.querySelector('.invoice-loans__form')).toBeNull();
+    (el.querySelector('.invoice-loans__intro .invoice-loans__add') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(popup()).not.toBeNull();
+    expect(popup()!.querySelector('form')).not.toBeNull();
+  });
+
+  it('cancelClosesAndDiscardsTheAssociateAndTypedValues', () => {
+    const c = fixture.componentInstance;
+    c.openAdd();
+    pick();
+    c.form.patchValue({ remarks: 'Typed' });
+    fixture.detectChanges();
+    (popup()!.querySelector('.invoice-loans__modal-cancel') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(popup()).toBeNull();
+    c.openAdd();
+    expect(c.picked).toBeNull();
+    expect(c.previousDues).toBe(0);
+    expect(c.form.value.remarks).toBe('');
+    expect(c.form.value.associateId).toBe('');
+  });
+
+  it('successfulSaveClosesThePopupAndReloadsTheList', () => {
+    const c = fixture.componentInstance;
+    c.openAdd();
+    fillValid();
+    c.save();
+    httpMock.expectOne({ method: 'POST', url: '/api/admin/advance-loans' }).flush({});
+    httpMock.expectOne(listReq).flush([]);
+    fixture.detectChanges();
+    expect(c.addOpen).toBeFalse();
+    expect(popup()).toBeNull();
+  });
+
+  it('failedSaveKeepsThePopupOpenAndShowsTheErrorInsideIt', () => {
+    const c = fixture.componentInstance;
+    c.openAdd();
+    fillValid();
+    c.save();
+    httpMock.expectOne({ method: 'POST', url: '/api/admin/advance-loans' })
+      .flush({ error: 'Associate not found' }, { status: 404, statusText: 'Not Found' });
+    fixture.detectChanges();
+    expect(c.addOpen).toBeTrue();
+    expect(popup()!.textContent).toContain('Associate not found');
+  });
+
+  it('escapeClosesThePopup', () => {
+    const c = fixture.componentInstance;
+    c.openAdd();
+    fixture.detectChanges();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(c.addOpen).toBeFalse();
+  });
+
+  it('escapeAndCancelAreIgnoredWhileASaveIsInFlight', () => {
+    const c = fixture.componentInstance;
+    c.openAdd();
+    fillValid();
+    c.save();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    c.closeAdd();
+    expect(c.addOpen).toBeTrue();
+    httpMock.expectOne({ method: 'POST', url: '/api/admin/advance-loans' }).flush({});
+    httpMock.expectOne(listReq).flush([]);
+    expect(c.addOpen).toBeFalse();
+  });
+
+  it('duesFailureMessageShowsInsideThePopup', () => {
+    const c = fixture.componentInstance;
+    c.openAdd();
+    c.pickAssociate('VP00001 — Asha');
+    httpMock.expectOne(r => r.url === '/api/admin/advance-loans/dues').flush({}, { status: 500, statusText: 'Err' });
+    fixture.detectChanges();
+    expect(popup()!.querySelector('app-inline-banner')).not.toBeNull();
+    expect(c.loadError).toBeFalse();
+  });
+});

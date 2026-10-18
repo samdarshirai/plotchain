@@ -1292,7 +1292,7 @@
     "invoiceLoans": {
       "eyebrow": "इनवॉइस", "title": "अग्रिम ऋण जोड़ें / देखें", "subtitle": "एसोसिएट्स को दिए गए अग्रिम ऋण दर्ज करें, बकाया देखें और वापसी भुगतान लें।",
       "associate": "एसोसिएट", "associateId": "एसोसिएट आईडी", "associateName": "एसोसिएट का नाम", "previousDues": "पिछला बकाया", "loanDate": "तिथि", "amount": "राशि", "payMode": "भुगतान माध्यम",
-      "bankName": "बैंक का नाम", "instrumentNo": "डीडी / चेक / लेन-देन संख्या", "remarks": "टिप्पणी", "addAction": "ऋण जोड़ें", "repayAction": "वापसी भुगतान", "repayTitle": "ऋण वापसी भुगतान",
+      "bankName": "बैंक का नाम", "instrumentNo": "डीडी / चेक / लेन-देन संख्या", "remarks": "टिप्पणी", "addTitle": "ऋण जोड़ें", "addAction": "ऋण जोड़ें", "repayAction": "वापसी भुगतान", "repayTitle": "ऋण वापसी भुगतान",
       "outstandingHint": "बकाया शेष", "paymentDate": "भुगतान तिथि", "txnNo": "लेन-देन संख्या", "saveAction": "सहेजें", "cancelAction": "रद्द करें",
       "columnSNo": "क्र.सं.", "repaid": "वापस किया", "outstanding": "बकाया", "columnAction": "कार्रवाई",
       "emptyState": "अभी कोई अग्रिम ऋण नहीं।", "loadError": "अग्रिम ऋण लोड नहीं हो सके।", "saveError": "सहेजा नहीं जा सका।", "requiredError": "कृपया सभी आवश्यक फ़ील्ड भरें।", "duesError": "पिछला बकाया लोड नहीं हो सका।", "pickAssociateError": "सूची से एक एसोसिएट चुनें।",

@@ -355,19 +355,19 @@
 
 // Invoice > Add / View Advance Loan (card/table layout comes from the shared @each list above).
 @media (max-width: 1023px) {
-  .invoice-loans__form { grid-template-columns: minmax(0, 1fr); }
-
   .invoice-loans__field input,
   .invoice-loans__field select,
   .invoice-loans__modal-field input,
   .invoice-loans__modal-field select { min-height: 44px; }
 
-  .invoice-loans__submit .brand-button,
   .invoice-loans__repay,
   .invoice-loans__modal-cancel,
   .invoice-loans__modal-submit { min-height: 44px; }
+}
 
-  .invoice-loans__submit .brand-button { width: 100%; }
+// The Add Loan popup's fields go single column on phones.
+@media (max-width: 767px) {
+  .invoice-loans__add-fields { grid-template-columns: minmax(0, 1fr); }
 }
 
 

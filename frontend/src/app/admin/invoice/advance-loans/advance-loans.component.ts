@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, HostListener, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -19,62 +19,12 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
           <h1 class="invoice-loans__title">{{ 'admin.invoiceLoans.title' | translate }}</h1>
           <p class="invoice-loans__subtitle">{{ 'admin.invoiceLoans.subtitle' | translate }}</p>
         </div>
+        <button type="button" class="invoice-loans__add brand-button" (click)="openAdd()">
+          {{ 'admin.invoiceLoans.addAction' | translate }}
+        </button>
       </div>
 
       <app-inline-banner *ngIf="loadError" tone="danger" [dismissible]="true" (dismissed)="loadError = false">{{ 'admin.invoiceLoans.loadError' | translate }}</app-inline-banner>
-      <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
-
-      <form class="card invoice-loans__form" [formGroup]="form" (ngSubmit)="save()">
-        <div class="invoice-loans__field">
-          <label>{{ 'admin.invoiceLoans.associate' | translate }}</label>
-          <input type="text" list="invoice-loans-associates" formControlName="associateText" autocomplete="off" (change)="pickAssociate($any($event.target).value)" />
-          <datalist id="invoice-loans-associates">
-            <option *ngFor="let a of associates" [value]="label(a)"></option>
-          </datalist>
-        </div>
-        <div class="invoice-loans__field">
-          <label>{{ 'admin.invoiceLoans.associateId' | translate }}</label>
-          <input type="text" readonly [value]="picked?.userId ?? ''" />
-        </div>
-        <div class="invoice-loans__field">
-          <label>{{ 'admin.invoiceLoans.associateName' | translate }}</label>
-          <input type="text" readonly [value]="picked?.name ?? ''" />
-        </div>
-        <div class="invoice-loans__field">
-          <label>{{ 'admin.invoiceLoans.previousDues' | translate }}</label>
-          <input type="text" readonly [value]="previousDues.toFixed(2)" />
-        </div>
-        <div class="invoice-loans__field">
-          <label>{{ 'admin.invoiceLoans.loanDate' | translate }}</label>
-          <input type="date" formControlName="loanDate" />
-        </div>
-        <div class="invoice-loans__field">
-          <label>{{ 'admin.invoiceLoans.amount' | translate }}</label>
-          <input type="number" step="0.01" min="0.01" inputmode="decimal" formControlName="amount" />
-        </div>
-        <div class="invoice-loans__field">
-          <label>{{ 'admin.invoiceLoans.payMode' | translate }}</label>
-          <select formControlName="payMode">
-            <option *ngFor="let m of payModes" [value]="m">{{ 'admin.invoiceLoans.payModes.' + m | translate }}</option>
-          </select>
-        </div>
-        <div class="invoice-loans__field">
-          <label>{{ 'admin.invoiceLoans.bankName' | translate }}</label>
-          <input type="text" formControlName="bankName" />
-        </div>
-        <div class="invoice-loans__field">
-          <label>{{ 'admin.invoiceLoans.instrumentNo' | translate }}</label>
-          <input type="text" formControlName="instrumentNo" />
-        </div>
-        <div class="invoice-loans__field invoice-loans__field--wide">
-          <label>{{ 'admin.invoiceLoans.remarks' | translate }}</label>
-          <textarea rows="2" formControlName="remarks"></textarea>
-        </div>
-        <div class="invoice-loans__submit">
-          <button type="submit" class="brand-button" [disabled]="saving">{{ 'admin.invoiceLoans.addAction' | translate }}</button>
-        </div>
-      </form>
-
       <div class="card">
         <app-editable-table
           [readOnly]="true"
@@ -88,6 +38,66 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
       <ng-template #actionTemplate let-row let-i="index">
         <button *ngIf="items[i] && items[i].outstanding > 0" type="button" class="invoice-loans__repay brand-button brand-button--secondary" (click)="openRepay(items[i])">{{ 'admin.invoiceLoans.repayAction' | translate }}</button>
       </ng-template>
+
+      <div class="invoice-loans__modal-overlay" *ngIf="addOpen">
+        <div class="invoice-loans__modal invoice-loans__add-modal" role="dialog" aria-modal="true" aria-labelledby="invoice-loans-add-title">
+          <h2 class="invoice-loans__modal-title" id="invoice-loans-add-title">{{ 'admin.invoiceLoans.addTitle' | translate }}</h2>
+          <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
+          <form [formGroup]="form" (ngSubmit)="save()">
+            <div class="invoice-loans__add-fields">
+            <div class="invoice-loans__field invoice-loans__modal-field">
+              <label>{{ 'admin.invoiceLoans.associate' | translate }}</label>
+              <input type="text" list="invoice-loans-associates" formControlName="associateText" autocomplete="off" (change)="pickAssociate($any($event.target).value)" />
+              <datalist id="invoice-loans-associates">
+                <option *ngFor="let a of associates" [value]="label(a)"></option>
+              </datalist>
+            </div>
+            <div class="invoice-loans__field invoice-loans__modal-field">
+              <label>{{ 'admin.invoiceLoans.associateId' | translate }}</label>
+              <input type="text" readonly [value]="picked?.userId ?? ''" />
+            </div>
+            <div class="invoice-loans__field invoice-loans__modal-field">
+              <label>{{ 'admin.invoiceLoans.associateName' | translate }}</label>
+              <input type="text" readonly [value]="picked?.name ?? ''" />
+            </div>
+            <div class="invoice-loans__field invoice-loans__modal-field">
+              <label>{{ 'admin.invoiceLoans.previousDues' | translate }}</label>
+              <input type="text" readonly [value]="previousDues.toFixed(2)" />
+            </div>
+            <div class="invoice-loans__field invoice-loans__modal-field">
+              <label>{{ 'admin.invoiceLoans.loanDate' | translate }}</label>
+              <input type="date" formControlName="loanDate" />
+            </div>
+            <div class="invoice-loans__field invoice-loans__modal-field">
+              <label>{{ 'admin.invoiceLoans.amount' | translate }}</label>
+              <input type="number" step="0.01" min="0.01" inputmode="decimal" formControlName="amount" />
+            </div>
+            <div class="invoice-loans__field invoice-loans__modal-field">
+              <label>{{ 'admin.invoiceLoans.payMode' | translate }}</label>
+              <select formControlName="payMode">
+                <option *ngFor="let m of payModes" [value]="m">{{ 'admin.invoiceLoans.payModes.' + m | translate }}</option>
+              </select>
+            </div>
+            <div class="invoice-loans__field invoice-loans__modal-field">
+              <label>{{ 'admin.invoiceLoans.bankName' | translate }}</label>
+              <input type="text" formControlName="bankName" />
+            </div>
+            <div class="invoice-loans__field invoice-loans__modal-field">
+              <label>{{ 'admin.invoiceLoans.instrumentNo' | translate }}</label>
+              <input type="text" formControlName="instrumentNo" />
+            </div>
+            <div class="invoice-loans__field invoice-loans__field--wide invoice-loans__modal-field">
+              <label>{{ 'admin.invoiceLoans.remarks' | translate }}</label>
+              <textarea rows="2" formControlName="remarks"></textarea>
+            </div>
+            </div>
+            <div class="invoice-loans__modal-footer">
+              <button type="button" class="invoice-loans__modal-cancel" (click)="closeAdd()">{{ 'admin.invoiceLoans.cancelAction' | translate }}</button>
+              <button type="submit" class="invoice-loans__modal-submit" [disabled]="saving">{{ 'admin.invoiceLoans.saveAction' | translate }}</button>
+            </div>
+          </form>
+        </div>
+      </div>
 
       <div class="invoice-loans__modal-overlay" *ngIf="repayOpen">
         <div class="invoice-loans__modal">
@@ -146,6 +156,7 @@ export class AdvanceLoansComponent implements OnInit {
   loadError = false;
   formError: string | null = null;
 
+  addOpen = false;
   repayOpen = false;
   repayLoan: LoanRow | null = null;
   repayError: string | null = null;
@@ -191,6 +202,33 @@ export class AdvanceLoansComponent implements OnInit {
     ];
     this.service.associates().subscribe({ next: a => (this.associates = a), error: () => (this.loadError = true) });
     this.load();
+  }
+
+  openAdd(): void {
+    this.formError = null;
+    this.form.reset(this.defaults);
+    this.picked = null;
+    this.previousDues = 0;
+    this.addOpen = true;
+  }
+
+  // Ignored while a save is in flight, so the popup cannot be dismissed mid-request.
+  closeAdd(): void {
+    if (this.saving) {
+      return;
+    }
+    this.addOpen = false;
+    this.formError = null;
+    this.form.reset(this.defaults);
+    this.picked = null;
+    this.previousDues = 0;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.addOpen) {
+      this.closeAdd();
+    }
   }
 
   label(a: AssociateOption): string {
@@ -239,6 +277,7 @@ export class AdvanceLoansComponent implements OnInit {
     this.service.createLoan(body).subscribe({
       next: () => {
         this.saving = false;
+        this.addOpen = false;
         this.form.reset(this.defaults);
         this.picked = null;
         this.previousDues = 0;
