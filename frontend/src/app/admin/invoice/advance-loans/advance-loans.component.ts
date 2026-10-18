@@ -189,15 +189,15 @@ export class AdvanceLoansComponent implements OnInit {
       { key: 'sNo', label: t('columnSNo'), type: 'text' },
       { key: 'date', label: t('loanDate'), type: 'text' },
       { key: 'userId', label: t('associateId'), type: 'text' },
-      { key: 'name', label: t('associateName'), type: 'text' },
+      { key: 'name', ellipsis: true, label: t('associateName'), type: 'text' },
       { key: 'amount', label: t('amount'), type: 'text' },
       { key: 'previousDues', label: t('previousDues'), type: 'text' },
       { key: 'repaid', label: t('repaid'), type: 'text' },
       { key: 'outstanding', label: t('outstanding'), type: 'text' },
-      { key: 'mode', label: t('payMode'), type: 'text' },
-      { key: 'bank', label: t('bankName'), type: 'text' },
-      { key: 'instrumentNo', label: t('instrumentNo'), type: 'text' },
-      { key: 'remarks', label: t('remarks'), type: 'text' },
+      { key: 'mode', ellipsis: true, label: t('payMode'), type: 'text' },
+      { key: 'bank', ellipsis: true, label: t('bankName'), type: 'text' },
+      { key: 'instrumentNo', ellipsis: true, label: t('instrumentNo'), type: 'text' },
+      { key: 'remarks', ellipsis: true, label: t('remarks'), type: 'text' },
       { key: 'action', label: t('columnAction'), type: 'action' }
     ];
     this.service.associates().subscribe({ next: a => (this.associates = a), error: () => (this.loadError = true) });

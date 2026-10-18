@@ -52,6 +52,21 @@ describe('EditableTableComponent', () => {
     expect(firstRowCells[2].getAttribute('data-label')).toBe('Note');
   });
 
+  it('an ellipsis column puts the full cell text in a title tooltip and marks the cell; other columns get neither', () => {
+    fixture.componentInstance.readOnly = true;
+    fixture.componentInstance.columns = [
+      { key: 'note', label: 'Note', type: 'text', ellipsis: true },
+      { key: 'percent', label: 'Percent', type: 'text' }
+    ];
+    fixture.componentInstance.rows = [{ note: 'a very long remark that will be cut', percent: '10' }];
+    fixture.detectChanges();
+    const [noteCell, percentCell] = fixture.nativeElement.querySelectorAll('tbody tr')[0].querySelectorAll('td');
+    expect(noteCell.getAttribute('title')).toBe('a very long remark that will be cut');
+    expect(noteCell.classList).toContain('editable-table__cell--ellipsis');
+    expect(percentCell.hasAttribute('title')).toBeFalse();
+    expect(percentCell.classList).not.toContain('editable-table__cell--ellipsis');
+  });
+
   it('typing into a text/number cell emits rowsChange with the updated value at that row/key, other rows unchanged', () => {
     fixture.detectChanges();
     const spy = jasmine.createSpy('rowsChange');

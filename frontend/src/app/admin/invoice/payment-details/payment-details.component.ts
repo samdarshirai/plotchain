@@ -55,14 +55,14 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
               <td [attr.data-label]="'admin.invoicePayments.columnSNo' | translate">{{ i + 1 }}</td>
               <td [attr.data-label]="'admin.invoicePayments.paymentDate' | translate">{{ r.paymentDate }}</td>
               <td [attr.data-label]="'admin.invoicePayments.associateId' | translate">{{ r.associateUserId }}</td>
-              <td [attr.data-label]="'admin.invoicePayments.associateName' | translate">{{ r.associateName }}</td>
+              <td class="editable-table__cell--ellipsis" [attr.title]="r.associateName" [attr.data-label]="'admin.invoicePayments.associateName' | translate">{{ r.associateName }}</td>
               <td [attr.data-label]="'admin.invoicePayments.mobileNo' | translate">{{ r.associatePhone }}</td>
-              <td [attr.data-label]="'admin.invoicePayments.paymentType' | translate">{{ 'admin.invoicePayments.paymentTypeLoanRepayment' | translate }}</td>
+              <td class="editable-table__cell--ellipsis" [attr.title]="'admin.invoicePayments.paymentTypeLoanRepayment' | translate" [attr.data-label]="'admin.invoicePayments.paymentType' | translate">{{ 'admin.invoicePayments.paymentTypeLoanRepayment' | translate }}</td>
               <td [attr.data-label]="'admin.invoicePayments.receiptNo' | translate">{{ r.receiptNo }}</td>
               <td [attr.data-label]="'admin.invoicePayments.amount' | translate">{{ r.amount.toFixed(2) }}</td>
-              <td [attr.data-label]="'admin.invoicePayments.payMode' | translate">{{ 'admin.invoicePayments.payModes.' + r.payMode | translate }}</td>
-              <td [attr.data-label]="'admin.invoicePayments.bankName' | translate">{{ r.bankName }}</td>
-              <td [attr.data-label]="'admin.invoicePayments.txnNo' | translate">{{ r.txnNo }}</td>
+              <td class="editable-table__cell--ellipsis" [attr.title]="'admin.invoicePayments.payModes.' + r.payMode | translate" [attr.data-label]="'admin.invoicePayments.payMode' | translate">{{ 'admin.invoicePayments.payModes.' + r.payMode | translate }}</td>
+              <td class="editable-table__cell--ellipsis" [attr.title]="r.bankName" [attr.data-label]="'admin.invoicePayments.bankName' | translate">{{ r.bankName }}</td>
+              <td class="editable-table__cell--ellipsis" [attr.title]="r.txnNo" [attr.data-label]="'admin.invoicePayments.txnNo' | translate">{{ r.txnNo }}</td>
               <td [attr.data-label]="'admin.invoicePayments.print' | translate">
                 <a class="invoice-payments__print brand-button brand-button--secondary" [routerLink]="['/settings/payment-details/receipt', r.id]" target="_blank">{{ 'admin.invoicePayments.printAction' | translate }}</a>
               </td>

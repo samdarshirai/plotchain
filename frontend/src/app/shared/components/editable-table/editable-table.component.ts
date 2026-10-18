@@ -24,6 +24,9 @@ export interface EditableTableColumn {
   // own value, sourced from `row[badgeKey]` and toned via the same `badgeTone` fn above -- e.g.
   // KYC Review Queue's Name column carrying the status pill instead of a dedicated Status column.
   badgeKey?: string;
+  // Optional: for fixed-height rows. The cell is marked so CSS can cut long text with "…", and its
+  // full text goes in a `title` tooltip -- e.g. the Invoice registers' name/bank/remarks columns.
+  ellipsis?: boolean;
 }
 
 @Component({
@@ -46,7 +49,12 @@ export interface EditableTableColumn {
           <td *ngIf="selectable" class="editable-table__select">
             <input type="checkbox" aria-label="Select row" [checked]="selectedIds.includes('' + row['id'])" (click)="$event.stopPropagation()" (change)="toggleRow('' + row['id'], $any($event.target).checked)" />
           </td>
-          <td *ngFor="let column of columns" [attr.data-label]="column.label">
+          <td
+            *ngFor="let column of columns"
+            [attr.data-label]="column.label"
+            [class.editable-table__cell--ellipsis]="!!column.ellipsis"
+            [attr.title]="column.ellipsis ? row[column.key] : null"
+          >
             <ng-container *ngIf="column.type === 'action'; else dataCell">
               <ng-container
                 *ngTemplateOutlet="actionTemplate ?? null; context: { $implicit: row, index: i }"
