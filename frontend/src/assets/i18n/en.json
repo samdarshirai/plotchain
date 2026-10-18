@@ -1362,6 +1362,15 @@
       "filterFrom": "From", "filterTo": "To", "allTypes": "All types", "allProjects": "All projects",
       "payModes": { "CASH": "Cash", "CHEQUE": "Cheque", "DD": "Demand Draft", "UPI": "UPI", "BANK_TRANSFER": "Bank Transfer" }
     },
+    "invoiceLoans": {
+      "eyebrow": "Invoice", "title": "Add / View Advance Loan", "subtitle": "Record advance loans given to associates, track dues and take repayments.",
+      "associate": "Associate", "associateId": "Associate Id", "associateName": "Associate Name", "previousDues": "Previous Dues", "loanDate": "Date", "amount": "Amount", "payMode": "Pay Mode",
+      "bankName": "Bank Name", "instrumentNo": "DD / Cheque / TXN No", "remarks": "Remarks", "addAction": "Add Loan", "repayAction": "Repay", "repayTitle": "Loan Repayment",
+      "outstandingHint": "Outstanding balance", "paymentDate": "Payment Date", "txnNo": "TXN No", "saveAction": "Save", "cancelAction": "Cancel",
+      "columnSNo": "S No", "repaid": "Repaid", "outstanding": "Outstanding", "columnAction": "Action",
+      "emptyState": "No advance loans yet.", "loadError": "Could not load advance loans.", "saveError": "Could not save.", "requiredError": "Please fill all required fields.", "duesError": "Could not load previous dues.", "pickAssociateError": "Pick an associate from the list.",
+      "payModes": { "CASH": "Cash", "CHEQUE": "Cheque", "DD": "Demand Draft", "UPI": "UPI", "BANK_TRANSFER": "Bank Transfer" }
+    },
     "viewCancelledPlot": {
       "title": "View Cancelled Plots", "subtitle": "Cancelled bookings by cancel date and project, with the full booking details.", "empty": "No cancelled plots for these filters.",
       "from": "Cancelled from", "to": "Cancelled to"
