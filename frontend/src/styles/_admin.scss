@@ -6015,7 +6015,6 @@ button.tree-explorer__vacant-card {
   max-width: 40rem;
 }
 
-.invoice-expenses__form,
 .invoice-expenses__filters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -6051,10 +6050,73 @@ button.tree-explorer__vacant-card {
   grid-column: 1 / -1;
 }
 
-.invoice-expenses__submit {
-  grid-column: 1 / -1;
+// Add Expense popup -- same overlay/card pattern as the Expense Types popup.
+.invoice-expenses__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 10, 11, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.invoice-expenses__modal {
+  width: 640px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  padding: 32px;
+}
+
+.invoice-expenses__modal-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+}
+
+.invoice-expenses__modal-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.invoice-expenses__modal-footer {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.invoice-expenses__modal-cancel {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.invoice-expenses__modal-submit {
+  background: var(--brand-secondary);
+  border: none;
+  color: var(--action-foreground);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 }
 
 // Invoice > Add / View Advance Loan. Classes are prefixed `invoice-loans` -- component styles are global.

@@ -342,13 +342,15 @@
 .invoice-expenses__field { min-width: 0; }
 
 @media (max-width: 1023px) {
-  .invoice-expenses__form,
   .invoice-expenses__filters { grid-template-columns: minmax(0, 1fr); }
 
   .invoice-expenses__field input,
   .invoice-expenses__field select { min-height: 44px; }
+}
 
-  .invoice-expenses__submit .brand-button { min-height: 44px; width: 100%; }
+// The Add Expense popup's fields go single column on phones (modal padding/footer rules come from the shared @each list).
+@media (max-width: 767px) {
+  .invoice-expenses__modal-fields { grid-template-columns: minmax(0, 1fr); }
 }
 
 // Invoice > Add / View Advance Loan (card/table layout comes from the shared @each list above).

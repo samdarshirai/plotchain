@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -33,65 +33,12 @@ function last30Days(): { from: string; to: string } {
           <h1 class="invoice-expenses__title">{{ 'admin.invoiceExpenses.title' | translate }}</h1>
           <p class="invoice-expenses__subtitle">{{ 'admin.invoiceExpenses.subtitle' | translate }}</p>
         </div>
+        <button type="button" class="invoice-expenses__add brand-button" (click)="openModal()">
+          {{ 'admin.invoiceExpenses.addAction' | translate }}
+        </button>
       </div>
 
       <app-inline-banner *ngIf="loadError" tone="danger" [dismissible]="true" (dismissed)="loadError = false">{{ 'admin.invoiceExpenses.loadError' | translate }}</app-inline-banner>
-      <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
-
-      <form class="card invoice-expenses__form" [formGroup]="form" (ngSubmit)="save()">
-        <div class="invoice-expenses__field">
-          <label>{{ 'admin.invoiceExpenses.expenseDate' | translate }}</label>
-          <input type="date" formControlName="expenseDate" />
-          <app-field-error [message]="fieldError('expenseDate')"></app-field-error>
-        </div>
-        <div class="invoice-expenses__field">
-          <label>{{ 'admin.invoiceExpenses.expenseType' | translate }}</label>
-          <select formControlName="expenseTypeId">
-            <option value=""></option>
-            <option *ngFor="let t of activeTypes" [value]="t.id">{{ t.name }}</option>
-          </select>
-          <app-field-error [message]="fieldError('expenseTypeId')"></app-field-error>
-        </div>
-        <div class="invoice-expenses__field">
-          <label>{{ 'admin.invoiceExpenses.project' | translate }}</label>
-          <select formControlName="projectId">
-            <option value=""></option>
-            <option *ngFor="let p of projects" [value]="p.id">{{ p.name }}</option>
-          </select>
-        </div>
-        <div class="invoice-expenses__field">
-          <label>{{ 'admin.invoiceExpenses.payTo' | translate }}</label>
-          <input type="text" formControlName="payTo" />
-          <app-field-error [message]="fieldError('payTo')"></app-field-error>
-        </div>
-        <div class="invoice-expenses__field">
-          <label>{{ 'admin.invoiceExpenses.amount' | translate }}</label>
-          <input type="number" step="0.01" min="0.01" inputmode="decimal" formControlName="amount" />
-          <app-field-error [message]="fieldError('amount')"></app-field-error>
-        </div>
-        <div class="invoice-expenses__field">
-          <label>{{ 'admin.invoiceExpenses.payMode' | translate }}</label>
-          <select formControlName="payMode">
-            <option *ngFor="let m of payModes" [value]="m">{{ 'admin.invoiceExpenses.payModes.' + m | translate }}</option>
-          </select>
-        </div>
-        <div class="invoice-expenses__field">
-          <label>{{ 'admin.invoiceExpenses.bankName' | translate }}</label>
-          <input type="text" formControlName="bankName" />
-        </div>
-        <div class="invoice-expenses__field">
-          <label>{{ 'admin.invoiceExpenses.txnNo' | translate }}</label>
-          <input type="text" formControlName="txnNo" />
-        </div>
-        <div class="invoice-expenses__field invoice-expenses__field--wide">
-          <label>{{ 'admin.invoiceExpenses.remarks' | translate }}</label>
-          <textarea rows="2" formControlName="remarks"></textarea>
-        </div>
-        <div class="invoice-expenses__submit">
-          <button type="submit" class="brand-button" [disabled]="saving">{{ 'admin.invoiceExpenses.addAction' | translate }}</button>
-        </div>
-      </form>
-
       <form class="card invoice-expenses__filters" [formGroup]="filters">
         <div class="invoice-expenses__field">
           <label>{{ 'admin.invoiceExpenses.filterFrom' | translate }}</label>
@@ -126,6 +73,68 @@ function last30Days(): { from: string; to: string } {
         ></app-editable-table>
       </div>
     </div>
+    <div class="invoice-expenses__modal-overlay" *ngIf="modalOpen">
+      <div class="invoice-expenses__modal" role="dialog" aria-modal="true" aria-labelledby="invoice-expenses-modal-title">
+        <div class="invoice-expenses__modal-title" id="invoice-expenses-modal-title">{{ 'admin.invoiceExpenses.addTitle' | translate }}</div>
+        <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <div class="invoice-expenses__modal-fields">
+            <div class="invoice-expenses__field invoice-expenses__modal-field">
+              <label>{{ 'admin.invoiceExpenses.expenseDate' | translate }}</label>
+              <input type="date" formControlName="expenseDate" />
+              <app-field-error [message]="fieldError('expenseDate')"></app-field-error>
+            </div>
+            <div class="invoice-expenses__field invoice-expenses__modal-field">
+              <label>{{ 'admin.invoiceExpenses.expenseType' | translate }}</label>
+              <select formControlName="expenseTypeId">
+                <option value=""></option>
+                <option *ngFor="let t of activeTypes" [value]="t.id">{{ t.name }}</option>
+              </select>
+              <app-field-error [message]="fieldError('expenseTypeId')"></app-field-error>
+            </div>
+            <div class="invoice-expenses__field invoice-expenses__modal-field">
+              <label>{{ 'admin.invoiceExpenses.project' | translate }}</label>
+              <select formControlName="projectId">
+                <option value=""></option>
+                <option *ngFor="let p of projects" [value]="p.id">{{ p.name }}</option>
+              </select>
+            </div>
+            <div class="invoice-expenses__field invoice-expenses__modal-field">
+              <label>{{ 'admin.invoiceExpenses.payTo' | translate }}</label>
+              <input type="text" formControlName="payTo" />
+              <app-field-error [message]="fieldError('payTo')"></app-field-error>
+            </div>
+            <div class="invoice-expenses__field invoice-expenses__modal-field">
+              <label>{{ 'admin.invoiceExpenses.amount' | translate }}</label>
+              <input type="number" step="0.01" min="0.01" inputmode="decimal" formControlName="amount" />
+              <app-field-error [message]="fieldError('amount')"></app-field-error>
+            </div>
+            <div class="invoice-expenses__field invoice-expenses__modal-field">
+              <label>{{ 'admin.invoiceExpenses.payMode' | translate }}</label>
+              <select formControlName="payMode">
+                <option *ngFor="let m of payModes" [value]="m">{{ 'admin.invoiceExpenses.payModes.' + m | translate }}</option>
+              </select>
+            </div>
+            <div class="invoice-expenses__field invoice-expenses__modal-field">
+              <label>{{ 'admin.invoiceExpenses.bankName' | translate }}</label>
+              <input type="text" formControlName="bankName" />
+            </div>
+            <div class="invoice-expenses__field invoice-expenses__modal-field">
+              <label>{{ 'admin.invoiceExpenses.txnNo' | translate }}</label>
+              <input type="text" formControlName="txnNo" />
+            </div>
+            <div class="invoice-expenses__field invoice-expenses__field--wide invoice-expenses__modal-field">
+              <label>{{ 'admin.invoiceExpenses.remarks' | translate }}</label>
+              <textarea rows="2" formControlName="remarks"></textarea>
+            </div>
+          </div>
+          <div class="invoice-expenses__modal-footer">
+            <button type="button" class="invoice-expenses__modal-cancel" (click)="closeModal()">{{ 'admin.invoiceExpenses.cancelAction' | translate }}</button>
+            <button type="submit" class="invoice-expenses__modal-submit" [disabled]="saving">{{ 'admin.invoiceExpenses.saveAction' | translate }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
   `
 })
 export class ExpensesComponent implements OnInit {
@@ -143,6 +152,7 @@ export class ExpensesComponent implements OnInit {
   loadError = false;
   formError: string | null = null;
   saving = false;
+  modalOpen = false;
   private serverFieldErrors: Record<string, string> = {};
 
   private readonly defaults = { expenseDate: '', expenseTypeId: '', projectId: '', payTo: '', amount: 0, payMode: 'CASH' as PayMode, bankName: '', txnNo: '', remarks: '' };
@@ -186,6 +196,31 @@ export class ExpensesComponent implements OnInit {
     this.load();
   }
 
+  openModal(): void {
+    this.serverFieldErrors = {};
+    this.formError = null;
+    this.form.reset(this.defaults);
+    this.modalOpen = true;
+  }
+
+  // Ignored while a save is in flight, so the popup cannot be dismissed mid-request.
+  closeModal(): void {
+    if (this.saving) {
+      return;
+    }
+    this.modalOpen = false;
+    this.serverFieldErrors = {};
+    this.formError = null;
+    this.form.reset(this.defaults);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.modalOpen) {
+      this.closeModal();
+    }
+  }
+
   fieldError(name: string): string | undefined {
     if (this.serverFieldErrors[name]) {
       return this.serverFieldErrors[name];
@@ -224,6 +259,7 @@ export class ExpensesComponent implements OnInit {
     this.service.createExpense(body).subscribe({
       next: () => {
         this.saving = false;
+        this.modalOpen = false;
         this.form.reset(this.defaults);
         this.load();
       },
