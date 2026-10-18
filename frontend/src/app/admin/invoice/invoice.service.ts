@@ -9,6 +9,7 @@ export interface ExpenseCreate { expenseDate: string; expenseTypeId: string; pro
 export interface AssociateOption { id: string; userId: string; name: string; }
 export interface ProjectOption { id: string; name: string; }
 export interface LoanRow { id: string; associateId: string; associateUserId: string; associateName: string; loanDate: string; amount: number; previousDues: number; repaid: number; outstanding: number; payMode: PayMode; bankName: string | null; instrumentNo: string | null; remarks: string | null; }
+export interface LoanDetail { loan: LoanRow; associatePhone: string | null; repayments: RepaymentRow[] }
 export interface LoanCreate { associateId: string; loanDate: string; amount: number; payMode: PayMode; bankName: string | null; instrumentNo: string | null; remarks: string | null; }
 export interface RepaymentCreate { paymentDate: string; amount: number; payMode: PayMode; bankName: string | null; txnNo: string | null; }
 export interface RepaymentRow { id: string; loanId: string; receiptNo: string; paymentDate: string; associateId: string; associateUserId: string; associateName: string; associatePhone: string; amount: number; payMode: PayMode; bankName: string | null; txnNo: string | null; }
@@ -44,6 +45,10 @@ export class InvoiceService {
 
   loans(f: { associateId?: string; from?: string; to?: string }): Observable<LoanRow[]> {
     return this.http.get<LoanRow[]>('/api/admin/advance-loans', { params: params(f) });
+  }
+
+  loanDetail(id: string): Observable<LoanDetail> {
+    return this.http.get<LoanDetail>(`/api/admin/advance-loans/${id}`);
   }
 
   createLoan(b: LoanCreate): Observable<LoanRow> {

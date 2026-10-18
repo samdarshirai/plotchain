@@ -2,15 +2,17 @@ import { Component, HostListener, OnInit, TemplateRef, ViewChild, inject } from 
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { RouterLink } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { AssociateOption, InvoiceService, LoanCreate, LoanRow, PAY_MODES, PayMode } from '../invoice.service';
+import { AssociateOption, InvoiceService, LoanCreate, LoanDetail, LoanRow, PAY_MODES, PayMode } from '../invoice.service';
 import { EditableTableColumn, EditableTableComponent } from '../../../shared/components/editable-table/editable-table.component';
+import { fitSize } from '../../../shared/utils/fit-text.util';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 
 @Component({
   selector: 'app-invoice-loans',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent],
   template: `
     <div class="invoice-loans">
       <div class="invoice-loans__intro">
@@ -36,7 +38,10 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
       </div>
 
       <ng-template #actionTemplate let-row let-i="index">
-        <button *ngIf="items[i] && items[i].outstanding > 0" type="button" class="invoice-loans__repay brand-button" (click)="openRepay(items[i])">{{ 'admin.invoiceLoans.repayAction' | translate }}</button>
+        <span class="invoice-loans__row-actions" *ngIf="items[i]">
+          <button *ngIf="items[i].outstanding > 0" type="button" class="invoice-loans__repay brand-button" (click)="openRepay(items[i])">{{ 'admin.invoiceLoans.repayAction' | translate }}</button>
+          <button type="button" class="invoice-loans__detail brand-button" (click)="openDetail(items[i])">{{ 'admin.invoiceLoans.detailAction' | translate }}</button>
+        </span>
       </ng-template>
 
       <div class="invoice-loans__modal-overlay" *ngIf="addOpen">
@@ -96,6 +101,57 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
               <button type="submit" class="invoice-loans__modal-submit" [disabled]="saving">{{ 'admin.invoiceLoans.saveAction' | translate }}</button>
             </div>
           </form>
+        </div>
+      </div>
+
+      <div class="invoice-loans__modal-overlay" *ngIf="detailOpen">
+        <div class="invoice-loans__modal invoice-loans__detail-modal" role="dialog" aria-modal="true" aria-labelledby="invoice-loans-detail-title">
+          <h2 class="invoice-loans__modal-title" id="invoice-loans-detail-title">{{ 'admin.invoiceLoans.detailTitle' | translate }}<ng-container *ngIf="detail"> — {{ detail.loan.associateUserId }} {{ detail.loan.associateName }}</ng-container></h2>
+          <app-inline-banner *ngIf="detailError" tone="danger">{{ detailError }}</app-inline-banner>
+          <p *ngIf="detailLoading">{{ 'admin.invoiceLoans.detailLoading' | translate }}</p>
+          <ng-container *ngIf="detail as d">
+            <dl class="invoice-loans__detail-grid">
+              <div><dt>{{ 'admin.invoiceLoans.associateId' | translate }}</dt><dd>{{ d.loan.associateUserId }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.associateName' | translate }}</dt><dd>{{ d.loan.associateName }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.mobileNo' | translate }}</dt><dd>{{ d.associatePhone || '—' }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.loanDate' | translate }}</dt><dd>{{ d.loan.loanDate }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.amount' | translate }}</dt><dd>{{ d.loan.amount.toFixed(2) }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.previousDues' | translate }}</dt><dd>{{ d.loan.previousDues.toFixed(2) }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.repaid' | translate }}</dt><dd>{{ d.loan.repaid.toFixed(2) }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.outstanding' | translate }}</dt><dd>{{ d.loan.outstanding.toFixed(2) }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.payMode' | translate }}</dt><dd>{{ 'admin.invoiceLoans.payModes.' + d.loan.payMode | translate }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.bankName' | translate }}</dt><dd>{{ d.loan.bankName || '—' }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.instrumentNo' | translate }}</dt><dd>{{ d.loan.instrumentNo || '—' }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.remarks' | translate }}</dt><dd>{{ d.loan.remarks || '—' }}</dd></div>
+            </dl>
+            <h3 class="invoice-loans__detail-heading">{{ 'admin.invoiceLoans.repaymentsHeading' | translate }}</h3>
+            <p *ngIf="!d.repayments.length">{{ 'admin.invoiceLoans.noRepayments' | translate }}</p>
+            <table class="invoice-loans__repayments" *ngIf="d.repayments.length">
+              <thead>
+                <tr>
+                  <th>{{ 'admin.invoiceLoans.receiptNo' | translate }}</th>
+                  <th>{{ 'admin.invoiceLoans.paymentDate' | translate }}</th>
+                  <th>{{ 'admin.invoiceLoans.amount' | translate }}</th>
+                  <th>{{ 'admin.invoiceLoans.payMode' | translate }}</th>
+                  <th>{{ 'admin.invoiceLoans.bankName' | translate }}</th>
+                  <th>{{ 'admin.invoiceLoans.txnNo' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of d.repayments">
+                  <td [attr.data-label]="'admin.invoiceLoans.receiptNo' | translate"><a [routerLink]="['/settings/payment-details/receipt', r.id]" target="_blank" rel="noopener">{{ r.receiptNo }}</a></td>
+                  <td [attr.data-label]="'admin.invoiceLoans.paymentDate' | translate">{{ r.paymentDate }}</td>
+                  <td [attr.data-label]="'admin.invoiceLoans.amount' | translate" [class.editable-table__cell--fit-md]="fit(r.amount) === 'md'" [class.editable-table__cell--fit-sm]="fit(r.amount) === 'sm'">{{ r.amount.toFixed(2) }}</td>
+                  <td [attr.data-label]="'admin.invoiceLoans.payMode' | translate">{{ 'admin.invoiceLoans.payModes.' + r.payMode | translate }}</td>
+                  <td [attr.data-label]="'admin.invoiceLoans.bankName' | translate">{{ r.bankName || '—' }}</td>
+                  <td [attr.data-label]="'admin.invoiceLoans.txnNo' | translate">{{ r.txnNo || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </ng-container>
+          <div class="invoice-loans__modal-footer">
+            <button type="button" class="invoice-loans__modal-cancel" (click)="closeDetail()">{{ 'admin.invoiceLoans.closeAction' | translate }}</button>
+          </div>
         </div>
       </div>
 
@@ -160,6 +216,11 @@ export class AdvanceLoansComponent implements OnInit {
   repayOpen = false;
   repayLoan: LoanRow | null = null;
   repayError: string | null = null;
+  detailOpen = false;
+  detailLoading = false;
+  detail: LoanDetail | null = null;
+  detailError: string | null = null;
+  private detailLoanId: string | null = null;
   saving = false;
   repaySaving = false;
 
@@ -228,7 +289,40 @@ export class AdvanceLoansComponent implements OnInit {
   onEscape(): void {
     if (this.addOpen) {
       this.closeAdd();
+    } else if (this.detailOpen) {
+      this.closeDetail();
     }
+  }
+
+  fit(amount: number) {
+    return fitSize(amount.toFixed(2));
+  }
+
+  openDetail(loan: LoanRow): void {
+    this.detailOpen = true;
+    this.detail = null;
+    this.detailError = null;
+    this.detailLoading = true;
+    this.detailLoanId = loan.id;
+    this.service.loanDetail(loan.id).subscribe({
+      next: d => {
+        if (this.detailLoanId === loan.id) {
+          this.detail = d;
+          this.detailLoading = false;
+        }
+      },
+      error: (err: HttpErrorResponse) => {
+        if (this.detailLoanId === loan.id) {
+          this.detailLoading = false;
+          this.detailError = (err.error as { error?: string } | null)?.error ?? this.translate.instant('admin.invoiceLoans.detailError');
+        }
+      }
+    });
+  }
+
+  closeDetail(): void {
+    this.detailOpen = false;
+    this.detailLoanId = null;
   }
 
   label(a: AssociateOption): string {

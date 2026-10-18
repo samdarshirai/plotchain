@@ -6281,7 +6281,28 @@ button.tree-explorer__vacant-card {
 
 // Desktop register layout (fixed row height, column widths, no sideways scroll) lives in _admin-mobile.scss
 // next to the stacked-card cut-off it depends on.
-.invoice-loans__repay { white-space: nowrap; min-width: 4.5rem; }
+.invoice-loans__repay, .invoice-loans__detail { white-space: nowrap; min-width: 4.5rem; }
+.invoice-loans__row-actions { display: flex; gap: 4px; }
+
+.invoice-loans__detail-modal { width: 760px; }
+.invoice-loans__detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  margin: 0 0 20px;
+
+  dt { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+  dd { margin: 2px 0 0; font-size: 14px; overflow-wrap: anywhere; }
+}
+.invoice-loans__detail-heading { font-size: 16px; font-weight: 600; margin: 0 0 8px; }
+.invoice-loans__repayments {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th { text-align: left; color: var(--text-muted); font-weight: 600; padding: 6px 8px; }
+  td { padding: 8px; border-bottom: 1px solid var(--border-subtle); overflow-wrap: anywhere; }
+}
 
 
 // Invoice > Payment Details register + receipt. Classes are prefixed `invoice-payments` / `invoice-receipt`.
