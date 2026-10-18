@@ -117,7 +117,7 @@ public class AdvanceLoanService {
 
     static String likePattern(String q) {
         if (q == null || q.isBlank()) return "%";
-        String escaped = q.trim().toLowerCase().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        String escaped = q.trim().toLowerCase(java.util.Locale.ROOT).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
         return "%" + escaped + "%";
     }
 

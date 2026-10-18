@@ -15,6 +15,8 @@ public class AdvanceLoanException extends RuntimeException {
         this.status = status;
     }
 
+    HttpStatus status() { return status; }
+
     @RestControllerAdvice
     static class Handler {
         @ExceptionHandler(AdvanceLoanException.class)

@@ -80,6 +80,24 @@ class AdvanceLoanControllerTest {
     }
 
     @Test
+    void repayRejectsZeroAmountWith400() throws Exception {
+        mockMvc.perform(post("/api/admin/advance-loans/" + UUID.randomUUID() + "/repayments")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"paymentDate\":\"2026-10-02\",\"amount\":0,\"payMode\":\"CASH\"}"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createRejectsZeroAmountWith400() throws Exception {
+        mockMvc.perform(post("/api/admin/advance-loans")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"associateId\":\"" + UUID.randomUUID() + "\",\"loanDate\":\"2026-10-01\",\"amount\":0,\"payMode\":\"CASH\"}"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void receiptForbiddenForAssociate() throws Exception {
         mockMvc.perform(get("/api/admin/loan-repayments/" + UUID.randomUUID())
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
