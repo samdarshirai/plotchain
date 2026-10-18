@@ -190,7 +190,8 @@
 
 // The four management lists share the same compact card layout. Tablets use it too:
 // the pinned sidebar leaves too little room for a full-width ledger at 768–1023px.
-@each $screen in admin-users, master-projects, news, expense-types, invoice-expenses {
+@each $screen in admin-users, master-projects, news, expense-types, invoice-expenses,
+  invoice-payments {
   .#{$screen} {
     min-width: 0;
 
@@ -349,4 +350,17 @@
   .invoice-expenses__field select { min-height: 44px; }
 
   .invoice-expenses__submit .brand-button { min-height: 44px; width: 100%; }
+}
+
+// Invoice > Payment Details + receipt.
+@media (max-width: 1023px) {
+  .invoice-payments { padding: 1rem; }
+  .invoice-payments__field { flex-basis: 100%; }
+  .invoice-payments__field input { min-height: 44px; }
+  .invoice-payments__submit,
+  .invoice-payments__submit .brand-button { width: 100%; }
+  .invoice-payments__submit .brand-button,
+  .invoice-payments__print,
+  .invoice-receipt__print { min-height: 44px; }
+  .invoice-receipt__print { width: 100%; }
 }

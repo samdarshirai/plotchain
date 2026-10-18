@@ -6056,3 +6056,89 @@ button.tree-explorer__vacant-card {
   display: flex;
   justify-content: flex-end;
 }
+
+// Invoice > Payment Details register + receipt. Classes are prefixed `invoice-payments` / `invoice-receipt`.
+.invoice-payments {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  font-family: 'Inter', var(--font-sans);
+}
+
+.invoice-payments__intro-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.invoice-payments__eyebrow { @extend %admin-screen-eyebrow; }
+.invoice-payments__title { @extend %admin-screen-title; }
+.invoice-payments__subtitle { @extend %admin-screen-subtitle; max-width: 40rem; }
+
+.invoice-payments__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 20px;
+}
+
+.invoice-payments__field {
+  min-width: 0;
+  flex: 1 1 180px;
+
+  label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    background: var(--surface-card);
+  }
+}
+
+.invoice-payments__field--wide { flex: 2 1 280px; }
+
+.invoice-payments__table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td { padding: 10px 12px; text-align: left; font-size: 14px; border-bottom: 1px solid var(--border-subtle); }
+  th { white-space: nowrap; font-weight: 600; color: var(--text-muted); }
+}
+
+.invoice-payments__empty { text-align: center !important; color: var(--text-muted); }
+
+.invoice-payments__print { display: inline-flex; align-items: center; text-decoration: none; }
+
+.invoice-receipt { max-width: 640px; margin: 0 auto; padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 1rem; }
+.invoice-receipt__card { border: 1px solid var(--border-subtle, #ddd); padding: 1.5rem; border-radius: 8px; background: var(--surface-card); }
+.invoice-receipt__title { margin: 0 0 1rem; font-size: 1.25rem; }
+.invoice-receipt__fields {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+  margin: 0;
+
+  dt { color: var(--text-muted); font-weight: 600; }
+  dd { margin: 0; overflow-wrap: anywhere; }
+}
+
+@media print {
+  body * { visibility: hidden; }
+  .invoice-receipt__card, .invoice-receipt__card * { visibility: visible; }
+  .invoice-receipt__card { position: absolute; left: 0; top: 0; width: 100%; border: none; }
+}

@@ -1354,6 +1354,20 @@
       "columnSNo": "S No", "expenseType": "Expense Type", "status": "Status", "columnAction": "Action", "statusActive": "Active", "statusInactive": "Inactive",
       "emptyState": "No expense types yet.", "loadError": "Could not load expense types.", "saveError": "Could not save expense type.", "requiredError": "Required"
     },
+    "invoicePayments": {
+      "eyebrow": "Invoice", "title": "Payment Details", "subtitle": "Review advance loan repayments received from associates and print receipts.",
+      "filterFrom": "From", "filterTo": "To", "search": "Search", "searchPlaceholder": "Search by Associate Id, name or mobile", "apply": "Apply",
+      "columnSNo": "S No", "paymentDate": "Payment Date", "associateId": "Associate Id", "associateName": "Associate Name", "mobileNo": "Mobile No",
+      "paymentType": "Payment Type", "receiptNo": "Receipt No", "amount": "Amount", "payMode": "Payment Mode", "bankName": "Bank Name", "txnNo": "TXN No", "print": "Print",
+      "paymentTypeLoanRepayment": "Loan Repayment", "printAction": "Print", "emptyState": "No payments for these filters.", "loadError": "Could not load payments.",
+      "filterError": "The From date cannot be after the To date.",
+      "payModes": { "CASH": "Cash", "CHEQUE": "Cheque", "DD": "Demand Draft", "UPI": "UPI", "BANK_TRANSFER": "Bank Transfer" }
+    },
+    "invoiceReceipt": {
+      "title": "Repayment Receipt", "receiptNo": "Receipt No", "paymentDate": "Payment Date", "associateId": "Associate Id", "associateName": "Associate Name",
+      "mobileNo": "Mobile No", "amount": "Amount", "payMode": "Payment Mode", "bankName": "Bank Name", "txnNo": "TXN No",
+      "printAction": "Print", "notFound": "This receipt could not be found.", "back": "Back to Payment Details"
+    },
     "invoiceExpenses": {
       "eyebrow": "Invoice", "title": "Add / View Expense", "subtitle": "Record company expenses and review them by date, type and project.",
       "expenseDate": "Date", "expenseType": "Expense Type", "project": "Project", "payTo": "Pay To", "amount": "Amount", "payMode": "Pay Mode",
