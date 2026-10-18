@@ -103,4 +103,22 @@ class AdvanceLoanControllerTest {
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
             .andExpect(status().isForbidden());
     }
+
+    @Test
+    void repayRejectsThirteenDigitAmountWith400() throws Exception {
+        mockMvc.perform(post("/api/admin/advance-loans/" + UUID.randomUUID() + "/repayments")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"paymentDate\":\"2026-10-02\",\"amount\":1000000000000,\"payMode\":\"CASH\"}"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createRejectsThirteenDigitAmountWith400() throws Exception {
+        mockMvc.perform(post("/api/admin/advance-loans")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"associateId\":\"" + UUID.randomUUID() + "\",\"loanDate\":\"2026-10-01\",\"amount\":1000000000000,\"payMode\":\"CASH\"}"))
+            .andExpect(status().isBadRequest());
+    }
 }

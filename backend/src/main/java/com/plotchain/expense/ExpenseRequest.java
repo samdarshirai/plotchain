@@ -1,5 +1,6 @@
 package com.plotchain.expense;
 
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -14,7 +15,7 @@ public record ExpenseRequest(
     @NotNull UUID expenseTypeId,
     UUID projectId,
     @NotBlank @Size(max = 150) String payTo,
-    @NotNull @Positive BigDecimal amount,
+    @NotNull @Positive @Digits(integer = 12, fraction = 2) BigDecimal amount,
     @NotNull PayMode payMode,
     @Size(max = 100) String bankName,
     @Size(max = 100) String txnNo,

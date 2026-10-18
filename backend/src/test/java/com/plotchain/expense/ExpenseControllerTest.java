@@ -60,4 +60,13 @@ class ExpenseControllerTest {
                 .contentType("application/json").content(body))
             .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void createRejectsThirteenDigitAmountWith400() throws Exception {
+        String body = "{\"expenseDate\":\"2026-10-01\",\"expenseTypeId\":\"" + UUID.randomUUID()
+            + "\",\"payTo\":\"X\",\"amount\":1000000000000,\"payMode\":\"CASH\"}";
+        mockMvc.perform(post("/api/admin/expenses").header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json").content(body))
+            .andExpect(status().isBadRequest());
+    }
 }
