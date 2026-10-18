@@ -66,6 +66,17 @@ public class AdvanceLoanService {
         return rows.stream().map(l -> toResponse(l, byId.get(l.getAssociateId()), repaid.getOrDefault(l.getId(), BigDecimal.ZERO))).toList();
     }
 
+    @Transactional(readOnly = true)
+    public AdvanceLoanDetailResponse detail(UUID id) {
+        AdvanceLoan l = loans.findById(id)
+            .orElseThrow(() -> new AdvanceLoanException(HttpStatus.NOT_FOUND, "Advance loan not found: " + id));
+        Associate a = associates.findById(l.getAssociateId()).orElseThrow();
+        List<LoanRepayment> rows = repayments.findByLoanIdOrderByPaymentDateDescCreatedAtDesc(id);
+        BigDecimal repaid = rows.stream().map(LoanRepayment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new AdvanceLoanDetailResponse(toResponse(l, a, repaid), a.getPhone(),
+            rows.stream().map(p -> toResponse(p, a)).toList());
+    }
+
     @Transactional
     public LoanRepaymentResponse repay(UUID loanId, RepaymentRequest r, UUID actorId) {
         requireTwoDecimals(r.amount());

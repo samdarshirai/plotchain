@@ -458,7 +458,7 @@ public class SecurityConfig {
                     .hasAuthority("ADMIN")
                 // Advance loans / repayments: admin-only reads need exact matchers or they fall
                 // through to anyRequest().authenticated() and any associate could read them.
-                .requestMatchers(HttpMethod.GET, "/api/admin/advance-loans", "/api/admin/advance-loans/dues",
+                .requestMatchers(HttpMethod.GET, "/api/admin/advance-loans", "/api/admin/advance-loans/dues", "/api/admin/advance-loans/*",
                     "/api/admin/loan-repayments", "/api/admin/loan-repayments/*")
                     .hasAuthority("ADMIN")
                 .anyRequest().authenticated())

@@ -41,6 +41,11 @@ public class AdvanceLoanController {
         return service.dues(associateId);
     }
 
+    @GetMapping("/advance-loans/{id}")
+    public AdvanceLoanDetailResponse detail(@PathVariable UUID id) {
+        return service.detail(id);
+    }
+
     @PostMapping("/advance-loans/{id}/repayments")
     public ResponseEntity<LoanRepaymentResponse> repay(@PathVariable UUID id, @Valid @RequestBody RepaymentRequest request,
                                                        @AuthenticationPrincipal UUID actorId) {

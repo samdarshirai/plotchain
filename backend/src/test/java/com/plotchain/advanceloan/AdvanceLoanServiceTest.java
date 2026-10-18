@@ -195,4 +195,44 @@ class AdvanceLoanServiceTest {
         service.repayments(null, null, "%");
         verify(repayments).search(any(), any(), eq("%\\%%"));
     }
+
+    private LoanRepayment repayment(UUID loanId, String amount) {
+        return new LoanRepayment(UUID.randomUUID(), loanId, "RCP-000001", LocalDate.of(2026, 10, 2), new BigDecimal(amount),
+            PayMode.UPI, null, null);
+    }
+
+    @Test
+    void detailComputesRepaidKeepsRepositoryOrderAndPhone() {
+        AdvanceLoan l = loan("1000.00");
+        LoanRepayment newer = repayment(l.getId(), "400.00");
+        LoanRepayment older = repayment(l.getId(), "100.00");
+        when(loans.findById(l.getId())).thenReturn(Optional.of(l));
+        when(associates.findById(associateId)).thenReturn(Optional.of(associate));
+        when(repayments.findByLoanIdOrderByPaymentDateDescCreatedAtDesc(l.getId())).thenReturn(List.of(newer, older));
+        AdvanceLoanDetailResponse d = service.detail(l.getId());
+        assertThat(d.loan().repaid()).isEqualByComparingTo("500.00");
+        assertThat(d.loan().outstanding()).isEqualByComparingTo("500.00");
+        assertThat(d.associatePhone()).isEqualTo("9999999999");
+        assertThat(d.repayments()).extracting(LoanRepaymentResponse::id).containsExactly(newer.getId(), older.getId());
+    }
+
+    @Test
+    void detailWithNoRepaymentsHasZeroRepaid() {
+        AdvanceLoan l = loan("1000.00");
+        when(loans.findById(l.getId())).thenReturn(Optional.of(l));
+        when(associates.findById(associateId)).thenReturn(Optional.of(associate));
+        when(repayments.findByLoanIdOrderByPaymentDateDescCreatedAtDesc(l.getId())).thenReturn(List.of());
+        AdvanceLoanDetailResponse d = service.detail(l.getId());
+        assertThat(d.loan().repaid()).isEqualByComparingTo("0");
+        assertThat(d.loan().outstanding()).isEqualByComparingTo("1000.00");
+        assertThat(d.repayments()).isEmpty();
+    }
+
+    @Test
+    void detailUnknownIdIsNotFound() {
+        UUID id = UUID.randomUUID();
+        when(loans.findById(id)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.detail(id)).isInstanceOfSatisfying(AdvanceLoanException.class,
+            e -> assertThat(e.status()).isEqualTo(HttpStatus.NOT_FOUND));
+    }
 }

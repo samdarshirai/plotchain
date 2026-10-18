@@ -121,4 +121,42 @@ class AdvanceLoanControllerTest {
                 .content("{\"associateId\":\"" + UUID.randomUUID() + "\",\"loanDate\":\"2026-10-01\",\"amount\":1000000000000,\"payMode\":\"CASH\"}"))
             .andExpect(status().isBadRequest());
     }
+
+    private AdvanceLoanDetailResponse detailFor(UUID id) {
+        UUID assoc = UUID.randomUUID();
+        AdvanceLoanResponse loan = new AdvanceLoanResponse(id, assoc, "VP00001", "Asha", java.time.LocalDate.of(2026, 10, 1),
+            new BigDecimal("1000.00"), BigDecimal.ZERO, new BigDecimal("400.00"), new BigDecimal("600.00"),
+            com.plotchain.expense.PayMode.CASH, null, null, null);
+        LoanRepaymentResponse rep = new LoanRepaymentResponse(UUID.randomUUID(), id, "RCP-000001", java.time.LocalDate.of(2026, 10, 2),
+            assoc, "VP00001", "Asha", "9999999999", new BigDecimal("400.00"), com.plotchain.expense.PayMode.UPI, null, null);
+        return new AdvanceLoanDetailResponse(loan, "9999999999", java.util.List.of(rep));
+    }
+
+    @Test
+    void detailForbiddenForAssociate() throws Exception {
+        mockMvc.perform(get("/api/admin/advance-loans/" + UUID.randomUUID())
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void detailOkForAdmin() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(service.detail(id)).thenReturn(detailFor(id));
+        mockMvc.perform(get("/api/admin/advance-loans/" + id)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.loan.id").value(id.toString()))
+            .andExpect(jsonPath("$.repayments[0].receiptNo").value("RCP-000001"))
+            .andExpect(jsonPath("$.associatePhone").value("9999999999"));
+    }
+
+    @Test
+    void detailUnknownIdIs404() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(service.detail(id)).thenThrow(new AdvanceLoanException(org.springframework.http.HttpStatus.NOT_FOUND, "Advance loan not found: " + id));
+        mockMvc.perform(get("/api/admin/advance-loans/" + id)
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isNotFound());
+    }
 }

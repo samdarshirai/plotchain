@@ -21,6 +21,8 @@ public interface LoanRepaymentRepository extends JpaRepository<LoanRepayment, UU
     @Query("select r.loanId, sum(r.amount) from LoanRepayment r where r.loanId in :loanIds group by r.loanId")
     List<Object[]> sumsByLoanIds(@Param("loanIds") Collection<UUID> loanIds);
 
+    List<LoanRepayment> findByLoanIdOrderByPaymentDateDescCreatedAtDesc(UUID loanId);
+
     @Query(value = "select nextval('loan_repayment_receipt_seq')", nativeQuery = true)
     long nextReceiptNumber();
 
