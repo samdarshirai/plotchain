@@ -51,13 +51,6 @@ services:
         - frontend/**
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist/frontend/browser
-    headers:
-      - path: /manifest.webmanifest
-        name: Content-Type
-        value: application/manifest+json
-      - path: /sw.js
-        name: Cache-Control
-        value: no-cache
     routes:
       - type: rewrite
         source: /api/*
