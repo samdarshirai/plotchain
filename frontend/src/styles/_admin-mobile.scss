@@ -365,7 +365,7 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
 }
 
 // Advance Loans: 1 S No, 2 Date, 3 Id, 4 Name*, 5 Amount, 6 Prev Dues, 7 Repaid, 8 Outstanding, 9 Mode, 10 Bank*, 11 Ref*, 12 Remarks*, 13 Action
-// (* = takes the leftover width, shared equally; ~84px each at a 1512px viewport).
+// (* = takes the leftover width, shared equally; ~82px each at a 1512px viewport).
 @media (min-width: #{$invoice-loans-stack-max + 1}) {
   @include invoice-fixed-table(invoice-loans);
 
@@ -373,10 +373,10 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
     th:nth-child(1) { width: 36px; }
     th:nth-child(2) { width: 92px; }
     th:nth-child(3) { width: 80px; }
-    th:nth-child(n + 5):nth-child(-n + 7) { width: 90px; }
-    th:nth-child(8) { width: 92px; }
-    th:nth-child(9) { width: 92px; }
-    th:nth-child(13) { width: 100px; }
+    th:nth-child(n + 5):nth-child(-n + 7) { width: 98px; }
+    th:nth-child(8) { width: 100px; }
+    th:nth-child(9) { width: 84px; }
+    th:nth-child(13) { width: 84px; }
     th:nth-child(n + 5):nth-child(-n + 8),
     td:nth-child(n + 5):nth-child(-n + 8) { text-align: right; }
   }
@@ -395,7 +395,7 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
     th:nth-child(5) { width: 92px; }
     th:nth-child(6) { width: 108px; }
     th:nth-child(7) { width: 92px; }
-    th:nth-child(8) { width: 90px; }
+    th:nth-child(8) { width: 98px; }
     th:nth-child(9) { width: 92px; }
     th:nth-child(12) { width: 92px; }
     th:nth-child(8), td:nth-child(8) { text-align: right; }
