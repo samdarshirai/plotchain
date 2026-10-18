@@ -6120,7 +6120,7 @@ button.tree-explorer__vacant-card {
   th { white-space: nowrap; font-weight: 600; color: var(--text-muted); }
 }
 
-.invoice-payments__empty { text-align: center !important; color: var(--text-muted); }
+.invoice-payments__table .editable-table__empty { text-align: center; color: var(--text-muted); }
 
 .invoice-payments__print { display: inline-flex; align-items: center; text-decoration: none; }
 
@@ -6138,7 +6138,7 @@ button.tree-explorer__vacant-card {
 }
 
 @media print {
-  body * { visibility: hidden; }
+  body:has(.invoice-receipt__card) * { visibility: hidden; }
   .invoice-receipt__card, .invoice-receipt__card * { visibility: visible; }
   .invoice-receipt__card { position: absolute; left: 0; top: 0; width: 100%; border: none; }
 }

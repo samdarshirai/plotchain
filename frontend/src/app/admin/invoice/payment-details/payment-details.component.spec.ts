@@ -27,6 +27,25 @@ describe('PaymentDetailsComponent', () => {
     expect(el.querySelector('a.invoice-payments__print')?.getAttribute('href')).toContain('/settings/payment-details/receipt/r1');
   });
 
+  it('labelsEveryCellForStackedCardLayout', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('table.editable-table')).not.toBeNull();
+    const tds = el.querySelectorAll('tbody td');
+    expect(tds.length).toBe(12);
+    tds.forEach(td => expect(td.getAttribute('data-label')).toContain('admin.invoicePayments.'));
+  });
+
+  it('ignoresStaleResponse', () => {
+    const c = fixture.componentInstance;
+    c.apply();
+    const first = httpMock.expectOne(r => r.url === '/api/admin/loan-repayments');
+    c.apply();
+    const second = httpMock.expectOne(r => r.url === '/api/admin/loan-repayments');
+    second.flush([{ ...row, receiptNo: 'NEW' }]);
+    expect(first.cancelled).toBeTrue();
+    expect(c.rows.map(r => r.receiptNo)).toEqual(['NEW']);
+  });
+
   it('refetchesWithSearchAndDateParams', () => {
     const c = fixture.componentInstance;
     c.filters.patchValue({ from: '2026-10-01', to: '2026-10-31', q: 'asha' });
