@@ -453,6 +453,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/company/branding/public").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/company/branding/logo/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/company/branding/favicon").permitAll()
+                // Advance loans / repayments: admin-only reads need exact matchers or they fall
+                // through to anyRequest().authenticated() and any associate could read them.
+                .requestMatchers(HttpMethod.GET, "/api/admin/advance-loans", "/api/admin/advance-loans/dues",
+                    "/api/admin/loan-repayments", "/api/admin/loan-repayments/*")
+                    .hasAuthority("ADMIN")
                 .anyRequest().authenticated())
             .exceptionHandling(ex -> ex.authenticationEntryPoint(
                 (request, response, authException) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
