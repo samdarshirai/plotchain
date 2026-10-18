@@ -369,7 +369,7 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
 }
 
 // Advance Loans: 1 S No, 2 Date, 3 Id, 4 Name*, 5 Amount, 6 Prev Dues, 7 Repaid, 8 Outstanding, 9 Mode, 10 Bank*, 11 Ref*, 12 Remarks*, 13 Action
-// (* = takes the leftover width, shared equally; ~82px each at a 1512px viewport).
+// (* = takes the leftover width, shared equally; ~79px each at a 1512px viewport).
 @media (min-width: #{$invoice-loans-stack-max + 1}) {
   @include invoice-fixed-table(invoice-loans);
 
@@ -445,7 +445,7 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
 
 // Stacked-card layout: Repay and Detail sit side by side in the Action cell.
 @media (max-width: #{$invoice-loans-stack-max}) {
-  .invoice-loans__row-actions { display: flex; gap: 8px; }
+  .invoice-loans__row-actions { display: flex; flex-wrap: wrap; gap: 8px; }
   .invoice-loans__row-actions > button { min-height: 44px; }
 }
 

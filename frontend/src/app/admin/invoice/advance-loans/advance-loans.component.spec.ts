@@ -184,6 +184,19 @@ describe('AdvanceLoansComponent', () => {
       fixture.detectChanges();
       expect(fixture.componentInstance.detail!.loan.id).toBe('l2');
     });
+
+    it('ignoresALateErrorOfPreviouslyOpenedLoan', () => {
+      init([loanRow, { ...loanRow, id: 'l2', associateUserId: 'VP00002' }]);
+      const first = open('l1');
+      detailBtns()[1].click();
+      fixture.detectChanges();
+      httpMock.expectOne('/api/admin/advance-loans/l2')
+        .flush({ loan: { ...loanRow, id: 'l2', associateUserId: 'VP00002' }, associatePhone: null, repayments: [] });
+      first.flush({ error: 'Advance loan not found: l1' }, { status: 404, statusText: 'Not Found' });
+      fixture.detectChanges();
+      expect(fixture.componentInstance.detailError).toBeNull();
+      expect(fixture.componentInstance.detail!.loan.id).toBe('l2');
+    });
   });
 
   it('save twice synchronously posts once', () => {

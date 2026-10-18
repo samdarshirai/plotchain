@@ -114,7 +114,7 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
               <div><dt>{{ 'admin.invoiceLoans.associateId' | translate }}</dt><dd>{{ d.loan.associateUserId }}</dd></div>
               <div><dt>{{ 'admin.invoiceLoans.associateName' | translate }}</dt><dd>{{ d.loan.associateName }}</dd></div>
               <div><dt>{{ 'admin.invoiceLoans.mobileNo' | translate }}</dt><dd>{{ d.associatePhone || '—' }}</dd></div>
-              <div><dt>{{ 'admin.invoiceLoans.loanDate' | translate }}</dt><dd>{{ d.loan.loanDate }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.detailLoanDate' | translate }}</dt><dd>{{ d.loan.loanDate }}</dd></div>
               <div><dt>{{ 'admin.invoiceLoans.amount' | translate }}</dt><dd>{{ d.loan.amount.toFixed(2) }}</dd></div>
               <div><dt>{{ 'admin.invoiceLoans.previousDues' | translate }}</dt><dd>{{ d.loan.previousDues.toFixed(2) }}</dd></div>
               <div><dt>{{ 'admin.invoiceLoans.repaid' | translate }}</dt><dd>{{ d.loan.repaid.toFixed(2) }}</dd></div>
