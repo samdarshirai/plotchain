@@ -359,6 +359,10 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
     }
 
     tbody tr { height: 48px; }
+
+    // Very large amounts step the font down so the whole number stays visible (see fit-text.util.ts).
+    td.editable-table__cell--fit-md { font-size: 10.5px; }
+    td.editable-table__cell--fit-sm { font-size: 9px; }
   }
 
   .#{$screen} .card { overflow-x: visible; }

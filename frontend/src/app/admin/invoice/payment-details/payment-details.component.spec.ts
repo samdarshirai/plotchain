@@ -74,4 +74,20 @@ describe('PaymentDetailsComponent', () => {
     expect(link.classList).toContain('brand-button');
     expect(link.classList).not.toContain('brand-button--secondary');
   });
+
+  it('stepsTheAmountFontDownForVeryLongAmountsSoTheWholeNumberShows', () => {
+    const c = fixture.componentInstance;
+    c.filters.patchValue({ q: 'x' });
+    c.apply();
+    httpMock.expectOne(r => r.url === '/api/admin/loan-repayments').flush([
+      { ...row, id: 'a', amount: 99999999.99 },
+      { ...row, id: 'b', amount: 123456789.5 },
+      { ...row, id: 'c', amount: 999999999999.99 }
+    ]);
+    fixture.detectChanges();
+    const amountCell = (i: number) => (fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr')[i].querySelectorAll('td')[7];
+    expect(amountCell(0).className).not.toContain('editable-table__cell--fit');
+    expect(amountCell(1).classList).toContain('editable-table__cell--fit-md');
+    expect(amountCell(2).classList).toContain('editable-table__cell--fit-sm');
+  });
 });

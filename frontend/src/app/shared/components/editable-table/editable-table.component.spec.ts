@@ -67,6 +67,25 @@ describe('EditableTableComponent', () => {
     expect(percentCell.classList).not.toContain('editable-table__cell--ellipsis');
   });
 
+  it('a fitText column steps the font down for long values so the whole number stays visible', () => {
+    fixture.componentInstance.readOnly = true;
+    fixture.componentInstance.columns = [
+      { key: 'amount', label: 'Amount', type: 'text', fitText: true },
+      { key: 'other', label: 'Other', type: 'text' }
+    ];
+    fixture.componentInstance.rows = [
+      { amount: '99999999.99', other: '123456789012.50' },
+      { amount: '123456789.50', other: '123456789012.50' },
+      { amount: '999999999999.99', other: '123456789012.50' }
+    ];
+    fixture.detectChanges();
+    const cells = (i: number) => fixture.nativeElement.querySelectorAll('tbody tr')[i].querySelectorAll('td');
+    expect(cells(0)[0].className).not.toContain('editable-table__cell--fit');
+    expect(cells(1)[0].classList).toContain('editable-table__cell--fit-md');
+    expect(cells(2)[0].classList).toContain('editable-table__cell--fit-sm');
+    expect(cells(2)[1].className).not.toContain('editable-table__cell--fit');
+  });
+
   it('typing into a text/number cell emits rowsChange with the updated value at that row/key, other rows unchanged', () => {
     fixture.detectChanges();
     const spy = jasmine.createSpy('rowsChange');

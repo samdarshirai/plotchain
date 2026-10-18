@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { fitSize } from '../../utils/fit-text.util';
 
 export interface ActionCellContext {
   $implicit: Record<string, string | number>;
@@ -27,6 +28,8 @@ export interface EditableTableColumn {
   // Optional: for fixed-height rows. The cell is marked so CSS can cut long text with "…", and its
   // full text goes in a `title` tooltip -- e.g. the Invoice registers' name/bank/remarks columns.
   ellipsis?: boolean;
+  // Optional, for number columns in fixed-height rows: long values get a smaller font (see fitSize) instead of being cut.
+  fitText?: boolean;
 }
 
 @Component({
@@ -53,6 +56,8 @@ export interface EditableTableColumn {
             *ngFor="let column of columns"
             [attr.data-label]="column.label"
             [class.editable-table__cell--ellipsis]="!!column.ellipsis"
+            [class.editable-table__cell--fit-md]="column.fitText && fitSize(row[column.key]) === 'md'"
+            [class.editable-table__cell--fit-sm]="column.fitText && fitSize(row[column.key]) === 'sm'"
             [attr.title]="column.ellipsis ? row[column.key] : null"
           >
             <ng-container *ngIf="column.type === 'action'; else dataCell">
@@ -151,6 +156,8 @@ export class EditableTableComponent {
   toggleAll(checked: boolean): void {
     this.selectionChange.emit(checked ? this.rows.map((r) => '' + r['id']) : []);
   }
+
+  readonly fitSize = fitSize;
 
   trackByIndex(index: number): number {
     return index;

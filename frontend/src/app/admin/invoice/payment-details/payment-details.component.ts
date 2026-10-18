@@ -1,3 +1,4 @@
+import { fitSize } from '../../../shared/utils/fit-text.util';
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, of, switchMap } from 'rxjs';
@@ -59,7 +60,7 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
               <td [attr.data-label]="'admin.invoicePayments.mobileNo' | translate">{{ r.associatePhone }}</td>
               <td class="editable-table__cell--ellipsis" [attr.title]="'admin.invoicePayments.paymentTypeLoanRepayment' | translate" [attr.data-label]="'admin.invoicePayments.paymentType' | translate">{{ 'admin.invoicePayments.paymentTypeLoanRepayment' | translate }}</td>
               <td [attr.data-label]="'admin.invoicePayments.receiptNo' | translate">{{ r.receiptNo }}</td>
-              <td [attr.data-label]="'admin.invoicePayments.amount' | translate">{{ r.amount.toFixed(2) }}</td>
+              <td [class.editable-table__cell--fit-md]="fit(r.amount) === 'md'" [class.editable-table__cell--fit-sm]="fit(r.amount) === 'sm'" [attr.data-label]="'admin.invoicePayments.amount' | translate">{{ r.amount.toFixed(2) }}</td>
               <td class="editable-table__cell--ellipsis" [attr.title]="'admin.invoicePayments.payModes.' + r.payMode | translate" [attr.data-label]="'admin.invoicePayments.payMode' | translate">{{ 'admin.invoicePayments.payModes.' + r.payMode | translate }}</td>
               <td class="editable-table__cell--ellipsis" [attr.title]="r.bankName" [attr.data-label]="'admin.invoicePayments.bankName' | translate">{{ r.bankName }}</td>
               <td class="editable-table__cell--ellipsis" [attr.title]="r.txnNo" [attr.data-label]="'admin.invoicePayments.txnNo' | translate">{{ r.txnNo }}</td>
@@ -95,6 +96,10 @@ export class PaymentDetailsComponent implements OnInit {
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(items => { if (items) { this.rows = items; } });
     this.load();
+  }
+
+  fit(amount: number): 'md' | 'sm' | null {
+    return fitSize(amount.toFixed(2));
   }
 
   apply(): void {
