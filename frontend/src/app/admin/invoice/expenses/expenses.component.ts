@@ -10,6 +10,17 @@ import { EditableTableColumn, EditableTableComponent } from '../../../shared/com
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 
+// Local calendar dates (not toISOString, which is UTC and can land a day early in the morning for UTC+ zones).
+function localIsoDate(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function last30Days(): { from: string; to: string } {
+  const now = new Date();
+  return { from: localIsoDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29)), to: localIsoDate(now) };
+}
+
 @Component({
   selector: 'app-invoice-expenses',
   standalone: true,
@@ -146,7 +157,8 @@ export class ExpensesComponent implements OnInit {
     txnNo: [''],
     remarks: ['']
   });
-  filters = this.fb.nonNullable.group({ from: [''], to: [''], typeId: [''], projectId: [''] });
+  private readonly defaultRange = last30Days();
+  filters = this.fb.nonNullable.group({ from: [this.defaultRange.from], to: [this.defaultRange.to], typeId: [''], projectId: [''] });
 
   ngOnInit(): void {
     const t = (key: string) => this.translate.instant(`admin.invoiceExpenses.${key}`);

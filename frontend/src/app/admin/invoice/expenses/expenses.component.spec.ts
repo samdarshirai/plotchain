@@ -77,3 +77,50 @@ describe('ExpensesComponent', () => {
     expect(c.saving).toBeFalse();
   });
 });
+
+describe('ExpensesComponent default filters', () => {
+  let httpMock: HttpTestingController;
+
+  beforeEach(() => {
+    jasmine.clock().install();
+    // 01:30 local on 18 Oct: a UTC-based date would already be the 17th for UTC+5:30 and earlier zones.
+    jasmine.clock().mockDate(new Date(2026, 9, 18, 1, 30));
+    TestBed.configureTestingModule({ imports: [ExpensesComponent, HttpClientTestingModule, TranslateModule.forRoot()] });
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => jasmine.clock().uninstall());
+
+  it('defaultsFromAndToToTheLast30DaysInclusiveInLocalTime', () => {
+    const fixture = TestBed.createComponent(ExpensesComponent);
+    expect(fixture.componentInstance.filters.getRawValue()).toEqual({ from: '2026-09-19', to: '2026-10-18', typeId: '', projectId: '' });
+  });
+
+  it('sendsTheDefaultDatesOnTheFirstListRequest', () => {
+    const fixture = TestBed.createComponent(ExpensesComponent);
+    fixture.detectChanges();
+    httpMock.expectOne('/api/admin/expense-types').flush([]);
+    httpMock.expectOne('/api/company/projects').flush([]);
+    const req = httpMock.expectOne(r => r.url === '/api/admin/expenses');
+    expect(req.request.params.get('from')).toBe('2026-09-19');
+    expect(req.request.params.get('to')).toBe('2026-10-18');
+    expect(req.request.params.has('typeId')).toBeFalse();
+    expect(req.request.params.has('projectId')).toBeFalse();
+    req.flush([]);
+    httpMock.verify();
+  });
+
+  it('stillLetsTheUserClearADateToRemoveThatBound', () => {
+    const fixture = TestBed.createComponent(ExpensesComponent);
+    fixture.detectChanges();
+    httpMock.expectOne('/api/admin/expense-types').flush([]);
+    httpMock.expectOne('/api/company/projects').flush([]);
+    httpMock.expectOne(r => r.url === '/api/admin/expenses').flush([]);
+    fixture.componentInstance.filters.patchValue({ from: '' });
+    const req = httpMock.expectOne(r => r.url === '/api/admin/expenses');
+    expect(req.request.params.has('from')).toBeFalse();
+    expect(req.request.params.get('to')).toBe('2026-10-18');
+    req.flush([]);
+    httpMock.verify();
+  });
+});
