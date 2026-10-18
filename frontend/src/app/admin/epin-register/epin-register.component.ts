@@ -120,11 +120,11 @@ type Panel =
             <table class="epin-register__table">
               <thead>
                 <tr>
-                  <th>{{ 'admin.epinRegister.colCode' | translate }}</th>
-                  <th>{{ 'admin.epinRegister.colStatus' | translate }}</th>
-                  <th>{{ 'admin.epinRegister.colBatch' | translate }}</th>
-                  <th>{{ 'admin.epinRegister.colExpires' | translate }}</th>
-                  <th>{{ 'admin.epinRegister.colHolder' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.epinRegister.colCode' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'admin.epinRegister.colStatus' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.epinRegister.colBatch' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.epinRegister.colExpires' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.epinRegister.colHolder' | translate }}</th>
                 </tr>
               </thead>
               <tbody>

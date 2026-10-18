@@ -129,12 +129,12 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
             <table class="invoice-loans__repayments" *ngIf="d.repayments.length">
               <thead>
                 <tr>
-                  <th>{{ 'admin.invoiceLoans.receiptNo' | translate }}</th>
-                  <th>{{ 'admin.invoiceLoans.paymentDate' | translate }}</th>
-                  <th>{{ 'admin.invoiceLoans.amount' | translate }}</th>
-                  <th>{{ 'admin.invoiceLoans.payMode' | translate }}</th>
-                  <th>{{ 'admin.invoiceLoans.bankName' | translate }}</th>
-                  <th>{{ 'admin.invoiceLoans.txnNo' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.invoiceLoans.receiptNo' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.invoiceLoans.paymentDate' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.invoiceLoans.amount' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">credit_card</span>{{ 'admin.invoiceLoans.payMode' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">account_balance</span>{{ 'admin.invoiceLoans.bankName' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.invoiceLoans.txnNo' | translate }}</th>
                 </tr>
               </thead>
               <tbody>

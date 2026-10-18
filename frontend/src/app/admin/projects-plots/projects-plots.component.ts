@@ -102,10 +102,10 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
         <div class="projects-plots__table-wrap">
           <table class="projects-plots__table">
             <thead><tr>
-              <th scope="col">{{ 'admin.projectsPlots.table.plot' | translate }}</th>
-              <th scope="col">{{ 'admin.projectsPlots.table.area' | translate }}</th>
-              <th scope="col" class="projects-plots__num">{{ 'admin.projectsPlots.table.total' | translate }}</th>
-              <th scope="col">{{ 'admin.projectsPlots.table.status' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'admin.projectsPlots.table.plot' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">square_foot</span>{{ 'admin.projectsPlots.table.area' | translate }}</th>
+              <th scope="col" class="projects-plots__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.projectsPlots.table.total' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'admin.projectsPlots.table.status' | translate }}</th>
             </tr></thead>
             <tbody><tr><td colspan="4" class="projects-plots__empty-row">{{ 'plotBookings.table.empty' | translate }}</td></tr></tbody>
           </table>
@@ -176,17 +176,17 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             <div class="projects-plots__table-wrap" *ngIf="view === 'table' && tableRows.length">
               <table class="projects-plots__table" [class.projects-plots__table--book]="fullTable">
                 <thead><tr>
-                  <th scope="col" *ngIf="fullTable">{{ 'admin.projectsPlots.table.sNo' | translate }}</th>
-                  <th scope="col">{{ 'admin.projectsPlots.table.plot' | translate }}</th>
-                  <th scope="col" *ngIf="fullTable">{{ 'admin.projectsPlots.table.type' | translate }}</th>
-                  <th scope="col" class="projects-plots__num" *ngIf="fullTable">{{ 'admin.projectsPlots.table.roadSize' | translate }}</th>
-                  <th scope="col">{{ 'admin.projectsPlots.table.area' | translate }}</th>
-                  <th scope="col" class="projects-plots__num" *ngIf="!readOnly">{{ 'admin.projectsPlots.rateLabel' | translate }}</th>
-                  <th scope="col" class="projects-plots__num">{{ (fullTable ? 'admin.projectsPlots.table.price' : 'admin.projectsPlots.table.total') | translate }}</th>
-                  <th scope="col" class="projects-plots__num" *ngIf="fullTable">{{ 'admin.projectsPlots.extraPriceLabel' | translate }}</th>
-                  <th scope="col" class="projects-plots__num" *ngIf="fullTable">{{ 'admin.projectsPlots.table.totalPrice' | translate }}</th>
-                  <th scope="col">{{ 'admin.projectsPlots.table.status' | translate }}</th>
-                  <th scope="col" *ngIf="canManage">{{ 'admin.projectsPlots.table.actions' | translate }}</th>
+                  <th scope="col" *ngIf="fullTable"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.projectsPlots.table.sNo' | translate }}</th>
+                  <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'admin.projectsPlots.table.plot' | translate }}</th>
+                  <th scope="col" *ngIf="fullTable"><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'admin.projectsPlots.table.type' | translate }}</th>
+                  <th scope="col" class="projects-plots__num" *ngIf="fullTable"><span class="material-symbols-outlined th-icon" aria-hidden="true">square_foot</span>{{ 'admin.projectsPlots.table.roadSize' | translate }}</th>
+                  <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">square_foot</span>{{ 'admin.projectsPlots.table.area' | translate }}</th>
+                  <th scope="col" class="projects-plots__num" *ngIf="!readOnly"><span class="material-symbols-outlined th-icon" aria-hidden="true">sell</span>{{ 'admin.projectsPlots.rateLabel' | translate }}</th>
+                  <th scope="col" class="projects-plots__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ (fullTable ? 'admin.projectsPlots.table.price' : 'admin.projectsPlots.table.total') | translate }}</th>
+                  <th scope="col" class="projects-plots__num" *ngIf="fullTable"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.projectsPlots.extraPriceLabel' | translate }}</th>
+                  <th scope="col" class="projects-plots__num" *ngIf="fullTable"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.projectsPlots.table.totalPrice' | translate }}</th>
+                  <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'admin.projectsPlots.table.status' | translate }}</th>
+                  <th scope="col" *ngIf="canManage"><span class="material-symbols-outlined th-icon" aria-hidden="true">more_horiz</span>{{ 'admin.projectsPlots.table.actions' | translate }}</th>
                   <th scope="col" *ngIf="bookMode"><span class="projects-plots__sr">{{ 'admin.projectsPlots.bookAction' | translate }}</span></th>
                 </tr></thead>
                 <tbody>

@@ -49,20 +49,20 @@ export const saleRow = (s: Sale): BookingRow => ({
       <table class="booking-table" [attr.aria-label]="label">
         <thead>
           <tr>
-            <th scope="col">{{ 'plotBookings.table.bookingDate' | translate }}</th>
-            <th scope="col">{{ 'plotBookings.table.associateId' | translate }}</th>
-            <th scope="col">{{ 'plotBookings.table.name' | translate }}</th>
-            <th scope="col">{{ 'plotBookings.table.project' | translate }}</th>
-            <th scope="col">{{ 'plotBookings.table.plotType' | translate }}</th>
-            <th scope="col">{{ 'plotBookings.table.plotNo' | translate }}</th>
-            <th scope="col" class="booking-table__num">{{ 'plotBookings.table.rate' | translate }}</th>
-            <th scope="col" class="booking-table__num">{{ 'plotBookings.table.area' | translate }}</th>
-            <th scope="col" class="booking-table__num">{{ 'plotBookings.table.price' | translate }}</th>
-            <th scope="col" class="booking-table__num">{{ 'plotBookings.table.extraPrice' | translate }}</th>
-            <th scope="col" class="booking-table__num">{{ 'plotBookings.table.totalPrice' | translate }}</th>
-            <th scope="col" class="booking-table__num">{{ 'plotBookings.table.paid' | translate }}</th>
-            <th scope="col" class="booking-table__num">{{ 'plotBookings.table.rest' | translate }}</th>
-            <th scope="col">{{ 'plotBookings.table.details' | translate }}</th>
+            <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.table.bookingDate' | translate }}</th>
+            <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'plotBookings.table.associateId' | translate }}</th>
+            <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">person</span>{{ 'plotBookings.table.name' | translate }}</th>
+            <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">apartment</span>{{ 'plotBookings.table.project' | translate }}</th>
+            <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'plotBookings.table.plotType' | translate }}</th>
+            <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'plotBookings.table.plotNo' | translate }}</th>
+            <th scope="col" class="booking-table__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">sell</span>{{ 'plotBookings.table.rate' | translate }}</th>
+            <th scope="col" class="booking-table__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">square_foot</span>{{ 'plotBookings.table.area' | translate }}</th>
+            <th scope="col" class="booking-table__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'plotBookings.table.price' | translate }}</th>
+            <th scope="col" class="booking-table__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'plotBookings.table.extraPrice' | translate }}</th>
+            <th scope="col" class="booking-table__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'plotBookings.table.totalPrice' | translate }}</th>
+            <th scope="col" class="booking-table__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'plotBookings.table.paid' | translate }}</th>
+            <th scope="col" class="booking-table__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">account_balance_wallet</span>{{ 'plotBookings.table.rest' | translate }}</th>
+            <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">info</span>{{ 'plotBookings.table.details' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -95,11 +95,11 @@ export const saleRow = (s: Sale): BookingRow => ({
               <td colspan="14">
                 <table class="booking-table__installments">
                   <thead><tr>
-                    <th>{{ 'plotBookings.column.no' | translate }}</th>
-                    <th>{{ 'plotBookings.column.dueDate' | translate }}</th>
-                    <th>{{ 'plotBookings.column.amount' | translate }}</th>
-                    <th>{{ 'plotBookings.column.status' | translate }}</th>
-                    <th>{{ 'plotBookings.column.paidOn' | translate }}</th>
+                    <th><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'plotBookings.column.no' | translate }}</th>
+                    <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.column.dueDate' | translate }}</th>
+                    <th><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'plotBookings.column.amount' | translate }}</th>
+                    <th><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'plotBookings.column.status' | translate }}</th>
+                    <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.column.paidOn' | translate }}</th>
                   </tr></thead>
                   <tbody>
                     <tr *ngFor="let i of r.installments">

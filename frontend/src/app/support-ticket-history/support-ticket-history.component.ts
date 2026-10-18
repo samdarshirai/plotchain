@@ -52,10 +52,10 @@ const PAGE_SIZE = 20;
         <table class="ticket-history__table" *ngIf="page.entries.length" [attr.aria-label]="'supportTickets.title' | translate">
           <thead>
             <tr>
-              <th scope="col">{{ 'supportTickets.columnSubject' | translate }}</th>
-              <th scope="col">{{ 'supportTickets.columnStatus' | translate }}</th>
-              <th scope="col">{{ 'supportTickets.columnCreatedAt' | translate }}</th>
-              <th scope="col">{{ 'supportTickets.columnResponse' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">subject</span>{{ 'supportTickets.columnSubject' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'supportTickets.columnStatus' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'supportTickets.columnCreatedAt' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">chat</span>{{ 'supportTickets.columnResponse' | translate }}</th>
             </tr>
           </thead>
           <tbody>

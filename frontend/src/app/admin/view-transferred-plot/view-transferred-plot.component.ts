@@ -54,16 +54,16 @@ const isoDate = (d: Date): string => {
           <table class="add-plot-emi__table" [attr.aria-label]="'admin.viewTransferredPlot.title' | translate" *ngIf="page.transfers.length">
             <thead>
               <tr>
-                <th scope="col">{{ 'admin.viewBookedPlot.col.sNo' | translate }}</th>
-                <th scope="col">{{ 'admin.viewTransferredPlot.col.transferDate' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.associateId' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.associate' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.mobile' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.project' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.plot' | translate }}</th>
-                <th scope="col">{{ 'admin.viewTransferredPlot.col.oldPlot' | translate }}</th>
-                <th scope="col">{{ 'admin.viewTransferredPlot.col.paid' | translate }}</th>
-                <th scope="col">{{ 'admin.viewTransferredPlot.col.rest' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.viewBookedPlot.col.sNo' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.viewTransferredPlot.col.transferDate' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.addPlotEmi.col.associateId' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.addPlotEmi.col.associate' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">call</span>{{ 'admin.addPlotEmi.col.mobile' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">apartment</span>{{ 'admin.addPlotEmi.col.project' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'admin.addPlotEmi.col.plot' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'admin.viewTransferredPlot.col.oldPlot' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.viewTransferredPlot.col.paid' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">account_balance_wallet</span>{{ 'admin.viewTransferredPlot.col.rest' | translate }}</th>
               </tr>
             </thead>
             <tbody>

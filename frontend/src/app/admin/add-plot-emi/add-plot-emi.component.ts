@@ -72,20 +72,20 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
           <table #tbl class="add-plot-emi__table" [attr.aria-label]="'admin.addPlotEmi.title' | translate" *ngIf="page.bookings.length">
             <thead>
               <tr>
-                <th scope="col">{{ 'admin.addPlotEmi.col.bookedOn' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.associateId' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.associate' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.mobile' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.project' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.plot' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.plotType' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.area' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.price' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.discount' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.total' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.paid' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.col.remaining' | translate }}</th>
-                <th scope="col" class="add-plot-emi__noprint">{{ 'admin.addPlotEmi.col.action' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.addPlotEmi.col.bookedOn' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.addPlotEmi.col.associateId' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.addPlotEmi.col.associate' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">call</span>{{ 'admin.addPlotEmi.col.mobile' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">apartment</span>{{ 'admin.addPlotEmi.col.project' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'admin.addPlotEmi.col.plot' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'admin.addPlotEmi.col.plotType' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">square_foot</span>{{ 'admin.addPlotEmi.col.area' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.addPlotEmi.col.price' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">percent</span>{{ 'admin.addPlotEmi.col.discount' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.addPlotEmi.col.total' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.addPlotEmi.col.paid' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">account_balance_wallet</span>{{ 'admin.addPlotEmi.col.remaining' | translate }}</th>
+                <th scope="col" class="add-plot-emi__noprint"><span class="material-symbols-outlined th-icon" aria-hidden="true">more_horiz</span>{{ 'admin.addPlotEmi.col.action' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -226,14 +226,14 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
           <table class="add-plot-emi__table add-plot-emi__table--history">
             <thead>
               <tr>
-                <th scope="col">{{ 'admin.addPlotEmi.hist.sNo' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.hist.paymentDate' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.hist.amount' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.hist.mode' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.hist.txn' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.hist.txnDate' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.hist.status' | translate }}</th>
-                <th scope="col">{{ 'admin.addPlotEmi.hist.confirmedDate' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.addPlotEmi.hist.sNo' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.addPlotEmi.hist.paymentDate' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.addPlotEmi.hist.amount' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">credit_card</span>{{ 'admin.addPlotEmi.hist.mode' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">receipt_long</span>{{ 'admin.addPlotEmi.hist.txn' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.addPlotEmi.hist.txnDate' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'admin.addPlotEmi.hist.status' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.addPlotEmi.hist.confirmedDate' | translate }}</th>
               </tr>
             </thead>
             <tbody>

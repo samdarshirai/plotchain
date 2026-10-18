@@ -55,11 +55,11 @@ const PAGE_SIZE = 20;
             <table class="my-bookings__table">
               <thead>
                 <tr>
-                  <th>{{ 'plotBookings.column.no' | translate }}</th>
-                  <th>{{ 'plotBookings.column.dueDate' | translate }}</th>
-                  <th>{{ 'plotBookings.column.amount' | translate }}</th>
-                  <th>{{ 'plotBookings.column.status' | translate }}</th>
-                  <th>{{ 'plotBookings.column.paidOn' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'plotBookings.column.no' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.column.dueDate' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'plotBookings.column.amount' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'plotBookings.column.status' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.column.paidOn' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
