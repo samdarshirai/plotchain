@@ -62,8 +62,8 @@ describe('ReviewLaunchStepComponent', () => {
     await createAndFlush(stateWith(false));
 
     const rows = fixture.debugElement.queryAll(By.directive(ChecklistRowComponent));
-    const companyProfileRow = rows.find(r => r.componentInstance.editHref === '/setup/company-profile');
-    const brandingRow = rows.find(r => r.componentInstance.editHref === '/setup/branding');
+    const companyProfileRow = rows.find(r => r.componentInstance.editHref === '/admin/setup/company-profile');
+    const brandingRow = rows.find(r => r.componentInstance.editHref === '/admin/setup/branding');
 
     expect(companyProfileRow?.componentInstance.tone).toBe('blocking');
     expect(brandingRow?.componentInstance.tone).toBe('optional');
@@ -73,7 +73,7 @@ describe('ReviewLaunchStepComponent', () => {
     await createAndFlush(stateWith(true));
 
     const rows = fixture.debugElement.queryAll(By.directive(ChecklistRowComponent));
-    const companyProfileRow = rows.find(r => r.componentInstance.editHref === '/setup/company-profile');
+    const companyProfileRow = rows.find(r => r.componentInstance.editHref === '/admin/setup/company-profile');
     expect(companyProfileRow?.componentInstance.tone).toBe('complete');
   });
 

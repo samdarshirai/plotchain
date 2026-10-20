@@ -44,13 +44,13 @@ export class SetupShellFooterComponent {
 
   goPrevious(): void {
     if (this.previousPath) {
-      this.router.navigate(['/setup', this.previousPath]);
+      this.router.navigate(['/admin/setup', this.previousPath]);
     }
   }
 
   goNext(): void {
     if (this.nextPath) {
-      this.router.navigate(['/setup', this.nextPath]);
+      this.router.navigate(['/admin/setup', this.nextPath]);
     }
   }
 }

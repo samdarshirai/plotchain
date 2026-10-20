@@ -140,7 +140,7 @@ describe('AdvanceLoansComponent', () => {
       expect(rows[0].textContent).toContain('RC2');
       expect(rows[1].textContent).toContain('RC1');
       const a = rows[0].querySelector('a')!;
-      expect(a.getAttribute('href')).toContain('/settings/payment-details/receipt/r2');
+      expect(a.getAttribute('href')).toContain('/admin/settings/payment-details/receipt/r2');
       expect(a.getAttribute('target')).toBe('_blank');
     });
 

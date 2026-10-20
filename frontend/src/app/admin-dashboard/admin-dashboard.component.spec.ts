@@ -157,8 +157,8 @@ describe('AdminDashboardComponent', () => {
 
     const rows: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll('.admin-dashboard__decision-row'));
     expect(rows.length).toBe(2);
-    expect(rows[0].getAttribute('href')).toBe('/settings/payout-approval');
-    expect(rows[1].getAttribute('href')).toBe('/settings/kyc-queue');
+    expect(rows[0].getAttribute('href')).toBe('/admin/settings/payout-approval');
+    expect(rows[1].getAttribute('href')).toBe('/admin/settings/kyc-queue');
 
     const counts = fixture.nativeElement.querySelectorAll('.admin-dashboard__decision-count');
     expect(counts[0].textContent.trim()).toBe('7');
@@ -184,7 +184,7 @@ describe('AdminDashboardComponent', () => {
 
     expect(fixture.nativeElement.querySelector('a[href="/admin/sales/new"]')).toBeTruthy();
     expect(
-      fixture.nativeElement.querySelector('a[href="/settings/associate-directory?provision=1"]')
+      fixture.nativeElement.querySelector('a[href="/admin/settings/associate-directory?provision=1"]')
     ).toBeTruthy();
   });
 });

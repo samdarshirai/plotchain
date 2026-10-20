@@ -82,7 +82,7 @@ test('public screens and all setup steps use the design at desktop and mobile si
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const step of ['company-profile', 'branding', 'compensation', 'projects', 'payments-kyc', 'review-launch']) {
-      await checkScreen(page, `/setup/${step}`, testInfo.outputPath(`setup-${width}-${step}.png`));
+      await checkScreen(page, `/admin/setup/${step}`, testInfo.outputPath(`setup-${width}-${step}.png`));
     }
   }
 });

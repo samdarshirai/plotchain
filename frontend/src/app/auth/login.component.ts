@@ -2,7 +2,7 @@ import { apiUrl } from '../core/api/api-url';
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { take } from 'rxjs';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -78,7 +78,7 @@ import { BrandButtonComponent } from '../shared/components/brand-button/brand-bu
           <div class="login-error" *ngIf="error">{{ 'auth.loginError' | translate }}</div>
           <div class="login-error" *ngIf="platformNotLive">{{ 'auth.platformNotLiveError' | translate }}</div>
 
-          <p class="login-request-access">
+          <p class="login-request-access" *ngIf="realm === 'associate'">
             {{ 'auth.newAssociatePrompt' | translate }}
             <a href="#" (click)="$event.preventDefault()">{{ 'auth.requestAccess' | translate }}</a>
           </p>
@@ -93,6 +93,7 @@ export class LoginComponent implements OnInit {
   private authService = inject(AuthService);
   private setupService = inject(SetupService);
   private router = inject(Router);
+  readonly realm: 'admin' | 'associate' = inject(ActivatedRoute).snapshot.data['realm'] === 'admin' ? 'admin' : 'associate';
   private brandingBootstrap = inject(BrandingBootstrapService);
   private translate = inject(TranslateService);
 
@@ -149,10 +150,10 @@ export class LoginComponent implements OnInit {
     this.error = false;
     this.platformNotLive = false;
     const { userId, password } = this.form.getRawValue();
-    this.authService.login(userId!, password!).subscribe({
+    this.authService.login(userId!, password!, this.realm).subscribe({
       next: response => {
         if (response.mustChangePassword) {
-          this.router.navigate(['/change-password']);
+          this.router.navigate([this.realm === 'admin' ? '/admin/change-password' : '/change-password']);
           return;
         }
         if (ADMIN_FAMILY_ROLES.has(response.role)) {

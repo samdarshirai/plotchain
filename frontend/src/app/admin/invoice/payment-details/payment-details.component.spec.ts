@@ -24,7 +24,7 @@ describe('PaymentDetailsComponent', () => {
   it('rendersAllColumnsIncludingPaymentTypeAndPrintLink', () => {
     const el = fixture.nativeElement as HTMLElement;
     ['RCP-000001', 'VP00001', 'Asha', '9999999999', 'HDFC', 'T1', 'admin.invoicePayments.paymentTypeLoanRepayment'].forEach(s => expect(el.textContent).toContain(s));
-    expect(el.querySelector('a.invoice-payments__print')?.getAttribute('href')).toContain('/settings/payment-details/receipt/r1');
+    expect(el.querySelector('a.invoice-payments__print')?.getAttribute('href')).toContain('/admin/settings/payment-details/receipt/r1');
   });
 
   it('labelsEveryCellForStackedCardLayout', () => {

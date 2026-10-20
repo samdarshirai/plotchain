@@ -17,7 +17,7 @@ describe('postAuthLandingPath', () => {
 
   it('sends every admin-family role to the first incomplete setup step while unlaunched', () => {
     for (const role of ADMIN_FAMILY_ROLES) {
-      expect(postAuthLandingPath(role, unlaunchedState, () => 'company-profile')).toBe('/setup/company-profile');
+      expect(postAuthLandingPath(role, unlaunchedState, () => 'company-profile')).toBe('/admin/setup/company-profile');
     }
   });
 

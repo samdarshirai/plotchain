@@ -27,8 +27,8 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     labelKey: 'nav.categories.masterData',
     icon: 'database',
     items: [
-      { key: 'masterProjects', labelKey: 'settings.sections.masterProjects', path: '/settings/master-projects' },
-      { key: 'projectsPlots', labelKey: 'settings.sections.projectsPlots', path: '/settings/plots' }
+      { key: 'masterProjects', labelKey: 'settings.sections.masterProjects', path: '/admin/settings/master-projects' },
+      { key: 'projectsPlots', labelKey: 'settings.sections.projectsPlots', path: '/admin/settings/plots' }
     ]
   },
   {
@@ -36,9 +36,9 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     labelKey: 'nav.categories.network',
     icon: 'group',
     items: [
-      { key: 'associateDirectory', labelKey: 'settings.sections.associateDirectory', path: '/settings/associate-directory' },
-      { key: 'treeExplorer', labelKey: 'settings.sections.treeExplorer', path: '/settings/tree-explorer' },
-      { key: 'kycQueue', labelKey: 'settings.sections.kycQueue', path: '/settings/kyc-queue' }
+      { key: 'associateDirectory', labelKey: 'settings.sections.associateDirectory', path: '/admin/settings/associate-directory' },
+      { key: 'treeExplorer', labelKey: 'settings.sections.treeExplorer', path: '/admin/settings/tree-explorer' },
+      { key: 'kycQueue', labelKey: 'settings.sections.kycQueue', path: '/admin/settings/kyc-queue' }
     ]
   },
   {
@@ -46,7 +46,7 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     labelKey: 'nav.categories.epin',
     icon: 'pin',
     items: [
-      { key: 'epinRegister', labelKey: 'settings.sections.epinRegister', path: '/settings/e-pin-register' }
+      { key: 'epinRegister', labelKey: 'settings.sections.epinRegister', path: '/admin/settings/e-pin-register' }
     ]
   },
   {
@@ -54,11 +54,11 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     labelKey: 'nav.categories.finance',
     icon: 'point_of_sale',
     items: [
-      { key: 'ledgerRegister', labelKey: 'settings.sections.ledgerRegister', path: '/settings/ledger-register' },
-      { key: 'salesRegister', labelKey: 'settings.sections.salesRegister', path: '/settings/sales-register' },
-      { key: 'cycleManagement', labelKey: 'settings.sections.cycleManagement', path: '/settings/cycle-management' },
-      { key: 'payoutApproval', labelKey: 'settings.sections.payoutApproval', path: '/settings/payout-approval' },
-      { key: 'expenseTypes', labelKey: 'settings.sections.expenseTypes', path: '/settings/expense-types' }
+      { key: 'ledgerRegister', labelKey: 'settings.sections.ledgerRegister', path: '/admin/settings/ledger-register' },
+      { key: 'salesRegister', labelKey: 'settings.sections.salesRegister', path: '/admin/settings/sales-register' },
+      { key: 'cycleManagement', labelKey: 'settings.sections.cycleManagement', path: '/admin/settings/cycle-management' },
+      { key: 'payoutApproval', labelKey: 'settings.sections.payoutApproval', path: '/admin/settings/payout-approval' },
+      { key: 'expenseTypes', labelKey: 'settings.sections.expenseTypes', path: '/admin/settings/expense-types' }
     ]
   },
   {
@@ -66,9 +66,9 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     labelKey: 'nav.categories.invoice',
     icon: 'receipt_long',
     items: [
-      { key: 'paymentDetails', labelKey: 'settings.sections.paymentDetails', path: '/settings/payment-details' },
-      { key: 'invoiceExpenses', labelKey: 'settings.sections.invoiceExpenses', path: '/settings/invoice-expenses' },
-      { key: 'advanceLoans', labelKey: 'settings.sections.advanceLoans', path: '/settings/advance-loans' }
+      { key: 'paymentDetails', labelKey: 'settings.sections.paymentDetails', path: '/admin/settings/payment-details' },
+      { key: 'invoiceExpenses', labelKey: 'settings.sections.invoiceExpenses', path: '/admin/settings/invoice-expenses' },
+      { key: 'advanceLoans', labelKey: 'settings.sections.advanceLoans', path: '/admin/settings/advance-loans' }
     ]
   },
   {
@@ -76,14 +76,14 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     labelKey: 'nav.categories.inventory',
     icon: 'domain',
     items: [
-      { key: 'bookNewPlot', labelKey: 'nav.plotBooking.bookNewPlot', path: '/settings/book-plot' },
-      { key: 'addPlotEmi', labelKey: 'nav.plotBooking.addPlotEmi', path: '/settings/add-plot-emi' },
-      { key: 'viewBookedPlot', labelKey: 'nav.plotBooking.viewBookedPlot', path: '/settings/view-booked-plot' },
-      { key: 'viewConfirmedPlot', labelKey: 'nav.plotBooking.viewConfirmedPlot', path: '/settings/view-confirmed-plot' },
-      { key: 'plotTransfer', labelKey: 'nav.plotBooking.plotTransfer', path: '/settings/plot-transfer' },
-      { key: 'viewPlotEmi', labelKey: 'nav.plotBooking.viewPlotEmi', path: '/settings/view-plot-emi' },
-      { key: 'viewTransferredPlots', labelKey: 'nav.plotBooking.viewTransferredPlots', path: '/settings/view-transferred-plot' },
-      { key: 'viewCancelledPlot', labelKey: 'nav.plotBooking.viewCancelledPlot', path: '/settings/view-cancelled-plot' }
+      { key: 'bookNewPlot', labelKey: 'nav.plotBooking.bookNewPlot', path: '/admin/settings/book-plot' },
+      { key: 'addPlotEmi', labelKey: 'nav.plotBooking.addPlotEmi', path: '/admin/settings/add-plot-emi' },
+      { key: 'viewBookedPlot', labelKey: 'nav.plotBooking.viewBookedPlot', path: '/admin/settings/view-booked-plot' },
+      { key: 'viewConfirmedPlot', labelKey: 'nav.plotBooking.viewConfirmedPlot', path: '/admin/settings/view-confirmed-plot' },
+      { key: 'plotTransfer', labelKey: 'nav.plotBooking.plotTransfer', path: '/admin/settings/plot-transfer' },
+      { key: 'viewPlotEmi', labelKey: 'nav.plotBooking.viewPlotEmi', path: '/admin/settings/view-plot-emi' },
+      { key: 'viewTransferredPlots', labelKey: 'nav.plotBooking.viewTransferredPlots', path: '/admin/settings/view-transferred-plot' },
+      { key: 'viewCancelledPlot', labelKey: 'nav.plotBooking.viewCancelledPlot', path: '/admin/settings/view-cancelled-plot' }
     ]
   },
   {
@@ -91,8 +91,8 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     labelKey: 'nav.categories.communication',
     icon: 'forum',
     items: [
-      { key: 'supportTickets', labelKey: 'settings.sections.supportTickets', path: '/settings/support-tickets' },
-      { key: 'news', labelKey: 'settings.sections.news', path: '/settings/news' }
+      { key: 'supportTickets', labelKey: 'settings.sections.supportTickets', path: '/admin/settings/support-tickets' },
+      { key: 'news', labelKey: 'settings.sections.news', path: '/admin/settings/news' }
     ]
   },
   {
@@ -100,10 +100,10 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     labelKey: 'nav.categories.setup',
     icon: 'tune',
     items: [
-      { key: 'companyProfile', labelKey: 'settings.sections.companyProfile', path: '/settings/company-profile' },
-      { key: 'branding', labelKey: 'settings.sections.branding', path: '/settings/branding' },
-      { key: 'paymentsKyc', labelKey: 'settings.sections.paymentsKyc', path: '/settings/payments-kyc' },
-      { key: 'compensation', labelKey: 'settings.sections.compensation', path: '/settings/compensation' }
+      { key: 'companyProfile', labelKey: 'settings.sections.companyProfile', path: '/admin/settings/company-profile' },
+      { key: 'branding', labelKey: 'settings.sections.branding', path: '/admin/settings/branding' },
+      { key: 'paymentsKyc', labelKey: 'settings.sections.paymentsKyc', path: '/admin/settings/payments-kyc' },
+      { key: 'compensation', labelKey: 'settings.sections.compensation', path: '/admin/settings/compensation' }
     ]
   },
   {
@@ -111,8 +111,8 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     labelKey: 'nav.categories.system',
     icon: 'admin_panel_settings',
     items: [
-      { key: 'auditLog', labelKey: 'settings.sections.auditLog', path: '/settings/audit-log' },
-      { key: 'adminStats', labelKey: 'settings.sections.adminStats', path: '/settings/admin-stats' }
+      { key: 'auditLog', labelKey: 'settings.sections.auditLog', path: '/admin/settings/audit-log' },
+      { key: 'adminStats', labelKey: 'settings.sections.adminStats', path: '/admin/settings/admin-stats' }
     ]
   }
 ];
@@ -121,7 +121,7 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
 export const ADMIN_USERS_NAV_ITEM: AdminNavItem = {
   key: 'adminUsers',
   labelKey: 'settings.sections.adminUsers',
-  path: '/settings/admin-users'
+  path: '/admin/settings/admin-users'
 };
 
 // Which category owns a given URL. Derived from the router's URL on every navigation rather than

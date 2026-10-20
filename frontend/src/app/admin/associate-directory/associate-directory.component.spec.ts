@@ -320,15 +320,19 @@ describe('AssociateDirectoryComponent', () => {
       expect(bodyRows[2].querySelector('.associate-directory__login')).toBeNull();
     });
 
-    it('impersonates that row, goes to /dashboard and does not open the side panel', () => {
+    it('impersonates that row, opens /dashboard in a new tab and does not open the side panel', () => {
       loadRows();
       const impersonate = spyOn(TestBed.inject(AuthService), 'impersonate').and.returnValue(of({} as any));
+      const tab = { location: { href: '' }, close: jasmine.createSpy('close') };
+      const open = spyOn(window, 'open').and.returnValue(tab as unknown as Window);
       const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
       buttons()[0].click();
 
       expect(impersonate).toHaveBeenCalledWith('a1', 'Jane');
-      expect(navigate).toHaveBeenCalledWith(['/dashboard']);
+      expect(open).toHaveBeenCalledWith('', '_blank');
+      expect(tab.location.href).toBe('/dashboard');
+      expect(navigate).not.toHaveBeenCalled();
       httpMock.expectNone('/api/admin/associates/a1');
       expect(fixture.componentInstance.panelOpen).toBeFalse();
     });
@@ -336,12 +340,15 @@ describe('AssociateDirectoryComponent', () => {
     it('shows the error paragraph when impersonation fails', () => {
       loadRows();
       spyOn(TestBed.inject(AuthService), 'impersonate').and.returnValue(throwError(() => new Error('boom')));
+      const tab = { location: { href: '' }, close: jasmine.createSpy('close') };
+      spyOn(window, 'open').and.returnValue(tab as unknown as Window);
       const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
       buttons()[0].click();
       fixture.detectChanges();
 
       expect(navigate).not.toHaveBeenCalled();
+      expect(tab.close).toHaveBeenCalled();
       expect(fixture.componentInstance.loginError).toBeTrue();
       expect(fixture.nativeElement.querySelector('.associate-directory__login-error')?.textContent?.trim()).toBeTruthy();
     });

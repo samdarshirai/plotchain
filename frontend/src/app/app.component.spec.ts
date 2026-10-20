@@ -107,7 +107,7 @@ describe('AppComponent', () => {
     spyOn(authService, 'getRole').and.returnValue('ADMIN');
     fixture.detectChanges();
 
-    (app as unknown as { updateSetupRouteState(url: string): void }).updateSetupRouteState('/setup/company-profile');
+    (app as unknown as { updateSetupRouteState(url: string): void }).updateSetupRouteState('/admin/setup/company-profile');
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
@@ -247,19 +247,20 @@ describe('AppComponent', () => {
       expect(banner.textContent).toContain('Viewing as Asha Rao');
     });
 
-    it('Exit restores the admin session and returns to the associate directory', () => {
+    it('Exit ends the associate session and closes the tab', () => {
       const authService = TestBed.inject(AuthService);
       const router = TestBed.inject(Router);
       spyOn(authService, 'isAuthenticated').and.returnValue(true);
       spyOn(authService, 'isImpersonating').and.returnValue(true);
       spyOn(authService, 'getImpersonatedName').and.returnValue('Asha Rao');
       spyOn(authService, 'exitImpersonation');
+      spyOn(window, 'close');
       spyOn(router, 'navigate');
       const fixture = TestBed.createComponent(AppComponent);
       fixture.detectChanges();
       ((fixture.nativeElement as HTMLElement).querySelector('.impersonation-banner__exit') as HTMLButtonElement).click();
       expect(authService.exitImpersonation).toHaveBeenCalled();
-      expect(router.navigate).toHaveBeenCalledWith(['/settings/associate-directory']);
+      expect(window.close).toHaveBeenCalled();
     });
   });
 });

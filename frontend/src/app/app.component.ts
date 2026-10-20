@@ -73,16 +73,18 @@ export class AppComponent implements OnInit, OnDestroy {
 
   onExitImpersonation(): void {
     this.authService.exitImpersonation();
-    this.router.navigate(['/settings/associate-directory']);
+    window.close();
+    this.router.navigate(['/login']); // reached only if the browser refuses to close this tab
   }
 
   onLogout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
+    const realm = this.authService.currentRealm();
+    this.authService.logout(realm);
+    this.router.navigate([realm === 'admin' ? '/admin/login' : '/login']);
   }
 
   private updateSetupRouteState(url: string): void {
-    this.isSetupRoute = url.startsWith('/setup');
+    this.isSetupRoute = url.startsWith('/admin/setup');
     this.isChromelessRoute = this.isSetupRoute;
   }
 }

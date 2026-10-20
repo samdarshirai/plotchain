@@ -12,7 +12,7 @@ import { InvoiceService, RepaymentRow } from '../invoice.service';
     <div class="invoice-receipt">
       <div *ngIf="notFound" class="invoice-receipt__not-found">
         <p>{{ 'admin.invoiceReceipt.notFound' | translate }}</p>
-        <a routerLink="/settings/payment-details">{{ 'admin.invoiceReceipt.back' | translate }}</a>
+        <a routerLink="/admin/settings/payment-details">{{ 'admin.invoiceReceipt.back' | translate }}</a>
       </div>
 
       <ng-container *ngIf="row as r">

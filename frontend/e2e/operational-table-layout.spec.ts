@@ -23,7 +23,7 @@ for (const screen of ['sales-register', 'associate-directory']) for (const width
         sponsorUserId: 'VP00002', position: 'L', status: 'ACTIVE', kycStatus: 'VERIFIED', joinedAt: '2026-10-01T12:00:00Z' }],
       page: 0, size: 20, totalElements: 1
     } }));
-    await page.goto(`/settings/${screen}`, { waitUntil: 'networkidle' });
+    await page.goto(`/admin/settings/${screen}`, { waitUntil: 'networkidle' });
     const table = page.locator(`.${screen} .editable-table`);
     await expect(table.locator('tbody tr')).toHaveCount(1);
     await page.screenshot({ path: testInfo.outputPath('table.png'), fullPage: true });

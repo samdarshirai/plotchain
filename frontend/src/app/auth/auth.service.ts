@@ -1,65 +1,80 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { LoginRequest } from './models/login-request.model';
 import { LoginResponse } from './models/login-response.model';
+import { ADMIN_FAMILY_ROLES } from '../admin/admin.guard';
 
-const TOKEN_KEY = 'plotchain.auth.token';
-const MUST_CHANGE_KEY = 'plotchain.auth.mustChangePassword';
-const ROLE_KEY = 'plotchain.auth.role';
-const ADMIN_TOKEN_KEY = 'plotchain.auth.admin.token';
-const ADMIN_ROLE_KEY = 'plotchain.auth.admin.role';
-const ADMIN_MUST_CHANGE_KEY = 'plotchain.auth.admin.mustChange';
+export type AuthRealm = 'admin' | 'associate';
+
+// Admin and associate sessions live in separate localStorage slots so both can be signed in at
+// once in different tabs. Which slot a call uses follows the URL: /admin/** is the admin realm.
+const KEYS = {
+  associate: { token: 'plotchain.auth.token', mustChange: 'plotchain.auth.mustChangePassword', role: 'plotchain.auth.role' },
+  admin: { token: 'plotchain.auth.admin.token', mustChange: 'plotchain.auth.admin.mustChange', role: 'plotchain.auth.admin.role' }
+} as const;
 const IMPERSONATING_KEY = 'plotchain.auth.impersonating';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private router: Router) {}
 
-  login(userId: string, password: string): Observable<LoginResponse> {
+  // Uses the navigation target while one is in flight so guards see the realm of the page being
+  // opened, not the page being left.
+  currentRealm(): AuthRealm {
+    const nav = this.router.getCurrentNavigation();
+    const url = nav?.finalUrl?.toString() ?? nav?.extractedUrl?.toString()
+      ?? (this.router.navigated ? this.router.url : window.location.pathname);
+    return url === '/admin' || url.startsWith('/admin/') || url.startsWith('/admin?') ? 'admin' : 'associate';
+  }
+
+  login(userId: string, password: string, realm: AuthRealm = this.currentRealm()): Observable<LoginResponse> {
     const request: LoginRequest = { userId, password };
     return this.http.post<LoginResponse>('/api/auth/login', request).pipe(
       tap(response => {
-        this.clearImpersonation();
-        localStorage.setItem(TOKEN_KEY, response.token);
-        localStorage.setItem(MUST_CHANGE_KEY, String(response.mustChangePassword));
-        localStorage.setItem(ROLE_KEY, response.role);
+        // An admin account on the associate login (or the reverse) is rejected like bad credentials.
+        if (ADMIN_FAMILY_ROLES.has(response.role) !== (realm === 'admin')) {
+          throw new HttpErrorResponse({ status: 401 });
+        }
+        if (realm === 'associate') {
+          localStorage.removeItem(IMPERSONATING_KEY);
+        }
+        this.store(realm, response);
       })
     );
   }
 
-  logout(): void {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(MUST_CHANGE_KEY);
-    localStorage.removeItem(ROLE_KEY);
-    this.clearImpersonation();
+  logout(realm: AuthRealm = this.currentRealm()): void {
+    const keys = KEYS[realm];
+    localStorage.removeItem(keys.token);
+    localStorage.removeItem(keys.mustChange);
+    localStorage.removeItem(keys.role);
+    if (realm === 'associate') {
+      localStorage.removeItem(IMPERSONATING_KEY);
+    }
   }
 
-  private clearImpersonation(): void {
-    localStorage.removeItem(ADMIN_TOKEN_KEY);
-    localStorage.removeItem(ADMIN_ROLE_KEY);
-    localStorage.removeItem(ADMIN_MUST_CHANGE_KEY);
-    localStorage.removeItem(IMPERSONATING_KEY);
+  private store(realm: AuthRealm, response: LoginResponse): void {
+    const keys = KEYS[realm];
+    localStorage.setItem(keys.token, response.token);
+    localStorage.setItem(keys.mustChange, String(response.mustChangePassword));
+    localStorage.setItem(keys.role, response.role);
   }
 
+  // Writes the associate session only; the admin session is left alone and the caller opens the
+  // associate app in a new tab.
   impersonate(associateId: string, displayName: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`/api/admin/associates/${associateId}/impersonate`, {}).pipe(
       tap(response => {
-        if (!this.isImpersonating()) {
-          this.stash(ADMIN_TOKEN_KEY, TOKEN_KEY);
-          this.stash(ADMIN_ROLE_KEY, ROLE_KEY);
-          this.stash(ADMIN_MUST_CHANGE_KEY, MUST_CHANGE_KEY);
-        }
-        localStorage.setItem(TOKEN_KEY, response.token);
-        localStorage.setItem(MUST_CHANGE_KEY, String(response.mustChangePassword));
-        localStorage.setItem(ROLE_KEY, response.role);
+        this.store('associate', response);
         localStorage.setItem(IMPERSONATING_KEY, displayName);
       })
     );
   }
 
   isImpersonating(): boolean {
-    return localStorage.getItem(IMPERSONATING_KEY) !== null;
+    return this.currentRealm() === 'associate' && localStorage.getItem(IMPERSONATING_KEY) !== null;
   }
 
   getImpersonatedName(): string | null {
@@ -67,32 +82,19 @@ export class AuthService {
   }
 
   exitImpersonation(): void {
-    if (!this.isImpersonating()) {
-      return;
-    }
-    this.stash(TOKEN_KEY, ADMIN_TOKEN_KEY);
-    this.stash(ROLE_KEY, ADMIN_ROLE_KEY);
-    this.stash(MUST_CHANGE_KEY, ADMIN_MUST_CHANGE_KEY);
-    this.clearImpersonation();
+    this.logout('associate');
   }
 
-  private stash(toKey: string, fromKey: string): void {
-    const value = localStorage.getItem(fromKey);
-    if (value !== null) {
-      localStorage.setItem(toKey, value);
-    }
+  getToken(realm: AuthRealm = this.currentRealm()): string | null {
+    return localStorage.getItem(KEYS[realm].token);
   }
 
-  getToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+  getRole(realm: AuthRealm = this.currentRealm()): string | null {
+    return localStorage.getItem(KEYS[realm].role);
   }
 
-  getRole(): string | null {
-    return localStorage.getItem(ROLE_KEY);
-  }
-
-  isAuthenticated(): boolean {
-    const payload = this.decodePayload(this.getToken());
+  isAuthenticated(realm: AuthRealm = this.currentRealm()): boolean {
+    const payload = this.decodePayload(this.getToken(realm));
     if (!payload || typeof payload['exp'] !== 'number') {
       return false;
     }
@@ -100,12 +102,12 @@ export class AuthService {
   }
 
   mustChangePassword(): boolean {
-    return localStorage.getItem(MUST_CHANGE_KEY) === 'true';
+    return localStorage.getItem(KEYS[this.currentRealm()].mustChange) === 'true';
   }
 
   changePassword(currentPassword: string, newPassword: string): Observable<void> {
     return this.http.post<void>('/api/associates/me/password', { currentPassword, newPassword }).pipe(
-      tap(() => localStorage.setItem(MUST_CHANGE_KEY, 'false'))
+      tap(() => localStorage.setItem(KEYS[this.currentRealm()].mustChange, 'false'))
     );
   }
 

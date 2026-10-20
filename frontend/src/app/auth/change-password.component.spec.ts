@@ -53,7 +53,7 @@ describe('ChangePasswordComponent', () => {
       launchedAt: null
     });
 
-    expect(router.navigate).toHaveBeenCalledWith(['/setup/company-profile']);
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/setup/company-profile']);
   });
 
   it('navigates to the admin route when an ADMIN completes a forced password change once launched', () => {

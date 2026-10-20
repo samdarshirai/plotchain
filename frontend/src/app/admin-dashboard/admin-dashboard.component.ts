@@ -43,7 +43,7 @@ import { AdminRecentSalesTableComponent } from './widgets/recent-sales-table/rec
           </div>
           <div class="admin-dashboard__actions">
             <a
-              [routerLink]="['/settings', 'associate-directory']"
+              [routerLink]="['/admin/settings', 'associate-directory']"
               [queryParams]="{ provision: 1 }"
               class="admin-dashboard__action admin-dashboard__action--secondary"
             >{{ 'adminDashboard.provisionAssociateAction' | translate }}</a>
@@ -92,7 +92,7 @@ import { AdminRecentSalesTableComponent } from './widgets/recent-sales-table/rec
               <span class="admin-dashboard__decision-total" *ngIf="decisionTotal(s) > 0">{{ decisionTotal(s) }}</span>
             </div>
             <div class="admin-dashboard__decision-rows">
-              <a [routerLink]="['/settings', 'payout-approval']" class="admin-dashboard__decision-row" [class.admin-dashboard__decision-row--empty]="!s.pendingWithdrawals">
+              <a [routerLink]="['/admin/settings', 'payout-approval']" class="admin-dashboard__decision-row" [class.admin-dashboard__decision-row--empty]="!s.pendingWithdrawals">
                 <span class="material-symbols-outlined" aria-hidden="true">payments</span>
                 <span class="admin-dashboard__decision-body">
                   <span class="admin-dashboard__decision-title">{{ 'adminDashboard.decisionWithdrawalsTitle' | translate }}</span>
@@ -108,7 +108,7 @@ import { AdminRecentSalesTableComponent } from './widgets/recent-sales-table/rec
                 </span>
                 <span class="admin-dashboard__decision-count">{{ s.pendingWithdrawals }}</span>
               </a>
-              <a [routerLink]="['/settings', 'kyc-queue']" class="admin-dashboard__decision-row" [class.admin-dashboard__decision-row--empty]="!s.kycBreakdown.pending">
+              <a [routerLink]="['/admin/settings', 'kyc-queue']" class="admin-dashboard__decision-row" [class.admin-dashboard__decision-row--empty]="!s.kycBreakdown.pending">
                 <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
                 <span class="admin-dashboard__decision-body">
                   <span class="admin-dashboard__decision-title">{{ 'adminDashboard.decisionKycTitle' | translate }}</span>
@@ -124,7 +124,7 @@ import { AdminRecentSalesTableComponent } from './widgets/recent-sales-table/rec
             </div>
             <div class="admin-dashboard__decision-foot">
               <span>{{ 'adminDashboard.decisionFooter' | translate }}</span>
-              <a [routerLink]="['/settings', 'payout-approval']">{{ 'adminDashboard.decisionReviewAll' | translate }}</a>
+              <a [routerLink]="['/admin/settings', 'payout-approval']">{{ 'adminDashboard.decisionReviewAll' | translate }}</a>
             </div>
           </section>
         </div>
@@ -162,7 +162,7 @@ import { AdminRecentSalesTableComponent } from './widgets/recent-sales-table/rec
             <span class="admin-dashboard__panel-rule"></span>
           </div>
           <p class="admin-dashboard__empty" *ngIf="!s.unrepliedMessages.length">{{ 'adminDashboard.messagesEmpty' | translate }}</p>
-          <a *ngFor="let m of s.unrepliedMessages" [routerLink]="['/settings', 'support-tickets']" class="admin-dashboard__message">
+          <a *ngFor="let m of s.unrepliedMessages" [routerLink]="['/admin/settings', 'support-tickets']" class="admin-dashboard__message">
             <span class="admin-dashboard__message-subject">{{ m.subject }}</span>
             <span class="admin-dashboard__message-meta">{{ m.associateName }} ({{ m.associateUserId }}) &middot; {{ m.createdAt | date: 'medium' }}</span>
           </a>

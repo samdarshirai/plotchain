@@ -17,5 +17,5 @@ export const adminGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const role = authService.getRole();
-  return role !== null && ADMIN_FAMILY_ROLES.has(role) ? true : router.parseUrl('/dashboard');
+  return role !== null && ADMIN_FAMILY_ROLES.has(role) ? true : router.parseUrl('/admin/login');
 };
