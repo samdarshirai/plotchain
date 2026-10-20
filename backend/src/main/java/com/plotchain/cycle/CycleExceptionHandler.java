@@ -20,6 +20,11 @@ public class CycleExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(CycleValidationException.class)
+    public ResponseEntity<Map<String, String>> handleCycleValidation(CycleValidationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(CyclePayoutStateException.class)
     public ResponseEntity<Map<String, String>> handleCyclePayoutState(CyclePayoutStateException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));

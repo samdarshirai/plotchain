@@ -128,3 +128,12 @@ tr[aria-selected='true'] td {
   // dropped the label under the icon. As text, the icon glues to the label's first word.
   display: inline;
 }
+
+// Walnut header row on every table. !important because ~30 screen/component rules each set their
+// own th background/color; one global override beats editing them all.
+// ponytail: !important override, replace with a shared th mixin if these rules get consolidated.
+th {
+  background: var(--ink) !important;
+  color: #fff !important;
+  border-bottom-color: var(--ink) !important;
+}

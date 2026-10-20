@@ -133,6 +133,9 @@ public class CycleService {
         if (cycle.getStatus() != CycleStatus.OPEN) {
             throw new CycleAlreadyClosedException(cycle.getId());
         }
+        if (!LocalDate.now().isAfter(cycle.getPeriodEnd())) {
+            throw new CycleValidationException("Cycle period has not ended yet (ends " + cycle.getPeriodEnd() + "), cannot close: " + id);
+        }
 
         // Flow step 1 (partial): write only, not a separate commit -- Decision #2 -- so this
         // isn't externally observable mid-batch under this design, and rolls back along with
@@ -677,9 +680,11 @@ public class CycleService {
     public Cycle getOrOpenCurrent() {
         LocalDate today = LocalDate.now();
 
-        return cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)
-            .filter(cycle -> covers(cycle, today))
-            .orElseGet(() -> openNewCycle(today));
+        Optional<Cycle> open = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN);
+        return open.filter(cycle -> covers(cycle, today))
+            .orElseGet(() -> open.filter(c -> cycleRepository
+                    .existsByPeriodStartLessThanEqualAndPeriodEndGreaterThanEqual(periodEndFor(today), periodStartFor(today)))
+                .orElseGet(() -> openNewCycle(today)));
     }
 
     private boolean covers(Cycle cycle, LocalDate date) {
@@ -701,6 +706,9 @@ public class CycleService {
     }
 
     private Cycle createCycle(LocalDate periodStart, LocalDate periodEnd) {
+        if (cycleRepository.existsByPeriodStartLessThanEqualAndPeriodEndGreaterThanEqual(periodEnd, periodStart)) {
+            throw new CycleValidationException("A cycle already exists overlapping " + periodStart + " to " + periodEnd);
+        }
         Cycle cycle = new Cycle();
         cycle.setId(UUID.randomUUID());
         cycle.setPeriodStart(periodStart);

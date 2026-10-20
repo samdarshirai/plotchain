@@ -52,7 +52,7 @@ describe('ThemeService', () => {
       const target = document.createElement('div');
       service.apply(primary, secondary, target);
       expect(contrastRatio(target.style.getPropertyValue('--action-foreground'), secondary)).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio(target.style.getPropertyValue('--brand-on-ink'), '#0C0A0B')).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(target.style.getPropertyValue('--brand-on-ink'), '#4A3426')).toBeGreaterThanOrEqual(4.5);
       expect(contrastRatio(target.style.getPropertyValue('--brand-on-surface'), '#F7F2E7')).toBeGreaterThanOrEqual(4.5);
     }
   });

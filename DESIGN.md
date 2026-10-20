@@ -24,7 +24,7 @@ Six named colors, drawn from the mark, not a palette generator:
 
 | Name | Hex | Role |
 |---|---|---|
-| **Ink** | `#0C0A0B` | Deep brand ground — app header, sidebar, footers, the "plaque" chrome |
+| **Ink** | `#4A3426` | Walnut Brown brand ground — app header, sidebar, footers, the "plaque" chrome |
 | **Antique Gold** | `#C6A227` | Primary accent — active states, key figures, links (not button backgrounds — see Oxblood) |
 | **Bright Gold** | `#EAD07D` | Gold's highlight step — hover/gradient partner for Antique Gold; also the text color on every primary button (Oxblood background) |
 | **Oxblood** | `#5C1A2A` | Secondary brand color, but the primary-button color — every Save/+Record Sale/+Submit Withdrawal/etc CTA app-wide is Oxblood background with Bright Gold text. Otherwise used sparingly for emphasis chips, selected states, the associate rank badge, never for body text |
@@ -124,7 +124,7 @@ Keep Material Symbols Outlined (already in use, `_tokens.scss` imports it) — o
 | `--status-success/warning/danger` | `#4B7A52` / `#B4790E` / `#B23B32` |
 | `--font-sans` (system stack) | Inter, falling back to the current system stack |
 | *(new)* | `--font-display: 'Fraunces', Georgia, serif;` |
-| *(new)* | `--ink: #0C0A0B;` for shell/chrome surfaces |
+| *(new)* | `--ink: #4A3426;` for shell/chrome surfaces |
 
 This is a token swap, not a rebuild — every component (`_buttons.scss`, `_cards.scss`, `_tables.scss`, `_app-shell.scss`, `_admin.scss`, `_setup.scss`) already consumes these custom properties, so the brand can land by editing `_tokens.scss` plus adding the Ink-shell/Seal-card treatment to `_app-shell.scss` and `_cards.scss`, without restructuring existing screens.
 

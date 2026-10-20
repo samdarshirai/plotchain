@@ -68,7 +68,7 @@ export class ThemeService {
     target.style.setProperty('--brand-primary-contrast', primaryContrast);
     target.style.setProperty('--brand-secondary-contrast', readableForeground('#F7F2E7', secondary));
     target.style.setProperty('--action-foreground', readableForeground(brightHex, secondary));
-    target.style.setProperty('--brand-on-ink', readableForeground(brightHex, '#0C0A0B'));
+    target.style.setProperty('--brand-on-ink', WHITE);
     target.style.setProperty('--brand-on-surface', readableForeground(secondary, '#F7F2E7'));
     target.style.setProperty('--surface-selected', `color-mix(in srgb, ${primary} 12%, var(--surface-card))`);
 

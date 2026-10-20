@@ -23,17 +23,6 @@ export interface AdminNavCategory {
 
 export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
   {
-    key: 'setup',
-    labelKey: 'nav.categories.setup',
-    icon: 'tune',
-    items: [
-      { key: 'companyProfile', labelKey: 'settings.sections.companyProfile', path: '/settings/company-profile' },
-      { key: 'branding', labelKey: 'settings.sections.branding', path: '/settings/branding' },
-      { key: 'paymentsKyc', labelKey: 'settings.sections.paymentsKyc', path: '/settings/payments-kyc' },
-      { key: 'compensation', labelKey: 'settings.sections.compensation', path: '/settings/compensation' }
-    ]
-  },
-  {
     key: 'masterData',
     labelKey: 'nav.categories.masterData',
     icon: 'database',
@@ -53,6 +42,14 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     ]
   },
   {
+    key: 'epin',
+    labelKey: 'nav.categories.epin',
+    icon: 'pin',
+    items: [
+      { key: 'epinRegister', labelKey: 'settings.sections.epinRegister', path: '/settings/e-pin-register' }
+    ]
+  },
+  {
     key: 'finance',
     labelKey: 'nav.categories.finance',
     icon: 'point_of_sale',
@@ -60,7 +57,6 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
       { key: 'ledgerRegister', labelKey: 'settings.sections.ledgerRegister', path: '/settings/ledger-register' },
       { key: 'salesRegister', labelKey: 'settings.sections.salesRegister', path: '/settings/sales-register' },
       { key: 'cycleManagement', labelKey: 'settings.sections.cycleManagement', path: '/settings/cycle-management' },
-      { key: 'epinRegister', labelKey: 'settings.sections.epinRegister', path: '/settings/e-pin-register' },
       { key: 'payoutApproval', labelKey: 'settings.sections.payoutApproval', path: '/settings/payout-approval' },
       { key: 'expenseTypes', labelKey: 'settings.sections.expenseTypes', path: '/settings/expense-types' }
     ]
@@ -97,6 +93,17 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     items: [
       { key: 'supportTickets', labelKey: 'settings.sections.supportTickets', path: '/settings/support-tickets' },
       { key: 'news', labelKey: 'settings.sections.news', path: '/settings/news' }
+    ]
+  },
+  {
+    key: 'setup',
+    labelKey: 'nav.categories.setup',
+    icon: 'tune',
+    items: [
+      { key: 'companyProfile', labelKey: 'settings.sections.companyProfile', path: '/settings/company-profile' },
+      { key: 'branding', labelKey: 'settings.sections.branding', path: '/settings/branding' },
+      { key: 'paymentsKyc', labelKey: 'settings.sections.paymentsKyc', path: '/settings/payments-kyc' },
+      { key: 'compensation', labelKey: 'settings.sections.compensation', path: '/settings/compensation' }
     ]
   },
   {

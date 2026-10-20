@@ -26,6 +26,9 @@ public interface CycleRepository extends JpaRepository<Cycle, UUID> {
     // Admin cycle-history list, narrowed by the optional ?status= filter.
     Page<Cycle> findByStatusOrderByPeriodStartDesc(CycleStatus status, Pageable pageable);
 
+    // Any cycle whose [periodStart, periodEnd] intersects the given range (duplicate/overlap guard).
+    boolean existsByPeriodStartLessThanEqualAndPeriodEndGreaterThanEqual(LocalDate end, LocalDate start);
+
     // Associate dashboard header's "Cycle 09" ordinal: how many cycles have started on or
     // before this one's periodStart (1-indexed, so the very first cycle ever is "Cycle 1").
     long countByPeriodStartLessThanEqual(LocalDate periodStart);

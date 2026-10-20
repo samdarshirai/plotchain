@@ -211,6 +211,31 @@ class CycleServiceTest {
     }
 
     @Test
+    void closeThrowsCycleValidationExceptionWhenPeriodHasNotEnded() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository);
+        Cycle cycle = newCycleWithBounds(LocalDate.now().minusDays(1), LocalDate.now(), CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+
+        assertThatThrownBy(() -> service.close(cycle.getId())).isInstanceOf(CycleValidationException.class);
+        assertThat(cycle.getStatus()).isEqualTo(CycleStatus.OPEN);
+    }
+
+    @Test
+    void getOrOpenCurrentDoesNotCreateAnOverlappingCycle() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository);
+        Cycle stale = newCycleWithBounds(LocalDate.now().plusDays(1), LocalDate.now().plusDays(10), CycleStatus.OPEN);
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(stale));
+        when(cycleRepository.existsByPeriodStartLessThanEqualAndPeriodEndGreaterThanEqual(any(), any())).thenReturn(true);
+
+        assertThat(service.getOrOpenCurrent()).isSameAs(stale);
+        verify(cycleRepository, never()).save(any(Cycle.class));
+    }
+
+    @Test
     void closeWithNoAssociatesWritesNoLegVolumeRowsAndStillClosesAndReopens() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,

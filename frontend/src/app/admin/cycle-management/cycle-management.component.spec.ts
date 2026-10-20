@@ -48,7 +48,27 @@ describe('CycleManagementComponent', () => {
     httpMock.expectOne('/api/admin/stats').flush(STATS_RESPONSE);
   });
 
-  afterEach(() => httpMock.verify());
+  // Each listed cycle triggers a GET /api/admin/cycles/{id} for its income columns.
+  const flushDetails = () =>
+    httpMock.match(r => /^\/api\/admin\/cycles\/[^/]+$/.test(r.url)).forEach(req =>
+      req.flush({
+        id: 'c1', periodStart: '', periodEnd: '', status: 'CLOSED', totalNet: 730,
+        incomeTypeTotals: [{ incomeType: 'DIRECT', totalNet: 500 }, { incomeType: 'MATCHING', totalNet: 230 }]
+      })
+    );
+
+  afterEach(() => {
+    flushDetails();
+    httpMock.verify();
+  });
+
+  it('shows per-income-type and total columns on each row', () => {
+    flushDetails();
+    const row = fixture.componentInstance.historyRows[0];
+    expect(row['DIRECT']).toBe('500');
+    expect(row['ROYALTY']).toBe('0');
+    expect(row['totalNet']).toBe('730');
+  });
 
   it('loads the first page of cycle history on init', () => {
     expect(fixture.componentInstance.page?.cycles.length).toBe(2);
@@ -88,44 +108,6 @@ describe('CycleManagementComponent', () => {
     expect(emptyCell?.textContent?.trim()).toBeTruthy();
   });
 
-  it('fetches and opens the detail side panel when View Detail is clicked', () => {
-    fixture.detectChanges();
-    fixture.componentInstance.viewDetail('c1');
-
-    const req = httpMock.expectOne('/api/admin/cycles/c1');
-    req.flush({
-      id: 'c1', periodStart: '2026-08-01', periodEnd: '2026-08-15', status: 'CLOSED',
-      incomeTypeTotals: [
-        { incomeType: 'DIRECT', totalNet: 500 },
-        { incomeType: 'MATCHING', totalNet: 200 },
-        { incomeType: 'SPONSOR_MATCHING', totalNet: 20 },
-        { incomeType: 'ROYALTY', totalNet: 10 },
-        { incomeType: 'REWARD', totalNet: 0 }
-      ],
-      totalNet: 730
-    });
-
-    expect(fixture.componentInstance.selectedDetail?.totalNet).toBe(730);
-    expect(fixture.componentInstance.detailPanelOpen).toBe(true);
-  });
-
-  it('shows a detail error when the drill-down fetch fails, without silently doing nothing', () => {
-    fixture.componentInstance.viewDetail('c1');
-
-    const req = httpMock.expectOne('/api/admin/cycles/c1');
-    req.flush({ error: 'boom' }, { status: 500, statusText: 'Server Error' });
-
-    expect(fixture.componentInstance.detailError).toBe(true);
-    expect(fixture.componentInstance.selectedDetail).toBeNull();
-  });
-
-  it('closes the detail panel via closeDetailPanel', () => {
-    fixture.componentInstance.detailPanelOpen = true;
-    fixture.componentInstance.closeDetailPanel();
-
-    expect(fixture.componentInstance.detailPanelOpen).toBe(false);
-  });
-
   it('derives the current OPEN cycle from the unfiltered history page and shows a Close Cycle button', () => {
     fixture.detectChanges();
 
@@ -140,7 +122,7 @@ describe('CycleManagementComponent', () => {
     expect(fixture.componentInstance.currentCycleStats?.totalIncome).toBe(1500);
     const stats: HTMLElement = fixture.nativeElement.querySelector('.cycle-management__stats');
     expect(stats).toBeTruthy();
-    expect(stats.textContent).toContain('12'); // daysRemaining
+    expect(fixture.nativeElement.querySelector('.cycle-progress__label').textContent).toContain('12'); // daysRemaining
     expect(stats.textContent).toContain('3'); // newAssociatesThisCycle
   });
 
@@ -148,7 +130,7 @@ describe('CycleManagementComponent', () => {
     fixture.detectChanges();
 
     const stats: HTMLElement = fixture.nativeElement.querySelector('.cycle-management__stats');
-    expect(stats.querySelectorAll('app-stat-tile').length).toBe(7);
+    expect(stats.querySelectorAll('.cycle-metric').length).toBe(6);
     expect(stats.textContent).toContain('admin.cycleManagement.salesThisCycleLabel');
     expect(stats.textContent).toContain('admin.cycleManagement.revenueThisCycleLabel');
     expect(stats.textContent).toContain('4'); // salesThisCycle
@@ -176,6 +158,11 @@ describe('CycleManagementComponent', () => {
     expect(req.request.method).toBe('POST');
     req.flush({ cycleId: 'c2', status: 'CLOSED', legVolumeRowsWritten: 5, newCycleId: 'c3' });
 
+    expect(fixture.componentInstance.closeResult?.newCycleId).toBe('c3');
+    expect(fixture.componentInstance.closeError).toBeNull();
+
+    // Dismissing the success popup reloads the list and stats.
+    fixture.componentInstance.dismissClosePopup();
     httpMock.expectOne('/api/admin/cycles?page=0&size=20').flush({
       cycles: [
         { id: 'c2', periodStart: '2026-08-16', periodEnd: '2026-08-31', status: 'CLOSED' },
@@ -183,9 +170,8 @@ describe('CycleManagementComponent', () => {
       ],
       page: 0, size: 20, totalElements: 2
     });
-
-    expect(fixture.componentInstance.closeResult?.newCycleId).toBe('c3');
-    expect(fixture.componentInstance.closeError).toBeNull();
+    httpMock.expectOne('/api/admin/stats').flush(STATS_RESPONSE);
+    expect(fixture.componentInstance.closeResult).toBeNull();
   });
 
   it('shows a conflict error on a 409 without crashing', () => {
@@ -195,7 +181,7 @@ describe('CycleManagementComponent', () => {
     const req = httpMock.expectOne('/api/admin/cycles/c2/close');
     req.flush({ error: 'Cycle is not open, cannot close' }, { status: 409, statusText: 'Conflict' });
 
-    expect(fixture.componentInstance.closeError).toBe('conflict');
+    expect(fixture.componentInstance.closeError).toBe('Cycle is not open, cannot close');
     expect(fixture.componentInstance.closeResult).toBeNull();
   });
 
@@ -206,7 +192,7 @@ describe('CycleManagementComponent', () => {
     const req = httpMock.expectOne('/api/admin/cycles/c2/close');
     req.flush({ error: 'boom' }, { status: 500, statusText: 'Server Error' });
 
-    expect(fixture.componentInstance.closeError).toBe('generic');
+    expect(fixture.componentInstance.closeError).toBe('boom');
   });
 
   it('shows a Credit Wallets button only for the CLOSED row, not the OPEN row', () => {

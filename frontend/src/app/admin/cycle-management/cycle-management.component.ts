@@ -1,21 +1,21 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { catchError, forkJoin, of } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { CycleManagementService } from './cycle-management.service';
 import { CycleStatus, CyclePage, CycleSummary } from '../models/cycle.model';
-import { CycleDetail } from '../models/cycle-detail.model';
+import { CycleDetail, CycleIncomeType } from '../models/cycle-detail.model';
 import { CycleCloseResponse } from '../models/cycle-close-response.model';
 import { WalletCreditingResult } from '../models/wallet-crediting-result.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
-import { SidePanelComponent } from '../../shared/components/side-panel/side-panel.component';
 import { BrandButtonComponent } from '../../shared/components/brand-button/brand-button.component';
-import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.component';
 import { AdminDashboardService } from '../../admin-dashboard/admin-dashboard.service';
 import { CurrentCycleStats } from '../../admin-dashboard/admin-dashboard.model';
 
 const PAGE_SIZE = 20;
+const INCOME_TYPES: CycleIncomeType[] = ['DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'ROYALTY', 'REWARD'];
 
 @Component({
   selector: 'app-cycle-management',
@@ -25,9 +25,7 @@ const PAGE_SIZE = 20;
     TranslateModule,
     EditableTableComponent,
     InlineBannerComponent,
-    SidePanelComponent,
-    BrandButtonComponent,
-    StatTileComponent
+    BrandButtonComponent
   ],
   template: `
     <div class="cycle-management">
@@ -37,80 +35,78 @@ const PAGE_SIZE = 20;
         <p class="cycle-management__subtitle">{{ 'admin.cycleManagement.subtitle' | translate }}</p>
       </div>
 
-      <div class="cycle-management__current" *ngIf="currentOpenCycle as open">
-        <div class="cycle-management__current-meta">
-          <span class="cycle-management__current-eyebrow">{{ 'admin.cycleManagement.currentCycleTitle' | translate }}</span>
-          <span class="cycle-management__current-period">{{ open.periodStart }} – {{ open.periodEnd }}</span>
-          <ng-container *ngTemplateOutlet="cycleRailTpl; context: { status: open.status }"></ng-container>
+      <section class="cycle-management__current" *ngIf="currentOpenCycle as open">
+        <div class="cycle-management__current-head">
+          <div class="cycle-management__current-meta">
+            <span class="cycle-management__current-eyebrow">{{ 'admin.cycleManagement.currentCycleTitle' | translate }}</span>
+            <span class="cycle-management__current-period">{{ open.periodStart }} – {{ open.periodEnd }}</span>
+            <ng-container *ngTemplateOutlet="cycleRailTpl; context: { status: open.status }"></ng-container>
+          </div>
+          <ng-container *ngIf="currentCycleStats as stats">
+          <div class="cycle-progress">
+            <div class="cycle-progress__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progressPercent">
+              <span class="cycle-progress__fill" [style.width.%]="progressPercent"></span>
+            </div>
+            <span class="cycle-progress__label">{{ stats.daysRemaining }} {{ 'admin.cycleManagement.daysRemainingLabel' | translate }}</span>
+          </div>
+          </ng-container>
+          <div class="cycle-management__current-actions">
+            <app-brand-button variant="danger" class="cycle-management__close-cycle-action" (clicked)="closeCycle()">
+              {{ 'admin.cycleManagement.closeCycleAction' | translate }}
+            </app-brand-button>
+          </div>
         </div>
-        <div class="cycle-management__current-actions">
-          <app-brand-button variant="danger" class="cycle-management__close-cycle-action" (clicked)="closeCycle()">
-            {{ 'admin.cycleManagement.closeCycleAction' | translate }}
-          </app-brand-button>
+
+        <ng-container *ngIf="currentCycleStats as stats">
+          <div class="cycle-management__stats">
+            <div class="cycle-metric cycle-metric--hero">
+              <span class="cycle-metric__label">{{ 'admin.cycleManagement.totalIncomeLabel' | translate }}</span>
+              <span class="cycle-metric__value">{{ stats.totalIncome | currency:'INR':'symbol':'1.0-2' }}</span>
+              <span class="cycle-metric__delta" *ngIf="incomeDelta !== null" [class.cycle-metric__delta--down]="incomeDelta < 0">
+                {{ incomeDelta >= 0 ? '▲' : '▼' }} {{ incomeDelta | number:'1.0-1' }}% {{ 'admin.cycleManagement.vsPreviousCycleLabel' | translate }}
+              </span>
+            </div>
+            <div class="cycle-metric">
+              <span class="cycle-metric__label">{{ 'admin.cycleManagement.directIncomeLabel' | translate }}</span>
+              <span class="cycle-metric__value">{{ stats.directIncome | currency:'INR':'symbol':'1.0-2' }}</span>
+            </div>
+            <div class="cycle-metric">
+              <span class="cycle-metric__label">{{ 'admin.cycleManagement.matchingIncomeLabel' | translate }}</span>
+              <span class="cycle-metric__value">{{ stats.matchingIncome | currency:'INR':'symbol':'1.0-2' }}</span>
+            </div>
+            <div class="cycle-metric">
+              <span class="cycle-metric__label">{{ 'admin.cycleManagement.newAssociatesLabel' | translate }}</span>
+              <span class="cycle-metric__value">{{ stats.newAssociatesThisCycle }}</span>
+            </div>
+            <div class="cycle-metric">
+              <span class="cycle-metric__label">{{ 'admin.cycleManagement.salesThisCycleLabel' | translate }}</span>
+              <span class="cycle-metric__value">{{ stats.salesThisCycle }}</span>
+            </div>
+            <div class="cycle-metric">
+              <span class="cycle-metric__label">{{ 'admin.cycleManagement.revenueThisCycleLabel' | translate }}</span>
+              <span class="cycle-metric__value">{{ stats.revenueThisCycle | currency:'INR':'symbol':'1.0-2' }}</span>
+            </div>
+          </div>
+        </ng-container>
+      </section>
+
+      <div class="cycle-popup__overlay" *ngIf="closeResult || closeError">
+        <div class="cycle-popup" role="dialog" aria-modal="true">
+          <ng-container *ngIf="closeResult as result">
+            <h2 class="cycle-popup__title cycle-popup__title--success cycle-management__close-success">{{ 'admin.cycleManagement.closeSuccessTitle' | translate }}</h2>
+            <p>{{ 'admin.cycleManagement.closeSuccessClosedCycleLabel' | translate }}: <strong>{{ result.cycleId }}</strong> ({{ result.status }})</p>
+            <p>{{ 'admin.cycleManagement.closeSuccessLegVolumeRowsLabel' | translate }}: <strong>{{ result.legVolumeRowsWritten }}</strong></p>
+            <p>{{ 'admin.cycleManagement.closeSuccessNewCycleLabel' | translate }}: <strong>{{ result.newCycleId }}</strong></p>
+          </ng-container>
+          <ng-container *ngIf="closeError">
+            <h2 class="cycle-popup__title cycle-popup__title--error">{{ 'admin.cycleManagement.closeErrorTitle' | translate }}</h2>
+            <p class="cycle-management__close-error">{{ closeError }}</p>
+          </ng-container>
+          <div class="cycle-popup__footer">
+            <button type="button" class="brand-button cycle-management__close-popup-action" (click)="dismissClosePopup()">{{ 'admin.cycleManagement.closePopupAction' | translate }}</button>
+          </div>
         </div>
       </div>
-
-      <!-- Cycle-scoped stats (relocated from admin-dashboard.component.ts, Task 3): a standalone
-           tile grid below the hero strip, styled like Admin Stats' metric cards rather than fused
-           into the Current Cycle card, which is scoped to the open/close action alone. -->
-      <div class="cycle-management__stats" *ngIf="currentCycleStats as stats">
-        <app-stat-tile
-          icon="hourglass_top"
-          layout="vertical"
-          [label]="'admin.cycleManagement.daysRemainingLabel' | translate"
-          [value]="stats.daysRemaining.toString()"
-        ></app-stat-tile>
-        <app-stat-tile
-          icon="payments"
-          layout="vertical"
-          [label]="'admin.cycleManagement.directIncomeLabel' | translate"
-          [value]="(stats.directIncome | currency:'INR':'symbol':'1.0-2') || ''"
-        ></app-stat-tile>
-        <app-stat-tile
-          icon="sync_alt"
-          layout="vertical"
-          [label]="'admin.cycleManagement.matchingIncomeLabel' | translate"
-          [value]="(stats.matchingIncome | currency:'INR':'symbol':'1.0-2') || ''"
-        ></app-stat-tile>
-        <app-stat-tile
-          icon="account_balance_wallet"
-          layout="vertical"
-          [label]="'admin.cycleManagement.totalIncomeLabel' | translate"
-          [value]="(stats.totalIncome | currency:'INR':'symbol':'1.0-2') || ''"
-        ></app-stat-tile>
-        <app-stat-tile
-          icon="person_add"
-          layout="vertical"
-          [label]="'admin.cycleManagement.newAssociatesLabel' | translate"
-          [value]="stats.newAssociatesThisCycle.toString()"
-        ></app-stat-tile>
-        <app-stat-tile
-          icon="point_of_sale"
-          layout="vertical"
-          [label]="'admin.cycleManagement.salesThisCycleLabel' | translate"
-          [value]="stats.salesThisCycle.toString()"
-        ></app-stat-tile>
-        <app-stat-tile
-          icon="trending_up"
-          layout="vertical"
-          [label]="'admin.cycleManagement.revenueThisCycleLabel' | translate"
-          [value]="(stats.revenueThisCycle | currency:'INR':'symbol':'1.0-2') || ''"
-        ></app-stat-tile>
-      </div>
-
-      <app-inline-banner *ngIf="closeResult as result" tone="success" [dismissible]="true" class="cycle-management__close-success" (dismissed)="closeResult = null">
-        <p>{{ 'admin.cycleManagement.closeSuccessTitle' | translate }}</p>
-        <p>{{ 'admin.cycleManagement.closeSuccessClosedCycleLabel' | translate }}: <strong>{{ result.cycleId }}</strong> ({{ result.status }})</p>
-        <p>{{ 'admin.cycleManagement.closeSuccessLegVolumeRowsLabel' | translate }}: <strong>{{ result.legVolumeRowsWritten }}</strong></p>
-        <p>{{ 'admin.cycleManagement.closeSuccessNewCycleLabel' | translate }}: <strong>{{ result.newCycleId }}</strong></p>
-        <div class="cycle-transition">
-          <span class="cycle-chip cycle-chip--closed">{{ result.cycleId }} · {{ result.status }}</span>
-          <span class="cycle-transition__arrow">→</span>
-          <span class="cycle-chip cycle-chip--open">{{ result.newCycleId }} · OPEN</span>
-        </div>
-      </app-inline-banner>
-      <app-inline-banner *ngIf="closeError === 'conflict'" tone="danger" [dismissible]="true" class="cycle-management__close-conflict-error" (dismissed)="closeError = null">{{ 'admin.cycleManagement.closeConflictError' | translate }}</app-inline-banner>
-      <app-inline-banner *ngIf="closeError === 'generic'" tone="danger" [dismissible]="true" class="cycle-management__close-generic-error" (dismissed)="closeError = null">{{ 'admin.cycleManagement.closeGenericError' | translate }}</app-inline-banner>
 
       <app-inline-banner *ngIf="creditResult as result" tone="success" [dismissible]="true" class="cycle-management__credit-success" (dismissed)="creditResult = null">
         <p>{{ 'admin.cycleManagement.creditSuccessTitle' | translate }}</p>
@@ -147,9 +143,6 @@ const PAGE_SIZE = 20;
       </div>
       <ng-template #actionsTpl let-i="index">
         <div class="cycle-management__row-actions">
-          <button type="button" class="cycle-management__view-detail-action brand-button brand-button--secondary" (click)="viewDetail(page!.cycles[i].id)">
-            {{ 'admin.cycleManagement.viewDetailAction' | translate }}
-          </button>
           <button
             type="button"
             *ngIf="page!.cycles[i].status === 'CLOSED'"
@@ -172,30 +165,6 @@ const PAGE_SIZE = 20;
           {{ 'admin.cycleManagement.nextPageAction' | translate }}
         </button>
       </div>
-
-      <app-side-panel
-        [open]="detailPanelOpen"
-        [title]="'admin.cycleManagement.detailPanelTitle' | translate"
-        (closed)="closeDetailPanel()"
-      >
-        <app-inline-banner *ngIf="detailError" tone="danger" class="cycle-management__detail-error">{{ 'admin.cycleManagement.detailError' | translate }}</app-inline-banner>
-        <div class="cycle-management__detail-body" *ngIf="selectedDetail as detail">
-          <div class="cycle-detail__meta">
-            <span class="cycle-detail__period">{{ detail.periodStart }} – {{ detail.periodEnd }}</span>
-            <ng-container *ngTemplateOutlet="cycleRailTpl; context: { status: detail.status }"></ng-container>
-          </div>
-          <ul class="cycle-detail__breakdown cycle-management__breakdown-list">
-            <li *ngFor="let row of detail.incomeTypeTotals" class="cycle-detail__row cycle-management__breakdown-row">
-              <span class="cycle-detail__row-label">{{ 'admin.cycleManagement.incomeType' + incomeTypeLabelSuffix(row.incomeType) | translate }}</span>
-              <span class="cycle-detail__row-value cycle-management__breakdown-amount">{{ row.totalNet }}</span>
-            </li>
-            <li class="cycle-detail__row cycle-detail__row--total cycle-management__detail-total">
-              <span class="cycle-detail__row-label">{{ 'admin.cycleManagement.detailTotalNetLabel' | translate }}</span>
-              <span class="cycle-detail__row-value">{{ detail.totalNet }}</span>
-            </li>
-          </ul>
-        </div>
-      </app-side-panel>
 
       <ng-template #cycleRailTpl let-status="status">
         <ol class="cycle-rail" [attr.aria-label]="'Cycle status: ' + status">
@@ -227,19 +196,32 @@ export class CycleManagementComponent implements OnInit {
   loadError = false;
   historyColumns: EditableTableColumn[] = [];
   historyRows: Record<string, string>[] = [];
-  selectedDetail: CycleDetail | null = null;
-  detailPanelOpen = false;
-  detailError = false;
   currentOpenCycle: CycleSummary | null = null;
   // The 6 cycle-income fields relocated here from admin-dashboard.component.ts (Task 3): sourced
   // from the same /api/admin/stats endpoint's currentCycle, which is null exactly when there's no
   // OPEN cycle -- same condition as currentOpenCycle above, so the two never disagree in practice.
   currentCycleStats: CurrentCycleStats | null = null;
   closeResult: CycleCloseResponse | null = null;
-  closeError: 'conflict' | 'generic' | null = null;
+  closeError: string | null = null;
   creditResult: WalletCreditingResult | null = null;
   creditError: 'conflict' | 'generic' | null = null;
   private status: CycleStatus | '' = '';
+
+  // Share of the current cycle's days already elapsed (daysRemaining comes from the stats endpoint).
+  get progressPercent(): number {
+    const stats = this.currentCycleStats;
+    if (!stats) {
+      return 0;
+    }
+    const days = (new Date(stats.periodEnd).getTime() - new Date(stats.periodStart).getTime()) / 86400000 + 1;
+    return Math.min(100, Math.max(0, Math.round(((days - stats.daysRemaining) / days) * 100)));
+  }
+
+  // % change of total income vs the previous cycle; null when there's nothing to compare against.
+  get incomeDelta(): number | null {
+    const stats = this.currentCycleStats;
+    return stats?.previousCycleTotalIncome ? ((stats.totalIncome - stats.previousCycleTotalIncome) / stats.previousCycleTotalIncome) * 100 : null;
+  }
 
   get currentPage(): number {
     return (this.page?.page ?? 0) + 1;
@@ -262,6 +244,12 @@ export class CycleManagementComponent implements OnInit {
         type: 'badge',
         badgeTone: value => this.statusBadgeTone(value)
       },
+      ...INCOME_TYPES.map(t => ({
+        key: t,
+        label: this.translate.instant('admin.cycleManagement.incomeType' + this.incomeTypeLabelSuffix(t)),
+        type: 'text' as const
+      })),
+      { key: 'totalNet', label: this.translate.instant('admin.cycleManagement.detailTotalNetLabel'), type: 'text' },
       { key: 'actions', label: this.translate.instant('admin.cycleManagement.columnActions'), type: 'action' }
     ];
     this.loadPage(0);
@@ -298,28 +286,26 @@ export class CycleManagementComponent implements OnInit {
     });
   }
 
+  // List endpoint has no income totals, so fetch each row's detail (<= PAGE_SIZE calls); a failed
+  // detail just leaves that row's income cells blank.
   private updateTableRows(): void {
-    this.historyRows = (this.page?.cycles ?? []).map(cycle => ({
-      periodStart: cycle.periodStart,
-      periodEnd: cycle.periodEnd,
-      status: cycle.status
-    }));
+    const cycles = this.page?.cycles ?? [];
+    this.historyRows = cycles.map(c => this.toRow(c, null));
+    if (!cycles.length) {
+      return;
+    }
+    forkJoin(cycles.map(c => this.cycleManagementService.detail(c.id).pipe(catchError(() => of(null))))).subscribe(
+      details => (this.historyRows = cycles.map((c, i) => this.toRow(c, details[i])))
+    );
   }
 
-  viewDetail(id: string): void {
-    this.detailError = false;
-    this.selectedDetail = null;
-    this.cycleManagementService.detail(id).subscribe({
-      next: detail => {
-        this.selectedDetail = detail;
-        this.detailPanelOpen = true;
-      },
-      error: () => (this.detailError = true)
-    });
-  }
-
-  closeDetailPanel(): void {
-    this.detailPanelOpen = false;
+  private toRow(cycle: CycleSummary, detail: CycleDetail | null): Record<string, string> {
+    const row: Record<string, string> = { periodStart: cycle.periodStart, periodEnd: cycle.periodEnd, status: cycle.status };
+    for (const t of INCOME_TYPES) {
+      row[t] = detail ? String(detail.incomeTypeTotals.find(x => x.incomeType === t)?.totalNet ?? 0) : '';
+    }
+    row['totalNet'] = detail ? String(detail.totalNet) : '';
+    return row;
   }
 
   incomeTypeLabelSuffix(incomeType: string): string {
@@ -375,13 +361,23 @@ export class CycleManagementComponent implements OnInit {
     this.cycleManagementService.close(this.currentOpenCycle.id).subscribe({
       next: result => {
         this.closeResult = result;
-        this.loadPage(0);
       },
       error: (err: HttpErrorResponse) => {
         this.closeResult = null;
-        this.closeError = err.status === 409 ? 'conflict' : 'generic';
+        this.closeError = err.error?.error || this.translate.instant('admin.cycleManagement.closeGenericError');
       }
     });
+  }
+
+  // Closing the popup reloads the screen's data so the newly opened cycle shows up.
+  dismissClosePopup(): void {
+    const reload = !!this.closeResult;
+    this.closeResult = null;
+    this.closeError = null;
+    if (reload) {
+      this.loadPage(0);
+      this.loadCurrentCycleStats();
+    }
   }
 
   creditWallets(id: string): void {
