@@ -1,8 +1,14 @@
 databases:
-  - name: plotchain-db
+  - name: plotchain
     databaseName: plotchain
     user: plotchain
-    plan: free
+    plan: 0.1c-256mb
+    region: singapore
+    postgresMajorVersion: "18"
+    diskSizeGB: 1
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
 
 services:
   - type: web
@@ -11,6 +17,7 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     plan: free
+    region: singapore
     buildFilter:
       paths:
         - backend/**
@@ -23,23 +30,23 @@ services:
         value: https://app.virajacres.com
       - key: DB_HOST
         fromDatabase:
-          name: plotchain-db
+          name: plotchain
           property: host
       - key: DB_PORT
         fromDatabase:
-          name: plotchain-db
+          name: plotchain
           property: port
       - key: DB_NAME
         fromDatabase:
-          name: plotchain-db
+          name: plotchain
           property: database
       - key: DB_USER
         fromDatabase:
-          name: plotchain-db
+          name: plotchain
           property: user
       - key: DB_PASSWORD
         fromDatabase:
-          name: plotchain-db
+          name: plotchain
           property: password
 
   - type: web
