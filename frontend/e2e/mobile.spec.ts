@@ -36,7 +36,7 @@ for (const role of ROLES) for (const width of [360, 390]) {
 
     if (role.name === 'admin') {
       test('book-plot table with plots does not widen the page', async ({ page }) => {
-        await page.goto('/settings/book-plot', { waitUntil: 'networkidle' });
+        await page.goto('/admin/settings/book-plot', { waitUntil: 'networkidle' });
         const select = page.locator('.projects-plots__project-select select');
         const count = await select.locator('option').count();
         for (let i = 0; i < count; i++) {
@@ -49,7 +49,7 @@ for (const role of ROLES) for (const width of [360, 390]) {
       });
 
       test('compensation reward tier inputs stay usable', async ({ page }) => {
-        await page.goto('/settings/compensation', { waitUntil: 'networkidle' });
+        await page.goto('/admin/settings/compensation', { waitUntil: 'networkidle' });
         await page.getByText('Reward Tiers').first().click();
         const input = page.locator('.compensation-step .editable-table tbody tr input').first();
         await expect(input).toBeVisible();

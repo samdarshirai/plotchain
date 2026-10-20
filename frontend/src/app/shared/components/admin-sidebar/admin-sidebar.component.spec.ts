@@ -13,9 +13,9 @@ describe('AdminSidebarComponent', () => {
         HttpClientTestingModule,
         RouterTestingModule.withRoutes([
           { path: 'admin/dashboard', children: [] },
-          { path: 'settings/company-profile', children: [] },
-          { path: 'settings/branding', children: [] },
-          { path: 'settings/audit-log', children: [] }
+          { path: 'admin/settings/company-profile', children: [] },
+          { path: 'admin/settings/branding', children: [] },
+          { path: 'admin/settings/audit-log', children: [] }
         ]),
         TranslateModule.forRoot()
       ]
@@ -34,7 +34,7 @@ describe('AdminSidebarComponent', () => {
   it('lists Dashboard, Admin Users plus the eight category groups, all closed by default', () => {
     const { el } = render();
     expect(el.querySelector('a[href="/admin/dashboard"]')).toBeTruthy();
-    expect(el.querySelector('a[href="/settings/admin-users"]')).toBeTruthy();
+    expect(el.querySelector('a[href="/admin/settings/admin-users"]')).toBeTruthy();
     expect(groupLabels(el).length).toBe(8);
     expect(el.querySelectorAll('.associate-sidebar__subnav').length).toBe(0);
     expect(el.querySelectorAll('[aria-expanded="true"]').length).toBe(0);
@@ -48,10 +48,10 @@ describe('AdminSidebarComponent', () => {
     fixture.detectChanges();
     const hrefs = Array.from(el.querySelectorAll('.associate-sidebar__sublink')).map(a => a.getAttribute('href'));
     expect(hrefs).toEqual([
-      '/settings/company-profile',
-      '/settings/branding',
-      '/settings/payments-kyc',
-      '/settings/compensation'
+      '/admin/settings/company-profile',
+      '/admin/settings/branding',
+      '/admin/settings/payments-kyc',
+      '/admin/settings/compensation'
     ]);
     expect(setup.getAttribute('aria-expanded')).toBe('true');
 
@@ -73,14 +73,14 @@ describe('AdminSidebarComponent', () => {
 
   it('auto-opens the group that owns the current route, and follows navigation', async () => {
     const router = TestBed.inject(Router);
-    await router.navigateByUrl('/settings/branding');
+    await router.navigateByUrl('/admin/settings/branding');
     const { fixture, el } = render();
     expect(el.querySelectorAll('.associate-sidebar__subnav').length).toBe(1);
-    expect(el.querySelector('.associate-sidebar__sublink[href="/settings/branding"]')).toBeTruthy();
+    expect(el.querySelector('.associate-sidebar__sublink[href="/admin/settings/branding"]')).toBeTruthy();
 
-    await router.navigateByUrl('/settings/audit-log');
+    await router.navigateByUrl('/admin/settings/audit-log');
     fixture.detectChanges();
-    expect(el.querySelector('.associate-sidebar__sublink[href="/settings/audit-log"]')).toBeTruthy();
+    expect(el.querySelector('.associate-sidebar__sublink[href="/admin/settings/audit-log"]')).toBeTruthy();
   });
 
   it('emits logout when the logout button is clicked', () => {

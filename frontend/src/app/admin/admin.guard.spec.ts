@@ -23,17 +23,17 @@ describe('adminGuard', () => {
     });
   }
 
-  it('redirects to /dashboard when the stored role is ASSOCIATE', () => {
+  it('redirects to /admin/login when the stored role is ASSOCIATE', () => {
     authService.getRole.and.returnValue('ASSOCIATE');
     const router = TestBed.inject(Router);
     const result = TestBed.runInInjectionContext(() => adminGuard({} as any, {} as any)) as UrlTree;
-    expect(result.toString()).toBe(router.parseUrl('/dashboard').toString());
+    expect(result.toString()).toBe(router.parseUrl('/admin/login').toString());
   });
 
-  it('redirects to /dashboard when no role is stored', () => {
+  it('redirects to /admin/login when no role is stored', () => {
     authService.getRole.and.returnValue(null);
     const router = TestBed.inject(Router);
     const result = TestBed.runInInjectionContext(() => adminGuard({} as any, {} as any)) as UrlTree;
-    expect(result.toString()).toBe(router.parseUrl('/dashboard').toString());
+    expect(result.toString()).toBe(router.parseUrl('/admin/login').toString());
   });
 });

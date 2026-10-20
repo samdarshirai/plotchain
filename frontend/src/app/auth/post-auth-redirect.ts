@@ -11,7 +11,7 @@ export function postAuthLandingPath(role: string, state: SetupStateResponse, inc
     return '/dashboard';
   }
   if (!state.launchedAt) {
-    return `/setup/${incompleteStepPath()}`;
+    return `/admin/setup/${incompleteStepPath()}`;
   }
   return '/admin/dashboard';
 }

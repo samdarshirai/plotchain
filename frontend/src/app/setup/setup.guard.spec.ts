@@ -36,7 +36,7 @@ describe('setup guards', () => {
       setupService.getState.and.returnValue(of(launchedState));
       const result$ = TestBed.runInInjectionContext(() => setupModeGuard({} as any, {} as any)) as any;
       result$.subscribe((result: UrlTree) => {
-        expect(result.toString()).toBe(router.parseUrl('/settings').toString());
+        expect(result.toString()).toBe(router.parseUrl('/admin/settings').toString());
         done();
       });
     });
@@ -57,7 +57,7 @@ describe('setup guards', () => {
       setupService.firstIncompleteStepPath.and.returnValue('company-profile');
       const result$ = TestBed.runInInjectionContext(() => launchedModeGuard({} as any, {} as any)) as any;
       result$.subscribe((result: UrlTree) => {
-        expect(result.toString()).toBe(router.parseUrl('/setup/company-profile').toString());
+        expect(result.toString()).toBe(router.parseUrl('/admin/setup/company-profile').toString());
         done();
       });
     });

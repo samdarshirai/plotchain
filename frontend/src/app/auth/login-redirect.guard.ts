@@ -16,14 +16,15 @@ import { ADMIN_FAMILY_ROLES } from '../admin/admin.guard';
 // guard does its own isAuthenticated() check before falling through to the same
 // role/setup-state redirect logic rootRedirectGuard and login.component.ts's post-login routing
 // already use.
-export const loginRedirectGuard: CanActivateFn = (): Observable<UrlTree> | UrlTree | true => {
+export const loginRedirectGuard: CanActivateFn = (route): Observable<UrlTree> | UrlTree | true => {
   const authService = inject(AuthService);
   const setupService = inject(SetupService);
   const router = inject(Router);
-  if (!authService.isAuthenticated()) {
+  const realm = route.data['realm'] === 'admin' ? 'admin' : 'associate';
+  if (!authService.isAuthenticated(realm)) {
     return true;
   }
-  const role = authService.getRole() ?? '';
+  const role = authService.getRole(realm) ?? '';
   if (!ADMIN_FAMILY_ROLES.has(role)) {
     return router.parseUrl('/dashboard');
   }

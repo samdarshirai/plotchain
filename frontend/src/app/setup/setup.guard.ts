@@ -9,7 +9,7 @@ export const setupModeGuard: CanActivateFn = (): Observable<boolean | UrlTree> =
   const setupService = inject(SetupService);
   const router = inject(Router);
   return setupService.getState().pipe(
-    map(state => (state.launchedAt ? router.parseUrl('/settings') : true))
+    map(state => (state.launchedAt ? router.parseUrl('/admin/settings') : true))
   );
 };
 
@@ -19,6 +19,6 @@ export const launchedModeGuard: CanActivateFn = (): Observable<boolean | UrlTree
   const setupService = inject(SetupService);
   const router = inject(Router);
   return setupService.getState().pipe(
-    map(state => (state.launchedAt ? true : router.parseUrl(`/setup/${setupService.firstIncompleteStepPath(state)}`)))
+    map(state => (state.launchedAt ? true : router.parseUrl(`/admin/setup/${setupService.firstIncompleteStepPath(state)}`)))
   );
 };

@@ -57,7 +57,7 @@ for (const width of [320, 390, 768, 1024, 1440]) {
     test.beforeEach(async ({ page }) => mockSession(page));
     for (const screen of ['admin-users', 'master-projects', 'news', 'expense-types']) {
       test(`${screen}: populated list and scrollable form`, async ({ page }, testInfo) => {
-        await page.goto(`/settings/${screen}`, { waitUntil: 'networkidle' });
+        await page.goto(`/admin/settings/${screen}`, { waitUntil: 'networkidle' });
         await expect(page.locator(`.${screen} .editable-table tbody tr`)).toHaveCount(1);
         await noPageOverflow(page);
         if (width < 1024) await fitsInside(page.locator(`.${screen} .editable-table`));
@@ -78,14 +78,14 @@ for (const width of [320, 390, 768, 1024, 1440]) {
       });
     }
     test('KYC: populated review table scrolls within its panel', async ({ page }) => {
-      await page.goto('/settings/kyc-queue', { waitUntil: 'networkidle' });
+      await page.goto('/admin/settings/kyc-queue', { waitUntil: 'networkidle' });
       await expect(page.locator('.kyc-queue .editable-table tbody tr')).toHaveCount(1);
       await noPageOverflow(page);
       await expect(page.locator('.kyc-queue__table-scroll')).toHaveCSS('overflow-x', 'auto');
     });
 
     test('plots: populated table and edit dialog', async ({ page }, testInfo) => {
-      await page.goto('/settings/plots', { waitUntil: 'networkidle' });
+      await page.goto('/admin/settings/plots', { waitUntil: 'networkidle' });
       await expect(page.locator('.projects-plots__table tbody tr')).toHaveCount(1);
       await noPageOverflow(page);
       for (const cell of await page.locator('.projects-plots__table th, .projects-plots__table td').all()) await fitsInside(cell);
@@ -105,7 +105,7 @@ for (const width of [320, 390, 768, 1024, 1440]) {
     });
 
     test('admin user password reset fits on short screens', async ({ page }) => {
-      await page.goto('/settings/admin-users', { waitUntil: 'networkidle' });
+      await page.goto('/admin/settings/admin-users', { waitUntil: 'networkidle' });
       await page.locator('.admin-users__reset').click();
       const modal = page.locator('.admin-users__reset-modal .admin-users__modal');
       await fitsInside(modal);
@@ -115,7 +115,7 @@ for (const width of [320, 390, 768, 1024, 1440]) {
     });
 
     test('book plot table and booking popup fit the viewport', async ({ page }) => {
-      await page.goto('/settings/book-plot', { waitUntil: 'networkidle' });
+      await page.goto('/admin/settings/book-plot', { waitUntil: 'networkidle' });
       await expect(page.locator('.projects-plots__table tbody tr')).toHaveCount(1);
       await noPageOverflow(page);
       for (const cell of await page.locator('.projects-plots__table th, .projects-plots__table td').all()) await fitsInside(cell);

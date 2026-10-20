@@ -356,12 +356,21 @@ export class AssociateDirectoryComponent implements OnInit {
     return !!a && a.role === 'ASSOCIATE' && a.status !== 'SUSPENDED';
   }
 
-  // Swaps the admin session for the associate's (AuthService stashes the admin token), then lands on their dashboard.
+  // Opens the associate's dashboard in a new tab; the admin session in this tab is untouched.
+  // The tab is opened up front, inside the click, so popup blockers allow it.
   loginAs(id: string, name: string): void {
     this.loginError = false;
+    const tab = window.open('', '_blank');
     this.authService.impersonate(id, name).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
-      error: () => (this.loginError = true)
+      next: () => {
+        if (tab) {
+          tab.location.href = '/dashboard';
+        }
+      },
+      error: () => {
+        tab?.close();
+        this.loginError = true;
+      }
     });
   }
 

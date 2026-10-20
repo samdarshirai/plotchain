@@ -42,6 +42,7 @@ import { epinUnlockGuard } from './epins/register/epin-unlock.guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [loginRedirectGuard] },
+  { path: 'admin/login', component: LoginComponent, data: { realm: 'admin' }, canActivate: [loginRedirectGuard] },
   { path: 'terms', component: TermsOfServiceComponent },
   { path: 'privacy', component: PrivacyPolicyComponent },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard, associateOnlyGuard] },
@@ -94,10 +95,11 @@ export const routes: Routes = [
   { path: 'messages/new', loadComponent: () => import('./support-ticket-history/new-message.component').then(m => m.NewMessageComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'messages', loadComponent: () => import('./support-ticket-history/support-ticket-history.component').then(m => m.SupportTicketHistoryComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
+  { path: 'admin/change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
   { path: 'admin/sales/new', component: RecordSaleComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/dashboard', component: AdminDashboardComponent, canActivate: [authGuard, adminGuard, launchedModeGuard] },
   {
-    path: 'setup',
+    path: 'admin/setup',
     component: SetupShellComponent,
     canActivate: [authGuard, adminGuard, setupModeGuard],
     children: [
@@ -111,7 +113,7 @@ export const routes: Routes = [
     ]
   },
   {
-    path: 'settings',
+    path: 'admin/settings',
     component: SettingsShellComponent,
     canActivate: [authGuard, adminGuard, launchedModeGuard],
     children: [
@@ -154,5 +156,8 @@ export const routes: Routes = [
       { path: '', redirectTo: 'company-profile', pathMatch: 'full' }
     ]
   },
-  { path: '', pathMatch: 'full', canActivate: [authGuard, rootRedirectGuard], children: [] }
+  // old admin bookmarks (relative redirects keep the remaining segments)
+  { path: 'setup', redirectTo: 'admin/setup' },
+  { path: 'settings', redirectTo: 'admin/settings' },
+  { path: '', pathMatch: 'full', canActivate: [rootRedirectGuard], children: [] }
 ];

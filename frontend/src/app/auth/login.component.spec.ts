@@ -30,6 +30,22 @@ describe('LoginComponent', () => {
     localStorage.clear();
   });
 
+  function asAdminLogin(): void {
+    (fixture.componentInstance as { realm: string }).realm = 'admin';
+  }
+
+  it('rejects an ADMIN account on the associate login like a bad password', () => {
+    fixture.componentInstance.form.setValue({ userId: 'admin', password: 'Password123!' });
+    fixture.componentInstance.onSubmit();
+
+    httpMock.expectOne('/api/auth/login')
+      .flush({ token: 'abc.def.ghi', associateId: 'admin-1', role: 'ADMIN', mustChangePassword: false });
+
+    expect(fixture.componentInstance.error).toBeTrue();
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(localStorage.length).toBe(0);
+  });
+
   it('navigates to /dashboard on successful ASSOCIATE login without consulting setup state', () => {
     fixture.componentInstance.form.setValue({ userId: 'jane', password: 'Password123!' });
     fixture.componentInstance.onSubmit();
@@ -42,6 +58,7 @@ describe('LoginComponent', () => {
   });
 
   it('navigates to the first incomplete setup step on an ADMIN login while unlaunched', () => {
+    asAdminLogin();
     fixture.componentInstance.form.setValue({ userId: 'admin', password: 'Password123!' });
     fixture.componentInstance.onSubmit();
 
@@ -54,10 +71,11 @@ describe('LoginComponent', () => {
       launchedAt: null
     });
 
-    expect(router.navigate).toHaveBeenCalledWith(['/setup/company-profile']);
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/setup/company-profile']);
   });
 
   it('navigates to the admin route on an ADMIN login once launched', () => {
+    asAdminLogin();
     fixture.componentInstance.form.setValue({ userId: 'admin', password: 'Password123!' });
     fixture.componentInstance.onSubmit();
 
@@ -74,13 +92,14 @@ describe('LoginComponent', () => {
   });
 
   it('redirects to /change-password before ever consulting setup state', () => {
+    asAdminLogin();
     fixture.componentInstance.form.setValue({ userId: 'admin', password: 'Password123!' });
     fixture.componentInstance.onSubmit();
 
     httpMock.expectOne('/api/auth/login')
       .flush({ token: 'abc.def.ghi', associateId: 'admin-1', role: 'ADMIN', mustChangePassword: true });
 
-    expect(router.navigate).toHaveBeenCalledWith(['/change-password']);
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/change-password']);
     httpMock.expectNone('/api/company/setup-state');
   });
 

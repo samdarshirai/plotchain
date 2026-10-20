@@ -40,8 +40,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           (typeof route.path === 'string' ? req.url.includes(route.path) : route.path.test(req.url))
       );
       if (error.status === 401 && !isExpected401Route) {
-        authService.logout();
-        router.navigate(['/login']);
+        const realm = authService.currentRealm();
+        authService.logout(realm);
+        router.navigate([realm === 'admin' ? '/admin/login' : '/login']);
       }
       return throwError(() => error);
     })

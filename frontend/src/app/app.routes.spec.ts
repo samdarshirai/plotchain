@@ -133,7 +133,7 @@ describe('routes', () => {
   });
 
   describe('setup route', () => {
-    const setupRoute = routes.find(r => r.path === 'setup');
+    const setupRoute = routes.find(r => r.path === 'admin/setup');
 
     it('is guarded by authGuard, adminGuard and setupModeGuard', () => {
       expect(setupRoute).toBeTruthy();
@@ -168,7 +168,7 @@ describe('routes', () => {
 
   describe('settings route', () => {
     it('is guarded by authGuard, adminGuard and launchedModeGuard', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       expect(settingsRoute).toBeTruthy();
       expect(settingsRoute!.canActivate).toContain(authGuard);
       expect(settingsRoute!.canActivate).toContain(adminGuard);
@@ -176,61 +176,61 @@ describe('routes', () => {
     });
 
     it('redirects bare /settings to Setup\'s first item, with no hub screen left', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const emptyChild = settingsRoute!.children!.find(c => c.path === '');
       expect(emptyChild).toBeTruthy();
       expect(emptyChild!.component).toBeUndefined();
       expect(emptyChild!.redirectTo).toBe('company-profile');
-      expect(emptyChild!.redirectTo).toBe(ADMIN_NAV_CATEGORIES.find(c => c.key === 'setup')!.items[0].path.replace('/settings/', ''));
+      expect(emptyChild!.redirectTo).toBe(ADMIN_NAV_CATEGORIES.find(c => c.key === 'setup')!.items[0].path.replace('/admin/settings/', ''));
     });
 
     it('has a child route behind every nav item in every category', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const childPaths = settingsRoute!.children!.map(c => c.path);
 
       const items = [ADMIN_USERS_NAV_ITEM, ...ADMIN_NAV_CATEGORIES.flatMap(c => c.items)];
       for (const item of items) {
-        expect(childPaths).toContain(item.path.replace('/settings/', ''));
+        expect(childPaths).toContain(item.path.replace('/admin/settings/', ''));
       }
     });
 
     it('has a sales-register child stamped with sectionKey salesRegister', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const salesRegisterChild = settingsRoute!.children!.find(c => c.path === 'sales-register');
       expect(salesRegisterChild).toBeTruthy();
       expect(salesRegisterChild!.data).toEqual({ sectionKey: 'salesRegister' });
     });
 
     it('has a cycle-management child stamped with sectionKey cycleManagement', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const cycleManagementChild = settingsRoute!.children!.find(c => c.path === 'cycle-management');
       expect(cycleManagementChild).toBeTruthy();
       expect(cycleManagementChild!.data).toEqual({ sectionKey: 'cycleManagement' });
     });
 
     it('has a ledger-register child stamped with sectionKey ledgerRegister', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const ledgerRegisterChild = settingsRoute!.children!.find(c => c.path === 'ledger-register');
       expect(ledgerRegisterChild).toBeTruthy();
       expect(ledgerRegisterChild!.data).toEqual({ sectionKey: 'ledgerRegister' });
     });
 
     it('has a payout-approval child stamped with sectionKey payoutApproval', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const payoutApprovalChild = settingsRoute!.children!.find(c => c.path === 'payout-approval');
       expect(payoutApprovalChild).toBeTruthy();
       expect(payoutApprovalChild!.data).toEqual({ sectionKey: 'payoutApproval' });
     });
 
     it('has a plots child stamped with sectionKey projectsPlots', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const child = settingsRoute!.children!.find(c => c.path === 'plots');
       expect(child).toBeTruthy();
       expect(child!.data).toEqual({ sectionKey: 'projectsPlots' });
     });
 
     it('has a lazy support-tickets child stamped with sectionKey supportTickets', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const child = settingsRoute!.children!.find(c => c.path === 'support-tickets');
       expect(child).toBeDefined();
       expect(child!.component).toBeUndefined();
@@ -239,7 +239,7 @@ describe('routes', () => {
     });
 
     it('has a lazy expense-types child stamped with sectionKey expenseTypes', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const child = settingsRoute!.children!.find(c => c.path === 'expense-types');
       expect(child).toBeDefined();
       expect(child!.loadComponent).toBeDefined();
@@ -247,7 +247,7 @@ describe('routes', () => {
     });
 
     it('has a lazy payment-details child stamped with sectionKey paymentDetails', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const child = settingsRoute!.children!.find(c => c.path === 'payment-details');
       expect(child).toBeDefined();
       expect(child!.loadComponent).toBeDefined();
@@ -255,7 +255,7 @@ describe('routes', () => {
     });
 
     it('has a lazy invoice-expenses child stamped with sectionKey invoiceExpenses', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const child = settingsRoute!.children!.find(c => c.path === 'invoice-expenses');
       expect(child).toBeDefined();
       expect(child!.loadComponent).toBeDefined();
@@ -263,7 +263,7 @@ describe('routes', () => {
     });
 
     it('has a lazy advance-loans child stamped with sectionKey advanceLoans', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const child = settingsRoute!.children!.find(c => c.path === 'advance-loans');
       expect(child).toBeDefined();
       expect(child!.loadComponent).toBeDefined();
@@ -271,7 +271,7 @@ describe('routes', () => {
     });
 
     it('has a lazy payment-details/receipt/:id child stamped with sectionKey paymentDetails', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const child = settingsRoute!.children!.find(c => c.path === 'payment-details/receipt/:id');
       expect(child).toBeDefined();
       expect(child!.loadComponent).toBeDefined();
@@ -279,7 +279,7 @@ describe('routes', () => {
     });
 
     it('has a lazy news child stamped with sectionKey news', () => {
-      const settingsRoute = routes.find(r => r.path === 'settings');
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const child = settingsRoute!.children!.find(c => c.path === 'news');
       expect(child).toBeDefined();
       expect(child!.loadComponent).toBeDefined();
@@ -288,10 +288,10 @@ describe('routes', () => {
   });
 
   describe('root route', () => {
-    it('redirects via authGuard and rootRedirectGuard, rendering nothing itself', () => {
+    it('redirects via rootRedirectGuard, rendering nothing itself', () => {
       const rootRoute = routes.find(r => r.path === '');
       expect(rootRoute).toBeTruthy();
-      expect(rootRoute!.canActivate).toEqual([authGuard, rootRedirectGuard]);
+      expect(rootRoute!.canActivate).toEqual([rootRedirectGuard]);
       expect(rootRoute!.children).toEqual([]);
     });
   });

@@ -5,5 +5,8 @@ import { AuthService } from './auth.service';
 export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  return authService.isAuthenticated() ? true : router.parseUrl('/login');
+  if (authService.isAuthenticated()) {
+    return true;
+  }
+  return router.parseUrl(authService.currentRealm() === 'admin' ? '/admin/login' : '/login');
 };

@@ -50,7 +50,7 @@ export class SetupStepNavComponent {
 
   goPrevious(): void {
     if (this.previousPath) {
-      this.router.navigate(['/setup', this.previousPath]);
+      this.router.navigate(['/admin/setup', this.previousPath]);
     }
   }
 
@@ -65,11 +65,11 @@ export class SetupStepNavComponent {
       return;
     }
     step?.flushPendingSave();
-    this.router.navigate(['/setup', this.nextPath]);
+    this.router.navigate(['/admin/setup', this.nextPath]);
   }
 
   goBackToSettings(): void {
     this.inspectorService.activeStep?.flushPendingSave();
-    this.router.navigate(['/settings']);
+    this.router.navigate(['/admin/settings']);
   }
 }

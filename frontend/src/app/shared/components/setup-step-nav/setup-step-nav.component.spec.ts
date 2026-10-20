@@ -30,7 +30,7 @@ describe('SetupStepNavComponent', () => {
     fixture.componentInstance.previousPath = 'branding';
     fixture.detectChanges();
     fixture.nativeElement.querySelector('.setup-step-nav__previous button').click();
-    expect(router.navigate).toHaveBeenCalledWith(['/setup', 'branding']);
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/setup', 'branding']);
   });
 
   it('does not render a Next button when nextPath is null', () => {
@@ -43,7 +43,7 @@ describe('SetupStepNavComponent', () => {
     fixture.componentInstance.nextPath = 'compensation';
     fixture.detectChanges();
     fixture.nativeElement.querySelector('.setup-step-nav__next button').click();
-    expect(router.navigate).toHaveBeenCalledWith(['/setup', 'compensation']);
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/setup', 'compensation']);
   });
 
   it('shows the saved indicator only when savedJustNow is true', () => {
@@ -70,7 +70,7 @@ describe('SetupStepNavComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.setup-step-nav__save')).toBeTruthy();
     fixture.nativeElement.querySelector('.setup-step-nav__save button').click();
-    expect(router.navigate).toHaveBeenCalledWith(['/settings']);
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/settings']);
   });
 
   it('defaultsToSetupModeAndShowsPreviousNextWhenInputOmitted', () => {
@@ -91,7 +91,7 @@ describe('SetupStepNavComponent', () => {
     fixture.nativeElement.querySelector('.setup-step-nav__next button').click();
 
     expect(step.flushPendingSave).toHaveBeenCalled();
-    expect(router.navigate).toHaveBeenCalledWith(['/setup', 'compensation']);
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/setup', 'compensation']);
   });
 
   it('blocks Next and does not flush or navigate when the active step reports invalid', () => {
@@ -112,7 +112,7 @@ describe('SetupStepNavComponent', () => {
 
     fixture.nativeElement.querySelector('.setup-step-nav__next button').click();
 
-    expect(router.navigate).toHaveBeenCalledWith(['/setup', 'compensation']);
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/setup', 'compensation']);
   });
 
   it('flushes the active step before navigating to /settings when Save is clicked', () => {
@@ -126,6 +126,6 @@ describe('SetupStepNavComponent', () => {
     // Save is not gated by isStepValid() -- only Next is -- so it flushes and navigates even
     // though this step reports invalid.
     expect(step.flushPendingSave).toHaveBeenCalled();
-    expect(router.navigate).toHaveBeenCalledWith(['/settings']);
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/settings']);
   });
 });

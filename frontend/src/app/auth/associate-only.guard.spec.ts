@@ -44,7 +44,7 @@ describe('associateOnlyGuard', () => {
 
     const result$ = TestBed.runInInjectionContext(() => associateOnlyGuard({} as any, {} as any)) as any;
     result$.subscribe((result: UrlTree) => {
-      expect(result.toString()).toBe(router.parseUrl('/setup/company-profile').toString());
+      expect(result.toString()).toBe(router.parseUrl('/admin/setup/company-profile').toString());
       done();
     });
   });

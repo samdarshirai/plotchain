@@ -23,7 +23,7 @@ import { STEP_PATHS, StepStatus } from './models/setup-state.model';
           [class.setup-progress-rail__step--active]="step.key === activeStepKey"
           [class.setup-progress-rail__step--complete]="step.complete"
         >
-          <a class="setup-progress-rail__step-link" [routerLink]="['/setup', stepPaths[step.key]]">
+          <a class="setup-progress-rail__step-link" [routerLink]="['/admin/setup', stepPaths[step.key]]">
             <span class="setup-progress-rail__step-number">{{ step.number }}</span>
             <span class="setup-progress-rail__step-label">{{ 'setup.steps.' + step.key | translate }}</span>
             <span class="setup-progress-rail__step-optional" *ngIf="!step.required">

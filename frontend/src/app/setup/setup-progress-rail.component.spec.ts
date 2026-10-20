@@ -65,8 +65,8 @@ describe('SetupProgressRailComponent', () => {
     fixture.componentInstance.steps = steps;
     fixture.detectChanges();
     const rows = fixture.nativeElement.querySelectorAll('.setup-progress-rail__step-link');
-    expect(rows[0].getAttribute('href')).toBe('/setup/company-profile');
-    expect(rows[1].getAttribute('href')).toBe('/setup/branding');
-    expect(rows[3].getAttribute('href')).toBe('/setup/projects');
+    expect(rows[0].getAttribute('href')).toBe('/admin/setup/company-profile');
+    expect(rows[1].getAttribute('href')).toBe('/admin/setup/branding');
+    expect(rows[3].getAttribute('href')).toBe('/admin/setup/projects');
   });
 });

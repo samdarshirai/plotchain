@@ -12,6 +12,7 @@ describe('loginRedirectGuard', () => {
   let setupService: jasmine.SpyObj<SetupService>;
   let router: Router;
 
+  let route: { data: Record<string, string> };
   const launchedState: SetupStateResponse = { steps: [], canGoLive: true, launchedAt: '2026-01-01T00:00:00Z' };
   const unlaunchedState: SetupStateResponse = { steps: [], canGoLive: false, launchedAt: null };
 
@@ -26,12 +27,13 @@ describe('loginRedirectGuard', () => {
       ]
     });
     router = TestBed.inject(Router);
+    route = { data: {} };
   });
 
   it('renders the login form for an unauthenticated visitor', () => {
     authService.isAuthenticated.and.returnValue(false);
 
-    const result = TestBed.runInInjectionContext(() => loginRedirectGuard({} as any, {} as any));
+    const result = TestBed.runInInjectionContext(() => loginRedirectGuard(route as any, {} as any));
 
     expect(result).toBeTrue();
     expect(authService.getRole).not.toHaveBeenCalled();
@@ -42,7 +44,7 @@ describe('loginRedirectGuard', () => {
     authService.isAuthenticated.and.returnValue(true);
     authService.getRole.and.returnValue('ASSOCIATE');
 
-    const result = TestBed.runInInjectionContext(() => loginRedirectGuard({} as any, {} as any)) as UrlTree;
+    const result = TestBed.runInInjectionContext(() => loginRedirectGuard(route as any, {} as any)) as UrlTree;
 
     expect(result.toString()).toBe(router.parseUrl('/dashboard').toString());
     expect(setupService.getState).not.toHaveBeenCalled();
@@ -51,12 +53,13 @@ describe('loginRedirectGuard', () => {
   it('redirects an authenticated ADMIN to the first incomplete setup step while unlaunched', done => {
     authService.isAuthenticated.and.returnValue(true);
     authService.getRole.and.returnValue('ADMIN');
+    route.data['realm'] = 'admin';
     setupService.getState.and.returnValue(of(unlaunchedState));
     setupService.firstIncompleteStepPath.and.returnValue('company-profile');
 
-    const result$ = TestBed.runInInjectionContext(() => loginRedirectGuard({} as any, {} as any)) as any;
+    const result$ = TestBed.runInInjectionContext(() => loginRedirectGuard(route as any, {} as any)) as any;
     result$.subscribe((result: UrlTree) => {
-      expect(result.toString()).toBe(router.parseUrl('/setup/company-profile').toString());
+      expect(result.toString()).toBe(router.parseUrl('/admin/setup/company-profile').toString());
       done();
     });
   });
@@ -64,12 +67,20 @@ describe('loginRedirectGuard', () => {
   it('redirects an authenticated ADMIN to /admin/dashboard once launched', done => {
     authService.isAuthenticated.and.returnValue(true);
     authService.getRole.and.returnValue('ADMIN');
+    route.data['realm'] = 'admin';
     setupService.getState.and.returnValue(of(launchedState));
 
-    const result$ = TestBed.runInInjectionContext(() => loginRedirectGuard({} as any, {} as any)) as any;
+    const result$ = TestBed.runInInjectionContext(() => loginRedirectGuard(route as any, {} as any)) as any;
     result$.subscribe((result: UrlTree) => {
       expect(result.toString()).toBe(router.parseUrl('/admin/dashboard').toString());
       done();
     });
+  });
+
+  it('checks the admin session, not the associate one, on the admin login route', () => {
+    route.data['realm'] = 'admin';
+    authService.isAuthenticated.and.callFake(realm => realm === 'associate');
+    const result = TestBed.runInInjectionContext(() => loginRedirectGuard(route as any, {} as any));
+    expect(result).toBeTrue();
   });
 });

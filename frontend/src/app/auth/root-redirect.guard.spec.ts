@@ -16,7 +16,7 @@ describe('rootRedirectGuard', () => {
   const unlaunchedState: SetupStateResponse = { steps: [], canGoLive: false, launchedAt: null };
 
   beforeEach(() => {
-    authService = jasmine.createSpyObj('AuthService', ['getRole']);
+    authService = jasmine.createSpyObj('AuthService', ['getRole', 'isAuthenticated']);
     setupService = jasmine.createSpyObj('SetupService', ['getState', 'firstIncompleteStepPath']);
     TestBed.configureTestingModule({
       imports: [RouterTestingModule],
@@ -29,7 +29,7 @@ describe('rootRedirectGuard', () => {
   });
 
   it('redirects an ASSOCIATE to /dashboard without checking setup state', () => {
-    authService.getRole.and.returnValue('ASSOCIATE');
+    authService.isAuthenticated.and.callFake(realm => realm === 'associate');
     setupService.getState.and.returnValue(of(unlaunchedState));
 
     const result = TestBed.runInInjectionContext(() => rootRedirectGuard({} as any, {} as any)) as UrlTree;
@@ -38,18 +38,20 @@ describe('rootRedirectGuard', () => {
   });
 
   it('redirects ADMIN to the first incomplete setup step while unlaunched', done => {
+    authService.isAuthenticated.and.callFake(realm => realm === 'admin');
     authService.getRole.and.returnValue('ADMIN');
     setupService.getState.and.returnValue(of(unlaunchedState));
     setupService.firstIncompleteStepPath.and.returnValue('company-profile');
 
     const result$ = TestBed.runInInjectionContext(() => rootRedirectGuard({} as any, {} as any)) as any;
     result$.subscribe((result: UrlTree) => {
-      expect(result.toString()).toBe(router.parseUrl('/setup/company-profile').toString());
+      expect(result.toString()).toBe(router.parseUrl('/admin/setup/company-profile').toString());
       done();
     });
   });
 
   it('redirects ADMIN to /admin/dashboard once launched', done => {
+    authService.isAuthenticated.and.callFake(realm => realm === 'admin');
     authService.getRole.and.returnValue('ADMIN');
     setupService.getState.and.returnValue(of(launchedState));
 
@@ -59,5 +61,10 @@ describe('rootRedirectGuard', () => {
       done();
     });
   });
-
+  it('redirects to /dashboard (and on to /login) with no session at all', () => {
+    authService.isAuthenticated.and.returnValue(false);
+    const result = TestBed.runInInjectionContext(() => rootRedirectGuard({} as any, {} as any)) as UrlTree;
+    expect(result.toString()).toBe(router.parseUrl('/dashboard').toString());
+    expect(setupService.getState).not.toHaveBeenCalled();
+  });
 });

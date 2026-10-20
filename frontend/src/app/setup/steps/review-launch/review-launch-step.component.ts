@@ -42,7 +42,7 @@ import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-s
           [tone]="rowTone(step)"
           [badgeLabel]="badgeLabel(step)"
           [editLabel]="'setup.reviewLaunch.editLabel' | translate"
-          [editHref]="'/setup/' + stepPaths[step.key]"
+          [editHref]="'/admin/setup/' + stepPaths[step.key]"
         ></app-checklist-row>
       </div>
 

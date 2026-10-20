@@ -66,7 +66,7 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
               <td class="editable-table__cell--ellipsis" [attr.title]="r.bankName" [attr.data-label]="'admin.invoicePayments.bankName' | translate">{{ r.bankName }}</td>
               <td class="editable-table__cell--ellipsis" [attr.title]="r.txnNo" [attr.data-label]="'admin.invoicePayments.txnNo' | translate">{{ r.txnNo }}</td>
               <td [attr.data-label]="'admin.invoicePayments.print' | translate">
-                <a class="invoice-payments__print brand-button" [routerLink]="['/settings/payment-details/receipt', r.id]" target="_blank">{{ 'admin.invoicePayments.printAction' | translate }}</a>
+                <a class="invoice-payments__print brand-button" [routerLink]="['/admin/settings/payment-details/receipt', r.id]" target="_blank">{{ 'admin.invoicePayments.printAction' | translate }}</a>
               </td>
             </tr>
             <tr *ngIf="rows.length === 0">
