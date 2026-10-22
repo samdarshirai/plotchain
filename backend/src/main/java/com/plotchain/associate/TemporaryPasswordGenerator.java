@@ -11,7 +11,7 @@ public final class TemporaryPasswordGenerator {
     }
 
     public static String generate() {
-        byte[] bytes = new byte[12];
+        byte[] bytes = new byte[6]; // 6 bytes -> exactly 8 Base64-URL chars
         RANDOM.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }

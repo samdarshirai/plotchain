@@ -15,6 +15,11 @@ class TemporaryPasswordGeneratorTest {
     }
 
     @Test
+    void generatesAnEightCharacterPassword() {
+        assertThat(TemporaryPasswordGenerator.generate()).hasSize(8);
+    }
+
+    @Test
     void generatesDifferentPasswordsOnSuccessiveCalls() {
         String first = TemporaryPasswordGenerator.generate();
         String second = TemporaryPasswordGenerator.generate();
