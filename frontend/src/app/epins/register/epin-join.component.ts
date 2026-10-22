@@ -155,7 +155,7 @@ import { INDIA_STATE_OPTIONS } from '../../shared/india-states';
           <section class="epin-join__section epin-join__section--5">
             <h2 class="epin-join__heading">{{ 'epins.passwordLabel' | translate }}</h2>
             <label class="epin-join__field"><span>{{ 'epins.passwordLabel' | translate }} <span class="epin-join__req">*</span></span>
-              <input class="epin-join__input" type="password" autocomplete="off" formControlName="transactionPassword" />
+              <input class="epin-join__input" type="text" autocomplete="off" formControlName="transactionPassword" />
               <app-field-error [message]="err('transactionPassword')"></app-field-error>
             </label>
           </section>

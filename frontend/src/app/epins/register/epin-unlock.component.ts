@@ -16,7 +16,7 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
       <h1 class="epin-reg__title">{{ 'epinRegister.unlockTitle' | translate }}</h1>
       <p class="epin-reg__hint">{{ 'epinRegister.unlockHint' | translate }}</p>
       <label class="epin-reg__label">{{ 'epins.passwordLabel' | translate }}
-        <input class="epin-reg__input" type="password" autocomplete="off" name="pw" [(ngModel)]="password" />
+        <input class="epin-reg__input" type="text" autocomplete="off" name="pw" [(ngModel)]="password" />
       </label>
       <app-inline-banner *ngIf="error" tone="danger">{{ error | translate }}</app-inline-banner>
       <button type="submit" class="brand-button" [disabled]="busy">{{ 'epinRegister.unlock' | translate }}</button>

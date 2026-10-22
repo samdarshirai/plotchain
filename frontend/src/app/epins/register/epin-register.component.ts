@@ -49,7 +49,7 @@ const PAGE_SIZE = 20;
             </div>
           </div>
           <label class="epin-reg__label">{{ 'epins.passwordLabel' | translate }}
-            <input class="epin-reg__input" type="password" autocomplete="off" name="pw" [(ngModel)]="password" /></label>
+            <input class="epin-reg__input" type="text" autocomplete="off" name="pw" [(ngModel)]="password" /></label>
           <button type="submit" class="brand-button epin-reg__submit" [disabled]="busy">
             {{ count && count > 0 ? ('epinRegister.transferN' | translate: { count: count }) : ('epinRegister.submit' | translate) }}
           </button>

@@ -326,7 +326,7 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
             <div class="detail-card__fields detail-card__fields--auth">
               <label class="detail-card__field">
                 <span>{{ 'myAccount.authorisation.transactionPasswordLabel' | translate }}</span>
-                <input type="password" formControlName="transactionPassword" [placeholder]="'myAccount.authorisation.placeholder' | translate" />
+                <input type="text" autocomplete="off" formControlName="transactionPassword" [placeholder]="'myAccount.authorisation.placeholder' | translate" />
                 <span class="detail-card__hint">{{ 'myAccount.authorisation.hint' | translate }}</span>
               </label>
             </div>
@@ -374,15 +374,15 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
             <div class="detail-card__fields">
               <label class="detail-card__field" *ngIf="transactionPasswordStatus?.isSet">
                 <span>{{ 'myAccount.transactionPasswordTab.currentLabel' | translate }}</span>
-                <input type="password" formControlName="currentTransactionPassword" />
+                <input type="text" autocomplete="off" formControlName="currentTransactionPassword" />
               </label>
               <label class="detail-card__field">
                 <span>{{ 'myAccount.transactionPasswordTab.newLabel' | translate }}</span>
-                <input type="password" formControlName="newTransactionPassword" />
+                <input type="text" autocomplete="off" formControlName="newTransactionPassword" />
               </label>
               <label class="detail-card__field">
                 <span>{{ 'myAccount.transactionPasswordTab.confirmLabel' | translate }}</span>
-                <input type="password" formControlName="confirmTransactionPassword" />
+                <input type="text" autocomplete="off" formControlName="confirmTransactionPassword" />
               </label>
             </div>
             <div class="profile-actions">
