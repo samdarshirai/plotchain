@@ -165,7 +165,7 @@ export class EPinRegisterComponent implements OnInit {
     const seq = ++this.seq;
     const call = this.mode === 'used'
       ? this.service.used(this.type, this.q, this.page, this.size)
-      : this.service.unused(this.type, this.q, this.mode === 'new', this.page, this.size);
+      : this.service.unused(this.type, this.q, false, this.page, this.size);
     (call as unknown as import('rxjs').Observable<{ rows: Row[]; totalElements: number }>).subscribe({
       next: res => { if (seq === this.seq) { this.rows = res.rows; this.total = res.totalElements; } },
       error: (e: HttpErrorResponse) => { if (seq === this.seq && !this.relock(e)) { this.loadError = true; } }
