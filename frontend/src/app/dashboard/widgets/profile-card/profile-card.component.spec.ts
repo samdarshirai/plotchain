@@ -76,9 +76,10 @@ describe('ProfileCardComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Mobile');
   });
 
-  it('renders the sponsor as "id · name" when present', () => {
+  it('renders only the sponsor id when present', () => {
     createComponent(associate({ sponsorAssociateId: 'SDI100001', sponsorName: 'Head Office Sponsor' }));
-    expect(fixture.nativeElement.textContent).toContain('SDI100001 · Head Office Sponsor');
+    expect(fixture.nativeElement.textContent).toContain('SDI100001');
+    expect(fixture.nativeElement.textContent).not.toContain('Head Office Sponsor');
   });
 
   it('falls back to "Head Office" when the associate has no sponsor', () => {

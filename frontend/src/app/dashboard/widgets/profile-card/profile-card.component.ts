@@ -73,9 +73,6 @@ export class ProfileCardComponent {
   }
 
   get sponsorDisplay(): string | null {
-    if (!this.associate.sponsorAssociateId && !this.associate.sponsorName) {
-      return null;
-    }
-    return [this.associate.sponsorAssociateId, this.associate.sponsorName].filter(Boolean).join(' · ');
+    return this.associate.sponsorAssociateId || null;
   }
 }
