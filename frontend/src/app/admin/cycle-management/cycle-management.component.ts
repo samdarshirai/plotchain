@@ -15,7 +15,15 @@ import { AdminDashboardService } from '../../admin-dashboard/admin-dashboard.ser
 import { CurrentCycleStats } from '../../admin-dashboard/admin-dashboard.model';
 
 const PAGE_SIZE = 20;
-const INCOME_TYPES: CycleIncomeType[] = ['DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'ROYALTY', 'REWARD'];
+const INCOME_TYPES: CycleIncomeType[] = ['DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'SELF_PERFORMANCE', 'ROYALTY', 'REWARD'];
+// Key order = table order; 'totalNet' sits between ROYALTY and REWARD, so the loop below can't be a single map.
+const COLUMN_KEYS = [
+  'DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'SELF_PERFORMANCE', 'ROYALTY', 'totalNet', 'REWARD'
+];
+const COLUMN_LABEL_KEYS: Record<string, string> = {
+  DIRECT: 'columnDirect', MATCHING: 'columnMatching', SPONSOR_MATCHING: 'columnSponsor',
+  SELF_PERFORMANCE: 'columnSelfPerformance', ROYALTY: 'columnRoyalty', totalNet: 'columnTotalIncome', REWARD: 'columnReward'
+};
 
 @Component({
   selector: 'app-cycle-management',
@@ -245,20 +253,22 @@ export class CycleManagementComponent implements OnInit {
 
   ngOnInit(): void {
     this.historyColumns = [
-      { key: 'periodStart', label: this.translate.instant('admin.cycleManagement.columnPeriodStart'), type: 'text' },
-      { key: 'periodEnd', label: this.translate.instant('admin.cycleManagement.columnPeriodEnd'), type: 'text' },
+      { key: 'period', label: this.translate.instant('admin.cycleManagement.columnPeriod'), type: 'text' },
       {
         key: 'status',
         label: this.translate.instant('admin.cycleManagement.columnStatus'),
         type: 'badge',
         badgeTone: value => this.statusBadgeTone(value)
       },
-      ...INCOME_TYPES.map(t => ({
-        key: t,
-        label: this.translate.instant('admin.cycleManagement.incomeType' + this.incomeTypeLabelSuffix(t)),
+      { key: 'business', label: this.translate.instant('admin.cycleManagement.columnBusiness'), type: 'text' },
+      ...COLUMN_KEYS.map(k => ({
+        key: k,
+        label: this.translate.instant('admin.cycleManagement.' + COLUMN_LABEL_KEYS[k]),
         type: 'text' as const
       })),
-      { key: 'totalNet', label: this.translate.instant('admin.cycleManagement.detailTotalNetLabel'), type: 'text' },
+      { key: 'tripExpense', label: this.translate.instant('admin.cycleManagement.columnTripExpense'), type: 'text' },
+      { key: 'commissionExpense', label: this.translate.instant('admin.cycleManagement.columnCommissionExpense'), type: 'text' },
+      { key: 'commissionPct', label: this.translate.instant('admin.cycleManagement.columnCommissionPct'), type: 'text' },
       { key: 'actions', label: this.translate.instant('admin.cycleManagement.columnActions'), type: 'action' }
     ];
     this.loadPage(0);
@@ -309,11 +319,21 @@ export class CycleManagementComponent implements OnInit {
   }
 
   private toRow(cycle: CycleSummary, detail: CycleDetail | null): Record<string, string> {
-    const row: Record<string, string> = { periodStart: cycle.periodStart, periodEnd: cycle.periodEnd, status: cycle.status };
+    const row: Record<string, string> = {
+      period: `${cycle.periodStart} – ${cycle.periodEnd}`,
+      status: cycle.status
+    };
     for (const t of INCOME_TYPES) {
       row[t] = detail ? String(detail.incomeTypeTotals.find(x => x.incomeType === t)?.totalNet ?? 0) : '';
     }
     row['totalNet'] = detail ? String(detail.totalNet) : '';
+    row['business'] = detail ? String(detail.totalBusiness) : '';
+    row['tripExpense'] = detail ? String(detail.tripExpense) : '';
+    // Commission = gross ledger income (before TDS/admin deductions) + trip expense.
+    const commissionExpense = detail ? detail.totalGross + detail.tripExpense : 0;
+    row['commissionExpense'] = detail ? String(commissionExpense) : '';
+    row['commissionPct'] =
+      detail && detail.totalBusiness > 0 ? ((commissionExpense / detail.totalBusiness) * 100).toFixed(2) + '%' : '—';
     return row;
   }
 

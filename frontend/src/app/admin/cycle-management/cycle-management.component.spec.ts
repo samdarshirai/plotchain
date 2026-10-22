@@ -52,7 +52,7 @@ describe('CycleManagementComponent', () => {
   const flushDetails = () =>
     httpMock.match(r => /^\/api\/admin\/cycles\/[^/]+$/.test(r.url)).forEach(req =>
       req.flush({
-        id: 'c1', periodStart: '', periodEnd: '', status: 'CLOSED', totalNet: 730,
+        id: 'c1', periodStart: '', periodEnd: '', status: 'CLOSED', totalNet: 730, totalBusiness: 1000, totalGross: 800, tripExpense: 100,
         incomeTypeTotals: [{ incomeType: 'DIRECT', totalNet: 500 }, { incomeType: 'MATCHING', totalNet: 230 }]
       })
     );
@@ -68,6 +68,9 @@ describe('CycleManagementComponent', () => {
     expect(row['DIRECT']).toBe('500');
     expect(row['ROYALTY']).toBe('0');
     expect(row['totalNet']).toBe('730');
+    expect(row['business']).toBe('1000');
+    expect(row['commissionExpense']).toBe('900');
+    expect(row['commissionPct']).toBe('90.00%');
   });
 
   it('loads the first page of cycle history on init', () => {

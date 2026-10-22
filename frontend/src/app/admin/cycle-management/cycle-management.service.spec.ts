@@ -43,7 +43,7 @@ describe('CycleManagementService', () => {
   it('fetches a cycle detail by id', () => {
     const mockDetail: CycleDetail = {
       id: 'c1', periodStart: '2026-08-01', periodEnd: '2026-08-15', status: 'CLOSED',
-      incomeTypeTotals: [{ incomeType: 'DIRECT', totalNet: 100 }], totalNet: 100
+      incomeTypeTotals: [{ incomeType: 'DIRECT', totalNet: 100 }], totalNet: 100, totalBusiness: 0, totalGross: 0, tripExpense: 0
     };
 
     service.detail('c1').subscribe(res => expect(res).toEqual(mockDetail));

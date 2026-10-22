@@ -17,4 +17,7 @@ public record CycleDetailResponse(
     LocalDate periodEnd,
     CycleStatus status,
     List<CycleIncomeTypeTotal> incomeTypeTotals,
-    BigDecimal totalNet) {}
+    BigDecimal totalNet,
+    BigDecimal totalBusiness,
+    BigDecimal totalGross,
+    BigDecimal tripExpense) {}

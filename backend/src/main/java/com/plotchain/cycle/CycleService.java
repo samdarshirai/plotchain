@@ -9,6 +9,7 @@ import com.plotchain.compensation.RewardTierRepository;
 import com.plotchain.compensation.RoyaltyBonusRate;
 import com.plotchain.compensation.RoyaltyBonusRateRepository;
 import com.plotchain.associate.KycStatus;
+import com.plotchain.expense.ExpenseRepository;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntry;
 import com.plotchain.income.LedgerEntryRepository;
@@ -50,6 +51,7 @@ public class CycleService {
     private final RankTierRepository rankTierRepository;
     private final RoyaltyBonusRateRepository royaltyBonusRateRepository;
     private final RewardTierRepository rewardTierRepository;
+    private final ExpenseRepository expenseRepository;
 
     // Cycle-management unit 2 (GET /api/admin/cycles/{id}, spec lines 95-97): fixed order
     // matching the spec's literal "DIRECT/MATCHING/SPONSOR_MATCHING/ROYALTY/REWARD/SELF_PERFORMANCE"
@@ -74,7 +76,8 @@ public class CycleService {
         LedgerEntryRepository ledgerEntryRepository,
         RankTierRepository rankTierRepository,
         RoyaltyBonusRateRepository royaltyBonusRateRepository,
-        RewardTierRepository rewardTierRepository
+        RewardTierRepository rewardTierRepository,
+        ExpenseRepository expenseRepository
     ) {
         this.cycleRepository = cycleRepository;
         this.associateRepository = associateRepository;
@@ -85,6 +88,7 @@ public class CycleService {
         this.rankTierRepository = rankTierRepository;
         this.royaltyBonusRateRepository = royaltyBonusRateRepository;
         this.rewardTierRepository = rewardTierRepository;
+        this.expenseRepository = expenseRepository;
     }
 
     public CyclePageResponse list(CycleStatus status, int page, int size) {
@@ -112,10 +116,14 @@ public class CycleService {
             .toList();
 
         BigDecimal totalNet = ledgerEntryRepository.sumNetAmountByCycle(cycle.getId());
+        BigDecimal totalGross = ledgerEntryRepository.sumGrossAmount(null, null, cycle.getId(), null);
+        BigDecimal totalBusiness = saleRepository.sumAmountByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED);
+        BigDecimal tripExpense = expenseRepository.sumAmountByTypeNameBetween(
+            "Trip", cycle.getPeriodStart(), cycle.getPeriodEnd());
 
         return new CycleDetailResponse(
             cycle.getId(), cycle.getPeriodStart(), cycle.getPeriodEnd(), cycle.getStatus(),
-            incomeTypeTotals, totalNet);
+            incomeTypeTotals, totalNet, totalBusiness, totalGross, tripExpense);
     }
 
     // Cycle-management unit 3 (row lock + OPEN check, unchanged) + unit 4 (leg-volume rollup) +

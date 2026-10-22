@@ -1480,10 +1480,17 @@
 
 .cycle-management .card {
   @extend %admin-screen-card;
+  overflow-x: auto; // 14 columns: scroll inside the card instead of overflowing the page
 }
 
 .cycle-management .editable-table {
   margin: 0;
+  min-width: 1400px;
+}
+
+.cycle-management .editable-table th,
+.cycle-management .editable-table td {
+  white-space: nowrap;
 }
 
 .cycle-management .editable-table thead th {
@@ -1498,10 +1505,9 @@
   border-bottom: none;
 }
 
-// Period Start / Period End -- tabular-nums on Inter, matching Sales Register's own
+// Period + money columns -- tabular-nums on Inter, matching Sales Register's own
 // "Recorded At" date-column treatment, not full ledger-mono (dates aren't money).
-.cycle-management .editable-table td:nth-child(1),
-.cycle-management .editable-table td:nth-child(2) {
+.cycle-management .editable-table td {
   font-variant-numeric: tabular-nums;
 }
 
@@ -1612,6 +1618,11 @@
   .cycle-management .editable-table {
     table-layout: fixed;
     width: 100%;
+    min-width: 0;
+  }
+
+  .cycle-management .editable-table td {
+    white-space: normal;
   }
 
   .cycle-management .editable-table thead {
