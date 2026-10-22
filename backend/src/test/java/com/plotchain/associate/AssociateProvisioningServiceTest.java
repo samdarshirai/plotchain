@@ -50,7 +50,6 @@ class AssociateProvisioningServiceTest {
 
     @Test
     void createsAnAssociateWithATemporaryPasswordThatMustBeChanged() {
-        when(associateRepository.existsByEmail("new@plotchain.test")).thenReturn(false);
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(lowestRank));
 
         CreateAssociateResponse response = service.create(
@@ -81,18 +80,17 @@ class AssociateProvisioningServiceTest {
     }
 
     @Test
-    void rejectsADuplicateEmail() {
-        when(associateRepository.existsByEmail("taken@plotchain.test")).thenReturn(true);
+    void rejectsADuplicatePhone() {
+        when(associateRepository.existsByPhone("9990001111")).thenReturn(true);
 
         assertThatThrownBy(() -> service.create(
-            new CreateAssociateRequest("Jane Doe", "taken@plotchain.test", null, null, null, null)))
-            .isInstanceOf(EmailAlreadyRegisteredException.class);
+            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, null, null, "9990001111")))
+            .isInstanceOf(PhoneAlreadyRegisteredException.class);
     }
 
     @Test
     void rejectsAPlacementThatIsAlreadyOccupied() {
         UUID parentId = UUID.randomUUID();
-        when(associateRepository.existsByEmail("new@plotchain.test")).thenReturn(false);
         when(associateRepository.findById(parentId)).thenReturn(Optional.of(new Associate()));
         when(associateRepository.existsByParentIdAndPosition(parentId, "L")).thenReturn(true);
 
@@ -104,7 +102,6 @@ class AssociateProvisioningServiceTest {
     @Test
     void rejectsAnUnknownParent() {
         UUID parentId = UUID.randomUUID();
-        when(associateRepository.existsByEmail("new@plotchain.test")).thenReturn(false);
         when(associateRepository.findById(parentId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.create(
@@ -115,7 +112,6 @@ class AssociateProvisioningServiceTest {
     @Test
     void rejectsMissingPositionWhenAParentIsSpecified() {
         UUID parentId = UUID.randomUUID();
-        when(associateRepository.existsByEmail("new@plotchain.test")).thenReturn(false);
         when(associateRepository.findById(parentId)).thenReturn(Optional.of(new Associate()));
 
         assertThatThrownBy(() -> service.create(
@@ -125,7 +121,6 @@ class AssociateProvisioningServiceTest {
 
     @Test
     void failsClearlyWhenNoRankTiersAreConfigured() {
-        when(associateRepository.existsByEmail("new@plotchain.test")).thenReturn(false);
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
 
         assertThatThrownBy(() -> service.create(
@@ -135,7 +130,6 @@ class AssociateProvisioningServiceTest {
 
     @Test
     void persistsPhoneFromRequest() {
-        when(associateRepository.existsByEmail("new@plotchain.test")).thenReturn(false);
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(lowestRank));
 
         service.create(

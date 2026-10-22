@@ -293,12 +293,12 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
               <label class="detail-card__field">
                 <span>{{ 'myAccount.contact.phoneLabel' | translate }}</span>
                 <input type="text" formControlName="phone" />
-                <app-field-error [message]="fieldError('phone')"></app-field-error>
+                <app-field-error [message]="fieldError('phone') || emailConflictError"></app-field-error>
               </label>
               <label class="detail-card__field">
                 <span>{{ 'myAccount.contact.emailLabel' | translate }}</span>
                 <input type="email" formControlName="email" />
-                <app-field-error [message]="fieldError('email') || emailConflictError"></app-field-error>
+                <app-field-error [message]="fieldError('email')"></app-field-error>
               </label>
             </div>
 
@@ -768,7 +768,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
         if (String(err.error?.code ?? '').startsWith('TRANSACTION_PASSWORD')) {
           this.saveError = this.transactionPasswordErrorMessage(err, 'profileKyc.saveError');
         } else if (err.status === 409) {
-          this.emailConflictError = err.error?.error ?? this.translate.instant('profileKyc.validation.emailTaken');
+          this.emailConflictError = err.error?.error ?? this.translate.instant('profileKyc.validation.phoneTaken');
         } else if (err.status === 401) {
           this.saveError = err.error?.error ?? this.translate.instant('myAccount.authorisation.hint');
         } else {

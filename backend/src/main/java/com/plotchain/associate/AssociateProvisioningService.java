@@ -38,12 +38,12 @@ public class AssociateProvisioningService {
             associate.getTemporaryPassword(), transactionPassword);
     }
 
-    // Shared by admin create and the associate e-Pin Join: validates email + placement, then saves
+    // Shared by admin create and the associate e-Pin Join: validates phone + placement, then saves
     // a PENDING associate. The caller may set extra profile fields on the returned entity and save
     // again in the same transaction. The one-time temporary password rides on a transient field.
     public Associate createPending(String name, String email, String phone, UUID sponsorId, UUID parentId, String position) {
-        if (email != null && associateRepository.existsByEmail(email)) {
-            throw new EmailAlreadyRegisteredException(email);
+        if (phone != null && associateRepository.existsByPhone(phone)) {
+            throw new PhoneAlreadyRegisteredException(phone);
         }
         CreateAssociateRequest request = new CreateAssociateRequest(name, email, sponsorId, parentId, position, phone);
 

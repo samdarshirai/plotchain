@@ -10,8 +10,8 @@ import java.util.Map;
 @RestControllerAdvice
 public class AssociateProvisioningExceptionHandler {
 
-    @ExceptionHandler(EmailAlreadyRegisteredException.class)
-    public ResponseEntity<Map<String, String>> handleEmailTaken(EmailAlreadyRegisteredException ex) {
+    @ExceptionHandler(PhoneAlreadyRegisteredException.class)
+    public ResponseEntity<Map<String, String>> handlePhoneTaken(PhoneAlreadyRegisteredException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
 

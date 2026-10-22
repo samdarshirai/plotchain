@@ -136,29 +136,6 @@ class AssociateRepositoryTest {
     }
 
     @Test
-    void findByEmailReturnsTheMatchingAssociate() {
-        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
-        entityManager.persist(rank);
-
-        Associate associate = newAssociate(null, null, rank.getId());
-        associate.setEmail("jane@plotchain.test");
-        associateRepository.save(associate);
-        entityManager.flush();
-
-        Optional<Associate> found = associateRepository.findByEmail("jane@plotchain.test");
-
-        assertThat(found).isPresent();
-        assertThat(found.get().getId()).isEqualTo(associate.getId());
-    }
-
-    @Test
-    void findByEmailReturnsEmptyForAnUnknownEmail() {
-        Optional<Associate> found = associateRepository.findByEmail("nobody@plotchain.test");
-
-        assertThat(found).isEmpty();
-    }
-
-    @Test
     void persistsAnAdminWithoutARank() {
         Associate admin = newAssociate(null, null, null);
         admin.setRole(AssociateRole.ADMIN);

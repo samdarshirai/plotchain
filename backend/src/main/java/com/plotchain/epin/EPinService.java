@@ -274,6 +274,9 @@ public class EPinService {
         if (associateRepository.existsByAadhaarNumber(req.aadhaarNumber())) {
             throw new EPinDuplicateIdentityException("AADHAAR_TAKEN");
         }
+        if (req.phone() != null && associateRepository.existsByPhone(req.phone())) {
+            throw new EPinDuplicateIdentityException("PHONE_TAKEN");
+        }
 
         // Walk down the chosen leg to its first free slot.
         // ponytail: O(leg depth) lookups; the unique (parent, position) index is the race guard.

@@ -1,7 +1,7 @@
 package com.plotchain.associate;
 
-public class EmailAlreadyRegisteredException extends RuntimeException {
-    public EmailAlreadyRegisteredException(String email) {
-        super("Email already registered: " + email);
+public class PhoneAlreadyRegisteredException extends RuntimeException {
+    public PhoneAlreadyRegisteredException(String phone) {
+        super("Phone already registered: " + phone);
     }
 }

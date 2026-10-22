@@ -76,7 +76,7 @@ class AssociateProfileServiceTest {
     void updateProfileChangesNamePhoneAndEmail() {
         Associate associate = seeded();
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
-        when(associateRepository.existsByEmail("jane.doe@example.com")).thenReturn(false);
+        when(associateRepository.existsByPhone("9990002222")).thenReturn(false);
         UpdateAssociateProfileRequest request =
             requestWith("Jane A. Doe", "9990002222", "jane.doe@example.com", "42 Wallaby Way");
 
@@ -94,7 +94,7 @@ class AssociateProfileServiceTest {
     }
 
     @Test
-    void updateProfileAllowsResubmittingTheAssociatesOwnUnchangedEmail() {
+    void updateProfileAllowsResubmittingTheAssociatesOwnUnchangedPhone() {
         Associate associate = seeded();
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
         UpdateAssociateProfileRequest request = requestWith("Jane Doe", "9990001111", "jane@example.com", null);
@@ -102,22 +102,22 @@ class AssociateProfileServiceTest {
         AssociateProfileResponse response = service.updateProfile(ASSOCIATE_ID, request);
 
         assertThat(response.email()).isEqualTo("jane@example.com");
-        // Own unchanged email must never trip the uniqueness check against itself.
-        verify(associateRepository, never()).existsByEmail(any());
+        // Own unchanged phone must never trip the uniqueness check against itself.
+        verify(associateRepository, never()).existsByPhone(any());
     }
 
     @Test
-    void updateProfileRejectsAnEmailAlreadyRegisteredToAnotherAssociate() {
+    void updateProfileRejectsAPhoneAlreadyRegisteredToAnotherAssociate() {
         Associate associate = seeded();
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
-        when(associateRepository.existsByEmail("taken@example.com")).thenReturn(true);
-        UpdateAssociateProfileRequest request = requestWith("Jane Doe", "9990001111", "taken@example.com", null);
+        when(associateRepository.existsByPhone("9990003333")).thenReturn(true);
+        UpdateAssociateProfileRequest request = requestWith("Jane Doe", "9990003333", "jane@example.com", null);
 
         assertThatThrownBy(() -> service.updateProfile(ASSOCIATE_ID, request))
-            .isInstanceOf(EmailAlreadyRegisteredException.class);
+            .isInstanceOf(PhoneAlreadyRegisteredException.class);
 
-        // Email must not be applied to the entity, and no save on the rejected path.
-        assertThat(associate.getEmail()).isEqualTo("jane@example.com");
+        // Phone must not be applied to the entity, and no save on the rejected path.
+        assertThat(associate.getPhone()).isEqualTo("9990001111");
         verify(associateRepository, never()).save(any());
     }
 
@@ -131,7 +131,6 @@ class AssociateProfileServiceTest {
 
         assertThat(response.email()).isNull();
         assertThat(associate.getEmail()).isNull();
-        verify(associateRepository, never()).existsByEmail(any());
     }
 
     @Test

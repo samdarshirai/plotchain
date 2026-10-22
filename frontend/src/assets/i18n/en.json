@@ -253,7 +253,7 @@
     "validation": {
       "nameRequired": "Name is required.",
       "emailInvalid": "Enter a valid email address.",
-      "emailTaken": "This email is already registered to another account."
+      "phoneTaken": "This phone number is already registered to another account."
     },
     "kyc": {
       "loadError": "Something went wrong loading your KYC status. Please try again.",
@@ -743,7 +743,7 @@
     "validation": {
       "required": "This field is required.",
       "invalidEmail": "Enter a valid email address.",
-      "emailTaken": "An associate with this email is already registered.",
+      "phoneTaken": "An associate with this phone number is already registered.",
       "placementUnavailable": "That placement is already occupied. Choose a different leg.",
       "positionRequired": "Choose a left or right leg for the selected parent.",
       "unknownSponsor": "No associate matches that sponsor. Pick one from the suggestions, or clear the field to create this associate without a sponsor.",

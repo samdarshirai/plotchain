@@ -94,9 +94,10 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         """, nativeQuery = true)
     long countDownlineByPositionAndStatus(@Param("associateId") UUID associateId, @Param("position") String position, @Param("status") String status);
 
-    Optional<Associate> findByEmail(String email);
-
+    // Email is no longer unique for associates; still used for admin staff accounts.
     boolean existsByEmail(String email);
+
+    boolean existsByPhone(String phone);
 
     boolean existsByParentIdAndPosition(UUID parentId, String position);
 

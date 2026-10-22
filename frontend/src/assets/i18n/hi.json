@@ -266,7 +266,7 @@
     "validation": {
       "nameRequired": "Name is required.",
       "emailInvalid": "Enter a valid email address.",
-      "emailTaken": "This email is already registered to another account."
+      "phoneTaken": "This phone number is already registered to another account."
     },
     "kyc": {
       "loadError": "Something went wrong loading your KYC status. Please try again.",
@@ -714,7 +714,7 @@
     "validation": {
       "required": "यह फ़ील्ड आवश्यक है।",
       "invalidEmail": "एक मान्य ईमेल पता दर्ज करें।",
-      "emailTaken": "इस ईमेल से पहले ही एक एसोसिएट पंजीकृत है।",
+      "phoneTaken": "इस फ़ोन नंबर से पहले ही एक एसोसिएट पंजीकृत है।",
       "placementUnavailable": "यह प्लेसमेंट पहले से भरी हुई है। कोई अन्य लेग चुनें।",
       "positionRequired": "चयनित पैरेंट के लिए बायाँ या दायाँ लेग चुनें।",
       "unknownSponsor": "इस प्रायोजक से कोई एसोसिएट मेल नहीं खाता। सुझावों में से एक चुनें, या बिना प्रायोजक के एसोसिएट बनाने के लिए फ़ील्ड खाली करें।",

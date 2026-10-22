@@ -330,8 +330,8 @@ export class NewAssociatePanelComponent implements OnInit, OnChanges {
   }
 
   private messageForConflict(backendMessage: string | undefined): string {
-    if (backendMessage?.startsWith('Email already registered')) {
-      return this.translate.instant('admin.validation.emailTaken');
+    if (backendMessage?.startsWith('Phone already registered')) {
+      return this.translate.instant('admin.validation.phoneTaken');
     }
     if (backendMessage?.startsWith('Placement already occupied')) {
       return this.translate.instant('admin.validation.placementUnavailable');

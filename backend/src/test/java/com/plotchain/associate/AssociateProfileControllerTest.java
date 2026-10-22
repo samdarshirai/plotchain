@@ -83,7 +83,7 @@ class AssociateProfileControllerTest {
     void putUpdatesNamePhoneAndEmail() throws Exception {
         Associate self = seeded(UUID.randomUUID());
         String token = tokenFor(self);
-        when(associateRepository.existsByEmail("jane.a.doe@example.com")).thenReturn(false);
+        when(associateRepository.existsByPhone("9990002222")).thenReturn(false);
         when(associateRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         mockMvc.perform(put("/api/associates/me/profile")
@@ -127,16 +127,16 @@ class AssociateProfileControllerTest {
     }
 
     @Test
-    void putReturnsConflictWhenEmailAlreadyRegisteredToAnotherAssociate() throws Exception {
+    void putReturnsConflictWhenPhoneAlreadyRegisteredToAnotherAssociate() throws Exception {
         Associate self = seeded(UUID.randomUUID());
         String token = tokenFor(self);
-        when(associateRepository.existsByEmail("taken@example.com")).thenReturn(true);
+        when(associateRepository.existsByPhone("9990003333")).thenReturn(true);
 
         mockMvc.perform(put("/api/associates/me/profile")
                 .header("Authorization", "Bearer " + token)
                 .contentType("application/json")
                 .content(new ObjectMapper().writeValueAsString(
-                    requestWith("Jane Doe", "9990001111", "taken@example.com", null))))
+                    requestWith("Jane Doe", "9990003333", "jane@example.com", null))))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.error").isNotEmpty());
     }

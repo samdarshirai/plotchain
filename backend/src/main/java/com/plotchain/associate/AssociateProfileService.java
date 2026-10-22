@@ -31,17 +31,13 @@ public class AssociateProfileService {
         Associate associate = associateRepository.findById(associateId)
             .orElseThrow(() -> new AssociateNotFoundException(associateId));
 
-        // Only check uniqueness when the email is actually changing -- resubmitting the
-        // associate's own current email (a plain PUT of unchanged data) must not trip a false
-        // conflict against itself. Reuses the exact existsByEmail()/EmailAlreadyRegisteredException
-        // pattern AssociateProvisioningService.create() already established for create-time
-        // uniqueness, so the rule is enforced identically at create and at edit.
-        if (!Objects.equals(request.email(), associate.getEmail())) {
-            if (request.email() != null && associateRepository.existsByEmail(request.email())) {
-                throw new EmailAlreadyRegisteredException(request.email());
-            }
-            associate.setEmail(request.email());
+        // Only check uniqueness when the phone is actually changing -- resubmitting the
+        // associate's own current phone must not trip a false conflict against itself.
+        if (!Objects.equals(request.phone(), associate.getPhone())
+            && request.phone() != null && associateRepository.existsByPhone(request.phone())) {
+            throw new PhoneAlreadyRegisteredException(request.phone());
         }
+        associate.setEmail(request.email());
 
         associate.setName(request.name());
         associate.setPhone(request.phone());
