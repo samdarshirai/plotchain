@@ -50,6 +50,10 @@ function positionRequiredWhenParentSelectedValidator(group: AbstractControl): Va
               {{ 'admin.temporaryPasswordLabel' | translate }}:
               <strong>{{ result.temporaryPassword }}</strong>
             </p>
+            <p>
+              {{ 'admin.transactionPasswordLabel' | translate }}:
+              <strong>{{ result.transactionPassword }}</strong>
+            </p>
             <p class="new-associate-panel__modal-banner-notice">{{ 'admin.temporaryPasswordNotice' | translate }}</p>
           </app-inline-banner>
           <div class="new-associate-panel__modal-footer">

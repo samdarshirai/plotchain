@@ -9,4 +9,4 @@ import java.util.UUID;
  * login identifier (e.g. VP00001) — without it the admin has no way to tell the associate
  * what to log in with.
  */
-public record CreateAssociateResponse(UUID associateId, String userId, String temporaryPassword) {}
+public record CreateAssociateResponse(UUID associateId, String userId, String temporaryPassword, String transactionPassword) {}

@@ -373,7 +373,7 @@ describe('AssociateDirectoryComponent', () => {
       fixture.detectChanges();
 
       const panel = fixture.debugElement.query(By.directive(NewAssociatePanelComponent)).componentInstance as NewAssociatePanelComponent;
-      panel.created.emit({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!' });
+      panel.created.emit({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!', transactionPassword: 'Txn1234!' });
 
       const reloadReq = httpMock.expectOne('/api/admin/associates?page=0&size=20');
       reloadReq.flush({ associates: [], page: 0, size: 20, totalElements: 0 });

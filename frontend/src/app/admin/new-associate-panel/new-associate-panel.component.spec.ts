@@ -93,7 +93,7 @@ describe('NewAssociatePanelComponent', () => {
         parentId: 'a1',
         position: 'L'
       });
-      req.flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!' });
+      req.flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!', transactionPassword: 'Txn1234!' });
 
       expect(fixture.componentInstance.provisioned?.temporaryPassword).toBe('Temp1234!');
       expect(created.temporaryPassword).toBe('Temp1234!');
@@ -142,7 +142,7 @@ describe('NewAssociatePanelComponent', () => {
       fixture.componentInstance.onProvisionSubmit();
       httpMock
         .expectOne('/api/associates')
-        .flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!' });
+        .flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!', transactionPassword: 'Txn1234!' });
     });
 
     it('maps a 409 "Placement already occupied" conflict to an error message', () => {
@@ -201,7 +201,7 @@ describe('NewAssociatePanelComponent', () => {
       const req = httpMock.expectOne('/api/associates');
       expect(req.request.body.sponsorId).toBeUndefined();
       expect(fixture.componentInstance.sponsorUnresolved).toBeFalse();
-      req.flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!' });
+      req.flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!', transactionPassword: 'Txn1234!' });
     });
 
     it('clears the unresolved-sponsor error once the field is edited again', () => {
@@ -240,7 +240,7 @@ describe('NewAssociatePanelComponent', () => {
       const req = httpMock.expectOne('/api/associates');
       expect(req.request.body.parentId).toBe('p1');
       expect(req.request.body.position).toBe('R');
-      req.flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!' });
+      req.flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!', transactionPassword: 'Txn1234!' });
     });
   });
 });

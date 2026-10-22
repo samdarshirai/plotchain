@@ -32,7 +32,10 @@ public class AssociateProvisioningService {
     public CreateAssociateResponse create(CreateAssociateRequest request) {
         Associate associate = createPending(request.name(), request.email(), request.phone(),
             request.sponsorId(), request.parentId(), request.position());
-        return new CreateAssociateResponse(associate.getId(), associate.getUserId(), associate.getTemporaryPassword());
+        String transactionPassword = assignGeneratedTransactionPassword(associate);
+        associateRepository.save(associate);
+        return new CreateAssociateResponse(associate.getId(), associate.getUserId(),
+            associate.getTemporaryPassword(), transactionPassword);
     }
 
     // Shared by admin create and the associate e-Pin Join: validates email + placement, then saves

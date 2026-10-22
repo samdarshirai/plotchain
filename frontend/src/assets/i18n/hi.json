@@ -715,6 +715,7 @@
     "doneButtonLabel": "पूर्ण",
     "assignedUserIdLabel": "एसोसिएट आईडी",
     "temporaryPasswordLabel": "अस्थायी पासवर्ड",
+    "transactionPasswordLabel": "ट्रांज़ैक्शन पासवर्ड",
     "temporaryPasswordNotice": "यह पासवर्ड केवल एक बार दिखाया जाता है। इसे अभी नोट कर लें — यहाँ से जाने के बाद आपको नया खाता बनाना होगा।",
     "validation": {
       "required": "यह फ़ील्ड आवश्यक है।",

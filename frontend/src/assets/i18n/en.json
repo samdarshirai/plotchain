@@ -744,6 +744,7 @@
     "doneButtonLabel": "Done",
     "assignedUserIdLabel": "Associate ID",
     "temporaryPasswordLabel": "Temporary Password",
+    "transactionPasswordLabel": "Transaction Password",
     "temporaryPasswordNotice": "This password is shown only once. Copy it now — if you navigate away, you will need to provision a new account.",
     "validation": {
       "required": "This field is required.",

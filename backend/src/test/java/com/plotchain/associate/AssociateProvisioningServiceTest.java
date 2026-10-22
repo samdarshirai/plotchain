@@ -57,7 +57,7 @@ class AssociateProvisioningServiceTest {
             new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, null, null, null));
 
         ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
-        org.mockito.Mockito.verify(associateRepository).save(saved.capture());
+        org.mockito.Mockito.verify(associateRepository, org.mockito.Mockito.times(2)).save(saved.capture());
         Associate created = saved.getValue();
 
         assertThat(created.getEmail()).isEqualTo("new@plotchain.test");
@@ -76,6 +76,8 @@ class AssociateProvisioningServiceTest {
         // The response carries the plaintext once; only the hash is persisted.
         assertThat(created.getPasswordHash()).isNotEqualTo(response.temporaryPassword());
         assertThat(passwordEncoder.matches(response.temporaryPassword(), created.getPasswordHash())).isTrue();
+        assertThat(response.transactionPassword()).isNotBlank();
+        assertThat(passwordEncoder.matches(response.transactionPassword(), created.getTransactionPasswordHash())).isTrue();
     }
 
     @Test
@@ -140,7 +142,7 @@ class AssociateProvisioningServiceTest {
             new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, null, null, "+1234567890"));
 
         ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
-        org.mockito.Mockito.verify(associateRepository).save(saved.capture());
+        org.mockito.Mockito.verify(associateRepository, org.mockito.Mockito.times(2)).save(saved.capture());
         Associate created = saved.getValue();
 
         assertThat(created.getPhone()).isEqualTo("+1234567890");
