@@ -16,8 +16,9 @@ import { INDIA_STATE_OPTIONS } from '../../shared/india-states';
   imports: [CommonModule, ReactiveFormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
   styleUrl: './epin-join.component.scss',
   template: `
-    <div class="epin-join">
-      <h1 class="epin-join__title" *ngIf="!result">{{ 'epinRegister.join.title' | translate }}</h1>
+    <div class="epin-join" (keydown.escape)="back()" (click)="$event.target === $event.currentTarget && !busy && back()">
+     <div class="epin-join__modal" role="dialog" aria-modal="true" aria-labelledby="epin-join-title">
+      <h1 class="epin-join__title" id="epin-join-title" *ngIf="!result">{{ 'epinRegister.join.title' | translate }}</h1>
 
       <div class="epin-join__done" *ngIf="result as r">
         <div class="epin-join__done-seal">
@@ -40,14 +41,6 @@ import { INDIA_STATE_OPTIONS } from '../../shared/india-states';
       </div>
 
       <form class="epin-join__form" [formGroup]="form" (ngSubmit)="submit()" *ngIf="!result" novalidate>
-        <div class="epin-join__toolbar">
-          <span class="epin-join__crumb">{{ 'epinRegister.join.breadcrumb' | translate }}</span>
-          <div class="epin-join__actions">
-            <button type="button" class="epin-join__cancel" (click)="back()">{{ 'epinRegister.join.cancel' | translate }}</button>
-            <button type="submit" class="epin-join__submit" [disabled]="busy">{{ 'epinRegister.submit' | translate }}</button>
-          </div>
-        </div>
-
         <div class="epin-join__card">
           <div class="epin-join__seal">
             <div class="epin-join__seal-row">
@@ -169,7 +162,13 @@ import { INDIA_STATE_OPTIONS } from '../../shared/india-states';
 
           <app-inline-banner *ngIf="error" class="epin-join__banner" tone="danger">{{ error | translate }}</app-inline-banner>
         </div>
+
+        <div class="epin-join__footer">
+          <button type="button" class="epin-join__cancel" (click)="back()">{{ 'epinRegister.join.cancel' | translate }}</button>
+          <button type="submit" class="epin-join__submit" [disabled]="busy">{{ 'epinRegister.submit' | translate }}</button>
+        </div>
       </form>
+     </div>
     </div>
   `
 })

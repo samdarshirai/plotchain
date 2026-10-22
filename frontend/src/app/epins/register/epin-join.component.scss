@@ -1,10 +1,20 @@
 @use '../../../styles/seal';
 
 .epin-join {
-  max-width: 1480px; margin: 0 auto; padding: 1.5rem 2rem;
+  position: fixed; inset: 0; z-index: 50; background: rgba(12, 10, 11, 0.55);
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+
+  &__modal {
+    width: 1100px; max-width: 100%; max-height: calc(100dvh - 2rem); overflow-y: auto; overscroll-behavior: contain;
+    background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 5px; padding: 1.5rem 2rem 0;
+  }
+  &__footer {
+    position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: 0.625rem;
+    margin: 1rem -2rem 0; padding: 0.875rem 2rem; background: var(--surface-card); border-top: 1px solid var(--border-subtle);
+  }
 
   &__title { font-family: var(--font-display); font-weight: 500; font-size: 1.5rem; margin: 0 0 0.75rem; color: var(--text-primary); }
-  &__card { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 1.25rem 1.5rem; }
+  &__card { background: var(--surface-card); padding: 0; }
   &__form &__card { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1rem 1.75rem; align-content: start; }
 
   &__toolbar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem 1rem; flex-wrap: wrap; margin-bottom: 0.875rem; }
@@ -54,13 +64,14 @@
 
   @media (max-width: 1100px) { &__grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 768px) {
-    padding: 1rem;
-    &__form &__card { grid-template-columns: minmax(0, 1fr); padding: 1rem; }
+    padding: 0.5rem;
+    &__modal { padding: 1.25rem 1rem 0; }
+    &__footer { flex-direction: column-reverse; margin: 1rem -1rem 0; padding: 0.875rem 1rem; button { min-height: 44px; } }
+    &__input { font-size: 1rem; min-height: 44px; }
+    &__form &__card { grid-template-columns: minmax(0, 1fr); }
     &__seal, &__section, &__section--7, &__section--5, &__banner { grid-column: 1 / -1; }
     &__grid, &__grid--4 { grid-template-columns: minmax(0, 1fr); }
     &__field--wide { grid-column: auto; }
-    &__toolbar, &__actions { width: 100%; }
-    &__actions > button { flex: 1; }
   }
 
   &__done { max-width: 44rem; margin: 1rem auto; display: flex; flex-direction: column; gap: 1.25rem; }
