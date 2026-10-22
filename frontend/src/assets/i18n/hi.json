@@ -926,8 +926,8 @@
       }
     },
     "cycleManagement": {
-      "eyebrow": "Admin · Cycle Management",
-      "title": "Cycle Management",
+      "eyebrow": "Admin · Closing Report",
+      "title": "Closing Report",
       "subtitle": "Review past settlement cycles and trigger the close for the current one.",
       "statusFilterLabel": "Status",
       "statusFilterAllOption": "All statuses",
@@ -1832,7 +1832,7 @@
       "auditLog": "ऑडिट लॉग",
       "adminStats": "एडमिन आँकड़े",
       "salesRegister": "बिक्री रजिस्टर",
-      "cycleManagement": "चक्र प्रबंधन",
+      "cycleManagement": "Closing Report",
       "ledgerRegister": "Income Statement",
       "payoutApproval": "Payout Approval",
       "masterProjects": "प्रोजेक्ट्स",

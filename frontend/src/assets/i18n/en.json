@@ -955,8 +955,8 @@
       }
     },
     "cycleManagement": {
-      "eyebrow": "Admin · Cycle Management",
-      "title": "Cycle Management",
+      "eyebrow": "Admin · Closing Report",
+      "title": "Closing Report",
       "subtitle": "Review past settlement cycles and trigger the close for the current one.",
       "statusFilterLabel": "Status",
       "statusFilterAllOption": "All statuses",
@@ -1920,7 +1920,7 @@
       "auditLog": "Audit Log",
       "adminStats": "Admin Stats",
       "salesRegister": "Sales Register",
-      "cycleManagement": "Cycle Management",
+      "cycleManagement": "Closing Report",
       "ledgerRegister": "Income Statement",
       "epinRegister": "e-Pin Register",
       "payoutApproval": "Payout Approval",
