@@ -49,6 +49,7 @@ describe('DashboardComponent', () => {
         designationValue: 'Sales Executive',
         businessVolumeEyebrow: 'Business Volume',
         networkIncomeEyebrow: 'Network & Income',
+        noActiveCycle: 'No active cycle',
         settlesAtCycleClose: 'settles at cycle close',
         lifetimeVolume: 'lifetime volume',
         ownBookings: 'own bookings',
@@ -80,12 +81,12 @@ describe('DashboardComponent', () => {
 
   afterEach(() => httpMock.verify());
 
-  function loadDashboard(): void {
+  function loadDashboard(response: DashboardResponse = mockResponse): void {
     fixture = TestBed.createComponent(DashboardComponent);
     fixture.detectChanges();
 
     const dashboardReq = httpMock.expectOne('/api/associates/me/dashboard');
-    dashboardReq.flush(mockResponse);
+    dashboardReq.flush(response);
     fixture.detectChanges();
 
     // PendingActivationBannerComponent fetches the profile itself.
@@ -169,6 +170,14 @@ describe('DashboardComponent', () => {
     loadDashboard();
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('Cycle 9');
+  });
+
+  it('renders a no-active-cycle pill and no cycle range when cycleCountdown is null', () => {
+    loadDashboard({ ...mockResponse, cycleCountdown: null });
+    const meta = fixture.nativeElement.querySelector('.dashboard__header-meta');
+    expect(meta.textContent).toContain('No active cycle');
+    expect(fixture.nativeElement.querySelector('.dashboard__cycle-range')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.dashboard-error')).toBeFalsy();
   });
 
   it('formats the Business Volume tiles from the response data, including the static-zero "settles at cycle close" tiles', () => {

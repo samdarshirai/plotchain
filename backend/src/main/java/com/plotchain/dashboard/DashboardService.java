@@ -11,7 +11,6 @@ import com.plotchain.compensation.RoyaltyBonusRateRepository;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
-import com.plotchain.cycle.NoOpenCycleException;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntryRepository;
 import com.plotchain.legvolume.LegVolume;
@@ -78,15 +77,19 @@ public class DashboardService {
             throw new NoRankAssignedException(associateId);
         }
 
-        Cycle cycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)
-            .orElseThrow(NoOpenCycleException::new);
+        // No OPEN cycle (fresh DB, admin hasn't opened one) is a valid state: cycle-scoped figures
+        // are zero and cycleCountdown is null, mirroring AdminStatsService.
+        Optional<Cycle> openCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN);
+        UUID openCycleId = openCycle.map(Cycle::getId).orElse(null);
 
-        BigDecimal direct = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.DIRECT);
-        BigDecimal matching = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.MATCHING);
-        BigDecimal sponsorMatching = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.SPONSOR_MATCHING);
-        BigDecimal selfPerformance = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.SELF_PERFORMANCE);
-        BigDecimal total = ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycle.getId());
-        BigDecimal royaltyBonus = ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycle.getId(), IncomeType.ROYALTY);
+        BigDecimal direct = cycleIncome(associateId, openCycleId, IncomeType.DIRECT);
+        BigDecimal matching = cycleIncome(associateId, openCycleId, IncomeType.MATCHING);
+        BigDecimal sponsorMatching = cycleIncome(associateId, openCycleId, IncomeType.SPONSOR_MATCHING);
+        BigDecimal selfPerformance = cycleIncome(associateId, openCycleId, IncomeType.SELF_PERFORMANCE);
+        BigDecimal total = openCycle
+            .map(c -> ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, c.getId()))
+            .orElse(BigDecimal.ZERO);
+        BigDecimal royaltyBonus = cycleIncome(associateId, openCycleId, IncomeType.ROYALTY);
 
         // Royalty slab lookup (and the left/right leg volume panel) needs the associate's
         // most-recently-CLOSED cycle -- the currently OPEN cycle never has a leg_volume row of
@@ -130,8 +133,12 @@ public class DashboardService {
             .map(c -> ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, c.getId()))
             .toList();
 
-        int salesThisCycle = (int) saleRepository.countByAssociateIdAndCycleIdAndStatus(associateId, cycle.getId(), SaleStatus.RECORDED);
-        BigDecimal revenueBookedThisCycle = saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, cycle.getId(), SaleStatus.RECORDED);
+        int salesThisCycle = openCycle
+            .map(c -> (int) saleRepository.countByAssociateIdAndCycleIdAndStatus(associateId, c.getId(), SaleStatus.RECORDED))
+            .orElse(0);
+        BigDecimal revenueBookedThisCycle = openCycle
+            .map(c -> saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, c.getId(), SaleStatus.RECORDED))
+            .orElse(BigDecimal.ZERO);
         BigDecimal revenueBookedPreviousCycle = latestClosedCycle
             .map(closed -> saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, closed.getId(), SaleStatus.RECORDED))
             .orElse(BigDecimal.ZERO);
@@ -164,11 +171,15 @@ public class DashboardService {
         BigDecimal totalLeftBusiness = legBusinessTotals.left();
         BigDecimal totalRightBusiness = legBusinessTotals.right();
         BigDecimal totalSelfBusiness = saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED);
-        BigDecimal newBookedAreaSqft = saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(
-            associateId, cycle.getId(), SaleStatus.RECORDED);
+        BigDecimal newBookedAreaSqft = openCycle
+            .map(c -> saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, c.getId(), SaleStatus.RECORDED))
+            .orElse(BigDecimal.ZERO);
 
-        long daysRemaining = Math.max(0, ChronoUnit.DAYS.between(LocalDate.now(), cycle.getPeriodEnd()));
-        int cycleNumber = (int) cycleRepository.countByPeriodStartLessThanEqual(cycle.getPeriodStart());
+        DashboardResponse.CycleCountdown countdown = openCycle.map(c -> new DashboardResponse.CycleCountdown(
+            c.getId(),
+            Math.max(0, ChronoUnit.DAYS.between(LocalDate.now(), c.getPeriodEnd())),
+            (int) cycleRepository.countByPeriodStartLessThanEqual(c.getPeriodStart()),
+            c.getPeriodStart(), c.getPeriodEnd())).orElse(null);
 
         return new DashboardResponse(
             new DashboardResponse.AssociateSummary(
@@ -178,14 +189,20 @@ public class DashboardService {
                 associate.getLastActiveAt()),
             associate.getKycStatus() != KycStatus.VERIFIED,
             new DashboardResponse.CycleIncome(
-                cycle.getId(), direct, matching, sponsorMatching, selfPerformance, royaltyBonus, royaltyBonusPct, total,
+                openCycleId, direct, matching, sponsorMatching, selfPerformance, royaltyBonus, royaltyBonusPct, total,
                 previousCycleTotalIncome, incomeTrend, matchingIncomeLifetime, sponsorMatchingIncomeLifetime),
             new DashboardResponse.WalletSummary(wallet.getBalance()),
-            new DashboardResponse.CycleCountdown(cycle.getId(), daysRemaining, cycleNumber, cycle.getPeriodStart(), cycle.getPeriodEnd()),
+            countdown,
             new DashboardResponse.SalesSummary(salesThisCycle, revenueBookedThisCycle, revenueBookedChangePct),
             new DashboardResponse.NetworkSummary(totalDownline, directCount, leftAssociateCount, rightAssociateCount),
             new DashboardResponse.LegVolumeSummary(
                 leftLegVolume, rightLegVolume, totalLeftBusiness, totalRightBusiness, totalSelfBusiness, newBookedAreaSqft)
         );
+    }
+
+    private BigDecimal cycleIncome(UUID associateId, UUID cycleId, IncomeType type) {
+        return cycleId == null
+            ? BigDecimal.ZERO
+            : ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, type);
     }
 }

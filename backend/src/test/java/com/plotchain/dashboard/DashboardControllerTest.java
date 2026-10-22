@@ -155,18 +155,34 @@ class DashboardControllerTest {
     }
 
     @Test
-    void returns409WhenNoOpenCycle() throws Exception {
+    void returnsDashboardWithNullCountdownAndZeroCycleIncomeWhenNoOpenCycle() throws Exception {
         UUID associateId = UUID.randomUUID();
+        UUID rankId = UUID.randomUUID();
         Associate associate = new Associate();
         associate.setId(associateId);
-        associate.setRankId(UUID.randomUUID());
+        associate.setRankId(rankId);
         associate.setKycStatus(KycStatus.VERIFIED);
         associate.setCumulativeMatchedVolume(BigDecimal.ZERO);
+
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(cycleRepository.findAllByOrderByPeriodStartDesc(any(org.springframework.data.domain.PageRequest.class)))
+            .thenReturn(org.springframework.data.domain.Page.empty());
+        when(ledgerEntryRepository.sumNetAmountByAssociateAndType(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
+        when(rankTierRepository.findAllByOrderByRankOrder())
+            .thenReturn(List.of(new RankTier(rankId, "Sales Associate", 1, BigDecimal.valueOf(5000))));
+        when(saleRepository.sumAmountByAssociateIdAndStatus(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(legVolumeRepository.totalBusiness(any()))
+            .thenReturn(new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
 
         mockMvc.perform(get("/api/associates/me/dashboard")
                 .header("Authorization", "Bearer " + tokenFor(associateId)))
-            .andExpect(status().isConflict());
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.cycleCountdown").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.cycleIncome.cycleId").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.cycleIncome.totalIncome").value(0))
+            .andExpect(jsonPath("$.salesSummary.salesThisCycle").value(0));
     }
 }

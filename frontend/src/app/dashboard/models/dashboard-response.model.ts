@@ -13,7 +13,7 @@ export interface AssociateSummary {
 }
 
 export interface CycleIncome {
-  cycleId: string;
+  cycleId: string | null;
   directIncome: number;
   matchingIncome: number;
   sponsorMatchingIncome: number;
@@ -69,7 +69,7 @@ export interface DashboardResponse {
   kycPendingBannerVisible: boolean;
   cycleIncome: CycleIncome;
   wallet: WalletSummary;
-  cycleCountdown: CycleCountdown;
+  cycleCountdown: CycleCountdown | null;
   salesSummary: SalesSummary;
   networkSummary: NetworkSummary;
   legVolumeSummary: LegVolumeSummary;

@@ -38,8 +38,11 @@ type CollapsibleSection = 'businessVolume' | 'networkIncome';
         <div class="dashboard__header-left">
           <h1 class="dashboard__title">{{ 'dashboard.title' | translate }}</h1>
           <div class="dashboard__header-meta">
-            <span class="dashboard__cycle-pill">{{ cycleClosesKey(d.cycleCountdown.daysRemaining) | translate: { days: d.cycleCountdown.daysRemaining } }}</span>
-            <span class="dashboard__cycle-range">{{ 'dashboard.cycleRange' | translate: { number: d.cycleCountdown.cycleNumber, start: (d.cycleCountdown.periodStart | date:'d MMM'), end: (d.cycleCountdown.periodEnd | date:'d MMM') } }}</span>
+            <ng-container *ngIf="d.cycleCountdown as cc; else noCycle">
+              <span class="dashboard__cycle-pill">{{ cycleClosesKey(cc.daysRemaining) | translate: { days: cc.daysRemaining } }}</span>
+              <span class="dashboard__cycle-range">{{ 'dashboard.cycleRange' | translate: { number: cc.cycleNumber, start: (cc.periodStart | date:'d MMM'), end: (cc.periodEnd | date:'d MMM') } }}</span>
+            </ng-container>
+            <ng-template #noCycle><span class="dashboard__cycle-pill">{{ 'dashboard.noActiveCycle' | translate }}</span></ng-template>
           </div>
         </div>
         <div class="dashboard__header-right">
