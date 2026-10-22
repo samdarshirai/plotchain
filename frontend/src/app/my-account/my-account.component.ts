@@ -1,3 +1,4 @@
+import { PasswordToggleDirective } from '../shared/directives/password-toggle.directive';
 import { apiUrl } from '../core/api/api-url';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
@@ -65,6 +66,7 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
   selector: 'app-my-account',
   standalone: true,
   imports: [
+    PasswordToggleDirective,
     CommonModule, ReactiveFormsModule, TranslateModule, FieldErrorComponent, InlineBannerComponent,
     BrandButtonComponent, DigitalIdCardComponent
   ],
@@ -326,7 +328,7 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
             <div class="detail-card__fields detail-card__fields--auth">
               <label class="detail-card__field">
                 <span>{{ 'myAccount.authorisation.transactionPasswordLabel' | translate }}</span>
-                <input type="text" autocomplete="off" formControlName="transactionPassword" [placeholder]="'myAccount.authorisation.placeholder' | translate" />
+                <input type="password" autocomplete="off" appPasswordToggle formControlName="transactionPassword" [placeholder]="'myAccount.authorisation.placeholder' | translate" />
                 <span class="detail-card__hint">{{ 'myAccount.authorisation.hint' | translate }}</span>
               </label>
             </div>
@@ -374,15 +376,15 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
             <div class="detail-card__fields">
               <label class="detail-card__field" *ngIf="transactionPasswordStatus?.isSet">
                 <span>{{ 'myAccount.transactionPasswordTab.currentLabel' | translate }}</span>
-                <input type="text" autocomplete="off" formControlName="currentTransactionPassword" />
+                <input type="password" autocomplete="off" appPasswordToggle formControlName="currentTransactionPassword" />
               </label>
               <label class="detail-card__field">
                 <span>{{ 'myAccount.transactionPasswordTab.newLabel' | translate }}</span>
-                <input type="text" autocomplete="off" formControlName="newTransactionPassword" />
+                <input type="password" autocomplete="off" appPasswordToggle formControlName="newTransactionPassword" />
               </label>
               <label class="detail-card__field">
                 <span>{{ 'myAccount.transactionPasswordTab.confirmLabel' | translate }}</span>
-                <input type="text" autocomplete="off" formControlName="confirmTransactionPassword" />
+                <input type="password" autocomplete="off" appPasswordToggle formControlName="confirmTransactionPassword" />
               </label>
             </div>
             <div class="profile-actions">

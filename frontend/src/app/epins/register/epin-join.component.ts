@@ -1,3 +1,4 @@
+import { PasswordToggleDirective } from '../../shared/directives/password-toggle.directive';
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -13,7 +14,7 @@ import { INDIA_STATE_OPTIONS } from '../../shared/india-states';
 @Component({
   selector: 'app-epin-join',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, PasswordToggleDirective],
   styleUrl: './epin-join.component.scss',
   template: `
     <div class="epin-join" (keydown.escape)="back()" (click)="$event.target === $event.currentTarget && !busy && back()">
@@ -155,7 +156,7 @@ import { INDIA_STATE_OPTIONS } from '../../shared/india-states';
           <section class="epin-join__section epin-join__section--5">
             <h2 class="epin-join__heading">{{ 'epins.passwordLabel' | translate }}</h2>
             <label class="epin-join__field"><span>{{ 'epins.passwordLabel' | translate }} <span class="epin-join__req">*</span></span>
-              <input class="epin-join__input" type="text" autocomplete="off" formControlName="transactionPassword" />
+              <input class="epin-join__input" type="password" appPasswordToggle autocomplete="off" formControlName="transactionPassword" />
               <app-field-error [message]="err('transactionPassword')"></app-field-error>
             </label>
           </section>

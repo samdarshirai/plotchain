@@ -1,3 +1,4 @@
+import { PasswordToggleDirective } from '../../shared/directives/password-toggle.directive';
 import { Component, OnInit, ViewChild, ElementRef, inject } from '@angular/core';
 import { headerIcon } from '../../shared/utils/header-icon';
 import { CommonModule, DatePipe } from '@angular/common';
@@ -20,7 +21,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-epin-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, PagerComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, PagerComponent, PasswordToggleDirective],
   providers: [DatePipe],
   styleUrl: './epin-register.component.scss',
   template: `
@@ -49,7 +50,7 @@ const PAGE_SIZE = 20;
             </div>
           </div>
           <label class="epin-reg__label">{{ 'epins.passwordLabel' | translate }}
-            <input class="epin-reg__input" type="text" autocomplete="off" name="pw" [(ngModel)]="password" /></label>
+            <input class="epin-reg__input" type="password" appPasswordToggle autocomplete="off" name="pw" [(ngModel)]="password" /></label>
           <button type="submit" class="brand-button epin-reg__submit" [disabled]="busy">
             {{ count && count > 0 ? ('epinRegister.transferN' | translate: { count: count }) : ('epinRegister.submit' | translate) }}
           </button>
