@@ -86,43 +86,50 @@ export const saleRow = (s: Sale): BookingRow => ({
               <td class="booking-table__num" [attr.data-label]="'plotBookings.table.rest' | translate">{{ money(r.rest) }}</td>
               <td [attr.data-label]="'plotBookings.table.details' | translate">
                 <button type="button" class="booking-table__details" *ngIf="r.installments"
-                  [attr.aria-expanded]="r.key === selectedKey" (click)="toggle(r)">
+                  aria-haspopup="dialog" (click)="toggle(r)">
                   {{ 'plotBookings.table.detailsAction' | translate }}
                 </button>
-              </td>
-            </tr>
-            <tr class="booking-table__expand" *ngIf="inline && r.key === expandedKey && r.installments">
-              <td colspan="14">
-                <table class="booking-table__installments">
-                  <thead><tr>
-                    <th><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'plotBookings.column.no' | translate }}</th>
-                    <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.column.dueDate' | translate }}</th>
-                    <th><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'plotBookings.column.amount' | translate }}</th>
-                    <th><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'plotBookings.column.status' | translate }}</th>
-                    <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.column.paidOn' | translate }}</th>
-                  </tr></thead>
-                  <tbody>
-                    <tr *ngFor="let i of r.installments">
-                      <td>{{ i.installmentNumber }}</td>
-                      <td>{{ i.dueDate | date: 'mediumDate' }}</td>
-                      <td>{{ money(i.amount) }}</td>
-                      <td>{{ 'plotBookings.installmentStatus.' + i.status | translate }}</td>
-                      <td>{{ i.paidAt ? (i.paidAt | date: 'mediumDate') : '—' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
               </td>
             </tr>
           </ng-container>
         </tbody>
       </table>
     </div>
+    <div class="booking-modal" *ngIf="inline && popupRow as r" (keydown.escape)="expandedKey = null"
+         (click)="$event.target === $event.currentTarget && (expandedKey = null)">
+      <div class="booking-modal__box" role="dialog" aria-modal="true" aria-labelledby="booking-modal-title">
+        <h2 class="booking-modal__title" id="booking-modal-title">{{ r.projectName || '—' }} · {{ r.plotNo || '—' }}</h2>
+        <div class="booking-modal__scroll">
+          <table class="booking-table__installments">
+            <thead><tr>
+              <th><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'plotBookings.column.no' | translate }}</th>
+              <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.column.dueDate' | translate }}</th>
+              <th><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'plotBookings.column.amount' | translate }}</th>
+              <th><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'plotBookings.column.status' | translate }}</th>
+              <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.column.paidOn' | translate }}</th>
+            </tr></thead>
+            <tbody>
+              <tr *ngFor="let i of r.installments">
+                <td>{{ i.installmentNumber }}</td>
+                <td>{{ i.dueDate | date: 'mediumDate' }}</td>
+                <td>{{ money(i.amount) }}</td>
+                <td>{{ 'plotBookings.installmentStatus.' + i.status | translate }}</td>
+                <td>{{ i.paidAt ? (i.paidAt | date: 'mediumDate') : '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="booking-modal__footer">
+          <button type="button" class="booking-modal__close" (click)="expandedKey = null">{{ 'plotBookings.table.close' | translate }}</button>
+        </div>
+      </div>
+    </div>
   `
 })
 export class BookingTableComponent {
   @Input({ required: true }) rows: BookingRow[] = [];
   @Input() label = '';
-  // inline: Details expands the installment schedule under the row; otherwise it just emits.
+  // inline: Details opens the installment schedule in a popup; otherwise it just emits.
   @Input() inline = false;
   @Input() selectedKey: string | null = null;
   @Output() details = new EventEmitter<string>();
@@ -134,8 +141,12 @@ export class BookingTableComponent {
 
   trackKey = (_: number, r: BookingRow): string => r.key;
 
+  get popupRow(): BookingRow | undefined {
+    return this.rows.find(r => r.key === this.expandedKey && r.installments);
+  }
+
   toggle(r: BookingRow): void {
-    this.expandedKey = this.expandedKey === r.key ? null : r.key;
+    this.expandedKey = r.key;
     this.details.emit(r.key);
   }
 }
