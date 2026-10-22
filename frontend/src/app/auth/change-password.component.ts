@@ -11,38 +11,14 @@ import { postAuthLandingPath } from './post-auth-redirect';
 import { BrandButtonComponent } from '../shared/components/brand-button/brand-button.component';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 
-interface PasswordChecks {
-  length: boolean;
-  upper: boolean;
-  number: boolean;
-  symbol: boolean;
-}
-
-// The server only enforces an 8-character minimum; this validator is a strict superset so a
-// weak-but-8-char password never reaches the API, keeping the 400/field-error path unreachable.
-function passwordStrengthValidator(control: AbstractControl): ValidationErrors | null {
-  const value: string = control.value ?? '';
-  const checks = passwordChecks(value);
-  return Object.values(checks).every(Boolean) ? null : { weak: true };
-}
+// Length is the only password rule; mirrors the server's @Size(min = 6).
+const MIN_PASSWORD_LENGTH = 6;
 
 function passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
   const next = group.get('newPassword')?.value;
   const confirm = group.get('confirmPassword')?.value;
   return next === confirm ? null : { mismatch: true };
 }
-
-function passwordChecks(value: string): PasswordChecks {
-  return {
-    length: value.length >= 8,
-    upper: /[A-Z]/.test(value),
-    number: /[0-9]/.test(value),
-    symbol: /[^A-Za-z0-9]/.test(value)
-  };
-}
-
-const STRENGTH_COLORS = ['var(--border-subtle)', 'var(--status-danger)', 'var(--status-warning)', 'var(--status-warning)', 'var(--status-success)'];
-const STRENGTH_LABEL_KEYS = ['', 'auth.strengthWeak', 'auth.strengthFair', 'auth.strengthGood', 'auth.strengthStrong'];
 
 @Component({
   selector: 'app-change-password',
@@ -85,27 +61,10 @@ const STRENGTH_LABEL_KEYS = ['', 'auth.strengthWeak', 'auth.strengthFair', 'auth
           </div>
         </div>
 
-        <div class="change-password-strength">
-          <div class="change-password-strength-bars">
-            <div
-              class="change-password-strength-bar"
-              *ngFor="let bar of strengthBars"
-              [style.background]="bar.color"
-            ></div>
-          </div>
-          <span class="change-password-strength-label" [style.color]="strengthLabelColor">
-            {{ strengthLabelKey ? (strengthLabelKey | translate) : '' }}
-          </span>
-        </div>
-
         <div class="change-password-requirements">
-          <div
-            class="change-password-requirement"
-            [class.change-password-requirement--met]="req.met"
-            *ngFor="let req of requirements"
-          >
-            <span class="material-symbols-outlined">{{ req.met ? 'check_circle' : 'radio_button_unchecked' }}</span>
-            <span>{{ req.labelKey | translate }}</span>
+          <div class="change-password-requirement" [class.change-password-requirement--met]="lengthMet">
+            <span class="material-symbols-outlined">{{ lengthMet ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            <span>{{ 'auth.reqLength' | translate }}</span>
           </div>
         </div>
 
@@ -152,7 +111,7 @@ export class ChangePasswordComponent {
   form = this.fb.group(
     {
       currentPassword: ['', Validators.required],
-      newPassword: ['', [Validators.required, passwordStrengthValidator]],
+      newPassword: ['', [Validators.required, Validators.minLength(MIN_PASSWORD_LENGTH)]],
       confirmPassword: ['', Validators.required]
     },
     { validators: passwordsMatchValidator }
@@ -162,37 +121,8 @@ export class ChangePasswordComponent {
   showNext = false;
   showConfirm = false;
 
-  get passwordChecks(): PasswordChecks {
-    return passwordChecks(this.form.get('newPassword')!.value ?? '');
-  }
-
-  get strengthScore(): number {
-    return Object.values(this.passwordChecks).filter(Boolean).length;
-  }
-
-  get strengthBars(): { color: string }[] {
-    const score = this.strengthScore;
-    const filledColor = STRENGTH_COLORS[score] ?? STRENGTH_COLORS[0];
-    return [0, 1, 2, 3].map(i => ({ color: i < score ? filledColor : STRENGTH_COLORS[0] }));
-  }
-
-  get strengthLabelKey(): string {
-    const value: string = this.form.get('newPassword')!.value ?? '';
-    return value.length === 0 ? '' : STRENGTH_LABEL_KEYS[this.strengthScore];
-  }
-
-  get strengthLabelColor(): string {
-    return STRENGTH_COLORS[this.strengthScore] ?? 'var(--text-muted)';
-  }
-
-  get requirements(): { labelKey: string; met: boolean }[] {
-    const checks = this.passwordChecks;
-    return [
-      { labelKey: 'auth.reqLength', met: checks.length },
-      { labelKey: 'auth.reqUpper', met: checks.upper },
-      { labelKey: 'auth.reqNumber', met: checks.number },
-      { labelKey: 'auth.reqSymbol', met: checks.symbol }
-    ];
+  get lengthMet(): boolean {
+    return (this.form.get('newPassword')!.value ?? '').length >= MIN_PASSWORD_LENGTH;
   }
 
   get showMismatch(): boolean {

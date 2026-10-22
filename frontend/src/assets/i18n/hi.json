@@ -181,7 +181,7 @@
     }
   },
   "plotBookings": {
-    "table": {"empty": "दिखाने के लिए कोई डेटा नहीं।", "bookingDate": "बुकिंग तिथि", "associateId": "एसोसिएट आईडी", "name": "नाम", "project": "प्रोजेक्ट", "plotType": "प्लॉट प्रकार", "plotNo": "प्लॉट नं.", "rate": "दर", "area": "क्षेत्रफल", "price": "मूल्य", "extraPrice": "अतिरिक्त मूल्य", "totalPrice": "कुल मूल्य", "paid": "भुगतान राशि", "rest": "शेष राशि", "details": "विवरण", "detailsAction": "देखें"},
+    "table": {"empty": "दिखाने के लिए कोई डेटा नहीं।", "bookingDate": "बुकिंग तिथि", "associateId": "एसोसिएट आईडी", "name": "नाम", "project": "प्रोजेक्ट", "plotType": "प्लॉट प्रकार", "plotNo": "प्लॉट नं.", "rate": "दर", "area": "क्षेत्रफल", "price": "मूल्य", "extraPrice": "अतिरिक्त मूल्य", "totalPrice": "कुल मूल्य", "paid": "भुगतान राशि", "rest": "शेष राशि", "details": "विवरण", "detailsAction": "देखें", "close": "बंद करें"},
     "myBookings": { "title": "My Bookings" },
     "team": {
       "title": { "TEAM": "टीम द्वारा खरीदे गए प्लॉट", "LEFT": "लेफ्ट प्लॉट बुकिंग", "RIGHT": "राइट प्लॉट बुकिंग" },
@@ -693,14 +693,7 @@
     "newPasswordLabel": "नया पासवर्ड",
     "confirmPasswordLabel": "नए पासवर्ड की पुष्टि करें",
     "confirmPasswordMismatch": "पासवर्ड मेल नहीं खाते",
-    "reqLength": "कम से कम 8 अक्षर",
-    "reqUpper": "एक बड़ा अक्षर (अपरकेस)",
-    "reqNumber": "एक अंक",
-    "reqSymbol": "एक विशेष चिह्न",
-    "strengthWeak": "कमज़ोर",
-    "strengthFair": "ठीक-ठाक",
-    "strengthGood": "अच्छा",
-    "strengthStrong": "मज़बूत",
+    "reqLength": "कम से कम 6 अक्षर",
     "changePasswordButton": "पासवर्ड बदलें",
     "changePasswordError": "आपका पासवर्ड नहीं बदला जा सका। कृपया अपना वर्तमान पासवर्ड जांचें और पुनः प्रयास करें।",
     "cancelLabel": "रद्द करें"

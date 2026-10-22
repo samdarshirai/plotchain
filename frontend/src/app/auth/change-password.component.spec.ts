@@ -27,6 +27,17 @@ describe('ChangePasswordComponent', () => {
     localStorage.clear();
   });
 
+  it('accepts any new password of 6+ characters and rejects shorter ones', () => {
+    const form = fixture.componentInstance.form;
+    const valid = (pw: string) => {
+      form.setValue({ currentPassword: 'x', newPassword: pw, confirmPassword: pw });
+      return form.valid;
+    };
+    expect(valid('123456')).toBe(true);
+    expect(valid('abcdef')).toBe(true);
+    expect(valid('12345')).toBe(false);
+  });
+
   it('navigates to /dashboard on successful password change without consulting setup state', () => {
     fixture.componentInstance.form.setValue({ currentPassword: 'Temp1234!', newPassword: 'NewPassword123!', confirmPassword: 'NewPassword123!' });
     fixture.componentInstance.onSubmit();

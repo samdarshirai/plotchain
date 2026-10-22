@@ -168,7 +168,7 @@
     }
   },
   "plotBookings": {
-    "table": {"empty": "No data to show.", "bookingDate": "Booking Date", "associateId": "Associate ID", "name": "Name", "project": "Project", "plotType": "Plot Type", "plotNo": "Plot No.", "rate": "Rate", "area": "Area", "price": "Price", "extraPrice": "Extra Price", "totalPrice": "Total Price", "paid": "Paid Amount", "rest": "Rest Amount", "details": "Details", "detailsAction": "View"},
+    "table": {"empty": "No data to show.", "bookingDate": "Booking Date", "associateId": "Associate ID", "name": "Name", "project": "Project", "plotType": "Plot Type", "plotNo": "Plot No.", "rate": "Rate", "area": "Area", "price": "Price", "extraPrice": "Extra Price", "totalPrice": "Total Price", "paid": "Paid Amount", "rest": "Rest Amount", "details": "Details", "detailsAction": "View", "close": "Close"},
     "myBookings": { "title": "My Bookings" },
     "team": {
       "title": { "TEAM": "Team Purchase Plots", "LEFT": "Left Plot Booking", "RIGHT": "Right Plot Booking" },
@@ -722,14 +722,7 @@
     "newPasswordLabel": "New Password",
     "confirmPasswordLabel": "Confirm New Password",
     "confirmPasswordMismatch": "Passwords don't match",
-    "reqLength": "At least 8 characters",
-    "reqUpper": "One uppercase letter",
-    "reqNumber": "One number",
-    "reqSymbol": "One special character",
-    "strengthWeak": "Weak",
-    "strengthFair": "Fair",
-    "strengthGood": "Good",
-    "strengthStrong": "Strong",
+    "reqLength": "At least 6 characters",
     "changePasswordButton": "Change Password",
     "changePasswordError": "Could not change your password. Please check your current password and try again.",
     "cancelLabel": "Cancel"

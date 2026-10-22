@@ -563,7 +563,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
 
   loginPasswordForm = this.fb.group({
     currentPassword: ['', Validators.required],
-    newPassword: ['', [Validators.required, Validators.minLength(8)]],
+    newPassword: ['', [Validators.required, Validators.minLength(6)]],
     confirmPassword: ['', Validators.required]
   });
 

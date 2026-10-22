@@ -748,34 +748,6 @@
   font-size: 1.1875rem;
 }
 
-.change-password-strength {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  margin-bottom: 0.75rem;
-}
-
-.change-password-strength-bars {
-  display: flex;
-  gap: 0.25rem;
-  flex: 1;
-}
-
-.change-password-strength-bar {
-  height: 3.5px;
-  flex: 1;
-  border-radius: var(--radius-sm);
-  transition: background 150ms;
-}
-
-.change-password-strength-label {
-  font-family: var(--font-sans);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  min-width: 2.75rem;
-  text-align: right;
-}
-
 .change-password-requirements {
   display: grid;
   grid-template-columns: 1fr 1fr;
