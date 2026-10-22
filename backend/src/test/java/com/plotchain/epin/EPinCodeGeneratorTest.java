@@ -7,9 +7,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EPinCodeGeneratorTest {
 
     @Test
-    void generatesSixDigitNumericPins() {
+    void generatesEightCharUppercaseAlphanumericPins() {
         for (int i = 0; i < 1000; i++) {
-            assertThat(EPinCodeGenerator.generate()).matches("\\d{6}");
+            assertThat(EPinCodeGenerator.generate()).matches("[A-Z0-9]{8}");
         }
     }
 }
