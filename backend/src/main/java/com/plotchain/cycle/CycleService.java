@@ -677,6 +677,11 @@ public class CycleService {
     // since at most one OPEN cycle is expected to exist at a time; if the most recent OPEN
     // cycle's stored period doesn't cover today (e.g. it's stale), a new cycle is created for
     // today's period without inspecting older OPEN cycles.
+    @Transactional
+    public CycleSummaryResponse openCurrentCycle() {
+        return toSummary(getOrOpenCurrent());
+    }
+
     public Cycle getOrOpenCurrent() {
         LocalDate today = LocalDate.now();
 

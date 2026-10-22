@@ -132,6 +132,19 @@ class CycleControllerTest {
     }
 
     @Test
+    void openReturnsTheCurrentCycleForAnAdminToken() throws Exception {
+        UUID cycleId = UUID.randomUUID();
+        when(cycleService.openCurrentCycle()).thenReturn(new CycleSummaryResponse(cycleId,
+            java.time.LocalDate.of(2026, 10, 16), java.time.LocalDate.of(2026, 10, 31), CycleStatus.OPEN));
+
+        mockMvc.perform(post("/api/admin/cycles/open")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(cycleId.toString()))
+            .andExpect(jsonPath("$.status").value("OPEN"));
+    }
+
+    @Test
     void closeReturnsTheSettlementResultForAnAdminToken() throws Exception {
         UUID cycleId = UUID.randomUUID();
         UUID newCycleId = UUID.randomUUID();

@@ -108,6 +108,14 @@ const INCOME_TYPES: CycleIncomeType[] = ['DIRECT', 'MATCHING', 'SPONSOR_MATCHING
         </div>
       </div>
 
+      <section class="cycle-management__no-cycle" *ngIf="page && !currentOpenCycle">
+        <p>{{ 'admin.cycleManagement.noOpenCycle' | translate }}</p>
+        <app-brand-button class="cycle-management__open-cycle-action" (clicked)="openCycle()">
+          {{ 'admin.cycleManagement.openCycleAction' | translate }}
+        </app-brand-button>
+      </section>
+      <app-inline-banner *ngIf="openError" tone="danger" [dismissible]="true" class="cycle-management__open-error" (dismissed)="openError = null">{{ openError }}</app-inline-banner>
+
       <app-inline-banner *ngIf="creditResult as result" tone="success" [dismissible]="true" class="cycle-management__credit-success" (dismissed)="creditResult = null">
         <p>{{ 'admin.cycleManagement.creditSuccessTitle' | translate }}</p>
         <p>{{ 'admin.cycleManagement.creditSuccessCycleLabel' | translate }}: <strong>{{ result.cycleId }}</strong> ({{ result.newCycleStatus }})</p>
@@ -203,6 +211,7 @@ export class CycleManagementComponent implements OnInit {
   currentCycleStats: CurrentCycleStats | null = null;
   closeResult: CycleCloseResponse | null = null;
   closeError: string | null = null;
+  openError: string | null = null;
   creditResult: WalletCreditingResult | null = null;
   creditError: 'conflict' | 'generic' | null = null;
   private status: CycleStatus | '' = '';
@@ -351,6 +360,19 @@ export class CycleManagementComponent implements OnInit {
       PAID: 'admin.cycleManagement.statusPaidOption'
     };
     return keys[stage];
+  }
+
+  openCycle(): void {
+    this.openError = null;
+    this.cycleManagementService.open().subscribe({
+      next: () => {
+        this.loadPage(0);
+        this.loadCurrentCycleStats();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.openError = err.error?.error || this.translate.instant('admin.cycleManagement.openGenericError');
+      }
+    });
   }
 
   closeCycle(): void {

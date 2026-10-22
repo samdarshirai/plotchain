@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { CycleStatus, CyclePage } from '../models/cycle.model';
+import { CycleStatus, CyclePage, CycleSummary } from '../models/cycle.model';
 import { CycleDetail } from '../models/cycle-detail.model';
 import { CycleCloseResponse } from '../models/cycle-close-response.model';
 import { WalletCreditingResult } from '../models/wallet-crediting-result.model';
@@ -20,6 +20,10 @@ export class CycleManagementService {
 
   detail(id: string): Observable<CycleDetail> {
     return this.http.get<CycleDetail>(`/api/admin/cycles/${id}`);
+  }
+
+  open(): Observable<CycleSummary> {
+    return this.http.post<CycleSummary>('/api/admin/cycles/open', {});
   }
 
   close(id: string): Observable<CycleCloseResponse> {

@@ -39,6 +39,11 @@ public class CycleController {
         return cycleService.getDetail(id);
     }
 
+    @PostMapping("/open")
+    public CycleSummaryResponse open() {
+        return cycleService.openCurrentCycle();
+    }
+
     @PostMapping("/{id}/close")
     public CycleCloseResponse close(@PathVariable UUID id) {
         return cycleService.close(id);

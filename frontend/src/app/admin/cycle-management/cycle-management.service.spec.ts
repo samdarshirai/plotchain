@@ -53,6 +53,14 @@ describe('CycleManagementService', () => {
     req.flush(mockDetail);
   });
 
+  it('opens the current cycle', () => {
+    service.open().subscribe();
+
+    const req = httpMock.expectOne('/api/admin/cycles/open');
+    expect(req.request.method).toBe('POST');
+    req.flush({ id: 'c1', periodStart: '2026-10-16', periodEnd: '2026-10-31', status: 'OPEN' });
+  });
+
   it('closes a cycle by id', () => {
     const mockResponse: CycleCloseResponse = { cycleId: 'c1', status: 'CLOSED', legVolumeRowsWritten: 3, newCycleId: 'c2' };
 

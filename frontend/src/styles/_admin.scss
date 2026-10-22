@@ -1236,6 +1236,15 @@
   color: var(--text-primary);
 }
 
+.cycle-management__no-cycle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
 .cycle-management__current-actions {
   display: flex;
   flex-direction: column;
@@ -1328,7 +1337,8 @@
     padding: 0.75rem;
   }
 
-  .cycle-management__current-actions {
+  .cycle-management__current-actions,
+  .cycle-management__no-cycle app-brand-button {
     align-items: stretch;
     width: 100%;
   }
