@@ -467,6 +467,7 @@ export class MyTreeComponent implements OnInit, OnDestroy {
     this.ngZone.runOutsideAngular(() => {
       const onPointerDown = (e: PointerEvent) => {
         if ((e.target as HTMLElement).closest('button')) return;
+        if (this.activePointers.size >= 1) return; // single-finger pan only, no pinch zoom (+/- buttons remain)
         this.dismissHint();
         wrap.setPointerCapture(e.pointerId);
         this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -558,6 +559,7 @@ export class MyTreeComponent implements OnInit, OnDestroy {
 
       const onWheel = (e: WheelEvent) => {
         e.preventDefault();
+        if (e.ctrlKey) return; // trackpad pinch arrives as ctrl+wheel
         const rect = wrap.getBoundingClientRect();
         const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
         this.applyTransform(zoomAround(this.panZoom, e.clientX - rect.left, e.clientY - rect.top, factor), false);
@@ -569,6 +571,9 @@ export class MyTreeComponent implements OnInit, OnDestroy {
       wrap.addEventListener('pointercancel', onPointerCancel, { passive: true });
       wrap.addEventListener('pointerleave', onPointerLeave, { passive: true });
       wrap.addEventListener('wheel', onWheel, { passive: false });
+      const onGesture = (e: Event) => e.preventDefault(); // iOS Safari pinch
+      wrap.addEventListener('gesturestart', onGesture);
+      wrap.addEventListener('gesturechange', onGesture);
 
       this.wrapCleanupFns = [
         () => wrap.removeEventListener('pointerdown', onPointerDown),
@@ -576,7 +581,9 @@ export class MyTreeComponent implements OnInit, OnDestroy {
         () => wrap.removeEventListener('pointerup', onPointerUp),
         () => wrap.removeEventListener('pointercancel', onPointerCancel),
         () => wrap.removeEventListener('pointerleave', onPointerLeave),
-        () => wrap.removeEventListener('wheel', onWheel)
+        () => wrap.removeEventListener('wheel', onWheel),
+        () => wrap.removeEventListener('gesturestart', onGesture),
+        () => wrap.removeEventListener('gesturechange', onGesture)
       ];
     });
   }

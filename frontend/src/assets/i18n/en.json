@@ -239,7 +239,7 @@
     "noRankLabel": "No rank",
     "skewedLegsFlag": "Skewed legs",
     "stagnantFlag": "Stagnant",
-    "panZoomHint": "Drag to pan · scroll or pinch to zoom",
+    "panZoomHint": "Drag to pan · scroll to zoom",
     "zoomInTitle": "Zoom in",
     "zoomOutTitle": "Zoom out",
     "fitToScreenLabel": "Fit",
