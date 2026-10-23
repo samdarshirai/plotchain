@@ -582,9 +582,9 @@ public class BookingService {
     // inventory row gives an Associate "own bookings + EMI schedule", not "own + descendant"
     // like the Sales row's explicit "team-volume reports" wording. No AssociateRepository
     // downline resolution needed here.
-    public AssociateBookingPageResponse getMyBookings(UUID associateId, int page, int size) {
+    public AssociateBookingPageResponse getMyBookings(UUID associateId, LocalDate from, LocalDate to, int page, int size) {
         Page<PlotBooking> result = plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(
-            associateId, PageRequest.of(page, size));
+            associateId, fromInstant(from), toInstant(to), PageRequest.of(page, size));
 
         List<BookingResponse> bookings = toResponses(result.getContent(), emiInstallmentRepository
             .findByBookingIdInOrderByInstallmentNumberAsc(
@@ -595,8 +595,8 @@ public class BookingService {
     }
 
     // position: null = whole team, "L"/"R" = that leg. Scoped to the caller's downline by the query.
-    public AssociateBookingPageResponse getTeamBookings(UUID associateId, String position, int page, int size) {
-        Page<PlotBooking> result = plotBookingRepository.findByDownline(associateId, position, PageRequest.of(page, size));
+    public AssociateBookingPageResponse getTeamBookings(UUID associateId, String position, LocalDate from, LocalDate to, int page, int size) {
+        Page<PlotBooking> result = plotBookingRepository.findByDownline(associateId, position, fromInstant(from), toInstant(to), PageRequest.of(page, size));
         List<BookingResponse> bookings = toResponses(result.getContent(), emiInstallmentRepository
             .findByBookingIdInOrderByInstallmentNumberAsc(
                 result.getContent().stream().map(PlotBooking::getId).toList()).stream()

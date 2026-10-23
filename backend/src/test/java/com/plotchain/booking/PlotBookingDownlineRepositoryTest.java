@@ -53,14 +53,14 @@ class PlotBookingDownlineRepositoryTest {
         PlotBooking br = d.booking(right, project, BookingStatus.ACTIVE, 4);
         d.booking(outsider, project, BookingStatus.ACTIVE, 5);
 
-        Page<PlotBooking> team = repo.findByDownline(root, null, PageRequest.of(0, 50));
+        Page<PlotBooking> team = repo.findByDownline(root, null, java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), PageRequest.of(0, 50));
         assertThat(team.getContent()).extracting(PlotBooking::getId)
             .containsExactly(br.getId(), bg.getId(), bl.getId());   // newest first, no own, no outsider
         assertThat(team.getTotalElements()).isEqualTo(3);
 
-        assertThat(repo.findByDownline(root, "L", PageRequest.of(0, 50)).getContent())
+        assertThat(repo.findByDownline(root, "L", java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), PageRequest.of(0, 50)).getContent())
             .extracting(PlotBooking::getId).containsExactly(bg.getId(), bl.getId());
-        assertThat(repo.findByDownline(root, "R", PageRequest.of(0, 50)).getContent())
+        assertThat(repo.findByDownline(root, "R", java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), PageRequest.of(0, 50)).getContent())
             .extracting(PlotBooking::getId).containsExactly(br.getId());
         assertThat(own.getId()).isNotIn(team.getContent().stream().map(PlotBooking::getId).toList());
     }

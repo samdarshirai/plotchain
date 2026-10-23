@@ -334,11 +334,13 @@ public class SaleService {
     // view-only, paginated. associateId always comes from the caller's own JWT (see
     // AssociateSaleController) -- there is no path for one associate to view another's sales
     // through this method.
-    public AssociateSalePageResponse getMySales(UUID associateId, int page, int size) {
+    public AssociateSalePageResponse getMySales(UUID associateId, java.time.LocalDate from, java.time.LocalDate to, int page, int size) {
         List<UUID> selfAndDownlineIds = associateRepository.findSelfAndDownline(associateId);
 
         Page<Sale> result = saleRepository.findByAssociateIdInOrderByRecordedAtDesc(
-            selfAndDownlineIds, PageRequest.of(page, size));
+            selfAndDownlineIds, from == null ? java.time.Instant.EPOCH : from.atStartOfDay().toInstant(java.time.ZoneOffset.UTC),
+            to == null ? java.time.Instant.parse("9999-01-01T00:00:00Z") : to.plusDays(1).atStartOfDay().toInstant(java.time.ZoneOffset.UTC),
+            PageRequest.of(page, size));
 
         List<SaleResponse> sales = toResponses(result.getContent());
         return new AssociateSalePageResponse(sales, page, size, result.getTotalElements());

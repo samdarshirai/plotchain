@@ -22,7 +22,9 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
     // "own + descendant" like the Sales row's "team-volume reports" wording -- so, unlike
     // SaleRepository.findByAssociateIdInOrderByRecordedAtDesc, this takes a single associateId,
     // never a self-plus-downline ID list.
-    Page<PlotBooking> findByAssociateIdOrderByBookedAtDesc(UUID associateId, Pageable pageable);
+    @Query("SELECT b FROM PlotBooking b WHERE b.associateId = :associateId AND b.bookedAt >= :from AND b.bookedAt < :to ORDER BY b.bookedAt DESC")
+    Page<PlotBooking> findByAssociateIdOrderByBookedAtDesc(@Param("associateId") UUID associateId,
+            @Param("from") Instant from, @Param("to") Instant to, Pageable pageable);
 
     // Same pessimistic-lock pattern as PlotRepository.findByIdForUpdate: must be the first statement
     // of the @Transactional pay/confirm/cancel/transfer methods (Decision 8); empty Optional doubles
@@ -88,6 +90,7 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
             SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
         )
         SELECT b.* FROM plot_booking b JOIN downline d ON b.associate_id = d.id
+        WHERE b.booked_at >= :from AND b.booked_at < :to
         ORDER BY b.booked_at DESC, b.id DESC
         """,
         countQuery = """
@@ -98,9 +101,11 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
             SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
         )
         SELECT count(*) FROM plot_booking b JOIN downline d ON b.associate_id = d.id
+        WHERE b.booked_at >= :from AND b.booked_at < :to
         """,
         nativeQuery = true)
-    Page<PlotBooking> findByDownline(@Param("associateId") UUID associateId, @Param("position") String position, Pageable pageable);
+    Page<PlotBooking> findByDownline(@Param("associateId") UUID associateId, @Param("position") String position,
+            @Param("from") Instant from, @Param("to") Instant to, Pageable pageable);
 
     // "My Business Datewise": same downline CTE as findByDownline, restricted to booked_at in [from, to).
     // position is 'L' or 'R'. CANCELLED bookings are not business.

@@ -985,14 +985,14 @@ class SaleServiceTest {
         when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(selfAndDownlineIds);
         Sale sale = recordedSale(UUID.randomUUID(), PLOT_ID);
         when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(
-            eq(selfAndDownlineIds), eq(PageRequest.of(0, 20))))
+            eq(selfAndDownlineIds), any(), any(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(sale), PageRequest.of(0, 20), 1));
 
-        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, 0, 20);
+        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, null, null, 0, 20);
 
         verify(associateRepository).findSelfAndDownline(ASSOCIATE_ID);
         verify(saleRepository).findByAssociateIdInOrderByRecordedAtDesc(
-            selfAndDownlineIds, PageRequest.of(0, 20));
+            eq(selfAndDownlineIds), any(), any(), eq(PageRequest.of(0, 20)));
         assertThat(response.totalElements()).isEqualTo(1);
         assertThat(response.page()).isEqualTo(0);
         assertThat(response.size()).isEqualTo(20);
@@ -1005,10 +1005,10 @@ class SaleServiceTest {
     void getMySalesReturnsAnEmptyPageWhenTheCallerHasNoSalesInTheirSubtree() {
         when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
         when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(
-            eq(List.of(ASSOCIATE_ID)), eq(PageRequest.of(0, 20))))
+            eq(List.of(ASSOCIATE_ID)), any(), any(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
-        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, 0, 20);
+        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, null, null, 0, 20);
 
         assertThat(response.totalElements()).isEqualTo(0);
         assertThat(response.sales()).isEmpty();
@@ -1039,12 +1039,12 @@ class SaleServiceTest {
             projectId, "Viraj Greens Ph II", "Patna", null, null, Instant.now());
 
         when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
-        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(Pageable.class)))
+        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(), any(), any(Pageable.class)))
             .thenReturn(new PageImpl<>(List.of(sale)));
         when(plotRepository.findAllById(List.of(plotId))).thenReturn(List.of(plot));
         when(projectRepository.findAllById(List.of(projectId))).thenReturn(List.of(project));
 
-        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, 0, 20);
+        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, null, null, 0, 20);
 
         assertThat(response.sales()).hasSize(1);
         assertThat(response.sales().get(0).plotNo()).isEqualTo("VG2-118");
@@ -1067,12 +1067,12 @@ class SaleServiceTest {
         sale.setRecordedAt(Instant.now());
 
         when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
-        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(Pageable.class)))
+        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(), any(), any(Pageable.class)))
             .thenReturn(new PageImpl<>(List.of(sale)));
         when(plotRepository.findAllById(List.of(plotId))).thenReturn(List.of());
         when(associateRepository.findAllById(List.of(ASSOCIATE_ID))).thenReturn(List.of(associateWithPosition("L")));
 
-        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, 0, 20);
+        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, null, null, 0, 20);
 
         assertThat(response.sales().get(0).associateUserId()).isEqualTo("VP00001");
         assertThat(response.sales().get(0).associateName()).isEqualTo("Jane Associate");
@@ -1095,12 +1095,12 @@ class SaleServiceTest {
         sale.setRecordedAt(Instant.now());
 
         when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
-        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(Pageable.class)))
+        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(), any(), any(Pageable.class)))
             .thenReturn(new PageImpl<>(List.of(sale)));
         when(plotRepository.findAllById(List.of(plotId))).thenReturn(List.of());
         when(projectRepository.findAllById(List.of(PROJECT_ID))).thenReturn(List.of(projectFixture()));
 
-        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, 0, 20);
+        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, null, null, 0, 20);
 
         assertThat(response.sales().get(0).plotNo()).isNull();
     }
@@ -1125,13 +1125,13 @@ class SaleServiceTest {
         sale.setRecordedAt(Instant.now());
 
         when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
-        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(Pageable.class)))
+        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(), any(), any(Pageable.class)))
             .thenReturn(new PageImpl<>(List.of(sale)));
         // Plot lookup comes back empty (as if the Plot were deleted) -- projectName must still resolve.
         when(plotRepository.findAllById(List.of(plotId))).thenReturn(List.of());
         when(projectRepository.findAllById(List.of(PROJECT_ID))).thenReturn(List.of(projectFixture()));
 
-        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, 0, 20);
+        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, null, null, 0, 20);
 
         assertThat(response.sales().get(0).plotNo()).isNull();
         assertThat(response.sales().get(0).projectName()).isEqualTo("Green Valley");

@@ -30,12 +30,15 @@ public class AssociateBookingController {
     @GetMapping("/api/associates/me/bookings")
     public AssociateBookingPageResponse getMyBookings(
             @AuthenticationPrincipal UUID associateId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
+        checkRange(from, to);
         page = Math.max(page, 0);
         size = Math.min(Math.max(size, 1), 100);
-        return bookingService.getMyBookings(associateId, page, size);
+        return bookingService.getMyBookings(associateId, from, to, page, size);
     }
 
     // Downline-scoped by the query itself (caller id from the JWT); leg = ALL | L | R.
@@ -43,16 +46,19 @@ public class AssociateBookingController {
     public AssociateBookingPageResponse getTeamBookings(
             @AuthenticationPrincipal UUID associateId,
             @RequestParam(defaultValue = "ALL") String leg,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
+        checkRange(from, to);
         String position = switch (leg) {
             case "ALL" -> null;
             case "L", "R" -> leg;
             default -> throw new org.springframework.web.server.ResponseStatusException(
                 org.springframework.http.HttpStatus.BAD_REQUEST, "leg must be ALL, L or R");
         };
-        return bookingService.getTeamBookings(associateId, position, Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        return bookingService.getTeamBookings(associateId, position, from, to, Math.max(page, 0), Math.min(Math.max(size, 1), 100));
     }
 
     // Report endpoints: from/to are inclusive calendar days, both optional.

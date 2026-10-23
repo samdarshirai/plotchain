@@ -100,7 +100,7 @@ class BookingServiceTest {
     }
 
     private void stubOwnPage(PlotBooking booking, List<EmiInstallment> installments) {
-        when(plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(eq(ASSOCIATE_ID), any()))
+        when(plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(eq(ASSOCIATE_ID), any(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
         when(emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(any()))
             .thenReturn(forBooking(booking, installments));
@@ -115,7 +115,7 @@ class BookingServiceTest {
             installment(3, "100.00", LocalDate.of(2026, 1, 1), InstallmentStatus.PAID),
             installment(4, "100.00", LocalDate.of(2026, 1, 1), InstallmentStatus.VOID)));
 
-        BookingResponse r = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20).bookings().get(0);
+        BookingResponse r = bookingService.getMyBookings(ASSOCIATE_ID, null, null, 0, 20).bookings().get(0);
 
         assertThat(r.installments()).extracting(EmiInstallmentResponse::overdue)
             .containsExactly(true, false, false, false);
@@ -131,7 +131,7 @@ class BookingServiceTest {
             installment(2, "250000.00", LocalDate.of(2026, 8, 1), InstallmentStatus.PENDING),
             installment(3, "150000.00", LocalDate.of(2026, 9, 1), InstallmentStatus.VOID)));
 
-        BookingResponse r = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20).bookings().get(0);
+        BookingResponse r = bookingService.getMyBookings(ASSOCIATE_ID, null, null, 0, 20).bookings().get(0);
 
         assertThat(r.status()).isEqualTo(BookingStatus.ACTIVE);
         assertThat(r.buyerName()).isEqualTo("Jane Buyer");
@@ -160,7 +160,7 @@ class BookingServiceTest {
         PlotBooking booking = richBooking();
         stubOwnPage(booking, List.of(installment(1, "100.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PAID)));
 
-        BookingResponse r = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20).bookings().get(0);
+        BookingResponse r = bookingService.getMyBookings(ASSOCIATE_ID, null, null, 0, 20).bookings().get(0);
 
         assertThat(r.buyerPhone()).isEqualTo("9999999999");
         assertThat(r.listPrice()).isEqualByComparingTo("650000.00");
@@ -174,12 +174,12 @@ class BookingServiceTest {
     @Test
     void getTeamBookingsBlanksBuyerPhoneButKeepsRatePricesAreaDiscountAndAssociateCode() {
         PlotBooking booking = richBooking();
-        when(plotBookingRepository.findByDownline(eq(ASSOCIATE_ID), eq(null), any()))
+        when(plotBookingRepository.findByDownline(eq(ASSOCIATE_ID), eq(null), any(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
         when(emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(any()))
             .thenReturn(forBooking(booking, List.of()));
 
-        BookingResponse r = bookingService.getTeamBookings(ASSOCIATE_ID, null, 0, 20).bookings().get(0);
+        BookingResponse r = bookingService.getTeamBookings(ASSOCIATE_ID, null, null, null, 0, 20).bookings().get(0);
 
         assertThat(r.buyerPhone()).isNull();
         assertThat(r.rate()).isNotNull();
@@ -209,7 +209,7 @@ class BookingServiceTest {
             installment(1, "300000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.VOID),
             installment(2, "300000.00", LocalDate.of(2026, 8, 1), InstallmentStatus.VOID)));
 
-        BookingResponse r = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20).bookings().get(0);
+        BookingResponse r = bookingService.getMyBookings(ASSOCIATE_ID, null, null, 0, 20).bookings().get(0);
 
         assertThat(r.status()).isEqualTo(BookingStatus.CANCELLED);
         assertThat(r.dueAmount()).isEqualByComparingTo("0");
@@ -656,14 +656,14 @@ class BookingServiceTest {
         booking.setInstallmentCount(1);
         booking.setBookedAt(Instant.now());
         when(plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(
-            eq(ASSOCIATE_ID), eq(PageRequest.of(0, 20))))
+            eq(ASSOCIATE_ID), any(), any(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
         when(emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(any()))
             .thenReturn(forBooking(booking, new java.util.ArrayList<>(List.of())));
 
-        AssociateBookingPageResponse response = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20);
+        AssociateBookingPageResponse response = bookingService.getMyBookings(ASSOCIATE_ID, null, null, 0, 20);
 
-        verify(plotBookingRepository).findByAssociateIdOrderByBookedAtDesc(ASSOCIATE_ID, PageRequest.of(0, 20));
+        verify(plotBookingRepository).findByAssociateIdOrderByBookedAtDesc(eq(ASSOCIATE_ID), any(), any(), eq(PageRequest.of(0, 20)));
         assertThat(response.totalElements()).isEqualTo(1);
         assertThat(response.page()).isEqualTo(0);
         assertThat(response.size()).isEqualTo(20);
@@ -688,12 +688,12 @@ class BookingServiceTest {
         second.setInstallmentNumber(2);
         second.setAmount(new BigDecimal("300000.00"));
         second.setDueDate(LocalDate.now().plusMonths(2));
-        when(plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(eq(ASSOCIATE_ID), any()))
+        when(plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(eq(ASSOCIATE_ID), any(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
         when(emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(any()))
             .thenReturn(forBooking(booking, new java.util.ArrayList<>(List.of(first, second))));
 
-        AssociateBookingPageResponse response = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20);
+        AssociateBookingPageResponse response = bookingService.getMyBookings(ASSOCIATE_ID, null, null, 0, 20);
 
         assertThat(response.bookings().get(0).installments()).hasSize(2);
         assertThat(response.bookings().get(0).installments().get(0).amount()).isEqualByComparingTo("300000.00");
@@ -701,10 +701,10 @@ class BookingServiceTest {
 
     @Test
     void getMyBookingsReturnsAnEmptyPageWhenTheCallerHasNoBookings() {
-        when(plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(eq(ASSOCIATE_ID), any()))
+        when(plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(eq(ASSOCIATE_ID), any(), any(), any()))
             .thenReturn(new PageImpl<>(List.of()));
 
-        AssociateBookingPageResponse response = bookingService.getMyBookings(ASSOCIATE_ID, 0, 20);
+        AssociateBookingPageResponse response = bookingService.getMyBookings(ASSOCIATE_ID, null, null, 0, 20);
 
         assertThat(response.totalElements()).isEqualTo(0);
         assertThat(response.bookings()).isEmpty();

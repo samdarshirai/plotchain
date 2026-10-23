@@ -1,10 +1,12 @@
 package com.plotchain.sales;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 // Sales unit 7 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
@@ -32,11 +34,17 @@ public class AssociateSaleController {
     @GetMapping("/api/associates/me/sales")
     public AssociateSalePageResponse getMySales(
             @AuthenticationPrincipal UUID associateId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST, "from must not be after to");
+        }
         page = Math.max(page, 0);
         size = Math.min(Math.max(size, 1), 100);
-        return saleService.getMySales(associateId, page, size);
+        return saleService.getMySales(associateId, from, to, page, size);
     }
 }

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -54,7 +55,7 @@ class AssociateBookingControllerTest {
             List.of(new EmiInstallmentResponse(1, new BigDecimal("600000.00"), LocalDate.now().plusMonths(1),
                 InstallmentStatus.PENDING, null, false)));
         AssociateBookingPageResponse page = new AssociateBookingPageResponse(List.of(booking), 0, 20, 1);
-        when(bookingService.getMyBookings(eq(associateId), eq(0), eq(20))).thenReturn(page);
+        when(bookingService.getMyBookings(eq(associateId), any(), any(), eq(0), eq(20))).thenReturn(page);
 
         mockMvc.perform(get("/api/associates/me/bookings")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
@@ -71,7 +72,7 @@ class AssociateBookingControllerTest {
     @Test
     void getMyBookingsSizeZeroIsClampedToOneNotA500() throws Exception {
         UUID associateId = UUID.randomUUID();
-        when(bookingService.getMyBookings(eq(associateId), eq(0), eq(1)))
+        when(bookingService.getMyBookings(eq(associateId), any(), any(), eq(0), eq(1)))
             .thenReturn(new AssociateBookingPageResponse(List.of(), 0, 1, 0));
 
         mockMvc.perform(get("/api/associates/me/bookings").param("size", "0")
@@ -83,7 +84,7 @@ class AssociateBookingControllerTest {
     @Test
     void getMyBookingsNegativeSizeIsClampedToOne() throws Exception {
         UUID associateId = UUID.randomUUID();
-        when(bookingService.getMyBookings(eq(associateId), eq(0), eq(1)))
+        when(bookingService.getMyBookings(eq(associateId), any(), any(), eq(0), eq(1)))
             .thenReturn(new AssociateBookingPageResponse(List.of(), 0, 1, 0));
 
         mockMvc.perform(get("/api/associates/me/bookings").param("size", "-5")
@@ -95,7 +96,7 @@ class AssociateBookingControllerTest {
     @Test
     void getTeamBookingsSizeZeroIsClampedToOne() throws Exception {
         UUID associateId = UUID.randomUUID();
-        when(bookingService.getTeamBookings(eq(associateId), eq(null), eq(0), eq(1)))
+        when(bookingService.getTeamBookings(eq(associateId), eq(null), any(), any(), eq(0), eq(1)))
             .thenReturn(new AssociateBookingPageResponse(List.of(), 0, 1, 0));
 
         mockMvc.perform(get("/api/associates/me/team-bookings").param("size", "0")
@@ -108,7 +109,7 @@ class AssociateBookingControllerTest {
     void getMyBookingsClampsPageAndSizeTheSameWayOtherAssociateMeEndpointsDo() throws Exception {
         UUID associateId = UUID.randomUUID();
         AssociateBookingPageResponse page = new AssociateBookingPageResponse(List.of(), 0, 100, 0);
-        when(bookingService.getMyBookings(eq(associateId), eq(0), eq(100))).thenReturn(page);
+        when(bookingService.getMyBookings(eq(associateId), any(), any(), eq(0), eq(100))).thenReturn(page);
 
         mockMvc.perform(get("/api/associates/me/bookings")
                 .param("page", "-1")
@@ -121,9 +122,9 @@ class AssociateBookingControllerTest {
     @Test
     void getTeamBookingsMapsLegToPositionAndScopesToCallerJwtId() throws Exception {
         UUID associateId = UUID.randomUUID();
-        when(bookingService.getTeamBookings(eq(associateId), eq("L"), eq(0), eq(20)))
+        when(bookingService.getTeamBookings(eq(associateId), eq("L"), any(), any(), eq(0), eq(20)))
             .thenReturn(new AssociateBookingPageResponse(List.of(), 0, 20, 0));
-        when(bookingService.getTeamBookings(eq(associateId), eq(null), eq(0), eq(20)))
+        when(bookingService.getTeamBookings(eq(associateId), eq(null), any(), any(), eq(0), eq(20)))
             .thenReturn(new AssociateBookingPageResponse(List.of(), 0, 20, 7));
         String token = tokenFor(AssociateRole.ASSOCIATE, associateId);
 

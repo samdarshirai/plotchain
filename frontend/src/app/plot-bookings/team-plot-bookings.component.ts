@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
+import { DateRangeComponent, last30Days } from '../shared/components/date-range/date-range.component';
 import { PagerComponent } from '../shared/components/pager/pager.component';
 import { AssociateBookingPage } from './models/associate-booking-page.model';
 import { BookingTableComponent, bookingRow } from './booking-table.component';
@@ -17,11 +18,13 @@ const LEG: Record<Scope, 'ALL' | 'L' | 'R'> = { TEAM: 'ALL', LEFT: 'L', RIGHT: '
 @Component({
   selector: 'app-team-plot-bookings',
   standalone: true,
-  imports: [CommonModule, TranslateModule, InlineBannerComponent, PagerComponent, BookingTableComponent],
+  imports: [CommonModule, TranslateModule, InlineBannerComponent, PagerComponent, BookingTableComponent, DateRangeComponent],
   template: `
     <div class="team-bookings booking-page" [attr.aria-busy]="loading">
       <h1>{{ 'plotBookings.team.title.' + scope | translate }}</h1>
       <p>{{ 'plotBookings.team.subtitle.' + scope | translate }}</p>
+
+      <app-date-range [from]="from" [to]="to" (rangeChange)="onRange($event)"></app-date-range>
 
       <app-inline-banner *ngIf="error" tone="danger">
         {{ 'plotBookings.team.loadError' | translate }}
@@ -47,6 +50,8 @@ export class TeamPlotBookingsComponent implements OnInit {
   loading = false;
   error = false;
   requestedPage = 0;
+  from = last30Days().from;
+  to = last30Days().to;
   get rows() { return (this.page?.bookings ?? []).map(bookingRow); }
 
   // Sibling routes reuse this instance, so scope is read reactively and the list reloaded.
@@ -58,13 +63,15 @@ export class TeamPlotBookingsComponent implements OnInit {
     });
   }
 
+  onRange(r: { from: string; to: string }): void { this.from = r.from; this.to = r.to; this.load(0); }
+
   // The previous page stays on screen if this load fails.
   load(p: number): void {
     this.requestedPage = p;
     this.loading = true;
     this.error = false;
     const scope = this.scope;
-    this.service.getTeamBookings(LEG[scope], p, PAGE_SIZE).subscribe({
+    this.service.getTeamBookings(LEG[scope], p, PAGE_SIZE, this.from, this.to).subscribe({
       next: res => {
         if (p !== this.requestedPage || scope !== this.scope) { return; }
         this.loading = false;

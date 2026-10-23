@@ -33,7 +33,7 @@ describe('SalesHistoryComponent', () => {
   });
 
   const flushFirst = (sales: object[], totalElements = sales.length) =>
-    httpMock.expectOne('/api/associates/me/sales?page=0&size=20').flush({ sales, page: 0, size: 20, totalElements });
+    httpMock.expectOne(r => r.urlWithParams.startsWith('/api/associates/me/sales?page=0&size=20')).flush({ sales, page: 0, size: 20, totalElements });
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -90,13 +90,13 @@ describe('SalesHistoryComponent', () => {
 
     it('requests the next page when the pager emits', () => {
       fixture.debugElement.query(By.directive(PagerComponent)).componentInstance.pageChange.emit(1);
-      httpMock.expectOne('/api/associates/me/sales?page=1&size=20').flush({ sales: [], page: 1, size: 20, totalElements: 25 });
+      httpMock.expectOne(r => r.urlWithParams.startsWith('/api/associates/me/sales?page=1&size=20')).flush({ sales: [], page: 1, size: 20, totalElements: 25 });
       expect(fixture.componentInstance.page?.page).toBe(1);
     });
 
     it('shows a load error when a later load fails', () => {
       fixture.componentInstance.goToPage(1);
-      httpMock.expectOne('/api/associates/me/sales?page=1&size=20').flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+      httpMock.expectOne(r => r.urlWithParams.startsWith('/api/associates/me/sales?page=1&size=20')).flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
       fixture.detectChanges();
       expect(q('.my-sales__load-error')?.textContent?.trim()).toBeTruthy();
     });
@@ -123,7 +123,7 @@ describe('SalesHistoryComponent', () => {
       fixture.componentInstance.goToPage(1);
       fixture.detectChanges();
       expect(fixture.debugElement.query(By.directive(PagerComponent)).componentInstance.disabled).toBe(true);
-      httpMock.expectOne('/api/associates/me/sales?page=1&size=20').flush({}, { status: 500, statusText: 'x' });
+      httpMock.expectOne(r => r.urlWithParams.startsWith('/api/associates/me/sales?page=1&size=20')).flush({}, { status: 500, statusText: 'x' });
       fixture.detectChanges();
       expect(fixture.componentInstance.loading).toBe(false);
       expect(fixture.debugElement.query(By.directive(PagerComponent)).componentInstance.disabled).toBe(false);
@@ -136,7 +136,7 @@ describe('SalesHistoryComponent', () => {
 
     it('renders an em dash when the associate ID or name is missing', () => {
       fixture.componentInstance.goToPage(0);
-      httpMock.expectOne('/api/associates/me/sales?page=0&size=20').flush({
+      httpMock.expectOne(r => r.urlWithParams.startsWith('/api/associates/me/sales?page=0&size=20')).flush({
         sales: [sale({ associateUserId: null, associateName: null })], page: 0, size: 20, totalElements: 1
       });
       fixture.detectChanges();

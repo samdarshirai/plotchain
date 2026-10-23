@@ -182,6 +182,7 @@
       "column": { "plot": "Plot", "project": "Project", "associate": "Booked by", "buyer": "Buyer", "bookedOn": "Booked on", "total": "Total", "paid": "Paid", "status": "Status" }
     },
     "loading": "Loading",
+    "dateRangeError": "From date must not be after To date.",
     "bookingsLoadError": "Couldn't load your bookings. Check your connection and try again.",
     "retryAction": "Try again",
     "bookingsEmptyTitle": "No bookings yet",

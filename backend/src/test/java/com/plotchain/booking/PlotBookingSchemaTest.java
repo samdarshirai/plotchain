@@ -130,7 +130,7 @@ class PlotBookingSchemaTest {
         PlotBooking theirs = persistBooking();
 
         var page = plotBookingRepository.findByAssociateIdOrderByBookedAtDesc(
-            mine.getAssociateId(), org.springframework.data.domain.PageRequest.of(0, 20));
+            mine.getAssociateId(), java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), org.springframework.data.domain.PageRequest.of(0, 20));
 
         assertThat(page.getContent()).extracting(PlotBooking::getId)
             .containsExactly(mine.getId())

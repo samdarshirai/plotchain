@@ -170,7 +170,7 @@ class SaleRepositoryTest {
         entityManager.flush();
 
         Page<Sale> result = saleRepository.findByAssociateIdInOrderByRecordedAtDesc(
-            List.of(associateA, associateB), PageRequest.of(0, 20));
+            List.of(associateA, associateB), Instant.EPOCH, Instant.parse("9999-01-01T00:00:00Z"), PageRequest.of(0, 20));
 
         assertThat(result.getContent()).extracting(Sale::getId)
             .containsExactly(laterSale.getId(), earlierSale.getId());

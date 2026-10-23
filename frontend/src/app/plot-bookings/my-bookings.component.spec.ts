@@ -41,13 +41,11 @@ describe('MyBookingsComponent', () => {
     expect(h1[0].textContent).toContain('plotBookings.myBookings.title');
   });
 
-  it('renders a table row per booking in server order with the plot label fallback in the detail', () => {
+  it('renders a table row per booking in server order', () => {
     boot();
     const rows = el().querySelectorAll('.booking-table tbody tr');
     expect(rows.length).toBe(2);
     expect(el().querySelector('thead')!.querySelectorAll('th').length).toBe(14);
-    expect(el().querySelector('.my-bookings__detail-title')!.textContent).toContain('123e4567');
-    expect(el().querySelector('.my-bookings__detail')!.textContent).toContain('plotBookings.buyerLabel');
   });
 
   it('shows rate, area, price, extra price, total, paid and rest in the row', () => {
@@ -63,54 +61,7 @@ describe('MyBookingsComponent', () => {
   it('uses plotNo and shows the project line when the response carries them', () => {
     boot([booking('b1', { plotNo: 'A-12', projectName: 'Green Valley' })]);
     expect(el().querySelector('.booking-table tbody')!.textContent).toContain('A-12');
-    expect(el().querySelector('.my-bookings__detail')!.textContent).toContain('Green Valley');
-  });
-
-  it('shows the paid bar with an aria-label percent and the printed amounts', () => {
-    boot();
-    const bar = el().querySelector('.my-bookings__bar')!;
-    expect(bar.getAttribute('role')).toBe('img');
-    expect(bar.getAttribute('aria-label')).toContain('plotBookings.progressLabel');
-  });
-
-  it('selects the first booking by default and shows its installments with overdue only on pending rows', () => {
-    boot();
-    const rows = el().querySelectorAll('.my-bookings__detail tbody tr');
-    expect(rows.length).toBe(4);
-    expect(rows[1].classList).toContain('my-bookings__row--overdue');
-    expect(rows[0].classList).not.toContain('my-bookings__row--overdue');
-  });
-
-  it('selecting another booking swaps the detail without any HTTP call', () => {
-    boot();
-    el().querySelectorAll<HTMLButtonElement>('.booking-table tbody button')[1].click();
-    fixture.detectChanges();
-    expect(fixture.componentInstance.selected!.id).toBe('b2');
-    expect(el().querySelectorAll('.my-bookings__detail tbody tr')[1].classList).toContain('my-bookings__row--void');
-    // afterEach http.verify() proves no request was issued
-  });
-
-  it('a cancelled booking shows the retained-paid note and a struck plot label', () => {
-    boot();
-    el().querySelectorAll<HTMLButtonElement>('.booking-table tbody button')[1].click();
-    fixture.detectChanges();
-    expect(el().querySelector('.my-bookings__detail .my-bookings__plot--struck')).not.toBeNull();
-    expect(el().textContent).toContain('plotBookings.cancelledNote');
-  });
-
-  it('a confirmed booking shows the confirmed note', () => {
-    boot([booking('b1', { status: 'CONFIRMED', paidAmount: 400000, dueAmount: 0, installments: [inst(1, { status: 'PAID' })] })]);
-    expect(el().textContent).toContain('plotBookings.confirmedNote');
-  });
-
-  it('opens the detail as a sheet on select and Back closes it', () => {
-    boot();
-    el().querySelectorAll<HTMLButtonElement>('.booking-table tbody button')[1].click();
-    fixture.detectChanges();
-    expect(el().querySelector('.my-bookings__detail')!.classList).toContain('my-bookings__detail--open');
-    el().querySelector<HTMLButtonElement>('.my-bookings__back')!.click();
-    fixture.detectChanges();
-    expect(el().querySelector('.my-bookings__detail')!.classList).not.toContain('my-bookings__detail--open');
+    expect(el().querySelector('.booking-table tbody')!.textContent).toContain('Green Valley');
   });
 
   it('shows an empty table (headers, no rows) when there are no bookings', () => {
@@ -140,29 +91,6 @@ describe('MyBookingsComponent', () => {
     expect(el().textContent).toContain('plotBookings.bookingsLoadError');
   });
 
-  it('ignores a stale overdue flag on PAID/VOID rows; only PENDING+overdue counts', () => {
-    boot([booking('b1', { installments: [inst(1, { status: 'PAID', overdue: true }), inst(2, { status: 'VOID', overdue: true }), inst(3, { overdue: true })] })]);
-    const rows = el().querySelectorAll('.my-bookings__detail tbody tr');
-    expect(rows[0].classList).not.toContain('my-bookings__row--overdue');
-    expect(rows[1].classList).not.toContain('my-bookings__row--overdue');
-    expect(rows[2].classList).toContain('my-bookings__row--overdue');
-    expect(el().querySelectorAll('.my-bookings__detail tbody .my-bookings__badge--overdue').length).toBe(1);
-    expect(el().querySelectorAll('.my-bookings__detail tbody tr .my-bookings__badge--overdue')[0].closest('tr')).toBe(rows[2] as HTMLTableRowElement);
-  });
-
-  it('never renders NaN or >100% bars (zero total, overpaid)', () => {
-    boot([booking('b1', { totalAmount: 0, paidAmount: 5, dueAmount: 0 })]);
-    expect(el().querySelector<HTMLElement>('.my-bookings__bar-fill')!.style.width).toBe('0%');
-    boot2Overpaid();
-  });
-
-  function boot2Overpaid() {
-    fixture.componentInstance.select(booking('b2', { totalAmount: 100, paidAmount: 500, dueAmount: 0 }) as never);
-    fixture.detectChanges();
-    expect(el().querySelector<HTMLElement>('.my-bookings__bar-fill')!.style.width).toBe('100%');
-    expect(el().textContent).not.toContain('NaN');
-  }
-
   it('Retry after a failed page-N load re-requests that page and keeps page 1 visible', () => {
     http.expectOne(r => r.url === '/api/associates/me/bookings').flush(pageOf([booking('b1')], 0, 25));
     fixture.detectChanges();
@@ -174,35 +102,6 @@ describe('MyBookingsComponent', () => {
     const retry = http.expectOne(r => r.url === '/api/associates/me/bookings');
     expect(retry.request.params.get('page')).toBe('1');
     retry.flush(pageOf([booking('b9')], 1, 25));
-  });
-
-  it('moves focus to Back when the sheet opens and returns it to the originating card on Back and Esc', async () => {
-    document.body.appendChild(fixture.nativeElement);
-    boot();
-    const card = el().querySelector<HTMLButtonElement>('[data-booking-id="b2"] button')!;
-    card.click();
-    fixture.detectChanges();
-    await new Promise(r => setTimeout(r));
-    expect(document.activeElement).toBe(el().querySelector('.my-bookings__back'));
-    el().querySelector<HTMLButtonElement>('.my-bookings__back')!.click();
-    fixture.detectChanges();
-    await new Promise(r => setTimeout(r));
-    expect(document.activeElement).toBe(card);
-    card.click();
-    fixture.detectChanges();
-    await new Promise(r => setTimeout(r));
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    fixture.detectChanges();
-    await new Promise(r => setTimeout(r));
-    expect(fixture.componentInstance.sheetOpen).toBeFalse();
-    expect(document.activeElement).toBe(card);
-    fixture.nativeElement.remove();
-  });
-
-  it('Esc does nothing when the sheet is closed', () => {
-    boot();
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    expect(fixture.componentInstance.sheetOpen).toBeFalse();
   });
 
   it('ignores an out-of-order page response (success and error) from a superseded request', () => {
@@ -226,8 +125,31 @@ describe('MyBookingsComponent', () => {
     expect(c.loading).toBeFalse();
   });
 
+  it('sends the last-30-days from/to and refetches page 0 when the range changes', () => {
+    const first = http.expectOne(r => r.url === '/api/associates/me/bookings');
+    expect(first.request.params.get('from')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(first.request.params.get('to')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    first.flush(pageOf([booking('b1')], 0, 1));
+    fixture.detectChanges();
+    fixture.componentInstance.onRange({ from: '2026-01-01', to: '2026-01-31' });
+    const next = http.expectOne(r => r.url === '/api/associates/me/bookings');
+    expect(next.request.params.get('from')).toBe('2026-01-01');
+    expect(next.request.params.get('page')).toBe('0');
+    next.flush(pageOf([], 0, 0));
+  });
+
+  it('View opens the installments in a popup and Close dismisses it', () => {
+    boot();
+    el().querySelector<HTMLButtonElement>('.booking-table tbody button')!.click();
+    fixture.detectChanges();
+    expect(el().querySelector('.booking-modal [role="dialog"]')).not.toBeNull();
+    el().querySelector<HTMLButtonElement>('.booking-modal__close')!.click();
+    fixture.detectChanges();
+    expect(el().querySelector('.booking-modal')).toBeNull();
+  });
+
   it('exposes no write controls', () => {
     boot();
-    expect(el().querySelectorAll('form, input, textarea, select').length).toBe(0);
+    expect(el().querySelectorAll('form, textarea, select, input:not([type="date"])').length).toBe(0);
   });
 });
