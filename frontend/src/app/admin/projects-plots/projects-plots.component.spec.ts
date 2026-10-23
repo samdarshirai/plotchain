@@ -811,7 +811,7 @@ describe('ProjectsPlotsComponent', () => {
 });
 
 describe('ProjectsPlotsComponent (associate read-only)', () => {
-  it('Table view has no Rate column, search or export and makes no rates request', fakeAsync(() => {
+  it('Table view has no Rate column or export, has plot search, and makes no rates request', fakeAsync(() => {
     TestBed.configureTestingModule({
       imports: [ProjectsPlotsComponent, HttpClientTestingModule, TranslateModule.forRoot()],
       providers: [provideRouter([]), { provide: ActivatedRoute, useValue: { snapshot: { data: { readOnly: true } } } }]
@@ -820,14 +820,25 @@ describe('ProjectsPlotsComponent (associate read-only)', () => {
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
     http.expectOne('/api/company/projects').flush([{ id: 'p1', name: 'G', location: 'H', hasThumbnail: false, totalPlots: 1, availablePlots: 1, soldPlots: 0, createdAt: '2026-01-01T00:00:00Z' }]);
-    http.expectOne('/api/projects/p1/plots/grid').flush([{ plotId: 'id-A-1', plotNo: 'A-1', type: 'NORMAL', area: 1200, price: 4500000, status: 'AVAILABLE' }]);
+    http.expectOne('/api/projects/p1/plots/grid').flush([
+      { plotId: 'id-A-1', plotNo: 'A-1', type: 'NORMAL', area: 1200, price: 4500000, status: 'AVAILABLE' },
+      { plotId: 'id-B-1', plotNo: 'B-1', type: 'NORMAL', area: 1200, price: 4500000, status: 'AVAILABLE' }]);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
+    const search = el.querySelector<HTMLInputElement>('.plot-table-tools__search')!;
+    expect(search).not.toBeNull(); // visible in every view once a project is chosen
     el.querySelectorAll<HTMLButtonElement>('.projects-plots__views button')[2].click();
     fixture.detectChanges();
     expect(el.querySelector('.projects-plots__table')).not.toBeNull();
     expect(el.textContent).not.toContain('admin.projectsPlots.rateLabel');
-    expect(el.querySelector('.plot-table-tools')).toBeNull();
+    expect(el.querySelector('.plot-table-tools__export')).toBeNull();
+    search.value = 'b-1';
+    search.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(el.querySelectorAll('.projects-plots__row').length).toBe(1);
+    el.querySelectorAll<HTMLButtonElement>('.projects-plots__views button')[0].click();
+    fixture.detectChanges();
+    expect(el.querySelectorAll('app-plot-tile').length).toBe(1);
     http.verify();
     flush();
   }));

@@ -71,17 +71,19 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'csv' })">{{ 'admin.projectsPlots.importCsvAction' | translate }}</button>
           <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'addPlot' })">{{ 'admin.projectsPlots.addPlotAction' | translate }}</button>
         </div>
-        <div class="plot-table-tools" *ngIf="view === 'table' && grid?.length && !readOnly">
+        <div class="plot-table-tools" *ngIf="readOnly || (grid?.length && view === 'table')">
           <label class="plot-table-tools__label">
             <span class="projects-plots__sr">{{ 'admin.projectsPlots.table.searchLabel' | translate }}</span>
-            <input type="search" class="plot-table-tools__search" [value]="search" [placeholder]="'admin.projectsPlots.table.searchPlaceholder' | translate" (input)="onSearch($any($event.target).value)">
+            <input type="search" class="plot-table-tools__search" [value]="search" [disabled]="!grid?.length" [placeholder]="'admin.projectsPlots.table.searchPlaceholder' | translate" (input)="onSearch($any($event.target).value)">
           </label>
-          <span class="plot-table-tools__count" role="status">{{ 'admin.projectsPlots.table.count' | translate: { shown: tableRows.length, total: visibleCount } }}</span>
-          <button type="button" class="brand-button plot-table-tools__export" [disabled]="!rates || !tableRows.length" (click)="exportPlots()">{{ 'admin.projectsPlots.table.exportCsv' | translate }}</button>
-          <span class="plot-table-tools__error" role="alert" *ngIf="ratesError">
-            {{ 'admin.projectsPlots.table.rateError' | translate }}
-            <button type="button" class="projects-plots__retry" (click)="loadRates()">{{ 'admin.projectsPlots.retry' | translate }}</button>
-          </span>
+          <ng-container *ngIf="view === 'table' && !readOnly">
+            <span class="plot-table-tools__count" role="status">{{ 'admin.projectsPlots.table.count' | translate: { shown: tableRows.length, total: visibleCount } }}</span>
+            <button type="button" class="brand-button plot-table-tools__export" [disabled]="!rates || !tableRows.length" (click)="exportPlots()">{{ 'admin.projectsPlots.table.exportCsv' | translate }}</button>
+            <span class="plot-table-tools__error" role="alert" *ngIf="ratesError">
+              {{ 'admin.projectsPlots.table.rateError' | translate }}
+              <button type="button" class="projects-plots__retry" (click)="loadRates()">{{ 'admin.projectsPlots.retry' | translate }}</button>
+            </span>
+          </ng-container>
         </div>
       </div>
 
@@ -170,7 +172,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
               <h2>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoPlotsTitle' : 'admin.projectsPlots.empty.noPlotsTitle') | translate }}</h2>
               <p>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoPlotsBody' : 'admin.projectsPlots.empty.noPlotsBody') | translate }}</p>
             </div>
-            <p class="projects-plots__empty" *ngIf="grid.length && !visibleBlocks.length">{{ 'admin.projectsPlots.empty.filter' | translate }}</p>
+            <p class="projects-plots__empty" role="status" *ngIf="grid.length && !visibleBlocks.length">{{ (search.trim() ? 'admin.projectsPlots.table.noMatch' : 'admin.projectsPlots.empty.filter') | translate }}</p>
 
             <p class="projects-plots__empty" role="status" *ngIf="view === 'table' && !readOnly && grid.length && visibleBlocks.length && !tableRows.length">{{ 'admin.projectsPlots.table.noMatch' | translate }}</p>
             <div class="projects-plots__table-wrap" *ngIf="view === 'table' && tableRows.length">
@@ -462,12 +464,17 @@ export class ProjectsPlotsComponent implements OnInit {
     for (const b of whole) {
       this.blockStats[b.block] = { available: b.plots.filter(p => p.status === 'AVAILABLE').length, total: b.plots.length };
     }
+    const label = (s: PlotStatus) => this.translate.instant('plotTile.status.' + s);
+    // Associates search every view (blocks); admin searches the table rows only.
     this.visibleBlocks = whole
-      .map(b => ({ block: b.block, plots: this.filter.size ? b.plots.filter(p => this.filter.has(p.status)) : b.plots }))
+      .map(b => {
+        const plots = this.filter.size ? b.plots.filter(p => this.filter.has(p.status)) : b.plots;
+        return { block: b.block, plots: this.readOnly ? filterPlotRows(plots, this.search, label) : plots };
+      })
       .filter(b => b.plots.length);
     const flat = this.visibleBlocks.flatMap(b => b.plots);
     this.visibleCount = flat.length;
-    this.tableRows = this.readOnly ? flat : filterPlotRows(flat, this.search, s => this.translate.instant('plotTile.status.' + s));
+    this.tableRows = this.readOnly ? flat : filterPlotRows(flat, this.search, label);
   }
 
   // Stable identity so a grid refresh updates tiles in place and a focused tile keeps focus.
