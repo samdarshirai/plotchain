@@ -2,15 +2,26 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { NewAssociatePanelComponent } from './new-associate-panel.component';
+import { AssociateProfileFormComponent } from '../../shared/components/associate-profile-form/associate-profile-form.component';
+import { By } from '@angular/platform-browser';
 
 describe('NewAssociatePanelComponent', () => {
   let fixture: ComponentFixture<NewAssociatePanelComponent>;
   let httpMock: HttpTestingController;
 
-  function open(): void {
+  const created = { associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!', transactionPassword: 'Txn1234!' };
+
+  function open(): AssociateProfileFormComponent {
     fixture.componentInstance.open = true;
     fixture.componentInstance.ngOnChanges({ open: {} as any });
+    fixture.detectChanges();
+    return fixture.debugElement.query(By.directive(AssociateProfileFormComponent)).componentInstance;
   }
+
+  const fillValid = (form: AssociateProfileFormComponent) => form.form.patchValue({
+    sponsorUserId: 'VP00002', position: 'L', name: 'Aditya Kumar', panNumber: 'ABCDE1234F', aadhaarNumber: '123456789012',
+    phone: '9876543210', state: 'Delhi', district: 'Central', address: 'Addr'
+  });
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -27,220 +38,74 @@ describe('NewAssociatePanelComponent', () => {
 
   afterEach(() => httpMock.verify());
 
-  describe('free mode (no presetParent)', () => {
-    it('does not submit when required fields are blank', () => {
-      open();
-
-      fixture.componentInstance.onProvisionSubmit();
-
-      httpMock.expectNone('/api/associates');
-      expect(fixture.componentInstance.provisionForm.invalid).toBeTrue();
-    });
-
-    it('only offers associates with a free slot in the Parent Node dropdown', () => {
-      open();
-      fixture.componentInstance.sponsorOptions = [
-        { id: 'free-1', userId: 'VP00010', name: 'Has Room', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: true },
-        { id: 'full-1', userId: 'VP00011', name: 'Fully Placed', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: false }
-      ];
-      fixture.detectChanges();
-
-      const options: string[] = Array.from(
-        fixture.nativeElement.querySelectorAll('select[formControlName="parentId"] option')
-      )
-        .map((el: any) => el.value)
-        .filter((v: string) => v);
-
-      expect(options).toEqual(['free-1']);
-    });
-
-    it('resolves the typed sponsor search text to the matching associate id', () => {
-      open();
-      fixture.componentInstance.sponsorOptions = [
-        { id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: true }
-      ];
-
-      fixture.componentInstance.onSponsorSearchInput('VP00002 — Sunil Sponsor');
-      expect(fixture.componentInstance.selectedSponsorId).toBe('sponsor-1');
-
-      fixture.componentInstance.onSponsorSearchInput('not a real match');
-      expect(fixture.componentInstance.selectedSponsorId).toBeNull();
-    });
-
-    it('submits name/email/phone/sponsorId plus the mandatory parent and placement, and shows the temporary password on success', () => {
-      open();
-      fixture.componentInstance.provisionForm.setValue({
-        name: 'Aditya Kumar',
-        email: 'aditya@example.com',
-        phone: '+919876500000',
-        sponsorSearch: 'VP00002 — Sunil Sponsor',
-        parentId: 'a1',
-        position: 'L'
-      });
-      fixture.componentInstance.selectedSponsorId = 'sponsor-1';
-
-      let created: any = null;
-      fixture.componentInstance.created.subscribe(response => (created = response));
-      fixture.componentInstance.onProvisionSubmit();
-
-      const req = httpMock.expectOne('/api/associates');
-      expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual({
-        name: 'Aditya Kumar',
-        email: 'aditya@example.com',
-        phone: '+919876500000',
-        sponsorId: 'sponsor-1',
-        parentId: 'a1',
-        position: 'L'
-      });
-      req.flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!', transactionPassword: 'Txn1234!' });
-
-      expect(fixture.componentInstance.provisioned?.temporaryPassword).toBe('Temp1234!');
-      expect(created.temporaryPassword).toBe('Temp1234!');
-
-      let closed = false;
-      fixture.componentInstance.closed.subscribe(() => (closed = true));
-      fixture.componentInstance.finishProvisioning();
-      expect(closed).toBeTrue();
-    });
-
-    it('shows a taken-email message on a 409 conflict instead of silently doing nothing', () => {
-      open();
-      fixture.componentInstance.provisionForm.setValue({
-        name: 'Aditya Kumar',
-        email: 'aditya@example.com',
-        phone: '',
-        sponsorSearch: '',
-        parentId: 'a1',
-        position: 'L'
-      });
-
-      fixture.componentInstance.onProvisionSubmit();
-
-      const req = httpMock.expectOne('/api/associates');
-      req.flush({ error: 'Email already registered' }, { status: 409, statusText: 'Conflict' });
-
-      expect(fixture.componentInstance.provisionSubmitError).toBeTruthy();
-      expect(fixture.componentInstance.provisioned).toBeNull();
-    });
-
-    it('does not submit until a parent node and a placement position are chosen', () => {
-      open();
-      fixture.componentInstance.provisionForm.patchValue({
-        name: 'Aditya Kumar',
-        email: 'aditya@example.com'
-      });
-
-      expect(fixture.componentInstance.provisionForm.invalid).toBeTrue();
-      fixture.componentInstance.onProvisionSubmit();
-      httpMock.expectNone('/api/associates');
-
-      fixture.componentInstance.provisionForm.patchValue({ parentId: 'a1' });
-      fixture.componentInstance.onPlacementSelect('R');
-
-      expect(fixture.componentInstance.provisionForm.invalid).toBeFalse();
-      fixture.componentInstance.onProvisionSubmit();
-      httpMock
-        .expectOne('/api/associates')
-        .flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!', transactionPassword: 'Txn1234!' });
-    });
-
-    it('maps a 409 "Placement already occupied" conflict to an error message', () => {
-      open();
-      fixture.componentInstance.provisionForm.setValue({
-        name: 'Aditya Kumar',
-        email: 'aditya@example.com',
-        phone: '',
-        sponsorSearch: '',
-        parentId: 'a1',
-        position: 'L'
-      });
-
-      fixture.componentInstance.onProvisionSubmit();
-
-      httpMock
-        .expectOne('/api/associates')
-        .flush({ error: 'Placement already occupied' }, { status: 409, statusText: 'Conflict' });
-
-      expect(fixture.componentInstance.provisionSubmitError).toBeTruthy();
-    });
-
-    it('blocks submit and flags the field when the sponsor text matches no associate', () => {
-      open();
-      fixture.componentInstance.provisionForm.setValue({
-        name: 'Aditya Kumar',
-        email: 'aditya@example.com',
-        phone: '',
-        sponsorSearch: 'Sunil Spons',
-        parentId: 'a1',
-        position: 'L'
-      });
-      fixture.componentInstance.onSponsorSearchInput('Sunil Spons');
-      expect(fixture.componentInstance.selectedSponsorId).toBeNull();
-
-      fixture.componentInstance.onProvisionSubmit();
-
-      httpMock.expectNone('/api/associates');
-      expect(fixture.componentInstance.sponsorUnresolved).toBeTrue();
-      expect(fixture.componentInstance.sponsorFieldError()).toBeTruthy();
-    });
-
-    it('still allows submit with a blank sponsor field (sponsor is optional)', () => {
-      open();
-      fixture.componentInstance.provisionForm.setValue({
-        name: 'Aditya Kumar',
-        email: 'aditya@example.com',
-        phone: '',
-        sponsorSearch: '   ',
-        parentId: 'a1',
-        position: 'L'
-      });
-
-      fixture.componentInstance.onProvisionSubmit();
-
-      const req = httpMock.expectOne('/api/associates');
-      expect(req.request.body.sponsorId).toBeUndefined();
-      expect(fixture.componentInstance.sponsorUnresolved).toBeFalse();
-      req.flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!', transactionPassword: 'Txn1234!' });
-    });
-
-    it('clears the unresolved-sponsor error once the field is edited again', () => {
-      open();
-      fixture.componentInstance.sponsorUnresolved = true;
-
-      fixture.componentInstance.onSponsorSearchInput('VP00002 — Sunil Sponsor');
-
-      expect(fixture.componentInstance.sponsorUnresolved).toBeFalse();
-      expect(fixture.componentInstance.sponsorFieldError()).toBeUndefined();
-    });
+  it('renders the full shared profile form (PAN, Aadhaar, address) and no transaction password', () => {
+    open();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('[formControlName="panNumber"]')).not.toBeNull();
+    expect(el.querySelector('[formControlName="aadhaarNumber"]')).not.toBeNull();
+    expect(el.querySelector('[formControlName="address"]')).not.toBeNull();
+    expect(el.querySelector('[formControlName="transactionPassword"]')).toBeNull();
   });
 
-  describe('preset mode (opened from a Tree Explorer vacant slot)', () => {
-    beforeEach(() => {
-      fixture.componentInstance.presetParent = { parentId: 'p1', leg: 'R', parentUserId: 'VP00050', parentName: 'Ravi Root' };
-    });
+  it('does not submit when required fields are blank', () => {
+    const form = open();
+    form.submit();
+    httpMock.expectNone('/api/associates');
+    expect(form.form.invalid).toBeTrue();
+  });
 
-    it('pre-fills parentId/position from presetParent and hides the parent dropdown and placement toggle', () => {
-      open();
-      fixture.detectChanges();
+  it('requires a sponsor and leg once the tree has associates', () => {
+    const form = open();
+    form.form.patchValue({ sponsorUserId: '', position: '' });
+    expect(form.form.controls.sponsorUserId.hasError('required')).toBeTrue();
+    expect(form.form.controls.position.hasError('required')).toBeTrue();
+  });
 
-      expect(fixture.componentInstance.provisionForm.value.parentId).toBe('p1');
-      expect(fixture.componentInstance.provisionForm.value.position).toBe('R');
-      expect(fixture.nativeElement.querySelector('select[formControlName="parentId"]')).toBeNull();
-      expect(fixture.nativeElement.querySelector('app-toggle-group')).toBeNull();
-      expect(fixture.nativeElement.textContent).toContain('VP00050');
-    });
+  it('posts the full profile and shows the credentials on success', () => {
+    const form = open();
+    fillValid(form);
+    let emitted: any = null;
+    fixture.componentInstance.created.subscribe(r => (emitted = r));
+    form.submit();
 
-    it('submits with the preset parentId/position without requiring a dropdown selection', () => {
-      open();
-      fixture.componentInstance.provisionForm.patchValue({ name: 'Aditya Kumar', email: 'aditya@example.com' });
+    const req = httpMock.expectOne('/api/associates');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body.sponsorUserId).toBe('VP00002');
+    expect(req.request.body.position).toBe('L');
+    expect(req.request.body.panNumber).toBe('ABCDE1234F');
+    expect(req.request.body.transactionPassword).toBeUndefined();
+    req.flush(created);
 
-      fixture.componentInstance.onProvisionSubmit();
+    expect(fixture.componentInstance.provisioned?.temporaryPassword).toBe('Temp1234!');
+    expect(emitted.userId).toBe('VP00099');
 
-      const req = httpMock.expectOne('/api/associates');
-      expect(req.request.body.parentId).toBe('p1');
-      expect(req.request.body.position).toBe('R');
-      req.flush({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!', transactionPassword: 'Txn1234!' });
-    });
+    let closed = false;
+    fixture.componentInstance.closed.subscribe(() => (closed = true));
+    fixture.componentInstance.finishProvisioning();
+    expect(closed).toBeTrue();
+  });
+
+  it('maps PAN_TAKEN to a PAN field error', () => {
+    const form = open();
+    fillValid(form);
+    form.submit();
+    httpMock.expectOne('/api/associates').flush({ error: 'PAN_TAKEN', code: 'PAN_TAKEN' }, { status: 409, statusText: 'Conflict' });
+    expect(fixture.componentInstance.serverErrors['panNumber']).toBeTruthy();
+    expect(fixture.componentInstance.provisioned).toBeNull();
+  });
+
+  it('shows a banner error on a generic 409 conflict', () => {
+    const form = open();
+    fillValid(form);
+    form.submit();
+    httpMock.expectOne('/api/associates').flush({ error: 'Placement already occupied' }, { status: 409, statusText: 'Conflict' });
+    expect(fixture.componentInstance.submitError).toBe('admin.validation.placementUnavailable');
+  });
+
+  it('prefills sponsor and leg from a Tree Explorer vacant slot', () => {
+    fixture.componentInstance.presetParent = { parentId: 'p1', leg: 'R', parentUserId: 'VP00050', parentName: 'Ravi Root' };
+    const form = open();
+    expect(form.form.controls.sponsorUserId.value).toBe('VP00050');
+    expect(form.form.controls.position.value).toBe('R');
   });
 });

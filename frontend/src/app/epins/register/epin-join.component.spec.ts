@@ -30,7 +30,7 @@ describe('EPinJoinComponent', () => {
     fixture.detectChanges();
   });
 
-  const fillValid = () => c.form.patchValue({
+  const fillValid = () => c.profile!.form.patchValue({
     sponsorUserId: 'SDI1', position: 'L', name: 'New Person', panNumber: 'ABCDE1234F', aadhaarNumber: '123456789012',
     phone: '9876543210', state: 'Delhi', district: 'Central', address: 'Addr', transactionPassword: 'pw'
   });
@@ -41,16 +41,16 @@ describe('EPinJoinComponent', () => {
   });
 
   it('does not submit when required fields or formats are invalid', () => {
-    c.form.patchValue({ panNumber: 'bad', aadhaarNumber: '12' });
-    c.submit();
+    c.profile!.form.patchValue({ panNumber: 'bad', aadhaarNumber: '12' });
+    c.profile!.submit();
     http.expectNone(r => r.url.endsWith('/join'));
-    expect(c.err('panNumber')).toBeTruthy();
-    expect(c.err('aadhaarNumber')).toBeTruthy();
+    expect(c.profile!.err('panNumber')).toBeTruthy();
+    expect(c.profile!.err('aadhaarNumber')).toBeTruthy();
   });
 
   it('posts the join request with the unlock token and shows the temporary password', () => {
     fillValid();
-    c.submit();
+    c.profile!.submit();
     const req = http.expectOne('/api/associates/me/epins/pin-1/join');
     expect(req.request.headers.get('X-Epin-Unlock')).toBe('tok');
     expect(req.request.body.sponsorUserId).toBe('SDI1');
@@ -64,16 +64,17 @@ describe('EPinJoinComponent', () => {
 
   it('maps a duplicate PAN conflict to a field error and clears the password', () => {
     fillValid();
-    c.submit();
+    c.profile!.submit();
     http.expectOne('/api/associates/me/epins/pin-1/join')
       .flush({ code: 'PAN_TAKEN' }, { status: 409, statusText: 'Conflict' });
-    expect(c.err('panNumber')).toContain('already');
-    expect(c.form.controls.transactionPassword.value).toBe('');
+    fixture.detectChanges();
+    expect(c.profile!.err('panNumber')).toContain('already');
+    expect(c.profile!.form.controls.transactionPassword.value).toBe('');
   });
 
   it('maps a wrong transaction password to the invalid-password message', () => {
     fillValid();
-    c.submit();
+    c.profile!.submit();
     http.expectOne('/api/associates/me/epins/pin-1/join').flush({}, { status: 401, statusText: 'Unauthorized' });
     expect(c.error).toBe('epins.errorPasswordInvalid');
   });

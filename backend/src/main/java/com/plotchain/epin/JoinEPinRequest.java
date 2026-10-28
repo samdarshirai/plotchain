@@ -4,6 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
+import com.plotchain.associate.AssociateProfileFields;
+
 import java.time.LocalDate;
 
 // Associate Join screen: registers a new member and consumes the pin in one step.
@@ -26,4 +28,4 @@ public record JoinEPinRequest(
     String nomineeName,
     String nomineeRelation,
     String transactionPassword
-) {}
+) implements AssociateProfileFields {}

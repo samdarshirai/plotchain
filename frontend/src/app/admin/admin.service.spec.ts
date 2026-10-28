@@ -19,38 +19,29 @@ describe('AdminService', () => {
 
   afterEach(() => httpMock.verify());
 
+  const profile = {
+    name: 'Jane Doe', panNumber: 'ABCDE1234F', aadhaarNumber: '123456789012', phone: '9876543210',
+    state: 'Delhi', district: 'Central', address: 'Addr'
+  };
+
   it('creates an associate and returns the assigned id and temporary password', () => {
     const mockResponse: CreateAssociateResponse = { associateId: 'assoc-1', userId: 'VP00001', temporaryPassword: 'Temp1234!', transactionPassword: 'Txn1234!' };
 
-    service.createAssociate({ name: 'Jane Doe', email: 'jane@plotchain.test' }).subscribe(res => {
+    service.createAssociate(profile).subscribe(res => {
       expect(res).toEqual(mockResponse);
     });
 
     const req = httpMock.expectOne('/api/associates');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ name: 'Jane Doe', email: 'jane@plotchain.test' });
+    expect(req.request.body).toEqual(profile);
     req.flush(mockResponse);
   });
 
-  it('sends optional placement fields when provided', () => {
-    service
-      .createAssociate({
-        name: 'Jane Doe',
-        email: 'jane@plotchain.test',
-        sponsorId: 'sponsor-1',
-        parentId: 'parent-1',
-        position: 'L'
-      })
-      .subscribe();
+  it('sends sponsor and leg when provided', () => {
+    service.createAssociate({ ...profile, sponsorUserId: 'VP00002', position: 'L' }).subscribe();
 
     const req = httpMock.expectOne('/api/associates');
-    expect(req.request.body).toEqual({
-      name: 'Jane Doe',
-      email: 'jane@plotchain.test',
-      sponsorId: 'sponsor-1',
-      parentId: 'parent-1',
-      position: 'L'
-    });
+    expect(req.request.body).toEqual({ ...profile, sponsorUserId: 'VP00002', position: 'L' });
     req.flush({ associateId: 'assoc-1', userId: 'VP00001', temporaryPassword: 'Temp1234!', transactionPassword: 'Txn1234!' });
   });
 

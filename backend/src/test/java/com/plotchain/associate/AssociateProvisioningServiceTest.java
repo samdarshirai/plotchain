@@ -25,6 +25,7 @@ class AssociateProvisioningServiceTest {
 
     @Mock AssociateRepository associateRepository;
     @Mock RankTierRepository rankTierRepository;
+    @Mock AssociateNomineeRepository nomineeRepository;
 
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     AssociateProvisioningService service;
@@ -39,7 +40,7 @@ class AssociateProvisioningServiceTest {
         // constructed for real here, backed by the mocked repository, same as every other
         // service-layer collaborator in this codebase.
         AssociateIdGenerator associateIdGenerator = new AssociateIdGenerator(associateRepository, "VP");
-        service = new AssociateProvisioningService(associateRepository, rankTierRepository, passwordEncoder, associateIdGenerator);
+        service = new AssociateProvisioningService(associateRepository, rankTierRepository, passwordEncoder, associateIdGenerator, nomineeRepository);
         // Default stub for the ID-generation lookup: empty repository unless a test overrides it.
         org.mockito.Mockito.lenient()
             .when(associateRepository.findTopByUserIdStartingWithOrderByUserIdDesc("VP"))
@@ -53,7 +54,7 @@ class AssociateProvisioningServiceTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(lowestRank));
 
         CreateAssociateResponse response = service.create(
-            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, null, null, null));
+            req(null, null, "9990001111"));
 
         ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
         org.mockito.Mockito.verify(associateRepository, org.mockito.Mockito.times(2)).save(saved.capture());
@@ -84,8 +85,9 @@ class AssociateProvisioningServiceTest {
         when(associateRepository.existsByPhone("9990001111")).thenReturn(true);
 
         assertThatThrownBy(() -> service.create(
-            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, null, null, "9990001111")))
-            .isInstanceOf(PhoneAlreadyRegisteredException.class);
+            req(null, null, "9990001111")))
+            .isInstanceOf(com.plotchain.epin.EPinDuplicateIdentityException.class)
+            .hasMessage("PHONE_TAKEN");
     }
 
     @Test
@@ -94,8 +96,7 @@ class AssociateProvisioningServiceTest {
         when(associateRepository.findById(parentId)).thenReturn(Optional.of(new Associate()));
         when(associateRepository.existsByParentIdAndPosition(parentId, "L")).thenReturn(true);
 
-        assertThatThrownBy(() -> service.create(
-            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, parentId, "L", null)))
+        assertThatThrownBy(() -> service.createPending("Jane Doe", "new@plotchain.test", null, null, parentId, "L"))
             .isInstanceOf(PlacementUnavailableException.class);
     }
 
@@ -104,8 +105,7 @@ class AssociateProvisioningServiceTest {
         UUID parentId = UUID.randomUUID();
         when(associateRepository.findById(parentId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.create(
-            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, parentId, "L", null)))
+        assertThatThrownBy(() -> service.createPending("Jane Doe", "new@plotchain.test", null, null, parentId, "L"))
             .isInstanceOf(AssociateNotFoundException.class);
     }
 
@@ -114,8 +114,7 @@ class AssociateProvisioningServiceTest {
         UUID parentId = UUID.randomUUID();
         when(associateRepository.findById(parentId)).thenReturn(Optional.of(new Associate()));
 
-        assertThatThrownBy(() -> service.create(
-            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, parentId, null, null)))
+        assertThatThrownBy(() -> service.createPending("Jane Doe", "new@plotchain.test", null, null, parentId, null))
             .isInstanceOf(PositionRequiredException.class);
     }
 
@@ -124,7 +123,7 @@ class AssociateProvisioningServiceTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
 
         assertThatThrownBy(() -> service.create(
-            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, null, null, null)))
+            req(null, null, "9990001111")))
             .isInstanceOf(NoRankTiersConfiguredException.class);
     }
 
@@ -133,12 +132,50 @@ class AssociateProvisioningServiceTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(lowestRank));
 
         service.create(
-            new CreateAssociateRequest("Jane Doe", "new@plotchain.test", null, null, null, "+1234567890"));
+            req(null, null, "+1234567890"));
 
         ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
         org.mockito.Mockito.verify(associateRepository, org.mockito.Mockito.times(2)).save(saved.capture());
         Associate created = saved.getValue();
 
         assertThat(created.getPhone()).isEqualTo("+1234567890");
+    }
+
+    private static CreateAssociateRequest req(String sponsorUserId, String position, String phone) {
+        return new CreateAssociateRequest("Jane Doe", sponsorUserId, position, null, "ABCDE1234F", "123456789012",
+            null, null, null, "new@plotchain.test", phone, "Odisha", "Khordha", "1 Main St", null, null, null);
+    }
+
+    @Test
+    void createWithSponsorWalksTheLegToTheFirstFreeSlotAndStoresProfile() {
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(lowestRank));
+        Associate sponsor = new Associate();
+        sponsor.setId(UUID.randomUUID());
+        Associate leftChild = new Associate();
+        leftChild.setId(UUID.randomUUID());
+        when(associateRepository.findByUserId("VP00009")).thenReturn(Optional.of(sponsor));
+        when(associateRepository.findFirstByParentIdAndPosition(sponsor.getId(), "L")).thenReturn(Optional.of(leftChild));
+        when(associateRepository.findFirstByParentIdAndPosition(leftChild.getId(), "L")).thenReturn(Optional.empty());
+        when(associateRepository.findById(leftChild.getId())).thenReturn(Optional.of(leftChild));
+
+        service.create(req("VP00009", "L", "9990001111"));
+
+        ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
+        org.mockito.Mockito.verify(associateRepository, org.mockito.Mockito.times(2)).save(saved.capture());
+        Associate created = saved.getValue();
+        assertThat(created.getSponsorId()).isEqualTo(sponsor.getId());
+        assertThat(created.getParentId()).isEqualTo(leftChild.getId());
+        assertThat(created.getPosition()).isEqualTo("L");
+        assertThat(created.getPanNumber()).isEqualTo("ABCDE1234F");
+        assertThat(created.getStatus()).isEqualTo(AssociateStatus.PENDING);
+    }
+
+    @Test
+    void rejectsADuplicatePan() {
+        when(associateRepository.existsByPanNumber("ABCDE1234F")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.create(req(null, null, "9990001111")))
+            .isInstanceOf(com.plotchain.epin.EPinDuplicateIdentityException.class)
+            .hasMessage("PAN_TAKEN");
     }
 }

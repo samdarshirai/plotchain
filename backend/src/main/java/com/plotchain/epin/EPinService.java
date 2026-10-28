@@ -268,38 +268,13 @@ public class EPinService {
         if (!associateRepository.findSelfAndDownline(callerId).contains(sponsor.getId())) {
             throw new AssociateNotFoundException(req.sponsorUserId());
         }
-        if (associateRepository.existsByPanNumber(req.panNumber())) {
-            throw new EPinDuplicateIdentityException("PAN_TAKEN");
-        }
-        if (associateRepository.existsByAadhaarNumber(req.aadhaarNumber())) {
-            throw new EPinDuplicateIdentityException("AADHAAR_TAKEN");
-        }
-        if (req.phone() != null && associateRepository.existsByPhone(req.phone())) {
-            throw new EPinDuplicateIdentityException("PHONE_TAKEN");
-        }
-
-        // Walk down the chosen leg to its first free slot.
-        // ponytail: O(leg depth) lookups; the unique (parent, position) index is the race guard.
-        Associate parent = sponsor;
-        for (Associate next = associateRepository.findFirstByParentIdAndPosition(parent.getId(), req.position()).orElse(null);
-             next != null;
-             next = associateRepository.findFirstByParentIdAndPosition(parent.getId(), req.position()).orElse(null)) {
-            parent = next;
-        }
+        provisioningService.assertIdentityUnique(req);
+        Associate parent = provisioningService.findFreeSlotParent(sponsor, req.position());
 
         String email = req.email() == null || req.email().isBlank() ? null : req.email().trim();
         Associate member = provisioningService.createPending(req.name().trim(), email, req.phone(),
             sponsor.getId(), parent.getId(), req.position());
-        member.setFatherHusbandName(req.fatherHusbandName());
-        member.setPanNumber(req.panNumber());
-        member.setAadhaarNumber(req.aadhaarNumber());
-        member.setDateOfBirth(req.dateOfBirth());
-        member.setGender(req.gender());
-        member.setMaritalStatus(req.maritalStatus());
-        member.setState(req.state());
-        member.setDistrict(req.district());
-        member.setAddress(req.address());
-        member.setPostalCode(req.postalCode());
+        provisioningService.applyProfile(member, req);
         String transactionPassword = provisioningService.assignGeneratedTransactionPassword(member);
         associateRepository.save(member);
 
