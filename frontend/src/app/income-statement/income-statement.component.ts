@@ -1,4 +1,4 @@
-import { AfterViewChecked, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -41,31 +41,6 @@ export interface CycleOption {
 // date-times "12 Aug 2026, 14:32", ranges "01 Aug 2026 – 15 Aug 2026".
 const DATE_FORMAT = 'dd MMM yyyy';
 const DATE_TIME_FORMAT = 'dd MMM yyyy, HH:mm';
-
-interface RewardTierView {
-  n: number;
-  designation: string;
-  matching: string;
-  reward: string;
-  leftPct: number;
-  rightPct: number;
-  leftLevel: string;
-  rightLevel: string;
-  leftText: string;
-  rightText: string;
-  state: 'achieved' | 'progress' | 'pending';
-  statusKey: string;
-}
-
-interface RewardAchievedView {
-  date: string;
-  designation: string;
-  reward: string;
-  paid: boolean;
-  payStatus: string;
-  paymentDate: string;
-  remarks: string;
-}
 
 @Component({
   selector: 'app-income-statement',
@@ -151,56 +126,18 @@ interface RewardAchievedView {
           </div>
         </div>
 
-        <div class="income-statement__reward-panel">
-          <div class="income-statement__reward-row income-statement__reward-row--head">
-            <span>#</span>
-            <span>{{ 'incomeStatement.columnDesignation' | translate }}</span>
-            <span>{{ 'incomeStatement.columnReward' | translate }}</span>
-            <span>{{ 'incomeStatement.leftLeg' | translate }}</span>
-            <span>{{ 'incomeStatement.rightLeg' | translate }}</span>
-            <span>{{ 'incomeStatement.columnStatus' | translate }}</span>
-          </div>
-          <div class="income-statement__reward-scroll" #rewardScroll>
-            <div class="income-statement__reward-row" *ngFor="let t of rewardTierViews" [class.income-statement__reward-row--current]="t.state === 'progress'">
-              <span class="income-statement__reward-index">{{ t.n }}</span>
-              <div class="income-statement__reward-name">
-                <strong>{{ t.designation }}</strong>
-                <small>{{ t.matching }} {{ 'incomeStatement.matchingSuffix' | translate }}</small>
-              </div>
-              <span>{{ t.reward }}</span>
-              <div class="income-statement__reward-leg">
-                <div class="income-statement__reward-bar"><div [style.width.%]="t.leftPct" [attr.data-level]="t.leftLevel"></div></div>
-                <small [attr.data-level]="t.leftLevel">{{ t.leftText }}</small>
-              </div>
-              <div class="income-statement__reward-leg">
-                <div class="income-statement__reward-bar"><div [style.width.%]="t.rightPct" [attr.data-level]="t.rightLevel"></div></div>
-                <small [attr.data-level]="t.rightLevel">{{ t.rightText }}</small>
-              </div>
-              <span><span class="income-statement__reward-chip" [attr.data-state]="t.state">{{ t.statusKey | translate }}</span></span>
-            </div>
-          </div>
-          <div class="income-statement__reward-foot">{{ 'incomeStatement.scrollAllLevels' | translate: { count: rewardTierViews.length } }}</div>
+        <div class="income-statement__table">
+          <app-editable-table [readOnly]="true" [columns]="rewardTierColumns" [rows]="rewardTierRows"></app-editable-table>
         </div>
 
         <h2 class="income-statement__reward-heading">{{ 'incomeStatement.achievedRewardsTitle' | translate }}</h2>
-        <div class="income-statement__reward-panel">
-          <div class="income-statement__reward-row income-statement__reward-row--achieved income-statement__reward-row--head">
-            <span>{{ 'incomeStatement.columnAchieved' | translate }}</span>
-            <span>{{ 'incomeStatement.columnDesignation' | translate }}</span>
-            <span>{{ 'incomeStatement.columnReward' | translate }}</span>
-            <span>{{ 'incomeStatement.columnPayStatus' | translate }}</span>
-            <span>{{ 'incomeStatement.columnPaymentDate' | translate }}</span>
-            <span>{{ 'incomeStatement.columnRemarks' | translate }}</span>
-          </div>
-          <div class="income-statement__reward-row income-statement__reward-row--achieved" *ngFor="let a of achievedViews">
-            <span>{{ a.date }}</span>
-            <strong>{{ a.designation }}</strong>
-            <span>{{ a.reward }}</span>
-            <span><span class="income-statement__reward-chip" [attr.data-state]="a.paid ? 'achieved' : 'pending'">{{ a.payStatus }}</span></span>
-            <span>{{ a.paymentDate }}</span>
-            <span class="income-statement__reward-remarks">{{ a.remarks }}</span>
-          </div>
-          <div class="income-statement__reward-foot" *ngIf="!achievedViews.length">{{ 'incomeStatement.achievedEmptyState' | translate }}</div>
+        <div class="income-statement__table">
+          <app-editable-table
+            [readOnly]="true"
+            [columns]="achievedColumns"
+            [rows]="achievedRows"
+            [emptyStateLabel]="'incomeStatement.achievedEmptyState' | translate"
+          ></app-editable-table>
         </div>
       </ng-container>
 
@@ -218,7 +155,7 @@ interface RewardAchievedView {
     </div>
   `
 })
-export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDestroy {
+export class IncomeStatementComponent implements OnInit, OnDestroy {
   private incomeStatementService = inject(IncomeStatementService);
   private profileService = inject(AssociateProfileService);
   private profile: AssociateProfileResponse | null = null;
@@ -237,13 +174,12 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
   activeIncomeType = 'ALL';
   statementColumns: EditableTableColumn[] = [];
   statementRows: Record<string, string>[] = [];
-  @ViewChild('rewardScroll') private rewardScroll?: ElementRef<HTMLElement>;
-  // Row index to scroll to once the tier rows are in the DOM (design: last achieved tier on top).
-  private rewardScrollTo: number | null = null;
   currentRank = '—';
   rewardCards: { labelKey: string; value: string }[] = [];
-  rewardTierViews: RewardTierView[] = [];
-  achievedViews: RewardAchievedView[] = [];
+  rewardTierColumns: EditableTableColumn[] = [];
+  rewardTierRows: Record<string, string>[] = [];
+  achievedColumns: EditableTableColumn[] = [];
+  achievedRows: Record<string, string>[] = [];
   private cycleId = '';
   private status = '';
 
@@ -286,15 +222,6 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
     });
   }
 
-  ngAfterViewChecked(): void {
-    const el = this.rewardScroll?.nativeElement;
-    const row = el?.firstElementChild as HTMLElement | null;
-    if (this.rewardScrollTo !== null && el && row) {
-      el.scrollTop = this.rewardScrollTo * row.offsetHeight;
-      this.rewardScrollTo = null;
-    }
-  }
-
   ngOnDestroy(): void {
     this.destroyed$.next();
     this.destroyed$.complete();
@@ -306,6 +233,7 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
       return;
     }
     if (this.activeIncomeType === 'REWARD') {
+      this.buildRewardColumns();
       return;
     }
     if (this.activeIncomeType === 'DIRECT') {
@@ -337,6 +265,30 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
           { key: 'grossAmount', label: t['incomeStatement.columnGrossAmount'], type: 'text' },
           { key: 'createdAt', label: t['incomeStatement.columnCreatedAt'], type: 'text' }
         ];
+      });
+  }
+
+  private buildRewardColumns(): void {
+    const keys = ['#', 'columnDesignation', 'columnReward', 'leftLeg', 'rightLeg', 'columnStatus'];
+    const achievedKeys = ['columnAchieved', 'columnDesignation', 'columnReward', 'columnPayStatus', 'columnPaymentDate', 'columnRemarks'];
+    this.translate
+      .get([...keys, ...achievedKeys].filter(k => k !== '#').map(k => 'incomeStatement.' + k))
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(t => {
+        const label = (k: string) => (k === '#' ? '#' : t['incomeStatement.' + k]);
+        const done = t['incomeStatement.statusAchieved'];
+        const inProgress = t['incomeStatement.statusInProgress'];
+        const tierTone = (v: string | number): BadgeTone => (v === done ? 'success' : v === inProgress ? 'warning' : 'default');
+        const tierKeys = ['n', 'designation', 'reward', 'left', 'right', 'status'];
+        this.rewardTierColumns = tierKeys.map((key, i) => ({
+          key, label: label(keys[i]), type: 'text' as const, ...(key === 'status' ? { type: 'badge' as const, badgeTone: tierTone } : {})
+        }));
+        const paid = this.translate.instant('incomeStatement.payStatusPaid');
+        const payTone = (v: string | number): BadgeTone => (v === paid ? 'success' : 'warning');
+        const achKeys = ['date', 'designation', 'reward', 'payStatus', 'paymentDate', 'remarks'];
+        this.achievedColumns = achKeys.map((key, i) => ({
+          key, label: label(achievedKeys[i]), type: 'text' as const, ...(key === 'payStatus' ? { type: 'badge' as const, badgeTone: payTone } : {})
+        }));
       });
   }
 
@@ -397,25 +349,17 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
         };
         const left = legTotal(t => t.requiredLeftBusiness);
         const right = legTotal(t => t.requiredRightBusiness);
-        const level = (pct: number) => (pct >= 100 ? 'ok' : pct >= 50 ? 'warn' : 'low');
         const firstOpen = tiers.findIndex(t => !t.status);
-        this.rewardTierViews = tiers.map((t, i) => {
-          const leftPct = Math.min(100, (left / t.matchingBusiness) * 100);
-          const rightPct = Math.min(100, (right / t.matchingBusiness) * 100);
+        this.rewardTierRows = tiers.map((t, i) => {
           const state = t.status ? 'achieved' : i === firstOpen ? 'progress' : 'pending';
+          const legText = (leg: number) => `${this.shortInr(Math.min(leg, t.matchingBusiness))} / ${this.shortInr(t.matchingBusiness)}`;
           return {
-            n: t.tierLevel,
-            designation: t.designation ?? '—',
-            matching: this.formatCurrency(t.matchingBusiness),
+            n: String(t.tierLevel),
+            designation: `${t.designation ?? '—'} (${this.formatCurrency(t.matchingBusiness)} ${this.translate.instant('incomeStatement.matchingSuffix')})`,
             reward: this.rewardText(t.reward, t.perkDescription),
-            leftPct,
-            rightPct,
-            leftLevel: level(leftPct),
-            rightLevel: level(rightPct),
-            leftText: `${this.shortInr(Math.min(left, t.matchingBusiness))} / ${this.shortInr(t.matchingBusiness)}`,
-            rightText: `${this.shortInr(Math.min(right, t.matchingBusiness))} / ${this.shortInr(t.matchingBusiness)}`,
-            state,
-            statusKey: state === 'achieved' ? 'incomeStatement.statusAchieved' : state === 'progress' ? 'incomeStatement.statusInProgress' : 'incomeStatement.statusPending'
+            left: legText(left),
+            right: legText(right),
+            status: this.translate.instant(state === 'achieved' ? 'incomeStatement.statusAchieved' : state === 'progress' ? 'incomeStatement.statusInProgress' : 'incomeStatement.statusPending')
           };
         });
         const achievedTiers = tiers.filter(t => t.status);
@@ -425,17 +369,15 @@ export class IncomeStatementComponent implements OnInit, AfterViewChecked, OnDes
           { labelKey: 'incomeStatement.rightBusiness', value: this.formatCurrency(right) },
           { labelKey: 'incomeStatement.matchingBusiness', value: this.formatCurrency(Math.min(left, right)) }
         ];
-        this.rewardScrollTo = Math.max(0, achievedTiers.length - 1);
       },
       error: () => (this.loadError = true)
     });
     this.incomeStatementService.rewardsAchieved().subscribe({
       next: rows => {
-        this.achievedViews = rows.map(r => ({
+        this.achievedRows = rows.map(r => ({
           date: this.formatDate(r.achievedDate, DATE_FORMAT) ?? r.achievedDate,
           designation: r.designation ?? '—',
           reward: this.rewardText(r.reward, r.perkDescription),
-          paid: r.paid,
           payStatus: this.translate.instant(r.paid ? 'incomeStatement.payStatusPaid' : 'incomeStatement.payStatusUnpaid'),
           paymentDate: r.paymentDate ? (this.formatDate(r.paymentDate, DATE_FORMAT) ?? r.paymentDate) : '—',
           remarks: r.remarks ?? '—'

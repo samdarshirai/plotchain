@@ -111,7 +111,7 @@ describe('IncomeStatementComponent', () => {
         columnAchievedDate: 'Achieved Date', statusNotAchieved: 'Not Achieved',
         columnDesignation: 'Designation', columnDate: 'Date', columnPayStatus: 'Pay Status',
         columnPaymentDate: 'Payment Date', columnRemarks: 'Remarks', statusAchieved: 'Achieved', statusPending: 'Pending',
-        payStatusPaid: 'Paid', payStatusUnpaid: 'Unpaid',
+        statusInProgress: 'In progress', leftLeg: 'Left leg', rightLeg: 'Right leg', columnAchieved: 'Achieved', matchingSuffix: 'matching', payStatusPaid: 'Paid', payStatusUnpaid: 'Unpaid',
         bflbAbbr: 'BFLB', bfrbAbbr: 'BFRB', nlbAbbr: 'NLB', nrbAbbr: 'NRB', tlbAbbr: 'TLB', trbAbbr: 'TRB', clbAbbr: 'CLB', crbAbbr: 'CRB',
         bflbLegend: 'Back Forward Left Business', bfrbLegend: 'Back Forward Right Business', nlbLegend: 'New Left Business', nrbLegend: 'New Right Business',
         tlbLegend: 'Total Left Business', trbLegend: 'Total Right Business', clbLegend: 'Calculate Left Business', crbLegend: 'Calculate Right Business',
@@ -404,25 +404,25 @@ describe('IncomeStatementComponent', () => {
     );
     expect(c.currentRank).toBe('T1');
     expect(c.rewardCards.map(x => x.value)).toEqual(['₹1,300,000', '₹300,000', '₹300,000']);
-    expect(c.rewardTierViews.map(t => t.state)).toEqual(['achieved', 'progress', 'pending']);
-    expect(c.rewardTierViews[1].leftPct).toBe(65);
-    expect(c.rewardTierViews[1].rightPct).toBe(15);
-    expect(c.rewardTierViews[1].rightLevel).toBe('low');
-    expect(c.achievedViews[0].payStatus).toBe('Unpaid');
-    expect(c.achievedViews[0].paymentDate).toBe('—');
-    expect(fixture.nativeElement.querySelectorAll('.income-statement__reward-scroll .income-statement__reward-row').length).toBe(3);
+    expect(c.rewardTierRows.map(t => t['status'])).toEqual(['Achieved', 'In progress', 'Pending']);
+    expect(c.rewardTierRows[1]['left']).toBe('₹13 L / ₹20 L');
+    expect(c.rewardTierRows[1]['right']).toBe('₹3 L / ₹20 L');
+    expect(c.achievedRows[0]['payStatus']).toBe('Unpaid');
+    expect(c.achievedRows[0]['paymentDate']).toBe('—');
+    expect(fixture.nativeElement.querySelectorAll('.income-statement__table tbody tr').length).toBe(4);
   });
 
   it('Reward tab with no achieved tier shows em-dash rank and first tier in progress', () => {
     const c = loadReward([tier(1, 500000, 500000, 500000, false), tier(2, 1000000, 1000000, 1000000, false)]);
     expect(c.currentRank).toBe('—');
-    expect(c.rewardTierViews.map(t => t.state)).toEqual(['progress', 'pending']);
-    expect(c.rewardTierViews[0].leftPct).toBe(0);
+    expect(c.rewardTierRows.map(t => t['status'])).toEqual(['In progress', 'Pending']);
+    expect(c.rewardTierRows[0]['left']).toBe('₹0 L / ₹5 L');
   });
 
   it('Reward tab with every tier met caps bars at 100% using top threshold as total', () => {
     const c = loadReward([tier(1, 500000, 0, 0, true), tier(2, 1000000, 0, 0, true)]);
     expect(c.currentRank).toBe('T2');
-    expect(c.rewardTierViews.every(t => t.state === 'achieved' && t.leftPct === 100 && t.rightLevel === 'ok')).toBeTrue();
+    expect(c.rewardTierRows.every(t => t['status'] === 'Achieved')).toBeTrue();
+    expect(c.rewardTierRows[0]['left']).toBe('₹5 L / ₹5 L');
   });
 });

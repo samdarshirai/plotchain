@@ -20,7 +20,7 @@ async function checkScreen(page: Page, route: string, screenshotPath: string, na
     const problems: string[] = [];
     const root = document.documentElement;
     if (root.scrollWidth > root.clientWidth) { problems.push(`page overflows by ${root.scrollWidth - root.clientWidth}px`); }
-    for (const th of document.querySelectorAll('thead th, .income-statement__reward-row--head')) {
+    for (const th of document.querySelectorAll('thead th')) {
       if (!th.getBoundingClientRect().height) { continue; }
       const style = getComputedStyle(th);
       if (style.backgroundColor === 'rgb(12, 10, 11)') { problems.push(`Ink table header: ${th.textContent}`); }

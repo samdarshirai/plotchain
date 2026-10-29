@@ -69,25 +69,6 @@
   }
 }
 
-// Reward ladder / achieved rewards are div-grid "tables": keep desktop column widths and let the
-// panel scroll sideways as one unit (header row + body stay aligned).
-@media (max-width: 767px) {
-  .income-statement__reward-panel {
-    overflow-x: auto;
-  }
-
-  .income-statement__reward-row,
-  .income-statement__reward-scroll,
-  .income-statement__reward-foot {
-    min-width: 680px;
-  }
-
-  .income-statement__reward-foot {
-    position: sticky;
-    left: 0;
-  }
-}
-
 // These filter bars stack into a column under 768px, where their desktop `flex: 1 1 220px` basis
 // becomes a 220px *height* (big empty gaps). Size to content instead.
 @media (max-width: 767px) {
