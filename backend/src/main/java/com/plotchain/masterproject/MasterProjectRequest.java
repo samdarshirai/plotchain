@@ -15,5 +15,11 @@ public record MasterProjectRequest(
     @NotBlank @Size(max = 100) String state,
     @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal businessPercentage,
     @NotNull @DecimalMin("0") BigDecimal ratePerSqft,
-    MasterProject.Status status
-) {}
+    MasterProject.Status status,
+    @DecimalMin("0") @DecimalMax("100") BigDecimal cornerExtraPercent
+) {
+    public MasterProjectRequest(String name, MasterProject.Type type, String city, String state,
+                                BigDecimal businessPercentage, BigDecimal ratePerSqft, MasterProject.Status status) {
+        this(name, type, city, state, businessPercentage, ratePerSqft, status, null);
+    }
+}

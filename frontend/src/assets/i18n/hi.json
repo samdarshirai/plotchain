@@ -1244,7 +1244,7 @@
       "addTitle": "Add Project", "editTitle": "Edit Project", "emptyState": "No projects yet.", "loadError": "Could not load projects.", "saveError": "Could not save project.", "mapError": "Could not load or upload map.",
       "requiredError": "Required", "invalidError": "Invalid value", "columnSNo": "S No", "columnDetails": "Details", "projectName": "Project Name", "type": "Type", "typePlot": "Plot", "typeApartment": "Apartment",
       "location": "Location", "city": "City", "state": "State", "cityState": "City/State", "business": "Business Count (%)", "businessPercentage": "Business Count (%)",
-      "rate": "Rate (Price per Sqft)", "locationMap": "Location Map", "projectMap": "Project Map", "uploaded": "Uploaded", "mapAlt": "Map", "status": "Status", "statusActive": "Active", "statusSuspended": "Suspended"
+      "rate": "Rate (Price per Sqft)", "cornerExtra": "कॉर्नर प्लॉट अतिरिक्त % (डिफ़ॉल्ट)", "locationMap": "Location Map", "projectMap": "Project Map", "uploaded": "Uploaded", "mapAlt": "Map", "status": "Status", "statusActive": "Active", "statusSuspended": "Suspended"
     },
     "expenseTypes": {
       "eyebrow": "वित्त और चक्र", "title": "व्यय प्रकार", "subtitle": "व्यय को वर्गीकृत करने की श्रेणियाँ। उपयोग रोकने के लिए प्रकार को निष्क्रिय करें।",

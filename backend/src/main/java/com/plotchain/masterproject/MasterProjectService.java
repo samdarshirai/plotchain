@@ -11,6 +11,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,7 +42,11 @@ public class MasterProjectService {
 
     @Transactional(readOnly = true)
     public List<MasterProjectResponse> list() {
-        return repository.findAllByOrderByNameAsc().stream().map(MasterProjectResponse::of).toList();
+        // The corner % lives on the plot-side project (same id as the master).
+        Map<UUID, BigDecimal> cornerPercents = new HashMap<>();
+        projectRepository.findAll().forEach(p -> cornerPercents.put(p.getId(), p.getCornerExtraPercent()));
+        return repository.findAllByOrderByNameAsc().stream()
+            .map(m -> MasterProjectResponse.of(m, cornerPercents.get(m.getId()))).toList();
     }
 
     @Transactional
@@ -56,9 +62,10 @@ public class MasterProjectService {
         // The plot-side project is created with the master (same id) -- the Plots screen no longer adds projects.
         Project plotSide = new Project(project.getId(), project.getName(), project.getLocation(), null, null, Instant.now());
         plotSide.setMasterProjectId(project.getId());
+        plotSide.setCornerExtraPercent(request.cornerExtraPercent());
         projectRepository.save(plotSide);
         auditService.record(AUDIT_SECTION, "Created master project " + name, Map.of("id", project.getId().toString()), actorId);
-        return MasterProjectResponse.of(project);
+        return MasterProjectResponse.of(project, plotSide.getCornerExtraPercent());
     }
 
     @Transactional
@@ -72,14 +79,17 @@ public class MasterProjectService {
         if (request.status() != null) project.setStatus(request.status());
         project.touch();
         repository.save(project);
+        BigDecimal[] corner = new BigDecimal[1];
         projectRepository.findById(id).ifPresent(plotSide -> {
             plotSide.setName(project.getName());
             plotSide.setLocation(project.getLocation());
+            plotSide.setCornerExtraPercent(request.cornerExtraPercent());
             projectRepository.save(plotSide);
+            corner[0] = plotSide.getCornerExtraPercent();
         });
         auditService.record(AUDIT_SECTION, "Updated master project " + name,
             Map.of("id", id.toString(), "status", project.getStatus().name()), actorId);
-        return MasterProjectResponse.of(project);
+        return MasterProjectResponse.of(project, corner[0]);
     }
 
     @Transactional

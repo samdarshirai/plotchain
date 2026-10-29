@@ -17,6 +17,7 @@ export interface MasterProject {
   status: MasterProjectStatus;
   hasLocationMap: boolean;
   hasProjectMap: boolean;
+  cornerExtraPercent?: number;
 }
 
 export type MasterProjectRequest = Omit<MasterProject, 'id' | 'hasLocationMap' | 'hasProjectMap'>;
