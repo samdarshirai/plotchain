@@ -9,6 +9,7 @@ import { KycQueueEntry } from '../models/kyc-queue-entry.model';
 import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/tab-bar.component';
 import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.component';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
+import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { titleCase } from '../../shared/utils/title-case';
 
 const PAGE_SIZE = 20;
@@ -17,7 +18,7 @@ const MS_PER_DAY = 86_400_000;
 @Component({
   selector: 'app-kyc-queue',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, TabBarComponent, StatTileComponent, EditableTableComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, TabBarComponent, StatTileComponent, EditableTableComponent, FieldErrorComponent],
   providers: [DatePipe],
   template: `
     <div class="kyc-queue" [class.kyc-queue--compact-table]="activeStatus !== 'PENDING'">
@@ -111,6 +112,7 @@ const MS_PER_DAY = 86_400_000;
             <input
               type="text"
               [(ngModel)]="rejectDraft"
+              [attr.aria-invalid]="rejectTried && !rejectReason ? 'true' : null"
               [placeholder]="'admin.kycQueue.rejectReasonPlaceholder' | translate"
             />
             <button type="button" class="kyc-queue__reject-cancel" (click)="cancelReject()">
@@ -119,12 +121,12 @@ const MS_PER_DAY = 86_400_000;
             <button
               type="button"
               class="kyc-queue__reject-confirm"
-              [disabled]="!rejectReason"
               (click)="confirmReject()"
             >
               {{ 'admin.kycQueue.rejectConfirmAction' | translate }}
             </button>
           </div>
+          <app-field-error [message]="rejectTried && !rejectReason ? 'Reason is required. Type a reason or pick one of the options above.' : undefined"></app-field-error>
         </div>
 
         <div class="kyc-queue__footer" *ngIf="page">
@@ -170,6 +172,7 @@ export class KycQueueComponent implements OnInit {
   // ever mid-rejection, so a single id + draft + chip is enough.
   rejectingId: string | null = null;
   rejectDraft = '';
+  rejectTried = false;
   selectedChip: string | null = null;
 
   get tabs(): TabDefinition[] {
@@ -259,6 +262,7 @@ export class KycQueueComponent implements OnInit {
   }
 
   cancelReject(): void {
+    this.rejectTried = false;
     this.rejectingId = null;
     this.rejectDraft = '';
     this.selectedChip = null;
@@ -269,6 +273,7 @@ export class KycQueueComponent implements OnInit {
   }
 
   confirmReject(): void {
+    this.rejectTried = true;
     if (!this.rejectingId || !this.rejectReason) {
       return;
     }

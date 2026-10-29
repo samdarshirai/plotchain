@@ -6,6 +6,8 @@ import { AssociateSummary } from '../models/associate-summary.model';
 import { AssociateLookupComponent } from '../../shared/components/associate-lookup/associate-lookup.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
+import { FormIssue } from '../../shared/validation/validation';
 import { SUPPORT_TICKET_STATUSES, SupportTicket, SupportTicketStatus } from '../../support-tickets/support-ticket.model';
 import { SupportTicketService } from '../../support-tickets/support-ticket.service';
 import { FlashMessage, TicketErrorKind, classifyTicketError, replyRequired, respondPayload } from './admin-support-tickets.util';
@@ -15,7 +17,7 @@ import { FlashMessage, TicketErrorKind, classifyTicketError, replyRequired, resp
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['./ticket-seal.component.scss'],
-  imports: [CommonModule, TranslateModule, AssociateLookupComponent, InlineBannerComponent, FieldErrorComponent],
+  imports: [CommonModule, TranslateModule, AssociateLookupComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <section class="ticket-seal">
       <!-- RESPOND -->
@@ -67,19 +69,22 @@ import { FlashMessage, TicketErrorKind, classifyTicketError, replyRequired, resp
       <ng-container *ngIf="mode === 'log'">
         <h2 #title tabindex="-1" class="ticket-seal__title">{{ 'admin.supportTickets.seal.log' | translate }}</h2>
         <app-inline-banner *ngIf="error && error.kind !== 'notFound'" tone="danger"><span role="alert">{{ error.kind === 'validation' && error.serverText ? error.serverText : (errorKey | translate) }}</span></app-inline-banner>
-        <form class="ticket-seal__form" (submit)="submitLog(); $event.preventDefault()" novalidate>
+        <form class="ticket-seal__form" [class.was-submitted]="logTried" (submit)="submitLog(); $event.preventDefault()" novalidate>
+          <app-error-summary [issues]="logIssues"></app-error-summary>
           <div class="ticket-seal__field" role="group" aria-labelledby="ticket-seal-associate-label"><span id="ticket-seal-associate-label">{{ 'admin.supportTickets.seal.associate' | translate }}</span>
             <app-associate-lookup [associates]="directory" [value]="associateId" [placeholder]="'admin.supportTickets.filter.anyAssociate' | translate"
               (selected)="associateId = $event?.id ?? ''; error = null"></app-associate-lookup>
+            <app-field-error [message]="logErrors['associate']"></app-field-error>
             <div class="ticket-seal__lookup-error" role="alert" *ngIf="error?.kind === 'notFound'">{{ 'admin.supportTickets.err.associateNotFound' | translate }}</div>
           </div>
           <label class="ticket-seal__field">{{ 'admin.supportTickets.seal.subject' | translate }}
-            <input type="text" name="subject" maxlength="200" [readOnly]="busy" [value]="subject" (input)="subject = $any($event.target).value" />
+            <input type="text" name="subject" maxlength="200" [readOnly]="busy" [value]="subject" (input)="subject = $any($event.target).value" [attr.aria-invalid]="logErrors['subject'] ? 'true' : null" />
+            <app-field-error [message]="logErrors['subject']"></app-field-error>
           </label>
           <label class="ticket-seal__field">{{ 'admin.supportTickets.seal.descriptionField' | translate }}
-            <textarea rows="5" name="description" [readOnly]="busy" [value]="description" (input)="description = $any($event.target).value"></textarea>
+            <textarea rows="5" name="description" [readOnly]="busy" [value]="description" (input)="description = $any($event.target).value" [attr.aria-invalid]="logErrors['description'] ? 'true' : null"></textarea>
+            <app-field-error [message]="logErrors['description']"></app-field-error>
           </label>
-          <div role="alert"><app-field-error [message]="logInvalid ? ('admin.supportTickets.err.logRequired' | translate) : undefined"></app-field-error></div>
           <div class="ticket-seal__form-actions">
             <button type="submit" class="brand-button ticket-seal__submit" [attr.aria-disabled]="busy ? 'true' : null" [attr.aria-busy]="busy">{{ (busy ? 'admin.supportTickets.action.logging' : 'admin.supportTickets.action.log') | translate }}</button>
             <button type="button" class="brand-button brand-button--secondary ticket-seal__cancel" [attr.aria-disabled]="busy ? 'true' : null" (click)="cancel()">{{ 'admin.supportTickets.action.cancel' | translate }}</button>
@@ -111,6 +116,8 @@ export class TicketSealComponent implements OnChanges {
   reply = '';
   tried = false;
   associateId = ''; subject = ''; description = ''; logTried = false;
+  logIssues: FormIssue[] = [];
+  logErrors: Record<string, string> = {};
   busy = false;
   error: { kind: TicketErrorKind; serverText?: string } | null = null;
 
@@ -137,7 +144,7 @@ export class TicketSealComponent implements OnChanges {
       if (this.ticket) { this.focusTitle(); }
     }
     if (ch['mode'] && this.mode === 'log') {
-      this.associateId = ''; this.subject = ''; this.description = ''; this.logTried = false; this.error = null; this.focusTitle();
+      this.associateId = ''; this.subject = ''; this.description = ''; this.logTried = false; this.logIssues = []; this.logErrors = {}; this.error = null; this.focusTitle();
     }
   }
 
@@ -174,6 +181,14 @@ export class TicketSealComponent implements OnChanges {
     if (this.busy) { return; }
     this.logTried = true;
     this.error = null;
+    const sub = this.subject.trim();
+    const probs: FormIssue[] = [];
+    if (!this.associateId) { probs.push({ id: 'associate', label: 'Associate', message: 'Associate is required. Search and pick one from the list.' }); }
+    if (!sub) { probs.push({ id: 'subject', label: 'Subject', message: 'Subject is required. Please fill it in.' }); }
+    else if (sub.length > 200) { probs.push({ id: 'subject', label: 'Subject', message: 'Subject is too long. Use at most 200 characters.' }); }
+    if (!this.description.trim()) { probs.push({ id: 'description', label: 'Description', message: 'Description is required. Please fill it in.' }); }
+    this.logIssues = probs;
+    this.logErrors = Object.fromEntries(probs.map(i => [i.id, i.message]));
     if (this.logInvalid) { return; }
     this.setBusy(true);
     this.service.create({ associateId: this.associateId, subject: this.subject.trim(), description: this.description.trim() }).subscribe({

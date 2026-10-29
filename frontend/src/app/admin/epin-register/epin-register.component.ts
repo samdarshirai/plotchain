@@ -8,6 +8,10 @@ import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { AssociateLookupComponent } from '../../shared/components/associate-lookup/associate-lookup.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
+import { toFieldErrors } from '../../core/api/field-errors.model';
+import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
+import { FormIssue } from '../../shared/validation/validation';
 import { AllocateResult, EPin, EPinEvent, EPinFilters, EPinPage, EPinStatus, RedemptionType } from './epin.model';
 
 const PAGE_SIZE = 20;
@@ -23,7 +27,7 @@ type Panel =
 @Component({
   selector: 'app-epin-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, AssociateLookupComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, AssociateLookupComponent, FieldErrorComponent, ErrorSummaryComponent],
   providers: [DatePipe],
   template: `
     <div class="epin-register">
@@ -78,10 +82,12 @@ type Panel =
 
       <div class="epin-register__panel" *ngIf="panel && panel.kind !== 'allocate' && panel.kind !== 'redeem'">
         <ng-container [ngSwitch]="panel.kind">
-          <form *ngSwitchCase="'generate'" (ngSubmit)="submitGenerate()">
+          <form *ngSwitchCase="'generate'" [class.was-submitted]="submitted" (ngSubmit)="submitGenerate()" novalidate>
+            <app-error-summary [issues]="issues"></app-error-summary>
             <h2>{{ 'admin.epinRegister.generateAction' | translate }}</h2>
             <label>{{ 'admin.epinRegister.countLabel' | translate }}
-              <input type="number" min="1" max="2000" name="count" [(ngModel)]="generateCount" required />
+              <input type="number" min="1" max="2000" name="count" [(ngModel)]="generateCount" required [attr.aria-invalid]="errs['count'] ? 'true' : null" />
+              <app-field-error [message]="errs['count']"></app-field-error>
             </label>
             <label>{{ 'admin.epinRegister.expiresLabel' | translate }}
               <input type="datetime-local" name="expires" [(ngModel)]="generateExpiresLocal" />
@@ -92,10 +98,12 @@ type Panel =
             </div>
           </form>
 
-          <form *ngSwitchCase="'block'" (ngSubmit)="submitBlock()">
+          <form *ngSwitchCase="'block'" [class.was-submitted]="submitted" (ngSubmit)="submitBlock()" novalidate>
+            <app-error-summary [issues]="issues"></app-error-summary>
             <h2>{{ 'admin.epinRegister.blockAction' | translate }}</h2>
             <label>{{ 'admin.epinRegister.reasonLabel' | translate }}
-              <input type="text" name="reason" maxlength="255" [(ngModel)]="panelReason" required />
+              <input type="text" name="reason" maxlength="255" [(ngModel)]="panelReason" required [attr.aria-invalid]="errs['reason'] ? 'true' : null" />
+              <app-field-error [message]="errs['reason']"></app-field-error>
             </label>
             <div class="epin-register__form-actions">
               <button type="submit" class="brand-button">{{ 'admin.epinRegister.submit' | translate }}</button>
@@ -159,11 +167,13 @@ type Panel =
             <ng-container *ngIf="panel?.kind === 'redeem'">
               <div class="epin-register__seal-title">{{ 'admin.epinRegister.redeemAction' | translate }}</div>
               <div class="epin-register__detail-code">{{ redeemEpin?.code }}</div>
-              <form (ngSubmit)="submitRedeem()">
+              <form [class.was-submitted]="submitted" (ngSubmit)="submitRedeem()" novalidate>
+                <app-error-summary [issues]="issues"></app-error-summary>
                 <div class="epin-register__field">{{ 'admin.epinRegister.associateLabel' | translate }}
                   <app-associate-lookup [associates]="associates" [value]="redeemAssociateId"
                     [placeholder]="'admin.epinRegister.lookupPlaceholder' | translate"
                     (selected)="onRedeemAssociate($event)"></app-associate-lookup>
+                  <app-field-error [message]="errs['associate']"></app-field-error>
                 </div>
                 <label>{{ 'admin.epinRegister.typeLabel' | translate }}
                   <select name="redeem-type" [(ngModel)]="redeemType">
@@ -179,17 +189,21 @@ type Panel =
             </ng-container>
             <ng-container *ngIf="panel?.kind === 'allocate'; else sealOther">
               <div class="epin-register__seal-title">{{ 'admin.epinRegister.allocateAction' | translate }}</div>
-              <form (ngSubmit)="submitAllocate()">
+              <form [class.was-submitted]="submitted" (ngSubmit)="submitAllocate()" novalidate>
+                <app-error-summary [issues]="issues"></app-error-summary>
                 <div class="epin-register__field">{{ 'admin.epinRegister.associateLabel' | translate }}
                   <app-associate-lookup [associates]="associates" [value]="allocateAssociateId"
                     [placeholder]="'admin.epinRegister.lookupPlaceholder' | translate"
                     (selected)="onAllocateAssociate($event)"></app-associate-lookup>
+                  <app-field-error [message]="errs['associate']"></app-field-error>
                 </div>
                 <label>{{ 'admin.epinRegister.countLabel' | translate }}
-                  <input type="number" min="1" max="2000" name="alloc-count" [(ngModel)]="allocateCount" required />
+                  <input type="number" min="1" max="2000" name="alloc-count" [(ngModel)]="allocateCount" required [attr.aria-invalid]="errs['alloc-count'] ? 'true' : null" />
+                  <app-field-error [message]="errs['alloc-count']"></app-field-error>
                 </label>
                 <label>{{ 'admin.epinRegister.batchFilterLabel' | translate }}
-                  <input type="text" name="alloc-batch" [(ngModel)]="allocateBatchId" />
+                  <input type="text" name="alloc-batch" [(ngModel)]="allocateBatchId" [attr.aria-invalid]="errs['alloc-batch'] ? 'true' : null" />
+                  <app-field-error [message]="errs['alloc-batch']"></app-field-error>
                 </label>
                 <p *ngIf="allocateResult" class="epin-register__allocated">{{ 'admin.epinRegister.allocatedCount' | translate: { count: allocateResult.count } }}</p>
                 <div class="epin-register__form-actions">
@@ -280,6 +294,9 @@ export class EPinRegisterComponent implements OnInit {
   redeemAssociateId = '';
   redeemType: RedemptionType = 'ACTIVATION';
   panelReason = '';
+  submitted = false;
+  issues: FormIssue[] = [];
+  errs: Record<string, string> = {};
   events: EPinEvent[] = [];
 
   get currentPage(): number { return (this.page?.page ?? 0) + 1; }
@@ -365,6 +382,7 @@ export class EPinRegisterComponent implements OnInit {
       this.eventsSeq++;
     }
     this.actionError = '';
+    this.clearErrors();
     this.generatedCodes = [];
     this.generatedBatchId = '';
     this.generateCount = 10;
@@ -384,11 +402,30 @@ export class EPinRegisterComponent implements OnInit {
     return Number.isInteger(n) && (n as number) >= 1 && (n as number) <= MAX_COUNT;
   }
 
-  private invalid(): void { this.actionError = 'admin.epinRegister.errorInvalid'; }
+  private clearErrors(): void { this.submitted = false; this.issues = []; this.errs = {}; }
+
+  // Records [id, label, message] problems for the open form; returns true when there are none.
+  private check(problems: [string, string, string | null][]): boolean {
+    this.submitted = true;
+    this.issues = [];
+    this.errs = {};
+    for (const [id, label, message] of problems) {
+      if (!message) continue;
+      this.errs[id === 'alloc-associate' || id === 'redeem-associate' ? 'associate' : id] = message;
+      this.issues.push({ id, label, message });
+    }
+    return this.issues.length === 0;
+  }
+
+  private countMessage(n: number | null): string | null {
+    return this.validCount(n) ? null : `Number of PINs must be a whole number from 1 to ${MAX_COUNT}.`;
+  }
+
+  private static readonly ASSOCIATE_MSG = 'Associate is required. Search and pick one from the list.';
 
   submitGenerate(): void {
     this.actionError = '';
-    if (!this.validCount(this.generateCount)) return this.invalid();
+    if (!this.check([['count', 'Number of PINs', this.countMessage(this.generateCount)]])) return;
     const expiresAt = this.generateExpiresLocal ? new Date(this.generateExpiresLocal).toISOString() : undefined;
     this.service.generate(this.generateCount, expiresAt).subscribe({
       next: res => { this.generatedCodes = res.codes; this.generatedBatchId = res.batchId; this.loadPage(0); },
@@ -403,9 +440,11 @@ export class EPinRegisterComponent implements OnInit {
   submitAllocate(): void {
     this.actionError = '';
     const batch = (this.allocateBatchId ?? '').trim();
-    if (!this.allocateAssociateId || !this.validCount(this.allocateCount) || (batch !== '' && !UUID_RE.test(batch))) {
-      return this.invalid();
-    }
+    if (!this.check([
+      ['alloc-associate', 'Associate', this.allocateAssociateId ? null : EPinRegisterComponent.ASSOCIATE_MSG],
+      ['alloc-count', 'Number of PINs', this.countMessage(this.allocateCount)],
+      ['alloc-batch', 'Batch ID', batch === '' || UUID_RE.test(batch) ? null : 'Batch ID is not valid. Paste the full batch ID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) or leave it empty.']
+    ])) return;
     this.service.allocate(this.allocateAssociateId, this.allocateCount, batch || undefined).subscribe({
       next: res => { this.allocateResult = res; this.loadPage(0); },
       error: e => this.fail(e)
@@ -415,7 +454,7 @@ export class EPinRegisterComponent implements OnInit {
   submitRedeem(): void {
     if (this.panel?.kind !== 'redeem') return;
     this.actionError = '';
-    if (!this.redeemAssociateId) return this.invalid();
+    if (!this.check([['redeem-associate', 'Associate', this.redeemAssociateId ? null : EPinRegisterComponent.ASSOCIATE_MSG]])) return;
     this.service.redeem(this.panel.epin.id, this.redeemAssociateId, this.redeemType).subscribe({
       next: () => { this.closePanel(); this.refreshSelected(); },
       error: e => this.fail(e)
@@ -426,7 +465,7 @@ export class EPinRegisterComponent implements OnInit {
     if (this.panel?.kind !== 'block') return;
     this.actionError = '';
     const reason = (this.panelReason ?? '').trim();
-    if (!reason) return this.invalid();
+    if (!this.check([['reason', 'Reason', reason ? null : 'Reason is required. Type why this PIN is being blocked.']])) return;
     this.service.block(this.panel.epin.id, reason).subscribe({
       next: () => { this.closePanel(); this.refreshSelected(); },
       error: e => this.fail(e)
@@ -442,6 +481,15 @@ export class EPinRegisterComponent implements OnInit {
   }
 
   private fail(e: HttpErrorResponse): void {
+    const fields = toFieldErrors(e);
+    if (e.status === 400 && Object.keys(fields).length) {
+      // Server field names -> the ids used by the open form.
+      const ids: Record<string, string> = { count: this.panel?.kind === 'allocate' ? 'alloc-count' : 'count', batchId: 'alloc-batch', associateId: 'associate', reason: 'reason' };
+      this.errs = {};
+      this.issues = Object.entries(fields).map(([k, message]) => ({ id: ids[k] ?? k, label: k, message }));
+      this.issues.forEach(i => (this.errs[i.id] = i.message));
+      return;
+    }
     this.actionError = e.status === 409 ? 'admin.epinRegister.errorConflict'
       : e.status === 404 ? 'admin.epinRegister.errorNotFound'
       : e.status === 400 ? 'admin.epinRegister.errorInvalid'

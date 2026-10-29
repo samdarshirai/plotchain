@@ -10,6 +10,7 @@ import { CycleManagementService } from '../cycle-management/cycle-management.ser
 import { CycleSummary } from '../models/cycle.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
+import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/tab-bar.component';
 import { AdminLedgerEntry } from '../models/ledger-entry.model';
 import { AdminLedgerSummaryPage, AdminLedgerSummaryRow } from '../models/ledger-summary.model';
@@ -58,7 +59,7 @@ const LEG_FIELD: Record<string, string> = {
 @Component({
   selector: 'app-ledger-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, TabBarComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, TabBarComponent, FieldErrorComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="ledger-register">
@@ -141,17 +142,18 @@ const LEG_FIELD: Record<string, string> = {
         </ng-template>
       </div>
 
-      <form class="card ledger-register__fulfil" *ngIf="fulfilIds.length" (ngSubmit)="saveFulfil()">
+      <form class="card ledger-register__fulfil" *ngIf="fulfilIds.length" [class.was-submitted]="fulfilTried" (ngSubmit)="saveFulfil()" novalidate>
         <label>
           {{ 'admin.ledgerRegister.fulfilDateLabel' | translate }}
-          <input type="date" name="fulfilDate" [(ngModel)]="fulfilDate" required />
+          <input type="date" name="fulfilDate" [(ngModel)]="fulfilDate" required [attr.aria-invalid]="fulfilTried && !fulfilDate ? 'true' : null" />
+          <app-field-error [message]="fulfilTried && !fulfilDate ? 'Payment date is required. Pick the date the payment was made.' : undefined"></app-field-error>
         </label>
         <label>
           {{ 'admin.ledgerRegister.fulfilRemarkLabel' | translate }}
           <input type="text" name="fulfilRemark" [(ngModel)]="fulfilRemark" maxlength="500" />
         </label>
         <app-inline-banner *ngIf="fulfilError" tone="danger">{{ 'admin.ledgerRegister.fulfilError' | translate }}</app-inline-banner>
-        <button type="submit" class="brand-button" [disabled]="!fulfilDate">{{ 'admin.ledgerRegister.fulfilSaveAction' | translate }}</button>
+        <button type="submit" class="brand-button">{{ 'admin.ledgerRegister.fulfilSaveAction' | translate }}</button>
         <button type="button" class="brand-button brand-button--secondary" (click)="fulfilIds = []">{{ 'admin.ledgerRegister.fulfilCancelAction' | translate }}</button>
       </form>
 
@@ -194,6 +196,7 @@ export class LedgerRegisterComponent implements OnInit {
   fulfilDate = '';
   fulfilRemark = '';
   fulfilError = false;
+  fulfilTried = false;
 
   get isSummary(): boolean {
     return this.incomeType === 'SUMMARY';
@@ -359,6 +362,7 @@ export class LedgerRegisterComponent implements OnInit {
     this.fulfilDate = date || new Date().toISOString().slice(0, 10);
     this.fulfilRemark = remark;
     this.fulfilError = false;
+    this.fulfilTried = false;
   }
 
   openEdit(row: Record<string, string>): void {
@@ -366,6 +370,10 @@ export class LedgerRegisterComponent implements OnInit {
   }
 
   saveFulfil(): void {
+    this.fulfilTried = true;
+    if (!this.fulfilDate) {
+      return;
+    }
     const paidAt = new Date(this.fulfilDate).toISOString();
     // Summary rows are keyed "associateId|cycleId" (see updateSummaryRows).
     const save$ = this.isSummary

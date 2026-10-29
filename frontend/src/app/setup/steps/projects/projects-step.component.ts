@@ -5,6 +5,8 @@ import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { ErrorSummaryComponent } from '../../../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues } from '../../../shared/validation/validation';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { StatTileComponent } from '../../../shared/components/stat-tile/stat-tile.component';
@@ -27,6 +29,7 @@ const PAGE_SIZE = 20;
     ReactiveFormsModule,
     TranslateModule,
     FieldErrorComponent,
+    ErrorSummaryComponent,
     InlineBannerComponent,
     StatTileComponent,
     TabBarComponent,
@@ -50,7 +53,8 @@ const PAGE_SIZE = 20;
         </app-brand-button>
       </div>
 
-      <form class="card projects-step__add-form" [formGroup]="addProjectForm" *ngIf="showAddProjectForm">
+      <form class="card projects-step__add-form" [formGroup]="addProjectForm" [class.was-submitted]="projectSubmitted" novalidate *ngIf="showAddProjectForm">
+        <app-error-summary [issues]="projectIssues"></app-error-summary>
         <div class="projects-step__row">
           <label>
             {{ 'setup.projects.nameLabel' | translate }}
@@ -61,7 +65,8 @@ const PAGE_SIZE = 20;
             <input type="text" formControlName="location" />
           </label>
         </div>
-        <app-field-error [message]="addProjectForm.get('name')?.touched && addProjectForm.get('name')?.errors?.['required'] ? ('setup.projects.validation.required' | translate) : undefined"></app-field-error>
+        <app-field-error [control]="addProjectForm.get('name')" label="Project name" [submitted]="projectSubmitted"></app-field-error>
+        <app-field-error [control]="addProjectForm.get('location')" label="Location" [submitted]="projectSubmitted"></app-field-error>
 
         <app-logo-uploader
           [label]="'setup.projects.photoLabel' | translate"
@@ -155,11 +160,13 @@ const PAGE_SIZE = 20;
         <app-tab-bar [tabs]="tabs" [activeTabId]="activeTab" (tabChange)="onTabChange($event)"></app-tab-bar>
 
         <div *ngIf="activeTab === 'plotList'">
-          <form class="projects-step__add-plot-form" [formGroup]="plotForm">
+          <form class="projects-step__add-plot-form" [formGroup]="plotForm" [class.was-submitted]="plotSubmitted" novalidate>
+            <app-error-summary [issues]="plotIssues"></app-error-summary>
             <div class="projects-step__row projects-step__row--plot-form">
               <label>
                 {{ 'setup.projects.plotNoLabel' | translate }}
                 <input type="text" formControlName="plotNo" />
+                <app-field-error [control]="plotForm.get('plotNo')" label="Plot number" [submitted]="plotSubmitted"></app-field-error>
               </label>
               <label>
                 {{ 'setup.projects.plotTypeLabel' | translate }}
@@ -171,14 +178,17 @@ const PAGE_SIZE = 20;
               <label>
                 {{ 'setup.projects.areaLabel' | translate }}
                 <input type="number" formControlName="areaSqft" />
+                <app-field-error [control]="plotForm.get('areaSqft')" label="Area" [submitted]="plotSubmitted"></app-field-error>
               </label>
               <label>
                 {{ 'setup.projects.rateLabel' | translate }}
                 <input type="number" formControlName="rate" />
+                <app-field-error [control]="plotForm.get('rate')" label="Rate" [submitted]="plotSubmitted"></app-field-error>
               </label>
               <label>
                 {{ 'setup.projects.priceLabel' | translate }}
                 <input type="number" formControlName="price" />
+                <app-field-error [control]="plotForm.get('price')" label="Price" [submitted]="plotSubmitted"></app-field-error>
               </label>
               <label>
                 {{ 'setup.projects.statusLabel' | translate }}
@@ -441,6 +451,8 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
   }
 
   submitAddProject(): void {
+    this.projectSubmitted = true;
+    this.projectIssues = collectIssues(this.addProjectForm, { name: 'Project name', location: 'Location' });
     if (this.addProjectForm.invalid) {
       this.addProjectForm.markAllAsTouched();
       return;
@@ -450,6 +462,8 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
       const finish = (created: Project) => {
         this.projects = [...this.projects, created];
         this.addProjectForm.reset({ name: '', location: '' });
+        this.projectSubmitted = false;
+        this.projectIssues = [];
         this.showAddProjectForm = false;
         this.clearPendingThumbnail();
         this.setupService.refresh();
@@ -515,13 +529,22 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
     this.loadPlots(page);
   }
 
+  projectSubmitted = false;
+  plotSubmitted = false;
+  projectIssues: FormIssue[] = [];
+  plotIssues: FormIssue[] = [];
+
   submitAddPlot(): void {
+    this.plotSubmitted = true;
+    this.plotIssues = collectIssues(this.plotForm, { plotNo: 'Plot number', areaSqft: 'Area', rate: 'Rate', price: 'Price' });
     if (!this.selectedProjectId || this.plotForm.invalid) {
       this.plotForm.markAllAsTouched();
       return;
     }
     this.projectsService.createPlot(this.selectedProjectId, this.plotForm.getRawValue()).subscribe(() => {
       this.plotForm.reset({ plotNo: '', plotType: 'NORMAL', areaSqft: 0, rate: 0, price: 0, status: 'AVAILABLE' });
+      this.plotSubmitted = false;
+      this.plotIssues = [];
       this.loadPlots(0);
       this.setupService.refresh();
     });

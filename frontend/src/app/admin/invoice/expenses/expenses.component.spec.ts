@@ -39,14 +39,22 @@ describe('ExpensesComponent', () => {
 
   it('postsTrimmedBodyThenReloadsAndResets', () => {
     const c = fixture.componentInstance;
-    c.form.patchValue({ expenseDate: '2026-10-02', expenseTypeId: 't1', payTo: ' Vendor ', amount: 50, payMode: 'UPI', txnNo: '' });
+    c.form.patchValue({ expenseDate: '2026-10-02', expenseTypeId: 't1', payTo: ' Vendor ', amount: 50, payMode: 'UPI', bankName: 'HDFC', txnNo: ' T1 ' });
     c.save();
     const req = httpMock.expectOne({ method: 'POST', url: '/api/admin/expenses' });
     expect(req.request.body.payTo).toBe('Vendor');
-    expect(req.request.body.txnNo).toBeNull();
+    expect(req.request.body.txnNo).toBe('T1');
     req.flush(row);
     httpMock.expectOne(r => r.url === '/api/admin/expenses').flush([row]);
     expect(c.form.value.payTo).toBe('');
+  });
+
+  it('requiresBankAndTxnForNonCash', () => {
+    const c = fixture.componentInstance;
+    c.form.patchValue({ expenseDate: '2026-10-02', expenseTypeId: 't1', payTo: 'V', amount: 50, payMode: 'UPI', bankName: '', txnNo: '' });
+    c.save();
+    httpMock.expectNone({ method: 'POST', url: '/api/admin/expenses' });
+    expect(c.issues.map(i => i.id)).toEqual(['bankName', 'txnNo']);
   });
 
   it('showsServerErrorOnFailure', () => {

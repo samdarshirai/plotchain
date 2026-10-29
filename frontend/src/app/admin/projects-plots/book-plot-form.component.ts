@@ -1,9 +1,11 @@
 import { Component, OnInit, ViewEncapsulation, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormControl, FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
+import { FormIssue, errorMessage, format } from '../../shared/validation/validation';
 import { PlotGridItem, formatArea, formatInr } from '../../shared/utils/plot-grid.util';
 import { BookingEmiConfig, BookingFormValue } from './projects-plots.model';
 import { PAYMENT_MODES } from '../../plot-bookings/models/associate-booking-page.model';
@@ -11,10 +13,11 @@ import { PAYMENT_MODES } from '../../plot-bookings/models/associate-booking-page
 @Component({
   selector: 'app-book-plot-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, FieldErrorComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, FieldErrorComponent, ErrorSummaryComponent],
   encapsulation: ViewEncapsulation.None,
   template: `
-    <form class="book-form" (submit)="submit($event)" novalidate>
+    <form class="book-form" [class.was-submitted]="tried" (submit)="submit($event)" novalidate>
+      <app-error-summary [issues]="issues"></app-error-summary>
       <h3 class="book-form__section">{{ 'admin.projectsPlots.plotDetailsHeading' | translate }}</h3>
       <dl class="book-form__facts">
         <div *ngIf="projectName"><dt>{{ 'admin.projectsPlots.factsProject' | translate }}</dt><dd>{{ projectName }}</dd></div>
@@ -36,7 +39,8 @@ import { PAYMENT_MODES } from '../../plot-bookings/models/associate-booking-page
         <app-field-error id="book-name-err" [message]="(nameInvalid ? 'admin.projectsPlots.buyerNameRequired' : '') | translate"></app-field-error>
       </label>
       <label><span>{{ 'admin.projectsPlots.buyerPhoneLabel' | translate }} <span>{{ 'admin.projectsPlots.optional' | translate }}</span></span>
-        <input type="tel" name="buyerPhone" maxlength="20" [disabled]="busy" [(ngModel)]="buyerPhone" />
+        <input type="tel" name="buyerPhone" maxlength="20" [disabled]="busy" [(ngModel)]="buyerPhone" [attr.aria-invalid]="phoneError ? 'true' : null" />
+        <app-field-error [message]="phoneError"></app-field-error>
       </label>
       <label class="book-form__extra"><span>{{ 'admin.projectsPlots.extraPriceLabel' | translate }} <span>{{ 'admin.projectsPlots.optional' | translate }}</span></span>
         <input #extraInput type="number" name="extraPrice" inputmode="decimal" min="0" step="any" autocomplete="off"
@@ -143,6 +147,7 @@ export class BookPlotFormComponent implements OnInit {
   extraRaw: number | null = null;
   discountRaw: number | null = null;
   tried = false;
+  issues: FormIssue[] = [];
 
   // Prefilled from the plot's default Extra Price; the booking's own value overrides it.
   ngOnInit(): void { this.extraRaw = this.plot.extraPrice ?? 0; }
@@ -170,6 +175,26 @@ export class BookPlotFormComponent implements OnInit {
   get extraError(): boolean { return this.tried && this.extraInvalid; }
   get extraText(): string { return formatInr(this.extra); }
 
+  get phoneError(): string | undefined {
+    const p = this.buyerPhone.trim();
+    return this.tried && p ? errorMessage(new FormControl(p, format('phone')), 'Buyer phone') : undefined;
+  }
+  private buildIssues(): FormIssue[] {
+    const out: FormIssue[] = [];
+    const add = (id: string, label: string, message: string) => out.push({ id, label, message });
+    if (!this.buyerName.trim()) { add('buyerName', 'Buyer name', 'Buyer name is required. Please fill it in.'); }
+    if (this.phoneError) { add('buyerPhone', 'Buyer phone', this.phoneError); }
+    if (this.extraInvalid) { add('extraPrice', 'Extra price', 'Extra price cannot be negative. Enter 0 or more.'); }
+    if (this.discountError) { add('discount', 'Discount', this.discountError === 'negative' ? 'Discount cannot be negative. Enter 0 or more.' : 'Discount must be less than the total price. Enter a smaller amount.'); }
+    if (this.firstError) { add('firstInstallmentAmount', 'First installment', 'First installment must be above 0 and within the balance after the booking amount.'); }
+    if (this.tokenError) { add('tokenAmount', 'Booking amount', this.tokenError === 'required' ? 'Booking amount is required. Enter an amount above 0.' : 'Booking amount must be less than the net total. Enter a smaller amount.'); }
+    if (!this.associateId) { add('associateUserId', 'Associate ID', this.associateError ? 'Associate ID was not found. Check the ID and retype it.' : "Associate ID is required. Enter the referring associate's ID."); }
+    if (!this.paymentMode) { add('paymentMode', 'Payment mode', 'Payment mode is required. Choose one from the list.'); }
+    if (!this.txnNo.trim()) { add('txnNo', 'Transaction number', 'Transaction number is required. Please fill it in.'); }
+    if (this.bankError) { add('bankName', 'Bank name', 'Bank name is required for non-cash payments. Please fill it in.'); }
+    if (this.dateError) { add('txnDate', 'Transaction date', this.txnDate ? 'Transaction date cannot be in the future. Pick today or earlier.' : 'Transaction date is required. Pick a date.'); }
+    return out;
+  }
   get nameInvalid(): boolean { return this.tried && !this.buyerName.trim(); }
   get priceText(): string { return formatInr(this.plot.price); }
   // The block is the plot number's prefix, as in the grid.
@@ -223,6 +248,8 @@ export class BookPlotFormComponent implements OnInit {
     e.preventDefault();
     if (this.busy) { return; } // double-submit guard; the disabled button alone is not enough for Enter-key submits
     this.tried = true;
+    this.issues = this.buildIssues();
+    if (this.phoneError) { return; }
     if (!this.buyerName.trim()) {
       this.buyerNameInput?.nativeElement.focus();
       return;

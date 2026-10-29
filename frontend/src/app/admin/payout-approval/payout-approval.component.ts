@@ -13,6 +13,8 @@ import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../sh
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { SealCardComponent } from '../../shared/components/seal-card/seal-card.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues, errorMessage } from '../../shared/validation/validation';
 import { AdminDashboardService } from '../../admin-dashboard/admin-dashboard.service';
 import { titleCase } from '../../shared/utils/title-case';
 
@@ -26,7 +28,7 @@ const PAGE_SIZE = 20;
   standalone: true,
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule, TranslateModule,
-    EditableTableComponent, InlineBannerComponent, SealCardComponent, FieldErrorComponent
+    EditableTableComponent, InlineBannerComponent, SealCardComponent, FieldErrorComponent, ErrorSummaryComponent
   ],
   providers: [DatePipe, CurrencyPipe],
   template: `
@@ -97,11 +99,13 @@ const PAGE_SIZE = 20;
                 class="payout-approval__reason-input"
                 [(ngModel)]="decisionReasons[page!.requests[i].id]"
                 [placeholder]="'admin.payoutApproval.rejectReasonPlaceholder' | translate"
+                [attr.aria-invalid]="rowErrors[page!.requests[i].id + ':reason'] ? 'true' : null"
               />
               <button type="button" class="payout-approval__reject-action brand-button brand-button--danger" (click)="reject(page!.requests[i].id)">
                 {{ 'admin.payoutApproval.rejectAction' | translate }}
               </button>
             </div>
+            <app-field-error [message]="rowErrors[page!.requests[i].id + ':reason']"></app-field-error>
           </div>
           <div class="payout-approval__action-stack" *ngSwitchCase="'APPROVED'">
             <div class="payout-approval__action-group">
@@ -110,22 +114,26 @@ const PAGE_SIZE = 20;
                 class="payout-approval__bank-reference-input"
                 [(ngModel)]="bankReferences[page!.requests[i].id]"
                 [placeholder]="'admin.payoutApproval.bankReferencePlaceholder' | translate"
+                [attr.aria-invalid]="rowErrors[page!.requests[i].id + ':bank'] ? 'true' : null"
               />
               <button type="button" class="payout-approval__disburse-action brand-button" (click)="disburse(page!.requests[i].id)">
                 {{ 'admin.payoutApproval.disburseAction' | translate }}
               </button>
             </div>
+            <app-field-error [message]="rowErrors[page!.requests[i].id + ':bank']"></app-field-error>
             <div class="payout-approval__action-group">
               <input
                 type="text"
                 class="payout-approval__reason-input"
                 [(ngModel)]="decisionReasons[page!.requests[i].id]"
                 [placeholder]="'admin.payoutApproval.cancelReasonPlaceholder' | translate"
+                [attr.aria-invalid]="rowErrors[page!.requests[i].id + ':reason'] ? 'true' : null"
               />
               <button type="button" class="payout-approval__cancel-action brand-button brand-button--danger" (click)="reject(page!.requests[i].id)">
                 {{ 'admin.payoutApproval.cancelAction' | translate }}
               </button>
             </div>
+            <app-field-error [message]="rowErrors[page!.requests[i].id + ':reason']"></app-field-error>
           </div>
           <span *ngSwitchCase="'REJECTED'" class="payout-approval__status-tag payout-approval__status-tag--rejected">{{ 'admin.payoutApproval.rejectedTag' | translate }}</span>
           <span *ngSwitchCase="'DISBURSED'" class="payout-approval__status-tag payout-approval__status-tag--disbursed">{{ 'admin.payoutApproval.disbursedTag' | translate }}</span>
@@ -152,7 +160,8 @@ const PAGE_SIZE = 20;
 
         <app-inline-banner *ngIf="submitError" tone="danger">{{ submitError }}</app-inline-banner>
 
-        <form [formGroup]="submitForm" (ngSubmit)="onSubmitWithdrawal()">
+        <form [formGroup]="submitForm" [class.was-submitted]="submitted" (ngSubmit)="onSubmitWithdrawal()" novalidate>
+          <app-error-summary [issues]="issues"></app-error-summary>
           <div class="payout-approval__modal-fields">
             <div class="payout-approval__modal-field">
               <label>{{ 'admin.submitWithdrawal.associateLabel' | translate }}</label>
@@ -179,7 +188,7 @@ const PAGE_SIZE = 20;
             <button type="button" class="payout-approval__modal-cancel" (click)="closeSubmitModal()">
               {{ 'admin.submitWithdrawal.cancelAction' | translate }}
             </button>
-            <button type="submit" class="payout-approval__modal-submit" [disabled]="submitForm.invalid">
+            <button type="submit" class="payout-approval__modal-submit">
               {{ 'admin.submitWithdrawal.submitButton' | translate }}
             </button>
           </div>
@@ -206,6 +215,10 @@ export class PayoutApprovalComponent implements OnInit {
   pendingWithdrawals: number | null = null;
   registerColumns: EditableTableColumn[] = [];
   registerRows: Record<string, string>[] = [];
+  rowErrors: Record<string, string> = {};
+  submitted = false;
+  issues: FormIssue[] = [];
+  private labels: Record<string, string> = { associateId: 'Associate', amount: 'Amount' };
   decisionReasons: Record<string, string> = {};
   bankReferences: Record<string, string> = {};
   private associateId = '';
@@ -279,6 +292,11 @@ export class PayoutApprovalComponent implements OnInit {
 
   reject(id: string): void {
     this.actionError = false;
+    if (!this.decisionReasons[id]?.trim()) {
+      this.rowErrors[id + ':reason'] = 'Reason is required. Type why this request is being rejected or cancelled.';
+      return;
+    }
+    delete this.rowErrors[id + ':reason'];
     this.payoutApprovalService.decide(id, 'REJECTED', this.decisionReasons[id]).subscribe({
       next: () => {
         delete this.decisionReasons[id];
@@ -290,6 +308,11 @@ export class PayoutApprovalComponent implements OnInit {
 
   disburse(id: string): void {
     this.actionError = false;
+    if (!this.bankReferences[id]?.trim()) {
+      this.rowErrors[id + ':bank'] = 'Bank reference is required. Enter the transfer reference (e.g. NEFT-12345) before disbursing.';
+      return;
+    }
+    delete this.rowErrors[id + ':bank'];
     this.payoutApprovalService.disburse(id, this.bankReferences[id] ?? '').subscribe({
       next: () => {
         delete this.bankReferences[id];
@@ -328,6 +351,8 @@ export class PayoutApprovalComponent implements OnInit {
     this.submitForm.reset({ associateId: '', amount: null });
     this.serverFieldErrors = {};
     this.submitError = null;
+    this.submitted = false;
+    this.issues = [];
     this.selectedMaxAmount = null;
     this.modalOpen = true;
     // Fetched fresh on every open so a stale eligibility/balance snapshot from page-load (or an
@@ -354,7 +379,7 @@ export class PayoutApprovalComponent implements OnInit {
       return this.serverFieldErrors[name];
     }
     const control = this.submitForm.get(name);
-    if (!control || !control.touched || !control.errors) {
+    if (!control || !(control.touched || this.submitted) || !control.errors) {
       return undefined;
     }
     if (control.errors['required']) {
@@ -363,14 +388,16 @@ export class PayoutApprovalComponent implements OnInit {
     if (control.errors['exceedsMax']) {
       return this.translate.instant('admin.submitWithdrawal.validation.exceedsMax');
     }
-    return undefined;
+    return errorMessage(control, this.labels[name]);
   }
 
   onSubmitWithdrawal(): void {
     this.serverFieldErrors = {};
     this.submitError = null;
+    this.submitted = true;
+    this.submitForm.markAllAsTouched();
+    this.issues = collectIssues(this.submitForm, this.labels).map(i => ({ ...i, message: this.submitFieldError(i.id) ?? i.message }));
     if (this.submitForm.invalid) {
-      this.submitForm.markAllAsTouched();
       return;
     }
     const { associateId, amount } = this.submitForm.getRawValue();
@@ -384,6 +411,7 @@ export class PayoutApprovalComponent implements OnInit {
         const fields = toFieldErrors(err);
         if (Object.keys(fields).length > 0) {
           this.serverFieldErrors = fields;
+          this.issues = collectIssues(this.submitForm, this.labels, fields);
           return;
         }
         if (err.status === 409) {

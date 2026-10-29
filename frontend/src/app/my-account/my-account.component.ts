@@ -793,6 +793,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
           this.saveError = err.error?.error ?? this.translate.instant('myAccount.authorisation.hint');
         } else {
           this.serverFieldErrors = toFieldErrors(err);
+          this.profileIssues = collectIssues(this.form, PROFILE_LABELS, this.serverFieldErrors);
           this.saveError = this.translate.instant('profileKyc.saveError');
         }
       }
