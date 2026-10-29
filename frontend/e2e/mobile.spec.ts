@@ -15,11 +15,14 @@ for (const role of ROLES) for (const width of [360, 390]) {
         }
       });
       const login = await res.json();
+      // Admin and associate sessions use separate localStorage slots (auth.service.ts KEYS).
+      const p = role.name === 'admin' ? 'plotchain.auth.admin.' : 'plotchain.auth.';
+      const mustChange = role.name === 'admin' ? 'mustChange' : 'mustChangePassword';
       await page.addInitScript(l => {
-        localStorage.setItem('plotchain.auth.token', l.token);
-        localStorage.setItem('plotchain.auth.mustChangePassword', 'false');
-        localStorage.setItem('plotchain.auth.role', l.role);
-      }, login);
+        localStorage.setItem(l.p + 'token', l.token);
+        localStorage.setItem(l.p + l.mustChange, 'false');
+        localStorage.setItem(l.p + 'role', l.role);
+      }, { ...login, p, mustChange });
     });
 
     for (const route of role.routes) {

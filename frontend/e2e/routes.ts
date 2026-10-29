@@ -1,5 +1,5 @@
 export const ADMIN_ROUTES = [
-  '/admin/dashboard', '/admin/sales/new', '/change-password',
+  '/admin/dashboard', '/admin/change-password',
   ...[
     'company-profile', 'branding', 'compensation', 'payments-kyc', 'associate-directory', 'tree-explorer',
     'kyc-queue', 'sales-register', 'cycle-management', 'ledger-register', 'e-pin-register', 'payout-approval',
