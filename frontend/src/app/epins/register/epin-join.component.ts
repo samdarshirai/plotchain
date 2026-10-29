@@ -15,7 +15,7 @@ import { AssociateProfileFormComponent, AssociateProfileValue } from '../../shar
   imports: [CommonModule, TranslateModule, InlineBannerComponent, AssociateProfileFormComponent],
   styleUrl: './epin-join.component.scss',
   template: `
-    <div class="epin-join" (keydown.escape)="back()" (click)="$event.target === $event.currentTarget && !busy && back()">
+    <div class="epin-join" (keydown.escape)="back()" (click)="$event.target === $event.currentTarget && !busy ? back() : null">
      <div class="epin-join__modal" role="dialog" aria-modal="true" aria-labelledby="epin-join-title">
       <h1 class="epin-join__title" id="epin-join-title" *ngIf="!result">{{ 'epinRegister.join.title' | translate }}</h1>
 
@@ -113,6 +113,7 @@ export class EPinJoinComponent implements OnInit {
       this.router.navigate(['/e-pins/unlock'], { queryParams: { returnUrl: this.router.url } });
       return;
     }
+    if (e.status === 409 && ['PAN_TAKEN', 'AADHAAR_TAKEN', 'PHONE_TAKEN'].includes(code)) { setTimeout(() => this.profile?.focusFirstError()); }
     if (e.status === 409 && code === 'PAN_TAKEN') { this.serverErrors['panNumber'] = 'PAN already registered'; return; }
     if (e.status === 409 && code === 'AADHAAR_TAKEN') { this.serverErrors['aadhaarNumber'] = 'Aadhaar already registered'; return; }
     if (e.status === 409 && code === 'PHONE_TAKEN') { this.serverErrors['phone'] = 'Phone already registered'; return; }
