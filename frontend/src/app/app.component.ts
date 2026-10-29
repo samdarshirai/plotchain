@@ -6,6 +6,7 @@ import { filter, Subscription } from 'rxjs';
 import { AuthService } from './auth/auth.service';
 import { ADMIN_FAMILY_ROLES } from './admin/admin.guard';
 import { AdminSidebarComponent } from './shared/components/admin-sidebar/admin-sidebar.component';
+import { AssociateIdentityBarComponent } from './shared/components/associate-identity-bar/associate-identity-bar.component';
 import { AssociateSidebarComponent } from './shared/components/associate-sidebar/associate-sidebar.component';
 
 // /setup is a guided, pre-launch-only wizard (setupModeGuard) with its own dedicated
@@ -14,7 +15,7 @@ import { AssociateSidebarComponent } from './shared/components/associate-sidebar
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, TranslateModule, AdminSidebarComponent, AssociateSidebarComponent],
+  imports: [CommonModule, RouterOutlet, TranslateModule, AdminSidebarComponent, AssociateSidebarComponent, AssociateIdentityBarComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
