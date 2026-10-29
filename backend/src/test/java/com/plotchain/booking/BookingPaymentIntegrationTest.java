@@ -135,7 +135,7 @@ class BookingPaymentIntegrationTest {
     }
 
     @Test
-    void discountedBookingPersistsSnapshotAndTotalAndAutoConfirmUsesTheDiscountedTotal() {
+    void discountedBookingPersistsSnapshotAndTotalAndTheScheduleUsesTheDiscountedTotal() {
         plotId = seedAvailablePlot();
         associateId = seedAssociate();
 

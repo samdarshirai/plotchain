@@ -40,6 +40,8 @@ public class Sale {
     private Instant recordedAt;
     @Column(name = "booking_id")
     private UUID bookingId;
+    @Column(name = "emi_installment_id")
+    private UUID emiInstallmentId;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -69,6 +71,8 @@ public class Sale {
     public void setVoidReason(String voidReason) { this.voidReason = voidReason; }
     public UUID getBookingId() { return bookingId; }
     public void setBookingId(UUID bookingId) { this.bookingId = bookingId; }
+    public UUID getEmiInstallmentId() { return emiInstallmentId; }
+    public void setEmiInstallmentId(UUID emiInstallmentId) { this.emiInstallmentId = emiInstallmentId; }
     public Instant getRecordedAt() { return recordedAt; }
     public void setRecordedAt(Instant recordedAt) { this.recordedAt = recordedAt; }
 }

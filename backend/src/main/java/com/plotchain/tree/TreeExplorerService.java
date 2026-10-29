@@ -87,7 +87,8 @@ public class TreeExplorerService {
 
         return new TreeNodeDetailsResponse(a.getName(), a.getUserId(), a.getJoinedAt(), leftMemberId, rightMemberId,
             totalLeftMembers, totalRightMembers, activeLeftMembers, activeRightMembers,
-            business.left(), business.right(), totalSelfBusiness);
+            business.left().add(saleRepository.sumOpenCycleLegBusiness(associateId, "L")),
+            business.right().add(saleRepository.sumOpenCycleLegBusiness(associateId, "R")), totalSelfBusiness);
     }
 
     /**

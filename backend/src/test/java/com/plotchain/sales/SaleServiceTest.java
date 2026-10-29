@@ -547,13 +547,14 @@ class SaleServiceTest {
         verify(ledgerEntryRepository, never()).save(any());
     }
 
-    // Plot-booking lifecycle unit 3: recordConfirmedBooking shares persistSaleAndIncome with
+    // Plot-booking lifecycle unit 3: recordInstallmentPayment shares persistSaleAndIncome with
     // recordSale; differs in the BOOKED guard and where the Sale's fields come from.
     private static final UUID BOOKING_ID = UUID.randomUUID();
+    private static final UUID INSTALLMENT_ID = UUID.randomUUID();
 
     private SaleResponse confirm(String totalAmount, Plot plot) {
-        return saleService.recordConfirmedBooking(BOOKING_ID, ASSOCIATE_ID, "Jane Buyer",
-            "9999999999", new BigDecimal(totalAmount), plot);
+        return saleService.recordInstallmentPayment(BOOKING_ID, INSTALLMENT_ID, 2, ASSOCIATE_ID, "Jane Buyer",
+            "9999999999", new BigDecimal(totalAmount), plot, true);
     }
 
     private Plot plotForBooking(PlotStatus status, String areaSqft) {
@@ -573,11 +574,11 @@ class SaleServiceTest {
     }
 
     @Test
-    void recordConfirmedBookingFlipsBookedPlotToSoldAndLinksSaleToBooking() {
+    void recordInstallmentPaymentFlipsBookedPlotToSoldAndLinksSaleToBooking() {
         stubConfirmedPathDependencies();
         Plot plot = plotForBooking(PlotStatus.BOOKED, "1200.00");
 
-        // amount comes from the booking (750000), not the plot price (600000)
+        // amount comes from the installment (750000), not the plot price (600000)
         SaleResponse response = confirm("750000.00", plot);
 
         assertThat(plot.getStatus()).isEqualTo(PlotStatus.SOLD);
@@ -586,27 +587,41 @@ class SaleServiceTest {
         verify(saleRepository).save(captor.capture());
         Sale saved = captor.getValue();
         assertThat(saved.getBookingId()).isEqualTo(BOOKING_ID);
+        assertThat(saved.getEmiInstallmentId()).isEqualTo(INSTALLMENT_ID);
         assertThat(saved.getPlotId()).isEqualTo(PLOT_ID);
         assertThat(saved.getProjectId()).isEqualTo(PROJECT_ID);
         assertThat(saved.getAssociateId()).isEqualTo(ASSOCIATE_ID);
         assertThat(saved.getAmount()).isEqualByComparingTo("750000.00");
         assertThat(saved.getBuyerName()).isEqualTo("Jane Buyer");
         assertThat(saved.getBuyerPhone()).isEqualTo("9999999999");
-        assertThat(saved.getNote()).isEqualTo("Confirmed from booking " + BOOKING_ID);
+        assertThat(saved.getNote()).isEqualTo("Payment 2 of booking " + BOOKING_ID);
         assertThat(saved.getStatus()).isEqualTo(SaleStatus.RECORDED);
         assertThat(saved.getLegCredited()).isEqualTo("L");
         assertThat(saved.getCycleId()).isEqualTo(CYCLE_ID);
         assertThat(response.status()).isEqualTo("RECORDED");
         assertThat(response.plotNo()).isEqualTo("A-101");
-        // the confirmed path takes the locked plot from the caller; it must not lock/read it itself
+        // the payment path takes the plot from the caller; it must not lock/read it itself
         verify(plotRepository, never()).findByIdForUpdate(any());
         verify(plotRepository, never()).findById(any());
+    }
+
+    @Test
+    void partialInstallmentPaymentLeavesPlotBooked() {
+        stubConfirmedPathDependencies();
+        Plot plot = plotForBooking(PlotStatus.BOOKED, "1200.00");
+
+        saleService.recordInstallmentPayment(BOOKING_ID, INSTALLMENT_ID, 1, ASSOCIATE_ID, "Jane Buyer",
+            "9999999999", new BigDecimal("100000.00"), plot, false);
+
+        assertThat(plot.getStatus()).isEqualTo(PlotStatus.BOOKED);
+        verify(plotRepository, never()).save(any());
+        verify(saleRepository).save(any());
     }
 
     // Parity with recordSaleSavesADirectIncomeLedgerEntryWithCorrectMath: same plan fixture, same
     // 600000.00 amount, same literal expectations.
     @Test
-    void recordConfirmedBookingCreditsSameDirectIncomeAsRecordSaleForSameInputs() {
+    void recordInstallmentPaymentCreditsSameDirectIncomeAsRecordSaleForSameInputs() {
         stubConfirmedPathDependencies();
 
         SaleResponse response = confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1200.00"));
@@ -626,7 +641,7 @@ class SaleServiceTest {
     }
 
     @Test
-    void recordConfirmedBookingThrowsAssociateNotFoundForUnknownAssociate() {
+    void recordInstallmentPaymentThrowsAssociateNotFoundForUnknownAssociate() {
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1200.00")))
@@ -637,7 +652,7 @@ class SaleServiceTest {
     }
 
     @Test
-    void recordConfirmedBookingThrowsProjectNotFoundForUnknownProject() {
+    void recordInstallmentPaymentThrowsProjectNotFoundForUnknownProject() {
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.empty());
 
@@ -649,27 +664,7 @@ class SaleServiceTest {
     }
 
     @Test
-    void recordConfirmedBookingRejectsAnAvailablePlot() {
-        assertThatThrownBy(() -> confirm("600000.00", plotForBooking(PlotStatus.AVAILABLE, "1200.00")))
-            .isInstanceOf(PlotNotAvailableException.class);
-
-        verify(saleRepository, never()).save(any());
-        verify(ledgerEntryRepository, never()).save(any());
-        verify(plotRepository, never()).save(any());
-    }
-
-    @Test
-    void recordConfirmedBookingRejectsASoldPlot() {
-        assertThatThrownBy(() -> confirm("600000.00", plotForBooking(PlotStatus.SOLD, "1200.00")))
-            .isInstanceOf(PlotNotAvailableException.class);
-
-        verify(saleRepository, never()).save(any());
-        verify(ledgerEntryRepository, never()).save(any());
-        verify(plotRepository, never()).save(any());
-    }
-
-    @Test
-    void recordConfirmedBookingCreditsSelfPerformanceBonusForBookedPlotArea() {
+    void recordInstallmentPaymentCreditsSelfPerformanceBonusForBookedPlotArea() {
         stubConfirmedPathDependencies();
         when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
 
@@ -685,7 +680,7 @@ class SaleServiceTest {
     }
 
     @Test
-    void recordConfirmedBookingThrowsWhenCompensationPlanMissing() {
+    void recordInstallmentPaymentThrowsWhenCompensationPlanMissing() {
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
         when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));

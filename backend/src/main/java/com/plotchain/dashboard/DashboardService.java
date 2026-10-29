@@ -168,8 +168,10 @@ public class DashboardService {
         // Lifetime Total Left/Right Business -- see LegVolumeRepository.totalBusiness() for why a
         // naive SUM(leftLegVolume) across all rows would double-count a long-lived unmatched carry.
         LegVolumeRepository.LegBusinessTotals legBusinessTotals = legVolumeRepository.totalBusiness(associateId);
-        BigDecimal totalLeftBusiness = legBusinessTotals.left();
-        BigDecimal totalRightBusiness = legBusinessTotals.right();
+        BigDecimal totalLeftBusiness = legBusinessTotals.left()
+            .add(saleRepository.sumOpenCycleLegBusiness(associateId, "L"));
+        BigDecimal totalRightBusiness = legBusinessTotals.right()
+            .add(saleRepository.sumOpenCycleLegBusiness(associateId, "R"));
         BigDecimal totalSelfBusiness = saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED);
         BigDecimal newBookedAreaSqft = openCycle
             .map(c -> saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, c.getId(), SaleStatus.RECORDED))

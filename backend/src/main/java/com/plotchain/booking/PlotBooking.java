@@ -66,9 +66,6 @@ public class PlotBooking {
     @Column(name = "cancel_reason")
     private String cancelReason;
 
-    @Column(name = "sale_id")
-    private UUID saleId;
-
     public BookingStatus getStatus() { return status; }
     public void setStatus(BookingStatus status) { this.status = status; }
     public String getBuyerName() { return buyerName; }
@@ -81,8 +78,6 @@ public class PlotBooking {
     public void setCancelledAt(Instant cancelledAt) { this.cancelledAt = cancelledAt; }
     public String getCancelReason() { return cancelReason; }
     public void setCancelReason(String cancelReason) { this.cancelReason = cancelReason; }
-    public UUID getSaleId() { return saleId; }
-    public void setSaleId(UUID saleId) { this.saleId = saleId; }
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }

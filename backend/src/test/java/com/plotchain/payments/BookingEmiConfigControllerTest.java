@@ -53,13 +53,13 @@ class BookingEmiConfigControllerTest {
     @Test
     void getConfigReturnsTheStoredConfigForAnAdminToken() throws Exception {
         BookingEmiConfig stored = new BookingEmiConfig();
-        stored.setConfirmRule("MANUAL");
+        stored.setDefaultInstallmentCount(4);
         when(bookingEmiConfigRepository.findAll()).thenReturn(List.of(stored));
 
         mockMvc.perform(get("/api/company/booking-emi")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.confirmRule").value("MANUAL"));
+            .andExpect(jsonPath("$.defaultInstallmentCount").value(4));
     }
 
     @Test
@@ -78,20 +78,8 @@ class BookingEmiConfigControllerTest {
         mockMvc.perform(put("/api/company/booking-emi")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
                 .contentType("application/json")
-                .content("{\"emiEnabled\":true,\"defaultInstallmentCount\":12,\"confirmRule\":\"AUTO_THRESHOLD\",\"confirmThresholdPercent\":25}"))
+                .content("{\"emiEnabled\":true,\"defaultInstallmentCount\":12}"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.confirmRule").value("AUTO_THRESHOLD"));
-    }
-
-    @Test
-    void putConfigReturns409ForAutoThresholdWithNoThreshold() throws Exception {
-        when(bookingEmiConfigRepository.findAll()).thenReturn(List.of(new BookingEmiConfig()));
-
-        mockMvc.perform(put("/api/company/booking-emi")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
-                .contentType("application/json")
-                .content("{\"emiEnabled\":true,\"defaultInstallmentCount\":1,\"confirmRule\":\"AUTO_THRESHOLD\"}"))
-            .andExpect(status().isConflict())
-            .andExpect(jsonPath("$.error").isNotEmpty());
+            .andExpect(jsonPath("$.defaultInstallmentCount").value(12));
     }
 }

@@ -48,53 +48,21 @@ class BookingEmiConfigServiceTest {
         when(bookingEmiConfigRepository.findAll()).thenReturn(List.of(stored));
 
         BookingEmiConfigResponse response = bookingEmiConfigService.updateConfig(
-            new BookingEmiConfigRequest(true, 12, "AUTO_THRESHOLD", 25), ACTOR_ID);
+            new BookingEmiConfigRequest(true, 12), ACTOR_ID);
 
         ArgumentCaptor<BookingEmiConfig> captor = ArgumentCaptor.forClass(BookingEmiConfig.class);
         verify(bookingEmiConfigRepository).save(captor.capture());
         assertThat(captor.getValue().isEmiEnabled()).isTrue();
         assertThat(captor.getValue().getDefaultInstallmentCount()).isEqualTo(12);
-        assertThat(captor.getValue().getConfirmRule()).isEqualTo("AUTO_THRESHOLD");
-        assertThat(captor.getValue().getConfirmThresholdPercent()).isEqualTo(25);
-        assertThat(response.confirmRule()).isEqualTo("AUTO_THRESHOLD");
-    }
-
-    @Test
-    void updateConfigClearsTheThresholdWhenSwitchingAwayFromAutoThreshold() {
-        BookingEmiConfig stored = new BookingEmiConfig();
-        stored.setConfirmRule("AUTO_THRESHOLD");
-        stored.setConfirmThresholdPercent(25);
-        when(bookingEmiConfigRepository.findAll()).thenReturn(List.of(stored));
-
-        bookingEmiConfigService.updateConfig(new BookingEmiConfigRequest(false, 1, "MANUAL", null), ACTOR_ID);
-
-        ArgumentCaptor<BookingEmiConfig> captor = ArgumentCaptor.forClass(BookingEmiConfig.class);
-        verify(bookingEmiConfigRepository).save(captor.capture());
-        assertThat(captor.getValue().getConfirmThresholdPercent()).isNull();
-    }
-
-    @Test
-    void updateConfigRejectsAutoThresholdWithNoThreshold() {
-        // Validation runs before the repository is ever touched, so no stubbing is needed here.
-        assertThatThrownBy(() -> bookingEmiConfigService.updateConfig(
-            new BookingEmiConfigRequest(true, 1, "AUTO_THRESHOLD", null), ACTOR_ID))
-            .isInstanceOf(InvalidBookingEmiConfigException.class);
-    }
-
-    @Test
-    void updateConfigRejectsAutoThresholdWithAZeroOrNegativeThreshold() {
-        assertThatThrownBy(() -> bookingEmiConfigService.updateConfig(
-            new BookingEmiConfigRequest(true, 1, "AUTO_THRESHOLD", 0), ACTOR_ID))
-            .isInstanceOf(InvalidBookingEmiConfigException.class);
+        assertThat(response.defaultInstallmentCount()).isEqualTo(12);
     }
 
     @Test
     void updateConfigRecordsAnAuditEntry() {
         BookingEmiConfig stored = new BookingEmiConfig();
-        stored.setConfirmRule("MANUAL");
         when(bookingEmiConfigRepository.findAll()).thenReturn(List.of(stored));
 
-        bookingEmiConfigService.updateConfig(new BookingEmiConfigRequest(true, 6, "KYC_GATED", null), ACTOR_ID);
+        bookingEmiConfigService.updateConfig(new BookingEmiConfigRequest(true, 6), ACTOR_ID);
 
         ArgumentCaptor<SettingsAuditLog> captor = ArgumentCaptor.forClass(SettingsAuditLog.class);
         verify(settingsAuditLogRepository).save(captor.capture());

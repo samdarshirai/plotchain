@@ -24,12 +24,6 @@ public class BookingEmiConfig {
     @Column(name = "default_installment_count", nullable = false)
     private int defaultInstallmentCount;
 
-    @Column(name = "confirm_rule", nullable = false)
-    private String confirmRule;
-
-    @Column(name = "confirm_threshold_percent")
-    private Integer confirmThresholdPercent;
-
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
@@ -40,12 +34,6 @@ public class BookingEmiConfig {
 
     public int getDefaultInstallmentCount() { return defaultInstallmentCount; }
     public void setDefaultInstallmentCount(int defaultInstallmentCount) { this.defaultInstallmentCount = defaultInstallmentCount; }
-
-    public String getConfirmRule() { return confirmRule; }
-    public void setConfirmRule(String confirmRule) { this.confirmRule = confirmRule; }
-
-    public Integer getConfirmThresholdPercent() { return confirmThresholdPercent; }
-    public void setConfirmThresholdPercent(Integer confirmThresholdPercent) { this.confirmThresholdPercent = confirmThresholdPercent; }
 
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }

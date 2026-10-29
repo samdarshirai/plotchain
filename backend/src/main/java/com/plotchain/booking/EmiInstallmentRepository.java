@@ -84,4 +84,24 @@ public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, 
     BigDecimal sumPayments(@Param("status") InstallmentStatus status, @Param("from") Instant from,
         @Param("to") Instant to, @Param("unbounded") boolean unbounded,
         @Param("projectId") UUID projectId);
+
+    // One-off backfill (BookingSaleBackfill): PAID installments that were confirmed before business
+    // was credited per payment, so they have no Sale. Legacy CONFIRMED bookings already carry one
+    // full-amount Sale and are excluded.
+    @Query("""
+        SELECT DISTINCT i.bookingId FROM EmiInstallment i
+        JOIN PlotBooking b ON b.id = i.bookingId
+        WHERE i.status = com.plotchain.booking.InstallmentStatus.PAID
+        AND b.status <> com.plotchain.booking.BookingStatus.CONFIRMED
+        AND NOT EXISTS (SELECT 1 FROM Sale s WHERE s.emiInstallmentId = i.id)
+        """)
+    List<UUID> findBookingIdsWithUncreditedPayments();
+
+    @Query("""
+        SELECT i FROM EmiInstallment i
+        WHERE i.bookingId = :bookingId AND i.status = com.plotchain.booking.InstallmentStatus.PAID
+        AND NOT EXISTS (SELECT 1 FROM Sale s WHERE s.emiInstallmentId = i.id)
+        ORDER BY i.installmentNumber ASC
+        """)
+    List<EmiInstallment> findUncreditedPaid(@Param("bookingId") UUID bookingId);
 }

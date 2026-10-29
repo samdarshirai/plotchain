@@ -168,6 +168,8 @@ class TreeExplorerControllerTest {
         when(legVolumeRepository.totalBusiness(ROOT_ID))
             .thenReturn(new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
         when(saleRepository.sumAmountByAssociateIdAndStatus(ROOT_ID, SaleStatus.RECORDED)).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumOpenCycleLegBusiness(ROOT_ID, "L")).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumOpenCycleLegBusiness(ROOT_ID, "R")).thenReturn(BigDecimal.ZERO);
 
         mockMvc.perform(get("/api/admin/tree/" + ROOT_ID + "/details")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))

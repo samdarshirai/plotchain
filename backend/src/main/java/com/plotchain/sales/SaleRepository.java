@@ -95,4 +95,20 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
         @Param("recordedFrom") Instant recordedFrom,
         @Param("recordedToExclusive") Instant recordedToExclusive,
         Pageable pageable);
+
+    // Live Left/Right Business for the still-OPEN cycle: leg_volume rows only exist once a cycle
+    // closes, so without this a fresh sale never shows in its uplines' totals until the next close.
+    // Seeded at the :position child, so it sums RECORDED sales of that whole leg's subtree.
+    @Query(value = """
+        WITH RECURSIVE downline(id) AS (
+            SELECT id FROM associate WHERE parent_id = :associateId AND position = :position
+            UNION ALL
+            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
+        )
+        SELECT COALESCE(SUM(s.amount), 0) FROM sale s
+        JOIN downline d ON d.id = s.associate_id
+        JOIN cycle c ON c.id = s.cycle_id
+        WHERE s.status = 'RECORDED' AND c.status = 'OPEN'
+        """, nativeQuery = true)
+    BigDecimal sumOpenCycleLegBusiness(@Param("associateId") UUID associateId, @Param("position") String position);
 }

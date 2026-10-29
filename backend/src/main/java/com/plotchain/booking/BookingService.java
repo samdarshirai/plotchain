@@ -11,7 +11,6 @@ import com.plotchain.projects.PlotRepository;
 import com.plotchain.projects.PlotStatus;
 import com.plotchain.projects.Project;
 import com.plotchain.projects.ProjectRepository;
-import com.plotchain.sales.SaleResponse;
 import com.plotchain.sales.SaleService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -253,7 +252,7 @@ public class BookingService {
     }
 
     // U2: admin confirms an ENTERED payment (ENTERED -> PAID). Allowed on ACTIVE or CONFIRMED bookings,
-    // never CANCELLED. Booking lock first (Decision 8); the plot lock is taken only inside confirmLocked.
+    // never CANCELLED. Booking lock first (Decision 8); the plot lock is taken only for the completing payment.
     @Transactional
     public BookingResponse confirmPayment(UUID bookingId, int installmentNumber, UUID actorId) {
         PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)
@@ -314,94 +313,83 @@ public class BookingService {
                     + ", ref " + installment.getPaymentRef(), now));
         }
         if (booking.getStatus() == BookingStatus.ACTIVE) {
-            afterInstallmentPaid(booking, installments, actorId);
+            creditConfirmedPayments(booking, installments, numbers, actorId);
         }
         return toResponse(booking, installments);
     }
 
-    // Unit 5: AUTO_THRESHOLD auto-confirm (spec Decision 1, Flow "Record payment"). U2: now runs from
-    // confirmEntered (only for ACTIVE bookings), inside the locked transaction, after the PAY_CONFIRMED event and before the response is built, so
-    // the response reflects a CONFIRMED booking. Holds only the booking lock; confirmLocked takes the
-    // plot lock itself (booking -> plot, Decision 8). Any failure in confirmLocked propagates and
-    // rolls the whole pay back (installment write + PAID event included).
-    // Config is read fresh from the global singleton every call (Resolved decision #3): no snapshot.
-    void afterInstallmentPaid(PlotBooking booking, List<EmiInstallment> installments, UUID actorId) {
-        BookingEmiConfig config = bookingEmiConfigRepository.findBySingletonGuardTrue()
-            .orElseThrow(() -> new IllegalStateException(
-                "booking_emi_config row missing - V14 migration seeds it"));
-        if (thresholdReached(booking, installments, config)) {
-            confirmLocked(booking, actorId);
-        }
-    }
-
-    // `installments` already contains the just-paid row as PAID (recordPayment mutates the same
-    // object that is in this list). Exact math, no division: paid/total >= threshold/100
-    // <=> paid*100 >= total*threshold. Only the literal AUTO_THRESHOLD rule qualifies (MANUAL and
-    // KYC_GATED never auto-confirm); a null/<=0 threshold never confirms rather than blocking the pay.
-    private boolean thresholdReached(PlotBooking booking, List<EmiInstallment> installments,
-                                     BookingEmiConfig config) {
-        if (!"AUTO_THRESHOLD".equals(config.getConfirmRule())) {
-            return false;
-        }
-        Integer threshold = config.getConfirmThresholdPercent();
-        BigDecimal total = booking.getTotalAmount();
-        if (threshold == null || threshold <= 0 || total.signum() <= 0) {
-            return false;
-        }
-        BigDecimal paid = sumByStatus(installments, InstallmentStatus.PAID);
-        return paid.multiply(BigDecimal.valueOf(100))
-            .compareTo(total.multiply(BigDecimal.valueOf(threshold))) >= 0;
-    }
-
-    // Plot-booking unit 4 (spec Flow "Confirm", Decisions 1, 2, 8). Locks the booking FIRST (so two
-    // simultaneous confirms serialize: the loser re-reads CONFIRMED and gets 409 -- the unique
-    // sale.booking_id index is only the backstop), then confirmLocked takes the plot lock.
-    // Allowed under MANUAL and AUTO_THRESHOLD alike: never reads booking_emi_config (Decision 1).
-    @Transactional
-    public BookingResponse confirmBooking(UUID bookingId, UUID actorId) {
-        PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)
-            .orElseThrow(() -> new BookingNotFoundException(bookingId));
-        if (booking.getStatus() != BookingStatus.ACTIVE) {
-            throw new BookingNotActiveException(bookingId);
-        }
-        confirmLocked(booking, actorId);
-        return toResponse(booking, emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
-    }
-
-    // Reusable confirm step; unit 5 calls this from afterInstallmentPaid inside recordPayment's
-    // transaction. PRECONDITIONS (not re-checked): caller is inside a transaction, already holds the
-    // booking row lock (findByIdForUpdate) and has verified status == ACTIVE.
-    // LOCK ORDER IS BOOKING -> PLOT EVERYWHERE (Decision 8): never take a plot lock and then a
-    // booking lock, or concurrent confirm/cancel/pay can deadlock. The plot lock is taken here so
-    // callers cannot forget it or get the order wrong.
-    void confirmLocked(PlotBooking lockedBooking, UUID actorId) {
-        Plot plot = plotRepository.findByIdForUpdate(lockedBooking.getPlotId())
-            .orElseThrow(() -> new IllegalStateException(
-                "plot row missing for booking " + lockedBooking.getId() + " - plot_id has an FK constraint"));
-        // Checked here (not left to SaleService.recordConfirmedBooking's identical guard) so the
-        // failure is the booking-flavoured PlotNotAvailableException (409), not a sales exception.
-        if (plot.getStatus() != PlotStatus.BOOKED) {
+    // Admin payment confirmation is the only trigger for business and income: each newly PAID
+    // installment gets its own Sale (amount = installment amount) inside the locked transaction, so
+    // dashboards, reports and the ledger update immediately. Once every live installment is PAID the
+    // booking is CONFIRMED (fully paid) and the plot goes BOOKED -> SOLD on that last Sale. Legacy
+    // bookings already CONFIRMED under the old one-Sale-per-booking rule never reach here (ACTIVE only).
+    // Holds the booking lock; the plot lock is taken only for the completing payment
+    // (booking -> plot, Decision 8). Any failure rolls the whole confirmation back.
+    private void creditConfirmedPayments(PlotBooking booking, List<EmiInstallment> installments,
+                                         List<Integer> numbers, UUID actorId) {
+        boolean fullyPaid = installments.stream()
+            .filter(i -> i.getStatus() != InstallmentStatus.VOID)
+            .allMatch(i -> i.getStatus() == InstallmentStatus.PAID);
+        Plot plot = fullyPaid
+            ? plotRepository.findByIdForUpdate(booking.getPlotId()).orElseThrow(() -> missingPlot(booking))
+            : plotRepository.findById(booking.getPlotId()).orElseThrow(() -> missingPlot(booking));
+        if (fullyPaid && plot.getStatus() != PlotStatus.BOOKED) {
+            // Checked here so the failure is the booking-flavoured PlotNotAvailableException (409).
             throw new PlotNotAvailableException(plot.getId());
         }
-
-        // Flips the plot BOOKED -> SOLD and sets sale.booking_id itself.
-        SaleResponse sale = saleService.recordConfirmedBooking(
-            lockedBooking.getId(), lockedBooking.getAssociateId(), lockedBooking.getBuyerName(),
-            lockedBooking.getBuyerPhone(), lockedBooking.getTotalAmount(), plot);
-
         Instant now = clock.instant();
-        lockedBooking.setStatus(BookingStatus.CONFIRMED);
-        lockedBooking.setConfirmedAt(now);
-        lockedBooking.setSaleId(sale.id());
-        plotBookingRepository.save(lockedBooking);
+        for (int n : numbers) {
+            EmiInstallment installment = installments.stream()
+                .filter(i -> i.getInstallmentNumber() == n).findFirst().orElseThrow();
+            boolean completes = fullyPaid && n == numbers.get(numbers.size() - 1);
+            saleService.recordInstallmentPayment(
+                booking.getId(), installment.getId(), n, booking.getAssociateId(), booking.getBuyerName(),
+                booking.getBuyerPhone(), installment.getAmount(), plot, completes);
+        }
+        if (fullyPaid) {
+            booking.setStatus(BookingStatus.CONFIRMED);
+            booking.setConfirmedAt(now);
+            plotBookingRepository.save(booking);
+            bookingEventRepository.save(BookingEvent.of(booking.getId(), BookingEventType.CONFIRMED,
+                actorId, "fully paid, amount " + booking.getTotalAmount().toPlainString(), now));
+        }
+    }
 
-        bookingEventRepository.save(BookingEvent.of(lockedBooking.getId(), BookingEventType.CONFIRMED,
-            actorId, "sale " + sale.id() + ", amount " + lockedBooking.getTotalAmount().toPlainString(), now));
+    // One-off backfill for BookingSaleBackfill: credits a Sale per PAID installment confirmed before
+    // business was credited per payment. ACTIVE bookings go through the normal path (so a fully paid
+    // one is completed: CONFIRMED, plot SOLD); CANCELLED bookings keep their retained payments as
+    // business but never touch the plot. Sales land in the current open cycle.
+    @Transactional
+    public void backfillPaymentSales(UUID bookingId) {
+        PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)
+            .orElseThrow(() -> new BookingNotFoundException(bookingId));
+        List<EmiInstallment> missing = emiInstallmentRepository.findUncreditedPaid(bookingId);
+        if (missing.isEmpty() || booking.getStatus() == BookingStatus.CONFIRMED) {
+            return;
+        }
+        List<Integer> numbers = missing.stream().map(EmiInstallment::getInstallmentNumber).toList();
+        UUID actorId = missing.get(missing.size() - 1).getConfirmedBy() != null
+            ? missing.get(missing.size() - 1).getConfirmedBy() : booking.getAssociateId();
+        if (booking.getStatus() == BookingStatus.ACTIVE) {
+            creditConfirmedPayments(booking, emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId),
+                numbers, actorId);
+            return;
+        }
+        Plot plot = plotRepository.findById(booking.getPlotId()).orElseThrow(() -> missingPlot(booking));
+        for (EmiInstallment i : missing) {
+            saleService.recordInstallmentPayment(booking.getId(), i.getId(), i.getInstallmentNumber(),
+                booking.getAssociateId(), booking.getBuyerName(), booking.getBuyerPhone(), i.getAmount(), plot, false);
+        }
+    }
+
+    private IllegalStateException missingPlot(PlotBooking booking) {
+        return new IllegalStateException(
+            "plot row missing for booking " + booking.getId() + " - plot_id has an FK constraint");
     }
 
     // Plot-booking unit 6 (spec Flow "Cancel", Decisions 4, 8). Locks the booking FIRST so a concurrent
     // pay / confirm / cancel serializes on it (the loser re-reads CANCELLED/CONFIRMED and gets 409),
-    // then the plot. LOCK ORDER IS BOOKING -> PLOT EVERYWHERE (Decision 8), same as confirmLocked.
+    // then the plot. LOCK ORDER IS BOOKING -> PLOT EVERYWHERE (Decision 8), same as creditConfirmedPayments.
     // PAID installments are untouched; PENDING and ENTERED (unconfirmed) -> VOID; amounts retained as a note only (no refunds).
     // The plot goes BOOKED -> AVAILABLE only if it is BOOKED and no other ACTIVE/CONFIRMED booking
     // holds it (see the stale-booking guard below). Any other plot state is drift: cancel must stay
@@ -640,8 +628,8 @@ public class BookingService {
     }
 
     // Flat, no-interest amortization: BookingEmiConfig carries no down-payment-percentage or
-    // interest-rate field (only emiEnabled, defaultInstallmentCount, confirmRule,
-    // confirmThresholdPercent -- confirmed by reading the entity directly, not assumed), so
+    // interest-rate field (only emiEnabled and defaultInstallmentCount --
+    // confirmed by reading the entity directly, not assumed), so
     // there is nothing to compound or front-load. When EMI is disabled, the schedule is a single
     // installment for the full amount, still due one month out -- the same formula as every
     // other case below, deliberately not special-cased to a due-today date, so there's one
