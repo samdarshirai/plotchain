@@ -3305,9 +3305,7 @@
   border: 1px solid var(--border-subtle);
   cursor: grab;
   touch-action: none;
-  background:
-    radial-gradient(circle, var(--border-subtle) 1.3px, transparent 1.3px) 0 0 / 24px 24px,
-    var(--surface-page);
+  background: var(--surface-page);
 }
 
 .tree-explorer__canvas-wrap--grabbing {
