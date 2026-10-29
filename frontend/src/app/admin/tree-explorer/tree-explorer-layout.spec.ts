@@ -1,4 +1,4 @@
-import { buildTreeLayout, LAYOUT, linkPathD, px, py } from './tree-explorer-layout';
+import { buildTreeLayout, depthForScale, INITIAL_DEPTH, visibleSlice, LAYOUT, linkPathD, px, py } from './tree-explorer-layout';
 import { TreeNode } from '../models/tree-node.model';
 
 function node(overrides: Partial<TreeNode>): TreeNode {
@@ -12,11 +12,11 @@ function node(overrides: Partial<TreeNode>): TreeNode {
 
 describe('buildTreeLayout', () => {
   it('returns null for a null root', () => {
-    expect(buildTreeLayout(null, 3)).toBeNull();
+    expect(buildTreeLayout(null)).toBeNull();
   });
 
   it('lays out a root-only tree with two vacant slots', () => {
-    const layout = buildTreeLayout(node({ id: 'root' }), 3)!;
+    const layout = buildTreeLayout(node({ id: 'root' }))!;
 
     expect(layout.filledCount).toBe(1);
     expect(layout.vacantCount).toBe(2);
@@ -31,7 +31,7 @@ describe('buildTreeLayout', () => {
       children: [node({ id: 'left', position: 'L' })]
     });
 
-    const layout = buildTreeLayout(root, 3)!;
+    const layout = buildTreeLayout(root)!;
     const link = layout.links.find(l => l.parent.id === 'root')!;
 
     expect((link.left as any).vacant).toBe(false);
@@ -42,7 +42,7 @@ describe('buildTreeLayout', () => {
   it('tags each vacant slot with the id/userId/name of the parent it hangs off', () => {
     const root = node({ id: 'root', userId: 'VP00001', name: 'Root Person' });
 
-    const layout = buildTreeLayout(root, 3)!;
+    const layout = buildTreeLayout(root)!;
     const vacant = layout.nodes.filter(n => n.vacant) as any[];
 
     expect(vacant.length).toBe(2);
@@ -53,37 +53,22 @@ describe('buildTreeLayout', () => {
     }
   });
 
-  it('does not synthesize vacant children beneath a node at the max fetch depth', () => {
-    // depth 0 (root) -> depth 1 -> depth 2 -> depth 3, with the depth-3 node
-    // returning children: [] because the API stopped fetching, not because
-    // those legs are confirmed empty.
+  it('lays out nodes deeper than 3 levels, with vacant slots beneath the deepest', () => {
     const root = node({
       id: 'd0',
-      children: [
-        node({
-          id: 'd1', position: 'L',
-          children: [
-            node({
-              id: 'd2', position: 'L',
-              children: [node({ id: 'd3', position: 'L', children: [] })]
-            })
-          ]
-        })
-      ]
+      children: [node({ id: 'd1', position: 'L', children: [node({ id: 'd2', position: 'L', children: [
+        node({ id: 'd3', position: 'L', children: [node({ id: 'd4', position: 'L', children: [] })] })
+      ] })] })]
     });
 
-    const layout = buildTreeLayout(root, 3)!;
+    const layout = buildTreeLayout(root)!;
 
-    // 4 filled nodes (d0..d3) plus vacant slots only at depths 1-3 for the
-    // legs that were never taken -- none of them synthesized beneath d3.
-    expect(layout.filledCount).toBe(4);
-    expect(layout.nodes.some(n => n.vacant && n.depth === 4)).toBe(false);
-    const d3Links = layout.links.filter(l => l.parent.id === 'd3');
-    expect(d3Links.length).toBe(0);
+    expect(layout.filledCount).toBe(5);
+    expect(layout.nodes.some(n => n.vacant && n.depth === 5)).toBe(true);
   });
 
   it('computes contentWidth/contentHeight from margins, leaf count, and depth', () => {
-    const layout = buildTreeLayout(node({ id: 'root' }), 3)!;
+    const layout = buildTreeLayout(node({ id: 'root' }))!;
     const leafCount = layout.nodes.filter(n => n.vacant || n.depth === Math.max(...layout.nodes.map(x => x.depth))).length;
 
     expect(layout.contentWidth).toBe(LAYOUT.LEFT_MARGIN * 2 + 2 * LAYOUT.LEAF_GAP);
@@ -97,7 +82,7 @@ describe('buildTreeLayout', () => {
       children: [node({ id: 'left', position: 'L' }), node({ id: 'right', position: 'R' })]
     });
 
-    const layout = buildTreeLayout(root, 3)!;
+    const layout = buildTreeLayout(root)!;
     const link = layout.links[0];
     const d = linkPathD(link);
 
@@ -112,5 +97,36 @@ describe('buildTreeLayout', () => {
     expect(d).toBe(
       `M ${pX} ${pBottom} L ${pX} ${midY} M ${lX} ${midY} L ${rX} ${midY} M ${lX} ${midY} L ${lX} ${lY} M ${rX} ${midY} L ${rX} ${rY}`
     );
+  });
+
+  describe('semantic zoom', () => {
+    const chain = () => buildTreeLayout(node({
+      id: 'd0',
+      children: [node({ id: 'd1', position: 'L', children: [node({ id: 'd2', position: 'L', children: [
+        node({ id: 'd3', position: 'L', children: [node({ id: 'd4', position: 'L', children: [] })] })
+      ] })] })]
+    }))!;
+
+    it('counts filled descendants under each node', () => {
+      const layout = chain();
+      const d3 = layout.nodes.find(n => n.id === 'd3')!;
+      expect(!d3.vacant && d3.descendants).toBe(1);
+      expect(layout.rootEntry.descendants).toBe(4);
+    });
+
+    it('keeps the depth at INITIAL_DEPTH until zoomed out, then adds a level per step', () => {
+      expect(depthForScale(1, 1, 9)).toBe(INITIAL_DEPTH);
+      expect(depthForScale(1, 2, 9)).toBe(INITIAL_DEPTH);
+      expect(depthForScale(1, 0.6, 9)).toBe(INITIAL_DEPTH + 1);
+      expect(depthForScale(1, 0.4, 9)).toBe(INITIAL_DEPTH + 2);
+      expect(depthForScale(1, 0.0001, 5)).toBe(5);
+    });
+
+    it('slices nodes and links to the visible depth', () => {
+      const view = visibleSlice(chain(), INITIAL_DEPTH);
+      expect(view.nodes.every(n => n.depth <= INITIAL_DEPTH)).toBe(true);
+      expect(view.nodes.some(n => n.id === 'd4')).toBe(false);
+      expect(view.links.some(l => l.parent.id === 'd3')).toBe(false);
+    });
   });
 });

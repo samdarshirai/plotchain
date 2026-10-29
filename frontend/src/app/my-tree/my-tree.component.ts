@@ -7,10 +7,9 @@ import { BrandButtonComponent } from '../shared/components/brand-button/brand-bu
 import { MyTreeService } from './my-tree.service';
 import { TreeNode } from '../admin/models/tree-node.model';
 import { TreeNodeDetails } from '../admin/models/tree-node-details.model';
-import { FilledEntry, LAYOUT, LayoutEntry, LayoutLink, TreeLayout, buildTreeLayout, linkPathD, px, py } from '../admin/tree-explorer/tree-explorer-layout';
-import { PanZoomState, computeFitTransform, panBy, pinchZoom, zoomAround } from '../admin/tree-explorer/tree-explorer-pan-zoom';
+import { FilledEntry, LAYOUT, LayoutEntry, LayoutLink, TreeLayout, buildTreeLayout, depthForScale, linkPathD, px, py, visibleBox, visibleSlice, INITIAL_DEPTH, ZOOM_STEP_PER_LEVEL } from '../admin/tree-explorer/tree-explorer-layout';
+import { PanZoomState, computeFitBoxTransform, panBy, pinchZoom, zoomAround } from '../admin/tree-explorer/tree-explorer-pan-zoom';
 
-const DEFAULT_DEPTH = 3;
 const HINT_TIMEOUT_MS = 3500;
 const FIT_ANIMATE_MS = 460;
 // Debounce before firing the hover-details request, so a mouse merely passing over several
@@ -51,7 +50,6 @@ const HOVER_DEBOUNCE_MS = 150;
         <div
           class="tree-explorer__stats-pill"
           *ngIf="layout as l"
-          [title]="'myTree.statsScopeHint' | translate: { depth: maxSlotDepth }"
         >
           <span><b>{{ l.nodes.length }}</b> {{ 'myTree.statsVisiblePositionsLabel' | translate }}</span>
           <span><b>{{ l.filledCount }}</b> {{ 'myTree.statsFilledLabel' | translate }}</span>
@@ -75,11 +73,11 @@ const HOVER_DEBOUNCE_MS = 150;
             [attr.height]="l.contentHeight"
             [attr.viewBox]="'0 0 ' + l.contentWidth + ' ' + l.contentHeight"
           >
-            <path class="tree-explorer__link" *ngFor="let link of l.links; trackBy: trackLink" [attr.d]="linkPath(link)"></path>
+            <path class="tree-explorer__link" *ngFor="let link of view.links; trackBy: trackLink" [attr.d]="linkPath(link)"></path>
           </svg>
 
           <div class="tree-explorer__node-layer">
-            <ng-container *ngFor="let entry of l.nodes; trackBy: trackNode">
+            <ng-container *ngFor="let entry of view.nodes; trackBy: trackNode">
               <div
                 class="tree-explorer__vacant-card"
                 *ngIf="entry.vacant"
@@ -154,6 +152,17 @@ const HOVER_DEBOUNCE_MS = 150;
                   <span>{{ 'myTree.leftLegLabel' | translate }}: &#8377;{{ entry.data.leftLegVolume | number }}</span>
                   <span>{{ 'myTree.rightLegLabel' | translate }}: &#8377;{{ entry.data.rightLegVolume | number }}</span>
                 </div>
+
+                <button
+                  type="button"
+                  class="tree-explorer__more-badge"
+                  *ngIf="entry.depth === visibleDepth && entry.descendants > 0"
+                  [title]="'myTree.moreBelowTitle' | translate: { count: entry.descendants }"
+                  (click)="revealNextLevel()"
+                >
+                  <span class="material-symbols-outlined">unfold_more</span>
+                  +{{ entry.descendants }}
+                </button>
               </div>
             </ng-container>
           </div>
@@ -210,7 +219,6 @@ export class MyTreeComponent implements OnInit, OnDestroy {
   private ngZone = inject(NgZone);
   private injector = inject(Injector);
 
-  readonly maxSlotDepth = DEFAULT_DEPTH;
 
   loadError = false;
   notFound = false;
@@ -235,8 +243,16 @@ export class MyTreeComponent implements OnInit, OnDestroy {
   }
   set root(node: TreeNode | null) {
     this._root = node;
-    this.layout = node ? buildTreeLayout(node, this.maxSlotDepth) : null;
+    this.layout = node ? buildTreeLayout(node) : null;
+    this.visibleDepth = Math.min(INITIAL_DEPTH, this.layout?.maxDepth ?? 0);
+    this.view = this.layout ? visibleSlice(this.layout, this.visibleDepth) : { nodes: [], links: [] };
   }
+
+  // Semantic zoom: how many levels are currently rendered, and the scale of the default
+  // (INITIAL_DEPTH-level) framing that deeper levels are measured against.
+  visibleDepth = INITIAL_DEPTH;
+  view: { nodes: LayoutEntry[]; links: LayoutLink[] } = { nodes: [], links: [] };
+  private baseScale = 1;
 
   private panZoom: PanZoomState = { x: 0, y: 0, scale: 1 };
   private attachedWrap: HTMLDivElement | null = null;
@@ -362,7 +378,9 @@ export class MyTreeComponent implements OnInit, OnDestroy {
     const wrap = this._canvasWrapRef?.nativeElement;
     if (!wrap || !this.layout) return;
     const rect = wrap.getBoundingClientRect();
-    const next = computeFitTransform(this.layout.contentWidth, this.layout.contentHeight, rect.width, rect.height);
+    this.baseScale = 0;
+    const next = computeFitBoxTransform(visibleBox(this.layout, INITIAL_DEPTH), rect.width, rect.height);
+    this.baseScale = next.scale;
     this.applyTransform(next, animated);
   }
 
@@ -402,7 +420,7 @@ export class MyTreeComponent implements OnInit, OnDestroy {
 
   private loadMyTree(): void {
     this.loadError = false;
-    this.myTreeService.getMyTree(DEFAULT_DEPTH).subscribe({
+    this.myTreeService.getMyTree().subscribe({
       next: node => {
         this.root = node;
         this.meId = node.id;
@@ -416,7 +434,7 @@ export class MyTreeComponent implements OnInit, OnDestroy {
   }
 
   private loadSubtree(associateId: string): void {
-    this.myTreeService.subtree(associateId, DEFAULT_DEPTH).subscribe({
+    this.myTreeService.subtree(associateId).subscribe({
       next: node => {
         this.root = node;
         this.scheduleFit(true);
@@ -444,8 +462,24 @@ export class MyTreeComponent implements OnInit, OnDestroy {
     this.applyTransform(zoomAround(this.panZoom, rect.width / 2, rect.height / 2, factor), false);
   }
 
+  revealNextLevel(): void {
+    this.zoomAtCenter(1 / ZOOM_STEP_PER_LEVEL);
+  }
+
+  private syncDepth(scale: number): void {
+    if (!this.layout || this.baseScale <= 0) return;
+    const depth = depthForScale(this.baseScale, scale, this.layout.maxDepth);
+    if (depth === this.visibleDepth) return;
+    const layout = this.layout;
+    this.ngZone.run(() => {
+      this.visibleDepth = depth;
+      this.view = visibleSlice(layout, depth);
+    });
+  }
+
   private applyTransform(next: PanZoomState, animate: boolean): void {
     this.panZoom = next;
+    this.syncDepth(next.scale);
     const inner = this.canvasInnerRef?.nativeElement;
     if (!inner) return;
     if (animate) {

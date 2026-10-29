@@ -84,7 +84,6 @@ class TreeExplorerControllerTest {
         when(associateRepository.findById(FOUNDING_ADMIN_ID)).thenReturn(Optional.of(foundingAdmin));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
-        when(associateRepository.countByParentId(FOUNDING_ADMIN_ID)).thenReturn(0L);
 
         mockMvc.perform(get("/api/admin/tree")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
@@ -104,7 +103,6 @@ class TreeExplorerControllerTest {
         when(associateRepository.findByIdAndRole(ROOT_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedRoot()));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
-        when(associateRepository.countByParentId(ROOT_ID)).thenReturn(0L);
 
         mockMvc.perform(get("/api/admin/tree/" + ROOT_ID)
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
@@ -113,16 +111,10 @@ class TreeExplorerControllerTest {
     }
 
     @Test
-    void subtreeClampsAnExcessivelyLargeDepthRequestToTheServerSideMaximum() throws Exception {
-        // This JDK's Mockito/ByteBuddy combination cannot mock/spy the concrete
-        // TreeExplorerService (see AuthControllerTest for the same constraint elsewhere in this
-        // suite), so clamping is verified behaviorally through the mocked (interface)
-        // AssociateRepository instead: build a chain 6 associates deep and prove that a
-        // depth=999 request only recurses 5 levels (the clamp), not all the way down.
+    void subtreeReturnsEveryLevelWithNoDepthCap() throws Exception {
         Associate root = seedRoot();
-        List<Associate> chain = new java.util.ArrayList<>();
         Associate previous = root;
-        for (int i = 1; i <= 6; i++) {
+        for (int i = 1; i <= 8; i++) {
             Associate a = new Associate();
             a.setId(UUID.randomUUID());
             a.setUserId("VP0000" + i);
@@ -130,9 +122,7 @@ class TreeExplorerControllerTest {
             a.setRole(AssociateRole.ASSOCIATE);
             a.setKycStatus(KycStatus.PENDING);
             a.setJoinedAt(Instant.now());
-            chain.add(a);
             when(associateRepository.findByParentId(previous.getId())).thenReturn(List.of(a));
-            when(associateRepository.countByParentId(previous.getId())).thenReturn(1L);
             previous = a;
         }
 
@@ -140,15 +130,10 @@ class TreeExplorerControllerTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/admin/tree/" + ROOT_ID).param("depth", "999")
+        mockMvc.perform(get("/api/admin/tree/" + ROOT_ID)
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
-            .andExpect(status().isOk());
-
-        // depth=999 must be silently clamped to the server-side maximum of 5: buildNode expands
-        // root (level 0) through level 4 (5 expansions total), then stops at the level-5 node
-        // without ever fetching level 5's own children -- otherwise a low-privilege admin-family
-        // token could trigger a 2^(depth+1)-1 node recursive fetch and exhaust server memory/time.
-        verify(associateRepository, never()).findByParentId(chain.get(4).getId());
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.children[0].children[0].children[0].children[0].children[0].children[0].children[0].children[0].userId").value("VP00008"));
     }
 
     @Test

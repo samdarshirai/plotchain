@@ -32,6 +32,8 @@ export interface FilledEntry {
   x: number;
   id: string;
   data: TreeNode;
+  // Filled nodes anywhere beneath this one -- the "+N more" count when the level below is hidden.
+  descendants: number;
 }
 
 export type LayoutEntry = VacantEntry | FilledEntry;
@@ -48,6 +50,7 @@ export interface TreeLayout {
   rootEntry: FilledEntry;
   contentWidth: number;
   contentHeight: number;
+  maxDepth: number;
   filledCount: number;
   vacantCount: number;
 }
@@ -56,7 +59,7 @@ function childAt(node: TreeNode, leg: 'L' | 'R'): TreeNode | null {
   return node.children.find(child => child.position === leg) ?? null;
 }
 
-export function buildTreeLayout(root: TreeNode | null, maxDepth: number): TreeLayout | null {
+export function buildTreeLayout(root: TreeNode | null): TreeLayout | null {
   if (!root) return null;
 
   const nodes: LayoutEntry[] = [];
@@ -89,18 +92,10 @@ export function buildTreeLayout(root: TreeNode | null, maxDepth: number): TreeLa
 
     filledCount++;
 
-    // A node returned at the API's max fetch depth has children:[] because the
-    // API didn't fetch further, not because those legs are confirmed vacant --
-    // stop here without synthesizing vacant slots beneath it.
-    if (depth >= maxDepth) {
-      const entry: FilledEntry = { vacant: false, depth, leg, x: leafCounter++, id: node.id, data: node };
-      nodes.push(entry);
-      return entry;
-    }
-
     const leftEntry = layout(childAt(node, 'L'), depth + 1, 'L', node);
     const rightEntry = layout(childAt(node, 'R'), depth + 1, 'R', node);
-    const entry: FilledEntry = { vacant: false, depth, leg, x: (leftEntry.x + rightEntry.x) / 2, id: node.id, data: node };
+    const descendants = [leftEntry, rightEntry].reduce((sum, e) => sum + (e.vacant ? 0 : 1 + e.descendants), 0);
+    const entry: FilledEntry = { vacant: false, depth, leg, x: (leftEntry.x + rightEntry.x) / 2, id: node.id, data: node, descendants };
     nodes.push(entry);
     links.push({ parent: entry, left: leftEntry, right: rightEntry });
     return entry;
@@ -117,7 +112,7 @@ export function buildTreeLayout(root: TreeNode | null, maxDepth: number): TreeLa
   const contentWidth = LAYOUT.LEFT_MARGIN * 2 + leafCounter * LAYOUT.LEAF_GAP;
   const contentHeight = LAYOUT.TOP_MARGIN * 2 + maxSeenDepth * LAYOUT.ROW_H + LAYOUT.CARD_H;
 
-  return { nodes, links, rootEntry, contentWidth, contentHeight, filledCount, vacantCount };
+  return { nodes, links, rootEntry, contentWidth, contentHeight, maxDepth: maxSeenDepth, filledCount, vacantCount };
 }
 
 export function px(entry: LayoutEntry): number {
@@ -142,4 +137,35 @@ export function linkPathD(link: LayoutLink): string {
     'M', lX, midY, 'L', lX, lY,
     'M', rX, midY, 'L', rX, rY
   ].join(' ');
+}
+
+// Semantic zoom: the layout is computed once for the whole tree (so positions never shift), and
+// only the levels down to `depth` are rendered. Zooming out raises `depth`, zooming in lowers it.
+export const INITIAL_DEPTH = 3;
+export const ZOOM_STEP_PER_LEVEL = 1.5;
+
+export function depthForScale(baseScale: number, scale: number, maxDepth: number): number {
+  const extra = Math.floor(Math.log(baseScale / scale) / Math.log(ZOOM_STEP_PER_LEVEL) + 1e-9);
+  return Math.min(maxDepth, INITIAL_DEPTH + Math.max(0, extra));
+}
+
+export function visibleSlice(layout: TreeLayout, depth: number): { nodes: LayoutEntry[]; links: LayoutLink[] } {
+  return {
+    nodes: layout.nodes.filter(n => n.depth <= depth),
+    links: layout.links.filter(l => l.parent.depth < depth)
+  };
+}
+
+// Pixel box (content space) of the cards down to `depth`, for framing the initial view.
+export function visibleBox(layout: TreeLayout, depth: number): { left: number; top: number; width: number; height: number } {
+  const shown = layout.nodes.filter(n => n.depth <= depth);
+  const xs = shown.map(px);
+  const left = Math.min(...xs) - LAYOUT.CARD_W / 2;
+  const right = Math.max(...xs) + LAYOUT.CARD_W / 2;
+  return {
+    left,
+    top: 0,
+    width: right - left,
+    height: LAYOUT.TOP_MARGIN * 2 + Math.min(depth, layout.maxDepth) * LAYOUT.ROW_H + LAYOUT.CARD_H
+  };
 }

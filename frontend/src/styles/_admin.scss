@@ -3517,6 +3517,7 @@
 
 .tree-explorer__node-card {
   position: absolute;
+  cursor: pointer;
   width: 220px;
   height: 158px;
   padding: 0.875rem 1rem;
@@ -3716,6 +3717,28 @@
 .tree-explorer__vol-bar-fill {
   height: 100%;
   background: var(--brand-gradient);
+}
+
+.tree-explorer__more-badge {
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--brand-primary);
+  background: var(--surface-card);
+  color: var(--brand-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  .material-symbols-outlined {
+    font-size: 1rem;
+  }
 }
 
 .tree-explorer__vol-row {

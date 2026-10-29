@@ -66,7 +66,7 @@ class TreeExplorerServiceTest {
         UUID id = UUID.randomUUID();
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.subtree(id, 3)).isInstanceOf(AssociateNotFoundException.class);
+        assertThatThrownBy(() -> service.subtree(id)).isInstanceOf(AssociateNotFoundException.class);
     }
 
     private static final UUID FOUNDING_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -83,9 +83,8 @@ class TreeExplorerServiceTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(associateRepository.findByParentId(FOUNDING_ADMIN_ID)).thenReturn(List.of(child));
-        when(associateRepository.countByParentId(childId)).thenReturn(0L);
 
-        TreeNodeResponse response = service.companyTree(1);
+        TreeNodeResponse response = service.companyTree();
 
         assertThat(response.userId()).isEqualTo("admin");
         assertThat(response.rankName()).isNull();
@@ -94,72 +93,33 @@ class TreeExplorerServiceTest {
     }
 
     @Test
-    void companyTreeStopsAtTheRequestedDepth() {
-        Associate foundingAdmin = newAssociate(FOUNDING_ADMIN_ID, "admin", Instant.now());
-        foundingAdmin.setRole(AssociateRole.ADMIN);
-
-        when(associateRepository.findById(FOUNDING_ADMIN_ID)).thenReturn(Optional.of(foundingAdmin));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
-        when(associateRepository.countByParentId(FOUNDING_ADMIN_ID)).thenReturn(0L);
-
-        TreeNodeResponse response = service.companyTree(0);
-
-        assertThat(response.children()).isEmpty();
-        org.mockito.Mockito.verify(associateRepository, org.mockito.Mockito.never()).findByParentId(FOUNDING_ADMIN_ID);
-    }
-
-    @Test
     void companyTreeThrowsWhenTheFoundingAdminIsMissing() {
         when(associateRepository.findById(FOUNDING_ADMIN_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.companyTree(3)).isInstanceOf(AssociateNotFoundException.class);
+        assertThatThrownBy(() -> service.companyTree()).isInstanceOf(AssociateNotFoundException.class);
     }
 
     @Test
-    void subtreeBuildsNestedChildrenUpToDepth() {
-        UUID rootId = UUID.randomUUID();
-        UUID childId = UUID.randomUUID();
-        Associate root = newAssociate(rootId, "VP00001", Instant.now());
-        Associate child = newAssociate(childId, "VP00002", Instant.now());
-
-        when(associateRepository.findByIdAndRole(rootId, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(root));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
-        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
-        when(associateRepository.findByParentId(rootId)).thenReturn(List.of(child));
-        // No findByParentId(childId) stub: depth 1 stops recursion at the child (remainingDepth
-        // reaches 0 there), so buildNode never queries the child's own children.
-        // No countByParentId(rootId) stub: root's remainingDepth (1) is > 0, so its
-        // direct-downline count is derived from the already-fetched children list, not a
-        // separate count query. Only the child (at the depth boundary) needs countByParentId.
-        when(associateRepository.countByParentId(childId)).thenReturn(0L);
-
-        TreeNodeResponse response = service.subtree(rootId, 1);
-
-        assertThat(response.userId()).isEqualTo("VP00001");
-        assertThat(response.children()).hasSize(1);
-        assertThat(response.children().get(0).userId()).isEqualTo("VP00002");
-        assertThat(response.children().get(0).children()).isEmpty();
-        // The root's direct-downline count for isStagnant must come from the already-fetched
-        // children list, not a redundant countByParentId query.
-        org.mockito.Mockito.verify(associateRepository, org.mockito.Mockito.never()).countByParentId(rootId);
-    }
-
-    @Test
-    void subtreeDoesNotDescendPastTheRequestedDepth() {
+    void subtreeBuildsEveryLevelWithNoDepthCap() {
         UUID rootId = UUID.randomUUID();
         Associate root = newAssociate(rootId, "VP00001", Instant.now());
 
         when(associateRepository.findByIdAndRole(rootId, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(root));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
-        when(associateRepository.countByParentId(rootId)).thenReturn(0L);
+        Associate previous = root;
+        for (int i = 2; i <= 9; i++) {
+            Associate next = newAssociate(UUID.randomUUID(), "VP0000" + i, Instant.now());
+            when(associateRepository.findByParentId(previous.getId())).thenReturn(List.of(next));
+            previous = next;
+        }
 
-        TreeNodeResponse response = service.subtree(rootId, 0);
-
-        assertThat(response.children()).isEmpty();
-        // depth 0 means no expansion at all -- findByParentId must never be called.
-        org.mockito.Mockito.verify(associateRepository, org.mockito.Mockito.never()).findByParentId(rootId);
+        TreeNodeResponse node = service.subtree(rootId);
+        for (int i = 2; i <= 9; i++) {
+            assertThat(node.children()).hasSize(1);
+            node = node.children().get(0);
+            assertThat(node.userId()).isEqualTo("VP0000" + i);
+        }
     }
 
     @Test
@@ -175,9 +135,7 @@ class TreeExplorerServiceTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(openCycle));
         when(legVolumeRepository.findByAssociateIdAndCycleId(id, cycleId)).thenReturn(Optional.of(legVolume));
-        when(associateRepository.countByParentId(id)).thenReturn(0L);
-
-        TreeNodeResponse response = service.subtree(id, 0);
+        TreeNodeResponse response = service.subtree(id);
 
         // The skew rule only applies when BOTH legs are non-zero -- a brand-new node with no
         // sales on either leg must never be flagged, even though 0/0 is technically undefined.
@@ -198,9 +156,7 @@ class TreeExplorerServiceTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(openCycle));
         when(legVolumeRepository.findByAssociateIdAndCycleId(id, cycleId)).thenReturn(Optional.of(skewed));
-        when(associateRepository.countByParentId(id)).thenReturn(0L);
-
-        TreeNodeResponse response = service.subtree(id, 0);
+        TreeNodeResponse response = service.subtree(id);
 
         assertThat(response.skewedLegsFlag()).isTrue();
     }
@@ -220,9 +176,7 @@ class TreeExplorerServiceTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(openCycle));
         when(legVolumeRepository.findByAssociateIdAndCycleId(id, cycleId)).thenReturn(Optional.of(balanced));
-        when(associateRepository.countByParentId(id)).thenReturn(0L);
-
-        TreeNodeResponse response = service.subtree(id, 0);
+        TreeNodeResponse response = service.subtree(id);
 
         assertThat(response.skewedLegsFlag()).isFalse();
     }
@@ -235,9 +189,7 @@ class TreeExplorerServiceTest {
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
-        when(associateRepository.countByParentId(id)).thenReturn(0L);
-
-        TreeNodeResponse response = service.subtree(id, 0);
+        TreeNodeResponse response = service.subtree(id);
 
         assertThat(response.stagnantFlag()).isTrue();
     }
@@ -309,5 +261,18 @@ class TreeExplorerServiceTest {
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.nodeDetails(id)).isInstanceOf(AssociateNotFoundException.class);
+    }
+
+    @Test
+    void nodeDetailsWorksForTheFoundingAdminRoot() {
+        Associate foundingAdmin = newAssociate(FOUNDING_ADMIN_ID, "admin", Instant.now());
+        foundingAdmin.setRole(AssociateRole.ADMIN);
+        when(associateRepository.findById(FOUNDING_ADMIN_ID)).thenReturn(Optional.of(foundingAdmin));
+        when(associateRepository.findByParentId(FOUNDING_ADMIN_ID)).thenReturn(List.of());
+        when(legVolumeRepository.totalBusiness(FOUNDING_ADMIN_ID))
+            .thenReturn(new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
+        when(saleRepository.sumAmountByAssociateIdAndStatus(FOUNDING_ADMIN_ID, SaleStatus.RECORDED)).thenReturn(BigDecimal.ZERO);
+
+        assertThat(service.nodeDetails(FOUNDING_ADMIN_ID).userId()).isEqualTo("admin");
     }
 }

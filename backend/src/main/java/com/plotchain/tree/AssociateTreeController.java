@@ -24,24 +24,17 @@ public class AssociateTreeController {
     // associate's subtree except through the explicit downline membership check in
     // subtreeWithinDownline()/searchWithinDownline() below (role-capability data-visibility
     // spec: "Subtree rooted at self only -- own direct downline + full L/R descendants").
-    // Depth default/clamp mirrors the admin-only TreeExplorerController.subtree() route
-    // exactly, for the same reason documented there: an unclamped depth could trigger a
-    // 2^(depth+1)-1 node recursive fetch and exhaust server memory/time.
     @GetMapping
-    public TreeNodeResponse myTree(@AuthenticationPrincipal UUID associateId,
-                                    @RequestParam(defaultValue = "3") int depth) {
-        depth = Math.max(0, Math.min(depth, 5));
-        return treeExplorerService.subtree(associateId, depth);
+    public TreeNodeResponse myTree(@AuthenticationPrincipal UUID associateId) {
+        return treeExplorerService.subtree(associateId);
     }
 
     // Re-root the my-tree view at a downline associate (search result or card click). targetId
     // must be in the caller's own findSelfAndDownline set -- see subtreeWithinDownline().
     @GetMapping("/{targetId}")
     public TreeNodeResponse mySubtree(@AuthenticationPrincipal UUID associateId,
-                                       @PathVariable UUID targetId,
-                                       @RequestParam(defaultValue = "3") int depth) {
-        depth = Math.max(0, Math.min(depth, 5));
-        return treeExplorerService.subtreeWithinDownline(associateId, targetId, depth);
+                                       @PathVariable UUID targetId) {
+        return treeExplorerService.subtreeWithinDownline(associateId, targetId);
     }
 
     // Downline-only search bar for /my-tree. Spring resolves this literal "/search" segment

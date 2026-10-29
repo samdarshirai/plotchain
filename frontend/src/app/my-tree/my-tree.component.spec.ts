@@ -45,7 +45,7 @@ describe('MyTreeComponent', () => {
   it('loads its own subtree on init with no user action, and no associate id in the request', () => {
     fixture.detectChanges();
 
-    const req = httpMock.expectOne('/api/associates/me/tree?depth=3');
+    const req = httpMock.expectOne('/api/associates/me/tree');
     expect(req.request.method).toBe('GET');
     req.flush(selfOnly);
 
@@ -54,7 +54,7 @@ describe('MyTreeComponent', () => {
 
   it('tags the root card "You" instead of a search-result tag', () => {
     fixture.detectChanges();
-    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(selfOnly);
+    httpMock.expectOne('/api/associates/me/tree').flush(selfOnly);
     fixture.detectChanges();
 
     const tag: HTMLElement | null = fixture.nativeElement.querySelector('.tree-explorer__result-tag');
@@ -64,7 +64,7 @@ describe('MyTreeComponent', () => {
 
   it('renders every level of a nested downline via the recursive node template', () => {
     fixture.detectChanges();
-    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+    httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
     fixture.detectChanges();
 
     const nodeIdEls: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.tree-explorer__node-id'));
@@ -73,7 +73,7 @@ describe('MyTreeComponent', () => {
 
   it('shows vacant-slot cards for open L/R positions when there is no downline yet (the empty-downline state)', () => {
     fixture.detectChanges();
-    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(selfOnly);
+    httpMock.expectOne('/api/associates/me/tree').flush(selfOnly);
     fixture.detectChanges();
 
     const vacantEls = fixture.nativeElement.querySelectorAll('.tree-explorer__vacant-card');
@@ -83,11 +83,11 @@ describe('MyTreeComponent', () => {
 
   it('shows stats-pill counts scoped to the loaded subtree', () => {
     fixture.detectChanges();
-    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+    httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
     fixture.detectChanges();
 
     // nestedTree: 3 filled nodes (self/child/grandchild) + 4 vacant slots synthesized around
-    // them (bounded by maxSlotDepth=3) = 7 total positions in the loaded subtree.
+    // them = 7 total positions in the loaded subtree.
     const values: string[] = Array.from(fixture.nativeElement.querySelectorAll('.tree-explorer__stats-pill b'))
       .map((el: any) => el.textContent?.trim());
     expect(values).toEqual(['7', '3', '4']);
@@ -95,7 +95,7 @@ describe('MyTreeComponent', () => {
 
   it('shows a load error when the fetch fails, without silently rendering an empty canvas', () => {
     fixture.detectChanges();
-    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(null, { status: 500, statusText: 'Server Error' });
+    httpMock.expectOne('/api/associates/me/tree').flush(null, { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
 
     expect(fixture.componentInstance.loadError).toBe(true);
@@ -105,7 +105,7 @@ describe('MyTreeComponent', () => {
 
   it('searches within the downline and re-roots the tree at the match', () => {
     fixture.detectChanges();
-    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+    httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
     fixture.detectChanges();
 
     fixture.componentInstance.searchQuery = 'Child';
@@ -113,7 +113,7 @@ describe('MyTreeComponent', () => {
 
     httpMock.expectOne('/api/associates/me/tree/search?q=Child')
       .flush({ ancestorPath: [{ id: 'a2', userId: 'VP00002', name: 'Child' }] });
-    httpMock.expectOne('/api/associates/me/tree/a2?depth=3').flush(nestedTree.children[0]);
+    httpMock.expectOne('/api/associates/me/tree/a2').flush(nestedTree.children[0]);
     fixture.detectChanges();
 
     expect(fixture.componentInstance.root?.id).toBe('a2');
@@ -124,7 +124,7 @@ describe('MyTreeComponent', () => {
 
   it('shows a not-found banner when the search has no match in the downline', () => {
     fixture.detectChanges();
-    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(selfOnly);
+    httpMock.expectOne('/api/associates/me/tree').flush(selfOnly);
     fixture.detectChanges();
 
     fixture.componentInstance.searchQuery = 'Nobody';
@@ -139,12 +139,12 @@ describe('MyTreeComponent', () => {
 
   it('onCardClick fills the search bar with that associate and re-roots at them', () => {
     fixture.detectChanges();
-    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+    httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
     fixture.detectChanges();
 
     fixture.componentInstance.onCardClick(nestedTree.children[0]);
 
-    httpMock.expectOne('/api/associates/me/tree/a2?depth=3').flush(nestedTree.children[0]);
+    httpMock.expectOne('/api/associates/me/tree/a2').flush(nestedTree.children[0]);
     fixture.detectChanges();
 
     expect(fixture.componentInstance.searchQuery).toBe('VP00002');
@@ -158,7 +158,7 @@ describe('MyTreeComponent', () => {
     // or it would not have caught that bug. setPointerCapture is stubbed because headless
     // Chrome throws NotFoundError for a pointerId not tied to a real hardware pointer session.
     fixture.detectChanges();
-    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+    httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
     fixture.detectChanges();
 
     const wrap: HTMLElement = fixture.nativeElement.querySelector('.tree-explorer__canvas-wrap');
@@ -169,7 +169,7 @@ describe('MyTreeComponent', () => {
     card.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 1, clientX: 100, clientY: 100, bubbles: true }));
     card.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, clientX: 100, clientY: 100, bubbles: true }));
 
-    httpMock.expectOne('/api/associates/me/tree/a2?depth=3').flush(nestedTree.children[0]);
+    httpMock.expectOne('/api/associates/me/tree/a2').flush(nestedTree.children[0]);
     fixture.detectChanges();
 
     expect(fixture.componentInstance.searchQuery).toBe('VP00002');
@@ -178,7 +178,7 @@ describe('MyTreeComponent', () => {
 
   it('a drag past the tap threshold does not re-root, so panning near a card stays panning', () => {
     fixture.detectChanges();
-    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+    httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
     fixture.detectChanges();
 
     const wrap: HTMLElement = fixture.nativeElement.querySelector('.tree-explorer__canvas-wrap');
@@ -188,7 +188,7 @@ describe('MyTreeComponent', () => {
     card.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 1, clientX: 100, clientY: 100, bubbles: true }));
     card.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, clientX: 140, clientY: 100, bubbles: true }));
 
-    httpMock.expectNone('/api/associates/me/tree/a2?depth=3');
+    httpMock.expectNone('/api/associates/me/tree/a2');
     expect(fixture.componentInstance.root?.id).toBe('a1');
   });
 
@@ -196,7 +196,7 @@ describe('MyTreeComponent', () => {
     jasmine.clock().install();
     try {
       fixture.detectChanges();
-      httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+      httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
       fixture.detectChanges();
 
       const card: HTMLElement = fixture.nativeElement.querySelector('[data-associate-id="a2"]');
@@ -223,7 +223,7 @@ describe('MyTreeComponent', () => {
     jasmine.clock().install();
     try {
       fixture.detectChanges();
-      httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+      httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
       fixture.detectChanges();
 
       const card: HTMLElement = fixture.nativeElement.querySelector('[data-associate-id="a2"]');
@@ -240,15 +240,15 @@ describe('MyTreeComponent', () => {
 
   it('the "My Tree" reset control returns to the caller\'s own tree as root', () => {
     fixture.detectChanges();
-    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+    httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
     fixture.detectChanges();
 
     fixture.componentInstance.onCardClick(nestedTree.children[0]);
-    httpMock.expectOne('/api/associates/me/tree/a2?depth=3').flush(nestedTree.children[0]);
+    httpMock.expectOne('/api/associates/me/tree/a2').flush(nestedTree.children[0]);
     fixture.detectChanges();
 
     fixture.componentInstance.resetToSelf();
-    httpMock.expectOne('/api/associates/me/tree?depth=3').flush(nestedTree);
+    httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
     fixture.detectChanges();
 
     expect(fixture.componentInstance.root?.id).toBe('a1');

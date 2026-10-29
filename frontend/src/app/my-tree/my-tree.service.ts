@@ -5,8 +5,6 @@ import { TreeNode } from '../admin/models/tree-node.model';
 import { TreeSearchResult } from '../admin/models/tree-search.model';
 import { TreeNodeDetails } from '../admin/models/tree-node-details.model';
 
-const DEFAULT_DEPTH = 3;
-
 // The caller (self) is always resolved server-side from the JWT principal, never passed as a
 // parameter here -- this service has no way to request another associate's tree as "me". The
 // `subtree`/`search` methods below re-root or search *within* that same self-scoped backend
@@ -17,12 +15,12 @@ const DEFAULT_DEPTH = 3;
 export class MyTreeService {
   private http = inject(HttpClient);
 
-  getMyTree(depth: number = DEFAULT_DEPTH): Observable<TreeNode> {
-    return this.http.get<TreeNode>('/api/associates/me/tree', { params: new HttpParams().set('depth', depth) });
+  getMyTree(): Observable<TreeNode> {
+    return this.http.get<TreeNode>('/api/associates/me/tree');
   }
 
-  subtree(associateId: string, depth: number = DEFAULT_DEPTH): Observable<TreeNode> {
-    return this.http.get<TreeNode>(`/api/associates/me/tree/${associateId}`, { params: new HttpParams().set('depth', depth) });
+  subtree(associateId: string): Observable<TreeNode> {
+    return this.http.get<TreeNode>(`/api/associates/me/tree/${associateId}`);
   }
 
   search(q: string): Observable<TreeSearchResult> {

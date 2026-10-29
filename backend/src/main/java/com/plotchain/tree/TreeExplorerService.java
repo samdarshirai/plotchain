@@ -56,17 +56,20 @@ public class TreeExplorerService {
         this.saleRepository = saleRepository;
     }
 
-    public TreeNodeResponse subtree(UUID associateId, int depth) {
+    public TreeNodeResponse subtree(UUID associateId) {
         Associate root = associateRepository.findByIdAndRole(associateId, AssociateRole.ASSOCIATE)
             .orElseThrow(() -> new AssociateNotFoundException(associateId));
-        return buildFrom(root, depth);
+        return buildFrom(root);
     }
 
     // Admin Tree Explorer hover details (lazy, per-node -- see TreeNodeDetailsResponse for why
     // this isn't baked into the bulk tree response).
     public TreeNodeDetailsResponse nodeDetails(UUID associateId) {
-        Associate a = associateRepository.findByIdAndRole(associateId, AssociateRole.ASSOCIATE)
-            .orElseThrow(() -> new AssociateNotFoundException(associateId));
+        // The founding admin (tree root, role ADMIN) is a visible card too, so it needs details.
+        Optional<Associate> found = FOUNDING_ADMIN_ID.equals(associateId)
+            ? associateRepository.findById(associateId)
+            : associateRepository.findByIdAndRole(associateId, AssociateRole.ASSOCIATE);
+        Associate a = found.orElseThrow(() -> new AssociateNotFoundException(associateId));
 
         List<Associate> directChildren = associateRepository.findByParentId(associateId);
         String leftMemberId = directChildren.stream()
@@ -89,16 +92,15 @@ public class TreeExplorerService {
 
     /**
      * The whole placement tree, rooted at the founding admin (V18). Powers the admin Tree
-     * Explorer's default view -- no search term needed. Bounded, like subtree(), only by the
-     * caller's depth clamp.
+     * Explorer's default view -- no search term needed. Unbounded depth.
      */
-    public TreeNodeResponse companyTree(int depth) {
+    public TreeNodeResponse companyTree() {
         Associate root = associateRepository.findById(FOUNDING_ADMIN_ID)
             .orElseThrow(() -> new AssociateNotFoundException(FOUNDING_ADMIN_ID));
-        return buildFrom(root, depth);
+        return buildFrom(root);
     }
 
-    private TreeNodeResponse buildFrom(Associate root, int depth) {
+    private TreeNodeResponse buildFrom(Associate root) {
         Map<UUID, RankTier> ranksById = rankTierRepository.findAllByOrderByRankOrder().stream()
             .collect(Collectors.toMap(RankTier::getId, r -> r));
         // leg_volume rows are written only at cycle CLOSE (CycleService#rollUpSubtree), keyed to
@@ -107,7 +109,7 @@ public class TreeExplorerService {
         // in DashboardService, see docs/superpowers/plans/2026-08-18-dashboard-leg-volume-fixes.md).
         // Reading the last CLOSED cycle instead is "current standing as of the last close."
         Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
-        return buildNode(root, depth, ranksById, latestClosedCycle);
+        return buildNode(root, ranksById, latestClosedCycle);
     }
 
     public TreeSearchResponse search(String userId) {
@@ -143,11 +145,11 @@ public class TreeExplorerService {
     // membership in the caller's own downline. AssociateNotFoundException (404), not a 403 --
     // matches subtree()'s existing response for an unknown id, and avoids confirming to the
     // caller that a given id belongs to some *other* real associate outside their downline.
-    public TreeNodeResponse subtreeWithinDownline(UUID associateId, UUID targetId, int depth) {
+    public TreeNodeResponse subtreeWithinDownline(UUID associateId, UUID targetId) {
         if (!associateRepository.findSelfAndDownline(associateId).contains(targetId)) {
             throw new AssociateNotFoundException(targetId);
         }
-        return subtree(targetId, depth);
+        return subtree(targetId);
     }
 
     // /my-tree hover details (associate-scoped counterpart of nodeDetails() above): same
@@ -159,22 +161,15 @@ public class TreeExplorerService {
         return nodeDetails(targetId);
     }
 
-    private TreeNodeResponse buildNode(Associate a, int remainingDepth, Map<UUID, RankTier> ranksById,
+    private TreeNodeResponse buildNode(Associate a, Map<UUID, RankTier> ranksById,
                                         Optional<Cycle> latestClosedCycle) {
         BigDecimal[] legs = legVolumesFor(a.getId(), latestClosedCycle);
-        List<TreeNodeResponse> children = remainingDepth <= 0
-            ? List.of()
-            : associateRepository.findByParentId(a.getId()).stream()
-                .map(child -> buildNode(child, remainingDepth - 1, ranksById, latestClosedCycle))
-                .toList();
-        // When remainingDepth > 0 the children were just fetched above via findByParentId, so
-        // children.size() is already the direct-downline count -- no need to re-ask the
-        // database. Only at the depth boundary (remainingDepth <= 0, children never fetched)
-        // do we fall back to a real count query, since an empty `children` there doesn't tell
-        // us whether the associate actually has zero children or recursion simply stopped.
-        long directDownlineCount = remainingDepth > 0
-            ? children.size()
-            : associateRepository.countByParentId(a.getId());
+        // ponytail: 2 queries per node (children + leg volume); batch-load the subtree via
+        // the recursive CTE if trees reach thousands of nodes.
+        List<TreeNodeResponse> children = associateRepository.findByParentId(a.getId()).stream()
+            .map(child -> buildNode(child, ranksById, latestClosedCycle))
+            .toList();
+        long directDownlineCount = children.size();
         RankTier rank = ranksById.get(a.getRankId());
         return new TreeNodeResponse(
             a.getId(), a.getUserId(), a.getName(), rank == null ? null : rank.getName(),

@@ -53,7 +53,7 @@ describe('TreeExplorerComponent', () => {
   function initWithCompanyTree(node: TreeNode | null = companyRoot): void {
     fixture.detectChanges();
     httpMock.expectOne('/api/associates').flush([]);
-    const req = httpMock.expectOne('/api/admin/tree?depth=5');
+    const req = httpMock.expectOne('/api/admin/tree');
     if (node) {
       req.flush(node);
     } else {
@@ -85,11 +85,22 @@ describe('TreeExplorerComponent', () => {
     const searchReq = httpMock.expectOne('/api/admin/tree/search?q=VP00001');
     searchReq.flush({ ancestorPath: [{ id: 'a1', userId: 'VP00001', name: 'Root' }] });
 
-    const subtreeReq = httpMock.expectOne('/api/admin/tree/a1?depth=3');
+    const subtreeReq = httpMock.expectOne('/api/admin/tree/a1');
     subtreeReq.flush(rootNode);
 
     expect(fixture.componentInstance.root?.userId).toBe('VP00001');
     expect(fixture.componentInstance.highlightedNodeId).toBe('a1');
+  });
+
+  it('clicking a card fills the search box and re-roots the tree on that associate', () => {
+    initWithCompanyTree(nestedTree);
+    const child = fixture.componentInstance.layout!.nodes.find(n => !n.vacant && n.id === 'a2')!;
+
+    fixture.componentInstance.onCardClick(child as any);
+    httpMock.expectOne('/api/admin/tree/a2').flush(nestedTree.children[0]);
+
+    expect(fixture.componentInstance.searchQuery).toBe('VP00002');
+    expect(fixture.componentInstance.root?.userId).toBe('VP00002');
   });
 
   it('renders every level of a nested tree via the recursive node template', () => {
@@ -113,7 +124,7 @@ describe('TreeExplorerComponent', () => {
       .map((el: any) => el.textContent?.trim());
 
     // nestedTree: 3 filled nodes (root/child/grandchild) + 4 vacant slots synthesized
-    // around them (bounded by maxSlotDepth=3) = 7 total positions in the loaded subtree.
+    // around them = 7 total positions in the loaded subtree.
     expect(values).toEqual(['7', '3', '4']);
   });
 
@@ -137,7 +148,7 @@ describe('TreeExplorerComponent', () => {
     const searchReq = httpMock.expectOne('/api/admin/tree/search?q=VP00001');
     searchReq.flush({ ancestorPath: [{ id: 'a1', userId: 'VP00001', name: 'Root' }] });
 
-    const subtreeReq = httpMock.expectOne('/api/admin/tree/a1?depth=3');
+    const subtreeReq = httpMock.expectOne('/api/admin/tree/a1');
     subtreeReq.flush(null, { status: 500, statusText: 'Server Error' });
 
     expect(fixture.componentInstance.loadError).toBe(true);
@@ -238,7 +249,7 @@ describe('TreeExplorerComponent', () => {
     // The panel stays open so the admin can see the success/temporary-password screen; it
     // closes only when they click "Done" (which emits `closed` -> closeNewAssociatePanel()).
     expect(fixture.componentInstance.panelOpen).toBeTrue();
-    httpMock.expectOne('/api/admin/tree?depth=5').flush(companyRoot);
+    httpMock.expectOne('/api/admin/tree').flush(companyRoot);
 
     fixture.componentInstance.closeNewAssociatePanel();
     expect(fixture.componentInstance.panelOpen).toBeFalse();

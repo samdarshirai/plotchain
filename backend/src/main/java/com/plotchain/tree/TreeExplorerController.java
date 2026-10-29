@@ -19,15 +19,13 @@ public class TreeExplorerController {
     }
 
     @GetMapping
-    public TreeNodeResponse companyTree(@RequestParam(defaultValue = "3") int depth) {
-        depth = Math.max(0, Math.min(depth, 5));
-        return treeExplorerService.companyTree(depth);
+    public TreeNodeResponse companyTree() {
+        return treeExplorerService.companyTree();
     }
 
     @GetMapping("/{associateId}")
-    public TreeNodeResponse subtree(@PathVariable UUID associateId, @RequestParam(defaultValue = "3") int depth) {
-        depth = Math.max(0, Math.min(depth, 5));
-        return treeExplorerService.subtree(associateId, depth);
+    public TreeNodeResponse subtree(@PathVariable UUID associateId) {
+        return treeExplorerService.subtree(associateId);
     }
 
     // Admin Tree Explorer hover details (see SecurityConfig for the ADMIN-only matcher this

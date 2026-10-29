@@ -7,7 +7,7 @@ export interface PanZoomState {
   scale: number;
 }
 
-export const MIN_SCALE = 0.3;
+export const MIN_SCALE = 0.05;
 export const MAX_SCALE = 2.5;
 
 export function clampScale(scale: number): number {
@@ -81,5 +81,20 @@ export function computeCenterTransform(
     scale,
     x: wrapW / 2 - entryX * scale,
     y: wrapH / 2 - entryY * scale
+  };
+}
+
+// Like computeFitTransform, but frames an arbitrary box of content space (not 0,0..W,H).
+export function computeFitBoxTransform(
+  box: { left: number; top: number; width: number; height: number },
+  wrapW: number,
+  wrapH: number,
+  margin = 0.92
+): PanZoomState {
+  const scale = clampScale(Math.min(wrapW / box.width, wrapH / box.height) * margin);
+  return {
+    scale,
+    x: (wrapW - box.width * scale) / 2 - box.left * scale,
+    y: 24 - box.top * scale
   };
 }

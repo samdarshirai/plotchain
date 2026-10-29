@@ -18,7 +18,7 @@ describe('MyTreeService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('fetches the caller\'s own subtree at the default depth (3), with no associate id in the request', () => {
+  it('fetches the caller\'s own subtree with no associate id in the request', () => {
     const mockNode: TreeNode = {
       id: 'a1', userId: 'VP00001', name: 'Self', rankName: null, kycStatus: 'PENDING', position: null,
       leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
@@ -26,19 +26,8 @@ describe('MyTreeService', () => {
 
     service.getMyTree().subscribe(res => expect(res).toEqual(mockNode));
 
-    const req = httpMock.expectOne('/api/associates/me/tree?depth=3');
+    const req = httpMock.expectOne('/api/associates/me/tree');
     expect(req.request.method).toBe('GET');
     req.flush(mockNode);
-  });
-
-  it('fetches at an explicitly requested depth', () => {
-    service.getMyTree(1).subscribe();
-
-    const req = httpMock.expectOne('/api/associates/me/tree?depth=1');
-    expect(req.request.method).toBe('GET');
-    req.flush({
-      id: 'a1', userId: 'VP00001', name: 'Self', rankName: null, kycStatus: 'PENDING', position: null,
-      leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
-    });
   });
 });

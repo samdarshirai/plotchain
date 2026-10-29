@@ -75,7 +75,6 @@ class AssociateTreeControllerTest {
         when(associateRepository.findByIdAndRole(selfId, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(self));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
-        when(associateRepository.countByParentId(selfId)).thenReturn(0L);
 
         mockMvc.perform(get("/api/associates/me/tree")
                 .header("Authorization", "Bearer " + tokenForAssociate(self)))
@@ -90,22 +89,14 @@ class AssociateTreeControllerTest {
     }
 
     @Test
-    void myTreeClampsAnExcessivelyLargeDepthRequestToTheServerSideMaximum() throws Exception {
-        // Mirrors TreeExplorerControllerTest.subtreeClampsAnExcessivelyLargeDepthRequestToTheServerSideMaximum,
-        // adapted to the self-scoped route: same JDK/Mockito constraint prevents spying the
-        // concrete TreeExplorerService, so the clamp is verified behaviorally through the
-        // mocked AssociateRepository -- build a chain 6 deep, prove depth=999 only recurses 5
-        // levels, not all the way down.
+    void myTreeReturnsEveryLevelWithNoDepthCap() throws Exception {
         UUID selfId = UUID.randomUUID();
         Associate self = newSelf(selfId, "VP00001");
 
-        List<Associate> chain = new java.util.ArrayList<>();
         Associate previous = self;
-        for (int i = 1; i <= 6; i++) {
-            Associate a = newSelf(UUID.randomUUID(), "VP0000" + i);
-            chain.add(a);
+        for (int i = 1; i <= 8; i++) {
+            Associate a = newSelf(UUID.randomUUID(), "VP1000" + i);
             when(associateRepository.findByParentId(previous.getId())).thenReturn(List.of(a));
-            when(associateRepository.countByParentId(previous.getId())).thenReturn(1L);
             previous = a;
         }
 
@@ -113,11 +104,10 @@ class AssociateTreeControllerTest {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/associates/me/tree").param("depth", "999")
+        mockMvc.perform(get("/api/associates/me/tree")
                 .header("Authorization", "Bearer " + tokenForAssociate(self)))
-            .andExpect(status().isOk());
-
-        verify(associateRepository, never()).findByParentId(chain.get(4).getId());
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.children[0].children[0].children[0].children[0].children[0].children[0].children[0].children[0].userId").value("VP10008"));
     }
 
     @Test
@@ -170,7 +160,6 @@ class AssociateTreeControllerTest {
             .thenReturn(Optional.of(downlineMember));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
-        when(associateRepository.countByParentId(downlineMemberId)).thenReturn(0L);
 
         mockMvc.perform(get("/api/associates/me/tree/" + downlineMemberId)
                 .header("Authorization", "Bearer " + tokenForAssociate(self)))

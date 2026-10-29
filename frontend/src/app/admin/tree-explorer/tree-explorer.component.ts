@@ -7,19 +7,15 @@ import { NewAssociatePanelComponent, PresetParent } from '../new-associate-panel
 import { TreeExplorerService } from './tree-explorer.service';
 import { TreeNode } from '../models/tree-node.model';
 import { TreeNodeDetails } from '../models/tree-node-details.model';
-import { FilledEntry, LAYOUT, LayoutEntry, LayoutLink, TreeLayout, VacantEntry, buildTreeLayout, linkPathD, px, py } from './tree-explorer-layout';
-import { PanZoomState, computeFitTransform, panBy, zoomAround } from './tree-explorer-pan-zoom';
+import { FilledEntry, LAYOUT, LayoutEntry, LayoutLink, TreeLayout, VacantEntry, buildTreeLayout, depthForScale, linkPathD, px, py, visibleBox, visibleSlice, INITIAL_DEPTH, ZOOM_STEP_PER_LEVEL } from './tree-explorer-layout';
+import { PanZoomState, computeFitBoxTransform, panBy, zoomAround } from './tree-explorer-pan-zoom';
 
-const DEFAULT_DEPTH = 3;
-// The default whole-tree view requests the backend's hard maximum (also 5) so the admin
-// sees as much of the company as the server will render in one shot; deeper nodes are
-// reached by searching, which re-roots at DEFAULT_DEPTH.
-const FULL_TREE_DEPTH = 5;
 const HINT_TIMEOUT_MS = 3500;
 const FIT_ANIMATE_MS = 460;
 // Debounce before firing the hover-details request, so a mouse merely passing over several
 // cards on its way elsewhere doesn't fire one request per card.
 const HOVER_DEBOUNCE_MS = 150;
+const CLICK_MOVE_PX = 5;
 
 @Component({
   selector: 'app-tree-explorer',
@@ -47,7 +43,6 @@ const HOVER_DEBOUNCE_MS = 150;
         <div
           class="tree-explorer__stats-pill"
           *ngIf="layout as l"
-          [title]="'admin.treeExplorer.statsScopeHint' | translate: { depth: maxSlotDepth }"
         >
           <span><b>{{ l.nodes.length }}</b> {{ 'admin.treeExplorer.statsVisiblePositionsLabel' | translate }}</span>
           <span><b>{{ l.filledCount }}</b> {{ 'admin.treeExplorer.statsFilledLabel' | translate }}</span>
@@ -77,11 +72,11 @@ const HOVER_DEBOUNCE_MS = 150;
             [attr.height]="l.contentHeight"
             [attr.viewBox]="'0 0 ' + l.contentWidth + ' ' + l.contentHeight"
           >
-            <path class="tree-explorer__link" *ngFor="let link of l.links; trackBy: trackLink" [attr.d]="linkPath(link)"></path>
+            <path class="tree-explorer__link" *ngFor="let link of view.links; trackBy: trackLink" [attr.d]="linkPath(link)"></path>
           </svg>
 
           <div class="tree-explorer__node-layer">
-            <ng-container *ngFor="let entry of l.nodes; trackBy: trackNode">
+            <ng-container *ngFor="let entry of view.nodes; trackBy: trackNode">
               <button
                 type="button"
                 class="tree-explorer__vacant-card"
@@ -98,6 +93,7 @@ const HOVER_DEBOUNCE_MS = 150;
                 class="tree-explorer__node-card"
                 *ngIf="!entry.vacant"
                 [class.tree-explorer__node-card--highlight]="entry.id === highlightedNodeId"
+                [attr.data-node-id]="entry.id"
                 [style.left.px]="cardLeft(entry)"
                 [style.top.px]="cardTop(entry)"
                 (mouseenter)="onCardHoverStart(entry, $event)"
@@ -157,6 +153,17 @@ const HOVER_DEBOUNCE_MS = 150;
                   <span>{{ 'admin.treeExplorer.leftLegLabel' | translate }}: ₹{{ entry.data.leftLegVolume | number }}</span>
                   <span>{{ 'admin.treeExplorer.rightLegLabel' | translate }}: ₹{{ entry.data.rightLegVolume | number }}</span>
                 </div>
+
+                <button
+                  type="button"
+                  class="tree-explorer__more-badge"
+                  *ngIf="entry.depth === visibleDepth && entry.descendants > 0"
+                  [title]="'admin.treeExplorer.moreBelowTitle' | translate: { count: entry.descendants }"
+                  (click)="revealNextLevel()"
+                >
+                  <span class="material-symbols-outlined">unfold_more</span>
+                  +{{ entry.descendants }}
+                </button>
               </div>
             </ng-container>
           </div>
@@ -224,7 +231,6 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
   private ngZone = inject(NgZone);
   private injector = inject(Injector);
 
-  readonly maxSlotDepth = DEFAULT_DEPTH;
 
   searchQuery = '';
   notFound = false;
@@ -253,15 +259,26 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
   }
   set root(node: TreeNode | null) {
     this._root = node;
-    this.layout = node ? buildTreeLayout(node, this.maxSlotDepth) : null;
+    this.layout = node ? buildTreeLayout(node) : null;
+    this.visibleDepth = Math.min(INITIAL_DEPTH, this.layout?.maxDepth ?? 0);
+    this.view = this.layout ? visibleSlice(this.layout, this.visibleDepth) : { nodes: [], links: [] };
     this.highlightedNodeId = node?.id ?? null;
   }
+
+  // Semantic zoom: how many levels are currently rendered, and the scale of the default
+  // (INITIAL_DEPTH-level) framing that deeper levels are measured against.
+  visibleDepth = INITIAL_DEPTH;
+  view: { nodes: LayoutEntry[]; links: LayoutLink[] } = { nodes: [], links: [] };
+  private baseScale = 1;
 
   private panZoom: PanZoomState = { x: 0, y: 0, scale: 1 };
   private attachedWrap: HTMLDivElement | null = null;
   private wrapCleanupFns: Array<() => void> = [];
   private activePointers = new Map<number, { x: number; y: number }>();
   private panFrom: { px: number; py: number; sx: number; sy: number } | null = null;
+  // Card under the pointer at pointerdown; pointer capture retargets click to the wrap, so a
+  // card click is detected as pointerdown+pointerup on the same card without real movement.
+  private downCard: { id: string; x: number; y: number } | null = null;
   private hintTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private resizeListener = () => this.fitToScreen(false);
 
@@ -289,7 +306,7 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
 
   // Default view: the whole company tree rooted at the founding admin, no search needed.
   private loadCompanyTree(): void {
-    this.treeExplorerService.companyTree(FULL_TREE_DEPTH).subscribe({
+    this.treeExplorerService.companyTree().subscribe({
       next: node => {
         this.root = node;
         // The root setter marks node.id as the highlighted node, which paints the
@@ -366,8 +383,17 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Same outcome as typing the associate's ID and pressing Search.
+  onCardClick(entry: FilledEntry): void {
+    this.searchQuery = entry.data.userId;
+    this.notFound = false;
+    this.loadError = false;
+    this.reload = () => this.loadSubtree(entry.id);
+    this.loadSubtree(entry.id);
+  }
+
   private loadSubtree(associateId: string): void {
-    this.treeExplorerService.subtree(associateId, DEFAULT_DEPTH).subscribe({
+    this.treeExplorerService.subtree(associateId).subscribe({
       next: node => {
         this.root = node;
         this.scheduleFit(true);
@@ -440,7 +466,9 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
     const wrap = this._canvasWrapRef?.nativeElement;
     if (!wrap || !this.layout) return;
     const rect = wrap.getBoundingClientRect();
-    const next = computeFitTransform(this.layout.contentWidth, this.layout.contentHeight, rect.width, rect.height);
+    this.baseScale = 0;
+    const next = computeFitBoxTransform(visibleBox(this.layout, INITIAL_DEPTH), rect.width, rect.height);
+    this.baseScale = next.scale;
     this.applyTransform(next, animated);
   }
 
@@ -461,8 +489,24 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
     this.applyTransform(zoomAround(this.panZoom, rect.width / 2, rect.height / 2, factor), false);
   }
 
+  revealNextLevel(): void {
+    this.zoomAtCenter(1 / ZOOM_STEP_PER_LEVEL);
+  }
+
+  private syncDepth(scale: number): void {
+    if (!this.layout || this.baseScale <= 0) return;
+    const depth = depthForScale(this.baseScale, scale, this.layout.maxDepth);
+    if (depth === this.visibleDepth) return;
+    const layout = this.layout;
+    this.ngZone.run(() => {
+      this.visibleDepth = depth;
+      this.view = visibleSlice(layout, depth);
+    });
+  }
+
   private applyTransform(next: PanZoomState, animate: boolean): void {
     this.panZoom = next;
+    this.syncDepth(next.scale);
     const inner = this.canvasInnerRef?.nativeElement;
     if (!inner) return;
     if (animate) {
@@ -488,6 +532,8 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
         // button's own (click) binding. Let clicks on controls pass through untouched.
         if ((e.target as HTMLElement).closest('button')) return;
         this.dismissHint();
+        const cardEl = (e.target as HTMLElement).closest('[data-node-id]');
+        this.downCard = cardEl ? { id: cardEl.getAttribute('data-node-id')!, x: e.clientX, y: e.clientY } : null;
         wrap.setPointerCapture(e.pointerId);
         this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
         if (this.activePointers.size === 1) {
@@ -510,6 +556,16 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
         }
       };
 
+      const onPointerUp = (e: PointerEvent) => {
+        const d = this.downCard;
+        this.downCard = null;
+        if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) < CLICK_MOVE_PX) {
+          const entry = this.layout?.nodes.find(n => !n.vacant && n.id === d.id);
+          if (entry) this.ngZone.run(() => this.onCardClick(entry as FilledEntry));
+        }
+        releasePointer(e);
+      };
+
       const releasePointer = (e: PointerEvent) => {
         this.activePointers.delete(e.pointerId);
         if (this.activePointers.size === 1) {
@@ -527,14 +583,14 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
 
       wrap.addEventListener('pointerdown', onPointerDown, { passive: false });
       wrap.addEventListener('pointermove', onPointerMove, { passive: true });
-      wrap.addEventListener('pointerup', releasePointer, { passive: true });
+      wrap.addEventListener('pointerup', onPointerUp, { passive: true });
       wrap.addEventListener('pointercancel', releasePointer, { passive: true });
       wrap.addEventListener('pointerleave', onPointerLeave, { passive: true });
 
       this.wrapCleanupFns = [
         () => wrap.removeEventListener('pointerdown', onPointerDown),
         () => wrap.removeEventListener('pointermove', onPointerMove),
-        () => wrap.removeEventListener('pointerup', releasePointer),
+        () => wrap.removeEventListener('pointerup', onPointerUp),
         () => wrap.removeEventListener('pointercancel', releasePointer),
         () => wrap.removeEventListener('pointerleave', onPointerLeave)
       ];

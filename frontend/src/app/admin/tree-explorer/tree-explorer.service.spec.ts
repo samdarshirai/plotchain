@@ -19,28 +19,28 @@ describe('TreeExplorerService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('fetches a subtree at the given depth', () => {
+  it('fetches a subtree', () => {
     const mockNode: TreeNode = {
       id: 'a1', userId: 'VP00001', name: 'Root', rankName: null, kycStatus: 'PENDING', position: null,
       leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
     };
 
-    service.subtree('a1', 2).subscribe(res => expect(res).toEqual(mockNode));
+    service.subtree('a1').subscribe(res => expect(res).toEqual(mockNode));
 
-    const req = httpMock.expectOne('/api/admin/tree/a1?depth=2');
+    const req = httpMock.expectOne('/api/admin/tree/a1');
     expect(req.request.method).toBe('GET');
     req.flush(mockNode);
   });
 
-  it('fetches the whole company tree at the given depth', () => {
+  it('fetches the whole company tree', () => {
     const mockNode: TreeNode = {
       id: 'admin', userId: 'admin', name: 'Administrator', rankName: null, kycStatus: 'VERIFIED', position: null,
       leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
     };
 
-    service.companyTree(5).subscribe(res => expect(res).toEqual(mockNode));
+    service.companyTree().subscribe(res => expect(res).toEqual(mockNode));
 
-    const req = httpMock.expectOne('/api/admin/tree?depth=5');
+    const req = httpMock.expectOne('/api/admin/tree');
     expect(req.request.method).toBe('GET');
     req.flush(mockNode);
   });

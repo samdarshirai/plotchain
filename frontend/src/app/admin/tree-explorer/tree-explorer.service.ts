@@ -9,12 +9,12 @@ import { TreeNodeDetails } from '../models/tree-node-details.model';
 export class TreeExplorerService {
   private http = inject(HttpClient);
 
-  companyTree(depth: number): Observable<TreeNode> {
-    return this.http.get<TreeNode>('/api/admin/tree', { params: new HttpParams().set('depth', depth) });
+  companyTree(): Observable<TreeNode> {
+    return this.http.get<TreeNode>('/api/admin/tree');
   }
 
-  subtree(associateId: string, depth: number): Observable<TreeNode> {
-    return this.http.get<TreeNode>(`/api/admin/tree/${associateId}`, { params: new HttpParams().set('depth', depth) });
+  subtree(associateId: string): Observable<TreeNode> {
+    return this.http.get<TreeNode>(`/api/admin/tree/${associateId}`);
   }
 
   search(userId: string): Observable<TreeSearchResult> {
