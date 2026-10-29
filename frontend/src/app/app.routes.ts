@@ -23,7 +23,6 @@ import { AssociateDirectoryComponent } from './admin/associate-directory/associa
 import { TreeExplorerComponent } from './admin/tree-explorer/tree-explorer.component';
 import { KycQueueComponent } from './admin/kyc-queue/kyc-queue.component';
 import { SalesRegisterComponent } from './admin/sales-register/sales-register.component';
-import { RecordSaleComponent } from './admin/sales-register/record-sale.component';
 import { CycleManagementComponent } from './admin/cycle-management/cycle-management.component';
 import { LedgerRegisterComponent } from './admin/ledger-register/ledger-register.component';
 import { MasterProjectsComponent } from './admin/master-projects/master-projects.component';
@@ -96,7 +95,6 @@ export const routes: Routes = [
   { path: 'messages', loadComponent: () => import('./support-ticket-history/support-ticket-history.component').then(m => m.SupportTicketHistoryComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
   { path: 'admin/change-password', component: ChangePasswordComponent, canActivate: [authGuard] },
-  { path: 'admin/sales/new', component: RecordSaleComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/dashboard', component: AdminDashboardComponent, canActivate: [authGuard, adminGuard, launchedModeGuard] },
   {
     path: 'admin/setup',

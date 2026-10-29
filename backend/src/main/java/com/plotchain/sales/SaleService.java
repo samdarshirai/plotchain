@@ -14,7 +14,6 @@ import com.plotchain.income.LedgerEntry;
 import com.plotchain.income.LedgerEntryRepository;
 import com.plotchain.income.LedgerEntryStatus;
 import com.plotchain.projects.Plot;
-import com.plotchain.projects.PlotNotFoundException;
 import com.plotchain.projects.PlotRepository;
 import com.plotchain.projects.PlotStatus;
 import com.plotchain.projects.Project;
@@ -67,44 +66,7 @@ public class SaleService {
         this.projectRepository = projectRepository;
     }
 
-    // Sales unit 2 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
-    // flow "Record a sale", steps 1-3): guards. Sales unit 3 (same doc, flow steps 4-9): the
-    // Plot->SOLD flip, cycle lookup, Sale persistence, and Direct Income ledger entry, now in the
-    // shared persistSaleAndIncome below (also used by recordInstallmentPayment), all inside one
-    // transaction.
-    //
-    // Mandatory-fields change on /admin/sales/new: plotId is now optional -- a sale need not be
-    // tied to a specific inventory Plot. When present, the Plot guard/lock/SOLD-flip stays first
-    // (before Associate/Project) so the row-lock concurrency proof above still holds and a
-    // not-found/not-available Plot still fails fast before touching anything else. associateId
-    // stays required -- legCredited (below) and the leg-volume rollup that drives Matching/
-    // Sponsor Matching/Royalty/Reward income (CycleService.rollUpLegVolumes) both key off it, so
-    // it can't go null. projectId is a new required, first-class field (previously only derivable
-    // via plotId -> Plot.projectId).
-    @Transactional
-    public SaleResponse recordSale(CreateSaleRequest request) {
-        Plot plot = null;
-        if (request.plotId() != null) {
-            plot = plotRepository.findByIdForUpdate(request.plotId())
-                .orElseThrow(() -> new PlotNotFoundException(request.plotId()));
-
-            if (plot.getStatus() != PlotStatus.AVAILABLE) {
-                throw new PlotNotAvailableException(plot.getId());
-            }
-        }
-
-        Associate associate = associateRepository.findById(request.associateId())
-            .orElseThrow(() -> new AssociateNotFoundException(request.associateId()));
-
-        Project project = projectRepository.findById(request.projectId())
-            .orElseThrow(() -> new ProjectNotFoundException(request.projectId()));
-
-        return persistSaleAndIncome(plot, associate, project,
-            request.buyerName(), request.buyerPhone(), request.buyerEmail(),
-            request.note(), request.price(), null, null, true);
-    }
-
-    // Shared core of recordSale and recordInstallmentPayment. plot may be null (plotless sale).
+    // Core of recordInstallmentPayment. plot may be null only for legacy plotless sales being voided elsewhere.
     // Runs inside the caller's transaction.
     private SaleResponse persistSaleAndIncome(Plot plot, Associate associate, Project project,
             String buyerName, String buyerPhone, String buyerEmail, String note,

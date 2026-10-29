@@ -78,7 +78,7 @@ class SaleServiceSelfPerformanceBonusIntegrationTest {
     }
 
     @Test
-    void recordSaleCreditsBothDirectIncomeAndSelfPerformanceBonusInOneTransaction() {
+    void paymentCreditsBothDirectIncomeAndSelfPerformanceBonusInOneTransaction() {
         CompensationPlanVersion planVersion = new CompensationPlanVersion(
             UUID.randomUUID(), "sp-bonus-test", LocalDate.of(2025, 6, 1),
             new BigDecimal("6.00"), new BigDecimal("7.00"), new BigDecimal("11.00"),
@@ -117,9 +117,8 @@ class SaleServiceSelfPerformanceBonusIntegrationTest {
         plotRepository.saveAndFlush(plot);
         plotId = plot.getId();
 
-        CreateSaleRequest request = new CreateSaleRequest(plotId, associateId, "Jane Buyer", "9999999999", null,
-            projectId, new BigDecimal("1000000.00"), "Sold to Jane Buyer");
-        SaleResponse response = saleService.recordSale(request);
+        SaleResponse response = saleService.recordInstallmentPayment(null, null, 1, associateId,
+            "Jane Buyer", "9999999999", new BigDecimal("1000000.00"), plot, true);
         saleId = response.id();
 
         List<LedgerEntry> entries = ledgerEntryRepository.findAllBySourceRef(saleId);

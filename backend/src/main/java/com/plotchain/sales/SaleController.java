@@ -24,11 +24,6 @@ public class SaleController {
         this.saleService = saleService;
     }
 
-    @PostMapping
-    public ResponseEntity<SaleResponse> record(@Valid @RequestBody CreateSaleRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(saleService.recordSale(request));
-    }
-
     @PostMapping("/{id}/void")
     public ResponseEntity<SaleResponse> voidSale(
             @PathVariable UUID id, @RequestBody VoidSaleRequest request) {

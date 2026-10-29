@@ -500,28 +500,6 @@ class SecurityConfigTest {
             .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
     }
 
-    // Sales unit 2: POST /api/admin/sales is ADMIN-only, the same target-role-model pattern as
-    // /api/admin/cycles/*/close above (not the isAdminFamily() convention most other admin GETs
-    // still use). A random, non-existent plotId reaches the real (H2, unmocked) PlotRepository
-    // and 404s for the ADMIN token -- proof the request passed the security layer, not proof of
-    // any particular business outcome, same "assert not 403" reasoning as
-    // passwordChangeIsReachableByAnAssociateToken above. Every other role, including the
-    // soon-to-be-deleted admin-family sub-roles, is blocked at the filter layer before the
-    // controller ever runs.
-    @ParameterizedTest
-    @EnumSource(AssociateRole.class)
-    void adminSalesRecordIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
-        String body = new ObjectMapper().writeValueAsString(
-            new com.plotchain.sales.CreateSaleRequest(UUID.randomUUID(), UUID.randomUUID(), "Jane Buyer", "9999999999", null,
-                UUID.randomUUID(), new java.math.BigDecimal("600000.00"), "Sold to Jane Buyer"));
-
-        mockMvc.perform(post("/api/admin/sales")
-                .header("Authorization", "Bearer " + tokenFor(role))
-                .contentType("application/json")
-                .content(body))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
-    }
-
     // Role-capability unit 7 (docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
     // Plot/project inventory row, Admin column: "books plots against any associate's record"):
     // POST /api/admin/bookings is ADMIN-only, same target-role-model pattern and first-match-wins
