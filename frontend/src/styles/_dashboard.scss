@@ -444,49 +444,6 @@
   @extend %panel-header-eyebrow-label;
 }
 
-.recent-sales-table__table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.75rem;
-
-  th {
-    text-align: left;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border-subtle);
-    font-size: 0.5938rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-  }
-
-  td {
-    padding: 0.625rem 0.375rem 0.625rem 0;
-    border-bottom: 1px solid rgba(217, 207, 188, 0.6);
-    color: var(--text-primary);
-  }
-}
-
-.recent-sales-table__plot-no {
-  font-family: var(--font-mono);
-}
-
-.recent-sales-table__status-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.5625rem;
-  border-radius: 999px;
-  background: rgba(75, 122, 82, 0.12);
-  font-size: 0.6563rem;
-  font-weight: 500;
-  color: var(--status-success);
-}
-
-.recent-sales-table__status-pill--voided {
-  background: rgba(178, 59, 50, 0.12);
-  color: var(--status-danger);
-}
-
 .recent-sales-table__loading,
 .recent-sales-table__empty,
 .recent-sales-table__error {

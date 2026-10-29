@@ -40,17 +40,17 @@ describe('AdminRecentSalesTableComponent', () => {
     expect(text).toContain('Jane Associate');
     const cells: NodeListOf<HTMLElement> = hostFixture.nativeElement.querySelectorAll('td');
     expect(cells[3].textContent).toContain('840,000');
-    expect(cells[4].textContent).toContain('Aug');
-    const statusPill: HTMLElement = hostFixture.nativeElement.querySelector('.admin-recent-sales-table__status-pill');
-    expect(statusPill.classList).not.toContain('admin-recent-sales-table__status-pill--voided');
+    expect(cells[4].textContent).toContain('18 Aug');
+    const badge: HTMLElement = hostFixture.nativeElement.querySelector('.editable-table__badge');
+    expect(badge.classList).toContain('editable-table__badge--success');
   });
 
-  it('marks a VOIDED sale with the voided pill class', () => {
+  it('marks a VOIDED sale with the danger badge', () => {
     hostFixture.componentInstance.sales = [{ ...sale, status: 'VOIDED' }];
     hostFixture.detectChanges();
 
-    const statusPill: HTMLElement = hostFixture.nativeElement.querySelector('.admin-recent-sales-table__status-pill');
-    expect(statusPill.classList).toContain('admin-recent-sales-table__status-pill--voided');
+    const badge: HTMLElement = hostFixture.nativeElement.querySelector('.editable-table__badge');
+    expect(badge.classList).toContain('editable-table__badge--danger');
   });
 
   it('shows an empty state when there are no sales', () => {

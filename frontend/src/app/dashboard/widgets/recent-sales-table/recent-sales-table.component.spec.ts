@@ -37,8 +37,8 @@ describe('RecentSalesTableComponent', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('VG2-118');
     expect(text).toContain('Viraj Greens Ph II');
-    const statusPill: HTMLElement = fixture.nativeElement.querySelector('.recent-sales-table__status-pill');
-    expect(statusPill.classList).not.toContain('recent-sales-table__status-pill--voided');
+    const badge: HTMLElement = fixture.nativeElement.querySelector('.editable-table__badge');
+    expect(badge.classList).toContain('editable-table__badge--success');
   });
 
   it('renders the sale value and recorded date in their own cells', () => {
@@ -49,7 +49,7 @@ describe('RecentSalesTableComponent', () => {
 
     const cells: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('td');
     expect(cells[2].textContent).toContain('840,000');
-    expect(cells[3].textContent).toContain('Aug');
+    expect(cells[3].textContent).toContain('18 Aug');
   });
 
   it('shows a loading state before the sales response arrives', () => {
@@ -63,14 +63,14 @@ describe('RecentSalesTableComponent', () => {
     req.flush(page);
   });
 
-  it('marks a VOIDED sale with the voided pill class', () => {
+  it('marks a VOIDED sale with the danger badge', () => {
     fixture.detectChanges();
     const req = httpMock.expectOne(r => r.url === '/api/associates/me/sales');
     req.flush({ ...page, sales: [{ ...page.sales[0], status: 'VOIDED' }] });
     fixture.detectChanges();
 
-    const statusPill: HTMLElement = fixture.nativeElement.querySelector('.recent-sales-table__status-pill');
-    expect(statusPill.classList).toContain('recent-sales-table__status-pill--voided');
+    const badge: HTMLElement = fixture.nativeElement.querySelector('.editable-table__badge');
+    expect(badge.classList).toContain('editable-table__badge--danger');
   });
 
   it('shows an empty state when there are no sales yet', () => {
