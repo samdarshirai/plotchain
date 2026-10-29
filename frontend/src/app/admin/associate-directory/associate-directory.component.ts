@@ -303,9 +303,9 @@ export class AssociateDirectoryComponent implements OnInit {
         badgeTone: value => this.statusBadgeTone(value)
       },
       { key: 'joinedAt', label: this.translate.instant('admin.associateDirectory.columnRegistrationDate'), type: 'text' },
-      { key: 'loginPassword', label: this.translate.instant('admin.associateDirectory.loginPasswordLabel'), type: 'text' },
-      { key: 'transactionPassword', label: this.translate.instant('admin.associateDirectory.transactionPasswordLabel'), type: 'text' },
-      { key: 'login', label: this.translate.instant('admin.associateDirectory.columnLogin'), type: 'action' }
+      { key: 'loginPassword', label: this.translate.instant('admin.associateDirectory.loginPasswordLabel'), type: 'text', icon: 'key' },
+      { key: 'transactionPassword', label: this.translate.instant('admin.associateDirectory.transactionPasswordLabel'), type: 'text', icon: 'lock' },
+      { key: 'login', label: this.translate.instant('admin.associateDirectory.columnLogin'), type: 'action', icon: 'login' }
     ];
     this.compensationPlanService.getCurrent().subscribe({
       next: res => (this.availableRanks = res.availableRanks),
