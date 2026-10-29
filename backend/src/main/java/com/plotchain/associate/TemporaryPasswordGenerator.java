@@ -1,7 +1,6 @@
 package com.plotchain.associate;
 
 import java.security.SecureRandom;
-import java.util.Base64;
 
 public final class TemporaryPasswordGenerator {
 
@@ -11,8 +10,6 @@ public final class TemporaryPasswordGenerator {
     }
 
     public static String generate() {
-        byte[] bytes = new byte[6]; // 6 bytes -> exactly 8 Base64-URL chars
-        RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return String.format("%06d", RANDOM.nextInt(1_000_000));
     }
 }
