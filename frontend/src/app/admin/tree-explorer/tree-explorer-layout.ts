@@ -55,11 +55,19 @@ export interface TreeLayout {
   vacantCount: number;
 }
 
+function countDescendants(node: TreeNode): number {
+  return node.children.reduce((sum, c) => sum + 1 + countDescendants(c), 0);
+}
+
+export function treeDepth(node: TreeNode): number {
+  return node.children.reduce((max, c) => Math.max(max, 1 + treeDepth(c)), 0);
+}
+
 function childAt(node: TreeNode, leg: 'L' | 'R'): TreeNode | null {
   return node.children.find(child => child.position === leg) ?? null;
 }
 
-export function buildTreeLayout(root: TreeNode | null): TreeLayout | null {
+export function buildTreeLayout(root: TreeNode | null, depthLimit = Infinity): TreeLayout | null {
   if (!root) return null;
 
   const nodes: LayoutEntry[] = [];
@@ -91,6 +99,16 @@ export function buildTreeLayout(root: TreeNode | null): TreeLayout | null {
     }
 
     filledCount++;
+
+    // At the depth limit the level below is collapsed: lay this node out as a leaf (no vacant
+    // slots beneath it -- those legs are hidden, not empty) and keep the "+N more" count.
+    if (depth >= depthLimit) {
+      const entry: FilledEntry = {
+        vacant: false, depth, leg, x: leafCounter++, id: node.id, data: node, descendants: countDescendants(node)
+      };
+      nodes.push(entry);
+      return entry;
+    }
 
     const leftEntry = layout(childAt(node, 'L'), depth + 1, 'L', node);
     const rightEntry = layout(childAt(node, 'R'), depth + 1, 'R', node);
@@ -139,33 +157,12 @@ export function linkPathD(link: LayoutLink): string {
   ].join(' ');
 }
 
-// Semantic zoom: the layout is computed once for the whole tree (so positions never shift), and
-// only the levels down to `depth` are rendered. Zooming out raises `depth`, zooming in lowers it.
+// Semantic zoom: only the levels down to `depth` are laid out. Zooming out raises `depth`,
+// zooming in lowers it; the layout is rebuilt compactly for the new depth.
 export const INITIAL_DEPTH = 3;
 export const ZOOM_STEP_PER_LEVEL = 1.5;
 
 export function depthForScale(baseScale: number, scale: number, maxDepth: number): number {
   const extra = Math.floor(Math.log(baseScale / scale) / Math.log(ZOOM_STEP_PER_LEVEL) + 1e-9);
-  return Math.min(maxDepth, INITIAL_DEPTH + Math.max(0, extra));
-}
-
-export function visibleSlice(layout: TreeLayout, depth: number): { nodes: LayoutEntry[]; links: LayoutLink[] } {
-  return {
-    nodes: layout.nodes.filter(n => n.depth <= depth),
-    links: layout.links.filter(l => l.parent.depth < depth)
-  };
-}
-
-// Pixel box (content space) of the cards down to `depth`, for framing the initial view.
-export function visibleBox(layout: TreeLayout, depth: number): { left: number; top: number; width: number; height: number } {
-  const shown = layout.nodes.filter(n => n.depth <= depth);
-  const xs = shown.map(px);
-  const left = Math.min(...xs) - LAYOUT.CARD_W / 2;
-  const right = Math.max(...xs) + LAYOUT.CARD_W / 2;
-  return {
-    left,
-    top: 0,
-    width: right - left,
-    height: LAYOUT.TOP_MARGIN * 2 + Math.min(depth, layout.maxDepth) * LAYOUT.ROW_H + LAYOUT.CARD_H
-  };
+  return Math.max(INITIAL_DEPTH, Math.min(maxDepth, INITIAL_DEPTH + Math.max(0, extra)));
 }

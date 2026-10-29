@@ -1,4 +1,4 @@
-import { buildTreeLayout, depthForScale, INITIAL_DEPTH, visibleSlice, LAYOUT, linkPathD, px, py } from './tree-explorer-layout';
+import { buildTreeLayout, depthForScale, INITIAL_DEPTH, treeDepth, LAYOUT, linkPathD, px, py } from './tree-explorer-layout';
 import { TreeNode } from '../models/tree-node.model';
 
 function node(overrides: Partial<TreeNode>): TreeNode {
@@ -100,12 +100,13 @@ describe('buildTreeLayout', () => {
   });
 
   describe('semantic zoom', () => {
-    const chain = () => buildTreeLayout(node({
+    const chainNode = () => node({
       id: 'd0',
       children: [node({ id: 'd1', position: 'L', children: [node({ id: 'd2', position: 'L', children: [
         node({ id: 'd3', position: 'L', children: [node({ id: 'd4', position: 'L', children: [] })] })
       ] })] })]
-    }))!;
+    });
+    const chain = () => buildTreeLayout(chainNode())!;
 
     it('counts filled descendants under each node', () => {
       const layout = chain();
@@ -122,11 +123,18 @@ describe('buildTreeLayout', () => {
       expect(depthForScale(1, 0.0001, 5)).toBe(5);
     });
 
-    it('slices nodes and links to the visible depth', () => {
-      const view = visibleSlice(chain(), INITIAL_DEPTH);
-      expect(view.nodes.every(n => n.depth <= INITIAL_DEPTH)).toBe(true);
-      expect(view.nodes.some(n => n.id === 'd4')).toBe(false);
-      expect(view.links.some(l => l.parent.id === 'd3')).toBe(false);
+    it('collapses levels below the depth limit into a leaf with a "+N" count', () => {
+      const layout = buildTreeLayout(chainNode(), INITIAL_DEPTH)!;
+      expect(layout.nodes.some(n => n.id === 'd4')).toBe(false);
+      const d3 = layout.nodes.find(n => n.id === 'd3')!;
+      expect(!d3.vacant && d3.descendants).toBe(1);
+      expect(layout.links.some(l => l.parent.id === 'd3')).toBe(false);
+      expect(layout.nodes.some(n => n.vacant && n.depth === INITIAL_DEPTH + 1)).toBe(false);
+    });
+
+    it('lays out more compactly at a lower depth limit than for the full tree', () => {
+      expect(treeDepth(chainNode())).toBe(4);
+      expect(buildTreeLayout(chainNode(), 1)!.contentWidth).toBeLessThan(buildTreeLayout(chainNode())!.contentWidth);
     });
   });
 });

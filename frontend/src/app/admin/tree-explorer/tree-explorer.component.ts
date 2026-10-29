@@ -7,8 +7,8 @@ import { NewAssociatePanelComponent, PresetParent } from '../new-associate-panel
 import { TreeExplorerService } from './tree-explorer.service';
 import { TreeNode } from '../models/tree-node.model';
 import { TreeNodeDetails } from '../models/tree-node-details.model';
-import { FilledEntry, LAYOUT, LayoutEntry, LayoutLink, TreeLayout, VacantEntry, buildTreeLayout, depthForScale, linkPathD, px, py, visibleBox, visibleSlice, INITIAL_DEPTH, ZOOM_STEP_PER_LEVEL } from './tree-explorer-layout';
-import { PanZoomState, computeFitBoxTransform, panBy, zoomAround } from './tree-explorer-pan-zoom';
+import { FilledEntry, LAYOUT, LayoutEntry, LayoutLink, TreeLayout, VacantEntry, buildTreeLayout, depthForScale, linkPathD, px, py, treeDepth, INITIAL_DEPTH, ZOOM_STEP_PER_LEVEL } from './tree-explorer-layout';
+import { PanZoomState, computeFitTransform, panBy, zoomAround } from './tree-explorer-pan-zoom';
 
 const HINT_TIMEOUT_MS = 3500;
 const FIT_ANIMATE_MS = 460;
@@ -72,11 +72,11 @@ const CLICK_MOVE_PX = 5;
             [attr.height]="l.contentHeight"
             [attr.viewBox]="'0 0 ' + l.contentWidth + ' ' + l.contentHeight"
           >
-            <path class="tree-explorer__link" *ngFor="let link of view.links; trackBy: trackLink" [attr.d]="linkPath(link)"></path>
+            <path class="tree-explorer__link" *ngFor="let link of l.links; trackBy: trackLink" [attr.d]="linkPath(link)"></path>
           </svg>
 
           <div class="tree-explorer__node-layer">
-            <ng-container *ngFor="let entry of view.nodes; trackBy: trackNode">
+            <ng-container *ngFor="let entry of l.nodes; trackBy: trackNode">
               <button
                 type="button"
                 class="tree-explorer__vacant-card"
@@ -259,16 +259,17 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
   }
   set root(node: TreeNode | null) {
     this._root = node;
-    this.layout = node ? buildTreeLayout(node) : null;
-    this.visibleDepth = Math.min(INITIAL_DEPTH, this.layout?.maxDepth ?? 0);
-    this.view = this.layout ? visibleSlice(this.layout, this.visibleDepth) : { nodes: [], links: [] };
+    this.treeDepth = node ? treeDepth(node) : 0;
+    this.visibleDepth = INITIAL_DEPTH;
+    this.layout = node ? buildTreeLayout(node, this.visibleDepth) : null;
     this.highlightedNodeId = node?.id ?? null;
   }
 
   // Semantic zoom: how many levels are currently rendered, and the scale of the default
   // (INITIAL_DEPTH-level) framing that deeper levels are measured against.
   visibleDepth = INITIAL_DEPTH;
-  view: { nodes: LayoutEntry[]; links: LayoutLink[] } = { nodes: [], links: [] };
+  // +1 below: the row of vacant "add" slots under the deepest filled level is shown too.
+  private treeDepth = 0;
   private baseScale = 1;
 
   private panZoom: PanZoomState = { x: 0, y: 0, scale: 1 };
@@ -466,8 +467,11 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
     const wrap = this._canvasWrapRef?.nativeElement;
     if (!wrap || !this.layout) return;
     const rect = wrap.getBoundingClientRect();
-    this.baseScale = 0;
-    const next = computeFitBoxTransform(visibleBox(this.layout, INITIAL_DEPTH), rect.width, rect.height);
+    this.ngZone.run(() => {
+      this.visibleDepth = INITIAL_DEPTH;
+      this.layout = buildTreeLayout(this._root, this.visibleDepth);
+    });
+    const next = computeFitTransform(this.layout!.contentWidth, this.layout!.contentHeight, rect.width, rect.height);
     this.baseScale = next.scale;
     this.applyTransform(next, animated);
   }
@@ -493,20 +497,23 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
     this.zoomAtCenter(1 / ZOOM_STEP_PER_LEVEL);
   }
 
-  private syncDepth(scale: number): void {
-    if (!this.layout || this.baseScale <= 0) return;
-    const depth = depthForScale(this.baseScale, scale, this.layout.maxDepth);
-    if (depth === this.visibleDepth) return;
-    const layout = this.layout;
+  // Rebuilds the layout when the zoom crosses a level threshold. Keeps the root card at the same
+  // screen position (the rebuilt tree is a different width), so the view grows around it.
+  private syncDepth(next: PanZoomState): PanZoomState {
+    if (!this.layout || !this._root || this.baseScale <= 0) return next;
+    const depth = depthForScale(this.baseScale, next.scale, this.treeDepth + 1);
+    if (depth === this.visibleDepth) return next;
+    const oldRootX = px(this.layout.rootEntry);
     this.ngZone.run(() => {
       this.visibleDepth = depth;
-      this.view = visibleSlice(layout, depth);
+      this.layout = buildTreeLayout(this._root, depth);
     });
+    return { ...next, x: next.x + (oldRootX - px(this.layout!.rootEntry)) * next.scale };
   }
 
   private applyTransform(next: PanZoomState, animate: boolean): void {
+    next = this.syncDepth(next);
     this.panZoom = next;
-    this.syncDepth(next.scale);
     const inner = this.canvasInnerRef?.nativeElement;
     if (!inner) return;
     if (animate) {
