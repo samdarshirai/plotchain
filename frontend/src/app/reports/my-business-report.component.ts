@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
+import { FieldErrorComponent } from '../shared/components/field-error/field-error.component';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { formatInr } from '../shared/utils/plot-grid.util';
 import { BusinessReport, BusinessReportRow, ReportsService } from './reports.service';
@@ -9,7 +10,7 @@ import { BusinessReport, BusinessReportRow, ReportsService } from './reports.ser
 @Component({
   selector: 'app-my-business-report',
   standalone: true,
-  imports: [CommonModule, TranslateModule, InlineBannerComponent],
+  imports: [CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
   template: `
     <div class="report" [attr.aria-busy]="loading">
       <h1>{{ 'reports.myBusiness.title' | translate }}</h1>
@@ -21,6 +22,7 @@ import { BusinessReport, BusinessReportRow, ReportsService } from './reports.ser
           <input type="date" [value]="to" (change)="to = $any($event.target).value; load()">
         </label>
       </div>
+      <app-field-error [message]="rangeError"></app-field-error>
       <app-inline-banner *ngIf="error" tone="danger">
         {{ 'reports.loadError' | translate }}
         <button type="button" (click)="load()">{{ 'plotBookings.retryAction' | translate }}</button>
@@ -81,7 +83,12 @@ export class MyBusinessReportComponent {
     return [{ key: 'left', rows: this.report!.left }, { key: 'right', rows: this.report!.right }];
   }
 
+  get rangeError(): string | undefined {
+    return this.from && this.to && this.from > this.to ? 'From date is after To date. Pick a From date on or before the To date.' : undefined;
+  }
+
   load(): void {
+    if (this.rangeError) return;
     const seq = ++this.seq;   // drop stale responses when the filter changes quickly
     this.loading = true;
     this.error = false;

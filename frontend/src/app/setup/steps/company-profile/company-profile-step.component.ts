@@ -13,13 +13,18 @@ import { SetupService } from '../../setup.service';
 import { SetupInspectorService, SetupStepController } from '../../setup-inspector.service';
 import { CompanyProfileRequest } from '../../models/company-profile.model';
 
-const PHONE_PATTERN = /^[+]?[0-9]{10,15}$/;
-const GSTIN_PATTERN = /^[0-9A-Z]{15}$/;
+import { ErrorSummaryComponent } from '../../../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues, errorMessage, format } from '../../../shared/validation/validation';
+
+const LABELS: Record<string, string> = {
+  displayName: 'Display name', legalName: 'Legal name', registrationNumber: 'GSTIN', contactName: 'Contact name',
+  contactPhone: 'Contact phone', contactEmail: 'Contact email', registeredAddress: 'Registered address'
+};
 
 @Component({
   selector: 'app-company-profile-step',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, FieldErrorComponent, SetupStepNavComponent],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, FieldErrorComponent, ErrorSummaryComponent, SetupStepNavComponent],
   template: `
     <div class="company-profile-step">
       <div class="company-profile-step__intro">
@@ -32,7 +37,8 @@ const GSTIN_PATTERN = /^[0-9A-Z]{15}$/;
         <p class="company-profile-step__subtitle">{{ 'setup.companyProfile.subtitle' | translate }}</p>
       </div>
 
-      <form class="card company-profile-step__card" [formGroup]="form">
+      <form class="card company-profile-step__card" [formGroup]="form" [class.was-submitted]="submitted" novalidate>
+        <app-error-summary [issues]="issues"></app-error-summary>
         <section class="company-profile-step__section">
           <h2 class="company-profile-step__section-title">
             <span class="material-symbols-outlined">info</span>
@@ -173,9 +179,9 @@ export class CompanyProfileStepComponent implements OnInit, AfterViewInit, OnDes
   form = this.fb.group({
     displayName: ['', Validators.required],
     legalName: ['', Validators.required],
-    registrationNumber: ['', Validators.pattern(GSTIN_PATTERN)],
+    registrationNumber: ['', format('gstin')],
     contactName: ['', Validators.required],
-    contactPhone: ['', [Validators.required, Validators.pattern(PHONE_PATTERN)]],
+    contactPhone: ['', [Validators.required, format('phone')]],
     contactEmail: ['', [Validators.required, Validators.email]],
     registeredAddress: ['', Validators.required]
   });
@@ -183,6 +189,8 @@ export class CompanyProfileStepComponent implements OnInit, AfterViewInit, OnDes
   @Input() mode: 'setup' | 'settings' = 'setup';
 
   savedJustNow = false;
+  submitted = false;
+  issues: FormIssue[] = [];
   stepNumber = 1;
   stepCount = 1;
   readonly previousPath = this.setupService.previousStepPath('companyProfile');
@@ -257,6 +265,9 @@ export class CompanyProfileStepComponent implements OnInit, AfterViewInit, OnDes
   // SetupStepController: lets SetupStepNavComponent block Next instead of silently discarding
   // an invalid required field (e.g. a bad GSTIN/phone).
   isStepValid(): boolean {
+    this.submitted = true;
+    this.form.markAllAsTouched();
+    this.issues = collectIssues(this.form, LABELS, this.serverFieldErrors);
     return this.form.valid;
   }
 
@@ -279,16 +290,7 @@ export class CompanyProfileStepComponent implements OnInit, AfterViewInit, OnDes
     if (!control || !control.touched || !control.errors) {
       return undefined;
     }
-    if (control.errors['required']) {
-      return this.translate.instant('setup.companyProfile.validation.required');
-    }
-    if (control.errors['email']) {
-      return this.translate.instant('setup.companyProfile.validation.email');
-    }
-    if (control.errors['pattern']) {
-      return this.translate.instant('setup.companyProfile.validation.pattern');
-    }
-    return undefined;
+    return errorMessage(control, LABELS[name]);
   }
 
   private save(): void {

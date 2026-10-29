@@ -56,12 +56,16 @@ export interface NetworkSummary {
 export interface LegVolumeSummary {
   leftLegVolume: number;
   rightLegVolume: number;
-  // totalLeftBusiness/totalRightBusiness/totalSelfBusiness are lifetime; newBookedAreaSqft is
-  // this-cycle only.
+  // totalLeftBusiness/totalRightBusiness/totalSelfBusiness are lifetime; newBookedAreaSqft and
+  // new{Left,Right,Matching}Business are live this-cycle figures (leftLegVolume/rightLegVolume
+  // are the live legs: this cycle plus carry-forward).
   totalLeftBusiness: number;
   totalRightBusiness: number;
   totalSelfBusiness: number;
   newBookedAreaSqft: number;
+  newLeftBusiness: number;
+  newRightBusiness: number;
+  newMatchingBusiness: number;
 }
 
 export interface DashboardResponse {

@@ -286,6 +286,7 @@ describe('MyAccountComponent', () => {
     fixture.componentInstance.onSaveChanges();
 
     httpMock.expectNone('/api/associates/me/profile');
+    expect(fixture.componentInstance.profileIssues.map(i => i.id)).toContain('name');
   });
 
   it('surfaces a 409 email-conflict as a field-level error, read from the flat error body', () => {

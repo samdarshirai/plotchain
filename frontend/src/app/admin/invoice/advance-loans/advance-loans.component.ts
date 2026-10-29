@@ -1,6 +1,6 @@
 import { Component, HostListener, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { FormGroup, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -8,11 +8,14 @@ import { AssociateOption, InvoiceService, LoanCreate, LoanDetail, LoanRow, PAY_M
 import { EditableTableColumn, EditableTableComponent } from '../../../shared/components/editable-table/editable-table.component';
 import { fitSize } from '../../../shared/utils/fit-text.util';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
+import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
+import { ErrorSummaryComponent } from '../../../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues, errorMessage } from '../../../shared/validation/validation';
 
 @Component({
   selector: 'app-invoice-loans',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <div class="invoice-loans">
       <div class="invoice-loans__intro">
@@ -48,11 +51,13 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
         <div class="invoice-loans__modal invoice-loans__add-modal" role="dialog" aria-modal="true" aria-labelledby="invoice-loans-add-title">
           <h2 class="invoice-loans__modal-title" id="invoice-loans-add-title">{{ 'admin.invoiceLoans.addTitle' | translate }}</h2>
           <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
-          <form [formGroup]="form" (ngSubmit)="save()">
+          <form [formGroup]="form" [class.was-submitted]="submitted" (ngSubmit)="save()" novalidate>
+            <app-error-summary [issues]="issues"></app-error-summary>
             <div class="invoice-loans__add-fields">
             <div class="invoice-loans__field invoice-loans__modal-field">
               <label>{{ 'admin.invoiceLoans.associate' | translate }}</label>
               <input type="text" list="invoice-loans-associates" formControlName="associateText" autocomplete="off" (change)="pickAssociate($any($event.target).value)" />
+              <app-field-error [message]="fe(form, 'associateId', submitted)"></app-field-error>
               <datalist id="invoice-loans-associates">
                 <option *ngFor="let a of associates" [value]="label(a)"></option>
               </datalist>
@@ -72,10 +77,12 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
             <div class="invoice-loans__field invoice-loans__modal-field">
               <label>{{ 'admin.invoiceLoans.loanDate' | translate }}</label>
               <input type="date" formControlName="loanDate" />
+              <app-field-error [message]="fe(form, 'loanDate', submitted)"></app-field-error>
             </div>
             <div class="invoice-loans__field invoice-loans__modal-field">
               <label>{{ 'admin.invoiceLoans.amount' | translate }}</label>
               <input type="number" step="0.01" min="0.01" inputmode="decimal" formControlName="amount" />
+              <app-field-error [message]="fe(form, 'amount', submitted)"></app-field-error>
             </div>
             <div class="invoice-loans__field invoice-loans__modal-field">
               <label>{{ 'admin.invoiceLoans.payMode' | translate }}</label>
@@ -160,15 +167,18 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
           <h2 class="invoice-loans__modal-title">{{ 'admin.invoiceLoans.repayTitle' | translate }}</h2>
           <p *ngIf="repayLoan">{{ 'admin.invoiceLoans.outstandingHint' | translate }}: {{ repayLoan.outstanding.toFixed(2) }}</p>
           <app-inline-banner *ngIf="repayError" tone="danger">{{ repayError }}</app-inline-banner>
-          <form [formGroup]="repayForm" (ngSubmit)="saveRepay()">
+          <form [formGroup]="repayForm" [class.was-submitted]="repaySubmitted" (ngSubmit)="saveRepay()" novalidate>
+            <app-error-summary [issues]="repayIssues"></app-error-summary>
             <div class="invoice-loans__modal-fields">
               <div class="invoice-loans__modal-field">
                 <label>{{ 'admin.invoiceLoans.paymentDate' | translate }}</label>
                 <input type="date" formControlName="paymentDate" />
+                <app-field-error [message]="fe(repayForm, 'paymentDate', repaySubmitted)"></app-field-error>
               </div>
               <div class="invoice-loans__modal-field">
                 <label>{{ 'admin.invoiceLoans.amount' | translate }}</label>
                 <input type="number" step="0.01" min="0.01" inputmode="decimal" formControlName="amount" />
+                <app-field-error [message]="fe(repayForm, 'amount', repaySubmitted)"></app-field-error>
               </div>
               <div class="invoice-loans__modal-field">
                 <label>{{ 'admin.invoiceLoans.payMode' | translate }}</label>
@@ -223,6 +233,23 @@ export class AdvanceLoansComponent implements OnInit {
   private detailLoanId: string | null = null;
   saving = false;
   repaySaving = false;
+  submitted = false;
+  repaySubmitted = false;
+  issues: FormIssue[] = [];
+  repayIssues: FormIssue[] = [];
+  private labels: Record<string, string> = { associateId: 'Associate', loanDate: 'Loan date', amount: 'Amount' };
+  private repayLabels: Record<string, string> = { paymentDate: 'Payment date', amount: 'Amount' };
+
+  fe(f: FormGroup, name: string, submitted: boolean): string | undefined {
+    const c = f.get(name);
+    if (!c || !(c.touched || submitted)) {
+      return undefined;
+    }
+    if (name === 'associateId' && c.errors?.['required']) {
+      return 'Associate is required. Start typing and pick one from the suggestions.';
+    }
+    return errorMessage(c, (f === this.form ? this.labels : this.repayLabels)[name]);
+  }
 
   private readonly defaults = { associateText: '', associateId: '', loanDate: '', amount: 0, payMode: 'CASH' as PayMode, bankName: '', instrumentNo: '', remarks: '' };
   form = this.fb.nonNullable.group({
@@ -267,6 +294,8 @@ export class AdvanceLoansComponent implements OnInit {
 
   openAdd(): void {
     this.formError = null;
+    this.submitted = false;
+    this.issues = [];
     this.form.reset(this.defaults);
     this.picked = null;
     this.previousDues = 0;
@@ -353,9 +382,13 @@ export class AdvanceLoansComponent implements OnInit {
       return;
     }
     this.formError = null;
+    this.submitted = true;
+    this.form.markAllAsTouched();
+    this.issues = collectIssues(this.form, this.labels).map(i => ({ ...i, id: i.id === 'associateId' ? 'associateText' : i.id }));
+    if (this.issues.some(i => i.id === 'associateText')) {
+      this.issues.find(i => i.id === 'associateText')!.message = this.fe(this.form, 'associateId', true)!;
+    }
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      this.formError = this.translate.instant(this.form.value.associateId ? 'admin.invoiceLoans.requiredError' : 'admin.invoiceLoans.pickAssociateError');
       return;
     }
     const v = this.form.getRawValue();
@@ -389,6 +422,8 @@ export class AdvanceLoansComponent implements OnInit {
   openRepay(loan: LoanRow): void {
     this.repayLoan = loan;
     this.repayError = null;
+    this.repaySubmitted = false;
+    this.repayIssues = [];
     this.repayForm.reset(this.repayDefaults);
     this.repaySaving = false;
     this.repayOpen = true;
@@ -399,9 +434,10 @@ export class AdvanceLoansComponent implements OnInit {
       return;
     }
     this.repayError = null;
+    this.repaySubmitted = true;
+    this.repayForm.markAllAsTouched();
+    this.repayIssues = collectIssues(this.repayForm, this.repayLabels);
     if (this.repayForm.invalid) {
-      this.repayForm.markAllAsTouched();
-      this.repayError = this.translate.instant('admin.invoiceLoans.requiredError');
       return;
     }
     const v = this.repayForm.getRawValue();

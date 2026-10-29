@@ -7,6 +7,7 @@ import { takeUntil } from 'rxjs/operators';
 import { ChecklistRowComponent, ChecklistRowTone } from '../../../shared/components/checklist-row/checklist-row.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { BrandButtonComponent } from '../../../shared/components/brand-button/brand-button.component';
+import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { StatTileComponent } from '../../../shared/components/stat-tile/stat-tile.component';
 import { SetupService } from '../../setup.service';
 import { SetupInspectorService, SetupStepController } from '../../setup-inspector.service';
@@ -22,7 +23,8 @@ import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-s
     ChecklistRowComponent,
     InlineBannerComponent,
     BrandButtonComponent,
-    StatTileComponent
+    StatTileComponent,
+    FieldErrorComponent
   ],
   template: `
     <div class="review-launch-step" *ngIf="(state$ | async) as state">
@@ -74,6 +76,7 @@ import { SetupStateResponse, STEP_PATHS, StepStatus } from '../../models/setup-s
             <input type="checkbox" [checked]="termsAccepted" (change)="termsAccepted = $any($event.target).checked" />
             {{ 'setup.reviewLaunch.termsLabel' | translate }}
           </label>
+          <app-field-error [message]="termsAccepted ? undefined : 'Terms are not accepted yet. Tick the box above to enable Go Live.'"></app-field-error>
           <div class="review-launch-step__terms-links">
             <a routerLink="/terms" target="_blank">{{ 'setup.reviewLaunch.termsLinkLabel' | translate }}</a>
             <a routerLink="/privacy" target="_blank">{{ 'setup.reviewLaunch.privacyLinkLabel' | translate }}</a>

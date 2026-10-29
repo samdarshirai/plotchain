@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
+import { FieldErrorComponent } from '../shared/components/field-error/field-error.component';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { formatInr } from '../shared/utils/plot-grid.util';
 import { EmiReportRow, ReportsService } from './reports.service';
@@ -9,7 +10,7 @@ import { EmiReportRow, ReportsService } from './reports.service';
 @Component({
   selector: 'app-emi-report',
   standalone: true,
-  imports: [CommonModule, TranslateModule, InlineBannerComponent],
+  imports: [CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
   template: `
     <div class="report" [attr.aria-busy]="loading">
       <h1>{{ 'reports.emi.title' | translate }}</h1>
@@ -21,6 +22,7 @@ import { EmiReportRow, ReportsService } from './reports.service';
           <input type="date" [value]="to" (change)="to = $any($event.target).value; load()">
         </label>
       </div>
+      <app-field-error [message]="rangeError"></app-field-error>
       <app-inline-banner *ngIf="error" tone="danger">
         {{ 'reports.loadError' | translate }}
         <button type="button" (click)="load()">{{ 'plotBookings.retryAction' | translate }}</button>
@@ -68,7 +70,12 @@ export class EmiReportComponent {
 
   constructor() { this.load(); }
 
+  get rangeError(): string | undefined {
+    return this.from && this.to && this.from > this.to ? 'From date is after To date. Pick a From date on or before the To date.' : undefined;
+  }
+
   load(): void {
+    if (this.rangeError) return;
     const seq = ++this.seq;
     this.loading = true;
     this.error = false;

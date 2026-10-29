@@ -26,6 +26,14 @@ describe('NewMessageComponent', () => {
     httpMock.expectNone(URL);
   });
 
+  it('shows the error summary on empty submit', () => {
+    component.send();
+    fixture.detectChanges();
+    expect(component.issues.length).toBe(2);
+    expect(fixture.nativeElement.querySelector('app-error-summary .error-summary')).toBeTruthy();
+    httpMock.expectNone(URL);
+  });
+
   it('posts trimmed subject/message and navigates to /messages', () => {
     const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
     component.form.setValue({ subject: ' Hi ', description: ' Need help ' });

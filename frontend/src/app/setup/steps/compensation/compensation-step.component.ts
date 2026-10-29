@@ -11,12 +11,22 @@ import { StatTileComponent } from '../../../shared/components/stat-tile/stat-til
 import { ToggleGroupComponent, ToggleOption } from '../../../shared/components/toggle-group/toggle-group.component';
 import { EditableTableColumn, EditableTableComponent } from '../../../shared/components/editable-table/editable-table.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
+import { ErrorSummaryComponent } from '../../../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues, errorMessage } from '../../../shared/validation/validation';
 import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { CompensationPlanService } from './compensation-plan.service';
 import { computeSampleEarnings, SampleEarningsResult } from './sample-earnings';
 import { SetupService } from '../../setup.service';
 import { SetupInspectorService, SetupStepController } from '../../setup-inspector.service';
 import { CompensationPlanRequest, SettlementCycle } from '../../models/compensation-plan.model';
+
+const LABELS: Record<string, string> = {
+  directIncomePct: 'Direct income %', matchingIncomePct: 'Matching income %', sponsorMatchingPct: 'Sponsor matching %',
+  tdsPct: 'TDS %', adminChargeWithPanPct: 'Admin charge (with PAN) %', adminChargeWithoutPanPct: 'Admin charge (without PAN) %',
+  activationFee: 'Activation fee'
+};
+// ponytail: minWithdrawal/settlementCycle stay un-surfaced -- minWithdrawal is intentionally hidden (QA B2), settlementCycle is a
+// defaulted toggle that cannot be invalid; royalty/reward table cells already gate on isComplete*Row, add cell errors if needed.
 
 const DEFAULT_SCENARIO_VOLUME = 1000000; // spec example: "sells ₹10L on each leg"
 
@@ -66,6 +76,7 @@ const RENDERED_FIELD_ERROR_KEYS = [
     ReactiveFormsModule,
     TranslateModule,
     FieldErrorComponent,
+    ErrorSummaryComponent,
     InlineBannerComponent,
     StatTileComponent,
     ToggleGroupComponent,
@@ -82,7 +93,9 @@ const RENDERED_FIELD_ERROR_KEYS = [
         <p class="compensation-step__subtitle">{{ 'setup.compensation.subtitle' | translate }}</p>
       </div>
 
-      <form class="card compensation-step__card" [formGroup]="form">
+      <form class="card compensation-step__card" [formGroup]="form" [class.was-submitted]="submitted" novalidate>
+        <app-error-summary [issues]="issues"></app-error-summary>
+        <app-error-summary [issues]="issues"></app-error-summary>
         <app-inline-banner tone="info">
           {{ 'setup.compensation.versioningNotice' | translate }}
         </app-inline-banner>
@@ -422,6 +435,8 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
   @Input() mode: 'setup' | 'settings' = 'setup';
 
   savedJustNow = false;
+  submitted = false;
+  issues: FormIssue[] = [];
   stepNumber = 1;
   stepCount = 1;
   submitError: string | null = null;
@@ -507,6 +522,9 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
 
   // SetupStepController: lets SetupStepNavComponent block Next on an invalid required field.
   isStepValid(): boolean {
+    this.submitted = true;
+    this.form.markAllAsTouched();
+    this.issues = collectIssues(this.form, LABELS, this.serverFieldErrors);
     return this.form.valid;
   }
 
@@ -642,13 +660,7 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     if (!control || !control.touched || !control.errors) {
       return undefined;
     }
-    if (control.errors['required']) {
-      return this.translate.instant('setup.compensation.validation.required');
-    }
-    if (control.errors['min'] || control.errors['max']) {
-      return this.translate.instant('setup.compensation.validation.range');
-    }
-    return undefined;
+    return errorMessage(control, LABELS[name]);
   }
 
   private recomputeSampleEarnings(): void {

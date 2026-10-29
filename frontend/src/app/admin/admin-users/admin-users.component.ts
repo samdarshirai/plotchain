@@ -8,12 +8,14 @@ import { toFieldErrors } from '../../core/api/field-errors.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues, errorMessage, format } from '../../shared/validation/validation';
 import { titleCase } from '../../shared/utils/title-case';
 
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   providers: [DatePipe],
   template: `
     <div class="admin-users">
@@ -85,7 +87,8 @@ import { titleCase } from '../../shared/utils/title-case';
           {{ (editing ? 'admin.adminUsers.editTitle' : 'admin.adminUsers.addTitle') | translate }}
         </div>
         <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
-        <form [formGroup]="form" (ngSubmit)="save()">
+        <form [formGroup]="form" [class.was-submitted]="submitted" (ngSubmit)="save()" novalidate>
+          <app-error-summary [issues]="issues"></app-error-summary>
           <div class="admin-users__modal-fields">
             <div class="admin-users__modal-field">
               <label>{{ 'admin.adminUsers.userId' | translate }}</label>
@@ -145,10 +148,13 @@ export class AdminUsersComponent implements OnInit {
   editing: AdminUser | null = null;
   formError: string | null = null;
   private serverFieldErrors: Record<string, string> = {};
+  submitted = false;
+  issues: FormIssue[] = [];
+  private labels = { userId: 'User ID', name: 'Operator name', phone: 'Mobile number', email: 'Email' };
   form = this.fb.nonNullable.group({
     userId: ['', Validators.required],
     name: ['', Validators.required],
-    phone: ['', Validators.required],
+    phone: ['', [Validators.required, format('phone')]],
     email: ['', Validators.email],
     status: ['ACTIVE' as 'ACTIVE' | 'SUSPENDED']
   });
@@ -172,6 +178,8 @@ export class AdminUsersComponent implements OnInit {
     this.editing = user;
     this.serverFieldErrors = {};
     this.formError = null;
+    this.submitted = false;
+    this.issues = [];
     this.form.reset({
       userId: user?.userId ?? '',
       name: user?.name ?? '',
@@ -187,17 +195,19 @@ export class AdminUsersComponent implements OnInit {
       return this.serverFieldErrors[name];
     }
     const control = this.form.get(name);
-    if (!control || !control.touched || !control.errors) {
+    if (!control || !(control.touched || this.submitted)) {
       return undefined;
     }
-    return this.translate.instant(control.errors['required'] ? 'admin.adminUsers.requiredError' : 'admin.adminUsers.invalidError');
+    return errorMessage(control, this.labels[name as keyof typeof this.labels]);
   }
 
   save(): void {
     this.serverFieldErrors = {};
     this.formError = null;
+    this.submitted = true;
+    this.form.markAllAsTouched();
+    this.issues = collectIssues(this.form, this.labels);
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
       return;
     }
     const raw = this.form.getRawValue();
@@ -213,6 +223,7 @@ export class AdminUsersComponent implements OnInit {
         const fields = toFieldErrors(err);
         if (Object.keys(fields).length > 0) {
           this.serverFieldErrors = fields;
+          this.issues = collectIssues(this.form, this.labels, fields);
           return;
         }
         this.formError = (err.error as { error?: string } | null)?.error ?? this.translate.instant('admin.adminUsers.saveError');

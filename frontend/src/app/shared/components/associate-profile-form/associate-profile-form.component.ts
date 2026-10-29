@@ -6,7 +6,15 @@ import { Observable } from 'rxjs';
 import { PasswordToggleDirective } from '../../directives/password-toggle.directive';
 import { InlineBannerComponent } from '../inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../field-error/field-error.component';
+import { ErrorSummaryComponent } from '../error-summary/error-summary.component';
 import { INDIA_STATE_OPTIONS } from '../../india-states';
+import { FormIssue, collectIssues, errorMessage, format } from '../../validation/validation';
+
+const LABELS: Record<string, string> = {
+  sponsorUserId: 'Sponsor ID', position: 'Position', name: 'Name', panNumber: 'PAN', aadhaarNumber: 'Aadhaar number',
+  email: 'Email', phone: 'Mobile', state: 'State', district: 'District', address: 'Address', postalCode: 'Pincode',
+  transactionPassword: 'Transaction password'
+};
 
 export interface AssociateProfileValue {
   sponsorUserId: string;
@@ -35,11 +43,12 @@ export interface AssociateProfileValue {
 @Component({
   selector: 'app-associate-profile-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, PasswordToggleDirective],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent, PasswordToggleDirective],
   styleUrl: './associate-profile-form.component.scss',
   template: `
-    <form #formEl class="associate-profile-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <form #formEl class="associate-profile-form" [formGroup]="form" [class.was-submitted]="submitAttempted" (ngSubmit)="submit()" novalidate>
       <div class="associate-profile-form__card">
+        <app-error-summary [issues]="issues"></app-error-summary>
         <ng-content></ng-content>
 
         <section class="associate-profile-form__section associate-profile-form__section--7">
@@ -124,7 +133,8 @@ export interface AssociateProfileValue {
               <app-field-error [message]="err('address')"></app-field-error>
             </label>
             <label class="associate-profile-form__field">{{ 'epinRegister.join.postalCode' | translate }}
-              <input class="associate-profile-form__input" formControlName="postalCode" placeholder="Zip Code" />
+              <input class="associate-profile-form__input" formControlName="postalCode" placeholder="Zip Code" inputmode="numeric" maxlength="6" />
+              <app-field-error [message]="err('postalCode')"></app-field-error>
             </label>
           </div>
         </section>
@@ -187,23 +197,24 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
   formError = '';
   sponsorName = '';
   submitAttempted = false;
+  issues: FormIssue[] = [];
 
   form = this.fb.nonNullable.group({
     sponsorUserId: [''],
     position: [''],
     name: ['', Validators.required],
     fatherHusbandName: [''],
-    panNumber: ['', [Validators.required, Validators.pattern(/^[A-Z]{5}[0-9]{4}[A-Z]$/)]],
-    aadhaarNumber: ['', [Validators.required, Validators.pattern(/^[0-9]{12}$/)]],
+    panNumber: ['', [Validators.required, format('pan')]],
+    aadhaarNumber: ['', [Validators.required, format('aadhaar')]],
     dateOfBirth: [''],
     gender: ['MALE'],
     maritalStatus: ['SINGLE'],
     email: ['', Validators.email],
-    phone: ['', [Validators.required, Validators.pattern(/^[+]?[0-9]{10,15}$/)]],
+    phone: ['', [Validators.required, format('phone')]],
     state: ['', Validators.required],
     district: ['', Validators.required],
     address: ['', Validators.required],
-    postalCode: [''],
+    postalCode: ['', format('pincode')],
     nomineeName: [''],
     nomineeRelation: [''],
     transactionPassword: ['']
@@ -212,6 +223,7 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
   ngOnInit(): void { this.syncValidators(); this.applyPreset(); }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['serverErrors'] && this.submitAttempted) { this.issues = collectIssues(this.form, LABELS, this.serverErrors); }
     if (changes['sponsorRequired'] || changes['showTransactionPassword']) { this.syncValidators(); }
     if ((changes['presetSponsorUserId'] || changes['presetPosition']) && !changes['presetSponsorUserId']?.firstChange) { this.applyPreset(); }
   }
@@ -235,6 +247,7 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
     this.form.reset();
     this.sponsorName = '';
     this.submitAttempted = false;
+    this.issues = [];
     this.applyPreset();
   }
 
@@ -254,11 +267,7 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
     const c = this.form.get(control);
     if (this.serverErrors[control]) { return this.serverErrors[control]; }
     if (!c || !c.invalid || !(c.touched || this.submitAttempted)) { return undefined; }
-    return c.errors?.['required'] ? 'Required'
-      : control === 'panNumber' ? 'Format: ABCDE1234F'
-      : control === 'aadhaarNumber' ? '12 digits'
-      : control === 'phone' ? '10-15 digits'
-      : control === 'email' ? 'Invalid email' : 'Invalid';
+    return errorMessage(c, LABELS[control]);
   }
 
   lookupSponsor(): void {
@@ -273,8 +282,9 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
     this.submitAttempted = true;
     this.form.markAllAsTouched();
     this.formError = '';
+    this.issues = collectIssues(this.form, LABELS);
     if (this.form.invalid) {
-      this.formError = 'epinRegister.join.errorInvalid';
+      this.formError = '';
       this.focusFirstError();
       return;
     }

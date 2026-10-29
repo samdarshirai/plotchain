@@ -12,6 +12,7 @@ import { SidePanelComponent } from '../../shared/components/side-panel/side-pane
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { CompensationPlanService } from '../../setup/steps/compensation/compensation-plan.service';
 import { RankOption } from '../../setup/models/compensation-plan.model';
+import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/tab-bar.component';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { titleCase } from '../../shared/utils/title-case';
@@ -30,7 +31,7 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
 @Component({
   selector: 'app-associate-directory',
   standalone: true,
-  imports: [CommonModule, TranslateModule, SidePanelComponent, InlineBannerComponent, NewAssociatePanelComponent, EditableTableComponent, TabBarComponent],
+  imports: [CommonModule, TranslateModule, SidePanelComponent, InlineBannerComponent, NewAssociatePanelComponent, EditableTableComponent, TabBarComponent, FieldErrorComponent],
   template: `
     <div class="associate-directory">
       <div class="associate-directory__header">
@@ -101,6 +102,7 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
           <div class="associate-directory__filter-field">
             <label>{{ 'admin.associateDirectory.joinedToLabel' | translate }}</label>
             <input type="date" (change)="onJoinedToChange($any($event.target).value)" />
+            <app-field-error [message]="rangeError"></app-field-error>
           </div>
         </div>
       </div>
@@ -459,7 +461,12 @@ export class AssociateDirectoryComponent implements OnInit {
     this.modalOpen = false;
   }
 
+  get rangeError(): string | undefined {
+    return this.joinedFrom && this.joinedTo && this.joinedFrom > this.joinedTo ? 'From date is after To date. Pick a From date on or before the To date.' : undefined;
+  }
+
   loadPage(page: number): void {
+    if (this.rangeError) return;
     this.loadError = false;
     const filters: AdminAssociateFilters = {};
     if (this.search) filters.search = this.search;

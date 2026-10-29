@@ -172,7 +172,7 @@ describe('TicketSealComponent (log)', () => {
     fill('a1', '   ', 'y'); submit(); http.expectNone('/api/admin/support-tickets');
     fill('a1', 'x', '  '); submit(); fixture.detectChanges();
     http.expectNone('/api/admin/support-tickets');
-    expect(el().textContent).toContain('admin.supportTickets.err.logRequired');
+    expect(el().textContent).toContain('Description is required');
   });
 
   it('subject input caps at 200 characters and a longer programmatic subject is blocked', () => {

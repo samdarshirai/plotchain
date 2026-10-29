@@ -7,12 +7,14 @@ import { NewsService } from './news.service';
 import { toFieldErrors } from '../../core/api/field-errors.model';
 import { EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
+import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues, errorMessage } from '../../shared/validation/validation';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 
 @Component({
   selector: 'app-news',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <div class="news">
       <div class="news__intro">
@@ -42,7 +44,8 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
       <div class="news__modal">
         <div class="news__modal-title">{{ 'admin.news.addTitle' | translate }}</div>
         <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
-        <form [formGroup]="form" (ngSubmit)="save()">
+        <form [formGroup]="form" [class.was-submitted]="submitted" (ngSubmit)="save()" novalidate>
+          <app-error-summary [issues]="issues"></app-error-summary>
           <div class="news__modal-fields">
             <div class="news__modal-field">
               <label>{{ 'admin.news.date' | translate }}</label>
@@ -80,6 +83,9 @@ export class NewsComponent implements OnInit {
   modalOpen = false;
   formError: string | null = null;
   private serverFieldErrors: Record<string, string> = {};
+  submitted = false;
+  issues: FormIssue[] = [];
+  private labels: Record<string, string> = { newsDate: 'Date', title: 'Title', body: 'Body' };
   form = this.fb.nonNullable.group({
     newsDate: ['', Validators.required],
     title: ['', Validators.required],
@@ -100,6 +106,8 @@ export class NewsComponent implements OnInit {
   openModal(): void {
     this.serverFieldErrors = {};
     this.formError = null;
+    this.submitted = false;
+    this.issues = [];
     this.form.reset({ newsDate: new Date().toISOString().slice(0, 10), title: '', body: '' });
     this.modalOpen = true;
   }
@@ -109,17 +117,19 @@ export class NewsComponent implements OnInit {
       return this.serverFieldErrors[name];
     }
     const control = this.form.get(name);
-    if (!control || !control.touched || !control.errors) {
+    if (!control || !(control.touched || this.submitted)) {
       return undefined;
     }
-    return this.translate.instant('admin.news.requiredError');
+    return errorMessage(control, this.labels[name]);
   }
 
   save(): void {
     this.serverFieldErrors = {};
     this.formError = null;
+    this.submitted = true;
+    this.form.markAllAsTouched();
+    this.issues = collectIssues(this.form, this.labels);
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
       return;
     }
     this.service.create(this.form.getRawValue()).subscribe({
@@ -131,6 +141,7 @@ export class NewsComponent implements OnInit {
         const fields = toFieldErrors(err);
         if (Object.keys(fields).length > 0) {
           this.serverFieldErrors = fields;
+      this.issues = collectIssues(this.form, this.labels, fields);
           return;
         }
         this.formError = (err.error as { error?: string } | null)?.error ?? this.translate.instant('admin.news.saveError');

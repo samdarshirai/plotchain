@@ -4,6 +4,7 @@ import { forkJoin } from 'rxjs';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MyTeamService } from './my-team.service';
 import { AdminAssociatePage, AdminAssociateFilters } from '../admin/models/admin-associate-page.model';
+import { FieldErrorComponent } from '../shared/components/field-error/field-error.component';
 import { TabBarComponent, TabDefinition } from '../shared/components/tab-bar/tab-bar.component';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
 import { titleCase } from '../shared/utils/title-case';
@@ -17,7 +18,7 @@ const VIEWS: TeamView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'];
 @Component({
   selector: 'app-my-team',
   standalone: true,
-  imports: [CommonModule, TranslateModule, EditableTableComponent, TabBarComponent],
+  imports: [CommonModule, TranslateModule, EditableTableComponent, TabBarComponent, FieldErrorComponent],
   template: `
     <div class="associate-directory">
       <div class="associate-directory__header">
@@ -54,6 +55,7 @@ const VIEWS: TeamView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'];
             <div class="associate-directory__filter-field">
               <label>{{ 'admin.associateDirectory.joinedToLabel' | translate }}</label>
               <input type="date" (change)="joinedTo = $any($event.target).value; loadPage(0)" />
+              <app-field-error [message]="rangeError"></app-field-error>
             </div>
           </div>
         </div>
@@ -116,7 +118,12 @@ export class MyTeamComponent implements OnInit {
     this.loadPage(0);
   }
 
+  get rangeError(): string | undefined {
+    return this.joinedFrom && this.joinedTo && this.joinedFrom > this.joinedTo ? 'From date is after To date. Pick a From date on or before the To date.' : undefined;
+  }
+
   loadPage(page: number): void {
+    if (this.rangeError) return;
     this.loadError = false;
     const filters: AdminAssociateFilters = {};
     if (this.search) filters.search = this.search;

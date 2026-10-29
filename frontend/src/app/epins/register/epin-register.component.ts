@@ -7,6 +7,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { EPinRegisterService, EPinType, EPinUnusedRow, EPinUsedRow } from './epin-register.service';
+import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
+import { FormIssue } from '../../shared/validation/validation';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { PagerComponent } from '../../shared/components/pager/pager.component';
 import { ExportColumn, exportCsv, printTable, toCsv } from '../../shared/utils/table-export.util';
@@ -21,7 +24,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-epin-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, PagerComponent, PasswordToggleDirective],
+  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent, PagerComponent, PasswordToggleDirective],
   providers: [DatePipe],
   styleUrl: './epin-register.component.scss',
   template: `
@@ -34,23 +37,27 @@ const PAGE_SIZE = 20;
         </div>
       </header>
 
-      <form class="epin-reg__card" *ngIf="mode === 'transfer'" (ngSubmit)="transfer()">
+      <form class="epin-reg__card" *ngIf="mode === 'transfer'" [class.was-submitted]="submitted" (ngSubmit)="transfer()" novalidate>
         <div class="epin-reg__card-head">
           <strong>{{ 'epinRegister.transferTo' | translate }}</strong>
           <span>{{ 'epinRegister.transferHint' | translate }}</span>
         </div>
+        <app-error-summary [issues]="issues"></app-error-summary>
         <div class="epin-reg__form">
           <label class="epin-reg__label">{{ 'epinRegister.noOfPin' | translate }}
-            <input class="epin-reg__input epin-reg__mono" type="number" min="1" name="count" [(ngModel)]="count" /></label>
+            <input class="epin-reg__input epin-reg__mono" type="number" min="1" name="count" id="count" [class.is-invalid]="fieldErr['count']" [(ngModel)]="count" />
+            <app-field-error [message]="fieldErr['count']"></app-field-error></label>
           <label class="epin-reg__label">{{ 'epinRegister.associateId' | translate }}
-            <input class="epin-reg__input epin-reg__mono" name="toUser" [(ngModel)]="userId" (blur)="lookup()" /></label>
+            <input class="epin-reg__input epin-reg__mono" name="toUser" id="toUser" [class.is-invalid]="fieldErr['toUser']" [(ngModel)]="userId" (blur)="lookup()" />
+            <app-field-error [message]="fieldErr['toUser']"></app-field-error></label>
           <div class="epin-reg__label">{{ 'epinRegister.associateName' | translate }}
             <div class="epin-reg__name" [class.epin-reg__name--ok]="recipientName" [class.epin-reg__name--bad]="lookupFailed">
               {{ recipientName || ((lookupFailed ? 'epins.errorNotFound' : 'epinRegister.enterAssociateId') | translate) }}
             </div>
           </div>
           <label class="epin-reg__label">{{ 'epins.passwordLabel' | translate }}
-            <input class="epin-reg__input" type="password" appPasswordToggle autocomplete="off" name="pw" [(ngModel)]="password" /></label>
+            <input class="epin-reg__input" type="password" appPasswordToggle autocomplete="off" name="pw" id="pw" [class.is-invalid]="fieldErr['pw']" [(ngModel)]="password" />
+            <app-field-error [message]="fieldErr['pw']"></app-field-error></label>
           <button type="submit" class="brand-button epin-reg__submit" [disabled]="busy">
             {{ count && count > 0 ? ('epinRegister.transferN' | translate: { count: count }) : ('epinRegister.submit' | translate) }}
           </button>
@@ -143,6 +150,9 @@ export class EPinRegisterComponent implements OnInit {
   error = '';
   success = 0;
   busy = false;
+  submitted = false;
+  issues: FormIssue[] = [];
+  fieldErr: Record<string, string> = {};
 
   ngOnInit(): void {
     this.mode = this.route.snapshot.data['mode'] as Mode;
@@ -220,12 +230,17 @@ export class EPinRegisterComponent implements OnInit {
 
   transfer(): void {
     this.success = 0;
-    if (!this.count || this.count < 1) { this.error = 'epinRegister.errorCount'; return; }
-    if (!this.userId.trim()) { this.error = 'epins.errorUserIdRequired'; return; }
-    if (!this.password.trim()) { this.error = 'epins.errorPasswordRequired'; return; }
+    this.submitted = true;
+    this.fieldErr = {};
+    if (!this.count || this.count < 1) { this.fieldErr['count'] = this.translate.instant('epinRegister.errorCount'); }
+    if (!this.userId.trim()) { this.fieldErr['toUser'] = this.translate.instant('epins.errorUserIdRequired'); }
+    if (!this.password.trim()) { this.fieldErr['pw'] = this.translate.instant('epins.errorPasswordRequired'); }
+    const labels: Record<string, string> = { count: 'No. of PINs', toUser: 'Associate ID', pw: 'Transaction password' };
+    this.issues = Object.entries(this.fieldErr).map(([id, message]) => ({ id, label: labels[id], message }));
+    if (this.issues.length) { this.error = ''; return; }
     this.busy = true;
     this.error = '';
-    this.service.transferBulk(this.count, this.userId.trim(), this.type, this.password).subscribe({
+    this.service.transferBulk(this.count!, this.userId.trim(), this.type, this.password).subscribe({
       next: r => { this.busy = false; this.success = r.transferred; this.count = null; this.password = ''; this.reload(); },
       error: e => this.fail(e)
     });

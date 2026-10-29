@@ -8,12 +8,14 @@ import { toFieldErrors } from '../../core/api/field-errors.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues, errorMessage } from '../../shared/validation/validation';
 import { titleCase } from '../../shared/utils/title-case';
 
 @Component({
   selector: 'app-expense-types',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <div class="expense-types">
       <div class="expense-types__intro">
@@ -53,7 +55,8 @@ import { titleCase } from '../../shared/utils/title-case';
           {{ (editing ? 'admin.expenseTypes.editTitle' : 'admin.expenseTypes.addTitle') | translate }}
         </div>
         <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
-        <form [formGroup]="form" (ngSubmit)="save()">
+        <form [formGroup]="form" [class.was-submitted]="submitted" (ngSubmit)="save()" novalidate>
+          <app-error-summary [issues]="issues"></app-error-summary>
           <div class="expense-types__modal-fields">
             <div class="expense-types__modal-field">
               <label>{{ 'admin.expenseTypes.expenseType' | translate }}</label>
@@ -91,6 +94,9 @@ export class ExpenseTypesComponent implements OnInit {
   editing: ExpenseType | null = null;
   formError: string | null = null;
   private serverFieldErrors: Record<string, string> = {};
+  submitted = false;
+  issues: FormIssue[] = [];
+  private labels: Record<string, string> = { name: 'Expense type' };
   form = this.fb.nonNullable.group({
     name: ['', Validators.required],
     status: ['ACTIVE' as ExpenseTypeStatus]
@@ -111,6 +117,8 @@ export class ExpenseTypesComponent implements OnInit {
     this.editing = item;
     this.serverFieldErrors = {};
     this.formError = null;
+    this.submitted = false;
+    this.issues = [];
     this.form.reset({ name: item?.name ?? '', status: item?.status ?? 'ACTIVE' });
     this.modalOpen = true;
   }
@@ -120,17 +128,19 @@ export class ExpenseTypesComponent implements OnInit {
       return this.serverFieldErrors[name];
     }
     const control = this.form.get(name);
-    if (!control || !control.touched || !control.errors) {
+    if (!control || !(control.touched || this.submitted)) {
       return undefined;
     }
-    return this.translate.instant('admin.expenseTypes.requiredError');
+    return errorMessage(control, this.labels[name]);
   }
 
   save(): void {
     this.serverFieldErrors = {};
     this.formError = null;
+    this.submitted = true;
+    this.form.markAllAsTouched();
+    this.issues = collectIssues(this.form, this.labels);
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
       return;
     }
     const request = this.form.getRawValue();
@@ -144,6 +154,7 @@ export class ExpenseTypesComponent implements OnInit {
         const fields = toFieldErrors(err);
         if (Object.keys(fields).length > 0) {
           this.serverFieldErrors = fields;
+      this.issues = collectIssues(this.form, this.labels, fields);
           return;
         }
         this.formError = (err.error as { error?: string } | null)?.error ?? this.translate.instant('admin.expenseTypes.saveError');

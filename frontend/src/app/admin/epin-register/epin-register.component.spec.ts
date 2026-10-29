@@ -143,10 +143,11 @@ describe('EPinRegisterComponent', () => {
     flushInitial([]);
     const c = fixture.componentInstance;
     for (const n of [0, -1, 2001, 1.5, null as unknown as number]) {
-      c.actionError = '';
+      c.issues = [];
       c.generateCount = n;
       c.submitGenerate();
-      expect(c.actionError).toBe('admin.epinRegister.errorInvalid');
+      expect(c.errs['count']).toContain('whole number');
+      expect(c.issues.length).toBe(1);
     }
   });
 
@@ -155,10 +156,10 @@ describe('EPinRegisterComponent', () => {
     const c = fixture.componentInstance;
     const cases: [string, number, string][] = [['', 1, ''], ['a1', 0, ''], ['a1', 2001, ''], ['a1', 1, 'not-a-uuid']];
     for (const [a, n, b] of cases) {
-      c.actionError = '';
+      c.issues = [];
       c.allocateAssociateId = a; c.allocateCount = n; c.allocateBatchId = b;
       c.submitAllocate();
-      expect(c.actionError).toBe('admin.epinRegister.errorInvalid');
+      expect(c.issues.length).toBe(1);
     }
   });
 
@@ -178,11 +179,11 @@ describe('EPinRegisterComponent', () => {
     const c = fixture.componentInstance;
     c.openPanel({ kind: 'redeem', epin: pin() as never });
     c.submitRedeem();
-    expect(c.actionError).toBe('admin.epinRegister.errorInvalid');
+    expect(c.errs['associate']).toContain('Associate is required');
     c.openPanel({ kind: 'block', epin: pin() as never });
     c.panelReason = '   ';
     c.submitBlock();
-    expect(c.actionError).toBe('admin.epinRegister.errorInvalid');
+    expect(c.errs['reason']).toContain('Reason is required');
   });
 
   it('redeems then reloads', () => {

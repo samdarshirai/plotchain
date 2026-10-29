@@ -15,12 +15,14 @@ import { toFieldErrors } from '../../core/api/field-errors.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues, errorMessage } from '../../shared/validation/validation';
 import { titleCase } from '../../shared/utils/title-case';
 
 @Component({
   selector: 'app-master-projects',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <div class="master-projects">
       <div class="master-projects__intro">
@@ -84,7 +86,8 @@ import { titleCase } from '../../shared/utils/title-case';
           {{ (editing ? 'admin.masterProjects.editTitle' : 'admin.masterProjects.addTitle') | translate }}
         </div>
         <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
-        <form [formGroup]="form" (ngSubmit)="save()">
+        <form [formGroup]="form" [class.was-submitted]="submitted" (ngSubmit)="save()" novalidate>
+          <app-error-summary [issues]="issues"></app-error-summary>
           <div class="master-projects__modal-fields">
             <div class="master-projects__modal-field master-projects__modal-field--wide">
               <label>{{ 'admin.masterProjects.projectName' | translate }}</label>
@@ -159,6 +162,9 @@ export class MasterProjectsComponent implements OnInit, OnDestroy {
   editing: MasterProject | null = null;
   formError: string | null = null;
   private serverFieldErrors: Record<string, string> = {};
+  submitted = false;
+  issues: FormIssue[] = [];
+  private labels: Record<string, string> = { name: 'Project name', city: 'City', state: 'State', businessPercentage: 'Business percentage', ratePerSqft: 'Rate per sq ft' };
   private files: Partial<Record<MasterProjectMapKind, File>> = {};
   form = this.fb.nonNullable.group({
     name: ['', Validators.required],
@@ -195,6 +201,8 @@ export class MasterProjectsComponent implements OnInit, OnDestroy {
     this.editing = project;
     this.serverFieldErrors = {};
     this.formError = null;
+    this.submitted = false;
+    this.issues = [];
     this.files = {};
     this.form.reset({
       name: project?.name ?? '',
@@ -222,17 +230,19 @@ export class MasterProjectsComponent implements OnInit, OnDestroy {
       return this.serverFieldErrors[name];
     }
     const control = this.form.get(name);
-    if (!control || !control.touched || !control.errors) {
+    if (!control || !(control.touched || this.submitted)) {
       return undefined;
     }
-    return this.translate.instant(control.errors['required'] ? 'admin.masterProjects.requiredError' : 'admin.masterProjects.invalidError');
+    return errorMessage(control, this.labels[name]);
   }
 
   save(): void {
     this.serverFieldErrors = {};
     this.formError = null;
+    this.submitted = true;
+    this.form.markAllAsTouched();
+    this.issues = collectIssues(this.form, this.labels);
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
       return;
     }
     const request = this.form.getRawValue();
@@ -293,6 +303,7 @@ export class MasterProjectsComponent implements OnInit, OnDestroy {
     const fields = toFieldErrors(err);
     if (Object.keys(fields).length > 0) {
       this.serverFieldErrors = fields;
+      this.issues = collectIssues(this.form, this.labels, fields);
       return;
     }
     this.formError = (err.error as { error?: string } | null)?.error ?? this.translate.instant(`admin.masterProjects.${fallbackKey}`);

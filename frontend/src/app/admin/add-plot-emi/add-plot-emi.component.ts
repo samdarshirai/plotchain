@@ -11,6 +11,8 @@ import { BookingPage, RegisterFilters } from '../admin-bookings-emi/bookings-emi
 import { collectPages, formatMoney, plotText, utcDate } from '../admin-bookings-emi/bookings-emi.util';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
+import { FormIssue } from '../../shared/validation/validation';
 import { ExportColumn, copyTable, exportCsv, exportExcel, printTable } from '../../shared/utils/table-export.util';
 
 const PAGE_SIZE = 20;
@@ -21,7 +23,7 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['./add-plot-emi.component.scss'],
-  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <div class="add-plot-emi">
       <div class="add-plot-emi__intro">
@@ -122,7 +124,8 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
     </div>
 
     <div class="add-plot-emi__overlay" *ngIf="payFor as b" (keydown.escape)="closePay()">
-      <form class="add-plot-emi__modal" role="dialog" aria-modal="true" aria-labelledby="ape-pay-title" (ngSubmit)="submit()" novalidate>
+      <form class="add-plot-emi__modal" role="dialog" aria-modal="true" aria-labelledby="ape-pay-title" [class.was-submitted]="tried" (ngSubmit)="submit()" novalidate>
+        <app-error-summary [issues]="issues"></app-error-summary>
         <h2 class="add-plot-emi__modal-title" id="ape-pay-title">{{ 'admin.addPlotEmi.payTitle' | translate }}</h2>
         <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
 
@@ -304,6 +307,7 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
   txnNo = '';
   txnDate = '';
   tried = false;
+  issues: FormIssue[] = [];
   saving = false;
   formError = '';
 
@@ -468,6 +472,7 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
     this.txnNo = '';
     this.txnDate = this.today;
     this.tried = false;
+    this.issues = [];
     this.formError = '';
   }
 
@@ -484,6 +489,14 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
     const b = this.payFor;
     if (!b || this.saving) { return; }
     this.tried = true;
+    const t = (k: string) => this.translate.instant(`admin.addPlotEmi.err.${k}`);
+    this.issues = [
+      ...(this.amountInvalid ? [{ id: 'amount', label: 'Amount', message: t('amount') }] : []),
+      ...(!this.mode ? [{ id: 'mode', label: 'Payment mode', message: t('mode') }] : []),
+      ...(this.bankInvalid ? [{ id: 'bank', label: 'Bank name', message: t('bank') }] : []),
+      ...(!this.txnNo.trim() ? [{ id: 'txnNo', label: 'Transaction number', message: t('txn') }] : []),
+      ...(this.dateInvalid ? [{ id: 'txnDate', label: 'Transaction date', message: t('date') }] : [])
+    ];
     if (this.amountInvalid || !this.mode || this.bankInvalid || !this.txnNo.trim() || this.dateInvalid) { return; }
     this.saving = true;
     this.formError = '';

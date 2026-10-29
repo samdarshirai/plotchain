@@ -362,7 +362,7 @@ describe('AdvanceLoansComponent add popup', () => {
     const c = fixture.componentInstance;
     c.openAdd();
     c.save();
-    expect(c.formError).toBeTruthy();
+    expect(c.issues.length).toBeGreaterThan(0);
     c.pickAssociate('VP00001 — Asha');
     expect(c.formError).toBeNull();
     httpMock.expectOne(r => r.url === '/api/admin/advance-loans/dues').flush({ associateId: 'a1', outstanding: 0 });

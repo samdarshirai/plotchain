@@ -160,6 +160,8 @@ class AuthServiceTest {
         associate.setPasswordHash(passwordEncoder.encode("Password123!"));
         when(associateRepository.findByUserId("jane")).thenReturn(Optional.of(associate));
         stubLaunched(true);
+        Instant earlier = Instant.parse("2026-10-12T12:00:00Z");
+        associate.setLastActiveAt(earlier);
 
         LoginResponse response = authService.login(new LoginRequest("jane", "Password123!"));
 
@@ -169,7 +171,8 @@ class AuthServiceTest {
 
         ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
         verify(associateRepository).save(saved.capture());
-        assertThat(saved.getValue().getLastActiveAt()).isNotNull();
+        assertThat(saved.getValue().getPreviousLoginAt()).isEqualTo(earlier);
+        assertThat(saved.getValue().getLastActiveAt()).isAfter(earlier);
     }
 
     @Test

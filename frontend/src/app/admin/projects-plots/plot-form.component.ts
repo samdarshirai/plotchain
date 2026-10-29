@@ -2,13 +2,15 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
+import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
+import { FormIssue } from '../../shared/validation/validation';
 import { Plot, PlotRequest, PlotType } from '../../setup/models/project.model';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 
 @Component({
   selector: 'app-plot-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, FieldErrorComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <ng-container *ngIf="locked; else editable">
       <h2 class="plot-form__title">{{ 'admin.projectsPlots.editLockedTitle' | translate }}</h2>
@@ -18,7 +20,8 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
       </button>
     </ng-container>
     <ng-template #editable>
-      <form class="plot-form" (submit)="submit($event)" novalidate>
+      <form class="plot-form" [class.was-submitted]="submitted_" (submit)="submit($event)" novalidate>
+        <app-error-summary [issues]="issues"></app-error-summary>
         <h2 class="plot-form__title">{{ (plot ? 'admin.projectsPlots.editPlotAction' : 'admin.projectsPlots.addPlotAction') | translate }}</h2>
         <label>{{ 'admin.projectsPlots.plotNoLabel' | translate }}
           <input type="text" name="plotNo" maxlength="50" [(ngModel)]="plotNo" [attr.aria-invalid]="plotNoInvalid" />
@@ -74,6 +77,7 @@ export class PlotFormComponent implements OnChanges {
   extraPrice: number | null = 0;
   roadSizeFt: number | null = null;
   submitted_ = false;
+  issues: FormIssue[] = [];
 
   ngOnChanges(c: SimpleChanges): void {
     if (!this.plot && this.rate == null && this.defaultRate) { this.rate = this.defaultRate; }
@@ -100,6 +104,14 @@ export class PlotFormComponent implements OnChanges {
   submit(e: Event): void {
     e.preventDefault();
     this.submitted_ = true;
+    const add = (id: string, label: string, message: string) => this.issues.push({ id, label, message });
+    this.issues = [];
+    if (this.duplicatePlotNo) { add('plotNo', 'Plot number', 'Plot number already exists in this project. Use a different number.'); }
+    else if (!this.plotNo.trim()) { add('plotNo', 'Plot number', 'Plot number is required. Please fill it in.'); }
+    if (!this.positive(this.areaSqft)) { add('areaSqft', 'Area', 'Area must be greater than 0. Enter the plot size in sq ft.'); }
+    if (!this.positive(this.rate)) { add('rate', 'Rate', 'Rate must be greater than 0. Enter the price per sq ft.'); }
+    if (!this.validExtra) { add('extraPrice', 'Extra price', 'Extra price cannot be negative. Enter 0 or more.'); }
+    if (!this.validRoad) { add('roadSizeFt', 'Road size', 'Road size cannot be negative. Enter 0 or more.'); }
     if (!this.plotNo.trim() || !this.positive(this.areaSqft) || !this.positive(this.rate) || !this.validExtra || !this.validRoad) { return; }
     this.submitted.emit({
       plotNo: this.plotNo.trim(), plotType: this.plotType,

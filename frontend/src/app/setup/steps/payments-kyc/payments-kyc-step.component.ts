@@ -9,6 +9,8 @@ import { FieldErrorComponent } from '../../../shared/components/field-error/fiel
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { ToggleGroupComponent, ToggleOption } from '../../../shared/components/toggle-group/toggle-group.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
+import { ErrorSummaryComponent } from '../../../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues, errorMessage, format } from '../../../shared/validation/validation';
 import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { PaymentsKycService } from './payments-kyc.service';
 import { SetupService } from '../../setup.service';
@@ -21,7 +23,8 @@ import {
   WithdrawalConfigRequest
 } from '../../models/payments-kyc.model';
 
-const IFSC_CODE_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+const PAY_LABELS: Record<string, string> = { gateway: 'Payment gateway' };
+const PAYOUT_LABELS: Record<string, string> = { bankName: 'Bank name', accountHolder: 'Account holder', accountNumber: 'Account number', ifscCode: 'IFSC code' };
 
 // The spec never enumerates gateway options -- these are a sensible Indian-market default set;
 // the backend accepts any non-blank gateway string (see PaymentConfigRequest). Icons are purely
@@ -51,6 +54,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
     ReactiveFormsModule,
     TranslateModule,
     FieldErrorComponent,
+    ErrorSummaryComponent,
     InlineBannerComponent,
     ToggleGroupComponent,
     SetupStepNavComponent
@@ -65,9 +69,10 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
         <p class="payments-kyc-step__subtitle">{{ 'setup.paymentsKyc.subtitle' | translate }}</p>
       </div>
 
+      <app-error-summary [issues]="issues"></app-error-summary>
       <div class="payments-kyc-step__grid">
       <div class="payments-kyc-step__grid-col payments-kyc-step__grid-col--primary">
-      <form class="card payments-kyc-step__card payments-kyc-step__card--payment" [formGroup]="paymentForm">
+      <form class="card payments-kyc-step__card payments-kyc-step__card--payment" [formGroup]="paymentForm" [class.was-submitted]="submitted" novalidate>
         <h2 class="payments-kyc-step__section-title">
           <span class="material-symbols-outlined">credit_card</span>
           {{ 'setup.paymentsKyc.paymentCollectionTitle' | translate }}
@@ -137,7 +142,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
       </form>
 
       <div class="payments-kyc-step__row--split">
-        <form class="card payments-kyc-step__card payments-kyc-step__card--payout" [formGroup]="payoutForm">
+        <form class="card payments-kyc-step__card payments-kyc-step__card--payout" [formGroup]="payoutForm" [class.was-submitted]="submitted" novalidate>
           <h2 class="payments-kyc-step__section-title">
             <span class="material-symbols-outlined">account_balance</span>
             {{ 'setup.paymentsKyc.payoutAccountTitle' | translate }}
@@ -209,11 +214,13 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
           <label *ngIf="approvalMode === 'AUTO_UNDER_LIMIT'">
             {{ 'setup.paymentsKyc.autoApproveLimitLabel' | translate }}
             <input type="number" [value]="autoApproveLimit" (input)="setAutoApproveLimit($event)" />
+            <app-field-error [message]="withdrawalHint('autoApproveLimit')"></app-field-error>
           </label>
 
           <label>
             {{ 'setup.paymentsKyc.minimumWithdrawalAmountLabel' | translate }}
             <input type="number" [value]="minimumWithdrawalAmount" (input)="setMinimumWithdrawalAmount($event)" />
+            <app-field-error [message]="withdrawalHint('minimumWithdrawalAmount')"></app-field-error>
           </label>
 
           <div class="payments-kyc-step__withdrawal-flow">
@@ -288,6 +295,7 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
           <label>
             {{ 'setup.paymentsKyc.defaultInstallmentCountLabel' | translate }}
             <input type="number" min="1" [value]="defaultInstallmentCount" (input)="setDefaultInstallmentCount($event)" />
+            <app-field-error [message]="withdrawalHint('defaultInstallmentCount')"></app-field-error>
           </label>
 
           <app-inline-banner *ngIf="bookingEmiSubmitError" tone="danger">{{ bookingEmiSubmitError }}</app-inline-banner>
@@ -408,8 +416,8 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
   payoutForm = this.fb.nonNullable.group({
     bankName: ['', Validators.required],
     accountHolder: ['', Validators.required],
-    accountNumber: ['', Validators.required],
-    ifscCode: ['', [Validators.required, Validators.pattern(IFSC_CODE_PATTERN)]],
+    accountNumber: ['', [Validators.required, format('accountNumber')]],
+    ifscCode: ['', [Validators.required, format('ifsc')]],
     accountType: this.fb.nonNullable.control<'CURRENT' | 'SAVINGS'>('CURRENT', Validators.required)
   });
   payoutSavedJustNow = false;
@@ -669,7 +677,32 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
   // required when approvalMode is AUTO_UNDER_LIMIT), surfaced as withdrawalSubmitError on save,
   // same as KYC/Booking & EMI have no client-side gate here either.
   isStepValid(): boolean {
+    this.submitted = true;
+    this.paymentForm.markAllAsTouched();
+    this.payoutForm.markAllAsTouched();
+    this.issues = [
+      ...collectIssues(this.paymentForm, PAY_LABELS, this.paymentServerFieldErrors),
+      ...collectIssues(this.payoutForm, PAYOUT_LABELS, this.payoutServerFieldErrors)
+    ];
     return this.paymentForm.valid && this.payoutForm.valid;
+  }
+
+  submitted = false;
+  issues: FormIssue[] = [];
+
+  /** Hint beside the plain-property numeric inputs (not FormControls); the server stays the authority. */
+  withdrawalHint(field: 'autoApproveLimit' | 'minimumWithdrawalAmount' | 'defaultInstallmentCount'): string | undefined {
+    if (field === 'autoApproveLimit') {
+      const v = this.autoApproveLimit;
+      return this.approvalMode === 'AUTO_UNDER_LIMIT' && (v === null || !(v > 0))
+        ? 'Auto-approve limit is required. Enter an amount greater than 0.' : undefined;
+    }
+    if (field === 'minimumWithdrawalAmount') {
+      const v = this.minimumWithdrawalAmount;
+      return v !== null && v < 0 ? 'Minimum withdrawal is too small. Enter 0 or more.' : undefined;
+    }
+    const n = this.defaultInstallmentCount;
+    return !Number.isInteger(n) || n < 1 ? 'Default installment count is too small. Enter a whole number, 1 or more.' : undefined;
   }
 
   ngOnDestroy(): void {
@@ -742,10 +775,7 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
     if (!control || !control.touched || !control.errors) {
       return undefined;
     }
-    if (control.errors['required']) {
-      return this.translate.instant('setup.paymentsKyc.validation.required');
-    }
-    return undefined;
+    return errorMessage(control, PAY_LABELS[name]);
   }
 
   private savePayment(): void {
@@ -803,13 +833,7 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
     if (!control || !control.touched || !control.errors) {
       return undefined;
     }
-    if (control.errors['required']) {
-      return this.translate.instant('setup.paymentsKyc.validation.required');
-    }
-    if (control.errors['pattern']) {
-      return this.translate.instant('setup.paymentsKyc.validation.ifscFormat');
-    }
-    return undefined;
+    return errorMessage(control, PAYOUT_LABELS[name]);
   }
 
   private savePayout(): void {

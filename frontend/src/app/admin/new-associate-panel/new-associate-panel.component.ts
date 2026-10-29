@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { CreateAssociateResponse } from '../models/create-associate-response.model';
+import { toFieldErrors } from '../../core/api/field-errors.model';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { AssociateProfileFormComponent, AssociateProfileValue } from '../../shared/components/associate-profile-form/associate-profile-form.component';
 
@@ -137,6 +138,7 @@ export class NewAssociatePanelComponent implements OnInit, OnChanges {
     const code = err.error?.code;
     if (err.status === 409 && code === 'PAN_TAKEN') { this.serverErrors = { panNumber: 'PAN already registered' }; return; }
     if (err.status === 409 && code === 'AADHAAR_TAKEN') { this.serverErrors = { aadhaarNumber: 'Aadhaar already registered' }; return; }
+    if (err.status === 400 && Object.keys(toFieldErrors(err)).length) { this.serverErrors = toFieldErrors(err); return; }
     this.submitError = err.status === 404 ? 'epinRegister.join.errorSponsor'
       : err.status === 409 ? this.conflictKey(err.error?.error)
       : err.status === 400 ? 'epinRegister.join.errorInvalid'

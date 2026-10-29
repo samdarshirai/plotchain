@@ -118,7 +118,7 @@ class DashboardServiceTest {
         associate.setJoinedAt(joinedAt);
         associate.setRankChangedAt(rankChangedAt);
         Instant lastLoginAt = Instant.parse("2026-10-09T08:30:00Z");
-        associate.setLastActiveAt(lastLoginAt);
+        associate.setPreviousLoginAt(lastLoginAt);
         UUID sponsorId = UUID.randomUUID();
         associate.setSponsorId(sponsorId);
 
@@ -161,8 +161,8 @@ class DashboardServiceTest {
 
         CompensationPlanVersion planVersion = compensationPlanVersion(new BigDecimal("7.00"));
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any())).thenReturn(Optional.of(planVersion));
-        // matchedVolume = min(300000, 200000) = 200000 > 0, exercises the real slab lookup.
-        when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(planVersion.getId(), new BigDecimal("200000")))
+        // matchedVolume = min(140000, 10000) = 10000 > 0, exercises the real slab lookup.
+        when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(planVersion.getId(), new BigDecimal("10000")))
             .thenReturn(Optional.of(new RoyaltyBonusRate(UUID.randomUUID(), planVersion.getId(), BigDecimal.ZERO, new BigDecimal("3.00"))));
 
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
@@ -228,8 +228,12 @@ class DashboardServiceTest {
         assertThat(response.networkSummary().directCount()).isEqualTo(8L);
         assertThat(response.networkSummary().leftAssociateCount()).isEqualTo(7L);
         assertThat(response.networkSummary().rightAssociateCount()).isEqualTo(5L);
-        assertThat(response.legVolumeSummary().leftLegVolume()).isEqualByComparingTo("300000");
-        assertThat(response.legVolumeSummary().rightLegVolume()).isEqualByComparingTo("200000");
+        // live legs = this cycle's subtree sales (40000 / 10000) + the latest closed row's carry (100000 / 0)
+        assertThat(response.legVolumeSummary().leftLegVolume()).isEqualByComparingTo("140000");
+        assertThat(response.legVolumeSummary().rightLegVolume()).isEqualByComparingTo("10000");
+        assertThat(response.legVolumeSummary().newLeftBusiness()).isEqualByComparingTo("40000");
+        assertThat(response.legVolumeSummary().newRightBusiness()).isEqualByComparingTo("10000");
+        assertThat(response.legVolumeSummary().newMatchingBusiness()).isEqualByComparingTo("10000");
         assertThat(response.legVolumeSummary().totalLeftBusiness()).isEqualByComparingTo("340000");
         assertThat(response.legVolumeSummary().totalRightBusiness()).isEqualByComparingTo("210000");
         assertThat(response.legVolumeSummary().totalSelfBusiness()).isEqualByComparingTo("500000");

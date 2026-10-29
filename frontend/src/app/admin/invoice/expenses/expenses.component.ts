@@ -1,6 +1,6 @@
 import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { AbstractControl, ReactiveFormsModule, FormBuilder, ValidationErrors, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ExpenseType, ExpenseTypesService } from '../../expense-types/expense-types.service';
@@ -8,6 +8,8 @@ import { InvoiceService, PAY_MODES, PayMode, ProjectOption, ExpenseRow, ExpenseC
 import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { EditableTableColumn, EditableTableComponent } from '../../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
+import { ErrorSummaryComponent } from '../../../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues, errorMessage } from '../../../shared/validation/validation';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 
 // Local calendar dates (not toISOString, which is UTC and can land a day early in the morning for UTC+ zones).
@@ -21,10 +23,14 @@ function last30Days(): { from: string; to: string } {
   return { from: localIsoDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29)), to: localIsoDate(now) };
 }
 
+// Bank and transaction number are mandatory for every mode except cash.
+const requiredUnlessCash = (c: AbstractControl): ValidationErrors | null =>
+  c.parent?.get('payMode')?.value !== 'CASH' && !String(c.value ?? '').trim() ? { required: true } : null;
+
 @Component({
   selector: 'app-invoice-expenses',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <div class="invoice-expenses">
       <div class="invoice-expenses__intro">
@@ -77,7 +83,8 @@ function last30Days(): { from: string; to: string } {
       <div class="invoice-expenses__modal" role="dialog" aria-modal="true" aria-labelledby="invoice-expenses-modal-title">
         <div class="invoice-expenses__modal-title" id="invoice-expenses-modal-title">{{ 'admin.invoiceExpenses.addTitle' | translate }}</div>
         <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
-        <form [formGroup]="form" (ngSubmit)="save()">
+        <form [formGroup]="form" [class.was-submitted]="submitted" (ngSubmit)="save()" novalidate>
+          <app-error-summary [issues]="issues"></app-error-summary>
           <div class="invoice-expenses__modal-fields">
             <div class="invoice-expenses__field invoice-expenses__modal-field">
               <label>{{ 'admin.invoiceExpenses.expenseDate' | translate }}</label>
@@ -118,10 +125,12 @@ function last30Days(): { from: string; to: string } {
             <div class="invoice-expenses__field invoice-expenses__modal-field">
               <label>{{ 'admin.invoiceExpenses.bankName' | translate }}</label>
               <input type="text" formControlName="bankName" />
+              <app-field-error [message]="fieldError('bankName')"></app-field-error>
             </div>
             <div class="invoice-expenses__field invoice-expenses__modal-field">
               <label>{{ 'admin.invoiceExpenses.txnNo' | translate }}</label>
               <input type="text" formControlName="txnNo" />
+              <app-field-error [message]="fieldError('txnNo')"></app-field-error>
             </div>
             <div class="invoice-expenses__field invoice-expenses__field--wide invoice-expenses__modal-field">
               <label>{{ 'admin.invoiceExpenses.remarks' | translate }}</label>
@@ -154,6 +163,11 @@ export class ExpensesComponent implements OnInit {
   saving = false;
   modalOpen = false;
   private serverFieldErrors: Record<string, string> = {};
+  submitted = false;
+  issues: FormIssue[] = [];
+  private labels: Record<string, string> = {
+    expenseDate: 'Expense date', expenseTypeId: 'Expense type', payTo: 'Pay to', amount: 'Amount', bankName: 'Bank name', txnNo: 'Transaction number'
+  };
 
   private readonly defaults = { expenseDate: '', expenseTypeId: '', projectId: '', payTo: '', amount: 0, payMode: 'CASH' as PayMode, bankName: '', txnNo: '', remarks: '' };
   form = this.fb.nonNullable.group({
@@ -163,8 +177,8 @@ export class ExpensesComponent implements OnInit {
     payTo: ['', Validators.required],
     amount: [0, [Validators.required, Validators.min(0.01)]],
     payMode: ['CASH' as PayMode, Validators.required],
-    bankName: [''],
-    txnNo: [''],
+    bankName: ['', requiredUnlessCash],
+    txnNo: ['', requiredUnlessCash],
     remarks: ['']
   });
   private readonly defaultRange = last30Days();
@@ -192,6 +206,10 @@ export class ExpensesComponent implements OnInit {
       error: () => (this.loadError = true)
     });
     this.service.projects().subscribe({ next: p => (this.projects = p), error: () => (this.loadError = true) });
+    this.form.controls.payMode.valueChanges.subscribe(() => {
+      this.form.controls.bankName.updateValueAndValidity();
+      this.form.controls.txnNo.updateValueAndValidity();
+    });
     this.filters.valueChanges.subscribe(() => this.load());
     this.load();
   }
@@ -199,6 +217,8 @@ export class ExpensesComponent implements OnInit {
   openModal(): void {
     this.serverFieldErrors = {};
     this.formError = null;
+    this.submitted = false;
+    this.issues = [];
     this.form.reset(this.defaults);
     this.modalOpen = true;
   }
@@ -211,6 +231,8 @@ export class ExpensesComponent implements OnInit {
     this.modalOpen = false;
     this.serverFieldErrors = {};
     this.formError = null;
+    this.submitted = false;
+    this.issues = [];
     this.form.reset(this.defaults);
   }
 
@@ -226,10 +248,10 @@ export class ExpensesComponent implements OnInit {
       return this.serverFieldErrors[name];
     }
     const control = this.form.get(name);
-    if (!control || !control.touched || !control.errors) {
+    if (!control || !(control.touched || this.submitted)) {
       return undefined;
     }
-    return this.translate.instant('admin.invoiceExpenses.requiredError');
+    return errorMessage(control, this.labels[name]);
   }
 
   save(): void {
@@ -238,8 +260,10 @@ export class ExpensesComponent implements OnInit {
     }
     this.serverFieldErrors = {};
     this.formError = null;
+    this.submitted = true;
+    this.form.markAllAsTouched();
+    this.issues = collectIssues(this.form, this.labels);
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
       return;
     }
     const v = this.form.getRawValue();
@@ -268,6 +292,7 @@ export class ExpensesComponent implements OnInit {
         const fields = toFieldErrors(err);
         if (Object.keys(fields).length > 0) {
           this.serverFieldErrors = fields;
+          this.issues = collectIssues(this.form, this.labels, fields);
           return;
         }
         this.formError = (err.error as { error?: string } | null)?.error ?? this.translate.instant('admin.invoiceExpenses.saveError');

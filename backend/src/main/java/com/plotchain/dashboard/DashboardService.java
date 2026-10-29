@@ -91,18 +91,20 @@ public class DashboardService {
             .orElse(BigDecimal.ZERO);
         BigDecimal royaltyBonus = cycleIncome(associateId, openCycleId, IncomeType.ROYALTY);
 
-        // Royalty slab lookup (and the left/right leg volume panel) needs the associate's
-        // most-recently-CLOSED cycle -- the currently OPEN cycle never has a leg_volume row of
-        // its own (rows are only written at cycle close, CycleService#rollUpSubtree).
+        // leg_volume rows are only written at cycle close (CycleService#rollUpSubtree), so the leg
+        // panel and the royalty slab are computed live the way close will: each leg is this cycle's
+        // sales in that leg's subtree plus the carry-forward on the latest CLOSED cycle's row.
         // latestClosedCycle is also reused below for the income/revenue deltas.
         Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
         Optional<LegVolume> latestLegVolume = latestClosedCycle
             .flatMap(closed -> legVolumeRepository.findByAssociateIdAndCycleId(associateId, closed.getId()));
-        BigDecimal matchedVolume = latestLegVolume
-            .map(lv -> lv.getLeftLegVolume().min(lv.getRightLegVolume()))
-            .orElse(BigDecimal.ZERO);
-        BigDecimal leftLegVolume = latestLegVolume.map(LegVolume::getLeftLegVolume).orElse(BigDecimal.ZERO);
-        BigDecimal rightLegVolume = latestLegVolume.map(LegVolume::getRightLegVolume).orElse(BigDecimal.ZERO);
+        BigDecimal newLeftBusiness = saleRepository.sumOpenCycleLegBusiness(associateId, "L");
+        BigDecimal newRightBusiness = saleRepository.sumOpenCycleLegBusiness(associateId, "R");
+        BigDecimal leftLegVolume = newLeftBusiness
+            .add(latestLegVolume.map(LegVolume::getCarriedForwardLeft).orElse(BigDecimal.ZERO));
+        BigDecimal rightLegVolume = newRightBusiness
+            .add(latestLegVolume.map(LegVolume::getCarriedForwardRight).orElse(BigDecimal.ZERO));
+        BigDecimal matchedVolume = leftLegVolume.min(rightLegVolume);
 
         CompensationPlanVersion planVersion = compensationPlanVersionRepository
             .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
@@ -168,10 +170,8 @@ public class DashboardService {
         // Lifetime Total Left/Right Business -- see LegVolumeRepository.totalBusiness() for why a
         // naive SUM(leftLegVolume) across all rows would double-count a long-lived unmatched carry.
         LegVolumeRepository.LegBusinessTotals legBusinessTotals = legVolumeRepository.totalBusiness(associateId);
-        BigDecimal totalLeftBusiness = legBusinessTotals.left()
-            .add(saleRepository.sumOpenCycleLegBusiness(associateId, "L"));
-        BigDecimal totalRightBusiness = legBusinessTotals.right()
-            .add(saleRepository.sumOpenCycleLegBusiness(associateId, "R"));
+        BigDecimal totalLeftBusiness = legBusinessTotals.left().add(newLeftBusiness);
+        BigDecimal totalRightBusiness = legBusinessTotals.right().add(newRightBusiness);
         BigDecimal totalSelfBusiness = saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED);
         BigDecimal newBookedAreaSqft = openCycle
             .map(c -> saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, c.getId(), SaleStatus.RECORDED))
@@ -188,7 +188,7 @@ public class DashboardService {
                 associate.getUserId(), associate.getName(), currentRank.getName(),
                 associate.getPhone(), associate.getJoinedAt(), associate.getRankChangedAt(),
                 sponsor.map(Associate::getUserId).orElse(null), sponsor.map(Associate::getName).orElse(null),
-                associate.getLastActiveAt()),
+                associate.getPreviousLoginAt()),
             associate.getKycStatus() != KycStatus.VERIFIED,
             new DashboardResponse.CycleIncome(
                 openCycleId, direct, matching, sponsorMatching, selfPerformance, royaltyBonus, royaltyBonusPct, total,
@@ -198,7 +198,8 @@ public class DashboardService {
             new DashboardResponse.SalesSummary(salesThisCycle, revenueBookedThisCycle, revenueBookedChangePct),
             new DashboardResponse.NetworkSummary(totalDownline, directCount, leftAssociateCount, rightAssociateCount),
             new DashboardResponse.LegVolumeSummary(
-                leftLegVolume, rightLegVolume, totalLeftBusiness, totalRightBusiness, totalSelfBusiness, newBookedAreaSqft)
+                leftLegVolume, rightLegVolume, totalLeftBusiness, totalRightBusiness, totalSelfBusiness, newBookedAreaSqft,
+                newLeftBusiness, newRightBusiness, matchedVolume)
         );
     }
 

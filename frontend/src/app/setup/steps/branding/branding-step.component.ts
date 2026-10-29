@@ -18,7 +18,12 @@ import { SetupInspectorService, SetupStepController } from '../../setup-inspecto
 import { CompanyBrandingRequest, CompanyBrandingResponse, LogoVariant } from '../../models/branding.model';
 import { LoginComponent } from '../../../auth/login.component';
 
-const HEX_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
+import { AbstractControl } from '@angular/forms';
+import { ErrorSummaryComponent } from '../../../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues, errorMessage, format } from '../../../shared/validation/validation';
+
+const isHex = (v: string): boolean => !format('hexColor')({ value: v } as AbstractControl);
+const LABELS: Record<string, string> = { primaryColor: 'Primary colour', secondaryColor: 'Secondary colour', tagline: 'Tagline' };
 const TAGLINE_MAX_LENGTH = 60;
 // Must match theme.service.ts's WHITE/INK constants -- the contrast warning uses the same
 // pair ThemeService itself checks when choosing --brand-primary-contrast.
@@ -33,7 +38,7 @@ const MIN_CONTRAST = 4.5;
     CommonModule,
     ReactiveFormsModule,
     TranslateModule,
-    FieldErrorComponent,
+    FieldErrorComponent,    ErrorSummaryComponent,
     ColorFieldComponent,
     LogoUploaderComponent,
     InlineBannerComponent,
@@ -52,7 +57,7 @@ const MIN_CONTRAST = 4.5;
         <p class="branding-step__subtitle">{{ 'setup.branding.subtitle' | translate }}</p>
       </div>
 
-      <form class="card branding-step__card" [formGroup]="form" #formCard>
+      <form class="card branding-step__card" [formGroup]="form" [class.was-submitted]="submitted" novalidate #formCard><app-error-summary [issues]="issues"></app-error-summary>
         <section class="branding-step__section">
           <h2 class="branding-step__section-title">
             <span class="material-symbols-outlined">image</span>
@@ -187,8 +192,8 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy, 
   readonly defaultSecondaryColor = currentBrandSecondary();
 
   form = this.fb.group({
-    primaryColor: [this.defaultPrimaryColor, [Validators.required, Validators.pattern(HEX_COLOR_PATTERN)]],
-    secondaryColor: [this.defaultSecondaryColor, [Validators.required, Validators.pattern(HEX_COLOR_PATTERN)]],
+    primaryColor: [this.defaultPrimaryColor, [Validators.required, format('hexColor')]],
+    secondaryColor: [this.defaultSecondaryColor, [Validators.required, format('hexColor')]],
     tagline: ['', Validators.maxLength(TAGLINE_MAX_LENGTH)]
   });
 
@@ -197,6 +202,8 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy, 
   branding: CompanyBrandingResponse | null = null;
   savedJustNow = false;
   contrastWarning = false;
+  submitted = false;
+  issues: FormIssue[] = [];
   stepNumber = 1;
   stepCount = 1;
   private serverFieldErrors: Record<string, string> = {};
@@ -230,12 +237,12 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy, 
 
     // Undebounced: instant, local-only preview repaint, no network.
     this.form.valueChanges.pipe(takeUntil(this.destroyed$)).subscribe(value => {
-      if (value.primaryColor && HEX_COLOR_PATTERN.test(value.primaryColor)) {
+      if (value.primaryColor && isHex(value.primaryColor)) {
         this.updateContrastWarning(value.primaryColor);
       }
       if (
-        value.primaryColor && HEX_COLOR_PATTERN.test(value.primaryColor) &&
-        value.secondaryColor && HEX_COLOR_PATTERN.test(value.secondaryColor)
+        value.primaryColor && isHex(value.primaryColor) &&
+        value.secondaryColor && isHex(value.secondaryColor)
       ) {
         this.paintPreview(value.primaryColor, value.secondaryColor);
       }
@@ -285,6 +292,9 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy, 
 
   // SetupStepController: lets SetupStepNavComponent block Next on an invalid required field.
   isStepValid(): boolean {
+    this.submitted = true;
+    this.form.markAllAsTouched();
+    this.issues = collectIssues(this.form, LABELS, this.serverFieldErrors);
     return this.form.valid;
   }
 
@@ -377,13 +387,7 @@ export class BrandingStepComponent implements OnInit, AfterViewInit, OnDestroy, 
     if (!control || !control.touched || !control.errors) {
       return undefined;
     }
-    if (control.errors['maxlength']) {
-      return this.translate.instant('setup.branding.validation.taglineTooLong');
-    }
-    if (control.errors['pattern']) {
-      return this.translate.instant('setup.branding.validation.hexColor');
-    }
-    return undefined;
+    return errorMessage(control, LABELS[name]);
   }
 
   logoError(variant: LogoVariant): string | undefined {
