@@ -25,14 +25,9 @@ export interface AssociateProfileResponse {
 // comment). name is @NotBlank server-side. transactionPassword is required only once the
 // associate has ever set one (see TransactionPasswordVerifier) -- omit/null it otherwise.
 export interface UpdateAssociateProfileRequest {
-  name: string;
   phone: string | null;
   email: string | null;
   address: string | null;
-  fatherHusbandName: string | null;
-  dateOfBirth: string | null;
-  gender: string | null;
-  maritalStatus: string | null;
   state: string | null;
   district: string | null;
   postalCode: string | null;

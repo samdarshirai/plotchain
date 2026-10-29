@@ -39,13 +39,8 @@ public class AssociateProfileService {
         }
         associate.setEmail(request.email());
 
-        associate.setName(request.name());
         associate.setPhone(request.phone());
         associate.setAddress(request.address());
-        associate.setFatherHusbandName(request.fatherHusbandName());
-        associate.setDateOfBirth(request.dateOfBirth());
-        associate.setGender(request.gender());
-        associate.setMaritalStatus(request.maritalStatus());
         associate.setState(request.state());
         associate.setDistrict(request.district());
         associate.setPostalCode(request.postalCode());

@@ -2,6 +2,7 @@ package com.plotchain.associate;
 
 import com.plotchain.auth.AuthService;
 import com.plotchain.auth.LoginResponse;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -16,8 +17,16 @@ public class AdminAssociateController {
     private final AdminAssociateService adminAssociateService;
 
     private final AuthService authService;
+    private final AssociateProfileService profileService;
+    private final AssociateBankDetailsService bankDetailsService;
+    private final AssociateNomineeService nomineeService;
 
-    public AdminAssociateController(AdminAssociateService adminAssociateService, AuthService authService) {
+    public AdminAssociateController(AdminAssociateService adminAssociateService, AuthService authService,
+        AssociateProfileService profileService, AssociateBankDetailsService bankDetailsService,
+        AssociateNomineeService nomineeService) {
+        this.profileService = profileService;
+        this.bankDetailsService = bankDetailsService;
+        this.nomineeService = nomineeService;
         this.adminAssociateService = adminAssociateService;
         this.authService = authService;
     }
@@ -44,6 +53,42 @@ public class AdminAssociateController {
     @GetMapping("/{id}")
     public AdminAssociateDetailResponse get(@PathVariable UUID id) {
         return adminAssociateService.get(id);
+    }
+
+    @GetMapping("/{id}/profile")
+    public AssociateProfileResponse getProfile(@PathVariable UUID id) {
+        return profileService.getProfile(id);
+    }
+
+    @PutMapping("/{id}/profile")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public AssociateProfileResponse updateProfile(@PathVariable UUID id,
+        @Valid @RequestBody AdminUpdateAssociateProfileRequest request, @AuthenticationPrincipal UUID actorId) {
+        return adminAssociateService.updateProfile(id, request, actorId);
+    }
+
+    @GetMapping("/{id}/bank-details")
+    public AssociateBankDetailsResponse getBankDetails(@PathVariable UUID id) {
+        return bankDetailsService.getBankDetails(id);
+    }
+
+    @PutMapping("/{id}/bank-details")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public AssociateBankDetailsResponse updateBankDetails(@PathVariable UUID id,
+        @Valid @RequestBody UpdateAssociateBankDetailsRequest request, @AuthenticationPrincipal UUID actorId) {
+        return adminAssociateService.updateBankDetails(id, request, actorId);
+    }
+
+    @GetMapping("/{id}/nominee")
+    public AssociateNomineeResponse getNominee(@PathVariable UUID id) {
+        return nomineeService.getNominee(id);
+    }
+
+    @PutMapping("/{id}/nominee")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public AssociateNomineeResponse updateNominee(@PathVariable UUID id,
+        @RequestBody AdminUpdateAssociateNomineeRequest request, @AuthenticationPrincipal UUID actorId) {
+        return adminAssociateService.updateNominee(id, request, actorId);
     }
 
     @PostMapping("/{id}/suspend")

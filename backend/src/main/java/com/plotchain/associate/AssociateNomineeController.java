@@ -1,10 +1,7 @@
 package com.plotchain.associate;
 
-import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,13 +23,5 @@ public class AssociateNomineeController {
     @GetMapping
     public AssociateNomineeResponse get(@AuthenticationPrincipal UUID associateId) {
         return associateNomineeService.getNominee(associateId);
-    }
-
-    @PutMapping
-    public AssociateNomineeResponse update(
-        @AuthenticationPrincipal UUID associateId,
-        @Valid @RequestBody UpdateAssociateNomineeRequest request
-    ) {
-        return associateNomineeService.updateNominee(associateId, request);
     }
 }

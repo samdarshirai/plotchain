@@ -285,6 +285,7 @@
     }
   },
   "myAccount": {
+    "lockedHint": "You can change contact info only. To change other details, contact admin.",
     "profileLoadError": "Something went wrong loading your profile. Please try again.",
     "joinedOn": "Joined {{date}}",
     "statusLabel": "Status: {{status}}",

@@ -21,14 +21,13 @@ class AssociateNomineeServiceTest {
 
     @Mock AssociateRepository associateRepository;
     @Mock AssociateNomineeRepository associateNomineeRepository;
-    @Mock TransactionPasswordGuard transactionPasswordGuard;
 
     AssociateNomineeService service;
     private static final UUID ASSOCIATE_ID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        service = new AssociateNomineeService(associateRepository, associateNomineeRepository, transactionPasswordGuard);
+        service = new AssociateNomineeService(associateRepository, associateNomineeRepository);
     }
 
     private Associate seededAssociate() {
@@ -87,11 +86,10 @@ class AssociateNomineeServiceTest {
         when(associateNomineeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         AssociateNomineeResponse response = service.updateNominee(ASSOCIATE_ID,
-            new UpdateAssociateNomineeRequest("Kajal Devi", "Wife", null));
+            new AdminUpdateAssociateNomineeRequest("Kajal Devi", "Wife"));
 
         assertThat(response.nomineeName()).isEqualTo("Kajal Devi");
         assertThat(response.relation()).isEqualTo("Wife");
-        verify(transactionPasswordGuard).require(ASSOCIATE_ID, null);
     }
 
     @Test
@@ -99,19 +97,8 @@ class AssociateNomineeServiceTest {
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.updateNominee(ASSOCIATE_ID,
-            new UpdateAssociateNomineeRequest("Kajal Devi", "Wife", null)))
+            new AdminUpdateAssociateNomineeRequest("Kajal Devi", "Wife")))
             .isInstanceOf(AssociateNotFoundException.class);
-        verify(associateNomineeRepository, never()).save(any());
-    }
-
-    @Test
-    void updateNomineePropagatesTheGuardsRejectionAndDoesNotSave() {
-        org.mockito.Mockito.doThrow(new InvalidTransactionPasswordException("bad"))
-            .when(transactionPasswordGuard).require(any(), any());
-
-        assertThatThrownBy(() -> service.updateNominee(ASSOCIATE_ID,
-            new UpdateAssociateNomineeRequest("Kajal Devi", "Wife", "wrong")))
-            .isInstanceOf(InvalidTransactionPasswordException.class);
         verify(associateNomineeRepository, never()).save(any());
     }
 }

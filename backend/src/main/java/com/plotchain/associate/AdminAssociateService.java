@@ -38,6 +38,8 @@ public class AdminAssociateService {
     private final PasswordEncoder passwordEncoder;
     private final SettingsAuditService settingsAuditService;
     private final AssociateStatusCache associateStatusCache;
+    private final AssociateBankDetailsService bankDetailsService;
+    private final AssociateNomineeService nomineeService;
 
     public AdminAssociateService(
         AssociateRepository associateRepository,
@@ -46,7 +48,9 @@ public class AdminAssociateService {
         LegVolumeRepository legVolumeRepository,
         PasswordEncoder passwordEncoder,
         SettingsAuditService settingsAuditService,
-        AssociateStatusCache associateStatusCache
+        AssociateStatusCache associateStatusCache,
+        AssociateBankDetailsService bankDetailsService,
+        AssociateNomineeService nomineeService
     ) {
         this.associateRepository = associateRepository;
         this.rankTierRepository = rankTierRepository;
@@ -55,6 +59,8 @@ public class AdminAssociateService {
         this.passwordEncoder = passwordEncoder;
         this.settingsAuditService = settingsAuditService;
         this.associateStatusCache = associateStatusCache;
+        this.bankDetailsService = bankDetailsService;
+        this.nomineeService = nomineeService;
     }
 
     public AdminAssociatePageResponse list(String search, UUID rankId, KycStatus kycStatus, KycStatus excludeKycStatus,
@@ -104,6 +110,47 @@ public class AdminAssociateService {
 
     public AdminAssociateDetailResponse get(UUID id) {
         return toDetail(findOrThrow(id));
+    }
+
+    @Transactional
+    public AssociateProfileResponse updateProfile(UUID id, AdminUpdateAssociateProfileRequest r, UUID actorId) {
+        Associate a = findOrThrow(id);
+        if (r.phone() != null && !r.phone().equals(a.getPhone()) && associateRepository.existsByPhone(r.phone())) {
+            throw new PhoneAlreadyRegisteredException(r.phone());
+        }
+        a.setName(r.name());
+        a.setPhone(r.phone());
+        a.setEmail(r.email());
+        a.setAddress(r.address());
+        a.setFatherHusbandName(r.fatherHusbandName());
+        a.setDateOfBirth(r.dateOfBirth());
+        a.setGender(r.gender());
+        a.setMaritalStatus(r.maritalStatus());
+        a.setState(r.state());
+        a.setDistrict(r.district());
+        a.setPostalCode(r.postalCode());
+        associateRepository.save(a);
+        audit(a, "profile", actorId);
+        return AssociateProfileResponse.from(a);
+    }
+
+    @Transactional
+    public AssociateBankDetailsResponse updateBankDetails(UUID id, UpdateAssociateBankDetailsRequest r, UUID actorId) {
+        AssociateBankDetailsResponse res = bankDetailsService.updateBankDetails(id, r);
+        audit(findOrThrow(id), "bank details", actorId);
+        return res;
+    }
+
+    @Transactional
+    public AssociateNomineeResponse updateNominee(UUID id, AdminUpdateAssociateNomineeRequest r, UUID actorId) {
+        AssociateNomineeResponse res = nomineeService.updateNominee(id, r);
+        audit(findOrThrow(id), "nominee", actorId);
+        return res;
+    }
+
+    private void audit(Associate a, String what, UUID actorId) {
+        settingsAuditService.record("ASSOCIATE", "Edited " + what + " of " + a.getUserId(),
+            Map.of("associateId", a.getId().toString()), actorId);
     }
 
     @Transactional
