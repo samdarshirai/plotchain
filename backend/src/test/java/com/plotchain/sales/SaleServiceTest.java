@@ -82,14 +82,6 @@ class SaleServiceTest {
             new BigDecimal("1200.00"), new BigDecimal("500.00"), new BigDecimal("600000.00"), status);
     }
 
-    private CreateSaleRequest requestFor(UUID plotId, UUID associateId) {
-        // price defaults to plotWithStatus()/plotWithAreaSqft()'s own fixed price (600000.00) so
-        // every existing amount-based assertion below keeps working unchanged now that amount
-        // comes from request.price() instead of a Plot.price snapshot.
-        return new CreateSaleRequest(plotId, associateId, "Jane Buyer", "9999999999", null,
-            PROJECT_ID, new BigDecimal("600000.00"), "Sold to Jane Buyer");
-    }
-
     private Project projectFixture() {
         return new Project(PROJECT_ID, "Green Valley", "Hyderabad", null, null, Instant.now());
     }
@@ -119,436 +111,7 @@ class SaleServiceTest {
             new BigDecimal("1.00"), new BigDecimal("2000"), new BigDecimal("2.00"), new BigDecimal("3000"));
     }
 
-    private void stubHappyPathGuardsAndDependencies() {
-        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
-        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
-        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
-        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(compensationPlanVersionRepository
-                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
-            .thenReturn(Optional.of(compensationPlanVersion()));
-    }
-
-    // Code-review finding (pre-merge review of this branch): recordSale read Plot via a plain
-    // unlocked findById before checking AVAILABLE and flipping to SOLD, so two concurrent
-    // POST /api/admin/sales requests against the same plot could both pass the guard before
-    // either committed, double-selling the plot. Fix mirrors CycleRepository.findByIdForUpdate
-    // (cycle-management unit 3): recordSale must acquire the row lock via findByIdForUpdate,
-    // never the unlocked findById, as its first statement.
-    @Test
-    void recordSaleAcquiresTheRowLockOnThePlotViaFindByIdForUpdateNotFindById() {
-        stubHappyPathGuardsAndDependencies();
-
-        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
-
-        verify(plotRepository).findByIdForUpdate(PLOT_ID);
-        verify(plotRepository, never()).findById(any());
-    }
-
-    @Test
-    void recordSaleThrowsPlotNotFoundExceptionWhenThePlotDoesNotExist() {
-        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID)))
-            .isInstanceOf(PlotNotFoundException.class);
-
-        verify(plotRepository, never()).save(any());
-        verify(associateRepository, never()).findById(any());
-    }
-
-    @Test
-    void recordSaleThrowsPlotNotAvailableExceptionWhenThePlotIsNotAvailable() {
-        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.SOLD)));
-
-        assertThatThrownBy(() -> saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID)))
-            .isInstanceOf(PlotNotAvailableException.class);
-
-        verify(plotRepository, never()).save(any());
-        verify(associateRepository, never()).findById(any());
-    }
-
-    @Test
-    void recordSaleThrowsPlotNotAvailableExceptionWhenThePlotIsBooked() {
-        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.BOOKED)));
-
-        assertThatThrownBy(() -> saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID)))
-            .isInstanceOf(PlotNotAvailableException.class);
-
-        verify(plotRepository, never()).save(any());
-        verify(saleRepository, never()).save(any());
-        verify(ledgerEntryRepository, never()).save(any());
-    }
-
-    @Test
-    void recordSaleLeavesBookingIdNullAndSnapshotsLegAndCycle() {
-        stubHappyPathGuardsAndDependencies();
-
-        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
-
-        ArgumentCaptor<Sale> saleCaptor = ArgumentCaptor.forClass(Sale.class);
-        verify(saleRepository).save(saleCaptor.capture());
-        Sale saved = saleCaptor.getValue();
-        assertThat(saved.getBookingId()).isNull();
-        assertThat(saved.getLegCredited()).isEqualTo("L");
-        assertThat(saved.getCycleId()).isEqualTo(CYCLE_ID);
-        assertThat(saved.getAmount()).isEqualByComparingTo("600000.00");
-        assertThat(saved.getStatus()).isEqualTo(SaleStatus.RECORDED);
-    }
-
-    @Test
-    void recordSaleThrowsAssociateNotFoundExceptionWhenTheAssociateDoesNotExist() {
-        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID)))
-            .isInstanceOf(AssociateNotFoundException.class);
-
-        verify(plotRepository, never()).save(any());
-    }
-
-    // Mandatory-fields change: projectId is now a required, first-class field on
-    // CreateSaleRequest -- guarded after Plot/Associate (same ordering as the pre-existing
-    // guards above), before the Plot->SOLD flip.
-    @Test
-    void recordSaleThrowsProjectNotFoundExceptionWhenTheProjectDoesNotExist() {
-        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
-        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID)))
-            .isInstanceOf(ProjectNotFoundException.class);
-
-        verify(plotRepository, never()).save(any());
-        verify(saleRepository, never()).save(any());
-    }
-
-    // Mandatory-fields change: plotId is now optional -- a sale need not be tied to a specific
-    // inventory Plot. No plot lookup, no SOLD flip, amount still comes from request.price().
-    @Test
-    void recordSaleAllowsANullPlotIdAndSkipsThePlotLookupAndFlip() {
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
-        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
-        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
-        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(compensationPlanVersionRepository
-                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
-            .thenReturn(Optional.of(compensationPlanVersion()));
-
-        SaleResponse response = saleService.recordSale(requestFor(null, ASSOCIATE_ID));
-
-        verify(plotRepository, never()).findByIdForUpdate(any());
-        verify(plotRepository, never()).save(any());
-        assertThat(response.plotId()).isNull();
-        assertThat(response.amount()).isEqualByComparingTo("600000.00");
-        ArgumentCaptor<Sale> captor = ArgumentCaptor.forClass(Sale.class);
-        verify(saleRepository).save(captor.capture());
-        assertThat(captor.getValue().getPlotId()).isNull();
-        assertThat(captor.getValue().getProjectId()).isEqualTo(PROJECT_ID);
-        assertThat(captor.getValue().getNote()).isEqualTo("Sold to Jane Buyer");
-    }
-
-    // Self-Performance Bonus needs Plot.areaSqft for its tier lookup -- a plotless sale has no
-    // Plot to read that from, so SPB is skipped for it even when enabled, a documented gap from
-    // the mandatory-fields change, not a bug.
-    @Test
-    void recordSaleSkipsSelfPerformanceBonusWhenNoPlotIsLinkedEvenWhenEnabled() {
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
-        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
-        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
-        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(compensationPlanVersionRepository
-                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
-            .thenReturn(Optional.of(compensationPlanVersion()));
-        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
-
-        saleService.recordSale(requestFor(null, ASSOCIATE_ID));
-
-        verify(ledgerEntryRepository, never()).save(
-            argThat(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE));
-    }
-
-    @Test
-    void recordSaleFlipsThePlotToSold() {
-        stubHappyPathGuardsAndDependencies();
-
-        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
-
-        ArgumentCaptor<Plot> captor = ArgumentCaptor.forClass(Plot.class);
-        verify(plotRepository).save(captor.capture());
-        assertThat(captor.getValue().getStatus()).isEqualTo(PlotStatus.SOLD);
-    }
-
-    @Test
-    void recordSaleStampsTheCurrentCycleOntoTheSale() {
-        stubHappyPathGuardsAndDependencies();
-
-        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
-
-        verify(cycleService).getOrOpenCurrent();
-        ArgumentCaptor<Sale> captor = ArgumentCaptor.forClass(Sale.class);
-        verify(saleRepository).save(captor.capture());
-        assertThat(captor.getValue().getCycleId()).isEqualTo(CYCLE_ID);
-    }
-
-    @Test
-    void recordSaleSavesASaleWithAmountAndLegSnapshottedAtRecordTime() {
-        stubHappyPathGuardsAndDependencies();
-
-        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
-
-        ArgumentCaptor<Sale> captor = ArgumentCaptor.forClass(Sale.class);
-        verify(saleRepository).save(captor.capture());
-        Sale saved = captor.getValue();
-        assertThat(saved.getPlotId()).isEqualTo(PLOT_ID);
-        assertThat(saved.getProjectId()).isEqualTo(PROJECT_ID);
-        assertThat(saved.getAssociateId()).isEqualTo(ASSOCIATE_ID);
-        assertThat(saved.getAmount()).isEqualByComparingTo("600000.00");
-        assertThat(saved.getLegCredited()).isEqualTo("L");
-        assertThat(saved.getStatus()).isEqualTo(SaleStatus.RECORDED);
-        assertThat(saved.getRecordedAt()).isNotNull();
-        assertThat(saved.getBuyerName()).isEqualTo("Jane Buyer");
-        assertThat(saved.getBuyerPhone()).isEqualTo("9999999999");
-        assertThat(saved.getNote()).isEqualTo("Sold to Jane Buyer");
-    }
-
-    @Test
-    void recordSaleSavesADirectIncomeLedgerEntryWithCorrectMath() {
-        stubHappyPathGuardsAndDependencies();
-
-        SaleResponse response = saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
-
-        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
-        verify(ledgerEntryRepository).save(captor.capture());
-        LedgerEntry entry = captor.getValue();
-        assertThat(entry.getIncomeType()).isEqualTo(IncomeType.DIRECT);
-        assertThat(entry.getAssociateId()).isEqualTo(ASSOCIATE_ID);
-        assertThat(entry.getCycleId()).isEqualTo(CYCLE_ID);
-        // gross = 600000.00 * (10.00 / 100) = 60000
-        assertThat(entry.getGrossAmount()).isEqualByComparingTo("60000");
-        // tds = 60000 * (5.00 / 100) = 3000
-        assertThat(entry.getTdsDeduction()).isEqualByComparingTo("3000");
-        // admin = 60000 * (4.00 / 100) = 2400 -- always the without-PAN tier (Decision 4)
-        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("2400");
-        // net = 60000 - 3000 - 2400 = 54600
-        assertThat(entry.getNetAmount()).isEqualByComparingTo("54600");
-        assertThat(entry.getStatus()).isEqualTo(LedgerEntryStatus.PENDING);
-        assertThat(entry.getSourceRef()).isEqualTo(response.id());
-        assertThat(entry.getCreatedAt()).isNotNull();
-    }
-
-    private Plot plotWithAreaSqft(BigDecimal areaSqft) {
-        return new Plot(PLOT_ID, UUID.randomUUID(), "A-101", PlotType.NORMAL,
-            areaSqft, new BigDecimal("500.00"), new BigDecimal("600000.00"), PlotStatus.AVAILABLE);
-    }
-
-    @Test
-    void recordSaleCreditsSelfPerformanceBonusAtTier1WhenEnabledAndAreaMeetsTheLowerThreshold() {
-        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithAreaSqft(new BigDecimal("2000"))));
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
-        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
-        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
-        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(compensationPlanVersionRepository
-                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
-            .thenReturn(Optional.of(compensationPlanVersion()));
-        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
-
-        SaleResponse response = saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
-
-        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
-        verify(ledgerEntryRepository, times(2)).save(captor.capture());
-        LedgerEntry selfPerformanceEntry = captor.getAllValues().stream()
-            .filter(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE).findFirst().orElseThrow();
-        // gross = 600000.00 * 1% = 6000
-        assertThat(selfPerformanceEntry.getGrossAmount()).isEqualByComparingTo("6000");
-        assertThat(selfPerformanceEntry.getSourceRef()).isEqualTo(response.id());
-    }
-
-    @Test
-    void recordSaleCreditsSelfPerformanceBonusAtTier2WhenAreaMeetsTheHigherThreshold() {
-        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithAreaSqft(new BigDecimal("3000"))));
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
-        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
-        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
-        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(compensationPlanVersionRepository
-                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
-            .thenReturn(Optional.of(compensationPlanVersion()));
-        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
-
-        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
-
-        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
-        verify(ledgerEntryRepository, times(2)).save(captor.capture());
-        LedgerEntry selfPerformanceEntry = captor.getAllValues().stream()
-            .filter(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE).findFirst().orElseThrow();
-        // gross = 600000.00 * 2% = 12000
-        assertThat(selfPerformanceEntry.getGrossAmount()).isEqualByComparingTo("12000");
-    }
-
-    @Test
-    void recordSaleWritesNoSelfPerformanceEntryWhenAreaIsBelowTheLowerThreshold() {
-        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithAreaSqft(new BigDecimal("1999"))));
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
-        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
-        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
-        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(compensationPlanVersionRepository
-                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
-            .thenReturn(Optional.of(compensationPlanVersion()));
-        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
-
-        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
-
-        verify(ledgerEntryRepository, never()).save(
-            argThat(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE));
-    }
-
-    @Test
-    void recordSaleWritesNoSelfPerformanceEntryWhenConfigIsDisabledRegardlessOfArea() {
-        stubHappyPathGuardsAndDependencies(); // plotWithStatus(AVAILABLE) has no explicit areaSqft set (null) -- irrelevant, since disabled short-circuits before reading it
-        // isEnabled() is NOT stubbed -- Mockito's boolean default (false) is exactly "disabled".
-
-        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
-
-        verify(ledgerEntryRepository, never()).save(
-            argThat(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE));
-    }
-
-    @Test
-    void recordSaleCreditsSelfPerformanceBonusAsCarriedForwardWhenAssociateKycIsNotVerified() {
-        Associate unverified = associateWithPosition("L");
-        unverified.setKycStatus(KycStatus.PENDING);
-        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithAreaSqft(new BigDecimal("2000"))));
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(unverified));
-        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
-        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
-        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(compensationPlanVersionRepository
-                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
-            .thenReturn(Optional.of(compensationPlanVersion()));
-        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
-
-        saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
-
-        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
-        verify(ledgerEntryRepository, times(2)).save(captor.capture());
-        LedgerEntry selfPerformanceEntry = captor.getAllValues().stream()
-            .filter(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE).findFirst().orElseThrow();
-        assertThat(selfPerformanceEntry.getStatus()).isEqualTo(LedgerEntryStatus.CARRIED_FORWARD);
-    }
-
-    // compensation-plan-reference.md's real published rates (direct 6%, tds 2%, admin-without-pan
-    // 15%) instead of this file's arbitrary-round-number compensationPlanVersion() fixture, so
-    // this test's expected amounts match the doc's own Round 1 worked example exactly.
-    private CompensationPlanVersion referenceCompensationPlanVersion() {
-        return new CompensationPlanVersion(
-            UUID.randomUUID(), "reference", LocalDate.now().minusDays(1),
-            new BigDecimal("6.00"), BigDecimal.ZERO, BigDecimal.ZERO,
-            new BigDecimal("2.00"), BigDecimal.ZERO, new BigDecimal("15.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.MONTHLY,
-            Instant.now(), null,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
-    }
-
-    @Test
-    void recordSaleSavesADirectIncomeLedgerEntryMatchingRound1DocFixture() {
-        // Round 1 doc fixture: plot price ₹10,00,000 (same amount A's own sale used).
-        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(
-            new Plot(PLOT_ID, UUID.randomUUID(), "A-101", PlotType.NORMAL,
-                new BigDecimal("1200.00"), new BigDecimal("833.33"), new BigDecimal("1000000.00"), PlotStatus.AVAILABLE)));
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
-        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
-        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
-        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(compensationPlanVersionRepository
-                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
-            .thenReturn(Optional.of(referenceCompensationPlanVersion()));
-
-        // price must match this test's own 1,000,000.00 fixture -- requestFor()'s default
-        // (600000.00) is for the other, plot-fixture-matched tests only.
-        CreateSaleRequest request = new CreateSaleRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "9999999999", null,
-            PROJECT_ID, new BigDecimal("1000000.00"), "Sold to Jane Buyer");
-        saleService.recordSale(request);
-
-        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
-        verify(ledgerEntryRepository).save(captor.capture());
-        LedgerEntry entry = captor.getValue();
-        // gross = 10,00,000 * 6% = 60,000
-        assertThat(entry.getGrossAmount()).isEqualByComparingTo("60000");
-        // tds = 60,000 * 2% = 1,200
-        assertThat(entry.getTdsDeduction()).isEqualByComparingTo("1200");
-        // admin = 60,000 * 15% = 9,000
-        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("9000");
-        // net = 60,000 - 1,200 - 9,000 = 49,800
-        assertThat(entry.getNetAmount()).isEqualByComparingTo("49800");
-    }
-
-    @Test
-    void recordSaleReturnsAFullyPopulatedSaleResponse() {
-        stubHappyPathGuardsAndDependencies();
-
-        SaleResponse response = saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
-
-        assertThat(response.id()).isNotNull();
-        assertThat(response.plotId()).isEqualTo(PLOT_ID);
-        assertThat(response.associateId()).isEqualTo(ASSOCIATE_ID);
-        assertThat(response.buyerName()).isEqualTo("Jane Buyer");
-        assertThat(response.buyerPhone()).isEqualTo("9999999999");
-        assertThat(response.buyerEmail()).isNull();
-        assertThat(response.amount()).isEqualByComparingTo("600000.00");
-        assertThat(response.cycleId()).isEqualTo(CYCLE_ID);
-        assertThat(response.legCredited()).isEqualTo("L");
-        assertThat(response.status()).isEqualTo("RECORDED");
-        assertThat(response.voidReason()).isNull();
-        assertThat(response.recordedAt()).isNotNull();
-        assertThat(response.note()).isEqualTo("Sold to Jane Buyer");
-        assertThat(response.projectName()).isEqualTo("Green Valley");
-    }
-
-    @Test
-    void recordSaleReturnsTheAssociateDisplayFieldsFromTheAlreadyLoadedAssociateNoNewQuery() {
-        stubHappyPathGuardsAndDependencies();
-
-        SaleResponse response = saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID));
-
-        assertThat(response.associateUserId()).isEqualTo("VP00001");
-        assertThat(response.associateName()).isEqualTo("Jane Associate");
-        // associateRepository.findById is the guard lookup itself (see
-        // recordSaleThrowsAssociateNotFoundExceptionWhenTheAssociateDoesNotExist) -- proving it's
-        // called exactly once here proves the response fields came from that same call, not a
-        // second, redundant lookup.
-        verify(associateRepository, times(1)).findById(ASSOCIATE_ID);
-    }
-
-    @Test
-    void recordSaleThrowsIllegalStateExceptionWhenNoCompensationPlanVersionIsConfigured() {
-        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.AVAILABLE)));
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
-        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
-        when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
-        when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(compensationPlanVersionRepository
-                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
-            .thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> saleService.recordSale(requestFor(PLOT_ID, ASSOCIATE_ID)))
-            .isInstanceOf(IllegalStateException.class);
-
-        verify(ledgerEntryRepository, never()).save(any());
-    }
-
-    // Plot-booking lifecycle unit 3: recordInstallmentPayment shares persistSaleAndIncome with
-    // recordSale; differs in the BOOKED guard and where the Sale's fields come from.
+    // recordInstallmentPayment: one Sale per confirmed booking payment, amount = that installment.
     private static final UUID BOOKING_ID = UUID.randomUUID();
     private static final UUID INSTALLMENT_ID = UUID.randomUUID();
 
@@ -618,10 +181,8 @@ class SaleServiceTest {
         verify(saleRepository).save(any());
     }
 
-    // Parity with recordSaleSavesADirectIncomeLedgerEntryWithCorrectMath: same plan fixture, same
-    // 600000.00 amount, same literal expectations.
-    @Test
-    void recordInstallmentPaymentCreditsSameDirectIncomeAsRecordSaleForSameInputs() {
+        @Test
+    void recordInstallmentPaymentCreditsDirectIncomeForTheInstallmentAmount() {
         stubConfirmedPathDependencies();
 
         SaleResponse response = confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1200.00"));
@@ -700,6 +261,100 @@ class SaleServiceTest {
     // flow "Void a sale", steps 1-2): guard-only tests. The happy-path reversal (steps 3-6) is
     // Sales unit 5's job -- voidSaleReachesThePlaceholderWhenGuardsPass below only proves the
     // guards let a RECORDED sale through, not that anything gets reversed.
+    // --- Self-Performance Bonus tiers and KYC gating, via the booking-payment path ---
+
+    private List<LedgerEntry> savedLedgerEntries(int times) {
+        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, times(times)).save(captor.capture());
+        return captor.getAllValues();
+    }
+
+    private LedgerEntry selfPerformance(List<LedgerEntry> entries) {
+        return entries.stream().filter(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE).findFirst().orElseThrow();
+    }
+
+    @Test
+    void paymentCreditsSelfPerformanceBonusAtTier1WhenAreaMeetsTheLowerThreshold() {
+        stubConfirmedPathDependencies();
+        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
+
+        confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "2000"));
+
+        // gross = 600000.00 * 1% = 6000
+        assertThat(selfPerformance(savedLedgerEntries(2)).getGrossAmount()).isEqualByComparingTo("6000");
+    }
+
+    @Test
+    void paymentCreditsSelfPerformanceBonusAtTier2WhenAreaMeetsTheHigherThreshold() {
+        stubConfirmedPathDependencies();
+        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
+
+        confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "3000"));
+
+        assertThat(selfPerformance(savedLedgerEntries(2)).getGrossAmount()).isEqualByComparingTo("12000");
+    }
+
+    @Test
+    void paymentWritesNoSelfPerformanceEntryBelowTheLowerThreshold() {
+        stubConfirmedPathDependencies();
+        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
+
+        confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1999"));
+
+        verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE));
+    }
+
+    @Test
+    void paymentWritesNoSelfPerformanceEntryWhenTheConfigIsDisabled() {
+        stubConfirmedPathDependencies();
+        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(false);
+
+        confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "3000"));
+
+        verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE));
+    }
+
+    @Test
+    void paymentCreditsSelfPerformanceBonusAsCarriedForwardWhenAssociateKycIsNotVerified() {
+        stubConfirmedPathDependencies();
+        Associate unverified = associateWithPosition("L");
+        unverified.setKycStatus(KycStatus.PENDING);
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(unverified));
+        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
+
+        confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "2000"));
+
+        assertThat(selfPerformance(savedLedgerEntries(2)).getStatus()).isEqualTo(LedgerEntryStatus.CARRIED_FORWARD);
+    }
+
+    // compensation-plan-reference.md's real published rates (direct 6%, tds 2%, admin-without-pan 15%)
+    // so the expected amounts match the doc's own Round 1 worked example exactly.
+    private CompensationPlanVersion referenceCompensationPlanVersion() {
+        return new CompensationPlanVersion(
+            UUID.randomUUID(), "reference", LocalDate.now().minusDays(1),
+            new BigDecimal("6.00"), BigDecimal.ZERO, BigDecimal.ZERO,
+            new BigDecimal("2.00"), BigDecimal.ZERO, new BigDecimal("15.00"),
+            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.MONTHLY,
+            Instant.now(), null,
+            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
+    }
+
+    @Test
+    void paymentSavesADirectIncomeLedgerEntryMatchingRound1DocFixture() {
+        stubConfirmedPathDependencies();
+        when(compensationPlanVersionRepository
+                .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(referenceCompensationPlanVersion()));
+
+        confirm("1000000.00", plotForBooking(PlotStatus.BOOKED, "1200.00"));
+
+        LedgerEntry entry = savedLedgerEntries(1).get(0);
+        assertThat(entry.getGrossAmount()).isEqualByComparingTo("60000");   // 10,00,000 * 6%
+        assertThat(entry.getTdsDeduction()).isEqualByComparingTo("1200");   // 60,000 * 2%
+        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("9000"); // 60,000 * 15%
+        assertThat(entry.getNetAmount()).isEqualByComparingTo("49800");
+    }
+
     @Test
     void voidSaleThrowsSaleNotFoundExceptionWhenTheSaleDoesNotExist() {
         UUID saleId = UUID.randomUUID();

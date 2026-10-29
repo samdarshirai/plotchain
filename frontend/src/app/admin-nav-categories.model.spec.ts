@@ -77,7 +77,6 @@ describe('findNavCategoryForUrl', () => {
   it('returnsUndefinedOutsideASettingsScreenSoTheItemTabRowCollapses', () => {
     expect(findNavCategoryForUrl('/admin/dashboard')).toBeUndefined();
     expect(findNavCategoryForUrl('/admin/settings')).toBeUndefined();
-    expect(findNavCategoryForUrl('/admin/sales/new')).toBeUndefined();
   });
 
   it('resolvesThePlotTransferScreenToTheInventoryCategory', () => {

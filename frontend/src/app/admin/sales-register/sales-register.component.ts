@@ -29,9 +29,6 @@ const PAGE_SIZE = 20;
     <div class="sales-register">
       <div class="sales-register__header">
         <h1 class="card-title">{{ 'admin.salesRegister.title' | translate }}</h1>
-        <a class="sales-register__record-link brand-button" [routerLink]="['/admin/sales/new']">
-          {{ 'admin.salesRegister.recordSaleLink' | translate }}
-        </a>
       </div>
 
       <div class="sales-register__filters">

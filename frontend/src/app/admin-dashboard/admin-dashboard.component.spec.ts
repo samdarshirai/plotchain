@@ -179,10 +179,10 @@ describe('AdminDashboardComponent', () => {
     expect(fixture.nativeElement.querySelector('.admin-dashboard__network')).toBeTruthy();
   });
 
-  it('renders quick action links to Provision Associate and Record Sale', () => {
+  it('renders quick action links to Provision Associate and Book Plot', () => {
     flushInitialLoad();
 
-    expect(fixture.nativeElement.querySelector('a[href="/admin/sales/new"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('a[href="/admin/settings/plots"]')).toBeTruthy();
     expect(
       fixture.nativeElement.querySelector('a[href="/admin/settings/associate-directory?provision=1"]')
     ).toBeTruthy();

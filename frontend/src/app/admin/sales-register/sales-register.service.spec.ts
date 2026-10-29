@@ -40,25 +40,6 @@ describe('SalesRegisterService', () => {
     req.flush({ sales: [], page: 0, size: 20, totalElements: 0 });
   });
 
-  it('records a sale', () => {
-    const mockSale = { id: 's1', status: 'RECORDED' } as Sale;
-
-    service
-      .record({
-        plotId: 'p1', associateId: 'a1', buyerName: 'Jane', buyerPhone: '9999999999',
-        projectId: 'proj-1', price: 120000, note: 'Sold to Jane'
-      })
-      .subscribe(res => expect(res).toEqual(mockSale));
-
-    const req = httpMock.expectOne('/api/admin/sales');
-    expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({
-      plotId: 'p1', associateId: 'a1', buyerName: 'Jane', buyerPhone: '9999999999',
-      projectId: 'proj-1', price: 120000, note: 'Sold to Jane'
-    });
-    req.flush(mockSale);
-  });
-
   it('voids a sale with a reason', () => {
     const mockSale = { id: 's1', status: 'VOIDED', voidReason: 'Buyer cancelled' } as Sale;
 

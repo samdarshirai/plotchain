@@ -47,8 +47,8 @@ import { AdminRecentSalesTableComponent } from './widgets/recent-sales-table/rec
               [queryParams]="{ provision: 1 }"
               class="admin-dashboard__action admin-dashboard__action--secondary"
             >{{ 'adminDashboard.provisionAssociateAction' | translate }}</a>
-            <a [routerLink]="['/admin', 'sales', 'new']" class="admin-dashboard__action admin-dashboard__action--primary">
-              {{ 'adminDashboard.recordSaleAction' | translate }}
+            <a [routerLink]="['/admin', 'settings', 'plots']" class="admin-dashboard__action admin-dashboard__action--primary">
+              {{ 'adminDashboard.bookPlotAction' | translate }}
             </a>
           </div>
         </header>
