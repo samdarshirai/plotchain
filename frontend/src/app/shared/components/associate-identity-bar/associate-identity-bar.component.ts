@@ -3,9 +3,10 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, of } from 'rxjs';
 import { AssociateProfileService } from '../../../profile-kyc/associate-profile.service';
 
-// Always-visible "Name · ID" strip for the signed-in associate (also shows the impersonated
-// associate, since impersonation runs in the associate session). Rendered by AppComponent only
-// while an associate-realm user is authenticated, so it is created per login and fetches once.
+// Always-visible "Name · ID" strip for the signed-in associate or admin (admin accounts are
+// associate rows, so GET /me/profile serves both; also shows the impersonated associate, since
+// impersonation runs in the associate session). Rendered by AppComponent only while a user is
+// authenticated, so it is created per login and fetches once.
 // ponytail: fetched once per login -- a renamed profile shows after reload; add a refetch if it matters.
 @Component({
   selector: 'app-associate-identity-bar',

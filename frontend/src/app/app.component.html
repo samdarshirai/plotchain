@@ -34,6 +34,6 @@
   [class.app-content--sidebar-rail]="authService.isAuthenticated() && !isChromelessRoute"
   [class.app-content--sidebar-expanded]="authService.isAuthenticated() && !isChromelessRoute && (isAdminFamily || associateSidebarPinned)"
 >
-  <app-associate-identity-bar *ngIf="authService.isAuthenticated() && !isChromelessRoute && !isAdminFamily"></app-associate-identity-bar>
+  <app-associate-identity-bar *ngIf="authService.isAuthenticated() && !isChromelessRoute"></app-associate-identity-bar>
   <router-outlet></router-outlet>
 </div>
