@@ -436,17 +436,20 @@
 
   // Native table layout keeps header and body columns aligned, including long values.
   .editable-table {
-    min-width: 48rem;
+    min-width: 68rem;
     table-layout: fixed;
   }
 
-  th:nth-child(1) { width: 14%; }
-  th:nth-child(2) { width: 24%; }
-  th:nth-child(3) { width: 14%; }
-  th:nth-child(4) { width: 9%; }
-  th:nth-child(5) { width: 11%; }
-  th:nth-child(6) { width: 16%; }
-  th:nth-child(7) { width: 12%; }
+  // 9 columns: ID, Name, Sponsor, Position, Status, Registration, Login pw, Txn pw, Login button.
+  th:nth-child(1) { width: 10%; }
+  th:nth-child(2) { width: 16%; }
+  th:nth-child(3) { width: 10%; }
+  th:nth-child(4) { width: 8%; }
+  th:nth-child(5) { width: 9%; }
+  th:nth-child(6) { width: 12%; }
+  th:nth-child(7) { width: 13%; }
+  th:nth-child(8) { width: 13%; }
+  th:nth-child(9) { width: 9%; }
 
   thead th {
     padding: 8px 12px;
