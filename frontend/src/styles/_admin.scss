@@ -6242,7 +6242,7 @@ button.tree-explorer__vacant-card {
 .invoice-loans__repay, .invoice-loans__detail { white-space: nowrap; min-width: 4.5rem; }
 .invoice-loans__row-actions { display: flex; gap: 4px; }
 
-.invoice-loans__detail-modal { width: 760px; }
+.invoice-loans__detail-modal { width: 900px; max-width: calc(100vw - 32px); }
 .invoice-loans__detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -6260,6 +6260,15 @@ button.tree-explorer__vacant-card {
 
   th { text-align: left; color: var(--text-muted); font-weight: 600; padding: 6px 8px; }
   td { padding: 8px; border-bottom: 1px solid var(--border-subtle); overflow-wrap: anywhere; }
+
+  // Desktop only (below 1024px the table stacks into cards): headers never break mid-word, short columns
+  // stay on one line, and the free-text columns (bank, txn) take the leftover width and wrap.
+  @media (min-width: 1024px) {
+    th { overflow-wrap: normal; word-break: normal; white-space: nowrap; }
+    td:nth-child(-n + 4) { white-space: nowrap; overflow-wrap: normal; }
+    td:nth-child(3) { text-align: right; font-variant-numeric: tabular-nums; }
+    th:nth-child(3) { text-align: right; }
+  }
 }
 
 
