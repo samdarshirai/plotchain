@@ -159,13 +159,14 @@ class AdminAssociateControllerTest {
     }
 
     @Test
-    void resetTransactionPasswordReturns204ForAnAdminToken() throws Exception {
+    void resetTransactionPasswordReturnsAGeneratedPasswordForAnAdminToken() throws Exception {
         when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE))
             .thenReturn(Optional.of(seedAssociate()));
 
         mockMvc.perform(post("/api/admin/associates/" + ASSOCIATE_ID + "/reset-transaction-password")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
-            .andExpect(status().isNoContent());
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.temporaryPassword").isString());
     }
 
     @Test

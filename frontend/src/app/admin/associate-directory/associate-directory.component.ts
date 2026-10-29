@@ -223,7 +223,7 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
         </app-inline-banner>
 
         <app-inline-banner *ngIf="transactionPasswordResetDone" tone="success">
-          {{ 'admin.associateDirectory.resetTransactionPasswordDone' | translate }}
+          {{ 'admin.associateDirectory.resetTransactionPasswordDone' | translate }}: <strong>{{ newTransactionPassword }}</strong>
         </app-inline-banner>
 
         <div class="associate-detail__actions">
@@ -266,6 +266,7 @@ export class AssociateDirectoryComponent implements OnInit {
   selected: AdminAssociateDetail | null = null;
   panelOpen = false;
   temporaryPassword: string | null = null;
+  newTransactionPassword: string | null = null;
   transactionPasswordResetDone = false;
   loadError = false;
   actionError = false;
@@ -302,6 +303,8 @@ export class AssociateDirectoryComponent implements OnInit {
         badgeTone: value => this.statusBadgeTone(value)
       },
       { key: 'joinedAt', label: this.translate.instant('admin.associateDirectory.columnRegistrationDate'), type: 'text' },
+      { key: 'loginPassword', label: this.translate.instant('admin.associateDirectory.loginPasswordLabel'), type: 'text' },
+      { key: 'transactionPassword', label: this.translate.instant('admin.associateDirectory.transactionPasswordLabel'), type: 'text' },
       { key: 'login', label: this.translate.instant('admin.associateDirectory.columnLogin'), type: 'action' }
     ];
     this.compensationPlanService.getCurrent().subscribe({
@@ -353,6 +356,7 @@ export class AssociateDirectoryComponent implements OnInit {
 
   selectAssociate(id: string): void {
     this.temporaryPassword = null;
+    this.newTransactionPassword = null;
     this.transactionPasswordResetDone = false;
     this.associateDirectoryService.get(id).subscribe(detail => {
       this.selected = detail;
@@ -419,8 +423,13 @@ export class AssociateDirectoryComponent implements OnInit {
     if (!window.confirm(this.translate.instant('admin.associateDirectory.resetTransactionPasswordConfirm'))) return;
     this.actionError = false;
     this.transactionPasswordResetDone = false;
+    this.newTransactionPassword = null;
     this.associateDirectoryService.resetTransactionPassword(this.selected.id).subscribe({
-      next: () => (this.transactionPasswordResetDone = true),
+      next: res => {
+        this.newTransactionPassword = res.temporaryPassword;
+        this.transactionPasswordResetDone = true;
+        if (this.selected) this.selected.transactionPassword = res.temporaryPassword;
+      },
       error: () => (this.actionError = true)
     });
   }
@@ -429,7 +438,10 @@ export class AssociateDirectoryComponent implements OnInit {
     if (!this.selected) return;
     this.actionError = false;
     this.associateDirectoryService.resetPassword(this.selected.id).subscribe({
-      next: res => (this.temporaryPassword = res.temporaryPassword),
+      next: res => {
+        this.temporaryPassword = res.temporaryPassword;
+        if (this.selected) this.selected.loginPassword = res.temporaryPassword;
+      },
       error: () => (this.actionError = true)
     });
   }
@@ -496,7 +508,9 @@ export class AssociateDirectoryComponent implements OnInit {
           sponsorUserId: a.sponsorUserId ?? '—',
           position: a.position ?? '—',
           status: titleCase(a.status),
-          joinedAt: new Date(a.joinedAt).toLocaleDateString('en-GB')
+          joinedAt: new Date(a.joinedAt).toLocaleDateString('en-GB'),
+          loginPassword: a.loginPassword ?? '—',
+          transactionPassword: a.transactionPassword ?? '—'
         }));
       },
       error: () => (this.loadError = true)

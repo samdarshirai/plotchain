@@ -2,7 +2,6 @@ package com.plotchain.associate;
 
 import com.plotchain.auth.AuthService;
 import com.plotchain.auth.LoginResponse;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -73,8 +72,7 @@ public class AdminAssociateController {
 
     @PostMapping("/{id}/reset-transaction-password")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Void> resetTransactionPassword(@PathVariable UUID id, @AuthenticationPrincipal UUID actorId) {
-        adminAssociateService.resetTransactionPassword(id, actorId);
-        return ResponseEntity.noContent().build();
+    public ResetPasswordResponse resetTransactionPassword(@PathVariable UUID id, @AuthenticationPrincipal UUID actorId) {
+        return adminAssociateService.resetTransactionPassword(id, actorId);
     }
 }
