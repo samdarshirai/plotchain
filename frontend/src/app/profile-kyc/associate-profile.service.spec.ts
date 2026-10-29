@@ -15,8 +15,7 @@ describe('AssociateProfileService', () => {
   };
 
   const updateRequest: UpdateAssociateProfileRequest = {
-    name: 'Jane A. Doe', phone: '9990002222', email: 'jane.a.doe@example.com', address: '221B Baker Street',
-    fatherHusbandName: null, dateOfBirth: null, gender: null, maritalStatus: null,
+    phone: '9990002222', email: 'jane.a.doe@example.com', address: '221B Baker Street',
     state: null, district: null, postalCode: null, transactionPassword: null
   };
 
@@ -46,14 +45,13 @@ describe('AssociateProfileService', () => {
     const req = httpMock.expectOne('/api/associates/me/profile');
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual(updateRequest);
-    req.flush({ ...mockResponse, name: 'Jane A. Doe' });
+    req.flush({ ...mockResponse, phone: '9990002222' });
 
-    expect(result?.name).toBe('Jane A. Doe');
   });
 
   it('propagates a 409 conflict on the update call without swallowing it', () => {
     let error: any;
-    service.updateProfile({ ...updateRequest, name: 'Jane Doe', phone: null, email: 'taken@example.com', address: null })
+    service.updateProfile({ ...updateRequest, phone: null, email: 'taken@example.com', address: null })
       .subscribe({ error: err => (error = err) });
 
     httpMock.expectOne('/api/associates/me/profile')

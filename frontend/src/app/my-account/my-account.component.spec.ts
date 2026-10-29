@@ -256,37 +256,24 @@ describe('MyAccountComponent', () => {
     expect(fixture.nativeElement.querySelector('.detail-card__missing-chip')).toBeFalsy();
   });
 
-  it('submits the profile and nominee forms together via one Save Changes action', () => {
+  it('submits only the contact fields via Save Changes and never touches nominee', () => {
     init();
     fixture.componentInstance.form.patchValue({
-      name: 'Left K. Kumar', phone: '9990002222', email: 'left.k@example.com', address: '42 Wallaby Way'
+      phone: '9990002222', email: 'left.k@example.com', address: '42 Wallaby Way'
     });
-    fixture.componentInstance.nomineeForm.patchValue({ nomineeName: 'Kajal Devi', relation: 'Wife' });
     fixture.componentInstance.form.patchValue({ transactionPassword: 'secret123' });
     fixture.componentInstance.onSaveChanges();
 
     const profileReq = httpMock.expectOne('/api/associates/me/profile');
     expect(profileReq.request.method).toBe('PUT');
-    expect(profileReq.request.body.name).toBe('Left K. Kumar');
+    expect(profileReq.request.body.name).toBeUndefined();
     expect(profileReq.request.body.address).toBe('42 Wallaby Way');
-    profileReq.flush({ ...profileResponse, name: 'Left K. Kumar' });
+    profileReq.flush(profileResponse);
 
-    const nomineeReq = httpMock.expectOne('/api/associates/me/nominee');
-    expect(nomineeReq.request.method).toBe('PUT');
-    expect(nomineeReq.request.body).toEqual({ nomineeName: 'Kajal Devi', relation: 'Wife', transactionPassword: 'secret123' });
-    nomineeReq.flush({ nomineeName: 'Kajal Devi', relation: 'Wife', updatedAt: '2026-09-22T00:00:00Z' });
+    httpMock.expectNone('/api/associates/me/nominee');
 
     expect(fixture.componentInstance.saveError).toBeUndefined();
     expect(fixture.componentInstance.saveSuccess).toBeTrue();
-  });
-
-  it('does not submit when the form is invalid (blank name)', () => {
-    init();
-    fixture.componentInstance.form.patchValue({ name: '' });
-    fixture.componentInstance.onSaveChanges();
-
-    httpMock.expectNone('/api/associates/me/profile');
-    expect(fixture.componentInstance.profileIssues.map(i => i.id)).toContain('name');
   });
 
   it('surfaces a 409 email-conflict as a field-level error, read from the flat error body', () => {
@@ -535,40 +522,13 @@ describe('MyAccountComponent', () => {
     httpMock.expectNone('/api/associates/me/bank-details');
   });
 
-  it('submits the bank details form via updateBankDetails on save', () => {
+  it('locks the bank, nominee and personal-detail fields for the associate', () => {
     init();
-    switchTab('bankDetails');
-    httpMock.expectOne('/api/associates/me/bank-details').flush(bankDetailsResponse);
-
-    fixture.componentInstance.bankForm.patchValue({
-      bankName: 'State Bank', accountHolder: 'Left Kumar', accountNumber: '123456789012',
-      ifscCode: 'SBIN0001234', accountType: 'SAVINGS'
-    });
-    fixture.componentInstance.onBankSubmit();
-
-    const req = httpMock.expectOne('/api/associates/me/bank-details');
-    expect(req.request.method).toBe('PUT');
-    expect(req.request.body).toEqual({
-      bankName: 'State Bank', accountHolder: 'Left Kumar', accountNumber: '123456789012',
-      ifscCode: 'SBIN0001234', accountType: 'SAVINGS'
-    });
-    req.flush({ ...bankDetailsResponse, bankName: 'State Bank' });
-
-    expect(fixture.componentInstance.bankSaveSuccess).toBeTrue();
-  });
-
-  it('does not submit the bank details form with a malformed IFSC code', () => {
-    init();
-    switchTab('bankDetails');
-    httpMock.expectOne('/api/associates/me/bank-details').flush(bankDetailsResponse);
-
-    fixture.componentInstance.bankForm.patchValue({
-      bankName: 'State Bank', accountHolder: 'Left Kumar', accountNumber: '123456789012',
-      ifscCode: 'not-an-ifsc', accountType: 'SAVINGS'
-    });
-    fixture.componentInstance.onBankSubmit();
-
-    httpMock.expectNone('/api/associates/me/bank-details');
+    const c = fixture.componentInstance;
+    expect(c.bankForm.disabled).toBeTrue();
+    expect(c.nomineeForm.disabled).toBeTrue();
+    ['name', 'fatherHusbandName', 'dateOfBirth', 'gender', 'maritalStatus'].forEach(k => expect(c.form.get(k)!.disabled).toBeTrue());
+    expect(c.form.get('phone')!.enabled).toBeTrue();
   });
 
   it('renders the KYC document count as uploaded/total', () => {

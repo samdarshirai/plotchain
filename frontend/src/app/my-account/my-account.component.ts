@@ -7,7 +7,7 @@ import { ActivatedRoute } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
-import { concatMap, map, takeUntil } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
 import { AssociateProfileService } from '../profile-kyc/associate-profile.service';
 import { AssociateKycService } from '../profile-kyc/associate-kyc.service';
 import { AssociateProfileResponse, UpdateAssociateProfileRequest } from '../profile-kyc/models/associate-profile.model';
@@ -16,7 +16,7 @@ import { RewardsService } from './rewards.service';
 import { AssociateRankProgress } from './models/associate-rank-progress.model';
 import { AssociateBankDetailsService } from './associate-bank-details.service';
 import { AssociateNomineeService } from './associate-nominee.service';
-import { AssociateNomineeResponse, UpdateAssociateNomineeRequest } from './models/associate-nominee.model';
+import { AssociateNomineeResponse } from './models/associate-nominee.model';
 import { AssociatePhotoService } from './associate-photo.service';
 import { AssociateTransactionPasswordService } from './associate-transaction-password.service';
 import { TransactionPasswordStatusResponse } from './models/associate-transaction-password.model';
@@ -409,17 +409,13 @@ const BANK_LABELS = { bankName: 'Bank name', accountHolder: 'Account holder', ac
           </form>
         </ng-container>
 
-        <form class="bank-card" [formGroup]="bankForm" [class.was-submitted]="bankSubmitted" (ngSubmit)="onBankSubmit()" novalidate *ngIf="activeTab === 'bankDetails'">
+        <form class="bank-card" [formGroup]="bankForm" [class.was-submitted]="bankSubmitted" novalidate *ngIf="activeTab === 'bankDetails'">
           <div class="bank-card__header">
             <span class="bank-card__title">{{ 'myAccount.bankDetails.title' | translate }}</span>
-            <app-brand-button type="submit" variant="primary" class="bank-card__save">
-              {{ 'myAccount.bankDetails.saveAction' | translate }}
-            </app-brand-button>
           </div>
           <app-error-summary [issues]="bankIssues"></app-error-summary>
           <p *ngIf="bankLoadError" class="my-account__load-error">{{ 'myAccount.bankDetails.loadError' | translate }}</p>
-          <app-inline-banner *ngIf="bankSaveSuccess" tone="success">{{ 'myAccount.bankDetails.saveSuccess' | translate }}</app-inline-banner>
-          <app-inline-banner *ngIf="bankSaveError" tone="danger" class="bank-card__save-error">{{ bankSaveError }}</app-inline-banner>
+          <app-inline-banner tone="info">{{ 'myAccount.lockedHint' | translate }}</app-inline-banner>
 
           <div class="bank-card__fields">
             <label class="bank-card__field">
@@ -635,6 +631,10 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   private bankServerFieldErrors: Record<string, string> = {};
 
   ngOnInit(): void {
+    // Only contact info is associate-editable; everything else is changed by an admin.
+    ['name', 'fatherHusbandName', 'dateOfBirth', 'gender', 'maritalStatus'].forEach(k => this.form.get(k)!.disable());
+    this.nomineeForm.disable();
+    this.bankForm.disable();
     this.loadProfile();
     this.loadNominee();
     this.loadKycStatus();
@@ -762,25 +762,14 @@ export class MyAccountComponent implements OnInit, OnDestroy {
       return;
     }
     const profileRequest: UpdateAssociateProfileRequest = {
-      name: v.name!, phone: v.phone || null, email: v.email || null, address: v.address || null,
-      fatherHusbandName: v.fatherHusbandName || null, dateOfBirth: v.dateOfBirth || null,
-      gender: v.gender || null, maritalStatus: v.maritalStatus || null,
+      phone: v.phone || null, email: v.email || null, address: v.address || null,
       state: v.state || null, district: v.district || null, postalCode: v.postalCode || null,
       transactionPassword
     };
-    const nomineeValue = this.nomineeForm.getRawValue();
-    const nomineeRequest: UpdateAssociateNomineeRequest = {
-      nomineeName: nomineeValue.nomineeName || null, relation: nomineeValue.relation || null, transactionPassword
-    };
 
-    this.associateProfileService.updateProfile(profileRequest).pipe(
-      concatMap(profileRes => this.associateNomineeService.updateNominee(nomineeRequest).pipe(
-        map(nomineeRes => [profileRes, nomineeRes] as const)
-      ))
-    ).subscribe({
-      next: ([profileRes, nomineeRes]) => {
+    this.associateProfileService.updateProfile(profileRequest).subscribe({
+      next: profileRes => {
         this.profile = profileRes;
-        this.nominee = nomineeRes;
         this.saveSuccess = true;
         this.form.patchValue({ transactionPassword: '' });
       },
@@ -896,34 +885,6 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   onRemovePhoto(): void {
     this.associatePhotoService.removePhoto().subscribe({
       next: () => this.setPhotoObjectUrl(null)
-    });
-  }
-
-  onBankSubmit(): void {
-    this.bankSubmitted = true;
-    this.bankForm.markAllAsTouched();
-    this.bankIssues = collectIssues(this.bankForm, BANK_LABELS);
-    if (this.bankForm.invalid) {
-      return;
-    }
-    this.bankSaveSuccess = false;
-    this.bankSaveError = undefined;
-    this.bankServerFieldErrors = {};
-
-    const { bankName, accountHolder, accountNumber, ifscCode, accountType } = this.bankForm.getRawValue();
-    this.associateBankDetailsService.updateBankDetails({
-      bankName: bankName!, accountHolder: accountHolder!, accountNumber: accountNumber!,
-      ifscCode: ifscCode!, accountType: accountType as 'CURRENT' | 'SAVINGS'
-    }).subscribe({
-      next: res => {
-        this.applyBankDetails(res);
-        this.bankSaveSuccess = true;
-      },
-      error: (err: HttpErrorResponse) => {
-        this.bankServerFieldErrors = toFieldErrors(err);
-        this.bankIssues = collectIssues(this.bankForm, BANK_LABELS, this.bankServerFieldErrors);
-        this.bankSaveError = this.translate.instant('myAccount.bankDetails.saveError');
-      }
     });
   }
 

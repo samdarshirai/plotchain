@@ -13,14 +13,11 @@ public class AssociateNomineeService {
 
     private final AssociateRepository associateRepository;
     private final AssociateNomineeRepository associateNomineeRepository;
-    private final TransactionPasswordGuard transactionPasswordGuard;
 
     public AssociateNomineeService(AssociateRepository associateRepository,
-                                    AssociateNomineeRepository associateNomineeRepository,
-                                    TransactionPasswordGuard transactionPasswordGuard) {
+                                    AssociateNomineeRepository associateNomineeRepository) {
         this.associateRepository = associateRepository;
         this.associateNomineeRepository = associateNomineeRepository;
-        this.transactionPasswordGuard = transactionPasswordGuard;
     }
 
     public AssociateNomineeResponse getNominee(UUID associateId) {
@@ -31,8 +28,7 @@ public class AssociateNomineeService {
             .orElseGet(AssociateNomineeResponse::empty);
     }
 
-    public AssociateNomineeResponse updateNominee(UUID associateId, UpdateAssociateNomineeRequest request) {
-        transactionPasswordGuard.require(associateId, request.transactionPassword());
+    public AssociateNomineeResponse updateNominee(UUID associateId, AdminUpdateAssociateNomineeRequest request) {
         associateRepository.findById(associateId)
             .orElseThrow(() -> new AssociateNotFoundException(associateId));
 

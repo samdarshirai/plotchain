@@ -986,24 +986,24 @@ class SecurityConfigTest {
     // ABOVE the blanket ADMIN write rules, same ordering trap as profileUpdateIsReachableByAnAssociateToken
     // above. Only a 403 here would mean the matcher ordering regressed.
     @Test
-    void bankDetailsUpdateIsReachableByAnAssociateToken() throws Exception {
+    void bankDetailsUpdateIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(put("/api/associates/me/bank-details")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
                 .contentType("application/json")
                 .content("{\"bankName\":\"State Bank\",\"accountHolder\":\"Jane Doe\",\"accountNumber\":\"123456789012\",\"ifscCode\":\"SBIN0001234\",\"accountType\":\"SAVINGS\"}"))
-            .andExpect(status().is(not(403)));
+            .andExpect(status().isForbidden());
     }
 
     // Profile screen redesign: PUT /api/associates/me/nominee needs its own matcher ABOVE the
-    // blanket ADMIN write rules, same ordering trap as bankDetailsUpdateIsReachableByAnAssociateToken
+    // blanket ADMIN write rules, same ordering trap as bankDetailsUpdateIsForbiddenForAnAssociateToken
     // above. Only a 403 here would mean the matcher ordering regressed.
     @Test
-    void nomineeUpdateIsReachableByAnAssociateToken() throws Exception {
+    void nomineeUpdateIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(put("/api/associates/me/nominee")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE))
                 .contentType("application/json")
                 .content("{\"nomineeName\":\"Kajal Devi\",\"relation\":\"Wife\"}"))
-            .andExpect(status().is(not(403)));
+            .andExpect(status().isForbidden());
     }
 
     // Profile screen redesign: POST/DELETE /api/associates/me/photo need their own matchers

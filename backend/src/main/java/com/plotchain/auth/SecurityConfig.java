@@ -100,20 +100,6 @@ public class SecurityConfig {
                 // /api/associates/me/dashboard, GET /api/associates/me/sales, and GET
                 // /api/associates/me/kyc already do.
                 .requestMatchers(HttpMethod.PUT, "/api/associates/me/profile").authenticated()
-                // Self-service bank-details edit: same shape as the profile-edit matcher directly
-                // above (My Account "Bank Details" tab, docs/superpowers/plans/can-you-break-down-vectorized-dongarra.md).
-                // Must precede the blanket ADMIN write rules below (first-match-wins) or an
-                // associate could never save their own bank details. GET needs no matcher of its
-                // own -- falls through to anyRequest().authenticated(), same as GET
-                // /api/associates/me/profile.
-                .requestMatchers(HttpMethod.PUT, "/api/associates/me/bank-details").authenticated()
-                // Self-service nominee edit: profile screen redesign ("Viraj Acres" mockup's
-                // Nominee Detail section), same shape as the bank-details matcher directly above.
-                // Must precede the blanket ADMIN write rules below (first-match-wins) or an
-                // associate could never save their own nominee. GET needs no matcher of its own --
-                // falls through to anyRequest().authenticated(), same as GET
-                // /api/associates/me/bank-details.
-                .requestMatchers(HttpMethod.PUT, "/api/associates/me/nominee").authenticated()
                 // Self-service profile photo upload/remove: profile screen redesign ("Viraj
                 // Acres" mockup's hero photo), same shape as the nominee matcher directly above.
                 // Must precede the blanket ADMIN write rules below (first-match-wins) or an
@@ -351,7 +337,9 @@ public class SecurityConfig {
                 // themselves (AdminAssociateController, KycReviewController) -- the first use
                 // of real per-role narrowing in this codebase.
                 .requestMatchers(HttpMethod.GET, "/api/admin/users").hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/admin/associates", "/api/admin/associates/*")
+                .requestMatchers(HttpMethod.GET, "/api/admin/associates", "/api/admin/associates/*",
+                    "/api/admin/associates/*/profile", "/api/admin/associates/*/bank-details",
+                    "/api/admin/associates/*/nominee")
                     .hasAuthority("ADMIN")
                 // "/api/admin/tree" (no segment) is the whole-company tree rooted at the
                 // founding admin; "/api/admin/tree/*" covers /{associateId} and /search.

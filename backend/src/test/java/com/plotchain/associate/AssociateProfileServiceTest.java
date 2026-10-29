@@ -47,7 +47,7 @@ class AssociateProfileServiceTest {
 
     private static UpdateAssociateProfileRequest requestWith(String name, String phone, String email, String address) {
         return new UpdateAssociateProfileRequest(
-            name, phone, email, address, null, null, null, null, null, null, null, null);
+            phone, email, address, null, null, null, null);
     }
 
     @Test
@@ -82,11 +82,9 @@ class AssociateProfileServiceTest {
 
         AssociateProfileResponse response = service.updateProfile(ASSOCIATE_ID, request);
 
-        assertThat(response.name()).isEqualTo("Jane A. Doe");
         assertThat(response.phone()).isEqualTo("9990002222");
         assertThat(response.email()).isEqualTo("jane.doe@example.com");
         assertThat(response.address()).isEqualTo("42 Wallaby Way");
-        assertThat(associate.getName()).isEqualTo("Jane A. Doe");
         assertThat(associate.getPhone()).isEqualTo("9990002222");
         assertThat(associate.getEmail()).isEqualTo("jane.doe@example.com");
         assertThat(associate.getAddress()).isEqualTo("42 Wallaby Way");
@@ -147,15 +145,10 @@ class AssociateProfileServiceTest {
         Associate associate = seeded();
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
         UpdateAssociateProfileRequest request = new UpdateAssociateProfileRequest(
-            "Jane Doe", "9990001111", "jane@example.com", "221B Baker Street",
-            "John Doe", LocalDate.of(1990, 5, 1), "FEMALE", "MARRIED", "Bihar", "Patna", "801503", null);
+            "9990001111", "jane@example.com", "221B Baker Street", "Bihar", "Patna", "801503", null);
 
         AssociateProfileResponse response = service.updateProfile(ASSOCIATE_ID, request);
 
-        assertThat(response.fatherHusbandName()).isEqualTo("John Doe");
-        assertThat(response.dateOfBirth()).isEqualTo(LocalDate.of(1990, 5, 1));
-        assertThat(response.gender()).isEqualTo("FEMALE");
-        assertThat(response.maritalStatus()).isEqualTo("MARRIED");
         assertThat(response.state()).isEqualTo("Bihar");
         assertThat(response.district()).isEqualTo("Patna");
         assertThat(response.postalCode()).isEqualTo("801503");
@@ -166,8 +159,7 @@ class AssociateProfileServiceTest {
         Associate associate = seeded();
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associate));
         UpdateAssociateProfileRequest request = new UpdateAssociateProfileRequest(
-            "Jane Doe", "9990001111", "jane@example.com", null,
-            null, null, null, null, null, null, null, "secret123");
+            "9990001111", "jane@example.com", null, null, null, null, "secret123");
 
         service.updateProfile(ASSOCIATE_ID, request);
 

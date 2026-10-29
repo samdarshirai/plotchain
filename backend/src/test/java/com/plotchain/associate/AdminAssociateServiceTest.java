@@ -60,7 +60,7 @@ class AdminAssociateServiceTest {
             settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
         service = new AdminAssociateService(
             associateRepository, rankTierRepository, cycleRepository, legVolumeRepository,
-            passwordEncoder, settingsAuditService, associateStatusCache);
+            passwordEncoder, settingsAuditService, associateStatusCache, null, null);
     }
 
     private Associate newAssociate(UUID id, String userId) {

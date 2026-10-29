@@ -55,7 +55,7 @@ class AssociateProfileControllerTest {
 
     private static UpdateAssociateProfileRequest requestWith(String name, String phone, String email, String address) {
         return new UpdateAssociateProfileRequest(
-            name, phone, email, address, null, null, null, null, null, null, null, "secret123");
+            phone, email, address, null, null, null, "secret123");
     }
 
     @Test
@@ -92,7 +92,6 @@ class AssociateProfileControllerTest {
                 .content(new ObjectMapper().writeValueAsString(
                     requestWith("Jane A. Doe", "9990002222", "jane.a.doe@example.com", "42 Wallaby Way"))))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.name").value("Jane A. Doe"))
             .andExpect(jsonPath("$.phone").value("9990002222"))
             .andExpect(jsonPath("$.email").value("jane.a.doe@example.com"))
             .andExpect(jsonPath("$.address").value("42 Wallaby Way"));
@@ -111,19 +110,6 @@ class AssociateProfileControllerTest {
                     requestWith("Jane A. Doe", "9990002222", "jane.a.doe@example.com", "42 Wallaby Way"))))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.code").value("TRANSACTION_PASSWORD_NOT_SET"));
-    }
-
-    @Test
-    void putRejectsABlankName() throws Exception {
-        Associate self = seeded(UUID.randomUUID());
-        String token = tokenFor(self);
-
-        mockMvc.perform(put("/api/associates/me/profile")
-                .header("Authorization", "Bearer " + token)
-                .contentType("application/json")
-                .content(new ObjectMapper().writeValueAsString(
-                    requestWith("  ", "9990002222", "jane@example.com", null))))
-            .andExpect(status().isBadRequest());
     }
 
     @Test

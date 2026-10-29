@@ -1,10 +1,7 @@
 package com.plotchain.associate;
 
-import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,13 +23,5 @@ public class AssociateBankDetailsController {
     @GetMapping
     public AssociateBankDetailsResponse get(@AuthenticationPrincipal UUID associateId) {
         return associateBankDetailsService.getBankDetails(associateId);
-    }
-
-    @PutMapping
-    public AssociateBankDetailsResponse update(
-        @AuthenticationPrincipal UUID associateId,
-        @Valid @RequestBody UpdateAssociateBankDetailsRequest request
-    ) {
-        return associateBankDetailsService.updateBankDetails(associateId, request);
     }
 }

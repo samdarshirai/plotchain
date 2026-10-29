@@ -8,6 +8,7 @@ import { AssociateDirectoryService } from './associate-directory.service';
 import { AdminAssociatePage, AdminAssociateFilters } from '../models/admin-associate-page.model';
 import { AdminAssociateDetail } from '../models/admin-associate-detail.model';
 import { NewAssociatePanelComponent } from '../new-associate-panel/new-associate-panel.component';
+import { EditAssociatePanelComponent } from './edit-associate-panel.component';
 import { SidePanelComponent } from '../../shared/components/side-panel/side-panel.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { CompensationPlanService } from '../../setup/steps/compensation/compensation-plan.service';
@@ -31,7 +32,7 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
 @Component({
   selector: 'app-associate-directory',
   standalone: true,
-  imports: [CommonModule, TranslateModule, SidePanelComponent, InlineBannerComponent, NewAssociatePanelComponent, EditableTableComponent, TabBarComponent, FieldErrorComponent],
+  imports: [CommonModule, TranslateModule, SidePanelComponent, InlineBannerComponent, NewAssociatePanelComponent, EditAssociatePanelComponent, EditableTableComponent, TabBarComponent, FieldErrorComponent],
   template: `
     <div class="associate-directory">
       <div class="associate-directory__header">
@@ -233,6 +234,9 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
           <button type="button" class="brand-button" *ngIf="selected.status === 'SUSPENDED'" (click)="reactivateSelected()">
             {{ 'admin.associateDirectory.reactivateAction' | translate }}
           </button>
+          <button type="button" class="brand-button brand-button--secondary" (click)="editOpen = true">
+            Edit details
+          </button>
           <button type="button" class="brand-button brand-button--secondary" (click)="resetPasswordForSelected()">
             {{ 'admin.associateDirectory.resetPasswordAction' | translate }}
           </button>
@@ -242,6 +246,15 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
         </div>
       </div>
     </app-side-panel>
+
+    <app-edit-associate-panel
+      *ngIf="selected"
+      [open]="editOpen"
+      [associateId]="selected.id"
+      [userId]="selected.userId"
+      (closed)="editOpen = false"
+      (saved)="onEdited()"
+    ></app-edit-associate-panel>
 
     <app-new-associate-panel
       [open]="modalOpen"
@@ -265,6 +278,7 @@ export class AssociateDirectoryComponent implements OnInit {
   page: AdminAssociatePage | null = null;
   selected: AdminAssociateDetail | null = null;
   panelOpen = false;
+  editOpen = false;
   temporaryPassword: string | null = null;
   newTransactionPassword: string | null = null;
   transactionPasswordResetDone = false;
@@ -390,6 +404,12 @@ export class AssociateDirectoryComponent implements OnInit {
 
   closePanel(): void {
     this.panelOpen = false;
+  }
+
+  onEdited(): void {
+    if (!this.selected) return;
+    this.associateDirectoryService.get(this.selected.id).subscribe(detail => (this.selected = detail));
+    this.loadPage(this.page?.page ?? 0);
   }
 
   suspendSelected(): void {
