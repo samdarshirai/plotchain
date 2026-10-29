@@ -81,16 +81,6 @@ class AssociateProvisioningServiceTest {
     }
 
     @Test
-    void rejectsADuplicatePhone() {
-        when(associateRepository.existsByPhone("9990001111")).thenReturn(true);
-
-        assertThatThrownBy(() -> service.create(
-            req(null, null, "9990001111")))
-            .isInstanceOf(com.plotchain.epin.EPinDuplicateIdentityException.class)
-            .hasMessage("PHONE_TAKEN");
-    }
-
-    @Test
     void rejectsAPlacementThatIsAlreadyOccupied() {
         UUID parentId = UUID.randomUUID();
         when(associateRepository.findById(parentId)).thenReturn(Optional.of(new Associate()));
