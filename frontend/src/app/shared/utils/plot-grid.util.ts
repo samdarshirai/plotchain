@@ -10,6 +10,7 @@ export interface PlotGridItem {
   price: number;
   status: PlotStatus;
   extraPrice?: number;
+  extraPercent?: number;
   roadSizeFt?: number | null;
 }
 

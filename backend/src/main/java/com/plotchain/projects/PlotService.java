@@ -7,6 +7,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,7 +46,7 @@ public class PlotService {
             request.price(),
             resolveStatus(request.status())
         );
-        plot.setExtraPrice(request.extraPrice());
+        applyExtra(plot, request);
         plot.setRoadSizeFt(request.roadSizeFt());
         plotRepository.save(plot);
         PlotResponse response = toResponse(plot);
@@ -73,7 +75,7 @@ public class PlotService {
         plot.setAreaSqft(request.areaSqft());
         plot.setRate(request.rate());
         plot.setPrice(request.price());
-        plot.setExtraPrice(request.extraPrice());
+        applyExtra(plot, request);
         plot.setRoadSizeFt(request.roadSizeFt());
         plot.setStatus(newStatus);
         plotRepository.save(plot);
@@ -98,6 +100,16 @@ public class PlotService {
         }
     }
 
+    // Extra Price is derived from the percentage when one is given; otherwise the flat extraPrice
+    // is kept (CSV import, older clients). ponytail: the project's corner default is prefilled by the
+    // UI, not applied server-side; inject ProjectRepository here if API-only clients need it.
+    private static void applyExtra(Plot plot, PlotRequest request) {
+        BigDecimal pct = request.extraPercent();
+        plot.setExtraPercent(pct);
+        plot.setExtraPrice(pct == null ? request.extraPrice()
+            : request.price().multiply(pct).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP));
+    }
+
     private static PlotStatus resolveStatus(String status) {
         return (status == null || status.isBlank()) ? PlotStatus.AVAILABLE : PlotStatus.valueOf(status);
     }
@@ -116,7 +128,8 @@ public class PlotService {
             plot.getPrice(),
             plot.getStatus().name(),
             plot.getExtraPrice(),
-            plot.getRoadSizeFt()
+            plot.getRoadSizeFt(),
+            plot.getExtraPercent()
         );
     }
 }

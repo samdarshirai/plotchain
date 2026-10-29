@@ -39,6 +39,9 @@ public class Plot {
     @Column(name = "extra_price")
     private BigDecimal extraPrice = BigDecimal.ZERO;
 
+    @Column(name = "extra_percent")
+    private BigDecimal extraPercent = BigDecimal.ZERO;
+
     @Column(name = "road_size_ft")
     private BigDecimal roadSizeFt;
 
@@ -80,6 +83,8 @@ public class Plot {
 
     public BigDecimal getRoadSizeFt() { return roadSizeFt; }
     public void setRoadSizeFt(BigDecimal roadSizeFt) { this.roadSizeFt = roadSizeFt; }
+    public BigDecimal getExtraPercent() { return extraPercent; }
+    public void setExtraPercent(BigDecimal extraPercent) { this.extraPercent = extraPercent == null ? BigDecimal.ZERO : extraPercent; }
     public BigDecimal getExtraPrice() { return extraPrice; }
     public void setExtraPrice(BigDecimal extraPrice) { this.extraPrice = extraPrice == null ? BigDecimal.ZERO : extraPrice; }
 

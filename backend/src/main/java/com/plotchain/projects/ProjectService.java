@@ -40,6 +40,7 @@ public class ProjectService {
 
     public ProjectResponse create(ProjectRequest request, UUID actorId) {
         Project project = new Project(UUID.randomUUID(), request.name(), request.location(), null, null, Instant.now());
+        project.setCornerExtraPercent(request.cornerExtraPercent());
         projectRepository.save(project);
         ProjectResponse response = toResponse(project);
         settingsAuditService.record("PROJECTS", "Created project " + project.getName(), response, actorId);
@@ -51,6 +52,7 @@ public class ProjectService {
         ProjectResponse before = toResponse(project);
         project.setName(request.name());
         project.setLocation(request.location());
+        project.setCornerExtraPercent(request.cornerExtraPercent());
         projectRepository.save(project);
         ProjectResponse after = toResponse(project);
         settingsAuditService.record("PROJECTS", "Updated project " + project.getName(),
@@ -122,7 +124,8 @@ public class ProjectService {
             plotRepository.countByProjectIdAndStatus(id, PlotStatus.AVAILABLE),
             plotRepository.countByProjectIdAndStatus(id, PlotStatus.SOLD),
             project.getCreatedAt(),
-            project.getMasterProjectId()
+            project.getMasterProjectId(),
+            project.getCornerExtraPercent()
         );
     }
 }

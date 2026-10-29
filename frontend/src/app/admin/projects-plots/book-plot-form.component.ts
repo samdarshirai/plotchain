@@ -42,9 +42,9 @@ import { PAYMENT_MODES } from '../../plot-bookings/models/associate-booking-page
         <input type="tel" name="buyerPhone" maxlength="20" [disabled]="busy" [(ngModel)]="buyerPhone" [attr.aria-invalid]="phoneError ? 'true' : null" />
         <app-field-error [message]="phoneError"></app-field-error>
       </label>
-      <label class="book-form__extra"><span>{{ 'admin.projectsPlots.extraPriceLabel' | translate }} <span>{{ 'admin.projectsPlots.optional' | translate }}</span></span>
-        <input #extraInput type="number" name="extraPrice" inputmode="decimal" min="0" step="any" autocomplete="off"
-          [disabled]="busy" [(ngModel)]="extraRaw" [attr.aria-invalid]="extraError ? 'true' : null" />
+      <label class="book-form__extra"><span>{{ 'admin.projectsPlots.extraPercentLabel' | translate }} = {{ extraText }}</span>
+        <input #extraInput type="number" name="extraPercent" inputmode="decimal" min="0" max="100" step="any" autocomplete="off"
+          [disabled]="busy" [(ngModel)]="extraPercentRaw" [attr.aria-invalid]="extraError ? 'true' : null" />
         <app-field-error [message]="(extraError ? 'admin.projectsPlots.error.generic' : '') | translate"></app-field-error>
       </label>
       <label class="book-form__discount"><span>{{ 'admin.projectsPlots.discountLabel' | translate }} <span>{{ 'admin.projectsPlots.optional' | translate }}</span></span>
@@ -144,13 +144,17 @@ export class BookPlotFormComponent implements OnInit {
   buyerName = '';
   buyerPhone = '';
   tokenAmount: number | null = null;
-  extraRaw: number | null = null;
+  extraPercentRaw: number | null = null;
   discountRaw: number | null = null;
   tried = false;
   issues: FormIssue[] = [];
 
-  // Prefilled from the plot's default Extra Price; the booking's own value overrides it.
-  ngOnInit(): void { this.extraRaw = this.plot.extraPrice ?? 0; }
+  // Prefilled from the plot's default Extra %; the booking's own value overrides it. Plots saved
+  // with only a flat amount show the equivalent %.
+  ngOnInit(): void {
+    const { extraPercent, extraPrice, price } = this.plot;
+    this.extraPercentRaw = extraPercent || (extraPrice && price ? round2(extraPrice / price * 100) : 0);
+  }
 
   // Associate is looked up client-side by its ID against the already-loaded list.
   lookupAssociate(): void {
@@ -170,8 +174,8 @@ export class BookPlotFormComponent implements OnInit {
     return f != null && (!(f > 0) || f > this.net - (this.tokenAmount ?? 0));
   }
 
-  get extra(): number { return round2(this.extraRaw ?? 0); }
-  get extraInvalid(): boolean { return this.extra < 0; }
+  get extra(): number { return round2(this.plot.price * (this.extraPercentRaw ?? 0) / 100); }
+  get extraInvalid(): boolean { const p = this.extraPercentRaw ?? 0; return p < 0 || p > 100; }
   get extraError(): boolean { return this.tried && this.extraInvalid; }
   get extraText(): string { return formatInr(this.extra); }
 
@@ -184,7 +188,7 @@ export class BookPlotFormComponent implements OnInit {
     const add = (id: string, label: string, message: string) => out.push({ id, label, message });
     if (!this.buyerName.trim()) { add('buyerName', 'Buyer name', 'Buyer name is required. Please fill it in.'); }
     if (this.phoneError) { add('buyerPhone', 'Buyer phone', this.phoneError); }
-    if (this.extraInvalid) { add('extraPrice', 'Extra price', 'Extra price cannot be negative. Enter 0 or more.'); }
+    if (this.extraInvalid) { add('extraPercent', 'Extra %', 'Extra % must be between 0 and 100.'); }
     if (this.discountError) { add('discount', 'Discount', this.discountError === 'negative' ? 'Discount cannot be negative. Enter 0 or more.' : 'Discount must be less than the total price. Enter a smaller amount.'); }
     if (this.firstError) { add('firstInstallmentAmount', 'First installment', 'First installment must be above 0 and within the balance after the booking amount.'); }
     if (this.tokenError) { add('tokenAmount', 'Booking amount', this.tokenError === 'required' ? 'Booking amount is required. Enter an amount above 0.' : 'Booking amount must be less than the net total. Enter a smaller amount.'); }
@@ -272,7 +276,7 @@ export class BookPlotFormComponent implements OnInit {
     }
     if (!this.associateId || !this.paymentMode || !this.txnNo.trim() || this.bankError || this.dateError) { return; }
     this.submitted.emit({ paymentMode: this.paymentMode, txnNo: this.txnNo.trim(), bankName: this.bankName.trim(), txnDate: this.txnDate,
-      firstInstallmentAmount: this.firstInstallmentAmount ?? undefined, associateId: this.associateId, buyerName: this.buyerName.trim(), buyerPhone: this.buyerPhone.trim(), tokenAmount: this.tokenAmount!, discount: this.discount, extraPrice: this.extra });
+      firstInstallmentAmount: this.firstInstallmentAmount ?? undefined, associateId: this.associateId, buyerName: this.buyerName.trim(), buyerPhone: this.buyerPhone.trim(), tokenAmount: this.tokenAmount!, discount: this.discount, extraPrice: this.extra, extraPercent: this.extraPercentRaw ?? 0 });
   }
 }
 

@@ -1,5 +1,7 @@
 package com.plotchain.booking;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -14,7 +16,7 @@ import java.util.UUID;
 // as Sales' CreateSaleRequest omitting amount), and the installment split always derives from the
 // singleton BookingEmiConfig policy. The one client-supplied amount is tokenAmount: it is recorded
 // as installment 1, already PAID, and the rest of the price is split across the other installments.
-// Optional extraPrice (null = the plot's default) is added to the list price. Optional discount (null = 0) comes off the list price. The upper bounds (discount below the plot price,
+// Optional extraPercent (% of list price) wins over extraPrice; both null = the plot's default. Optional extraPrice (null = the plot's default) is added to the list price. Optional discount (null = 0) comes off the list price. The upper bounds (discount below the plot price,
 // token below the discounted total) need the plot, so BookingService checks them.
 public record CreateBookingRequest(
     @NotNull UUID plotId,
@@ -28,8 +30,16 @@ public record CreateBookingRequest(
     @Size(max = 100) String txnNo,
     @Size(max = 100) String bankName,
     LocalDate txnDate,
-    @Positive BigDecimal firstInstallmentAmount
+    @Positive BigDecimal firstInstallmentAmount,
+    @DecimalMin("0") @DecimalMax("100") BigDecimal extraPercent
 ) {
+    public CreateBookingRequest(UUID plotId, UUID associateId, String buyerName, String buyerPhone,
+                                BigDecimal tokenAmount, BigDecimal discount, BigDecimal extraPrice,
+                                PaymentMode paymentMode, String txnNo, String bankName, LocalDate txnDate,
+                                BigDecimal firstInstallmentAmount) {
+        this(plotId, associateId, buyerName, buyerPhone, tokenAmount, discount, extraPrice, paymentMode, txnNo, bankName, txnDate, firstInstallmentAmount, null);
+    }
+
     public CreateBookingRequest(UUID plotId, UUID associateId, String buyerName, String buyerPhone,
                                 BigDecimal tokenAmount, BigDecimal discount, BigDecimal extraPrice) {
         this(plotId, associateId, buyerName, buyerPhone, tokenAmount, discount, extraPrice, null, null, null, null, null);

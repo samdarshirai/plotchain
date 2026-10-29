@@ -365,6 +365,19 @@ class BookingServiceTest {
         assertThat(response.totalAmount()).isEqualByComparingTo("600000.00");
     }
 
+    @Test
+    void createBookingExtraPercentIsAppliedToTheListPrice() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        BookingResponse response = bookingService.createBooking(new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID,
+            "Jane Buyer", "9999999999", new BigDecimal("100000"), new BigDecimal("50000"), new BigDecimal("1"),
+            null, null, null, null, null, new BigDecimal("10")));
+
+        // 10% of 600000 = 60000 wins over the flat 1; total = 600000 + 60000 - 50000
+        assertThat(response.extraPrice()).isEqualByComparingTo("60000.00");
+        assertThat(response.totalAmount()).isEqualByComparingTo("610000.00");
+    }
+
     private CreateBookingRequest requestWithDiscount(String token, String discount) {
         return new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "9999999999",
             new BigDecimal(token), new BigDecimal(discount));

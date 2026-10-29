@@ -64,6 +64,10 @@ const PAGE_SIZE = 20;
             {{ 'setup.projects.locationLabel' | translate }}
             <input type="text" formControlName="location" />
           </label>
+          <label>
+            {{ 'setup.projects.cornerExtraLabel' | translate }}
+            <input type="number" formControlName="cornerExtraPercent" min="0" max="100" step="any" />
+          </label>
         </div>
         <app-field-error [control]="addProjectForm.get('name')" label="Project name" [submitted]="projectSubmitted"></app-field-error>
         <app-field-error [control]="addProjectForm.get('location')" label="Location" [submitted]="projectSubmitted"></app-field-error>
@@ -303,7 +307,8 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
   showAddProjectForm = false;
   addProjectForm = this.fb.nonNullable.group({
     name: ['', Validators.required],
-    location: ['', Validators.required]
+    location: ['', Validators.required],
+    cornerExtraPercent: [10, [Validators.min(0), Validators.max(100)]]
   });
   pendingThumbnail: File | null = null;
   pendingThumbnailPreview: string | null = null;
@@ -461,7 +466,7 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
     this.projectsService.createProject(this.addProjectForm.getRawValue()).subscribe(project => {
       const finish = (created: Project) => {
         this.projects = [...this.projects, created];
-        this.addProjectForm.reset({ name: '', location: '' });
+        this.addProjectForm.reset({ name: '', location: '', cornerExtraPercent: 10 });
         this.projectSubmitted = false;
         this.projectIssues = [];
         this.showAddProjectForm = false;

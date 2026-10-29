@@ -80,12 +80,12 @@ describe('ProjectsStepComponent', () => {
     flushProjectsList([]);
     const component = fixture.componentInstance;
 
-    component.addProjectForm.setValue({ name: 'Green Valley', location: 'Hyderabad' });
+    component.addProjectForm.setValue({ name: 'Green Valley', location: 'Hyderabad', cornerExtraPercent: 10 });
     component.submitAddProject();
 
     const req = httpMock.expectOne('/api/company/projects');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ name: 'Green Valley', location: 'Hyderabad' });
+    expect(req.request.body).toEqual({ name: 'Green Valley', location: 'Hyderabad', cornerExtraPercent: 10 });
     req.flush(project);
     flushSetupState();
 
