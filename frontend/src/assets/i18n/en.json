@@ -1333,7 +1333,7 @@
       "addTitle": "Add Project", "editTitle": "Edit Project", "emptyState": "No projects yet.", "loadError": "Could not load projects.", "saveError": "Could not save project.", "mapError": "Could not load or upload map.",
       "requiredError": "Required", "invalidError": "Invalid value", "columnSNo": "S No", "columnDetails": "Details", "projectName": "Project Name", "type": "Type", "typePlot": "Plot", "typeApartment": "Apartment",
       "location": "Location", "city": "City", "state": "State", "cityState": "City/State", "business": "Business Count (%)", "businessPercentage": "Business Count (%)",
-      "rate": "Rate (Price per Sqft)", "locationMap": "Location Map", "projectMap": "Project Map", "uploaded": "Uploaded", "mapAlt": "Map", "status": "Status", "statusActive": "Active", "statusSuspended": "Suspended"
+      "rate": "Rate (Price per Sqft)", "cornerExtra": "Corner plot extra % (default)", "locationMap": "Location Map", "projectMap": "Project Map", "uploaded": "Uploaded", "mapAlt": "Map", "status": "Status", "statusActive": "Active", "statusSuspended": "Suspended"
     },
     "expenseTypes": {
       "eyebrow": "Finance & Cycles", "title": "Expense Types", "subtitle": "Categories used to classify expenses. Set a type to Inactive to stop using it.",

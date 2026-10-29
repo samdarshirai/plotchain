@@ -129,6 +129,11 @@ import { titleCase } from '../../shared/utils/title-case';
               <app-field-error [message]="fieldError('ratePerSqft')"></app-field-error>
             </div>
             <div class="master-projects__modal-field">
+              <label>{{ 'admin.masterProjects.cornerExtra' | translate }}</label>
+              <input type="number" min="0" max="100" step="0.01" formControlName="cornerExtraPercent" />
+              <app-field-error [message]="fieldError('cornerExtraPercent')"></app-field-error>
+            </div>
+            <div class="master-projects__modal-field">
               <label>{{ 'admin.masterProjects.locationMap' | translate }}</label>
               <input type="file" accept="image/png,image/jpeg,image/webp" class="master-projects__location-map-input" (change)="pickFile('LOCATION', $event)" />
             </div>
@@ -164,7 +169,7 @@ export class MasterProjectsComponent implements OnInit, OnDestroy {
   private serverFieldErrors: Record<string, string> = {};
   submitted = false;
   issues: FormIssue[] = [];
-  private labels: Record<string, string> = { name: 'Project name', city: 'City', state: 'State', businessPercentage: 'Business percentage', ratePerSqft: 'Rate per sq ft' };
+  private labels: Record<string, string> = { name: 'Project name', city: 'City', state: 'State', businessPercentage: 'Business percentage', ratePerSqft: 'Rate per sq ft', cornerExtraPercent: 'Corner extra %' };
   private files: Partial<Record<MasterProjectMapKind, File>> = {};
   form = this.fb.nonNullable.group({
     name: ['', Validators.required],
@@ -173,6 +178,7 @@ export class MasterProjectsComponent implements OnInit, OnDestroy {
     state: ['', Validators.required],
     businessPercentage: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     ratePerSqft: [0, [Validators.required, Validators.min(0)]],
+    cornerExtraPercent: [10, [Validators.min(0), Validators.max(100)]],
     status: ['ACTIVE' as MasterProjectStatus]
   });
 
@@ -211,6 +217,7 @@ export class MasterProjectsComponent implements OnInit, OnDestroy {
       state: project?.state ?? '',
       businessPercentage: project?.businessPercentage ?? 0,
       ratePerSqft: project?.ratePerSqft ?? 0,
+      cornerExtraPercent: project?.cornerExtraPercent ?? 10,
       status: project?.status ?? 'ACTIVE'
     });
     this.modalOpen = true;
