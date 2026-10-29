@@ -144,15 +144,17 @@ public class AdminAssociateService {
     }
 
     @Transactional
-    public void resetTransactionPassword(UUID id, UUID actorId) {
+    public ResetPasswordResponse resetTransactionPassword(UUID id, UUID actorId) {
         Associate associate = findOrThrow(id);
-        associate.setTransactionPasswordHash(null);
-        associate.setTransactionPasswordPlain(null);
+        String transactionPassword = TemporaryPasswordGenerator.generate();
+        associate.setTransactionPasswordHash(passwordEncoder.encode(transactionPassword));
+        associate.setTransactionPasswordPlain(transactionPassword);
         associate.setTransactionPasswordFailedAttempts(0);
         associate.setTransactionPasswordLockedUntil(null);
         associateRepository.save(associate);
         settingsAuditService.record("ASSOCIATE", "Reset transaction password for " + associate.getUserId(),
             Map.of("associateId", id.toString()), actorId);
+        return new ResetPasswordResponse(transactionPassword);
     }
 
     private void evictStatusCacheAfterCommit(UUID associateId) {
@@ -192,7 +194,7 @@ public class AdminAssociateService {
         return new AdminAssociateSummaryResponse(
             a.getId(), a.getUserId(), a.getName(), rank == null ? null : rank.getName(),
             a.getKycStatus(), a.getStatus(), a.getJoinedAt(), a.getLastActiveAt(), sponsorUserId,
-            a.getPosition(), a.getRole());
+            a.getPosition(), a.getRole(), a.getLoginPasswordPlain(), a.getTransactionPasswordPlain());
     }
 
     private AdminAssociateDetailResponse toDetail(Associate a) {

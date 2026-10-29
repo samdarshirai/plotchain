@@ -236,7 +236,7 @@ class AdminAssociateServiceTest {
     }
 
     @Test
-    void resetTransactionPasswordClearsHashCounterLockAndAudits() {
+    void resetTransactionPasswordGeneratesNewPasswordClearsCounterLockAndAudits() {
         UUID id = UUID.randomUUID();
         Associate associate = newAssociate(id, "VP00001");
         associate.setTransactionPasswordHash("hash");
@@ -244,9 +244,11 @@ class AdminAssociateServiceTest {
         associate.setTransactionPasswordLockedUntil(Instant.now().plusSeconds(600));
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
 
-        service.resetTransactionPassword(id, ACTOR_ID);
+        ResetPasswordResponse response = service.resetTransactionPassword(id, ACTOR_ID);
 
-        assertThat(associate.getTransactionPasswordHash()).isNull();
+        assertThat(response.temporaryPassword()).matches("\\d{6}");
+        assertThat(associate.getTransactionPasswordPlain()).isEqualTo(response.temporaryPassword());
+        assertThat(passwordEncoder.matches(response.temporaryPassword(), associate.getTransactionPasswordHash())).isTrue();
         assertThat(associate.getTransactionPasswordFailedAttempts()).isZero();
         assertThat(associate.getTransactionPasswordLockedUntil()).isNull();
         verify(associateRepository).save(associate);

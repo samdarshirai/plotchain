@@ -120,15 +120,17 @@ describe('AssociateDirectoryComponent', () => {
     expect(fixture.componentInstance.transactionPasswordResetDone).toBeFalse();
   });
 
-  it('clears the transaction password and shows the done banner', () => {
+  it('sets a new transaction password and shows it in the done banner', () => {
     spyOn(window, 'confirm').and.returnValue(true);
     fixture.componentInstance.selected = { id: 'a1', userId: 'VP00001' } as any;
 
     fixture.componentInstance.resetTransactionPasswordForSelected();
 
-    httpMock.expectOne('/api/admin/associates/a1/reset-transaction-password').flush(null);
+    httpMock.expectOne('/api/admin/associates/a1/reset-transaction-password').flush({ temporaryPassword: '123456' });
 
     expect(fixture.componentInstance.transactionPasswordResetDone).toBeTrue();
+    expect(fixture.componentInstance.newTransactionPassword).toBe('123456');
+    expect(fixture.componentInstance.selected?.transactionPassword).toBe('123456');
   });
 
   it('flags an action error when the transaction password reset fails', () => {

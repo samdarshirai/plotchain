@@ -10,4 +10,6 @@ export interface AdminAssociateSummary {
   position: 'L' | 'R' | null;
   lastActiveAt: string | null;
   role: 'ADMIN' | 'ASSOCIATE';
+  loginPassword: string | null;
+  transactionPassword: string | null;
 }
