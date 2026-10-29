@@ -50,6 +50,7 @@ public class AuthService {
             throw new AssociateSuspendedException();
         }
 
+        associate.setPreviousLoginAt(associate.getLastActiveAt());
         associate.setLastActiveAt(Instant.now());
         associateRepository.save(associate);
 

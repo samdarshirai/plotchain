@@ -118,7 +118,7 @@ class DashboardServiceTest {
         associate.setJoinedAt(joinedAt);
         associate.setRankChangedAt(rankChangedAt);
         Instant lastLoginAt = Instant.parse("2026-10-09T08:30:00Z");
-        associate.setLastActiveAt(lastLoginAt);
+        associate.setPreviousLoginAt(lastLoginAt);
         UUID sponsorId = UUID.randomUUID();
         associate.setSponsorId(sponsorId);
 
