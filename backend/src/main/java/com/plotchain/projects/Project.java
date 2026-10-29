@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -34,6 +35,9 @@ public class Project {
 
     @Column(name = "master_project_id")
     private UUID masterProjectId;
+
+    @Column(name = "corner_extra_percent")
+    private BigDecimal cornerExtraPercent = new BigDecimal("10.00");
 
     @Column(name = "created_at")
     private Instant createdAt;
@@ -65,6 +69,9 @@ public class Project {
 
     public UUID getMasterProjectId() { return masterProjectId; }
     public void setMasterProjectId(UUID masterProjectId) { this.masterProjectId = masterProjectId; }
+
+    public BigDecimal getCornerExtraPercent() { return cornerExtraPercent; }
+    public void setCornerExtraPercent(BigDecimal p) { if (p != null) this.cornerExtraPercent = p; }
 
     public Instant getCreatedAt() { return createdAt; }
 }

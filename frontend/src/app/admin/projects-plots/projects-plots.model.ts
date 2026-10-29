@@ -10,7 +10,8 @@ export interface BookingFormValue {
   buyerPhone: string;
   tokenAmount: number;
   discount: number; // always emitted by the form (0 when blank)
-  extraPrice?: number; // prefilled from the plot, editable; omitted = plot default
+  extraPrice?: number; // computed from extraPercent
+  extraPercent?: number; // prefilled from the plot, editable
   paymentMode?: string; // payment fields are always set by the form; optional so callers/specs stay valid
   txnNo?: string;
   bankName?: string;
@@ -26,6 +27,7 @@ export interface CreateBookingRequest {
   tokenAmount: number;
   discount?: number;
   extraPrice?: number;
+  extraPercent?: number;
   paymentMode?: string;
   txnNo?: string;
   bankName?: string;

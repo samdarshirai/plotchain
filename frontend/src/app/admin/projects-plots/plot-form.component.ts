@@ -30,7 +30,7 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
         </label>
         <fieldset class="plot-form__type">
           <legend>{{ 'admin.projectsPlots.plotTypeLabel' | translate }}</legend>
-          <label *ngFor="let t of types"><input type="radio" name="plotType" [value]="t" [(ngModel)]="plotType" /> {{ 'admin.projectsPlots.type.' + t | translate }}</label>
+          <label *ngFor="let t of types"><input type="radio" name="plotType" [value]="t" [(ngModel)]="plotType" (ngModelChange)="onTypeChange($event)" /> {{ 'admin.projectsPlots.type.' + t | translate }}</label>
         </fieldset>
         <label>{{ 'admin.projectsPlots.areaLabel' | translate }}
           <input type="number" name="areaSqft" min="0" step="any" [(ngModel)]="areaSqft" />
@@ -40,9 +40,9 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
           <input type="number" name="rate" min="0" step="any" [(ngModel)]="rate" />
           <app-field-error [message]="(positive(rate) || !submitted_ ? '' : 'admin.projectsPlots.error.generic') | translate"></app-field-error>
         </label>
-        <label>{{ 'admin.projectsPlots.extraPriceLabel' | translate }}
-          <input type="number" name="extraPrice" min="0" step="any" [(ngModel)]="extraPrice" />
-          <small>{{ 'admin.projectsPlots.extraPriceHint' | translate }}</small>
+        <label>{{ 'admin.projectsPlots.extraPercentLabel' | translate }}
+          <input type="number" name="extraPercent" min="0" max="100" step="any" [(ngModel)]="extraPercent" />
+          <small>{{ 'admin.projectsPlots.extraPercentHint' | translate }} = {{ extraPrice | number:'1.0-2' }}</small>
           <app-field-error [message]="(validExtra || !submitted_ ? '' : 'admin.projectsPlots.error.generic') | translate"></app-field-error>
         </label>
         <label>{{ 'admin.projectsPlots.roadSizeLabel' | translate }}
@@ -64,6 +64,8 @@ export class PlotFormComponent implements OnChanges {
   @Input() locked = false;
   // Master project's rate per sqft; prefills Rate when adding a plot.
   @Input() defaultRate: number | null = null;
+  // Project's default Extra % for CORNER plots; NORMAL plots default to 0.
+  @Input() cornerExtraPercent = 10;
   @Input() busy = false;
   @Input() duplicatePlotNo = false;
   @Output() submitted = new EventEmitter<PlotRequest>();
@@ -74,23 +76,30 @@ export class PlotFormComponent implements OnChanges {
   plotType: PlotType = 'NORMAL';
   areaSqft: number | null = null;
   rate: number | null = null;
-  extraPrice: number | null = 0;
+  extraPercent: number | null = 0;
   roadSizeFt: number | null = null;
   submitted_ = false;
   issues: FormIssue[] = [];
 
   ngOnChanges(c: SimpleChanges): void {
     if (!this.plot && this.rate == null && this.defaultRate) { this.rate = this.defaultRate; }
+    if (!this.plot && c['cornerExtraPercent']) { this.onTypeChange(this.plotType); }
     if (c['plot'] && this.plot) {
       ({ plotNo: this.plotNo, plotType: this.plotType, areaSqft: this.areaSqft, rate: this.rate } = this.plot);
-      this.extraPrice = this.plot.extraPrice ?? 0;
+      // Plots saved before percentages existed only carry a flat amount; show it as the equivalent %.
+      const price = this.plot.price;
+      this.extraPercent = this.plot.extraPercent || (this.plot.extraPrice && price ? Math.round(this.plot.extraPrice / price * 10000) / 100 : 0);
       this.roadSizeFt = this.plot.roadSizeFt ?? null;
     }
   }
 
   get plotNoInvalid(): boolean { return this.duplicatePlotNo || (this.submitted_ && !this.plotNo.trim()); }
 
-  get validExtra(): boolean { return this.extraPrice == null || this.extraPrice >= 0; }
+  onTypeChange(t: PlotType): void { this.extraPercent = t === 'CORNER' ? this.cornerExtraPercent : 0; }
+
+  get extraPrice(): number { return Math.round((this.areaSqft ?? 0) * (this.rate ?? 0) * (this.extraPercent ?? 0)) / 100; }
+
+  get validExtra(): boolean { return this.extraPercent == null || (this.extraPercent >= 0 && this.extraPercent <= 100); }
 
   get validRoad(): boolean { return this.roadSizeFt == null || this.roadSizeFt >= 0; }
 
@@ -110,12 +119,12 @@ export class PlotFormComponent implements OnChanges {
     else if (!this.plotNo.trim()) { add('plotNo', 'Plot number', 'Plot number is required. Please fill it in.'); }
     if (!this.positive(this.areaSqft)) { add('areaSqft', 'Area', 'Area must be greater than 0. Enter the plot size in sq ft.'); }
     if (!this.positive(this.rate)) { add('rate', 'Rate', 'Rate must be greater than 0. Enter the price per sq ft.'); }
-    if (!this.validExtra) { add('extraPrice', 'Extra price', 'Extra price cannot be negative. Enter 0 or more.'); }
+    if (!this.validExtra) { add('extraPercent', 'Extra %', 'Extra % must be between 0 and 100.'); }
     if (!this.validRoad) { add('roadSizeFt', 'Road size', 'Road size cannot be negative. Enter 0 or more.'); }
     if (!this.plotNo.trim() || !this.positive(this.areaSqft) || !this.positive(this.rate) || !this.validExtra || !this.validRoad) { return; }
     this.submitted.emit({
       plotNo: this.plotNo.trim(), plotType: this.plotType,
-      areaSqft: this.areaSqft!, rate: this.rate!, price: this.areaSqft! * this.rate!, extraPrice: this.extraPrice ?? 0, roadSizeFt: this.roadSizeFt ?? null,
+      areaSqft: this.areaSqft!, rate: this.rate!, price: this.areaSqft! * this.rate!, extraPercent: this.extraPercent ?? 0, roadSizeFt: this.roadSizeFt ?? null,
       status: this.plot?.status ?? 'AVAILABLE' // status is not editable here; echo the current one
     });
   }

@@ -13,8 +13,13 @@ public record PlotGridResponse(
     BigDecimal price,
     PlotStatus status,
     BigDecimal extraPrice,
-    BigDecimal roadSizeFt
+    BigDecimal roadSizeFt,
+    BigDecimal extraPercent
 ) {
+    public PlotGridResponse(UUID plotId, String plotNo, PlotType type, BigDecimal area, BigDecimal price, PlotStatus status, BigDecimal extraPrice, BigDecimal roadSizeFt) {
+        this(plotId, plotNo, type, area, price, status, extraPrice, roadSizeFt, BigDecimal.ZERO);
+    }
+
     public PlotGridResponse(UUID plotId, String plotNo, PlotType type, BigDecimal area, BigDecimal price, PlotStatus status, BigDecimal extraPrice) {
         this(plotId, plotNo, type, area, price, status, extraPrice, null);
     }

@@ -1,5 +1,6 @@
 package com.plotchain.projects;
 
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -19,13 +20,18 @@ public record PlotRequest(
     @NotNull @DecimalMin("0.01") BigDecimal price,
     @Pattern(regexp = "AVAILABLE|BOOKED|SOLD") String status,
     @PositiveOrZero BigDecimal extraPrice,
-    @PositiveOrZero BigDecimal roadSizeFt
+    @PositiveOrZero BigDecimal roadSizeFt,
+    @DecimalMin("0") @DecimalMax("100") BigDecimal extraPercent
 ) {
+    public PlotRequest(String plotNo, String plotType, BigDecimal areaSqft, BigDecimal rate, BigDecimal price, String status, BigDecimal extraPrice, BigDecimal roadSizeFt) {
+        this(plotNo, plotType, areaSqft, rate, price, status, extraPrice, roadSizeFt, null);
+    }
+
     public PlotRequest(String plotNo, String plotType, BigDecimal areaSqft, BigDecimal rate, BigDecimal price, String status, BigDecimal extraPrice) {
-        this(plotNo, plotType, areaSqft, rate, price, status, extraPrice, null);
+        this(plotNo, plotType, areaSqft, rate, price, status, extraPrice, null, null);
     }
 
     public PlotRequest(String plotNo, String plotType, BigDecimal areaSqft, BigDecimal rate, BigDecimal price, String status) {
-        this(plotNo, plotType, areaSqft, rate, price, status, null, null);
+        this(plotNo, plotType, areaSqft, rate, price, status, null, null, null);
     }
 }

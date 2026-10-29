@@ -66,7 +66,7 @@ describe('BookPlotFormComponent', () => {
     typeInto('buyerPhone', ' 9876543210 ');
     typeInto('tokenAmount', '100000');
     submitForm();
-    expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit Kulkarni', buyerPhone: '9876543210', tokenAmount: 100000, discount: 0, extraPrice: 0, ...pay }]);
+    expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit Kulkarni', buyerPhone: '9876543210', tokenAmount: 100000, discount: 0, extraPrice: 0, extraPercent: 0, ...pay }]);
   });
 
   it('blocks submit without a token amount and flags the field', async () => {
@@ -273,7 +273,7 @@ describe('BookPlotFormComponent', () => {
       const out = await ready();
       typeInto('discount', '130000'); typeInto('tokenAmount', '100000');
       submitForm();
-      expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit', buyerPhone: '', tokenAmount: 100000, discount: 130000, extraPrice: 0, ...pay }]);
+      expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit', buyerPhone: '', tokenAmount: 100000, discount: 130000, extraPrice: 0, extraPercent: 0, ...pay }]);
     });
   });
 

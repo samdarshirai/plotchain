@@ -142,6 +142,20 @@ class PlotServiceTest {
     }
 
     @Test
+    void createDerivesExtraPriceFromExtraPercent() {
+        when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-101"))).thenReturn(List.of());
+        PlotRequest request = new PlotRequest("A-101", "CORNER", new BigDecimal("1200.00"),
+            new BigDecimal("500.00"), new BigDecimal("600000.00"), null, new BigDecimal("1"), null, new BigDecimal("10"));
+
+        plotService.create(PROJECT_ID, request, ACTOR_ID);
+
+        ArgumentCaptor<Plot> captor = ArgumentCaptor.forClass(Plot.class);
+        verify(plotRepository).save(captor.capture());
+        assertThat(captor.getValue().getExtraPercent()).isEqualByComparingTo("10");
+        assertThat(captor.getValue().getExtraPrice()).isEqualByComparingTo("60000.00");
+    }
+
+    @Test
     void createThrowsWhenPlotNoAlreadyExistsInProject() {
         when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-101")))
             .thenReturn(List.of(seedPlot()));

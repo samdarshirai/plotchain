@@ -87,8 +87,10 @@ public class BookingService {
         if (discount.signum() < 0 || discount.compareTo(listPrice) >= 0) {
             throw new InvalidDiscountException(discount, listPrice);
         }
-        // Booking's extraPrice overrides the plot's default; null = use the plot's.
-        BigDecimal extraPrice = (request.extraPrice() != null ? request.extraPrice() : plot.getExtraPrice())
+        // Booking's extraPercent (of list price) wins, then its flat extraPrice; null = the plot's default.
+        BigDecimal extraPrice = (request.extraPercent() != null
+            ? listPrice.multiply(request.extraPercent()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP)
+            : request.extraPrice() != null ? request.extraPrice() : plot.getExtraPrice())
             .setScale(2, RoundingMode.HALF_UP);
         BigDecimal total = listPrice.add(extraPrice).subtract(discount);
         BigDecimal token = request.tokenAmount();

@@ -1,5 +1,6 @@
 package com.plotchain.projects;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -12,5 +13,6 @@ public record ProjectResponse(
     long availablePlots,
     long soldPlots,
     Instant createdAt,
-    UUID masterProjectId
+    UUID masterProjectId,
+    BigDecimal cornerExtraPercent
 ) {}

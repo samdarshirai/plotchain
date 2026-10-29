@@ -256,7 +256,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           <app-plot-form *ngIf="aside.kind === 'editPlot' && selectedPlot && plotDetail"
             [plot]="plotDetail" [locked]="plotDetail.status !== 'AVAILABLE' || selectedPlot.status !== 'AVAILABLE'" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
             (submitted)="saveEditedPlot($event)" (cancelled)="closeAside()"></app-plot-form>
-          <app-plot-form *ngIf="aside.kind === 'addPlot'" [plot]="null" [defaultRate]="defaultRate" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
+          <app-plot-form *ngIf="aside.kind === 'addPlot'" [plot]="null" [defaultRate]="defaultRate" [cornerExtraPercent]="selectedProject?.cornerExtraPercent ?? 10" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
             (submitted)="saveNewPlot($event)" (cancelled)="closeAside()"></app-plot-form>
         </div>
       </div>
@@ -601,6 +601,7 @@ export class ProjectsPlotsComponent implements OnInit {
       ...(v.bankName ? { bankName: v.bankName } : {}),
       ...(v.firstInstallmentAmount ? { firstInstallmentAmount: v.firstInstallmentAmount } : {}),
       ...(v.extraPrice !== undefined ? { extraPrice: v.extraPrice } : {}),
+      ...(v.extraPercent !== undefined ? { extraPercent: v.extraPercent } : {}),
       ...(v.discount > 0 ? { discount: v.discount } : {})
     }).subscribe({
       next: booking => {

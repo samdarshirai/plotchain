@@ -8,11 +8,13 @@ export interface Project {
   soldPlots: number;
   createdAt: string;
   masterProjectId?: string | null;
+  cornerExtraPercent?: number;
 }
 
 export interface ProjectRequest {
   name: string;
   location: string;
+  cornerExtraPercent?: number;
 }
 
 export type PlotType = 'NORMAL' | 'CORNER';
@@ -26,6 +28,7 @@ export interface Plot {
   rate: number;
   price: number;
   extraPrice?: number;
+  extraPercent?: number;
   roadSizeFt?: number | null;
   status: PlotStatus;
 }
@@ -37,6 +40,7 @@ export interface PlotRequest {
   rate: number;
   price: number;
   extraPrice?: number;
+  extraPercent?: number;
   roadSizeFt?: number | null;
   status?: PlotStatus | null;
 }
