@@ -12,11 +12,14 @@ import { ADMIN_FAMILY_ROLES } from '../admin/admin.guard';
 import { postAuthLandingPath } from './post-auth-redirect';
 import { BrandingBootstrapService } from '../core/theme/branding-bootstrap.service';
 import { BrandButtonComponent } from '../shared/components/brand-button/brand-button.component';
+import { FieldErrorComponent } from '../shared/components/field-error/field-error.component';
+import { ErrorSummaryComponent } from '../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues } from '../shared/validation/validation';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, BrandButtonComponent],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, BrandButtonComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <div class="login-page" [class.login-page--preview]="previewMode">
       <aside class="login-brand">
@@ -40,13 +43,15 @@ import { BrandButtonComponent } from '../shared/components/brand-button/brand-bu
           </select>
         </div>
 
-        <form class="login-form" [formGroup]="form" (ngSubmit)="onSubmit()">
+        <form class="login-form" [formGroup]="form" [class.was-submitted]="submitted" (ngSubmit)="onSubmit()" novalidate>
           <h1 class="login-heading">{{ 'auth.heading' | translate }}</h1>
           <p class="login-subheading">{{ 'auth.subheading' | translate }}</p>
 
+          <app-error-summary [issues]="issues"></app-error-summary>
           <label>
             {{ 'auth.userIdLabel' | translate }}
             <input type="text" autocomplete="username" formControlName="userId" />
+            <app-field-error [control]="form.get('userId')" label="User ID" [submitted]="submitted"></app-field-error>
           </label>
           <label>
             {{ 'auth.passwordLabel' | translate }}
@@ -61,6 +66,7 @@ import { BrandButtonComponent } from '../shared/components/brand-button/brand-bu
                 <span class="material-symbols-outlined">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
               </button>
             </span>
+            <app-field-error [control]="form.get('password')" label="Password" [submitted]="submitted"></app-field-error>
           </label>
 
           <div class="login-row-between">
@@ -71,7 +77,7 @@ import { BrandButtonComponent } from '../shared/components/brand-button/brand-bu
             <a href="#" class="login-forgot" (click)="$event.preventDefault()">{{ 'auth.forgotPassword' | translate }}</a>
           </div>
 
-          <app-brand-button type="submit" variant="primary" [fullWidth]="true" [disabled]="form.invalid">
+          <app-brand-button type="submit" variant="primary" [fullWidth]="true">
             {{ 'auth.loginButton' | translate }}
           </app-brand-button>
 
@@ -143,8 +149,17 @@ export class LoginComponent implements OnInit {
     this.translate.use((event.target as HTMLSelectElement).value);
   }
 
+  submitted = false;
+  issues: FormIssue[] = [];
+
   onSubmit(): void {
-    if (this.previewMode || this.form.invalid) {
+    if (this.previewMode) {
+      return;
+    }
+    this.submitted = true;
+    this.form.markAllAsTouched();
+    this.issues = collectIssues(this.form, { userId: 'User ID', password: 'Password' });
+    if (this.form.invalid) {
       return;
     }
     this.error = false;

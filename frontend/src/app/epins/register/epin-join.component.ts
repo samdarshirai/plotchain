@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { map } from 'rxjs';
 import { EPinRegisterService, EPinUnusedRow, JoinResult } from './epin-register.service';
+import { toFieldErrors } from '../../core/api/field-errors.model';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { AssociateProfileFormComponent, AssociateProfileValue } from '../../shared/components/associate-profile-form/associate-profile-form.component';
 
@@ -116,6 +117,7 @@ export class EPinJoinComponent implements OnInit {
     if (e.status === 409 && ['PAN_TAKEN', 'AADHAAR_TAKEN'].includes(code)) { setTimeout(() => this.profile?.focusFirstError()); }
     if (e.status === 409 && code === 'PAN_TAKEN') { this.serverErrors['panNumber'] = 'PAN already registered'; return; }
     if (e.status === 409 && code === 'AADHAAR_TAKEN') { this.serverErrors['aadhaarNumber'] = 'Aadhaar already registered'; return; }
+    if (e.status === 400 && Object.keys(toFieldErrors(e)).length) { this.serverErrors = toFieldErrors(e); setTimeout(() => this.profile?.focusFirstError()); return; }
     this.error = e.status === 401 ? 'epins.errorPasswordInvalid'
       : e.status === 423 ? 'epins.errorPasswordLocked'
       : e.status === 409 && code === 'TRANSACTION_PASSWORD_NOT_SET' ? 'epins.errorPasswordNotSet'

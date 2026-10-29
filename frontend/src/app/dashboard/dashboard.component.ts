@@ -154,18 +154,14 @@ export class DashboardComponent implements OnInit {
     return days === 1 ? 'dashboard.cycleClosesSingular' : 'dashboard.cycleCloses';
   }
 
-  // "New Left/Right Business" and "New Matching Business" are live, pre-close subtree volume for
-  // the still-open cycle -- no backend computation exists for that yet (leg_volume rows are only
-  // written at cycle close), so they render as a fixed 0 with a "settles at cycle close" note
-  // rather than a real figure.
   businessVolumeTiles(d: DashboardResponse): DashboardTile[] {
     return [
-      { icon: 'trending_up', labelKey: 'dashboard.newLeftBusinessLabel', value: '0', noteKey: 'dashboard.settlesAtCycleClose' },
-      { icon: 'trending_up', labelKey: 'dashboard.newRightBusinessLabel', value: '0', noteKey: 'dashboard.settlesAtCycleClose' },
+      { icon: 'trending_up', labelKey: 'dashboard.newLeftBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.newLeftBusiness), noteKey: 'dashboard.thisCycle' },
+      { icon: 'trending_up', labelKey: 'dashboard.newRightBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.newRightBusiness), noteKey: 'dashboard.thisCycle' },
       { icon: 'arrow_back', labelKey: 'dashboard.totalLeftBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.totalLeftBusiness), noteKey: 'dashboard.lifetimeVolume' },
       { icon: 'arrow_forward', labelKey: 'dashboard.totalRightBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.totalRightBusiness), noteKey: 'dashboard.lifetimeVolume' },
       { icon: 'person_check', labelKey: 'dashboard.totalSelfBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.totalSelfBusiness), noteKey: 'dashboard.ownBookings' },
-      { icon: 'sync_alt', labelKey: 'dashboard.newMatchingBusinessLabel', value: '0', noteKey: 'dashboard.settlesAtCycleClose' }
+      { icon: 'sync_alt', labelKey: 'dashboard.newMatchingBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.newMatchingBusiness), noteKey: 'dashboard.thisCycle' }
     ];
   }
 

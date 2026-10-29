@@ -23,6 +23,8 @@ import { TransactionPasswordStatusResponse } from './models/associate-transactio
 import { AuthService } from '../auth/auth.service';
 import { DigitalIdCardComponent } from './digital-id-card.component';
 import { FieldErrorComponent } from '../shared/components/field-error/field-error.component';
+import { ErrorSummaryComponent } from '../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues, errorMessage, format } from '../shared/validation/validation';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { BrandButtonComponent } from '../shared/components/brand-button/brand-button.component';
 import { toFieldErrors } from '../core/api/field-errors.model';
@@ -31,7 +33,10 @@ import { CompanyProfileService } from '../setup/steps/company-profile/company-pr
 import { CompanyLetterheadResponse } from '../setup/models/company-profile.model';
 import { INDIA_STATE_OPTIONS } from '../shared/india-states';
 
-const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+const PROFILE_LABELS = { name: 'Name', phone: 'Phone', email: 'Email', address: 'Address', postalCode: 'Pincode' };
+const LOGIN_PW_LABELS = { currentPassword: 'Current password', newPassword: 'New password', confirmPassword: 'Confirm password' };
+const TXN_PW_LABELS = { newTransactionPassword: 'New transaction password', confirmTransactionPassword: 'Confirm password' };
+const BANK_LABELS = { bankName: 'Bank name', accountHolder: 'Account holder', accountNumber: 'Account number', ifscCode: 'IFSC code' };
 
 // Consolidates /profile (ProfileKycComponent), /rewards (RewardsComponent), and /digital-id-card
 // (DigitalIdCardComponent) into one "My Account" screen per Account Consolidation.dc.html
@@ -67,7 +72,7 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
   standalone: true,
   imports: [
     PasswordToggleDirective,
-    CommonModule, ReactiveFormsModule, TranslateModule, FieldErrorComponent, InlineBannerComponent,
+    CommonModule, ReactiveFormsModule, TranslateModule, FieldErrorComponent, ErrorSummaryComponent, InlineBannerComponent,
     BrandButtonComponent, DigitalIdCardComponent
   ],
   providers: [CurrencyPipe],
@@ -224,7 +229,8 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
             >{{ 'myAccount.subtabs.transactionPassword' | translate }}</button>
           </div>
 
-          <form class="detail-card" [formGroup]="form" (ngSubmit)="onSaveChanges()" *ngIf="profileSubTab === 'profile'">
+          <form class="detail-card" [formGroup]="form" [class.was-submitted]="profileSubmitted" (ngSubmit)="onSaveChanges()" novalidate *ngIf="profileSubTab === 'profile'">
+            <app-error-summary [issues]="profileIssues"></app-error-summary>
             <app-inline-banner *ngIf="saveSuccess" tone="success">{{ 'myAccount.contact.saveSuccess' | translate }}</app-inline-banner>
             <app-inline-banner *ngIf="saveError" tone="danger">{{ saveError }}</app-inline-banner>
 
@@ -290,7 +296,8 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
               </label>
               <label class="detail-card__field">
                 <span>{{ 'myAccount.contact.postalCodeLabel' | translate }}</span>
-                <input type="text" formControlName="postalCode" />
+                <input type="text" formControlName="postalCode" inputmode="numeric" maxlength="6" />
+                <app-field-error [message]="fieldError('postalCode')"></app-field-error>
               </label>
               <label class="detail-card__field">
                 <span>{{ 'myAccount.contact.phoneLabel' | translate }}</span>
@@ -334,7 +341,7 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
             </div>
 
             <div class="profile-actions">
-              <app-brand-button type="submit" variant="primary" [disabled]="form.invalid">
+              <app-brand-button type="submit" variant="primary">
                 {{ 'myAccount.actions.save' | translate }}
               </app-brand-button>
               <button type="button" class="profile-actions__cancel" (click)="onCancelChanges()">
@@ -343,31 +350,36 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
             </div>
           </form>
 
-          <form class="detail-card" [formGroup]="loginPasswordForm" (ngSubmit)="onLoginPasswordSubmit()" *ngIf="profileSubTab === 'loginPassword'">
+          <form class="detail-card" [formGroup]="loginPasswordForm" [class.was-submitted]="loginPwSubmitted" (ngSubmit)="onLoginPasswordSubmit()" novalidate *ngIf="profileSubTab === 'loginPassword'">
+            <app-error-summary [issues]="loginPwIssues"></app-error-summary>
             <app-inline-banner *ngIf="loginPasswordSaveSuccess" tone="success">{{ 'myAccount.loginPasswordTab.saveSuccess' | translate }}</app-inline-banner>
             <app-inline-banner *ngIf="loginPasswordSaveError" tone="danger">{{ loginPasswordSaveError }}</app-inline-banner>
             <div class="detail-card__fields">
               <label class="detail-card__field">
                 <span>{{ 'myAccount.loginPasswordTab.currentLabel' | translate }}</span>
                 <input type="password" formControlName="currentPassword" autocomplete="current-password" />
+                <app-field-error [control]="loginPasswordForm.get('currentPassword')" label="Current password" [submitted]="loginPwSubmitted"></app-field-error>
               </label>
               <label class="detail-card__field">
                 <span>{{ 'myAccount.loginPasswordTab.newLabel' | translate }}</span>
                 <input type="password" formControlName="newPassword" autocomplete="new-password" />
+                <app-field-error [control]="loginPasswordForm.get('newPassword')" label="New password" [submitted]="loginPwSubmitted"></app-field-error>
               </label>
               <label class="detail-card__field">
                 <span>{{ 'myAccount.loginPasswordTab.confirmLabel' | translate }}</span>
                 <input type="password" formControlName="confirmPassword" autocomplete="new-password" />
+                <app-field-error [control]="loginPasswordForm.get('confirmPassword')" label="Confirm password" [submitted]="loginPwSubmitted"></app-field-error>
               </label>
             </div>
             <div class="profile-actions">
-              <app-brand-button type="submit" variant="primary" [disabled]="loginPasswordForm.invalid">
+              <app-brand-button type="submit" variant="primary">
                 {{ 'myAccount.loginPasswordTab.saveAction' | translate }}
               </app-brand-button>
             </div>
           </form>
 
-          <form class="detail-card" [formGroup]="transactionPasswordForm" (ngSubmit)="onTransactionPasswordSubmit()" *ngIf="profileSubTab === 'transactionPassword'">
+          <form class="detail-card" [formGroup]="transactionPasswordForm" [class.was-submitted]="txnPwSubmitted" (ngSubmit)="onTransactionPasswordSubmit()" novalidate *ngIf="profileSubTab === 'transactionPassword'">
+            <app-error-summary [issues]="txnPwIssues"></app-error-summary>
             <app-inline-banner *ngIf="transactionPasswordSaveSuccess" tone="success">{{ 'myAccount.transactionPasswordTab.saveSuccess' | translate }}</app-inline-banner>
             <app-inline-banner *ngIf="transactionPasswordSaveError" tone="danger">{{ transactionPasswordSaveError }}</app-inline-banner>
             <p *ngIf="transactionPasswordStatus && !transactionPasswordStatus.isSet" class="detail-card__hint">
@@ -381,27 +393,30 @@ const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
               <label class="detail-card__field">
                 <span>{{ 'myAccount.transactionPasswordTab.newLabel' | translate }}</span>
                 <input type="password" autocomplete="off" appPasswordToggle formControlName="newTransactionPassword" />
+                <app-field-error [control]="transactionPasswordForm.get('newTransactionPassword')" label="New transaction password" [submitted]="txnPwSubmitted"></app-field-error>
               </label>
               <label class="detail-card__field">
                 <span>{{ 'myAccount.transactionPasswordTab.confirmLabel' | translate }}</span>
                 <input type="password" autocomplete="off" appPasswordToggle formControlName="confirmTransactionPassword" />
+                <app-field-error [control]="transactionPasswordForm.get('confirmTransactionPassword')" label="Confirm password" [submitted]="txnPwSubmitted"></app-field-error>
               </label>
             </div>
             <div class="profile-actions">
-              <app-brand-button type="submit" variant="primary" [disabled]="transactionPasswordForm.invalid">
+              <app-brand-button type="submit" variant="primary">
                 {{ 'myAccount.transactionPasswordTab.saveAction' | translate }}
               </app-brand-button>
             </div>
           </form>
         </ng-container>
 
-        <form class="bank-card" [formGroup]="bankForm" (ngSubmit)="onBankSubmit()" *ngIf="activeTab === 'bankDetails'">
+        <form class="bank-card" [formGroup]="bankForm" [class.was-submitted]="bankSubmitted" (ngSubmit)="onBankSubmit()" novalidate *ngIf="activeTab === 'bankDetails'">
           <div class="bank-card__header">
             <span class="bank-card__title">{{ 'myAccount.bankDetails.title' | translate }}</span>
-            <app-brand-button type="submit" variant="primary" [disabled]="bankForm.invalid" class="bank-card__save">
+            <app-brand-button type="submit" variant="primary" class="bank-card__save">
               {{ 'myAccount.bankDetails.saveAction' | translate }}
             </app-brand-button>
           </div>
+          <app-error-summary [issues]="bankIssues"></app-error-summary>
           <p *ngIf="bankLoadError" class="my-account__load-error">{{ 'myAccount.bankDetails.loadError' | translate }}</p>
           <app-inline-banner *ngIf="bankSaveSuccess" tone="success">{{ 'myAccount.bankDetails.saveSuccess' | translate }}</app-inline-banner>
           <app-inline-banner *ngIf="bankSaveError" tone="danger" class="bank-card__save-error">{{ bankSaveError }}</app-inline-banner>
@@ -545,7 +560,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
 
   form = this.fb.group({
     name: ['', Validators.required],
-    phone: [''],
+    phone: ['', format('phone')],
     email: ['', Validators.email],
     address: [''],
     fatherHusbandName: [''],
@@ -554,7 +569,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
     maritalStatus: [''],
     state: [''],
     district: [''],
-    postalCode: [''],
+    postalCode: ['', format('pincode')],
     transactionPassword: ['']
   });
 
@@ -578,8 +593,8 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   bankForm = this.fb.group({
     bankName: ['', Validators.required],
     accountHolder: ['', Validators.required],
-    accountNumber: ['', Validators.required],
-    ifscCode: ['', [Validators.required, Validators.pattern(IFSC_PATTERN)]],
+    accountNumber: ['', [Validators.required, format('accountNumber')]],
+    ifscCode: ['', [Validators.required, format('ifsc')]],
     accountType: ['SAVINGS', Validators.required]
   });
 
@@ -673,21 +688,24 @@ export class MyAccountComponent implements OnInit, OnDestroy {
     return !!this.brandingBootstrap.getLast()?.hasSquareLogo;
   }
 
+  profileSubmitted = false;
+  profileIssues: FormIssue[] = [];
+  loginPwSubmitted = false;
+  loginPwIssues: FormIssue[] = [];
+  txnPwSubmitted = false;
+  txnPwIssues: FormIssue[] = [];
+  bankSubmitted = false;
+  bankIssues: FormIssue[] = [];
+
   fieldError(name: string): string | undefined {
     if (this.serverFieldErrors[name]) {
       return this.serverFieldErrors[name];
     }
     const control = this.form.get(name);
-    if (!control || !control.touched || !control.errors) {
+    if (!control || !(control.touched || this.profileSubmitted)) {
       return undefined;
     }
-    if (control.errors['required']) {
-      return this.translate.instant('profileKyc.validation.nameRequired');
-    }
-    if (control.errors['email']) {
-      return this.translate.instant('profileKyc.validation.emailInvalid');
-    }
-    return undefined;
+    return errorMessage(control, PROFILE_LABELS[name as keyof typeof PROFILE_LABELS]);
   }
 
   bankFieldError(name: string): string | undefined {
@@ -695,13 +713,10 @@ export class MyAccountComponent implements OnInit, OnDestroy {
       return this.bankServerFieldErrors[name];
     }
     const control = this.bankForm.get(name);
-    if (!control || !control.touched || !control.errors) {
+    if (!control || !(control.touched || this.bankSubmitted)) {
       return undefined;
     }
-    if (control.errors['pattern']) {
-      return this.translate.instant('myAccount.bankDetails.ifscInvalid');
-    }
-    return undefined;
+    return errorMessage(control, BANK_LABELS[name as keyof typeof BANK_LABELS]);
   }
 
   kycStatusTone(status: string): 'info' | 'warning' | 'success' | 'danger' {
@@ -723,6 +738,9 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   }
 
   onSaveChanges(): void {
+    this.profileSubmitted = true;
+    this.form.markAllAsTouched();
+    this.profileIssues = collectIssues(this.form, PROFILE_LABELS);
     if (this.form.invalid) {
       return;
     }
@@ -791,6 +809,9 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   }
 
   onLoginPasswordSubmit(): void {
+    this.loginPwSubmitted = true;
+    this.loginPasswordForm.markAllAsTouched();
+    this.loginPwIssues = collectIssues(this.loginPasswordForm, LOGIN_PW_LABELS);
     if (this.loginPasswordForm.invalid) {
       return;
     }
@@ -799,6 +820,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
     this.loginPasswordSaveError = undefined;
     if (newPassword !== confirmPassword) {
       this.loginPasswordSaveError = this.translate.instant('myAccount.loginPasswordTab.mismatch');
+      this.loginPwIssues = [{ id: 'confirmPassword', label: 'Confirm password', message: 'Confirm password does not match the new password. Type the same value again.' }];
       return;
     }
     this.authService.changePassword(currentPassword!, newPassword!).subscribe({
@@ -811,6 +833,9 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   }
 
   onTransactionPasswordSubmit(): void {
+    this.txnPwSubmitted = true;
+    this.transactionPasswordForm.markAllAsTouched();
+    this.txnPwIssues = collectIssues(this.transactionPasswordForm, TXN_PW_LABELS);
     if (this.transactionPasswordForm.invalid) {
       return;
     }
@@ -819,6 +844,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
     this.transactionPasswordSaveError = undefined;
     if (newTransactionPassword !== confirmTransactionPassword) {
       this.transactionPasswordSaveError = this.translate.instant('myAccount.transactionPasswordTab.mismatch');
+      this.txnPwIssues = [{ id: 'confirmTransactionPassword', label: 'Confirm password', message: 'Confirm password does not match the new transaction password. Type the same value again.' }];
       return;
     }
     this.associateTransactionPasswordService.setPassword({
@@ -873,6 +899,9 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   }
 
   onBankSubmit(): void {
+    this.bankSubmitted = true;
+    this.bankForm.markAllAsTouched();
+    this.bankIssues = collectIssues(this.bankForm, BANK_LABELS);
     if (this.bankForm.invalid) {
       return;
     }
@@ -891,6 +920,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
       },
       error: (err: HttpErrorResponse) => {
         this.bankServerFieldErrors = toFieldErrors(err);
+        this.bankIssues = collectIssues(this.bankForm, BANK_LABELS, this.bankServerFieldErrors);
         this.bankSaveError = this.translate.instant('myAccount.bankDetails.saveError');
       }
     });

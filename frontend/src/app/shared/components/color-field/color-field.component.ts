@@ -2,7 +2,10 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-const HEX_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
+import { AbstractControl } from '@angular/forms';
+import { format } from '../../validation/validation';
+
+const isHex = (v: string): boolean => !format('hexColor')({ value: v } as AbstractControl);
 
 @Component({
   selector: 'app-color-field',
@@ -50,7 +53,7 @@ export class ColorFieldComponent {
   onHexChange(next: string): void {
     // A partially typed hex simply doesn't emit yet -- the last valid color stays live.
     // Validation/error display is the parent step's responsibility.
-    if (HEX_COLOR_PATTERN.test(next)) {
+    if (isHex(next)) {
       this.valueChange.emit(next);
     }
   }

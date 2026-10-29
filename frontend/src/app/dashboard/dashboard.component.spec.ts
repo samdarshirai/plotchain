@@ -28,7 +28,8 @@ describe('DashboardComponent', () => {
     networkSummary: { totalDownline: 42, directCount: 8, leftAssociateCount: 184, rightAssociateCount: 134 },
     legVolumeSummary: {
       leftLegVolume: 300000, rightLegVolume: 200000,
-      totalLeftBusiness: 3100000, totalRightBusiness: 1800000, totalSelfBusiness: 0, newBookedAreaSqft: 1200
+      totalLeftBusiness: 3100000, totalRightBusiness: 1800000, totalSelfBusiness: 0, newBookedAreaSqft: 1200,
+      newLeftBusiness: 400000, newRightBusiness: 150000, newMatchingBusiness: 150000
     }
   };
 
@@ -50,7 +51,6 @@ describe('DashboardComponent', () => {
         businessVolumeEyebrow: 'Business Volume',
         networkIncomeEyebrow: 'Network & Income',
         noActiveCycle: 'No active cycle',
-        settlesAtCycleClose: 'settles at cycle close',
         lifetimeVolume: 'lifetime volume',
         ownBookings: 'own bookings',
         newLeftBusinessLabel: 'New Left Business',
@@ -180,21 +180,21 @@ describe('DashboardComponent', () => {
     expect(fixture.nativeElement.querySelector('.dashboard-error')).toBeFalsy();
   });
 
-  it('formats the Business Volume tiles from the response data, including the static-zero "settles at cycle close" tiles', () => {
+  it('formats the Business Volume tiles from the response data, including the live new-business tiles', () => {
     loadDashboard();
     const sections = fixture.nativeElement.querySelectorAll('.dashboard__section');
     const values: NodeListOf<HTMLElement> = sections[0].querySelectorAll('.stat-tile__value');
     const hints: NodeListOf<HTMLElement> = sections[0].querySelectorAll('.stat-tile__hint');
 
     // Tiles in order: New Left, New Right, Total Left, Total Right, Total Self, New Matching.
-    expect(values[0].textContent?.trim()).toBe('0');
-    expect(values[1].textContent?.trim()).toBe('0');
+    expect(values[0].textContent).toContain('400,000');
+    expect(values[1].textContent).toContain('150,000');
     expect(values[2].textContent).toContain('3,100,000');
     expect(values[3].textContent).toContain('1,800,000');
     expect(values[4].textContent).toContain('0');
-    expect(values[5].textContent?.trim()).toBe('0');
+    expect(values[5].textContent).toContain('150,000');
 
-    expect(hints[0].textContent?.trim()).toBe('settles at cycle close');
+    expect(hints[0].textContent?.trim()).toBe('this cycle');
     expect(hints[2].textContent?.trim()).toBe('lifetime volume');
   });
 

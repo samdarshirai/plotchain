@@ -32,9 +32,11 @@ public record DashboardResponse(
     public record SalesSummary(int salesThisCycle, BigDecimal revenueBookedThisCycle, BigDecimal revenueBookedChangePct) {}
     public record NetworkSummary(long totalDownline, long directCount, long leftAssociateCount, long rightAssociateCount) {}
     // totalLeftBusiness/totalRightBusiness are lifetime (carry-corrected, see DashboardService),
-    // totalSelfBusiness is lifetime own-sales, newBookedAreaSqft is this-cycle only.
+    // totalSelfBusiness is lifetime own-sales; newBookedAreaSqft and new{Left,Right,Matching}Business
+    // are live this-cycle figures. leftLegVolume/rightLegVolume are the live legs (this cycle plus carry).
     public record LegVolumeSummary(
         BigDecimal leftLegVolume, BigDecimal rightLegVolume,
         BigDecimal totalLeftBusiness, BigDecimal totalRightBusiness,
-        BigDecimal totalSelfBusiness, BigDecimal newBookedAreaSqft) {}
+        BigDecimal totalSelfBusiness, BigDecimal newBookedAreaSqft,
+        BigDecimal newLeftBusiness, BigDecimal newRightBusiness, BigDecimal newMatchingBusiness) {}
 }

@@ -9,6 +9,9 @@ import { ADMIN_FAMILY_ROLES } from '../admin/admin.guard';
 import { SetupService } from '../setup/setup.service';
 import { postAuthLandingPath } from './post-auth-redirect';
 import { BrandButtonComponent } from '../shared/components/brand-button/brand-button.component';
+import { FieldErrorComponent } from '../shared/components/field-error/field-error.component';
+import { ErrorSummaryComponent } from '../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues } from '../shared/validation/validation';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 
 // Length is the only password rule; mirrors the server's @Size(min = 6).
@@ -23,14 +26,15 @@ function passwordsMatchValidator(group: AbstractControl): ValidationErrors | nul
 @Component({
   selector: 'app-change-password',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, BrandButtonComponent, InlineBannerComponent],
+  imports: [CommonModule, ReactiveFormsModule, FieldErrorComponent, ErrorSummaryComponent, TranslateModule, BrandButtonComponent, InlineBannerComponent],
   template: `
     <main class="change-password-page">
       <p class="change-password-eyebrow">{{ 'auth.changePasswordEyebrow' | translate }}</p>
       <h1 class="change-password-heading">{{ 'auth.changePasswordTitle' | translate }}</h1>
       <p class="change-password-subheading">{{ 'auth.changePasswordSubtitle' | translate }}</p>
 
-      <form class="card change-password-form" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <form class="card change-password-form" [formGroup]="form" [class.was-submitted]="submitted" (ngSubmit)="onSubmit()" novalidate>
+        <app-error-summary [issues]="issues"></app-error-summary>
         <div class="change-password-field">
           <label>{{ 'auth.currentPasswordLabel' | translate }}</label>
           <div class="change-password-input">
@@ -44,6 +48,7 @@ function passwordsMatchValidator(group: AbstractControl): ValidationErrors | nul
               <span class="material-symbols-outlined">{{ showCurrent ? 'visibility_off' : 'visibility' }}</span>
             </button>
           </div>
+          <app-field-error [control]="form.get('currentPassword')" label="Current password" [submitted]="submitted"></app-field-error>
         </div>
 
         <div class="change-password-field">
@@ -59,6 +64,7 @@ function passwordsMatchValidator(group: AbstractControl): ValidationErrors | nul
               <span class="material-symbols-outlined">{{ showNext ? 'visibility_off' : 'visibility' }}</span>
             </button>
           </div>
+          <app-field-error [control]="form.get('newPassword')" label="New password" [submitted]="submitted"></app-field-error>
         </div>
 
         <div class="change-password-requirements">
@@ -81,6 +87,7 @@ function passwordsMatchValidator(group: AbstractControl): ValidationErrors | nul
               <span class="material-symbols-outlined">{{ showConfirm ? 'visibility_off' : 'visibility' }}</span>
             </button>
           </div>
+          <app-field-error [control]="form.get('confirmPassword')" label="Confirm password" [submitted]="submitted"></app-field-error>
           <p class="change-password-mismatch" *ngIf="showMismatch">
             <span class="material-symbols-outlined">error</span>
             {{ 'auth.confirmPasswordMismatch' | translate }}
@@ -90,7 +97,7 @@ function passwordsMatchValidator(group: AbstractControl): ValidationErrors | nul
         <div class="change-password-divider"></div>
 
         <div class="change-password-actions">
-          <app-brand-button type="submit" variant="primary" [disabled]="form.invalid">
+          <app-brand-button type="submit" variant="primary">
             {{ 'auth.changePasswordButton' | translate }}
           </app-brand-button>
           <a class="change-password-cancel" (click)="onCancel()">{{ 'auth.cancelLabel' | translate }}</a>
@@ -135,7 +142,18 @@ export class ChangePasswordComponent {
     this.location.back();
   }
 
+  submitted = false;
+  issues: FormIssue[] = [];
+
   onSubmit(): void {
+    this.submitted = true;
+    this.form.markAllAsTouched();
+    this.issues = collectIssues(this.form, {
+      currentPassword: 'Current password', newPassword: 'New password', confirmPassword: 'Confirm password'
+    });
+    if (this.form.errors?.['mismatch'] && !this.issues.some(i => i.id === 'confirmPassword')) {
+      this.issues.push({ id: 'confirmPassword', label: 'Confirm password', message: 'Confirm password does not match the new password. Type the same value again.' });
+    }
     if (this.form.invalid) {
       return;
     }

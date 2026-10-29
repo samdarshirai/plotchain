@@ -24,7 +24,7 @@ describe('CycleIncomeCardComponent (business summary)', () => {
   const legs: LegVolumeSummary = {
     leftLegVolume: 0, rightLegVolume: 0,
     totalLeftBusiness: 3000000, totalRightBusiness: 1500000, totalSelfBusiness: 500000,
-    newBookedAreaSqft: 0
+    newBookedAreaSqft: 0, newLeftBusiness: 0, newRightBusiness: 0, newMatchingBusiness: 0
   };
   const network: NetworkSummary = { totalDownline: 42, directCount: 8, leftAssociateCount: 30, rightAssociateCount: 12 };
 

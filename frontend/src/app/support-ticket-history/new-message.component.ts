@@ -4,12 +4,15 @@ import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { SupportTicketService } from '../support-tickets/support-ticket.service';
+import { FieldErrorComponent } from '../shared/components/field-error/field-error.component';
+import { ErrorSummaryComponent } from '../shared/components/error-summary/error-summary.component';
+import { FormIssue, collectIssues } from '../shared/validation/validation';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 
 @Component({
   selector: 'app-new-message',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, InlineBannerComponent],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <div class="new-message">
       <div class="new-message__intro">
@@ -19,16 +22,17 @@ import { InlineBannerComponent } from '../shared/components/inline-banner/inline
       <app-inline-banner *ngIf="sendError" tone="danger">
         <span role="alert">{{ 'supportTickets.new.sendError' | translate }}</span>
       </app-inline-banner>
-      <form class="card new-message__form" [formGroup]="form" (ngSubmit)="send()">
+      <form class="card new-message__form" [formGroup]="form" [class.was-submitted]="submitted" (ngSubmit)="send()" novalidate>
+        <app-error-summary [issues]="issues"></app-error-summary>
         <label>
           {{ 'supportTickets.new.subjectLabel' | translate }}
           <input type="text" formControlName="subject" maxlength="200" />
-          <span class="new-message__error" *ngIf="showError('subject')">{{ 'supportTickets.new.required' | translate }}</span>
+          <app-field-error [control]="form.controls.subject" label="Subject" [submitted]="submitted"></app-field-error>
         </label>
         <label>
           {{ 'supportTickets.new.messageLabel' | translate }}
           <textarea rows="6" formControlName="description"></textarea>
-          <span class="new-message__error" *ngIf="showError('description')">{{ 'supportTickets.new.required' | translate }}</span>
+          <app-field-error [control]="form.controls.description" label="Message" [submitted]="submitted"></app-field-error>
         </label>
         <button type="submit" class="brand-button new-message__send" [disabled]="sending">
           {{ (sending ? 'supportTickets.new.sending' : 'supportTickets.new.sendAction') | translate }}
@@ -49,15 +53,18 @@ export class NewMessageComponent {
   sending = false;
   sendError = false;
 
-  showError(name: 'subject' | 'description'): boolean {
-    const c = this.form.controls[name];
-    return c.invalid && (c.touched || c.dirty);
-  }
+  submitted = false;
+  issues: FormIssue[] = [];
 
   send(): void {
+    this.submitted = true;
     this.form.markAllAsTouched();
     const { subject, description } = this.form.getRawValue();
-    if (this.sending || !subject.trim() || !description.trim()) { return; }
+    // Whitespace-only counts as empty.
+    if (!subject.trim()) { this.form.controls.subject.setErrors({ required: true }); }
+    if (!description.trim()) { this.form.controls.description.setErrors({ required: true }); }
+    this.issues = collectIssues(this.form, { subject: 'Subject', description: 'Message' });
+    if (this.sending || this.form.invalid) { return; }
     this.sending = true;
     this.sendError = false;
     this.service.createMine({ subject: subject.trim(), description: description.trim() }).subscribe({

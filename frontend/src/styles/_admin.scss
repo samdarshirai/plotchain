@@ -90,7 +90,7 @@
 // applying docs/design/admin_operational_screens/sales_register.
 // Contextually scoped (.sales-register .card, etc.) -- base
 // .card/.editable-table/
-// .brand-button/.inline-banner/.field-error rules already live in
+// .brand-button/.inline-banner rules already live in
 // _cards.scss/_tables.scss/_buttons.scss/_shared-components.scss/
 // _forms.scss and are not duplicated here.
 // ============================================================
@@ -4962,7 +4962,6 @@ button.tree-explorer__vacant-card {
   &__aside form, &__aside .plot-form, &__aside .project-form { display: flex; flex-direction: column; gap: 1rem; }
   &__aside label { display: flex; flex-direction: column; gap: 0.375rem; font-size: 0.875rem; font-weight: 500; margin: 0; }
   &__aside small, &__aside label span span { font-weight: 400; color: var(--text-muted); }
-  &__aside .field-error { font-size: 0.8125rem; font-weight: 500; color: var(--status-danger); }
   &__aside fieldset { display: flex; gap: 1rem; border: 0; padding: 0; margin: 0;
     legend { font: 500 0.6875rem var(--font-mono); text-transform: uppercase; color: var(--text-muted); }
     label { flex-direction: row; align-items: center; } }
