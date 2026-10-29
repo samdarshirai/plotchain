@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output, ViewChild, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -38,7 +38,7 @@ export interface AssociateProfileValue {
   imports: [CommonModule, ReactiveFormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, PasswordToggleDirective],
   styleUrl: './associate-profile-form.component.scss',
   template: `
-    <form class="associate-profile-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <form #formEl class="associate-profile-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <div class="associate-profile-form__card">
         <ng-content></ng-content>
 
@@ -149,7 +149,7 @@ export interface AssociateProfileValue {
           </label>
         </section>
 
-        <app-inline-banner *ngIf="error" class="associate-profile-form__banner" tone="danger">{{ error | translate }}</app-inline-banner>
+        <app-inline-banner *ngIf="error || formError" class="associate-profile-form__banner" tone="danger">{{ (error || formError) | translate }}</app-inline-banner>
       </div>
 
       <div class="associate-profile-form__footer">
@@ -183,6 +183,8 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
   readonly genders = ['MALE', 'FEMALE', 'OTHER'];
   readonly maritals = ['SINGLE', 'MARRIED', 'OTHER'];
 
+  @ViewChild('formEl') private formEl?: ElementRef<HTMLFormElement>;
+  formError = '';
   sponsorName = '';
   submitAttempted = false;
 
@@ -236,6 +238,16 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
     this.applyPreset();
   }
 
+  /** Scrolls to and focuses the first invalid field (the modal is long; errors can be off-screen). */
+  focusFirstError(): void {
+    setTimeout(() => {
+      const el = this.formEl?.nativeElement.querySelector<HTMLElement>('input.ng-invalid, select.ng-invalid')
+        ?? this.formEl?.nativeElement.querySelector<HTMLElement>('.field-error')?.closest('label')?.querySelector<HTMLElement>('input, select');
+      el?.scrollIntoView({ block: 'center' });
+      el?.focus({ preventScroll: true });
+    });
+  }
+
   clearTransactionPassword(): void { this.form.controls.transactionPassword.setValue(''); }
 
   err(control: string): string | undefined {
@@ -260,7 +272,12 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
   submit(): void {
     this.submitAttempted = true;
     this.form.markAllAsTouched();
-    if (this.form.invalid) { return; }
+    this.formError = '';
+    if (this.form.invalid) {
+      this.formError = 'epinRegister.join.errorInvalid';
+      this.focusFirstError();
+      return;
+    }
     const v = this.form.getRawValue();
     const { transactionPassword, ...rest } = v;
     this.submitted.emit({
