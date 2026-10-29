@@ -141,6 +141,7 @@ public class AssociateProvisioningService {
         associate.setEmail(email);
         associate.setPhone(phone);
         associate.setPasswordHash(passwordEncoder.encode(temporaryPassword));
+        associate.setLoginPasswordPlain(temporaryPassword);
         associate.setRole(AssociateRole.ASSOCIATE);
         associate.setStatus(AssociateStatus.PENDING);
         associate.setSponsorId(sponsorId);
@@ -156,10 +157,11 @@ public class AssociateProvisioningService {
         return associate;
     }
 
-    /** Generates a one-time transaction password, stores only its hash, and returns the plaintext. */
+    /** Generates a one-time transaction password, stores its hash (plus a plain copy for admin view), and returns the plaintext. */
     public String assignGeneratedTransactionPassword(Associate associate) {
         String plain = TemporaryPasswordGenerator.generate();
         associate.setTransactionPasswordHash(passwordEncoder.encode(plain));
+        associate.setTransactionPasswordPlain(plain);
         return plain;
     }
 }

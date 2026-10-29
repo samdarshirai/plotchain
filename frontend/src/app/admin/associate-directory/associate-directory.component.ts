@@ -185,6 +185,14 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
             <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.lastActiveLabel' | translate }}</span>
             <span class="cycle-detail__row-value">{{ selected.lastActiveAt ? (selected.lastActiveAt | date) : '—' }}</span>
           </div>
+          <div class="cycle-detail__row">
+            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.loginPasswordLabel' | translate }}</span>
+            <span class="cycle-detail__row-value">{{ selected.loginPassword ?? ('admin.associateDirectory.passwordNotAvailable' | translate) }}</span>
+          </div>
+          <div class="cycle-detail__row">
+            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.transactionPasswordLabel' | translate }}</span>
+            <span class="cycle-detail__row-value">{{ selected.transactionPassword ?? ('admin.associateDirectory.passwordNotAvailable' | translate) }}</span>
+          </div>
         </div>
 
         <div class="associate-detail__meta">

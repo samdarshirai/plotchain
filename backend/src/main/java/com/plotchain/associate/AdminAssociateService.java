@@ -135,6 +135,7 @@ public class AdminAssociateService {
         Associate associate = findOrThrow(id);
         String temporaryPassword = TemporaryPasswordGenerator.generate();
         associate.setPasswordHash(passwordEncoder.encode(temporaryPassword));
+        associate.setLoginPasswordPlain(temporaryPassword);
         associate.setMustChangePassword(true);
         associateRepository.save(associate);
         settingsAuditService.record("ASSOCIATE", "Reset password for " + associate.getUserId(),
@@ -146,6 +147,7 @@ public class AdminAssociateService {
     public void resetTransactionPassword(UUID id, UUID actorId) {
         Associate associate = findOrThrow(id);
         associate.setTransactionPasswordHash(null);
+        associate.setTransactionPasswordPlain(null);
         associate.setTransactionPasswordFailedAttempts(0);
         associate.setTransactionPasswordLockedUntil(null);
         associateRepository.save(associate);
@@ -218,6 +220,7 @@ public class AdminAssociateService {
             a.getSponsorId(), sponsor == null ? null : sponsor.getUserId(),
             a.getParentId(), parent == null ? null : parent.getUserId(), a.getPosition(),
             associateRepository.countByParentId(a.getId()), associateRepository.countDownline(a.getId()),
-            leftLegVolume, rightLegVolume);
+            leftLegVolume, rightLegVolume,
+            a.getLoginPasswordPlain(), a.getTransactionPasswordPlain());
     }
 }

@@ -140,6 +140,15 @@ public class Associate {
     public void setPanNumber(String panNumber) { this.panNumber = panNumber; }
     public String getAadhaarNumber() { return aadhaarNumber; }
     public void setAadhaarNumber(String aadhaarNumber) { this.aadhaarNumber = aadhaarNumber; }
+    // Plain copies so admin can view them; null for members who haven't set/changed since V70.
+    @Column(name = "login_password_plain")
+    private String loginPasswordPlain;
+    @Column(name = "transaction_password_plain")
+    private String transactionPasswordPlain;
+    public String getLoginPasswordPlain() { return loginPasswordPlain; }
+    public void setLoginPasswordPlain(String v) { this.loginPasswordPlain = v; }
+    public String getTransactionPasswordPlain() { return transactionPasswordPlain; }
+    public void setTransactionPasswordPlain(String v) { this.transactionPasswordPlain = v; }
     public String getTransactionPasswordHash() { return transactionPasswordHash; }
     public void setTransactionPasswordHash(String transactionPasswordHash) { this.transactionPasswordHash = transactionPasswordHash; }
     public int getTransactionPasswordFailedAttempts() { return transactionPasswordFailedAttempts; }
