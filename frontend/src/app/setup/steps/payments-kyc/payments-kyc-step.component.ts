@@ -290,53 +290,6 @@ const RENDERED_PAYOUT_FIELD_ERROR_KEYS = ['bankName', 'accountHolder', 'accountN
             <input type="number" min="1" [value]="defaultInstallmentCount" (input)="setDefaultInstallmentCount($event)" />
           </label>
 
-          <div class="payments-kyc-step__confirm-rule">
-            <span class="payments-kyc-step__confirm-rule-label">{{ 'setup.paymentsKyc.confirmRuleLabel' | translate }}</span>
-            <div class="payments-kyc-step__confirm-rule-list">
-              <button
-                type="button"
-                class="payments-kyc-step__confirm-rule-row"
-                [class.payments-kyc-step__confirm-rule-row--active]="confirmRule === 'AUTO_THRESHOLD'"
-                (click)="setConfirmRule('AUTO_THRESHOLD')"
-              >
-                <span
-                  class="payments-kyc-step__confirm-rule-dot"
-                  [class.payments-kyc-step__confirm-rule-dot--active]="confirmRule === 'AUTO_THRESHOLD'"
-                ></span>
-                {{ 'setup.paymentsKyc.confirmRuleAutoThresholdLabel' | translate }}
-              </button>
-              <button
-                type="button"
-                class="payments-kyc-step__confirm-rule-row"
-                [class.payments-kyc-step__confirm-rule-row--active]="confirmRule === 'MANUAL'"
-                (click)="setConfirmRule('MANUAL')"
-              >
-                <span
-                  class="payments-kyc-step__confirm-rule-dot"
-                  [class.payments-kyc-step__confirm-rule-dot--active]="confirmRule === 'MANUAL'"
-                ></span>
-                {{ 'setup.paymentsKyc.confirmRuleManualLabel' | translate }}
-              </button>
-              <button
-                type="button"
-                class="payments-kyc-step__confirm-rule-row"
-                [class.payments-kyc-step__confirm-rule-row--active]="confirmRule === 'KYC_GATED'"
-                (click)="setConfirmRule('KYC_GATED')"
-              >
-                <span
-                  class="payments-kyc-step__confirm-rule-dot"
-                  [class.payments-kyc-step__confirm-rule-dot--active]="confirmRule === 'KYC_GATED'"
-                ></span>
-                {{ 'setup.paymentsKyc.confirmRuleKycGatedLabel' | translate }}
-              </button>
-            </div>
-          </div>
-
-          <label *ngIf="confirmRule === 'AUTO_THRESHOLD'">
-            {{ 'setup.paymentsKyc.confirmThresholdPercentLabel' | translate }}
-            <input type="number" min="1" max="100" [value]="confirmThresholdPercent" (input)="setConfirmThresholdPercent($event)" />
-          </label>
-
           <app-inline-banner *ngIf="bookingEmiSubmitError" tone="danger">{{ bookingEmiSubmitError }}</app-inline-banner>
           <div class="payments-kyc-step__saved" *ngIf="bookingEmiSavedJustNow">
             {{ 'setup.paymentsKyc.savedIndicator' | translate }}
@@ -495,8 +448,6 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
   // --- Booking & EMI Policy ---
   emiEnabled = false;
   defaultInstallmentCount = 1;
-  confirmRule: 'AUTO_THRESHOLD' | 'MANUAL' | 'KYC_GATED' = 'MANUAL';
-  confirmThresholdPercent: number | null = null;
   bookingEmiSavedJustNow = false;
   bookingEmiSubmitError: string | null = null;
   private bookingEmiLoadFailed = false;
@@ -659,8 +610,6 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
       next: res => {
         this.emiEnabled = res.emiEnabled;
         this.defaultInstallmentCount = res.defaultInstallmentCount;
-        this.confirmRule = res.confirmRule;
-        this.confirmThresholdPercent = res.confirmThresholdPercent;
       },
       error: () => {
         this.bookingEmiLoadFailed = true;
@@ -980,26 +929,11 @@ export class PaymentsKycStepComponent implements OnInit, AfterViewInit, OnDestro
     this.bookingEmiChanged$.next();
   }
 
-  setConfirmRule(value: string): void {
-    if (value === 'AUTO_THRESHOLD' || value === 'MANUAL' || value === 'KYC_GATED') {
-      this.confirmRule = value;
-      this.bookingEmiChanged$.next();
-    }
-  }
-
-  setConfirmThresholdPercent(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    this.confirmThresholdPercent = target.value === '' ? null : Number(target.value);
-    this.bookingEmiChanged$.next();
-  }
-
   private saveBookingEmi(): void {
     this.bookingEmiDirty = false;
     const request: BookingEmiConfigRequest = {
       emiEnabled: this.emiEnabled,
-      defaultInstallmentCount: this.defaultInstallmentCount,
-      confirmRule: this.confirmRule,
-      confirmThresholdPercent: this.confirmThresholdPercent
+      defaultInstallmentCount: this.defaultInstallmentCount
     };
     this.paymentsKycService.updateBookingEmiConfig(request).subscribe({
       next: () => {

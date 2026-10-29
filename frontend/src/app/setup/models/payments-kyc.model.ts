@@ -45,8 +45,6 @@ export type WithdrawalConfigRequest = Omit<WithdrawalConfigResponse, 'updatedAt'
 export interface BookingEmiConfigResponse {
   emiEnabled: boolean;
   defaultInstallmentCount: number;
-  confirmRule: 'AUTO_THRESHOLD' | 'MANUAL' | 'KYC_GATED';
-  confirmThresholdPercent: number | null;
   updatedAt: string | null;
 }
 

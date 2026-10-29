@@ -44,9 +44,9 @@ class PlotGridLiveStatusIntegrationTest {
     @BeforeEach
     void seed() {
         originalConfig = jdbc.queryForMap(
-            "SELECT emi_enabled, default_installment_count, confirm_rule, confirm_threshold_percent FROM booking_emi_config");
+            "SELECT emi_enabled, default_installment_count FROM booking_emi_config");
         jdbc.update("UPDATE booking_emi_config SET emi_enabled = TRUE, default_installment_count = 4, "
-            + "confirm_rule = 'MANUAL', confirm_threshold_percent = NULL, updated_at = CURRENT_TIMESTAMP");
+            + "updated_at = CURRENT_TIMESTAMP");
 
         Project project = new Project(UUID.randomUUID(), "Grid Test Project", "Hyderabad", null, null, Instant.now());
         projectRepository.saveAndFlush(project);
@@ -77,9 +77,8 @@ class PlotGridLiveStatusIntegrationTest {
     @AfterEach
     void cleanUp() {
         jdbc.update("UPDATE booking_emi_config SET emi_enabled = ?, default_installment_count = ?, "
-                + "confirm_rule = ?, confirm_threshold_percent = ?, updated_at = CURRENT_TIMESTAMP",
-            originalConfig.get("EMI_ENABLED"), originalConfig.get("DEFAULT_INSTALLMENT_COUNT"),
-            originalConfig.get("CONFIRM_RULE"), originalConfig.get("CONFIRM_THRESHOLD_PERCENT"));
+                + "updated_at = CURRENT_TIMESTAMP",
+            originalConfig.get("EMI_ENABLED"), originalConfig.get("DEFAULT_INSTALLMENT_COUNT"));
         jdbc.update("DELETE FROM booking_event WHERE booking_id IN (SELECT id FROM plot_booking WHERE associate_id = ?)", associateId);
         jdbc.update("DELETE FROM emi_installment WHERE booking_id IN (SELECT id FROM plot_booking WHERE associate_id = ?)", associateId);
         jdbc.update("DELETE FROM plot_booking WHERE associate_id = ?", associateId);

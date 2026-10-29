@@ -224,12 +224,12 @@ class PlotBookingSchemaTest {
     }
 
     @Test
-    void dbRejectsTwoSalesLinkedToTheSameBooking() {
+    void manySalesMayShareABookingOnePerInstallmentPayment() {
         PlotBooking b = persistBooking();
         UUID cycleId = persistCycle();
         saleRepository.saveAndFlush(saleFor(b, cycleId));
-        assertThatThrownBy(() -> saleRepository.saveAndFlush(saleFor(b, cycleId)))
-            .isInstanceOf(DataIntegrityViolationException.class);
+        saleRepository.saveAndFlush(saleFor(b, cycleId));
+        assertThat(saleRepository.findAll().stream().filter(x -> b.getId().equals(x.getBookingId())).count()).isEqualTo(2);
     }
 
     @Test

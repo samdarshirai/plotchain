@@ -238,6 +238,9 @@ class TreeExplorerServiceTest {
         when(legVolumeRepository.totalBusiness(id))
             .thenReturn(new LegVolumeRepository.LegBusinessTotals(new BigDecimal("50000"), new BigDecimal("0")));
         when(saleRepository.sumAmountByAssociateIdAndStatus(id, SaleStatus.RECORDED)).thenReturn(new BigDecimal("12000"));
+        // live business from the still-open cycle is added on top of closed-cycle totals
+        when(saleRepository.sumOpenCycleLegBusiness(id, "L")).thenReturn(new BigDecimal("7000"));
+        when(saleRepository.sumOpenCycleLegBusiness(id, "R")).thenReturn(new BigDecimal("3000"));
 
         TreeNodeDetailsResponse response = service.nodeDetails(id);
 
@@ -250,8 +253,8 @@ class TreeExplorerServiceTest {
         assertThat(response.totalRightMembers()).isEqualTo(0L);
         assertThat(response.activeLeftMembers()).isEqualTo(3L);
         assertThat(response.activeRightMembers()).isEqualTo(0L);
-        assertThat(response.totalLeftBusiness()).isEqualByComparingTo("50000");
-        assertThat(response.totalRightBusiness()).isEqualByComparingTo("0");
+        assertThat(response.totalLeftBusiness()).isEqualByComparingTo("57000");
+        assertThat(response.totalRightBusiness()).isEqualByComparingTo("3000");
         assertThat(response.totalSelfBusiness()).isEqualByComparingTo("12000");
     }
 
@@ -272,6 +275,8 @@ class TreeExplorerServiceTest {
         when(legVolumeRepository.totalBusiness(FOUNDING_ADMIN_ID))
             .thenReturn(new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
         when(saleRepository.sumAmountByAssociateIdAndStatus(FOUNDING_ADMIN_ID, SaleStatus.RECORDED)).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumOpenCycleLegBusiness(FOUNDING_ADMIN_ID, "L")).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumOpenCycleLegBusiness(FOUNDING_ADMIN_ID, "R")).thenReturn(BigDecimal.ZERO);
 
         assertThat(service.nodeDetails(FOUNDING_ADMIN_ID).userId()).isEqualTo("admin");
     }

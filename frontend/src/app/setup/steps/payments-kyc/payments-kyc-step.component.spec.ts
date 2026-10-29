@@ -52,8 +52,6 @@ describe('PaymentsKycStepComponent', () => {
   const defaultBookingEmiConfig: BookingEmiConfigResponse = {
     emiEnabled: false,
     defaultInstallmentCount: 1,
-    confirmRule: 'MANUAL',
-    confirmThresholdPercent: null,
     updatedAt: null
   };
 
@@ -116,7 +114,6 @@ describe('PaymentsKycStepComponent', () => {
     expect(component.requiredDocuments).toEqual(['AADHAAR', 'PAN', 'BANK_PASSBOOK']);
     expect(component.approvalMode).toBe('ALWAYS_MANUAL');
     expect(component.emiEnabled).toBe(false);
-    expect(component.confirmRule).toBe('MANUAL');
 
     tick(500);
     httpMock.expectNone('/api/company/payments');
@@ -281,22 +278,20 @@ describe('PaymentsKycStepComponent', () => {
     );
   }));
 
-  it('autosaves the booking & EMI section on a confirm-rule change, independently of the other sections', fakeAsync(() => {
+  it('autosaves the booking & EMI section on an EMI toggle, independently of the other sections', fakeAsync(() => {
     flushInitialLoads();
     const component = fixture.componentInstance;
 
-    component.setConfirmRule('KYC_GATED');
+    component.setEmiEnabled(true);
     tick(400);
 
     const req = httpMock.expectOne('/api/company/booking-emi');
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual({
-      emiEnabled: false,
-      defaultInstallmentCount: 1,
-      confirmRule: 'KYC_GATED',
-      confirmThresholdPercent: null
+      emiEnabled: true,
+      defaultInstallmentCount: 1
     });
-    req.flush({ ...defaultBookingEmiConfig, confirmRule: 'KYC_GATED' });
+    req.flush({ ...defaultBookingEmiConfig, emiEnabled: true });
     flushSetupState();
 
     httpMock.expectNone('/api/company/payments');
@@ -304,36 +299,6 @@ describe('PaymentsKycStepComponent', () => {
     httpMock.expectNone('/api/company/kyc');
     httpMock.expectNone('/api/company/withdrawal');
   }));
-
-  it('surfaces the booking & EMI cross-field 409 as a banner, not a field error', fakeAsync(() => {
-    flushInitialLoads();
-    const component = fixture.componentInstance;
-
-    component.setConfirmRule('AUTO_THRESHOLD');
-    tick(400);
-
-    httpMock.expectOne('/api/company/booking-emi').flush(
-      { error: 'confirm threshold percent must be a positive value when confirm rule is AUTO_THRESHOLD' },
-      { status: 409, statusText: 'Conflict' }
-    );
-
-    expect(component.bookingEmiSubmitError).toBe(
-      'confirm threshold percent must be a positive value when confirm rule is AUTO_THRESHOLD'
-    );
-    expect(component.bookingEmiSavedJustNow).toBeFalse();
-  }));
-
-  it('only renders the confirm-threshold field when confirmRule is AUTO_THRESHOLD', () => {
-    flushInitialLoads();
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelector('input[min="1"][max="100"]')).toBeNull();
-
-    fixture.componentInstance.setConfirmRule('AUTO_THRESHOLD');
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelector('input[min="1"][max="100"]')).toBeTruthy();
-  });
 
   it('does not render the inline step-nav when mode is setup (shell owns navigation there)', () => {
     flushInitialLoads();
@@ -382,7 +347,7 @@ describe('PaymentsKycStepComponent', () => {
       ifscCode: 'HDFC0001234'
     });
     component.toggleDocument('AADHAAR', false);
-    component.setConfirmRule('KYC_GATED');
+    component.setEmiEnabled(true);
     expect(component.paymentForm.dirty).toBeTrue();
     expect(component.payoutForm.dirty).toBeTrue();
 
@@ -391,7 +356,7 @@ describe('PaymentsKycStepComponent', () => {
     httpMock.expectOne('/api/company/payments').flush({ ...emptyPaymentConfig, gateway: 'RAZORPAY' });
     httpMock.expectOne('/api/company/payout-account').flush({ ...emptyPayoutAccount, ifscCode: 'HDFC0001234' });
     httpMock.expectOne('/api/company/kyc').flush({ ...defaultKycConfig, requiredDocuments: ['PAN', 'BANK_PASSBOOK'] });
-    httpMock.expectOne('/api/company/booking-emi').flush({ ...defaultBookingEmiConfig, confirmRule: 'KYC_GATED' });
+    httpMock.expectOne('/api/company/booking-emi').flush({ ...defaultBookingEmiConfig, emiEnabled: true });
     // setup-state is re-fetched once per successful save above, via SetupService.refresh() ->
     // switchMap -- each new refresh() cancels whichever of these GETs is still in flight, so
     // only the most recent survives to be flushed; the rest are expected to already be cancelled.
@@ -573,18 +538,18 @@ describe('PaymentsKycStepComponent', () => {
     flushInitialLoads();
     const component = fixture.componentInstance;
 
-    component.setConfirmRule('KYC_GATED');
+    component.setEmiEnabled(true);
     component.flushPendingSave();
     httpMock.expectOne('/api/company/booking-emi').flush(
-      { error: 'confirm threshold percent must be a positive value' },
+      { error: 'invalid booking policy' },
       { status: 409, statusText: 'Conflict' }
     );
 
     // bookingEmiDirty is private; observe the re-dirty indirectly through a second flush retrying.
     component.flushPendingSave();
     const retry = httpMock.expectOne('/api/company/booking-emi');
-    expect(retry.request.body.confirmRule).toBe('KYC_GATED');
-    retry.flush({ ...defaultBookingEmiConfig, confirmRule: 'KYC_GATED' });
+    expect(retry.request.body.emiEnabled).toBeTrue();
+    retry.flush({ ...defaultBookingEmiConfig, emiEnabled: true });
     flushSetupState();
   });
 });

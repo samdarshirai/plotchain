@@ -95,6 +95,7 @@ class DashboardServiceTest {
         lenient().when(legVolumeRepository.totalBusiness(associateId))
             .thenReturn(new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
         lenient().when(saleRepository.sumAmountByAssociateIdAndStatus(any(), any())).thenReturn(BigDecimal.ZERO);
+        lenient().when(saleRepository.sumOpenCycleLegBusiness(any(), any())).thenReturn(BigDecimal.ZERO);
         lenient().when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
         lenient().when(ledgerEntryRepository.sumNetAmountByAssociateAndType(any(), any())).thenReturn(BigDecimal.ZERO);
     }
@@ -184,6 +185,8 @@ class DashboardServiceTest {
         when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED)).thenReturn(new BigDecimal("3850000"));
         when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, closedCycleId, SaleStatus.RECORDED)).thenReturn(new BigDecimal("3260000"));
         when(saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED)).thenReturn(new BigDecimal("500000"));
+        when(saleRepository.sumOpenCycleLegBusiness(associateId, "L")).thenReturn(new BigDecimal("40000"));
+        when(saleRepository.sumOpenCycleLegBusiness(associateId, "R")).thenReturn(new BigDecimal("10000"));
         when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED)).thenReturn(new BigDecimal("1200"));
 
         when(associateRepository.countDownlineByPosition(associateId, "L")).thenReturn(7L);
@@ -227,8 +230,8 @@ class DashboardServiceTest {
         assertThat(response.networkSummary().rightAssociateCount()).isEqualTo(5L);
         assertThat(response.legVolumeSummary().leftLegVolume()).isEqualByComparingTo("300000");
         assertThat(response.legVolumeSummary().rightLegVolume()).isEqualByComparingTo("200000");
-        assertThat(response.legVolumeSummary().totalLeftBusiness()).isEqualByComparingTo("300000");
-        assertThat(response.legVolumeSummary().totalRightBusiness()).isEqualByComparingTo("200000");
+        assertThat(response.legVolumeSummary().totalLeftBusiness()).isEqualByComparingTo("340000");
+        assertThat(response.legVolumeSummary().totalRightBusiness()).isEqualByComparingTo("210000");
         assertThat(response.legVolumeSummary().totalSelfBusiness()).isEqualByComparingTo("500000");
         assertThat(response.legVolumeSummary().newBookedAreaSqft()).isEqualByComparingTo("1200");
     }

@@ -294,26 +294,4 @@ class BookingCancelServiceTest {
 
         verify(plotBookingRepository, never()).findFirstByPlotIdAndIdNotAndStatusIn(any(), any(), any());
     }
-
-    // Unit-5 follow-up: "VOID installment exclusion from paid% has no unit test". VOID can now exist.
-    // 4 x 150000 of 600000. 2 PAID + 1 VOID + 1 PENDING = 50% paid. At threshold 75 that must NOT
-    // confirm; if VOID were wrongly counted as paid it would be 75% and would confirm.
-    @Test
-    void voidInstallmentsDoNotCountTowardsPaidPercentForAutoConfirm() {
-        PlotBooking b = locked(PlotStatus.BOOKED);
-        List<EmiInstallment> rows = List.of(
-            inst(1, "150000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PAID),
-            inst(2, "150000.00", LocalDate.of(2026, 8, 1), InstallmentStatus.PAID),
-            inst(3, "150000.00", LocalDate.of(2026, 9, 1), InstallmentStatus.VOID),
-            inst(4, "150000.00", LocalDate.of(2026, 10, 1), InstallmentStatus.PENDING));
-        BookingEmiConfig cfg = new BookingEmiConfig();
-        cfg.setConfirmRule("AUTO_THRESHOLD");
-        cfg.setConfirmThresholdPercent(75);
-        when(bookingEmiConfigRepository.findBySingletonGuardTrue()).thenReturn(Optional.of(cfg));
-
-        bookingService.afterInstallmentPaid(b, rows, ACTOR_ID);
-
-        verifyNoInteractions(saleService);                                   // not confirmed
-        assertThat(b.getStatus()).isEqualTo(BookingStatus.ACTIVE);
-    }
 }
