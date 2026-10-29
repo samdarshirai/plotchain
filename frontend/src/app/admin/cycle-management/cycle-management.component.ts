@@ -15,14 +15,14 @@ import { AdminDashboardService } from '../../admin-dashboard/admin-dashboard.ser
 import { CurrentCycleStats } from '../../admin-dashboard/admin-dashboard.model';
 
 const PAGE_SIZE = 20;
-const INCOME_TYPES: CycleIncomeType[] = ['DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'SELF_PERFORMANCE', 'ROYALTY', 'REWARD'];
+const INCOME_TYPES: CycleIncomeType[] = ['DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'ROYALTY', 'REWARD'];
 // Key order = table order; 'totalNet' sits between ROYALTY and REWARD, so the loop below can't be a single map.
 const COLUMN_KEYS = [
-  'DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'SELF_PERFORMANCE', 'ROYALTY', 'totalNet', 'REWARD'
+  'DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'ROYALTY', 'totalNet', 'REWARD'
 ];
 const COLUMN_LABEL_KEYS: Record<string, string> = {
   DIRECT: 'columnDirect', MATCHING: 'columnMatching', SPONSOR_MATCHING: 'columnSponsor',
-  SELF_PERFORMANCE: 'columnSelfPerformance', ROYALTY: 'columnRoyalty', totalNet: 'columnTotalIncome', REWARD: 'columnReward'
+  ROYALTY: 'columnRoyalty', totalNet: 'columnTotalIncome', REWARD: 'columnReward'
 };
 
 @Component({

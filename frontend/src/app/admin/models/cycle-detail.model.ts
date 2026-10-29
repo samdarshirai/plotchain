@@ -1,6 +1,6 @@
 import { CycleStatus } from './cycle.model';
 
-export type CycleIncomeType = 'DIRECT' | 'MATCHING' | 'SPONSOR_MATCHING' | 'ROYALTY' | 'REWARD' | 'SELF_PERFORMANCE';
+export type CycleIncomeType = 'DIRECT' | 'MATCHING' | 'SPONSOR_MATCHING' | 'ROYALTY' | 'REWARD';
 
 export interface CycleIncomeTypeTotal {
   incomeType: CycleIncomeType;

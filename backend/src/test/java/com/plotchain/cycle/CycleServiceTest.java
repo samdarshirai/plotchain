@@ -146,8 +146,6 @@ class CycleServiceTest {
             .thenReturn(BigDecimal.valueOf(5));
         when(ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), IncomeType.REWARD))
             .thenReturn(BigDecimal.valueOf(2));
-        when(ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), IncomeType.SELF_PERFORMANCE))
-            .thenReturn(BigDecimal.valueOf(3));
         when(ledgerEntryRepository.sumNetAmountByCycle(cycle.getId())).thenReturn(BigDecimal.valueOf(170));
         when(ledgerEntryRepository.sumGrossAmount(null, null, cycle.getId(), null)).thenReturn(BigDecimal.valueOf(200));
         when(saleRepository.sumAmountByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(BigDecimal.valueOf(5000));
@@ -169,8 +167,7 @@ class CycleServiceTest {
             new CycleIncomeTypeTotal(IncomeType.MATCHING, BigDecimal.valueOf(50)),
             new CycleIncomeTypeTotal(IncomeType.SPONSOR_MATCHING, BigDecimal.valueOf(10)),
             new CycleIncomeTypeTotal(IncomeType.ROYALTY, BigDecimal.valueOf(5)),
-            new CycleIncomeTypeTotal(IncomeType.REWARD, BigDecimal.valueOf(2)),
-            new CycleIncomeTypeTotal(IncomeType.SELF_PERFORMANCE, BigDecimal.valueOf(3)));
+            new CycleIncomeTypeTotal(IncomeType.REWARD, BigDecimal.valueOf(2)));
     }
 
     @Test
