@@ -15,8 +15,8 @@ class TemporaryPasswordGeneratorTest {
     }
 
     @Test
-    void generatesAnEightCharacterPassword() {
-        assertThat(TemporaryPasswordGenerator.generate()).hasSize(8);
+    void generatesASixDigitPassword() {
+        assertThat(TemporaryPasswordGenerator.generate()).matches("\\d{6}");
     }
 
     @Test
