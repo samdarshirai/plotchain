@@ -56,7 +56,7 @@ import { FormIssue, collectIssues, errorMessage } from '../../../shared/validati
             <div class="invoice-loans__add-fields">
             <div class="invoice-loans__field invoice-loans__modal-field">
               <label>{{ 'admin.invoiceLoans.associate' | translate }}</label>
-              <input type="text" list="invoice-loans-associates" formControlName="associateText" autocomplete="off" (change)="pickAssociate($any($event.target).value)" />
+              <input type="text" list="invoice-loans-associates" formControlName="associateText" autocomplete="off" [class.is-invalid]="!!fe(form, 'associateId', submitted)" (change)="pickAssociate($any($event.target).value)" />
               <app-field-error [message]="fe(form, 'associateId', submitted)"></app-field-error>
               <datalist id="invoice-loans-associates">
                 <option *ngFor="let a of associates" [value]="label(a)"></option>
