@@ -113,10 +113,9 @@ export class EPinJoinComponent implements OnInit {
       this.router.navigate(['/e-pins/unlock'], { queryParams: { returnUrl: this.router.url } });
       return;
     }
-    if (e.status === 409 && ['PAN_TAKEN', 'AADHAAR_TAKEN', 'PHONE_TAKEN'].includes(code)) { setTimeout(() => this.profile?.focusFirstError()); }
+    if (e.status === 409 && ['PAN_TAKEN', 'AADHAAR_TAKEN'].includes(code)) { setTimeout(() => this.profile?.focusFirstError()); }
     if (e.status === 409 && code === 'PAN_TAKEN') { this.serverErrors['panNumber'] = 'PAN already registered'; return; }
     if (e.status === 409 && code === 'AADHAAR_TAKEN') { this.serverErrors['aadhaarNumber'] = 'Aadhaar already registered'; return; }
-    if (e.status === 409 && code === 'PHONE_TAKEN') { this.serverErrors['phone'] = 'Phone already registered'; return; }
     this.error = e.status === 401 ? 'epins.errorPasswordInvalid'
       : e.status === 423 ? 'epins.errorPasswordLocked'
       : e.status === 409 && code === 'TRANSACTION_PASSWORD_NOT_SET' ? 'epins.errorPasswordNotSet'

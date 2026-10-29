@@ -59,16 +59,13 @@ public class AssociateProvisioningService {
             associate.getTemporaryPassword(), transactionPassword);
     }
 
-    /** PAN / Aadhaar / phone must each be unused; surfaced as 409 with code PAN_TAKEN etc. */
+    /** PAN / Aadhaar must each be unused; surfaced as 409 with code PAN_TAKEN etc. */
     public void assertIdentityUnique(AssociateProfileFields f) {
         if (associateRepository.existsByPanNumber(f.panNumber())) {
             throw new EPinDuplicateIdentityException("PAN_TAKEN");
         }
         if (associateRepository.existsByAadhaarNumber(f.aadhaarNumber())) {
             throw new EPinDuplicateIdentityException("AADHAAR_TAKEN");
-        }
-        if (f.phone() != null && associateRepository.existsByPhone(f.phone())) {
-            throw new EPinDuplicateIdentityException("PHONE_TAKEN");
         }
     }
 
@@ -110,13 +107,10 @@ public class AssociateProvisioningService {
         nomineeRepository.save(nominee);
     }
 
-    // Shared by admin create and the associate e-Pin Join: validates phone + placement, then saves
+    // Shared by admin create and the associate e-Pin Join: validates placement, then saves
     // a PENDING associate. The caller may set extra profile fields on the returned entity and save
     // again in the same transaction. The one-time temporary password rides on a transient field.
     public Associate createPending(String name, String email, String phone, UUID sponsorId, UUID parentId, String position) {
-        if (phone != null && associateRepository.existsByPhone(phone)) {
-            throw new PhoneAlreadyRegisteredException(phone);
-        }
         if (parentId != null) {
             associateRepository.findById(parentId)
                 .orElseThrow(() -> new AssociateNotFoundException(parentId));

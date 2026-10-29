@@ -137,7 +137,6 @@ export class NewAssociatePanelComponent implements OnInit, OnChanges {
     const code = err.error?.code;
     if (err.status === 409 && code === 'PAN_TAKEN') { this.serverErrors = { panNumber: 'PAN already registered' }; return; }
     if (err.status === 409 && code === 'AADHAAR_TAKEN') { this.serverErrors = { aadhaarNumber: 'Aadhaar already registered' }; return; }
-    if (err.status === 409 && code === 'PHONE_TAKEN') { this.serverErrors = { phone: 'Phone already registered' }; return; }
     this.submitError = err.status === 404 ? 'epinRegister.join.errorSponsor'
       : err.status === 409 ? this.conflictKey(err.error?.error)
       : err.status === 400 ? 'epinRegister.join.errorInvalid'
