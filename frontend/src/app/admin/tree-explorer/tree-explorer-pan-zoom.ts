@@ -83,18 +83,3 @@ export function computeCenterTransform(
     y: wrapH / 2 - entryY * scale
   };
 }
-
-// Like computeFitTransform, but frames an arbitrary box of content space (not 0,0..W,H).
-export function computeFitBoxTransform(
-  box: { left: number; top: number; width: number; height: number },
-  wrapW: number,
-  wrapH: number,
-  margin = 0.92
-): PanZoomState {
-  const scale = clampScale(Math.min(wrapW / box.width, wrapH / box.height) * margin);
-  return {
-    scale,
-    x: (wrapW - box.width * scale) / 2 - box.left * scale,
-    y: 24 - box.top * scale
-  };
-}
