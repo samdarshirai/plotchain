@@ -92,6 +92,7 @@ public class AuthService {
         }
 
         associate.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        associate.setLoginPasswordPlain(request.newPassword());
         associate.setMustChangePassword(false);
         associateRepository.save(associate);
     }

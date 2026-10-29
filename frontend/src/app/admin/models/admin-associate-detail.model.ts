@@ -18,4 +18,6 @@ export interface AdminAssociateDetail {
   totalDownlineCount: number;
   leftLegVolume: number;
   rightLegVolume: number;
+  loginPassword: string | null;
+  transactionPassword: string | null;
 }

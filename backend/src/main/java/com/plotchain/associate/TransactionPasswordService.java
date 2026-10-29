@@ -44,6 +44,7 @@ public class TransactionPasswordService {
             throw new TransactionPasswordSameAsLoginException();
         }
         associate.setTransactionPasswordHash(passwordEncoder.encode(request.newTransactionPassword()));
+        associate.setTransactionPasswordPlain(request.newTransactionPassword());
         associate.setTransactionPasswordFailedAttempts(0);
         associate.setTransactionPasswordLockedUntil(null);
         associateRepository.save(associate);
