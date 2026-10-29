@@ -7,7 +7,7 @@ export interface PanZoomState {
   scale: number;
 }
 
-export const MIN_SCALE = 0.25;
+export const MIN_SCALE = 0.5;
 export const MAX_SCALE = 2.5;
 
 export function clampScale(scale: number): number {
