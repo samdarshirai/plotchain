@@ -8,6 +8,7 @@ import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
+import com.plotchain.sales.SaleRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -35,14 +36,17 @@ public class LedgerService {
     private final CycleRepository cycleRepository;
     private final LegVolumeRepository legVolumeRepository;
     private final CompensationPlanService compensationPlanService;
+    private final SaleRepository saleRepository;
 
     public LedgerService(
             LedgerEntryRepository ledgerEntryRepository,
             AssociateRepository associateRepository,
             CycleRepository cycleRepository,
             LegVolumeRepository legVolumeRepository,
-            CompensationPlanService compensationPlanService) {
+            CompensationPlanService compensationPlanService,
+            SaleRepository saleRepository) {
         this.compensationPlanService = compensationPlanService;
+        this.saleRepository = saleRepository;
         this.legVolumeRepository = legVolumeRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.associateRepository = associateRepository;
@@ -254,6 +258,24 @@ public class LedgerService {
                 totalLeft, totalRight, matched, matched, matched));
             bfLeft = row.getCarriedForwardLeft();
             bfRight = row.getCarriedForwardRight();
+        }
+
+        // Live open-cycle rows (CycleService.refreshLiveIncome) point at a leg volume that is never
+        // persisted, so they miss above. Rebuild theirs the way DashboardService does: carry-in from
+        // the latest closed row (bfLeft/bfRight as left by the loop) plus this cycle's leg sales.
+        List<UUID> liveRefs = entries.stream()
+            .filter(e -> (e.getIncomeType() == IncomeType.MATCHING || e.getIncomeType() == IncomeType.ROYALTY)
+                && e.getSourceRef() != null && !result.containsKey(e.getSourceRef()))
+            .map(LedgerEntry::getSourceRef).toList();
+        if (!liveRefs.isEmpty()) {
+            BigDecimal newLeft = saleRepository.sumOpenCycleLegBusiness(associateId, "L");
+            BigDecimal newRight = saleRepository.sumOpenCycleLegBusiness(associateId, "R");
+            BigDecimal totalLeft = bfLeft.add(newLeft);
+            BigDecimal totalRight = bfRight.add(newRight);
+            BigDecimal matched = totalLeft.min(totalRight);
+            AssociateLedgerEntryResponse.LegBreakdown live = new AssociateLedgerEntryResponse.LegBreakdown(
+                bfLeft, bfRight, newLeft, newRight, totalLeft, totalRight, matched, matched, matched);
+            liveRefs.forEach(ref -> result.put(ref, live));
         }
         return result;
     }

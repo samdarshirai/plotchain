@@ -37,12 +37,13 @@ class LedgerServiceTest {
     @Mock com.plotchain.legvolume.LegVolumeRepository legVolumeRepository;
 
     @Mock com.plotchain.compensation.CompensationPlanService compensationPlanService;
+    @Mock com.plotchain.sales.SaleRepository saleRepository;
 
     LedgerService service;
 
     @BeforeEach
     void setUp() {
-        service = new LedgerService(ledgerEntryRepository, associateRepository, cycleRepository, legVolumeRepository, compensationPlanService);
+        service = new LedgerService(ledgerEntryRepository, associateRepository, cycleRepository, legVolumeRepository, compensationPlanService, saleRepository);
     }
 
     private Associate newAssociate(UUID id, String userId, String name) {
@@ -287,6 +288,39 @@ class LedgerServiceTest {
         assertThat(b.newLeft()).isEqualByComparingTo("2000000");
         assertThat(b.newRight()).isEqualByComparingTo("1000000");
         assertThat(b.matchingBusiness()).isEqualByComparingTo("1000000");
+    }
+
+    // Live open-cycle MATCHING rows (CycleService.refreshLiveIncome) reference an unpersisted leg
+    // volume: breakdown = latest closed row's carry + this cycle's open leg sales.
+    @Test
+    void myListBuildsLegBreakdownForLiveOpenCycleMatchingRowsFromCarryPlusOpenLegSales() {
+        UUID associateId = UUID.randomUUID();
+        UUID closed = UUID.randomUUID(), open = UUID.randomUUID();
+        com.plotchain.legvolume.LegVolume closedRow = new com.plotchain.legvolume.LegVolume(
+            UUID.randomUUID(), associateId, closed, new BigDecimal("2000000"), new BigDecimal("1000000"),
+            new BigDecimal("1000000"), BigDecimal.ZERO);
+        LedgerEntry live = newEntry(UUID.randomUUID(), associateId, open, UUID.randomUUID());
+        live.setIncomeType(IncomeType.MATCHING);
+
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(live), PageRequest.of(0, 20), 1));
+        when(cycleRepository.findAllById(List.of(open)))
+            .thenReturn(List.of(newCycle(open, LocalDate.of(2026, 10, 16), LocalDate.of(2026, 10, 31))));
+        when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId))
+            .thenReturn(List.of(closedRow));
+        when(saleRepository.sumOpenCycleLegBusiness(associateId, "L")).thenReturn(new BigDecimal("2160000"));
+        when(saleRepository.sumOpenCycleLegBusiness(associateId, "R")).thenReturn(new BigDecimal("1240000"));
+
+        var b = service.myList(associateId, null, null, null, 0, 20).entries().get(0).legBreakdown();
+
+        assertThat(b.bfLeft()).isEqualByComparingTo("1000000");
+        assertThat(b.bfRight()).isEqualByComparingTo("0");
+        assertThat(b.newLeft()).isEqualByComparingTo("2160000");
+        assertThat(b.newRight()).isEqualByComparingTo("1240000");
+        assertThat(b.totalLeft()).isEqualByComparingTo("3160000");
+        assertThat(b.totalRight()).isEqualByComparingTo("1240000");
+        assertThat(b.calcLeft()).isEqualByComparingTo("1240000");
+        assertThat(b.matchingBusiness()).isEqualByComparingTo("1240000");
     }
 
     // Proves associateId is always passed through non-null (the caller's own id) alongside the
