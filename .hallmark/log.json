@@ -1,0 +1,11 @@
+[
+ {
+  "mode": "redesign",
+  "depth": "polish",
+  "scope": "page",
+  "prompt": "admin sign-in for Viraj Acres staff",
+  "entry": "/admin/login",
+  "waived": [],
+  "date": "2026-10-30"
+ }
+]
