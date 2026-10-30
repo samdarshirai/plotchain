@@ -1265,6 +1265,7 @@
       "selectPlaceholder": "Select...",
       "batchIdLabel": "Batch ID",
       "event": { "GENERATED": "Generated", "ALLOCATED": "Allocated", "TRANSFERRED": "Transferred", "REDEEMED": "Redeemed", "BLOCKED": "Blocked", "UNBLOCKED": "Unblocked" },
+      "pinTypeLabel": "Pin Type", "pinType": { "REGISTRATION": "Registration", "TOPUP": "Top Up" },
       "colCode": "E-Pin", "colStatus": "Status", "colBatch": "Batch", "colExpires": "Expires",
       "colHolder": "Holder", "colRedeemedTo": "Redeemed to", "colActions": "Actions",
       "emptyState": "No e-pins match these filters.",

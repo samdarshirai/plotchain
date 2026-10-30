@@ -117,19 +117,19 @@ class EPinRepositoryTest {
         usedForBInBatchB.setRedemptionType(RedemptionType.TOPUP);
         epinRepository.saveAndFlush(usedForBInBatchB);
 
-        Page<EPin> byStatus = epinRepository.search(EPinStatus.UNUSED, null, null, null, false, Instant.now(), PageRequest.of(0, 20));
+        Page<EPin> byStatus = epinRepository.search(EPinStatus.UNUSED, null, null, null, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(byStatus.getContent()).extracting(EPin::getId).containsExactly(unusedInBatchA.getId());
 
-        Page<EPin> byRedeemedTo = epinRepository.search(null, associateA, null, null, false, Instant.now(), PageRequest.of(0, 20));
+        Page<EPin> byRedeemedTo = epinRepository.search(null, null, associateA, null, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(byRedeemedTo.getContent()).extracting(EPin::getId).containsExactly(usedForA.getId());
 
-        Page<EPin> byBatchId = epinRepository.search(null, null, batchB, null, false, Instant.now(), PageRequest.of(0, 20));
+        Page<EPin> byBatchId = epinRepository.search(null, null, null, batchB, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(byBatchId.getContent()).extracting(EPin::getId).containsExactly(usedForBInBatchB.getId());
 
-        Page<EPin> combined = epinRepository.search(EPinStatus.USED, associateA, batchA, null, false, Instant.now(), PageRequest.of(0, 20));
+        Page<EPin> combined = epinRepository.search(EPinStatus.USED, null, associateA, batchA, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(combined.getContent()).extracting(EPin::getId).containsExactly(usedForA.getId());
 
-        Page<EPin> unfiltered = epinRepository.search(null, null, null, null, false, Instant.now(), PageRequest.of(0, 20));
+        Page<EPin> unfiltered = epinRepository.search(null, null, null, null, null, false, Instant.now(), PageRequest.of(0, 20));
         assertThat(unfiltered.getTotalElements()).isEqualTo(3);
     }
 
@@ -146,12 +146,12 @@ class EPinRepositoryTest {
         latest.setGeneratedAt(Instant.parse("2026-01-30T00:00:00Z"));
         epinRepository.saveAndFlush(latest);
 
-        Page<EPin> firstPage = epinRepository.search(null, null, null, null, false, Instant.now(), PageRequest.of(0, 2));
+        Page<EPin> firstPage = epinRepository.search(null, null, null, null, null, false, Instant.now(), PageRequest.of(0, 2));
         assertThat(firstPage.getContent()).extracting(EPin::getId)
             .containsExactly(latest.getId(), later.getId());
         assertThat(firstPage.getTotalElements()).isEqualTo(3);
 
-        Page<EPin> secondPage = epinRepository.search(null, null, null, null, false, Instant.now(), PageRequest.of(1, 2));
+        Page<EPin> secondPage = epinRepository.search(null, null, null, null, null, false, Instant.now(), PageRequest.of(1, 2));
         assertThat(secondPage.getContent()).extracting(EPin::getId).containsExactly(earlier.getId());
     }
 
@@ -159,7 +159,7 @@ class EPinRepositoryTest {
     void searchReturnsAnEmptyPageWhenNoRowMatchesTheGivenFilters() {
         persistAdmin();
 
-        Page<EPin> result = epinRepository.search(null, UUID.randomUUID(), null, null, false, Instant.now(), PageRequest.of(0, 20));
+        Page<EPin> result = epinRepository.search(null, null, UUID.randomUUID(), null, null, false, Instant.now(), PageRequest.of(0, 20));
 
         assertThat(result.getContent()).isEmpty();
         assertThat(result.getTotalElements()).isZero();
@@ -194,7 +194,7 @@ class EPinRepositoryTest {
         persistPin(admin, EPinStatus.ALLOCATED, admin, null);
         entityManager.flush();
 
-        Page<EPin> page = epinRepository.search(null, null, null, holder, false, Instant.now(), PageRequest.of(0, 20));
+        Page<EPin> page = epinRepository.search(null, null, null, null, holder, false, Instant.now(), PageRequest.of(0, 20));
 
         assertThat(page.getContent()).extracting(EPin::getId).containsExactly(mine.getId());
     }
@@ -209,7 +209,7 @@ class EPinRepositoryTest {
         persistPin(admin, EPinStatus.USED, null, now.minusSeconds(60));                    // used pins are never "expired"
         entityManager.flush();
 
-        Page<EPin> page = epinRepository.search(null, null, null, null, true, now, PageRequest.of(0, 20));
+        Page<EPin> page = epinRepository.search(null, null, null, null, null, true, now, PageRequest.of(0, 20));
 
         assertThat(page.getContent()).extracting(EPin::getId).containsExactly(expiredUnused.getId());
     }
@@ -236,9 +236,28 @@ class EPinRepositoryTest {
         persistPin(admin, EPinStatus.BLOCKED, null, null);             // not in the pool
         entityManager.flush();
 
-        List<EPin> pool = epinRepository.findAllocatable(now, null, PageRequest.of(0, 10));
+        List<EPin> pool = epinRepository.findAllocatable(now, null, null, PageRequest.of(0, 10));
 
         assertThat(pool).extracting(EPin::getId).containsExactly(older.getId(), newer.getId());
+    }
+
+    @Test
+    void searchAndFindAllocatableFilterByPinType() {
+        UUID admin = persistAdmin();
+        Instant now = Instant.parse("2026-10-01T00:00:00Z");
+        EPin registration = persistPin(admin, EPinStatus.UNUSED, null, null);
+        registration.setGeneratedAt(now.minusSeconds(100)); // older: would be allocated first without the filter
+        EPin topup = persistPin(admin, EPinStatus.UNUSED, null, null);
+        topup.setGeneratedAt(now.minusSeconds(50));
+        topup.setPinType(EPinType.TOPUP);
+        entityManager.flush();
+
+        assertThat(epinRepository.search(null, EPinType.TOPUP, null, null, null, false, now, PageRequest.of(0, 20)).getContent())
+            .extracting(EPin::getId).containsExactly(topup.getId());
+        assertThat(epinRepository.findAllocatable(now, EPinType.TOPUP, null, PageRequest.of(0, 10)))
+            .extracting(EPin::getId).containsExactly(topup.getId());
+        assertThat(epinRepository.findAllocatable(now, EPinType.REGISTRATION, null, PageRequest.of(0, 10)))
+            .extracting(EPin::getId).containsExactly(registration.getId());
     }
 
     @Test

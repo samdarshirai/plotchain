@@ -10,6 +10,7 @@ public record EPinResponse(
     String code,
     UUID batchId,
     EPinStatus status,
+    EPinType pinType,
     UUID generatedBy,
     Instant generatedAt,
     Instant expiresAt,

@@ -39,6 +39,15 @@ describe('EPinRegisterService', () => {
     req.flush({});
   });
 
+  it('sends pinType on generate and allocate when given', () => {
+    service.generate(5, undefined, 'TOPUP').subscribe();
+    httpMock.expectOne('/api/admin/epins').flush({});
+    service.allocate('a1', 2, undefined, 'TOPUP').subscribe();
+    const req = httpMock.expectOne('/api/admin/epins/allocate');
+    expect(req.request.body).toEqual({ associateId: 'a1', count: 2, pinType: 'TOPUP' });
+    req.flush({});
+  });
+
   it('allocates, blocks, unblocks, redeems and fetches events on the right endpoints', () => {
     service.allocate('a1', 3, 'b1').subscribe();
     let req = httpMock.expectOne('/api/admin/epins/allocate');

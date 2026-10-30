@@ -122,10 +122,10 @@ class EPinServiceTest {
         epin.setRedemptionType(RedemptionType.ACTIVATION);
         epin.setLinkedEntityId(linkedEntityId);
 
-        when(epinRepository.search(any(), any(), any(), any(), anyBoolean(), any(), any()))
+        when(epinRepository.search(any(), isNull(), any(), any(), any(), anyBoolean(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(epin), PageRequest.of(0, 20), 1));
 
-        EPinPageResponse response = epinService.list(EPinStatus.USED, redeemedTo, batchId, null, false, 0, 20);
+        EPinPageResponse response = epinService.list(EPinStatus.USED, null, redeemedTo, batchId, null, false, 0, 20);
 
         assertThat(response.page()).isEqualTo(0);
         assertThat(response.size()).isEqualTo(20);
@@ -148,18 +148,18 @@ class EPinServiceTest {
     void listPassesAllThreeFiltersAndThePageRequestThroughToSearchUnchanged() {
         UUID redeemedTo = UUID.randomUUID();
         UUID batchId = UUID.randomUUID();
-        when(epinRepository.search(any(), any(), any(), any(), anyBoolean(), any(), any())).thenReturn(new PageImpl<>(List.of()));
+        when(epinRepository.search(any(), isNull(), any(), any(), any(), anyBoolean(), any(), any())).thenReturn(new PageImpl<>(List.of()));
 
-        epinService.list(EPinStatus.UNUSED, redeemedTo, batchId, null, false, 2, 10);
+        epinService.list(EPinStatus.UNUSED, null, redeemedTo, batchId, null, false, 2, 10);
 
-        verify(epinRepository).search(EPinStatus.UNUSED, redeemedTo, batchId, null, false, NOW, PageRequest.of(2, 10));
+        verify(epinRepository).search(EPinStatus.UNUSED, null, redeemedTo, batchId, null, false, NOW, PageRequest.of(2, 10));
     }
 
     @Test
     void listReturnsAnEmptyPageWhenSearchFindsNothing() {
-        when(epinRepository.search(any(), any(), any(), any(), anyBoolean(), any(), any())).thenReturn(new PageImpl<>(List.of()));
+        when(epinRepository.search(any(), isNull(), any(), any(), any(), anyBoolean(), any(), any())).thenReturn(new PageImpl<>(List.of()));
 
-        EPinPageResponse response = epinService.list(null, null, null, null, false, 0, 20);
+        EPinPageResponse response = epinService.list(null, null, null, null, null, false, 0, 20);
 
         assertThat(response.epins()).isEmpty();
         assertThat(response.totalElements()).isZero();
@@ -334,10 +334,10 @@ class EPinServiceTest {
         used.setId(UUID.randomUUID());
         used.setStatus(EPinStatus.USED);
         used.setExpiresAt(NOW.minusSeconds(60));
-        when(epinRepository.search(any(), any(), any(), any(), anyBoolean(), any(), any()))
+        when(epinRepository.search(any(), isNull(), any(), any(), any(), anyBoolean(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(expired, used), PageRequest.of(0, 20), 2));
 
-        EPinPageResponse response = epinService.list(null, null, null, null, false, 0, 20);
+        EPinPageResponse response = epinService.list(null, null, null, null, null, false, 0, 20);
 
         assertThat(response.epins().get(0).expired()).isTrue();
         assertThat(response.epins().get(1).expired()).isFalse();
@@ -598,7 +598,7 @@ class EPinServiceTest {
         associateWith(target, AssociateStatus.ACTIVE);
         EPin a = unusedPin();
         EPin b = unusedPin();
-        when(epinRepository.findAllocatable(eq(NOW), isNull(), eq(PageRequest.of(0, 2)))).thenReturn(List.of(a, b));
+        when(epinRepository.findAllocatable(eq(NOW), isNull(), isNull(), eq(PageRequest.of(0, 2)))).thenReturn(List.of(a, b));
         ArgumentCaptor<EPinEvent> events = ArgumentCaptor.forClass(EPinEvent.class);
 
         AllocateEPinResponse response = epinService.allocate(new AllocateEPinRequest(target, 2, null), actor);
@@ -613,10 +613,21 @@ class EPinServiceTest {
     }
 
     @Test
+    void allocatePassesThePinTypeToThePoolQuery() {
+        UUID target = UUID.randomUUID();
+        associateWith(target, AssociateStatus.ACTIVE);
+        when(epinRepository.findAllocatable(eq(NOW), eq(EPinType.TOPUP), isNull(), eq(PageRequest.of(0, 1))))
+            .thenReturn(List.of(unusedPin()));
+
+        assertThat(epinService.allocate(new AllocateEPinRequest(target, 1, null, EPinType.TOPUP), UUID.randomUUID()).count())
+            .isEqualTo(1);
+    }
+
+    @Test
     void allocateFailsWholesaleWhenThePoolIsSmallerThanCount() {
         UUID target = UUID.randomUUID();
         associateWith(target, AssociateStatus.ACTIVE);
-        when(epinRepository.findAllocatable(any(), any(), any())).thenReturn(List.of(unusedPin()));
+        when(epinRepository.findAllocatable(any(), isNull(), any(), any())).thenReturn(List.of(unusedPin()));
 
         assertThatThrownBy(() -> epinService.allocate(new AllocateEPinRequest(target, 3, null), UUID.randomUUID()))
             .isInstanceOf(EPinInsufficientPoolException.class);
@@ -637,7 +648,7 @@ class EPinServiceTest {
         assertThatThrownBy(() -> epinService.allocate(new AllocateEPinRequest(pending, 1, null), UUID.randomUUID()))
             .isInstanceOf(AssociateNotActiveException.class);
 
-        verify(epinRepository, never()).findAllocatable(any(), any(), any());
+        verify(epinRepository, never()).findAllocatable(any(), isNull(), any(), any());
     }
 
     private EPin heldPin(UUID holder, EPinStatus status) {

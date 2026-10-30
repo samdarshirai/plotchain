@@ -137,7 +137,7 @@ class EPinControllerTest {
         epin.setRedeemedBy(UUID.randomUUID());
         epin.setRedeemedAt(Instant.now());
         epin.setRedemptionType(RedemptionType.ACTIVATION);
-        when(epinRepository.search(eq(EPinStatus.USED), eq(redeemedTo), eq(batchId), isNull(), eq(false), any(), any()))
+        when(epinRepository.search(eq(EPinStatus.USED), isNull(), eq(redeemedTo), eq(batchId), isNull(), eq(false), any(), any()))
             .thenReturn(new PageImpl<>(List.of(epin), PageRequest.of(0, 20), 1));
 
         mockMvc.perform(get("/api/admin/epins")
@@ -155,7 +155,7 @@ class EPinControllerTest {
 
     @Test
     void listReturns200WithAnEmptyPageWhenUnfiltered() throws Exception {
-        when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), any()))
+        when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), isNull(), eq(false), any(), any()))
             .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/admin/epins")
@@ -167,26 +167,26 @@ class EPinControllerTest {
 
     @Test
     void listClampsAnOversizedPageSizeToTheServerSideMaximum() throws Exception {
-        when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 100))))
+        when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 100))))
             .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/admin/epins").param("size", "999999")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
-        verify(epinRepository).search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 100)));
+        verify(epinRepository).search(isNull(), isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 100)));
     }
 
     @Test
     void listClampsANegativePageToZeroInsteadOfThrowing() throws Exception {
-        when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 20))))
+        when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/admin/epins").param("page", "-5")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
-        verify(epinRepository).search(isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 20)));
+        verify(epinRepository).search(isNull(), isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 20)));
     }
 
     @Test
@@ -363,7 +363,7 @@ class EPinControllerTest {
     @Test
     void listAcceptsTheAllocatedToAndExpiredFiltersAndPassesThemThrough() throws Exception {
         UUID holder = UUID.randomUUID();
-        when(epinRepository.search(any(), any(), any(), any(), anyBoolean(), any(), any()))
+        when(epinRepository.search(any(), isNull(), any(), any(), any(), anyBoolean(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
         mockMvc.perform(get("/api/admin/epins")
@@ -372,7 +372,7 @@ class EPinControllerTest {
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
-        verify(epinRepository).search(isNull(), isNull(), isNull(), eq(holder), eq(true), any(), any());
+        verify(epinRepository).search(isNull(), isNull(), isNull(), isNull(), eq(holder), eq(true), any(), any());
     }
 
     @Test
@@ -489,7 +489,7 @@ class EPinControllerTest {
         a.setId(target);
         a.setStatus(AssociateStatus.ACTIVE);
         when(associateRepository.findById(target)).thenReturn(Optional.of(a));
-        when(epinRepository.findAllocatable(any(), any(), any())).thenReturn(List.of());
+        when(epinRepository.findAllocatable(any(), isNull(), any(), any())).thenReturn(List.of());
         String admin = tokenFor(AssociateRole.ADMIN);
 
         mockMvc.perform(post("/api/admin/epins/allocate")

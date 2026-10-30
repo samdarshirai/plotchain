@@ -41,6 +41,7 @@ public class EPinController {
     @GetMapping
     public EPinPageResponse list(
             @RequestParam(required = false) EPinStatus status,
+            @RequestParam(required = false) EPinType pinType,
             @RequestParam(required = false) UUID redeemedTo,
             @RequestParam(required = false) UUID batchId,
             @RequestParam(required = false) UUID allocatedTo,
@@ -49,7 +50,7 @@ public class EPinController {
             @RequestParam(defaultValue = "20") int size) {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
-        return epinService.list(status, redeemedTo, batchId, allocatedTo, expired, page, size);
+        return epinService.list(status, pinType, redeemedTo, batchId, allocatedTo, expired, page, size);
     }
 
     @PostMapping("/allocate")
