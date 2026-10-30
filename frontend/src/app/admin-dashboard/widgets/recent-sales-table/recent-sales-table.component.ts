@@ -38,7 +38,7 @@ export class AdminRecentSalesTableComponent implements OnChanges {
     const recorded = t('saleStatusRecorded');
     this.columns = [
       { key: 'plotNo', label: t('recentSalesColumnPlot'), type: 'text' },
-      { key: 'projectName', label: t('recentSalesColumnProject'), type: 'text' },
+      { key: 'projectName', ellipsis: true, label: t('recentSalesColumnProject'), type: 'text' },
       { key: 'associateName', label: t('recentSalesColumnAssociate'), type: 'text' },
       { key: 'amount', label: t('recentSalesColumnValue'), type: 'text' },
       { key: 'date', label: t('recentSalesColumnDate'), type: 'text' },

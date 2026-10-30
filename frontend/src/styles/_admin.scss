@@ -1,9 +1,11 @@
 /* Hallmark · built: 2026-10-30 · theme: brand (DESIGN.md, locked) · shape: app screen · scope: /admin/dashboard
- * Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 · weakest: V, the band order is the old screen's (cycle, decisions, sales, network, messages), kept on purpose; the change is composition: one framed seal, everything else open
+ * Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V4 · weakest: R, the rail packs three lists tight to earn a no-scroll screen at 1280x800; kept them open (no boxes) so density does not read as clutter
+ * 2026-10-31 redesign (full, owner asked for no scrolling): two-column board, seal laid horizontal, network figures four across and messages in a 22rem rail; sales rows one line, project name truncated with its full text as the cell title
  * signature: the Ink payout-liability seal beside the open decision queue
  * answered: DESIGN.md SS3 flanking-rule caps replaced by sentence-case headings with a trailing hairline, the owner's choice (option b), dashboard only so far
  * reworded "PAYOUT LIABILITY · THIS CYCLE" to "Payout liability this cycle", "NEEDS A DECISION" to "Needs a decision", "NETWORK HEALTH" to "Network health", "Review all →" to "Review all" · 10, 54, 67 name them
  * reworded the cycle caption and decision/message meta from middot joins to commas and a second line · 10 names them
+ * /admin/dashboard polish (2026-10-30): fixed 67 (recent-sales table heads untracked, sentence case), F25 (plot column pinned on phones), F26 (network figure labels balanced)
  * built: the project · redesign: full · v2.0.0 */
 @use 'seal';
 
@@ -4109,10 +4111,10 @@ button.tree-explorer__vacant-card {
 .admin-dashboard {
   display: flex;
   flex-direction: column;
-  gap: var(--space-12);
-  max-width: 1240px;
+  gap: var(--space-6);
+  max-width: 1440px;
   margin: 0 auto;
-  padding: var(--space-8) var(--space-8) var(--space-12);
+  padding: var(--space-6) var(--space-8);
 
   a:focus-visible {
     outline: 2px solid var(--brand-secondary);
@@ -4138,7 +4140,7 @@ button.tree-explorer__vacant-card {
 .admin-dashboard__title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 400;
   line-height: 1.1;
   color: var(--text-primary);
@@ -4147,7 +4149,7 @@ button.tree-explorer__vacant-card {
 }
 
 .admin-dashboard__cycle-caption {
-  margin: var(--space-2) 0 0;
+  margin: var(--space-1) 0 0;
   font-size: 0.875rem;
   color: var(--text-muted);
 }
@@ -4200,7 +4202,7 @@ button.tree-explorer__vacant-card {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  margin: 0 0 var(--space-4);
+  margin: 0 0 var(--space-3);
   font-family: var(--font-sans);
   font-size: 1rem;
   font-weight: 600;
@@ -4214,25 +4216,87 @@ button.tree-explorer__vacant-card {
   }
 }
 
-// The lead band: what this cycle owes, beside what is blocking it from closing.
-.admin-dashboard__lead {
+// The board: seal and recent sales in the main column, the three "act on it" lists in a rail.
+// Sized so the whole screen fits 1280x800 under the app bar without scrolling.
+.admin-dashboard__board {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: var(--space-12);
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+  gap: var(--space-8);
   align-items: start;
 }
 
+.admin-dashboard__main,
+.admin-dashboard__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+// The rail's three lists each sit in their own card, as on the earlier dashboard (owner's ask).
+.admin-dashboard__side {
+  gap: var(--space-4);
+
+  > section {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: var(--space-4);
+  }
+}
+
+// The decision queue's footer runs edge to edge in a raised band at the foot of its card.
+.admin-dashboard__side .admin-dashboard__decision-foot {
+  margin: var(--space-3) calc(-1 * var(--space-4)) calc(-1 * var(--space-4));
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+}
+
+// Last row of each list sits on the card edge, so it drops its own rule.
+.admin-dashboard__decision-row:last-child,
+.admin-dashboard__message:last-child {
+  border-bottom: 0;
+}
+
+// The seal laid on its side: the figure on the left, its trend on the right, the strip beneath.
 .admin-dashboard__seal .seal-card-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: var(--space-8);
   max-width: none;
-  padding: var(--space-8);
+  padding: var(--space-6) var(--space-8);
+}
+
+.admin-dashboard__seal .seal-card-panel__label,
+.admin-dashboard__seal .seal-card-panel__figure,
+.admin-dashboard__seal .seal-card-panel__delta {
+  grid-column: 1;
+  text-align: left;
 }
 
 .admin-dashboard__seal .seal-card-panel__label {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
   font-size: 0.875rem;
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
+}
+
+.admin-dashboard__seal .seal-card-panel__figure {
+  font-size: 2.75rem;
+}
+
+.admin-dashboard__seal .seal-card-panel__trend {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: end;
+  height: 56px;
+  margin: 0;
+}
+
+.admin-dashboard__seal .seal-card-panel__strip {
+  grid-column: 1 / -1;
 }
 
 .admin-dashboard__seal .seal-card-panel__delta {
@@ -4246,12 +4310,12 @@ button.tree-explorer__vacant-card {
 .admin-dashboard__seal-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 0 calc(-1 * var(--space-8)) calc(-1 * var(--space-4));
+  margin: var(--space-4) calc(-1 * var(--space-8)) calc(-1 * var(--space-6));
   padding: 0 var(--space-8);
   border-top: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent);
 
   > div {
-    padding: var(--space-4) 0;
+    padding: var(--space-3) 0;
 
     &:not(:first-child) {
       padding-left: var(--space-6);
@@ -4309,8 +4373,8 @@ button.tree-explorer__vacant-card {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  min-height: 64px;
-  padding: var(--space-3) var(--space-2);
+  min-height: 52px;
+  padding: var(--space-2);
   border-bottom: 1px solid var(--border-subtle);
   text-decoration: none;
   color: inherit;
@@ -4367,7 +4431,7 @@ button.tree-explorer__vacant-card {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2) var(--space-4);
-  padding-top: var(--space-4);
+  padding-top: var(--space-3);
   font-size: 0.8125rem;
   color: var(--text-muted);
 
@@ -4383,7 +4447,7 @@ button.tree-explorer__vacant-card {
   }
 }
 
-// Recent sales: full width, so the six columns stop wrapping.
+// Recent sales: the main column's width, the project name the one column allowed to wrap.
 .admin-recent-sales-table__scroll {
   overflow-x: auto;
 }
@@ -4394,18 +4458,11 @@ button.tree-explorer__vacant-card {
   color: var(--text-muted);
 }
 
-// Network health beside messages.
-.admin-dashboard__pair {
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: var(--space-12);
-  align-items: start;
-}
 
 .admin-dashboard__figures {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-6);
+  gap: var(--space-3);
   margin: 0;
 
   > div {
@@ -4415,18 +4472,21 @@ button.tree-explorer__vacant-card {
   }
 
   dt {
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
+    line-height: 1.35;
     color: var(--text-muted);
+    text-wrap: balance;
   }
 
   dd {
     order: -1;
     margin: 0;
     font-family: var(--font-sans);
-    font-size: 1.5rem;
+    font-size: 1.125rem;
     font-weight: 600;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 }
 
@@ -4441,7 +4501,7 @@ button.tree-explorer__vacant-card {
 .admin-dashboard__split-bar {
   display: flex;
   height: 8px;
-  margin-top: var(--space-6);
+  margin-top: var(--space-4);
   border-radius: 1px;
   overflow: hidden;
 }
@@ -4482,8 +4542,8 @@ button.tree-explorer__vacant-card {
 .admin-dashboard__message {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: var(--space-3) var(--space-2);
+  gap: 0;
+  padding: 6px var(--space-2);
   border-bottom: 1px solid var(--border-subtle);
   text-decoration: none;
   color: inherit;
@@ -4497,11 +4557,31 @@ button.tree-explorer__vacant-card {
   font-size: 0.9375rem;
   font-weight: 500;
   color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-dashboard__messages-more {
+  display: inline-block;
+  margin-top: var(--space-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--brand-secondary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:hover { text-decoration-thickness: 2px; }
+  &:active { color: var(--text-primary); }
 }
 
 .admin-dashboard__message-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
   font-size: 0.8125rem;
   color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4513,10 +4593,9 @@ button.tree-explorer__vacant-card {
 }
 
 @media (max-width: 1100px) {
-  .admin-dashboard__lead,
-  .admin-dashboard__pair {
+  .admin-dashboard__board {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-8);
+    gap: var(--space-6);
   }
 }
 
@@ -4527,7 +4606,21 @@ button.tree-explorer__vacant-card {
   }
 
   .admin-dashboard__seal .seal-card-panel {
+    grid-template-columns: minmax(0, 1fr);
     padding: var(--space-6);
+  }
+
+  .admin-dashboard__seal .seal-card-panel__trend {
+    grid-column: 1;
+    grid-row: auto;
+    height: 40px;
+    margin-top: var(--space-3);
+  }
+
+  .admin-recent-sales-table td:nth-child(2) {
+    width: auto;
+    max-width: 14rem;
+    min-width: 12rem;
   }
 
   .admin-dashboard__seal-strip {
@@ -4542,9 +4635,6 @@ button.tree-explorer__vacant-card {
     }
   }
 
-  .admin-dashboard__figures {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 // Admin Network Growth chart (admin-dashboard/widgets/network-growth-chart) -- same visual
@@ -6250,6 +6340,42 @@ button.tree-explorer__vacant-card {
 
 // Rows stay one line and the table scrolls sideways on a phone, instead of a project name
 // stacking into seven lines.
+// Every row one line, so five sales fit the screen. The project name takes what width is left and
+// truncates (its full text is the cell's title). !important beats _tables.scss's desktop wrap rule.
+.admin-recent-sales-table th,
 .admin-recent-sales-table td {
-  white-space: nowrap;
+  white-space: nowrap !important;
+}
+
+.admin-recent-sales-table td:nth-child(2) {
+  width: 100%;
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Table heads in the body voice, not tracked capitals (gate 67).
+.admin-recent-sales-table th {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.8125rem;
+}
+
+// On a phone the plot number stays pinned while the rest of the row scrolls under it (F25).
+@media (max-width: 600px) {
+  .admin-recent-sales-table th:first-child,
+  .admin-recent-sales-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    box-shadow: 1px 0 0 var(--border-subtle);
+  }
+
+  .admin-recent-sales-table td:first-child {
+    background: var(--surface-card);
+  }
+
+  .admin-recent-sales-table th:first-child {
+    background: var(--ink);
+  }
 }

@@ -96,6 +96,8 @@
   "adminDashboard": {
     "messagesEyebrow": "New messages",
     "messagesEmpty": "No unreplied messages.",
+    "messagesMore": "{{count}} और संदेश हैं",
+    "messagesMoreSingular": "1 और संदेश है",
     "heading": "डैशबोर्ड",
     "subtitle": "वापसी पर स्वागत है। इस चक्र में आपके नेटवर्क का प्रदर्शन यहाँ देखें।",
     "totalAssociatesLabel": "कुल एसोसिएट्स",

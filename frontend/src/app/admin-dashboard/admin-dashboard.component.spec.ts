@@ -91,7 +91,8 @@ describe('AdminDashboardComponent', () => {
       adminDashboard: {
         cycleClosesShort: '{{days}} days left', cycleClosesShortSingular: '1 day left',
         deltaUp: '+{{amount}} vs last cycle', deltaDown: '-{{amount}} vs last cycle',
-        decisionOldest: 'oldest {{days}} days'
+        decisionOldest: 'oldest {{days}} days',
+        messagesMore: '{{count}} more messages', messagesMoreSingular: '1 more message'
       }
     });
 
@@ -177,6 +178,34 @@ describe('AdminDashboardComponent', () => {
 
     expect(fixture.nativeElement.querySelector('app-admin-recent-sales-table')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.admin-dashboard__network')).toBeTruthy();
+  });
+
+  it('shows only the latest unreplied message and links the rest to support tickets', () => {
+    const message = (id: string, subject: string) =>
+      ({ id, associateName: 'Jane Associate', associateUserId: 'VP00001', subject, createdAt: '2026-08-18T10:00:00Z' });
+    flushInitialLoad({
+      ...statsWithCycle,
+      unrepliedMessagesCount: 3,
+      unrepliedMessages: [message('m1', 'Latest question'), message('m2', 'Older question'), message('m3', 'Oldest question')]
+    });
+
+    const shown: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.admin-dashboard__message'));
+    expect(shown.length).toBe(1);
+    expect(shown[0].textContent).toContain('Latest question');
+    const more: HTMLAnchorElement = fixture.nativeElement.querySelector('.admin-dashboard__messages-more');
+    expect(more.getAttribute('href')).toBe('/admin/settings/support-tickets');
+    expect(more.textContent).toContain('2');
+  });
+
+  it('shows no more-messages link when only one message is waiting', () => {
+    flushInitialLoad({
+      ...statsWithCycle,
+      unrepliedMessagesCount: 1,
+      unrepliedMessages: [{ id: 'm1', associateName: 'Jane Associate', associateUserId: 'VP00001', subject: 'Only question', createdAt: '2026-08-18T10:00:00Z' }]
+    });
+
+    expect(fixture.nativeElement.querySelectorAll('.admin-dashboard__message').length).toBe(1);
+    expect(fixture.nativeElement.querySelector('.admin-dashboard__messages-more')).toBeNull();
   });
 
   it('renders quick action links to Provision Associate and Book Plot', () => {

@@ -83,6 +83,8 @@
   "adminDashboard": {
     "messagesEyebrow": "New messages",
     "messagesEmpty": "No unreplied messages.",
+    "messagesMore": "There are {{count}} more messages",
+    "messagesMoreSingular": "There is 1 more message",
     "heading": "Dashboard",
     "subtitle": "Welcome back. Here's how your network is performing this cycle.",
     "totalAssociatesLabel": "Total Associates",
