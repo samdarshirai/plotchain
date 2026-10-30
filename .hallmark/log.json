@@ -3,6 +3,32 @@
   "mode": "redesign",
   "depth": "full",
   "scope": "app",
+  "prompt": "admin operations dashboard, everything on one screen",
+  "entry": "/admin/dashboard",
+  "shape": "app screen",
+  "theme": "brand (DESIGN.md)",
+  "signature": "Ink payout-liability seal laid horizontal over the recent-sales ledger",
+  "sections": [
+   "header",
+   "main: seal + recent sales",
+   "rail: decisions, network, messages"
+  ],
+  "waived": [],
+  "date": "2026-10-31"
+ },
+ {
+  "mode": "redesign",
+  "depth": "polish",
+  "scope": "app",
+  "prompt": "admin operations dashboard for Viraj Acres",
+  "entry": "/admin/dashboard",
+  "waived": [],
+  "date": "2026-10-30"
+ },
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
   "prompt": "admin operations dashboard for Viraj Acres",
   "entry": "/admin/dashboard",
   "shape": "app screen",
