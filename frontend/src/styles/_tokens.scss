@@ -63,9 +63,21 @@
   // the same literal value by mockup coincidence today.
   --ink-surface-muted: #FFFFFF;
 
+  // /admin/login's all-Ink form panel (see _app-shell.scss .login-page--admin). --ink-line clears
+  // 3:1 against both --ink and --ink-field so the field edges read as controls.
+  --ink-field: #231B12;
+  --ink-line: #7A6B52;
+  --ink-text-muted: #B9AE98;
+  --ink-text-faint: #8C8170;
+  --ink-danger-fill: #2E1713;
+  --ink-danger-line: #7A2E28;
+  --ink-danger-text: #F2C4BE;
+  --ink-danger-icon: #E0645A;
+
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-display: 'Fraunces', Georgia, serif;
   --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  --font-wordmark: 'Times NR MT Pro', 'Times New Roman', Times, serif; /* the logo's wordmark only */
 
   // Near-square, per the mockups' "engraved ledger" corners -- deliberately not the generic
   // 8-12px SaaS radius the shared primitives (.card/.btn/inputs) used before this token existed.

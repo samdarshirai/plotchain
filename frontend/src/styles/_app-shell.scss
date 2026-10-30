@@ -1,3 +1,11 @@
+/* Hallmark · checked: 2026-10-30 · genre: editorial (inferred) · scope: /admin/login
+ * floor: 0 FAIL · fixed: 6 (1, 4, 40, 54, 67, 75) · structural: 1 printed (8)
+ * answered: the VIRAJ ACRES / LEGACY LIVING tracked caps are the logo's wordmark (DESIGN.md SS1), not a label
+ * dropped "Administrator Access" eyebrow · 54 names it; the Admin console badge carries it
+ * reworded "Log In" to "Sign in" · matches the heading
+ * dropped Remember me checkbox, Forgot password link · neither was wired; the owner removed them
+ * reverted the gold sign-in button to the app-wide Oxblood primary · DESIGN.md SS2
+ * built: the project · redesign: polish · v2.0.0 */
 // Left nav for every authenticated role (DESIGN.md SS4; mockup: "Header to sidebar conversion" ->
 // Dashboard Sidebar.dc.html). Associates get the pinnable rail; admin-family roles get
 // AdminSidebarComponent, which reuses these same classes at full width with accordion groups.
@@ -412,7 +420,7 @@
   gap: 0.875rem;
   margin: 0;
   color: var(--brand-primary);
-  font-family: 'Times NR MT Pro', 'Times New Roman', Times, serif;
+  font-family: var(--font-wordmark);
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 0.28em;
@@ -427,7 +435,7 @@
 .login-wordmark__caption {
   margin: 0.5rem 0 0;
   color: var(--brand-on-ink);
-  font-family: 'Times NR MT Pro', 'Times New Roman', Times, serif;
+  font-family: var(--font-wordmark);
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.2em;
@@ -455,7 +463,7 @@
   font-size: 0.8125rem;
   color: var(--text-muted);
   background: transparent;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--text-muted);
   border-radius: 4px;
   padding: 0.375rem 0.625rem;
 }
@@ -498,41 +506,15 @@
 .login-form input[type='password'] {
   margin-top: 0.375rem;
   background: var(--surface-card);
+  border-color: var(--text-muted); // --border-subtle is under 3:1 on Parchment for a field edge
   border-radius: var(--radius-sm);
   padding: 0.75rem 0.875rem;
 }
 
-.login-row-between {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.75rem;
-}
 
-.login-form .login-remember {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0;
-  font-family: var(--font-sans);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text-muted);
-}
 
-.login-remember input[type='checkbox'] {
-  width: auto;
-  accent-color: var(--brand-primary);
-}
 
-.login-forgot {
-  color: var(--brand-primary);
-  font-size: 0.8125rem;
-}
 
-.login-forgot:hover {
-  color: var(--brand-on-ink);
-}
 
 .login-error {
   margin-top: 1rem;
@@ -552,12 +534,24 @@
 }
 
 .login-request-access a {
-  color: var(--brand-primary);
+  color: var(--brand-secondary); // Antique Gold is 2.2:1 on Parchment
   font-weight: 600;
 }
 
 .login-request-access a:hover {
-  color: var(--brand-on-ink);
+  color: var(--text-primary);
+}
+
+// The global gold ring is 2.2:1 on Parchment; the associate panel draws it in Warm Charcoal.
+// The admin variant's Ink panel keeps the gold ring.
+.login-page:not(.login-page--admin) .login-panel :focus-visible {
+  outline-color: var(--text-primary);
+}
+
+// _forms.scss's gold :focus border and 14% halo also vanish on Parchment, so the fields get the same ring.
+.login-page:not(.login-page--admin) .login-form input:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
 }
 
 .login-form .login-password-field {
@@ -642,10 +636,6 @@
     padding: 0.625rem;
   }
 
-  .login-row-between {
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
 }
 
 // The error icon and logo frame only show on the admin variant below; associate /login keeps
@@ -679,9 +669,6 @@
   .login-brand .login-logo {
     width: 148px;
     height: 148px;
-    padding: 5px;
-    border: 1px solid color-mix(in srgb, var(--brand-primary-bright) 50%, transparent);
-    border-radius: 1px;
   }
 
   .login-wordmark__name {
@@ -723,9 +710,7 @@
     border: 1px solid color-mix(in srgb, var(--brand-primary) 50%, transparent);
     border-radius: 3px;
     color: var(--brand-primary-bright);
-    font: 600 10.5px/1 var(--font-sans);
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
+    font: 600 12px/1 var(--font-sans);
 
     .material-symbols-outlined {
       font-size: 15px;
@@ -736,7 +721,7 @@
   .login-lang {
     height: 40px;
     padding: 0 12px 0 16px;
-    border-color: #3A3022;
+    border-color: var(--ink-line);
     color: var(--surface-page);
     font-size: 14px;
   }
@@ -751,25 +736,10 @@
     gap: 24px;
   }
 
-  .login-eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 0 0 -14px;
-    color: var(--brand-primary);
-    font: 600 10.5px/1 var(--font-sans);
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-  }
-
-  .login-eyebrow__rule {
-    width: 18px;
-    height: 1px;
-    background: var(--brand-primary);
-  }
-
   .login-heading {
     margin: 0 0 -14px;
+    overflow-wrap: break-word;
+    min-width: 0;
     color: var(--surface-page);
     font-size: 44px;
     font-weight: 600;
@@ -779,7 +749,7 @@
 
   .login-subheading {
     margin: 0;
-    color: #B9AE98;
+    color: var(--ink-text-muted);
     font-size: 16px;
     line-height: 1.5;
   }
@@ -795,8 +765,8 @@
     height: 52px;
     margin-top: 8px;
     padding: 0 16px;
-    background: #231B12;
-    border: 1px solid #3A3022;
+    background: var(--ink-field);
+    border: 1px solid var(--ink-line);
     border-radius: 4px;
     color: var(--surface-page);
     font-size: 15px;
@@ -810,7 +780,7 @@
   }
 
   .login-form input.login-input--error {
-    border-color: #B23B32;
+    border-color: var(--status-danger);
   }
 
   .login-form .login-password-field input {
@@ -818,7 +788,7 @@
   }
 
   .login-form .login-password-toggle {
-    color: #B9AE98;
+    color: var(--ink-text-muted);
   }
 
   .login-form .login-password-toggle:hover {
@@ -829,47 +799,16 @@
     font-size: 21px;
   }
 
-  .login-row-between {
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-bottom: 0;
-  }
 
-  .login-form .login-remember {
-    gap: 10px;
-    color: #B9AE98;
-    font-size: 15px;
-    font-weight: 400;
-  }
 
-  .login-remember input[type='checkbox'] {
-    width: 18px;
-    height: 18px;
-    margin: 0;
-  }
 
-  .login-forgot {
-    color: var(--brand-primary-bright);
-    font-size: 15px;
-    font-weight: 500;
-  }
 
-  .login-forgot:hover {
-    color: var(--surface-page);
-  }
 
-  // Gold CTA on the Ink page per the design, not the app-wide Oxblood primary button.
+  // App-wide Oxblood primary (DESIGN.md SS2), sized up for the sign-in page.
   .brand-button {
     height: 54px;
     border-radius: 4px;
-    background: var(--brand-primary);
-    color: var(--ink);
     font-size: 17px;
-  }
-
-  .brand-button:hover:not(:disabled) {
-    opacity: 1;
-    background: var(--brand-primary-bright);
   }
 
   // Collapse the empty summary host so it doesn't add a phantom 24px flex gap.
@@ -882,17 +821,17 @@
     gap: 10px;
     margin-top: 0;
     padding: 12px 14px;
-    background: #2E1713;
-    border-color: #7A2E28;
+    background: var(--ink-danger-fill);
+    border-color: var(--ink-danger-line);
     border-radius: 4px;
-    color: #F2C4BE;
+    color: var(--ink-danger-text);
     font-size: 13.5px;
     line-height: 1.45;
 
     .material-symbols-outlined {
       display: inline-block;
       font-size: 19px;
-      color: #E0645A;
+      color: var(--ink-danger-icon);
     }
   }
 
@@ -901,7 +840,7 @@
     align-items: center;
     gap: 8px;
     margin: 0;
-    color: #B9AE98;
+    color: var(--ink-text-muted);
     font-size: 13px;
 
     .material-symbols-outlined {
@@ -914,11 +853,11 @@
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 16px;
-    color: #8C8170;
+    color: var(--ink-text-faint);
     font-size: 12.5px;
 
     a {
-      color: #B9AE98;
+      color: var(--ink-text-muted);
     }
 
     a:hover {

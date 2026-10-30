@@ -42,16 +42,13 @@ import { FormIssue, collectIssues } from '../shared/validation/validation';
           <span class="login-admin-badge" *ngIf="realm === 'admin'">
             <span class="material-symbols-outlined">shield_person</span>{{ 'auth.adminConsole' | translate }}
           </span>
-          <select class="login-lang" [value]="currentLang" (change)="onLanguageChange($event)">
+          <select class="login-lang" [attr.aria-label]="'auth.languageLabel' | translate" [value]="currentLang" (change)="onLanguageChange($event)">
             <option value="en">English</option>
             <option value="hi">हिन्दी</option>
           </select>
         </div>
 
         <form class="login-form" [formGroup]="form" [class.was-submitted]="submitted" (ngSubmit)="onSubmit()" novalidate>
-          <p class="login-eyebrow" *ngIf="realm === 'admin'">
-            <span class="login-eyebrow__rule"></span>{{ 'auth.adminEyebrow' | translate }}<span class="login-eyebrow__rule"></span>
-          </p>
           <h1 class="login-heading">{{ 'auth.heading' | translate }}</h1>
           <p class="login-subheading">{{ (realm === 'admin' ? 'auth.adminSubheading' : 'auth.subheading') | translate }}</p>
 
@@ -75,16 +72,9 @@ import { FormIssue, collectIssues } from '../shared/validation/validation';
                 <span class="material-symbols-outlined">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
               </button>
             </span>
-            <app-field-error [control]="form.get('password')" label="Password" [submitted]="submitted"></app-field-error>
+            <app-field-error [control]="form.get('password')" [label]="'auth.passwordLabel' | translate" [submitted]="submitted"></app-field-error>
           </label>
 
-          <div class="login-row-between">
-            <label class="login-remember">
-              <input type="checkbox" />
-              {{ 'auth.rememberMe' | translate }}
-            </label>
-            <a href="#" class="login-forgot" (click)="$event.preventDefault()">{{ 'auth.forgotPassword' | translate }}</a>
-          </div>
 
           <app-brand-button type="submit" variant="primary" [fullWidth]="true">
             {{ 'auth.loginButton' | translate }}
@@ -185,7 +175,7 @@ export class LoginComponent implements OnInit {
     }
     this.submitted = true;
     this.form.markAllAsTouched();
-    this.issues = collectIssues(this.form, { userId: this.userIdName, password: 'Password' });
+    this.issues = collectIssues(this.form, { userId: this.userIdName, password: this.translate.instant('auth.passwordLabel') });
     if (this.form.invalid) {
       return;
     }
