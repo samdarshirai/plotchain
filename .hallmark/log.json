@@ -3,6 +3,27 @@
   "mode": "redesign",
   "depth": "full",
   "scope": "app",
+  "prompt": "associate dashboard, keep every figure, easier to digest",
+  "entry": "/dashboard",
+  "shape": "app screen",
+  "theme": "brand (DESIGN.md)",
+  "signature": "Ink seal, total business over this cycle earnings, leading the hero",
+  "sections": [
+   "header",
+   "hero: seal + profile",
+   "business volume ledger",
+   "network & income ledger",
+   "leg balance + recent sales"
+  ],
+  "waived": [
+   "37"
+  ],
+  "date": "2026-10-31"
+ },
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
   "prompt": "admin operations dashboard, everything on one screen",
   "entry": "/admin/dashboard",
   "shape": "app screen",

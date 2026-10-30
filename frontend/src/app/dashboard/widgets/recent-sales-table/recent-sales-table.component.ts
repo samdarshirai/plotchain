@@ -15,7 +15,6 @@ const RECENT_SALES_COUNT = 5;
   template: `
     <div class="recent-sales-table">
       <div class="recent-sales-table__header">
-        <span class="recent-sales-table__rule"></span>
         <span class="recent-sales-table__label">{{ 'dashboard.recentSalesEyebrow' | translate }}</span>
         <span class="recent-sales-table__rule"></span>
       </div>
