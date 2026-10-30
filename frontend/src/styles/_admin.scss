@@ -449,16 +449,16 @@
     table-layout: fixed;
   }
 
-  // 9 columns: ID, Name, Sponsor, Position, Status, Registration, Login pw, Txn pw, Login button.
+  // 9 columns: ID, Name, Sponsor, Position, Status, Registration, Login pw, Txn pw, Login + Recalculate.
   th:nth-child(1) { width: 10%; }
-  th:nth-child(2) { width: 16%; }
-  th:nth-child(3) { width: 10%; }
-  th:nth-child(4) { width: 8%; }
-  th:nth-child(5) { width: 9%; }
+  th:nth-child(2) { width: 14%; }
+  th:nth-child(3) { width: 9%; }
+  th:nth-child(4) { width: 7%; }
+  th:nth-child(5) { width: 8%; }
   th:nth-child(6) { width: 12%; }
-  th:nth-child(7) { width: 13%; }
-  th:nth-child(8) { width: 13%; }
-  th:nth-child(9) { width: 9%; }
+  th:nth-child(7) { width: 11%; }
+  th:nth-child(8) { width: 11%; }
+  th:nth-child(9) { width: 18%; }
 
   thead th {
     padding: 8px 12px;
@@ -565,8 +565,29 @@
   cursor: pointer;
 }
 
+// A div, not a span: the table's `td > span` ellipsis rule would clip the second button.
+.associate-directory__row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.associate-directory__recalculate {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--brand-secondary);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--brand-secondary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled { opacity: 0.6; cursor: default; }
+}
+
 @media (max-width: 767px) {
-  .associate-directory__login { width: 100%; }
+  .associate-directory__login,
+  .associate-directory__recalculate { flex: 1; }
 }
 
 // Real <button>s (focusable, keyboard-activatable, natively disable-able) wearing the mockup's

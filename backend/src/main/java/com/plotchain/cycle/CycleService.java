@@ -183,6 +183,15 @@ public class CycleService {
         restoreFulfilment(cycleId, provisional);
     }
 
+    // Admin "Recalculate" (Associate Directory): re-runs live income for every OPEN cycle, oldest
+    // first so an older cycle's rewards are awarded before a newer one checks "already awarded".
+    // Tree-wide like every live run -- an associate's numbers depend on their whole downline.
+    @Transactional
+    public void refreshAllOpenCycles() {
+        cycleRepository.findByStatusOrderByPeriodStartAsc(CycleStatus.OPEN)
+            .forEach(c -> refreshLiveIncome(c.getId()));
+    }
+
     private static final List<IncomeType> CYCLE_DERIVED_INCOME_TYPES = List.of(
         IncomeType.MATCHING, IncomeType.SPONSOR_MATCHING, IncomeType.ROYALTY, IncomeType.REWARD);
 
@@ -438,6 +447,12 @@ public class CycleService {
         for (LegVolume legVolume : legVolumes) {
             BigDecimal matchedVolume = legVolume.getLeftLegVolume().min(legVolume.getRightLegVolume());
             if (matchedVolume.compareTo(BigDecimal.ZERO) <= 0) {
+                // No match, but one leg may still hold volume: all of it is excess (Decision #5)
+                // and must carry forward, or the Matching/Reward it earns once the empty leg fills
+                // next cycle is lost.
+                if (finalize && carryForwardExcess(legVolume)) {
+                    legVolumeRepository.save(legVolume);
+                }
                 continue;
             }
 
@@ -478,17 +493,24 @@ public class CycleService {
 
             // Decision #5: excess on the larger leg carries forward on this SAME row for unit 4's
             // rollup to consume next cycle -- never a new row.
-            if (legVolume.getLeftLegVolume().compareTo(legVolume.getRightLegVolume()) > 0) {
-                legVolume.setCarriedForwardLeft(legVolume.getLeftLegVolume().subtract(legVolume.getRightLegVolume()));
-            } else if (legVolume.getRightLegVolume().compareTo(legVolume.getLeftLegVolume()) > 0) {
-                legVolume.setCarriedForwardRight(legVolume.getRightLegVolume().subtract(legVolume.getLeftLegVolume()));
-            }
+            carryForwardExcess(legVolume);
             legVolumeRepository.save(legVolume);
 
             // Decision #6: raw matched volume, not the post-percentage income amount.
             associate.setCumulativeMatchedVolume(associate.getCumulativeMatchedVolume().add(matchedVolume));
             associateRepository.save(associate);
         }
+    }
+
+    // Writes the larger leg's excess onto this row's carriedForwardLeft/Right; false if legs are equal.
+    private static boolean carryForwardExcess(LegVolume legVolume) {
+        int cmp = legVolume.getLeftLegVolume().compareTo(legVolume.getRightLegVolume());
+        if (cmp > 0) {
+            legVolume.setCarriedForwardLeft(legVolume.getLeftLegVolume().subtract(legVolume.getRightLegVolume()));
+        } else if (cmp < 0) {
+            legVolume.setCarriedForwardRight(legVolume.getRightLegVolume().subtract(legVolume.getLeftLegVolume()));
+        }
+        return cmp != 0;
     }
 
     // Flow step 4 (Decision #7): for each ASSOCIATE-role associate, advance rankId to the

@@ -6,6 +6,7 @@ import com.plotchain.auth.JwtService;
 import com.plotchain.auth.LoginResponse;
 import com.plotchain.company.SettingsAuditLogRepository;
 import com.plotchain.cycle.CycleRepository;
+import com.plotchain.cycle.CycleService;
 import com.plotchain.cycle.CycleStatus;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTier;
@@ -31,6 +32,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -53,6 +55,7 @@ class AdminAssociateControllerTest {
     @MockBean CycleRepository cycleRepository;
     @MockBean LegVolumeRepository legVolumeRepository;
     @MockBean SettingsAuditLogRepository settingsAuditLogRepository;
+    @MockBean CycleService cycleService;
 
     private static final UUID ASSOCIATE_ID = UUID.randomUUID();
     private final RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(5000));
@@ -236,5 +239,29 @@ class AdminAssociateControllerTest {
                 .header("Authorization", "Bearer " + jwtService.generateToken(admin)))
             .andExpect(status().isConflict())
             .andExpect(content().json("{\"error\":\"Only associate accounts can be impersonated\"}"));
+    }
+
+    @Test
+    void recalculateRefreshesOpenCyclesForAnAdminToken() throws Exception {
+        when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE))
+            .thenReturn(Optional.of(seedAssociate()));
+        when(rankTierRepository.findById(rank.getId())).thenReturn(Optional.of(rank));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/admin/associates/" + ASSOCIATE_ID + "/recalculate")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.userId").value("VP00001"));
+
+        verify(cycleService).refreshAllOpenCycles();
+    }
+
+    @Test
+    void recalculateIsForbiddenForAnAssociateToken() throws Exception {
+        mockMvc.perform(post("/api/admin/associates/" + ASSOCIATE_ID + "/recalculate")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
+
+        verify(cycleService, never()).refreshAllOpenCycles();
     }
 }

@@ -355,8 +355,8 @@ class CycleServiceTest {
         assertLegVolume(written, admin.getId(), cycle.getId(), "150", "30", "120", "0");
         // b1: min(120,55)=55 > 0 -> matched. left(120) > right(55) -> excess 65 carried on the left.
         assertLegVolume(written, b1.getId(), cycle.getId(), "120", "55", "65", "0");
-        // b2: min(30,0)=0 -> no match, no carried-forward mutation (unit 5's own scope rule).
-        assertLegVolume(written, b2.getId(), cycle.getId(), "30", "0", "0", "0");
+        // b2: min(30,0)=0 -> no match, but the whole left leg is excess and carries forward.
+        assertLegVolume(written, b2.getId(), cycle.getId(), "30", "0", "30", "0");
         assertLegVolume(written, c1.getId(), cycle.getId(), "0", "0", "0", "0");
         assertLegVolume(written, c2.getId(), cycle.getId(), "0", "0", "0", "0");
         assertLegVolume(written, c3.getId(), cycle.getId(), "0", "0", "0", "0");

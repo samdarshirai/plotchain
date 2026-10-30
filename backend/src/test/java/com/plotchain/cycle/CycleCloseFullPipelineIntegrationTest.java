@@ -318,7 +318,7 @@ class CycleCloseFullPipelineIntegrationTest {
         LegVolume b2LegVolume = legVolumeRepository.findByAssociateIdAndCycleId(b2Id, cycleId).orElseThrow();
         assertThat(b2LegVolume.getLeftLegVolume()).isEqualByComparingTo("30");
         assertThat(b2LegVolume.getRightLegVolume()).isEqualByComparingTo("0");
-        assertThat(b2LegVolume.getCarriedForwardLeft()).isEqualByComparingTo("0"); // no Matching entry -> untouched
+        assertThat(b2LegVolume.getCarriedForwardLeft()).isEqualByComparingTo("30"); // no match -> whole leg carries
 
         // --- Matching Income. ---
         // tdsDeduction/netAmount are computed in Java to full precision (0.275, 5.005) but

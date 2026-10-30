@@ -2,6 +2,7 @@ package com.plotchain.associate;
 
 import com.plotchain.auth.AuthService;
 import com.plotchain.auth.LoginResponse;
+import com.plotchain.cycle.CycleService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,10 +21,12 @@ public class AdminAssociateController {
     private final AssociateProfileService profileService;
     private final AssociateBankDetailsService bankDetailsService;
     private final AssociateNomineeService nomineeService;
+    private final CycleService cycleService;
 
     public AdminAssociateController(AdminAssociateService adminAssociateService, AuthService authService,
         AssociateProfileService profileService, AssociateBankDetailsService bankDetailsService,
-        AssociateNomineeService nomineeService) {
+        AssociateNomineeService nomineeService, CycleService cycleService) {
+        this.cycleService = cycleService;
         this.profileService = profileService;
         this.bankDetailsService = bankDetailsService;
         this.nomineeService = nomineeService;
@@ -101,6 +104,15 @@ public class AdminAssociateController {
     @PreAuthorize("hasAuthority('ADMIN')")
     public LoginResponse impersonate(@PathVariable UUID id, @AuthenticationPrincipal UUID actorId) {
         return authService.impersonate(id, actorId);
+    }
+
+    // Recomputes the open cycles' live income (tree-wide) and returns the associate, 404 if unknown.
+    @PostMapping("/{id}/recalculate")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public AdminAssociateDetailResponse recalculate(@PathVariable UUID id) {
+        AdminAssociateDetailResponse associate = adminAssociateService.get(id);
+        cycleService.refreshAllOpenCycles();
+        return associate;
     }
 
     @PostMapping("/{id}/reactivate")
