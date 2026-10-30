@@ -61,6 +61,7 @@ class LiveIncomeIntegrationTest {
     private static final UUID SILVER_RANK_ID = UUID.fromString("00000000-0000-0000-0000-000000000201");
 
     private UUID cycleId;
+    private UUID nextCycleId;
     private UUID sponsorId;
     private UUID sponseeId;
     private UUID leftId;
@@ -74,7 +75,10 @@ class LiveIncomeIntegrationTest {
 
     @AfterEach
     void cleanUp() {
-        if (cycleId != null) {
+        for (UUID cycleId : new UUID[] {nextCycleId, this.cycleId}) {
+            if (cycleId == null) {
+                continue;
+            }
             ledgerEntryRepository.deleteAll(ledgerEntryRepository.findAll().stream()
                 .filter(e -> e.getCycleId().equals(cycleId)).toList());
             // unit 4's rollUpLegVolumes writes one LegVolume row per associate for this cycle,
@@ -298,5 +302,32 @@ class LiveIncomeIntegrationTest {
 
         assertThat(entries(sponseeId, IncomeType.REWARD)).isEmpty();
         assertThat(designationService.designationOf(sponseeId)).isNull();
+    }
+
+    // A cycle closing with business on one leg only must carry that whole leg forward (min = 0
+    // is still "excess on the larger leg"), so when the other leg fills next cycle the reward is
+    // achieved live -- before that cycle closes -- matching the reward screen's leg totals.
+    @Test
+    void oneLegOnlyCloseCarriesTheLegForwardSoTheNextCycleAchievesTheRewardLive() {
+        seedTree();
+        RewardTier tier = new RewardTier(UUID.randomUUID(), PLAN_VERSION_ID, 1,
+            new BigDecimal("100"), new BigDecimal("50"), "Mobile", "Sales Manager");
+        rewardTierRepository.saveAndFlush(tier);
+        rewardTierId = tier.getId();
+        seedSale(leftId, cycleId, plotId, new BigDecimal("200"));
+
+        nextCycleId = cycleService.close(cycleId).newCycleId();
+
+        assertThat(legVolumeRepository.findByAssociateIdAndCycleId(sponseeId, cycleId).orElseThrow().getCarriedForwardLeft())
+            .isEqualByComparingTo("200");
+
+        seedSale(rightId, nextCycleId, plotId, new BigDecimal("200"));
+        cycleService.refreshLiveIncome(nextCycleId);
+
+        assertThat(ledgerEntryRepository.findAll().stream()
+            .filter(e -> e.getCycleId().equals(nextCycleId) && e.getAssociateId().equals(sponseeId)
+                && e.getIncomeType() == IncomeType.REWARD))
+            .singleElement()
+            .satisfies(e -> assertThat(e.getSourceRef()).isEqualTo(rewardTierId));
     }
 }
