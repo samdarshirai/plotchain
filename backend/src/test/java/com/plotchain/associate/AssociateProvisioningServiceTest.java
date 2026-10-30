@@ -41,10 +41,6 @@ class AssociateProvisioningServiceTest {
         // service-layer collaborator in this codebase.
         AssociateIdGenerator associateIdGenerator = new AssociateIdGenerator(associateRepository, "VP");
         service = new AssociateProvisioningService(associateRepository, rankTierRepository, passwordEncoder, associateIdGenerator, nomineeRepository);
-        // Default stub for the ID-generation lookup: empty repository unless a test overrides it.
-        org.mockito.Mockito.lenient()
-            .when(associateRepository.findTopByUserIdStartingWithOrderByUserIdDesc("VP"))
-            .thenReturn(Optional.empty());
         org.mockito.Mockito.lenient().when(associateRepository.existsByUserId(org.mockito.ArgumentMatchers.anyString()))
             .thenReturn(false);
     }
@@ -67,12 +63,12 @@ class AssociateProvisioningServiceTest {
         assertThat(created.getRankId()).isEqualTo(lowestRank.getId());
         assertThat(created.getKycStatus()).isEqualTo(KycStatus.PENDING);
         assertThat(created.isMustChangePassword()).isTrue();
-        assertThat(created.getUserId()).isEqualTo("VP00001");
+        assertThat(created.getUserId()).matches("VP\\d{4}");
         assertThat(created.getRankChangedAt()).isNull();
 
         assertThat(response.temporaryPassword()).isNotBlank();
         assertThat(response.associateId()).isEqualTo(created.getId());
-        assertThat(response.userId()).isEqualTo("VP00001");
+        assertThat(response.userId()).isEqualTo(created.getUserId());
         // The response carries the plaintext once; only the hash is persisted.
         assertThat(created.getPasswordHash()).isNotEqualTo(response.temporaryPassword());
         assertThat(passwordEncoder.matches(response.temporaryPassword(), created.getPasswordHash())).isTrue();

@@ -554,7 +554,7 @@
     "transferAction": "Transfer",
     "activateTitle": "Activate a team member",
     "transferTitle": "Transfer this pin",
-    "userIdLabel": "Associate ID (e.g. VP00042)",
+    "userIdLabel": "Associate ID (e.g. VSA51234)",
     "confirm": "Confirm",
     "cancel": "Cancel",
     "status": { "UNUSED": "Unused", "ALLOCATED": "Allocated", "USED": "Used", "BLOCKED": "Blocked" },
