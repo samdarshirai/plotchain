@@ -134,6 +134,16 @@ import { titleCase } from '../../shared/utils/title-case';
               <app-field-error [message]="fieldError('cornerExtraPercent')"></app-field-error>
             </div>
             <div class="master-projects__modal-field">
+              <label>{{ 'admin.masterProjects.parkFacingExtra' | translate }}</label>
+              <input type="number" min="0" max="100" step="0.01" formControlName="parkFacingExtraPercent" />
+              <app-field-error [message]="fieldError('parkFacingExtraPercent')"></app-field-error>
+            </div>
+            <div class="master-projects__modal-field">
+              <label>{{ 'admin.masterProjects.roadSideExtra' | translate }}</label>
+              <input type="number" min="0" max="100" step="0.01" formControlName="roadSideExtraPercent" />
+              <app-field-error [message]="fieldError('roadSideExtraPercent')"></app-field-error>
+            </div>
+            <div class="master-projects__modal-field">
               <label>{{ 'admin.masterProjects.locationMap' | translate }}</label>
               <input type="file" accept="image/png,image/jpeg,image/webp" class="master-projects__location-map-input" (change)="pickFile('LOCATION', $event)" />
             </div>
@@ -169,7 +179,7 @@ export class MasterProjectsComponent implements OnInit, OnDestroy {
   private serverFieldErrors: Record<string, string> = {};
   submitted = false;
   issues: FormIssue[] = [];
-  private labels: Record<string, string> = { name: 'Project name', city: 'City', state: 'State', businessPercentage: 'Business percentage', ratePerSqft: 'Rate per sq ft', cornerExtraPercent: 'Corner extra %' };
+  private labels: Record<string, string> = { name: 'Project name', city: 'City', state: 'State', businessPercentage: 'Business percentage', ratePerSqft: 'Rate per sq ft', cornerExtraPercent: 'Corner extra %', parkFacingExtraPercent: 'Park facing extra %', roadSideExtraPercent: 'Road side extra %' };
   private files: Partial<Record<MasterProjectMapKind, File>> = {};
   form = this.fb.nonNullable.group({
     name: ['', Validators.required],
@@ -179,6 +189,8 @@ export class MasterProjectsComponent implements OnInit, OnDestroy {
     businessPercentage: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     ratePerSqft: [0, [Validators.required, Validators.min(0)]],
     cornerExtraPercent: [10, [Validators.min(0), Validators.max(100)]],
+    parkFacingExtraPercent: [5, [Validators.min(0), Validators.max(100)]],
+    roadSideExtraPercent: [5, [Validators.min(0), Validators.max(100)]],
     status: ['ACTIVE' as MasterProjectStatus]
   });
 
@@ -218,6 +230,8 @@ export class MasterProjectsComponent implements OnInit, OnDestroy {
       businessPercentage: project?.businessPercentage ?? 0,
       ratePerSqft: project?.ratePerSqft ?? 0,
       cornerExtraPercent: project?.cornerExtraPercent ?? 10,
+      parkFacingExtraPercent: project?.parkFacingExtraPercent ?? 5,
+      roadSideExtraPercent: project?.roadSideExtraPercent ?? 5,
       status: project?.status ?? 'ACTIVE'
     });
     this.modalOpen = true;

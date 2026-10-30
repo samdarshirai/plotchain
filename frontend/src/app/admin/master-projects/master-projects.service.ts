@@ -18,6 +18,8 @@ export interface MasterProject {
   hasLocationMap: boolean;
   hasProjectMap: boolean;
   cornerExtraPercent?: number;
+  parkFacingExtraPercent?: number;
+  roadSideExtraPercent?: number;
 }
 
 export type MasterProjectRequest = Omit<MasterProject, 'id' | 'hasLocationMap' | 'hasProjectMap'>;

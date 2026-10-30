@@ -1111,6 +1111,8 @@
         "noMatch": "No plots match your search.", "count": "{{shown}} of {{total}} plots", "rateError": "Couldn't load rates."
       },
       "cornerNote": "Notched = corner plot",
+      "parkNote": "Park facing",
+      "roadNote": "Road side",
       "status": { "AVAILABLE": "Available", "BOOKED": "Booked", "SOLD": "Sold" },
       "blockHeading": "Block {{block}}",
       "blockSummary": "{{available}} available of {{total}}",
@@ -1129,7 +1131,7 @@
       "plotNoHint": "Must be unique within the project.",
       "priceHint": "Entered separately from area × rate, as in the existing project setup.",
       "statusReadonlyHint": "Status changes through booking, not here.",
-      "type": { "NORMAL": "Normal", "CORNER": "Corner" },
+      "type": { "NORMAL": "Normal", "CORNER": "Corner", "PARK_FACING": "Park Facing", "ROAD_SIDE": "Road Side", "CORNER_PARK_FACING": "Corner + Park Facing", "CORNER_ROAD_SIDE": "Corner + Road Side" },
       "importCsvAction": "Import CSV",
       "downloadTemplateAction": "Download CSV template",
       "chooseFileLabel": "CSV file",
@@ -1184,7 +1186,7 @@
       "roadSizeHint": "Optional. Width of the road the plot faces, in feet.",
       "extraPriceHint": "Optional free-form amount added to the price. Can be changed per booking.",
       "extraPercentLabel": "Extra %",
-      "extraPercentHint": "Extra Price = this % of the plot price. Defaults from the project's corner %; change per plot.",
+      "extraPercentHint": "Extra Price = this % of the plot price. Defaults from the project's % for this plot type; change per plot.",
       "summary": { "total": "Total after discount" },
       "schedulePreview": "Token {{token}} paid now, then {{count}} installments of {{amount}} each",
       "scheduleSingle": "Token {{token}} paid now, then {{amount}} in one installment",
@@ -1335,7 +1337,7 @@
       "addTitle": "Add Project", "editTitle": "Edit Project", "emptyState": "No projects yet.", "loadError": "Could not load projects.", "saveError": "Could not save project.", "mapError": "Could not load or upload map.",
       "requiredError": "Required", "invalidError": "Invalid value", "columnSNo": "S No", "columnDetails": "Details", "projectName": "Project Name", "type": "Type", "typePlot": "Plot", "typeApartment": "Apartment",
       "location": "Location", "city": "City", "state": "State", "cityState": "City/State", "business": "Business Count (%)", "businessPercentage": "Business Count (%)",
-      "rate": "Rate (Price per Sqft)", "cornerExtra": "Corner plot extra % (default)", "locationMap": "Location Map", "projectMap": "Project Map", "uploaded": "Uploaded", "mapAlt": "Map", "status": "Status", "statusActive": "Active", "statusSuspended": "Suspended"
+      "rate": "Rate (Price per Sqft)", "cornerExtra": "Corner plot extra % (default)", "parkFacingExtra": "Park facing plot extra % (default)", "roadSideExtra": "Road side plot extra % (default)", "locationMap": "Location Map", "projectMap": "Project Map", "uploaded": "Uploaded", "mapAlt": "Map", "status": "Status", "statusActive": "Active", "statusSuspended": "Suspended"
     },
     "expenseTypes": {
       "eyebrow": "Finance & Cycles", "title": "Expense Types", "subtitle": "Categories used to classify expenses. Set a type to Inactive to stop using it.",
@@ -1758,6 +1760,8 @@
       "nameLabel": "Project Name",
       "locationLabel": "Location",
       "cornerExtraLabel": "Corner plot extra %",
+      "parkFacingExtraLabel": "Park facing plot extra %",
+      "roadSideExtraLabel": "Road side plot extra %",
       "photoLabel": "Project Photo",
       "addPhotoAction": "Add Photo",
       "changePhotoAction": "Change Photo",
@@ -1773,6 +1777,10 @@
       "plotTypeLabel": "Type",
       "plotTypeNormalLabel": "Normal",
       "plotTypeCornerLabel": "Corner",
+      "plotTypeParkFacingLabel": "Park Facing",
+      "plotTypeRoadSideLabel": "Road Side",
+      "plotTypeCornerParkFacingLabel": "Corner + Park Facing",
+      "plotTypeCornerRoadSideLabel": "Corner + Road Side",
       "areaLabel": "Area (sq ft)",
       "rateLabel": "Rate",
       "priceLabel": "Price",
@@ -1952,8 +1960,10 @@
     "sqft": "sq ft",
     "aria": "Plot {{no}}, {{type}}, {{area}} square feet, {{price}}, {{status}}",
     "corner": "Corner",
+    "park": "Park Facing",
+    "road": "Road Side",
     "status": { "AVAILABLE": "Available", "BOOKED": "Booked", "SOLD": "Sold" },
-    "type": { "NORMAL": "Normal", "CORNER": "Corner" }
+    "type": { "NORMAL": "Normal", "CORNER": "Corner", "PARK_FACING": "Park Facing", "ROAD_SIDE": "Road Side", "CORNER_PARK_FACING": "Corner + Park Facing", "CORNER_ROAD_SIDE": "Corner + Road Side" }
   },
   "epinRegister": {
     "eyebrow": "E-PIN REGISTER",

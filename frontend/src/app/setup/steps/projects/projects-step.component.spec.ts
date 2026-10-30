@@ -76,16 +76,23 @@ describe('ProjectsStepComponent', () => {
     expect(fixture.componentInstance.projects).toEqual([project]);
   });
 
+  it('offers all six plot types with their own labels', () => {
+    flushProjectsList([]);
+    const component = fixture.componentInstance;
+    expect(component.plotTypes).toEqual(['NORMAL', 'CORNER', 'PARK_FACING', 'ROAD_SIDE', 'CORNER_PARK_FACING', 'CORNER_ROAD_SIDE']);
+    expect(component.plotTypeLabel('CORNER_ROAD_SIDE')).toBe('setup.projects.plotTypeCornerRoadSideLabel');
+  });
+
   it('creates a project via the add-project form', () => {
     flushProjectsList([]);
     const component = fixture.componentInstance;
 
-    component.addProjectForm.setValue({ name: 'Green Valley', location: 'Hyderabad', cornerExtraPercent: 10 });
+    component.addProjectForm.setValue({ name: 'Green Valley', location: 'Hyderabad', cornerExtraPercent: 10, parkFacingExtraPercent: 5, roadSideExtraPercent: 5 });
     component.submitAddProject();
 
     const req = httpMock.expectOne('/api/company/projects');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ name: 'Green Valley', location: 'Hyderabad', cornerExtraPercent: 10 });
+    expect(req.request.body).toEqual({ name: 'Green Valley', location: 'Hyderabad', cornerExtraPercent: 10, parkFacingExtraPercent: 5, roadSideExtraPercent: 5 });
     req.flush(project);
     flushSetupState();
 

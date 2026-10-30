@@ -1132,6 +1132,8 @@
         "noMatch": "No plots match your search.", "count": "{{shown}} of {{total}} plots", "rateError": "Couldn't load rates."
       },
       "cornerNote": "Notched = corner plot",
+      "parkNote": "Park facing",
+      "roadNote": "Road side",
       "status": { "AVAILABLE": "Available", "BOOKED": "Booked", "SOLD": "Sold" },
       "blockHeading": "Block {{block}}",
       "blockSummary": "{{available}} available of {{total}}",
@@ -1150,7 +1152,7 @@
       "plotNoHint": "Must be unique within the project.",
       "priceHint": "Entered separately from area × rate, as in the existing project setup.",
       "statusReadonlyHint": "Status changes through booking, not here.",
-      "type": { "NORMAL": "Normal", "CORNER": "Corner" },
+      "type": { "NORMAL": "Normal", "CORNER": "Corner", "PARK_FACING": "Park Facing", "ROAD_SIDE": "Road Side", "CORNER_PARK_FACING": "Corner + Park Facing", "CORNER_ROAD_SIDE": "Corner + Road Side" },
       "importCsvAction": "Import CSV",
       "downloadTemplateAction": "Download CSV template",
       "chooseFileLabel": "CSV file",
@@ -1205,7 +1207,7 @@
       "roadSizeHint": "वैकल्पिक। प्लॉट के सामने की सड़क की चौड़ाई, फीट में।",
       "extraPriceHint": "मूल्य में जुड़ने वाली वैकल्पिक राशि। हर बुकिंग पर बदली जा सकती है।",
       "extraPercentLabel": "अतिरिक्त %",
-      "extraPercentHint": "अतिरिक्त मूल्य = प्लॉट मूल्य का यह %। प्रोजेक्ट के कॉर्नर % से तय; हर प्लॉट पर बदला जा सकता है।",
+      "extraPercentHint": "अतिरिक्त मूल्य = प्लॉट मूल्य का यह %। प्रोजेक्ट में इस प्लॉट प्रकार के % से तय; हर प्लॉट पर बदला जा सकता है।",
       "summary": { "total": "Total after discount" },
       "schedulePreview": "Token {{token}} paid now, then {{count}} installments of {{amount}} each",
       "scheduleSingle": "Token {{token}} paid now, then {{amount}} in one installment",
@@ -1246,7 +1248,7 @@
       "addTitle": "Add Project", "editTitle": "Edit Project", "emptyState": "No projects yet.", "loadError": "Could not load projects.", "saveError": "Could not save project.", "mapError": "Could not load or upload map.",
       "requiredError": "Required", "invalidError": "Invalid value", "columnSNo": "S No", "columnDetails": "Details", "projectName": "Project Name", "type": "Type", "typePlot": "Plot", "typeApartment": "Apartment",
       "location": "Location", "city": "City", "state": "State", "cityState": "City/State", "business": "Business Count (%)", "businessPercentage": "Business Count (%)",
-      "rate": "Rate (Price per Sqft)", "cornerExtra": "कॉर्नर प्लॉट अतिरिक्त % (डिफ़ॉल्ट)", "locationMap": "Location Map", "projectMap": "Project Map", "uploaded": "Uploaded", "mapAlt": "Map", "status": "Status", "statusActive": "Active", "statusSuspended": "Suspended"
+      "rate": "Rate (Price per Sqft)", "cornerExtra": "कॉर्नर प्लॉट अतिरिक्त % (डिफ़ॉल्ट)", "parkFacingExtra": "पार्क की ओर वाला प्लॉट अतिरिक्त % (डिफ़ॉल्ट)", "roadSideExtra": "सड़क किनारे वाला प्लॉट अतिरिक्त % (डिफ़ॉल्ट)", "locationMap": "Location Map", "projectMap": "Project Map", "uploaded": "Uploaded", "mapAlt": "Map", "status": "Status", "statusActive": "Active", "statusSuspended": "Suspended"
     },
     "expenseTypes": {
       "eyebrow": "वित्त और चक्र", "title": "व्यय प्रकार", "subtitle": "व्यय को वर्गीकृत करने की श्रेणियाँ। उपयोग रोकने के लिए प्रकार को निष्क्रिय करें।",
@@ -1669,6 +1671,8 @@
       "nameLabel": "परियोजना का नाम",
       "locationLabel": "स्थान",
       "cornerExtraLabel": "कॉर्नर प्लॉट अतिरिक्त %",
+      "parkFacingExtraLabel": "पार्क की ओर वाला प्लॉट अतिरिक्त %",
+      "roadSideExtraLabel": "सड़क किनारे वाला प्लॉट अतिरिक्त %",
       "photoLabel": "परियोजना फोटो",
       "addPhotoAction": "फोटो जोड़ें",
       "changePhotoAction": "फोटो बदलें",
@@ -1684,6 +1688,10 @@
       "plotTypeLabel": "प्रकार",
       "plotTypeNormalLabel": "सामान्य",
       "plotTypeCornerLabel": "कोने वाला",
+      "plotTypeParkFacingLabel": "पार्क की ओर",
+      "plotTypeRoadSideLabel": "सड़क किनारे",
+      "plotTypeCornerParkFacingLabel": "कोने वाला + पार्क की ओर",
+      "plotTypeCornerRoadSideLabel": "कोने वाला + सड़क किनारे",
       "areaLabel": "क्षेत्रफल (वर्ग फुट)",
       "rateLabel": "दर",
       "priceLabel": "मूल्य",
@@ -1862,8 +1870,10 @@
     "sqft": "sq ft",
     "aria": "Plot {{no}}, {{type}}, {{area}} square feet, {{price}}, {{status}}",
     "corner": "Corner",
+    "park": "Park Facing",
+    "road": "Road Side",
     "status": { "AVAILABLE": "Available", "BOOKED": "Booked", "SOLD": "Sold" },
-    "type": { "NORMAL": "Normal", "CORNER": "Corner" }
+    "type": { "NORMAL": "Normal", "CORNER": "Corner", "PARK_FACING": "Park Facing", "ROAD_SIDE": "Road Side", "CORNER_PARK_FACING": "Corner + Park Facing", "CORNER_ROAD_SIDE": "Corner + Road Side" }
   },
   "epinRegister": {
     "eyebrow": "ई-पिन रजिस्टर",
