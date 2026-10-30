@@ -3,6 +3,7 @@ package com.plotchain.income;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -161,4 +162,14 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
     List<LedgerSummaryRow> summarise(@Param("associateId") UUID associateId, @Param("cycleId") UUID cycleId);
 
     List<LedgerEntry> findByAssociateIdAndCycleId(UUID associateId, UUID cycleId);
+
+    // CycleService live income: this cycle's recomputable (cycle-derived, not yet wallet-PAID) rows.
+    // The delete is a bulk JPQL statement so it hits the DB before the recompute re-inserts rows
+    // that share a unique key (REWARD's sourceRef = tier id).
+    @Query("SELECT l FROM LedgerEntry l WHERE l.cycleId = :cycleId AND l.incomeType IN :types AND l.status <> com.plotchain.income.LedgerEntryStatus.PAID")
+    List<LedgerEntry> findRecomputable(@Param("cycleId") UUID cycleId, @Param("types") List<IncomeType> types);
+
+    @Modifying(flushAutomatically = true)
+    @Query("DELETE FROM LedgerEntry l WHERE l.cycleId = :cycleId AND l.incomeType IN :types AND l.status <> com.plotchain.income.LedgerEntryStatus.PAID")
+    void deleteRecomputable(@Param("cycleId") UUID cycleId, @Param("types") List<IncomeType> types);
 }

@@ -181,6 +181,10 @@ public class SaleService {
             }
         }
 
+        // Live income: recompute this open cycle's Matching / Sponsor Matching / Royalty / Reward
+        // now, so the whole upline sees it without waiting for cycle close.
+        cycleService.refreshLiveIncome(cycle.getId());
+
         // Flow step 9. plot and project are already loaded above -- toResponse(sale, plot,
         // associate, project) reuses them instead of re-fetching via toResponses' batch lookups.
         return toResponse(sale, plot, associate, project);
@@ -258,6 +262,10 @@ public class SaleService {
             ledgerEntry.setStatus(LedgerEntryStatus.REVERSED);
             ledgerEntryRepository.save(ledgerEntry);
         }
+
+        // Live income: drop this sale's volume from the open cycle's upline income (no-op if its
+        // cycle has already closed).
+        cycleService.refreshLiveIncome(sale.getCycleId());
 
         // Flow step 6. plot is already loaded above (when linked) -- toResponse(sale, plot,
         // associate, project) reuses it instead of re-fetching via toResponses' batch Plot
