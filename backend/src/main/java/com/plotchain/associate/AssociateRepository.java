@@ -111,12 +111,8 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
 
     boolean existsByUserId(String userId);
 
-    // Used to generate the next associate ID (e.g. VP00001 -> VP00002). Zero-padded fixed-width
-    // suffixes make string-descending order equal numeric order, so this needs no native SQL.
-    Optional<Associate> findTopByUserIdStartingWithOrderByUserIdDesc(String prefix);
-
     // Backs the parent-picker dropdown on the Create Associate form: admins pick a parent by
-    // its human-readable userId (e.g. VP00001), not the UUID primary key they never see.
+    // its human-readable userId (e.g. VSA51234), not the UUID primary key they never see.
     List<Associate> findAllByOrderByUserIdAsc();
 
     long countByRoleAndKycStatus(AssociateRole role, KycStatus kycStatus);
