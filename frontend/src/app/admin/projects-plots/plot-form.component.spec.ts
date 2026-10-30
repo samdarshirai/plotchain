@@ -94,4 +94,77 @@ describe('PlotFormComponent', () => {
     setup({ duplicatePlotNo: true });
     expect(el().textContent).toContain('admin.projectsPlots.error.duplicatePlotNo');
   });
+
+  describe('plot types and stacked Extra %', () => {
+    const defaults = { corner: 10, parkFacing: 5, roadSide: 5 };
+    const pick = async (t: string) => {
+      const select = el().querySelector<HTMLSelectElement>('select[name="plotType"]')!;
+      select.value = select.querySelector<HTMLOptionElement>(`option[value="${t}"]`)!.value;
+      select.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+    const extraInput = () => el().querySelector<HTMLInputElement>('[name="extraPercent"]')!;
+
+    it('offers the six plot types in a dropdown', () => {
+      setup({ extraDefaults: defaults });
+      const values = Array.from(el().querySelectorAll<HTMLOptionElement>('select[name="plotType"] option')).map(o => o.value);
+      expect(values).toEqual(['NORMAL', 'CORNER', 'PARK_FACING', 'ROAD_SIDE', 'CORNER_PARK_FACING', 'CORNER_ROAD_SIDE']);
+    });
+
+    it('prefills the stacked default when Corner + Park Facing is picked', async () => {
+      setup({ extraDefaults: defaults });
+      await fixture.whenStable();
+      await pick('CORNER_PARK_FACING');
+      expect(Number(extraInput().value)).toBe(15);
+      const hint = extraInput().parentElement!.querySelector('small')!.textContent!;
+      expect(hint).toContain('10% + ');
+      expect(hint).toContain('5%');
+    });
+
+    it('prefills 0 for Normal and the road default for Road Side', async () => {
+      setup({ extraDefaults: { corner: 10, parkFacing: 5, roadSide: 7 } });
+      await fixture.whenStable();
+      await pick('ROAD_SIDE');
+      expect(Number(extraInput().value)).toBe(7);
+      await pick('NORMAL');
+      expect(Number(extraInput().value)).toBe(0);
+    });
+
+    it('keeps a typed override until the type changes', async () => {
+      setup({ extraDefaults: defaults });
+      const out: PlotRequest[] = [];
+      fixture.componentInstance.submitted.subscribe(r => out.push(r));
+      await fixture.whenStable();
+      await pick('CORNER');
+      type('plotNo', 'C-9'); type('areaSqft', '1200'); type('rate', '3000'); type('extraPercent', '12');
+      await fixture.whenStable();
+      el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
+      expect(out[0].plotType).toBe('CORNER');
+      expect(out[0].extraPercent).toBe(12);
+    });
+
+    it('blocks submit when the stacked default exceeds 100', async () => {
+      setup({ extraDefaults: { corner: 98, parkFacing: 5, roadSide: 5 } });
+      const out: PlotRequest[] = [];
+      fixture.componentInstance.submitted.subscribe(r => out.push(r));
+      await fixture.whenStable();
+      await pick('CORNER_PARK_FACING');
+      type('plotNo', 'C-9'); type('areaSqft', '1200'); type('rate', '3000');
+      await fixture.whenStable();
+      el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
+      fixture.detectChanges();
+      expect(out.length).toBe(0);
+      expect(fixture.componentInstance.issues.map(i => i.id)).toContain('extraPercent');
+    });
+
+    it("keeps an edited plot's saved percent until its type changes", async () => {
+      setup({ extraDefaults: defaults, plot: { ...plot, plotType: 'PARK_FACING', extraPercent: 8 } });
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(Number(extraInput().value)).toBe(8);
+    });
+  });
 });
+

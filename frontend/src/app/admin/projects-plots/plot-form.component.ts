@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
 import { FormIssue } from '../../shared/validation/validation';
-import { Plot, PlotRequest, PlotType } from '../../setup/models/project.model';
+import { Plot, PLOT_TYPES, PlotRequest, PlotType } from '../../setup/models/project.model';
+import { defaultExtraPercent, ExtraDefaults, plotTypeParts } from '../../shared/utils/plot-grid.util';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 
 @Component({
@@ -28,10 +29,11 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
           <small>{{ 'admin.projectsPlots.plotNoHint' | translate }}</small>
           <app-field-error [message]="plotNoError() | translate"></app-field-error>
         </label>
-        <fieldset class="plot-form__type">
-          <legend>{{ 'admin.projectsPlots.plotTypeLabel' | translate }}</legend>
-          <label *ngFor="let t of types"><input type="radio" name="plotType" [value]="t" [(ngModel)]="plotType" (ngModelChange)="onTypeChange($event)" /> {{ 'admin.projectsPlots.type.' + t | translate }}</label>
-        </fieldset>
+        <label>{{ 'admin.projectsPlots.plotTypeLabel' | translate }}
+          <select name="plotType" [(ngModel)]="plotType" (ngModelChange)="onTypeChange($event)">
+            <option *ngFor="let t of types" [value]="t">{{ 'admin.projectsPlots.type.' + t | translate }}</option>
+          </select>
+        </label>
         <label>{{ 'admin.projectsPlots.areaLabel' | translate }}
           <input type="number" name="areaSqft" min="0" step="any" [(ngModel)]="areaSqft" />
           <app-field-error [message]="(positive(areaSqft) || !submitted_ ? '' : 'admin.projectsPlots.error.generic') | translate"></app-field-error>
@@ -42,7 +44,7 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
         </label>
         <label>{{ 'admin.projectsPlots.extraPercentLabel' | translate }}
           <input type="number" name="extraPercent" min="0" max="100" step="any" [(ngModel)]="extraPercent" />
-          <small>{{ 'admin.projectsPlots.extraPercentHint' | translate }} = {{ extraPrice | number:'1.0-2' }}</small>
+          <small>{{ 'admin.projectsPlots.extraPercentHint' | translate }}<ng-container *ngIf="defaultParts.length"> (<ng-container *ngFor="let x of defaultParts; let last = last">{{ x.key | translate }} {{ x.pct }}%{{ last ? '' : ' + ' }}</ng-container>)</ng-container> = {{ extraPrice | number:'1.0-2' }}</small>
           <app-field-error [message]="(validExtra || !submitted_ ? '' : 'admin.projectsPlots.error.generic') | translate"></app-field-error>
         </label>
         <label>{{ 'admin.projectsPlots.roadSizeLabel' | translate }}
@@ -64,14 +66,14 @@ export class PlotFormComponent implements OnChanges {
   @Input() locked = false;
   // Master project's rate per sqft; prefills Rate when adding a plot.
   @Input() defaultRate: number | null = null;
-  // Project's default Extra % for CORNER plots; NORMAL plots default to 0.
-  @Input() cornerExtraPercent = 10;
+  // Project's default Extra % per type part; a type's default is the sum of its parts (NORMAL = 0).
+  @Input() extraDefaults: ExtraDefaults = { corner: 10, parkFacing: 5, roadSide: 5 };
   @Input() busy = false;
   @Input() duplicatePlotNo = false;
   @Output() submitted = new EventEmitter<PlotRequest>();
   @Output() cancelled = new EventEmitter<void>();
 
-  readonly types: PlotType[] = ['NORMAL', 'CORNER'];
+  readonly types = PLOT_TYPES;
   plotNo = '';
   plotType: PlotType = 'NORMAL';
   areaSqft: number | null = null;
@@ -83,7 +85,7 @@ export class PlotFormComponent implements OnChanges {
 
   ngOnChanges(c: SimpleChanges): void {
     if (!this.plot && this.rate == null && this.defaultRate) { this.rate = this.defaultRate; }
-    if (!this.plot && c['cornerExtraPercent']) { this.onTypeChange(this.plotType); }
+    if (!this.plot && c['extraDefaults']) { this.onTypeChange(this.plotType); }
     if (c['plot'] && this.plot) {
       ({ plotNo: this.plotNo, plotType: this.plotType, areaSqft: this.areaSqft, rate: this.rate } = this.plot);
       // Plots saved before percentages existed only carry a flat amount; show it as the equivalent %.
@@ -95,7 +97,18 @@ export class PlotFormComponent implements OnChanges {
 
   get plotNoInvalid(): boolean { return this.duplicatePlotNo || (this.submitted_ && !this.plotNo.trim()); }
 
-  onTypeChange(t: PlotType): void { this.extraPercent = t === 'CORNER' ? this.cornerExtraPercent : 0; }
+  onTypeChange(t: PlotType): void { this.extraPercent = defaultExtraPercent(t, this.extraDefaults); }
+
+  // Parts of the selected type with their project default, for the Extra % hint ("Corner 10% + Park Facing 5%").
+  get defaultParts(): { key: string; pct: number }[] {
+    const p = plotTypeParts(this.plotType);
+    const d = this.extraDefaults;
+    return [
+      ...(p.corner ? [{ key: 'plotTile.corner', pct: d.corner }] : []),
+      ...(p.park ? [{ key: 'plotTile.park', pct: d.parkFacing }] : []),
+      ...(p.road ? [{ key: 'plotTile.road', pct: d.roadSide }] : [])
+    ];
+  }
 
   get extraPrice(): number { return Math.round((this.areaSqft ?? 0) * (this.rate ?? 0) * (this.extraPercent ?? 0)) / 100; }
 

@@ -11,7 +11,7 @@ import { Plot, PlotRequest, PlotStatus, Project } from '../../setup/models/proje
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { PlotTileComponent } from '../../shared/components/plot-tile/plot-tile.component';
 import {
-  PlotBlock, PlotGridItem, StatusCounts, countByStatus, formatArea, formatInr, groupIntoBlocks
+  PlotBlock, PlotGridItem, StatusCounts, countByStatus, ExtraDefaults, formatArea, formatInr, groupIntoBlocks
 } from '../../shared/utils/plot-grid.util';
 import { ExportColumn, exportCsv } from '../../shared/utils/table-export.util';
 import { filterPlotRows } from './projects-plots.util';
@@ -254,9 +254,9 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             [projectName]="selectedProject?.name ?? ''" [location]="selectedProject?.location ?? ''" [rate]="plotDetail?.rate ?? null"
             [emiConfig]="emiConfig" [busy]="bookingBusy" (submitted)="submitBooking($event)" (cancelled)="closeAside()"></app-book-plot-form>
           <app-plot-form *ngIf="aside.kind === 'editPlot' && selectedPlot && plotDetail"
-            [plot]="plotDetail" [locked]="plotDetail.status !== 'AVAILABLE' || selectedPlot.status !== 'AVAILABLE'" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
+            [plot]="plotDetail" [locked]="plotDetail.status !== 'AVAILABLE' || selectedPlot.status !== 'AVAILABLE'" [extraDefaults]="extraDefaults" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
             (submitted)="saveEditedPlot($event)" (cancelled)="closeAside()"></app-plot-form>
-          <app-plot-form *ngIf="aside.kind === 'addPlot'" [plot]="null" [defaultRate]="defaultRate" [cornerExtraPercent]="selectedProject?.cornerExtraPercent ?? 10" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
+          <app-plot-form *ngIf="aside.kind === 'addPlot'" [plot]="null" [defaultRate]="defaultRate" [extraDefaults]="extraDefaults" [busy]="busy" [duplicatePlotNo]="duplicatePlotNo"
             (submitted)="saveNewPlot($event)" (cancelled)="closeAside()"></app-plot-form>
         </div>
       </div>
@@ -317,6 +317,16 @@ export class ProjectsPlotsComponent implements OnInit {
   get modalOpen(): boolean { return this.aside.kind === 'addPlot' || this.aside.kind === 'editPlot' || this.aside.kind === 'book'; }
   get asideOpen(): boolean { return this.aside.kind !== 'none' && !this.modalOpen; }
   get canManage(): boolean { return !this.readOnly && !this.bookMode; }
+
+  // Cached per project: a fresh object every change detection would re-run the form's prefill and wipe a typed Extra %.
+  private extraDefaultsFor: { project: Project | null; value: ExtraDefaults } | null = null;
+  get extraDefaults(): ExtraDefaults {
+    const p = this.selectedProject;
+    if (this.extraDefaultsFor?.project !== p) {
+      this.extraDefaultsFor = { project: p, value: { corner: p?.cornerExtraPercent ?? 10, parkFacing: p?.parkFacingExtraPercent ?? 5, roadSide: p?.roadSideExtraPercent ?? 5 } };
+    }
+    return this.extraDefaultsFor.value;
+  }
 
   get defaultRate(): number | null {
     return this.masters.find(m => m.id === this.selectedProject?.masterProjectId)?.ratePerSqft ?? null;
