@@ -16,7 +16,7 @@ package com.plotchain.associate;
 public record AssociateIdCardResponse(
     String idNumber,
     String name,
-    String rank,
+    String designation,
     String photoUrl,
     String qrPayload
 ) {}

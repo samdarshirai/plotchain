@@ -21,7 +21,7 @@ describe('TreeExplorerService', () => {
 
   it('fetches a subtree', () => {
     const mockNode: TreeNode = {
-      id: 'a1', userId: 'VP00001', name: 'Root', rankName: null, kycStatus: 'PENDING', position: null,
+      id: 'a1', userId: 'VP00001', name: 'Root', designation: null, kycStatus: 'PENDING', position: null,
       leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
     };
 
@@ -34,7 +34,7 @@ describe('TreeExplorerService', () => {
 
   it('fetches the whole company tree', () => {
     const mockNode: TreeNode = {
-      id: 'admin', userId: 'admin', name: 'Administrator', rankName: null, kycStatus: 'VERIFIED', position: null,
+      id: 'admin', userId: 'admin', name: 'Administrator', designation: null, kycStatus: 'VERIFIED', position: null,
       leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
     };
 

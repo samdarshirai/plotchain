@@ -3,7 +3,7 @@ import { TreeNode } from '../models/tree-node.model';
 
 function node(overrides: Partial<TreeNode>): TreeNode {
   return {
-    id: 'id', userId: 'VP00001', name: 'Name', rankName: null, kycStatus: 'PENDING',
+    id: 'id', userId: 'VP00001', name: 'Name', designation: null, kycStatus: 'PENDING',
     position: null, leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false,
     stagnantFlag: false, children: [],
     ...overrides

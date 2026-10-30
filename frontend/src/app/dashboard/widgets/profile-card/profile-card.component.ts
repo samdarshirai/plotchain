@@ -12,7 +12,7 @@ import { AssociateSummary } from '../../models/dashboard-response.model';
       <div class="profile-card__identity">
         <div class="profile-card__avatar">{{ initials }}</div>
         <div class="profile-card__name">{{ associate.name }}</div>
-        <div class="profile-card__designation">{{ 'dashboard.designationValue' | translate }}</div>
+        <div class="profile-card__designation">{{ associate.designation ?? ('dashboard.designationValue' | translate) }}</div>
       </div>
       <div class="profile-card__rows">
         <div class="profile-card__row">
@@ -23,7 +23,7 @@ import { AssociateSummary } from '../../models/dashboard-response.model';
         <div class="profile-card__row">
           <span class="material-symbols-outlined profile-card__row-icon">verified</span>
           <span class="profile-card__row-label">{{ 'dashboard.profileDesignation' | translate }}</span>
-          <span class="profile-card__row-value">{{ 'dashboard.designationValue' | translate }}</span>
+          <span class="profile-card__row-value">{{ associate.designation ?? ('dashboard.designationValue' | translate) }}</span>
         </div>
         <div class="profile-card__row" *ngIf="associate.phone">
           <span class="material-symbols-outlined profile-card__row-icon">call</span>
@@ -44,11 +44,6 @@ import { AssociateSummary } from '../../models/dashboard-response.model';
           <span class="material-symbols-outlined profile-card__row-icon">schedule</span>
           <span class="profile-card__row-label">{{ 'dashboard.profileLastLogin' | translate }}</span>
           <span class="profile-card__row-value">{{ associate.lastLoginAt | date:'d MMM y, h:mm a' }}</span>
-        </div>
-        <div class="profile-card__row" *ngIf="associate.rankChangedAt">
-          <span class="material-symbols-outlined profile-card__row-icon">upgrade</span>
-          <span class="profile-card__row-label">{{ 'dashboard.profileLatestUpgrade' | translate }}</span>
-          <span class="profile-card__row-value">{{ associate.rankChangedAt | date:'d MMM y, h:mm a' }}</span>
         </div>
       </div>
     </div>

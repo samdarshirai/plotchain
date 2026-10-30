@@ -20,8 +20,8 @@ describe('RewardsService', () => {
 
   it('fetches the caller\'s own rank progress with no query params', () => {
     const mockResponse: AssociateRankProgress = {
-      currentRank: 'Sales Associate', currentRankOrder: 1, nextRank: 'Sales Executive',
-      progressPercent: 40, cumulativeMatchedVolume: 4000, volumeToNextRank: 6000, rewardTiers: []
+      designation: 'Sales Manager', nextDesignation: 'Area Manager',
+      progressPercent: 40, cumulativeMatchedVolume: 4000, volumeToNext: 6000, rewardTiers: []
     };
 
     service.getMyRankProgress().subscribe(res => {

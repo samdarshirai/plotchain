@@ -13,8 +13,7 @@ import java.util.Map;
 // controller's own package). Adding a second @ExceptionHandler for the same exception type here
 // would create a redundant, order-dependent second mapping for the same exception. See
 // SalesExceptionHandler's identical header comment for the established precedent. This class
-// only owns NoRankAssignedException (compensation's own class, distinct from
-// dashboard.NoRankAssignedException) and the two exception types pre-existing in this file.
+// only owns the two exception types below.
 @RestControllerAdvice
 public class CompensationExceptionHandler {
 
@@ -25,11 +24,6 @@ public class CompensationExceptionHandler {
 
     @ExceptionHandler(DuplicateEffectiveDateException.class)
     public ResponseEntity<Map<String, String>> handleDuplicateEffectiveDate(DuplicateEffectiveDateException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
-    }
-
-    @ExceptionHandler(NoRankAssignedException.class)
-    public ResponseEntity<Map<String, String>> handleNoRankAssigned(NoRankAssignedException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
 }

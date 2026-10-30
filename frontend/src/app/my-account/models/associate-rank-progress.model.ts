@@ -7,11 +7,10 @@ export interface AssociateRewardTier {
 }
 
 export interface AssociateRankProgress {
-  currentRank: string;
-  currentRankOrder: number;
-  nextRank: string | null;
+  designation: string | null;
+  nextDesignation: string | null;
   progressPercent: number;
   cumulativeMatchedVolume: number;
-  volumeToNextRank: number;
+  volumeToNext: number;
   rewardTiers: AssociateRewardTier[];
 }

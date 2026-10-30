@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -172,4 +173,20 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
     @Modifying(flushAutomatically = true)
     @Query("DELETE FROM LedgerEntry l WHERE l.cycleId = :cycleId AND l.incomeType IN :types AND l.status <> com.plotchain.income.LedgerEntryStatus.PAID")
     void deleteRecomputable(@Param("cycleId") UUID cycleId, @Param("types") List<IncomeType> types);
+
+    // DesignationService: every achieved reward tier (REWARD row -> reward_tier via sourceRef) for
+    // the given associates, so the caller can pick the highest tierLevel per associate.
+    @Query("""
+        SELECT l.associateId AS associateId, t.tierLevel AS tierLevel, t.designation AS designation
+        FROM LedgerEntry l, com.plotchain.compensation.RewardTier t
+        WHERE t.id = l.sourceRef AND l.incomeType = com.plotchain.income.IncomeType.REWARD
+        AND l.associateId IN :associateIds
+        """)
+    List<AchievedRewardTierRow> findAchievedRewardTiers(@Param("associateIds") Collection<UUID> associateIds);
+
+    interface AchievedRewardTierRow {
+        UUID getAssociateId();
+        int getTierLevel();
+        String getDesignation();
+    }
 }

@@ -4,8 +4,11 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.company.SettingsAuditService;
+import com.plotchain.income.DesignationService;
+import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
+import com.plotchain.sales.SaleRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +38,9 @@ public class CompensationPlanService {
     private final RankTierRepository rankTierRepository;
     private final SettingsAuditService settingsAuditService;
     private final AssociateRepository associateRepository;
+    private final DesignationService designationService;
+    private final LegVolumeRepository legVolumeRepository;
+    private final SaleRepository saleRepository;
 
     public CompensationPlanService(
             CompensationPlanVersionRepository versionRepository,
@@ -42,13 +48,19 @@ public class CompensationPlanService {
             RewardTierRepository rewardTierRepository,
             RankTierRepository rankTierRepository,
             SettingsAuditService settingsAuditService,
-            AssociateRepository associateRepository) {
+            AssociateRepository associateRepository,
+            DesignationService designationService,
+            LegVolumeRepository legVolumeRepository,
+            SaleRepository saleRepository) {
         this.versionRepository = versionRepository;
         this.royaltyBonusRateRepository = royaltyBonusRateRepository;
         this.rewardTierRepository = rewardTierRepository;
         this.rankTierRepository = rankTierRepository;
         this.settingsAuditService = settingsAuditService;
         this.associateRepository = associateRepository;
+        this.designationService = designationService;
+        this.legVolumeRepository = legVolumeRepository;
+        this.saleRepository = saleRepository;
     }
 
     public CompensationPlanResponse getCurrentPlan() {
@@ -64,62 +76,53 @@ public class CompensationPlanService {
     // JWT (see AssociateRankProgressController), never from the request -- no caller can view
     // another associate's rank progress through this method.
     //
-    // The current/next-rank + progressPercent/volumeToNextRank computation intentionally mirrors
-    // DashboardService.getDashboard(...)'s identical logic (same ranks-ordered-ascending walk, same
-    // clamping) rather than extracting a shared helper -- these are two independent per-feature
-    // aggregations, not a shared library method, matching this codebase's existing precedent of
-    // small per-feature duplication over cross-package extraction (e.g. AdminSalePageResponse vs.
-    // AssociateSalePageResponse in Sales unit 7). The reward-tier `achieved` predicate mirrors
-    // CycleService#creditReward's own volumeThreshold-vs-cumulativeMatchedVolume comparison.
+    //
+    // Progress is toward the next reward tier (whose designation the associate is promoted to);
+    // `designation` is the live one from DesignationService (highest tier with a REWARD row). The
+    // reward-tier `achieved` predicate mirrors CycleService#creditReward's own
+    // volumeThreshold-vs-cumulativeMatchedVolume comparison. cumulativeMatchedVolume only advances
+    // at cycle close, so the OPEN cycle's live matched volume (carry-in + this cycle's leg sales,
+    // same as DashboardService's New Matching Business) is added on top.
     public AssociateRankProgressResponse getMyRankProgress(UUID associateId) {
         Associate associate = associateRepository.findById(associateId)
             .orElseThrow(() -> new AssociateNotFoundException(associateId));
-        if (associate.getRankId() == null) {
-            throw new NoRankAssignedException(associateId);
-        }
-
-        List<RankTier> ranks = rankTierRepository.findAllByOrderByRankOrder();
-        RankTier currentRank = ranks.stream()
-            .filter(r -> r.getId().equals(associate.getRankId()))
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException(
-                "Associate's rank not found in rank table: " + associate.getRankId()));
-        // ranks is ordered ascending by rankOrder, and rankOrder values are not necessarily
-        // consecutive -- the next rank is the first one strictly above the current, not
-        // "current + 1".
-        Optional<RankTier> nextRank = ranks.stream()
-            .filter(r -> r.getRankOrder() > currentRank.getRankOrder())
-            .findFirst();
-
-        int progressPercent = nextRank
-            .map(nr -> associate.getCumulativeMatchedVolume()
-                .multiply(BigDecimal.valueOf(100))
-                .divide(nr.getVolumeThreshold(), 0, RoundingMode.DOWN)
-                .min(BigDecimal.valueOf(100))
-                .intValue())
-            .orElse(100);
-        BigDecimal volumeToNextRank = nextRank
-            .map(nr -> nr.getVolumeThreshold().subtract(associate.getCumulativeMatchedVolume()).max(BigDecimal.ZERO))
-            .orElse(BigDecimal.ZERO);
+        LegVolumeRepository.LegBusinessTotals carry = legVolumeRepository.carriedForward(associateId);
+        BigDecimal liveMatched = carry.left().add(saleRepository.sumOpenCycleLegBusiness(associateId, "L"))
+            .min(carry.right().add(saleRepository.sumOpenCycleLegBusiness(associateId, "R")));
+        BigDecimal cumulative = associate.getCumulativeMatchedVolume().add(liveMatched);
 
         CompensationPlanVersion version = currentVersion();
         List<RewardTier> tiers = rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(version.getId());
+        Optional<RewardTier> nextTier = tiers.stream()
+            .filter(t -> t.getVolumeThreshold().compareTo(cumulative) > 0)
+            .findFirst();
+
+        int progressPercent = nextTier
+            .map(nt -> cumulative
+                .multiply(BigDecimal.valueOf(100))
+                .divide(nt.getVolumeThreshold(), 0, RoundingMode.DOWN)
+                .min(BigDecimal.valueOf(100))
+                .intValue())
+            .orElse(100);
+        BigDecimal volumeToNext = nextTier
+            .map(nt -> nt.getVolumeThreshold().subtract(cumulative).max(BigDecimal.ZERO))
+            .orElse(BigDecimal.ZERO);
+
         List<AssociateRewardTierDto> tierDtos = tiers.stream()
             .map(t -> new AssociateRewardTierDto(
                 t.getTierLevel(),
                 t.getVolumeThreshold(),
                 t.getCashReward(),
                 t.getPerkDescription(),
-                t.getVolumeThreshold().compareTo(associate.getCumulativeMatchedVolume()) <= 0))
+                t.getVolumeThreshold().compareTo(cumulative) <= 0))
             .collect(Collectors.toList());
 
         return new AssociateRankProgressResponse(
-            currentRank.getName(),
-            currentRank.getRankOrder(),
-            nextRank.map(RankTier::getName).orElse(null),
+            designationService.designationOf(associateId),
+            nextTier.map(RewardTier::getDesignation).orElse(null),
             progressPercent,
-            associate.getCumulativeMatchedVolume(),
-            volumeToNextRank,
+            cumulative,
+            volumeToNext,
             tierDtos
         );
     }

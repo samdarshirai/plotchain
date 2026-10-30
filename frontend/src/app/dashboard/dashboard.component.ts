@@ -46,7 +46,7 @@ type CollapsibleSection = 'businessVolume' | 'networkIncome';
           </div>
         </div>
         <div class="dashboard__header-right">
-          <span class="dashboard__rank-badge">{{ d.associate.rank }}</span>
+          <span class="dashboard__rank-badge">{{ d.associate.designation ?? ('dashboard.designationValue' | translate) }}</span>
           <span class="dashboard__id-caption">{{ d.associate.associateId }}</span>
         </div>
       </div>
@@ -55,7 +55,7 @@ type CollapsibleSection = 'businessVolume' | 'networkIncome';
 
       <div class="dashboard__hero">
         <app-profile-card [associate]="d.associate"></app-profile-card>
-        <app-cycle-income-card [data]="d.cycleIncome" [legVolume]="d.legVolumeSummary" [network]="d.networkSummary" [rank]="d.associate.rank"></app-cycle-income-card>
+        <app-cycle-income-card [data]="d.cycleIncome" [legVolume]="d.legVolumeSummary" [network]="d.networkSummary" [designation]="d.associate.designation"></app-cycle-income-card>
       </div>
 
       <div class="dashboard__section">

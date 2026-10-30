@@ -1,6 +1,7 @@
 package com.plotchain.compensation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plotchain.income.DesignationService;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
@@ -42,6 +43,9 @@ class CompensationPlanServiceTest {
     @Mock RankTierRepository rankTierRepository;
     @Mock SettingsAuditLogRepository settingsAuditLogRepository;
     @Mock AssociateRepository associateRepository;
+    @Mock DesignationService designationService;
+    @Mock com.plotchain.legvolume.LegVolumeRepository legVolumeRepository;
+    @Mock com.plotchain.sales.SaleRepository saleRepository;
 
     CompensationPlanService compensationPlanService;
 
@@ -54,7 +58,7 @@ class CompensationPlanServiceTest {
             settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
         compensationPlanService = new CompensationPlanService(
             versionRepository, royaltyBonusRateRepository, rewardTierRepository, rankTierRepository,
-            settingsAuditService, associateRepository);
+            settingsAuditService, associateRepository, designationService, legVolumeRepository, saleRepository);
     }
 
     // -- fixtures --------------------------------------------------------
@@ -132,28 +136,29 @@ class CompensationPlanServiceTest {
 
     // -- getMyRankProgress --------------------------------------------------
 
-    @Test
-    void getMyRankProgressReturnsCurrentAndNextRankWithProgressAndRewardTiers() {
-        UUID associateId = UUID.randomUUID();
-        UUID currentRankId = UUID.randomUUID();
-        UUID nextRankId = UUID.randomUUID();
+    private void stubLiveLegs(UUID associateId, String carryLeft, String carryRight, String newLeft, String newRight) {
+        when(legVolumeRepository.carriedForward(associateId)).thenReturn(
+            new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal(carryLeft), new BigDecimal(carryRight)));
+        when(saleRepository.sumOpenCycleLegBusiness(associateId, "L")).thenReturn(new BigDecimal(newLeft));
+        when(saleRepository.sumOpenCycleLegBusiness(associateId, "R")).thenReturn(new BigDecimal(newRight));
+    }
 
+    @Test
+    void getMyRankProgressReturnsDesignationAndProgressTowardNextRewardTier() {
+        UUID associateId = UUID.randomUUID();
         Associate associate = new Associate();
         associate.setId(associateId);
-        associate.setRankId(currentRankId);
         associate.setCumulativeMatchedVolume(new BigDecimal("4000"));
-
-        RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, new BigDecimal("2000"));
-        RankTier nextRank = new RankTier(nextRankId, "Sales Executive", 2, new BigDecimal("10000"));
 
         CompensationPlanVersion version = seedVersion();
         RewardTier achievedTier = new RewardTier(
-            UUID.randomUUID(), version.getId(), 1, new BigDecimal("1000"), new BigDecimal("100"), "Tier 1");
+            UUID.randomUUID(), version.getId(), 1, new BigDecimal("1000"), new BigDecimal("100"), "Tier 1", "Sales Manager");
         RewardTier unreachedTier = new RewardTier(
-            UUID.randomUUID(), version.getId(), 2, new BigDecimal("5000"), new BigDecimal("500"), "Tier 2");
+            UUID.randomUUID(), version.getId(), 2, new BigDecimal("10000"), new BigDecimal("500"), "Tier 2", "Area Manager");
 
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank, nextRank));
+        when(designationService.designationOf(associateId)).thenReturn("Sales Manager");
+        stubLiveLegs(associateId, "0", "0", "0", "0");
         when(versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
             .thenReturn(Optional.of(version));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(version.getId()))
@@ -161,40 +166,32 @@ class CompensationPlanServiceTest {
 
         AssociateRankProgressResponse response = compensationPlanService.getMyRankProgress(associateId);
 
-        assertThat(response.currentRank()).isEqualTo("Sales Associate");
-        assertThat(response.currentRankOrder()).isEqualTo(1);
-        assertThat(response.nextRank()).isEqualTo("Sales Executive");
+        assertThat(response.designation()).isEqualTo("Sales Manager");
+        assertThat(response.nextDesignation()).isEqualTo("Area Manager");
         // progressPercent = 4000 * 100 / 10000 = 40
         assertThat(response.progressPercent()).isEqualTo(40);
         assertThat(response.cumulativeMatchedVolume()).isEqualByComparingTo("4000");
-        assertThat(response.volumeToNextRank()).isEqualByComparingTo("6000");
+        assertThat(response.volumeToNext()).isEqualByComparingTo("6000");
         assertThat(response.rewardTiers()).hasSize(2);
-        assertThat(response.rewardTiers().get(0).tierLevel()).isEqualTo(1);
         assertThat(response.rewardTiers().get(0).achieved()).isTrue();
-        assertThat(response.rewardTiers().get(1).tierLevel()).isEqualTo(2);
         assertThat(response.rewardTiers().get(1).achieved()).isFalse();
     }
 
     @Test
     void getMyRankProgressMarksATierAchievedWhenVolumeExactlyEqualsThreshold() {
-        // Boundary case for the achieved predicate's <= comparison: cumulativeMatchedVolume
-        // exactly equal to volumeThreshold (not strictly above, not strictly below) must still
-        // count as achieved, mirroring CycleService#creditReward's own <= comparison.
+        // Boundary case for the achieved predicate's <= comparison, mirroring
+        // CycleService#creditReward's own <= comparison.
         UUID associateId = UUID.randomUUID();
-        UUID currentRankId = UUID.randomUUID();
-
         Associate associate = new Associate();
         associate.setId(associateId);
-        associate.setRankId(currentRankId);
         associate.setCumulativeMatchedVolume(new BigDecimal("1000"));
 
-        RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, new BigDecimal("500"));
         CompensationPlanVersion version = seedVersion();
         RewardTier exactThresholdTier = new RewardTier(
             UUID.randomUUID(), version.getId(), 1, new BigDecimal("1000"), new BigDecimal("100"), "Tier 1");
 
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
+        stubLiveLegs(associateId, "0", "0", "0", "0");
         when(versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
             .thenReturn(Optional.of(version));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(version.getId()))
@@ -202,48 +199,35 @@ class CompensationPlanServiceTest {
 
         AssociateRankProgressResponse response = compensationPlanService.getMyRankProgress(associateId);
 
-        assertThat(response.rewardTiers()).hasSize(1);
         assertThat(response.rewardTiers().get(0).achieved()).isTrue();
+        assertThat(response.nextDesignation()).isNull();
+        assertThat(response.progressPercent()).isEqualTo(100);
+        assertThat(response.volumeToNext()).isEqualByComparingTo("0");
     }
 
     @Test
-    void getMyRankProgressAtMaxRankReturnsNullNextRankAndFullProgress() {
+    void getMyRankProgressAddsTheOpenCyclesLiveMatchedVolumeBeforeClose() {
         UUID associateId = UUID.randomUUID();
-        UUID currentRankId = UUID.randomUUID();
-
         Associate associate = new Associate();
         associate.setId(associateId);
-        associate.setRankId(currentRankId);
-        associate.setCumulativeMatchedVolume(new BigDecimal("50000"));
+        associate.setCumulativeMatchedVolume(new BigDecimal("1000"));
 
-        RankTier currentRank = new RankTier(currentRankId, "Sales Legend", 5, new BigDecimal("40000"));
         CompensationPlanVersion version = seedVersion();
+        RewardTier tier = new RewardTier(
+            UUID.randomUUID(), version.getId(), 1, new BigDecimal("10000"), new BigDecimal("500"), "Tier 1", "Sales Manager");
 
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
+        // live matched = min(500 + 4000, 0 + 3000) = 3000 -> cumulative 1000 + 3000 = 4000
+        stubLiveLegs(associateId, "500", "0", "4000", "3000");
         when(versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
             .thenReturn(Optional.of(version));
-        when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(version.getId()))
-            .thenReturn(List.of());
+        when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(version.getId())).thenReturn(List.of(tier));
 
         AssociateRankProgressResponse response = compensationPlanService.getMyRankProgress(associateId);
 
-        assertThat(response.nextRank()).isNull();
-        assertThat(response.progressPercent()).isEqualTo(100);
-        assertThat(response.volumeToNextRank()).isEqualByComparingTo("0");
-        assertThat(response.rewardTiers()).isEmpty();
-    }
-
-    @Test
-    void getMyRankProgressThrowsNoRankAssignedExceptionWhenAssociateHasNoRank() {
-        UUID associateId = UUID.randomUUID();
-        Associate associate = new Associate();
-        associate.setId(associateId);
-        associate.setRankId(null);
-        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
-
-        assertThatThrownBy(() -> compensationPlanService.getMyRankProgress(associateId))
-            .isInstanceOf(NoRankAssignedException.class);
+        assertThat(response.cumulativeMatchedVolume()).isEqualByComparingTo("4000");
+        assertThat(response.progressPercent()).isEqualTo(40);
+        assertThat(response.volumeToNext()).isEqualByComparingTo("6000");
     }
 
     @Test

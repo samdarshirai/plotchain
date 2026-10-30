@@ -19,7 +19,7 @@ public record DashboardResponse(
     // sponsorAssociateId/sponsorName are both null when the associate has no sponsor (tree root)
     // -- the frontend renders a "Head Office" fallback in that case.
     public record AssociateSummary(
-        String associateId, String name, String rank, String phone, Instant joinedAt, Instant rankChangedAt,
+        String associateId, String name, String designation, String phone, Instant joinedAt,
         String sponsorAssociateId, String sponsorName, Instant lastLoginAt) {}
     public record CycleIncome(
         UUID cycleId, BigDecimal directIncome, BigDecimal matchingIncome, BigDecimal sponsorMatchingIncome,

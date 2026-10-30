@@ -11,8 +11,6 @@ import { NewAssociatePanelComponent } from '../new-associate-panel/new-associate
 import { EditAssociatePanelComponent } from './edit-associate-panel.component';
 import { SidePanelComponent } from '../../shared/components/side-panel/side-panel.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
-import { CompensationPlanService } from '../../setup/steps/compensation/compensation-plan.service';
-import { RankOption } from '../../setup/models/compensation-plan.model';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/tab-bar.component';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
@@ -62,7 +60,6 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
       <p *ngIf="loadError" class="associate-directory__load-error">{{ 'admin.associateDirectory.loadError' | translate }}</p>
       <p *ngIf="actionError" class="associate-directory__action-error">{{ 'admin.associateDirectory.actionError' | translate }}</p>
       <p *ngIf="loginError" class="associate-directory__login-error">{{ 'admin.associateDirectory.loginError' | translate }}</p>
-      <p *ngIf="rankLoadError" class="associate-directory__rank-load-error">{{ 'admin.associateDirectory.rankLoadError' | translate }}</p>
 
       <!-- Filter panel and table sit flush against each other (0 gap, table's border-top:none
            against the panel's bottom edge) -- Viraj_Acres_Settings.dc.html lines 280/290. Grouped
@@ -81,13 +78,6 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
           />
         </span>
         <div class="associate-directory__filter-grid">
-          <div class="associate-directory__filter-field">
-            <label>{{ 'admin.associateDirectory.rankFilterLabel' | translate }}</label>
-            <select (change)="onRankChange($any($event.target).value)">
-              <option value="">{{ 'admin.associateDirectory.rankFilterAllOption' | translate }}</option>
-              <option *ngFor="let rank of availableRanks" [value]="rank.id">{{ rank.name }}</option>
-            </select>
-          </div>
           <div class="associate-directory__filter-field">
             <label>{{ 'admin.associateDirectory.statusFilterLabel' | translate }}</label>
             <select (change)="onStatusChange($any($event.target).value)">
@@ -156,7 +146,7 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
       <div *ngIf="selected" class="associate-directory__detail">
         <div class="associate-detail__identity">
           <span class="associate-detail__name">{{ selected.name }}</span>
-          <span class="editable-table__rank-badge" *ngIf="selected.rankName">{{ selected.rankName }}</span>
+          <span class="editable-table__rank-badge">{{ selected.designation ?? ('dashboard.designationValue' | translate) }}</span>
           <span class="associate-detail__status-badge" [ngClass]="'associate-detail__status-badge--' + kycStatusBadgeTone(titleCase(selected.kycStatus))">
             {{ titleCase(selected.kycStatus) }}
           </span>
@@ -269,7 +259,6 @@ export class AssociateDirectoryComponent implements OnInit {
   readonly titleCase = titleCase;
 
   private associateDirectoryService = inject(AssociateDirectoryService);
-  private compensationPlanService = inject(CompensationPlanService);
   private translate = inject(TranslateService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -285,12 +274,9 @@ export class AssociateDirectoryComponent implements OnInit {
   loadError = false;
   actionError = false;
   loginError = false;
-  rankLoadError = false;
-  availableRanks: RankOption[] = [];
   directoryColumns: EditableTableColumn[] = [];
   directoryRows: Record<string, string>[] = [];
   private search = '';
-  private rank = '';
   view: DirectoryView = 'all';
   viewTabs: TabDefinition[] = [];
   counts: DirectoryCounts | null = null;
@@ -321,10 +307,6 @@ export class AssociateDirectoryComponent implements OnInit {
       { key: 'transactionPassword', label: this.translate.instant('admin.associateDirectory.transactionPasswordLabel'), type: 'text', icon: 'lock' },
       { key: 'login', label: this.translate.instant('admin.associateDirectory.columnLogin'), type: 'action', icon: 'login' }
     ];
-    this.compensationPlanService.getCurrent().subscribe({
-      next: res => (this.availableRanks = res.availableRanks),
-      error: () => (this.rankLoadError = true)
-    });
     this.loadPage(0);
     this.loadCounts();
     if (this.route.snapshot.queryParamMap.has('provision')) {
@@ -336,11 +318,6 @@ export class AssociateDirectoryComponent implements OnInit {
 
   onSearchInput(value: string): void {
     this.search = value;
-    this.loadPage(0);
-  }
-
-  onRankChange(value: string): void {
-    this.rank = value;
     this.loadPage(0);
   }
 
@@ -510,7 +487,6 @@ export class AssociateDirectoryComponent implements OnInit {
     this.loadError = false;
     const filters: AdminAssociateFilters = {};
     if (this.search) filters.search = this.search;
-    if (this.rank) filters.rank = this.rank;
     if (this.view === 'green') filters.kycStatus = 'VERIFIED';
     if (this.view === 'red') filters.excludeKycStatus = 'VERIFIED';
     if (this.view === 'left') filters.leg = 'L';

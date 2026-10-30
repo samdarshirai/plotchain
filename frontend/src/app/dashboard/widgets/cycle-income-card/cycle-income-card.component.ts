@@ -23,8 +23,8 @@ import { CycleIncome, LegVolumeSummary, NetworkSummary } from '../../models/dash
           <p class="seal-card__caption">{{ 'dashboard.totalBusinessLabel' | translate }}</p>
           <div class="seal-card__chips">
             <span class="business-rank seal-card__chip">
-              <span class="seal-card__chip-label">{{ 'dashboard.rankLabel' | translate }}</span>
-              <strong>{{ rank }}</strong>
+              <span class="seal-card__chip-label">{{ 'dashboard.profileDesignation' | translate }}</span>
+              <strong>{{ designation ?? ('dashboard.designationValue' | translate) }}</strong>
             </span>
             <a class="business-team seal-card__chip" [routerLink]="['/my-team']">
               <span class="seal-card__chip-label">{{ 'dashboard.teamSizeLabel' | translate }}</span>
@@ -77,7 +77,7 @@ export class CycleIncomeCardComponent {
   @Input({ required: true }) data!: CycleIncome;
   @Input({ required: true }) legVolume!: LegVolumeSummary;
   @Input({ required: true }) network!: NetworkSummary;
-  @Input({ required: true }) rank!: string;
+  @Input() designation: string | null = null;
 
   get delta(): number {
     return this.data.totalIncome - this.data.previousCycleTotalIncome;

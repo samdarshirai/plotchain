@@ -1,6 +1,7 @@
 package com.plotchain.associate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plotchain.income.DesignationService;
 import com.plotchain.company.SettingsAuditLog;
 import com.plotchain.company.SettingsAuditLogRepository;
 import com.plotchain.company.SettingsAuditService;
@@ -10,7 +11,6 @@ import com.plotchain.cycle.CycleStatus;
 import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTier;
-import com.plotchain.rank.RankTierRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -42,7 +43,7 @@ import static org.mockito.Mockito.when;
 class AdminAssociateServiceTest {
 
     @Mock AssociateRepository associateRepository;
-    @Mock RankTierRepository rankTierRepository;
+    @Mock DesignationService designationService;
     @Mock CycleRepository cycleRepository;
     @Mock LegVolumeRepository legVolumeRepository;
     @Mock SettingsAuditLogRepository settingsAuditLogRepository;
@@ -59,7 +60,7 @@ class AdminAssociateServiceTest {
         SettingsAuditService settingsAuditService = new SettingsAuditService(
             settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
         service = new AdminAssociateService(
-            associateRepository, rankTierRepository, cycleRepository, legVolumeRepository,
+            associateRepository, designationService, cycleRepository, legVolumeRepository,
             passwordEncoder, settingsAuditService, associateStatusCache, null, null);
     }
 
@@ -83,7 +84,7 @@ class AdminAssociateServiceTest {
         when(associateRepository.searchDirectory(
             eq("jane"), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(false), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(associate), PageRequest.of(0, 20), 1));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
+        when(designationService.designationsOf(List.of(associate.getId()))).thenReturn(Map.of(associate.getId(), "Sales Manager"));
 
         AdminAssociatePageResponse response = service.list(
             "jane", null, null, null, null, null, null, false, null, 0, 20);
@@ -91,7 +92,7 @@ class AdminAssociateServiceTest {
         assertThat(response.totalElements()).isEqualTo(1);
         assertThat(response.associates()).hasSize(1);
         assertThat(response.associates().get(0).userId()).isEqualTo("VP00001");
-        assertThat(response.associates().get(0).rankName()).isEqualTo("Sales Associate");
+        assertThat(response.associates().get(0).designation()).isEqualTo("Sales Manager");
         assertThat(response.associates().get(0).role()).isEqualTo(AssociateRole.ASSOCIATE);
     }
 
@@ -100,7 +101,6 @@ class AdminAssociateServiceTest {
         when(associateRepository.searchDirectory(
             isNull(), isNull(), isNull(), isNull(), isNull(), any(), any(), eq(false), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
 
         service.list(null, null, null, null, null, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31), false, null, 0, 20);
 
@@ -132,7 +132,6 @@ class AdminAssociateServiceTest {
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
         when(associateRepository.findById(sponsorId)).thenReturn(Optional.of(sponsor));
         when(associateRepository.findById(parentId)).thenReturn(Optional.of(parent));
-        when(rankTierRepository.findById(rank.getId())).thenReturn(Optional.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED))
             .thenReturn(Optional.of(openCycle));
         when(legVolumeRepository.findByAssociateIdAndCycleId(id, cycleId)).thenReturn(Optional.of(legVolume));
@@ -162,7 +161,6 @@ class AdminAssociateServiceTest {
         UUID id = UUID.randomUUID();
         Associate associate = newAssociate(id, "VP00001");
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
-        when(rankTierRepository.findById(rank.getId())).thenReturn(Optional.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
         AdminAssociateDetailResponse response = service.suspend(id, ACTOR_ID);
@@ -182,7 +180,6 @@ class AdminAssociateServiceTest {
         UUID id = UUID.randomUUID();
         Associate associate = newAssociate(id, "VP00001");
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
-        when(rankTierRepository.findById(rank.getId())).thenReturn(Optional.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
         service.suspend(id, ACTOR_ID);
@@ -196,7 +193,6 @@ class AdminAssociateServiceTest {
         Associate associate = newAssociate(id, "VP00001");
         associate.setStatus(AssociateStatus.SUSPENDED);
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
-        when(rankTierRepository.findById(rank.getId())).thenReturn(Optional.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
         AdminAssociateDetailResponse response = service.reactivate(id, ACTOR_ID);
@@ -211,7 +207,6 @@ class AdminAssociateServiceTest {
         Associate associate = newAssociate(id, "VP00001");
         associate.setStatus(AssociateStatus.SUSPENDED);
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
-        when(rankTierRepository.findById(rank.getId())).thenReturn(Optional.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
         service.reactivate(id, ACTOR_ID);

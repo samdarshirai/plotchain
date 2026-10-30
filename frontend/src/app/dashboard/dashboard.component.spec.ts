@@ -11,8 +11,8 @@ describe('DashboardComponent', () => {
 
   const mockResponse: DashboardResponse = {
     associate: {
-      associateId: 'SDI384818', name: 'Asha Kumar', rank: 'Sales Associate',
-      phone: '9876543210', joinedAt: '2025-09-05T05:25:42Z', rankChangedAt: null,
+      associateId: 'SDI384818', name: 'Asha Kumar', designation: 'Sales Manager',
+      phone: '9876543210', joinedAt: '2025-09-05T05:25:42Z',
       sponsorAssociateId: 'SDI100001', sponsorName: 'Head Office Sponsor', lastLoginAt: null
     },
     kycPendingBannerVisible: true,
@@ -102,7 +102,7 @@ describe('DashboardComponent', () => {
     loadDashboard();
     const header = fixture.nativeElement.querySelector('.dashboard__header');
     expect(header.textContent).not.toContain('Asha Kumar');
-    expect(header.textContent).toContain('Sales Associate');
+    expect(header.textContent).toContain('Sales Manager');
     const idCaption = fixture.nativeElement.querySelector('.dashboard__id-caption');
     expect(idCaption.textContent.trim()).toBe('SDI384818');
   });

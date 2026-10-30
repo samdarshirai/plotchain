@@ -1,10 +1,9 @@
 export interface AssociateSummary {
   associateId: string;
   name: string;
-  rank: string;
+  designation: string | null;
   phone: string | null;
   joinedAt: string;
-  rankChangedAt: string | null;
   // Both null when the associate has no sponsor (tree root) -- render a "Head Office" fallback.
   sponsorAssociateId: string | null;
   sponsorName: string | null;

@@ -70,10 +70,7 @@ class AssociateRankProgressControllerTest {
         associate.setRankId(currentRankId);
         associate.setCumulativeMatchedVolume(BigDecimal.ZERO);
 
-        RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, BigDecimal.valueOf(5000));
-
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
         when(versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
             .thenReturn(Optional.of(version(versionId)));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(versionId)).thenReturn(List.of());
@@ -81,9 +78,8 @@ class AssociateRankProgressControllerTest {
         mockMvc.perform(get("/api/associates/me/rank-progress")
                 .header("Authorization", "Bearer " + tokenFor(associateId)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.currentRank").value("Sales Associate"))
-            .andExpect(jsonPath("$.currentRankOrder").value(1))
-            .andExpect(jsonPath("$.nextRank").doesNotExist())
+            .andExpect(jsonPath("$.designation").doesNotExist())
+            .andExpect(jsonPath("$.nextDesignation").doesNotExist())
             .andExpect(jsonPath("$.progressPercent").value(100));
     }
 
@@ -91,17 +87,5 @@ class AssociateRankProgressControllerTest {
     void returns401WithoutAToken() throws Exception {
         mockMvc.perform(get("/api/associates/me/rank-progress"))
             .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void returns409WhenAssociateHasNoRank() throws Exception {
-        UUID associateId = UUID.randomUUID();
-        Associate associate = new Associate();
-        associate.setId(associateId);
-        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
-
-        mockMvc.perform(get("/api/associates/me/rank-progress")
-                .header("Authorization", "Bearer " + tokenFor(associateId)))
-            .andExpect(status().isConflict());
     }
 }

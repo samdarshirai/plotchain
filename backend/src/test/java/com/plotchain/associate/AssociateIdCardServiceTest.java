@@ -1,7 +1,6 @@
 package com.plotchain.associate;
 
-import com.plotchain.rank.RankTier;
-import com.plotchain.rank.RankTierRepository;
+import com.plotchain.income.DesignationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +19,7 @@ import static org.mockito.Mockito.when;
 class AssociateIdCardServiceTest {
 
     @Mock AssociateRepository associateRepository;
-    @Mock RankTierRepository rankTierRepository;
+    @Mock DesignationService designationService;
 
     AssociateIdCardService service;
     private static final UUID ASSOCIATE_ID = UUID.randomUUID();
@@ -28,7 +27,7 @@ class AssociateIdCardServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AssociateIdCardService(associateRepository, rankTierRepository);
+        service = new AssociateIdCardService(associateRepository, designationService);
     }
 
     private Associate associateWithRank() {
@@ -41,24 +40,21 @@ class AssociateIdCardServiceTest {
     }
 
     @Test
-    void returnsIdCardWithIdNumberNameRankAndQrPayload() {
+    void returnsIdCardWithIdNumberNameDesignationAndQrPayload() {
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithRank()));
-        RankTier rank = new RankTier(RANK_ID, "Silver Associate", 2, BigDecimal.valueOf(10000));
-        when(rankTierRepository.findById(RANK_ID)).thenReturn(Optional.of(rank));
+        when(designationService.designationOf(ASSOCIATE_ID)).thenReturn("Sales Manager");
 
         AssociateIdCardResponse response = service.getMyIdCard(ASSOCIATE_ID);
 
         assertThat(response.idNumber()).isEqualTo("VP00001");
         assertThat(response.name()).isEqualTo("Asha Rao");
-        assertThat(response.rank()).isEqualTo("Silver Associate");
+        assertThat(response.designation()).isEqualTo("Sales Manager");
         assertThat(response.qrPayload()).isEqualTo("VP00001");
     }
 
     @Test
     void photoUrlIsAlwaysNull() {
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithRank()));
-        RankTier rank = new RankTier(RANK_ID, "Silver Associate", 2, BigDecimal.valueOf(10000));
-        when(rankTierRepository.findById(RANK_ID)).thenReturn(Optional.of(rank));
 
         AssociateIdCardResponse response = service.getMyIdCard(ASSOCIATE_ID);
 
@@ -81,14 +77,5 @@ class AssociateIdCardServiceTest {
 
         assertThatThrownBy(() -> service.getMyIdCard(ASSOCIATE_ID))
             .isInstanceOf(NoRankAssignedException.class);
-    }
-
-    @Test
-    void throwsIllegalStateExceptionWhenRankIdNotInRankTable() {
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithRank()));
-        when(rankTierRepository.findById(RANK_ID)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.getMyIdCard(ASSOCIATE_ID))
-            .isInstanceOf(IllegalStateException.class);
     }
 }

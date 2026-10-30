@@ -7,7 +7,7 @@
 export interface AssociateIdCard {
   idNumber: string;
   name: string;
-  rank: string;
+  designation: string | null;
   photoUrl: string | null;
   qrPayload: string;
 }

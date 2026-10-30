@@ -20,7 +20,7 @@ describe('DigitalIdCardService', () => {
 
   it('fetches the caller\'s own digital ID card with no query params', () => {
     const mockResponse: AssociateIdCard = {
-      idNumber: 'VP00042', name: 'Priya Nair', rank: 'Gold Associate', photoUrl: null, qrPayload: 'VP00042'
+      idNumber: 'VP00042', name: 'Priya Nair', designation: 'Sales Manager', photoUrl: null, qrPayload: 'VP00042'
     };
 
     service.getMyIdCard().subscribe(res => {

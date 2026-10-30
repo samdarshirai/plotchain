@@ -132,8 +132,8 @@ import { AssociateIdCard } from './models/associate-id-card.model';
         <dd class="digital-id-card__id-number">{{ card.idNumber }}</dd>
         <dt>{{ 'digitalIdCard.nameLabel' | translate }}</dt>
         <dd class="digital-id-card__name">{{ card.name }}</dd>
-        <dt>{{ 'digitalIdCard.rankLabel' | translate }}</dt>
-        <dd class="digital-id-card__rank">{{ card.rank }}</dd>
+        <dt>{{ 'digitalIdCard.designationLabel' | translate }}</dt>
+        <dd class="digital-id-card__rank">{{ card.designation ?? ('dashboard.designationValue' | translate) }}</dd>
       </dl>
 
       <div class="digital-id-card__qr">

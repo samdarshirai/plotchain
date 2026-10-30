@@ -387,6 +387,9 @@ class LedgerServiceTest {
         when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(e));
         when(legVolumeRepository.totalBusiness(me)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("1600000"), new BigDecimal("300000")));
+        // Open-cycle leg sales count immediately, not only after close.
+        when(saleRepository.sumOpenCycleLegBusiness(me, "L")).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumOpenCycleLegBusiness(me, "R")).thenReturn(new BigDecimal("100000"));
 
         List<AssociateRewardTierRow> rows = service.myRewardTiers(me);
 
@@ -394,9 +397,9 @@ class LedgerServiceTest {
         assertThat(rows.get(0).status()).isEqualTo(LedgerEntryStatus.PAID);
         assertThat(rows.get(0).achievedDate()).isEqualTo(Instant.parse("2026-01-15T00:00:00Z"));
         assertThat(rows.get(0).requiredLeftBusiness()).isZero();
-        assertThat(rows.get(0).requiredRightBusiness()).isEqualByComparingTo("200000");
+        assertThat(rows.get(0).requiredRightBusiness()).isEqualByComparingTo("100000");
         assertThat(rows.get(1).requiredLeftBusiness()).isZero();
-        assertThat(rows.get(1).requiredRightBusiness()).isEqualByComparingTo("1200000");
+        assertThat(rows.get(1).requiredRightBusiness()).isEqualByComparingTo("1100000");
         assertThat(rows.get(1).status()).isNull();
         assertThat(rows.get(1).achievedDate()).isNull();
     }
@@ -409,6 +412,8 @@ class LedgerServiceTest {
                 new BigDecimal("500000"), new BigDecimal("15000"), "+ Smart Watch", "Sales Associate")));
         when(legVolumeRepository.totalBusiness(me)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
+        when(saleRepository.sumOpenCycleLegBusiness(me, "L")).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumOpenCycleLegBusiness(me, "R")).thenReturn(BigDecimal.ZERO);
 
         AssociateRewardTierRow row = service.myRewardTiers(me).get(0);
 
