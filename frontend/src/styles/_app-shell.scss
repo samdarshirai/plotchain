@@ -659,9 +659,8 @@
 }
 
 // /admin/login -- the dark "Admin Console" variant (Claude Design "Admin Login.dc.html"): an
-// all-Ink page with the form panel on the left and an Oxblood brand aside on the right.
+// all-Ink page with an Oxblood brand aside on the left and the form panel on the right.
 .login-page--admin {
-  flex-direction: row-reverse;
   background: var(--ink);
   color: var(--surface-page);
 
