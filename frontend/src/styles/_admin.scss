@@ -4728,6 +4728,7 @@ button.tree-explorer__vacant-card {
     &--on { color: var(--text-primary); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
     &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; } }
   &__key-count { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  &__type-icon { font-size: 0.9375rem; line-height: 1; }
   &__swatch { width: 12px; height: 12px; border: 1px solid; box-sizing: border-box;
     &--available { background: #DCE8D6; border-color: var(--status-success); }
     &--booked { background: #F1D9A6; border-color: var(--status-warning-text); }
@@ -4742,6 +4743,9 @@ button.tree-explorer__vacant-card {
     .plot-tile { min-width: 0; min-height: 64px; }
     .plot-tile__face { height: 104px; align-items: center; justify-content: flex-start; padding: 8px 2px; }
     .projects-plots__block--road-below & .plot-tile__face { justify-content: flex-end; }
+    // Number sits at the top unless the road is below, so the park/road mark goes to the bottom then.
+    .plot-tile__type-icon { top: auto; bottom: 6px; right: 50%; transform: translateX(50%); }
+    .projects-plots__block--road-below & .plot-tile__type-icon { top: 8px; bottom: auto; }
     .plot-tile__meta { display: none; }
     .plot-tile__no { font-size: 0.75rem; font-weight: 500; white-space: nowrap; } }
   &__panel--site { gap: 0.625rem;

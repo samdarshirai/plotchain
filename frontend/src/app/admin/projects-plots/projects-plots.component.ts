@@ -164,6 +164,12 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
                 <span class="projects-plots__key projects-plots__key--static">
                   <span class="projects-plots__swatch projects-plots__swatch--corner" aria-hidden="true"></span>{{ 'admin.projectsPlots.cornerNote' | translate }}
                 </span>
+                <span class="projects-plots__key projects-plots__key--static">
+                  <span class="material-symbols-outlined projects-plots__type-icon" aria-hidden="true">park</span>{{ 'admin.projectsPlots.parkNote' | translate }}
+                </span>
+                <span class="projects-plots__key projects-plots__key--static">
+                  <span class="material-symbols-outlined projects-plots__type-icon" aria-hidden="true">add_road</span>{{ 'admin.projectsPlots.roadNote' | translate }}
+                </span>
               </div>
             </ng-template>
 
