@@ -4,10 +4,9 @@ import com.plotchain.company.SettingsAuditService;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
+import com.plotchain.income.DesignationService;
 import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
-import com.plotchain.rank.RankTier;
-import com.plotchain.rank.RankTierRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,7 +31,7 @@ import java.util.stream.Collectors;
 public class AdminAssociateService {
 
     private final AssociateRepository associateRepository;
-    private final RankTierRepository rankTierRepository;
+    private final DesignationService designationService;
     private final CycleRepository cycleRepository;
     private final LegVolumeRepository legVolumeRepository;
     private final PasswordEncoder passwordEncoder;
@@ -43,7 +42,7 @@ public class AdminAssociateService {
 
     public AdminAssociateService(
         AssociateRepository associateRepository,
-        RankTierRepository rankTierRepository,
+        DesignationService designationService,
         CycleRepository cycleRepository,
         LegVolumeRepository legVolumeRepository,
         PasswordEncoder passwordEncoder,
@@ -53,7 +52,7 @@ public class AdminAssociateService {
         AssociateNomineeService nomineeService
     ) {
         this.associateRepository = associateRepository;
-        this.rankTierRepository = rankTierRepository;
+        this.designationService = designationService;
         this.cycleRepository = cycleRepository;
         this.legVolumeRepository = legVolumeRepository;
         this.passwordEncoder = passwordEncoder;
@@ -75,8 +74,7 @@ public class AdminAssociateService {
             normalizedSearch, rankId, kycStatus, excludeKycStatus, status, joinedFromInstant, joinedToExclusive,
             newestFirst, leg, PageRequest.of(page, size));
 
-        Map<UUID, RankTier> ranksById = ranksById();
-        List<AdminAssociateSummaryResponse> summaries = toSummaries(result.getContent(), ranksById);
+        List<AdminAssociateSummaryResponse> summaries = toSummaries(result.getContent());
         return new AdminAssociatePageResponse(summaries, page, size, result.getTotalElements());
     }
 
@@ -103,8 +101,7 @@ public class AdminAssociateService {
             ids, normalizedSearch, kycStatus, excludeKycStatus, status, joinedFromInstant, joinedToExclusive,
             newestFirst, PageRequest.of(page, size));
 
-        Map<UUID, RankTier> ranksById = ranksById();
-        List<AdminAssociateSummaryResponse> summaries = toSummaries(result.getContent(), ranksById);
+        List<AdminAssociateSummaryResponse> summaries = toSummaries(result.getContent());
         return new AdminAssociatePageResponse(summaries, page, size, result.getTotalElements());
     }
 
@@ -222,30 +219,25 @@ public class AdminAssociateService {
             .orElseThrow(() -> new AssociateNotFoundException(id));
     }
 
-    private Map<UUID, RankTier> ranksById() {
-        return rankTierRepository.findAllByOrderByRankOrder().stream()
-            .collect(Collectors.toMap(RankTier::getId, r -> r));
-    }
-
-    // Sponsor userIds resolved in one findAllById for the whole page (toDetail's per-row findById
-    // would be N+1 here).
-    private List<AdminAssociateSummaryResponse> toSummaries(List<Associate> page, Map<UUID, RankTier> ranksById) {
+    // Sponsor userIds and designations resolved in one query each for the whole page (toDetail's
+    // per-row lookups would be N+1 here).
+    private List<AdminAssociateSummaryResponse> toSummaries(List<Associate> page) {
         Set<UUID> sponsorIds = page.stream().map(Associate::getSponsorId).filter(Objects::nonNull)
             .collect(Collectors.toSet());
         Map<UUID, String> sponsorUserIds = associateRepository.findAllById(sponsorIds).stream()
             .collect(Collectors.toMap(Associate::getId, Associate::getUserId));
-        return page.stream().map(a -> toSummary(a, ranksById.get(a.getRankId()), sponsorUserIds.get(a.getSponsorId()))).toList();
+        Map<UUID, String> designations = designationService.designationsOf(page.stream().map(Associate::getId).toList());
+        return page.stream().map(a -> toSummary(a, designations.get(a.getId()), sponsorUserIds.get(a.getSponsorId()))).toList();
     }
 
-    private AdminAssociateSummaryResponse toSummary(Associate a, RankTier rank, String sponsorUserId) {
+    private AdminAssociateSummaryResponse toSummary(Associate a, String designation, String sponsorUserId) {
         return new AdminAssociateSummaryResponse(
-            a.getId(), a.getUserId(), a.getName(), rank == null ? null : rank.getName(),
+            a.getId(), a.getUserId(), a.getName(), designation,
             a.getKycStatus(), a.getStatus(), a.getJoinedAt(), a.getLastActiveAt(), sponsorUserId,
             a.getPosition(), a.getRole(), a.getLoginPasswordPlain(), a.getTransactionPasswordPlain());
     }
 
     private AdminAssociateDetailResponse toDetail(Associate a) {
-        RankTier rank = a.getRankId() == null ? null : rankTierRepository.findById(a.getRankId()).orElse(null);
         Associate sponsor = a.getSponsorId() == null ? null : associateRepository.findById(a.getSponsorId()).orElse(null);
         Associate parent = a.getParentId() == null ? null : associateRepository.findById(a.getParentId()).orElse(null);
 
@@ -264,7 +256,7 @@ public class AdminAssociateService {
 
         return new AdminAssociateDetailResponse(
             a.getId(), a.getUserId(), a.getName(), a.getEmail(), a.getPhone(),
-            rank == null ? null : rank.getName(), a.getKycStatus(), a.getStatus(),
+            designationService.designationOf(a.getId()), a.getKycStatus(), a.getStatus(),
             a.getJoinedAt(), a.getLastActiveAt(),
             a.getSponsorId(), sponsor == null ? null : sponsor.getUserId(),
             a.getParentId(), parent == null ? null : parent.getUserId(), a.getPosition(),

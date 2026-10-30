@@ -51,7 +51,7 @@ describe('CycleIncomeCardComponent (business summary)', () => {
     c.data = overrides.income ?? income;
     c.legVolume = overrides.legs ?? legs;
     c.network = network;
-    c.rank = 'Sales Associate';
+    c.designation = 'Sales Manager';
     fixture.detectChanges();
   }
 
@@ -82,9 +82,9 @@ describe('CycleIncomeCardComponent (business summary)', () => {
     expect(fixture.componentInstance.totalBusiness).toBe(0);
   });
 
-  it('shows rank and team size with the left/right split', () => {
+  it('shows designation and team size with the left/right split', () => {
     createComponent();
-    expect(el('.business-rank').textContent).toContain('Sales Associate');
+    expect(el('.business-rank').textContent).toContain('Sales Manager');
     const team = el('.business-team').textContent;
     expect(team).toContain('42');
     expect(team).toContain('30 left · 12 right');

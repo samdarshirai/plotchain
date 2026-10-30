@@ -3381,14 +3381,6 @@
   font-size: 0.85rem;
 }
 
-// Only "gold" ranks get a distinct treatment (reusing --status-warning, already an amber
-// hex, via color-mix); every other freeform rankName -- Silver/Bronze/custom/null -- keeps
-// this neutral look, which is the graceful degradation for an unbounded tier system.
-.tree-explorer__node-avatar--gold {
-  background: color-mix(in srgb, var(--status-warning) 22%, var(--surface-card));
-  color: color-mix(in srgb, var(--status-warning) 70%, black);
-}
-
 .tree-explorer__node-id-wrap {
   flex: 1;
   min-width: 0;

@@ -282,10 +282,14 @@ public class LedgerService {
 
     // Full reward ladder for the caller, each tier joined to its REWARD ledger row (sourceRef =
     // reward_tier.id, CycleService#creditReward). Required left/right = volume still missing per
-    // leg: max(0, threshold - cumulative leg business). No row = NOT_ACHIEVED.
+    // leg: max(0, threshold - cumulative leg business), live -- closed-cycle totals plus this OPEN
+    // cycle's leg sales, same as DashboardService's Total Left/Right Business. No row = NOT_ACHIEVED.
     public List<AssociateRewardTierRow> myRewardTiers(UUID associateId) {
         Map<UUID, LedgerEntry> bySourceRef = rewardEntriesBySourceRef(associateId);
-        LegVolumeRepository.LegBusinessTotals totals = legVolumeRepository.totalBusiness(associateId);
+        LegVolumeRepository.LegBusinessTotals closed = legVolumeRepository.totalBusiness(associateId);
+        LegVolumeRepository.LegBusinessTotals totals = new LegVolumeRepository.LegBusinessTotals(
+            closed.left().add(saleRepository.sumOpenCycleLegBusiness(associateId, "L")),
+            closed.right().add(saleRepository.sumOpenCycleLegBusiness(associateId, "R")));
         return compensationPlanService.currentRewardTiers().stream().map(t -> {
             LedgerEntry e = bySourceRef.get(t.getId());
             return new AssociateRewardTierRow(

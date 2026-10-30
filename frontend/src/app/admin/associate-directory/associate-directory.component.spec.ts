@@ -33,12 +33,10 @@ describe('AssociateDirectoryComponent', () => {
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
 
-    httpMock.expectOne('/api/company/compensation')
-      .flush({ availableRanks: [{ id: 'r1', name: 'Sales Associate' }] });
     httpMock.expectOne('/api/associates')
       .flush([{ id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE', hasFreeSlot: true }]);
     httpMock.expectOne('/api/admin/associates?page=0&size=20')
-      .flush({ associates: [{ id: 'a1', userId: 'VP00001', name: 'Jane', rankName: 'Sales Associate', kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: 'VP00000', position: 'L', lastActiveAt: null, role: 'ASSOCIATE' }], page: 0, size: 20, totalElements: 1 });
+      .flush({ associates: [{ id: 'a1', userId: 'VP00001', name: 'Jane', designation: 'Sales Associate', kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: 'VP00000', position: 'L', lastActiveAt: null, role: 'ASSOCIATE' }], page: 0, size: 20, totalElements: 1 });
     flushCounts(httpMock, { '': 168, 'status=ACTIVE': 142, 'status=SUSPENDED': 26, 'kycStatus=PENDING': 11, 'kycStatus=VERIFIED': 100, 'excludeKycStatus=VERIFIED': 68, 'leg=L': 90, 'leg=R': 78 });
   });
 
@@ -59,7 +57,7 @@ describe('AssociateDirectoryComponent', () => {
 
     const req = httpMock.expectOne('/api/admin/associates/a1');
     req.flush({
-      id: 'a1', userId: 'VP00001', name: 'Jane', email: null, phone: null, rankName: 'Sales Associate',
+      id: 'a1', userId: 'VP00001', name: 'Jane', email: null, phone: null, designation: 'Sales Associate',
       kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', lastActiveAt: null,
       sponsorId: null, sponsorUserId: null, parentId: null, parentUserId: null, position: null,
       directDownlineCount: 0, totalDownlineCount: 0, leftLegVolume: 0, rightLegVolume: 0
@@ -171,18 +169,6 @@ describe('AssociateDirectoryComponent', () => {
     expect(errorEl?.textContent?.trim()).toBeTruthy();
   });
 
-  it('loads available ranks for the rank filter dropdown', () => {
-    expect(fixture.componentInstance.availableRanks).toEqual([{ id: 'r1', name: 'Sales Associate' }]);
-  });
-
-  it('changing the rank filter reloads page 0 with the rank param', () => {
-    fixture.componentInstance.onRankChange('r1');
-
-    const req = httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('rank') === 'r1' && r.params.get('page') === '0');
-    expect(req.request.method).toBe('GET');
-    req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
-  });
-
   it('Green tab loads only VERIFIED associates', () => {
     fixture.componentInstance.onViewChange('green');
 
@@ -236,44 +222,9 @@ describe('AssociateDirectoryComponent', () => {
     req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
   });
 
-  it('an empty filter value omits that param instead of sending an empty string', () => {
-    fixture.componentInstance.onRankChange('');
-
-    const req = httpMock.expectOne('/api/admin/associates?page=0&size=20');
-    expect(req.request.method).toBe('GET');
-    req.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
-  });
-
-  it('shows a rank load error when the ranks fetch fails, without silently doing nothing', async () => {
-    TestBed.resetTestingModule();
-    await TestBed.configureTestingModule({
-      imports: [AssociateDirectoryComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
-    }).compileComponents();
-
-    const isolatedFixture = TestBed.createComponent(AssociateDirectoryComponent);
-    const isolatedHttpMock = TestBed.inject(HttpTestingController);
-    isolatedFixture.detectChanges();
-
-    isolatedHttpMock.expectOne('/api/company/compensation')
-      .flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
-    isolatedHttpMock.expectOne('/api/associates')
-      .flush([]);
-    isolatedHttpMock.expectOne('/api/admin/associates?page=0&size=20')
-      .flush({ associates: [], page: 0, size: 20, totalElements: 0 });
-    isolatedFixture.detectChanges();
-
-    expect(isolatedFixture.componentInstance.rankLoadError).toBe(true);
-    const errorEl: HTMLElement | null = isolatedFixture.nativeElement.querySelector('.associate-directory__rank-load-error');
-    expect(errorEl?.textContent?.trim()).toBeTruthy();
-
-    flushCounts(isolatedHttpMock);
-
-    isolatedHttpMock.verify();
-  });
-
   it('shows an empty-state row when no associates match', () => {
-    fixture.componentInstance.onRankChange('r1');
-    httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('rank') === 'r1')
+    fixture.componentInstance.onSearchInput('nobody');
+    httpMock.expectOne(r => r.url === '/api/admin/associates' && r.params.get('search') === 'nobody')
       .flush({ associates: [], page: 0, size: 20, totalElements: 0 });
     fixture.detectChanges();
 
@@ -289,7 +240,7 @@ describe('AssociateDirectoryComponent', () => {
 
     const req = httpMock.expectOne('/api/admin/associates/a1');
     req.flush({
-      id: 'a1', userId: 'VP00001', name: 'Jane', email: null, phone: null, rankName: 'Sales Associate',
+      id: 'a1', userId: 'VP00001', name: 'Jane', email: null, phone: null, designation: 'Sales Associate',
       kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', lastActiveAt: null,
       sponsorId: null, sponsorUserId: null, parentId: null, parentUserId: null, position: null,
       directDownlineCount: 0, totalDownlineCount: 0, leftLegVolume: 0, rightLegVolume: 0
@@ -301,7 +252,7 @@ describe('AssociateDirectoryComponent', () => {
 
   describe('Login-as-associate column', () => {
     const row = (id: string, name: string, role: string, status: string) =>
-      ({ id, userId: 'VP' + id, name, rankName: null, kycStatus: 'VERIFIED', status, joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: null, position: null, lastActiveAt: null, role });
+      ({ id, userId: 'VP' + id, name, designation: null, kycStatus: 'VERIFIED', status, joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: null, position: null, lastActiveAt: null, role });
 
     function loadRows(): void {
       fixture.componentInstance.goToPage(0);
@@ -435,7 +386,6 @@ describe('AssociateDirectoryComponent with ?provision=1', () => {
     const navigateSpy = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
     fixture.detectChanges();
 
-    httpMock.expectOne('/api/company/compensation').flush({ availableRanks: [] });
     httpMock.expectOne('/api/associates').flush([]);
     httpMock.expectOne('/api/admin/associates?page=0&size=20')
       .flush({ associates: [], page: 0, size: 20, totalElements: 0 });

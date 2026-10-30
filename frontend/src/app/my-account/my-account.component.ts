@@ -136,7 +136,7 @@ const BANK_LABELS = { bankName: 'Bank name', accountHolder: 'Account holder', ac
                 </div>
               </div>
               <div class="profile-hero__actions">
-                <span class="my-account__rank-chip" *ngIf="rankProgress as rp">{{ rp.currentRank }}</span>
+                <span class="my-account__rank-chip" *ngIf="rankProgress as rp">{{ (rp.designation ?? ('dashboard.designationValue' | translate)) }}</span>
                 <button type="button" class="profile-hero__print-button" (click)="printIdCard()">
                   {{ 'myAccount.downloadIdCard' | translate }}
                 </button>
@@ -167,11 +167,11 @@ const BANK_LABELS = { bankName: 'Bank name', accountHolder: 'Account holder', ac
                 <div class="profile-hero__rank-plaque">
                   <div class="rank-card__body">
                     <div class="rank-card__current">
-                      <span class="rank-card__figure">{{ rp.currentRank }}</span>
-                      <span class="rank-card__next" *ngIf="rp.nextRank">
-                        {{ 'myAccount.rank.nextRank' | translate: { rank: rp.nextRank, pct: rp.progressPercent } }}
+                      <span class="rank-card__figure">{{ (rp.designation ?? ('dashboard.designationValue' | translate)) }}</span>
+                      <span class="rank-card__next" *ngIf="rp.nextDesignation">
+                        {{ 'myAccount.rank.nextRank' | translate: { designation: rp.nextDesignation, pct: rp.progressPercent } }}
                       </span>
-                      <span class="rank-card__next" *ngIf="!rp.nextRank">{{ 'myAccount.rank.maxRankReached' | translate }}</span>
+                      <span class="rank-card__next" *ngIf="!rp.nextDesignation">{{ 'myAccount.rank.maxRankReached' | translate }}</span>
                     </div>
                     <div class="rank-card__stat">
                       <span class="rank-card__stat-label">{{ 'myAccount.rank.cumulativeVolumeLabel' | translate }}</span>
@@ -179,13 +179,13 @@ const BANK_LABELS = { bankName: 'Bank name', accountHolder: 'Account holder', ac
                     </div>
                     <div class="rank-card__stat">
                       <span class="rank-card__stat-label">{{ 'myAccount.rank.volumeToNextRankLabel' | translate }}</span>
-                      <span class="rank-card__stat-value rank-card__stat-value--accent">{{ formatCurrency(rp.volumeToNextRank) }}</span>
+                      <span class="rank-card__stat-value rank-card__stat-value--accent">{{ formatCurrency(rp.volumeToNext) }}</span>
                     </div>
                   </div>
                   <div class="rank-card__bar"><div class="rank-card__bar-fill" [style.width.%]="rp.progressPercent"></div></div>
                   <div class="rank-card__bar-labels">
-                    <span>{{ rp.currentRank }} &middot; {{ formatCurrency(rp.cumulativeMatchedVolume) }}</span>
-                    <span *ngIf="rp.nextRank">{{ rp.nextRank }} &middot; {{ formatCurrency(rp.cumulativeMatchedVolume + rp.volumeToNextRank) }}</span>
+                    <span>{{ (rp.designation ?? ('dashboard.designationValue' | translate)) }} &middot; {{ formatCurrency(rp.cumulativeMatchedVolume) }}</span>
+                    <span *ngIf="rp.nextDesignation">{{ rp.nextDesignation }} &middot; {{ formatCurrency(rp.cumulativeMatchedVolume + rp.volumeToNext) }}</span>
                   </div>
                 </div>
 

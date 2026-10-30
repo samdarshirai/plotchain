@@ -9,7 +9,7 @@ describe('DigitalIdCardComponent', () => {
   let httpMock: HttpTestingController;
 
   const baseCard: AssociateIdCard = {
-    idNumber: 'VP00042', name: 'Priya Nair', rank: 'Gold Associate', photoUrl: null, qrPayload: 'VP00042'
+    idNumber: 'VP00042', name: 'Priya Nair', designation: 'Sales Manager', photoUrl: null, qrPayload: 'VP00042'
   };
 
   beforeEach(async () => {
@@ -23,7 +23,7 @@ describe('DigitalIdCardComponent', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('loads and displays the associate\'s id number, name, and rank on init', () => {
+  it('loads and displays the associate\'s id number, name, and designation on init', () => {
     fixture.detectChanges();
     httpMock.expectOne('/api/associates/me/id-card').flush(baseCard);
     fixture.detectChanges();
@@ -31,7 +31,7 @@ describe('DigitalIdCardComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.digital-id-card__id-number')?.textContent?.trim()).toBe('VP00042');
     expect(compiled.querySelector('.digital-id-card__name')?.textContent?.trim()).toBe('Priya Nair');
-    expect(compiled.querySelector('.digital-id-card__rank')?.textContent?.trim()).toBe('Gold Associate');
+    expect(compiled.querySelector('.digital-id-card__rank')?.textContent?.trim()).toBe('Sales Manager');
   });
 
   it('shows a load error when the fetch fails, without silently doing nothing', () => {

@@ -1,7 +1,6 @@
 package com.plotchain.associate;
 
-import com.plotchain.rank.RankTier;
-import com.plotchain.rank.RankTierRepository;
+import com.plotchain.income.DesignationService;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -9,7 +8,7 @@ import java.util.UUID;
 // role-capability unit 10 (docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
 // "Digital ID card" row -- Associate sees "Own ID card only (photo, ID number, rank, QR)").
 // Render-on-demand, not persisted: every call recomputes the response from the associate and
-// rank_tier tables directly (the reconciliation table's own note: "No endpoint (spec always
+// reward ledger rows directly (the reconciliation table's own note: "No endpoint (spec always
 // described this as render-on-demand, not persisted...)") -- there is no AssociateIdCard
 // entity/table, and this method never writes one.
 //
@@ -28,11 +27,11 @@ import java.util.UUID;
 public class AssociateIdCardService {
 
     private final AssociateRepository associateRepository;
-    private final RankTierRepository rankTierRepository;
+    private final DesignationService designationService;
 
-    public AssociateIdCardService(AssociateRepository associateRepository, RankTierRepository rankTierRepository) {
+    public AssociateIdCardService(AssociateRepository associateRepository, DesignationService designationService) {
         this.associateRepository = associateRepository;
-        this.rankTierRepository = rankTierRepository;
+        this.designationService = designationService;
     }
 
     // Self-scoped by construction: associateId always comes from the caller's own JWT (see
@@ -47,9 +46,6 @@ public class AssociateIdCardService {
             // chk_associate_rank_required guarantees every ASSOCIATE-role row has a rank.
             throw new NoRankAssignedException(associateId);
         }
-        RankTier rank = rankTierRepository.findById(associate.getRankId())
-            .orElseThrow(() -> new IllegalStateException(
-                "Associate's rank not found in rank table: " + associate.getRankId()));
 
         // The QR payload is the data a frontend would encode into a QR image client-side, not a
         // server-rendered image -- no QR-generation library exists in pom.xml, and the simpler,
@@ -61,7 +57,7 @@ public class AssociateIdCardService {
         return new AssociateIdCardResponse(
             associate.getUserId(),
             associate.getName(),
-            rank.getName(),
+            designationService.designationOf(associateId),
             null,
             associate.getUserId()
         );

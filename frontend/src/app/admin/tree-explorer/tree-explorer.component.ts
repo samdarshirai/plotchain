@@ -121,7 +121,7 @@ const CLICK_MOVE_PX = 5;
                 </span>
 
                 <div class="tree-explorer__node-top">
-                  <span class="tree-explorer__node-avatar" [class.tree-explorer__node-avatar--gold]="isGoldRank(entry.data.rankName)">
+                  <span class="tree-explorer__node-avatar">
                     {{ entry.data.name.charAt(0) }}
                   </span>
                   <div class="tree-explorer__node-id-wrap">
@@ -152,7 +152,7 @@ const CLICK_MOVE_PX = 5;
                 </div>
 
                 <span class="tree-explorer__rank-pill">
-                  {{ entry.data.rankName ?? ('admin.treeExplorer.noRankLabel' | translate) }}
+                  {{ entry.data.designation ?? ('dashboard.designationValue' | translate) }}
                 </span>
 
                 <div class="tree-explorer__vol-bar">
@@ -473,9 +473,6 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
     return 100 - this.legLeftPercent(node);
   }
 
-  isGoldRank(rankName: string | null): boolean {
-    return !!rankName && rankName.toLowerCase().includes('gold');
-  }
 
   cardLeft(entry: LayoutEntry): number {
     return px(entry) - LAYOUT.CARD_W / 2;

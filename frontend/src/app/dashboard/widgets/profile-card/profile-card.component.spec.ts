@@ -5,8 +5,8 @@ import { AssociateSummary } from '../../models/dashboard-response.model';
 
 function associate(overrides: Partial<AssociateSummary>): AssociateSummary {
   return {
-    associateId: 'SDI384818', name: 'Asha Kumar', rank: 'Sales Associate',
-    phone: '9876543210', joinedAt: '2025-09-05T05:25:42Z', rankChangedAt: null,
+    associateId: 'SDI384818', name: 'Asha Kumar', designation: 'Sales Manager',
+    phone: '9876543210', joinedAt: '2025-09-05T05:25:42Z',
     sponsorAssociateId: null, sponsorName: null, lastLoginAt: null,
     ...overrides
   };
@@ -43,11 +43,9 @@ describe('ProfileCardComponent', () => {
     }).compileComponents();
   });
 
-  it('renders the associate name and static designation', () => {
+  it('renders the associate name', () => {
     createComponent(associate({}));
-    const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Asha Kumar');
-    expect(text).toContain('Sales Executive');
+    expect(fixture.nativeElement.textContent).toContain('Asha Kumar');
   });
 
   it('computes initials from the first two words of the name, uppercased', () => {
@@ -87,13 +85,13 @@ describe('ProfileCardComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Head Office');
   });
 
-  it('hides the latest-upgrade row when rankChangedAt is null', () => {
-    createComponent(associate({ rankChangedAt: null }));
-    expect(fixture.nativeElement.textContent).not.toContain('Latest Upgrade');
+  it('shows the achieved designation', () => {
+    createComponent(associate({ designation: 'Sales Manager' }));
+    expect(fixture.nativeElement.textContent).toContain('Sales Manager');
   });
 
-  it('shows the latest-upgrade row when rankChangedAt is set', () => {
-    createComponent(associate({ rankChangedAt: '2026-01-10T09:00:00Z' }));
-    expect(fixture.nativeElement.textContent).toContain('Latest Upgrade');
+  it('falls back to the base designation when no reward tier is achieved', () => {
+    createComponent(associate({ designation: null }));
+    expect(fixture.nativeElement.textContent).toContain('Sales Executive');
   });
 });

@@ -44,4 +44,15 @@ public interface LegVolumeRepository extends JpaRepository<LegVolume, UUID> {
         }
         return new LegBusinessTotals(totalLeft, totalRight);
     }
+
+    // Carry-in for the OPEN cycle: the latest closed cycle's carried-forward legs (only closed
+    // cycles have leg_volume rows). Zero before the first close.
+    default LegBusinessTotals carriedForward(UUID associateId) {
+        List<LegVolume> history = findByAssociateIdOrderByCyclePeriodStartAsc(associateId);
+        if (history.isEmpty()) {
+            return new LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO);
+        }
+        LegVolume latest = history.get(history.size() - 1);
+        return new LegBusinessTotals(latest.getCarriedForwardLeft(), latest.getCarriedForwardRight());
+    }
 }

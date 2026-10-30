@@ -1,5 +1,6 @@
 package com.plotchain.tree;
 
+import com.plotchain.income.DesignationService;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
@@ -12,7 +13,6 @@ import com.plotchain.cycle.CycleStatus;
 import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTier;
-import com.plotchain.rank.RankTierRepository;
 import com.plotchain.sales.SaleRepository;
 import com.plotchain.sales.SaleStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
 class TreeExplorerServiceTest {
 
     @Mock AssociateRepository associateRepository;
-    @Mock RankTierRepository rankTierRepository;
+    @Mock DesignationService designationService;
     @Mock CycleRepository cycleRepository;
     @Mock LegVolumeRepository legVolumeRepository;
     @Mock SaleRepository saleRepository;
@@ -46,7 +46,7 @@ class TreeExplorerServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new TreeExplorerService(associateRepository, rankTierRepository, cycleRepository, legVolumeRepository, saleRepository);
+        service = new TreeExplorerService(associateRepository, designationService, cycleRepository, legVolumeRepository, saleRepository);
     }
 
     private Associate newAssociate(UUID id, String userId, Instant joinedAt) {
@@ -80,14 +80,13 @@ class TreeExplorerServiceTest {
         Associate child = newAssociate(childId, "VP00001", Instant.now());
 
         when(associateRepository.findById(FOUNDING_ADMIN_ID)).thenReturn(Optional.of(foundingAdmin));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(associateRepository.findByParentId(FOUNDING_ADMIN_ID)).thenReturn(List.of(child));
 
         TreeNodeResponse response = service.companyTree();
 
         assertThat(response.userId()).isEqualTo("admin");
-        assertThat(response.rankName()).isNull();
+        assertThat(response.designation()).isNull();
         assertThat(response.children()).hasSize(1);
         assertThat(response.children().get(0).userId()).isEqualTo("VP00001");
     }
@@ -105,7 +104,6 @@ class TreeExplorerServiceTest {
         Associate root = newAssociate(rootId, "VP00001", Instant.now());
 
         when(associateRepository.findByIdAndRole(rootId, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(root));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         Associate previous = root;
         for (int i = 2; i <= 9; i++) {
@@ -132,7 +130,6 @@ class TreeExplorerServiceTest {
         LegVolume legVolume = LegVolume.empty(id, cycleId);
 
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(openCycle));
         when(legVolumeRepository.findByAssociateIdAndCycleId(id, cycleId)).thenReturn(Optional.of(legVolume));
         TreeNodeResponse response = service.subtree(id);
@@ -153,7 +150,6 @@ class TreeExplorerServiceTest {
             new BigDecimal("100000"), new BigDecimal("1000000"), BigDecimal.ZERO, BigDecimal.ZERO);
 
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(openCycle));
         when(legVolumeRepository.findByAssociateIdAndCycleId(id, cycleId)).thenReturn(Optional.of(skewed));
         TreeNodeResponse response = service.subtree(id);
@@ -173,7 +169,6 @@ class TreeExplorerServiceTest {
             new BigDecimal("100000"), new BigDecimal("900000"), BigDecimal.ZERO, BigDecimal.ZERO);
 
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(openCycle));
         when(legVolumeRepository.findByAssociateIdAndCycleId(id, cycleId)).thenReturn(Optional.of(balanced));
         TreeNodeResponse response = service.subtree(id);
@@ -187,7 +182,6 @@ class TreeExplorerServiceTest {
         Associate associate = newAssociate(id, "VP00001", Instant.now().minus(91, ChronoUnit.DAYS));
 
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(associate));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(rank));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         TreeNodeResponse response = service.subtree(id);
 

@@ -9,25 +9,25 @@ describe('TreeExplorerComponent', () => {
   let httpMock: HttpTestingController;
 
   const rootNode = {
-    id: 'a1', userId: 'VP00001', name: 'Root', rankName: null, kycStatus: 'PENDING', position: null,
+    id: 'a1', userId: 'VP00001', name: 'Root', designation: null, kycStatus: 'PENDING', position: null,
     leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
   };
 
   const companyRoot: TreeNode = {
-    id: 'admin', userId: 'admin', name: 'Administrator', rankName: null, kycStatus: 'VERIFIED', position: null,
+    id: 'admin', userId: 'admin', name: 'Administrator', designation: null, kycStatus: 'VERIFIED', position: null,
     leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
   };
 
   const nestedTree: TreeNode = {
-    id: 'a1', userId: 'VP00001', name: 'Root', rankName: null, kycStatus: 'PENDING', position: null,
+    id: 'a1', userId: 'VP00001', name: 'Root', designation: null, kycStatus: 'PENDING', position: null,
     leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false,
     children: [
       {
-        id: 'a2', userId: 'VP00002', name: 'Child', rankName: null, kycStatus: 'PENDING', position: 'L',
+        id: 'a2', userId: 'VP00002', name: 'Child', designation: null, kycStatus: 'PENDING', position: 'L',
         leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false,
         children: [
           {
-            id: 'a3', userId: 'VP00003', name: 'Grandchild', rankName: null, kycStatus: 'PENDING', position: 'L',
+            id: 'a3', userId: 'VP00003', name: 'Grandchild', designation: null, kycStatus: 'PENDING', position: 'L',
             leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false,
             children: []
           }

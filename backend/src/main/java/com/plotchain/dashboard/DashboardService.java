@@ -11,12 +11,11 @@ import com.plotchain.compensation.RoyaltyBonusRateRepository;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
+import com.plotchain.income.DesignationService;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntryRepository;
 import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
-import com.plotchain.rank.RankTier;
-import com.plotchain.rank.RankTierRepository;
 import com.plotchain.sales.SaleRepository;
 import com.plotchain.sales.SaleStatus;
 import com.plotchain.wallet.Wallet;
@@ -38,7 +37,7 @@ import java.util.UUID;
 public class DashboardService {
 
     private final AssociateRepository associateRepository;
-    private final RankTierRepository rankTierRepository;
+    private final DesignationService designationService;
     private final CycleRepository cycleRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
     private final LegVolumeRepository legVolumeRepository;
@@ -49,7 +48,7 @@ public class DashboardService {
 
     public DashboardService(
         AssociateRepository associateRepository,
-        RankTierRepository rankTierRepository,
+        DesignationService designationService,
         CycleRepository cycleRepository,
         LedgerEntryRepository ledgerEntryRepository,
         LegVolumeRepository legVolumeRepository,
@@ -59,7 +58,7 @@ public class DashboardService {
         SaleRepository saleRepository
     ) {
         this.associateRepository = associateRepository;
-        this.rankTierRepository = rankTierRepository;
+        this.designationService = designationService;
         this.cycleRepository = cycleRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.legVolumeRepository = legVolumeRepository;
@@ -153,12 +152,6 @@ public class DashboardService {
         Wallet wallet = walletRepository.findById(associateId)
             .orElseGet(() -> Wallet.zero(associateId));
 
-        List<RankTier> ranks = rankTierRepository.findAllByOrderByRankOrder();
-        RankTier currentRank = ranks.stream()
-            .filter(r -> r.getId().equals(associate.getRankId()))
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException("Associate's rank not found in rank table: " + associate.getRankId()));
-
         long totalDownline = associateRepository.countDownline(associateId);
         long directCount = associateRepository.countByParentId(associateId);
         long leftAssociateCount = associateRepository.countDownlineByPosition(associateId, "L");
@@ -185,8 +178,8 @@ public class DashboardService {
 
         return new DashboardResponse(
             new DashboardResponse.AssociateSummary(
-                associate.getUserId(), associate.getName(), currentRank.getName(),
-                associate.getPhone(), associate.getJoinedAt(), associate.getRankChangedAt(),
+                associate.getUserId(), associate.getName(), designationService.designationOf(associateId),
+                associate.getPhone(), associate.getJoinedAt(),
                 sponsor.map(Associate::getUserId).orElse(null), sponsor.map(Associate::getName).orElse(null),
                 associate.getPreviousLoginAt()),
             associate.getKycStatus() != KycStatus.VERIFIED,

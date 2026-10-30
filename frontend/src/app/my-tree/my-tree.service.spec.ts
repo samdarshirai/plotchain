@@ -20,7 +20,7 @@ describe('MyTreeService', () => {
 
   it('fetches the caller\'s own subtree with no associate id in the request', () => {
     const mockNode: TreeNode = {
-      id: 'a1', userId: 'VP00001', name: 'Self', rankName: null, kycStatus: 'PENDING', position: null,
+      id: 'a1', userId: 'VP00001', name: 'Self', designation: null, kycStatus: 'PENDING', position: null,
       leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
     };
 

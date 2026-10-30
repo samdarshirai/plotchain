@@ -1,5 +1,6 @@
 package com.plotchain.dashboard;
 
+import com.plotchain.income.DesignationService;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
@@ -16,8 +17,6 @@ import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntryRepository;
 import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
-import com.plotchain.rank.RankTier;
-import com.plotchain.rank.RankTierRepository;
 import com.plotchain.sales.SaleRepository;
 import com.plotchain.sales.SaleStatus;
 import com.plotchain.wallet.Wallet;
@@ -48,7 +47,7 @@ import static org.mockito.Mockito.when;
 class DashboardServiceTest {
 
     @Mock AssociateRepository associateRepository;
-    @Mock RankTierRepository rankTierRepository;
+    @Mock DesignationService designationService;
     @Mock CycleRepository cycleRepository;
     @Mock LedgerEntryRepository ledgerEntryRepository;
     @Mock LegVolumeRepository legVolumeRepository;
@@ -62,7 +61,7 @@ class DashboardServiceTest {
     @BeforeEach
     void setUp() {
         dashboardService = new DashboardService(
-            associateRepository, rankTierRepository, cycleRepository,
+            associateRepository, designationService, cycleRepository,
             ledgerEntryRepository, legVolumeRepository, walletRepository,
             compensationPlanVersionRepository, royaltyBonusRateRepository, saleRepository);
     }
@@ -133,8 +132,6 @@ class DashboardServiceTest {
         cycle.setPeriodStart(LocalDate.now().minusDays(5));
         cycle.setPeriodEnd(LocalDate.now().plusDays(10));
 
-        RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, BigDecimal.valueOf(5000));
-
         UUID closedCycleId = UUID.randomUUID();
         Cycle closedCycle = new Cycle();
         closedCycle.setId(closedCycleId);
@@ -166,7 +163,6 @@ class DashboardServiceTest {
             .thenReturn(Optional.of(new RoyaltyBonusRate(UUID.randomUUID(), planVersion.getId(), BigDecimal.ZERO, new BigDecimal("3.00"))));
 
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
 
         stubUnconditionalCalls(associateId);
         // Single closed-cycle row -> it's its own first row, so incoming carry is 0 and lifetime
@@ -195,13 +191,13 @@ class DashboardServiceTest {
         when(ledgerEntryRepository.sumNetAmountByAssociateAndType(associateId, IncomeType.MATCHING)).thenReturn(new BigDecimal("126000"));
         when(ledgerEntryRepository.sumNetAmountByAssociateAndType(associateId, IncomeType.SPONSOR_MATCHING)).thenReturn(BigDecimal.ZERO);
 
+        when(designationService.designationOf(associateId)).thenReturn("Sales Manager");
         DashboardResponse response = dashboardService.getDashboard(associateId);
 
         assertThat(response.kycPendingBannerVisible()).isTrue();
         assertThat(response.associate().associateId()).isEqualTo("SDI384818");
         assertThat(response.associate().name()).isEqualTo("Asha Kumar");
-        assertThat(response.associate().rank()).isEqualTo("Sales Associate");
-        assertThat(response.associate().rankChangedAt()).isEqualTo(rankChangedAt);
+        assertThat(response.associate().designation()).isEqualTo("Sales Manager");
         assertThat(response.associate().lastLoginAt()).isEqualTo(lastLoginAt);
         assertThat(response.associate().sponsorAssociateId()).isEqualTo("SDI100001");
         assertThat(response.associate().sponsorName()).isEqualTo("Head Office Sponsor");
@@ -262,8 +258,6 @@ class DashboardServiceTest {
         cycle.setPeriodStart(LocalDate.now().minusDays(5));
         cycle.setPeriodEnd(LocalDate.now().plusDays(10));
 
-        RankTier currentRank = new RankTier(currentRankId, "Sales Associate", 1, BigDecimal.valueOf(5000));
-
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(cycle));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
@@ -273,7 +267,6 @@ class DashboardServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
             .thenReturn(Optional.of(compensationPlanVersion(new BigDecimal("7.00"))));
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(currentRank));
         when(saleRepository.countByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(0L);
         when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
         when(cycleRepository.countByPeriodStartLessThanEqual(cycle.getPeriodStart())).thenReturn(1L);

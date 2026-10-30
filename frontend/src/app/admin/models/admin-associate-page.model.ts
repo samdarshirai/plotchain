@@ -9,7 +9,6 @@ export interface AdminAssociatePage {
 
 export interface AdminAssociateFilters {
   search?: string;
-  rank?: string;
   kycStatus?: string;
   excludeKycStatus?: string;
   status?: string;

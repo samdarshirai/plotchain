@@ -8,10 +8,9 @@ import com.plotchain.associate.AssociateStatus;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
+import com.plotchain.income.DesignationService;
 import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
-import com.plotchain.rank.RankTier;
-import com.plotchain.rank.RankTierRepository;
 import com.plotchain.sales.SaleRepository;
 import com.plotchain.sales.SaleStatus;
 import org.springframework.stereotype.Service;
@@ -37,20 +36,20 @@ public class TreeExplorerService {
     private static final UUID FOUNDING_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     private final AssociateRepository associateRepository;
-    private final RankTierRepository rankTierRepository;
+    private final DesignationService designationService;
     private final CycleRepository cycleRepository;
     private final LegVolumeRepository legVolumeRepository;
     private final SaleRepository saleRepository;
 
     public TreeExplorerService(
         AssociateRepository associateRepository,
-        RankTierRepository rankTierRepository,
+        DesignationService designationService,
         CycleRepository cycleRepository,
         LegVolumeRepository legVolumeRepository,
         SaleRepository saleRepository
     ) {
         this.associateRepository = associateRepository;
-        this.rankTierRepository = rankTierRepository;
+        this.designationService = designationService;
         this.cycleRepository = cycleRepository;
         this.legVolumeRepository = legVolumeRepository;
         this.saleRepository = saleRepository;
@@ -102,15 +101,14 @@ public class TreeExplorerService {
     }
 
     private TreeNodeResponse buildFrom(Associate root) {
-        Map<UUID, RankTier> ranksById = rankTierRepository.findAllByOrderByRankOrder().stream()
-            .collect(Collectors.toMap(RankTier::getId, r -> r));
+        Map<UUID, String> designations = designationService.designationsOf(associateRepository.findSelfAndDownline(root.getId()));
         // leg_volume rows are written only at cycle CLOSE (CycleService#rollUpSubtree), keyed to
         // the cycle being closed -- the currently OPEN cycle never has a row of its own, so this
         // lookup was a structural no-op that always fell through to zero (same bug already fixed
         // in DashboardService, see docs/superpowers/plans/2026-08-18-dashboard-leg-volume-fixes.md).
         // Reading the last CLOSED cycle instead is "current standing as of the last close."
         Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
-        return buildNode(root, ranksById, latestClosedCycle);
+        return buildNode(root, designations, latestClosedCycle);
     }
 
     public TreeSearchResponse search(String userId) {
@@ -162,18 +160,17 @@ public class TreeExplorerService {
         return nodeDetails(targetId);
     }
 
-    private TreeNodeResponse buildNode(Associate a, Map<UUID, RankTier> ranksById,
+    private TreeNodeResponse buildNode(Associate a, Map<UUID, String> designations,
                                         Optional<Cycle> latestClosedCycle) {
         BigDecimal[] legs = legVolumesFor(a.getId(), latestClosedCycle);
         // ponytail: 2 queries per node (children + leg volume); batch-load the subtree via
         // the recursive CTE if trees reach thousands of nodes.
         List<TreeNodeResponse> children = associateRepository.findByParentId(a.getId()).stream()
-            .map(child -> buildNode(child, ranksById, latestClosedCycle))
+            .map(child -> buildNode(child, designations, latestClosedCycle))
             .toList();
         long directDownlineCount = children.size();
-        RankTier rank = ranksById.get(a.getRankId());
         return new TreeNodeResponse(
-            a.getId(), a.getUserId(), a.getName(), rank == null ? null : rank.getName(),
+            a.getId(), a.getUserId(), a.getName(), designations.get(a.getId()),
             a.getKycStatus(), a.getPosition(), legs[0], legs[1],
             isSkewed(legs[0], legs[1]), isStagnant(a, directDownlineCount), children);
     }

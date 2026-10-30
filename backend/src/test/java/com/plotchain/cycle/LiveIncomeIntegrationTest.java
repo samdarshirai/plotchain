@@ -4,6 +4,9 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.associate.KycStatus;
+import com.plotchain.compensation.RewardTier;
+import com.plotchain.compensation.RewardTierRepository;
+import com.plotchain.income.DesignationService;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntry;
 import com.plotchain.income.LedgerEntryRepository;
@@ -48,6 +51,8 @@ class LiveIncomeIntegrationTest {
     @Autowired ProjectRepository projectRepository;
     @Autowired PlotRepository plotRepository;
     @Autowired LegVolumeRepository legVolumeRepository;
+    @Autowired RewardTierRepository rewardTierRepository;
+    @Autowired DesignationService designationService;
 
     // V13__seed_default_rank_tiers.sql's lowest-order seeded rank -- chk_associate_rank_required
     // (V4__user_id_login_and_admin_roles.sql) requires rank_id NOT NULL for role = 'ASSOCIATE',
@@ -62,6 +67,10 @@ class LiveIncomeIntegrationTest {
     private UUID rightId;
     private UUID projectId;
     private UUID plotId;
+    private UUID rewardTierId;
+
+    // V8__compensation_plan.sql's genesis compensation_plan_version row -- reward_tier FKs to it.
+    private static final UUID PLAN_VERSION_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @AfterEach
     void cleanUp() {
@@ -85,6 +94,9 @@ class LiveIncomeIntegrationTest {
             if (id != null) {
                 associateRepository.deleteById(id);
             }
+        }
+        if (rewardTierId != null) {
+            rewardTierRepository.deleteById(rewardTierId);
         }
         if (plotId != null) {
             plotRepository.deleteById(plotId);
@@ -259,5 +271,32 @@ class LiveIncomeIntegrationTest {
 
         assertThat(entries(sponseeId, IncomeType.MATCHING)).singleElement()
             .satisfies(e -> assertThat(e.getId()).isEqualTo(finalId));
+    }
+
+    @Test
+    void crossingARewardTierMidCyclePromotesTheDesignationImmediatelyAndAVoidRevertsIt() {
+        seedTree();
+        RewardTier tier = new RewardTier(UUID.randomUUID(), PLAN_VERSION_ID, 1,
+            new BigDecimal("100"), new BigDecimal("50"), "Mobile", "Sales Manager");
+        rewardTierRepository.saveAndFlush(tier);
+        rewardTierId = tier.getId();
+        seedSale(leftId, cycleId, plotId, new BigDecimal("200"));
+        UUID rightSale = seedSale(rightId, cycleId, plotId, new BigDecimal("200"));
+        assertThat(designationService.designationOf(sponseeId)).isNull();
+
+        cycleService.refreshLiveIncome(cycleId);
+
+        // min(200, 200) = 200 > tier 1's 100 increment: achieved while the cycle is still OPEN.
+        assertThat(entries(sponseeId, IncomeType.REWARD)).singleElement()
+            .satisfies(e -> assertThat(e.getSourceRef()).isEqualTo(rewardTierId));
+        assertThat(designationService.designationOf(sponseeId)).isEqualTo("Sales Manager");
+
+        Sale voided = saleRepository.findById(rightSale).orElseThrow();
+        voided.setStatus(SaleStatus.VOIDED);
+        saleRepository.saveAndFlush(voided);
+        cycleService.refreshLiveIncome(cycleId);
+
+        assertThat(entries(sponseeId, IncomeType.REWARD)).isEmpty();
+        assertThat(designationService.designationOf(sponseeId)).isNull();
     }
 }

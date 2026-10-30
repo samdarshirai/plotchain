@@ -1,5 +1,6 @@
 package com.plotchain.associate;
 
+import com.plotchain.income.DesignationService;
 import com.plotchain.auth.JwtService;
 import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
@@ -34,6 +35,7 @@ class AssociateIdCardControllerTest {
 
     @MockBean AssociateRepository associateRepository;
     @MockBean RankTierRepository rankTierRepository;
+    @MockBean DesignationService designationService;
 
     private String tokenFor(UUID associateId) {
         Associate associate = new Associate();
@@ -54,15 +56,14 @@ class AssociateIdCardControllerTest {
         associate.setName("Priya Nair");
         associate.setRankId(rankId);
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
-        when(rankTierRepository.findById(rankId))
-            .thenReturn(Optional.of(new RankTier(rankId, "Gold Associate", 3, BigDecimal.valueOf(20000))));
+        when(designationService.designationOf(associateId)).thenReturn("Sales Manager");
 
         mockMvc.perform(get("/api/associates/me/id-card")
                 .header("Authorization", "Bearer " + token))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.idNumber").value("VP00042"))
             .andExpect(jsonPath("$.name").value("Priya Nair"))
-            .andExpect(jsonPath("$.rank").value("Gold Associate"))
+            .andExpect(jsonPath("$.designation").value("Sales Manager"))
             .andExpect(jsonPath("$.photoUrl").doesNotExist())
             .andExpect(jsonPath("$.qrPayload").value("VP00042"));
     }

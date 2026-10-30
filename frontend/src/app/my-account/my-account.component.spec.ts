@@ -52,12 +52,12 @@ describe('MyAccountComponent', () => {
     documents: []
   };
   const rankProgress: AssociateRankProgress = {
-    currentRank: 'Silver', currentRankOrder: 1, nextRank: 'Gold',
-    progressPercent: 2, cumulativeMatchedVolume: 0, volumeToNextRank: 100000,
+    designation: 'Sales Manager', nextDesignation: 'Area Manager',
+    progressPercent: 2, cumulativeMatchedVolume: 0, volumeToNext: 100000,
     rewardTiers: []
   };
   const idCard: AssociateIdCard = {
-    idNumber: 'VP00001', name: 'Left Kumar', rank: 'Silver', photoUrl: null, qrPayload: 'VP00001'
+    idNumber: 'VP00001', name: 'Left Kumar', designation: 'Sales Manager', photoUrl: null, qrPayload: 'VP00001'
   };
   const bankDetailsResponse: AssociateBankDetailsResponse = {
     bankName: null, accountHolder: null, accountNumber: null, ifscCode: null, accountType: null, updatedAt: null
@@ -103,7 +103,7 @@ describe('MyAccountComponent', () => {
     init();
     expect(fixture.componentInstance.profile?.name).toBe('Left Kumar');
     expect(fixture.componentInstance.kycStatus?.kycStatus).toBe('VERIFIED');
-    expect(fixture.componentInstance.rankProgress?.currentRank).toBe('Silver');
+    expect(fixture.componentInstance.rankProgress?.designation).toBe('Sales Manager');
   });
 
   it('renders the header identity strip with name, associate ID, joined date, and KYC status', () => {
@@ -151,19 +151,19 @@ describe('MyAccountComponent', () => {
   it('renders the current rank figure, next-rank line, and a progress bar width from rank progress', () => {
     init();
     const rankCard: HTMLElement = fixture.nativeElement.querySelector('.profile-hero__rank-plaque');
-    expect(rankCard.textContent).toContain('Silver');
-    expect(rankCard.textContent).toContain('Gold');
+    expect(rankCard.textContent).toContain('Sales Manager');
+    expect(rankCard.textContent).toContain('Area Manager');
     const fill: HTMLElement = fixture.nativeElement.querySelector('.rank-card__bar-fill');
     expect(fill.style.width).toBe('2%');
   });
 
-  it('renders a max-rank message instead of a next-rank line when nextRank is null', () => {
+  it('renders a max-rank message instead of a next-rank line when nextDesignation is null', () => {
     fixture = TestBed.createComponent(MyAccountComponent);
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
     httpMock.expectOne('/api/associates/me/profile').flush(profileResponse);
     httpMock.expectOne('/api/associates/me/kyc').flush(kycResponse);
-    httpMock.expectOne('/api/associates/me/rank-progress').flush({ ...rankProgress, nextRank: null, progressPercent: 100 });
+    httpMock.expectOne('/api/associates/me/rank-progress').flush({ ...rankProgress, nextDesignation: null, progressPercent: 100 });
     httpMock.expectOne('/api/associates/me/id-card').flush(idCard);
     httpMock.expectOne('/api/company/profile/letterhead').flush(companyLetterhead);
     httpMock.expectOne('/api/associates/me/nominee').flush(nomineeResponse);
