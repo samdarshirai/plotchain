@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
+import { BrandButtonComponent } from '../../shared/components/brand-button/brand-button.component';
 import { NewAssociatePanelComponent, PresetParent } from '../new-associate-panel/new-associate-panel.component';
 import { TreeExplorerService } from './tree-explorer.service';
 import { TreeNode } from '../models/tree-node.model';
@@ -20,7 +21,7 @@ const CLICK_MOVE_PX = 5;
 @Component({
   selector: 'app-tree-explorer',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, NewAssociatePanelComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, BrandButtonComponent, NewAssociatePanelComponent],
   template: `
     <div class="tree-explorer card">
       <div class="tree-explorer__intro">
@@ -39,6 +40,14 @@ const CLICK_MOVE_PX = 5;
           />
           <button type="button" (click)="onSearch()">{{ 'admin.treeExplorer.searchAction' | translate }}</button>
         </div>
+
+        <app-brand-button variant="ghost" *ngIf="rootHistory.length" (clicked)="goBack()">
+          {{ 'admin.treeExplorer.backLabel' | translate }}
+        </app-brand-button>
+
+        <app-brand-button variant="ghost" *ngIf="homeId && root?.id !== homeId" (clicked)="goToMyTree()">
+          {{ 'admin.treeExplorer.myTreeLabel' | translate }}
+        </app-brand-button>
 
         <div
           class="tree-explorer__stats-pill"
@@ -253,6 +262,11 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
   // that slot without guessing which endpoint/depth is "current".
   private reload: (() => void) | null = null;
 
+  // Company root id (the default view) and the ids of previous roots, most recent last, so Back
+  // can step up one re-root at a time and My Tree can jump straight home.
+  homeId: string | null = null;
+  rootHistory: string[] = [];
+
   private _root: TreeNode | null = null;
   get root(): TreeNode | null {
     return this._root;
@@ -310,6 +324,7 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
     this.treeExplorerService.companyTree().subscribe({
       next: node => {
         this.root = node;
+        this.homeId = node.id;
         // The root setter marks node.id as the highlighted node, which paints the
         // "search result" tag. That tag is meaningless for the default root -- clear it.
         this.highlightedNodeId = null;
@@ -373,9 +388,7 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
     this.loadError = false;
     this.treeExplorerService.search(this.searchQuery).subscribe({
       next: result => {
-        const target = result.ancestorPath[result.ancestorPath.length - 1];
-        this.reload = () => this.loadSubtree(target.id);
-        this.loadSubtree(target.id);
+        this.navigateTo(result.ancestorPath[result.ancestorPath.length - 1].id);
       },
       error: () => {
         this.root = null;
@@ -389,8 +402,37 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
     this.searchQuery = entry.data.userId;
     this.notFound = false;
     this.loadError = false;
-    this.reload = () => this.loadSubtree(entry.id);
-    this.loadSubtree(entry.id);
+    this.navigateTo(entry.id);
+  }
+
+  goBack(): void {
+    const id = this.rootHistory.pop();
+    if (!id) return;
+    this.searchQuery = '';
+    this.notFound = false;
+    this.loadError = false;
+    if (id === this.homeId) {
+      this.reload = () => this.loadCompanyTree();
+      this.loadCompanyTree();
+    } else {
+      this.reload = () => this.loadSubtree(id);
+      this.loadSubtree(id);
+    }
+  }
+
+  goToMyTree(): void {
+    this.rootHistory = [];
+    this.searchQuery = '';
+    this.notFound = false;
+    this.loadError = false;
+    this.reload = () => this.loadCompanyTree();
+    this.loadCompanyTree();
+  }
+
+  private navigateTo(associateId: string): void {
+    if (this.root && this.root.id !== associateId) this.rootHistory.push(this.root.id);
+    this.reload = () => this.loadSubtree(associateId);
+    this.loadSubtree(associateId);
   }
 
   private loadSubtree(associateId: string): void {

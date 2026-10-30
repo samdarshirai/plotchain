@@ -43,6 +43,10 @@ const HOVER_DEBOUNCE_MS = 150;
           <button type="button" (click)="onSearch()">{{ 'myTree.searchAction' | translate }}</button>
         </div>
 
+        <app-brand-button variant="ghost" *ngIf="rootHistory.length" (clicked)="goBack()">
+          {{ 'myTree.backLabel' | translate }}
+        </app-brand-button>
+
         <app-brand-button variant="ghost" *ngIf="root?.id !== meId" (clicked)="resetToSelf()">
           {{ 'myTree.resetLabel' | translate }}
         </app-brand-button>
@@ -230,6 +234,8 @@ export class MyTreeComponent implements OnInit, OnDestroy {
   meId: string | null = null;
   isPanning = false;
   hintDismissed = false;
+  // Ids of previous roots, most recent last, so Back can step up one re-root at a time.
+  rootHistory: string[] = [];
 
   hoveredNodeId: string | null = null;
   hoveredDetails: TreeNodeDetails | null = null;
@@ -393,7 +399,7 @@ export class MyTreeComponent implements OnInit, OnDestroy {
     this.notFound = false;
     this.loadError = false;
     this.myTreeService.search(this.searchQuery).subscribe({
-      next: result => this.loadSubtree(result.ancestorPath[result.ancestorPath.length - 1].id),
+      next: result => this.navigateTo(result.ancestorPath[result.ancestorPath.length - 1].id),
       error: () => {
         this.notFound = true;
       }
@@ -403,7 +409,22 @@ export class MyTreeComponent implements OnInit, OnDestroy {
   onCardClick(node: TreeNode): void {
     this.searchQuery = node.userId;
     this.notFound = false;
-    this.loadSubtree(node.id);
+    this.navigateTo(node.id);
+  }
+
+  goBack(): void {
+    const id = this.rootHistory.pop();
+    if (!id) return;
+    this.searchQuery = '';
+    this.notFound = false;
+    this.loadError = false;
+    if (id === this.meId) this.loadMyTree();
+    else this.loadSubtree(id);
+  }
+
+  private navigateTo(associateId: string): void {
+    if (this.root && this.root.id !== associateId) this.rootHistory.push(this.root.id);
+    this.loadSubtree(associateId);
   }
 
   // Entry point from the raw pointerup tap-detection in attachCanvasListeners (see tapStart) --
@@ -419,6 +440,7 @@ export class MyTreeComponent implements OnInit, OnDestroy {
   resetToSelf(): void {
     this.searchQuery = '';
     this.notFound = false;
+    this.rootHistory = [];
     this.loadMyTree();
   }
 

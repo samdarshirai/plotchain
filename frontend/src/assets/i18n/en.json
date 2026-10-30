@@ -212,7 +212,7 @@
     "subtitle": "Associates under you in the tree."
   },
   "myTree": {
-    "title": "My Tree",
+    "title": "Genealogy",
     "subtitle": "Your own placement and downline — this view is scoped to you only.",
     "loadError": "Something went wrong loading your tree. Please try again.",
     "selfLabel": "You",
@@ -220,6 +220,7 @@
     "searchAction": "Search",
     "notFound": "No associate found in your downline with that name or ID.",
     "resetLabel": "My Tree",
+    "backLabel": "Back",
     "hoverLoading": "Loading…",
     "hoverJoinedLabel": "Joined",
     "hoverLeftRightIdLabel": "Left/Right member Id",
@@ -825,10 +826,12 @@
       "provisionSubmitAction": "Provision Associate"
     },
     "treeExplorer": {
-      "title": "Tree Explorer",
+      "title": "Genealogy",
       "subtitle": "Search an associate to inspect their binary-tree placement, downline, and leg-volume balance.",
       "searchPlaceholder": "Enter Associate ID",
       "searchAction": "Search",
+      "backLabel": "Back",
+      "myTreeLabel": "My Tree",
       "notFound": "No associate found with that ID.",
       "loadError": "Something went wrong loading this associate's tree. Try again.",
       "emptyStateTitle": "No tree loaded yet",
