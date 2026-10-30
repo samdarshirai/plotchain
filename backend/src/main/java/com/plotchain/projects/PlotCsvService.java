@@ -29,7 +29,7 @@ import java.util.UUID;
 public class PlotCsvService {
 
     private static final String HEADER_ROW = "plot_no,plot_type,area_sqft,rate,price,status\n";
-    private static final Set<String> VALID_PLOT_TYPES = Set.of("NORMAL", "CORNER");
+    private static final Set<String> VALID_PLOT_TYPES = Set.of("NORMAL", "CORNER", "PARK_FACING", "ROAD_SIDE", "CORNER_PARK_FACING", "CORNER_ROAD_SIDE");
     private static final Set<String> VALID_STATUSES = Set.of("AVAILABLE", "BOOKED", "SOLD");
 
     private final PlotRepository plotRepository;
@@ -107,7 +107,7 @@ public class PlotCsvService {
 
             String plotType = row.get("plot_type");
             if (plotType == null || !VALID_PLOT_TYPES.contains(plotType)) {
-                errors.add(new CsvRowError(rowNumber, "plot_type", "plot_type must be NORMAL or CORNER"));
+                errors.add(new CsvRowError(rowNumber, "plot_type", "plot_type must be NORMAL, CORNER, PARK_FACING, ROAD_SIDE, CORNER_PARK_FACING or CORNER_ROAD_SIDE"));
             }
 
             validatePositiveDecimal(row, "area_sqft", rowNumber, errors);

@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 // of validating the string shape here and resolving it to an enum in the service.
 public record PlotRequest(
     @NotBlank String plotNo,
-    @NotBlank @Pattern(regexp = "NORMAL|CORNER") String plotType,
+    @NotBlank @Pattern(regexp = "NORMAL|CORNER|PARK_FACING|ROAD_SIDE|CORNER_PARK_FACING|CORNER_ROAD_SIDE") String plotType,
     @NotNull @DecimalMin("0.01") BigDecimal areaSqft,
     @NotNull @DecimalMin("0.01") BigDecimal rate,
     @NotNull @DecimalMin("0.01") BigDecimal price,

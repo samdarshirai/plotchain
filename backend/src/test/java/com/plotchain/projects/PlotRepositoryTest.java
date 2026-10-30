@@ -101,4 +101,27 @@ class PlotRepositoryTest {
 
         assertThat(result).extracting(Plot::getPlotNo).containsExactlyInAnyOrder("A-101", "A-102");
     }
+
+    @Test
+    void savesACornerParkFacingPlot() {
+        Project project = persistProject();
+        Plot plot = new Plot(UUID.randomUUID(), project.getId(), "A-201", PlotType.CORNER_PARK_FACING,
+            new BigDecimal("1200.00"), new BigDecimal("500.00"), new BigDecimal("600000.00"), PlotStatus.AVAILABLE);
+        plotRepository.save(plot);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(plotRepository.findById(plot.getId()).orElseThrow().getPlotType()).isEqualTo(PlotType.CORNER_PARK_FACING);
+    }
+
+    @Test
+    void newProjectsDefaultParkAndRoadExtraPercentToFive() {
+        Project project = persistProject();
+        entityManager.flush();
+        entityManager.clear();
+
+        Project reloaded = projectRepository.findById(project.getId()).orElseThrow();
+        assertThat(reloaded.getParkFacingExtraPercent()).isEqualByComparingTo("5");
+        assertThat(reloaded.getRoadSideExtraPercent()).isEqualByComparingTo("5");
+    }
 }
