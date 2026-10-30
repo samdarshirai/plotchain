@@ -147,12 +147,103 @@ public class CycleService {
         cycle.setStatus(CycleStatus.CALCULATING);
         cycleRepository.save(cycle);
 
+        // Live income rows written by refreshLiveIncome during the cycle are replaced by the
+        // final run below (same math, plus the carry-forward/rank/reward-carry side effects).
+        List<LedgerEntry> provisional = clearProvisionalIncome(cycle.getId());
+        List<LegVolume> legVolumes = computeIncome(cycle, true);
+        restoreFulfilment(cycle.getId(), provisional);
+
+        // Flow step 8. Opens the next cycle starting the day after THIS close (m9 fix) rather
+        // than reusing getOrOpenCurrent()'s bucket-for-today logic, which would hand the new
+        // cycle the same date range as the one just closed when closing early (before the
+        // current bucket's natural end) -- see openCycleStartingAfterClose's comment.
+        cycle.setStatus(CycleStatus.CLOSED);
+        cycleRepository.save(cycle);
+        Cycle nextCycle = openCycleStartingAfterClose(LocalDate.now());
+
+        return new CycleCloseResponse(cycle.getId(), cycle.getStatus(), legVolumes.size(), nextCycle.getId());
+    }
+
+    // Live income: called after every booking payment and every void (SaleService), in the
+    // caller's transaction, so MATCHING / SPONSOR_MATCHING / ROYALTY / REWARD show up for the open
+    // cycle immediately instead of only at close. Replaces this cycle's previous provisional rows
+    // with a fresh run of the same math close() uses, minus close's persistent side effects
+    // (leg-volume rows, carry-forward, cumulativeMatchedVolume, ranks, reward carry). No-op once
+    // the cycle has left OPEN. Row lock serializes concurrent payments and a concurrent close().
+    // ponytail: full-tree recompute per payment, O(associates) queries; switch to ancestor-only
+    // incremental updates if payment recording gets slow.
+    @Transactional
+    public void refreshLiveIncome(UUID cycleId) {
+        Cycle cycle = cycleRepository.findByIdForUpdate(cycleId).orElse(null);
+        if (cycle == null || cycle.getStatus() != CycleStatus.OPEN) {
+            return;
+        }
+        List<LedgerEntry> provisional = clearProvisionalIncome(cycleId);
+        computeIncome(cycle, false);
+        restoreFulfilment(cycleId, provisional);
+    }
+
+    private static final List<IncomeType> CYCLE_DERIVED_INCOME_TYPES = List.of(
+        IncomeType.MATCHING, IncomeType.SPONSOR_MATCHING, IncomeType.ROYALTY, IncomeType.REWARD);
+
+    // Deletes this cycle's not-yet-wallet-PAID cycle-derived rows, returning them so
+    // restoreFulfilment can carry an admin's Payout Approval date/remark onto their replacements.
+    private List<LedgerEntry> clearProvisionalIncome(UUID cycleId) {
+        List<LedgerEntry> provisional = ledgerEntryRepository.findRecomputable(cycleId, CYCLE_DERIVED_INCOME_TYPES);
+        if (!provisional.isEmpty()) {
+            ledgerEntryRepository.deleteRecomputable(cycleId, CYCLE_DERIVED_INCOME_TYPES);
+        }
+        return provisional;
+    }
+
+    private void restoreFulfilment(UUID cycleId, List<LedgerEntry> previous) {
+        if (previous.stream().noneMatch(e -> e.getFulfilledAt() != null)) {
+            return;
+        }
+        Map<String, LedgerEntry> fulfilledByKey = new HashMap<>();
+        for (LedgerEntry e : previous) {
+            if (e.getFulfilledAt() != null) {
+                fulfilledByKey.put(fulfilmentKey(e, previous), e);
+            }
+        }
+        List<LedgerEntry> current = ledgerEntryRepository.findRecomputable(cycleId, CYCLE_DERIVED_INCOME_TYPES);
+        for (LedgerEntry e : current) {
+            LedgerEntry old = fulfilledByKey.get(fulfilmentKey(e, current));
+            if (old != null) {
+                e.setFulfilledAt(old.getFulfilledAt());
+                e.setFulfilmentRemark(old.getFulfilmentRemark());
+                ledgerEntryRepository.save(e);
+            }
+        }
+    }
+
+    // Stable identity of a cycle-derived row across recomputes (ids and leg-volume sourceRefs are
+    // regenerated each run): REWARD by tier, SPONSOR_MATCHING by the sponsee whose MATCHING row it
+    // pays on, the rest are one-per-associate-per-cycle.
+    private String fulfilmentKey(LedgerEntry e, List<LedgerEntry> sameRun) {
+        String discriminator = switch (e.getIncomeType()) {
+            case REWARD -> String.valueOf(e.getSourceRef());
+            case SPONSOR_MATCHING -> sameRun.stream()
+                .filter(m -> m.getId().equals(e.getSourceRef()))
+                .map(m -> String.valueOf(m.getAssociateId()))
+                .findFirst().orElse("");
+            default -> "";
+        };
+        return e.getAssociateId() + "|" + e.getIncomeType() + "|" + discriminator;
+    }
+
+    // Settlement batch flow steps 2-7, shared by close() (finalize = true) and refreshLiveIncome
+    // (finalize = false). Ledger rows are written either way; only a finalizing run persists
+    // leg-volume rows and mutates carry-forward, cumulativeMatchedVolume, ranks, and reward carry.
+    private List<LegVolume> computeIncome(Cycle cycle, boolean finalize) {
         List<Associate> associates = associateRepository.findAll();
         List<Sale> sales = saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED);
 
         // Flow step 2.
         List<LegVolume> legVolumes = rollUpLegVolumes(cycle.getId(), associates, sales);
-        legVolumeRepository.saveAll(legVolumes);
+        if (finalize) {
+            legVolumeRepository.saveAll(legVolumes);
+        }
 
         // Flow step 3 (Decision #10): resolved once per batch run, against cycle.getPeriodStart()
         // -- deliberately not LocalDate.now() -- so a plan version an admin publishes after this
@@ -162,12 +253,14 @@ public class CycleService {
             .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart())
             .orElseThrow(() -> new IllegalStateException(
                 "compensation_plan_version row missing - V8 migration seeds it"));
-        creditMatchingIncome(cycle.getId(), associates, legVolumes, planVersion);
+        creditMatchingIncome(cycle.getId(), associates, legVolumes, planVersion, finalize);
 
         // Flow step 4 (Decision #7): advance rankId for each ASSOCIATE-role associate to the
         // highest RankTier their updated cumulativeMatchedVolume now qualifies for. Never
         // demotes. Skipped for ADMIN and the four staff roles (see advanceRanks' own comment).
-        advanceRanks(associates);
+        if (finalize) {
+            advanceRanks(associates);
+        }
 
         // Flow step 5 (Decision #9): second pass, requires step 3 (creditMatchingIncome) complete
         // tree-wide. One SPONSOR_MATCHING entry per direct sponsee who earned Matching Income this
@@ -196,17 +289,9 @@ public class CycleService {
             matchedVolumeThisCycle.put(legVolume.getAssociateId(),
                 legVolume.getLeftLegVolume().min(legVolume.getRightLegVolume()));
         }
-        creditReward(cycle.getId(), associates, matchedVolumeThisCycle, planVersion);
+        creditReward(cycle.getId(), associates, matchedVolumeThisCycle, planVersion, finalize);
 
-        // Flow step 8. Opens the next cycle starting the day after THIS close (m9 fix) rather
-        // than reusing getOrOpenCurrent()'s bucket-for-today logic, which would hand the new
-        // cycle the same date range as the one just closed when closing early (before the
-        // current bucket's natural end) -- see openCycleStartingAfterClose's comment.
-        cycle.setStatus(CycleStatus.CLOSED);
-        cycleRepository.save(cycle);
-        Cycle nextCycle = openCycleStartingAfterClose(LocalDate.now());
-
-        return new CycleCloseResponse(cycle.getId(), cycle.getStatus(), legVolumes.size(), nextCycle.getId());
+        return legVolumes;
     }
 
     // Decision #4: a single in-memory post-order DFS pass, not N recursive SQL queries. Builds
@@ -342,7 +427,8 @@ public class CycleService {
         UUID cycleId,
         List<Associate> associates,
         List<LegVolume> legVolumes,
-        CompensationPlanVersion planVersion
+        CompensationPlanVersion planVersion,
+        boolean finalize
     ) {
         Map<UUID, Associate> associatesById = new HashMap<>();
         for (Associate associate : associates) {
@@ -383,6 +469,12 @@ public class CycleService {
             entry.setSourceRef(legVolume.getId());
             entry.setCreatedAt(Instant.now());
             ledgerEntryRepository.save(entry);
+
+            // Live (non-finalizing) runs stop here: Associate is a managed entity, so even an
+            // unsaved setter below would be flushed by dirty checking.
+            if (!finalize) {
+                continue;
+            }
 
             // Decision #5: excess on the larger leg carries forward on this SAME row for unit 4's
             // rollup to consume next cycle -- never a new row.
@@ -617,7 +709,8 @@ public class CycleService {
         UUID cycleId,
         List<Associate> associates,
         Map<UUID, BigDecimal> matchedVolumeThisCycle,
-        CompensationPlanVersion planVersion
+        CompensationPlanVersion planVersion,
+        boolean finalize
     ) {
         List<RewardTier> tiers = rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId());
         if (tiers.isEmpty()) {
@@ -669,8 +762,10 @@ public class CycleService {
                 previousThreshold = tier.getVolumeThreshold();
             }
 
-            associate.setRewardVolumeCarriedForward(available);
-            associateRepository.save(associate);
+            if (finalize) {
+                associate.setRewardVolumeCarriedForward(available);
+                associateRepository.save(associate);
+            }
         }
     }
 

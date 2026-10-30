@@ -6,6 +6,7 @@ import com.plotchain.cycle.CycleNotFoundException;
 import com.plotchain.cycle.CyclePayoutStateException;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
+import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntry;
 import com.plotchain.income.LedgerEntryRepository;
 import com.plotchain.income.LedgerEntryStatus;
@@ -13,8 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 // Wallet/withdrawal unit 1 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
@@ -26,6 +29,9 @@ import java.util.UUID;
 // the same atomic creditBalance + per-entry status-flip mechanism, reused unmodified.
 @Service
 public class WalletCreditingService {
+
+    private static final Set<IncomeType> LIVE_INCOME_TYPES = EnumSet.of(
+        IncomeType.MATCHING, IncomeType.SPONSOR_MATCHING, IncomeType.ROYALTY, IncomeType.REWARD);
 
     private final CycleRepository cycleRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
@@ -89,7 +95,14 @@ public class WalletCreditingService {
     // resolve a display name for the audit message.
     @Transactional
     public ReconciliationResult reconcileCarriedForward(UUID associateId, String associateUserId, UUID actorId) {
-        List<LedgerEntry> entries = ledgerEntryRepository.findByAssociateIdAndStatus(associateId, LedgerEntryStatus.CARRIED_FORWARD);
+        // Open-cycle Matching/Sponsor Matching/Royalty/Reward rows are live and provisional
+        // (CycleService.refreshLiveIncome rewrites them on every payment); they're re-gated on KYC
+        // at the next recompute or at close and paid by creditWallets, never swept here.
+        List<LedgerEntry> entries = ledgerEntryRepository.findByAssociateIdAndStatus(associateId, LedgerEntryStatus.CARRIED_FORWARD)
+            .stream()
+            .filter(e -> !LIVE_INCOME_TYPES.contains(e.getIncomeType())
+                || cycleRepository.findById(e.getCycleId()).map(c -> c.getStatus() != CycleStatus.OPEN).orElse(true))
+            .toList();
         BigDecimal totalCredited = creditEntries(entries);
 
         // Zero CARRIED_FORWARD entries is the common case -- most associates verify KYC before
