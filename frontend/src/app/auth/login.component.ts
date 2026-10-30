@@ -2,7 +2,7 @@ import { apiUrl } from '../core/api/api-url';
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { take } from 'rxjs';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -19,11 +19,13 @@ import { FormIssue, collectIssues } from '../shared/validation/validation';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, BrandButtonComponent, FieldErrorComponent, ErrorSummaryComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, TranslateModule, BrandButtonComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
-    <div class="login-page" [class.login-page--preview]="previewMode">
+    <div class="login-page" [class.login-page--preview]="previewMode" [class.login-page--admin]="realm === 'admin'">
       <aside class="login-brand">
-        <img *ngIf="showSquareLogo" class="login-logo" [src]="logoSrc" alt="" />
+        <span *ngIf="showSquareLogo" class="login-logo-frame">
+          <img class="login-logo" [src]="logoSrc" alt="" />
+        </span>
         <p *ngIf="showTagline" class="login-tagline">{{ resolvedTagline }}</p>
         <div class="login-wordmark">
           <p class="login-wordmark__name">
@@ -37,6 +39,9 @@ import { FormIssue, collectIssues } from '../shared/validation/validation';
 
       <div class="login-panel">
         <div class="login-lang-row" *ngIf="!previewMode">
+          <span class="login-admin-badge" *ngIf="realm === 'admin'">
+            <span class="material-symbols-outlined">shield_person</span>{{ 'auth.adminConsole' | translate }}
+          </span>
           <select class="login-lang" [value]="currentLang" (change)="onLanguageChange($event)">
             <option value="en">English</option>
             <option value="hi">हिन्दी</option>
@@ -44,19 +49,23 @@ import { FormIssue, collectIssues } from '../shared/validation/validation';
         </div>
 
         <form class="login-form" [formGroup]="form" [class.was-submitted]="submitted" (ngSubmit)="onSubmit()" novalidate>
+          <p class="login-eyebrow" *ngIf="realm === 'admin'">
+            <span class="login-eyebrow__rule"></span>{{ 'auth.adminEyebrow' | translate }}<span class="login-eyebrow__rule"></span>
+          </p>
           <h1 class="login-heading">{{ 'auth.heading' | translate }}</h1>
           <p class="login-subheading">{{ (realm === 'admin' ? 'auth.adminSubheading' : 'auth.subheading') | translate }}</p>
 
           <app-error-summary [issues]="issues"></app-error-summary>
+          <ng-container *ngIf="realm === 'admin'" [ngTemplateOutlet]="loginErrors"></ng-container>
           <label>
             {{ (realm === 'admin' ? 'auth.adminUserIdLabel' : 'auth.userIdLabel') | translate }}
-            <input type="text" autocomplete="username" formControlName="userId" />
+            <input type="text" autocomplete="username" formControlName="userId" [class.login-input--error]="error" />
             <app-field-error [control]="form.get('userId')" [label]="userIdName" [submitted]="submitted"></app-field-error>
           </label>
           <label>
             {{ 'auth.passwordLabel' | translate }}
             <span class="login-password-field">
-              <input [type]="showPassword ? 'text' : 'password'" formControlName="password" />
+              <input [type]="showPassword ? 'text' : 'password'" formControlName="password" [class.login-input--error]="error" />
               <button
                 type="button"
                 class="login-password-toggle"
@@ -81,14 +90,30 @@ import { FormIssue, collectIssues } from '../shared/validation/validation';
             {{ 'auth.loginButton' | translate }}
           </app-brand-button>
 
-          <div class="login-error" *ngIf="error">{{ 'auth.loginError' | translate }}</div>
-          <div class="login-error" *ngIf="platformNotLive">{{ 'auth.platformNotLiveError' | translate }}</div>
+          <ng-container *ngIf="realm !== 'admin'" [ngTemplateOutlet]="loginErrors"></ng-container>
+          <ng-template #loginErrors>
+            <div class="login-error" *ngIf="error">
+              <span class="material-symbols-outlined">error</span>{{ 'auth.loginError' | translate }}
+            </div>
+            <div class="login-error" *ngIf="platformNotLive">
+              <span class="material-symbols-outlined">error</span>{{ 'auth.platformNotLiveError' | translate }}
+            </div>
+          </ng-template>
+
+          <p class="login-admin-note" *ngIf="realm === 'admin'">
+            <span class="material-symbols-outlined">lock</span>{{ 'auth.adminSecurityNote' | translate }}
+          </p>
 
           <p class="login-request-access" *ngIf="realm === 'associate'">
             {{ 'auth.newAssociatePrompt' | translate }}
             <a href="#" (click)="$event.preventDefault()">{{ 'auth.requestAccess' | translate }}</a>
           </p>
         </form>
+
+        <div class="login-admin-footer" *ngIf="realm === 'admin' && !previewMode">
+          <span>© {{ year }} {{ 'auth.adminFooterCompany' | translate }}</span>
+          <a routerLink="/login">{{ 'auth.associateSignIn' | translate }}</a>
+        </div>
       </div>
     </div>
   `
@@ -100,6 +125,7 @@ export class LoginComponent implements OnInit {
   private setupService = inject(SetupService);
   private router = inject(Router);
   readonly realm: 'admin' | 'associate' = inject(ActivatedRoute).snapshot.data['realm'] === 'admin' ? 'admin' : 'associate';
+  readonly year = new Date().getFullYear();
   readonly userIdName = this.realm === 'admin' ? 'Admin ID' : 'User ID';
   private brandingBootstrap = inject(BrandingBootstrapService);
   private translate = inject(TranslateService);

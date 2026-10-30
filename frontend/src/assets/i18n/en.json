@@ -703,7 +703,12 @@
   "auth": {
     "heading": "Sign in",
     "subheading": "Welcome back to your associate account.",
-    "adminSubheading": "Welcome back to your admin account.",
+    "adminSubheading": "Manage associates, bookings and payouts.",
+    "adminConsole": "Admin Console",
+    "adminEyebrow": "Administrator Access",
+    "adminSecurityNote": "Admin sign-ins are logged.",
+    "associateSignIn": "Associate sign-in",
+    "adminFooterCompany": "Viraj Acres, Patna",
     "userIdLabel": "Associate ID",
     "adminUserIdLabel": "Admin ID",
     "passwordLabel": "Password",

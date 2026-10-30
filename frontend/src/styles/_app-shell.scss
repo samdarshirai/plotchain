@@ -648,6 +648,324 @@
   }
 }
 
+// The error icon and logo frame only show on the admin variant below; associate /login keeps
+// its plain banner and bare logo.
+.login-error .material-symbols-outlined {
+  display: none;
+}
+
+.login-logo-frame {
+  display: block;
+}
+
+// /admin/login -- the dark "Admin Console" variant (Claude Design "Admin Login.dc.html"): an
+// all-Ink page with the form panel on the left and an Oxblood brand aside on the right.
+.login-page--admin {
+  flex-direction: row-reverse;
+  background: var(--ink);
+  color: var(--surface-page);
+
+  .login-brand {
+    flex: 1 1 320px;
+    max-width: 560px;
+    background: var(--brand-secondary);
+  }
+
+  .login-logo-frame {
+    padding: 5px;
+    border: 1px solid var(--brand-primary);
+    border-radius: 2px;
+  }
+
+  .login-brand .login-logo {
+    width: 148px;
+    height: 148px;
+    padding: 5px;
+    border: 1px solid color-mix(in srgb, var(--brand-primary-bright) 50%, transparent);
+    border-radius: 1px;
+  }
+
+  .login-wordmark__name {
+    color: var(--brand-primary-bright);
+    font-family: var(--font-display);
+    font-size: clamp(14px, 1.6vw, 19px);
+    letter-spacing: 0.24em;
+  }
+
+  .login-wordmark__rule {
+    background: var(--brand-primary-bright);
+  }
+
+  .login-wordmark__caption {
+    margin-top: 0.875rem;
+    color: var(--surface-page);
+    font-family: var(--font-display);
+    font-size: 12px;
+    letter-spacing: 0.3em;
+  }
+
+  .login-panel {
+    flex: 2 1 480px;
+    padding: 40px 48px;
+    background: var(--ink);
+  }
+
+  .login-lang-row {
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .login-admin-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border: 1px solid color-mix(in srgb, var(--brand-primary) 50%, transparent);
+    border-radius: 3px;
+    color: var(--brand-primary-bright);
+    font: 600 10.5px/1 var(--font-sans);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+
+    .material-symbols-outlined {
+      font-size: 15px;
+      color: var(--brand-primary);
+    }
+  }
+
+  .login-lang {
+    height: 40px;
+    padding: 0 12px 0 16px;
+    border-color: #3A3022;
+    color: var(--surface-page);
+    font-size: 14px;
+  }
+
+  .login-lang option {
+    background: var(--ink);
+  }
+
+  .login-form {
+    max-width: 440px;
+    padding: 40px 0;
+    gap: 24px;
+  }
+
+  .login-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 -14px;
+    color: var(--brand-primary);
+    font: 600 10.5px/1 var(--font-sans);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .login-eyebrow__rule {
+    width: 18px;
+    height: 1px;
+    background: var(--brand-primary);
+  }
+
+  .login-heading {
+    margin: 0 0 -14px;
+    color: var(--surface-page);
+    font-size: 44px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+
+  .login-subheading {
+    margin: 0;
+    color: #B9AE98;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .login-form label {
+    margin-bottom: 0;
+    color: var(--surface-page);
+    font-size: 14px;
+  }
+
+  .login-form input[type='text'],
+  .login-form input[type='password'] {
+    height: 52px;
+    margin-top: 8px;
+    padding: 0 16px;
+    background: #231B12;
+    border: 1px solid #3A3022;
+    border-radius: 4px;
+    color: var(--surface-page);
+    font-size: 15px;
+  }
+
+  .login-form input[type='text']:focus,
+  .login-form input[type='password']:focus {
+    outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 22%, transparent);
+  }
+
+  .login-form input.login-input--error {
+    border-color: #B23B32;
+  }
+
+  .login-form .login-password-field input {
+    padding-right: 52px;
+  }
+
+  .login-form .login-password-toggle {
+    color: #B9AE98;
+  }
+
+  .login-form .login-password-toggle:hover {
+    color: var(--surface-page);
+  }
+
+  .login-form .login-password-toggle .material-symbols-outlined {
+    font-size: 21px;
+  }
+
+  .login-row-between {
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 0;
+  }
+
+  .login-form .login-remember {
+    gap: 10px;
+    color: #B9AE98;
+    font-size: 15px;
+    font-weight: 400;
+  }
+
+  .login-remember input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+  }
+
+  .login-forgot {
+    color: var(--brand-primary-bright);
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .login-forgot:hover {
+    color: var(--surface-page);
+  }
+
+  // Gold CTA on the Ink page per the design, not the app-wide Oxblood primary button.
+  .brand-button {
+    height: 54px;
+    border-radius: 4px;
+    background: var(--brand-primary);
+    color: var(--ink);
+    font-size: 17px;
+  }
+
+  .brand-button:hover:not(:disabled) {
+    opacity: 1;
+    background: var(--brand-primary-bright);
+  }
+
+  // Collapse the empty summary host so it doesn't add a phantom 24px flex gap.
+  app-error-summary:empty {
+    display: none;
+  }
+
+  .login-error {
+    display: flex;
+    gap: 10px;
+    margin-top: 0;
+    padding: 12px 14px;
+    background: #2E1713;
+    border-color: #7A2E28;
+    border-radius: 4px;
+    color: #F2C4BE;
+    font-size: 13.5px;
+    line-height: 1.45;
+
+    .material-symbols-outlined {
+      display: inline-block;
+      font-size: 19px;
+      color: #E0645A;
+    }
+  }
+
+  .login-admin-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: #B9AE98;
+    font-size: 13px;
+
+    .material-symbols-outlined {
+      font-size: 17px;
+    }
+  }
+
+  .login-admin-footer {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    color: #8C8170;
+    font-size: 12.5px;
+
+    a {
+      color: #B9AE98;
+    }
+
+    a:hover {
+      color: var(--surface-page);
+    }
+  }
+}
+
+// Mobile: same stack as associate /login -- a compact Oxblood brand band above the form.
+@media (max-width: 767px) {
+  .login-page--admin {
+    flex-direction: column;
+
+    .login-brand {
+      flex: none;
+      max-width: none;
+    }
+
+    .login-brand .login-logo {
+      width: 64px;
+      height: 64px;
+    }
+
+    .login-panel {
+      padding: 1.5rem 1.25rem 2rem;
+    }
+
+    .login-form {
+      padding: 1rem 0 2rem;
+    }
+
+    .login-heading {
+      font-size: 2.25rem;
+    }
+
+    .login-form input[type='text'],
+    .login-form input[type='password'] {
+      font-size: 1rem;
+    }
+
+    .login-lang {
+      font-size: 1rem;
+    }
+  }
+}
+
 // /change-password carries the Viraj Acres "Legacy Living" identity onto a plain authenticated
 // content page (the real global .app-header/.app-nav already wraps this route -- see
 // app.component.html -- so unlike /login there's no bespoke Ink brand aside here, just the
