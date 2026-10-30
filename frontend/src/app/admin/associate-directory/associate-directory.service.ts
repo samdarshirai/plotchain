@@ -35,6 +35,10 @@ export class AssociateDirectoryService {
     return this.http.post<AdminAssociateDetail>(`/api/admin/associates/${id}/suspend`, {});
   }
 
+  recalculate(id: string): Observable<AdminAssociateDetail> {
+    return this.http.post<AdminAssociateDetail>(`/api/admin/associates/${id}/recalculate`, {});
+  }
+
   reactivate(id: string): Observable<AdminAssociateDetail> {
     return this.http.post<AdminAssociateDetail>(`/api/admin/associates/${id}/reactivate`, {});
   }

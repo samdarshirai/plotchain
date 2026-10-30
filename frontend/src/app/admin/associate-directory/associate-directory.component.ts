@@ -110,14 +110,27 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
         <!-- Row click opens the side panel, so the button stops propagation. Rows are built from
              page.associates, so the template's index maps straight back to it. -->
         <ng-template #loginTpl let-i="index">
-          <button
-            *ngIf="canLogin(i)"
-            type="button"
-            class="associate-directory__login"
-            (click)="$event.stopPropagation(); loginAs(page!.associates[i].id, page!.associates[i].name)"
-          >
-            {{ 'admin.associateDirectory.loginAction' | translate }}
-          </button>
+          <div class="associate-directory__row-actions">
+            <button
+              *ngIf="canLogin(i)"
+              type="button"
+              class="associate-directory__login"
+              (click)="$event.stopPropagation(); loginAs(page!.associates[i].id, page!.associates[i].name)"
+            >
+              {{ 'admin.associateDirectory.loginAction' | translate }}
+            </button>
+            <button
+              *ngIf="page?.associates?.[i] as a"
+              type="button"
+              class="associate-directory__recalculate"
+              [disabled]="recalculatingId !== null"
+              (click)="$event.stopPropagation(); recalculate(a.id)"
+            >
+              {{ (recalculatingId === a.id ? 'admin.associateDirectory.recalculatingAction'
+                  : recalculatedId === a.id ? 'admin.associateDirectory.recalculatedAction'
+                  : 'admin.associateDirectory.recalculateAction') | translate }}
+            </button>
+          </div>
         </ng-template>
 
         <div class="associate-directory__pagination" *ngIf="page">
@@ -274,6 +287,8 @@ export class AssociateDirectoryComponent implements OnInit {
   loadError = false;
   actionError = false;
   loginError = false;
+  recalculatingId: string | null = null;
+  recalculatedId: string | null = null;
   directoryColumns: EditableTableColumn[] = [];
   directoryRows: Record<string, string>[] = [];
   private search = '';
@@ -375,6 +390,24 @@ export class AssociateDirectoryComponent implements OnInit {
       error: () => {
         tab?.close();
         this.loginError = true;
+      }
+    });
+  }
+
+  // Re-runs the open cycles' live income server-side (tree-wide), so this associate's matching,
+  // royalty and reward numbers reflect every recorded sale without waiting for a payment or close.
+  recalculate(id: string): void {
+    this.actionError = false;
+    this.recalculatingId = id;
+    this.recalculatedId = null;
+    this.associateDirectoryService.recalculate(id).subscribe({
+      next: () => {
+        this.recalculatingId = null;
+        this.recalculatedId = id;
+      },
+      error: () => {
+        this.recalculatingId = null;
+        this.actionError = true;
       }
     });
   }

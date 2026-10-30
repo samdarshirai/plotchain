@@ -183,6 +183,15 @@ public class CycleService {
         restoreFulfilment(cycleId, provisional);
     }
 
+    // Admin "Recalculate" (Associate Directory): re-runs live income for every OPEN cycle, oldest
+    // first so an older cycle's rewards are awarded before a newer one checks "already awarded".
+    // Tree-wide like every live run -- an associate's numbers depend on their whole downline.
+    @Transactional
+    public void refreshAllOpenCycles() {
+        cycleRepository.findByStatusOrderByPeriodStartAsc(CycleStatus.OPEN)
+            .forEach(c -> refreshLiveIncome(c.getId()));
+    }
+
     private static final List<IncomeType> CYCLE_DERIVED_INCOME_TYPES = List.of(
         IncomeType.MATCHING, IncomeType.SPONSOR_MATCHING, IncomeType.ROYALTY, IncomeType.REWARD);
 

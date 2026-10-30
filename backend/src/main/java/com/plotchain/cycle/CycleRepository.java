@@ -10,11 +10,14 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface CycleRepository extends JpaRepository<Cycle, UUID> {
     Optional<Cycle> findFirstByStatusOrderByPeriodStartDesc(CycleStatus status);
+
+    List<Cycle> findByStatusOrderByPeriodStartAsc(CycleStatus status);
 
     // Admin Stats "Cycles Completed" tile: count of cycles in any of the given statuses
     // (CLOSED + PAID, i.e. finished their lifecycle -- not OPEN/CALCULATING).

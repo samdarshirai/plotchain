@@ -307,6 +307,45 @@ describe('AssociateDirectoryComponent', () => {
     });
   });
 
+  describe('Recalculate button', () => {
+    const row = (id: string, name: string, role: string, status: string) =>
+      ({ id, userId: 'VP' + id, name, designation: null, kycStatus: 'VERIFIED', status, joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: null, position: null, lastActiveAt: null, role });
+
+    function loadRows(): void {
+      fixture.componentInstance.goToPage(0);
+      httpMock.expectOne('/api/admin/associates?page=0&size=20').flush({
+        associates: [row('a1', 'Jane', 'ASSOCIATE', 'ACTIVE')],
+        page: 0, size: 20, totalElements: 1
+      });
+      fixture.detectChanges();
+    }
+    const button = (): HTMLButtonElement => fixture.nativeElement.querySelector('.associate-directory__recalculate');
+
+    it('posts recalculate for that row without opening the side panel, then shows done', () => {
+      loadRows();
+      button().click();
+      fixture.detectChanges();
+      expect(button().disabled).toBeTrue();
+
+      httpMock.expectOne({ method: 'POST', url: '/api/admin/associates/a1/recalculate' }).flush({});
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.panelOpen).toBeFalse();
+      expect(fixture.componentInstance.recalculatedId).toBe('a1');
+      expect(button().disabled).toBeFalse();
+    });
+
+    it('shows the action error when recalculate fails', () => {
+      loadRows();
+      button().click();
+      httpMock.expectOne('/api/admin/associates/a1/recalculate').flush({}, { status: 500, statusText: 'boom' });
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.actionError).toBeTrue();
+      expect(fixture.componentInstance.recalculatingId).toBeNull();
+    });
+  });
+
   describe('New Associate panel wiring', () => {
     it('opens the panel instead of navigating, via the New Associate button', () => {
       fixture.detectChanges();
