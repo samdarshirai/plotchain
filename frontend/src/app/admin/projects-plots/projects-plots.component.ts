@@ -324,14 +324,15 @@ export class ProjectsPlotsComponent implements OnInit {
   get asideOpen(): boolean { return this.aside.kind !== 'none' && !this.modalOpen; }
   get canManage(): boolean { return !this.readOnly && !this.bookMode; }
 
-  // Cached per project: a fresh object every change detection would re-run the form's prefill and wipe a typed Extra %.
-  private extraDefaultsFor: { project: Project | null; value: ExtraDefaults } | null = null;
+  // Same object while the values are unchanged: a fresh one (every change detection, or after a project
+  // reload) would re-run the form's prefill and wipe a typed Extra %.
+  private cachedExtraDefaults: ExtraDefaults = { corner: 10, parkFacing: 5, roadSide: 5 };
   get extraDefaults(): ExtraDefaults {
     const p = this.selectedProject;
-    if (this.extraDefaultsFor?.project !== p) {
-      this.extraDefaultsFor = { project: p, value: { corner: p?.cornerExtraPercent ?? 10, parkFacing: p?.parkFacingExtraPercent ?? 5, roadSide: p?.roadSideExtraPercent ?? 5 } };
-    }
-    return this.extraDefaultsFor.value;
+    const next = { corner: p?.cornerExtraPercent ?? 10, parkFacing: p?.parkFacingExtraPercent ?? 5, roadSide: p?.roadSideExtraPercent ?? 5 };
+    const c = this.cachedExtraDefaults;
+    if (c.corner !== next.corner || c.parkFacing !== next.parkFacing || c.roadSide !== next.roadSide) { this.cachedExtraDefaults = next; }
+    return this.cachedExtraDefaults;
   }
 
   get defaultRate(): number | null {

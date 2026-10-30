@@ -24,7 +24,8 @@ export function plotTypeParts(t: PlotType): { corner: boolean; park: boolean; ro
 // Combination types stack: the defaults of each part are added, not compounded.
 export function defaultExtraPercent(t: PlotType, d: ExtraDefaults): number {
   const p = plotTypeParts(t);
-  return (p.corner ? d.corner : 0) + (p.park ? d.parkFacing : 0) + (p.road ? d.roadSide : 0);
+  const sum = (p.corner ? d.corner : 0) + (p.park ? d.parkFacing : 0) + (p.road ? d.roadSide : 0);
+  return Math.round(sum * 100) / 100; // 2 dp like the DB column; avoids 0.30000000000000004 in the input
 }
 
 export interface PlotBlock {

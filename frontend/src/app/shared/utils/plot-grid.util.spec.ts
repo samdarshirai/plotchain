@@ -59,4 +59,8 @@ describe('plot-grid.util', () => {
     expect(defaultExtraPercent('CORNER', d)).toBe(10);
     expect(defaultExtraPercent('NORMAL', d)).toBe(0);
   });
+
+  it('rounds the stacked default to 2 decimals (no float noise in the input)', () => {
+    expect(defaultExtraPercent('CORNER_PARK_FACING', { corner: 0.1, parkFacing: 0.2, roadSide: 0 })).toBe(0.3);
+  });
 });

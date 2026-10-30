@@ -57,6 +57,17 @@ describe('ProjectsPlotsComponent', () => {
     flush();
   }));
 
+  it('keeps the same extraDefaults object when a reload returns an equal project (no Extra % wipe)', fakeAsync(() => {
+    boot([project({ cornerExtraPercent: 10, parkFacingExtraPercent: 5, roadSideExtraPercent: 5 })]);
+    const c = fixture.componentInstance;
+    const before = c.extraDefaults;
+    c.selectedProject = { ...c.selectedProject! };
+    expect(c.extraDefaults).toBe(before);
+    c.selectedProject = { ...c.selectedProject!, parkFacingExtraPercent: 7 };
+    expect(c.extraDefaults.parkFacing).toBe(7);
+    flush();
+  }));
+
   it('lists projects and loads the first project grid, grouped into blocks in natural order', fakeAsync(() => {
     boot();
     expect(el().textContent).toContain('Green Valley');
