@@ -1,3 +1,10 @@
+/* Hallmark · built: 2026-10-30 · theme: brand (DESIGN.md, locked) · shape: app screen · scope: /admin/dashboard
+ * Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 · weakest: V, the band order is the old screen's (cycle, decisions, sales, network, messages), kept on purpose; the change is composition: one framed seal, everything else open
+ * signature: the Ink payout-liability seal beside the open decision queue
+ * answered: DESIGN.md SS3 flanking-rule caps replaced by sentence-case headings with a trailing hairline, the owner's choice (option b), dashboard only so far
+ * reworded "PAYOUT LIABILITY · THIS CYCLE" to "Payout liability this cycle", "NEEDS A DECISION" to "Needs a decision", "NETWORK HEALTH" to "Network health", "Review all →" to "Review all" · 10, 54, 67 name them
+ * reworded the cycle caption and decision/message meta from middot joins to commas and a second line · 10 names them
+ * built: the project · redesign: full · v2.0.0 */
 @use 'seal';
 
 // ============================================================
@@ -4095,13 +4102,22 @@ button.tree-explorer__vacant-card {
 // Redesign 1a ("The Ledger"), transcribed from Admin Dashboard Redesign.dc.html option 1a's
 // content column (2026-09-08-admin-dashboard-redesign-1a-design.md). Content region only -- the
 // mockup's Ink sidebar is deliberately not built; the global app shell carries navigation.
+// 2026-10-30 Hallmark redesign (full, app scope): the screen read as five framed boxes competing
+// for attention. Now the Seal Card is the only framed object (DESIGN.md SS5); every other region
+// sits open on Parchment under one sentence-case heading with the brand's hairline running off
+// it (DESIGN.md SS3, option b), and the bands are separated by space rather than borders.
 .admin-dashboard {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem; // 20px
+  gap: var(--space-12);
   max-width: 1240px;
   margin: 0 auto;
-  padding: 24px 28px 30px;
+  padding: var(--space-8) var(--space-8) var(--space-12);
+
+  a:focus-visible {
+    outline: 2px solid var(--brand-secondary);
+    outline-offset: 2px;
+  }
 }
 
 .admin-dashboard__load-error,
@@ -4113,25 +4129,26 @@ button.tree-explorer__vacant-card {
 
 .admin-dashboard__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 1.5rem;
-  padding-bottom: 1.125rem;
-  border-bottom: 1px solid var(--border-subtle);
+  gap: var(--space-4) var(--space-6);
 }
 
 .admin-dashboard__title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.6875rem; // 27px
+  font-size: 2rem;
   font-weight: 400;
   line-height: 1.1;
   color: var(--text-primary);
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 .admin-dashboard__cycle-caption {
-  margin: 0.375rem 0 0;
-  font-size: 0.75rem;
+  margin: var(--space-2) 0 0;
+  font-size: 0.875rem;
   color: var(--text-muted);
 }
 
@@ -4142,70 +4159,102 @@ button.tree-explorer__vacant-card {
 
 .admin-dashboard__actions {
   display: flex;
-  gap: 0.625rem;
-  flex: none;
+  flex-wrap: wrap;
+  gap: var(--space-3);
 }
 
 .admin-dashboard__action {
-  border-radius: 3px;
-  padding: 0.625rem 0.9375rem;
-  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-4);
+  font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
 .admin-dashboard__action--primary {
   background: var(--brand-secondary);
   border: 1px solid var(--brand-secondary);
   color: var(--action-foreground);
+
+  &:hover { background: color-mix(in srgb, var(--brand-secondary) 85%, var(--ink)); }
+  &:active { background: var(--ink); }
 }
 
 .admin-dashboard__action--secondary {
   background: transparent;
   border: 1px solid var(--brand-secondary);
   color: var(--brand-secondary);
+
+  &:hover { background: var(--brand-secondary-soft); }
+  &:active { background: color-mix(in srgb, var(--brand-secondary) 22%, transparent); }
 }
 
-.admin-dashboard__row {
+// One heading recipe for every open region: Inter, sentence case, the brand hairline after it.
+.admin-dashboard__section-title,
+.admin-recent-sales-table__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: color-mix(in srgb, var(--brand-secondary) 30%, transparent);
+  }
+}
+
+// The lead band: what this cycle owes, beside what is blocking it from closing.
+.admin-dashboard__lead {
   display: grid;
-  grid-template-columns: 1.45fr 1fr;
-  gap: 1.25rem;
-}
-
-.admin-dashboard__row--top {
-  align-items: stretch;
-}
-
-.admin-dashboard__row--bottom {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--space-12);
   align-items: start;
 }
 
-// The dashboard uses the shared Ink frame at full column width.
 .admin-dashboard__seal .seal-card-panel {
   max-width: none;
-  padding: 1.5rem;
+  padding: var(--space-8);
 }
 
 .admin-dashboard__seal .seal-card-panel__label {
-  margin-bottom: 0.75rem;
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
+  margin-bottom: var(--space-4);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.admin-dashboard__seal .seal-card-panel__delta {
+  color: var(--ink-success-text);
+}
+
+.admin-dashboard__seal .seal-card-panel__delta--down {
+  color: var(--ink-danger-text);
 }
 
 .admin-dashboard__seal-strip {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  margin: 0 -1.625rem;
-  padding: 0 1.625rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 calc(-1 * var(--space-8)) calc(-1 * var(--space-4));
+  padding: 0 var(--space-8);
   border-top: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent);
 
   > div {
-    padding: 0.9375rem 0;
+    padding: var(--space-4) 0;
 
     &:not(:first-child) {
-      padding-left: 1.25rem;
+      padding-left: var(--space-6);
       border-left: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent);
     }
   }
@@ -4213,17 +4262,14 @@ button.tree-explorer__vacant-card {
 
 .admin-dashboard__seal-strip-label {
   display: block;
-  font-size: 0.5938rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-surface-muted);
+  font-size: 0.8125rem;
+  color: var(--ink-text-muted);
 }
 
 .admin-dashboard__seal-strip-value {
   display: block;
-  margin-top: 0.4375rem;
-  font-size: 1.0625rem;
+  margin-top: var(--space-1);
+  font-size: 1.125rem;
   font-weight: 600;
   color: var(--surface-page);
   font-variant-numeric: tabular-nums;
@@ -4231,56 +4277,47 @@ button.tree-explorer__vacant-card {
 
 .admin-dashboard__seal-strip-sub {
   font-weight: 400;
-  font-size: 0.75rem;
-  color: var(--ink-surface-muted);
+  font-size: 0.875rem;
+  color: var(--ink-text-muted);
 }
 
-// "NEEDS A DECISION" queue
+// Needs a decision: open list, one row per queue.
 .admin-dashboard__decision {
   display: flex;
   flex-direction: column;
-  background: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-}
-
-.admin-dashboard__decision-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.125rem 0.75rem;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.admin-dashboard__decision-eyebrow {
-  font-size: 0.6563rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--brand-secondary);
 }
 
 .admin-dashboard__decision-total {
-  font-size: 0.625rem;
-  font-weight: 600;
-  color: var(--surface-card);
+  order: 2;
+  min-width: 1.5rem;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
   background: var(--status-danger);
-  padding: 0.1875rem 0.375rem;
-  border-radius: 2px;
+  color: var(--status-on-fill);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-dashboard__section-title::after {
+  order: 1;
 }
 
 .admin-dashboard__decision-row {
   display: flex;
   align-items: center;
-  gap: 0.8125rem;
-  padding: 0.875rem 1.125rem;
-  border-bottom: 1px solid #efe7d6;
+  gap: var(--space-4);
+  min-height: 64px;
+  padding: var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
   text-decoration: none;
   color: inherit;
+  transition: background-color 150ms ease;
 
-  &:hover {
-    background: var(--surface-raised);
-  }
+  &:hover { background: var(--surface-raised); }
+  &:active { background: color-mix(in srgb, var(--surface-raised) 70%, var(--border-subtle)); }
 
   .material-symbols-outlined {
     font-size: 1.25rem;
@@ -4289,8 +4326,8 @@ button.tree-explorer__vacant-card {
 }
 
 .admin-dashboard__decision-row--empty {
-  opacity: 0.55;
-
+  .material-symbols-outlined,
+  .admin-dashboard__decision-title,
   .admin-dashboard__decision-count {
     color: var(--text-muted);
   }
@@ -4303,154 +4340,135 @@ button.tree-explorer__vacant-card {
 
 .admin-dashboard__decision-title {
   display: block;
-  font-size: 0.78125rem;
+  font-size: 0.9375rem;
   font-weight: 500;
   color: var(--text-primary);
 }
 
 .admin-dashboard__decision-sub {
   display: block;
-  font-size: 0.6875rem;
+  margin-top: 2px;
+  font-size: 0.8125rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .admin-dashboard__decision-count {
   font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 500;
   color: var(--brand-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .admin-dashboard__decision-foot {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  margin-top: auto;
-  padding: 0.8125rem 1.125rem;
-  border-top: 1px solid var(--border-subtle);
-  background: var(--surface-raised);
-  font-size: 0.6875rem;
+  gap: var(--space-2) var(--space-4);
+  padding-top: var(--space-4);
+  font-size: 0.8125rem;
   color: var(--text-muted);
 
   a {
     font-weight: 600;
     color: var(--brand-secondary);
-    text-decoration: none;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    white-space: nowrap;
+
+    &:hover { text-decoration-thickness: 2px; }
+    &:active { color: var(--text-primary); }
   }
 }
 
-.admin-dashboard__panel {
-  background: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-  padding: 1.125rem 1.25rem;
+// Recent sales: full width, so the six columns stop wrapping.
+.admin-recent-sales-table__scroll {
+  overflow-x: auto;
 }
 
-.admin-dashboard__panel-head {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.875rem;
-}
-
-.admin-dashboard__panel-rule {
-  flex: 1;
-  height: 1px;
-  background: color-mix(in srgb, var(--brand-secondary) 35%, transparent);
-}
-
-.admin-dashboard__panel-eyebrow {
-  font-size: 0.6563rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--brand-secondary);
-  white-space: nowrap;
-}
-
-.admin-dashboard__panel-link {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--brand-secondary);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.admin-dashboard__leaders {
+.admin-recent-sales-table__empty {
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6875rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+// Network health beside messages.
+.admin-dashboard__pair {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--space-12);
+  align-items: start;
+}
+
+.admin-dashboard__figures {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-6);
+  margin: 0;
 
   > div {
     display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-
-    &::after {
-      content: '';
-      flex: 1;
-      order: 2;
-      border-bottom: 1px dotted #c9bea8;
-
-    }
+    flex-direction: column;
+    gap: var(--space-1);
   }
 
   dt {
-    margin: 0;
-    order: 1;
-    font-size: 0.71875rem;
-    color: var(--text-primary);
+    font-size: 0.8125rem;
+    color: var(--text-muted);
   }
 
   dd {
+    order: -1;
     margin: 0;
-    order: 3;
-    font-size: 0.71875rem;
-    font-weight: 500;
+    font-family: var(--font-sans);
+    font-size: 1.5rem;
+    font-weight: 600;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
   }
 }
 
-.admin-dashboard__leader--warn {
-  color: var(--status-warning) !important;
+.admin-dashboard__figure--warn {
+  color: var(--status-warning-text) !important;
 }
 
-.admin-dashboard__leader--good {
-  color: var(--status-success) !important;
+.admin-dashboard__figure--good {
+  color: var(--status-success-text) !important;
 }
 
 .admin-dashboard__split-bar {
   display: flex;
-  height: 7px;
-  margin-top: 1rem;
-  border: 1px solid var(--border-subtle);
+  height: 8px;
+  margin-top: var(--space-6);
+  border-radius: 1px;
+  overflow: hidden;
 }
 
 .admin-dashboard__split-bar-active {
+  flex-basis: 0;
   background: var(--brand-secondary);
 }
 
 .admin-dashboard__split-bar-idle {
-  background: #e3d9c2;
+  flex-basis: 0;
+  background: var(--border-subtle);
 }
 
 .admin-dashboard__split-legend {
   display: flex;
-  gap: 0.875rem;
-  margin-top: 0.5rem;
-  font-size: 0.625rem;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
 .admin-dashboard__swatch {
   display: inline-block;
-  width: 9px;
-  height: 9px;
-  margin-right: 5px;
-  vertical-align: baseline;
+  width: 10px;
+  height: 10px;
+  margin-right: var(--space-2);
 }
 
 .admin-dashboard__swatch--active {
@@ -4458,47 +4476,75 @@ button.tree-explorer__vacant-card {
 }
 
 .admin-dashboard__swatch--idle {
-  background: #c3b79f;
+  background: var(--border-subtle);
 }
 
-// Admin Recent Sales table (admin-dashboard/widgets/recent-sales-table) -- same visual pattern as
-// _dashboard.scss's .recent-sales-table, kept as an independent copy under admin-prefixed classes
-// rather than a cross-partial @extend: styles.scss loads each partial via @use, which gives every
-// partial its own module scope, and this design deliberately keeps _admin.scss self-contained
-// rather than reaching into _dashboard.scss (see the design doc's note on why).
-.admin-recent-sales-table {
-  background: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 1rem 1.125rem;
-}
-
-.admin-recent-sales-table__header {
+.admin-dashboard__message {
   display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  margin-bottom: 0.75rem;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 150ms ease;
+
+  &:hover { background: var(--surface-raised); }
+  &:active { background: color-mix(in srgb, var(--surface-raised) 70%, var(--border-subtle)); }
 }
 
-.admin-recent-sales-table__rule {
-  flex: 1;
-  height: 1px;
-  background: color-mix(in srgb, var(--brand-secondary) 22%, transparent);
-}
-
-.admin-recent-sales-table__label {
-  font-size: 0.625rem;
+.admin-dashboard__message-subject {
+  font-size: 0.9375rem;
   font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--brand-secondary);
-  white-space: nowrap;
+  color: var(--text-primary);
 }
 
-.admin-recent-sales-table__empty {
-  margin: 0;
+.admin-dashboard__message-meta {
   font-size: 0.8125rem;
   color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-dashboard__action,
+  .admin-dashboard__decision-row,
+  .admin-dashboard__message {
+    transition: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .admin-dashboard__lead,
+  .admin-dashboard__pair {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-8);
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-dashboard {
+    gap: var(--space-8);
+    padding: var(--space-6) var(--space-4) var(--space-8);
+  }
+
+  .admin-dashboard__seal .seal-card-panel {
+    padding: var(--space-6);
+  }
+
+  .admin-dashboard__seal-strip {
+    grid-template-columns: minmax(0, 1fr);
+    margin-inline: calc(-1 * var(--space-6));
+    padding-inline: var(--space-6);
+
+    > div:not(:first-child) {
+      padding-left: 0;
+      border-left: 0;
+      border-top: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent);
+    }
+  }
+
+  .admin-dashboard__figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 // Admin Network Growth chart (admin-dashboard/widgets/network-growth-chart) -- same visual
@@ -4553,29 +4599,6 @@ button.tree-explorer__vacant-card {
   color: var(--text-muted);
 }
 
-@media (max-width: 960px) {
-  .admin-dashboard__row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .admin-dashboard__seal-strip {
-    grid-template-columns: 1fr;
-
-    > div:not(:first-child) {
-      padding-left: 0;
-      border-left: 0;
-      border-top: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent);
-    }
-  }
-}
-
-@media (max-width: 700px) {
-  .admin-dashboard__header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-}
 
 .epin-register {
   display: flex; flex-direction: column; gap: 1.5rem;
@@ -5133,15 +5156,6 @@ button.tree-explorer__vacant-card {
 }
 .new-message__error { font-size: 0.75rem; color: var(--status-danger); }
 .new-message__send { align-self: flex-start; }
-
-// ---- Admin dashboard: unreplied messages ----
-.admin-dashboard__messages { display: flex; flex-direction: column; gap: 0.5rem; }
-.admin-dashboard__message {
-  display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border-subtle); text-decoration: none; color: var(--text-primary);
-}
-.admin-dashboard__message-subject { font-weight: 500; }
-.admin-dashboard__message-meta { font-size: 0.75rem; color: var(--text-muted); }
 
 // ============================================================
 // Admin Users (Master Data): table of non-Associate team admins with Edit/Delete per row,
@@ -6227,4 +6241,15 @@ button.tree-explorer__vacant-card {
   .cycle-popup__overlay { align-items: flex-end; }
   .cycle-popup { width: 100%; max-width: 100vw; border-radius: 12px 12px 0 0; }
   .cycle-popup__footer .brand-button { width: 100%; }
+}
+
+// Recent sales on the dashboard: the shared table's header icons add noise to a five-row glance.
+.admin-recent-sales-table .th-icon {
+  display: none;
+}
+
+// Rows stay one line and the table scrolls sideways on a phone, instead of a project name
+// stacking into seven lines.
+.admin-recent-sales-table td {
+  white-space: nowrap;
 }

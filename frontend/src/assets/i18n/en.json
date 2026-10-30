@@ -98,7 +98,7 @@
     "totalSalesRecordedHint": "{{count}} ever recorded",
     "activePlotsHint": "{{count}} plots still available",
     "noCycleEmptyState": "No open cycle right now.",
-    "recentSalesEyebrow": "Recent Sales",
+    "recentSalesEyebrow": "Recent sales",
     "recentSalesEmpty": "No sales recorded yet.",
     "recentSalesColumnPlot": "Plot",
     "recentSalesColumnProject": "Project",

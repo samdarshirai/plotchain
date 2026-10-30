@@ -16,13 +16,11 @@ import { EditableTableColumn, EditableTableComponent } from '../../../shared/com
   providers: [CurrencyPipe, DatePipe],
   template: `
     <div class="admin-recent-sales-table">
-      <div class="admin-recent-sales-table__header">
-        <span class="admin-recent-sales-table__rule"></span>
-        <span class="admin-recent-sales-table__label">{{ 'adminDashboard.recentSalesEyebrow' | translate }}</span>
-        <span class="admin-recent-sales-table__rule"></span>
-      </div>
+      <h2 class="admin-recent-sales-table__label">{{ 'adminDashboard.recentSalesEyebrow' | translate }}</h2>
       <p *ngIf="!sales.length" class="admin-recent-sales-table__empty">{{ 'adminDashboard.recentSalesEmpty' | translate }}</p>
-      <app-editable-table *ngIf="sales.length" [readOnly]="true" [columns]="columns" [rows]="rows"></app-editable-table>
+      <div *ngIf="sales.length" class="admin-recent-sales-table__scroll">
+        <app-editable-table [readOnly]="true" [columns]="columns" [rows]="rows"></app-editable-table>
+      </div>
     </div>
   `
 })

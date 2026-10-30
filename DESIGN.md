@@ -55,12 +55,12 @@ Every primary button app-wide (`.brand-button`'s default/`primary` variant) is O
 
 Set Fraunces sparingly and at restraint: one page title, one hero figure, section eyebrows — never body copy or table content. It's the ornamental voice; Inter carries the actual work.
 
-Section headers echo the wordmark's flanking rule directly:
+Section headers keep the wordmark's hairline, not its caps:
 
 ```
-──  CURRENT CYCLE  ──
+Current cycle  ───────────────
 ```
-small caps, tracked ~0.12em, Antique Gold hairlines either side, on both Ink and Parchment surfaces (invert rule color to Oxblood on Parchment, gold on Ink, for enough contrast).
+Inter, semibold, sentence case, untracked, with a hairline running off the label (Oxblood on Parchment, gold on Ink). Tracked capitals stay in the logo's own wordmark only; on a working screen they read as generated chrome and slow scanning. (Changed 2026-10-30; `/admin/dashboard` is the first screen on it. Other screens still carry the old `── CAPS ──` headers until they are redone.)
 
 ## 4. Layout
 
@@ -91,7 +91,7 @@ App shell stays split, deliberately:
 
 The one place per screen allowed to look like the logo. A Parchment (or Ink, on the dashboard) card with:
 - a double gold hairline border (echoing the wordmark's flanking rules, mitred not rounded past 4px)
-- its header set as a flanking-rule small-caps label (`── RANK ──`, `── THIS CYCLE ──`)
+- its header set as a flanking-rule label in sentence case (`── Rank ──`, `── This cycle ──`)
 - its primary figure in Fraunces, large, Antique Gold or Warm Charcoal depending on surface
 
 Used for exactly one thing per screen: current-cycle earnings on the dashboard, the rank badge on the profile, the payout total on a payout-approval screen. If everything gets a seal, nothing reads as special — restrict it on purpose.
