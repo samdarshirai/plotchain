@@ -14,5 +14,7 @@ public record ProjectResponse(
     long soldPlots,
     Instant createdAt,
     UUID masterProjectId,
-    BigDecimal cornerExtraPercent
+    BigDecimal cornerExtraPercent,
+    BigDecimal parkFacingExtraPercent,
+    BigDecimal roadSideExtraPercent
 ) {}

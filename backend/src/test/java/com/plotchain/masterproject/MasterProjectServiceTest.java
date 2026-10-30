@@ -1,5 +1,8 @@
 package com.plotchain.masterproject;
 
+import java.time.Instant;
+import org.mockito.ArgumentCaptor;
+import com.plotchain.projects.Project;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.company.SettingsAuditLogRepository;
@@ -85,5 +88,36 @@ class MasterProjectServiceTest {
             new MockMultipartFile("file", "m.png", "image/png", new byte[]{1, 2}), ACTOR);
         assertThat(p.getLocationMap()).hasSize(2);
         assertThat(p.getProjectMap()).isNull();
+    }
+
+    @Test
+    void createCarriesParkAndRoadDefaultsToPlotSide() {
+        MasterProjectRequest req = new MasterProjectRequest("Green Valley", MasterProject.Type.APARTMENT, "Pune", "MH",
+            new BigDecimal("25.5"), new BigDecimal("1500"), null, new BigDecimal("10"), new BigDecimal("7"), new BigDecimal("6"));
+
+        MasterProjectResponse r = service.create(req, ACTOR);
+
+        ArgumentCaptor<Project> captor = ArgumentCaptor.forClass(Project.class);
+        verify(projectRepository).save(captor.capture());
+        assertThat(captor.getValue().getParkFacingExtraPercent()).isEqualByComparingTo("7");
+        assertThat(captor.getValue().getRoadSideExtraPercent()).isEqualByComparingTo("6");
+        assertThat(r.parkFacingExtraPercent()).isEqualByComparingTo("7");
+        assertThat(r.roadSideExtraPercent()).isEqualByComparingTo("6");
+    }
+
+    @Test
+    void updateWithoutParkAndRoadKeepsCurrentValues() {
+        UUID id = UUID.randomUUID();
+        when(repository.findById(id)).thenReturn(Optional.of(new MasterProject(id)));
+        Project plotSide = new Project(id, "P", "Pune", null, null, Instant.now());
+        plotSide.setParkFacingExtraPercent(new BigDecimal("7"));
+        plotSide.setRoadSideExtraPercent(new BigDecimal("6"));
+        when(projectRepository.findById(id)).thenReturn(Optional.of(plotSide));
+
+        MasterProjectResponse r = service.update(id, request("P", null), ACTOR);
+
+        assertThat(plotSide.getParkFacingExtraPercent()).isEqualByComparingTo("7");
+        assertThat(plotSide.getRoadSideExtraPercent()).isEqualByComparingTo("6");
+        assertThat(r.parkFacingExtraPercent()).isEqualByComparingTo("7");
     }
 }

@@ -379,4 +379,18 @@ class PlotServiceTest {
         assertThat(saved.getDetail()).contains("\"deleted\":{\"id\":")
             .contains("\"plotNo\":\"A-101\"");
     }
+
+    @Test
+    void createAcceptsRoadSideWithExtraPercent() {
+        when(plotRepository.findAllByProjectIdAndPlotNoIn(PROJECT_ID, List.of("A-102"))).thenReturn(List.of());
+        PlotRequest request = new PlotRequest("A-102", "ROAD_SIDE", new BigDecimal("1200.00"),
+            new BigDecimal("500.00"), new BigDecimal("600000.00"), null, null, null, new BigDecimal("5"));
+
+        plotService.create(PROJECT_ID, request, ACTOR_ID);
+
+        ArgumentCaptor<Plot> captor = ArgumentCaptor.forClass(Plot.class);
+        verify(plotRepository).save(captor.capture());
+        assertThat(captor.getValue().getPlotType()).isEqualTo(PlotType.ROAD_SIDE);
+        assertThat(captor.getValue().getExtraPrice()).isEqualByComparingTo("30000.00");
+    }
 }

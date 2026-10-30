@@ -179,4 +179,29 @@ class PlotCsvServiceTest {
 
         verify(settingsAuditLogRepository, never()).save(any());
     }
+
+    @Test
+    void validateAcceptsTheNewPlotTypes() {
+        when(plotRepository.findAllByProjectIdAndPlotNoIn(any(), any())).thenReturn(List.of());
+        MockMultipartFile file = csvFile(HEADER
+            + "A-101,PARK_FACING,1200,500,600000,AVAILABLE\n"
+            + "A-102,ROAD_SIDE,1200,500,600000,AVAILABLE\n"
+            + "A-103,CORNER_PARK_FACING,1200,500,600000,AVAILABLE\n"
+            + "A-104,CORNER_ROAD_SIDE,1200,500,600000,AVAILABLE\n");
+
+        CsvValidationResponse response = plotCsvService.validate(PROJECT_ID, file);
+
+        assertThat(response.errors()).isEmpty();
+        assertThat(response.validRows()).isEqualTo(4);
+    }
+
+    @Test
+    void validateRejectsParkRoadCombination() {
+        MockMultipartFile file = csvFile(HEADER + "A-101,PARK_ROAD,1200,500,600000,AVAILABLE\n");
+
+        CsvValidationResponse response = plotCsvService.validate(PROJECT_ID, file);
+
+        assertThat(response.errors()).hasSize(1);
+        assertThat(response.errors().get(0).field()).isEqualTo("plot_type");
+    }
 }

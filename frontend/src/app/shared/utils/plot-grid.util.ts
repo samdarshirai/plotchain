@@ -14,6 +14,20 @@ export interface PlotGridItem {
   roadSizeFt?: number | null;
 }
 
+// Default Extra % per plot-type part, from the project (corner 10 / park facing 5 / road side 5 by default).
+export interface ExtraDefaults { corner: number; parkFacing: number; roadSide: number }
+
+export function plotTypeParts(t: PlotType): { corner: boolean; park: boolean; road: boolean } {
+  return { corner: t.startsWith('CORNER'), park: t.endsWith('PARK_FACING'), road: t.endsWith('ROAD_SIDE') };
+}
+
+// Combination types stack: the defaults of each part are added, not compounded.
+export function defaultExtraPercent(t: PlotType, d: ExtraDefaults): number {
+  const p = plotTypeParts(t);
+  const sum = (p.corner ? d.corner : 0) + (p.park ? d.parkFacing : 0) + (p.road ? d.roadSide : 0);
+  return Math.round(sum * 100) / 100; // 2 dp like the DB column; avoids 0.30000000000000004 in the input
+}
+
 export interface PlotBlock {
   block: string;
   plots: PlotGridItem[];

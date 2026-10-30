@@ -9,15 +9,20 @@ export interface Project {
   createdAt: string;
   masterProjectId?: string | null;
   cornerExtraPercent?: number;
+  parkFacingExtraPercent?: number;
+  roadSideExtraPercent?: number;
 }
 
 export interface ProjectRequest {
   name: string;
   location: string;
   cornerExtraPercent?: number;
+  parkFacingExtraPercent?: number;
+  roadSideExtraPercent?: number;
 }
 
-export type PlotType = 'NORMAL' | 'CORNER';
+export type PlotType = 'NORMAL' | 'CORNER' | 'PARK_FACING' | 'ROAD_SIDE' | 'CORNER_PARK_FACING' | 'CORNER_ROAD_SIDE';
+export const PLOT_TYPES: PlotType[] = ['NORMAL', 'CORNER', 'PARK_FACING', 'ROAD_SIDE', 'CORNER_PARK_FACING', 'CORNER_ROAD_SIDE'];
 export type PlotStatus = 'AVAILABLE' | 'BOOKED' | 'SOLD';
 
 export interface Plot {

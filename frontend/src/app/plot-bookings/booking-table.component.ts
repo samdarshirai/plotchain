@@ -75,7 +75,7 @@ export const saleRow = (s: Sale): BookingRow => ({
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.associateId' | translate">{{ r.associateCode || '—' }}</td>
               <td [attr.data-label]="'plotBookings.table.name' | translate">{{ r.associateName || '—' }}</td>
               <td class="booking-table__wrap" [attr.data-label]="'plotBookings.table.project' | translate">{{ r.projectName || '—' }}</td>
-              <td [attr.data-label]="'plotBookings.table.plotType' | translate">{{ r.plotType || '—' }}</td>
+              <td [attr.data-label]="'plotBookings.table.plotType' | translate">{{ r.plotType ? ('plotTile.type.' + r.plotType | translate) : '—' }}</td>
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.plotNo' | translate">{{ r.plotNo || '—' }}</td>
               <td class="booking-table__num" [attr.data-label]="'plotBookings.table.rate' | translate">{{ money(r.rate) }}</td>
               <td class="booking-table__num" [attr.data-label]="'plotBookings.table.area' | translate">{{ r.areaSqft == null ? '—' : area(r.areaSqft) }}</td>

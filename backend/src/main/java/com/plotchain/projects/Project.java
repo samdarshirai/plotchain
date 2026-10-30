@@ -39,6 +39,12 @@ public class Project {
     @Column(name = "corner_extra_percent")
     private BigDecimal cornerExtraPercent = new BigDecimal("10.00");
 
+    @Column(name = "park_facing_extra_percent")
+    private BigDecimal parkFacingExtraPercent = new BigDecimal("5.00");
+
+    @Column(name = "road_side_extra_percent")
+    private BigDecimal roadSideExtraPercent = new BigDecimal("5.00");
+
     @Column(name = "created_at")
     private Instant createdAt;
 
@@ -72,6 +78,12 @@ public class Project {
 
     public BigDecimal getCornerExtraPercent() { return cornerExtraPercent; }
     public void setCornerExtraPercent(BigDecimal p) { if (p != null) this.cornerExtraPercent = p; }
+
+    public BigDecimal getParkFacingExtraPercent() { return parkFacingExtraPercent; }
+    public void setParkFacingExtraPercent(BigDecimal p) { if (p != null) this.parkFacingExtraPercent = p; }
+
+    public BigDecimal getRoadSideExtraPercent() { return roadSideExtraPercent; }
+    public void setRoadSideExtraPercent(BigDecimal p) { if (p != null) this.roadSideExtraPercent = p; }
 
     public Instant getCreatedAt() { return createdAt; }
 }

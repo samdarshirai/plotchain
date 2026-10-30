@@ -51,7 +51,7 @@ describe('MyBookingsComponent', () => {
   it('shows rate, area, price, extra price, total, paid and rest in the row', () => {
     boot([booking('b1', { plotNo: 'A-12', plotType: 'CORNER', rate: 500, areaSqft: 1200, listPrice: 375000, extraPrice: 25000, associateCode: 'VP1', associateName: 'Ravi' })]);
     const cell = (label: string) => el().querySelector(`td[data-label="plotBookings.table.${label}"]`)!.textContent!.trim();
-    expect(cell('plotType')).toBe('CORNER');
+    expect(cell('plotType')).toBe('plotTile.type.CORNER');
     expect(cell('plotNo')).toBe('A-12');
     expect(cell('associateId')).toBe('VP1');
     expect(cell('extraPrice')).toContain('25,000');

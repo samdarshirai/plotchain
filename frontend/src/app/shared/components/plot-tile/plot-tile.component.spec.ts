@@ -73,8 +73,50 @@ describe('PlotTileComponent', () => {
       expect(cs.outlineOffset).toBe('-7px');
       expect(cs.borderTopWidth).toBe('3px');
     });
+    it('corner combo tile draws the ring inset too', () => {
+      expect(focused('CORNER_ROAD_SIDE', false).outlineOffset).toBe('-7px');
+    });
     it('non-corner tile keeps the outside 2px offset', () => {
       expect(focused('STANDARD', false).outlineOffset).toBe('2px');
     });
   });
+
+  describe('park facing and road side marks', () => {
+    const typeIcon = () => el().querySelector('.plot-tile__type-icon');
+    function show(type: string, plan = false) {
+      fixture.componentRef.setInput('type', type);
+      fixture.componentRef.setInput('plan', plan);
+      fixture.detectChanges();
+    }
+
+    it('marks a Corner + Park Facing tile as corner and shows the park icon', () => {
+      show('CORNER_PARK_FACING');
+      expect(button().classList).toContain('plot-tile--corner');
+      expect(typeIcon()!.textContent!.trim()).toBe('park');
+    });
+
+    it('shows the add_road icon for Road Side and no corner class', () => {
+      show('ROAD_SIDE');
+      expect(button().classList).not.toContain('plot-tile--corner');
+      expect(typeIcon()!.textContent!.trim()).toBe('add_road');
+    });
+
+    it('shows the type icon in the plan variant too', () => {
+      show('PARK_FACING', true);
+      expect(typeIcon()!.textContent!.trim()).toBe('park');
+    });
+
+    it('shows no type icon for Normal or Corner', () => {
+      show('CORNER');
+      expect(typeIcon()).toBeNull();
+    });
+
+    it('names the type parts in the meta line', () => {
+      show('CORNER_PARK_FACING');
+      const meta = el().querySelector('.plot-tile__meta')!.textContent!;
+      expect(meta).toContain('plotTile.corner');
+      expect(meta).toContain('plotTile.park');
+    });
+  });
 });
+

@@ -1,3 +1,5 @@
+import { PlotType } from '../../setup/models/project.model';
+
 export type BookingStatus = 'ACTIVE' | 'CONFIRMED' | 'CANCELLED';
 export type InstallmentStatus = 'PENDING' | 'ENTERED' | 'PAID' | 'VOID';
 export type PaymentMode = 'CASH' | 'CHEQUE' | 'BANK_TRANSFER' | 'UPI' | 'DEMAND_DRAFT' | 'NEFT' | 'RTGS';
@@ -37,7 +39,7 @@ export interface Booking {
   listPrice?: number | null;
   discount?: number | null;
   areaSqft?: number | null;
-  plotType?: 'NORMAL' | 'CORNER' | null;
+  plotType?: PlotType | null;
   rate?: number | null;
   cancelledAt?: string | null;
   associateCode?: string | null;

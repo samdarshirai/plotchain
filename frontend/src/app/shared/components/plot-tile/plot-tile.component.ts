@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { PlotStatus, PlotType } from '../../../setup/models/project.model';
-import { formatArea, formatInr, formatLakh } from '../../utils/plot-grid.util';
+import { formatArea, formatInr, formatLakh, plotTypeParts } from '../../utils/plot-grid.util';
 
 const ICONS: Record<PlotStatus, string> = { AVAILABLE: 'check_circle', BOOKED: 'schedule', SOLD: 'lock' };
 
@@ -17,7 +17,7 @@ const ICONS: Record<PlotStatus, string> = { AVAILABLE: 'check_circle', BOOKED: '
   imports: [CommonModule, TranslateModule],
   template: `
     <button type="button" class="plot-tile"
-      [class.plot-tile--corner]="type === 'CORNER'"
+      [class.plot-tile--corner]="parts.corner"
       [class.plot-tile--available]="status === 'AVAILABLE'"
       [class.plot-tile--booked]="status === 'BOOKED'"
       [class.plot-tile--sold]="status === 'SOLD'"
@@ -31,7 +31,8 @@ const ICONS: Record<PlotStatus, string> = { AVAILABLE: 'check_circle', BOOKED: '
       (click)="tileSelect.emit()">
       <ng-container *ngIf="!plan; else planFace">
         <span class="plot-tile__no">{{ plotNo }}</span>
-        <span class="plot-tile__meta">{{ areaText }}<ng-container *ngIf="type === 'CORNER'"> · {{ 'plotTile.corner' | translate }}</ng-container></span>
+        <ng-container *ngTemplateOutlet="typeIconTpl"></ng-container>
+        <span class="plot-tile__meta">{{ areaText }}<ng-container *ngFor="let k of partKeys; let first = first">{{ first ? ' · ' : ', ' }}{{ k | translate }}</ng-container></span>
         <span class="plot-tile__price">{{ shortPrice }}</span>
         <span class="plot-tile__status">
           <span class="material-symbols-outlined plot-tile__icon" aria-hidden="true">{{ icon }}</span>
@@ -42,8 +43,13 @@ const ICONS: Record<PlotStatus, string> = { AVAILABLE: 'check_circle', BOOKED: '
       <ng-template #planFace>
         <span class="plot-tile__face">
           <span class="plot-tile__no">{{ plotNo }}</span>
+          <ng-container *ngTemplateOutlet="typeIconTpl"></ng-container>
           <span class="plot-tile__meta">{{ areaText }} {{ 'plotTile.sqft' | translate }}</span>
         </span>
+      </ng-template>
+      <!-- Park / road mark; the aria-label already names the type. -->
+      <ng-template #typeIconTpl>
+        <span *ngIf="typeIcon" class="material-symbols-outlined plot-tile__type-icon" aria-hidden="true">{{ typeIcon }}</span>
       </ng-template>
     </button>
   `
@@ -63,4 +69,10 @@ export class PlotTileComponent {
   get shortPrice(): string { return formatLakh(this.price); }
   get fullPrice(): string { return formatInr(this.price); }
   get icon(): string { return ICONS[this.status]; }
+  get parts() { return plotTypeParts(this.type); }
+  get typeIcon(): string | null { return this.parts.park ? 'park' : this.parts.road ? 'add_road' : null; }
+  get partKeys(): string[] {
+    const p = this.parts;
+    return [...(p.corner ? ['plotTile.corner'] : []), ...(p.park ? ['plotTile.park'] : []), ...(p.road ? ['plotTile.road'] : [])];
+  }
 }

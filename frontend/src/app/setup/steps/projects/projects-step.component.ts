@@ -17,9 +17,18 @@ import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav
 import { ProjectsService } from './projects.service';
 import { SetupService } from '../../setup.service';
 import { SetupInspectorService, SetupStepController } from '../../setup-inspector.service';
-import { CsvValidationResponse, PlotPageResponse, PlotStatus, PlotType, Project } from '../../models/project.model';
+import { CsvValidationResponse, PLOT_TYPES, PlotPageResponse, PlotStatus, PlotType, Project } from '../../models/project.model';
 
 const PAGE_SIZE = 20;
+
+const PLOT_TYPE_LABELS: Record<PlotType, string> = {
+  NORMAL: 'setup.projects.plotTypeNormalLabel',
+  CORNER: 'setup.projects.plotTypeCornerLabel',
+  PARK_FACING: 'setup.projects.plotTypeParkFacingLabel',
+  ROAD_SIDE: 'setup.projects.plotTypeRoadSideLabel',
+  CORNER_PARK_FACING: 'setup.projects.plotTypeCornerParkFacingLabel',
+  CORNER_ROAD_SIDE: 'setup.projects.plotTypeCornerRoadSideLabel'
+};
 
 @Component({
   selector: 'app-projects-step',
@@ -67,6 +76,14 @@ const PAGE_SIZE = 20;
           <label>
             {{ 'setup.projects.cornerExtraLabel' | translate }}
             <input type="number" formControlName="cornerExtraPercent" min="0" max="100" step="any" />
+          </label>
+          <label>
+            {{ 'setup.projects.parkFacingExtraLabel' | translate }}
+            <input type="number" formControlName="parkFacingExtraPercent" min="0" max="100" step="any" />
+          </label>
+          <label>
+            {{ 'setup.projects.roadSideExtraLabel' | translate }}
+            <input type="number" formControlName="roadSideExtraPercent" min="0" max="100" step="any" />
           </label>
         </div>
         <app-field-error [control]="addProjectForm.get('name')" label="Project name" [submitted]="projectSubmitted"></app-field-error>
@@ -175,8 +192,7 @@ const PAGE_SIZE = 20;
               <label>
                 {{ 'setup.projects.plotTypeLabel' | translate }}
                 <select formControlName="plotType">
-                  <option value="NORMAL">{{ 'setup.projects.plotTypeNormalLabel' | translate }}</option>
-                  <option value="CORNER">{{ 'setup.projects.plotTypeCornerLabel' | translate }}</option>
+                  <option *ngFor="let t of plotTypes" [value]="t">{{ plotTypeLabel(t) }}</option>
                 </select>
               </label>
               <label>
@@ -303,12 +319,15 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
   stepNumber = 1;
   stepCount = 1;
 
+  readonly plotTypes = PLOT_TYPES;
   projects: Project[] = [];
   showAddProjectForm = false;
   addProjectForm = this.fb.nonNullable.group({
     name: ['', Validators.required],
     location: ['', Validators.required],
-    cornerExtraPercent: [10, [Validators.min(0), Validators.max(100)]]
+    cornerExtraPercent: [10, [Validators.min(0), Validators.max(100)]],
+    parkFacingExtraPercent: [5, [Validators.min(0), Validators.max(100)]],
+    roadSideExtraPercent: [5, [Validators.min(0), Validators.max(100)]]
   });
   pendingThumbnail: File | null = null;
   pendingThumbnailPreview: string | null = null;
@@ -394,7 +413,7 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
   }
 
   plotTypeLabel(type: PlotType): string {
-    return this.translate.instant(type === 'CORNER' ? 'setup.projects.plotTypeCornerLabel' : 'setup.projects.plotTypeNormalLabel');
+    return this.translate.instant(PLOT_TYPE_LABELS[type]);
   }
 
   plotStatusLabel(status: PlotStatus): string {
@@ -466,7 +485,7 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
     this.projectsService.createProject(this.addProjectForm.getRawValue()).subscribe(project => {
       const finish = (created: Project) => {
         this.projects = [...this.projects, created];
-        this.addProjectForm.reset({ name: '', location: '', cornerExtraPercent: 10 });
+        this.addProjectForm.reset({ name: '', location: '', cornerExtraPercent: 10, parkFacingExtraPercent: 5, roadSideExtraPercent: 5 });
         this.projectSubmitted = false;
         this.projectIssues = [];
         this.showAddProjectForm = false;
