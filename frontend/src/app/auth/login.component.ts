@@ -45,13 +45,13 @@ import { FormIssue, collectIssues } from '../shared/validation/validation';
 
         <form class="login-form" [formGroup]="form" [class.was-submitted]="submitted" (ngSubmit)="onSubmit()" novalidate>
           <h1 class="login-heading">{{ 'auth.heading' | translate }}</h1>
-          <p class="login-subheading">{{ 'auth.subheading' | translate }}</p>
+          <p class="login-subheading">{{ (realm === 'admin' ? 'auth.adminSubheading' : 'auth.subheading') | translate }}</p>
 
           <app-error-summary [issues]="issues"></app-error-summary>
           <label>
-            {{ 'auth.userIdLabel' | translate }}
+            {{ (realm === 'admin' ? 'auth.adminUserIdLabel' : 'auth.userIdLabel') | translate }}
             <input type="text" autocomplete="username" formControlName="userId" />
-            <app-field-error [control]="form.get('userId')" label="User ID" [submitted]="submitted"></app-field-error>
+            <app-field-error [control]="form.get('userId')" [label]="userIdName" [submitted]="submitted"></app-field-error>
           </label>
           <label>
             {{ 'auth.passwordLabel' | translate }}
@@ -100,6 +100,7 @@ export class LoginComponent implements OnInit {
   private setupService = inject(SetupService);
   private router = inject(Router);
   readonly realm: 'admin' | 'associate' = inject(ActivatedRoute).snapshot.data['realm'] === 'admin' ? 'admin' : 'associate';
+  readonly userIdName = this.realm === 'admin' ? 'Admin ID' : 'User ID';
   private brandingBootstrap = inject(BrandingBootstrapService);
   private translate = inject(TranslateService);
 
@@ -158,7 +159,7 @@ export class LoginComponent implements OnInit {
     }
     this.submitted = true;
     this.form.markAllAsTouched();
-    this.issues = collectIssues(this.form, { userId: 'User ID', password: 'Password' });
+    this.issues = collectIssues(this.form, { userId: this.userIdName, password: 'Password' });
     if (this.form.invalid) {
       return;
     }

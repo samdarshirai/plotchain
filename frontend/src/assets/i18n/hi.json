@@ -673,6 +673,8 @@
   "auth": {
     "heading": "साइन इन करें",
     "subheading": "अपने एसोसिएट खाते में आपका स्वागत है।",
+    "adminSubheading": "अपने एडमिन खाते में आपका स्वागत है।",
+    "adminUserIdLabel": "एडमिन आईडी",
     "userIdLabel": "एसोसिएट आईडी",
     "passwordLabel": "पासवर्ड",
     "rememberMe": "मुझे याद रखें",

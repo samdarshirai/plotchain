@@ -703,7 +703,9 @@
   "auth": {
     "heading": "Sign in",
     "subheading": "Welcome back to your associate account.",
+    "adminSubheading": "Welcome back to your admin account.",
     "userIdLabel": "Associate ID",
+    "adminUserIdLabel": "Admin ID",
     "passwordLabel": "Password",
     "rememberMe": "Remember me",
     "forgotPassword": "Forgot password?",
