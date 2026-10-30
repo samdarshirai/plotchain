@@ -71,6 +71,23 @@ describe('EPinRegisterComponent', () => {
     expect(c.panel).toBeNull();
   });
 
+  it('reloads page 0 with the pin type filter and generates Top Up pins', () => {
+    flushInitial([pin({ pinType: 'TOPUP' })]);
+    expect(fixture.nativeElement.textContent).toContain('admin.epinRegister.pinType.TOPUP');
+    const c = fixture.componentInstance;
+    c.onPinTypeChange('TOPUP');
+    const list = httpMock.expectOne(r => r.url === '/api/admin/epins');
+    expect(list.request.params.get('pinType')).toBe('TOPUP');
+    list.flush(emptyPage);
+    c.openPanel({ kind: 'generate' });
+    c.generatePinType = 'TOPUP';
+    c.submitGenerate();
+    const gen = httpMock.expectOne(r => r.method === 'POST' && r.url === '/api/admin/epins');
+    expect(gen.request.body).toEqual({ count: 10, pinType: 'TOPUP' });
+    gen.flush({ batchId: UUID, count: 10, codes: [], generatedAt: 'now', expiresAt: null });
+    reload();
+  });
+
   it('generates a batch and shows the returned codes once', () => {
     flushInitial([]);
     const c = fixture.componentInstance;

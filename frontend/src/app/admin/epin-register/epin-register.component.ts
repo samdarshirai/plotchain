@@ -12,7 +12,7 @@ import { toFieldErrors } from '../../core/api/field-errors.model';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
 import { FormIssue } from '../../shared/validation/validation';
-import { AllocateResult, EPin, EPinEvent, EPinFilters, EPinPage, EPinStatus, RedemptionType } from './epin.model';
+import { AllocateResult, EPin, EPinEvent, EPinFilters, EPinPage, EPinStatus, EPinType, RedemptionType } from './epin.model';
 
 const PAGE_SIZE = 20;
 const MAX_COUNT = 2000;
@@ -59,6 +59,13 @@ type Panel =
             <option *ngFor="let s of statuses" [value]="s">{{ 'admin.epinRegister.status.' + s | translate }}</option>
           </select>
         </label>
+        <label class="epin-register__filter">
+          {{ 'admin.epinRegister.pinTypeLabel' | translate }}
+          <select (change)="onPinTypeChange($any($event.target).value)">
+            <option value="">{{ 'admin.epinRegister.filterAll' | translate }}</option>
+            <option *ngFor="let t of pinTypes" [value]="t">{{ 'admin.epinRegister.pinType.' + t | translate }}</option>
+          </select>
+        </label>
         <div class="epin-register__filter">
           {{ 'admin.epinRegister.holderFilterLabel' | translate }}
           <app-associate-lookup [associates]="associates" [value]="holderId"
@@ -88,6 +95,11 @@ type Panel =
             <label>{{ 'admin.epinRegister.countLabel' | translate }}
               <input type="number" min="1" max="2000" name="count" [(ngModel)]="generateCount" required [attr.aria-invalid]="errs['count'] ? 'true' : null" />
               <app-field-error [message]="errs['count']"></app-field-error>
+            </label>
+            <label>{{ 'admin.epinRegister.pinTypeLabel' | translate }}
+              <select name="pin-type" [(ngModel)]="generatePinType">
+                <option *ngFor="let t of pinTypes" [value]="t">{{ 'admin.epinRegister.pinType.' + t | translate }}</option>
+              </select>
             </label>
             <label>{{ 'admin.epinRegister.expiresLabel' | translate }}
               <input type="datetime-local" name="expires" [(ngModel)]="generateExpiresLocal" />
@@ -130,6 +142,7 @@ type Panel =
                 <tr>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.epinRegister.colCode' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'admin.epinRegister.colStatus' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'admin.epinRegister.pinTypeLabel' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.epinRegister.colBatch' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.epinRegister.colExpires' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.epinRegister.colHolder' | translate }}</th>
@@ -144,12 +157,13 @@ type Panel =
                       {{ (p.expired ? 'admin.epinRegister.expiredChip' : 'admin.epinRegister.status.' + p.status) | translate }}
                     </span>
                   </td>
+                  <td>{{ 'admin.epinRegister.pinType.' + p.pinType | translate }}</td>
                   <td [attr.title]="p.batchId">{{ p.batchId.slice(0, 8) }}</td>
                   <td [class.epin-register__expired-date]="p.expired">{{ p.expiresAt ? datePipe.transform(p.expiresAt, 'mediumDate') : '—' }}</td>
                   <td>{{ userId(p.allocatedTo) }}</td>
                 </tr>
                 <tr *ngIf="!page?.epins?.length">
-                  <td colspan="5">{{ 'admin.epinRegister.emptyState' | translate }}</td>
+                  <td colspan="6">{{ 'admin.epinRegister.emptyState' | translate }}</td>
                 </tr>
               </tbody>
             </table>
@@ -201,6 +215,12 @@ type Panel =
                   <input type="number" min="1" max="2000" name="alloc-count" [(ngModel)]="allocateCount" required [attr.aria-invalid]="errs['alloc-count'] ? 'true' : null" />
                   <app-field-error [message]="errs['alloc-count']"></app-field-error>
                 </label>
+                <label>{{ 'admin.epinRegister.pinTypeLabel' | translate }}
+                  <select name="alloc-pin-type" [(ngModel)]="allocatePinType">
+                    <option value="">{{ 'admin.epinRegister.filterAll' | translate }}</option>
+                    <option *ngFor="let t of pinTypes" [value]="t">{{ 'admin.epinRegister.pinType.' + t | translate }}</option>
+                  </select>
+                </label>
                 <label>{{ 'admin.epinRegister.batchFilterLabel' | translate }}
                   <input type="text" name="alloc-batch" [(ngModel)]="allocateBatchId" [attr.aria-invalid]="errs['alloc-batch'] ? 'true' : null" />
                   <app-field-error [message]="errs['alloc-batch']"></app-field-error>
@@ -224,6 +244,7 @@ type Panel =
                 </span>
               </div>
               <dl class="epin-register__meta">
+                <div><dt>{{ 'admin.epinRegister.pinTypeLabel' | translate }}</dt><dd>{{ 'admin.epinRegister.pinType.' + p.pinType | translate }}</dd></div>
                 <div><dt>{{ 'admin.epinRegister.colBatch' | translate }}</dt><dd class="epin-register__code">{{ p.batchId.slice(0, 8) }}</dd></div>
                 <div><dt>{{ 'admin.epinRegister.colExpires' | translate }}</dt><dd>{{ p.expiresAt ? datePipe.transform(p.expiresAt, 'mediumDate') : '—' }}</dd></div>
                 <div><dt>{{ 'admin.epinRegister.colHolder' | translate }}</dt><dd class="epin-register__code">{{ userId(p.allocatedTo) }}</dd></div>
@@ -267,12 +288,14 @@ export class EPinRegisterComponent implements OnInit {
   protected datePipe = inject(DatePipe);
 
   readonly statuses: EPinStatus[] = ['UNUSED', 'ALLOCATED', 'USED', 'BLOCKED'];
+  readonly pinTypes: EPinType[] = ['REGISTRATION', 'TOPUP'];
   page: EPinPage | null = null;
   associates: AssociateSummary[] = [];
   loadError = false;
   actionError = '';
 
   status = '';
+  pinType = '';
   holderId = '';
   redeemedToId = '';
   selectedId: string | null = null;
@@ -282,6 +305,7 @@ export class EPinRegisterComponent implements OnInit {
   panel: Panel | null = null;
   generateCount = 10;
   generateExpiresLocal = '';
+  generatePinType: EPinType = 'REGISTRATION';
   generatedCodes: string[] = [];
   generatedBatchId = '';
   private appliedBatchId = '';
@@ -290,6 +314,7 @@ export class EPinRegisterComponent implements OnInit {
   allocateAssociateId = '';
   allocateCount = 1;
   allocateBatchId = '';
+  allocatePinType: EPinType | '' = '';
   allocateResult: AllocateResult | null = null;
   redeemAssociateId = '';
   redeemType: RedemptionType = 'ACTIVATION';
@@ -348,6 +373,7 @@ export class EPinRegisterComponent implements OnInit {
   }
 
   onStatusChange(v: string): void { this.status = v; this.loadPage(0); }
+  onPinTypeChange(v: string): void { this.pinType = v; this.loadPage(0); }
   onHolderChange(v: string): void { this.holderId = v; this.loadPage(0); }
   onBatchChange(v: string): void {
     this.batchId = v;
@@ -363,6 +389,7 @@ export class EPinRegisterComponent implements OnInit {
     this.loadError = false;
     const filters: EPinFilters = {};
     if (this.status) filters.status = this.status as EPinStatus;
+    if (this.pinType) filters.pinType = this.pinType as EPinType;
     if (this.holderId) filters.allocatedTo = this.holderId;
     if (this.redeemedToId) filters.redeemedTo = this.redeemedToId;
     if (this.appliedBatchId) filters.batchId = this.appliedBatchId;
@@ -387,9 +414,11 @@ export class EPinRegisterComponent implements OnInit {
     this.generatedBatchId = '';
     this.generateCount = 10;
     this.generateExpiresLocal = '';
+    this.generatePinType = 'REGISTRATION';
     this.allocateAssociateId = '';
     this.allocateCount = 1;
     this.allocateBatchId = '';
+    this.allocatePinType = '';
     this.allocateResult = null;
     this.redeemAssociateId = '';
     this.redeemType = 'ACTIVATION';
@@ -427,7 +456,7 @@ export class EPinRegisterComponent implements OnInit {
     this.actionError = '';
     if (!this.check([['count', 'Number of PINs', this.countMessage(this.generateCount)]])) return;
     const expiresAt = this.generateExpiresLocal ? new Date(this.generateExpiresLocal).toISOString() : undefined;
-    this.service.generate(this.generateCount, expiresAt).subscribe({
+    this.service.generate(this.generateCount, expiresAt, this.generatePinType).subscribe({
       next: res => { this.generatedCodes = res.codes; this.generatedBatchId = res.batchId; this.loadPage(0); },
       error: e => this.fail(e)
     });
@@ -445,7 +474,7 @@ export class EPinRegisterComponent implements OnInit {
       ['alloc-count', 'Number of PINs', this.countMessage(this.allocateCount)],
       ['alloc-batch', 'Batch ID', batch === '' || UUID_RE.test(batch) ? null : 'Batch ID is not valid. Paste the full batch ID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) or leave it empty.']
     ])) return;
-    this.service.allocate(this.allocateAssociateId, this.allocateCount, batch || undefined).subscribe({
+    this.service.allocate(this.allocateAssociateId, this.allocateCount, batch || undefined, this.allocatePinType || undefined).subscribe({
       next: res => { this.allocateResult = res; this.loadPage(0); },
       error: e => this.fail(e)
     });

@@ -1,11 +1,13 @@
 export type EPinStatus = 'UNUSED' | 'ALLOCATED' | 'USED' | 'BLOCKED';
 export type RedemptionType = 'ACTIVATION' | 'TOPUP';
+export type EPinType = 'REGISTRATION' | 'TOPUP';
 
 export interface EPin {
   id: string;
   code: string;
   batchId: string;
   status: EPinStatus;
+  pinType: EPinType;
   generatedBy: string;
   generatedAt: string;
   expiresAt: string | null;
@@ -32,6 +34,7 @@ export interface EPinPage {
 
 export interface EPinFilters {
   status?: EPinStatus | '';
+  pinType?: EPinType;
   batchId?: string;
   allocatedTo?: string;
   redeemedTo?: string;

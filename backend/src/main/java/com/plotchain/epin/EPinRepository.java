@@ -24,6 +24,7 @@ public interface EPinRepository extends JpaRepository<EPin, UUID> {
     @Query("""
         SELECT e FROM EPin e
         WHERE (:status IS NULL OR e.status = :status)
+        AND (:pinType IS NULL OR e.pinType = :pinType)
         AND (:redeemedTo IS NULL OR e.redeemedTo = :redeemedTo)
         AND (:batchId IS NULL OR e.batchId = :batchId)
         AND (:allocatedTo IS NULL OR e.allocatedTo = :allocatedTo)
@@ -34,6 +35,7 @@ public interface EPinRepository extends JpaRepository<EPin, UUID> {
         """)
     Page<EPin> search(
         @Param("status") EPinStatus status,
+        @Param("pinType") EPinType pinType,
         @Param("redeemedTo") UUID redeemedTo,
         @Param("batchId") UUID batchId,
         @Param("allocatedTo") UUID allocatedTo,
@@ -59,10 +61,11 @@ public interface EPinRepository extends JpaRepository<EPin, UUID> {
         SELECT e FROM EPin e
         WHERE e.status = com.plotchain.epin.EPinStatus.UNUSED
         AND (e.expiresAt IS NULL OR e.expiresAt > :now)
+        AND (:pinType IS NULL OR e.pinType = :pinType)
         AND (:batchId IS NULL OR e.batchId = :batchId)
         ORDER BY e.generatedAt, e.id
         """)
-    List<EPin> findAllocatable(@Param("now") Instant now, @Param("batchId") UUID batchId, Pageable pageable);
+    List<EPin> findAllocatable(@Param("now") Instant now, @Param("pinType") EPinType pinType, @Param("batchId") UUID batchId, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM EPin e WHERE e.id = :id")

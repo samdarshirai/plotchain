@@ -85,9 +85,9 @@ public class EPinService {
     // null-safe pattern as LedgerService.adminList -- passed straight through to
     // EPinRepository.search unchanged. No batch-resolved associate enrichment (see
     // EPinResponse's own comment for why).
-    public EPinPageResponse list(EPinStatus status, UUID redeemedTo, UUID batchId, UUID allocatedTo,
+    public EPinPageResponse list(EPinStatus status, EPinType pinType, UUID redeemedTo, UUID batchId, UUID allocatedTo,
                                  boolean expiredOnly, int page, int size) {
-        Page<EPin> result = epinRepository.search(status, redeemedTo, batchId, allocatedTo, expiredOnly,
+        Page<EPin> result = epinRepository.search(status, pinType, redeemedTo, batchId, allocatedTo, expiredOnly,
             clock.instant(), PageRequest.of(page, size));
         List<EPinResponse> epins = result.getContent().stream().map(this::toResponse).toList();
         return new EPinPageResponse(epins, page, size, result.getTotalElements());
@@ -189,7 +189,7 @@ public class EPinService {
         }
 
         Instant now = clock.instant();
-        List<EPin> pool = epinRepository.findAllocatable(now, request.batchId(), PageRequest.of(0, request.count()));
+        List<EPin> pool = epinRepository.findAllocatable(now, request.pinType(), request.batchId(), PageRequest.of(0, request.count()));
         if (pool.size() < request.count()) {
             throw new EPinInsufficientPoolException(request.count(), pool.size());
         }
@@ -400,7 +400,7 @@ public class EPinService {
     private EPinResponse toResponse(EPin epin) {
         boolean live = epin.getStatus() == EPinStatus.UNUSED || epin.getStatus() == EPinStatus.ALLOCATED;
         return new EPinResponse(
-            epin.getId(), epin.getCode(), epin.getBatchId(), epin.getStatus(),
+            epin.getId(), epin.getCode(), epin.getBatchId(), epin.getStatus(), epin.getPinType(),
             epin.getGeneratedBy(), epin.getGeneratedAt(), epin.getExpiresAt(),
             epin.getAllocatedTo(), epin.getAllocatedBy(), epin.getAllocatedAt(),
             epin.getRedeemedTo(), epin.getRedeemedBy(), epin.getRedeemedAt(),

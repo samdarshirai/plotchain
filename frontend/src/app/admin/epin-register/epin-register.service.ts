@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
-  AllocateResult, EPin, EPinBatchResult, EPinEvent, EPinFilters, EPinPage, RedemptionType
+  AllocateResult, EPin, EPinBatchResult, EPinEvent, EPinFilters, EPinPage, EPinType, RedemptionType
 } from './epin.model';
 
 @Injectable({ providedIn: 'root' })
@@ -19,13 +19,14 @@ export class EPinRegisterService {
     return this.http.get<EPinPage>('/api/admin/epins', { params });
   }
 
-  generate(count: number, expiresAt?: string): Observable<EPinBatchResult> {
-    return this.http.post<EPinBatchResult>('/api/admin/epins', expiresAt ? { count, expiresAt } : { count });
+  generate(count: number, expiresAt?: string, pinType?: EPinType): Observable<EPinBatchResult> {
+    return this.http.post<EPinBatchResult>('/api/admin/epins',
+      { count, ...(expiresAt && { expiresAt }), ...(pinType && { pinType }) });
   }
 
-  allocate(associateId: string, count: number, batchId?: string): Observable<AllocateResult> {
+  allocate(associateId: string, count: number, batchId?: string, pinType?: EPinType): Observable<AllocateResult> {
     return this.http.post<AllocateResult>('/api/admin/epins/allocate',
-      batchId ? { associateId, count, batchId } : { associateId, count });
+      { associateId, count, ...(batchId && { batchId }), ...(pinType && { pinType }) });
   }
 
   block(id: string, reason: string): Observable<EPin> {
