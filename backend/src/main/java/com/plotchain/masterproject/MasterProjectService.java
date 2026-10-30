@@ -11,7 +11,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,11 +41,11 @@ public class MasterProjectService {
 
     @Transactional(readOnly = true)
     public List<MasterProjectResponse> list() {
-        // The corner % lives on the plot-side project (same id as the master).
-        Map<UUID, BigDecimal> cornerPercents = new HashMap<>();
-        projectRepository.findAll().forEach(p -> cornerPercents.put(p.getId(), p.getCornerExtraPercent()));
+        // The extra % defaults live on the plot-side project (same id as the master).
+        Map<UUID, Project> plotSides = new HashMap<>();
+        projectRepository.findAll().forEach(p -> plotSides.put(p.getId(), p));
         return repository.findAllByOrderByNameAsc().stream()
-            .map(m -> MasterProjectResponse.of(m, cornerPercents.get(m.getId()))).toList();
+            .map(m -> MasterProjectResponse.of(m, plotSides.get(m.getId()))).toList();
     }
 
     @Transactional
@@ -63,9 +62,11 @@ public class MasterProjectService {
         Project plotSide = new Project(project.getId(), project.getName(), project.getLocation(), null, null, Instant.now());
         plotSide.setMasterProjectId(project.getId());
         plotSide.setCornerExtraPercent(request.cornerExtraPercent());
+        plotSide.setParkFacingExtraPercent(request.parkFacingExtraPercent());
+        plotSide.setRoadSideExtraPercent(request.roadSideExtraPercent());
         projectRepository.save(plotSide);
         auditService.record(AUDIT_SECTION, "Created master project " + name, Map.of("id", project.getId().toString()), actorId);
-        return MasterProjectResponse.of(project, plotSide.getCornerExtraPercent());
+        return MasterProjectResponse.of(project, plotSide);
     }
 
     @Transactional
@@ -79,17 +80,18 @@ public class MasterProjectService {
         if (request.status() != null) project.setStatus(request.status());
         project.touch();
         repository.save(project);
-        BigDecimal[] corner = new BigDecimal[1];
-        projectRepository.findById(id).ifPresent(plotSide -> {
+        Project plotSide = projectRepository.findById(id).orElse(null);
+        if (plotSide != null) {
             plotSide.setName(project.getName());
             plotSide.setLocation(project.getLocation());
             plotSide.setCornerExtraPercent(request.cornerExtraPercent());
+            plotSide.setParkFacingExtraPercent(request.parkFacingExtraPercent());
+            plotSide.setRoadSideExtraPercent(request.roadSideExtraPercent());
             projectRepository.save(plotSide);
-            corner[0] = plotSide.getCornerExtraPercent();
-        });
+        }
         auditService.record(AUDIT_SECTION, "Updated master project " + name,
             Map.of("id", id.toString(), "status", project.getStatus().name()), actorId);
-        return MasterProjectResponse.of(project, corner[0]);
+        return MasterProjectResponse.of(project, plotSide);
     }
 
     @Transactional

@@ -16,10 +16,18 @@ public record MasterProjectRequest(
     @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal businessPercentage,
     @NotNull @DecimalMin("0") BigDecimal ratePerSqft,
     MasterProject.Status status,
-    @DecimalMin("0") @DecimalMax("100") BigDecimal cornerExtraPercent
+    @DecimalMin("0") @DecimalMax("100") BigDecimal cornerExtraPercent,
+    @DecimalMin("0") @DecimalMax("100") BigDecimal parkFacingExtraPercent,
+    @DecimalMin("0") @DecimalMax("100") BigDecimal roadSideExtraPercent
 ) {
     public MasterProjectRequest(String name, MasterProject.Type type, String city, String state,
                                 BigDecimal businessPercentage, BigDecimal ratePerSqft, MasterProject.Status status) {
         this(name, type, city, state, businessPercentage, ratePerSqft, status, null);
+    }
+
+    public MasterProjectRequest(String name, MasterProject.Type type, String city, String state,
+                                BigDecimal businessPercentage, BigDecimal ratePerSqft, MasterProject.Status status,
+                                BigDecimal cornerExtraPercent) {
+        this(name, type, city, state, businessPercentage, ratePerSqft, status, cornerExtraPercent, null, null);
     }
 }

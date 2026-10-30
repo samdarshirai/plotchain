@@ -1,5 +1,6 @@
 package com.plotchain.projects;
 
+import java.math.BigDecimal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.company.SettingsAuditLog;
@@ -247,5 +248,22 @@ class ProjectServiceTest {
         when(plotRepository.existsByProjectId(PROJECT_ID)).thenReturn(true);
 
         assertThat(projectService.isComplete()).isTrue();
+    }
+
+    @Test
+    void createStoresParkAndRoadDefaults() {
+        ProjectResponse response = projectService.create(new ProjectRequest("Green Valley", "Hyderabad",
+            new BigDecimal("10"), new BigDecimal("7"), new BigDecimal("6")), ACTOR_ID);
+
+        assertThat(response.parkFacingExtraPercent()).isEqualByComparingTo("7");
+        assertThat(response.roadSideExtraPercent()).isEqualByComparingTo("6");
+    }
+
+    @Test
+    void createDefaultsParkAndRoadToFive() {
+        ProjectResponse response = projectService.create(new ProjectRequest("Green Valley", "Hyderabad"), ACTOR_ID);
+
+        assertThat(response.parkFacingExtraPercent()).isEqualByComparingTo("5");
+        assertThat(response.roadSideExtraPercent()).isEqualByComparingTo("5");
     }
 }
