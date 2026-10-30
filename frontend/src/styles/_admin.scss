@@ -1524,7 +1524,6 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1180px;
   margin: 0 auto;
   padding: 1.5rem 2rem;
   font-family: 'Inter', var(--font-sans);
@@ -1612,20 +1611,47 @@
 }
 
 // Columns differ per income-type tab, so cells share one muted tabular treatment instead of
-// per-position rules. The wide tabs (Matching: 14 columns) scroll inside the card on desktop.
-.ledger-register .card {
-  overflow-x: auto;
-}
-
+// per-position rules. Even the widest tab (Matching: 16 columns) fits the card on desktop with no
+// sideways scroll: fixed layout shares the width equally, and headers and cells wrap.
 .ledger-register .editable-table td {
   font-variant-numeric: tabular-nums;
   font-size: 0.8125rem;
-  white-space: nowrap;
 }
 
 .ledger-register .editable-table .editable-table__select {
   width: 2rem;
   padding-inline: 0.75rem 0;
+}
+
+@media (min-width: 769px) {
+  // The settings shell already pads the page; extra side padding here only costs table width.
+  .ledger-register {
+    padding-inline: 0;
+  }
+
+  .ledger-register .editable-table {
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .ledger-register .editable-table thead th {
+    padding: 0.5rem 4px;
+    font-size: 11px;
+    letter-spacing: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .ledger-register .editable-table tbody td {
+    padding: 0.625rem 4px;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  // Header icons take too much of a ~60px column.
+  .ledger-register .editable-table .th-icon {
+    display: none;
+  }
 }
 
 .ledger-register__toolbar {
