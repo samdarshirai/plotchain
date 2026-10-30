@@ -1,360 +1,317 @@
-// Associate Dashboard (dashboard-mockup spec, Viraj Acres Dashboard Mockups.dc.html):
-// page-header row, the existing Seal Card hero (see _setup.scss's .seal-card, extended here
-// into a two-column split with an income breakdown panel), a 4-tile KPI row, and a two-column
-// panel row (Leg Balance; Recent Sales + a plain contact-admin note).
+/* Hallmark · built: 2026-10-31 · theme: brand (DESIGN.md, locked) · shape: app screen · scope: /dashboard
+ * Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V4 · weakest: R, every figure the old tiles carried is still here, so the two ledgers stay dense; columns line left up with right so the density reads as a table, not a wall
+ * signature: the Ink seal, total business over this cycle's earnings, leading the hero
+ * redesign (full): seal first, profile beside it; 16 icon tiles became two ruled ledgers (this cycle over lifetime, team over income); leg balance beside a wider sales table
+ * answered: DESIGN.md SS3 sentence-case section heads with a trailing hairline, same as /admin/dashboard
+ * reworded "Business Volume", "Network & Income", "Business Summary", "This Cycle's Earnings", "Leg Balance", "Recent Sales" to sentence case · 54, 67 name them
+ * reworded cycleRange, teamSplit, networkHint middot joins to commas, dropped the arrow from "View income statement" · 10 names them
+ * dropped the stat-tile icons (16 Material symbols) · 30a, icon tiles
+ * waive 37: four faces are the project's token set (DESIGN.md); this screen sets two, Inter and Fraunces
+ * dismissed WARN 3: the ledger cells carry no icons; equal columns line left over left
+ * built: the project · redesign: full · v2.0.0 */
+
+// Associate Dashboard: header, the Ink seal beside the profile card, two collapsible figure
+// ledgers (Business volume, Network & income), then leg balance beside recent sales.
 
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-6);
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1.5rem 1.75rem 2rem;
+  padding: var(--space-6) var(--space-8) var(--space-8);
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--brand-secondary);
+    outline-offset: 2px;
+  }
 }
 
-// Shared "rule -- label -- rule" panel-header eyebrow (recent-sales-table and leg-balance both
-// use it) -- one definition, extended by both, instead of two copies of the same 3 rules.
-%panel-header-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  margin-bottom: 0.75rem;
-}
-
-%panel-header-eyebrow-rule {
-  flex: 1;
-  height: 1px;
-  background: color-mix(in srgb, var(--brand-secondary) 22%, transparent);
-}
-
-%panel-header-eyebrow-label {
-  font-size: 0.625rem;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--brand-secondary);
+// Sentence-case heading with a hairline running off it (DESIGN.md SS3), shared by the two
+// collapsible sections, leg balance and recent sales.
+%dashboard-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
   white-space: nowrap;
 }
 
+%dashboard-heading-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+%dashboard-heading-rule {
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--brand-secondary) 30%, transparent);
+}
+
+// Header.
 .dashboard__header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-4);
   flex-wrap: wrap;
 }
 
 .dashboard__title {
-  margin: 0 0 0.5rem;
+  margin: 0 0 var(--space-2);
   font-family: var(--font-display);
-  font-size: 1.875rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1.1;
   color: var(--text-primary);
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 .dashboard__header-meta {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
 .dashboard__cycle-pill {
-  padding: 0.3125rem 0.625rem;
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
-  background: rgba(198, 142, 39, 0.16);
-  font-size: 0.625rem;
+  background: color-mix(in srgb, var(--status-warning) 16%, transparent);
+  font-size: 0.8125rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   color: var(--status-warning-text);
 }
 
 .dashboard__cycle-range {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--text-muted);
 }
 
 .dashboard__header-right {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
 .dashboard__rank-badge {
-  padding: 0.375rem 0.6875rem;
+  padding: var(--space-1) var(--space-3);
   border: 1px solid var(--brand-secondary);
   border-radius: var(--radius-sm);
-  font-size: 0.625rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: var(--brand-secondary);
 }
 
 .dashboard__id-caption {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
   color: var(--text-muted);
 }
 
+// Same recipe as .inline-banner--warning; parchment on the solid bronze was 3.3:1.
 .kyc-banner {
-  padding: 0.75rem 1rem;
-  background: var(--status-warning);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--status-warning-text);
+  background: color-mix(in srgb, var(--status-warning) 14%, var(--surface-card));
   border-radius: var(--radius-sm);
-  color: var(--brand-secondary-contrast);
-  font-size: 0.8125rem;
+  color: var(--status-warning-text);
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
-// Hero row: profile card beside the cycle-income Seal Card (dashboard-mockup spec).
+// Hero: the seal leads (DOM keeps the profile card first), the profile card sits beside it.
 .dashboard__hero {
   display: grid;
-  grid-template-columns: minmax(280px, 0.95fr) minmax(360px, 1.25fr);
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: var(--space-4);
   align-items: stretch;
 }
 
-// Grid stretches each host (app-profile-card/app-cycle-income-card) to the row's tallest item,
-// but .profile-card only takes its own content height unless told to fill that host -- same fix
-// as .dashboard__tiles > app-stat-tile below, needed here too so the profile card matches the
-// Seal Card's height instead of leaving dead space at its bottom.
-.dashboard__hero > app-profile-card {
-  display: flex;
+.dashboard__hero > app-cycle-income-card {
+  order: -1;
+  min-width: 0;
 }
 
+.dashboard__hero > app-profile-card {
+  display: flex;
+  min-width: 0;
+}
+
+// Profile card: identity line on top, then label/value rows.
 .profile-card {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  padding: 1.125rem 1.25rem;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 1.25rem;
-  align-items: center;
 }
 
 .profile-card__identity {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--space-3);
   align-items: center;
-  gap: 0.5rem;
-  width: 88px;
 }
 
 .profile-card__avatar {
-  width: 72px;
-  height: 72px;
+  grid-row: span 2;
+  width: 3rem;
+  height: 3rem;
   border-radius: 50%;
   border: 1px solid var(--brand-primary);
   background: var(--brand-primary-soft);
-  color: var(--brand-primary);
+  color: var(--brand-on-surface);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
+  font-size: 1.125rem;
   font-weight: 600;
-  font-size: 1.25rem;
 }
 
 .profile-card__name {
   font-family: var(--font-display);
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 600;
   color: var(--text-primary);
-  text-align: center;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 .profile-card__designation {
-  font-size: 0.5938rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 0.8125rem;
   color: var(--text-muted);
-  text-align: center;
 }
 
 .profile-card__rows {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
   min-width: 0;
 }
 
 .profile-card__row {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 7.5rem minmax(0, 1fr);
   align-items: center;
-  gap: 0.5rem;
-  padding-bottom: 0.375rem;
-  border-bottom: 1px solid var(--border-subtle);
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .profile-card__row-icon {
-  font-size: 15px;
-  color: var(--brand-primary);
+  font-size: 1rem;
+  color: var(--text-muted);
 }
 
 .profile-card__row-label {
-  font-size: 0.5938rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.8125rem;
   color: var(--text-muted);
-  min-width: 92px;
 }
 
 .profile-card__row-value {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
-// Business Volume / Network & Income tile sections (dashboard-mockup spec): reuse the
-// panel-header-eyebrow placeholder that leg-balance/recent-sales already extend.
-.dashboard__section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5625rem;
+// Seal Card (base .seal-card rules live in _setup.scss). The dashboard splits the body into the
+// total-business column and the lifetime breakdown, with this cycle's earnings as a strip below.
+.cycle-income-card .seal-card__header-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
-// A <button> (collapsible), not a plain div -- reset the button chrome and keep the same
-// flex-row eyebrow layout the placeholder gives every other panel header.
-.dashboard__section-header {
-  @extend %panel-header-eyebrow;
-  width: 100%;
-  padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-
-.dashboard__section-rule {
-  @extend %panel-header-eyebrow-rule;
-  flex: 0 0 16px;
-}
-
-.dashboard__section-rule--fill {
-  flex: 1;
-}
-
-.dashboard__section-label {
-  @extend %panel-header-eyebrow-label;
-}
-
-.dashboard__section-chevron {
-  font-size: 18px;
-  color: var(--text-muted);
-  flex: 0 0 auto;
-}
-
-// Seal Card additions (base .seal-card/.seal-card__* rules live in _setup.scss). The dashboard's
-// cycle-income-card splits the body into a figure/delta column and an income-breakdown column.
 .seal-card__split {
   display: grid;
-  grid-template-columns: 1fr 1.3fr;
-  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-6) var(--space-4);
 }
 
 .cycle-income-card .seal-card__figure {
   font-size: 2.25rem;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 .seal-card__caption {
-  margin: 0 0 1rem;
-  font-size: 0.75rem;
-  color: #8C8271;
+  margin: 0 0 var(--space-4);
+  font-size: 0.8125rem;
+  color: var(--ink-text-muted);
 }
 
 .seal-card__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
 }
 
 .seal-card__chip {
   display: flex;
   flex-direction: column;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid rgba(232, 223, 201, 0.15);
+  gap: 0.125rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--ink-text) 18%, transparent);
   border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
-  color: #E8DFC9;
+  font-size: 0.875rem;
+  color: var(--ink-text);
   text-decoration: none;
+  transition: border-color 150ms ease;
+}
+
+a.seal-card__chip:hover {
+  border-color: var(--brand-primary);
 }
 
 .seal-card__chip-label,
 .seal-card__chip-note {
-  font-size: 0.6875rem;
-  color: #8C8271;
-}
-
-.seal-card__earnings {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 1rem;
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(232, 223, 201, 0.15);
-}
-
-.seal-card__earnings-figure {
-  font-size: 1.25rem;
-  color: #E8DFC9;
-}
-
-.seal-card__earnings .seal-card__link {
-  margin-left: auto;
-}
-
-.seal-card__delta {
-  margin: 0;
   font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--status-success);
-}
-
-.seal-card__delta--down {
-  color: var(--status-danger);
-}
-
-.seal-card__link {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--brand-primary);
-  text-decoration: none;
+  color: var(--ink-text-muted);
 }
 
 .seal-card__breakdown-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .seal-card__breakdown-hint {
-  font-size: 0.6875rem;
-  color: #8C8271;
+  font-size: 0.75rem;
+  color: var(--ink-text-muted);
 }
 
 .seal-card__breakdown-row {
-  margin-bottom: 0.625rem;
+  margin-bottom: var(--space-3);
 }
 
 .seal-card__breakdown-line {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.25rem;
-  font-size: 0.8125rem;
-  color: #E8DFC9;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+  font-size: 0.875rem;
+  color: var(--ink-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .seal-card__breakdown-bar {
   height: 3px;
-  background: rgba(232, 223, 201, 0.15);
+  background: color-mix(in srgb, var(--ink-text) 15%, transparent);
   border-radius: 999px;
 
   span {
@@ -365,162 +322,242 @@
   }
 }
 
-// flex-wrap, not CSS Grid: a partial LAST ROW of tiles (6 or 10 tiles never divide evenly into a
-// fixed column count) needs to stretch to fill the row rather than leave empty tracks. Grid's
-// auto-fit only avoids this when the item count happens to match however many 170px tracks fit
-// the container width -- it still leaves a gap otherwise (e.g. 10 tiles at 6 columns-that-fit
-// wraps 6+4, leaving 2 tracks empty on the second row). Flexbox sizes each wrapped line
-// independently, so leftover space in any partial line is always distributed among just that
-// line's items, with no dead space regardless of item count.
-.dashboard__tiles {
+.seal-card__earnings {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-4);
+  margin: 0 var(--space-6);
+  padding: var(--space-4) 0 var(--space-6);
+  border-top: 1px solid color-mix(in srgb, var(--ink-text) 15%, transparent);
 }
 
-// flex-basis 170px matches the mockup's minmax(170px, ...) minimum tile width; flex-grow lets
-// tiles stretch to fill remaining space in their row, same as the mockup's 1fr.
+.seal-card__earnings .seal-card__header-label {
+  flex-basis: 100%;
+}
+
+.seal-card__earnings-figure {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--brand-primary-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+.seal-card__delta {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink-success-text);
+}
+
+.seal-card__delta--down {
+  color: var(--ink-danger-text);
+}
+
+.seal-card__link {
+  margin-left: auto;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--brand-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Gold ring on the Ink seal; oxblood would vanish there.
+.dashboard .seal-card a:focus-visible {
+  outline-color: var(--brand-primary);
+}
+
+// Collapsible figure ledgers.
+.dashboard__section {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard__section-header {
+  @extend %dashboard-heading-row;
+  width: 100%;
+  min-height: 2.75rem;
+  margin-bottom: var(--space-1);
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.dashboard__section-label {
+  @extend %dashboard-heading;
+}
+
+.dashboard__section-rule {
+  @extend %dashboard-heading-rule;
+}
+
+.dashboard__section-chevron {
+  font-size: 1.25rem;
+  color: var(--text-muted);
+  transition: color 150ms ease;
+}
+
+.dashboard__section-header:hover .dashboard__section-chevron {
+  color: var(--text-primary);
+}
+
+.dashboard__section-header:active,
+.seal-card__chip:active,
+.seal-card__link:active {
+  opacity: 0.75;
+}
+
+// A ledger: one bordered panel, figures in ruled cells. The 1px gap over a border-coloured
+// background draws the rules; every count here divides evenly, so no row is left part-empty.
+.dashboard__tiles {
+  display: grid;
+  gap: 1px;
+  background: var(--border-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
 .dashboard__tiles > app-stat-tile {
   display: flex;
-  flex: 1 1 170px;
+  min-width: 0;
 }
 
 .dashboard__tiles .stat-tile {
   flex: 1;
-}
-
-// Mockup KPI tiles put the icon in the top-right corner with the label/value/hint stack filling
-// the rest of the card, unlike the shared stat-tile's default icon-left row layout -- an override
-// scoped to the dashboard rather than a new layout mode on the shared component, since nothing
-// else needs this arrangement.
-.dashboard__tiles .stat-tile--with-icon {
-  position: relative;
-  padding-right: 2.75rem;
-}
-
-.dashboard__tiles .stat-tile__icon {
-  position: absolute;
-  top: 1.25rem;
-  right: 1.25rem;
-  font-size: 20px;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border: none;
+  border-radius: 0;
 }
 
 .dashboard__tiles .stat-tile__body {
-  width: 100%;
+  gap: var(--space-1);
 }
 
+.dashboard__tiles .stat-tile__value {
+  order: 1;
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.dashboard__tiles .stat-tile__hint {
+  order: 2;
+  font-size: 0.75rem;
+}
+
+// Business volume: this cycle across the top row, lifetime beneath, so left sits over left and
+// right over right. DOM order is New left, New right, Total left, Total right, Total self,
+// New matching.
+#dashboard-section-business-volume {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  > :nth-child(1) { grid-area: 1 / 1; }
+  > :nth-child(2) { grid-area: 1 / 2; }
+  > :nth-child(6) { grid-area: 1 / 3; }
+  > :nth-child(3) { grid-area: 2 / 1; }
+  > :nth-child(4) { grid-area: 2 / 2; }
+  > :nth-child(5) { grid-area: 2 / 3; }
+}
+
+// Network & income: the team on the top row, the money beneath.
+#dashboard-section-network-income {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+// Leg balance beside recent sales.
 .dashboard__panels {
   display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: var(--space-4);
   align-items: start;
 }
 
 .dashboard__panels-right {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
-// Recent Sales table.
+.leg-balance,
 .recent-sales-table {
   min-width: 0;
-  overflow-x: auto;
+  padding: var(--space-4) var(--space-6);
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  padding: 1rem 1.125rem;
 }
 
+.leg-balance__header,
 .recent-sales-table__header {
-  @extend %panel-header-eyebrow;
+  @extend %dashboard-heading-row;
+  flex-wrap: wrap;
 }
 
-.recent-sales-table__rule {
-  @extend %panel-header-eyebrow-rule;
-}
-
+.leg-balance__label,
 .recent-sales-table__label {
-  @extend %panel-header-eyebrow-label;
+  @extend %dashboard-heading;
 }
 
-.recent-sales-table__loading,
-.recent-sales-table__empty,
-.recent-sales-table__error {
-  margin: 0;
+.leg-balance__rule,
+.recent-sales-table__rule {
+  @extend %dashboard-heading-rule;
+}
+
+.leg-balance__caption {
   font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
-// Leg Balance panel.
-.leg-balance {
-  background: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 1rem 1.125rem;
-}
-
-.leg-balance__header {
-  @extend %panel-header-eyebrow;
-}
-
-.leg-balance__rule {
-  @extend %panel-header-eyebrow-rule;
-}
-
-.leg-balance__label {
-  @extend %panel-header-eyebrow-label;
-}
-
-.leg-balance__caption {
-  font-size: 0.6875rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
 .leg-balance__figures {
-  display: flex;
-  justify-content: center;
-  align-items: stretch;
-  gap: 2.5rem;
-  margin-bottom: 1.25rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
+  gap: var(--space-4);
+  margin: var(--space-2) 0 var(--space-4);
 }
 
 .leg-balance__figure {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.375rem;
+  gap: var(--space-1);
+  min-width: 0;
 }
 
 .leg-balance__divider {
-  width: 1px;
   background: var(--border-subtle);
 }
 
 .leg-balance__figure-label {
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
 .leg-balance__figure-value {
   font-family: var(--font-display);
   font-size: 1.75rem;
-  font-weight: 700;
+  font-weight: 600;
+  line-height: 1.1;
   color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .leg-balance__figure-caption {
-  font-size: 0.6875rem;
-  color: var(--text-muted);
-}
-
-.leg-balance__note {
-  margin: 0.75rem 0 0;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
@@ -529,7 +566,7 @@
   height: 10px;
   border-radius: 999px;
   overflow: hidden;
-  background: repeating-linear-gradient(135deg, rgba(198, 162, 57, 0.3), rgba(198, 162, 57, 0.3) 4px, transparent 4px, transparent 8px);
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 30%, transparent) 0 4px, transparent 4px 8px);
 }
 
 .leg-balance__bar-fill {
@@ -544,34 +581,141 @@
   background: var(--brand-primary);
 }
 
+.leg-balance__note,
 .leg-balance__empty {
-  margin: 0.75rem 0 0;
-  font-size: 0.75rem;
+  margin: var(--space-3) 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
   color: var(--text-muted);
 }
 
-// Quick actions -- inert plain hint (dashboard-mockup: no record-sale/provision-associate buttons),
-// in its own bordered card matching the recent-sales-table/leg-balance card chrome.
-.quick-actions {
-  background: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 1rem 1.125rem;
+.recent-sales-table {
+  overflow-x: auto;
 }
 
+.recent-sales-table__loading,
+.recent-sales-table__empty,
+.recent-sales-table__error {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+// The shared table's header icons add noise to a five-row glance; heads in the body voice
+// (gate 67); plot, value, date and status stay one line, the project name wraps.
+.recent-sales-table .th-icon {
+  display: none;
+}
+
+.recent-sales-table th {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.8125rem;
+  white-space: nowrap !important;
+}
+
+.recent-sales-table td:not(:nth-child(2)) {
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums;
+}
+
+// The contact-admin note reads as a footnote to the sales table, not a card of its own.
 .quick-actions__hint {
   margin: 0;
-  font-size: 0.75rem;
+  padding: 0 var(--space-2);
+  font-size: 0.8125rem;
   color: var(--text-muted);
+}
+
+@media (max-width: 1100px) {
+  // Two columns: this cycle on the left, lifetime on the right.
+  #dashboard-section-business-volume {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    > :nth-child(1) { grid-area: 1 / 1; }
+    > :nth-child(2) { grid-area: 2 / 1; }
+    > :nth-child(6) { grid-area: 3 / 1; }
+    > :nth-child(3) { grid-area: 1 / 2; }
+    > :nth-child(4) { grid-area: 2 / 2; }
+    > :nth-child(5) { grid-area: 3 / 2; }
+  }
+
+  // Two columns: the team down the left, the money down the right.
+  #dashboard-section-network-income {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(5, auto);
+    grid-auto-flow: column;
+  }
 }
 
 @media (max-width: 960px) {
-  .dashboard__hero {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
+  .dashboard__hero,
   .dashboard__panels {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard {
+    padding: var(--space-4);
+  }
+
+  .seal-card__split {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--space-4) var(--space-4) var(--space-3);
+  }
+
+  .seal-card__earnings {
+    margin: 0 var(--space-4);
+    padding-bottom: var(--space-4);
+  }
+
+  .seal-card__link {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+
+  .profile-card,
+  .leg-balance,
+  .recent-sales-table {
+    padding: var(--space-4);
+  }
+
+  .profile-card__row {
+    grid-template-columns: auto 6.5rem minmax(0, 1fr);
+  }
+
+  .leg-balance__caption {
+    flex-basis: 100%;
+  }
+
+  .dashboard__tiles .stat-tile {
+    padding: var(--space-3);
+  }
+
+  .dashboard__tiles .stat-tile__value {
+    font-size: 1.125rem;
+  }
+
+  // Rows stay one line and the table scrolls sideways, plot number pinned (F25).
+  .recent-sales-table td:nth-child(2) {
+    white-space: nowrap !important;
+  }
+
+  .recent-sales-table th:first-child,
+  .recent-sales-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    box-shadow: 1px 0 0 var(--border-subtle);
+  }
+
+  .recent-sales-table td:first-child {
+    background: var(--surface-card);
+  }
+
+  .recent-sales-table th:first-child {
+    background: var(--ink);
   }
 }
 

@@ -13,7 +13,6 @@ import { LegBalanceComponent } from './widgets/leg-balance/leg-balance.component
 import { StatTileComponent } from '../shared/components/stat-tile/stat-tile.component';
 
 interface DashboardTile {
-  icon: string;
   labelKey: string;
   value: string;
   noteKey?: string;
@@ -66,14 +65,12 @@ type CollapsibleSection = 'businessVolume' | 'networkIncome';
           aria-controls="dashboard-section-business-volume"
           (click)="toggleSection('businessVolume')"
         >
-          <span class="dashboard__section-rule"></span>
           <span class="dashboard__section-label">{{ 'dashboard.businessVolumeEyebrow' | translate }}</span>
           <span class="dashboard__section-rule dashboard__section-rule--fill"></span>
           <span class="material-symbols-outlined dashboard__section-chevron">{{ isExpanded('businessVolume') ? 'expand_less' : 'expand_more' }}</span>
         </button>
         <div id="dashboard-section-business-volume" class="dashboard__tiles" *ngIf="isExpanded('businessVolume')">
           <app-stat-tile *ngFor="let tile of businessVolumeTiles(d)"
-            [icon]="tile.icon"
             [label]="tile.labelKey | translate"
             [value]="tile.value"
             [hint]="tile.noteKey ? (tile.noteKey | translate: tile.noteParams) : undefined"
@@ -89,14 +86,12 @@ type CollapsibleSection = 'businessVolume' | 'networkIncome';
           aria-controls="dashboard-section-network-income"
           (click)="toggleSection('networkIncome')"
         >
-          <span class="dashboard__section-rule"></span>
           <span class="dashboard__section-label">{{ 'dashboard.networkIncomeEyebrow' | translate }}</span>
           <span class="dashboard__section-rule dashboard__section-rule--fill"></span>
           <span class="material-symbols-outlined dashboard__section-chevron">{{ isExpanded('networkIncome') ? 'expand_less' : 'expand_more' }}</span>
         </button>
         <div id="dashboard-section-network-income" class="dashboard__tiles" *ngIf="isExpanded('networkIncome')">
           <app-stat-tile *ngFor="let tile of networkIncomeTiles(d)"
-            [icon]="tile.icon"
             [label]="tile.labelKey | translate"
             [value]="tile.value"
             [hint]="tile.noteKey ? (tile.noteKey | translate: tile.noteParams) : undefined"
@@ -156,35 +151,35 @@ export class DashboardComponent implements OnInit {
 
   businessVolumeTiles(d: DashboardResponse): DashboardTile[] {
     return [
-      { icon: 'trending_up', labelKey: 'dashboard.newLeftBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.newLeftBusiness), noteKey: 'dashboard.thisCycle' },
-      { icon: 'trending_up', labelKey: 'dashboard.newRightBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.newRightBusiness), noteKey: 'dashboard.thisCycle' },
-      { icon: 'arrow_back', labelKey: 'dashboard.totalLeftBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.totalLeftBusiness), noteKey: 'dashboard.lifetimeVolume' },
-      { icon: 'arrow_forward', labelKey: 'dashboard.totalRightBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.totalRightBusiness), noteKey: 'dashboard.lifetimeVolume' },
-      { icon: 'person_check', labelKey: 'dashboard.totalSelfBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.totalSelfBusiness), noteKey: 'dashboard.ownBookings' },
-      { icon: 'sync_alt', labelKey: 'dashboard.newMatchingBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.newMatchingBusiness), noteKey: 'dashboard.thisCycle' }
+      { labelKey: 'dashboard.newLeftBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.newLeftBusiness), noteKey: 'dashboard.thisCycle' },
+      { labelKey: 'dashboard.newRightBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.newRightBusiness), noteKey: 'dashboard.thisCycle' },
+      { labelKey: 'dashboard.totalLeftBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.totalLeftBusiness), noteKey: 'dashboard.lifetimeVolume' },
+      { labelKey: 'dashboard.totalRightBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.totalRightBusiness), noteKey: 'dashboard.lifetimeVolume' },
+      { labelKey: 'dashboard.totalSelfBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.totalSelfBusiness), noteKey: 'dashboard.ownBookings' },
+      { labelKey: 'dashboard.newMatchingBusinessLabel', value: this.formatCurrency(d.legVolumeSummary.newMatchingBusiness), noteKey: 'dashboard.thisCycle' }
     ];
   }
 
   networkIncomeTiles(d: DashboardResponse): DashboardTile[] {
     return [
-      { icon: 'group', labelKey: 'dashboard.leftAssociatesLabel', value: d.networkSummary.leftAssociateCount.toString(), noteKey: 'dashboard.inLeftLeg' },
-      { icon: 'group', labelKey: 'dashboard.rightAssociatesLabel', value: d.networkSummary.rightAssociateCount.toString(), noteKey: 'dashboard.inRightLeg' },
+      { labelKey: 'dashboard.leftAssociatesLabel', value: d.networkSummary.leftAssociateCount.toString(), noteKey: 'dashboard.inLeftLeg' },
+      { labelKey: 'dashboard.rightAssociatesLabel', value: d.networkSummary.rightAssociateCount.toString(), noteKey: 'dashboard.inRightLeg' },
       {
-        icon: 'hub', labelKey: 'dashboard.networkLabel', value: d.networkSummary.totalDownline.toString(),
+        labelKey: 'dashboard.networkLabel', value: d.networkSummary.totalDownline.toString(),
         noteKey: 'dashboard.networkHint',
         noteParams: { direct: d.networkSummary.directCount, downline: d.networkSummary.totalDownline - d.networkSummary.directCount }
       },
-      { icon: 'sell', labelKey: 'dashboard.salesThisCycleLabel', value: d.salesSummary.salesThisCycle.toString() },
-      { icon: 'square_foot', labelKey: 'dashboard.newBookedAreaLabel', value: `${d.legVolumeSummary.newBookedAreaSqft.toLocaleString('en-IN')} Sq. Ft.`, noteKey: 'dashboard.thisCycle' },
-      { icon: 'payments', labelKey: 'dashboard.directIncomeLabel', value: this.formatCurrency(d.cycleIncome.directIncome), noteKey: 'dashboard.thisCycle' },
-      { icon: 'sync_alt', labelKey: 'dashboard.matchingIncomeLabel', value: this.formatCurrency(d.cycleIncome.matchingIncomeLifetime), noteKey: 'dashboard.lifetime' },
-      { icon: 'supervisor_account', labelKey: 'dashboard.sponsorMatchingLabel', value: this.formatCurrency(d.cycleIncome.sponsorMatchingIncomeLifetime), noteKey: 'dashboard.lifetime' },
+      { labelKey: 'dashboard.salesThisCycleLabel', value: d.salesSummary.salesThisCycle.toString() },
+      { labelKey: 'dashboard.newBookedAreaLabel', value: `${d.legVolumeSummary.newBookedAreaSqft.toLocaleString('en-IN')} Sq. Ft.`, noteKey: 'dashboard.thisCycle' },
+      { labelKey: 'dashboard.directIncomeLabel', value: this.formatCurrency(d.cycleIncome.directIncome), noteKey: 'dashboard.thisCycle' },
+      { labelKey: 'dashboard.matchingIncomeLabel', value: this.formatCurrency(d.cycleIncome.matchingIncomeLifetime), noteKey: 'dashboard.lifetime' },
+      { labelKey: 'dashboard.sponsorMatchingLabel', value: this.formatCurrency(d.cycleIncome.sponsorMatchingIncomeLifetime), noteKey: 'dashboard.lifetime' },
       {
-        icon: 'workspace_premium', labelKey: 'dashboard.currentRoyaltyBonusLabel',
+        labelKey: 'dashboard.currentRoyaltyBonusLabel',
         value: `${this.formatCurrency(d.cycleIncome.royaltyBonus)} (${d.cycleIncome.royaltyBonusPct}%)`,
         noteKey: 'dashboard.rankBasedPoolShare'
       },
-      { icon: 'account_balance_wallet', labelKey: 'dashboard.walletBalanceLabel', value: this.formatCurrency(d.wallet.balance), noteKey: 'dashboard.withdrawContactAdmin' }
+      { labelKey: 'dashboard.walletBalanceLabel', value: this.formatCurrency(d.wallet.balance), noteKey: 'dashboard.withdrawContactAdmin' }
     ];
   }
 }
