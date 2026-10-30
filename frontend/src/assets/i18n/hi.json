@@ -673,7 +673,12 @@
   "auth": {
     "heading": "साइन इन करें",
     "subheading": "अपने एसोसिएट खाते में आपका स्वागत है।",
-    "adminSubheading": "अपने एडमिन खाते में आपका स्वागत है।",
+    "adminSubheading": "एसोसिएट, बुकिंग और भुगतान प्रबंधित करें।",
+    "adminConsole": "एडमिन कंसोल",
+    "adminEyebrow": "प्रशासक पहुँच",
+    "adminSecurityNote": "एडमिन साइन-इन लॉग किए जाते हैं।",
+    "associateSignIn": "एसोसिएट साइन-इन",
+    "adminFooterCompany": "विराज एकर्स, पटना",
     "adminUserIdLabel": "एडमिन आईडी",
     "userIdLabel": "एसोसिएट आईडी",
     "passwordLabel": "पासवर्ड",

@@ -163,4 +163,15 @@ describe('LoginComponent', () => {
 
     expect(passwordInput.type).toBe('text');
   });
+  it('renders the admin console badge and an associate sign-in link only on the admin login', () => {
+    expect(fixture.nativeElement.querySelector('.login-admin-badge')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.login-admin-footer')).toBeFalsy();
+
+    asAdminLogin();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.login-page--admin')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.login-admin-badge')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.login-admin-footer a').getAttribute('href')).toBe('/login');
+  });
 });
