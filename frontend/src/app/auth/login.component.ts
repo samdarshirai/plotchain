@@ -76,7 +76,7 @@ import { FormIssue, collectIssues } from '../shared/validation/validation';
           </label>
 
 
-          <app-brand-button type="submit" variant="primary" [fullWidth]="true">
+          <app-brand-button type="submit" variant="primary" [fullWidth]="true" [disabled]="submitting">
             {{ 'auth.loginButton' | translate }}
           </app-brand-button>
 
@@ -92,11 +92,6 @@ import { FormIssue, collectIssues } from '../shared/validation/validation';
 
           <p class="login-admin-note" *ngIf="realm === 'admin'">
             <span class="material-symbols-outlined">lock</span>{{ 'auth.adminSecurityNote' | translate }}
-          </p>
-
-          <p class="login-request-access" *ngIf="realm === 'associate'">
-            {{ 'auth.newAssociatePrompt' | translate }}
-            <a href="#" (click)="$event.preventDefault()">{{ 'auth.requestAccess' | translate }}</a>
           </p>
         </form>
 
@@ -133,6 +128,8 @@ export class LoginComponent implements OnInit {
   error = false;
   platformNotLive = false;
   showPassword = false;
+  // True while a login request is in flight; disables Sign in so a double click sends one request.
+  submitting = false;
 
   ngOnInit(): void {
     // In production (non-preview) use, fall back to the last-fetched public branding when the
@@ -170,7 +167,7 @@ export class LoginComponent implements OnInit {
   issues: FormIssue[] = [];
 
   onSubmit(): void {
-    if (this.previewMode) {
+    if (this.previewMode || this.submitting) {
       return;
     }
     this.submitted = true;
@@ -181,6 +178,7 @@ export class LoginComponent implements OnInit {
     }
     this.error = false;
     this.platformNotLive = false;
+    this.submitting = true;
     const { userId, password } = this.form.getRawValue();
     this.authService.login(userId!, password!, this.realm).subscribe({
       next: response => {
@@ -197,6 +195,7 @@ export class LoginComponent implements OnInit {
         this.router.navigate(['/dashboard']);
       },
       error: (err: HttpErrorResponse) => {
+        this.submitting = false;
         if (err.status === 403) {
           this.platformNotLive = true;
         } else {
