@@ -254,4 +254,35 @@ describe('MyTreeComponent', () => {
     expect(fixture.componentInstance.root?.id).toBe('a1');
     expect(fixture.componentInstance.searchQuery).toBe('');
   });
+
+  it('Back steps up one re-root at a time, ending at self, and My Tree clears history', () => {
+    const c = fixture.componentInstance;
+    const child = nestedTree.children[0];
+    const grandchild = child.children[0];
+    fixture.detectChanges();
+    httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
+
+    c.onCardClick(child);
+    httpMock.expectOne('/api/associates/me/tree/a2').flush(child);
+    c.onCardClick(grandchild);
+    httpMock.expectOne('/api/associates/me/tree/a3').flush(grandchild);
+    c.onCardClick(grandchild); // re-clicking the current root is not a step
+    httpMock.expectOne('/api/associates/me/tree/a3').flush(grandchild);
+    expect(c.rootHistory).toEqual(['a1', 'a2']);
+
+    c.goBack();
+    httpMock.expectOne('/api/associates/me/tree/a2').flush(child);
+    expect(c.root?.id).toBe('a2');
+
+    c.goBack();
+    httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
+    expect(c.root?.id).toBe('a1');
+    expect(c.rootHistory).toEqual([]);
+
+    c.onCardClick(child);
+    httpMock.expectOne('/api/associates/me/tree/a2').flush(child);
+    c.resetToSelf();
+    httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
+    expect(c.rootHistory).toEqual([]);
+  });
 });

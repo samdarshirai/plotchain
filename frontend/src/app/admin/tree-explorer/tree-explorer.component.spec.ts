@@ -254,4 +254,34 @@ describe('TreeExplorerComponent', () => {
     fixture.componentInstance.closeNewAssociatePanel();
     expect(fixture.componentInstance.panelOpen).toBeFalse();
   });
+
+  it('Back steps up one re-root at a time, ending at the company root, and My Tree clears history', () => {
+    const c = fixture.componentInstance;
+    const child = nestedTree.children[0];
+    const grandchild = child.children[0];
+    initWithCompanyTree(nestedTree);
+
+    c.onCardClick({ id: 'a2', data: child } as any);
+    httpMock.expectOne('/api/admin/tree/a2').flush(child);
+    c.onCardClick({ id: 'a3', data: grandchild } as any);
+    httpMock.expectOne('/api/admin/tree/a3').flush(grandchild);
+    expect(c.rootHistory).toEqual(['a1', 'a2']);
+
+    c.goBack();
+    httpMock.expectOne('/api/admin/tree/a2').flush(child);
+    expect(c.root?.id).toBe('a2');
+
+    c.goBack();
+    httpMock.expectOne('/api/admin/tree').flush(nestedTree);
+    expect(c.root?.id).toBe('a1');
+    expect(c.highlightedNodeId).toBeNull();
+    expect(c.rootHistory).toEqual([]);
+
+    c.onCardClick({ id: 'a2', data: child } as any);
+    httpMock.expectOne('/api/admin/tree/a2').flush(child);
+    c.goToMyTree();
+    httpMock.expectOne('/api/admin/tree').flush(nestedTree);
+    expect(c.root?.id).toBe('a1');
+    expect(c.rootHistory).toEqual([]);
+  });
 });
