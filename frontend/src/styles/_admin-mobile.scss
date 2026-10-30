@@ -326,7 +326,7 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
       font-size: 12px;
       line-height: 1.25;
       vertical-align: middle;
-      white-space: nowrap;
+      white-space: nowrap !important; // beats the global wrap rule in _tables.scss
       overflow: hidden;
       text-overflow: ellipsis;
       overflow-wrap: normal;
@@ -334,7 +334,7 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
     }
 
     th {
-      white-space: normal;
+      white-space: normal !important;
       font-size: 11px;
       letter-spacing: 0.04em;
     }

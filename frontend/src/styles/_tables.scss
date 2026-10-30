@@ -137,3 +137,44 @@ th {
   color: #fff !important;
   border-bottom-color: var(--ink) !important;
 }
+
+// Every table fits its container on desktop: no sideways scroll. Cell text wraps between words
+// instead; buttons and badges stay on one line. !important because many screen rules set
+// min-width / nowrap on tables and cells. Phones keep each screen's own stacked-card or scroll layout.
+// ponytail: !important override, drop the per-screen min-width/nowrap rules if this sticks.
+@media (min-width: 769px) {
+  table {
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+
+  th,
+  td {
+    min-width: 0 !important;
+    padding-inline: 6px !important;
+    white-space: normal !important;
+    overflow-wrap: break-word;
+  }
+
+  // Headers are the widest part of dense tables: icon sits above the label, and a label may
+  // break mid-word as a last resort.
+  th {
+    letter-spacing: 0 !important;
+    overflow-wrap: anywhere;
+  }
+
+  th .th-icon {
+    display: block;
+    margin: 0 0 2px;
+  }
+
+  :is(th, td) :is(button, .brand-button, [class*='badge']) {
+    white-space: nowrap !important;
+    overflow-wrap: normal;
+  }
+
+  :is(th, td) :is(input, select, textarea) {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
