@@ -114,6 +114,21 @@ describe('LoginComponent', () => {
     expect(fixture.componentInstance.platformNotLive).toBeFalse();
   });
 
+  it('ignores a second submit while the first login is in flight, then re-enables on failure', () => {
+    fixture.componentInstance.form.setValue({ userId: 'jane', password: 'wrong' });
+    fixture.componentInstance.onSubmit();
+    fixture.componentInstance.onSubmit();
+    fixture.detectChanges();
+
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('button[type="submit"]');
+    expect(button.disabled).toBeTrue();
+    const req = httpMock.expectOne('/api/auth/login');
+    req.flush({ error: 'Invalid ID or password' }, { status: 401, statusText: 'Unauthorized' });
+    fixture.detectChanges();
+
+    expect(button.disabled).toBeFalse();
+  });
+
   it('shows the platform-not-live error on a 403', () => {
     fixture.componentInstance.form.setValue({ userId: 'jane', password: 'Password123!' });
     fixture.componentInstance.onSubmit();
