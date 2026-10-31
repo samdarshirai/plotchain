@@ -20,7 +20,7 @@ public interface CycleRepository extends JpaRepository<Cycle, UUID> {
     List<Cycle> findByStatusOrderByPeriodStartAsc(CycleStatus status);
 
     // Admin Stats "Cycles Completed" tile: count of cycles in any of the given statuses
-    // (CLOSED + PAID, i.e. finished their lifecycle -- not OPEN/CALCULATING).
+    // (CLOSED, i.e. finished their lifecycle -- not OPEN/CALCULATING).
     long countByStatusIn(Collection<CycleStatus> statuses);
 
     // Admin cycle-history list, unfiltered: most recent period first.

@@ -119,7 +119,7 @@ public class AdminStatsService {
 
         long activePlots = plotRepository.countByStatusNot(PlotStatus.SOLD);
         long totalSalesRecorded = saleRepository.countByStatus(SaleStatus.RECORDED);
-        long cyclesCompleted = cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED, CycleStatus.PAID));
+        long cyclesCompleted = cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED));
 
         // Redesign 1a additions (2026-09-08-admin-dashboard-redesign-1a-design.md).
         BigDecimal pendingWithdrawalsValue =

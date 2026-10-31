@@ -205,17 +205,6 @@ class CycleServiceTest {
     }
 
     @Test
-    void closeThrowsCycleAlreadyClosedExceptionWhenStatusIsPaid() {
-        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
-            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
-        Cycle cycle = newCycle(CycleStatus.PAID);
-        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
-
-        assertThatThrownBy(() -> service.close(cycle.getId())).isInstanceOf(CycleAlreadyClosedException.class);
-    }
-
-    @Test
     void closeThrowsCycleValidationExceptionWhenPeriodHasNotEnded() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,

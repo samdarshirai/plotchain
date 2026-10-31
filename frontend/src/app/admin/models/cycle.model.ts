@@ -1,4 +1,4 @@
-export type CycleStatus = 'OPEN' | 'CALCULATING' | 'CLOSED' | 'PAID';
+export type CycleStatus = 'OPEN' | 'CALCULATING' | 'CLOSED';
 
 export interface CycleSummary {
   id: string;

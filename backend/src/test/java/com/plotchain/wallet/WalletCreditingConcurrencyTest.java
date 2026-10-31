@@ -163,7 +163,7 @@ class WalletCreditingConcurrencyTest {
         WalletCreditingResult response = second.get(5, TimeUnit.SECONDS);
 
         assertThat(events).containsExactly("holder-locked", "second-calling", "second-returned");
-        assertThat(response.newCycleStatus()).isEqualTo(CycleStatus.PAID);
+        assertThat(response.newCycleStatus()).isEqualTo(CycleStatus.CLOSED);
         assertThat(response.entriesCredited()).isEqualTo(1);
         // Credited exactly once -- not doubled by the holder's own (non-crediting) lock hold.
         assertThat(walletRepository.findById(associateId).orElseThrow().getBalance()).isEqualByComparingTo("75.00");
@@ -171,7 +171,7 @@ class WalletCreditingConcurrencyTest {
     }
 
     @Test
-    void secondCreditWalletsBlocksUntilFirstTransactionResolvesThenGets409IfFirstAlreadyCredited() throws Exception {
+    void secondCreditWalletsBlocksUntilFirstTransactionResolvesThenCreditsNothingIfFirstAlreadyPaidTheIncome() throws Exception {
         associateId = seedAssociate();
         cycleId = seedClosedCycleWithOnePendingEntry(associateId, new BigDecimal("75.00"));
 
@@ -182,10 +182,12 @@ class WalletCreditingConcurrencyTest {
         TransactionTemplate holderTx = new TransactionTemplate(transactionManager);
 
         Future<?> holder = pool.submit(() -> holderTx.executeWithoutResult(status -> {
-            Cycle locked = cycleRepository.findByIdForUpdate(cycleId).orElseThrow();
-            // Stands in for a first credit-wallets call that already completed successfully.
-            locked.setStatus(CycleStatus.PAID);
-            cycleRepository.save(locked);
+            cycleRepository.findByIdForUpdate(cycleId).orElseThrow();
+            // Stands in for a first credit-wallets call that already paid the income.
+            ledgerEntryRepository.findByCycleIdAndStatus(cycleId, LedgerEntryStatus.PENDING).forEach(e -> {
+                e.setStatus(LedgerEntryStatus.PAID);
+                ledgerEntryRepository.save(e);
+            });
             events.add("holder-locked");
             lockHeld.countDown();
             awaitQuietly(releaseLock);
@@ -206,9 +208,10 @@ class WalletCreditingConcurrencyTest {
         releaseLock.countDown();
         holder.get(5, TimeUnit.SECONDS);
 
-        assertThatThrownBy(second::get).hasCauseInstanceOf(CyclePayoutStateException.class);
-        // The would-be-credited entry stays untouched -- no double-credit and no orphaned Wallet
-        // row from the second (rejected) attempt.
+        WalletCreditingResult response = second.get(5, TimeUnit.SECONDS);
+        // Nothing left PENDING after the first payment -- no double-credit, no orphaned Wallet row.
+        assertThat(response.entriesCredited()).isZero();
+        assertThat(response.newCycleStatus()).isEqualTo(CycleStatus.CLOSED);
         assertThat(walletRepository.findById(associateId)).isEmpty();
         pool.shutdownNow();
     }

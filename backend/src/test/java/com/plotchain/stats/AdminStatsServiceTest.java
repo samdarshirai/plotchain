@@ -102,7 +102,7 @@ class AdminStatsServiceTest {
         when(plotRepository.count()).thenReturn(140L);
         when(plotRepository.countByStatus(PlotStatus.SOLD)).thenReturn(119L);
         when(saleRepository.countByStatus(SaleStatus.RECORDED)).thenReturn(63L);
-        when(cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED, CycleStatus.PAID))).thenReturn(11L);
+        when(cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED))).thenReturn(11L);
         when(withdrawalRequestRepository.sumAmountByStatus(WithdrawalRequestStatus.REQUESTED))
             .thenReturn(new BigDecimal("218400"));
         WithdrawalRequest oldestWithdrawal = new WithdrawalRequest();
@@ -219,7 +219,7 @@ class AdminStatsServiceTest {
         when(withdrawalRequestRepository.countByStatus(WithdrawalRequestStatus.REQUESTED)).thenReturn(0L);
         when(plotRepository.countByStatusNot(PlotStatus.SOLD)).thenReturn(0L);
         when(saleRepository.countByStatus(SaleStatus.RECORDED)).thenReturn(0L);
-        when(cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED, CycleStatus.PAID))).thenReturn(0L);
+        when(cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED))).thenReturn(0L);
         when(saleService.list(null, null, null, null, 0, 5))
             .thenReturn(new AdminSalePageResponse(List.of(), 0, 5, 0));
 

@@ -104,17 +104,18 @@ class WalletCreditingServiceTest {
         verify(ledgerEntryRepository).save(entryA);
         verify(ledgerEntryRepository).save(entryB);
 
-        assertThat(cycle.getStatus()).isEqualTo(CycleStatus.PAID);
-        verify(cycleRepository).save(cycle);
+        // Payment belongs to income: the cycle stays CLOSED.
+        assertThat(cycle.getStatus()).isEqualTo(CycleStatus.CLOSED);
+        verify(cycleRepository, never()).save(any());
 
         assertThat(result.cycleId()).isEqualTo(cycleId);
         assertThat(result.entriesCredited()).isEqualTo(2);
         assertThat(result.totalAmountCredited()).isEqualByComparingTo("150.00");
-        assertThat(result.newCycleStatus()).isEqualTo(CycleStatus.PAID);
+        assertThat(result.newCycleStatus()).isEqualTo(CycleStatus.CLOSED);
     }
 
     @Test
-    void aCycleWithNoPendingEntriesStillReachesPaidWithZeroCounts() {
+    void aCycleWithNoPendingEntriesCreditsNothingAndStaysClosed() {
         service = new WalletCreditingService(cycleRepository, ledgerEntryRepository, walletRepository, settingsAuditService);
         UUID cycleId = UUID.randomUUID();
         Cycle cycle = newCycle(cycleId, CycleStatus.CLOSED);
@@ -122,28 +123,11 @@ class WalletCreditingServiceTest {
         when(ledgerEntryRepository.findByCycleIdAndStatus(cycleId, LedgerEntryStatus.PENDING))
             .thenReturn(List.of());
 
-        // Decision 3: PAID is reached once the PENDING set (however small -- here, empty) is
-        // fully processed, regardless of any CARRIED_FORWARD entries a real cycle might still
-        // have sitting in it (findByCycleIdAndStatus's own filtering means this test never needs
-        // to construct one to prove the point).
         WalletCreditingResult result = service.creditWallets(cycleId);
 
         assertThat(result.entriesCredited()).isZero();
         assertThat(result.totalAmountCredited()).isEqualByComparingTo("0");
-        assertThat(cycle.getStatus()).isEqualTo(CycleStatus.PAID);
-        verify(cycleRepository).save(cycle);
-        verify(walletRepository, never()).creditBalance(any(), any());
-    }
-
-    @Test
-    void creditingAnAlreadyPaidCycleThrowsCyclePayoutStateExceptionAndTouchesNothingElse() {
-        service = new WalletCreditingService(cycleRepository, ledgerEntryRepository, walletRepository, settingsAuditService);
-        UUID cycleId = UUID.randomUUID();
-        when(cycleRepository.findByIdForUpdate(cycleId)).thenReturn(Optional.of(newCycle(cycleId, CycleStatus.PAID)));
-
-        assertThatThrownBy(() -> service.creditWallets(cycleId)).isInstanceOf(CyclePayoutStateException.class);
-
-        verify(ledgerEntryRepository, never()).findByCycleIdAndStatus(any(), any());
+        assertThat(cycle.getStatus()).isEqualTo(CycleStatus.CLOSED);
         verify(walletRepository, never()).creditBalance(any(), any());
     }
 

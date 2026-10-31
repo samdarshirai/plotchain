@@ -143,7 +143,6 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
             <option value="OPEN">{{ 'admin.cycleManagement.statusOpenOption' | translate }}</option>
             <option value="CALCULATING">{{ 'admin.cycleManagement.statusCalculatingOption' | translate }}</option>
             <option value="CLOSED">{{ 'admin.cycleManagement.statusClosedOption' | translate }}</option>
-            <option value="PAID">{{ 'admin.cycleManagement.statusPaidOption' | translate }}</option>
           </select>
         </label>
       </div>
@@ -206,7 +205,7 @@ export class CycleManagementComponent implements OnInit {
 
   // The Cycle Rail's fixed, one-directional sequence (see docs/design/admin_operational_screens/
   // cycle_management/DESIGN.md's "signature element" section) -- mirrors CycleStatus.java exactly.
-  readonly railStages: CycleStatus[] = ['OPEN', 'CALCULATING', 'CLOSED', 'PAID'];
+  readonly railStages: CycleStatus[] = ['OPEN', 'CALCULATING', 'CLOSED'];
 
   page: CyclePage | null = null;
   loadError = false;
@@ -355,17 +354,15 @@ export class CycleManagementComponent implements OnInit {
     return stageIndex === currentIndex ? 'current' : 'upcoming';
   }
 
-  // Amber for the two not-yet-settled states, gray once volume is rolled up but unpaid, green
-  // only once actually disbursed -- same "share a tone across related statuses" idiom Ledger
-  // Register/Payout Approval already use (their Pending/Carried-Forward and Requested groupings).
+  // Amber for the two not-yet-settled states, green once closed (the final state -- payment is
+  // tracked per income entry, not on the cycle) -- same "share a tone across related statuses"
+  // idiom Ledger Register/Payout Approval already use.
   statusBadgeTone(value: string | number): BadgeTone {
     switch (value) {
       case 'OPEN':
       case 'CALCULATING':
         return 'warning';
       case 'CLOSED':
-        return 'default';
-      case 'PAID':
         return 'success';
       default:
         return 'default';
@@ -376,8 +373,7 @@ export class CycleManagementComponent implements OnInit {
     const keys: Record<CycleStatus, string> = {
       OPEN: 'admin.cycleManagement.statusOpenOption',
       CALCULATING: 'admin.cycleManagement.statusCalculatingOption',
-      CLOSED: 'admin.cycleManagement.statusClosedOption',
-      PAID: 'admin.cycleManagement.statusPaidOption'
+      CLOSED: 'admin.cycleManagement.statusClosedOption'
     };
     return keys[stage];
   }

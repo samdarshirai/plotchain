@@ -139,10 +139,10 @@ class WalletCreditingIdempotencyTest {
 
         assertThat(result.entriesCredited()).isEqualTo(2);
         assertThat(result.totalAmountCredited()).isEqualByComparingTo("150.00");
-        assertThat(result.newCycleStatus()).isEqualTo(CycleStatus.PAID);
+        assertThat(result.newCycleStatus()).isEqualTo(CycleStatus.CLOSED);
 
         Cycle cycleAfterRetry = cycleRepository.findById(cycleId).orElseThrow();
-        assertThat(cycleAfterRetry.getStatus()).isEqualTo(CycleStatus.PAID);
+        assertThat(cycleAfterRetry.getStatus()).isEqualTo(CycleStatus.CLOSED);
         assertThat(walletRepository.findById(associateAId).orElseThrow().getBalance()).isEqualByComparingTo("100.00");
         assertThat(walletRepository.findById(associateBId).orElseThrow().getBalance()).isEqualByComparingTo("50.00");
     }

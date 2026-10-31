@@ -84,7 +84,7 @@ class AdminStatsControllerTest {
             .thenReturn(Optional.empty());
         when(plotRepository.countByStatusNot(PlotStatus.SOLD)).thenReturn(21L);
         when(saleRepository.countByStatus(SaleStatus.RECORDED)).thenReturn(63L);
-        when(cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED, CycleStatus.PAID))).thenReturn(11L);
+        when(cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED))).thenReturn(11L);
         when(cycleRepository.findAllByOrderByPeriodStartDesc(any())).thenReturn(Page.empty());
         when(saleService.list(null, null, null, null, 0, 5))
             .thenReturn(new AdminSalePageResponse(List.of(), 0, 5, 0));
@@ -121,7 +121,7 @@ class AdminStatsControllerTest {
             .thenReturn(2L);
         when(plotRepository.countByStatusNot(PlotStatus.SOLD)).thenReturn(21L);
         when(saleRepository.countByStatus(SaleStatus.RECORDED)).thenReturn(63L);
-        when(cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED, CycleStatus.PAID))).thenReturn(11L);
+        when(cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED))).thenReturn(11L);
 
         Cycle cycle = new Cycle();
         cycle.setId(UUID.randomUUID());
