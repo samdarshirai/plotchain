@@ -678,8 +678,27 @@ public class CycleService {
             associatesById.put(associate.getId(), associate);
         }
 
+        UUID previousClosedCycleId = cycleRepository
+            .findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)
+            .map(Cycle::getId)
+            .orElse(null);
+
         for (LegVolume legVolume : legVolumes) {
-            BigDecimal matchedVolume = legVolume.getLeftLegVolume().min(legVolume.getRightLegVolume());
+            // Royalty is on THIS cycle's business only: strip volume carried in from the prior
+            // cycle's unmatched leg before matching the legs.
+            BigDecimal carriedInLeft = BigDecimal.ZERO;
+            BigDecimal carriedInRight = BigDecimal.ZERO;
+            if (previousClosedCycleId != null) {
+                LegVolume prior = legVolumeRepository
+                    .findByAssociateIdAndCycleId(legVolume.getAssociateId(), previousClosedCycleId)
+                    .orElse(null);
+                if (prior != null) {
+                    carriedInLeft = prior.getCarriedForwardLeft();
+                    carriedInRight = prior.getCarriedForwardRight();
+                }
+            }
+            BigDecimal matchedVolume = legVolume.getLeftLegVolume().subtract(carriedInLeft)
+                .min(legVolume.getRightLegVolume().subtract(carriedInRight));
             if (matchedVolume.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }

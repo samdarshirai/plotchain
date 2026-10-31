@@ -44,6 +44,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -539,6 +540,62 @@ class CycleServiceTest {
         assertThat(entry.getNetAmount()).isEqualByComparingTo("4.55");
         assertThat(entry.getStatus()).isEqualTo(LedgerEntryStatus.PENDING);
         assertThat(entry.getCreatedAt()).isNotNull();
+    }
+
+    @Test
+    void closeRoyaltyIgnoresVolumeCarriedInFromThePriorCycle() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository, expenseRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setRole(AssociateRole.ASSOCIATE);
+        root.setKycStatus(KycStatus.VERIFIED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // This cycle: 100 left, 50 right. Prior cycle left 30 unmatched on the right leg, so the
+        // legs pair as 100 vs 80 = 80 matched in total, but only 50 of it is this cycle's business.
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
+        ));
+        Cycle priorClosedCycle = newCycle(CycleStatus.CLOSED);
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED))
+            .thenReturn(Optional.of(priorClosedCycle));
+        when(legVolumeRepository.findByAssociateIdAndCycleId(any(UUID.class), eq(priorClosedCycle.getId())))
+            .thenReturn(Optional.empty());
+        when(legVolumeRepository.findByAssociateIdAndCycleId(root.getId(), priorClosedCycle.getId()))
+            .thenReturn(Optional.of(new LegVolume(UUID.randomUUID(), root.getId(), priorClosedCycle.getId(),
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("30"))));
+
+        CompensationPlanVersion planVersion = planVersionFixture();
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
+            .thenReturn(Optional.of(planVersion));
+        // Only a lookup at this cycle's 50 finds a slab (1%); the 80 total would find none.
+        lenient().when(royaltyBonusRateRepository
+            .findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+                eq(planVersion.getId()), any(BigDecimal.class)))
+            .thenReturn(Optional.empty());
+        when(royaltyBonusRateRepository
+            .findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+                eq(planVersion.getId()), argThat(v -> v.compareTo(new BigDecimal("50")) == 0)))
+            .thenReturn(Optional.of(royaltyBonusRateFixture(planVersion.getId(), new BigDecimal("50"), new BigDecimal("1"))));
+
+        service.close(cycle.getId());
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, atLeastOnce()).save(entryCaptor.capture());
+        List<LedgerEntry> royalties = entryCaptor.getAllValues().stream()
+            .filter(e -> e.getIncomeType() == IncomeType.ROYALTY).toList();
+        assertThat(royalties).hasSize(1);
+        // 50 * 1% = 0.50
+        assertThat(royalties.get(0).getGrossAmount()).isEqualByComparingTo("0.50");
     }
 
     @Test

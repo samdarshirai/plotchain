@@ -372,12 +372,13 @@ class CycleCloseFullPipelineIntegrationTest {
         // net = 0.30 - 0.015(tds) - 0.012(admin) = 0.273 unrounded -> DB rounds HALF_UP to 0.27.
         assertThat(sponsorFromAdmin.getNetAmount()).isEqualByComparingTo("0.27");
 
-        // --- Royalty: b1 only -- matched volume 55 meets the seeded 50 slab threshold. Admin is
-        // excluded by the role guard regardless of its own matched volume (30). ---
+        // --- Royalty: b1 only -- THIS cycle's matched volume is 50 (55 total minus the 5 carried
+        // in on the right leg from the prior cycle) and meets the seeded 50 slab threshold. Admin
+        // is excluded by the role guard regardless of its own matched volume (30). ---
         LedgerEntry b1Royalty = findEntry(b1Id, IncomeType.ROYALTY);
-        assertThat(b1Royalty.getGrossAmount()).isEqualByComparingTo("1.65");
-        // net = 1.65 - 0.0825(tds) - 0.066(admin) = 1.5015 unrounded -> DB rounds HALF_UP to 1.50.
-        assertThat(b1Royalty.getNetAmount()).isEqualByComparingTo("1.50");
+        assertThat(b1Royalty.getGrossAmount()).isEqualByComparingTo("1.50");
+        // net = 1.50 - 0.075(tds) - 0.06(admin) = 1.365 unrounded -> DB rounds HALF_UP to 1.37.
+        assertThat(b1Royalty.getNetAmount()).isEqualByComparingTo("1.37");
         assertThat(b1Royalty.getStatus()).isEqualTo(LedgerEntryStatus.CARRIED_FORWARD);
         assertThat(b1Royalty.getSourceRef()).isEqualTo(b1LegVolume.getId());
         assertThat(findEntries(adminId, IncomeType.ROYALTY)).isEmpty();
