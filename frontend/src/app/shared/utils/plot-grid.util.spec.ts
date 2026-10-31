@@ -1,17 +1,19 @@
-import { countByStatus, defaultExtraPercent, formatArea, formatInr, formatLakh, groupIntoBlocks, PlotGridItem, plotTypeParts } from './plot-grid.util';
+import { countByStatus, defaultExtraPercent, formatAmount, formatArea, formatInr, formatLakh, groupIntoBlocks, PlotGridItem, plotTypeParts } from './plot-grid.util';
 
 const plot = (plotNo: string, status: PlotGridItem['status'] = 'AVAILABLE'): PlotGridItem =>
   ({ plotId: 'id-' + plotNo, plotNo, type: 'NORMAL', area: 1200, price: 4500000, status });
 
 describe('plot-grid.util', () => {
   it('formats rupees with Indian grouping', () => {
-    expect(formatInr(5130000).replace(/\s/g, '')).toBe('₹51,30,000');
+    expect(formatInr(5130000).replace(/\s/g, '')).toBe('₹51,30,000.00');
+    expect(formatInr(333333.333)).toBe('₹3,33,333.33');
+    expect(formatAmount(1000000)).toBe('10,00,000.00');
   });
 
   it('formats lakh shorthand, falling back to full rupees under one lakh', () => {
     expect(formatLakh(5130000)).toBe('₹51.3 L');
     expect(formatLakh(4500000)).toBe('₹45.0 L');
-    expect(formatLakh(75000).replace(/\s/g, '')).toBe('₹75,000');
+    expect(formatLakh(75000).replace(/\s/g, '')).toBe('₹75,000.00');
   });
 
   it('formats area with Indian grouping', () => {

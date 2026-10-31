@@ -446,7 +446,7 @@ export class ProjectsPlotsComponent implements OnInit {
 
   rateText(plotId: string): string {
     const r = this.rates?.[plotId];
-    return r != null ? r.toLocaleString('en-IN') : '—';
+    return r != null ? formatInr(r) : '—';
   }
 
   // Rate × size; falls back to the stored price until rates load.

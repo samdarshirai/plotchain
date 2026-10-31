@@ -1,3 +1,4 @@
+import { formatAmount } from '../../../shared/utils/plot-grid.util';
 import { fitSize } from '../../../shared/utils/fit-text.util';
 import { headerIcon } from '../../../shared/utils/header-icon';
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
@@ -61,7 +62,7 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
               <td [attr.data-label]="'admin.invoicePayments.mobileNo' | translate">{{ r.associatePhone }}</td>
               <td class="editable-table__cell--ellipsis" [attr.title]="'admin.invoicePayments.paymentTypeLoanRepayment' | translate" [attr.data-label]="'admin.invoicePayments.paymentType' | translate">{{ 'admin.invoicePayments.paymentTypeLoanRepayment' | translate }}</td>
               <td [attr.data-label]="'admin.invoicePayments.receiptNo' | translate">{{ r.receiptNo }}</td>
-              <td [class.editable-table__cell--fit-md]="fit(r.amount) === 'md'" [class.editable-table__cell--fit-sm]="fit(r.amount) === 'sm'" [attr.data-label]="'admin.invoicePayments.amount' | translate">{{ r.amount.toFixed(2) }}</td>
+              <td [class.editable-table__cell--fit-md]="fit(r.amount) === 'md'" [class.editable-table__cell--fit-sm]="fit(r.amount) === 'sm'" [attr.data-label]="'admin.invoicePayments.amount' | translate">{{ r.amount | number:'1.2-2' }}</td>
               <td class="editable-table__cell--ellipsis" [attr.title]="'admin.invoicePayments.payModes.' + r.payMode | translate" [attr.data-label]="'admin.invoicePayments.payMode' | translate">{{ 'admin.invoicePayments.payModes.' + r.payMode | translate }}</td>
               <td class="editable-table__cell--ellipsis" [attr.title]="r.bankName" [attr.data-label]="'admin.invoicePayments.bankName' | translate">{{ r.bankName }}</td>
               <td class="editable-table__cell--ellipsis" [attr.title]="r.txnNo" [attr.data-label]="'admin.invoicePayments.txnNo' | translate">{{ r.txnNo }}</td>
@@ -101,7 +102,7 @@ export class PaymentDetailsComponent implements OnInit {
   }
 
   fit(amount: number): 'md' | 'sm' | null {
-    return fitSize(amount.toFixed(2));
+    return fitSize(formatAmount(amount));
   }
 
   apply(): void {

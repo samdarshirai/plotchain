@@ -242,8 +242,8 @@ const PLOT_TYPE_LABELS: Record<PlotType, string> = {
                 <td>{{ plot.plotNo }}</td>
                 <td>{{ plotTypeLabel(plot.plotType) }}</td>
                 <td>{{ plot.areaSqft }}</td>
-                <td>{{ plot.rate }}</td>
-                <td>{{ plot.price | currency:'INR':'symbol':'1.0-2' }}</td>
+                <td>{{ plot.rate | currency:'INR':'symbol':'1.2-2' }}</td>
+                <td>{{ plot.price | currency:'INR':'symbol':'1.2-2' }}</td>
                 <td>
                   <span class="projects-step__status-pill" [ngClass]="plotStatusClass(plot.status)">
                     {{ plotStatusLabel(plot.status) }}

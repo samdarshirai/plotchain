@@ -19,7 +19,7 @@ import { CycleIncome, LegVolumeSummary, NetworkSummary } from '../../models/dash
             <span class="seal-card__header-rule"></span>
             <span class="seal-card__header-label">{{ 'dashboard.businessSummaryEyebrow' | translate }}</span>
           </div>
-          <h2 class="total seal-card__figure">{{ totalBusiness | currency:'INR':'symbol':'1.0-0' }}</h2>
+          <h2 class="total seal-card__figure">{{ totalBusiness | currency:'INR':'symbol':'1.2-2' }}</h2>
           <p class="seal-card__caption">{{ 'dashboard.totalBusinessLabel' | translate }}</p>
           <div class="seal-card__chips">
             <span class="business-rank seal-card__chip">
@@ -41,21 +41,21 @@ import { CycleIncome, LegVolumeSummary, NetworkSummary } from '../../models/dash
           <div class="seal-card__breakdown-row">
             <div class="left-business seal-card__breakdown-line">
               <span>{{ 'dashboard.totalLeftBusinessLabel' | translate }}</span>
-              <span>{{ legVolume.totalLeftBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
+              <span>{{ legVolume.totalLeftBusiness | currency:'INR':'symbol':'1.2-2' }}</span>
             </div>
             <div class="seal-card__breakdown-bar"><span [style.width.%]="barPct(legVolume.totalLeftBusiness)"></span></div>
           </div>
           <div class="seal-card__breakdown-row">
             <div class="right-business seal-card__breakdown-line">
               <span>{{ 'dashboard.totalRightBusinessLabel' | translate }}</span>
-              <span>{{ legVolume.totalRightBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
+              <span>{{ legVolume.totalRightBusiness | currency:'INR':'symbol':'1.2-2' }}</span>
             </div>
             <div class="seal-card__breakdown-bar"><span [style.width.%]="barPct(legVolume.totalRightBusiness)"></span></div>
           </div>
           <div class="seal-card__breakdown-row">
             <div class="self-business seal-card__breakdown-line">
               <span>{{ 'dashboard.totalSelfBusinessLabel' | translate }}</span>
-              <span>{{ legVolume.totalSelfBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
+              <span>{{ legVolume.totalSelfBusiness | currency:'INR':'symbol':'1.2-2' }}</span>
             </div>
             <div class="seal-card__breakdown-bar"><span [style.width.%]="barPct(legVolume.totalSelfBusiness)"></span></div>
           </div>
@@ -63,9 +63,9 @@ import { CycleIncome, LegVolumeSummary, NetworkSummary } from '../../models/dash
       </div>
       <div class="business-earnings seal-card__earnings">
         <span class="seal-card__header-label">{{ 'dashboard.cycleIncomeEyebrow' | translate }}</span>
-        <strong class="seal-card__earnings-figure">{{ data.totalIncome | currency:'INR' }}</strong>
+        <strong class="seal-card__earnings-figure">{{ data.totalIncome | currency:'INR':'symbol':'1.2-2' }}</strong>
         <span class="seal-card__delta" [class.seal-card__delta--down]="delta < 0">
-          {{ (delta >= 0 ? 'dashboard.deltaUp' : 'dashboard.deltaDown') | translate: { amount: (deltaAbs | currency:'INR':'symbol':'1.0-0') } }}
+          {{ (delta >= 0 ? 'dashboard.deltaUp' : 'dashboard.deltaDown') | translate: { amount: (deltaAbs | currency:'INR':'symbol':'1.2-2') } }}
         </span>
         <a class="seal-card__link" [routerLink]="['/income-statement']" [queryParams]="{ cycleId: data.cycleId }">{{ 'dashboard.viewIncomeStatement' | translate }}</a>
       </div>

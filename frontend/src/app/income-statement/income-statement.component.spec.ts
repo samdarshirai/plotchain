@@ -355,7 +355,7 @@ describe('IncomeStatementComponent', () => {
     ]);
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
-    expect(cells).toEqual(jasmine.arrayContaining(['PC200', '₹35,000', '₹3,500']));
+    expect(cells).toEqual(jasmine.arrayContaining(['PC200', '₹35,000.00', '₹3,500.00']));
   });
 
   const tier = (n: number, threshold: number, reqL: number, reqR: number, achieved: boolean) => ({
@@ -382,7 +382,7 @@ describe('IncomeStatementComponent', () => {
 
     const values: string[] = Array.from(fixture.nativeElement.querySelectorAll('.income-statement__card-value'))
       .map((e: any) => e.textContent.trim());
-    expect(values).toEqual(['₹1,250', '42']);
+    expect(values).toEqual(['₹1,250.00', '42']);
     expect(fixture.nativeElement.querySelector('.editable-table__badge--success').textContent.trim()).toBe('PAID');
   });
 
@@ -403,7 +403,7 @@ describe('IncomeStatementComponent', () => {
       [{ achievedDate: '2026-01-05T00:00:00Z', designation: 'T1', reward: 15000, perkDescription: '+ Smart Watch', paid: false, paymentDate: null, remarks: null }]
     );
     expect(c.currentRank).toBe('T1');
-    expect(c.rewardCards.map(x => x.value)).toEqual(['₹1,300,000', '₹300,000', '₹300,000']);
+    expect(c.rewardCards.map(x => x.value)).toEqual(['₹1,300,000.00', '₹300,000.00', '₹300,000.00']);
     expect(c.rewardTierRows.map(t => t['status'])).toEqual(['Achieved', 'In progress', 'Pending']);
     expect(c.rewardTierRows[1]['left']).toBe('₹13 L / ₹20 L');
     expect(c.rewardTierRows[1]['right']).toBe('₹3 L / ₹20 L');

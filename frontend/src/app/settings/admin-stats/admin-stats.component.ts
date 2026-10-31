@@ -66,7 +66,7 @@ import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.c
           icon="account_balance_wallet"
           layout="vertical"
           [label]="'settings.adminStats.totalWalletBalanceLabel' | translate"
-          [value]="(s.totalWalletBalance | currency:'INR':'symbol':'1.0-2') || ''"
+          [value]="(s.totalWalletBalance | currency:'INR':'symbol':'1.2-2') || ''"
         ></app-stat-tile>
       </div>
     </div>
