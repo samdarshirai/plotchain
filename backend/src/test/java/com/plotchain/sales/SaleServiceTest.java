@@ -6,7 +6,6 @@ import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.KycStatus;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
-import com.plotchain.compensation.SelfPerformanceBonusConfigService;
 import com.plotchain.compensation.SettlementCycle;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleService;
@@ -59,7 +58,6 @@ class SaleServiceTest {
     @Mock CompensationPlanVersionRepository compensationPlanVersionRepository;
     @Mock SaleRepository saleRepository;
     @Mock LedgerEntryRepository ledgerEntryRepository;
-    @Mock SelfPerformanceBonusConfigService selfPerformanceBonusConfigService;
     @Mock com.plotchain.projects.ProjectRepository projectRepository;
 
     SaleService saleService;
@@ -74,7 +72,7 @@ class SaleServiceTest {
         saleService = new SaleService(
             plotRepository, associateRepository, cycleService,
             compensationPlanVersionRepository, saleRepository, ledgerEntryRepository,
-            selfPerformanceBonusConfigService, projectRepository);
+            projectRepository);
     }
 
     private Plot plotWithStatus(PlotStatus status) {
@@ -105,10 +103,9 @@ class SaleServiceTest {
         return new CompensationPlanVersion(
             UUID.randomUUID(), "v1", LocalDate.now().minusDays(1),
             new BigDecimal("10.00"), BigDecimal.ZERO, BigDecimal.ZERO,
-            new BigDecimal("5.00"), BigDecimal.ZERO, new BigDecimal("4.00"),
+            new BigDecimal("5.00"), new BigDecimal("4.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.MONTHLY,
-            Instant.now(), null,
-            new BigDecimal("1.00"), new BigDecimal("2000"), new BigDecimal("2.00"), new BigDecimal("3000"));
+            Instant.now(), null);
     }
 
     // recordInstallmentPayment: one Sale per confirmed booking payment, amount = that installment.
@@ -225,22 +222,6 @@ class SaleServiceTest {
     }
 
     @Test
-    void recordInstallmentPaymentCreditsSelfPerformanceBonusForBookedPlotArea() {
-        stubConfirmedPathDependencies();
-        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
-
-        SaleResponse response = confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "3000"));
-
-        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
-        verify(ledgerEntryRepository, times(2)).save(captor.capture());
-        LedgerEntry spb = captor.getAllValues().get(1);
-        assertThat(spb.getIncomeType()).isEqualTo(IncomeType.SELF_PERFORMANCE);
-        // gross = 600000.00 * 2% = 12000
-        assertThat(spb.getGrossAmount()).isEqualByComparingTo("12000");
-        assertThat(spb.getSourceRef()).isEqualTo(response.id());
-    }
-
-    @Test
     void recordInstallmentPaymentThrowsWhenCompensationPlanMissing() {
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
@@ -261,82 +242,21 @@ class SaleServiceTest {
     // flow "Void a sale", steps 1-2): guard-only tests. The happy-path reversal (steps 3-6) is
     // Sales unit 5's job -- voidSaleReachesThePlaceholderWhenGuardsPass below only proves the
     // guards let a RECORDED sale through, not that anything gets reversed.
-    // --- Self-Performance Bonus tiers and KYC gating, via the booking-payment path ---
-
     private List<LedgerEntry> savedLedgerEntries(int times) {
         ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository, times(times)).save(captor.capture());
         return captor.getAllValues();
     }
 
-    private LedgerEntry selfPerformance(List<LedgerEntry> entries) {
-        return entries.stream().filter(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE).findFirst().orElseThrow();
-    }
-
-    @Test
-    void paymentCreditsSelfPerformanceBonusAtTier1WhenAreaMeetsTheLowerThreshold() {
-        stubConfirmedPathDependencies();
-        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
-
-        confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "2000"));
-
-        // gross = 600000.00 * 1% = 6000
-        assertThat(selfPerformance(savedLedgerEntries(2)).getGrossAmount()).isEqualByComparingTo("6000");
-    }
-
-    @Test
-    void paymentCreditsSelfPerformanceBonusAtTier2WhenAreaMeetsTheHigherThreshold() {
-        stubConfirmedPathDependencies();
-        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
-
-        confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "3000"));
-
-        assertThat(selfPerformance(savedLedgerEntries(2)).getGrossAmount()).isEqualByComparingTo("12000");
-    }
-
-    @Test
-    void paymentWritesNoSelfPerformanceEntryBelowTheLowerThreshold() {
-        stubConfirmedPathDependencies();
-        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
-
-        confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1999"));
-
-        verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE));
-    }
-
-    @Test
-    void paymentWritesNoSelfPerformanceEntryWhenTheConfigIsDisabled() {
-        stubConfirmedPathDependencies();
-        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(false);
-
-        confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "3000"));
-
-        verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.SELF_PERFORMANCE));
-    }
-
-    @Test
-    void paymentCreditsSelfPerformanceBonusAsCarriedForwardWhenAssociateKycIsNotVerified() {
-        stubConfirmedPathDependencies();
-        Associate unverified = associateWithPosition("L");
-        unverified.setKycStatus(KycStatus.PENDING);
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(unverified));
-        when(selfPerformanceBonusConfigService.isEnabled()).thenReturn(true);
-
-        confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "2000"));
-
-        assertThat(selfPerformance(savedLedgerEntries(2)).getStatus()).isEqualTo(LedgerEntryStatus.CARRIED_FORWARD);
-    }
-
-    // compensation-plan-reference.md's real published rates (direct 6%, tds 2%, admin-without-pan 15%)
+    // compensation-plan-reference.md's real published rates (direct 6%, tds 2%, processing fee 15%)
     // so the expected amounts match the doc's own Round 1 worked example exactly.
     private CompensationPlanVersion referenceCompensationPlanVersion() {
         return new CompensationPlanVersion(
             UUID.randomUUID(), "reference", LocalDate.now().minusDays(1),
             new BigDecimal("6.00"), BigDecimal.ZERO, BigDecimal.ZERO,
-            new BigDecimal("2.00"), BigDecimal.ZERO, new BigDecimal("15.00"),
+            new BigDecimal("2.00"), new BigDecimal("15.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.MONTHLY,
-            Instant.now(), null,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
+            Instant.now(), null);
     }
 
     @Test
@@ -530,15 +450,14 @@ class SaleServiceTest {
         UUID saleId = UUID.randomUUID();
         Sale sale = recordedSale(saleId, PLOT_ID);
         LedgerEntry directEntry = pendingLedgerEntry(saleId);
-        LedgerEntry selfPerformanceEntry = pendingLedgerEntry(saleId);
-        selfPerformanceEntry.setId(UUID.randomUUID());
-        selfPerformanceEntry.setIncomeType(IncomeType.SELF_PERFORMANCE);
+        LedgerEntry secondEntry = pendingLedgerEntry(saleId);
+        secondEntry.setId(UUID.randomUUID());
 
         when(saleRepository.findById(saleId)).thenReturn(Optional.of(sale));
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(plotRepository.findById(sale.getPlotId())).thenReturn(Optional.of(plotWithStatus(PlotStatus.SOLD)));
         when(plotRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(ledgerEntryRepository.findAllBySourceRef(saleId)).thenReturn(List.of(directEntry, selfPerformanceEntry));
+        when(ledgerEntryRepository.findAllBySourceRef(saleId)).thenReturn(List.of(directEntry, secondEntry));
         when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
 
@@ -548,7 +467,7 @@ class SaleServiceTest {
         verify(ledgerEntryRepository, times(2)).save(captor.capture());
         assertThat(captor.getAllValues()).allMatch(e -> e.getStatus() == LedgerEntryStatus.REVERSED);
         assertThat(captor.getAllValues()).extracting(LedgerEntry::getId)
-            .containsExactlyInAnyOrder(directEntry.getId(), selfPerformanceEntry.getId());
+            .containsExactlyInAnyOrder(directEntry.getId(), secondEntry.getId());
     }
 
     @Test

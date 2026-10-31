@@ -70,9 +70,8 @@ class DashboardServiceTest {
         return new CompensationPlanVersion(
             UUID.randomUUID(), "v1", LocalDate.now().minusDays(1),
             new BigDecimal("10.00"), matchingIncomePct, new BigDecimal("3.00"), new BigDecimal("5.00"),
-            new BigDecimal("2.00"), new BigDecimal("4.00"), BigDecimal.ZERO, BigDecimal.ZERO,
-            SettlementCycle.MONTHLY, Instant.now(), null,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
+            new BigDecimal("4.00"), BigDecimal.ZERO, BigDecimal.ZERO,
+            SettlementCycle.MONTHLY, Instant.now(), null);
     }
 
     // Stubs every call this method makes unconditionally regardless of fixture specifics: the
@@ -151,7 +150,6 @@ class DashboardServiceTest {
         when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.DIRECT)).thenReturn(BigDecimal.valueOf(1000));
         when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.MATCHING)).thenReturn(BigDecimal.valueOf(500));
         when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.SPONSOR_MATCHING)).thenReturn(BigDecimal.valueOf(300));
-        when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.SELF_PERFORMANCE)).thenReturn(BigDecimal.valueOf(200));
         when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.ROYALTY)).thenReturn(BigDecimal.valueOf(400));
         when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycleId)).thenReturn(BigDecimal.valueOf(2400));
         when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, closedCycleId)).thenReturn(BigDecimal.valueOf(1800));
@@ -203,7 +201,6 @@ class DashboardServiceTest {
         assertThat(response.associate().sponsorName()).isEqualTo("Head Office Sponsor");
         assertThat(response.cycleIncome().directIncome()).isEqualByComparingTo("1000");
         assertThat(response.cycleIncome().sponsorMatchingIncome()).isEqualByComparingTo("300");
-        assertThat(response.cycleIncome().selfPerformanceBonus()).isEqualByComparingTo("200");
         assertThat(response.cycleIncome().royaltyBonus()).isEqualByComparingTo("400");
         assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("3.00");
         assertThat(response.cycleIncome().totalIncome()).isEqualByComparingTo("2400");

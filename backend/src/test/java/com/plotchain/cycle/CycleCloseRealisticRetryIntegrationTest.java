@@ -224,15 +224,16 @@ class CycleCloseRealisticRetryIntegrationTest {
         assertThat(b1Matching.getGrossAmount()).isEqualByComparingTo("2.80");
         // tds = 2.80 * 2% = 0.056 unrounded -> DB rounds HALF_UP to 0.06.
         assertThat(b1Matching.getTdsDeduction()).isEqualByComparingTo("0.06");
-        assertThat(b1Matching.getAdminDeduction()).isEqualByComparingTo("0.42");
-        // net = 2.80 - 0.056(tds) - 0.42(admin) = 2.324 unrounded -> DB rounds HALF_UP to 2.32.
-        assertThat(b1Matching.getNetAmount()).isEqualByComparingTo("2.32");
+        // processing fee = 2.80 * 5% = 0.14.
+        assertThat(b1Matching.getAdminDeduction()).isEqualByComparingTo("0.14");
+        // net = 2.80 - 0.056(tds) - 0.14(fee) = 2.604 unrounded -> DB rounds HALF_UP to 2.60.
+        assertThat(b1Matching.getNetAmount()).isEqualByComparingTo("2.60");
 
         LedgerEntry adminMatching = ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(adminId, cycleId, IncomeType.MATCHING)
             .orElseThrow(() -> new AssertionError("expected a MATCHING entry for admin after retry"));
         assertThat(adminMatching.getGrossAmount()).isEqualByComparingTo("2.10");
-        // net = 2.10 - 0.042(tds) - 0.315(admin) = 1.743 unrounded -> DB rounds HALF_UP to 1.74.
-        assertThat(adminMatching.getNetAmount()).isEqualByComparingTo("1.74");
+        // net = 2.10 - 0.042(tds) - 0.105(fee) = 1.953 unrounded -> DB rounds HALF_UP to 1.95.
+        assertThat(adminMatching.getNetAmount()).isEqualByComparingTo("1.95");
 
         List<LedgerEntry> sponsorEntries = ledgerEntryRepository.findAll().stream()
             .filter(e -> sId.equals(e.getAssociateId()) && e.getIncomeType() == IncomeType.SPONSOR_MATCHING
@@ -240,8 +241,8 @@ class CycleCloseRealisticRetryIntegrationTest {
             .toList();
         assertThat(sponsorEntries).hasSize(1);
         assertThat(sponsorEntries.get(0).getGrossAmount()).isEqualByComparingTo("0.14");
-        // net = 0.14 - 0.0028(tds) - 0.021(admin) = 0.1162 unrounded -> DB rounds HALF_UP to 0.12.
-        assertThat(sponsorEntries.get(0).getNetAmount()).isEqualByComparingTo("0.12");
+        // net = 0.14 - 0.0028(tds) - 0.007(fee) = 0.1302 unrounded -> DB rounds HALF_UP to 0.13.
+        assertThat(sponsorEntries.get(0).getNetAmount()).isEqualByComparingTo("0.13");
         assertThat(sponsorEntries.get(0).getSourceRef()).isEqualTo(b1Matching.getId());
 
         long ledgerEntriesAfterRetry = ledgerEntryRepository.findAll().stream()

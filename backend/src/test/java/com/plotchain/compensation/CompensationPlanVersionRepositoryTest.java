@@ -97,9 +97,8 @@ class CompensationPlanVersionRepositoryTest {
         CompensationPlanVersion version = new CompensationPlanVersion(
             UUID.randomUUID(), "royalty-test", effectiveFrom,
             BigDecimal.ZERO, new BigDecimal("7.00"), BigDecimal.ZERO,
-            new BigDecimal("2.00"), BigDecimal.ZERO, new BigDecimal("15.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
+            new BigDecimal("2.00"), new BigDecimal("15.00"),
+            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null);
         entityManager.persist(version);
         return version;
     }
@@ -197,13 +196,11 @@ class CompensationPlanVersionRepositoryTest {
                 new BigDecimal("7.00"),
                 new BigDecimal("5.00"),
                 new BigDecimal("2.00"),
-                new BigDecimal("5.00"),
                 new BigDecimal("15.00"),
                 new BigDecimal("1100.00"),
                 new BigDecimal("500.00"),
                 settlementCycle,
                 Instant.now(),
-                null,
-                BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
+                null);
     }
 }

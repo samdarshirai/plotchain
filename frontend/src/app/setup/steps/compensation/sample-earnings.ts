@@ -9,7 +9,6 @@
 
 export interface SampleEarningsInput {
   scenarioVolume: number;
-  hasPan: boolean;
 }
 
 export interface SampleEarningsPlan {
@@ -17,8 +16,8 @@ export interface SampleEarningsPlan {
   matchingIncomePct: number;
   sponsorMatchingPct: number;
   tdsPct: number;
+  /** Processing fee %. */
   adminChargeWithPanPct: number;
-  adminChargeWithoutPanPct: number;
   /** From the first configured royalty-table row; 0 if the table is empty. Row
    * selection is the caller's responsibility — this function only consumes the
    * already-resolved flat percentage. */
@@ -40,14 +39,13 @@ export function computeSampleEarnings(
   input: SampleEarningsInput,
   plan: SampleEarningsPlan
 ): SampleEarningsResult {
-  const { scenarioVolume, hasPan } = input;
+  const { scenarioVolume } = input;
   const {
     directIncomePct,
     matchingIncomePct,
     sponsorMatchingPct,
     tdsPct,
     adminChargeWithPanPct,
-    adminChargeWithoutPanPct,
     royaltyPct
   } = plan;
 
@@ -71,8 +69,7 @@ export function computeSampleEarnings(
 
   const grossIncome = directIncome + matchingIncome + sponsorBonus + royaltyBonus;
 
-  const adminChargePct = hasPan ? adminChargeWithPanPct : adminChargeWithoutPanPct;
-  const adminCharge = (grossIncome * adminChargePct) / 100;
+  const adminCharge = (grossIncome * adminChargeWithPanPct) / 100;
 
   const tds = (grossIncome * tdsPct) / 100;
 

@@ -1302,26 +1302,14 @@ app-setup-progress-rail {
   flex-shrink: 0;
 }
 
-.compensation-step__simulator-field,
-.compensation-step__simulator-checkbox {
+.compensation-step__simulator-field {
   display: flex;
+  flex-direction: column;
   gap: 0.375rem;
   font-size: 0.8rem;
   color: var(--text-muted);
 }
 
-.compensation-step__simulator-field {
-  flex-direction: column;
-}
-
-.compensation-step__simulator-checkbox {
-  flex-direction: row;
-  align-items: center;
-
-  input[type='checkbox'] {
-    accent-color: var(--brand-secondary);
-  }
-}
 
 .compensation-step__simulator-breakdown {
   display: flex;

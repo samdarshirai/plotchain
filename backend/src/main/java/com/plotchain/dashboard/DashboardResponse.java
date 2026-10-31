@@ -23,7 +23,7 @@ public record DashboardResponse(
         String sponsorAssociateId, String sponsorName, Instant lastLoginAt) {}
     public record CycleIncome(
         UUID cycleId, BigDecimal directIncome, BigDecimal matchingIncome, BigDecimal sponsorMatchingIncome,
-        BigDecimal selfPerformanceBonus, BigDecimal royaltyBonus, BigDecimal royaltyBonusPct, BigDecimal totalIncome,
+        BigDecimal royaltyBonus, BigDecimal royaltyBonusPct, BigDecimal totalIncome,
         BigDecimal previousCycleTotalIncome, List<BigDecimal> incomeTrend,
         BigDecimal matchingIncomeLifetime, BigDecimal sponsorMatchingIncomeLifetime) {}
     public record WalletSummary(BigDecimal balance) {}

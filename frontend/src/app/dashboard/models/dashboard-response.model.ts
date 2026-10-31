@@ -16,7 +16,6 @@ export interface CycleIncome {
   directIncome: number;
   matchingIncome: number;
   sponsorMatchingIncome: number;
-  selfPerformanceBonus: number;
   royaltyBonus: number;
   royaltyBonusPct: number;
   totalIncome: number;

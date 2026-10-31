@@ -84,7 +84,6 @@ public class DashboardService {
         BigDecimal direct = cycleIncome(associateId, openCycleId, IncomeType.DIRECT);
         BigDecimal matching = cycleIncome(associateId, openCycleId, IncomeType.MATCHING);
         BigDecimal sponsorMatching = cycleIncome(associateId, openCycleId, IncomeType.SPONSOR_MATCHING);
-        BigDecimal selfPerformance = cycleIncome(associateId, openCycleId, IncomeType.SELF_PERFORMANCE);
         BigDecimal total = openCycle
             .map(c -> ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, c.getId()))
             .orElse(BigDecimal.ZERO);
@@ -184,7 +183,7 @@ public class DashboardService {
                 associate.getPreviousLoginAt()),
             associate.getKycStatus() != KycStatus.VERIFIED,
             new DashboardResponse.CycleIncome(
-                openCycleId, direct, matching, sponsorMatching, selfPerformance, royaltyBonus, royaltyBonusPct, total,
+                openCycleId, direct, matching, sponsorMatching, royaltyBonus, royaltyBonusPct, total,
                 previousCycleTotalIncome, incomeTrend, matchingIncomeLifetime, sponsorMatchingIncomeLifetime),
             new DashboardResponse.WalletSummary(wallet.getBalance()),
             countdown,

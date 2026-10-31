@@ -3,10 +3,8 @@ package com.plotchain.sales;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
-import com.plotchain.associate.KycStatus;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
-import com.plotchain.compensation.SelfPerformanceBonusConfigService;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleService;
 import com.plotchain.income.IncomeType;
@@ -44,7 +42,6 @@ public class SaleService {
     private final CompensationPlanVersionRepository compensationPlanVersionRepository;
     private final SaleRepository saleRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
-    private final SelfPerformanceBonusConfigService selfPerformanceBonusConfigService;
     private final ProjectRepository projectRepository;
 
     public SaleService(
@@ -54,7 +51,6 @@ public class SaleService {
             CompensationPlanVersionRepository compensationPlanVersionRepository,
             SaleRepository saleRepository,
             LedgerEntryRepository ledgerEntryRepository,
-            SelfPerformanceBonusConfigService selfPerformanceBonusConfigService,
             ProjectRepository projectRepository) {
         this.plotRepository = plotRepository;
         this.associateRepository = associateRepository;
@@ -62,7 +58,6 @@ public class SaleService {
         this.compensationPlanVersionRepository = compensationPlanVersionRepository;
         this.saleRepository = saleRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
-        this.selfPerformanceBonusConfigService = selfPerformanceBonusConfigService;
         this.projectRepository = projectRepository;
     }
 
@@ -113,14 +108,14 @@ public class SaleService {
             .orElseThrow(() -> new IllegalStateException(
                 "compensation_plan_version row missing - V8 migration seeds it"));
 
-        // Flow step 8: Direct Income, computed synchronously. Admin-charge deduction always
-        // uses the without-PAN tier (Decision 4) -- Associate has no pan_number field.
+        // Flow step 8: Direct Income, computed synchronously. adminDeduction is the plan's
+        // Processing Fee % (stored as admin_charge_with_pan_pct).
         BigDecimal grossAmount = sale.getAmount()
             .multiply(planVersion.getDirectIncomePct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
         BigDecimal tdsDeduction = grossAmount
             .multiply(planVersion.getTdsPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
         BigDecimal adminDeduction = grossAmount
-            .multiply(planVersion.getAdminChargeWithoutPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+            .multiply(planVersion.getAdminChargeWithPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
         BigDecimal netAmount = grossAmount.subtract(tdsDeduction).subtract(adminDeduction);
 
         LedgerEntry ledgerEntry = new LedgerEntry();
@@ -136,50 +131,6 @@ public class SaleService {
         ledgerEntry.setSourceRef(sale.getId());
         ledgerEntry.setCreatedAt(Instant.now());
         ledgerEntryRepository.save(ledgerEntry);
-
-        // Self-Performance Bonus: same shape as Direct Income above (self-only, sale-time,
-        // this sale's own amount), gated by SelfPerformanceBonusConfigService.isEnabled() and
-        // the plot's area crossing one of the two tier thresholds on this same planVersion.
-        // Highest qualifying tier wins; below the lower threshold, no entry (compensation-plan-
-        // reference.md's own Known Gap: no rate is documented below 2,000 sqft). Also gated on
-        // plot != null -- SPB's tier lookup needs Plot.areaSqft, which a plotless sale doesn't
-        // have; skipping SPB for those is a documented gap from the mandatory-fields change, not
-        // a bug.
-        if (selfPerformanceBonusConfigService.isEnabled() && plot != null) {
-            BigDecimal areaSqft = plot.getAreaSqft();
-            BigDecimal selfPerformancePct = null;
-            if (areaSqft.compareTo(planVersion.getSelfPerformanceTier2SqftThreshold()) >= 0) {
-                selfPerformancePct = planVersion.getSelfPerformanceTier2Pct();
-            } else if (areaSqft.compareTo(planVersion.getSelfPerformanceTier1SqftThreshold()) >= 0) {
-                selfPerformancePct = planVersion.getSelfPerformanceTier1Pct();
-            }
-
-            if (selfPerformancePct != null) {
-                BigDecimal spGrossAmount = sale.getAmount()
-                    .multiply(selfPerformancePct.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-                if (spGrossAmount.compareTo(BigDecimal.ZERO) > 0) {
-                    BigDecimal spTdsDeduction = spGrossAmount
-                        .multiply(planVersion.getTdsPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-                    BigDecimal spAdminDeduction = spGrossAmount
-                        .multiply(planVersion.getAdminChargeWithoutPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-                    BigDecimal spNetAmount = spGrossAmount.subtract(spTdsDeduction).subtract(spAdminDeduction);
-
-                    LedgerEntry selfPerformanceEntry = new LedgerEntry();
-                    selfPerformanceEntry.setId(UUID.randomUUID());
-                    selfPerformanceEntry.setIncomeType(IncomeType.SELF_PERFORMANCE);
-                    selfPerformanceEntry.setAssociateId(sale.getAssociateId());
-                    selfPerformanceEntry.setCycleId(sale.getCycleId());
-                    selfPerformanceEntry.setGrossAmount(spGrossAmount);
-                    selfPerformanceEntry.setTdsDeduction(spTdsDeduction);
-                    selfPerformanceEntry.setAdminDeduction(spAdminDeduction);
-                    selfPerformanceEntry.setNetAmount(spNetAmount);
-                    selfPerformanceEntry.setStatus(kycGatedStatus(associate));
-                    selfPerformanceEntry.setSourceRef(sale.getId());
-                    selfPerformanceEntry.setCreatedAt(Instant.now());
-                    ledgerEntryRepository.save(selfPerformanceEntry);
-                }
-            }
-        }
 
         // Live income: recompute this open cycle's Matching / Sponsor Matching / Royalty / Reward
         // now, so the whole upline sees it without waiting for cycle close.
@@ -247,9 +198,8 @@ public class SaleService {
             plotRepository.save(plot);
         }
 
-        // Flow step 5: reverse every ledger entry this sale created at record time (Direct
-        // Income always, Self-Performance Bonus when it was enabled and the area qualified) --
-        // Decision 6 (self-performance-bonus design). Same data-integrity reasoning as the
+        // Flow step 5: reverse every ledger entry this sale created at record time (its Direct
+        // Income). Same data-integrity reasoning as the
         // missing-Plot case above -- recordSale always creates at least one LedgerEntry per Sale
         // (Direct Income), in the same transaction.
         List<LedgerEntry> ledgerEntries = ledgerEntryRepository.findAllBySourceRef(sale.getId());
@@ -370,14 +320,5 @@ public class SaleService {
             plot != null ? plot.getPlotType().name() : null, plot != null ? plot.getAreaSqft() : null,
             plot != null ? plot.getRate() : null, plot != null ? plot.getPrice() : null,
             plot != null ? plot.getExtraPrice() : null);
-    }
-
-    // Duplicates CycleService.kycGatedStatus()'s one-line logic rather than extracting a shared
-    // utility -- consistent with how the deduction math above is already duplicated between the
-    // two classes; no cross-class extraction is in scope here.
-    private LedgerEntryStatus kycGatedStatus(Associate associate) {
-        return associate.getKycStatus() == KycStatus.VERIFIED
-            ? LedgerEntryStatus.PENDING
-            : LedgerEntryStatus.CARRIED_FORWARD;
     }
 }

@@ -184,20 +184,11 @@ public class CompensationPlanService {
             request.sponsorMatchingPct(),
             request.tdsPct(),
             request.adminChargeWithPanPct(),
-            request.adminChargeWithoutPanPct(),
             request.activationFee(),
             request.minWithdrawal(),
             SettlementCycle.valueOf(request.settlementCycle()),
             Instant.now(),
-            adminId,
-            // The existing Angular admin UI doesn't send these 4 fields yet (out of scope for
-            // this backend-only branch), so request.selfPerformanceXxx() can be null here -- fall
-            // back to the same values V25__self_performance_bonus.sql uses as its migration-time
-            // column defaults, rather than 400ing on every pre-existing compensation-plan edit.
-            orDefault(request.selfPerformanceTier1Pct(), BigDecimal.ZERO),
-            orDefault(request.selfPerformanceTier1SqftThreshold(), new BigDecimal("2000")),
-            orDefault(request.selfPerformanceTier2Pct(), BigDecimal.ZERO),
-            orDefault(request.selfPerformanceTier2SqftThreshold(), new BigDecimal("3000"))
+            adminId
         );
         versionRepository.save(newVersion);
 
@@ -220,12 +211,6 @@ public class CompensationPlanService {
     // no blank-singleton state; every column is NOT NULL from the moment the migration runs.
     public boolean isComplete() {
         return currentVersion().getCreatedByAssociateId() != null;
-    }
-
-    // Backward-compatibility default for CompensationPlanRequest's 4 self-performance fields,
-    // which are not @NotNull -- see that record's field comment for why.
-    private static BigDecimal orDefault(BigDecimal value, BigDecimal fallback) {
-        return value != null ? value : fallback;
     }
 
     public List<RewardTier> currentRewardTiers() {
@@ -348,18 +333,13 @@ public class CompensationPlanService {
             version.getSponsorMatchingPct(),
             version.getTdsPct(),
             version.getAdminChargeWithPanPct(),
-            version.getAdminChargeWithoutPanPct(),
             version.getActivationFee(),
             version.getMinWithdrawal(),
             version.getSettlementCycle().name(),
             royaltyDtos,
             tierDtos,
             availableRanks,
-            version.getCreatedAt(),
-            version.getSelfPerformanceTier1Pct(),
-            version.getSelfPerformanceTier1SqftThreshold(),
-            version.getSelfPerformanceTier2Pct(),
-            version.getSelfPerformanceTier2SqftThreshold()
+            version.getCreatedAt()
         );
     }
 }

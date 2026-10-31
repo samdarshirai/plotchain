@@ -107,12 +107,11 @@ public class LedgerService {
             gross.put(IncomeType.SPONSOR_MATCHING, r.getSponsorMatching());
             gross.put(IncomeType.ROYALTY, r.getRoyalty());
             gross.put(IncomeType.REWARD, r.getReward());
-            gross.put(IncomeType.SELF_PERFORMANCE, r.getSelfPerformance());
             return new AdminLedgerSummaryRow(
                 r.getAssociateId(), a == null ? null : a.getUserId(), a == null ? null : a.getName(),
                 r.getCycleId(), c == null ? null : c.getPeriodStart(), c == null ? null : c.getPeriodEnd(),
                 gross, r.getTotalGross(), r.getTds(), r.getAdminCharges(), r.getTotalNet(),
-                r.getEntryCount(), r.getPaidCount());
+                r.getEntryCount(), r.getPaidCount(), r.getPaidAt());
         }).sorted(java.util.Comparator
             .comparing(AdminLedgerSummaryRow::cyclePeriodStart, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()))
             .thenComparing(AdminLedgerSummaryRow::associateUserId, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
@@ -121,6 +120,12 @@ public class LedgerService {
         int from = Math.min(page * size, rows.size());
         int to = Math.min(from + size, rows.size());
         return new AdminLedgerSummaryPageResponse(rows.subList(from, to), page, size, rows.size());
+    }
+
+    // Associate Income Statement "All" tab: the caller's own per-cycle summary, every cycle,
+    // newest first. Same rows as the admin Summary tab, scoped to one associate.
+    public List<AdminLedgerSummaryRow> mySummary(UUID associateId) {
+        return adminSummary(associateId, null, 0, Integer.MAX_VALUE).rows();
     }
 
     // Flow "Associate own ledger" (same spec doc, steps 1-6): associateId is always the caller's

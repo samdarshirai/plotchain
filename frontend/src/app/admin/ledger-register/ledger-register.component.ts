@@ -45,8 +45,7 @@ const SUMMARY_TYPES = [
   { type: 'MATCHING', labelKey: 'incomeStatement.columnMatchingIncome' },
   { type: 'SPONSOR_MATCHING', labelKey: 'incomeStatement.columnSponsorMatchingIncome' },
   { type: 'ROYALTY', labelKey: 'incomeStatement.columnRoyaltyBonus' },
-  { type: 'REWARD', labelKey: 'incomeStatement.columnReward' },
-  { type: 'SELF_PERFORMANCE', labelKey: 'admin.ledgerRegister.columnSelfPerformance' }
+  { type: 'REWARD', labelKey: 'incomeStatement.columnReward' }
 ];
 
 const LEG_FIELD: Record<string, string> = {

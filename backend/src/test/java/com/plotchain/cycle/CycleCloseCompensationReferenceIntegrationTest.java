@@ -187,9 +187,8 @@ class CycleCloseCompensationReferenceIntegrationTest {
         CompensationPlanVersion planVersion = new CompensationPlanVersion(
             UUID.randomUUID(), "comp-ref", LocalDate.of(2025, 6, 1),
             new BigDecimal("6.00"), new BigDecimal("7.00"), new BigDecimal("11.00"),
-            new BigDecimal("2.00"), BigDecimal.ZERO, new BigDecimal("15.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
+            new BigDecimal("2.00"), new BigDecimal("15.00"),
+            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null);
         compensationPlanVersionRepository.saveAndFlush(planVersion);
         planVersionId = planVersion.getId();
 

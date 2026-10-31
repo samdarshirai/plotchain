@@ -154,14 +154,12 @@ class SetupStateServiceTest {
             new BigDecimal("7.00"),
             new BigDecimal("5.00"),
             new BigDecimal("2.00"),
-            new BigDecimal("5.00"),
             new BigDecimal("15.00"),
             new BigDecimal("1100.00"),
             new BigDecimal("500.00"),
             SettlementCycle.SEMI_MONTHLY,
             Instant.parse("2020-01-01T00:00:00Z"),
-            null,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
+            null);
     }
 
     private CompensationPlanVersion savedCompensationVersion(UUID createdByAssociateId) {
@@ -173,14 +171,12 @@ class SetupStateServiceTest {
             new BigDecimal("7.00"),
             new BigDecimal("5.00"),
             new BigDecimal("2.00"),
-            new BigDecimal("5.00"),
             new BigDecimal("15.00"),
             new BigDecimal("1100.00"),
             new BigDecimal("500.00"),
             SettlementCycle.SEMI_MONTHLY,
             Instant.now(),
-            createdByAssociateId,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
+            createdByAssociateId);
     }
 
     private void stubCompensationIncomplete() {

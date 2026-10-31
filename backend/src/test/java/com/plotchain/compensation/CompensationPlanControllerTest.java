@@ -68,13 +68,11 @@ class CompensationPlanControllerTest {
             new BigDecimal("5.00"),
             new BigDecimal("2.00"),
             new BigDecimal("5.00"),
-            new BigDecimal("15.00"),
             new BigDecimal("1100.00"),
             new BigDecimal("500.00"),
             SettlementCycle.SEMI_MONTHLY,
             Instant.parse("2020-01-01T00:00:00Z"),
-            null,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000")
+            null
         );
     }
 
@@ -85,7 +83,6 @@ class CompensationPlanControllerTest {
           "sponsorMatchingPct": 5.00,
           "tdsPct": 2.00,
           "adminChargeWithPanPct": 5.00,
-          "adminChargeWithoutPanPct": 15.00,
           "activationFee": 1100.00,
           "minWithdrawal": 500.00,
           "settlementCycle": "SEMI_MONTHLY",
@@ -93,11 +90,7 @@ class CompensationPlanControllerTest {
           "rewardTiers": [
             {"tierLevel": 1, "volumeThreshold": 1000.00, "cashReward": 100.00, "perkDescription": "Tier 1"},
             {"tierLevel": 2, "volumeThreshold": 2000.00, "cashReward": 200.00, "perkDescription": "Tier 2"}
-          ],
-          "selfPerformanceTier1Pct": 1.00,
-          "selfPerformanceTier1SqftThreshold": 2000,
-          "selfPerformanceTier2Pct": 2.00,
-          "selfPerformanceTier2SqftThreshold": 3000
+          ]
         }
         """;
 
@@ -108,7 +101,6 @@ class CompensationPlanControllerTest {
           "sponsorMatchingPct": 5.00,
           "tdsPct": 2.00,
           "adminChargeWithPanPct": 5.00,
-          "adminChargeWithoutPanPct": 15.00,
           "activationFee": 1100.00,
           "minWithdrawal": 500.00,
           "settlementCycle": "SEMI_MONTHLY",
@@ -116,11 +108,7 @@ class CompensationPlanControllerTest {
           "rewardTiers": [
             {"tierLevel": 1, "volumeThreshold": 1000.00, "cashReward": 100.00, "perkDescription": "Tier 1"},
             {"tierLevel": 3, "volumeThreshold": 2000.00, "cashReward": 200.00, "perkDescription": "Tier 3"}
-          ],
-          "selfPerformanceTier1Pct": 1.00,
-          "selfPerformanceTier1SqftThreshold": 2000,
-          "selfPerformanceTier2Pct": 2.00,
-          "selfPerformanceTier2SqftThreshold": 3000
+          ]
         }
         """;
 
@@ -131,16 +119,11 @@ class CompensationPlanControllerTest {
           "sponsorMatchingPct": 5.00,
           "tdsPct": 2.00,
           "adminChargeWithPanPct": 5.00,
-          "adminChargeWithoutPanPct": 15.00,
           "activationFee": 1100.00,
           "minWithdrawal": 500.00,
           "settlementCycle": "HALF_YEARLY",
           "royaltyBonusRates": [],
-          "rewardTiers": [],
-          "selfPerformanceTier1Pct": 1.00,
-          "selfPerformanceTier1SqftThreshold": 2000,
-          "selfPerformanceTier2Pct": 2.00,
-          "selfPerformanceTier2SqftThreshold": 3000
+          "rewardTiers": []
         }
         """;
 
@@ -151,7 +134,6 @@ class CompensationPlanControllerTest {
           "sponsorMatchingPct": 5.00,
           "tdsPct": 2.00,
           "adminChargeWithPanPct": 5.00,
-          "adminChargeWithoutPanPct": 15.00,
           "activationFee": 1100.00,
           "minWithdrawal": 500.00,
           "settlementCycle": "",

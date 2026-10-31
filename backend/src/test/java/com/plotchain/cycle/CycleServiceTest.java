@@ -388,24 +388,22 @@ class CycleServiceTest {
         return new CompensationPlanVersion(
             UUID.randomUUID(), "v1", LocalDate.of(2026, 1, 1),
             BigDecimal.ZERO, new BigDecimal("10.00"), new BigDecimal("11.00"),
-            new BigDecimal("5.00"), BigDecimal.ZERO, new BigDecimal("4.00"),
+            new BigDecimal("5.00"), new BigDecimal("4.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY,
-            Instant.now(), null,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
+            Instant.now(), null);
     }
 
     // Doc-fixture-accuracy tests use compensation-plan-reference.md's real published rates
-    // (direct 6%, matching 7%, sponsor 11%, tds 2%, admin-without-pan 15%) instead of
+    // (direct 6%, matching 7%, sponsor 11%, tds 2%, processing fee 15%) instead of
     // planVersionFixture()'s arbitrary round numbers, so expected amounts match the doc's own
     // worked Round 1 / Round 2 examples exactly.
     private CompensationPlanVersion referencePlanVersionFixture() {
         return new CompensationPlanVersion(
             UUID.randomUUID(), "reference", LocalDate.of(2026, 1, 1),
             new BigDecimal("6.00"), new BigDecimal("7.00"), new BigDecimal("11.00"),
-            new BigDecimal("2.00"), BigDecimal.ZERO, new BigDecimal("15.00"),
+            new BigDecimal("2.00"), new BigDecimal("15.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY,
-            Instant.now(), null,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
+            Instant.now(), null);
     }
 
     private LedgerEntry matchingEntryFixture(UUID associateId, UUID cycleId, BigDecimal grossAmount) {
@@ -529,13 +527,9 @@ class CycleServiceTest {
         assertThat(entry.getGrossAmount()).isEqualByComparingTo("70000.00");
     }
 
-    // Documented gap, not a spec: Associate has no pan_number field, so applyDeductions always
-    // uses adminChargeWithoutPanPct regardless of what adminChargeWithPanPct is configured to
-    // (compensation-plan-reference.md §2's 5%-with-PAN / 15%-without-PAN distinction is not wired
-    // up anywhere). This pins that current behavior as a baseline, not an intended rule -- no
-    // production change accompanies it.
+    // Processing Fee: applyDeductions uses adminChargeWithPanPct (the single Processing Fee %).
     @Test
-    void applyDeductionsAlwaysUsesTheWithoutPanRateEvenWhenAWithPanRateIsConfigured() {
+    void applyDeductionsUsesTheProcessingFeeRate() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
             rewardTierRepository, expenseRepository);
@@ -555,15 +549,12 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
 
-        // adminChargeWithPanPct (5%, doc's PAN-on-file rate) is clearly distinct from
-        // adminChargeWithoutPanPct (15%, doc's no-PAN rate) so a wrong pick is unmistakable.
         CompensationPlanVersion planVersion = new CompensationPlanVersion(
-            UUID.randomUUID(), "pan-gap", LocalDate.of(2026, 1, 1),
+            UUID.randomUUID(), "processing-fee", LocalDate.of(2026, 1, 1),
             BigDecimal.ZERO, new BigDecimal("10.00"), BigDecimal.ZERO,
-            new BigDecimal("2.00"), new BigDecimal("5.00"), new BigDecimal("15.00"),
+            new BigDecimal("2.00"), new BigDecimal("5.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY,
-            Instant.now(), null,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
+            Instant.now(), null);
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
             .thenReturn(Optional.of(planVersion));
 
@@ -573,9 +564,8 @@ class CycleServiceTest {
         verify(ledgerEntryRepository).save(entryCaptor.capture());
         LedgerEntry entry = entryCaptor.getValue();
 
-        // gross = min(100,50)=50 * 10% = 5.00; admin deduction always uses the 15% without-PAN
-        // rate = 0.75, never the 5% with-PAN rate (which would be 0.25).
-        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("0.75");
+        // gross = min(100,50)=50 * 10% = 5.00; 5% processing fee = 0.25.
+        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("0.25");
     }
 
     @Test
@@ -1409,9 +1399,8 @@ class CycleServiceTest {
         CompensationPlanVersion zeroSponsorMatchingPlanVersion = new CompensationPlanVersion(
             UUID.randomUUID(), "v1", LocalDate.of(2026, 1, 1),
             BigDecimal.ZERO, new BigDecimal("10.00"), BigDecimal.ZERO,
-            new BigDecimal("5.00"), BigDecimal.ZERO, new BigDecimal("4.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
+            new BigDecimal("5.00"), new BigDecimal("4.00"),
+            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null);
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
             .thenReturn(Optional.of(zeroSponsorMatchingPlanVersion));
 

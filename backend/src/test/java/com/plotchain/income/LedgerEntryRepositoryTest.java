@@ -398,7 +398,8 @@ class LedgerEntryRepositoryTest {
         Associate b = seedAssociate();
         Cycle cycle = seedCycle();
         LedgerEntry direct = newEntry(a.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID());
-        direct.setFulfilledAt(Instant.now());
+        Instant paidAt = Instant.parse("2026-10-20T10:00:00Z");
+        direct.setFulfilledAt(paidAt);
         ledgerEntryRepository.save(direct);
         ledgerEntryRepository.save(newEntry(a.getId(), cycle.getId(), IncomeType.MATCHING, UUID.randomUUID()));
         ledgerEntryRepository.save(newEntry(b.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID()));
@@ -417,5 +418,6 @@ class LedgerEntryRepositoryTest {
         assertThat(rowA.getRoyalty()).isEqualByComparingTo("0");
         assertThat(rowA.getEntryCount()).isEqualTo(2);
         assertThat(rowA.getPaidCount()).isEqualTo(1);
+        assertThat(rowA.getPaidAt()).isEqualTo(paidAt);
     }
 }

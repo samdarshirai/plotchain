@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { RewardTierRow } from './models/reward-tier-row.model';
 import { RewardAchievedRow } from './models/reward-achieved-row.model';
 import { AssociateLedgerFilters, AssociateLedgerPage } from './models/associate-ledger-page.model';
+import { IncomeSummaryRow } from './models/income-summary-row.model';
 
 @Injectable({ providedIn: 'root' })
 export class IncomeStatementService {
@@ -17,6 +18,10 @@ export class IncomeStatementService {
       }
     }
     return this.http.get<AssociateLedgerPage>('/api/associates/me/ledger', { params });
+  }
+
+  summary(): Observable<IncomeSummaryRow[]> {
+    return this.http.get<IncomeSummaryRow[]>('/api/associates/me/income-summary');
   }
 
   rewardTiers(): Observable<RewardTierRow[]> {

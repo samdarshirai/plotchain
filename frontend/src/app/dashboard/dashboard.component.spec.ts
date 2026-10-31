@@ -18,7 +18,7 @@ describe('DashboardComponent', () => {
     kycPendingBannerVisible: true,
     cycleIncome: {
       cycleId: 'c1', directIncome: 1000, matchingIncome: 500, sponsorMatchingIncome: 300,
-      selfPerformanceBonus: 200, royaltyBonus: 400, royaltyBonusPct: 3, totalIncome: 2400,
+      royaltyBonus: 400, royaltyBonusPct: 3, totalIncome: 2400,
       previousCycleTotalIncome: 1800, incomeTrend: [1200, 1800, 2400],
       matchingIncomeLifetime: 126000, sponsorMatchingIncomeLifetime: 0
     },

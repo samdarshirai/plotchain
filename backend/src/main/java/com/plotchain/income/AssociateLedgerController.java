@@ -45,6 +45,11 @@ public class AssociateLedgerController {
         return ledgerService.myList(associateId, incomeType, cycleId, status, page, size);
     }
 
+    @GetMapping("/api/associates/me/income-summary")
+    public List<AdminLedgerSummaryRow> getMyIncomeSummary(@AuthenticationPrincipal UUID associateId) {
+        return ledgerService.mySummary(associateId);
+    }
+
     @GetMapping("/api/associates/me/reward-tiers")
     public List<AssociateRewardTierRow> getMyRewardTiers(@AuthenticationPrincipal UUID associateId) {
         return ledgerService.myRewardTiers(associateId);
