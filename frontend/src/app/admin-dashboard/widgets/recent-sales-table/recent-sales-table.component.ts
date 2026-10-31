@@ -1,6 +1,7 @@
-import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { TranslateModule } from '@ngx-translate/core';
+import { Component, Input, inject } from '@angular/core';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../../shared/components/editable-table/editable-table.component';
 import { Sale } from '../../../admin/models/sale.model';
 
 // Unlike the associate side's RecentSalesTableComponent, this widget takes its data as an
@@ -11,7 +12,8 @@ import { Sale } from '../../../admin/models/sale.model';
 @Component({
   selector: 'app-admin-recent-sales-table',
   standalone: true,
-  imports: [CommonModule, TranslateModule],
+  imports: [CommonModule, TranslateModule, EditableTableComponent],
+  providers: [CurrencyPipe, DatePipe],
   template: `
     <div class="admin-recent-sales-table">
       <div class="admin-recent-sales-table__header">
@@ -20,36 +22,49 @@ import { Sale } from '../../../admin/models/sale.model';
         <span class="admin-recent-sales-table__rule"></span>
       </div>
       <p *ngIf="!sales.length" class="admin-recent-sales-table__empty">{{ 'adminDashboard.recentSalesEmpty' | translate }}</p>
-      <table class="admin-recent-sales-table__table" *ngIf="sales.length">
-        <thead>
-          <tr>
-            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'adminDashboard.recentSalesColumnPlot' | translate }}</th>
-            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">apartment</span>{{ 'adminDashboard.recentSalesColumnProject' | translate }}</th>
-            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'adminDashboard.recentSalesColumnAssociate' | translate }}</th>
-            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'adminDashboard.recentSalesColumnValue' | translate }}</th>
-            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'adminDashboard.recentSalesColumnDate' | translate }}</th>
-            <th><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'adminDashboard.recentSalesColumnStatus' | translate }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let sale of sales">
-            <td class="admin-recent-sales-table__plot-no">{{ sale.plotNo }}</td>
-            <td>{{ sale.projectName }}</td>
-            <td>{{ sale.associateName }}</td>
-            <td>{{ sale.amount | currency:'INR' }}</td>
-            <td>{{ sale.recordedAt | date:'d MMM' }}</td>
-            <td>
-              <span
-                class="admin-recent-sales-table__status-pill"
-                [class.admin-recent-sales-table__status-pill--voided]="sale.status === 'VOIDED'"
-              >{{ (sale.status === 'VOIDED' ? 'adminDashboard.saleStatusVoided' : 'adminDashboard.saleStatusRecorded') | translate }}</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <app-editable-table
+        *ngIf="sales.length"
+        [readOnly]="true"
+        [columns]="columns"
+        [rows]="rows"
+      ></app-editable-table>
     </div>
   `
 })
 export class AdminRecentSalesTableComponent {
-  @Input({ required: true }) sales: Sale[] = [];
+  private translate = inject(TranslateService);
+  private currencyPipe = inject(CurrencyPipe);
+  private datePipe = inject(DatePipe);
+
+  rows: Record<string, string>[] = [];
+  readonly columns: EditableTableColumn[] = [
+    { key: 'plotNo', label: this.translate.instant('adminDashboard.recentSalesColumnPlot'), type: 'text', icon: 'landscape' },
+    { key: 'projectName', label: this.translate.instant('adminDashboard.recentSalesColumnProject'), type: 'text', icon: 'apartment' },
+    { key: 'associateName', label: this.translate.instant('adminDashboard.recentSalesColumnAssociate'), type: 'text', icon: 'groups' },
+    { key: 'amount', label: this.translate.instant('adminDashboard.recentSalesColumnValue'), type: 'text', icon: 'payments' },
+    { key: 'recordedAt', label: this.translate.instant('adminDashboard.recentSalesColumnDate'), type: 'text', icon: 'calendar_today' },
+    { key: 'status', label: this.translate.instant('adminDashboard.recentSalesColumnStatus'), type: 'badge', badgeTone: v => this.statusTone(v) }
+  ];
+
+  private _sales: Sale[] = [];
+
+  @Input({ required: true })
+  set sales(value: Sale[]) {
+    this._sales = value;
+    this.rows = value.map(sale => ({
+      plotNo: sale.plotNo ?? '—',
+      projectName: sale.projectName ?? '—',
+      associateName: sale.associateName ?? '—',
+      amount: this.currencyPipe.transform(sale.amount, 'INR', 'symbol', '1.0-2') ?? String(sale.amount),
+      recordedAt: this.datePipe.transform(sale.recordedAt, 'd MMM y') ?? sale.recordedAt,
+      status: this.translate.instant(sale.status === 'VOIDED' ? 'adminDashboard.saleStatusVoided' : 'adminDashboard.saleStatusRecorded')
+    }));
+  }
+  get sales(): Sale[] {
+    return this._sales;
+  }
+
+  private statusTone(value: string | number): BadgeTone {
+    return value === this.translate.instant('adminDashboard.saleStatusVoided') ? 'danger' : 'success';
+  }
 }
