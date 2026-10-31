@@ -453,9 +453,9 @@
     "loadError": "Something went wrong loading your digital ID card. Please try again."
   },
   "incomeStatement": {
-    "title": "Income Statement",
+    "title": "My Income Report",
     "subtitle": "Your itemized income history, by cycle and income type.",
-    "tabAll": "All",
+    "tabAll": "My Total Income",
     "tabDirect": "Direct",
     "tabMatching": "Matching",
     "tabSponsorMatching": "Sponsor Matching",
