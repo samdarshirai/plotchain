@@ -35,12 +35,16 @@ export interface PlotBlock {
 
 export type StatusCounts = Record<PlotStatus, number>;
 
-const inr = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+// Every money figure reads Indian-grouped with paise: ₹10,00,000.00.
+const inr = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const grouped = new Intl.NumberFormat('en-IN');
+const amount2 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const natural = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true });
 
 export const formatInr = (n: number): string => inr.format(n);
 export const formatArea = (n: number): string => grouped.format(n);
+// Same as formatInr without the ₹, for columns whose header already says the unit.
+export const formatAmount = (n: number): string => amount2.format(n);
 
 // "₹51.3 L" tile shorthand; below one lakh the full figure reads better than "₹0.8 L".
 export function formatLakh(n: number): string {

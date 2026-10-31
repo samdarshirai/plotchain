@@ -19,11 +19,11 @@ describe('bookings-emi.util', () => {
     expect(plotText(b({ plotNo: 'A-12' }))).toBe('A-12');
   });
 
-  it('formatMoney keeps whole rupees clean and shows paise when present', () => {
-    expect(formatMoney(1500000)).toBe('₹15,00,000');
+  it('formatMoney always shows paise with Indian grouping', () => {
+    expect(formatMoney(1500000)).toBe('₹15,00,000.00');
     expect(formatMoney(333333.33)).toBe('₹3,33,333.33');
     expect(formatMoney(333333.34)).toBe('₹3,33,333.34');
-    expect(formatMoney(0)).toBe('₹0');
+    expect(formatMoney(0)).toBe('₹0.00');
   });
 });
 

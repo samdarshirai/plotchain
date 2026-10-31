@@ -18,6 +18,7 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
 import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
 import { FormIssue, collectIssues, errorMessage } from '../../shared/validation/validation';
 import { titleCase } from '../../shared/utils/title-case';
+import { formatInr } from '../../shared/utils/plot-grid.util';
 
 @Component({
   selector: 'app-master-projects',
@@ -342,7 +343,7 @@ export class MasterProjectsComponent implements OnInit, OnDestroy {
           type: titleCase(p.type),
           cityState: [p.city, p.state].filter(Boolean).join(', ') || '—',
           business: `${p.businessPercentage}%`,
-          rate: `₹${p.ratePerSqft}`,
+          rate: formatInr(p.ratePerSqft),
           locationMap: p.hasLocationMap ? yes : '—',
           projectMap: p.hasProjectMap ? yes : '—',
           status: titleCase(p.status)

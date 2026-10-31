@@ -178,7 +178,7 @@ const PAGE_SIZE = 20;
               <label>{{ 'admin.submitWithdrawal.amountLabel' | translate }}</label>
               <input type="number" formControlName="amount" (blur)="markSubmitTouched('amount')" />
               <p class="payout-approval__modal-max-amount" *ngIf="selectedMaxAmount !== null">
-                {{ 'admin.submitWithdrawal.maxAmountLabel' | translate }}: {{ selectedMaxAmount | currency: 'INR' : 'symbol' : '1.0-2' }}
+                {{ 'admin.submitWithdrawal.maxAmountLabel' | translate }}: {{ selectedMaxAmount | currency: 'INR' : 'symbol':'1.2-2' }}
               </p>
               <app-field-error [message]="submitFieldError('amount')"></app-field-error>
             </div>
@@ -339,7 +339,7 @@ export class PayoutApprovalComponent implements OnInit {
   private updateTableRows(): void {
     this.registerRows = (this.page?.requests ?? []).map(request => ({
       associate: `${request.associateUserId} — ${request.associateName}`,
-      amount: this.currencyPipe.transform(request.amount, 'INR', 'symbol', '1.0-2') ?? String(request.amount),
+      amount: this.currencyPipe.transform(request.amount, 'INR', 'symbol', '1.2-2') ?? String(request.amount),
       status: titleCase(request.status),
       reason: request.reason ?? this.translate.instant('admin.payoutApproval.noReason'),
       bankReference: request.bankReference ?? this.translate.instant('admin.payoutApproval.noBankReference'),

@@ -1,3 +1,4 @@
+import { formatAmount } from '../../../shared/utils/plot-grid.util';
 import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, ReactiveFormsModule, FormBuilder, ValidationErrors, Validators } from '@angular/forms';
@@ -316,7 +317,7 @@ export class ExpensesComponent implements OnInit {
       type: e.expenseTypeName,
       project: e.projectName ?? '',
       payTo: e.payTo,
-      amount: e.amount.toFixed(2),
+      amount: formatAmount(e.amount),
       mode: this.translate.instant(`admin.invoiceExpenses.payModes.${e.payMode}`),
       bank: e.bankName ?? '',
       txn: e.txnNo ?? '',

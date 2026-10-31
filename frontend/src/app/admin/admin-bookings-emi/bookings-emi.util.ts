@@ -1,6 +1,7 @@
 import { EMPTY, Observable, expand, reduce } from 'rxjs';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { Booking } from '../../plot-bookings/models/associate-booking-page.model';
+import { formatInr } from '../../shared/utils/plot-grid.util';
 
 // Walks every page (for exports); `size` must match the page size `load` requests.
 export function collectPages<T>(
@@ -12,9 +13,7 @@ export function collectPages<T>(
   );
 }
 
-// Whole rupees stay clean ("₹15,00,000"); paise appear only when present, so 333333.33 is never shown as 333333.
-const inr2 = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 2 });
-export const formatMoney = (n: number): string => inr2.format(n);
+export const formatMoney = formatInr;
 
 // The server compares dates against UTC today, so the client must too.
 export const utcDate = (d: Date = new Date()): string => d.toISOString().slice(0, 10);

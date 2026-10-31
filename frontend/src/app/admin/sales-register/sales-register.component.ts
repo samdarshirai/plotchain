@@ -214,7 +214,7 @@ export class SalesRegisterComponent implements OnInit {
       projectName: sale.projectName ?? '',
       buyerName: sale.buyerName,
       buyerPhone: sale.buyerPhone ?? '',
-      amount: this.currencyPipe.transform(sale.amount, 'INR', 'symbol', '1.0-2') ?? String(sale.amount),
+      amount: this.currencyPipe.transform(sale.amount, 'INR', 'symbol', '1.2-2') ?? String(sale.amount),
       legCredited: sale.legCredited,
       note: sale.note,
       status: titleCase(sale.status),

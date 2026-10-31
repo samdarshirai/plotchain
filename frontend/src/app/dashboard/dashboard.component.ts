@@ -142,7 +142,7 @@ export class DashboardComponent implements OnInit {
   }
 
   formatCurrency(value: number): string {
-    return this.currencyPipe.transform(value, 'INR', 'symbol', '1.0-0') ?? String(value);
+    return this.currencyPipe.transform(value, 'INR', 'symbol', '1.2-2') ?? String(value);
   }
 
   cycleClosesKey(days: number): string {

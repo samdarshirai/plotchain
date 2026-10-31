@@ -65,11 +65,11 @@ describe('CycleManagementComponent', () => {
   it('shows per-income-type and total columns on each row', () => {
     flushDetails();
     const row = fixture.componentInstance.historyRows[0];
-    expect(row['DIRECT']).toBe('500');
-    expect(row['ROYALTY']).toBe('0');
-    expect(row['totalNet']).toBe('730');
-    expect(row['business']).toBe('1000');
-    expect(row['commissionExpense']).toBe('900');
+    expect(row['DIRECT']).toBe('₹500.00');
+    expect(row['ROYALTY']).toBe('₹0.00');
+    expect(row['totalNet']).toBe('₹730.00');
+    expect(row['business']).toBe('₹1,000.00');
+    expect(row['commissionExpense']).toBe('₹900.00');
     expect(row['commissionPct']).toBe('90.00%');
   });
 

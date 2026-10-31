@@ -347,38 +347,38 @@ const RENDERED_FIELD_ERROR_KEYS = [
           <dl class="compensation-step__simulator-breakdown" *ngIf="sampleEarnings as earnings">
             <div class="compensation-step__simulator-line">
               <dt>{{ 'setup.compensation.directIncomeLineLabel' | translate }}</dt>
-              <dd>{{ earnings.directIncome | currency:'INR':'symbol':'1.0-2' }}</dd>
+              <dd>{{ earnings.directIncome | currency:'INR':'symbol':'1.2-2' }}</dd>
             </div>
             <div class="compensation-step__simulator-line">
               <dt>{{ 'setup.compensation.matchingIncomeLineLabel' | translate }}</dt>
-              <dd>{{ earnings.matchingIncome | currency:'INR':'symbol':'1.0-2' }}</dd>
+              <dd>{{ earnings.matchingIncome | currency:'INR':'symbol':'1.2-2' }}</dd>
             </div>
             <div class="compensation-step__simulator-line">
               <dt>{{ 'setup.compensation.sponsorBonusLineLabel' | translate }}</dt>
-              <dd>{{ earnings.sponsorBonus | currency:'INR':'symbol':'1.0-2' }}</dd>
+              <dd>{{ earnings.sponsorBonus | currency:'INR':'symbol':'1.2-2' }}</dd>
             </div>
             <div class="compensation-step__simulator-line">
               <dt>{{ 'setup.compensation.royaltyBonusLineLabel' | translate }}</dt>
-              <dd>{{ earnings.royaltyBonus | currency:'INR':'symbol':'1.0-2' }}</dd>
+              <dd>{{ earnings.royaltyBonus | currency:'INR':'symbol':'1.2-2' }}</dd>
             </div>
             <div class="compensation-step__simulator-line">
               <dt>{{ 'setup.compensation.grossIncomeLineLabel' | translate }}</dt>
-              <dd>{{ earnings.grossIncome | currency:'INR':'symbol':'1.0-2' }}</dd>
+              <dd>{{ earnings.grossIncome | currency:'INR':'symbol':'1.2-2' }}</dd>
             </div>
             <div class="compensation-step__simulator-line compensation-step__simulator-line--deduction">
               <dt>{{ 'setup.compensation.adminChargeLineLabel' | translate }}</dt>
-              <dd>{{ earnings.adminCharge | currency:'INR':'symbol':'1.0-2' }}</dd>
+              <dd>{{ earnings.adminCharge | currency:'INR':'symbol':'1.2-2' }}</dd>
             </div>
             <div class="compensation-step__simulator-line compensation-step__simulator-line--deduction">
               <dt>{{ 'setup.compensation.tdsLineLabel' | translate }}</dt>
-              <dd>{{ earnings.tds | currency:'INR':'symbol':'1.0-2' }}</dd>
+              <dd>{{ earnings.tds | currency:'INR':'symbol':'1.2-2' }}</dd>
             </div>
           </dl>
 
           <div class="compensation-step__simulator-total" *ngIf="sampleEarnings as earnings">
             <span>{{ 'setup.compensation.finalEarningsLineLabel' | translate }}</span>
             <strong class="compensation-step__final-earnings">
-              {{ earnings.finalEarnings | currency:'INR':'symbol':'1.0-2' }}
+              {{ earnings.finalEarnings | currency:'INR':'symbol':'1.2-2' }}
             </strong>
           </div>
         </div>

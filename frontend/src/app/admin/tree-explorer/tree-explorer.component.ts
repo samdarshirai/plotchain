@@ -159,8 +159,8 @@ const CLICK_MOVE_PX = 5;
                   <div class="tree-explorer__vol-bar-fill" [style.width.%]="legLeftPercent(entry.data)"></div>
                 </div>
                 <div class="tree-explorer__vol-row">
-                  <span>{{ 'admin.treeExplorer.leftLegLabel' | translate }}: ₹{{ entry.data.leftLegVolume | number }}</span>
-                  <span>{{ 'admin.treeExplorer.rightLegLabel' | translate }}: ₹{{ entry.data.rightLegVolume | number }}</span>
+                  <span>{{ 'admin.treeExplorer.leftLegLabel' | translate }}: {{ entry.data.leftLegVolume | currency:'INR':'symbol':'1.2-2' }}</span>
+                  <span>{{ 'admin.treeExplorer.rightLegLabel' | translate }}: {{ entry.data.rightLegVolume | currency:'INR':'symbol':'1.2-2' }}</span>
                 </div>
 
                 <button
@@ -198,9 +198,9 @@ const CLICK_MOVE_PX = 5;
             <div>{{ 'admin.treeExplorer.hoverTotalRightMembersLabel' | translate }}: {{ d.totalRightMembers }}</div>
             <div>{{ 'admin.treeExplorer.hoverActiveLeftMembersLabel' | translate }}: {{ d.activeLeftMembers }}</div>
             <div>{{ 'admin.treeExplorer.hoverActiveRightMembersLabel' | translate }}: {{ d.activeRightMembers }}</div>
-            <div>{{ 'admin.treeExplorer.hoverTotalLeftBusinessLabel' | translate }}: ₹{{ d.totalLeftBusiness | number }}</div>
-            <div>{{ 'admin.treeExplorer.hoverTotalRightBusinessLabel' | translate }}: ₹{{ d.totalRightBusiness | number }}</div>
-            <div>{{ 'admin.treeExplorer.hoverTotalSelfBusinessLabel' | translate }}: ₹{{ d.totalSelfBusiness | number }}</div>
+            <div>{{ 'admin.treeExplorer.hoverTotalLeftBusinessLabel' | translate }}: {{ d.totalLeftBusiness | currency:'INR':'symbol':'1.2-2' }}</div>
+            <div>{{ 'admin.treeExplorer.hoverTotalRightBusinessLabel' | translate }}: {{ d.totalRightBusiness | currency:'INR':'symbol':'1.2-2' }}</div>
+            <div>{{ 'admin.treeExplorer.hoverTotalSelfBusinessLabel' | translate }}: {{ d.totalSelfBusiness | currency:'INR':'symbol':'1.2-2' }}</div>
           </ng-container>
         </div>
 

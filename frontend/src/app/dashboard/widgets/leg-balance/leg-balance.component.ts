@@ -17,13 +17,13 @@ import { LegVolumeSummary } from '../../models/dashboard-response.model';
       <div class="leg-balance__figures">
         <div class="leg-balance__figure">
           <span class="leg-balance__figure-label">{{ 'dashboard.leftLegLabel' | translate }}</span>
-          <span class="leg-balance__figure-value">{{ data.leftLegVolume | currency:'INR':'symbol':'1.0-0' }}</span>
+          <span class="leg-balance__figure-value">{{ data.leftLegVolume | currency:'INR':'symbol':'1.2-2' }}</span>
           <span class="leg-balance__figure-caption" *ngIf="leftAssociateCount != null">{{ 'dashboard.legAssociatesCaption' | translate: { count: leftAssociateCount } }}</span>
         </div>
         <div class="leg-balance__divider"></div>
         <div class="leg-balance__figure">
           <span class="leg-balance__figure-label">{{ 'dashboard.rightLegLabel' | translate }}</span>
-          <span class="leg-balance__figure-value">{{ data.rightLegVolume | currency:'INR':'symbol':'1.0-0' }}</span>
+          <span class="leg-balance__figure-value">{{ data.rightLegVolume | currency:'INR':'symbol':'1.2-2' }}</span>
           <span class="leg-balance__figure-caption" *ngIf="rightAssociateCount != null">{{ 'dashboard.legAssociatesCaption' | translate: { count: rightAssociateCount } }}</span>
         </div>
       </div>

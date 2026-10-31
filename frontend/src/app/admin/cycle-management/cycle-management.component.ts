@@ -13,6 +13,7 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
 import { BrandButtonComponent } from '../../shared/components/brand-button/brand-button.component';
 import { AdminDashboardService } from '../../admin-dashboard/admin-dashboard.service';
 import { CurrentCycleStats } from '../../admin-dashboard/admin-dashboard.model';
+import { formatInr } from '../../shared/utils/plot-grid.util';
 
 const PAGE_SIZE = 20;
 const INCOME_TYPES: CycleIncomeType[] = ['DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'ROYALTY', 'REWARD'];
@@ -69,18 +70,18 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
           <div class="cycle-management__stats">
             <div class="cycle-metric cycle-metric--hero">
               <span class="cycle-metric__label">{{ 'admin.cycleManagement.totalIncomeLabel' | translate }}</span>
-              <span class="cycle-metric__value">{{ stats.totalIncome | currency:'INR':'symbol':'1.0-2' }}</span>
+              <span class="cycle-metric__value">{{ stats.totalIncome | currency:'INR':'symbol':'1.2-2' }}</span>
               <span class="cycle-metric__delta" *ngIf="incomeDelta !== null" [class.cycle-metric__delta--down]="incomeDelta < 0">
                 {{ incomeDelta >= 0 ? '▲' : '▼' }} {{ incomeDelta | number:'1.0-1' }}% {{ 'admin.cycleManagement.vsPreviousCycleLabel' | translate }}
               </span>
             </div>
             <div class="cycle-metric">
               <span class="cycle-metric__label">{{ 'admin.cycleManagement.directIncomeLabel' | translate }}</span>
-              <span class="cycle-metric__value">{{ stats.directIncome | currency:'INR':'symbol':'1.0-2' }}</span>
+              <span class="cycle-metric__value">{{ stats.directIncome | currency:'INR':'symbol':'1.2-2' }}</span>
             </div>
             <div class="cycle-metric">
               <span class="cycle-metric__label">{{ 'admin.cycleManagement.matchingIncomeLabel' | translate }}</span>
-              <span class="cycle-metric__value">{{ stats.matchingIncome | currency:'INR':'symbol':'1.0-2' }}</span>
+              <span class="cycle-metric__value">{{ stats.matchingIncome | currency:'INR':'symbol':'1.2-2' }}</span>
             </div>
             <div class="cycle-metric">
               <span class="cycle-metric__label">{{ 'admin.cycleManagement.newAssociatesLabel' | translate }}</span>
@@ -92,7 +93,7 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
             </div>
             <div class="cycle-metric">
               <span class="cycle-metric__label">{{ 'admin.cycleManagement.revenueThisCycleLabel' | translate }}</span>
-              <span class="cycle-metric__value">{{ stats.revenueThisCycle | currency:'INR':'symbol':'1.0-2' }}</span>
+              <span class="cycle-metric__value">{{ stats.revenueThisCycle | currency:'INR':'symbol':'1.2-2' }}</span>
             </div>
           </div>
         </ng-container>
@@ -323,14 +324,14 @@ export class CycleManagementComponent implements OnInit {
       status: cycle.status
     };
     for (const t of INCOME_TYPES) {
-      row[t] = detail ? String(detail.incomeTypeTotals.find(x => x.incomeType === t)?.totalNet ?? 0) : '';
+      row[t] = detail ? formatInr(detail.incomeTypeTotals.find(x => x.incomeType === t)?.totalNet ?? 0) : '';
     }
-    row['totalNet'] = detail ? String(detail.totalNet) : '';
-    row['business'] = detail ? String(detail.totalBusiness) : '';
-    row['tripExpense'] = detail ? String(detail.tripExpense) : '';
+    row['totalNet'] = detail ? formatInr(detail.totalNet) : '';
+    row['business'] = detail ? formatInr(detail.totalBusiness) : '';
+    row['tripExpense'] = detail ? formatInr(detail.tripExpense) : '';
     // Commission = gross ledger income (before TDS/admin deductions) + trip expense.
     const commissionExpense = detail ? detail.totalGross + detail.tripExpense : 0;
-    row['commissionExpense'] = detail ? String(commissionExpense) : '';
+    row['commissionExpense'] = detail ? formatInr(commissionExpense) : '';
     row['commissionPct'] =
       detail && detail.totalBusiness > 0 ? ((commissionExpense / detail.totalBusiness) * 100).toFixed(2) + '%' : '—';
     return row;

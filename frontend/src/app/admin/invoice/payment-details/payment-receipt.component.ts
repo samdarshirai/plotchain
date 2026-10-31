@@ -24,7 +24,7 @@ import { InvoiceService, RepaymentRow } from '../invoice.service';
             <dt>{{ 'admin.invoiceReceipt.associateId' | translate }}</dt><dd>{{ r.associateUserId }}</dd>
             <dt>{{ 'admin.invoiceReceipt.associateName' | translate }}</dt><dd>{{ r.associateName }}</dd>
             <dt>{{ 'admin.invoiceReceipt.mobileNo' | translate }}</dt><dd>{{ r.associatePhone }}</dd>
-            <dt>{{ 'admin.invoiceReceipt.amount' | translate }}</dt><dd>{{ r.amount.toFixed(2) }}</dd>
+            <dt>{{ 'admin.invoiceReceipt.amount' | translate }}</dt><dd>{{ r.amount | number:'1.2-2' }}</dd>
             <dt>{{ 'admin.invoiceReceipt.payMode' | translate }}</dt><dd>{{ 'admin.invoicePayments.payModes.' + r.payMode | translate }}</dd>
             <dt>{{ 'admin.invoiceReceipt.bankName' | translate }}</dt><dd>{{ r.bankName }}</dd>
             <dt>{{ 'admin.invoiceReceipt.txnNo' | translate }}</dt><dd>{{ r.txnNo }}</dd>
