@@ -372,7 +372,7 @@ describe('IncomeStatementComponent', () => {
     expect(fixture.nativeElement.querySelector('.income-statement__legend').textContent).toContain('Calculate Right Business');
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
-    expect(cells).toEqual(jasmine.arrayContaining(['02 Jun 2026 – 16 Jun 2026', '1000000', '500000', '35000']));
+    expect(cells).toEqual(jasmine.arrayContaining(['02 Jun 2026 – 16 Jun 2026', '₹1,000,000.00', '₹500,000.00', '₹35,000.00']));
   });
 
   it('Royalty tab shows date, new left/right/matching business and royalty bonus', () => {
@@ -395,7 +395,7 @@ describe('IncomeStatementComponent', () => {
     ]);
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
-    expect(cells).toEqual(jasmine.arrayContaining(['02 Jun 2026 – 16 Jun 2026', '0', '500000']));
+    expect(cells).toEqual(jasmine.arrayContaining(['02 Jun 2026 – 16 Jun 2026', '₹0.00', '₹500,000.00']));
   });
 
   it('Sponsor Matching tab shows Date, Member ID, Matching Income and Sponsor Matching Income', () => {

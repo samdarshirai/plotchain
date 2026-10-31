@@ -528,7 +528,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   private updateMatchingRows(): void {
-    const n = (v: number | undefined) => String(v ?? 0);
+    const n = (v: number | undefined) => this.formatCurrency(v ?? 0);
     this.statementRows = (this.page?.entries ?? []).map((entry, i) => {
       const b = entry.legBreakdown;
       return {
@@ -542,7 +542,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         clb: n(b?.calcLeft),
         crb: n(b?.calcRight),
         matchingBusiness: n(b?.matchingBusiness),
-        matchingIncome: n(entry.grossAmount)
+        matchingIncome: this.formatCurrency(entry.grossAmount)
       };
     });
   }
@@ -553,7 +553,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       return;
     }
     if (this.activeIncomeType === 'ROYALTY') {
-      const n = (v: number | undefined) => String(v ?? 0);
+      const n = (v: number | undefined) => this.formatCurrency(v ?? 0);
       this.statementRows = (this.page?.entries ?? []).map(entry => ({
         date: `${this.formatDate(entry.cyclePeriodStart, DATE_FORMAT)} – ${this.formatDate(entry.cyclePeriodEnd, DATE_FORMAT)}`,
         newLeft: n(entry.legBreakdown?.newLeft),
