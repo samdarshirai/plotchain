@@ -72,14 +72,12 @@ class CompensationPlanServiceTest {
             new BigDecimal("7.00"),
             new BigDecimal("5.00"),
             new BigDecimal("2.00"),
-            new BigDecimal("5.00"),
             new BigDecimal("15.00"),
             new BigDecimal("1100.00"),
             new BigDecimal("500.00"),
             SettlementCycle.SEMI_MONTHLY,
             Instant.parse("2020-01-01T00:00:00Z"),
-            null,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000")
+            null
         );
     }
 
@@ -96,14 +94,12 @@ class CompensationPlanServiceTest {
             new BigDecimal("7.00"),
             new BigDecimal("5.00"),
             new BigDecimal("2.00"),
-            new BigDecimal("5.00"),
             new BigDecimal("15.00"),
             new BigDecimal("1100.00"),
             new BigDecimal("500.00"),
             SettlementCycle.SEMI_MONTHLY,
             Instant.now(),
-            createdBy,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000")
+            createdBy
         );
     }
 
@@ -122,15 +118,12 @@ class CompensationPlanServiceTest {
             new BigDecimal("5.00"),
             new BigDecimal("2.00"),
             new BigDecimal("5.00"),
-            new BigDecimal("15.00"),
             new BigDecimal("1100.00"),
             new BigDecimal("500.00"),
             settlementCycle,
             List.of(new RoyaltyBonusRateInput(new BigDecimal("40"), new BigDecimal("3.00"))),
             tiers,
-            effectiveFrom,
-            new BigDecimal("1.00"), new BigDecimal("2000"),
-            new BigDecimal("2.00"), new BigDecimal("3000")
+            effectiveFrom
         );
     }
 
@@ -527,54 +520,5 @@ class CompensationPlanServiceTest {
         SettingsAuditLog saved = captor.getValue();
         assertThat(saved.getSection()).isEqualTo("COMPENSATION");
         assertThat(saved.getChangedByAssociateId()).isEqualTo(ADMIN_ID);
-    }
-
-    @Test
-    void updatePlanSavesTheSelfPerformanceBonusRatesAndThresholds() {
-        lenient().when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
-        when(versionRepository.findByEffectiveFrom(any())).thenReturn(Optional.empty());
-
-        CompensationPlanRequest request = new CompensationPlanRequest(
-            new BigDecimal("6.00"), new BigDecimal("7.00"), new BigDecimal("11.00"),
-            new BigDecimal("2.00"), new BigDecimal("5.00"), new BigDecimal("15.00"),
-            new BigDecimal("1100.00"), new BigDecimal("500.00"), "SEMI_MONTHLY",
-            List.of(), List.of(), null,
-            new BigDecimal("1.00"), new BigDecimal("2000"),
-            new BigDecimal("2.00"), new BigDecimal("3000"));
-
-        compensationPlanService.updatePlan(request, ADMIN_ID);
-
-        ArgumentCaptor<CompensationPlanVersion> captor = ArgumentCaptor.forClass(CompensationPlanVersion.class);
-        verify(versionRepository).save(captor.capture());
-        assertThat(captor.getValue().getSelfPerformanceTier1Pct()).isEqualByComparingTo("1.00");
-        assertThat(captor.getValue().getSelfPerformanceTier1SqftThreshold()).isEqualByComparingTo("2000");
-        assertThat(captor.getValue().getSelfPerformanceTier2Pct()).isEqualByComparingTo("2.00");
-        assertThat(captor.getValue().getSelfPerformanceTier2SqftThreshold()).isEqualByComparingTo("3000");
-    }
-
-    @Test
-    void updatePlanDefaultsSelfPerformanceFieldsToV25MigrationDefaultsWhenNull() {
-        // The existing Angular admin UI doesn't send these 4 fields yet -- a request built the
-        // way that UI builds it (all 4 null) must still succeed and fall back to the same
-        // defaults V25__self_performance_bonus.sql seeds at the column level.
-        lenient().when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
-        when(versionRepository.findByEffectiveFrom(any())).thenReturn(Optional.empty());
-
-        CompensationPlanRequest request = new CompensationPlanRequest(
-            new BigDecimal("6.00"), new BigDecimal("7.00"), new BigDecimal("11.00"),
-            new BigDecimal("2.00"), new BigDecimal("5.00"), new BigDecimal("15.00"),
-            new BigDecimal("1100.00"), new BigDecimal("500.00"), "SEMI_MONTHLY",
-            List.of(), List.of(), null,
-            null, null, null, null);
-
-        CompensationPlanResponse response = compensationPlanService.updatePlan(request, ADMIN_ID);
-
-        ArgumentCaptor<CompensationPlanVersion> captor = ArgumentCaptor.forClass(CompensationPlanVersion.class);
-        verify(versionRepository).save(captor.capture());
-        assertThat(captor.getValue().getSelfPerformanceTier1Pct()).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat(captor.getValue().getSelfPerformanceTier1SqftThreshold()).isEqualByComparingTo("2000");
-        assertThat(captor.getValue().getSelfPerformanceTier2Pct()).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat(captor.getValue().getSelfPerformanceTier2SqftThreshold()).isEqualByComparingTo("3000");
-        assertThat(response).isNotNull();
     }
 }

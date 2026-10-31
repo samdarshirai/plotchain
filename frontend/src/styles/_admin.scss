@@ -2505,11 +2505,22 @@
 }
 
 // Money columns right-aligned per tab (headers too); everything else left-aligned.
-// ALL (generic ledger): 1 Type, 2 Cycle, 3 Status, 4 Gross, 5 Source Ref, 6 Created.
+// ALL (per-period summary): 1 Period, 2-9 money (Direct .. Payable), 10 Paid Status,
+// 11 Payment Date. Last row is the Total row.
 .income-statement[data-income-type='ALL'] {
-  .editable-table thead th:nth-child(4),
-  .editable-table tbody td:not(.editable-table__empty):nth-child(4) {
+  .editable-table thead th:nth-child(n + 2):nth-child(-n + 9),
+  .editable-table tbody td:not(.editable-table__empty):nth-child(n + 2):nth-child(-n + 9) {
     text-align: right;
+  }
+
+  .editable-table tbody tr:last-child td:not(.editable-table__empty) {
+    font-weight: 700;
+    background: var(--surface-raised);
+    border-top: 2px solid var(--border-subtle);
+  }
+
+  .editable-table__badge:empty {
+    display: none;
   }
 }
 

@@ -24,7 +24,6 @@ describe('CompensationStepComponent', () => {
     sponsorMatchingPct: 2,
     tdsPct: 2,
     adminChargeWithPanPct: 5,
-    adminChargeWithoutPanPct: 15,
     activationFee: 1100,
     minWithdrawal: 100,
     settlementCycle: 'SEMI_MONTHLY',

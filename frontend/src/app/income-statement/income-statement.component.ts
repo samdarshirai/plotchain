@@ -9,6 +9,7 @@ import { AssociateProfileResponse } from '../profile-kyc/models/associate-profil
 import { IncomeStatementService } from './income-statement.service';
 import { RewardTierRow } from './models/reward-tier-row.model';
 import { AssociateLedgerPage, AssociateLedgerFilters } from './models/associate-ledger-page.model';
+import { IncomeSummaryRow } from './models/income-summary-row.model';
 import { TabBarComponent, TabDefinition } from '../shared/components/tab-bar/tab-bar.component';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
@@ -27,9 +28,6 @@ const TAB_ROUTES = [
 
 const MATCHING_KEYS = ['bflb', 'bfrb', 'nlb', 'nrb', 'tlb', 'trb', 'clb', 'crb'];
 
-const ledgerStatusTone = (value: string | number): BadgeTone =>
-  value === 'PAID' ? 'success' : value === 'REVERSED' ? 'danger' : 'warning';
-
 export interface CycleOption {
   cycleId: string;
   cyclePeriodStart: string;
@@ -47,7 +45,7 @@ const DATE_TIME_FORMAT = 'dd MMM yyyy, HH:mm';
   imports: [CommonModule, TranslateModule, TabBarComponent, EditableTableComponent, InlineBannerComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
-    <div class="income-statement" [attr.data-income-type]="activeIncomeType" [class.income-statement--matching]="activeIncomeType === 'MATCHING'" [class.income-statement--reward]="activeIncomeType === 'REWARD'" [class.income-statement--direct]="activeIncomeType === 'DIRECT'">
+    <div class="income-statement" [attr.data-income-type]="activeIncomeType" [class.income-statement--matching]="activeIncomeType === 'MATCHING'" [class.income-statement--reward]="activeIncomeType === 'REWARD'" [class.income-statement--direct]="activeIncomeType === 'DIRECT'" [class.income-statement--all]="activeIncomeType === 'ALL'">
       <div class="income-statement__head">
         <div class="income-statement__intro">
           <h1 class="income-statement__title">{{ 'incomeStatement.title' | translate }}</h1>
@@ -74,7 +72,7 @@ const DATE_TIME_FORMAT = 'dd MMM yyyy, HH:mm';
         </div>
       </div>
 
-      <div class="income-statement__filters" *ngIf="activeIncomeType !== 'REWARD'">
+      <div class="income-statement__filters" *ngIf="activeIncomeType !== 'REWARD' && activeIncomeType !== 'ALL'">
         <div class="income-statement__filter-field">
           <label>
             {{ 'incomeStatement.cycleFilterLabel' | translate }}
@@ -247,24 +245,62 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       this.buildSponsorMatchingColumns();
       return;
     }
+    this.buildSummaryColumns();
+  }
+
+  // ALL tab: one row per period, then a Total row. Total Income is gross across every income
+  // type; Payable = Total Income - TDS - Processing Charge.
+  private buildSummaryColumns(): void {
+    const keys = ['Period', 'DirectIncome', 'MatchingIncome', 'SponsorIncome', 'RoyaltyBonus', 'TotalIncome',
+      'Tds', 'ProcessingCharge', 'PayableAmount', 'PaidStatus', 'PaymentDate'];
+    const rowKeys = ['period', 'direct', 'matching', 'sponsor', 'royalty', 'totalIncome',
+      'tds', 'processing', 'payable', 'paidStatus', 'paymentDate'];
     this.translate
-      .get([
-        'incomeStatement.columnIncomeType',
-        'incomeStatement.columnCyclePeriod',
-        'incomeStatement.columnStatus',
-        'incomeStatement.columnGrossAmount',
-        'incomeStatement.columnCreatedAt'
-      ])
+      .get(keys.map(k => 'incomeStatement.column' + k))
       .pipe(takeUntil(this.destroyed$))
       .subscribe(t => {
-        this.statementColumns = [
-          { key: 'incomeType', label: t['incomeStatement.columnIncomeType'], type: 'text' },
-          { key: 'cyclePeriod', label: t['incomeStatement.columnCyclePeriod'], type: 'text' },
-          { key: 'status', label: t['incomeStatement.columnStatus'], type: 'badge', badgeTone: ledgerStatusTone },
-          { key: 'grossAmount', label: t['incomeStatement.columnGrossAmount'], type: 'text' },
-          { key: 'createdAt', label: t['incomeStatement.columnCreatedAt'], type: 'text' }
-        ];
+        const paid = this.translate.instant('incomeStatement.payStatusPaid');
+        const unpaid = this.translate.instant('incomeStatement.payStatusUnpaid');
+        const tone = (v: string | number): BadgeTone => (v === paid ? 'success' : v === unpaid ? 'danger' : 'warning');
+        this.statementColumns = rowKeys.map((key, i) => ({
+          key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const,
+          ...(key === 'paidStatus' ? { type: 'badge' as const, badgeTone: tone } : {})
+        }));
       });
+  }
+
+  private updateSummaryRows(rows: IncomeSummaryRow[]): void {
+    const money = ['direct', 'matching', 'sponsor', 'royalty', 'totalIncome', 'tds', 'processing', 'payable'] as const;
+    const totals: Record<string, number> = Object.fromEntries(money.map(k => [k, 0]));
+    const out: Record<string, string>[] = rows.map(r => {
+      const values: Record<string, number> = {
+        direct: r.gross.DIRECT ?? 0,
+        matching: r.gross.MATCHING ?? 0,
+        sponsor: r.gross.SPONSOR_MATCHING ?? 0,
+        royalty: r.gross.ROYALTY ?? 0,
+        totalIncome: r.totalGross,
+        tds: r.tds,
+        processing: r.adminCharges,
+        payable: r.totalNet
+      };
+      money.forEach(k => (totals[k] += values[k]));
+      const status = r.paidCount === 0 ? 'payStatusUnpaid' : r.paidCount >= r.entryCount ? 'payStatusPaid' : 'payStatusPartial';
+      return {
+        period: `${this.formatDate(r.cyclePeriodStart, DATE_FORMAT)} – ${this.formatDate(r.cyclePeriodEnd, DATE_FORMAT)}`,
+        ...Object.fromEntries(money.map(k => [k, this.formatCurrency(values[k])])),
+        paidStatus: this.translate.instant('incomeStatement.' + status),
+        paymentDate: r.paidAt ? (this.formatDate(r.paidAt, DATE_FORMAT) ?? r.paidAt) : '—'
+      };
+    });
+    if (out.length) {
+      out.push({
+        period: this.translate.instant('incomeStatement.totalRow'),
+        ...Object.fromEntries(money.map(k => [k, this.formatCurrency(totals[k])])),
+        paidStatus: '',
+        paymentDate: ''
+      });
+    }
+    this.statementRows = out;
   }
 
   private buildRewardColumns(): void {
@@ -451,10 +487,16 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       return;
     }
     this.loadError = false;
-    const filters: AssociateLedgerFilters = {};
-    if (this.activeIncomeType !== 'ALL') {
-      filters.incomeType = this.activeIncomeType as AssociateLedgerFilters['incomeType'];
+    if (this.activeIncomeType === 'ALL') {
+      this.page = null;
+      this.incomeStatementService.summary().subscribe({
+        next: rows => this.updateSummaryRows(rows),
+        error: () => (this.loadError = true)
+      });
+      return;
     }
+    const filters: AssociateLedgerFilters = {};
+    filters.incomeType = this.activeIncomeType as AssociateLedgerFilters['incomeType'];
     if (this.cycleId) {
       filters.cycleId = this.cycleId;
     }
@@ -540,12 +582,5 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       }));
       return;
     }
-    this.statementRows = (this.page?.entries ?? []).map(entry => ({
-      incomeType: entry.incomeType,
-      cyclePeriod: `${this.formatDate(entry.cyclePeriodStart, DATE_FORMAT)} – ${this.formatDate(entry.cyclePeriodEnd, DATE_FORMAT)}`,
-      status: entry.status,
-      grossAmount: this.formatCurrency(entry.grossAmount),
-      createdAt: this.formatDate(entry.createdAt, DATE_TIME_FORMAT) ?? entry.createdAt
-    }));
   }
 }

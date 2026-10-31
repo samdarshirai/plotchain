@@ -13,16 +13,11 @@ public record CompensationPlanResponse(
     BigDecimal sponsorMatchingPct,
     BigDecimal tdsPct,
     BigDecimal adminChargeWithPanPct,
-    BigDecimal adminChargeWithoutPanPct,
     BigDecimal activationFee,
     BigDecimal minWithdrawal,
     String settlementCycle,
     List<RoyaltyBonusRateDto> royaltyBonusRates,
     List<RewardTierDto> rewardTiers,
     List<RankOptionDto> availableRanks,
-    Instant createdAt,
-    BigDecimal selfPerformanceTier1Pct,
-    BigDecimal selfPerformanceTier1SqftThreshold,
-    BigDecimal selfPerformanceTier2Pct,
-    BigDecimal selfPerformanceTier2SqftThreshold
+    Instant createdAt
 ) {}

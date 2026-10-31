@@ -86,6 +86,27 @@ class AssociateLedgerControllerTest {
     }
 
     @Test
+    void getMyIncomeSummaryReturnsTheCallersOwnPerCycleRows() throws Exception {
+        UUID associateId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        java.util.Map<IncomeType, BigDecimal> gross = new java.util.EnumMap<>(IncomeType.class);
+        gross.put(IncomeType.DIRECT, new BigDecimal("100.00"));
+        AdminLedgerSummaryRow row = new AdminLedgerSummaryRow(
+            associateId, "VP00001", "Jane", cycleId, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 15),
+            gross, new BigDecimal("100.00"), new BigDecimal("2.00"), new BigDecimal("5.00"), new BigDecimal("93.00"),
+            1, 1, Instant.parse("2026-01-20T00:00:00Z"));
+        when(ledgerService.mySummary(associateId)).thenReturn(List.of(row));
+
+        mockMvc.perform(get("/api/associates/me/income-summary")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].cycleId").value(cycleId.toString()))
+            .andExpect(jsonPath("$[0].gross.DIRECT").value(100.00))
+            .andExpect(jsonPath("$[0].totalNet").value(93.00))
+            .andExpect(jsonPath("$[0].paidAt").value("2026-01-20T00:00:00Z"));
+    }
+
+    @Test
     void getMyLedgerReturns200WithAnEmptyPageWhenUnfiltered() throws Exception {
         UUID associateId = UUID.randomUUID();
         when(ledgerService.myList(eq(associateId), isNull(), isNull(), isNull(), eq(0), eq(20)))

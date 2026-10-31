@@ -219,9 +219,8 @@ class CycleCloseFullPipelineIntegrationTest {
         CompensationPlanVersion planVersion = new CompensationPlanVersion(
             UUID.randomUUID(), "full-pipeline", LocalDate.of(2025, 6, 1),
             new BigDecimal("10.00"), new BigDecimal("10.00"), new BigDecimal("10.00"),
-            new BigDecimal("5.00"), new BigDecimal("3.00"), new BigDecimal("4.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null,
-            BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO, new BigDecimal("3000"));
+            new BigDecimal("5.00"), new BigDecimal("4.00"),
+            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null);
         compensationPlanVersionRepository.saveAndFlush(planVersion);
         planVersionId = planVersion.getId();
 

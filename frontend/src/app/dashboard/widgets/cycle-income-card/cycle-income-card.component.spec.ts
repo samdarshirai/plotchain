@@ -12,7 +12,6 @@ describe('CycleIncomeCardComponent (business summary)', () => {
     directIncome: 1000,
     matchingIncome: 500,
     sponsorMatchingIncome: 300,
-    selfPerformanceBonus: 200,
     royaltyBonus: 400,
     royaltyBonusPct: 3,
     totalIncome: 2400,

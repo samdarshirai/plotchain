@@ -24,7 +24,6 @@ export interface CompensationPlanResponse {
   sponsorMatchingPct: number;
   tdsPct: number;
   adminChargeWithPanPct: number;
-  adminChargeWithoutPanPct: number;
   activationFee: number;
   minWithdrawal: number;
   settlementCycle: 'SEMI_MONTHLY' | 'MONTHLY' | 'HALF_YEARLY' | 'YEARLY' | 'CUSTOM';

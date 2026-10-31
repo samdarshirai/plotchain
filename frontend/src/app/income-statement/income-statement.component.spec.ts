@@ -13,6 +13,7 @@ describe('IncomeStatementComponent', () => {
 
   const frColumnTranslations = {
     incomeStatement: {
+      columnPeriod: 'Période',
       columnIncomeType: 'Type de revenu',
       columnCyclePeriod: 'Période',
       columnStatus: 'Statut',
@@ -48,14 +49,33 @@ describe('IncomeStatementComponent', () => {
     cyclePeriodEnd: '2025-12-31'
   };
 
-  function flushInitialRequests(lookupEntries: unknown[] = [sampleEntry, otherCycleEntry]): void {
+  const summaryRow = (over: Record<string, unknown> = {}) => ({
+    cycleId: 'c1', cyclePeriodStart: '2026-01-01', cyclePeriodEnd: '2026-01-15',
+    gross: { DIRECT: 10000, MATCHING: 2000, SPONSOR_MATCHING: 500, ROYALTY: 300, REWARD: 1000 },
+    totalGross: 13800, tds: 276, adminCharges: 690, totalNet: 12834,
+    entryCount: 3, paidCount: 3, paidAt: '2026-01-20T10:00:00Z',
+    ...over
+  });
+
+  const SUMMARY_URL = '/api/associates/me/income-summary';
+
+  function flushInitialRequests(
+    lookupEntries: unknown[] = [sampleEntry, otherCycleEntry],
+    summary: unknown[] = [summaryRow()]
+  ): void {
     httpMock
       .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('size') === '100')
       .flush({ entries: lookupEntries, page: 0, size: 100, totalElements: lookupEntries.length, totalGrossAmount: 0 });
-    httpMock
-      .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('size') === '20')
-      .flush({ entries: [sampleEntry], page: 0, size: 20, totalElements: 1, totalGrossAmount: 0 });
+    httpMock.expectOne(SUMMARY_URL).flush(summary);
     httpMock.expectOne('/api/associates/me/profile').flush({ id: 'a1', userId: 'AS001', name: 'Test Associate' });
+  }
+
+  // Ledger-backed tabs (filters, pagination, cards) live on the per-type tabs, not on All.
+  function goToDirect(entries: unknown[] = [sampleEntry], extra: Record<string, unknown> = {}): void {
+    routeData$.next({ incomeType: 'DIRECT' });
+    httpMock
+      .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('incomeType') === 'DIRECT')
+      .flush({ entries, page: 0, size: 20, totalElements: entries.length, totalGrossAmount: 0, ...extra });
   }
 
   beforeEach(async () => {
@@ -110,7 +130,9 @@ describe('IncomeStatementComponent', () => {
         columnAchievedDate: 'Achieved Date', statusNotAchieved: 'Not Achieved',
         columnDesignation: 'Designation', columnDate: 'Date', columnPayStatus: 'Pay Status',
         columnPaymentDate: 'Payment Date', columnRemarks: 'Remarks', statusAchieved: 'Achieved', statusPending: 'Pending',
-        statusInProgress: 'In progress', leftLeg: 'Left leg', rightLeg: 'Right leg', columnAchieved: 'Achieved', matchingSuffix: 'matching', payStatusPaid: 'Paid', payStatusUnpaid: 'Unpaid',
+        statusInProgress: 'In progress', leftLeg: 'Left leg', rightLeg: 'Right leg', columnAchieved: 'Achieved', matchingSuffix: 'matching', payStatusPaid: 'Paid', payStatusUnpaid: 'Unpaid', payStatusPartial: 'Partially Paid', totalRow: 'Total',
+        columnDirectIncome: 'Direct Income', columnSponsorIncome: 'Sponsor Income', columnTotalIncome: 'Total Income', columnTds: 'TDS',
+        columnProcessingCharge: 'Processing Charge', columnPayableAmount: 'Payable Amount', columnPaidStatus: 'Paid Status',
         bflbAbbr: 'BFLB', bfrbAbbr: 'BFRB', nlbAbbr: 'NLB', nrbAbbr: 'NRB', tlbAbbr: 'TLB', trbAbbr: 'TRB', clbAbbr: 'CLB', crbAbbr: 'CRB',
         bflbLegend: 'Back Forward Left Business', bfrbLegend: 'Back Forward Right Business', nlbLegend: 'New Left Business', nrbLegend: 'New Right Business',
         tlbLegend: 'Total Left Business', trbLegend: 'Total Right Business', clbLegend: 'Calculate Left Business', crbLegend: 'Calculate Right Business',
@@ -133,10 +155,54 @@ describe('IncomeStatementComponent', () => {
     httpMock.verify();
   });
 
-  it('loads the first unfiltered page of my ledger on init, with the All tab active', () => {
+  it('loads the per-period summary on init, with the All tab active', () => {
     flushInitialRequests();
-    expect(fixture.componentInstance.page?.entries.length).toBe(1);
     expect(fixture.componentInstance.activeIncomeType).toBe('ALL');
+    expect(fixture.componentInstance.page).toBeNull();
+    expect(fixture.componentInstance.statementRows.length).toBe(2); // 1 period + Total
+  });
+
+  it('All tab maps each period to type columns, TDS, processing, payable and paid status', () => {
+    flushInitialRequests();
+    const row = fixture.componentInstance.statementRows[0];
+    expect(row).toEqual({
+      period: '01 Jan 2026 – 15 Jan 2026',
+      direct: '₹10,000.00', matching: '₹2,000.00', sponsor: '₹500.00', royalty: '₹300.00',
+      totalIncome: '₹13,800.00', tds: '₹276.00', processing: '₹690.00', payable: '₹12,834.00',
+      paidStatus: 'Paid', paymentDate: '20 Jan 2026'
+    });
+  });
+
+  it('All tab appends a Total row summing every money column across periods', () => {
+    flushInitialRequests(undefined, [
+      summaryRow(),
+      summaryRow({ cycleId: 'c2', gross: { DIRECT: 1000 }, totalGross: 1000, tds: 20, adminCharges: 50, totalNet: 930,
+        entryCount: 2, paidCount: 0, paidAt: null })
+    ]);
+    const rows = fixture.componentInstance.statementRows;
+    expect(rows.length).toBe(3);
+    expect(rows[1]['paidStatus']).toBe('Unpaid');
+    expect(rows[1]['paymentDate']).toBe('—');
+    expect(rows[1]['matching']).toBe('₹0.00');
+    expect(rows[2]).toEqual({
+      period: 'Total',
+      direct: '₹11,000.00', matching: '₹2,000.00', sponsor: '₹500.00', royalty: '₹300.00',
+      totalIncome: '₹14,800.00', tds: '₹296.00', processing: '₹740.00', payable: '₹13,764.00',
+      paidStatus: '', paymentDate: ''
+    });
+  });
+
+  it('All tab marks a period with some paid entries as Partially Paid', () => {
+    flushInitialRequests(undefined, [summaryRow({ paidCount: 1 })]);
+    expect(fixture.componentInstance.statementRows[0]['paidStatus']).toBe('Partially Paid');
+  });
+
+  it('All tab hides the cycle/status filters, cards and pagination', () => {
+    flushInitialRequests();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.income-statement__filters')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.income-statement__cards--summary')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.income-statement__pagination')).toBeNull();
   });
 
   it('derives the cycle filter options from the unfiltered lookup, deduped by cycleId, newest first', () => {
@@ -153,9 +219,7 @@ describe('IncomeStatementComponent', () => {
     httpMock
       .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('size') === '100')
       .flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
-    httpMock
-      .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('size') === '20')
-      .flush({ entries: [sampleEntry], page: 0, size: 20, totalElements: 1, totalGrossAmount: 0 });
+    httpMock.expectOne(SUMMARY_URL).flush([summaryRow()]);
 
     expect(fixture.componentInstance.cycles).toEqual([]);
     expect(fixture.componentInstance.loadError).toBe(false);
@@ -174,6 +238,7 @@ describe('IncomeStatementComponent', () => {
 
   it('reloads with the cycleId filter when the cycle dropdown changes', () => {
     flushInitialRequests();
+    goToDirect();
     fixture.componentInstance.onCycleIdChange('c2');
 
     const req = httpMock.expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('cycleId') === 'c2');
@@ -182,6 +247,7 @@ describe('IncomeStatementComponent', () => {
 
   it('reloads with the status filter when the status dropdown changes', () => {
     flushInitialRequests();
+    goToDirect();
     fixture.componentInstance.onStatusChange('REVERSED');
 
     const req = httpMock.expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('status') === 'REVERSED');
@@ -213,9 +279,7 @@ describe('IncomeStatementComponent', () => {
 
   it('shows a load error when the initial page load fails, without silently doing nothing', () => {
     httpMock.expectOne(r => r.params.get('size') === '100').flush({ entries: [], page: 0, size: 100, totalElements: 0, totalGrossAmount: 0 });
-    httpMock
-      .expectOne(r => r.params.get('size') === '20')
-      .flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+    httpMock.expectOne(SUMMARY_URL).flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
 
     expect(fixture.componentInstance.loadError).toBe(true);
@@ -225,9 +289,7 @@ describe('IncomeStatementComponent', () => {
 
   it('renders the load error through InlineBannerComponent with tone danger, not a plain paragraph', () => {
     httpMock.expectOne(r => r.params.get('size') === '100').flush({ entries: [], page: 0, size: 100, totalElements: 0, totalGrossAmount: 0 });
-    httpMock
-      .expectOne(r => r.params.get('size') === '20')
-      .flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+    httpMock.expectOne(SUMMARY_URL).flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
 
     const bannerEl: HTMLElement | null = fixture.nativeElement.querySelector('app-inline-banner.income-statement__load-error');
@@ -236,11 +298,10 @@ describe('IncomeStatementComponent', () => {
     expect(fixture.nativeElement.querySelector('p.income-statement__load-error')).toBeFalsy();
   });
 
-  it('shows an empty-state row when no entries match', () => {
-    flushInitialRequests();
-    fixture.componentInstance.onStatusChange('REVERSED');
-    httpMock.expectOne(r => r.params.get('status') === 'REVERSED').flush({ entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 });
+  it('shows an empty-state row, and no Total row, when there is no income yet', () => {
+    flushInitialRequests(undefined, []);
     fixture.detectChanges();
+    expect(fixture.componentInstance.statementRows).toEqual([]);
 
     const emptyCell: HTMLElement | null = fixture.nativeElement.querySelector('.editable-table__empty');
     expect(emptyCell?.textContent?.trim()).toBeTruthy();
@@ -248,6 +309,7 @@ describe('IncomeStatementComponent', () => {
 
   it('clicking Next loads the next page', () => {
     flushInitialRequests();
+    goToDirect();
     fixture.componentInstance.goToPage(1);
     const req = httpMock.expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('page') === '1' && r.params.get('size') === '20');
     req.flush({ entries: [], page: 1, size: 20, totalElements: 21, totalGrossAmount: 0 });
@@ -261,23 +323,23 @@ describe('IncomeStatementComponent', () => {
     expect(fixture.nativeElement.querySelectorAll('input').length).toBe(0);
   });
 
-  it('formats gross amount as currency, with no net amount shown with thousands separators, not raw numbers', () => {
+  it('formats money as currency with thousands separators, not raw numbers', () => {
     flushInitialRequests();
     fixture.detectChanges();
     const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
-    expect(rowText).toContain('10,000');
+    expect(rowText).toContain('₹10,000.00');
     expect(rowText).not.toContain('10000');
-    expect(rowText).not.toContain('9,300');
   });
 
   it('resolves real translated column header text, not raw i18n keys', () => {
     flushInitialRequests();
     expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
-      'Income Type', 'Cycle Period', 'Status', 'Gross Amount', 'Created At'
+      'Period', 'Direct Income', 'Matching Income', 'Sponsor Income', 'Royalty Bonus', 'Total Income',
+      'TDS', 'Processing Charge', 'Payable Amount', 'Paid Status', 'Payment Date'
     ]);
     const headerText: string = fixture.nativeElement.querySelector('.editable-table thead tr').textContent;
-    expect(headerText).toContain('Gross Amount');
-    expect(headerText).not.toContain('incomeStatement.columnGrossAmount');
+    expect(headerText).toContain('Processing Charge');
+    expect(headerText).not.toContain('incomeStatement.column');
   });
 
   it('rebuilds the column headers when the active language changes', () => {
@@ -286,9 +348,7 @@ describe('IncomeStatementComponent', () => {
     translateService.use('fr');
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
-      'Type de revenu', 'Période', 'Statut', 'Montant brut', 'Créé le'
-    ]);
+    expect(fixture.componentInstance.statementColumns[0].label).toBe('Période');
   });
 
   it('Matching tab shows the leg-business columns, legend and no S.N.', () => {
@@ -371,18 +431,20 @@ describe('IncomeStatementComponent', () => {
     return fixture.componentInstance;
   }
 
-  it('shows total income and entry count cards from the whole filtered set, and a toned status badge', () => {
+  it('shows total income and entry count cards from the whole filtered set on a per-type tab', () => {
     flushInitialRequests();
-    fixture.componentInstance.onStatusChange('PAID');
-    httpMock.expectOne(r => r.params.get('status') === 'PAID').flush({
-      entries: [{ ...sampleEntry, status: 'PAID' }], page: 0, size: 20, totalElements: 42, totalGrossAmount: 1250
-    });
+    goToDirect([sampleEntry], { totalElements: 42, totalGrossAmount: 1250 });
     fixture.detectChanges();
 
     const values: string[] = Array.from(fixture.nativeElement.querySelectorAll('.income-statement__card-value'))
       .map((e: any) => e.textContent.trim());
     expect(values).toEqual(['₹1,250.00', '42']);
-    expect(fixture.nativeElement.querySelector('.editable-table__badge--success').textContent.trim()).toBe('PAID');
+  });
+
+  it('All tab shows the paid status as a success badge', () => {
+    flushInitialRequests();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.editable-table__badge--success').textContent.trim()).toBe('Paid');
   });
 
   it('hides the summary cards on the Reward tab', () => {

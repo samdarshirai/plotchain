@@ -1,6 +1,7 @@
 package com.plotchain.income;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
@@ -18,4 +19,5 @@ public record AdminLedgerSummaryRow(
     BigDecimal adminCharges,
     BigDecimal totalNet,
     long entryCount,
-    long paidCount) {}
+    long paidCount,
+    Instant paidAt) {}

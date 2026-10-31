@@ -22,7 +22,7 @@ import { CompensationPlanRequest, SettlementCycle } from '../../models/compensat
 
 const LABELS: Record<string, string> = {
   directIncomePct: 'Direct income %', matchingIncomePct: 'Matching income %', sponsorMatchingPct: 'Sponsor matching %',
-  tdsPct: 'TDS %', adminChargeWithPanPct: 'Admin charge (with PAN) %', adminChargeWithoutPanPct: 'Admin charge (without PAN) %',
+  tdsPct: 'TDS %', adminChargeWithPanPct: 'Processing fee %',
   activationFee: 'Activation fee'
 };
 // ponytail: minWithdrawal/settlementCycle stay un-surfaced -- minWithdrawal is intentionally hidden (QA B2), settlementCycle is a
@@ -64,7 +64,6 @@ const RENDERED_FIELD_ERROR_KEYS = [
   'sponsorMatchingPct',
   'tdsPct',
   'adminChargeWithPanPct',
-  'adminChargeWithoutPanPct',
   'activationFee'
 ];
 
@@ -281,20 +280,11 @@ const RENDERED_FIELD_ERROR_KEYS = [
 
           <div class="compensation-step__row">
             <label>
-              {{ 'setup.compensation.adminChargeWithoutPanLabel' | translate }}
-              <input
-                type="number"
-                formControlName="adminChargeWithoutPanPct"
-                (blur)="markTouched('adminChargeWithoutPanPct')"
-              />
-            </label>
-            <label>
               {{ 'setup.compensation.activationFeeLabel' | translate }}
               <input type="number" formControlName="activationFee" (blur)="markTouched('activationFee')" />
             </label>
           </div>
           <div class="compensation-step__field-errors">
-            <app-field-error [message]="fieldError('adminChargeWithoutPanPct')"></app-field-error>
             <app-field-error [message]="fieldError('activationFee')"></app-field-error>
           </div>
 
@@ -337,11 +327,6 @@ const RENDERED_FIELD_ERROR_KEYS = [
           <label class="compensation-step__simulator-field">
             {{ 'setup.compensation.scenarioVolumeLabel' | translate }}
             <input type="number" [value]="scenarioVolume" (input)="setScenarioVolume($event)" />
-          </label>
-
-          <label class="compensation-step__simulator-checkbox">
-            <input type="checkbox" [checked]="hasPan" (change)="setHasPan($event)" />
-            {{ 'setup.compensation.hasPanLabel' | translate }}
           </label>
 
           <dl class="compensation-step__simulator-breakdown" *ngIf="sampleEarnings as earnings">
@@ -410,7 +395,6 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     settlementCycle: this.fb.nonNullable.control<SettlementCycle>('SEMI_MONTHLY', Validators.required),
     tdsPct: [2, [Validators.required, Validators.min(0), Validators.max(100)]],
     adminChargeWithPanPct: [5, [Validators.required, Validators.min(0), Validators.max(100)]],
-    adminChargeWithoutPanPct: [15, [Validators.required, Validators.min(0), Validators.max(100)]],
     activationFee: [1100, [Validators.required, Validators.min(0)]],
     minWithdrawal: [0, [Validators.required, Validators.min(0)]]
   });
@@ -422,7 +406,6 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
 
   // Local-only inputs for the Earnings Simulator -- never persisted/saved.
   scenarioVolume = DEFAULT_SCENARIO_VOLUME;
-  hasPan = true;
   sampleEarnings: SampleEarningsResult | null = null;
 
   // Reward Tiers / Global Royalty / Fees & Settlement independently expand/collapse (Settings
@@ -605,8 +588,7 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     return this.translate.instant('setup.compensation.accordion.feesSummary', {
       cycle: cycleLabel,
       tds: raw.tdsPct ?? 0,
-      withPan: raw.adminChargeWithPanPct ?? 0,
-      withoutPan: raw.adminChargeWithoutPanPct ?? 0
+      withPan: raw.adminChargeWithPanPct ?? 0
     });
   }
 
@@ -642,12 +624,6 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     this.recomputeSampleEarnings();
   }
 
-  setHasPan(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    this.hasPan = target.checked;
-    this.recomputeSampleEarnings();
-  }
-
   markTouched(name: string): void {
     this.form.get(name)?.markAsTouched();
   }
@@ -669,14 +645,13 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     // royalty-table row; 0 if the table is empty.
     const royaltyPct = this.royaltyRows.length > 0 ? Number(this.royaltyRows[0]['royaltyPct']) || 0 : 0;
     this.sampleEarnings = computeSampleEarnings(
-      { scenarioVolume: this.scenarioVolume, hasPan: this.hasPan },
+      { scenarioVolume: this.scenarioVolume },
       {
         directIncomePct: Number(raw.directIncomePct) || 0,
         matchingIncomePct: Number(raw.matchingIncomePct) || 0,
         sponsorMatchingPct: Number(raw.sponsorMatchingPct) || 0,
         tdsPct: Number(raw.tdsPct) || 0,
         adminChargeWithPanPct: Number(raw.adminChargeWithPanPct) || 0,
-        adminChargeWithoutPanPct: Number(raw.adminChargeWithoutPanPct) || 0,
         royaltyPct
       }
     );

@@ -405,16 +405,15 @@ public class CycleService {
     // because every caller needs tds/admin/net together to populate one LedgerEntry.
     private record Deductions(BigDecimal tdsDeduction, BigDecimal adminDeduction, BigDecimal netAmount) {}
 
-    // Decision #10: tdsDeduction = gross * tdsPct/100, adminDeduction = gross *
-    // adminChargeWithoutPanPct/100 (always the without-PAN tier -- Associate has no pan_number
-    // field), netAmount = gross - tds - admin. planVersion is the single CompensationPlanVersion
+    // Decision #10: tdsDeduction = gross * tdsPct/100, adminDeduction = gross * Processing Fee %
+    // (adminChargeWithPanPct)/100, netAmount = gross - tds - admin. planVersion is the single CompensationPlanVersion
     // resolved once per close() run against cycle.getPeriodStart() (Decision #10) -- every income
     // type in this batch shares that one resolved version; no caller re-resolves its own.
     private Deductions applyDeductions(BigDecimal grossAmount, CompensationPlanVersion planVersion) {
         BigDecimal tdsDeduction = grossAmount.multiply(
             planVersion.getTdsPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
         BigDecimal adminDeduction = grossAmount.multiply(
-            planVersion.getAdminChargeWithoutPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+            planVersion.getAdminChargeWithPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
         BigDecimal netAmount = grossAmount.subtract(tdsDeduction).subtract(adminDeduction);
         return new Deductions(tdsDeduction, adminDeduction, netAmount);
     }

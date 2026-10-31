@@ -30,8 +30,6 @@ public class CompensationPlanVersion {
     private BigDecimal tdsPct;
     @Column(name = "admin_charge_with_pan_pct")
     private BigDecimal adminChargeWithPanPct;
-    @Column(name = "admin_charge_without_pan_pct")
-    private BigDecimal adminChargeWithoutPanPct;
     @Column(name = "activation_fee")
     private BigDecimal activationFee;
     @Column(name = "min_withdrawal")
@@ -43,14 +41,6 @@ public class CompensationPlanVersion {
     private Instant createdAt;
     @Column(name = "created_by_associate_id")
     private UUID createdByAssociateId;
-    @Column(name = "self_performance_tier1_pct")
-    private BigDecimal selfPerformanceTier1Pct;
-    @Column(name = "self_performance_tier1_sqft_threshold")
-    private BigDecimal selfPerformanceTier1SqftThreshold;
-    @Column(name = "self_performance_tier2_pct")
-    private BigDecimal selfPerformanceTier2Pct;
-    @Column(name = "self_performance_tier2_sqft_threshold")
-    private BigDecimal selfPerformanceTier2SqftThreshold;
 
     protected CompensationPlanVersion() {}
 
@@ -63,16 +53,11 @@ public class CompensationPlanVersion {
             BigDecimal sponsorMatchingPct,
             BigDecimal tdsPct,
             BigDecimal adminChargeWithPanPct,
-            BigDecimal adminChargeWithoutPanPct,
             BigDecimal activationFee,
             BigDecimal minWithdrawal,
             SettlementCycle settlementCycle,
             Instant createdAt,
-            UUID createdByAssociateId,
-            BigDecimal selfPerformanceTier1Pct,
-            BigDecimal selfPerformanceTier1SqftThreshold,
-            BigDecimal selfPerformanceTier2Pct,
-            BigDecimal selfPerformanceTier2SqftThreshold) {
+            UUID createdByAssociateId) {
         this.id = id;
         this.versionLabel = versionLabel;
         this.effectiveFrom = effectiveFrom;
@@ -81,16 +66,11 @@ public class CompensationPlanVersion {
         this.sponsorMatchingPct = sponsorMatchingPct;
         this.tdsPct = tdsPct;
         this.adminChargeWithPanPct = adminChargeWithPanPct;
-        this.adminChargeWithoutPanPct = adminChargeWithoutPanPct;
         this.activationFee = activationFee;
         this.minWithdrawal = minWithdrawal;
         this.settlementCycle = settlementCycle;
         this.createdAt = createdAt;
         this.createdByAssociateId = createdByAssociateId;
-        this.selfPerformanceTier1Pct = selfPerformanceTier1Pct;
-        this.selfPerformanceTier1SqftThreshold = selfPerformanceTier1SqftThreshold;
-        this.selfPerformanceTier2Pct = selfPerformanceTier2Pct;
-        this.selfPerformanceTier2SqftThreshold = selfPerformanceTier2SqftThreshold;
     }
 
     public UUID getId() { return id; }
@@ -101,14 +81,9 @@ public class CompensationPlanVersion {
     public BigDecimal getSponsorMatchingPct() { return sponsorMatchingPct; }
     public BigDecimal getTdsPct() { return tdsPct; }
     public BigDecimal getAdminChargeWithPanPct() { return adminChargeWithPanPct; }
-    public BigDecimal getAdminChargeWithoutPanPct() { return adminChargeWithoutPanPct; }
     public BigDecimal getActivationFee() { return activationFee; }
     public BigDecimal getMinWithdrawal() { return minWithdrawal; }
     public SettlementCycle getSettlementCycle() { return settlementCycle; }
     public Instant getCreatedAt() { return createdAt; }
     public UUID getCreatedByAssociateId() { return createdByAssociateId; }
-    public BigDecimal getSelfPerformanceTier1Pct() { return selfPerformanceTier1Pct; }
-    public BigDecimal getSelfPerformanceTier1SqftThreshold() { return selfPerformanceTier1SqftThreshold; }
-    public BigDecimal getSelfPerformanceTier2Pct() { return selfPerformanceTier2Pct; }
-    public BigDecimal getSelfPerformanceTier2SqftThreshold() { return selfPerformanceTier2SqftThreshold; }
 }
