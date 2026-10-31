@@ -223,7 +223,6 @@ class CycleServiceTest {
             rewardTierRepository, expenseRepository);
         Cycle stale = newCycleWithBounds(LocalDate.now().plusDays(1), LocalDate.now().plusDays(10), CycleStatus.OPEN);
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(stale));
-        when(cycleRepository.existsByPeriodStartLessThanEqualAndPeriodEndGreaterThanEqual(any(), any())).thenReturn(true);
 
         assertThat(service.getOrOpenCurrent()).isSameAs(stale);
         verify(cycleRepository, never()).save(any(Cycle.class));
@@ -855,27 +854,30 @@ class CycleServiceTest {
     }
 
     @Test
-    void getOrOpenCurrentCreatesTheNextCycleWhenTheExistingOpenCycleDoesNotCoverToday() {
+    void getOrOpenCurrentReusesAStaleOpenCycleInsteadOfOpeningASecondOne() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
             rewardTierRepository, expenseRepository);
         LocalDate today = LocalDate.now();
-        // Deliberately a stale period comfortably in the past relative to "today", regardless
-        // of which day-of-month the test happens to run on: [-40, -26] days never overlaps
-        // today's computed [periodStart, periodEnd] window (that window is at most 31 days wide
-        // and always includes today itself).
+        // Period long over but admin hasn't closed it: it stays the one OPEN cycle.
         Cycle stale = newCycleWithBounds(today.minusDays(40), today.minusDays(26), CycleStatus.OPEN);
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
             .thenReturn(Optional.of(stale));
-        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Cycle result = service.getOrOpenCurrent();
+        assertThat(service.getOrOpenCurrent()).isSameAs(stale);
+        verify(cycleRepository, never()).save(any(Cycle.class));
+    }
 
-        assertThat(result.getId()).isNotEqualTo(stale.getId());
-        assertThat(result.getPeriodStart()).isEqualTo(expectedPeriodStart(today));
-        assertThat(result.getPeriodEnd()).isEqualTo(expectedPeriodEnd(today));
-        assertThat(result.getStatus()).isEqualTo(CycleStatus.OPEN);
-        verify(cycleRepository).save(any(Cycle.class));
+    @Test
+    void getOrOpenCurrentRefusesToCreateACycleWhileAnotherIsOpen() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository, expenseRepository);
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
+        when(cycleRepository.existsByStatus(CycleStatus.OPEN)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.getOrOpenCurrent()).isInstanceOf(CycleValidationException.class);
+        verify(cycleRepository, never()).save(any(Cycle.class));
     }
 
     @Test

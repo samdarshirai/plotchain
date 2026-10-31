@@ -4,6 +4,9 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.associate.KycStatus;
+import com.plotchain.cycle.Cycle;
+import com.plotchain.cycle.CycleRepository;
+import com.plotchain.cycle.CycleStatus;
 import com.plotchain.income.LedgerEntryRepository;
 import com.plotchain.projects.Plot;
 import com.plotchain.projects.PlotRepository;
@@ -59,6 +62,7 @@ class BookingCancelIntegrationTest {
     @Autowired AssociateRepository associateRepository;
     @Autowired PlotBookingRepository plotBookingRepository;
     @Autowired EmiInstallmentRepository emiInstallmentRepository;
+    @Autowired CycleRepository cycleRepository;
     // Pass-through spy (reset by Spring after each test) so one test can make the CANCELLED event write
     // fail AFTER the installments were voided and the plot flipped. Boot 3.3.4: @SpyBean.
     @SpyBean BookingEventRepository bookingEventRepository;
@@ -95,6 +99,13 @@ class BookingCancelIntegrationTest {
                 emiInstallmentRepository.deleteAll(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(b.getId()));
             }
             plotBookingRepository.deleteAll(bookings);
+        }
+        // Recording a sale opens today's cycle via CycleService.getOrOpenCurrent(); drop it so
+        // later tests can open their own (only one OPEN cycle may exist).
+        for (Cycle c : cycleRepository.findByStatusOrderByPeriodStartAsc(CycleStatus.OPEN)) {
+            ledgerEntryRepository.deleteAll(ledgerEntryRepository.findAll().stream()
+                .filter(e -> c.getId().equals(e.getCycleId())).toList());
+            cycleRepository.delete(c);
         }
         if (plotId != null) plotRepository.deleteById(plotId);
         if (projectId != null) projectRepository.deleteById(projectId);

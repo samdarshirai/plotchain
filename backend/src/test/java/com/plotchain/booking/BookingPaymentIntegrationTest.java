@@ -4,6 +4,10 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.associate.KycStatus;
+import com.plotchain.cycle.Cycle;
+import com.plotchain.cycle.CycleRepository;
+import com.plotchain.cycle.CycleStatus;
+import com.plotchain.income.LedgerEntryRepository;
 import com.plotchain.projects.Plot;
 import com.plotchain.projects.PlotRepository;
 import com.plotchain.projects.PlotStatus;
@@ -50,6 +54,8 @@ class BookingPaymentIntegrationTest {
     @Autowired PlotBookingRepository plotBookingRepository;
     @Autowired EmiInstallmentRepository emiInstallmentRepository;
     @Autowired BookingEventRepository bookingEventRepository;
+    @Autowired CycleRepository cycleRepository;
+    @Autowired LedgerEntryRepository ledgerEntryRepository;
     @Autowired PlatformTransactionManager transactionManager;
     @Autowired JdbcTemplate jdbc;
 
@@ -69,6 +75,13 @@ class BookingPaymentIntegrationTest {
                     emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId()));
             }
             plotBookingRepository.deleteAll(bookings);
+        }
+        // Recording a sale opens today's cycle via CycleService.getOrOpenCurrent(); drop it so
+        // later tests can open their own (only one OPEN cycle may exist).
+        for (Cycle c : cycleRepository.findByStatusOrderByPeriodStartAsc(CycleStatus.OPEN)) {
+            ledgerEntryRepository.deleteAll(ledgerEntryRepository.findAll().stream()
+                .filter(e -> c.getId().equals(e.getCycleId())).toList());
+            cycleRepository.delete(c);
         }
         if (plotId != null) plotRepository.deleteById(plotId);
         if (projectId != null) projectRepository.deleteById(projectId);

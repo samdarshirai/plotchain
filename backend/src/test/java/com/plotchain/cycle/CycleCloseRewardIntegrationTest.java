@@ -84,6 +84,10 @@ class CycleCloseRewardIntegrationTest {
             saleRepository.deleteAll(saleRepository.findAll().stream()
                 .filter(s -> cycleId.equals(s.getCycleId())).toList());
             cycleRepository.deleteById(cycleId);
+            // close() opens the next cycle (starting the day after today); remove it as well.
+            cycleRepository.findAll().stream()
+                .filter(c -> c.getStatus() == CycleStatus.OPEN && c.getPeriodStart().isAfter(LocalDate.now()))
+                .forEach(cycleRepository::delete);
         }
         if (tierId != null) {
             rewardTierRepository.deleteById(tierId);
@@ -177,7 +181,7 @@ class CycleCloseRewardIntegrationTest {
         seedSale(leftId, firstCycleId, plotId, new BigDecimal("100"));
         seedSale(rightId, firstCycleId, plotId, new BigDecimal("100"));
 
-        cycleService.close(firstCycleId);
+        CycleCloseResponse firstClose = cycleService.close(firstCycleId);
 
         List<LedgerEntry> rewardEntriesAfterFirstClose = ledgerEntryRepository.findAll().stream()
             .filter(e -> rootId.equals(e.getAssociateId()) && e.getIncomeType() == IncomeType.REWARD)
@@ -189,6 +193,8 @@ class CycleCloseRewardIntegrationTest {
         // Second cycle, no new sales -- cumulativeMatchedVolume (persisted from the first close,
         // still 100, still above the tier's 40 threshold) is the only thing creditReward looks at
         // for this associate; the point is that it must NOT re-award despite still qualifying.
+        // Only one OPEN cycle may exist: drop the one the first close() opened for "tomorrow".
+        cycleRepository.deleteById(firstClose.newCycleId());
         secondCycleId = seedOpenCycle(LocalDate.of(2026, 7, 16), LocalDate.of(2026, 7, 31));
         cycleService.close(secondCycleId);
 

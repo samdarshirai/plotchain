@@ -19,6 +19,9 @@ public interface CycleRepository extends JpaRepository<Cycle, UUID> {
 
     List<Cycle> findByStatusOrderByPeriodStartAsc(CycleStatus status);
 
+    // One-OPEN-cycle guard for CycleService.createCycle.
+    boolean existsByStatus(CycleStatus status);
+
     // Admin Stats "Cycles Completed" tile: count of cycles in any of the given statuses
     // (CLOSED, i.e. finished their lifecycle -- not OPEN/CALCULATING).
     long countByStatusIn(Collection<CycleStatus> statuses);

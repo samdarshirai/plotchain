@@ -793,28 +793,17 @@ public class CycleService {
 
     // Sales unit 1 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
     // Decision 5): returns today's OPEN cycle under the PRD's 1st-15th / 16th-end-of-month
-    // cadence, creating one only if no existing cycle covers today. Reuses the existing
-    // findFirstByStatusOrderByPeriodStartDesc query rather than adding a new repository method,
-    // since at most one OPEN cycle is expected to exist at a time; if the most recent OPEN
-    // cycle's stored period doesn't cover today (e.g. it's stale), a new cycle is created for
-    // today's period without inspecting older OPEN cycles.
+    // cadence. At most one OPEN cycle may exist: if one exists it is returned even when its
+    // period has already ended (admin hasn't closed it yet), so payments keep landing in it
+    // until close() rolls over to the next cycle. A new cycle is created only when none is OPEN.
     @Transactional
     public CycleSummaryResponse openCurrentCycle() {
         return toSummary(getOrOpenCurrent());
     }
 
     public Cycle getOrOpenCurrent() {
-        LocalDate today = LocalDate.now();
-
-        Optional<Cycle> open = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN);
-        return open.filter(cycle -> covers(cycle, today))
-            .orElseGet(() -> open.filter(c -> cycleRepository
-                    .existsByPeriodStartLessThanEqualAndPeriodEndGreaterThanEqual(periodEndFor(today), periodStartFor(today)))
-                .orElseGet(() -> openNewCycle(today)));
-    }
-
-    private boolean covers(Cycle cycle, LocalDate date) {
-        return !date.isBefore(cycle.getPeriodStart()) && !date.isAfter(cycle.getPeriodEnd());
+        return cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)
+            .orElseGet(() -> openNewCycle(LocalDate.now()));
     }
 
     private Cycle openNewCycle(LocalDate today) {
@@ -832,6 +821,9 @@ public class CycleService {
     }
 
     private Cycle createCycle(LocalDate periodStart, LocalDate periodEnd) {
+        if (cycleRepository.existsByStatus(CycleStatus.OPEN)) {
+            throw new CycleValidationException("An OPEN cycle already exists; close it before opening another");
+        }
         if (cycleRepository.existsByPeriodStartLessThanEqualAndPeriodEndGreaterThanEqual(periodEnd, periodStart)) {
             throw new CycleValidationException("A cycle already exists overlapping " + periodStart + " to " + periodEnd);
         }

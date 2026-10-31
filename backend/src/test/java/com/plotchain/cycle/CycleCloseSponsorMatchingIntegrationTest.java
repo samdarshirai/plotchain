@@ -83,6 +83,10 @@ class CycleCloseSponsorMatchingIntegrationTest {
             saleRepository.deleteAll(saleRepository.findAll().stream()
                 .filter(s -> s.getCycleId().equals(cycleId)).toList());
             cycleRepository.deleteById(cycleId);
+            // close() opens the next cycle (starting the day after today); remove it as well.
+            cycleRepository.findAll().stream()
+                .filter(c -> c.getStatus() == CycleStatus.OPEN && c.getPeriodStart().isAfter(LocalDate.now()))
+                .forEach(cycleRepository::delete);
         }
         for (UUID id : new UUID[] {leftId, rightId, sponseeId, sponsorId}) {
             if (id != null) {

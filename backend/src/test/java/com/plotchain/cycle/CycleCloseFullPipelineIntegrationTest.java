@@ -99,6 +99,10 @@ class CycleCloseFullPipelineIntegrationTest {
             saleRepository.deleteAll(saleRepository.findAll().stream()
                 .filter(s -> cycleId.equals(s.getCycleId())).toList());
             cycleRepository.deleteById(cycleId);
+            // close() opens the next cycle (starting the day after today); remove it as well.
+            cycleRepository.findAll().stream()
+                .filter(c -> c.getStatus() == CycleStatus.OPEN && c.getPeriodStart().isAfter(LocalDate.now()))
+                .forEach(cycleRepository::delete);
         }
         if (priorClosedCycleId != null) {
             legVolumeRepository.deleteAll(legVolumeRepository.findAll().stream()

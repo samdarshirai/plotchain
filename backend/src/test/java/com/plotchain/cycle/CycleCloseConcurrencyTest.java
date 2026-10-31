@@ -61,6 +61,10 @@ class CycleCloseConcurrencyTest {
             legVolumeRepository.deleteAll(legVolumeRepository.findAll().stream()
                 .filter(lv -> cycleId.equals(lv.getCycleId())).toList());
             cycleRepository.deleteById(cycleId);
+            // close() opens the next cycle (starting the day after today); remove it as well.
+            cycleRepository.findAll().stream()
+                .filter(c -> c.getStatus() == CycleStatus.OPEN && c.getPeriodStart().isAfter(LocalDate.now()))
+                .forEach(cycleRepository::delete);
         }
     }
 

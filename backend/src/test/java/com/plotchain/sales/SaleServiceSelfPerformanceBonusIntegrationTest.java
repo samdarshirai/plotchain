@@ -9,6 +9,9 @@ import com.plotchain.compensation.CompensationPlanVersionRepository;
 import com.plotchain.compensation.SelfPerformanceBonusConfig;
 import com.plotchain.compensation.SelfPerformanceBonusConfigRepository;
 import com.plotchain.compensation.SettlementCycle;
+import com.plotchain.cycle.Cycle;
+import com.plotchain.cycle.CycleRepository;
+import com.plotchain.cycle.CycleStatus;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntry;
 import com.plotchain.income.LedgerEntryRepository;
@@ -45,6 +48,7 @@ class SaleServiceSelfPerformanceBonusIntegrationTest {
     @Autowired LedgerEntryRepository ledgerEntryRepository;
     @Autowired CompensationPlanVersionRepository compensationPlanVersionRepository;
     @Autowired SelfPerformanceBonusConfigRepository selfPerformanceBonusConfigRepository;
+    @Autowired CycleRepository cycleRepository;
 
     private UUID planVersionId;
     private UUID projectId;
@@ -70,6 +74,13 @@ class SaleServiceSelfPerformanceBonusIntegrationTest {
         }
         if (planVersionId != null) {
             compensationPlanVersionRepository.deleteById(planVersionId);
+        }
+        // Recording a sale opens today's cycle via CycleService.getOrOpenCurrent(); drop it so
+        // later tests can open their own (only one OPEN cycle may exist).
+        for (Cycle c : cycleRepository.findByStatusOrderByPeriodStartAsc(CycleStatus.OPEN)) {
+            ledgerEntryRepository.deleteAll(ledgerEntryRepository.findAll().stream()
+                .filter(e -> c.getId().equals(e.getCycleId())).toList());
+            cycleRepository.delete(c);
         }
         // Restore the singleton config row to its seeded (disabled) state for other tests.
         SelfPerformanceBonusConfig config = selfPerformanceBonusConfigRepository.findAll().get(0);

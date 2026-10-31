@@ -92,6 +92,10 @@ class CycleCloseCompensationReferenceIntegrationTest {
             saleRepository.deleteAll(saleRepository.findAll().stream()
                 .filter(s -> cycleId.equals(s.getCycleId())).toList());
             cycleRepository.deleteById(cycleId);
+            // close() opens the next cycle (starting the day after today); remove it as well.
+            cycleRepository.findAll().stream()
+                .filter(c -> c.getStatus() == CycleStatus.OPEN && c.getPeriodStart().isAfter(LocalDate.now()))
+                .forEach(cycleRepository::delete);
         }
         for (UUID id : new UUID[] {cId, dId, eId, fId, aId, bId, youId}) {
             if (id != null) {
