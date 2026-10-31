@@ -73,7 +73,7 @@ describe('CycleManagementService', () => {
 
   it('credits wallets for a cycle by id', () => {
     const mockResponse: WalletCreditingResult = {
-      cycleId: 'c1', entriesCredited: 12, totalAmountCredited: 4500, newCycleStatus: 'PAID'
+      cycleId: 'c1', entriesCredited: 12, totalAmountCredited: 4500, newCycleStatus: 'CLOSED'
     };
 
     service.creditWallets('c1').subscribe(res => expect(res).toEqual(mockResponse));

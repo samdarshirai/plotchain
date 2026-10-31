@@ -21,6 +21,8 @@ import com.plotchain.projects.ProjectRepository;
 import com.plotchain.sales.Sale;
 import com.plotchain.sales.SaleRepository;
 import com.plotchain.sales.SaleStatus;
+import com.plotchain.wallet.WalletCreditingService;
+import com.plotchain.wallet.WalletRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +55,8 @@ class LiveIncomeIntegrationTest {
     @Autowired LegVolumeRepository legVolumeRepository;
     @Autowired RewardTierRepository rewardTierRepository;
     @Autowired DesignationService designationService;
+    @Autowired WalletCreditingService walletCreditingService;
+    @Autowired WalletRepository walletRepository;
 
     // V13__seed_default_rank_tiers.sql's lowest-order seeded rank -- chk_associate_rank_required
     // (V4__user_id_login_and_admin_roles.sql) requires rank_id NOT NULL for role = 'ASSOCIATE',
@@ -96,6 +100,7 @@ class LiveIncomeIntegrationTest {
         }
         for (UUID id : new UUID[] {leftId, rightId, sponseeId, sponsorId}) {
             if (id != null) {
+                walletRepository.deleteById(id);
                 associateRepository.deleteById(id);
             }
         }
@@ -320,6 +325,29 @@ class LiveIncomeIntegrationTest {
 
         assertThat(legVolumeRepository.findByAssociateIdAndCycleId(sponseeId, cycleId).orElseThrow().getCarriedForwardLeft())
             .isEqualByComparingTo("200");
+
+        seedSale(rightId, nextCycleId, plotId, new BigDecimal("200"));
+        cycleService.refreshLiveIncome(nextCycleId);
+
+        assertThat(ledgerEntryRepository.findAll().stream()
+            .filter(e -> e.getCycleId().equals(nextCycleId) && e.getAssociateId().equals(sponseeId)
+                && e.getIncomeType() == IncomeType.REWARD))
+            .singleElement()
+            .satisfies(e -> assertThat(e.getSourceRef()).isEqualTo(rewardTierId));
+    }
+
+    // Paying a closed cycle's income keeps the cycle CLOSED, so its carry still feeds the next one.
+    @Test
+    void payingACycleIncomeKeepsItClosedAndItsCarryStillFeedsTheNextCycle() {
+        seedTree();
+        RewardTier tier = new RewardTier(UUID.randomUUID(), PLAN_VERSION_ID, 1,
+            new BigDecimal("100"), new BigDecimal("50"), "Mobile", "Sales Manager");
+        rewardTierRepository.saveAndFlush(tier);
+        rewardTierId = tier.getId();
+        seedSale(leftId, cycleId, plotId, new BigDecimal("200"));
+        nextCycleId = cycleService.close(cycleId).newCycleId();
+        walletCreditingService.creditWallets(cycleId);
+        assertThat(cycleRepository.findById(cycleId).orElseThrow().getStatus()).isEqualTo(CycleStatus.CLOSED);
 
         seedSale(rightId, nextCycleId, plotId, new BigDecimal("200"));
         cycleService.refreshLiveIncome(nextCycleId);

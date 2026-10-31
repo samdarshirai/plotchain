@@ -103,8 +103,8 @@ describe('CycleManagementComponent', () => {
   });
 
   it('shows an empty-state row when no cycles match', () => {
-    fixture.componentInstance.onStatusChange('PAID');
-    httpMock.expectOne(r => r.params.get('status') === 'PAID').flush({ cycles: [], page: 0, size: 20, totalElements: 0 });
+    fixture.componentInstance.onStatusChange('CLOSED');
+    httpMock.expectOne(r => r.params.get('status') === 'CLOSED').flush({ cycles: [], page: 0, size: 20, totalElements: 0 });
     fixture.detectChanges();
 
     const emptyCell: HTMLElement | null = fixture.nativeElement.querySelector('.editable-table__empty');
@@ -210,20 +210,20 @@ describe('CycleManagementComponent', () => {
 
     const req = httpMock.expectOne('/api/admin/cycles/c1/credit-wallets');
     expect(req.request.method).toBe('POST');
-    req.flush({ cycleId: 'c1', entriesCredited: 12, totalAmountCredited: 4500, newCycleStatus: 'PAID' });
+    req.flush({ cycleId: 'c1', entriesCredited: 12, totalAmountCredited: 4500, newCycleStatus: 'CLOSED' });
 
     httpMock.expectOne('/api/admin/cycles?page=0&size=20').flush({
       cycles: [
-        { id: 'c1', periodStart: '2026-08-01', periodEnd: '2026-08-15', status: 'PAID' },
+        { id: 'c1', periodStart: '2026-08-01', periodEnd: '2026-08-15', status: 'CLOSED' },
         { id: 'c2', periodStart: '2026-08-16', periodEnd: '2026-08-31', status: 'OPEN' }
       ],
       page: 0, size: 20, totalElements: 2
     });
 
     expect(fixture.componentInstance.creditResult?.entriesCredited).toBe(12);
-    expect(fixture.componentInstance.creditResult?.newCycleStatus).toBe('PAID');
+    expect(fixture.componentInstance.creditResult?.newCycleStatus).toBe('CLOSED');
     expect(fixture.componentInstance.creditError).toBeNull();
-    expect(fixture.componentInstance.page?.cycles[0].status).toBe('PAID');
+    expect(fixture.componentInstance.page?.cycles[0].status).toBe('CLOSED');
   });
 
   it('shows a conflict error on a 409 without crashing', () => {
