@@ -40,7 +40,7 @@ A platform for land-selling companies to manage a network of associates who sell
 |---|---|---|
 | entry_id | UUID | PK |
 | associate_id | UUID | beneficiary |
-| income_type | ENUM(direct, matching, sponsor_matching, royalty, reward, perk) | |
+| income_type | ENUM(direct, matching, sponsor_matching, royalty, reward, self_performance) | |
 | cycle_id | UUID | |
 | gross_amount | decimal | |
 | tds_deduction | decimal | 2% |

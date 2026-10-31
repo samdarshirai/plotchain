@@ -37,8 +37,7 @@ const INCOME_TYPE_TABS = [
   { id: 'MATCHING', labelKey: 'admin.ledgerRegister.incomeTypeMatchingOption' },
   { id: 'SPONSOR_MATCHING', labelKey: 'admin.ledgerRegister.incomeTypeSponsorMatchingOption' },
   { id: 'ROYALTY', labelKey: 'admin.ledgerRegister.incomeTypeRoyaltyOption' },
-  { id: 'REWARD', labelKey: 'admin.ledgerRegister.incomeTypeRewardOption' },
-  { id: 'PERK', labelKey: 'admin.ledgerRegister.incomeTypePerkOption' }
+  { id: 'REWARD', labelKey: 'admin.ledgerRegister.incomeTypeRewardOption' }
 ];
 
 const SUMMARY_TYPES = [
@@ -47,7 +46,6 @@ const SUMMARY_TYPES = [
   { type: 'SPONSOR_MATCHING', labelKey: 'incomeStatement.columnSponsorMatchingIncome' },
   { type: 'ROYALTY', labelKey: 'incomeStatement.columnRoyaltyBonus' },
   { type: 'REWARD', labelKey: 'incomeStatement.columnReward' },
-  { type: 'PERK', labelKey: 'incomeStatement.tabPerk' },
   { type: 'SELF_PERFORMANCE', labelKey: 'admin.ledgerRegister.columnSelfPerformance' }
 ];
 

@@ -12,7 +12,7 @@ export const ASSOCIATE_ROUTES = [
   '/plot-bookings/mine', '/plot-bookings/right', '/plot-bookings/my-sales', '/e-pins/unlock', '/profile',
   '/profile/welcome-letter', '/profile/bank-details', '/profile/kyc', '/income-statement', '/income-statement/direct',
   '/income-statement/matching', '/income-statement/sponsor-matching', '/income-statement/royalty',
-  '/income-statement/reward', '/income-statement/perk', '/reports/my-business', '/reports/emi', '/payout-history',
+  '/income-statement/reward', '/reports/my-business', '/reports/emi', '/payout-history',
   '/messages', '/messages/new', '/change-password'
 ];
 

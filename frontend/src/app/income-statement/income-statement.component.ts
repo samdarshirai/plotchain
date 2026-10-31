@@ -22,8 +22,7 @@ const TAB_ROUTES = [
   { id: 'MATCHING', labelKey: 'incomeStatement.tabMatching', path: '/income-statement/matching' },
   { id: 'SPONSOR_MATCHING', labelKey: 'incomeStatement.tabSponsorMatching', path: '/income-statement/sponsor-matching' },
   { id: 'ROYALTY', labelKey: 'incomeStatement.tabRoyalty', path: '/income-statement/royalty' },
-  { id: 'REWARD', labelKey: 'incomeStatement.tabReward', path: '/income-statement/reward' },
-  { id: 'PERK', labelKey: 'incomeStatement.tabPerk', path: '/income-statement/perk' }
+  { id: 'REWARD', labelKey: 'incomeStatement.tabReward', path: '/income-statement/reward' }
 ];
 
 const MATCHING_KEYS = ['bflb', 'bfrb', 'nlb', 'nrb', 'tlb', 'trb', 'clb', 'crb'];

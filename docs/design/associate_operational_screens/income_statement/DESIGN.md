@@ -49,7 +49,7 @@ What's different is the *job*. Ledger Register is an audit tool: every entry, ev
 ├──────────────────────────────────────────────────────────────────────┤
 │ ┌ tab-bar (segmented pill, brand-gradient active) ────────────────┐    │
 │ │ [All] [Direct] [Matching] [Sponsor Matching] [Royalty] [Reward]  │    │
-│ │ [Perk]                                    (scrolls on narrow vw) │    │
+│ │                                           (scrolls on narrow vw) │    │
 │ └──────────────────────────────────────────────────────────────┘    │
 │ ┌ filter strip (surface-raised, 16px radius) — 2 fields, not 4 ────┐   │
 │ │ Cycle ▾                       Status ▾                           │   │
@@ -77,7 +77,7 @@ This is the direct associate-facing counterpart to Ledger Register's "raw ledger
 
 | Screen need | Component used | Notes |
 |---|---|---|
-| Income-type navigation | `TabBarComponent` (`app-tab-bar`) | Same segmented-pill component `KycQueueComponent` already uses (`.tab-bar`/`.tab-bar__tab`/`.tab-bar__tab--active` in `_shared-components.scss` — brand-gradient active state, no new CSS). Seven tabs (`All`, `Direct`, `Matching`, `Sponsor Matching`, `Royalty`, `Reward`, `Perk`) — more than any existing `TabBarComponent` consumer ships today, so this design adds one small, additive rule: the tab row scrolls horizontally with hidden native scrollbars below the width it needs, rather than wrapping to a second line or overflowing the viewport. No component change — a wrapper `overflow-x: auto` on the existing `.tab-bar` render, same technique the responsive section below uses for the table. |
+| Income-type navigation | `TabBarComponent` (`app-tab-bar`) | Same segmented-pill component `KycQueueComponent` already uses (`.tab-bar`/`.tab-bar__tab`/`.tab-bar__tab--active` in `_shared-components.scss` — brand-gradient active state, no new CSS). Six tabs (`All`, `Direct`, `Matching`, `Sponsor Matching`, `Royalty`, `Reward`) — more than any existing `TabBarComponent` consumer ships today, so this design adds one small, additive rule: the tab row scrolls horizontally with hidden native scrollbars below the width it needs, rather than wrapping to a second line or overflowing the viewport. No component change — a wrapper `overflow-x: auto` on the existing `.tab-bar` render, same technique the responsive section below uses for the table. |
 | Statement table + pagination shell | `EditableTableComponent` (`readOnly`, no `actionTemplate`) | Columns: Income Type, Cycle Period, Status, Gross Amount, TDS Deduction, Admin Deduction, Net Amount, Source Ref, Created At. No Actions column — view-only, per Global Constraints. |
 | Cycle / Status filters | Two plain `<select>`s inside a `surface-raised` strip | Same `*__filter-field` idiom as Ledger Register, income type omitted (lives in the tab bar instead — see Layout concept). Cycle options are the client-derived, deduped, newest-first list from Design Decision 1 of the approved plan — rendered here as period-range text (`1 Aug 2026 – 31 Aug 2026`), never a raw `cycleId`. |
 | Load error | `InlineBannerComponent` tone="danger" | The approved plan's Task 3 code currently renders a plain `<p class="income-statement__load-error">`; this design recommends the same one-line upgrade every other bespoke-pass screen in this domain (Sales Register, Ledger Register) already made — swap for `<app-inline-banner tone="danger">`, keeping the CSS hook class name for the implementer to find. Per Design Decision 1, a *cycle-lookup* failure never triggers this banner (it only empties the Cycle dropdown) — only a failed main-table load does. |
@@ -94,7 +94,7 @@ The approved plan's `updateTableRows()` currently maps all four money fields as 
 ## Screen states
 
 1. **Statement, default/loaded.** "All" tab active, both filters at rest ("All cycles" / "All statuses"), full page of entries across every income type, pagination footer active.
-2. **Single income-type tab active.** E.g. "Perk" selected — tab bar shows the active pill, table reloads to only that `incomeType`, filters remain independently applied on top (Design Decision 3's "All" default plus Global Constraints' un-hidden `PERK` tab).
+2. **Single income-type tab active.** E.g. "Royalty" selected — tab bar shows the active pill, table reloads to only that `incomeType`, filters remain independently applied on top (Design Decision 3's "All" default).
 3. **Empty state.** A filter/tab combination (e.g. Status = Reversed on a tab with no reversed entries) returns zero rows; the table falls back to its single-line `emptyStateLabel` row, tab bar and filter strip stay interactive above it.
 4. **Load error.** Initial page load fails; `InlineBannerComponent` tone="danger" sits above the table, table shows its empty-state row beneath, same placement every other bespoke-pass screen in this domain uses.
 

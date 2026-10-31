@@ -150,7 +150,6 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
           COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.SPONSOR_MATCHING THEN l.grossAmount ELSE 0 END), 0) AS sponsorMatching,
           COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.ROYALTY THEN l.grossAmount ELSE 0 END), 0) AS royalty,
           COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.REWARD THEN l.grossAmount ELSE 0 END), 0) AS reward,
-          COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.PERK THEN l.grossAmount ELSE 0 END), 0) AS perk,
           COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.SELF_PERFORMANCE THEN l.grossAmount ELSE 0 END), 0) AS selfPerformance,
           COALESCE(SUM(l.grossAmount), 0) AS totalGross, COALESCE(SUM(l.tdsDeduction), 0) AS tds,
           COALESCE(SUM(l.adminDeduction), 0) AS adminCharges, COALESCE(SUM(l.netAmount), 0) AS totalNet,

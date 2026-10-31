@@ -12,7 +12,6 @@ public interface LedgerSummaryRow {
         BigDecimal getSponsorMatching();
         BigDecimal getRoyalty();
         BigDecimal getReward();
-        BigDecimal getPerk();
         BigDecimal getSelfPerformance();
         BigDecimal getTotalGross();
         BigDecimal getTds();

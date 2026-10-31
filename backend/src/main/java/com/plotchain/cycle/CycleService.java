@@ -56,9 +56,7 @@ public class CycleService {
     // Cycle-management unit 2 (GET /api/admin/cycles/{id}, spec lines 95-97): fixed order
     // matching the spec's literal "DIRECT/MATCHING/SPONSOR_MATCHING/ROYALTY/REWARD"
     // listing, not IncomeType.values() filtered at call time -- explicit here so a future
-    // IncomeType constant added before PERK can't silently join this breakdown without a
-    // deliberate edit to this list. PERK itself is excluded: per Decision #8 of the domain-design
-    // spec, it's descriptive metadata attached to REWARD entries, never its own ledger line.
+    // IncomeType constant can't silently join this breakdown without a deliberate edit to this list.
     private static final List<IncomeType> BREAKDOWN_INCOME_TYPES = List.of(
         IncomeType.DIRECT, IncomeType.MATCHING, IncomeType.SPONSOR_MATCHING,
         IncomeType.ROYALTY, IncomeType.REWARD);

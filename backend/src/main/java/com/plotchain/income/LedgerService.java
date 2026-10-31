@@ -107,7 +107,6 @@ public class LedgerService {
             gross.put(IncomeType.SPONSOR_MATCHING, r.getSponsorMatching());
             gross.put(IncomeType.ROYALTY, r.getRoyalty());
             gross.put(IncomeType.REWARD, r.getReward());
-            gross.put(IncomeType.PERK, r.getPerk());
             gross.put(IncomeType.SELF_PERFORMANCE, r.getSelfPerformance());
             return new AdminLedgerSummaryRow(
                 r.getAssociateId(), a == null ? null : a.getUserId(), a == null ? null : a.getName(),

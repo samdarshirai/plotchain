@@ -85,7 +85,6 @@ describe('IncomeStatementComponent', () => {
         tabSponsorMatching: 'Sponsor Matching',
         tabRoyalty: 'Royalty',
         tabReward: 'Reward',
-        tabPerk: 'Perk',
         cycleFilterLabel: 'Cycle',
         cycleFilterAllOption: 'All cycles',
         statusFilterLabel: 'Status',
@@ -164,13 +163,13 @@ describe('IncomeStatementComponent', () => {
 
   it('navigating to an income type route reloads with the incomeType filter and resets to page 0', () => {
     flushInitialRequests();
-    routeData$.next({ incomeType: 'PERK' });
+    routeData$.next({ incomeType: 'ROYALTY' });
 
     const req = httpMock.expectOne(
-      r => r.url === '/api/associates/me/ledger' && r.params.get('incomeType') === 'PERK' && r.params.get('page') === '0'
+      r => r.url === '/api/associates/me/ledger' && r.params.get('incomeType') === 'ROYALTY' && r.params.get('page') === '0'
     );
     req.flush({ entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 });
-    expect(fixture.componentInstance.activeIncomeType).toBe('PERK');
+    expect(fixture.componentInstance.activeIncomeType).toBe('ROYALTY');
   });
 
   it('reloads with the cycleId filter when the cycle dropdown changes', () => {

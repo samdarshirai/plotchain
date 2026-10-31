@@ -22,13 +22,13 @@ describe('IncomeStatementService', () => {
     const mockResponse: AssociateLedgerPage = { entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 };
 
     service
-      .list({ incomeType: 'PERK', cycleId: 'c1', status: 'PAID' }, 0, 20)
+      .list({ incomeType: 'ROYALTY', cycleId: 'c1', status: 'PAID' }, 0, 20)
       .subscribe(res => expect(res).toEqual(mockResponse));
 
     const req = httpMock.expectOne(
       r =>
         r.url === '/api/associates/me/ledger' &&
-        r.params.get('incomeType') === 'PERK' &&
+        r.params.get('incomeType') === 'ROYALTY' &&
         r.params.get('cycleId') === 'c1' &&
         r.params.get('status') === 'PAID' &&
         r.params.get('page') === '0' &&

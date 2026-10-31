@@ -70,25 +70,25 @@ describe('LedgerRegisterComponent', () => {
   });
 
   it('reloads with the incomeType filter when it changes', () => {
-    fixture.componentInstance.onIncomeTypeChange('PERK');
+    fixture.componentInstance.onIncomeTypeChange('ROYALTY');
 
-    const req = httpMock.expectOne(r => r.url === '/api/admin/ledger' && r.params.get('incomeType') === 'PERK');
+    const req = httpMock.expectOne(r => r.url === '/api/admin/ledger' && r.params.get('incomeType') === 'ROYALTY');
     req.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
   });
 
   it('renders income types as tabs and reloads when a tab is clicked', () => {
     const el: HTMLElement = fixture.nativeElement;
     const tabs = el.querySelectorAll<HTMLElement>('.ledger-register__tabs .tab-bar__tab');
-    expect(tabs.length).toBe(8);
+    expect(tabs.length).toBe(7);
     expect(tabs[1].classList).toContain('tab-bar__tab--active');
 
-    tabs[7].click();
+    tabs[5].click();
     fixture.detectChanges();
 
-    const req = httpMock.expectOne(r => r.url === '/api/admin/ledger' && r.params.get('incomeType') === 'PERK' && r.params.get('page') === '0');
+    const req = httpMock.expectOne(r => r.url === '/api/admin/ledger' && r.params.get('incomeType') === 'ROYALTY' && r.params.get('page') === '0');
     req.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
     fixture.detectChanges();
-    expect(el.querySelectorAll('.ledger-register__tabs .tab-bar__tab')[7].classList).toContain('tab-bar__tab--active');
+    expect(el.querySelectorAll('.ledger-register__tabs .tab-bar__tab')[5].classList).toContain('tab-bar__tab--active');
   });
 
   it('reloads with the cycleId filter when it changes', () => {

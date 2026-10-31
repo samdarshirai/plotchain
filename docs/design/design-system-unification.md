@@ -27,7 +27,7 @@ The existing page header → filters/actions → table/cards → pagination/deta
 - [x] Associate dashboard, genealogy tree, team directory.
 - [x] Plot availability, team/left/right bookings, own bookings, own sales, nested installment tables.
 - [x] Welcome letter, profile, bank details, KYC.
-- [x] All-income, direct, matching, sponsor-matching, royalty, reward, perk statements.
+- [x] All-income, direct, matching, sponsor-matching, royalty, reward statements.
 - [x] Business and EMI reports, payout history, message history, new message.
 - [x] E-pin unlock, new/transfer/used registers, join form.
 - [x] Login, terms, privacy, all six setup steps.

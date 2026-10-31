@@ -2505,9 +2505,8 @@
 }
 
 // Money columns right-aligned per tab (headers too); everything else left-aligned.
-// ALL / PERK (generic ledger): 1 Type, 2 Cycle, 3 Status, 4 Gross, 5 Source Ref, 6 Created.
-.income-statement[data-income-type='ALL'],
-.income-statement[data-income-type='PERK'] {
+// ALL (generic ledger): 1 Type, 2 Cycle, 3 Status, 4 Gross, 5 Source Ref, 6 Created.
+.income-statement[data-income-type='ALL'] {
   .editable-table thead th:nth-child(4),
   .editable-table tbody td:not(.editable-table__empty):nth-child(4) {
     text-align: right;

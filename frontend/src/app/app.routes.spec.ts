@@ -92,7 +92,7 @@ describe('routes', () => {
   });
 
   it('guards every income-statement route with authGuard and associateOnlyGuard and tags its incomeType', () => {
-    const paths = ['', '/direct', '/matching', '/sponsor-matching', '/royalty', '/reward', '/perk'].map(s => 'income-statement' + s);
+    const paths = ['', '/direct', '/matching', '/sponsor-matching', '/royalty', '/reward'].map(s => 'income-statement' + s);
     for (const path of paths) {
       const route = routes.find(r => r.path === path);
       expect(route).withContext(path).toBeTruthy();
