@@ -2523,12 +2523,6 @@
     text-align: right;
   }
 
-  .editable-table tbody tr:last-child td:not(.editable-table__empty) {
-    font-weight: 700;
-    background: var(--surface-raised);
-    border-top: 2px solid var(--border-subtle);
-  }
-
   .editable-table__badge:empty {
     display: none;
   }
@@ -2754,8 +2748,15 @@
   }
 }
 
+// Every itemised tab ends with a Total row (all except REWARD).
+.income-statement:not([data-income-type='REWARD']) .editable-table tbody tr:last-child td:not(.editable-table__empty) {
+  font-weight: 700;
+  background: var(--surface-raised);
+  border-top: 2px solid var(--border-subtle);
+}
+
 // Stacked-card mode (table--stacked, see table-fit.ts): the Total row keeps its shading.
-.income-statement[data-income-type='ALL'] .table--stacked tbody tr:last-child {
+.income-statement:not([data-income-type='REWARD']) .table--stacked tbody tr:last-child {
   background: var(--surface-raised);
 }
 

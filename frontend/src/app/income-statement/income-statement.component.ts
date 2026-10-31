@@ -3,18 +3,20 @@ import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { reduce, expand, takeUntil } from 'rxjs/operators';
+import { EMPTY } from 'rxjs';
 import { AssociateProfileService } from '../profile-kyc/associate-profile.service';
 import { AssociateProfileResponse } from '../profile-kyc/models/associate-profile.model';
 import { IncomeStatementService } from './income-statement.service';
 import { RewardTierRow } from './models/reward-tier-row.model';
+import { AssociateLedgerEntry } from './models/associate-ledger-entry.model';
 import { AssociateLedgerPage, AssociateLedgerFilters } from './models/associate-ledger-page.model';
 import { IncomeSummaryRow } from './models/income-summary-row.model';
 import { TabBarComponent, TabDefinition } from '../shared/components/tab-bar/tab-bar.component';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 100; // backend max; all pages are fetched so the Total row covers every entry
 const CYCLE_LOOKUP_SIZE = 100;
 
 const TAB_ROUTES = [
@@ -138,17 +140,6 @@ const DATE_TIME_FORMAT = 'dd MMM yyyy, HH:mm';
         </div>
       </ng-container>
 
-      <div class="income-statement__pagination" *ngIf="page">
-        <span class="income-statement__page-indicator">
-          {{ 'incomeStatement.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
-        </span>
-        <button type="button" class="brand-button brand-button--secondary" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
-          {{ 'incomeStatement.previousPageAction' | translate }}
-        </button>
-        <button type="button" class="brand-button brand-button--secondary" [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="goToPage(page.page + 1)">
-          {{ 'incomeStatement.nextPageAction' | translate }}
-        </button>
-      </div>
     </div>
   `
 })
@@ -184,17 +175,6 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     return TAB_ROUTES.map(t => ({ id: t.id, label: this.translate.instant(t.labelKey) }));
   }
 
-  get currentPage(): number {
-    return (this.page?.page ?? 0) + 1;
-  }
-
-  get totalPages(): number {
-    if (!this.page || this.page.size === 0) {
-      return 1;
-    }
-    return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
-  }
-
   ngOnInit(): void {
     // buildColumns() uses translate.get() (reactive) rather than instant() -- instant() only
     // resolves once the async translation file fetch (TranslateHttpLoader) completes, so a
@@ -215,7 +195,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     this.route.data.pipe(takeUntil(this.destroyed$)).subscribe(data => {
       this.activeIncomeType = (data['incomeType'] as string) ?? 'ALL';
       this.buildColumns();
-      this.loadPage(0);
+      this.loadPage();
     });
   }
 
@@ -440,16 +420,12 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
 
   onCycleIdChange(value: string): void {
     this.cycleId = value;
-    this.loadPage(0);
+    this.loadPage();
   }
 
   onStatusChange(value: string): void {
     this.status = value;
-    this.loadPage(0);
-  }
-
-  goToPage(page: number): void {
-    this.loadPage(page);
+    this.loadPage();
   }
 
   // Design Decision 1 (see plan header): a dedicated, unfiltered, one-time lookup -- independent
@@ -480,7 +456,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadPage(page: number): void {
+  private loadPage(): void {
     if (this.activeIncomeType === 'REWARD') {
       this.loadRewardTiers();
       return;
@@ -502,7 +478,11 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     if (this.status) {
       filters.status = this.status as AssociateLedgerFilters['status'];
     }
-    this.incomeStatementService.list(filters, page, PAGE_SIZE).subscribe({
+    this.incomeStatementService.list(filters, 0, PAGE_SIZE).pipe(
+      expand(res => (res.entries.length && (res.page + 1) * res.size < res.totalElements
+        ? this.incomeStatementService.list(filters, res.page + 1, PAGE_SIZE) : EMPTY)),
+      reduce((acc, res) => ({ ...acc, entries: [...acc.entries, ...res.entries] }))
+    ).subscribe({
       next: res => {
         this.page = res;
         this.updateTableRows();
@@ -526,6 +506,21 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     return this.currencyPipe.transform(amount, 'INR', 'symbol', '1.2-2') ?? String(amount);
   }
 
+  // Appends the bold Total row (label in the first column, '' elsewhere unless summed).
+  private withTotal(rows: Record<string, string>[], keys: string[], sums: Record<string, number>): Record<string, string>[] {
+    if (!rows.length) {
+      return rows;
+    }
+    const total: Record<string, string> = Object.fromEntries(keys.map(k => [k, '']));
+    total[keys[0]] = this.translate.instant('incomeStatement.totalRow');
+    Object.entries(sums).forEach(([k, v]) => (total[k] = this.formatCurrency(v)));
+    return [...rows, total];
+  }
+
+  private sum(f: (e: AssociateLedgerEntry) => number | null | undefined): number {
+    return (this.page?.entries ?? []).reduce((acc, e) => acc + (f(e) ?? 0), 0);
+  }
+
   private updateMatchingRows(): void {
     const n = (v: number | undefined) => this.formatCurrency(v ?? 0);
     this.statementRows = (this.page?.entries ?? []).map((entry, i) => {
@@ -544,6 +539,13 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         matchingIncome: this.formatCurrency(entry.grossAmount)
       };
     });
+    // bf/total/calc columns are balances, not additive: left blank in the Total row.
+    this.statementRows = this.withTotal(this.statementRows, ['period', ...MATCHING_KEYS, 'matchingBusiness', 'matchingIncome'], {
+      nlb: this.sum(e => e.legBreakdown?.newLeft),
+      nrb: this.sum(e => e.legBreakdown?.newRight),
+      matchingBusiness: this.sum(e => e.legBreakdown?.matchingBusiness),
+      matchingIncome: this.sum(e => e.grossAmount)
+    });
   }
 
   private updateTableRows(): void {
@@ -560,6 +562,12 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         newMatching: n(entry.legBreakdown?.matchingBusiness),
         royaltyBonus: this.formatCurrency(entry.grossAmount)
       }));
+      this.statementRows = this.withTotal(this.statementRows, ['date', 'newLeft', 'newRight', 'newMatching', 'royaltyBonus'], {
+        newLeft: this.sum(e => e.legBreakdown?.newLeft),
+        newRight: this.sum(e => e.legBreakdown?.newRight),
+        newMatching: this.sum(e => e.legBreakdown?.matchingBusiness),
+        royaltyBonus: this.sum(e => e.grossAmount)
+      });
       return;
     }
     if (this.activeIncomeType === 'DIRECT') {
@@ -570,6 +578,10 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         amount: this.formatCurrency(entry.grossAmount),
         directIncome: this.formatCurrency(entry.grossAmount)
       }));
+      this.statementRows = this.withTotal(this.statementRows, ['dateTime', 'associateId', 'name', 'amount', 'directIncome'], {
+        amount: this.sum(e => e.grossAmount),
+        directIncome: this.sum(e => e.grossAmount)
+      });
       return;
     }
     if (this.activeIncomeType === 'SPONSOR_MATCHING') {
@@ -579,6 +591,10 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         matchingIncome: entry.sponseeMatchingAmount == null ? '' : this.formatCurrency(entry.sponseeMatchingAmount),
         sponsorMatchingIncome: this.formatCurrency(entry.grossAmount)
       }));
+      this.statementRows = this.withTotal(this.statementRows, ['date', 'memberId', 'matchingIncome', 'sponsorMatchingIncome'], {
+        matchingIncome: this.sum(e => e.sponseeMatchingAmount),
+        sponsorMatchingIncome: this.sum(e => e.grossAmount)
+      });
       return;
     }
   }

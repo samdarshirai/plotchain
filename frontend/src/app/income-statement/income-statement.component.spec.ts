@@ -307,14 +307,18 @@ describe('IncomeStatementComponent', () => {
     expect(emptyCell?.textContent?.trim()).toBeTruthy();
   });
 
-  it('clicking Next loads the next page', () => {
+  it('loads every page and ends the table with a Total row', () => {
     flushInitialRequests();
-    goToDirect();
-    fixture.componentInstance.goToPage(1);
-    const req = httpMock.expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('page') === '1' && r.params.get('size') === '20');
-    req.flush({ entries: [], page: 1, size: 20, totalElements: 21, totalGrossAmount: 0 });
+    routeData$.next({ incomeType: 'DIRECT' });
+    const isDirect = (r: { url: string; params: { get(k: string): string | null } }, page: string) =>
+      r.url === '/api/associates/me/ledger' && r.params.get('incomeType') === 'DIRECT' && r.params.get('page') === page;
+    httpMock.expectOne(r => isDirect(r, '0')).flush({ entries: [sampleEntry], page: 0, size: 1, totalElements: 2, totalGrossAmount: 0 });
+    httpMock.expectOne(r => isDirect(r, '1')).flush({ entries: [sampleEntry], page: 1, size: 1, totalElements: 2, totalGrossAmount: 0 });
 
-    expect(fixture.componentInstance.page?.page).toBe(1);
+    const rows = fixture.componentInstance.statementRows;
+    expect(rows.length).toBe(3); // 2 entries + Total
+    expect(rows[2]['dateTime']).toBe('Total');
+    expect(rows[2]['directIncome']).toBe(rows[0]['directIncome'].replace('10,000.00', '20,000.00'));
   });
 
   it('has no action column and no write inputs — this screen is view-only', () => {
@@ -433,12 +437,12 @@ describe('IncomeStatementComponent', () => {
 
   it('shows total income and entry count cards from the whole filtered set on a per-type tab', () => {
     flushInitialRequests();
-    goToDirect([sampleEntry], { totalElements: 42, totalGrossAmount: 1250 });
+    goToDirect([sampleEntry], { totalElements: 1, totalGrossAmount: 1250 });
     fixture.detectChanges();
 
     const values: string[] = Array.from(fixture.nativeElement.querySelectorAll('.income-statement__card-value'))
       .map((e: any) => e.textContent.trim());
-    expect(values).toEqual(['₹1,250.00', '42']);
+    expect(values).toEqual(['₹1,250.00', '1']);
   });
 
   it('All tab shows the paid status as a success badge', () => {
