@@ -18,7 +18,7 @@ Ground-truth Direct/Matching/Sponsor's Matching/Royalty/Self-Performance/Reward 
 |---|---|---|---|
 | **Direct Income** | 6% | The plot sale value | One hop — only the direct sponsor of the seller |
 | **Matching Income** | 7% | `min(left leg volume, right leg volume)` — this cycle's new volume plus anything carried forward | Every ancestor, no depth limit — each recalculates off their own two legs |
-| **Sponsor's Matching Bonus** | 11% | The Matching Income each of your *direct* sponsees earns | One hop only — does not chain to your sponsor's sponsor |
+| **Sponsor's Matching Bonus** | 11% | The Matching Income of each associate you sponsored (`sponsor_id`), wherever they sit in the binary tree | Their one sponsor only — does not chain to your sponsor's sponsor |
 | **Self-Performance Bonus** | 1% (≥2,000 sqft) / 2% (≥3,000 sqft) | Own single-closing sale | Self only, not team-based |
 
 ## 2. Deductions (apply to every payout's gross amount)
@@ -121,7 +121,7 @@ Inputs: A sponsors C (₹30,00,000) and D (₹20,00,000). B sponsors E (₹23,00
 ## 7. Depth behavior
 
 - **Matching Income and Royalty Bonus**: apply to every ancestor regardless of tree depth — each recalculates independently off their own subtree totals. No explicit source statement, but consistent with the "min(left, right)" formula applying per-node and with the implemented batch's leaf-to-root rollup (`CycleService`, Decision #4 in the domain-design doc).
-- **Sponsor's Matching Bonus**: explicitly one generation only, confirmed by both the source ("11% × matching income of *each* direct sponsee") and the implementation (`creditSponsorMatching()` iterates `findBySponsorId`, direct sponsees only, no recursion).
+- **Sponsor's Matching Bonus**: paid to the earner's single sponsor (`sponsor_id`) only — every associate has exactly one sponsor, so exactly one associate gets each 11% credit. Placement depth is irrelevant: the sponsor is paid even when the sponsee sits several levels below them in the binary tree (spillover via `parent_id`). The source PDFs don't state a depth rule in words (plan PDF p.7 is a diagram; process PDF p.9 only shows "Matching Income for A × 11% + Matching Income for B × 11%" for your own sponsees A and B); the one-sponsor rule was confirmed by the plan owner on 2026-10-31. Implementation: `creditSponsorMatching()` iterates `findBySponsorId`, no recursion.
 - No per-generation override schedule (e.g. Level 1 = 11%, Level 2 = 5%, ...) exists in either source PDF or the implementation.
 
 ---

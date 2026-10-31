@@ -55,7 +55,7 @@ The highest-stakes screen — mistakes here are expensive and hard to unwind mid
 |---|---|---|
 | Direct income % | percent | applied to a solo sale |
 | Matching income % | percent | applied to matched-pair volume |
-| Sponsor matching bonus % | percent | applied to a direct sponsee's matching income |
+| Sponsor matching bonus % | percent | applied to the matching income of each associate you sponsored, wherever they are placed |
 | Royalty bonus table | table (rank → %) | add/edit rows per rank |
 | Reward tiers | table (level → volume threshold → cash + perk description) | ordered, no gaps allowed |
 | Settlement cycle | select | 15th/30th (semi-monthly) / monthly / custom |
