@@ -70,7 +70,7 @@ class AdminBookingRegisterControllerTest {
                 .param("plotId", plot.toString()).param("projectId", project.toString())
                 .param("overdue", "true").param("page", "2").param("size", "5"))
             .andExpect(status().isOk());
-        verify(registerService).list(BookingStatus.ACTIVE, assoc, plot, project, true, null, null, null, null, null, 2, 5);
+        verify(registerService).list(BookingStatus.ACTIVE, assoc, plot, project, true, null, null, null, null, null, false, 2, 5);
     }
 
     @Test
@@ -79,7 +79,7 @@ class AdminBookingRegisterControllerTest {
             .thenReturn(new AdminBookingPageResponse(List.of(), 0, 20, 0));
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin()).param("overdue", "false"))
             .andExpect(status().isOk());
-        verify(registerService).list(null, null, null, null, false, null, null, null, null, null, 0, 20);
+        verify(registerService).list(null, null, null, null, false, null, null, null, null, null, false, 0, 20);
     }
 
     @Test
@@ -88,7 +88,7 @@ class AdminBookingRegisterControllerTest {
             .thenReturn(new AdminBookingPageResponse(List.of(), 0, 100, 0));
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin())
             .param("page", "-3").param("size", "1000")).andExpect(status().isOk());
-        verify(registerService).list(null, null, null, null, false, null, null, null, null, null, 0, 100);
+        verify(registerService).list(null, null, null, null, false, null, null, null, null, null, false, 0, 100);
     }
 
     @Test
@@ -97,7 +97,7 @@ class AdminBookingRegisterControllerTest {
             .thenReturn(new AdminBookingPageResponse(List.of(), 0, 1, 0));
         mockMvc.perform(get("/api/admin/bookings").header("Authorization", admin()).param("size", "0"))
             .andExpect(status().isOk());
-        verify(registerService).list(null, null, null, null, false, null, null, null, null, null, 0, 1);
+        verify(registerService).list(null, null, null, null, false, null, null, null, null, null, false, 0, 1);
     }
 
     @Test
@@ -149,7 +149,7 @@ class AdminBookingRegisterControllerTest {
             .andExpect(status().isOk());
         verify(registerService).list(null, null, null, null, false, java.time.LocalDate.of(2026, 6, 1),
             java.time.LocalDate.of(2026, 6, 30), java.time.LocalDate.of(2026, 7, 1),
-            java.time.LocalDate.of(2026, 7, 31), "VP00", 0, 20);
+            java.time.LocalDate.of(2026, 7, 31), "VP00", false, 0, 20);
     }
 
     @Test

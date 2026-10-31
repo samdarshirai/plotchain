@@ -1,4 +1,9 @@
 spring:
+  # @DataJpaTest otherwise swaps in a plain embedded H2 (no MODE=PostgreSQL) that rejects
+  # Postgres-only migration syntax such as V64's "CREATE SEQUENCE ... START 1".
+  test:
+    database:
+      replace: none
   datasource:
     url: jdbc:h2:mem:plotchain;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000
     username: sa

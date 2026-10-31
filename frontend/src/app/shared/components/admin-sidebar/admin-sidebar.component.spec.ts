@@ -31,31 +31,29 @@ describe('AdminSidebarComponent', () => {
   const groupLabels = (el: HTMLElement) =>
     Array.from(el.querySelectorAll('.associate-sidebar__group-toggle')).map(b => b.textContent?.trim());
 
-  it('lists Dashboard, Admin Users plus the eight category groups, all closed by default', () => {
+  it('lists Dashboard, Admin Users plus the nine category groups, all closed by default', () => {
     const { el } = render();
     expect(el.querySelector('a[href="/admin/dashboard"]')).toBeTruthy();
     expect(el.querySelector('a[href="/admin/settings/admin-users"]')).toBeTruthy();
-    expect(groupLabels(el).length).toBe(8);
+    expect(groupLabels(el).length).toBe(9);
     expect(el.querySelectorAll('.associate-sidebar__subnav').length).toBe(0);
     expect(el.querySelectorAll('[aria-expanded="true"]').length).toBe(0);
   });
 
   it('opens a group on click to show its links, and closes it on a second click', () => {
     const { fixture, el } = render();
-    const setup = el.querySelectorAll('.associate-sidebar__group-toggle')[0] as HTMLButtonElement;
+    const masterData = el.querySelectorAll('.associate-sidebar__group-toggle')[0] as HTMLButtonElement;
 
-    setup.click();
+    masterData.click();
     fixture.detectChanges();
     const hrefs = Array.from(el.querySelectorAll('.associate-sidebar__sublink')).map(a => a.getAttribute('href'));
     expect(hrefs).toEqual([
-      '/admin/settings/company-profile',
-      '/admin/settings/branding',
-      '/admin/settings/payments-kyc',
-      '/admin/settings/compensation'
+      '/admin/settings/master-projects',
+      '/admin/settings/plots'
     ]);
-    expect(setup.getAttribute('aria-expanded')).toBe('true');
+    expect(masterData.getAttribute('aria-expanded')).toBe('true');
 
-    setup.click();
+    masterData.click();
     fixture.detectChanges();
     expect(el.querySelectorAll('.associate-sidebar__sublink').length).toBe(0);
   });

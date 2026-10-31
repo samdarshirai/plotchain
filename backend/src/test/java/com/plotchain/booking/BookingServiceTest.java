@@ -219,15 +219,16 @@ class BookingServiceTest {
     }
 
     @Test
-    void createBookingResponseIsActiveWithTheTokenPaidAndTheRestPendingNoneOverdue() {
+    void createBookingResponseIsActiveWithTheTokenEnteredAndTheRestPendingNoneOverdue() {
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
 
         BookingResponse r = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "100000"));
 
         assertThat(r.status()).isEqualTo(BookingStatus.ACTIVE);
-        assertThat(r.paidAmount()).isEqualByComparingTo("100000");
-        assertThat(r.dueAmount()).isEqualByComparingTo("500000.00");
-        assertThat(r.installments().get(0).status()).isEqualTo(InstallmentStatus.PAID);
+        // Token is ENTERED (unconfirmed) until admin confirms it, so it still counts as due.
+        assertThat(r.paidAmount()).isEqualByComparingTo("0");
+        assertThat(r.dueAmount()).isEqualByComparingTo("600000.00");
+        assertThat(r.installments().get(0).status()).isEqualTo(InstallmentStatus.ENTERED);
         assertThat(r.installments().subList(1, 4))
             .allMatch(i -> i.status() == InstallmentStatus.PENDING && !i.overdue());
     }
@@ -248,7 +249,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void createBookingRecordsTheTokenAsInstallmentOnePaidAtBookingTimeWithRefToken() {
+    void createBookingRecordsTheTokenAsInstallmentOneEnteredAtBookingTimeWithRefToken() {
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
 
         bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "100000"));
@@ -258,13 +259,13 @@ class BookingServiceTest {
         EmiInstallment token = captor.getValue().get(0);
         assertThat(token.getInstallmentNumber()).isEqualTo(1);
         assertThat(token.getAmount()).isEqualByComparingTo("100000");
-        assertThat(token.getStatus()).isEqualTo(InstallmentStatus.PAID);
+        assertThat(token.getStatus()).isEqualTo(InstallmentStatus.ENTERED);
         assertThat(token.getPaidAt()).isNotNull();
         assertThat(token.getPaymentRef()).isEqualTo("TOKEN");
     }
 
     @Test
-    void createBookingSnapshotsPriceAreaRateAndConfirmsOnlyTheTokenInstallment() {
+    void createBookingSnapshotsPriceAreaRateAndConfirmsNoInstallment() {
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
 
         bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "100000"));
@@ -281,10 +282,8 @@ class BookingServiceTest {
         ArgumentCaptor<List<EmiInstallment>> captor = ArgumentCaptor.forClass(List.class);
         verify(emiInstallmentRepository).saveAll(captor.capture());
         List<EmiInstallment> schedule = captor.getValue();
-        assertThat(schedule.get(0).getConfirmedAt()).isEqualTo(booking.getBookedAt());
-        assertThat(schedule.get(0).getConfirmedBy()).isEqualTo(ASSOCIATE_ID);
-        assertThat(schedule.subList(1, schedule.size()))
-            .allMatch(i -> i.getConfirmedAt() == null && i.getConfirmedBy() == null);
+        // Even the token waits for admin confirmation.
+        assertThat(schedule).allMatch(i -> i.getConfirmedAt() == null && i.getConfirmedBy() == null);
     }
 
     @Test
