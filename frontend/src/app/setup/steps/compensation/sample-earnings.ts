@@ -58,7 +58,7 @@ export function computeSampleEarnings(
   const matchingIncome = (scenarioVolume * matchingIncomePct) / 100;
 
   // DERIVED (spec is silent on the exact base for this line — spec text says
-  // "applied to a direct sponsee's matching income", setup-onboarding-spec.md:58).
+  // "applied to the matching income of each associate you sponsored, wherever they are placed", setup-onboarding-spec.md:58).
   // This single-scenario preview has no separate sponsee input, so it reuses the
   // same computed `matchingIncome` above as a stand-in for "a sponsee's matching
   // income". This is a genuine spec gap, not an obvious inference.

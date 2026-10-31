@@ -69,6 +69,8 @@ class CycleCloseSponsorMatchingIntegrationTest {
     private UUID rightId;
     private UUID projectId;
     private UUID plotId;
+    // Extra associates seeded by tests with bigger trees; deleted in reverse (children first).
+    private final java.util.ArrayList<UUID> extraIds = new java.util.ArrayList<>();
 
     @AfterEach
     void cleanUp() {
@@ -87,6 +89,9 @@ class CycleCloseSponsorMatchingIntegrationTest {
             cycleRepository.findAll().stream()
                 .filter(c -> c.getStatus() == CycleStatus.OPEN && c.getPeriodStart().isAfter(LocalDate.now()))
                 .forEach(cycleRepository::delete);
+        }
+        for (int i = extraIds.size() - 1; i >= 0; i--) {
+            associateRepository.deleteById(extraIds.get(i));
         }
         for (UUID id : new UUID[] {leftId, rightId, sponseeId, sponsorId}) {
             if (id != null) {
@@ -200,5 +205,55 @@ class CycleCloseSponsorMatchingIntegrationTest {
         assertThat(sponsorEntry.getSourceRef()).isEqualTo(sponseeMatchingEntry.getId());
         // gross = 7.00 (sponsee's Matching gross) * 5.00% (V8-seeded sponsor_matching_pct) = 0.3500
         assertThat(sponsorEntry.getGrossAmount()).isEqualByComparingTo("0.35");
+    }
+
+    // Product-owner example (2026-10-31): Sponsor Matching follows sponsor_id only, never parent_id,
+    // and never chains to the sponsor's sponsor. 5 is placed in 2's subtree (left leg of 1) but is
+    // sponsored by 3 (right leg of 1) -- only 3 is credited on 5's Matching.
+    //
+    //            1
+    //          /   \
+    //         2     3          sponsors: 2,3 <- 1;  4 <- 2;  5 <- 3;  6,7 <- 5
+    //        / \
+    //       4   5
+    //          / \
+    //         6   7            sales: 6 = 100, 7 = 100
+    @Test
+    void closePaysOnlyTheSponsorEvenWhenSponseeIsPlacedInAnotherLeg() {
+        cycleId = seedOpenCycle();
+        UUID a1 = seedAssociate("tree01", null, null, null);
+        extraIds.add(a1);
+        UUID a2 = seedAssociate("tree02", a1, "L", a1);
+        extraIds.add(a2);
+        UUID a3 = seedAssociate("tree03", a1, "R", a1);
+        extraIds.add(a3);
+        UUID a4 = seedAssociate("tree04", a2, "L", a2);
+        extraIds.add(a4);
+        UUID a5 = seedAssociate("tree05", a2, "R", a3);
+        extraIds.add(a5);
+        UUID a6 = seedAssociate("tree06", a5, "L", a5);
+        extraIds.add(a6);
+        UUID a7 = seedAssociate("tree07", a5, "R", a5);
+        extraIds.add(a7);
+        plotId = seedPlot();
+        seedSale(a6, cycleId, plotId, new BigDecimal("100"));
+        seedSale(a7, cycleId, plotId, new BigDecimal("100"));
+
+        cycleService.close(cycleId);
+
+        // 5's Matching: min(100, 100) * 7.00% = 7.00
+        LedgerEntry fiveMatching = ledgerEntryRepository
+            .findByAssociateIdAndCycleIdAndIncomeType(a5, cycleId, IncomeType.MATCHING)
+            .orElseThrow(() -> new AssertionError("expected a MATCHING entry for associate 5"));
+        assertThat(fiveMatching.getGrossAmount()).isEqualByComparingTo("7.00");
+
+        List<LedgerEntry> creditsOnFive = ledgerEntryRepository.findAll().stream()
+            .filter(e -> e.getIncomeType() == IncomeType.SPONSOR_MATCHING)
+            .filter(e -> e.getSourceRef().equals(fiveMatching.getId()))
+            .toList();
+        assertThat(creditsOnFive).hasSize(1);
+        assertThat(creditsOnFive.get(0).getAssociateId()).isEqualTo(a3);
+        // 7.00 * 5.00% (V8-seeded sponsor_matching_pct in the test DB) = 0.35
+        assertThat(creditsOnFive.get(0).getGrossAmount()).isEqualByComparingTo("0.35");
     }
 }
