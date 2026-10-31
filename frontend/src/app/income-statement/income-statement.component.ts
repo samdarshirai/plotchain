@@ -387,13 +387,12 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         const firstOpen = tiers.findIndex(t => !t.status);
         this.rewardTierRows = tiers.map((t, i) => {
           const state = t.status ? 'achieved' : i === firstOpen ? 'progress' : 'pending';
-          const legText = (leg: number) => `${this.shortInr(Math.min(leg, t.matchingBusiness))} / ${this.shortInr(t.matchingBusiness)}`;
           return {
             n: String(t.tierLevel),
             designation: `${t.designation ?? '—'} (${this.formatCurrency(t.matchingBusiness)} ${this.translate.instant('incomeStatement.matchingSuffix')})`,
             reward: this.rewardText(t.reward, t.perkDescription),
-            left: legText(left),
-            right: legText(right),
+            left: this.shortInr(t.requiredLeftBusiness),
+            right: this.shortInr(t.requiredRightBusiness),
             status: this.translate.instant(state === 'achieved' ? 'incomeStatement.statusAchieved' : state === 'progress' ? 'incomeStatement.statusInProgress' : 'incomeStatement.statusPending')
           };
         });

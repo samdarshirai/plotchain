@@ -457,7 +457,7 @@ describe('IncomeStatementComponent', () => {
     expect(fixture.nativeElement.querySelector('.income-statement__cards--summary')).toBeNull();
   });
 
-  it('Reward tab derives totals, rank, 3-state status and bars from remaining business', () => {
+  it('Reward tab derives totals, rank, 3-state status and remaining business per leg', () => {
     // left total 1.3M (500k-0, 2M-700k), right total 300k (2M-1.7M)
     const c = loadReward(
       [tier(1, 500000, 0, 200000, true), tier(2, 2000000, 700000, 1700000, false), tier(3, 4000000, 2700000, 3700000, false)],
@@ -466,8 +466,8 @@ describe('IncomeStatementComponent', () => {
     expect(c.currentRank).toBe('T1');
     expect(c.rewardCards.map(x => x.value)).toEqual(['₹1,300,000.00', '₹300,000.00', '₹300,000.00']);
     expect(c.rewardTierRows.map(t => t['status'])).toEqual(['Achieved', 'In progress', 'Pending']);
-    expect(c.rewardTierRows[1]['left']).toBe('₹13 L / ₹20 L');
-    expect(c.rewardTierRows[1]['right']).toBe('₹3 L / ₹20 L');
+    expect(c.rewardTierRows[1]['left']).toBe('₹7 L');
+    expect(c.rewardTierRows[1]['right']).toBe('₹17 L');
     expect(c.achievedRows[0]['payStatus']).toBe('Unpaid');
     expect(c.achievedRows[0]['paymentDate']).toBe('—');
     expect(fixture.nativeElement.querySelectorAll('.income-statement__table tbody tr').length).toBe(4);
@@ -477,13 +477,13 @@ describe('IncomeStatementComponent', () => {
     const c = loadReward([tier(1, 500000, 500000, 500000, false), tier(2, 1000000, 1000000, 1000000, false)]);
     expect(c.currentRank).toBe('—');
     expect(c.rewardTierRows.map(t => t['status'])).toEqual(['In progress', 'Pending']);
-    expect(c.rewardTierRows[0]['left']).toBe('₹0 L / ₹5 L');
+    expect(c.rewardTierRows[0]['left']).toBe('₹5 L');
   });
 
-  it('Reward tab with every tier met caps bars at 100% using top threshold as total', () => {
+  it('Reward tab with every tier met shows zero remaining', () => {
     const c = loadReward([tier(1, 500000, 0, 0, true), tier(2, 1000000, 0, 0, true)]);
     expect(c.currentRank).toBe('T2');
     expect(c.rewardTierRows.every(t => t['status'] === 'Achieved')).toBeTrue();
-    expect(c.rewardTierRows[0]['left']).toBe('₹5 L / ₹5 L');
+    expect(c.rewardTierRows[0]['left']).toBe('₹0 L');
   });
 });
