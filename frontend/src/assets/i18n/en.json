@@ -280,6 +280,8 @@
     "tabs": {
       "welcomeLetter": "Welcome Letter",
       "profile": "Profile",
+      "loginPassword": "Login Password",
+      "transactionPassword": "Transaction Password",
       "bankDetails": "Bank Details",
       "kyc": "KYC Details"
     },
@@ -290,7 +292,6 @@
       "photoUploadError": "Something went wrong uploading your photo. Please try again."
     },
     "subtabs": {
-      "profile": "Profile",
       "loginPassword": "Login Password",
       "transactionPassword": "Transaction Password"
     },

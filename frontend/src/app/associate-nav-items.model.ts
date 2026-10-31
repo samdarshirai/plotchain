@@ -17,8 +17,8 @@ export interface AssociateNavItem {
 // ADMIN_NAV_CATEGORIES there's no findNavCategoryForUrl-style lookup here: active state comes
 // from Angular's routerLinkActive directive in the template, not manual URL matching.
 //
-// My Account is the one item with `children`: its 4 sub-sections (Welcome Letter, Profile, Bank
-// Details, KYC Details) are real sibling routes under /profile (see app.routes.ts), rendered as
+// My Account is the one item with `children`: its 6 sub-sections (Welcome Letter, Profile, Login
+// Password, Transaction Password, Bank Details, KYC Details) are real sibling routes under /profile (see app.routes.ts), rendered as
 // nested sub-links in the sidebar rather than an in-page tab bar (docs/superpowers/plans/
 // can-you-break-down-vectorized-dongarra.md).
 export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
@@ -28,6 +28,8 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
     children: [
       { key: 'welcomeLetter', labelKey: 'myAccount.tabs.welcomeLetter', path: '/profile/welcome-letter' },
       { key: 'profile', labelKey: 'myAccount.tabs.profile', path: '/profile' },
+      { key: 'loginPassword', labelKey: 'myAccount.tabs.loginPassword', path: '/profile/login-password' },
+      { key: 'transactionPassword', labelKey: 'myAccount.tabs.transactionPassword', path: '/profile/transaction-password' },
       { key: 'bankDetails', labelKey: 'myAccount.tabs.bankDetails', path: '/profile/bank-details' },
       { key: 'kyc', labelKey: 'myAccount.tabs.kyc', path: '/profile/kyc' }
     ]

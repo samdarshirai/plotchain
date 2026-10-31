@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { BehaviorSubject } from 'rxjs';
 import { MyAccountComponent } from './my-account.component';
@@ -16,8 +16,8 @@ import { BrandingBootstrapService } from '../core/theme/branding-bootstrap.servi
 
 // Consolidates ProfileKycComponent + RewardsComponent + DigitalIdCardComponent (role-capability /
 // income-ledger units) into one "My Account" screen per Account Consolidation.dc.html (claude.ai
-// design project cfbfc37d-4de7-4f26-8b81-923167ca3d33), split into 4 sections (Welcome Letter,
-// Profile, Bank Details, KYC Details), each a sibling route reusing this component with a
+// design project cfbfc37d-4de7-4f26-8b81-923167ca3d33), split into 6 sections (Welcome Letter,
+// Profile, Login Password, Transaction Password, Bank Details, KYC Details), each a sibling route reusing this component with a
 // different `data.tab` (app.routes.ts) and navigated to via the sidebar's My Account sub-items
 // (docs/superpowers/plans/can-you-break-down-vectorized-dongarra.md), not an in-page tab bar.
 // `activeTab` is driven off ActivatedRoute.data, mocked here with a BehaviorSubject so tests can
@@ -29,13 +29,12 @@ import { BrandingBootstrapService } from '../core/theme/branding-bootstrap.servi
 // /api/associates/me/id-card fires on init too.
 //
 // Profile screen redesign ("Viraj Acres" mockup): the Profile section (activeTab === 'profile')
-// additionally fires GET nominee/transaction-password-status/photo on init, and splits into an
-// in-page tab bar (`profileSubTab`) -- Profile / Login Password / Transaction Password -- scoped
-// to this route's content only, not a route change.
+// additionally fires GET nominee/transaction-password-status/photo on init.
 describe('MyAccountComponent', () => {
   let fixture: ComponentFixture<MyAccountComponent>;
   let httpMock: HttpTestingController;
   let routeDataSubject: BehaviorSubject<{ tab: string }>;
+  let router: Router;
 
   const profileResponse: AssociateProfileResponse = {
     id: 'a1', userId: 'VP00001', name: 'Left Kumar', phone: null,
@@ -93,8 +92,13 @@ describe('MyAccountComponent', () => {
     routeDataSubject = new BehaviorSubject<{ tab: string }>({ tab: 'profile' });
     await TestBed.configureTestingModule({
       imports: [MyAccountComponent, HttpClientTestingModule, TranslateModule.forRoot()],
-      providers: [{ provide: ActivatedRoute, useValue: { data: routeDataSubject.asObservable() } }]
+      providers: [
+        provideRouter([]),
+        { provide: ActivatedRoute, useValue: { data: routeDataSubject.asObservable() } }
+      ]
     }).compileComponents();
+    router = TestBed.inject(Router);
+    spyOn(router, 'navigate').and.resolveTo(true);
   });
 
   afterEach(() => httpMock.verify());
@@ -232,12 +236,23 @@ describe('MyAccountComponent', () => {
     expect(fixture.nativeElement.querySelector('.profile-hero__print-button')).toBeFalsy();
   });
 
-  it('shows the three in-page sub-tabs (Profile / Login Password / Transaction Password) on the Profile section only', () => {
+  it('shows each password form only on its own route, not on Profile', () => {
     init();
-    expect(fixture.nativeElement.querySelector('.profile-subtabs')).toBeTruthy();
+    const forms = () => (fixture.nativeElement as HTMLElement).querySelectorAll('form.detail-card').length;
+    const has = (name: string) => !!(fixture.nativeElement as HTMLElement).querySelector(`input[formcontrolname="${name}"]`);
+    expect(has('phone')).toBeTrue();
+    expect(has('currentPassword')).toBeFalse();
+    expect(has('newTransactionPassword')).toBeFalse();
 
-    switchTab('kyc');
-    expect(fixture.nativeElement.querySelector('.profile-subtabs')).toBeFalsy();
+    switchTab('loginPassword');
+    expect(forms()).toBe(1);
+    expect(has('currentPassword')).toBeTrue();
+    expect(has('phone')).toBeFalse();
+
+    switchTab('transactionPassword');
+    expect(forms()).toBe(1);
+    expect(has('newTransactionPassword')).toBeTrue();
+    expect(has('phone')).toBeFalse();
   });
 
   it('shows a "N field missing" chip on the contact detail section when phone or email is blank', () => {
@@ -300,13 +315,13 @@ describe('MyAccountComponent', () => {
     expect(fixture.componentInstance.saveError).toBe('Transaction password is required to save these changes');
   });
 
-  it('does not call the server when the password is blank and none is set; jumps to the set-password tab', () => {
+  it('does not call the server when the password is blank and none is set; jumps to the set-password page', () => {
     init();
     fixture.componentInstance.onSaveChanges();
 
     httpMock.expectNone('/api/associates/me/profile');
     httpMock.expectNone('/api/associates/me/nominee');
-    expect(fixture.componentInstance.profileSubTab).toBe('transactionPassword');
+    expect(router.navigate).toHaveBeenCalledWith(['/profile/transaction-password']);
     expect(fixture.componentInstance.saveError).toBe('myAccount.transactionPasswordTab.errorNotSet');
   });
 
@@ -317,7 +332,7 @@ describe('MyAccountComponent', () => {
 
     httpMock.expectNone('/api/associates/me/profile');
     httpMock.expectNone('/api/associates/me/nominee');
-    expect(fixture.componentInstance.profileSubTab).toBe('profile');
+    expect(router.navigate).not.toHaveBeenCalled();
     expect(fixture.componentInstance.saveError).toBe('myAccount.transactionPasswordTab.errorRequired');
   });
 
@@ -336,7 +351,7 @@ describe('MyAccountComponent', () => {
       httpMock.expectNone('/api/associates/me/nominee');
       expect(fixture.componentInstance.saveError).toBe(key);
       expect(fixture.componentInstance.emailConflictError).toBeUndefined();
-      if (status === 409) expect(fixture.componentInstance.profileSubTab).toBe('transactionPassword');
+      if (status === 409) expect(router.navigate).toHaveBeenCalledWith(['/profile/transaction-password']);
     });
 
     it(`maps change-transaction-password ${status} ${body.code} to ${key}`, () => {
@@ -350,10 +365,9 @@ describe('MyAccountComponent', () => {
     });
   });
 
-  it('changes the login password via the Login Password sub-tab, reusing AuthService', () => {
+  it('changes the login password via the Login Password page, reusing AuthService', () => {
     init();
-    fixture.componentInstance.profileSubTab = 'loginPassword';
-    fixture.detectChanges();
+    switchTab('loginPassword');
     fixture.componentInstance.loginPasswordForm.setValue({
       currentPassword: 'OldPass123!', newPassword: 'NewPass123!', confirmPassword: 'NewPass123!'
     });
@@ -377,10 +391,9 @@ describe('MyAccountComponent', () => {
     expect(fixture.componentInstance.loginPasswordSaveError).toBeTruthy();
   });
 
-  it('sets a transaction password for the first time via the Transaction Password sub-tab', () => {
+  it('sets a transaction password for the first time via the Transaction Password page', () => {
     init();
-    fixture.componentInstance.profileSubTab = 'transactionPassword';
-    fixture.detectChanges();
+    switchTab('transactionPassword');
     fixture.componentInstance.transactionPasswordForm.setValue({
       currentTransactionPassword: '', newTransactionPassword: 'secret123', confirmTransactionPassword: 'secret123'
     });

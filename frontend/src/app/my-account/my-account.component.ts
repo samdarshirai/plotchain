@@ -3,7 +3,7 @@ import { apiUrl } from '../core/api/api-url';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
@@ -46,21 +46,22 @@ const BANK_LABELS = { bankName: 'Bank name', accountHolder: 'Account holder', ac
 // the exception: it only backs the print-only card now (see DigitalIdCardComponent embedded
 // below), so it's fetched lazily on the first "Download ID card" click rather than on init.
 //
-// Split into 4 sections (Welcome Letter, Profile, Bank Details, KYC Details), each its own sibling
+// Split into 6 sections (Welcome Letter, Profile, Login Password, Transaction Password, Bank
+// Details, KYC Details), each its own sibling
 // route under /profile (app.routes.ts) and its own sub-item in the sidebar (AssociateSidebarComponent
 // / ASSOCIATE_NAV_ITEMS['myAccount'].children) rather than an in-page tab bar -- so each section is
 // a real, deep-linkable, back/forward-safe URL (docs/superpowers/plans/can-you-break-down-vectorized-dongarra.md).
 // Angular reuses this same component instance across those sibling routes, so `activeTab` is driven
 // reactively off ActivatedRoute.data (set per-route below), not read once on init. Rank,
 // Verification, and the "Download ID card" header action are Profile-only (not shown on the other
-// 3 sections). Bank Details is lazy-loaded on first navigation to that route; Profile/KYC/Welcome
+// sections). Bank Details is lazy-loaded on first navigation to that route; Profile/KYC/Welcome
 // Letter data all come from the profile/KYC GETs already fired on init, so no extra lazy-load is
 // needed for them.
 //
-// Profile screen redesign ("Viraj Acres" mockup, Profile Screen.dc.html): the Profile section
-// (activeTab === 'profile') additionally splits into an in-page tab bar (`profileSubTab`) --
-// Profile / Login Password / Transaction Password -- scoped only to this route's content, NOT a
-// route change: the 4 sidebar routes above it are untouched. The mockup's hero photo/name/ID card
+// Profile screen redesign ("Viraj Acres" mockup, Profile Screen.dc.html): Login Password and
+// Transaction Password were in-page tabs on the Profile section; they are now their own sidebar
+// routes (see above), and a profile save that needs a transaction password first navigates to
+// /profile/transaction-password. The mockup's hero photo/name/ID card
 // is new (`.profile-hero`), absorbing the old `.verification-card`'s associate-ID content; rank
 // info is NOT dropped, `.rank-card` just moves to its own full-width row below the hero. Nominee
 // is a new sibling resource (own service, own backend table) saved together with the profile form
@@ -208,28 +209,7 @@ const BANK_LABELS = { bankName: 'Bank name', accountHolder: 'Account holder', ac
           </div>
           <app-field-error [message]="photoUploadError"></app-field-error>
 
-          <div class="profile-subtabs">
-            <button
-              type="button"
-              class="profile-subtabs__tab"
-              [class.profile-subtabs__tab--active]="profileSubTab === 'profile'"
-              (click)="profileSubTab = 'profile'"
-            >{{ 'myAccount.subtabs.profile' | translate }}</button>
-            <button
-              type="button"
-              class="profile-subtabs__tab"
-              [class.profile-subtabs__tab--active]="profileSubTab === 'loginPassword'"
-              (click)="profileSubTab = 'loginPassword'"
-            >{{ 'myAccount.subtabs.loginPassword' | translate }}</button>
-            <button
-              type="button"
-              class="profile-subtabs__tab"
-              [class.profile-subtabs__tab--active]="profileSubTab === 'transactionPassword'"
-              (click)="profileSubTab = 'transactionPassword'"
-            >{{ 'myAccount.subtabs.transactionPassword' | translate }}</button>
-          </div>
-
-          <form class="detail-card" [formGroup]="form" [class.was-submitted]="profileSubmitted" (ngSubmit)="onSaveChanges()" novalidate *ngIf="profileSubTab === 'profile'">
+          <form class="detail-card" [formGroup]="form" [class.was-submitted]="profileSubmitted" (ngSubmit)="onSaveChanges()" novalidate>
             <app-error-summary [issues]="profileIssues"></app-error-summary>
             <app-inline-banner *ngIf="saveSuccess" tone="success">{{ 'myAccount.contact.saveSuccess' | translate }}</app-inline-banner>
             <app-inline-banner *ngIf="saveError" tone="danger">{{ saveError }}</app-inline-banner>
@@ -349,65 +329,75 @@ const BANK_LABELS = { bankName: 'Bank name', accountHolder: 'Account holder', ac
               </button>
             </div>
           </form>
-
-          <form class="detail-card" [formGroup]="loginPasswordForm" [class.was-submitted]="loginPwSubmitted" (ngSubmit)="onLoginPasswordSubmit()" novalidate *ngIf="profileSubTab === 'loginPassword'">
-            <app-error-summary [issues]="loginPwIssues"></app-error-summary>
-            <app-inline-banner *ngIf="loginPasswordSaveSuccess" tone="success">{{ 'myAccount.loginPasswordTab.saveSuccess' | translate }}</app-inline-banner>
-            <app-inline-banner *ngIf="loginPasswordSaveError" tone="danger">{{ loginPasswordSaveError }}</app-inline-banner>
-            <div class="detail-card__fields">
-              <label class="detail-card__field">
-                <span>{{ 'myAccount.loginPasswordTab.currentLabel' | translate }}</span>
-                <input type="password" formControlName="currentPassword" autocomplete="current-password" />
-                <app-field-error [control]="loginPasswordForm.get('currentPassword')" label="Current password" [submitted]="loginPwSubmitted"></app-field-error>
-              </label>
-              <label class="detail-card__field">
-                <span>{{ 'myAccount.loginPasswordTab.newLabel' | translate }}</span>
-                <input type="password" formControlName="newPassword" autocomplete="new-password" />
-                <app-field-error [control]="loginPasswordForm.get('newPassword')" label="New password" [submitted]="loginPwSubmitted"></app-field-error>
-              </label>
-              <label class="detail-card__field">
-                <span>{{ 'myAccount.loginPasswordTab.confirmLabel' | translate }}</span>
-                <input type="password" formControlName="confirmPassword" autocomplete="new-password" />
-                <app-field-error [control]="loginPasswordForm.get('confirmPassword')" label="Confirm password" [submitted]="loginPwSubmitted"></app-field-error>
-              </label>
-            </div>
-            <div class="profile-actions">
-              <app-brand-button type="submit" variant="primary">
-                {{ 'myAccount.loginPasswordTab.saveAction' | translate }}
-              </app-brand-button>
-            </div>
-          </form>
-
-          <form class="detail-card" [formGroup]="transactionPasswordForm" [class.was-submitted]="txnPwSubmitted" (ngSubmit)="onTransactionPasswordSubmit()" novalidate *ngIf="profileSubTab === 'transactionPassword'">
-            <app-error-summary [issues]="txnPwIssues"></app-error-summary>
-            <app-inline-banner *ngIf="transactionPasswordSaveSuccess" tone="success">{{ 'myAccount.transactionPasswordTab.saveSuccess' | translate }}</app-inline-banner>
-            <app-inline-banner *ngIf="transactionPasswordSaveError" tone="danger">{{ transactionPasswordSaveError }}</app-inline-banner>
-            <p *ngIf="transactionPasswordStatus && !transactionPasswordStatus.isSet" class="detail-card__hint">
-              {{ 'myAccount.transactionPasswordTab.notSetHint' | translate }}
-            </p>
-            <div class="detail-card__fields">
-              <label class="detail-card__field" *ngIf="transactionPasswordStatus?.isSet">
-                <span>{{ 'myAccount.transactionPasswordTab.currentLabel' | translate }}</span>
-                <input type="password" autocomplete="off" appPasswordToggle formControlName="currentTransactionPassword" />
-              </label>
-              <label class="detail-card__field">
-                <span>{{ 'myAccount.transactionPasswordTab.newLabel' | translate }}</span>
-                <input type="password" autocomplete="off" appPasswordToggle formControlName="newTransactionPassword" />
-                <app-field-error [control]="transactionPasswordForm.get('newTransactionPassword')" label="New transaction password" [submitted]="txnPwSubmitted"></app-field-error>
-              </label>
-              <label class="detail-card__field">
-                <span>{{ 'myAccount.transactionPasswordTab.confirmLabel' | translate }}</span>
-                <input type="password" autocomplete="off" appPasswordToggle formControlName="confirmTransactionPassword" />
-                <app-field-error [control]="transactionPasswordForm.get('confirmTransactionPassword')" label="Confirm password" [submitted]="txnPwSubmitted"></app-field-error>
-              </label>
-            </div>
-            <div class="profile-actions">
-              <app-brand-button type="submit" variant="primary">
-                {{ 'myAccount.transactionPasswordTab.saveAction' | translate }}
-              </app-brand-button>
-            </div>
-          </form>
         </ng-container>
+
+        <form class="detail-card" [formGroup]="loginPasswordForm" [class.was-submitted]="loginPwSubmitted" (ngSubmit)="onLoginPasswordSubmit()" novalidate *ngIf="activeTab === 'loginPassword'">
+          <app-error-summary [issues]="loginPwIssues"></app-error-summary>
+          <div class="detail-card__flanking-header">
+            <span class="detail-card__flanking-rule"></span>
+            <span class="detail-card__flanking-label">{{ 'myAccount.subtabs.loginPassword' | translate }}</span>
+            <span class="detail-card__flanking-rule detail-card__flanking-rule--fill"></span>
+          </div>
+          <app-inline-banner *ngIf="loginPasswordSaveSuccess" tone="success">{{ 'myAccount.loginPasswordTab.saveSuccess' | translate }}</app-inline-banner>
+          <app-inline-banner *ngIf="loginPasswordSaveError" tone="danger">{{ loginPasswordSaveError }}</app-inline-banner>
+          <div class="detail-card__fields">
+            <label class="detail-card__field">
+              <span>{{ 'myAccount.loginPasswordTab.currentLabel' | translate }}</span>
+              <input type="password" formControlName="currentPassword" autocomplete="current-password" />
+              <app-field-error [control]="loginPasswordForm.get('currentPassword')" label="Current password" [submitted]="loginPwSubmitted"></app-field-error>
+            </label>
+            <label class="detail-card__field">
+              <span>{{ 'myAccount.loginPasswordTab.newLabel' | translate }}</span>
+              <input type="password" formControlName="newPassword" autocomplete="new-password" />
+              <app-field-error [control]="loginPasswordForm.get('newPassword')" label="New password" [submitted]="loginPwSubmitted"></app-field-error>
+            </label>
+            <label class="detail-card__field">
+              <span>{{ 'myAccount.loginPasswordTab.confirmLabel' | translate }}</span>
+              <input type="password" formControlName="confirmPassword" autocomplete="new-password" />
+              <app-field-error [control]="loginPasswordForm.get('confirmPassword')" label="Confirm password" [submitted]="loginPwSubmitted"></app-field-error>
+            </label>
+          </div>
+          <div class="profile-actions">
+            <app-brand-button type="submit" variant="primary">
+              {{ 'myAccount.loginPasswordTab.saveAction' | translate }}
+            </app-brand-button>
+          </div>
+        </form>
+
+        <form class="detail-card" [formGroup]="transactionPasswordForm" [class.was-submitted]="txnPwSubmitted" (ngSubmit)="onTransactionPasswordSubmit()" novalidate *ngIf="activeTab === 'transactionPassword'">
+          <app-error-summary [issues]="txnPwIssues"></app-error-summary>
+          <div class="detail-card__flanking-header">
+            <span class="detail-card__flanking-rule"></span>
+            <span class="detail-card__flanking-label">{{ 'myAccount.subtabs.transactionPassword' | translate }}</span>
+            <span class="detail-card__flanking-rule detail-card__flanking-rule--fill"></span>
+          </div>
+          <app-inline-banner *ngIf="transactionPasswordSaveSuccess" tone="success">{{ 'myAccount.transactionPasswordTab.saveSuccess' | translate }}</app-inline-banner>
+          <app-inline-banner *ngIf="transactionPasswordSaveError" tone="danger">{{ transactionPasswordSaveError }}</app-inline-banner>
+          <p *ngIf="transactionPasswordStatus && !transactionPasswordStatus.isSet" class="detail-card__hint">
+            {{ 'myAccount.transactionPasswordTab.notSetHint' | translate }}
+          </p>
+          <div class="detail-card__fields">
+            <label class="detail-card__field" *ngIf="transactionPasswordStatus?.isSet">
+              <span>{{ 'myAccount.transactionPasswordTab.currentLabel' | translate }}</span>
+              <input type="password" autocomplete="off" appPasswordToggle formControlName="currentTransactionPassword" />
+            </label>
+            <label class="detail-card__field">
+              <span>{{ 'myAccount.transactionPasswordTab.newLabel' | translate }}</span>
+              <input type="password" autocomplete="off" appPasswordToggle formControlName="newTransactionPassword" />
+              <app-field-error [control]="transactionPasswordForm.get('newTransactionPassword')" label="New transaction password" [submitted]="txnPwSubmitted"></app-field-error>
+            </label>
+            <label class="detail-card__field">
+              <span>{{ 'myAccount.transactionPasswordTab.confirmLabel' | translate }}</span>
+              <input type="password" autocomplete="off" appPasswordToggle formControlName="confirmTransactionPassword" />
+              <app-field-error [control]="transactionPasswordForm.get('confirmTransactionPassword')" label="Confirm password" [submitted]="txnPwSubmitted"></app-field-error>
+            </label>
+          </div>
+          <div class="profile-actions">
+            <app-brand-button type="submit" variant="primary">
+              {{ 'myAccount.transactionPasswordTab.saveAction' | translate }}
+            </app-brand-button>
+          </div>
+        </form>
 
         <form class="bank-card" [formGroup]="bankForm" [class.was-submitted]="bankSubmitted" novalidate *ngIf="activeTab === 'bankDetails'">
           <div class="bank-card__header">
@@ -531,6 +521,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   private associateTransactionPasswordService = inject(AssociateTransactionPasswordService);
   private authService = inject(AuthService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private rewardsService = inject(RewardsService);
   private translate = inject(TranslateService);
   private currencyPipe = inject(CurrencyPipe);
@@ -549,8 +540,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   readonly maritalStatusOptions = ['SINGLE', 'MARRIED', 'OTHER'];
   readonly stateOptions = INDIA_STATE_OPTIONS;
 
-  activeTab: 'welcomeLetter' | 'profile' | 'bankDetails' | 'kyc' = 'profile';
-  profileSubTab: 'profile' | 'loginPassword' | 'transactionPassword' = 'profile';
+  activeTab: 'welcomeLetter' | 'profile' | 'loginPassword' | 'transactionPassword' | 'bankDetails' | 'kyc' = 'profile';
   printTarget: 'idCard' | 'welcomeLetter' = 'idCard';
   private bankDetailsLoaded = false;
 
@@ -754,7 +744,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
     if (!transactionPassword) {
       // Blank: don't hit the server (each guarded PUT would burn a lockout attempt).
       if (this.transactionPasswordStatus && !this.transactionPasswordStatus.isSet) {
-        this.profileSubTab = 'transactionPassword';
+        this.router.navigate(['/profile/transaction-password']);
         this.saveError = this.translate.instant('myAccount.transactionPasswordTab.errorNotSet');
       } else {
         this.saveError = this.translate.instant('myAccount.transactionPasswordTab.errorRequired');
@@ -854,7 +844,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   private transactionPasswordErrorMessage(e: HttpErrorResponse, fallbackKey: string): string {
     const code = e.error?.code;
     if (e.status === 409 && code === 'TRANSACTION_PASSWORD_NOT_SET') {
-      this.profileSubTab = 'transactionPassword';
+      this.router.navigate(['/profile/transaction-password']);
       return this.translate.instant('myAccount.transactionPasswordTab.errorNotSet');
     }
     if (e.status === 423) return this.translate.instant('myAccount.transactionPasswordTab.errorLocked');

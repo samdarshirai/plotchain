@@ -66,7 +66,7 @@ export const routes: Routes = [
   { path: 'e-pins/view-used', loadComponent: () => import('./epins/register/epin-register.component').then(m => m.EPinRegisterComponent), data: { mode: 'used' }, canActivate: [authGuard, associateOnlyGuard, epinUnlockGuard] },
   // Merged into one "My Account" screen (Account Consolidation.dc.html) -- /rewards and
   // /digital-id-card redirect here so old bookmarks/links keep working. Split into 4 sibling
-  // routes (Welcome Letter, Profile, Bank Details, KYC Details), all rendering the same
+  // routes (Welcome Letter, Profile, Login Password, Transaction Password, Bank Details, KYC Details), all rendering the same
   // MyAccountComponent with a different `data.tab`, so the sidebar's My Account sub-items are
   // real, deep-linkable, back/forward-safe URLs (docs/superpowers/plans/
   // can-you-break-down-vectorized-dongarra.md) -- same MyAccountComponent instance is reused
@@ -74,6 +74,8 @@ export const routes: Routes = [
   // (ActivatedRoute.data subscription), not just once on init.
   { path: 'profile', component: MyAccountComponent, data: { tab: 'profile' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'profile/welcome-letter', component: MyAccountComponent, data: { tab: 'welcomeLetter' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'profile/login-password', component: MyAccountComponent, data: { tab: 'loginPassword' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'profile/transaction-password', component: MyAccountComponent, data: { tab: 'transactionPassword' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'profile/bank-details', component: MyAccountComponent, data: { tab: 'bankDetails' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'profile/kyc', component: MyAccountComponent, data: { tab: 'kyc' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'rewards', redirectTo: 'profile' },
