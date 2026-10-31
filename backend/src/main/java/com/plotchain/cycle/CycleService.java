@@ -260,6 +260,7 @@ public class CycleService {
             .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
             .orElseThrow(() -> new IllegalStateException(
                 "compensation_plan_version row missing - V8 migration seeds it"));
+        reRateDirectIncome(cycle.getId(), sales, planVersion);
         creditMatchingIncome(cycle.getId(), associates, legVolumes, planVersion, finalize);
 
         // Flow step 4 (Decision #7): advance rankId for each ASSOCIATE-role associate to the
@@ -397,6 +398,31 @@ public class CycleService {
     // the same min > 0 guard -- a zero-matched associate's row is left untouched (its unmatched
     // leg, if any, is not carried forward under this unit's implementation; that's the spec's
     // Flow step 3 text taken literally, not an oversight).
+    // Direct Income is written once at payment time (SaleService). Re-rate this cycle's
+    // not-yet-PAID rows in place with today's plan so a mid-cycle rate change reaches them too.
+    // Updated, not deleted and re-inserted, so ids and Payout Approval marks stay put. Rows whose
+    // sale was voided aren't in `sales` and are left as they are.
+    private void reRateDirectIncome(UUID cycleId, List<Sale> sales, CompensationPlanVersion planVersion) {
+        Map<UUID, Sale> salesById = new HashMap<>();
+        for (Sale sale : sales) {
+            salesById.put(sale.getId(), sale);
+        }
+        for (LedgerEntry entry : ledgerEntryRepository.findRecomputable(cycleId, List.of(IncomeType.DIRECT))) {
+            Sale sale = salesById.get(entry.getSourceRef());
+            if (sale == null || entry.getStatus() == LedgerEntryStatus.REVERSED) {
+                continue;
+            }
+            BigDecimal grossAmount = sale.getAmount().multiply(
+                planVersion.getDirectIncomePct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+            Deductions deductions = applyDeductions(grossAmount, planVersion);
+            entry.setGrossAmount(grossAmount);
+            entry.setTdsDeduction(deductions.tdsDeduction());
+            entry.setAdminDeduction(deductions.adminDeduction());
+            entry.setNetAmount(deductions.netAmount());
+            ledgerEntryRepository.save(entry);
+        }
+    }
+
     // Cycle-management unit 8 (Royalty): extracted out of creditMatchingIncome (unit 5) and
     // creditSponsorMatching (unit 7), which had each inline-duplicated this exact math (Decision
     // #10). Unit 7's own code review flagged that a third inline copy in creditRoyalty would be

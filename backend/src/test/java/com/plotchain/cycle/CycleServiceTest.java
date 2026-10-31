@@ -246,6 +246,38 @@ class CycleServiceTest {
         verify(compensationPlanVersionRepository).findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now());
     }
 
+    // Direct Income is written at payment time; a later recalculation re-rates it in place with
+    // today's plan, same as the cycle-derived types.
+    @Test
+    void refreshLiveIncomeReRatesDirectIncomeWithTodaysPlan() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository, expenseRepository);
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        Associate seller = associateFixture(null, null);
+        Sale sale = saleFixture(seller.getId(), cycle.getId(), new BigDecimal("100000"));
+        LedgerEntry direct = matchingEntryFixture(seller.getId(), cycle.getId(), new BigDecimal("7000"));
+        direct.setIncomeType(IncomeType.DIRECT);
+        direct.setSourceRef(sale.getId());
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(associateRepository.findAll()).thenReturn(List.of(seller));
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(sale));
+        // lenient: the same method is also called for the cycle-derived types, which stay empty here.
+        org.mockito.Mockito.lenient().when(ledgerEntryRepository.findRecomputable(cycle.getId(), List.of(IncomeType.DIRECT)))
+            .thenReturn(List.of(direct));
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
+            .thenReturn(Optional.of(referencePlanVersionFixture()));
+
+        service.refreshLiveIncome(cycle.getId());
+
+        // 6% of 100000 = 6000; TDS 2% = 120; processing fee 15% = 900; net 4980.
+        verify(ledgerEntryRepository).save(direct);
+        assertThat(direct.getGrossAmount()).isEqualByComparingTo("6000");
+        assertThat(direct.getTdsDeduction()).isEqualByComparingTo("120");
+        assertThat(direct.getAdminDeduction()).isEqualByComparingTo("900");
+        assertThat(direct.getNetAmount()).isEqualByComparingTo("4980");
+    }
+
     @Test
     void closeWithNoAssociatesWritesNoLegVolumeRowsAndStillClosesAndReopens() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
