@@ -889,19 +889,14 @@ describe('ProjectsPlotsComponent (associate read-only)', () => {
       expect(el().textContent).not.toContain('admin.projectsPlots.empty.noProjectsTitle');
     });
 
-    it('with several projects shows a Select project placeholder and loads nothing until chosen', () => {
+    it('auto-selects the first of several projects and shows an empty table when it has no plots', () => {
       boot([proj('p1'), proj('p2')]);
-      expect(select().options[0].value).toBe('');
-      expect(select().options[0].disabled).toBe(true);
-      expect(select().options[0].textContent).toContain('admin.projectsPlots.projectPlaceholder');
-      expect(select().value).toBe('');
-      expect(el().textContent).toContain('admin.projectsPlots.empty.selectProjectPrompt');
-      http.expectNone(r => r.url.includes('/plots/grid'));
-      select().value = 'p2';
-      select().dispatchEvent(new Event('change'));
-      http.expectOne('/api/projects/p2/plots/grid').flush([]);
+      http.expectOne('/api/projects/p1/plots/grid').flush([]);
       fixture.detectChanges();
+      expect(select().value).toBe('p1');
       expect(Array.from(select().options).some(o => o.value === '')).toBe(false);
+      expect(el().querySelectorAll('table.projects-plots__table thead th').length).toBe(4);
+      expect(el().querySelector('.projects-plots__empty-row')).toBeTruthy();
       http.verify();
     });
 

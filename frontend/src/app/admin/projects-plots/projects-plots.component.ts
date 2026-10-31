@@ -138,7 +138,6 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           </button>
         </nav>
         <!-- (b) project header + legend + grid -->
-        <p class="projects-plots__empty" role="status" *ngIf="readOnly && !selectedProject && projects.length">{{ 'admin.projectsPlots.empty.selectProjectPrompt' | translate }}</p>
         <section class="projects-plots__main" *ngIf="selectedProject as sp">
           <app-inline-banner *ngIf="gridError" tone="danger">
             {{ 'admin.projectsPlots.error.loadGrid' | translate }}
@@ -357,7 +356,7 @@ export class ProjectsPlotsComponent implements OnInit {
         this.projects = list;
         this.projectsError = false;
         const keep = selectId ?? this.selectedProject?.id;
-        const next = list.find(p => p.id === keep) ?? (this.readOnly && list.length > 1 ? null : list[0]) ?? null;
+        const next = list.find(p => p.id === keep) ?? list[0] ?? null;
         if (next && next.id !== this.selectedProject?.id) {
           this.selectProject(next);
         } else {
