@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 // An associate's visible title: the designation of the highest reward tier they've achieved (has
 // a REWARD ledger row). CycleService.refreshLiveIncome writes REWARD rows on every payment/void,
 // so this promotes (and, on a void, reverts) immediately. No achieved tier -> absent/null; the
-// frontend falls back to its base "Sales Executive" label.
+// frontend falls back to its base "Sales Associate" label.
 @Service
 public class DesignationService {
 

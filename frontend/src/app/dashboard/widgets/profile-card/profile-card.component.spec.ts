@@ -23,7 +23,7 @@ describe('ProfileCardComponent', () => {
     translateService.use('en');
     translateService.setTranslation('en', {
       dashboard: {
-        designationValue: 'Sales Executive',
+        designationValue: 'Sales Associate',
         profileAssociateId: 'Associate ID',
         profileDesignation: 'Designation',
         profileMobile: 'Mobile',
@@ -92,6 +92,6 @@ describe('ProfileCardComponent', () => {
 
   it('falls back to the base designation when no reward tier is achieved', () => {
     createComponent(associate({ designation: null }));
-    expect(fixture.nativeElement.textContent).toContain('Sales Executive');
+    expect(fixture.nativeElement.textContent).toContain('Sales Associate');
   });
 });

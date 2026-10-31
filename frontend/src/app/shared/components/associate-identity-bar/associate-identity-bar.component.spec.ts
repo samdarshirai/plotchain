@@ -21,7 +21,7 @@ describe('AssociateIdentityBarComponent', () => {
       ]
     });
     const translate = TestBed.inject(TranslateService);
-    translate.setTranslation('en', { dashboard: { designationValue: 'Sales Executive' } });
+    translate.setTranslation('en', { dashboard: { designationValue: 'Sales Associate' } });
     translate.use('en');
     const fixture = TestBed.createComponent(AssociateIdentityBarComponent);
     fixture.detectChanges();
@@ -43,7 +43,7 @@ describe('AssociateIdentityBarComponent', () => {
 
   it('falls back to the base designation when none is achieved', () => {
     const el = render(profile);
-    expect(el.querySelector('.identity-bar__designation')?.textContent).toContain('Sales Executive');
+    expect(el.querySelector('.identity-bar__designation')?.textContent).toContain('Sales Associate');
   });
 
   it('shows no designation for admins and does not fetch rank progress', () => {

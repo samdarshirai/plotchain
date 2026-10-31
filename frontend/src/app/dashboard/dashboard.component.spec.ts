@@ -47,7 +47,7 @@ describe('DashboardComponent', () => {
       dashboard: {
         networkHint: '{{direct}} direct · {{downline}} downline',
         cycleRange: 'Cycle {{number}} · {{start}}–{{end}}',
-        designationValue: 'Sales Executive',
+        designationValue: 'Sales Associate',
         businessVolumeEyebrow: 'Business Volume',
         networkIncomeEyebrow: 'Network & Income',
         noActiveCycle: 'No active cycle',
