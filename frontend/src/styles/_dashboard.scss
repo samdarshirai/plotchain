@@ -589,10 +589,6 @@ a.seal-card__chip:hover {
   color: var(--text-muted);
 }
 
-.recent-sales-table {
-  overflow-x: auto;
-}
-
 .recent-sales-table__loading,
 .recent-sales-table__empty,
 .recent-sales-table__error {
@@ -697,26 +693,6 @@ a.seal-card__chip:hover {
     font-size: 1.125rem;
   }
 
-  // Rows stay one line and the table scrolls sideways, plot number pinned (F25).
-  .recent-sales-table td:nth-child(2) {
-    white-space: nowrap !important;
-  }
-
-  .recent-sales-table th:first-child,
-  .recent-sales-table td:first-child {
-    position: sticky;
-    left: 0;
-    z-index: 1;
-    box-shadow: 1px 0 0 var(--border-subtle);
-  }
-
-  .recent-sales-table td:first-child {
-    background: var(--surface-card);
-  }
-
-  .recent-sales-table th:first-child {
-    background: var(--ink);
-  }
 }
 
 .epins {

@@ -1,4 +1,4 @@
-import { Component, HostBinding, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, HostBinding, NgZone, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
@@ -8,6 +8,7 @@ import { ADMIN_FAMILY_ROLES } from './admin/admin.guard';
 import { AdminSidebarComponent } from './shared/components/admin-sidebar/admin-sidebar.component';
 import { AssociateIdentityBarComponent } from './shared/components/associate-identity-bar/associate-identity-bar.component';
 import { AssociateSidebarComponent } from './shared/components/associate-sidebar/associate-sidebar.component';
+import { startTableFit } from './shared/utils/table-fit';
 
 // /setup is a guided, pre-launch-only wizard (setupModeGuard) with its own dedicated
 // step-nav -- it stays chromeless (no global chrome) so cross-navigation doesn't undercut the
@@ -23,6 +24,8 @@ export class AppComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);
   private router = inject(Router);
   private navigationSubscription?: Subscription;
+  private zone = inject(NgZone);
+  private stopTableFit?: () => void;
 
   // Offsets the fixed sidebar/topbar below the sticky banner (see _app-shell.scss).
   @HostBinding('class.impersonation-active') get impersonating(): boolean {
@@ -56,6 +59,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // Outside Angular's zone: resize/mutation callbacks only toggle a CSS class, no change detection.
+    this.stopTableFit = this.zone.runOutsideAngular(() => startTableFit());
     this.isMobile = this.mobileQuery?.matches ?? false;
     this.mobileQuery?.addEventListener('change', this.onMobileChange);
     this.updateSetupRouteState(this.router.url);
@@ -70,6 +75,7 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.mobileQuery?.removeEventListener('change', this.onMobileChange);
     this.navigationSubscription?.unsubscribe();
+    this.stopTableFit?.();
   }
 
   onExitImpersonation(): void {

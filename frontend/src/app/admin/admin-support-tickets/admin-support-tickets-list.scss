@@ -16,7 +16,7 @@
     &--in_progress { background: var(--brand-primary-soft); border-color: var(--brand-primary); }
     &--resolved { background: color-mix(in srgb, var(--status-success) 14%, var(--surface-card)); border-color: var(--status-success); color: var(--status-success-text); }
     &--closed { background: var(--surface-raised); color: var(--text-muted); } }
-  &__pager { display: flex; justify-content: center; align-items: center; gap: 1rem; padding: 1rem; .brand-button { min-height: 44px; } }
+  &__pager { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 1rem; padding: 1rem; .brand-button { min-height: 44px; } }
   &__empty { padding: 2.5rem 1rem; text-align: center; h2 { margin: 0 0 0.5rem; font: 600 1.125rem var(--font-sans); } p { margin: 0 0 1rem; color: var(--text-muted); } .brand-button { min-height: 44px; } }
   &__retry { margin-left: 0.75rem; background: none; border: 0; text-decoration: underline; cursor: pointer; color: inherit; font-weight: 600; min-height: 44px; }
   &__skeleton { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; }

@@ -2475,7 +2475,17 @@
 
 .income-statement .editable-table {
   margin: 0;
-  min-width: 920px;
+  width: 100%;
+}
+
+// Headers break between words only ("PERIOD", not "PERIO D"); the global _tables.scss rule allows
+// mid-word breaks. Period wraps to two dates at most, never one word per line.
+.income-statement .editable-table th {
+  overflow-wrap: normal;
+}
+
+.income-statement .editable-table td[data-label]:first-child {
+  min-width: 7.5rem !important;
 }
 
 .income-statement .editable-table thead th {
@@ -2744,6 +2754,11 @@
   }
 }
 
+// Stacked-card mode (table--stacked, see table-fit.ts): the Total row keeps its shading.
+.income-statement[data-income-type='ALL'] .table--stacked tbody tr:last-child {
+  background: var(--surface-raised);
+}
+
 .income-statement__pagination {
   @extend %admin-screen-pagination;
 }
@@ -2766,18 +2781,6 @@
 
   .income-statement__filter-field {
     min-width: 0;
-  }
-
-  // Same phone behaviour as the Reward ladder: keep the table, scroll it sideways inside its panel
-  // (.income-statement__table has overflow-x:auto) instead of collapsing rows into stacked cards.
-  .income-statement .editable-table {
-    width: max-content;
-    min-width: 100%;
-  }
-
-  .income-statement .editable-table th,
-  .income-statement .editable-table td {
-    white-space: nowrap;
   }
 
   .income-statement__pagination .brand-button--secondary,

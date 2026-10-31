@@ -135,4 +135,5 @@ This is a token swap, not a rebuild — every component (`_buttons.scss`, `_card
 - **Do** limit the Seal Card treatment to one card per screen.
 - **Don't** use Oxblood for error/danger states — that's what `--status-danger` is for.
 - **Don't** let Ink chrome creep into content areas; it kills table legibility.
+- **Don't** make a table scroll sideways. If the columns don't fit, the rows become stacked cards (see `CLAUDE.md`).
 - **Don't** add scroll animations, gradients-on-everything, or drop shadows beyond a subtle 1px card border — the restraint *is* the luxury cue here, not extra ornament.
