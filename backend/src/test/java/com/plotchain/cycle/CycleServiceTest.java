@@ -228,6 +228,24 @@ class CycleServiceTest {
         verify(cycleRepository, never()).save(any(Cycle.class));
     }
 
+    // Every calculation uses the plan in effect today, not the one in effect when the cycle
+    // started: an admin's rate change applies on the next recalculation of the open cycle.
+    @Test
+    void closeResolvesThePlanVersionInEffectTodayNotAtCycleStart() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository, expenseRepository);
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        service.close(cycle.getId());
+
+        verify(compensationPlanVersionRepository).findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now());
+    }
+
     @Test
     void closeWithNoAssociatesWritesNoLegVolumeRowsAndStillClosesAndReopens() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
@@ -236,7 +254,7 @@ class CycleServiceTest {
         Cycle cycle = newCycle(CycleStatus.OPEN);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         CycleCloseResponse response = service.close(cycle.getId());
@@ -261,7 +279,7 @@ class CycleServiceTest {
         Cycle cycle = newCycle(CycleStatus.OPEN);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -328,7 +346,7 @@ class CycleServiceTest {
         when(legVolumeRepository.findByAssociateIdAndCycleId(b1.getId(), priorClosedCycle.getId()))
             .thenReturn(Optional.of(b1PriorLegVolume));
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         CycleCloseResponse response = service.close(cycle.getId());
@@ -460,7 +478,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -514,7 +532,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("1000000"))
         ));
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(referencePlanVersionFixture()));
 
         service.close(cycle.getId());
@@ -555,7 +573,7 @@ class CycleServiceTest {
             new BigDecimal("2.00"), new BigDecimal("5.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY,
             Instant.now(), null);
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
 
         service.close(cycle.getId());
@@ -590,7 +608,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("40"))
         ));
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -622,7 +640,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -658,7 +676,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("100"))
         ));
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -694,7 +712,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -729,7 +747,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -761,7 +779,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -793,7 +811,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
         // The LegVolume row's id is only generated at runtime inside close(), so match on the
         // known associateId/cycleId/incomeType and accept any sourceRef.
@@ -902,7 +920,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -944,7 +962,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("600"))
         ));
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -978,7 +996,7 @@ class CycleServiceTest {
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -1013,7 +1031,7 @@ class CycleServiceTest {
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -1048,7 +1066,7 @@ class CycleServiceTest {
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -1090,7 +1108,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
 
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -1117,7 +1135,7 @@ class CycleServiceTest {
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         LedgerEntry sponseeMatchingEntry = matchingEntryFixture(sponsee.getId(), cycle.getId(), new BigDecimal("50.00"));
@@ -1168,7 +1186,7 @@ class CycleServiceTest {
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(referencePlanVersionFixture()));
 
         LedgerEntry aMatchingEntry = matchingEntryFixture(a.getId(), cycle.getId(), new BigDecimal("140000.00"));
@@ -1214,7 +1232,7 @@ class CycleServiceTest {
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         LedgerEntry sponseeOneMatchingEntry = matchingEntryFixture(sponseeOne.getId(), cycle.getId(), new BigDecimal("50.00"));
@@ -1255,7 +1273,7 @@ class CycleServiceTest {
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         when(associateRepository.findBySponsorId(sponsor.getId())).thenReturn(List.of(sponsee));
@@ -1284,7 +1302,7 @@ class CycleServiceTest {
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         // grossAmount and netAmount deliberately far apart -- if Sponsor Matching ever mistakenly
@@ -1329,7 +1347,7 @@ class CycleServiceTest {
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         LedgerEntry sponseeMatchingEntry = matchingEntryFixture(sponsee.getId(), cycle.getId(), new BigDecimal("50.00"));
@@ -1361,7 +1379,7 @@ class CycleServiceTest {
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         LedgerEntry sponseeMatchingEntry = matchingEntryFixture(sponsee.getId(), cycle.getId(), new BigDecimal("50.00"));
@@ -1401,7 +1419,7 @@ class CycleServiceTest {
             BigDecimal.ZERO, new BigDecimal("10.00"), BigDecimal.ZERO,
             new BigDecimal("5.00"), new BigDecimal("4.00"),
             BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null);
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(zeroSponsorMatchingPlanVersion));
 
         LedgerEntry sponseeMatchingEntry = matchingEntryFixture(sponsee.getId(), cycle.getId(), new BigDecimal("50.00"));
@@ -1435,7 +1453,7 @@ class CycleServiceTest {
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         LedgerEntry sponseeMatchingEntry = matchingEntryFixture(sponsee.getId(), cycle.getId(), new BigDecimal("50.00"));
@@ -1476,7 +1494,7 @@ class CycleServiceTest {
         ));
 
         CompensationPlanVersion planVersion = planVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         // Volume-slab lookup: "highest threshold not exceeded" against the associate's own
         // matched volume this cycle (50), not their rank.
@@ -1533,7 +1551,7 @@ class CycleServiceTest {
             saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
         // Deliberately NOT stubbing royaltyBonusRateRepository -- Mockito's unstubbed default for
         // an Optional-returning method is Optional.empty(), i.e. "no slab rate configured at or
@@ -1567,7 +1585,7 @@ class CycleServiceTest {
             saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -1602,7 +1620,7 @@ class CycleServiceTest {
             saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -1632,7 +1650,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
         CompensationPlanVersion planVersion = planVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
             planVersion.getId(), new BigDecimal("50")))
@@ -1669,7 +1687,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
         CompensationPlanVersion planVersion = planVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
             planVersion.getId(), new BigDecimal("50")))
@@ -1716,7 +1734,7 @@ class CycleServiceTest {
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
         CompensationPlanVersion planVersion = planVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         // royaltyPct = 0 -- a valid admin configuration for a rate row, distinct from "no rate
         // configured at all" (the empty-Optional case tested above).
@@ -1751,7 +1769,7 @@ class CycleServiceTest {
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
             saleFixture(left.getId(), cycle.getId(), new BigDecimal("100"))
         ));
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
         service.close(cycle.getId());
@@ -1785,7 +1803,7 @@ class CycleServiceTest {
         ));
 
         CompensationPlanVersion planVersion = referencePlanVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         // ₹40L slab (1.5%) must win over the lower ₹20L slab (1%) -- "highest threshold not exceeded".
         when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
@@ -1828,7 +1846,7 @@ class CycleServiceTest {
         ));
 
         CompensationPlanVersion planVersion = referencePlanVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
             planVersion.getId(), new BigDecimal("2000000")))
@@ -1869,7 +1887,7 @@ class CycleServiceTest {
         ));
 
         CompensationPlanVersion planVersion = referencePlanVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         // Deliberately NOT stubbing royaltyBonusRateRepository -- no slab configured at or below
         // ₹10,00,000, so Mockito's default empty Optional is exactly right.
@@ -1905,7 +1923,7 @@ class CycleServiceTest {
         ));
 
         CompensationPlanVersion planVersion = planVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(
             rewardTierFixture(planVersion.getId(), 1, new BigDecimal("40"), new BigDecimal("1000.00"))
@@ -1954,7 +1972,7 @@ class CycleServiceTest {
         ));
 
         CompensationPlanVersion planVersion = planVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         // Matched volume this cycle is 50, but the only configured tier needs 500 -- no tier is
         // crossed.
@@ -1993,7 +2011,7 @@ class CycleServiceTest {
         ));
 
         CompensationPlanVersion planVersion = planVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(
             rewardTierFixture(planVersion.getId(), 1, new BigDecimal("40"), new BigDecimal("1000.00")),
@@ -2041,7 +2059,7 @@ class CycleServiceTest {
         ));
 
         CompensationPlanVersion planVersion = planVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(
             rewardTierFixture(planVersion.getId(), 1, new BigDecimal("40"), new BigDecimal("1000.00"))
@@ -2083,7 +2101,7 @@ class CycleServiceTest {
         ));
 
         CompensationPlanVersion planVersion = planVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(
             rewardTierFixture(planVersion.getId(), 1, new BigDecimal("40"), new BigDecimal("1000.00"))
@@ -2118,7 +2136,7 @@ class CycleServiceTest {
         ));
 
         CompensationPlanVersion planVersion = planVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         RewardTier tier = rewardTierFixture(planVersion.getId(), 1, new BigDecimal("40"), new BigDecimal("1000.00"));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(tier));
@@ -2158,7 +2176,7 @@ class CycleServiceTest {
         ));
 
         CompensationPlanVersion planVersion = planVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         // cashReward = 0 -- a valid perk-only tier configuration, distinct from "threshold not
         // met" (tested above).
@@ -2192,7 +2210,7 @@ class CycleServiceTest {
             saleFixture(left.getId(), cycle.getId(), new BigDecimal("100")),
             saleFixture(right.getId(), cycle.getId(), new BigDecimal("50"))
         ));
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
         // Deliberately NOT stubbing rewardTierRepository -- Mockito's unstubbed default for a
         // List-returning method is an empty List, i.e. "no reward tiers configured for this plan
@@ -2229,7 +2247,7 @@ class CycleServiceTest {
         ));
 
         CompensationPlanVersion planVersion = referencePlanVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(
             rewardTierFixture(planVersion.getId(), 1, new BigDecimal("500000"), new BigDecimal("15000.00")),
@@ -2278,7 +2296,7 @@ class CycleServiceTest {
         ));
 
         CompensationPlanVersion planVersion = referencePlanVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(
             rewardTierFixture(planVersion.getId(), 1, new BigDecimal("500000"), new BigDecimal("15000.00")),
@@ -2333,7 +2351,7 @@ class CycleServiceTest {
         ));
 
         CompensationPlanVersion planVersion = referencePlanVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
         RewardTier tier1 = rewardTierFixture(planVersion.getId(), 1, new BigDecimal("500000"), new BigDecimal("15000.00"));
         RewardTier tier2 = rewardTierFixture(planVersion.getId(), 2, new BigDecimal("1000000"), new BigDecimal("20000.00"));
@@ -2416,7 +2434,7 @@ class CycleServiceTest {
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(tree.sales());
         CompensationPlanVersion planVersion = planVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
 
         long start = System.nanoTime();
@@ -2503,7 +2521,7 @@ class CycleServiceTest {
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(chain.sales());
         CompensationPlanVersion planVersion = planVersionFixture();
-        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart()))
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
 
         long start = System.nanoTime();

@@ -252,12 +252,12 @@ public class CycleService {
             legVolumeRepository.saveAll(legVolumes);
         }
 
-        // Flow step 3 (Decision #10): resolved once per batch run, against cycle.getPeriodStart()
-        // -- deliberately not LocalDate.now() -- so a plan version an admin publishes after this
-        // cycle's period already ended never retroactively changes the rate this cycle's volume
-        // was earned under. Same missing-version convention as SaleService/DashboardService.
+        // Flow step 3 (Decision #10): resolved once per batch run, against today -- not
+        // cycle.getPeriodStart() -- so every calculation (live refresh, admin Recalculate, close)
+        // uses the plan in effect now. Closed cycles are never recomputed, so their rates stay
+        // as they were. Same missing-version convention as SaleService/DashboardService.
         CompensationPlanVersion planVersion = compensationPlanVersionRepository
-            .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(cycle.getPeriodStart())
+            .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
             .orElseThrow(() -> new IllegalStateException(
                 "compensation_plan_version row missing - V8 migration seeds it"));
         creditMatchingIncome(cycle.getId(), associates, legVolumes, planVersion, finalize);
@@ -407,7 +407,7 @@ public class CycleService {
 
     // Decision #10: tdsDeduction = gross * tdsPct/100, adminDeduction = gross * Processing Fee %
     // (adminChargeWithPanPct)/100, netAmount = gross - tds - admin. planVersion is the single CompensationPlanVersion
-    // resolved once per close() run against cycle.getPeriodStart() (Decision #10) -- every income
+    // resolved once per computeIncome() run against today (Decision #10) -- every income
     // type in this batch shares that one resolved version; no caller re-resolves its own.
     private Deductions applyDeductions(BigDecimal grossAmount, CompensationPlanVersion planVersion) {
         BigDecimal tdsDeduction = grossAmount.multiply(

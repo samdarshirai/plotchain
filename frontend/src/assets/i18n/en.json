@@ -1712,7 +1712,7 @@
         "royaltySummary": "{{count}} slabs configured",
         "feesSummary": "{{cycle}} · TDS {{tds}}% · Processing {{withPan}}%"
       },
-      "versioningNotice": "Changes here apply to future cycles only. Past payouts are never recalculated.",
+      "versioningNotice": "Changes apply to the current open cycle the next time income is calculated, and to all future cycles. Closed cycles are never recalculated.",
       "directIncomeLabel": "Direct Income %",
       "matchingIncomeLabel": "Matching Income %",
       "sponsorMatchingLabel": "Sponsor Matching Bonus %",
