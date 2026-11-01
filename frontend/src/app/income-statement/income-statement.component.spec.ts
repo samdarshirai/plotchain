@@ -130,7 +130,7 @@ describe('IncomeStatementComponent', () => {
         columnAchievedDate: 'Achieved Date', statusNotAchieved: 'Not Achieved',
         columnDesignation: 'Designation', columnDate: 'Date', columnPayStatus: 'Pay Status',
         columnPaymentDate: 'Payment Date', columnRemarks: 'Remarks', statusAchieved: 'Achieved', statusPending: 'Pending',
-        statusInProgress: 'In progress', leftLeg: 'Left leg', rightLeg: 'Right leg', columnAchieved: 'Achieved', matchingSuffix: 'matching', payStatusPaid: 'Paid', payStatusUnpaid: 'Unpaid', payStatusPartial: 'Partially Paid', totalRow: 'Total',
+        statusInProgress: 'In progress', leftLeg: 'Left leg', rightLeg: 'Right leg', columnAchieved: 'Achieved', columnMatchingVolume: 'Matching Income Volume', payStatusPaid: 'Paid', payStatusUnpaid: 'Unpaid', payStatusPartial: 'Partially Paid', totalRow: 'Total',
         columnDirectIncome: 'Direct Income', columnSponsorIncome: 'Sponsor Income', columnTotalIncome: 'Total Income', columnTds: 'TDS',
         columnProcessingCharge: 'Processing Charge', columnPayableAmount: 'Payable Amount', columnPaidStatus: 'Paid Status',
         bflbAbbr: 'BFLB', bfrbAbbr: 'BFRB', nlbAbbr: 'NLB', nrbAbbr: 'NRB', tlbAbbr: 'TLB', trbAbbr: 'TRB', clbAbbr: 'CLB', crbAbbr: 'CRB',
@@ -490,6 +490,8 @@ describe('IncomeStatementComponent', () => {
     expect(c.currentRank).toBe('T1');
     expect(c.rewardCards.map(x => x.value)).toEqual(['₹1,300,000.00', '₹300,000.00', '₹300,000.00']);
     expect(c.rewardTierRows.map(t => t['status'])).toEqual(['Achieved', 'In progress', 'Pending']);
+    expect(c.rewardTierRows[1]['designation']).toBe('T2');
+    expect(c.rewardTierRows[1]['volume']).toBe('₹2,000,000.00');
     expect(c.rewardTierRows[1]['left']).toBe('₹7 L');
     expect(c.rewardTierRows[1]['right']).toBe('₹17 L');
     expect(c.achievedRows[0]['payStatus']).toBe('Unpaid');
