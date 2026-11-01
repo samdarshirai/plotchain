@@ -60,7 +60,13 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
       { key: 'mySales', labelKey: 'nav.mySales', path: '/plot-bookings/my-sales' }
     ]
   },
-  { key: 'incomeStatement', labelKey: 'nav.incomeStatement', icon: 'description', path: '/income-statement' },
+  {
+    key: 'incomeStatement', labelKey: 'nav.incomeStatement', icon: 'description', path: '/income-statement',
+    children: [
+      { key: 'incomeAll', labelKey: 'incomeStatement.tabAll', path: '/income-statement' },
+      { key: 'incomeDownline', labelKey: 'incomeStatement.tabDownline', path: '/income-statement/downline' }
+    ]
+  },
   {
     key: 'reports', labelKey: 'nav.reports', icon: 'assessment', path: '/reports',
     children: [
