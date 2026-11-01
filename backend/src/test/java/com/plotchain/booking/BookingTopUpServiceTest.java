@@ -80,7 +80,7 @@ class BookingTopUpServiceTest {
     }
 
     private TopUpRequest req(String amount, PaymentMode mode, String bank) {
-        return new TopUpRequest(new BigDecimal(amount), mode, bank, "TXN1", null);
+        return new TopUpRequest(new BigDecimal(amount), mode, bank, "TXN1", null, "RCP-1");
     }
 
     @Test
@@ -98,8 +98,19 @@ class BookingTopUpServiceTest {
         assertThat(pay.paymentMode()).isEqualTo(PaymentMode.UPI);
         assertThat(pay.bankName()).isEqualTo("HDFC");
         assertThat(pay.paymentRef()).isEqualTo("TXN1");
+        assertThat(pay.receiptNo()).isEqualTo("RCP-1");
         assertThat(pay.paidAt()).isEqualTo(NOW);
         assertThat(r.dueAmount()).isEqualByComparingTo("90000.00"); // 70000 pending + 20000 entered
+    }
+
+    @Test
+    void topUpStoresTheTrimmedReceiptNo() {
+        PlotBooking b = booking(BookingStatus.ACTIVE);
+
+        BookingResponse r = bookingService.topUp(b.getId(),
+            new TopUpRequest(new BigDecimal("1000.00"), PaymentMode.CASH, null, "TXN1", null, "  RCP-9 "), ACTOR_ID);
+
+        assertThat(r.installments().get(r.installments().size() - 1).receiptNo()).isEqualTo("RCP-9");
     }
 
     @Test

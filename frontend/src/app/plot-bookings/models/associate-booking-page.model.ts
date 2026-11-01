@@ -17,6 +17,7 @@ export interface EmiInstallment {
   bankName?: string | null;
   paymentRef?: string | null;
   recordedAt?: string | null;
+  receiptNo?: string | null;
 }
 
 export interface Booking {

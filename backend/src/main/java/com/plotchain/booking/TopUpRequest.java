@@ -16,5 +16,6 @@ public record TopUpRequest(
     @NotNull PaymentMode paymentMode,
     @Size(max = 100) String bankName,
     @NotBlank @Size(max = 100) String paymentRef,
-    Instant paidAt
+    Instant paidAt,
+    @NotBlank @Size(max = 50) String receiptNo
 ) {}

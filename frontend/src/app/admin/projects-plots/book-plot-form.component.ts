@@ -95,6 +95,10 @@ import { PAYMENT_MODES } from '../../plot-bookings/models/associate-booking-page
           <input type="text" name="txnNo" maxlength="100" autocomplete="off" [disabled]="busy" [(ngModel)]="txnNo" [attr.aria-invalid]="tried && !txnNo.trim() ? 'true' : null" />
           <app-field-error [message]="(tried && !txnNo.trim() ? 'admin.projectsPlots.fieldRequired' : '') | translate"></app-field-error>
         </label>
+        <label>{{ 'admin.projectsPlots.receiptNoLabel' | translate }}
+          <input type="text" name="receiptNo" maxlength="50" autocomplete="off" [disabled]="busy" [(ngModel)]="receiptNo" [attr.aria-invalid]="tried && !receiptNo.trim() ? 'true' : null" />
+          <app-field-error [message]="(tried && !receiptNo.trim() ? 'admin.projectsPlots.fieldRequired' : '') | translate"></app-field-error>
+        </label>
         <label>{{ 'admin.projectsPlots.bankNameLabel' | translate }} <span *ngIf="!bankRequired">{{ 'admin.projectsPlots.optional' | translate }}</span>
           <input type="text" name="bankName" maxlength="100" autocomplete="off" [disabled]="busy" [(ngModel)]="bankName" [attr.aria-invalid]="bankError ? 'true' : null" />
           <app-field-error [message]="(bankError ? 'admin.projectsPlots.fieldRequired' : '') | translate"></app-field-error>
@@ -138,6 +142,7 @@ export class BookPlotFormComponent implements OnInit {
   paymentModes = PAYMENT_MODES;
   paymentMode = '';
   txnNo = '';
+  receiptNo = '';
   bankName = '';
   txnDate = '';
   today = new Date().toISOString().slice(0, 10);
@@ -195,6 +200,7 @@ export class BookPlotFormComponent implements OnInit {
     if (!this.associateId) { add('associateUserId', 'Associate ID', this.associateError ? 'Associate ID was not found. Check the ID and retype it.' : "Associate ID is required. Enter the referring associate's ID."); }
     if (!this.paymentMode) { add('paymentMode', 'Payment mode', 'Payment mode is required. Choose one from the list.'); }
     if (!this.txnNo.trim()) { add('txnNo', 'Transaction number', 'Transaction number is required. Please fill it in.'); }
+    if (!this.receiptNo.trim()) { add('receiptNo', 'Receipt number', 'Receipt number is required. Please fill it in.'); }
     if (this.bankError) { add('bankName', 'Bank name', 'Bank name is required for non-cash payments. Please fill it in.'); }
     if (this.dateError) { add('txnDate', 'Transaction date', this.txnDate ? 'Transaction date cannot be in the future. Pick today or earlier.' : 'Transaction date is required. Pick a date.'); }
     return out;
@@ -274,8 +280,8 @@ export class BookPlotFormComponent implements OnInit {
       this.firstInput?.nativeElement.focus();
       return;
     }
-    if (!this.associateId || !this.paymentMode || !this.txnNo.trim() || this.bankError || this.dateError) { return; }
-    this.submitted.emit({ paymentMode: this.paymentMode, txnNo: this.txnNo.trim(), bankName: this.bankName.trim(), txnDate: this.txnDate,
+    if (!this.associateId || !this.paymentMode || !this.txnNo.trim() || !this.receiptNo.trim() || this.bankError || this.dateError) { return; }
+    this.submitted.emit({ paymentMode: this.paymentMode, txnNo: this.txnNo.trim(), receiptNo: this.receiptNo.trim(), bankName: this.bankName.trim(), txnDate: this.txnDate,
       firstInstallmentAmount: this.firstInstallmentAmount ?? undefined, associateId: this.associateId, buyerName: this.buyerName.trim(), buyerPhone: this.buyerPhone.trim(), tokenAmount: this.tokenAmount!, discount: this.discount, extraPrice: this.extra, extraPercent: this.extraPercentRaw ?? 0 });
   }
 }

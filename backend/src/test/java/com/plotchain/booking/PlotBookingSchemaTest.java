@@ -99,6 +99,18 @@ class PlotBookingSchemaTest {
     }
 
     @Test
+    void receiptNoRoundTripsAndIsNullByDefault() {
+        EmiInstallment i = persistInstallment(persistBooking().getId());
+        assertThat(i.getReceiptNo()).isNull();
+
+        i.setReceiptNo("RCP-1");
+        emiInstallmentRepository.saveAndFlush(i);
+        entityManager.clear();
+
+        assertThat(emiInstallmentRepository.findById(i.getId()).orElseThrow().getReceiptNo()).isEqualTo("RCP-1");
+    }
+
+    @Test
     void newBookingDefaultsToActiveAndNewInstallmentToPending() {
         PlotBooking b = persistBooking();
         EmiInstallment i = persistInstallment(b.getId());

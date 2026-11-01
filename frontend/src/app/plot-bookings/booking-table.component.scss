@@ -26,7 +26,7 @@
   &__scroll { overflow-x: auto; }
   &__footer { position: sticky; bottom: 0; display: flex; justify-content: flex-end; margin: 1rem -1.5rem 0; padding: 0.875rem 1.5rem; background: var(--surface-card); border-top: 1px solid var(--border-subtle); }
   &__close { min-height: 40px; padding: 0 1.25rem; cursor: pointer; font: inherit; color: var(--text-primary); background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 5px; }
-  .booking-table__installments { font-size: 0.8125rem; th, td { padding: 0.5rem 0.625rem; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--border-subtle); } th { font-size: 0.6875rem; text-transform: uppercase; color: var(--text-muted); } }
+  .booking-table__installments { font-size: 0.8125rem; th, td { padding: 0.5rem 0.625rem; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--border-subtle); } th { white-space: normal; font-size: 0.6875rem; text-transform: uppercase; color: var(--text-muted); } }
 }
 @media (max-width: 768px) {
   .booking-modal { padding: 0.5rem; &__box { padding: 1.25rem 1rem 0; } &__footer { margin: 1rem -1rem 0; padding: 0.875rem 1rem; } &__close { width: 100%; min-height: 44px; } }

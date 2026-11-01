@@ -16,7 +16,7 @@ export interface RegisterFilters {
   hasPending?: boolean;
 }
 
-export interface TopUpRequest { amount: number; paymentMode: PaymentMode; bankName?: string; paymentRef: string; paidAt?: string; }
+export interface TopUpRequest { amount: number; paymentMode: PaymentMode; bankName?: string; paymentRef: string; paidAt?: string; receiptNo: string; }
 
 export interface PaymentRow {
   bookingId: string; installmentNumber: number; paymentDate: string;

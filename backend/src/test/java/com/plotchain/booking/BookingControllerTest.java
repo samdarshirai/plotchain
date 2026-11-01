@@ -190,6 +190,41 @@ class BookingControllerTest {
             org.mockito.ArgumentMatchers.argThat(r -> r.discount() != null && r.discount().compareTo(new BigDecimal("25000")) == 0));
     }
 
+    private static final String TOP_UP = "{\"amount\":1000,\"paymentMode\":\"CASH\",\"paymentRef\":\"T1\"%s}";
+
+    private org.springframework.test.web.servlet.ResultActions topUp(String receiptField) throws Exception {
+        return mockMvc.perform(post("/api/admin/bookings/" + UUID.randomUUID() + "/top-up")
+            .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+            .contentType("application/json")
+            .content(TOP_UP.formatted(receiptField)));
+    }
+
+    @Test
+    void topUpWithoutReceiptNoIs400() throws Exception {
+        topUp("").andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void topUpWithBlankReceiptNoIs400() throws Exception {
+        topUp(",\"receiptNo\":\"  \"").andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void topUpWithOversizedReceiptNoIs400() throws Exception {
+        topUp(",\"receiptNo\":\"" + "R".repeat(51) + "\"").andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void topUpWithReceiptNoIsForwardedToTheService() throws Exception {
+        when(bookingService.topUp(any(UUID.class), any(TopUpRequest.class), any()))
+            .thenReturn(new BookingResponse(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), BookingStatus.ACTIVE,
+                "Jane Buyer", BigDecimal.TEN, 1, Instant.now(), BigDecimal.ZERO, BigDecimal.TEN, List.of()));
+
+        topUp(",\"receiptNo\":\"RCP-1\"").andExpect(status().isOk());
+        org.mockito.Mockito.verify(bookingService).topUp(any(UUID.class),
+            org.mockito.ArgumentMatchers.argThat(r -> "RCP-1".equals(r.receiptNo())), any());
+    }
+
     @Test
     void postWithNegativeDiscountIs400() throws Exception {
         mockMvc.perform(post("/api/admin/bookings")

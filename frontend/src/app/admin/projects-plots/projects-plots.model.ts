@@ -14,6 +14,7 @@ export interface BookingFormValue {
   extraPercent?: number; // prefilled from the plot, editable
   paymentMode?: string; // payment fields are always set by the form; optional so callers/specs stay valid
   txnNo?: string;
+  receiptNo?: string;
   bankName?: string;
   txnDate?: string; // yyyy-MM-dd
   firstInstallmentAmount?: number;
@@ -30,6 +31,7 @@ export interface CreateBookingRequest {
   extraPercent?: number;
   paymentMode?: string;
   txnNo?: string;
+  receiptNo?: string;
   bankName?: string;
   txnDate?: string;
   firstInstallmentAmount?: number;
