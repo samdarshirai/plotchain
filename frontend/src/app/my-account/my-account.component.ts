@@ -343,17 +343,17 @@ const BANK_LABELS = { bankName: 'Bank name', accountHolder: 'Account holder', ac
           <div class="detail-card__fields">
             <label class="detail-card__field">
               <span>{{ 'myAccount.loginPasswordTab.currentLabel' | translate }}</span>
-              <input type="password" formControlName="currentPassword" autocomplete="current-password" />
+              <input type="password" appPasswordToggle formControlName="currentPassword" autocomplete="current-password" />
               <app-field-error [control]="loginPasswordForm.get('currentPassword')" label="Current password" [submitted]="loginPwSubmitted"></app-field-error>
             </label>
             <label class="detail-card__field">
               <span>{{ 'myAccount.loginPasswordTab.newLabel' | translate }}</span>
-              <input type="password" formControlName="newPassword" autocomplete="new-password" />
+              <input type="password" appPasswordToggle formControlName="newPassword" autocomplete="new-password" />
               <app-field-error [control]="loginPasswordForm.get('newPassword')" label="New password" [submitted]="loginPwSubmitted"></app-field-error>
             </label>
             <label class="detail-card__field">
               <span>{{ 'myAccount.loginPasswordTab.confirmLabel' | translate }}</span>
-              <input type="password" formControlName="confirmPassword" autocomplete="new-password" />
+              <input type="password" appPasswordToggle formControlName="confirmPassword" autocomplete="new-password" />
               <app-field-error [control]="loginPasswordForm.get('confirmPassword')" label="Confirm password" [submitted]="loginPwSubmitted"></app-field-error>
             </label>
           </div>
