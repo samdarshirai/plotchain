@@ -25,8 +25,13 @@ const TAB_ROUTES = [
   { id: 'MATCHING', labelKey: 'incomeStatement.tabMatching', path: '/income-statement/matching' },
   { id: 'SPONSOR_MATCHING', labelKey: 'incomeStatement.tabSponsorMatching', path: '/income-statement/sponsor-matching' },
   { id: 'ROYALTY', labelKey: 'incomeStatement.tabRoyalty', path: '/income-statement/royalty' },
-  { id: 'REWARD', labelKey: 'incomeStatement.tabReward', path: '/income-statement/reward' }
+  { id: 'REWARD', labelKey: 'incomeStatement.tabReward', path: '/income-statement/reward' },
+  { id: 'DOWNLINE', labelKey: 'incomeStatement.tabDownline', path: '/income-statement/downline' }
 ];
+
+const DOWNLINE_KEYS = ['sNo', 'paymentDate', 'associateId', 'name', 'direct', 'matching', 'totalIncome',
+  'tds', 'processing', 'payable', 'paidStatus'];
+const DOWNLINE_MONEY = ['direct', 'matching', 'totalIncome', 'tds', 'processing', 'payable'] as const;
 
 const MATCHING_KEYS = ['bflb', 'bfrb', 'nlb', 'nrb', 'tlb', 'trb', 'clb', 'crb'];
 
@@ -74,7 +79,21 @@ const DATE_TIME_FORMAT = 'dd MMM yyyy, HH:mm';
         </div>
       </div>
 
-      <div class="income-statement__filters" *ngIf="activeIncomeType !== 'REWARD' && activeIncomeType !== 'ALL'">
+      <div class="income-statement__filters" *ngIf="activeIncomeType === 'DOWNLINE'">
+        <div class="income-statement__filter-field">
+          <label>
+            {{ 'incomeStatement.cycleFilterLabel' | translate }}
+            <select (change)="onDownlineCycleChange($any($event.target).value)">
+              <option value="">{{ 'incomeStatement.cycleFilterAllOption' | translate }}</option>
+              <option *ngFor="let cycle of downlineCycles" [value]="cycle.cycleId" [selected]="cycle.cycleId === downlineCycleId">
+                {{ formatDate(cycle.cyclePeriodStart) }} – {{ formatDate(cycle.cyclePeriodEnd) }}
+              </option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="income-statement__filters" *ngIf="activeIncomeType !== 'REWARD' && activeIncomeType !== 'ALL' && activeIncomeType !== 'DOWNLINE'">
         <div class="income-statement__filter-field">
           <label>
             {{ 'incomeStatement.cycleFilterLabel' | translate }}
@@ -170,6 +189,9 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   achievedRows: Record<string, string>[] = [];
   private cycleId = '';
   private status = '';
+  downlineCycles: CycleOption[] = [];
+  downlineCycleId = '';
+  private downlineAll: IncomeSummaryRow[] = [];
 
   get tabs(): TabDefinition[] {
     return TAB_ROUTES.map(t => ({ id: t.id, label: this.translate.instant(t.labelKey) }));
@@ -223,6 +245,10 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     }
     if (this.activeIncomeType === 'SPONSOR_MATCHING') {
       this.buildSponsorMatchingColumns();
+      return;
+    }
+    if (this.activeIncomeType === 'DOWNLINE') {
+      this.buildDownlineColumns();
       return;
     }
     this.buildSummaryColumns();
@@ -281,6 +307,56 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       });
     }
     this.statementRows = out;
+  }
+
+  // My Downline Income Report: one row per downline associate x cycle (Direct + Matching only,
+  // so Total/TDS/fee/payable cover just those two), then a Total row.
+  private buildDownlineColumns(): void {
+    const keys = ['SNo', 'PaymentDate', 'AssociateId', 'AssociateName', 'DirectIncome', 'MatchingIncome', 'TotalIncome',
+      'Tds', 'ProcessingFee', 'PayableAmount', 'PaidStatus'];
+    this.translate
+      .get(keys.map(k => 'incomeStatement.column' + k))
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe(t => {
+        const paid = this.translate.instant('incomeStatement.payStatusPaid');
+        const unpaid = this.translate.instant('incomeStatement.payStatusUnpaid');
+        const tone = (v: string | number): BadgeTone => (v === paid ? 'success' : v === unpaid ? 'danger' : v ? 'warning' : 'default');
+        this.statementColumns = DOWNLINE_KEYS.map((key, i) => ({
+          key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const,
+          ...(key === 'paidStatus' ? { type: 'badge' as const, badgeTone: tone } : {})
+        }));
+      });
+  }
+
+  onDownlineCycleChange(value: string): void {
+    this.downlineCycleId = value;
+    this.updateDownlineRows();
+  }
+
+  private updateDownlineRows(): void {
+    const rows = this.downlineAll.filter(r => !this.downlineCycleId || r.cycleId === this.downlineCycleId);
+    const sums: Record<string, number> = Object.fromEntries(DOWNLINE_MONEY.map(k => [k, 0]));
+    const out = rows.map((r, i) => {
+      const values: Record<string, number> = {
+        direct: r.gross.DIRECT ?? 0,
+        matching: r.gross.MATCHING ?? 0,
+        totalIncome: r.totalGross,
+        tds: r.tds,
+        processing: r.adminCharges,
+        payable: r.totalNet
+      };
+      DOWNLINE_MONEY.forEach(k => (sums[k] += values[k]));
+      const status = r.paidCount === 0 ? 'payStatusUnpaid' : r.paidCount >= r.entryCount ? 'payStatusPaid' : 'payStatusPartial';
+      return {
+        sNo: String(i + 1),
+        paymentDate: r.paidAt ? (this.formatDate(r.paidAt, DATE_FORMAT) ?? r.paidAt) : '—',
+        associateId: r.associateUserId ?? '',
+        name: r.associateName ?? '',
+        ...Object.fromEntries(DOWNLINE_MONEY.map(k => [k, this.formatCurrency(values[k])])),
+        paidStatus: this.translate.instant('incomeStatement.' + status)
+      };
+    });
+    this.statementRows = this.withTotal(out, DOWNLINE_KEYS, sums);
   }
 
   private buildRewardColumns(): void {
@@ -463,6 +539,21 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       return;
     }
     this.loadError = false;
+    if (this.activeIncomeType === 'DOWNLINE') {
+      this.page = null;
+      this.incomeStatementService.downlineIncome().subscribe({
+        next: rows => {
+          this.downlineAll = rows;
+          const byCycle = new Map<string, CycleOption>();
+          rows.forEach(r => r.cyclePeriodStart && r.cyclePeriodEnd && !byCycle.has(r.cycleId) &&
+            byCycle.set(r.cycleId, { cycleId: r.cycleId, cyclePeriodStart: r.cyclePeriodStart, cyclePeriodEnd: r.cyclePeriodEnd }));
+          this.downlineCycles = [...byCycle.values()].sort((a, b) => b.cyclePeriodStart.localeCompare(a.cyclePeriodStart));
+          this.updateDownlineRows();
+        },
+        error: () => (this.loadError = true)
+      });
+      return;
+    }
     if (this.activeIncomeType === 'ALL') {
       this.page = null;
       this.incomeStatementService.summary().subscribe({

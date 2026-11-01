@@ -420,4 +420,29 @@ class LedgerEntryRepositoryTest {
         assertThat(rowA.getPaidCount()).isEqualTo(1);
         assertThat(rowA.getPaidAt()).isEqualTo(paidAt);
     }
+
+    @Test
+    void summariseDownlineCoversOnlyListedAssociatesAndOnlyDirectPlusMatching() {
+        Associate a = seedAssociate();
+        Associate outsider = seedAssociate();
+        Cycle cycle = seedCycle();
+        ledgerEntryRepository.save(newEntry(a.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID()));
+        ledgerEntryRepository.save(newEntry(a.getId(), cycle.getId(), IncomeType.MATCHING, UUID.randomUUID()));
+        ledgerEntryRepository.save(newEntry(a.getId(), cycle.getId(), IncomeType.ROYALTY, UUID.randomUUID()));
+        ledgerEntryRepository.save(newEntry(a.getId(), cycle.getId(), IncomeType.SPONSOR_MATCHING, UUID.randomUUID()));
+        ledgerEntryRepository.save(newEntry(outsider.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID()));
+        ledgerEntryRepository.flush();
+
+        List<LedgerSummaryRow> rows = ledgerEntryRepository.summariseDownline(List.of(a.getId()));
+
+        assertThat(rows).hasSize(1);
+        LedgerSummaryRow row = rows.get(0);
+        assertThat(row.getAssociateId()).isEqualTo(a.getId());
+        assertThat(row.getTotalGross()).isEqualByComparingTo("200.00");
+        assertThat(row.getTds()).isEqualByComparingTo("10.00");
+        assertThat(row.getAdminCharges()).isEqualByComparingTo("8.00");
+        assertThat(row.getTotalNet()).isEqualByComparingTo("182.00");
+        assertThat(row.getRoyalty()).isEqualByComparingTo("0");
+        assertThat(row.getEntryCount()).isEqualTo(2);
+    }
 }

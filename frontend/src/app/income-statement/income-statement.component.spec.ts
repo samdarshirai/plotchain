@@ -133,6 +133,8 @@ describe('IncomeStatementComponent', () => {
         statusInProgress: 'In progress', leftLeg: 'Left leg', rightLeg: 'Right leg', columnAchieved: 'Achieved', columnMatchingVolume: 'Matching Income Volume', payStatusPaid: 'Paid', payStatusUnpaid: 'Unpaid', payStatusPartial: 'Partially Paid', totalRow: 'Total',
         columnDirectIncome: 'Direct Income', columnSponsorIncome: 'Sponsor Income', columnTotalIncome: 'Total Income', columnTds: 'TDS',
         columnProcessingCharge: 'Processing Charge', columnPayableAmount: 'Payable Amount', columnPaidStatus: 'Paid Status',
+        tabDownline: 'My Downline Income Report', columnSNo: 'S No', columnProcessingFee: 'Processing Fee',
+        columnAssociateId: 'Associate ID', columnAssociateName: 'Name',
         bflbAbbr: 'BFLB', bfrbAbbr: 'BFRB', nlbAbbr: 'NLB', nrbAbbr: 'NRB', tlbAbbr: 'TLB', trbAbbr: 'TRB', clbAbbr: 'CLB', crbAbbr: 'CRB',
         bflbLegend: 'Back Forward Left Business', bfrbLegend: 'Back Forward Right Business', nlbLegend: 'New Left Business', nrbLegend: 'New Right Business',
         tlbLegend: 'Total Left Business', trbLegend: 'Total Right Business', clbLegend: 'Calculate Left Business', crbLegend: 'Calculate Right Business',
@@ -189,6 +191,51 @@ describe('IncomeStatementComponent', () => {
       direct: '₹11,000.00', matching: '₹2,000.00', sponsor: '₹500.00', royalty: '₹300.00',
       totalIncome: '₹14,800.00', tds: '₹296.00', processing: '₹740.00', payable: '₹13,764.00',
       paidStatus: '', paymentDate: ''
+    });
+  });
+
+  describe('My Downline Income Report', () => {
+    const DOWNLINE_URL = '/api/associates/me/downline-income';
+    const downlineRows = [
+      summaryRow({ associateUserId: 'AS002', associateName: 'Ravi', gross: { DIRECT: 1000, MATCHING: 500 },
+        totalGross: 1500, tds: 30, adminCharges: 75, totalNet: 1395, entryCount: 2, paidCount: 2 }),
+      summaryRow({ associateUserId: 'AS003', associateName: 'Sita', cycleId: 'c0', cyclePeriodStart: '2025-12-16',
+        cyclePeriodEnd: '2025-12-31', gross: { MATCHING: 200 }, totalGross: 200, tds: 4, adminCharges: 10, totalNet: 186,
+        entryCount: 1, paidCount: 0, paidAt: null })
+    ];
+
+    beforeEach(() => {
+      flushInitialRequests();
+      routeData$.next({ incomeType: 'DOWNLINE' });
+      httpMock.expectOne(DOWNLINE_URL).flush(downlineRows);
+      fixture.detectChanges();
+    });
+
+    it('lists each downline associate x cycle, then a Total row summing every money column', () => {
+      const c = fixture.componentInstance;
+      expect(c.statementColumns.map(col => col.label)).toEqual(['S No', 'Payment Date', 'Associate ID', 'Name',
+        'Direct Income', 'Matching Income', 'Total Income', 'TDS', 'Processing Fee', 'Payable Amount', 'Paid Status']);
+      expect(c.statementRows[0]).toEqual({
+        sNo: '1', paymentDate: '20 Jan 2026', associateId: 'AS002', name: 'Ravi',
+        direct: '₹1,000.00', matching: '₹500.00', totalIncome: '₹1,500.00', tds: '₹30.00', processing: '₹75.00',
+        payable: '₹1,395.00', paidStatus: 'Paid'
+      });
+      expect(c.statementRows[1]['paidStatus']).toBe('Unpaid');
+      expect(c.statementRows[2]).toEqual({
+        sNo: 'Total', paymentDate: '', associateId: '', name: '',
+        direct: '₹1,000.00', matching: '₹700.00', totalIncome: '₹1,700.00', tds: '₹34.00', processing: '₹85.00',
+        payable: '₹1,581.00', paidStatus: ''
+      });
+    });
+
+    it('cycle filter narrows rows client-side without a new request', () => {
+      const c = fixture.componentInstance;
+      expect(c.downlineCycles.map(x => x.cycleId)).toEqual(['c1', 'c0']);
+      c.onDownlineCycleChange('c0');
+      expect(c.statementRows.length).toBe(2);
+      expect(c.statementRows[0]['associateId']).toBe('AS003');
+      expect(c.statementRows[1]['totalIncome']).toBe('₹200.00');
+      httpMock.expectNone(DOWNLINE_URL);
     });
   });
 

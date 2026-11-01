@@ -88,6 +88,7 @@ export const routes: Routes = [
   { path: 'income-statement/sponsor-matching', component: IncomeStatementComponent, data: { incomeType: 'SPONSOR_MATCHING' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'income-statement/royalty', component: IncomeStatementComponent, data: { incomeType: 'ROYALTY' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'income-statement/reward', component: IncomeStatementComponent, data: { incomeType: 'REWARD' }, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'income-statement/downline', component: IncomeStatementComponent, data: { incomeType: 'DOWNLINE' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'reports/my-business', loadComponent: () => import('./reports/my-business-report.component').then(m => m.MyBusinessReportComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'reports/emi', loadComponent: () => import('./reports/emi-report.component').then(m => m.EmiReportComponent), canActivate: [authGuard, associateOnlyGuard] },
   { path: 'payout-history', component: PayoutHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
