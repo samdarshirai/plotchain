@@ -59,7 +59,7 @@ const DATE_TIME_FORMAT = 'dd MMM yyyy, HH:mm';
           <p class="income-statement__subtitle">{{ 'incomeStatement.subtitle' | translate }}</p>
         </div>
 
-        <div class="income-statement__tabs">
+        <div class="income-statement__tabs" *ngIf="activeIncomeType !== 'DOWNLINE'">
           <app-tab-bar [tabs]="tabs" [activeTabId]="activeIncomeType" (tabChange)="onTabChange($event)"></app-tab-bar>
         </div>
       </div>
@@ -194,7 +194,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   private downlineAll: IncomeSummaryRow[] = [];
 
   get tabs(): TabDefinition[] {
-    return TAB_ROUTES.map(t => ({ id: t.id, label: this.translate.instant(t.labelKey) }));
+    return TAB_ROUTES.filter(t => t.id !== 'DOWNLINE').map(t => ({ id: t.id, label: this.translate.instant(t.labelKey) }));
   }
 
   ngOnInit(): void {
