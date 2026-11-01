@@ -15,12 +15,14 @@ import java.util.UUID;
 public record AssociateProfileResponse(
     UUID id, String userId, String name, String phone, String email, String address, Instant joinedAt,
     String fatherHusbandName, LocalDate dateOfBirth, String gender, String maritalStatus,
-    String state, String district, String postalCode, AssociateStatus status
+    String state, String district, String postalCode, AssociateStatus status,
+    String panNumber, String aadhaarNumber
 ) {
     public static AssociateProfileResponse from(Associate a) {
         return new AssociateProfileResponse(
             a.getId(), a.getUserId(), a.getName(), a.getPhone(), a.getEmail(), a.getAddress(), a.getJoinedAt(),
             a.getFatherHusbandName(), a.getDateOfBirth(), a.getGender(), a.getMaritalStatus(),
-            a.getState(), a.getDistrict(), a.getPostalCode(), a.getStatus());
+            a.getState(), a.getDistrict(), a.getPostalCode(), a.getStatus(),
+            a.getPanNumber(), a.getAadhaarNumber());
     }
 }

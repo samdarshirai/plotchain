@@ -11,7 +11,7 @@ describe('AssociateProfileService', () => {
     id: 'a1', userId: 'VP00001', name: 'Jane Doe', phone: '9990001111',
     email: 'jane@example.com', address: '221B Baker Street', joinedAt: '2026-01-01T00:00:00Z',
     fatherHusbandName: null, dateOfBirth: null, gender: null, maritalStatus: null,
-    state: null, district: null, postalCode: null
+    state: null, district: null, postalCode: null, panNumber: null, aadhaarNumber: null
   };
 
   const updateRequest: UpdateAssociateProfileRequest = {

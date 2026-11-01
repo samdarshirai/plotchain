@@ -37,6 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -80,6 +81,9 @@ class AdminAssociateControllerTest {
         a.setStatus(AssociateStatus.ACTIVE);
         a.setJoinedAt(Instant.now());
         a.setPasswordHash("hash");
+        a.setPhone("9876543210");
+        a.setPanNumber("ABCDE1234F");
+        a.setAadhaarNumber("123412341234");
         return a;
     }
 
@@ -93,6 +97,7 @@ class AdminAssociateControllerTest {
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.associates[0].userId").value("VP00001"))
+            .andExpect(jsonPath("$.associates[0].phone").value("9876543210"))
             .andExpect(jsonPath("$.totalElements").value(1));
     }
 
@@ -263,5 +268,73 @@ class AdminAssociateControllerTest {
             .andExpect(status().isForbidden());
 
         verify(cycleService, never()).refreshAllOpenCycles();
+    }
+
+    private static final String PROFILE_JSON = """
+        {"name":"Jane Doe","phone":"9876543210","panNumber":"%s","aadhaarNumber":"%s"}""";
+
+    @Test
+    void adminProfileUpdateChangesPanAndAadhaar() throws Exception {
+        when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedAssociate()));
+        when(associateRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/profile")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(PROFILE_JSON.formatted("ZZZZZ9999Z", "999988887777")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.panNumber").value("ZZZZZ9999Z"))
+            .andExpect(jsonPath("$.aadhaarNumber").value("999988887777"));
+    }
+
+    @Test
+    void adminProfileUpdateRejectsAPanAlreadyUsedByAnotherAssociate() throws Exception {
+        when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedAssociate()));
+        when(associateRepository.existsByPanNumber("ZZZZZ9999Z")).thenReturn(true);
+
+        mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/profile")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(PROFILE_JSON.formatted("ZZZZZ9999Z", "123412341234")))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.code").value("PAN_TAKEN"));
+        verify(associateRepository, never()).save(any());
+    }
+
+    @Test
+    void adminProfileUpdateRejectsAnAadhaarAlreadyUsedByAnotherAssociate() throws Exception {
+        when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedAssociate()));
+        when(associateRepository.existsByAadhaarNumber("999988887777")).thenReturn(true);
+
+        mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/profile")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(PROFILE_JSON.formatted("ABCDE1234F", "999988887777")))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.code").value("AADHAAR_TAKEN"));
+        verify(associateRepository, never()).save(any());
+    }
+
+    @Test
+    void adminProfileUpdateKeepingTheSamePanDoesNotTripTheDuplicateCheck() throws Exception {
+        when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedAssociate()));
+        when(associateRepository.existsByPanNumber("ABCDE1234F")).thenReturn(true); // it's this associate's own PAN
+        when(associateRepository.existsByAadhaarNumber("123412341234")).thenReturn(true);
+        when(associateRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/profile")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(PROFILE_JSON.formatted("ABCDE1234F", "123412341234")))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void adminProfileUpdateRejectsAMalformedPan() throws Exception {
+        mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/profile")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json")
+                .content(PROFILE_JSON.formatted("abc", "123412341234")))
+            .andExpect(status().isBadRequest());
     }
 }

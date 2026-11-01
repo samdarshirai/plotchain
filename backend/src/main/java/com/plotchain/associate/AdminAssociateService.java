@@ -1,5 +1,7 @@
 package com.plotchain.associate;
 
+import com.plotchain.epin.EPinDuplicateIdentityException;
+
 import com.plotchain.company.SettingsAuditService;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
@@ -115,7 +117,15 @@ public class AdminAssociateService {
         if (r.phone() != null && !r.phone().equals(a.getPhone()) && associateRepository.existsByPhone(r.phone())) {
             throw new PhoneAlreadyRegisteredException(r.phone());
         }
+        if (!r.panNumber().equals(a.getPanNumber()) && associateRepository.existsByPanNumber(r.panNumber())) {
+            throw new EPinDuplicateIdentityException("PAN_TAKEN");
+        }
+        if (!r.aadhaarNumber().equals(a.getAadhaarNumber()) && associateRepository.existsByAadhaarNumber(r.aadhaarNumber())) {
+            throw new EPinDuplicateIdentityException("AADHAAR_TAKEN");
+        }
         a.setName(r.name());
+        a.setPanNumber(r.panNumber());
+        a.setAadhaarNumber(r.aadhaarNumber());
         a.setPhone(r.phone());
         a.setEmail(r.email());
         a.setAddress(r.address());
@@ -234,7 +244,8 @@ public class AdminAssociateService {
         return new AdminAssociateSummaryResponse(
             a.getId(), a.getUserId(), a.getName(), designation,
             a.getKycStatus(), a.getStatus(), a.getJoinedAt(), a.getLastActiveAt(), sponsorUserId,
-            a.getPosition(), a.getRole(), a.getLoginPasswordPlain(), a.getTransactionPasswordPlain());
+            a.getPosition(), a.getRole(), a.getLoginPasswordPlain(), a.getTransactionPasswordPlain(),
+            a.getPhone(), a.getEmail());
     }
 
     private AdminAssociateDetailResponse toDetail(Associate a) {

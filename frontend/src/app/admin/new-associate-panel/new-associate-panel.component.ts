@@ -2,7 +2,8 @@ import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChange
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule } from '@ngx-translate/core';
-import { of } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { AssociateDirectoryService } from '../associate-directory/associate-directory.service';
 import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { CreateAssociateResponse } from '../models/create-associate-response.model';
@@ -54,10 +55,16 @@ export interface PresetParent {
         </ng-container>
 
         <ng-template #provisionFormTemplate>
-          <div class="new-associate-panel__modal-title">{{ 'admin.associateDirectory.provisionModalTitle' | translate }}</div>
-          <p class="new-associate-panel__modal-subtitle">{{ 'admin.associateDirectory.provisionModalSubtitle' | translate }}</p>
+          <div class="new-associate-panel__modal-title">
+            {{ (editAssociateId ? 'admin.associateDirectory.editModalTitle' : 'admin.associateDirectory.provisionModalTitle') | translate }}
+          </div>
+          <p class="new-associate-panel__modal-subtitle">
+            {{ (editAssociateId ? 'admin.associateDirectory.editModalSubtitle' : 'admin.associateDirectory.provisionModalSubtitle') | translate }}
+          </p>
 
+          <app-inline-banner *ngIf="loadError" tone="danger">{{ 'admin.associateDirectory.editLoadError' | translate }}</app-inline-banner>
           <app-associate-profile-form
+            *ngIf="!editAssociateId || initial"
             [sponsorRequired]="associates.length > 0"
             [busy]="busy"
             [error]="submitError"
@@ -65,7 +72,10 @@ export interface PresetParent {
             [presetSponsorUserId]="presetParent?.parentUserId ?? ''"
             [presetPosition]="presetParent?.leg ?? ''"
             [sponsorLookup]="sponsorLookup"
-            submitLabel="admin.associateDirectory.provisionSubmitAction"
+            [initial]="initial"
+            [lockSponsor]="!!editAssociateId"
+            [showBank]="!!editAssociateId"
+            [submitLabel]="editAssociateId ? 'admin.associateDirectory.editSubmitAction' : 'admin.associateDirectory.provisionSubmitAction'"
             (submitted)="onSubmit($event)"
             (cancelled)="cancel()"
           ></app-associate-profile-form>
@@ -76,22 +86,29 @@ export interface PresetParent {
 })
 export class NewAssociatePanelComponent implements OnInit, OnChanges {
   private adminService = inject(AdminService);
+  private directoryService = inject(AssociateDirectoryService);
 
   @Input() open = false;
   @Input() presetParent: PresetParent | null = null;
+  /** Set = edit mode: same form, pre-filled from this associate, saves via the admin update endpoints. */
+  @Input() editAssociateId: string | null = null;
   @Output() closed = new EventEmitter<void>();
   @Output() created = new EventEmitter<CreateAssociateResponse>();
+  @Output() saved = new EventEmitter<void>();
 
   provisioned: CreateAssociateResponse | null = null;
   submitError = '';
   serverErrors: Record<string, string> = {};
   busy = false;
+  initial: Record<string, string | null> | null = null;
+  loadError = false;
   // Sponsor is required once the tree has anyone in it; the very first associate is necessarily parentless.
   associates: AssociateSummary[] = [];
 
   sponsorLookup = (userId: string) => of(this.associates.find(a => a.userId === userId) ?? null);
 
   ngOnInit(): void {
+    if (this.editAssociateId) { return; } // sponsor is locked in edit mode; no lookup list needed
     this.adminService.listAssociates().subscribe({
       next: associates => (this.associates = associates),
       error: () => {
@@ -107,7 +124,26 @@ export class NewAssociatePanelComponent implements OnInit, OnChanges {
       this.submitError = '';
       this.serverErrors = {};
       this.busy = false;
+      this.initial = null;
+      this.loadError = false;
+      if (this.editAssociateId) { this.loadForEdit(this.editAssociateId); }
     }
+  }
+
+  private loadForEdit(id: string): void {
+    const s = this.directoryService;
+    forkJoin([s.get(id), s.getProfile(id), s.getNominee(id), s.getBankDetails(id)]).subscribe({
+      next: ([d, p, n, b]) => (this.initial = {
+        sponsorUserId: d.sponsorUserId, position: d.position,
+        name: p.name, fatherHusbandName: p.fatherHusbandName, panNumber: p.panNumber, aadhaarNumber: p.aadhaarNumber,
+        dateOfBirth: p.dateOfBirth, gender: p.gender, maritalStatus: p.maritalStatus,
+        email: p.email, phone: p.phone, state: p.state, district: p.district, address: p.address, postalCode: p.postalCode,
+        nomineeName: n.nomineeName, nomineeRelation: n.relation,
+        bankName: b.bankName, accountHolder: b.accountHolder, accountNumber: b.accountNumber,
+        ifscCode: b.ifscCode, accountType: b.accountType ?? 'SAVINGS'
+      }),
+      error: () => (this.loadError = true)
+    });
   }
 
   cancel(): void {
@@ -118,6 +154,7 @@ export class NewAssociatePanelComponent implements OnInit, OnChanges {
     this.serverErrors = {};
     this.submitError = '';
     this.busy = true;
+    if (this.editAssociateId) { this.saveEdit(this.editAssociateId, v); return; }
     const { transactionPassword: _unused, ...request } = v;
     this.adminService
       .createAssociate({ ...request, sponsorUserId: request.sponsorUserId || undefined, position: request.position || undefined })
@@ -132,6 +169,38 @@ export class NewAssociatePanelComponent implements OnInit, OnChanges {
           this.handleError(err);
         }
       });
+  }
+
+  private saveEdit(id: string, v: AssociateProfileValue): void {
+    const n = (x: string | null | undefined) => x || null;
+    const hasBank = !!(v.bankName || v.accountHolder || v.accountNumber || v.ifscCode);
+    forkJoin([
+      this.directoryService.updateProfile(id, {
+        name: v.name, fatherHusbandName: n(v.fatherHusbandName), panNumber: v.panNumber, aadhaarNumber: v.aadhaarNumber,
+        dateOfBirth: n(v.dateOfBirth), gender: n(v.gender), maritalStatus: n(v.maritalStatus),
+        phone: n(v.phone), email: n(v.email), address: n(v.address),
+        state: n(v.state), district: n(v.district), postalCode: n(v.postalCode)
+      }),
+      this.directoryService.updateNominee(id, { nomineeName: n(v.nomineeName), relation: n(v.nomineeRelation) }),
+      hasBank
+        ? this.directoryService.updateBankDetails(id, {
+            bankName: v.bankName!, accountHolder: v.accountHolder!, accountNumber: v.accountNumber!,
+            ifscCode: v.ifscCode!, accountType: v.accountType as 'CURRENT' | 'SAVINGS'
+          })
+        : of(null)
+    ]).subscribe({
+      next: () => {
+        this.busy = false;
+        this.saved.emit();
+        this.closed.emit();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.busy = false;
+        if (err.status === 409 && !err.error?.code) { this.serverErrors = { phone: 'Phone number already registered' }; return; }
+        if (err.status === 400 && !Object.keys(toFieldErrors(err)).length) { this.submitError = 'admin.associateDirectory.editSaveError'; return; }
+        this.handleError(err);
+      }
+    });
   }
 
   private handleError(err: HttpErrorResponse): void {

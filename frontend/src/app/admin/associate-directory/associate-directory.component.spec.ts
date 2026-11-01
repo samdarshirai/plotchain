@@ -406,6 +406,39 @@ describe('AssociateDirectoryComponent', () => {
       expect(fixture.componentInstance.page?.page).toBe(1);
     });
   });
+  describe('Edit (row action) + contact columns', () => {
+    function loadRow(): void {
+      fixture.componentInstance.goToPage(0);
+      httpMock.expectOne('/api/admin/associates?page=0&size=20').flush({
+        associates: [{ id: 'a1', userId: 'VP00001', name: 'Jane', designation: null, kycStatus: 'VERIFIED', status: 'ACTIVE',
+          joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: null, position: null, lastActiveAt: null, role: 'ASSOCIATE',
+          phone: '9876543210', email: null }],
+        page: 0, size: 20, totalElements: 1
+      });
+      fixture.detectChanges();
+    }
+
+    it('shows Mobile and Email columns, blank email as a dash', () => {
+      loadRow();
+      expect(fixture.componentInstance.directoryColumns.map(c => c.key)).toEqual(jasmine.arrayContaining(['phone', 'email']));
+      expect(fixture.componentInstance.directoryRows[0]['phone']).toBe('9876543210');
+      expect(fixture.componentInstance.directoryRows[0]['email']).toBe('—');
+    });
+
+    it('opens the pre-filled edit modal for that row without opening the side panel', () => {
+      loadRow();
+      fixture.nativeElement.querySelector('.associate-directory__edit').click();
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.panelOpen).toBeFalse();
+      const panels = fixture.debugElement.queryAll(By.directive(NewAssociatePanelComponent));
+      expect(panels.some(p => p.componentInstance.editAssociateId === 'a1')).toBeTrue();
+      httpMock.expectOne('/api/admin/associates/a1').flush({});
+      httpMock.expectOne('/api/admin/associates/a1/profile').flush({});
+      httpMock.expectOne('/api/admin/associates/a1/nominee').flush({});
+      httpMock.expectOne('/api/admin/associates/a1/bank-details').flush({});
+    });
+  });
 });
 
 describe('AssociateDirectoryComponent with ?provision=1', () => {
@@ -434,4 +467,5 @@ describe('AssociateDirectoryComponent with ?provision=1', () => {
     flushCounts(httpMock);
     httpMock.verify();
   });
+
 });

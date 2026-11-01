@@ -35,6 +35,12 @@ export interface AssociateProfileValue {
   nomineeName: string;
   nomineeRelation: string;
   transactionPassword?: string;
+  // Present only when the form is shown with [showBank] (admin edit).
+  bankName?: string;
+  accountHolder?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  accountType?: string;
 }
 
 // The one add-associate form: shared by the associate e-Pin Join screen and the admin "Add Associate"
@@ -151,6 +157,30 @@ export interface AssociateProfileValue {
           </div>
         </section>
 
+        <section class="associate-profile-form__section associate-profile-form__section--12" *ngIf="showBank">
+          <h2 class="associate-profile-form__heading">{{ 'myAccount.bankDetails.title' | translate }}</h2>
+          <div class="associate-profile-form__grid associate-profile-form__grid--4">
+            <label class="associate-profile-form__field">{{ 'myAccount.bankDetails.bankNameLabel' | translate }}
+              <input class="associate-profile-form__input" formControlName="bankName" />
+            </label>
+            <label class="associate-profile-form__field">{{ 'myAccount.bankDetails.accountHolderLabel' | translate }}
+              <input class="associate-profile-form__input" formControlName="accountHolder" />
+            </label>
+            <label class="associate-profile-form__field">{{ 'myAccount.bankDetails.accountNumberLabel' | translate }}
+              <input class="associate-profile-form__input" formControlName="accountNumber" inputmode="numeric" />
+            </label>
+            <label class="associate-profile-form__field">{{ 'myAccount.bankDetails.ifscCodeLabel' | translate }}
+              <input class="associate-profile-form__input" formControlName="ifscCode" />
+            </label>
+            <label class="associate-profile-form__field">{{ 'myAccount.bankDetails.accountTypeLabel' | translate }}
+              <select class="associate-profile-form__input" formControlName="accountType">
+                <option value="SAVINGS">{{ 'myAccount.bankDetails.accountTypeSavings' | translate }}</option>
+                <option value="CURRENT">{{ 'myAccount.bankDetails.accountTypeCurrent' | translate }}</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
         <section class="associate-profile-form__section associate-profile-form__section--5" *ngIf="showTransactionPassword">
           <h2 class="associate-profile-form__heading">{{ 'epins.passwordLabel' | translate }}</h2>
           <label class="associate-profile-form__field"><span>{{ 'epins.passwordLabel' | translate }} <span class="associate-profile-form__req">*</span></span>
@@ -186,6 +216,12 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
   @Input() sponsorLookup: ((userId: string) => Observable<{ name: string } | null>) | null = null;
   /** Field errors from the server, keyed by control name. */
   @Input() serverErrors: Record<string, string> = {};
+  /** Values to prefill (admin edit). Nulls become blank. */
+  @Input() initial: Partial<Record<keyof AssociateProfileValue, string | null>> | null = null;
+  /** Sponsor + leg shown but not editable (tree placement can't change from a form). */
+  @Input() lockSponsor = false;
+  /** Adds the optional Bank details section (admin edit). */
+  @Input() showBank = false;
   @Output() submitted = new EventEmitter<AssociateProfileValue>();
   @Output() cancelled = new EventEmitter<void>();
 
@@ -217,21 +253,30 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
     postalCode: ['', format('pincode')],
     nomineeName: [''],
     nomineeRelation: [''],
-    transactionPassword: ['']
+    transactionPassword: [''],
+    bankName: [''],
+    accountHolder: [''],
+    accountNumber: [''],
+    ifscCode: [''],
+    accountType: ['SAVINGS']
   });
 
-  ngOnInit(): void { this.syncValidators(); this.applyPreset(); }
+  ngOnInit(): void { this.syncValidators(); this.applyPreset(); this.applyInitial(); }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['serverErrors'] && this.submitAttempted) { this.issues = collectIssues(this.form, LABELS, this.serverErrors); }
-    if (changes['sponsorRequired'] || changes['showTransactionPassword']) { this.syncValidators(); }
+    if (changes['sponsorRequired'] || changes['showTransactionPassword'] || changes['lockSponsor']) { this.syncValidators(); }
+    if (changes['initial'] && !changes['initial'].firstChange) { this.applyInitial(); }
     if ((changes['presetSponsorUserId'] || changes['presetPosition']) && !changes['presetSponsorUserId']?.firstChange) { this.applyPreset(); }
   }
 
   private syncValidators(): void {
-    const sponsorValidators = this.sponsorRequired ? [Validators.required] : [];
+    const sponsorValidators = this.sponsorRequired && !this.lockSponsor ? [Validators.required] : [];
     this.form.controls.sponsorUserId.setValidators(sponsorValidators);
     this.form.controls.position.setValidators(sponsorValidators);
+    for (const c of [this.form.controls.sponsorUserId, this.form.controls.position]) {
+      if (this.lockSponsor) { c.disable({ emitEvent: false }); } else { c.enable({ emitEvent: false }); }
+    }
     this.form.controls.transactionPassword.setValidators(this.showTransactionPassword ? [Validators.required] : []);
     Object.values(this.form.controls).forEach(c => c.updateValueAndValidity({ emitEvent: false }));
   }
@@ -239,6 +284,13 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
   private applyPreset(): void {
     if (!this.presetSponsorUserId) { return; }
     this.form.patchValue({ sponsorUserId: this.presetSponsorUserId, position: this.presetPosition });
+    this.lookupSponsor();
+  }
+
+  private applyInitial(): void {
+    if (!this.initial) { return; }
+    const v = Object.fromEntries(Object.entries(this.initial).map(([k, x]) => [k, x ?? '']));
+    this.form.patchValue(v);
     this.lookupSponsor();
   }
 
@@ -289,14 +341,15 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
       return;
     }
     const v = this.form.getRawValue();
-    const { transactionPassword, ...rest } = v;
+    const { transactionPassword, bankName, accountHolder, accountNumber, ifscCode, accountType, ...rest } = v;
     this.submitted.emit({
       ...rest,
       sponsorUserId: v.sponsorUserId.trim(),
       name: v.name.trim(),
       dateOfBirth: v.dateOfBirth || null,
       email: v.email.trim() || null,
-      ...(this.showTransactionPassword ? { transactionPassword } : {})
+      ...(this.showTransactionPassword ? { transactionPassword } : {}),
+      ...(this.showBank ? { bankName, accountHolder, accountNumber, ifscCode, accountType } : {})
     });
   }
 }

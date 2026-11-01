@@ -12,4 +12,6 @@ export interface AdminAssociateSummary {
   role: 'ADMIN' | 'ASSOCIATE';
   loginPassword: string | null;
   transactionPassword: string | null;
+  phone: string | null;
+  email: string | null;
 }

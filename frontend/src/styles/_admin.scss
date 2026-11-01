@@ -568,6 +568,7 @@
 // A div, not a span: the table's `td > span` ellipsis rule would clip the second button.
 .associate-directory__row-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
