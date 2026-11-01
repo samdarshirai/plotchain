@@ -4,14 +4,13 @@
     position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: 0.625rem;
     margin: 1rem -2rem 0; padding: 0.875rem 2rem; background: var(--surface-card); border-top: 1px solid var(--border-subtle);
   }
-  &__submit, &__cancel { height: 38px; padding: 0 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.875rem; transition: background-color 150ms, border-color 150ms; }
+  &__submit, &__cancel { height: 40px; padding: 0 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.875rem; transition: background-color 150ms, border-color 150ms; }
   &__submit { background: var(--brand-secondary); color: var(--action-foreground); border: 0; &:hover:not(:disabled) { background: color-mix(in srgb, var(--brand-secondary) 90%, black); } &:disabled { opacity: 0.6; cursor: default; } }
   &__cancel { background: transparent; color: var(--text-primary); border: 1px solid var(--border-subtle); font-weight: 500; &:hover { border-color: var(--text-muted); } }
 
   &__section { min-width: 0; display: flex; flex-direction: column; gap: 0.625rem; grid-column: span 12; &--7 { grid-column: span 7; } &--5 { grid-column: span 5; } }
   &__heading {
-    display: flex; align-items: center; gap: 0.75rem; margin: 0; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand-secondary);
-    &::before { content: ''; width: 24px; height: 1px; background: var(--brand-secondary); }
+    display: flex; align-items: center; gap: 0.75rem; margin: 0; font-size: 0.875rem; font-weight: 600; color: var(--brand-on-surface);
     &::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
   }
 
@@ -21,7 +20,7 @@
   &__input {
     width: 100%; box-sizing: border-box; height: 36px; padding: 0 0.75rem; border: 1px solid var(--border-subtle); border-radius: 4px;
     background: var(--surface-raised); color: var(--text-primary); font-family: inherit; font-size: 0.84rem; transition: border-color 150ms;
-    &:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 18%, transparent); }
+    &:focus-visible { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 22%, transparent); }
     &[readonly] { background: var(--surface-raised); color: var(--text-muted); }
   }
   &__banner { grid-column: span 12; }
@@ -35,4 +34,29 @@
     &__grid, &__grid--4 { grid-template-columns: minmax(0, 1fr); }
     &__field--wide { grid-column: auto; }
   }
+}
+
+// Inside the admin modal: each section is a row, its heading in a left rail and the fields beside it,
+// so a long form scans down the rail instead of as one wall of inputs.
+:host-context(.new-associate-panel__modal) {
+  .associate-profile-form__card { display: flex; flex-direction: column; gap: 0; }
+  .associate-profile-form__section,
+  .associate-profile-form__section--7,
+  .associate-profile-form__section--5 {
+    display: grid; grid-template-columns: 10rem minmax(0, 1fr); gap: 0 2rem; align-items: start;
+    padding: 1.25rem 0; border-top: 1px solid var(--border-subtle);
+    &:first-of-type { border-top: 0; padding-top: 0.25rem; }
+  }
+  .associate-profile-form__heading { padding-top: 0.5rem; &::after { content: none; } }
+  .associate-profile-form__banner { margin-top: 0.5rem; }
+  .associate-profile-form__footer { margin: 0 -2rem; padding: 0.875rem 2rem; }
+  .associate-profile-form__field { color: var(--text-muted); font-size: 0.8125rem; }
+  .associate-profile-form__input { height: 40px; }
+  @media (max-width: 900px) {
+    .associate-profile-form__section,
+    .associate-profile-form__section--7,
+    .associate-profile-form__section--5 { grid-template-columns: minmax(0, 1fr); gap: 0.625rem; }
+    .associate-profile-form__heading { padding-top: 0; }
+  }
+  @media (max-width: 768px) { .associate-profile-form__footer { margin: 0 -1rem; padding: 0.875rem 1rem; } }
 }

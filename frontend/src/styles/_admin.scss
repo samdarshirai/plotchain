@@ -687,7 +687,7 @@
 .new-associate-panel__modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(12, 10, 11, 0.55);
+  background: rgba(25, 19, 11, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -695,56 +695,77 @@
 }
 
 // Wide enough for the shared app-associate-profile-form (same form as the associate e-Pin Join).
+// The title block is sticky, with a gold hairline under it, so it stays put while the form scrolls.
 .new-associate-panel__modal {
-  width: 1100px;
+  width: 1040px;
   max-width: calc(100vw - 32px);
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 5px;
-  padding: 24px 32px 0;
+  border-radius: 4px;
+  padding: 0 2rem;
 
   @media (max-width: 768px) {
-    padding: 20px 16px 0;
+    padding: 0 1rem;
   }
+
+  // Issued credentials read as codes, not prose.
+  strong { font-family: var(--font-mono); font-weight: 500; font-variant-numeric: tabular-nums; }
 }
 
 .new-associate-panel__modal-title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 -2rem;
+  padding: 1.5rem 2rem 0.25rem;
+  background: var(--surface-card);
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 600;
-  margin: 0 0 4px 0;
+  line-height: 1.2;
+  color: var(--text-primary);
+
+  @media (max-width: 768px) { margin: 0 -1rem; padding: 1.25rem 1rem 0.25rem; }
 }
 
+// The subtitle sits under the title; the hairline closes the header block.
 .new-associate-panel__modal-subtitle {
-  font-size: 13.5px;
+  font-size: 0.875rem;
   color: var(--text-muted);
-  margin: 0 0 16px 0;
+  margin: 0 0 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--brand-primary);
 }
 
 .new-associate-panel__modal-banner-notice {
-  font-size: 12.5px;
+  font-size: 0.8125rem;
 }
 
 .new-associate-panel__modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 28px;
-  padding-bottom: 24px;
+  margin-top: 1.5rem;
+  padding-bottom: 1.5rem;
 }
 
 .new-associate-panel__modal-submit {
   background: var(--brand-secondary);
   border: none;
   color: var(--action-foreground);
-  font-weight: 700;
-  font-size: 14px;
-  padding: 10px 18px;
-  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.875rem;
+  height: 40px;
+  padding: 0 1.5rem;
+  border-radius: 4px;
   cursor: pointer;
+  transition: background-color 150ms;
+
+  &:hover { background: color-mix(in srgb, var(--brand-secondary) 90%, black); }
+  &:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
 }
 
 .sales-register .card {
