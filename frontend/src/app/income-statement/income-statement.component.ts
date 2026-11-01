@@ -284,7 +284,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   private buildRewardColumns(): void {
-    const keys = ['#', 'columnDesignation', 'columnReward', 'leftLeg', 'rightLeg', 'columnStatus'];
+    const keys = ['#', 'columnMatchingVolume', 'columnDesignation', 'columnReward', 'leftLeg', 'rightLeg', 'columnStatus'];
     const achievedKeys = ['columnAchieved', 'columnDesignation', 'columnReward', 'columnPayStatus', 'columnPaymentDate', 'columnRemarks'];
     this.translate
       .get([...keys, ...achievedKeys].filter(k => k !== '#').map(k => 'incomeStatement.' + k))
@@ -294,7 +294,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         const done = t['incomeStatement.statusAchieved'];
         const inProgress = t['incomeStatement.statusInProgress'];
         const tierTone = (v: string | number): BadgeTone => (v === done ? 'success' : v === inProgress ? 'warning' : 'default');
-        const tierKeys = ['n', 'designation', 'reward', 'left', 'right', 'status'];
+        const tierKeys = ['n', 'volume', 'designation', 'reward', 'left', 'right', 'status'];
         this.rewardTierColumns = tierKeys.map((key, i) => ({
           key, label: label(keys[i]), type: 'text' as const, ...(key === 'status' ? { type: 'badge' as const, badgeTone: tierTone } : {})
         }));
@@ -369,7 +369,8 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
           const state = t.status ? 'achieved' : i === firstOpen ? 'progress' : 'pending';
           return {
             n: String(t.tierLevel),
-            designation: `${t.designation ?? '—'} (${this.formatCurrency(t.matchingBusiness)} ${this.translate.instant('incomeStatement.matchingSuffix')})`,
+            volume: this.formatCurrency(t.matchingBusiness),
+            designation: t.designation ?? '—',
             reward: this.rewardText(t.reward, t.perkDescription),
             left: this.shortInr(t.requiredLeftBusiness),
             right: this.shortInr(t.requiredRightBusiness),
