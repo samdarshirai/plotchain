@@ -180,6 +180,7 @@
   },
   "plotBookings": {
     "table": {"empty": "दिखाने के लिए कोई डेटा नहीं।", "bookingDate": "बुकिंग तिथि", "associateId": "एसोसिएट आईडी", "name": "नाम", "project": "प्रोजेक्ट", "plotType": "प्लॉट प्रकार", "plotNo": "प्लॉट नं.", "rate": "दर", "area": "क्षेत्रफल", "price": "मूल्य", "extraPrice": "अतिरिक्त मूल्य", "totalPrice": "कुल मूल्य", "paid": "भुगतान राशि", "rest": "शेष राशि", "details": "विवरण", "detailsAction": "देखें", "close": "बंद करें"},
+    "payments": {"paymentDate": "भुगतान तिथि", "amount": "राशि", "receiptNo": "रसीद नं", "mode": "भुगतान माध्यम", "instrumentNo": "चेक/डीडी/NEFT/RTGS नं", "date": "तिथि", "empty": "अभी कोई भुगतान नहीं।"},
     "myBookings": { "title": "My Bookings" },
     "team": {
       "title": { "TEAM": "टीम द्वारा खरीदे गए प्लॉट", "LEFT": "लेफ्ट प्लॉट बुकिंग", "RIGHT": "राइट प्लॉट बुकिंग" },
@@ -1199,6 +1200,7 @@
       "paymentModeLabel": "Payment mode",
       "paymentModeSelect": "Select mode",
       "paymentMode": { "CASH": "Cash", "CHEQUE": "Cheque", "BANK_TRANSFER": "Bank transfer", "UPI": "UPI", "DEMAND_DRAFT": "डिमांड ड्राफ्ट", "NEFT": "NEFT", "RTGS": "RTGS" },
+      "receiptNoLabel": "रसीद नं",
       "txnNoLabel": "TXN no.",
       "bankNameLabel": "Bank name",
       "txnDateLabel": "TXN date",
@@ -1413,8 +1415,10 @@
       "selectMode": "तरीका चुनें",
       "bankName": "बैंक का नाम",
       "txnNo": "TXN नं",
+      "receiptNo": "रसीद नं",
       "txnDate": "TXN तिथि",
       "err": {
+        "receipt": "रसीद नं आवश्यक है।",
         "amount": "शून्य से अधिक राशि दर्ज करें, बकाया ईएमआई राशि तक।",
         "mode": "भुगतान का तरीका चुनें।",
         "bank": "इस तरीके के लिए बैंक का नाम आवश्यक है।",
@@ -1424,7 +1428,7 @@
         "notActive": "यह बुकिंग अब सक्रिय नहीं है।"
       },
       "success": "प्लॉट {{plot}} के लिए {{amount}} का भुगतान जोड़ा गया। इसे भुगतान कतार से पुष्ट करें।",
-      "hist": { "sNo": "क्र.सं.", "paymentDate": "भुगतान तिथि और समय", "txnDate": "TXN तिथि", "confirmedDate": "पुष्टि तिथि", 
+      "hist": { "receiptNo": "रसीद नं", "sNo": "क्र.सं.", "paymentDate": "भुगतान तिथि और समय", "txnDate": "TXN तिथि", "confirmedDate": "पुष्टि तिथि", 
         "empty": "अभी कोई भुगतान नहीं।",
         "date": "तिथि",
         "amount": "राशि",

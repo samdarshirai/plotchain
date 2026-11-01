@@ -31,13 +31,21 @@ public record CreateBookingRequest(
     @Size(max = 100) String bankName,
     LocalDate txnDate,
     @Positive BigDecimal firstInstallmentAmount,
-    @DecimalMin("0") @DecimalMax("100") BigDecimal extraPercent
+    @DecimalMin("0") @DecimalMax("100") BigDecimal extraPercent,
+    @Size(max = 50) String receiptNo
 ) {
     public CreateBookingRequest(UUID plotId, UUID associateId, String buyerName, String buyerPhone,
                                 BigDecimal tokenAmount, BigDecimal discount, BigDecimal extraPrice,
                                 PaymentMode paymentMode, String txnNo, String bankName, LocalDate txnDate,
+                                BigDecimal firstInstallmentAmount, BigDecimal extraPercent) {
+        this(plotId, associateId, buyerName, buyerPhone, tokenAmount, discount, extraPrice, paymentMode, txnNo, bankName, txnDate, firstInstallmentAmount, extraPercent, null);
+    }
+
+    public CreateBookingRequest(UUID plotId, UUID associateId, String buyerName, String buyerPhone,
+                                BigDecimal tokenAmount, BigDecimal discount, BigDecimal extraPrice,
+                                PaymentMode paymentMode, String txnNo, String bankName, LocalDate txnDate,
                                 BigDecimal firstInstallmentAmount) {
-        this(plotId, associateId, buyerName, buyerPhone, tokenAmount, discount, extraPrice, paymentMode, txnNo, bankName, txnDate, firstInstallmentAmount, null);
+        this(plotId, associateId, buyerName, buyerPhone, tokenAmount, discount, extraPrice, paymentMode, txnNo, bankName, txnDate, firstInstallmentAmount, null, null);
     }
 
     public CreateBookingRequest(UUID plotId, UUID associateId, String buyerName, String buyerPhone,

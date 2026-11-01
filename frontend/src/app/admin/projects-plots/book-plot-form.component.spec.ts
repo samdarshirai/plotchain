@@ -18,10 +18,10 @@ describe('BookPlotFormComponent', () => {
     fixture.componentRef.setInput('emiConfig', emi);
     fixture.componentRef.setInput('busy', busy);
     // Payment fields are mandatory; default them so existing cases reach the emit.
-    Object.assign(fixture.componentInstance, { paymentMode: 'CASH', txnNo: 'T1', txnDate: fixture.componentInstance.today });
+    Object.assign(fixture.componentInstance, { paymentMode: 'CASH', txnNo: 'T1', receiptNo: 'R1', txnDate: fixture.componentInstance.today });
     fixture.detectChanges();
   }
-  const pay = { paymentMode: 'CASH', txnNo: 'T1', bankName: '', txnDate: new Date().toISOString().slice(0, 10), firstInstallmentAmount: undefined };
+  const pay = { paymentMode: 'CASH', txnNo: 'T1', receiptNo: 'R1', bankName: '', txnDate: new Date().toISOString().slice(0, 10), firstInstallmentAmount: undefined };
   const submitForm = () => el().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
   const typeInto = (name: string, v: string) => {
     const i = el().querySelector<HTMLInputElement>(`[name="${name}"]`)!;
@@ -67,6 +67,35 @@ describe('BookPlotFormComponent', () => {
     typeInto('tokenAmount', '100000');
     submitForm();
     expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit Kulkarni', buyerPhone: '9876543210', tokenAmount: 100000, discount: 0, extraPrice: 0, extraPercent: 0, ...pay }]);
+  });
+
+  it('blocks submit without a receipt no and flags the field', async () => {
+    setup();
+    const out: BookingFormValue[] = [];
+    fixture.componentInstance.submitted.subscribe(v => out.push(v));
+    Object.assign(fixture.componentInstance, { receiptNo: '  ' });
+    fixture.componentInstance.associateId = 'a1';
+    await fixture.whenStable();
+    typeInto('buyerName', 'Rohit');
+    typeInto('tokenAmount', '100000');
+    submitForm();
+    fixture.detectChanges();
+    expect(out.length).toBe(0);
+    expect(el().querySelector('[name="receiptNo"]')!.getAttribute('aria-invalid')).toBe('true');
+    expect(fixture.componentInstance.issues.map(i => i.id)).toContain('receiptNo');
+  });
+
+  it('emits the trimmed receipt no', async () => {
+    setup();
+    const out: BookingFormValue[] = [];
+    fixture.componentInstance.submitted.subscribe(v => out.push(v));
+    fixture.componentInstance.associateId = 'a1';
+    await fixture.whenStable();
+    typeInto('buyerName', 'Rohit');
+    typeInto('tokenAmount', '100000');
+    typeInto('receiptNo', '  RCP-42 ');
+    submitForm();
+    expect(out[0].receiptNo).toBe('RCP-42');
   });
 
   it('blocks submit without a token amount and flags the field', async () => {

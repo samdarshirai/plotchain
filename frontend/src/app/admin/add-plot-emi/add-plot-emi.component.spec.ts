@@ -62,13 +62,41 @@ describe('AddPlotEmiComponent', () => {
     c.onProject('proj1');
     http.expectOne(r => r.url === '/api/admin/bookings').flush({ bookings: [booking()], page: 0, size: 20, totalElements: 1 });
     c.openPay(booking());
-    c.amount = 20000; c.mode = 'UPI'; c.bankName = 'SBI'; c.txnNo = 'T1'; c.txnDate = c.today;
+    c.amount = 20000; c.mode = 'UPI'; c.bankName = 'SBI'; c.txnNo = 'T1'; c.receiptNo = 'R1'; c.txnDate = c.today;
     c.submit();
     const req = http.expectOne('/api/admin/bookings/b1/top-up');
-    expect(req.request.body).toEqual({ amount: 20000, paymentMode: 'UPI', bankName: 'SBI', paymentRef: 'T1', paidAt: `${c.today}T00:00:00Z` });
+    expect(req.request.body).toEqual({ amount: 20000, paymentMode: 'UPI', bankName: 'SBI', paymentRef: 'T1', receiptNo: 'R1', paidAt: `${c.today}T00:00:00Z` });
     req.flush(booking());
     expect(c.payFor).toBeNull();
     http.expectOne(r => r.url === '/api/admin/bookings').flush({ bookings: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('requires a receipt no: blocks the top-up, flags the field, lists it in the error summary', () => {
+    c.onProject('proj1');
+    http.expectOne(r => r.url === '/api/admin/bookings').flush({ bookings: [booking()], page: 0, size: 20, totalElements: 1 });
+    c.openPay(booking());
+    c.amount = 20000; c.mode = 'CASH'; c.txnNo = 'T1'; c.txnDate = c.today;
+    expect(c.receiptNo).toBe('');
+    c.receiptNo = '   ';
+    c.submit();
+    fixture.detectChanges();
+    http.expectNone('/api/admin/bookings/b1/top-up');
+    expect(c.issues.map(i => i.id)).toEqual(['receiptNo']);
+    expect(fixture.nativeElement.textContent).toContain('admin.addPlotEmi.err.receipt');
+  });
+
+  it('clears the receipt no when the pay form is reopened', () => {
+    c.openPay(booking());
+    c.receiptNo = 'R9';
+    c.openPay(booking());
+    expect(c.receiptNo).toBe('');
+  });
+
+  it('shows the receipt no in the payment history', () => {
+    c.historyOf = booking({ installments: [{ ...booking().installments[0], receiptNo: 'RCP-5' }] });
+    fixture.detectChanges();
+    const row = fixture.nativeElement.querySelector('[data-label="admin.addPlotEmi.hist.receiptNo"]') as HTMLElement;
+    expect(row.textContent!.trim()).toBe('RCP-5');
   });
 
   describe('cancel booking', () => {

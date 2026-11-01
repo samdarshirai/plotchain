@@ -163,6 +163,10 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
             <input type="text" name="txnNo" maxlength="100" [(ngModel)]="txnNo" />
             <app-field-error [message]="tried && !txnNo.trim() ? ('admin.addPlotEmi.err.txn' | translate) : undefined"></app-field-error>
           </label>
+          <label>{{ 'admin.addPlotEmi.receiptNo' | translate }}
+            <input type="text" name="receiptNo" maxlength="50" [(ngModel)]="receiptNo" />
+            <app-field-error [message]="tried && !receiptNo.trim() ? ('admin.addPlotEmi.err.receipt' | translate) : undefined"></app-field-error>
+          </label>
           <label>{{ 'admin.addPlotEmi.txnDate' | translate }}
             <input type="date" name="txnDate" [attr.max]="today" [(ngModel)]="txnDate" />
             <app-field-error [message]="tried && dateInvalid ? ('admin.addPlotEmi.err.date' | translate) : undefined"></app-field-error>
@@ -233,6 +237,7 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.addPlotEmi.hist.paymentDate' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.addPlotEmi.hist.amount' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">credit_card</span>{{ 'admin.addPlotEmi.hist.mode' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">receipt_long</span>{{ 'admin.addPlotEmi.hist.receiptNo' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">receipt_long</span>{{ 'admin.addPlotEmi.hist.txn' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.addPlotEmi.hist.txnDate' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'admin.addPlotEmi.hist.status' | translate }}</th>
@@ -245,6 +250,7 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
                 <td [attr.data-label]="'admin.addPlotEmi.hist.paymentDate' | translate">{{ dateTime(i.recordedAt) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.hist.amount' | translate">{{ money(i.amount) }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.hist.mode' | translate">{{ i.paymentMode ? ('admin.bookingsEmi.paymentMode.' + i.paymentMode | translate) : '—' }}</td>
+                <td [attr.data-label]="'admin.addPlotEmi.hist.receiptNo' | translate">{{ i.receiptNo || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.hist.txn' | translate">{{ i.paymentRef || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.hist.txnDate' | translate">{{ i.paidAt ? i.paidAt.slice(0, 10) : '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.hist.status' | translate">{{ 'admin.bookingsEmi.installment.' + i.status | translate }}</td>
@@ -255,7 +261,7 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
               <tr>
                 <td colspan="2">{{ 'admin.addPlotEmi.hist.total' | translate }}</td>
                 <td class="add-plot-emi__num">{{ money(historyTotal(b)) }}</td>
-                <td colspan="5"></td>
+                <td colspan="6"></td>
               </tr>
             </tfoot>
           </table>
@@ -305,6 +311,7 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
   mode: PaymentMode | '' = '';
   bankName = '';
   txnNo = '';
+  receiptNo = '';
   txnDate = '';
   tried = false;
   issues: FormIssue[] = [];
@@ -470,6 +477,7 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
     this.mode = '';
     this.bankName = '';
     this.txnNo = '';
+    this.receiptNo = '';
     this.txnDate = this.today;
     this.tried = false;
     this.issues = [];
@@ -495,15 +503,16 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
       ...(!this.mode ? [{ id: 'mode', label: 'Payment mode', message: t('mode') }] : []),
       ...(this.bankInvalid ? [{ id: 'bank', label: 'Bank name', message: t('bank') }] : []),
       ...(!this.txnNo.trim() ? [{ id: 'txnNo', label: 'Transaction number', message: t('txn') }] : []),
+      ...(!this.receiptNo.trim() ? [{ id: 'receiptNo', label: 'Receipt number', message: t('receipt') }] : []),
       ...(this.dateInvalid ? [{ id: 'txnDate', label: 'Transaction date', message: t('date') }] : [])
     ];
-    if (this.amountInvalid || !this.mode || this.bankInvalid || !this.txnNo.trim() || this.dateInvalid) { return; }
+    if (this.amountInvalid || !this.mode || this.bankInvalid || !this.txnNo.trim() || !this.receiptNo.trim() || this.dateInvalid) { return; }
     this.saving = true;
     this.formError = '';
     const amount = round2(this.amount as number);
     this.service.topUp(b.id, {
       amount, paymentMode: this.mode, bankName: this.bankName.trim() || undefined,
-      paymentRef: this.txnNo.trim(), paidAt: `${this.txnDate}T00:00:00Z`
+      paymentRef: this.txnNo.trim(), receiptNo: this.receiptNo.trim(), paidAt: `${this.txnDate}T00:00:00Z`
     }).subscribe({
       next: () => {
         this.saving = false;

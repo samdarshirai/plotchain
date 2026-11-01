@@ -236,6 +236,7 @@ public class BookingService {
         payment.setPaymentMode(request.paymentMode());
         payment.setBankName(bankName.isEmpty() ? null : bankName);
         payment.setPaymentRef(paymentRef);
+        payment.setReceiptNo(request.receiptNo().trim());
         payment.setPaidAt(paidAt);
         payment.setRecordedBy(actorId);
         payment.setRecordedAt(now);
@@ -666,6 +667,7 @@ public class BookingService {
         tokenInstallment.setPaidAt(request.txnDate() == null ? bookedAt : request.txnDate().atStartOfDay(ZoneOffset.UTC).toInstant());
         tokenInstallment.setPaymentRef(request.txnNo() == null || request.txnNo().isBlank() ? "TOKEN" : request.txnNo().trim());
         tokenInstallment.setPaymentMode(request.paymentMode());
+        tokenInstallment.setReceiptNo(request.receiptNo() == null || request.receiptNo().isBlank() ? null : request.receiptNo().trim());
         tokenInstallment.setBankName(request.bankName() == null || request.bankName().isBlank() ? null : request.bankName().trim());
         tokenInstallment.setRecordedAt(bookedAt);
         tokenInstallment.setRecordedBy(tokenConfirmedBy);
@@ -711,7 +713,7 @@ public class BookingService {
                 .map(i -> new EmiInstallmentResponse(
                     i.getInstallmentNumber(), i.getAmount(), i.getDueDate(), i.getStatus(), i.getPaidAt(),
                     i.getStatus() == InstallmentStatus.PENDING && i.getDueDate().isBefore(today),
-                    i.getPaymentMode(), i.getConfirmedAt(), i.getBankName(), i.getPaymentRef(), i.getRecordedAt()))
+                    i.getPaymentMode(), i.getConfirmedAt(), i.getBankName(), i.getPaymentRef(), i.getRecordedAt(), i.getReceiptNo()))
                 .toList();
             Plot plot = plots.get(booking.getPlotId());
             Project project = plot == null ? null : projects.get(plot.getProjectId());

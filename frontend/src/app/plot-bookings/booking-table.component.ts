@@ -102,19 +102,22 @@ export const saleRow = (s: Sale): BookingRow => ({
         <div class="booking-modal__scroll">
           <table class="booking-table__installments">
             <thead><tr>
-              <th><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'plotBookings.column.no' | translate }}</th>
-              <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.column.dueDate' | translate }}</th>
-              <th><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'plotBookings.column.amount' | translate }}</th>
-              <th><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'plotBookings.column.status' | translate }}</th>
-              <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.column.paidOn' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.payments.paymentDate' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'plotBookings.payments.amount' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">receipt_long</span>{{ 'plotBookings.payments.receiptNo' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">credit_card</span>{{ 'plotBookings.payments.mode' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'plotBookings.payments.instrumentNo' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.payments.date' | translate }}</th>
             </tr></thead>
             <tbody>
-              <tr *ngFor="let i of r.installments">
-                <td>{{ i.installmentNumber }}</td>
-                <td>{{ i.dueDate | date: 'mediumDate' }}</td>
-                <td>{{ money(i.amount) }}</td>
-                <td>{{ 'plotBookings.installmentStatus.' + i.status | translate }}</td>
-                <td>{{ i.paidAt ? (i.paidAt | date: 'mediumDate') : '—' }}</td>
+              <tr *ngIf="!payments(r).length"><td colspan="6">{{ 'plotBookings.payments.empty' | translate }}</td></tr>
+              <tr *ngFor="let i of payments(r)">
+                <td class="booking-table__mono" [attr.data-label]="'plotBookings.payments.paymentDate' | translate">{{ i.confirmedAt ? (i.confirmedAt | date: 'mediumDate') : '—' }}</td>
+                <td class="booking-table__mono" [attr.data-label]="'plotBookings.payments.amount' | translate">{{ money(i.amount) }}</td>
+                <td class="booking-table__mono" [attr.data-label]="'plotBookings.payments.receiptNo' | translate">{{ i.receiptNo || '—' }}</td>
+                <td [attr.data-label]="'plotBookings.payments.mode' | translate">{{ i.paymentMode ? ('admin.projectsPlots.paymentMode.' + i.paymentMode | translate) : '—' }}</td>
+                <td class="booking-table__mono" [attr.data-label]="'plotBookings.payments.instrumentNo' | translate">{{ i.paymentRef || '—' }}</td>
+                <td class="booking-table__mono" [attr.data-label]="'plotBookings.payments.date' | translate">{{ i.paidAt ? (i.paidAt | date: 'mediumDate') : '—' }}</td>
               </tr>
             </tbody>
           </table>
@@ -143,6 +146,12 @@ export class BookingTableComponent {
 
   get popupRow(): BookingRow | undefined {
     return this.rows.find(r => r.key === this.expandedKey && r.installments);
+  }
+
+  // Payments are the ENTERED/PAID rows (the rest of the schedule is future EMIs), newest first.
+  payments(r: BookingRow): EmiInstallment[] {
+    return (r.installments ?? []).filter(i => (i.status === 'ENTERED' || i.status === 'PAID') && i.paidAt)
+      .sort((a, c) => (c.paidAt ?? '').localeCompare(a.paidAt ?? ''));
   }
 
   toggle(r: BookingRow): void {

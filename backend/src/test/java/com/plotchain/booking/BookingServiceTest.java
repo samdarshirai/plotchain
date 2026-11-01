@@ -265,6 +265,35 @@ class BookingServiceTest {
     }
 
     @Test
+    void createBookingStoresTheTrimmedReceiptNoOnTheTokenInstallment() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        bookingService.createBooking(tokenRequestWithReceipt("  RCP-77 "));
+
+        assertThat(savedTokenInstallment().getReceiptNo()).isEqualTo("RCP-77");
+    }
+
+    @Test
+    void createBookingStoresNoReceiptNoWhenItIsBlankOrMissing() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        bookingService.createBooking(tokenRequestWithReceipt("   "));
+
+        assertThat(savedTokenInstallment().getReceiptNo()).isNull();
+    }
+
+    private CreateBookingRequest tokenRequestWithReceipt(String receiptNo) {
+        return new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "9999999999", new BigDecimal("100000"),
+            null, null, PaymentMode.CASH, "T1", null, null, null, null, receiptNo);
+    }
+
+    private EmiInstallment savedTokenInstallment() {
+        ArgumentCaptor<List<EmiInstallment>> captor = ArgumentCaptor.forClass(List.class);
+        verify(emiInstallmentRepository).saveAll(captor.capture());
+        return captor.getValue().get(0);
+    }
+
+    @Test
     void createBookingSnapshotsPriceAreaRateAndConfirmsNoInstallment() {
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
 

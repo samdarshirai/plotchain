@@ -60,6 +60,12 @@ public class EmiInstallment {
     @Column(name = "recorded_at")
     private Instant recordedAt;
 
+    @Column(name = "receipt_no")
+    private String receiptNo;
+
+    public String getReceiptNo() { return receiptNo; }
+    public void setReceiptNo(String receiptNo) { this.receiptNo = receiptNo; }
+
     public Instant getRecordedAt() { return recordedAt; }
     public void setRecordedAt(Instant recordedAt) { this.recordedAt = recordedAt; }
 
