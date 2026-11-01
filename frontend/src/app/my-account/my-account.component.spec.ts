@@ -40,7 +40,7 @@ describe('MyAccountComponent', () => {
     id: 'a1', userId: 'VP00001', name: 'Left Kumar', phone: null,
     email: 'left@example.com', address: null, joinedAt: '2026-09-02T00:00:00Z',
     fatherHusbandName: null, dateOfBirth: null, gender: null, maritalStatus: null,
-    state: null, district: null, postalCode: null
+    state: null, district: null, postalCode: null, panNumber: null, aadhaarNumber: null
   };
   const companyLetterhead: CompanyLetterheadResponse = {
     displayName: 'Plotchain Estates', registeredAddress: '123 MG Road, Bengaluru',

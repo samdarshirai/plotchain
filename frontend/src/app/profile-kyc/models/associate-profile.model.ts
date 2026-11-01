@@ -18,6 +18,8 @@ export interface AssociateProfileResponse {
   state: string | null;
   district: string | null;
   postalCode: string | null;
+  panNumber: string | null;
+  aadhaarNumber: string | null;
 }
 
 // A null phone/email/address/personal-detail field clears the field server-side (all nullable

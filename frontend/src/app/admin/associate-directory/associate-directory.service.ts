@@ -11,6 +11,7 @@ export type AdminUpdateAssociateProfileRequest = {
   name: string; phone: string | null; email: string | null; address: string | null;
   fatherHusbandName: string | null; dateOfBirth: string | null; gender: string | null; maritalStatus: string | null;
   state: string | null; district: string | null; postalCode: string | null;
+  panNumber: string; aadhaarNumber: string;
 };
 
 @Injectable({ providedIn: 'root' })
