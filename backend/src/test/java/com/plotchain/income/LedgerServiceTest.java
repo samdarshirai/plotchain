@@ -419,6 +419,31 @@ class LedgerServiceTest {
     }
 
     @Test
+    void myRewardTiers_measuresEachLevelOnVolumeAfterThePreviousOnes() {
+        UUID me = UUID.randomUUID();
+        UUID planId = UUID.randomUUID();
+        when(compensationPlanService.currentRewardTiers()).thenReturn(List.of(
+            new com.plotchain.compensation.RewardTier(UUID.randomUUID(), planId, 1, new BigDecimal("1000000"), new BigDecimal("1"), null),
+            new com.plotchain.compensation.RewardTier(UUID.randomUUID(), planId, 2, new BigDecimal("2000000"), new BigDecimal("2"), null),
+            new com.plotchain.compensation.RewardTier(UUID.randomUUID(), planId, 3, new BigDecimal("3000000"), new BigDecimal("3"), null)));
+        when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of());
+        when(legVolumeRepository.totalBusiness(me)).thenReturn(
+            new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("4500000"), new BigDecimal("1200000")));
+        when(saleRepository.sumOpenCycleLegBusiness(me, "L")).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumOpenCycleLegBusiness(me, "R")).thenReturn(BigDecimal.ZERO);
+
+        List<AssociateRewardTierRow> rows = service.myRewardTiers(me);
+
+        // Matched 12L: Level 1 (10L) cleared, Level 2 in progress (needs 30L total), Level 3 untouched.
+        assertThat(rows.get(0).requiredLeftBusiness()).isZero();
+        assertThat(rows.get(0).requiredRightBusiness()).isZero();
+        assertThat(rows.get(1).requiredLeftBusiness()).isZero(); // left leg already past 30L
+        assertThat(rows.get(1).requiredRightBusiness()).isEqualByComparingTo("1800000");
+        assertThat(rows.get(2).requiredLeftBusiness()).isEqualByComparingTo("3000000"); // full, left surplus not counted
+        assertThat(rows.get(2).requiredRightBusiness()).isEqualByComparingTo("3000000");
+    }
+
+    @Test
     void myRewardTiers_joinsLedgerRowToTier_andLeavesUnachievedNull() {
         UUID me = UUID.randomUUID();
         UUID t1 = UUID.randomUUID();
@@ -443,9 +468,10 @@ class LedgerServiceTest {
         assertThat(rows.get(0).achievedDate()).isEqualTo(Instant.parse("2026-01-15T00:00:00Z"));
         assertThat(rows.get(0).requiredLeftBusiness()).isZero();
         assertThat(rows.get(0).requiredRightBusiness()).isEqualByComparingTo("100000");
-        // Level 2 needs its own 15L on top of Level 1's 5L: 20L per leg in total.
-        assertThat(rows.get(1).requiredLeftBusiness()).isEqualByComparingTo("400000");
-        assertThat(rows.get(1).requiredRightBusiness()).isEqualByComparingTo("1600000");
+        // Matched is 4L (right leg 3L + 1L open), short of Level 1, so Level 2 hasn't started:
+        // it shows its full 15L per leg, not reduced by the left leg's surplus.
+        assertThat(rows.get(1).requiredLeftBusiness()).isEqualByComparingTo("1500000");
+        assertThat(rows.get(1).requiredRightBusiness()).isEqualByComparingTo("1500000");
         assertThat(rows.get(1).status()).isNull();
         assertThat(rows.get(1).achievedDate()).isNull();
     }

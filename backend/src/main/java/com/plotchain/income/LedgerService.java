@@ -314,30 +314,47 @@ public class LedgerService {
     }
 
     // Full reward ladder for the caller, each tier joined to its REWARD ledger row (sourceRef =
-    // reward_tier.id, CycleService#creditReward). Leg volume resets after each level, so a tier is
-    // reached once cumulative leg business covers the SUM of thresholds up to it. Required
-    // left/right = max(0, that sum - cumulative leg business), live -- closed-cycle totals plus this
-    // OPEN cycle's leg sales, same as DashboardService's Total Left/Right Business. No row = NOT_ACHIEVED.
+    // reward_tier.id, CycleService#creditReward). Leg volume resets after each level, so each
+    // level is measured on volume earned AFTER the previous levels (matched = min(left, right)
+    // against the running sum of thresholds). Required left/right = volume still missing per leg:
+    // 0 for a cleared level, max(0, thresholdsThroughThis - leg business) for the level in
+    // progress, and the full threshold for every level after it. Live: closed-cycle totals plus
+    // this OPEN cycle's leg sales, same as DashboardService's Total Left/Right Business.
+    // No row = NOT_ACHIEVED.
     public List<AssociateRewardTierRow> myRewardTiers(UUID associateId) {
         Map<UUID, LedgerEntry> bySourceRef = rewardEntriesBySourceRef(associateId);
         LegVolumeRepository.LegBusinessTotals closed = legVolumeRepository.totalBusiness(associateId);
         BigDecimal left = closed.left().add(saleRepository.sumOpenCycleLegBusiness(associateId, "L"));
         BigDecimal right = closed.right().add(saleRepository.sumOpenCycleLegBusiness(associateId, "R"));
+        BigDecimal matched = left.min(right);
         List<AssociateRewardTierRow> rows = new ArrayList<>();
-        BigDecimal needed = BigDecimal.ZERO;
+        BigDecimal before = BigDecimal.ZERO;
         for (RewardTier t : compensationPlanService.currentRewardTiers()) {
-            needed = needed.add(t.getVolumeThreshold());
+            BigDecimal through = before.add(t.getVolumeThreshold());
+            BigDecimal requiredLeft;
+            BigDecimal requiredRight;
+            if (matched.compareTo(through) >= 0) {
+                requiredLeft = BigDecimal.ZERO;
+                requiredRight = BigDecimal.ZERO;
+            } else if (matched.compareTo(before) >= 0) {
+                requiredLeft = remaining(through, left);
+                requiredRight = remaining(through, right);
+            } else {
+                requiredLeft = t.getVolumeThreshold();
+                requiredRight = t.getVolumeThreshold();
+            }
             LedgerEntry e = bySourceRef.get(t.getId());
             rows.add(new AssociateRewardTierRow(
                 t.getTierLevel(),
                 t.getVolumeThreshold(),
                 t.getDesignation(),
-                remaining(needed, left),
-                remaining(needed, right),
+                requiredLeft,
+                requiredRight,
                 t.getCashReward(),
                 t.getPerkDescription(),
                 e == null ? null : e.getStatus(),
                 e == null ? null : e.getCreatedAt()));
+            before = through;
         }
         return rows;
     }
