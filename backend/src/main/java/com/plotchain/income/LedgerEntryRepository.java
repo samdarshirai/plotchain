@@ -162,6 +162,9 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
 
     List<LedgerEntry> findByAssociateIdAndCycleId(UUID associateId, UUID cycleId);
 
+    // Every status, PAID and REVERSED included (CycleService re-points open-cycle Direct Income).
+    List<LedgerEntry> findByCycleIdAndIncomeType(UUID cycleId, IncomeType incomeType);
+
     // CycleService live income: this cycle's recomputable (cycle-derived, not yet wallet-PAID) rows.
     // The delete is a bulk JPQL statement so it hits the DB before the recompute re-inserts rows
     // that share a unique key (REWARD's sourceRef = tier id).

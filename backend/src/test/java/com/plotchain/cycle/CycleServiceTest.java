@@ -47,6 +47,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,6 +59,7 @@ class CycleServiceTest {
     @Mock SaleRepository saleRepository;
     @Mock CompensationPlanVersionRepository compensationPlanVersionRepository;
     @Mock LedgerEntryRepository ledgerEntryRepository;
+    @Mock com.plotchain.wallet.WalletRepository walletRepository;
     @Mock RankTierRepository rankTierRepository;
     @Mock RoyaltyBonusRateRepository royaltyBonusRateRepository;
     @Mock RewardTierRepository rewardTierRepository;
@@ -96,7 +98,7 @@ class CycleServiceTest {
     void listWithNoStatusFilterDelegatesToFindAll() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         Cycle cycle = newCycle(CycleStatus.OPEN);
         when(cycleRepository.findAllByOrderByPeriodStartDesc(PageRequest.of(0, 20)))
             .thenReturn(new PageImpl<>(List.of(cycle), PageRequest.of(0, 20), 1));
@@ -117,7 +119,7 @@ class CycleServiceTest {
     void listWithStatusFilterDelegatesToFindByStatus() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         Cycle cycle = newCycle(CycleStatus.CLOSED);
         when(cycleRepository.findByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED, PageRequest.of(1, 10)))
             .thenReturn(new PageImpl<>(List.of(cycle), PageRequest.of(1, 10), 11));
@@ -134,7 +136,7 @@ class CycleServiceTest {
     void getDetailReturnsCycleFieldsPlusPerIncomeTypeBreakdownAndOverallTotal() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         Cycle cycle = newCycle(CycleStatus.CLOSED);
         when(cycleRepository.findById(cycle.getId())).thenReturn(Optional.of(cycle));
         when(ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), IncomeType.DIRECT))
@@ -175,7 +177,7 @@ class CycleServiceTest {
     void getDetailThrowsCycleNotFoundExceptionWhenIdDoesNotResolve() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         UUID missingId = UUID.randomUUID();
         when(cycleRepository.findById(missingId)).thenReturn(Optional.empty());
 
@@ -187,7 +189,7 @@ class CycleServiceTest {
     void closeThrowsCycleNotFoundExceptionWhenTheCycleDoesNotExist() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         UUID id = UUID.randomUUID();
         when(cycleRepository.findByIdForUpdate(id)).thenReturn(Optional.empty());
 
@@ -198,7 +200,7 @@ class CycleServiceTest {
     void closeThrowsCycleAlreadyClosedExceptionWhenStatusIsClosed() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         Cycle cycle = newCycle(CycleStatus.CLOSED);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
 
@@ -209,7 +211,7 @@ class CycleServiceTest {
     void closeThrowsCycleValidationExceptionWhenPeriodHasNotEnded() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         Cycle cycle = newCycleWithBounds(LocalDate.now().minusDays(1), LocalDate.now(), CycleStatus.OPEN);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
 
@@ -221,7 +223,7 @@ class CycleServiceTest {
     void getOrOpenCurrentDoesNotCreateAnOverlappingCycle() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         Cycle stale = newCycleWithBounds(LocalDate.now().plusDays(1), LocalDate.now().plusDays(10), CycleStatus.OPEN);
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(stale));
 
@@ -235,7 +237,7 @@ class CycleServiceTest {
     void closeResolvesThePlanVersionInEffectTodayNotAtCycleStart() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         Cycle cycle = newCycle(CycleStatus.OPEN);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -248,42 +250,130 @@ class CycleServiceTest {
     }
 
     // Direct Income is written at payment time; a later recalculation re-rates it in place with
-    // today's plan, same as the cycle-derived types.
-    @Test
-    void refreshLiveIncomeReRatesDirectIncomeWithTodaysPlan() {
+    // today's plan and re-points it to the seller's sponsor (compensation-plan-reference.md section 1).
+    private static final UUID SPONSOR_ID = UUID.randomUUID();
+
+    private record DirectScenario(Cycle cycle, Associate seller, LedgerEntry direct) {}
+
+    private DirectScenario directScenario(LedgerEntryStatus status, boolean sellerIsAdmin, UUID entryOwner) {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         Cycle cycle = newCycle(CycleStatus.OPEN);
         Associate seller = associateFixture(null, null);
+        seller.setRole(sellerIsAdmin ? AssociateRole.ADMIN : AssociateRole.ASSOCIATE);
+        seller.setSponsorId(sellerIsAdmin ? null : SPONSOR_ID);
         Sale sale = saleFixture(seller.getId(), cycle.getId(), new BigDecimal("100000"));
-        LedgerEntry direct = matchingEntryFixture(seller.getId(), cycle.getId(), new BigDecimal("7000"));
+        LedgerEntry direct = matchingEntryFixture(entryOwner == null ? seller.getId() : entryOwner, cycle.getId(), new BigDecimal("7000"));
         direct.setIncomeType(IncomeType.DIRECT);
         direct.setSourceRef(sale.getId());
+        direct.setStatus(status);
+        direct.setNetAmount(new BigDecimal("4980"));
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
         when(associateRepository.findAll()).thenReturn(List.of(seller));
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(sale));
-        // lenient: the same method is also called for the cycle-derived types, which stay empty here.
-        org.mockito.Mockito.lenient().when(ledgerEntryRepository.findRecomputable(cycle.getId(), List.of(IncomeType.DIRECT)))
-            .thenReturn(List.of(direct));
+        when(ledgerEntryRepository.findByCycleIdAndIncomeType(cycle.getId(), IncomeType.DIRECT)).thenReturn(List.of(direct));
+        lenient().when(associateRepository.existsById(SPONSOR_ID)).thenReturn(true);
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(referencePlanVersionFixture()));
+        return new DirectScenario(cycle, seller, direct);
+    }
 
-        service.refreshLiveIncome(cycle.getId());
+    @Test
+    void refreshLiveIncomeReRatesDirectIncomeWithTodaysPlan() {
+        DirectScenario d = directScenario(LedgerEntryStatus.PENDING, false, null);
+
+        service.refreshLiveIncome(d.cycle().getId());
 
         // 6% of 100000 = 6000; TDS 2% = 120; processing fee 15% = 900; net 4980.
-        verify(ledgerEntryRepository).save(direct);
-        assertThat(direct.getGrossAmount()).isEqualByComparingTo("6000");
-        assertThat(direct.getTdsDeduction()).isEqualByComparingTo("120");
-        assertThat(direct.getAdminDeduction()).isEqualByComparingTo("900");
-        assertThat(direct.getNetAmount()).isEqualByComparingTo("4980");
+        verify(ledgerEntryRepository).save(d.direct());
+        assertThat(d.direct().getGrossAmount()).isEqualByComparingTo("6000");
+        assertThat(d.direct().getTdsDeduction()).isEqualByComparingTo("120");
+        assertThat(d.direct().getAdminDeduction()).isEqualByComparingTo("900");
+        assertThat(d.direct().getNetAmount()).isEqualByComparingTo("4980");
+    }
+
+    @Test
+    void recalculateRePointsPendingDirectEntryToSponsor() {
+        DirectScenario d = directScenario(LedgerEntryStatus.PENDING, false, null);
+
+        service.refreshLiveIncome(d.cycle().getId());
+
+        assertThat(d.direct().getAssociateId()).isEqualTo(SPONSOR_ID);
+        verifyNoInteractions(walletRepository);
+    }
+
+    @Test
+    void recalculateRePointsPaidDirectEntryAndMovesWalletCredit() {
+        DirectScenario d = directScenario(LedgerEntryStatus.PAID, false, null);
+        when(walletRepository.existsById(SPONSOR_ID)).thenReturn(true);
+
+        service.refreshLiveIncome(d.cycle().getId());
+
+        assertThat(d.direct().getAssociateId()).isEqualTo(SPONSOR_ID);
+        assertThat(d.direct().getStatus()).isEqualTo(LedgerEntryStatus.PAID);
+        assertThat(d.direct().getNetAmount()).isEqualByComparingTo("4980"); // PAID amounts are not re-rated
+        verify(walletRepository).creditBalance(d.seller().getId(), new BigDecimal("-4980"));
+        verify(walletRepository).creditBalance(SPONSOR_ID, new BigDecimal("4980"));
+    }
+
+    @Test
+    void recalculateCreatesSponsorWalletBeforeCrediting() {
+        DirectScenario d = directScenario(LedgerEntryStatus.PAID, false, null);
+        when(walletRepository.existsById(SPONSOR_ID)).thenReturn(false);
+
+        service.refreshLiveIncome(d.cycle().getId());
+
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(walletRepository);
+        order.verify(walletRepository).save(argThat(w -> SPONSOR_ID.equals(w.getAssociateId())));
+        order.verify(walletRepository).creditBalance(SPONSOR_ID, new BigDecimal("4980"));
+    }
+
+    @Test
+    void recalculateIsIdempotentForDirectEntries() {
+        DirectScenario d = directScenario(LedgerEntryStatus.PAID, false, SPONSOR_ID);
+
+        service.refreshLiveIncome(d.cycle().getId());
+
+        assertThat(d.direct().getAssociateId()).isEqualTo(SPONSOR_ID);
+        verifyNoInteractions(walletRepository);
+    }
+
+    @Test
+    void recalculateLeavesReversedDirectEntryAlone() {
+        DirectScenario d = directScenario(LedgerEntryStatus.REVERSED, false, null);
+
+        service.refreshLiveIncome(d.cycle().getId());
+
+        assertThat(d.direct().getAssociateId()).isEqualTo(d.seller().getId());
+        verifyNoInteractions(walletRepository);
+    }
+
+    @Test
+    void recalculateThrowsWhenNonAdminSellerHasNoSponsor() {
+        DirectScenario d = directScenario(LedgerEntryStatus.PENDING, false, null);
+        d.seller().setSponsorId(null);
+
+        assertThatThrownBy(() -> service.refreshLiveIncome(d.cycle().getId()))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("no sponsor");
+    }
+
+    @Test
+    void recalculateReversesDirectEntryOnAdminSale() {
+        DirectScenario d = directScenario(LedgerEntryStatus.PAID, true, null);
+
+        service.refreshLiveIncome(d.cycle().getId());
+
+        assertThat(d.direct().getStatus()).isEqualTo(LedgerEntryStatus.REVERSED);
+        verify(walletRepository).creditBalance(d.seller().getId(), new BigDecimal("-4980"));
     }
 
     @Test
     void closeWithNoAssociatesWritesNoLegVolumeRowsAndStillClosesAndReopens() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         Cycle cycle = newCycle(CycleStatus.OPEN);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -308,7 +398,7 @@ class CycleServiceTest {
     void closeOpensTheNextCycleStartingTheDayAfterActualCloseNotTheBucketForToday() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         Cycle cycle = newCycle(CycleStatus.OPEN);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -337,7 +427,7 @@ class CycleServiceTest {
     void closeComputesLegVolumeRollupTreeWideOnAMixedFixtureTreeAndWritesOneRowPerAssociate() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         // Fixture tree (Admin is the root, per the role-model spec):
         //           admin
@@ -493,7 +583,7 @@ class CycleServiceTest {
     void closeCreditsMatchingIncomeForAnAssociateWithANonzeroMatchedPair() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.VERIFIED);
@@ -546,7 +636,7 @@ class CycleServiceTest {
     void closeRoyaltyIgnoresVolumeCarriedInFromThePriorCycle() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -602,7 +692,7 @@ class CycleServiceTest {
     void closeCreditsMatchingIncomeMatchingRound1DocFixture() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.VERIFIED);
@@ -639,7 +729,7 @@ class CycleServiceTest {
     void applyDeductionsUsesTheProcessingFeeRate() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.VERIFIED);
@@ -679,7 +769,7 @@ class CycleServiceTest {
     void closeWritesNoMatchingEntryWhenOneLegIsZero() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.VERIFIED);
@@ -710,7 +800,7 @@ class CycleServiceTest {
     void closeCarriesTheExcessOnTheLargerLeftLegForwardOnTheSameLegVolumeRow() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.VERIFIED);
@@ -746,7 +836,7 @@ class CycleServiceTest {
     void closeCarriesTheExcessOnTheLargerRightLegForwardOnTheSameLegVolumeRow() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.VERIFIED);
@@ -782,7 +872,7 @@ class CycleServiceTest {
     void closeIncrementsCumulativeMatchedVolumeByTheMatchedVolumeNotTheIncomeAmount() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.VERIFIED);
@@ -818,7 +908,7 @@ class CycleServiceTest {
     void closeSetsCarriedForwardStatusWhenAssociateKycIsPending() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.PENDING);
@@ -850,7 +940,7 @@ class CycleServiceTest {
     void closeSetsCarriedForwardStatusWhenAssociateKycIsRejected() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.REJECTED);
@@ -882,7 +972,7 @@ class CycleServiceTest {
     void closeSkipsWritingWhenAnIdempotentEntryAlreadyExistsForThatLegVolumeRow() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setKycStatus(KycStatus.VERIFIED);
@@ -919,7 +1009,7 @@ class CycleServiceTest {
     void getOrOpenCurrentCreatesANewCycleWhenNoCycleCoversToday() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         LocalDate today = LocalDate.now();
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
             .thenReturn(Optional.empty());
@@ -938,7 +1028,7 @@ class CycleServiceTest {
     void getOrOpenCurrentReturnsTheExistingOpenCycleWhenItCoversToday() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         LocalDate today = LocalDate.now();
         Cycle existing = newCycleWithBounds(expectedPeriodStart(today), expectedPeriodEnd(today), CycleStatus.OPEN);
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN))
@@ -954,7 +1044,7 @@ class CycleServiceTest {
     void getOrOpenCurrentReusesAStaleOpenCycleInsteadOfOpeningASecondOne() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         LocalDate today = LocalDate.now();
         // Period long over but admin hasn't closed it: it stays the one OPEN cycle.
         Cycle stale = newCycleWithBounds(today.minusDays(40), today.minusDays(26), CycleStatus.OPEN);
@@ -969,7 +1059,7 @@ class CycleServiceTest {
     void getOrOpenCurrentRefusesToCreateACycleWhileAnotherIsOpen() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.empty());
         when(cycleRepository.existsByStatus(CycleStatus.OPEN)).thenReturn(true);
 
@@ -981,7 +1071,7 @@ class CycleServiceTest {
     void closeAdvancesRankWhenCumulativeMatchedVolumeCrossesOneThreshold() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         UUID bronzeId = UUID.randomUUID();
         UUID silverId = UUID.randomUUID();
@@ -1022,7 +1112,7 @@ class CycleServiceTest {
     void closeAdvancesRankToTheHighestTierWhenCumulativeMatchedVolumeCrossesTwoThresholdsInOneCycle() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         UUID bronzeId = UUID.randomUUID();
         UUID silverId = UUID.randomUUID();
@@ -1063,7 +1153,7 @@ class CycleServiceTest {
     void closeNeverDemotesRankEvenWhenCurrentCycleAloneWouldOnlyQualifyForALowerTier() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         UUID bronzeId = UUID.randomUUID();
         UUID silverId = UUID.randomUUID();
@@ -1098,7 +1188,7 @@ class CycleServiceTest {
     void closeSkipsRankAdvancementForAdmin() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         UUID bronzeId = UUID.randomUUID();
         UUID silverId = UUID.randomUUID();
@@ -1133,7 +1223,7 @@ class CycleServiceTest {
     void closeSkipsRankAdvancementForNonAssociateStaffRoles() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         UUID bronzeId = UUID.randomUUID();
         UUID silverId = UUID.randomUUID();
@@ -1168,7 +1258,7 @@ class CycleServiceTest {
     void closeKeepsCurrentRankUnchangedWhenMatchedVolumeDoesNotCrossAnyNewThreshold() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         UUID bronzeId = UUID.randomUUID();
         UUID silverId = UUID.randomUUID();
@@ -1211,7 +1301,7 @@ class CycleServiceTest {
     void closeCreditsSponsorMatchingForADirectSponseesMatchingEntryThisCycle() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate sponsor = associateFixture(null, null);
         sponsor.setKycStatus(KycStatus.VERIFIED);
@@ -1258,7 +1348,7 @@ class CycleServiceTest {
     void closeCreditsSponsorMatchingMatchingRound2DocFixture() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         // "You" sponsors A and B directly. A's own Matching gross this cycle is ₹1,40,000
         // (Round 2 doc fixture), B's is ₹1,19,000.
@@ -1306,7 +1396,7 @@ class CycleServiceTest {
     void closeWritesOneSponsorMatchingEntryPerDirectSponseeNotAggregated() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate sponsor = associateFixture(null, null);
         sponsor.setKycStatus(KycStatus.VERIFIED);
@@ -1349,7 +1439,7 @@ class CycleServiceTest {
     void closeWritesNoSponsorMatchingEntryWhenTheSponseeHasNoMatchingEntryThisCycle() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate sponsor = associateFixture(null, null);
         sponsor.setKycStatus(KycStatus.VERIFIED);
@@ -1378,7 +1468,7 @@ class CycleServiceTest {
     void closeBasesSponsorMatchingGrossOnTheSponseesMatchingGrossAmountNeverNetAmount() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate sponsor = associateFixture(null, null);
         sponsor.setKycStatus(KycStatus.VERIFIED);
@@ -1422,7 +1512,7 @@ class CycleServiceTest {
     void closeGatesSponsorMatchingStatusOnTheSponsorsOwnKycStatusNotTheSponsees() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate sponsor = associateFixture(null, null);
         sponsor.setKycStatus(KycStatus.PENDING); // sponsor unverified
@@ -1455,7 +1545,7 @@ class CycleServiceTest {
     void closeSkipsSponsorMatchingWriteWhenAnIdempotentEntryAlreadyExists() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate sponsor = associateFixture(null, null);
         sponsor.setKycStatus(KycStatus.VERIFIED);
@@ -1488,7 +1578,7 @@ class CycleServiceTest {
     void closeSkipsSponsorMatchingWriteWhenComputedGrossAmountIsZero() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate sponsor = associateFixture(null, null);
         sponsor.setKycStatus(KycStatus.VERIFIED);
@@ -1525,7 +1615,7 @@ class CycleServiceTest {
     void closeCreditsSponsorMatchingToAdminWhenAdminIsTheSponsor() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         // Decision #7: "Matching and Sponsor Matching... do apply to Admin in full." Admin has no
         // rankId, no role guard should exclude it from being credited as a sponsor.
@@ -1562,7 +1652,7 @@ class CycleServiceTest {
     void closeCreditsRoyaltyUsingTheVolumeSlabRateForTheAssociatesMatchedVolume() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -1623,7 +1713,7 @@ class CycleServiceTest {
     void closeWritesNoRoyaltyEntryWhenNoRateIsConfiguredForTheAssociatesMatchedVolume() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -1655,7 +1745,7 @@ class CycleServiceTest {
     void closeSkipsRoyaltyForAdmin() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         // Decision #7: Royalty is "Also skipped for Admin (no rankId to look up a rate for)".
         Associate admin = associateFixture(null, null);
@@ -1688,7 +1778,7 @@ class CycleServiceTest {
     void closeSkipsRoyaltyForNonAssociateStaffRoles() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         // ADMIN is exempt from needing a rank (chk_associate_rank_required,
         // V4__user_id_login_and_admin_roles.sql) same as any non-ASSOCIATE role always was,
@@ -1721,7 +1811,7 @@ class CycleServiceTest {
     void closeSetsCarriedForwardStatusForRoyaltyWhenAssociateKycIsNotVerified() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -1758,7 +1848,7 @@ class CycleServiceTest {
     void closeSkipsRoyaltyWriteWhenAnIdempotentEntryAlreadyExists() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -1805,7 +1895,7 @@ class CycleServiceTest {
     void closeSkipsRoyaltyWriteWhenComputedGrossAmountIsZero() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -1840,7 +1930,7 @@ class CycleServiceTest {
     void closeWritesNoRoyaltyEntryWhenTheAssociateHasNoMatchedVolumeThisCycle() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -1870,7 +1960,7 @@ class CycleServiceTest {
     void closeCreditsRoyaltyMatchingRound2DocFixtureFortyLakhSlab() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -1913,7 +2003,7 @@ class CycleServiceTest {
     void closeCreditsRoyaltyAtExactSlabBoundaryUsesThatSlabsRate() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -1955,7 +2045,7 @@ class CycleServiceTest {
     void closeCreditsRoyaltyBelowLowestSlabWritesNoEntry() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -1990,7 +2080,7 @@ class CycleServiceTest {
     void closeCreditsRewardForAnAssociateWhoCrossesATierThreshold() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -2042,7 +2132,7 @@ class CycleServiceTest {
     void closeWritesNoRewardEntryWhenNoTierThresholdIsMet() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -2078,7 +2168,7 @@ class CycleServiceTest {
     void closeCreditsMultipleNewlyCrossedRewardTiersInASingleCycle() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -2126,7 +2216,7 @@ class CycleServiceTest {
     void closeCreditsRewardForAdmin() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         // Decision #8: RewardTier has no FK to rank_tier, so unlike Royalty (unit 8, which
         // explicitly skips Admin), Reward applies to Admin in full.
@@ -2171,7 +2261,7 @@ class CycleServiceTest {
     void closeSetsCarriedForwardStatusForRewardWhenAssociateKycIsNotVerified() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -2206,7 +2296,7 @@ class CycleServiceTest {
     void closeSkipsRewardWriteWhenAnIdempotentEntryAlreadyExists() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -2246,7 +2336,7 @@ class CycleServiceTest {
     void closeSkipsRewardWriteWhenTierCashRewardIsZero() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -2282,7 +2372,7 @@ class CycleServiceTest {
     void closeWritesNoRewardEntryWhenNoRewardTiersAreConfigured() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -2314,7 +2404,7 @@ class CycleServiceTest {
     void closeCreditsRewardIncomeMatchingRound1DocFixtureAwardsOnlyLevelOne() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -2363,7 +2453,7 @@ class CycleServiceTest {
     void closeCreditsRewardIncomeMatchingRound2DocFixtureAwardsThreeTiers() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -2414,7 +2504,7 @@ class CycleServiceTest {
     void closeCreditsRewardTierUsingCarriedForwardVolumeFromAPriorCycle() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
@@ -2510,7 +2600,7 @@ class CycleServiceTest {
     void closeCorrectlyComputesMatchingIncomeAcrossABalancedTreeOfSixHundredAssociates() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         int size = 600;
         BigDecimal ownSaleAmount = new BigDecimal("100");
@@ -2596,7 +2686,7 @@ class CycleServiceTest {
     void closeHandlesADeepChainOfSixHundredAssociatesWithoutStackOverflow() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
-            rewardTierRepository, expenseRepository);
+            rewardTierRepository, expenseRepository, walletRepository);
 
         int depth = 600;
         BigDecimal chainNodeSaleAmount = new BigDecimal("1000");
