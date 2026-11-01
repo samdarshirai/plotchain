@@ -236,6 +236,51 @@ class LedgerServiceTest {
     }
 
     @Test
+    void myListDirectRowCarriesSellerAndSaleAmount() {
+        UUID sponsorId = UUID.randomUUID(), sellerId = UUID.randomUUID(), saleId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        LedgerEntry direct = newEntry(UUID.randomUUID(), sponsorId, cycleId, saleId);
+        direct.setIncomeType(IncomeType.DIRECT);
+        com.plotchain.sales.Sale sale = new com.plotchain.sales.Sale();
+        sale.setId(saleId);
+        sale.setAssociateId(sellerId);
+        sale.setAmount(new BigDecimal("1000000.00"));
+
+        when(ledgerEntryRepository.search(eq(sponsorId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(direct), PageRequest.of(0, 20), 1));
+        when(cycleRepository.findAllById(List.of(cycleId)))
+            .thenReturn(List.of(newCycle(cycleId, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
+        when(saleRepository.findAllById(List.of(saleId))).thenReturn(List.of(sale));
+        when(associateRepository.findAllById(List.of(sellerId)))
+            .thenReturn(List.of(newAssociate(sellerId, "PC1002", "A")));
+
+        AssociateLedgerEntryResponse row = service.myList(sponsorId, null, null, null, 0, 20).entries().get(0);
+
+        assertThat(row.sponseeUserId()).isEqualTo("PC1002");
+        assertThat(row.sponseeName()).isEqualTo("A");
+        assertThat(row.saleAmount()).isEqualByComparingTo("1000000.00");
+    }
+
+    @Test
+    void myListDirectRowLeavesSellerFieldsNullWhenTheSaleLookupMisses() {
+        UUID sponsorId = UUID.randomUUID(), saleId = UUID.randomUUID(), cycleId = UUID.randomUUID();
+        LedgerEntry direct = newEntry(UUID.randomUUID(), sponsorId, cycleId, saleId);
+        direct.setIncomeType(IncomeType.DIRECT);
+
+        when(ledgerEntryRepository.search(eq(sponsorId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(direct), PageRequest.of(0, 20), 1));
+        when(cycleRepository.findAllById(List.of(cycleId)))
+            .thenReturn(List.of(newCycle(cycleId, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
+        when(saleRepository.findAllById(List.of(saleId))).thenReturn(List.of());
+
+        AssociateLedgerEntryResponse row = service.myList(sponsorId, null, null, null, 0, 20).entries().get(0);
+
+        assertThat(row.sponseeUserId()).isNull();
+        assertThat(row.sponseeName()).isNull();
+        assertThat(row.saleAmount()).isNull();
+    }
+
+    @Test
     void myListAddsLegBreakdownToMatchingRowsUsingPriorCyclesCarryAsBroughtForward() {
         UUID associateId = UUID.randomUUID();
         UUID c1 = UUID.randomUUID(), c2 = UUID.randomUUID();

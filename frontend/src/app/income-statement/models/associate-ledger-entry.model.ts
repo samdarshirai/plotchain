@@ -36,4 +36,7 @@ export interface AssociateLedgerEntry {
   legBreakdown?: LegBreakdown | null;
   sponseeUserId?: string | null;
   sponseeMatchingAmount?: number | null;
+  // DIRECT rows only: the selling sponsee's name and the sale amount the 6% was taken from.
+  sponseeName?: string | null;
+  saleAmount?: number | null;
 }

@@ -146,12 +146,22 @@ public class LedgerService {
         Map<UUID, LedgerEntry> sponseeEntries = sponseeMatchingEntries(content);
         Map<UUID, Associate> sponsees = associatesById(List.copyOf(sponseeEntries.values()));
 
+        Map<UUID, com.plotchain.sales.Sale> directSales = directSales(content);
+        List<UUID> sellerIds = directSales.values().stream().map(com.plotchain.sales.Sale::getAssociateId).distinct().toList();
+        Map<UUID, Associate> directSellers = sellerIds.isEmpty() ? new HashMap<>()
+            : associateRepository.findAllById(sellerIds).stream().collect(Collectors.toMap(Associate::getId, a -> a));
+
         List<AssociateLedgerEntryResponse> entries = content.stream()
             .map(e -> {
                 LedgerEntry src = sponseeEntries.get(e.getSourceRef());
                 Associate sponsee = src == null ? null : sponsees.get(src.getAssociateId());
+                com.plotchain.sales.Sale sale = directSales.get(e.getSourceRef());
+                Associate seller = sale == null ? null : directSellers.get(sale.getAssociateId());
                 return toAssociateResponse(e, cyclesById.get(e.getCycleId()), breakdowns.get(e.getSourceRef()),
-                    sponsee == null ? null : sponsee.getUserId(), src == null ? null : src.getGrossAmount());
+                    sponsee != null ? sponsee.getUserId() : seller == null ? null : seller.getUserId(),
+                    src == null ? null : src.getGrossAmount(),
+                    seller == null ? null : seller.getName(),
+                    sale == null ? null : sale.getAmount());
             })
             .toList();
         BigDecimal totalGross = ledgerEntryRepository.sumGrossAmount(associateId, incomeType, cycleId, status);
@@ -168,6 +178,19 @@ public class LedgerService {
             .collect(Collectors.toMap(LedgerEntry::getId, l -> l));
     }
 
+    // DIRECT rows' sourceRef is the sale id (SaleService#persistSaleAndIncome). Keyed by that id;
+    // one batch query, empty when the page has no DIRECT rows.
+    private Map<UUID, com.plotchain.sales.Sale> directSales(List<LedgerEntry> entries) {
+        List<UUID> ids = entries.stream()
+            .filter(e -> e.getIncomeType() == IncomeType.DIRECT && e.getSourceRef() != null)
+            .map(LedgerEntry::getSourceRef).distinct().toList();
+        if (ids.isEmpty()) {
+            return new HashMap<>();
+        }
+        return saleRepository.findAllById(ids).stream()
+            .collect(Collectors.toMap(com.plotchain.sales.Sale::getId, sl -> sl));
+    }
+
     // Shared with (a follow-up unit's) GET /api/associates/me/ledger: every ledger row needs its
     // cycle's period dates resolved the same way regardless of who's asking.
     private Map<UUID, Cycle> cyclesById(List<LedgerEntry> entries) {
@@ -178,6 +201,9 @@ public class LedgerService {
 
     private Map<UUID, Associate> associatesById(List<LedgerEntry> entries) {
         List<UUID> distinctAssociateIds = entries.stream().map(LedgerEntry::getAssociateId).distinct().toList();
+        if (distinctAssociateIds.isEmpty()) {
+            return new HashMap<>();
+        }
         return associateRepository.findAllById(distinctAssociateIds).stream()
             .collect(Collectors.toMap(Associate::getId, a -> a));
     }
@@ -220,7 +246,7 @@ public class LedgerService {
     // -- a read-only view, not a strict-consistency write path.
     private AssociateLedgerEntryResponse toAssociateResponse(
             LedgerEntry entry, Cycle cycle, AssociateLedgerEntryResponse.LegBreakdown legBreakdown,
-            String sponseeUserId, BigDecimal sponseeMatchingAmount) {
+            String sponseeUserId, BigDecimal sponseeMatchingAmount, String sponseeName, BigDecimal saleAmount) {
         return new AssociateLedgerEntryResponse(
             entry.getId(),
             entry.getIncomeType(),
@@ -236,7 +262,9 @@ public class LedgerService {
             entry.getCreatedAt(),
             legBreakdown,
             sponseeUserId,
-            sponseeMatchingAmount);
+            sponseeMatchingAmount,
+            sponseeName,
+            saleAmount);
     }
 
     // MATCHING and ROYALTY rows' sourceRef is the leg_volume.id (CycleService#creditMatchingIncome/creditRoyalty). Brought-forward
