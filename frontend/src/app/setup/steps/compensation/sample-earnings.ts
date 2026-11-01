@@ -49,8 +49,10 @@ export function computeSampleEarnings(
     royaltyPct
   } = plan;
 
-  // Spec-verbatim (setup-onboarding-spec.md:56): "applied to a solo sale".
-  const directIncome = (scenarioVolume * directIncomePct) / 100;
+  // Direct Income is the sponsor's cut of each direct sponsee's sale (compensation-plan-reference.md
+  // section 1). The preview associate has one sponsee per leg, each selling scenarioVolume, so the
+  // associate earns on both: Round 1's 6% x 10L + 6% x 10L = 1,20,000.
+  const directIncome = (2 * scenarioVolume * directIncomePct) / 100;
 
   // Spec-verbatim (setup-onboarding-spec.md:57): "applied to matched-pair volume".
   // Both legs are set equal to scenarioVolume in this single-input preview, so

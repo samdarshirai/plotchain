@@ -73,7 +73,7 @@ A platform for land-selling companies to manage a network of associates who sell
 
 Run once per cycle close (batch job), bottom-up over the tree:
 
-1. **Direct Income** — computed immediately on `SaleRecorded`: `plot_amount × 6%`, credited to the selling associate. No tree traversal needed.
+1. **Direct Income** — computed immediately on `SaleRecorded`: `plot_amount × 6%`, credited to the seller's sponsor (one hop up `sponsor_id`; the admin has no sponsor, so the admin's own sales earn no Direct Income). No tree traversal needed. See `compensation-plan-reference.md` §1.
 
 2. **Leg volume rollup** — for every associate, sum descendant sales per leg (this cycle's new volume + carried-forward volume from prior cycles).
 

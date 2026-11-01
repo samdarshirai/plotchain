@@ -53,7 +53,7 @@ The highest-stakes screen — mistakes here are expensive and hard to unwind mid
 
 | Field | Type | Notes |
 |---|---|---|
-| Direct income % | percent | applied to a solo sale |
+| Direct income % | percent | applied to each direct sponsee's sale (paid to their sponsor) |
 | Matching income % | percent | applied to matched-pair volume |
 | Sponsor matching bonus % | percent | applied to the matching income of each associate you sponsored, wherever they are placed |
 | Royalty bonus table | table (rank → %) | add/edit rows per rank |

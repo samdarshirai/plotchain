@@ -10,6 +10,8 @@ Role model: per the two-role spec, an Associate never records their own sale —
 
 ## Scope
 
+> **Superseded 2026-11-01:** Direct Income now credits the seller's *sponsor*, not the seller (the admin, who has no sponsor, earns none on their own sales). See `compensation-plan-reference.md` §1 and `docs/superpowers/plans/2026-11-01-direct-income-to-sponsor.md`. References below to crediting the selling associate are historical.
+
 **In scope**: recording a sale against a real `Plot`, the admin sales register (list/filter, void), the associate-facing own-sales read, and Direct Income — computed synchronously at record time (per `mlm-land-platform-spec.md` §3 step 1: "computed immediately on `SaleRecorded`... No tree traversal needed"). A minimal cycle-lifecycle piece (`CycleService.getOrOpenCurrent()`) is included because Sales cannot function without *some* cycle to attach to, and nothing in the codebase creates one today.
 
 **Out of scope**: Matching/Sponsor Matching/Royalty/Reward income and the leg-volume rollup batch (all require the full compensation-engine batch job — Cycle Management, a separate future spec). Admin-triggered cycle open/close/re-run, cycle monitoring UI. EMI/installment payment tracking (buyer pays the full `amount` at booking time in this spec — no partial-payment or "confirm date" gate; the PRD's own open question on this is resolved as "not needed yet," see Decisions). PAN capture on `Associate` (doesn't exist; Direct Income's admin-charge deduction always uses the without-PAN rate until a future KYC spec adds it).
