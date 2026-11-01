@@ -50,7 +50,13 @@ public class AssociateLedgerController {
         return ledgerService.mySummary(associateId);
     }
 
-    @GetMapping("/api/associates/me/reward-tiers")
+    // Self-scoped like the routes above: the downline is always the JWT caller's own.
+    @GetMapping("/api/associates/me/downline-income")
+    public List<AdminLedgerSummaryRow> getMyDownlineIncome(@AuthenticationPrincipal UUID associateId) {
+        return ledgerService.myDownlineSummary(associateId);
+    }
+
+        @GetMapping("/api/associates/me/reward-tiers")
     public List<AssociateRewardTierRow> getMyRewardTiers(@AuthenticationPrincipal UUID associateId) {
         return ledgerService.myRewardTiers(associateId);
     }

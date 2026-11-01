@@ -107,6 +107,22 @@ class AssociateLedgerControllerTest {
     }
 
     @Test
+    void getMyDownlineIncomeIsScopedToTheJwtCaller() throws Exception {
+        UUID associateId = UUID.randomUUID();
+        AdminLedgerSummaryRow row = new AdminLedgerSummaryRow(
+            UUID.randomUUID(), "VP00002", "Ravi", UUID.randomUUID(), LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 15),
+            new java.util.EnumMap<>(IncomeType.class), new BigDecimal("100.00"), new BigDecimal("2.00"), new BigDecimal("5.00"),
+            new BigDecimal("93.00"), 1, 0, null);
+        when(ledgerService.myDownlineSummary(associateId)).thenReturn(List.of(row));
+
+        mockMvc.perform(get("/api/associates/me/downline-income")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].associateUserId").value("VP00002"))
+            .andExpect(jsonPath("$[0].totalNet").value(93.00));
+    }
+
+    @Test
     void getMyLedgerReturns200WithAnEmptyPageWhenUnfiltered() throws Exception {
         UUID associateId = UUID.randomUUID();
         when(ledgerService.myList(eq(associateId), isNull(), isNull(), isNull(), eq(0), eq(20)))

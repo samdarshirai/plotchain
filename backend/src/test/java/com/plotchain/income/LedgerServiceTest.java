@@ -87,6 +87,21 @@ class LedgerServiceTest {
     // resolution, mapped by id -- proves the row carries both raw ids and resolved display
     // fields, plus every ledger field including the nullable sourceRef.
     @Test
+    void myDownlineSummaryExcludesTheCallerAndSkipsTheQueryWhenThereIsNoDownline() {
+        UUID self = UUID.randomUUID();
+        UUID child = UUID.randomUUID();
+        when(associateRepository.findSelfAndDownline(self)).thenReturn(List.of(self, child));
+        when(ledgerEntryRepository.summariseDownline(List.of(child))).thenReturn(List.of());
+
+        assertThat(service.myDownlineSummary(self)).isEmpty();
+        verify(ledgerEntryRepository).summariseDownline(List.of(child));
+
+        UUID loner = UUID.randomUUID();
+        when(associateRepository.findSelfAndDownline(loner)).thenReturn(List.of(loner));
+        assertThat(service.myDownlineSummary(loner)).isEmpty();
+    }
+
+    @Test
     void adminListReturnsAPageMappedToResponsesWithResolvedAssociateAndCycleFields() {
         UUID entryId = UUID.randomUUID();
         UUID associateId = UUID.randomUUID();

@@ -91,7 +91,21 @@ public class LedgerService {
     // Admin Summary tab: one row per associate x cycle, net per income type. Newest cycle first,
     // then associate id; paged in memory (see LedgerEntryRepository#summarise).
     public AdminLedgerSummaryPageResponse adminSummary(UUID associateId, UUID cycleId, int page, int size) {
-        List<LedgerSummaryRow> all = ledgerEntryRepository.summarise(associateId, cycleId);
+        List<AdminLedgerSummaryRow> rows = toSummaryRows(ledgerEntryRepository.summarise(associateId, cycleId));
+        int from = Math.min(page * size, rows.size());
+        int to = Math.min(from + size, rows.size());
+        return new AdminLedgerSummaryPageResponse(rows.subList(from, to), page, size, rows.size());
+    }
+
+    // Associate "My Downline Income Report": every associate below the caller (whole tree, self
+    // excluded), one row per associate x cycle, DIRECT + MATCHING only. Newest cycle first.
+    public List<AdminLedgerSummaryRow> myDownlineSummary(UUID associateId) {
+        List<UUID> ids = associateRepository.findSelfAndDownline(associateId).stream()
+            .filter(id -> !id.equals(associateId)).toList();
+        return ids.isEmpty() ? List.of() : toSummaryRows(ledgerEntryRepository.summariseDownline(ids));
+    }
+
+    private List<AdminLedgerSummaryRow> toSummaryRows(List<LedgerSummaryRow> all) {
         Map<UUID, Associate> associates = associateRepository
             .findAllById(all.stream().map(LedgerSummaryRow::getAssociateId).distinct().toList()).stream()
             .collect(Collectors.toMap(Associate::getId, a -> a));
@@ -99,7 +113,7 @@ public class LedgerService {
             .findAllById(all.stream().map(LedgerSummaryRow::getCycleId).distinct().toList()).stream()
             .collect(Collectors.toMap(Cycle::getId, c -> c));
 
-        List<AdminLedgerSummaryRow> rows = all.stream().map(r -> {
+        return all.stream().map(r -> {
             Associate a = associates.get(r.getAssociateId());
             Cycle c = cycles.get(r.getCycleId());
             Map<IncomeType, BigDecimal> gross = new java.util.EnumMap<>(IncomeType.class);
@@ -117,10 +131,6 @@ public class LedgerService {
             .comparing(AdminLedgerSummaryRow::cyclePeriodStart, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()))
             .thenComparing(AdminLedgerSummaryRow::associateUserId, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
             .toList();
-
-        int from = Math.min(page * size, rows.size());
-        int to = Math.min(from + size, rows.size());
-        return new AdminLedgerSummaryPageResponse(rows.subList(from, to), page, size, rows.size());
     }
 
     // Associate Income Statement "All" tab: the caller's own per-cycle summary, every cycle,

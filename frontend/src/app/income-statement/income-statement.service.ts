@@ -24,6 +24,10 @@ export class IncomeStatementService {
     return this.http.get<IncomeSummaryRow[]>('/api/associates/me/income-summary');
   }
 
+  downlineIncome(): Observable<IncomeSummaryRow[]> {
+    return this.http.get<IncomeSummaryRow[]>('/api/associates/me/downline-income');
+  }
+
   rewardTiers(): Observable<RewardTierRow[]> {
     return this.http.get<RewardTierRow[]>('/api/associates/me/reward-tiers');
   }
