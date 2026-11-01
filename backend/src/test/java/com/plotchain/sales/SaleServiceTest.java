@@ -65,6 +65,7 @@ class SaleServiceTest {
     private static final UUID PLOT_ID = UUID.randomUUID();
     private static final UUID PROJECT_ID = UUID.randomUUID();
     private static final UUID ASSOCIATE_ID = UUID.randomUUID();
+    private static final UUID SPONSOR_ID = UUID.randomUUID();
     private static final UUID CYCLE_ID = UUID.randomUUID();
 
     @BeforeEach
@@ -90,6 +91,8 @@ class SaleServiceTest {
         associate.setPosition(position);
         associate.setUserId("VP00001");
         associate.setName("Jane Associate");
+        associate.setRole(com.plotchain.associate.AssociateRole.ASSOCIATE);
+        associate.setSponsorId(SPONSOR_ID);
         return associate;
     }
 
@@ -124,10 +127,11 @@ class SaleServiceTest {
 
     private void stubConfirmedPathDependencies() {
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
+        org.mockito.Mockito.lenient().when(associateRepository.existsById(SPONSOR_ID)).thenReturn(true);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
         when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        org.mockito.Mockito.lenient().when(ledgerEntryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(compensationPlanVersionRepository
                 .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
             .thenReturn(Optional.of(compensationPlanVersion()));
@@ -188,7 +192,7 @@ class SaleServiceTest {
         verify(ledgerEntryRepository).save(captor.capture());
         LedgerEntry entry = captor.getValue();
         assertThat(entry.getIncomeType()).isEqualTo(IncomeType.DIRECT);
-        assertThat(entry.getAssociateId()).isEqualTo(ASSOCIATE_ID);
+        assertThat(entry.getAssociateId()).isEqualTo(SPONSOR_ID);
         assertThat(entry.getCycleId()).isEqualTo(CYCLE_ID);
         assertThat(entry.getGrossAmount()).isEqualByComparingTo("60000");
         assertThat(entry.getTdsDeduction()).isEqualByComparingTo("3000");
@@ -485,18 +489,56 @@ class SaleServiceTest {
     }
 
     @Test
-    void voidSaleThrowsIllegalStateExceptionWhenTheLedgerEntryRowIsMissing() {
+    void voidSaleSucceedsWhenTheSaleHasNoLedgerEntries() {
         UUID saleId = UUID.randomUUID();
         Sale sale = recordedSale(saleId, PLOT_ID);
         when(saleRepository.findById(saleId)).thenReturn(Optional.of(sale));
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(plotRepository.findById(PLOT_ID)).thenReturn(Optional.of(plotWithStatus(PlotStatus.SOLD)));
         when(plotRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
         when(ledgerEntryRepository.findAllBySourceRef(saleId)).thenReturn(List.of());
 
-        assertThatThrownBy(() -> saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out")))
-            .isInstanceOf(IllegalStateException.class);
+        saleService.voidSale(saleId, new VoidSaleRequest("Buyer backed out"));
 
+        assertThat(sale.getStatus()).isEqualTo(SaleStatus.VOIDED);
+        verify(ledgerEntryRepository, never()).save(any());
+    }
+
+    @Test
+    void paymentThrowsWhenNonAdminSellerHasNoSponsor() {
+        stubConfirmedPathDependencies();
+        Associate seller = associateWithPosition("L");
+        seller.setSponsorId(null);
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(seller));
+
+        assertThatThrownBy(() -> confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1200.00")))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("no sponsor");
+        verify(ledgerEntryRepository, never()).save(any());
+    }
+
+    @Test
+    void paymentThrowsWhenSponsorRowIsMissing() {
+        stubConfirmedPathDependencies();
+        when(associateRepository.existsById(SPONSOR_ID)).thenReturn(false);
+
+        assertThatThrownBy(() -> confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1200.00")))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("sponsor row missing");
+    }
+
+    @Test
+    void adminSaleWithNoSponsorIsRecordedWithoutDirectIncome() {
+        stubConfirmedPathDependencies();
+        Associate admin = associateWithPosition("L");
+        admin.setRole(com.plotchain.associate.AssociateRole.ADMIN);
+        admin.setSponsorId(null);
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(admin));
+
+        confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1200.00"));
+
+        verify(saleRepository).save(any());
         verify(ledgerEntryRepository, never()).save(any());
     }
 
