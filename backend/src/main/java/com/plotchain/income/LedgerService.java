@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -313,28 +314,32 @@ public class LedgerService {
     }
 
     // Full reward ladder for the caller, each tier joined to its REWARD ledger row (sourceRef =
-    // reward_tier.id, CycleService#creditReward). Required left/right = volume still missing per
-    // leg: max(0, threshold - cumulative leg business), live -- closed-cycle totals plus this OPEN
-    // cycle's leg sales, same as DashboardService's Total Left/Right Business. No row = NOT_ACHIEVED.
+    // reward_tier.id, CycleService#creditReward). Leg volume resets after each level, so a tier is
+    // reached once cumulative leg business covers the SUM of thresholds up to it. Required
+    // left/right = max(0, that sum - cumulative leg business), live -- closed-cycle totals plus this
+    // OPEN cycle's leg sales, same as DashboardService's Total Left/Right Business. No row = NOT_ACHIEVED.
     public List<AssociateRewardTierRow> myRewardTiers(UUID associateId) {
         Map<UUID, LedgerEntry> bySourceRef = rewardEntriesBySourceRef(associateId);
         LegVolumeRepository.LegBusinessTotals closed = legVolumeRepository.totalBusiness(associateId);
-        LegVolumeRepository.LegBusinessTotals totals = new LegVolumeRepository.LegBusinessTotals(
-            closed.left().add(saleRepository.sumOpenCycleLegBusiness(associateId, "L")),
-            closed.right().add(saleRepository.sumOpenCycleLegBusiness(associateId, "R")));
-        return compensationPlanService.currentRewardTiers().stream().map(t -> {
+        BigDecimal left = closed.left().add(saleRepository.sumOpenCycleLegBusiness(associateId, "L"));
+        BigDecimal right = closed.right().add(saleRepository.sumOpenCycleLegBusiness(associateId, "R"));
+        List<AssociateRewardTierRow> rows = new ArrayList<>();
+        BigDecimal needed = BigDecimal.ZERO;
+        for (RewardTier t : compensationPlanService.currentRewardTiers()) {
+            needed = needed.add(t.getVolumeThreshold());
             LedgerEntry e = bySourceRef.get(t.getId());
-            return new AssociateRewardTierRow(
+            rows.add(new AssociateRewardTierRow(
                 t.getTierLevel(),
                 t.getVolumeThreshold(),
                 t.getDesignation(),
-                remaining(t.getVolumeThreshold(), totals.left()),
-                remaining(t.getVolumeThreshold(), totals.right()),
+                remaining(needed, left),
+                remaining(needed, right),
                 t.getCashReward(),
                 t.getPerkDescription(),
                 e == null ? null : e.getStatus(),
-                e == null ? null : e.getCreatedAt());
-        }).toList();
+                e == null ? null : e.getCreatedAt()));
+        }
+        return rows;
     }
 
     // Achieved rewards in tier order, with admin fulfilment (pay status/date/remark).

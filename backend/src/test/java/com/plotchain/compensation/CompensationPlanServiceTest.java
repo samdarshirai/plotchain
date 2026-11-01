@@ -161,10 +161,10 @@ class CompensationPlanServiceTest {
 
         assertThat(response.designation()).isEqualTo("Sales Manager");
         assertThat(response.nextDesignation()).isEqualTo("Area Manager");
-        // progressPercent = 4000 * 100 / 10000 = 40
-        assertThat(response.progressPercent()).isEqualTo(40);
+        // Level 1 spends 1000; 3000 of Level 2's own 10000 so far = 30%
+        assertThat(response.progressPercent()).isEqualTo(30);
         assertThat(response.cumulativeMatchedVolume()).isEqualByComparingTo("4000");
-        assertThat(response.volumeToNext()).isEqualByComparingTo("6000");
+        assertThat(response.volumeToNext()).isEqualByComparingTo("7000");
         assertThat(response.rewardTiers()).hasSize(2);
         assertThat(response.rewardTiers().get(0).achieved()).isTrue();
         assertThat(response.rewardTiers().get(1).achieved()).isFalse();
@@ -248,22 +248,6 @@ class CompensationPlanServiceTest {
 
         verify(versionRepository, never()).save(any());
     }
-
-    @Test
-    void updatePlanThrowsWhenThresholdDoesNotStrictlyIncrease() {
-        List<RewardTierInput> nonIncreasingTiers = List.of(
-            new RewardTierInput(1, new BigDecimal("1000"), new BigDecimal("100"), "Tier 1"),
-            new RewardTierInput(2, new BigDecimal("1000"), new BigDecimal("200"), "Tier 2")
-        );
-
-        assertThatThrownBy(() -> compensationPlanService.updatePlan(requestWithTiers(nonIncreasingTiers), ADMIN_ID))
-            .isInstanceOf(RewardTierGapException.class)
-            .hasMessageContaining("2");
-
-        verify(versionRepository, never()).save(any());
-    }
-
-    // -- valid save --------------------------------------------------------
 
     @Test
     void updatePlanSavesNewVersionWithIncrementedLabelAndAdminId() {

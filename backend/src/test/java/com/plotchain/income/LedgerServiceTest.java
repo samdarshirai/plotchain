@@ -443,8 +443,9 @@ class LedgerServiceTest {
         assertThat(rows.get(0).achievedDate()).isEqualTo(Instant.parse("2026-01-15T00:00:00Z"));
         assertThat(rows.get(0).requiredLeftBusiness()).isZero();
         assertThat(rows.get(0).requiredRightBusiness()).isEqualByComparingTo("100000");
-        assertThat(rows.get(1).requiredLeftBusiness()).isZero();
-        assertThat(rows.get(1).requiredRightBusiness()).isEqualByComparingTo("1100000");
+        // Level 2 needs its own 15L on top of Level 1's 5L: 20L per leg in total.
+        assertThat(rows.get(1).requiredLeftBusiness()).isEqualByComparingTo("400000");
+        assertThat(rows.get(1).requiredRightBusiness()).isEqualByComparingTo("1600000");
         assertThat(rows.get(1).status()).isNull();
         assertThat(rows.get(1).achievedDate()).isNull();
     }

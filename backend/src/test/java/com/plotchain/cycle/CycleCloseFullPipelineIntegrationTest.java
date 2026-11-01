@@ -243,7 +243,8 @@ class CycleCloseFullPipelineIntegrationTest {
         RewardTier tier1 = new RewardTier(UUID.randomUUID(), planVersionId, 1, new BigDecimal("10"), new BigDecimal("500.00"), null);
         rewardTierRepository.saveAndFlush(tier1);
         rewardTier1Id = tier1.getId();
-        RewardTier tier2 = new RewardTier(UUID.randomUUID(), planVersionId, 2, new BigDecimal("50"), new BigDecimal("2000.00"), null);
+        // Each level counts fresh volume: b1 (matched 50) clears 10 + 40, Admin (30) clears only 10.
+        RewardTier tier2 = new RewardTier(UUID.randomUUID(), planVersionId, 2, new BigDecimal("40"), new BigDecimal("2000.00"), null);
         rewardTierRepository.saveAndFlush(tier2);
         rewardTier2Id = tier2.getId();
 

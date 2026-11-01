@@ -2435,10 +2435,8 @@ class CycleServiceTest {
 
         service.close(cycle.getId());
 
-        // Per the source PDF's own worked example: reaching exactly ₹10,00,000 clears Level 1
-        // (needs to EXCEED ₹5,00,000) but does not clear Level 2 (needs to EXCEED ₹10,00,000,
-        // not merely reach it) -- only ₹5,00,000 of the ₹10,00,000 is consumed, and the remaining
-        // ₹5,00,000 carries forward toward Level 2's own threshold next cycle.
+        // Leg volume resets after each level: Level 1 spends ₹5,00,000, leaving ₹5,00,000 --
+        // short of Level 2's own fresh ₹10,00,000 -- which carries forward.
         // Two saves this cycle: the MATCHING entry (unit 5) and the one REWARD entry (Level 1).
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(entryCaptor.capture());
@@ -2495,9 +2493,8 @@ class CycleServiceTest {
         BigDecimal rewardTotal = rewardEntries.stream().map(LedgerEntry::getGrossAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
         assertThat(rewardTotal).isEqualByComparingTo("80000.00");
         assertThat(rewardEntries).noneMatch(e -> e.getGrossAmount().compareTo(new BigDecimal("90000.00")) == 0);
-        // Exactly ₹20,00,000 remains, one short of exceeding Level 4's ₹40,00,000 mark (₹20,00,000
-        // consumed by Levels 1-3, ₹20,00,000 of the ₹40,00,000 matched left over).
-        assertThat(root.getRewardVolumeCarriedForward()).isEqualByComparingTo("2000000");
+        // Levels 1-3 spend 5L + 10L + 20L = 35L of the 40L; the 5L left is short of Level 4's own 40L.
+        assertThat(root.getRewardVolumeCarriedForward()).isEqualByComparingTo("500000");
     }
 
     @Test
@@ -2509,9 +2506,8 @@ class CycleServiceTest {
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
         root.setKycStatus(KycStatus.VERIFIED);
-        // Simulates post-Round-1 state: Level 1 (₹5L) already awarded in a prior cycle, ₹2,00,000
-        // left over from that cycle's consumption, carried forward into this one.
-        root.setRewardVolumeCarriedForward(new BigDecimal("200000"));
+        // Level 1 (10L) already awarded in a prior cycle, 5L left over and carried into this one.
+        root.setRewardVolumeCarriedForward(new BigDecimal("500000"));
         Associate left = associateFixture(root.getId(), "L");
         Associate right = associateFixture(root.getId(), "R");
         when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
@@ -2521,19 +2517,17 @@ class CycleServiceTest {
         when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
-        // This cycle's own matched volume is ₹3,50,000 -- combined with the ₹2,00,000 carried
-        // forward, ₹5,50,000 available, enough to EXCEED Level 2's ₹5,00,000 increment (from the
-        // ₹5L anchor up to the ₹10L threshold).
+        // This cycle matches 15L: with the 5L carried, exactly Level 2's own fresh 20L.
         when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
-            saleFixture(left.getId(), cycle.getId(), new BigDecimal("350000")),
-            saleFixture(right.getId(), cycle.getId(), new BigDecimal("500000"))
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("1500000")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("1600000"))
         ));
 
         CompensationPlanVersion planVersion = referencePlanVersionFixture();
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
-        RewardTier tier1 = rewardTierFixture(planVersion.getId(), 1, new BigDecimal("500000"), new BigDecimal("15000.00"));
-        RewardTier tier2 = rewardTierFixture(planVersion.getId(), 2, new BigDecimal("1000000"), new BigDecimal("20000.00"));
+        RewardTier tier1 = rewardTierFixture(planVersion.getId(), 1, new BigDecimal("1000000"), new BigDecimal("15000.00"));
+        RewardTier tier2 = rewardTierFixture(planVersion.getId(), 2, new BigDecimal("2000000"), new BigDecimal("20000.00"));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(tier1, tier2));
         when(ledgerEntryRepository.existsByAssociateIdAndIncomeTypeAndSourceRef(root.getId(), IncomeType.REWARD, tier1.getId()))
             .thenReturn(true);
@@ -2549,8 +2543,48 @@ class CycleServiceTest {
         assertThat(rewardEntries).hasSize(1);
         assertThat(rewardEntries.get(0).getSourceRef()).isEqualTo(tier2.getId());
         assertThat(rewardEntries.get(0).getGrossAmount()).isEqualByComparingTo("20000.00");
-        // ₹2,00,000(carried) + ₹3,50,000(this cycle, min(3.5L,5L)) - ₹5,00,000(Level 2's increment) = ₹50,000
-        assertThat(root.getRewardVolumeCarriedForward()).isEqualByComparingTo("50000");
+        // 5L carried + 15L this cycle - 20L (Level 2) = 0
+        assertThat(root.getRewardVolumeCarriedForward()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void closeAwardsLevelOneWhenMatchedVolumeExactlyReachesItsThreshold() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository, expenseRepository, walletRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setRole(AssociateRole.ASSOCIATE);
+        root.setKycStatus(KycStatus.VERIFIED);
+        Associate left = associateFixture(root.getId(), "L");
+        Associate right = associateFixture(root.getId(), "R");
+        when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of(
+            saleFixture(left.getId(), cycle.getId(), new BigDecimal("1000000")),
+            saleFixture(right.getId(), cycle.getId(), new BigDecimal("1000000"))
+        ));
+
+        CompensationPlanVersion planVersion = referencePlanVersionFixture();
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
+            .thenReturn(Optional.of(planVersion));
+        RewardTier tier1 = rewardTierFixture(planVersion.getId(), 1, new BigDecimal("1000000"), new BigDecimal("15000.00"));
+        RewardTier tier2 = rewardTierFixture(planVersion.getId(), 2, new BigDecimal("2000000"), new BigDecimal("20000.00"));
+        when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(tier1, tier2));
+
+        service.close(cycle.getId());
+
+        // 10L exactly clears Level 1; Level 2 then needs a fresh 20L, so nothing carries.
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.atLeastOnce()).save(entryCaptor.capture());
+        List<LedgerEntry> rewardEntries = entryCaptor.getAllValues().stream()
+            .filter(e -> e.getIncomeType() == IncomeType.REWARD).toList();
+        assertThat(rewardEntries).extracting(LedgerEntry::getSourceRef).containsExactly(tier1.getId());
+        assertThat(root.getRewardVolumeCarriedForward()).isEqualByComparingTo("0");
     }
 
     // -- Scale tests: ~600-associate tree --------------------------------------------------
