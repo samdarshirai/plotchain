@@ -95,7 +95,7 @@ describe('AssociateSidebarComponent', () => {
     expect(fixture.nativeElement.querySelectorAll('.associate-sidebar__sublink').length).toBe(6);
   });
 
-  it('renders the My Account sub-items (Welcome Letter, Profile, Login Password, Transaction Password, Bank Details, KYC Details) when expanded', () => {
+  it('renders the My Account sub-items (Welcome, Profile, Bank Details, KYC Details, Change Login Password, Change Transaction Password) when expanded', () => {
     const fixture = TestBed.createComponent(AssociateSidebarComponent);
     fixture.componentInstance.toggle('myAccount');
     fixture.detectChanges();
@@ -103,7 +103,7 @@ describe('AssociateSidebarComponent', () => {
     const sublinks = fixture.nativeElement.querySelectorAll('.associate-sidebar__sublink');
     expect(sublinks.length).toBe(6);
     const hrefs = Array.from(sublinks as NodeListOf<HTMLAnchorElement>).map(a => a.getAttribute('href'));
-    expect(hrefs).toEqual(['/profile/welcome-letter', '/profile', '/profile/login-password', '/profile/transaction-password', '/profile/bank-details', '/profile/kyc']);
+    expect(hrefs).toEqual(['/profile/welcome-letter', '/profile', '/profile/bank-details', '/profile/kyc', '/profile/login-password', '/profile/transaction-password']);
   });
 
   it('hides the My Account sub-items when the sidebar is collapsed', () => {

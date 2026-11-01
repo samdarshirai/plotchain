@@ -278,10 +278,10 @@
     "statusLabel": "Status: {{status}}",
     "downloadIdCard": "Download ID card",
     "tabs": {
-      "welcomeLetter": "Welcome Letter",
+      "welcomeLetter": "Welcome",
       "profile": "Profile",
-      "loginPassword": "Login Password",
-      "transactionPassword": "Transaction Password",
+      "loginPassword": "Change Login Password",
+      "transactionPassword": "Change Transaction Password",
       "bankDetails": "Bank Details",
       "kyc": "KYC Details"
     },
