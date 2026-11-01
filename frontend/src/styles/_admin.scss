@@ -436,7 +436,6 @@
   border: 1px solid var(--border-subtle);
   border-top: none;
   border-radius: 0 0 6px 6px;
-  overflow-x: auto;
 
   .editable-table {
     width: 100%;
@@ -445,26 +444,27 @@
 
   // Native table layout keeps header and body columns aligned, including long values.
   .editable-table {
-    min-width: 68rem;
     table-layout: fixed;
   }
 
-  // 9 columns: ID, Name, Sponsor, Position, Status, Registration, Login pw, Txn pw, Login + Recalculate.
-  th:nth-child(1) { width: 10%; }
-  th:nth-child(2) { width: 14%; }
-  th:nth-child(3) { width: 9%; }
-  th:nth-child(4) { width: 7%; }
-  th:nth-child(5) { width: 8%; }
-  th:nth-child(6) { width: 12%; }
-  th:nth-child(7) { width: 11%; }
-  th:nth-child(8) { width: 11%; }
-  th:nth-child(9) { width: 18%; }
+  // 11 columns: ID, Name, Phone, Email, Sponsor, Position, Status, Registration, Login pw, Txn pw, Actions.
+  th:nth-child(1) { width: 8%; }
+  th:nth-child(2) { width: 7%; }
+  th:nth-child(3) { width: 10%; }
+  th:nth-child(4) { width: 11%; }
+  th:nth-child(5) { width: 7%; }
+  th:nth-child(6) { width: 6%; }
+  th:nth-child(7) { width: 7%; }
+  th:nth-child(8) { width: 9%; }
+  th:nth-child(9) { width: 8%; }
+  th:nth-child(10) { width: 10%; }
+  th:nth-child(11) { width: 17%; }
 
   thead th {
-    padding: 8px 12px;
+    padding: 8px 6px;
     font-size: 11.5px;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
     color: var(--text-muted);
     text-align: left;
@@ -477,7 +477,7 @@
   }
 
   tbody td {
-    padding: 8px 12px;
+    padding: 8px 6px;
     font-size: 14px;
     border-bottom: none;
   }
@@ -525,9 +525,9 @@
     font-weight: 600;
   }
 
-  // Joined (6th column).
-  td:nth-child(6),
-  th:nth-child(6) {
+  // Joined (8th column).
+  td:nth-child(8),
+  th:nth-child(8) {
     text-align: right;
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
@@ -554,13 +554,14 @@
 // Compact secondary "Login" button in the last column; 40px tap target, full width once the
 // table stacks into cards on phones.
 .associate-directory__login {
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: 28px;
+  padding: 0 8px;
   border: 1px solid var(--brand-secondary);
   border-radius: 6px;
   background: var(--brand-secondary);
   color: var(--action-foreground);
   font: inherit;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -569,17 +570,18 @@
 .associate-directory__row-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px;
 }
 
 .associate-directory__recalculate {
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: 28px;
+  padding: 0 8px;
   border: 1px solid var(--brand-secondary);
   border-radius: 6px;
   background: transparent;
   color: var(--brand-secondary);
   font: inherit;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
 
