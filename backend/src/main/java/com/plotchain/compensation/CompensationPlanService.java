@@ -16,10 +16,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -79,8 +79,8 @@ public class CompensationPlanService {
     //
     // Progress is toward the next reward tier (whose designation the associate is promoted to);
     // `designation` is the live one from DesignationService (highest tier with a REWARD row). The
-    // reward-tier `achieved` predicate mirrors CycleService#creditReward's own
-    // volumeThreshold-vs-cumulativeMatchedVolume comparison. cumulativeMatchedVolume only advances
+    // reward-tier `achieved` predicate mirrors CycleService#creditReward: per-level thresholds,
+    // summed, against cumulativeMatchedVolume. cumulativeMatchedVolume only advances
     // at cycle close, so the OPEN cycle's live matched volume (carry-in + this cycle's leg sales,
     // same as DashboardService's New Matching Business) is added on top.
     public AssociateRankProgressResponse getMyRankProgress(UUID associateId) {
@@ -93,33 +93,37 @@ public class CompensationPlanService {
 
         CompensationPlanVersion version = currentVersion();
         List<RewardTier> tiers = rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(version.getId());
-        Optional<RewardTier> nextTier = tiers.stream()
-            .filter(t -> t.getVolumeThreshold().compareTo(cumulative) > 0)
-            .findFirst();
+        // Leg volume resets after each level: a tier is reached once cumulative covers the sum of
+        // thresholds up to it. Progress is within the next level only.
+        RewardTier nextTier = null;
+        BigDecimal neededBeforeNext = BigDecimal.ZERO;
+        BigDecimal needed = BigDecimal.ZERO;
+        List<AssociateRewardTierDto> tierDtos = new ArrayList<>();
+        for (RewardTier t : tiers) {
+            BigDecimal before = needed;
+            needed = needed.add(t.getVolumeThreshold());
+            boolean achieved = needed.compareTo(cumulative) <= 0;
+            if (!achieved && nextTier == null) {
+                nextTier = t;
+                neededBeforeNext = before;
+            }
+            tierDtos.add(new AssociateRewardTierDto(
+                t.getTierLevel(), t.getVolumeThreshold(), t.getCashReward(), t.getPerkDescription(), achieved));
+        }
 
-        int progressPercent = nextTier
-            .map(nt -> cumulative
-                .multiply(BigDecimal.valueOf(100))
-                .divide(nt.getVolumeThreshold(), 0, RoundingMode.DOWN)
-                .min(BigDecimal.valueOf(100))
-                .intValue())
-            .orElse(100);
-        BigDecimal volumeToNext = nextTier
-            .map(nt -> nt.getVolumeThreshold().subtract(cumulative).max(BigDecimal.ZERO))
-            .orElse(BigDecimal.ZERO);
-
-        List<AssociateRewardTierDto> tierDtos = tiers.stream()
-            .map(t -> new AssociateRewardTierDto(
-                t.getTierLevel(),
-                t.getVolumeThreshold(),
-                t.getCashReward(),
-                t.getPerkDescription(),
-                t.getVolumeThreshold().compareTo(cumulative) <= 0))
-            .collect(Collectors.toList());
+        int progressPercent = 100;
+        BigDecimal volumeToNext = BigDecimal.ZERO;
+        if (nextTier != null) {
+            BigDecimal intoLevel = cumulative.subtract(neededBeforeNext).max(BigDecimal.ZERO);
+            progressPercent = intoLevel.multiply(BigDecimal.valueOf(100))
+                .divide(nextTier.getVolumeThreshold(), 0, RoundingMode.DOWN)
+                .min(BigDecimal.valueOf(100)).intValue();
+            volumeToNext = nextTier.getVolumeThreshold().subtract(intoLevel).max(BigDecimal.ZERO);
+        }
 
         return new AssociateRankProgressResponse(
             designationService.designationOf(associateId),
-            nextTier.map(RewardTier::getDesignation).orElse(null),
+            nextTier == null ? null : nextTier.getDesignation(),
             progressPercent,
             cumulative,
             volumeToNext,
@@ -280,7 +284,7 @@ public class CompensationPlanService {
 
     // Gives concrete meaning to the spec's undefined "ordered, no gaps allowed"
     // (setup-onboarding-spec.md:60): sorted tier levels must equal exactly 1..n with no gaps or
-    // duplicates, and each tier's volumeThreshold must strictly increase over the previous tier.
+    // duplicates. Thresholds needn't increase: each level's volume is counted fresh (CycleService#creditReward).
     private void validateRewardTierContiguity(List<RewardTierInput> tiers) {
         if (tiers == null || tiers.isEmpty()) {
             return;
@@ -289,7 +293,6 @@ public class CompensationPlanService {
             .sorted(Comparator.comparingInt(RewardTierInput::tierLevel))
             .collect(Collectors.toList());
 
-        BigDecimal previousThreshold = null;
         for (int i = 0; i < sorted.size(); i++) {
             RewardTierInput tier = sorted.get(i);
             int expectedLevel = i + 1;
@@ -298,12 +301,6 @@ public class CompensationPlanService {
                     "Reward tier levels must be contiguous starting at 1 with no gaps or duplicates; "
                         + "expected level " + expectedLevel + " but found level " + tier.tierLevel());
             }
-            if (previousThreshold != null && tier.volumeThreshold().compareTo(previousThreshold) <= 0) {
-                throw new RewardTierGapException(
-                    "Reward tier " + tier.tierLevel()
-                        + " volume threshold must strictly increase over the previous tier");
-            }
-            previousThreshold = tier.volumeThreshold();
         }
     }
 

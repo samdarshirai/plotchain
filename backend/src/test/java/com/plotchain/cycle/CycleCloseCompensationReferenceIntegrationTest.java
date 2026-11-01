@@ -265,7 +265,7 @@ class CycleCloseCompensationReferenceIntegrationTest {
         assertThat(youRoyalty.getGrossAmount()).isEqualByComparingTo("60000.00");
 
         // Your REWARD: cumulativeMatchedVolume 0 -> ₹40,00,000 this cycle, all 3 configured tiers
-        // (₹5L, ₹10L, ₹20L) cleared in sequence -- 15,000 + 20,000 + 45,000 = 80,000.
+        // (₹5L, ₹10L, ₹20L, each counted fresh = 35L) cleared in sequence -- 15,000 + 20,000 + 45,000 = 80,000.
         List<LedgerEntry> yourRewardEntries = findEntries(youId, IncomeType.REWARD);
         assertThat(yourRewardEntries).hasSize(3);
         BigDecimal rewardTotal = yourRewardEntries.stream()

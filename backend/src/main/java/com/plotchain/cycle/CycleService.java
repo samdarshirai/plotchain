@@ -791,28 +791,16 @@ public class CycleService {
     }
 
     // Flow step 7: for EVERY associate (Admin included -- RewardTier has no FK to rank_tier,
-    // unlike Royalty, so nothing here excludes any role), walk RewardTiers in ascending
-    // tierLevel order (findAllByPlanVersionIdOrderByTierLevel, already ordered) and consume this
-    // cycle's matched volume (matchedVolumeThisCycle, the same min(left,right) value
-    // creditMatchingIncome used) plus any volume carried forward from a prior cycle
-    // (Associate.rewardVolumeCarriedForward) sequentially against each tier's INCREMENT over the
-    // previous tier's threshold -- not the tier's absolute threshold, and not a plain
-    // cumulativeMatchedVolume >= comparison. A tier is only cleared when the available pool
-    // STRICTLY EXCEEDS its increment (not merely reaches it): compensation-plan-reference.md §4's
-    // own worked examples ("Congrats! On 10 Lakh Pair of Sales & reaching Level 1, Remaining
-    // 5 Lakh will be carried forward for the next level target") show an associate landing exactly
-    // on a tier's absolute threshold clears only the tier below it, with the remainder carried
-    // forward -- the same leftover-carry-forward shape creditMatchingIncome already uses for leg
-    // volumes. Any amount left after the loop (because it wasn't enough to exceed the next
-    // not-yet-awarded tier's increment) is written back to rewardVolumeCarriedForward for next
-    // cycle's run to pick up. Idempotency is checked WITHOUT a cycleId filter
-    // (existsByAssociateIdAndIncomeTypeAndSourceRef, deliberately narrower than the other four
-    // income types' cycle-scoped equivalent) -- a tier is awarded once EVER; an already-awarded
-    // tier's increment is skipped without being re-consumed from the pool (it was already spent
-    // when it was first awarded). Multiple tiers can still be newly-crossed in a single cycle --
-    // each gets its own entry, sourceRef = tier.id. perkDescription is never written as its own
-    // ledger line: it's descriptive metadata reachable by looking up the RewardTier row this
-    // entry's sourceRef points to.
+    // unlike Royalty, so nothing here excludes any role), walk RewardTiers in ascending tierLevel
+    // order and spend this cycle's matched volume (min(left,right), same as creditMatchingIncome)
+    // plus Associate.rewardVolumeCarriedForward on each not-yet-awarded tier in turn. Leg volume
+    // resets after every level: each tier needs its OWN volumeThreshold of fresh matched volume
+    // (tiers 10L, 20L -> Level 2 needs 20L more after Level 1, 30L total), and reaching the
+    // threshold exactly is enough. Whatever is left is written back to rewardVolumeCarriedForward
+    // for the next cycle. Idempotency is checked WITHOUT a cycleId filter: a tier is awarded once
+    // EVER, and an already-awarded tier's volume was spent when it was awarded, so it's skipped
+    // without consuming the pool. Several tiers can be crossed in one cycle, each its own entry,
+    // sourceRef = tier.id. perkDescription stays on the RewardTier row, not a ledger line.
     private void creditReward(
         UUID cycleId,
         List<Associate> associates,
@@ -829,19 +817,15 @@ public class CycleService {
             BigDecimal available = matchedVolumeThisCycle
                 .getOrDefault(associate.getId(), BigDecimal.ZERO)
                 .add(associate.getRewardVolumeCarriedForward());
-            BigDecimal previousThreshold = BigDecimal.ZERO;
 
             for (RewardTier tier : tiers) {
-                BigDecimal increment = tier.getVolumeThreshold().subtract(previousThreshold);
-
                 boolean alreadyAwarded = ledgerEntryRepository.existsByAssociateIdAndIncomeTypeAndSourceRef(
                     associate.getId(), IncomeType.REWARD, tier.getId());
                 if (alreadyAwarded) {
-                    previousThreshold = tier.getVolumeThreshold();
                     continue;
                 }
 
-                if (available.compareTo(increment) <= 0) {
+                if (available.compareTo(tier.getVolumeThreshold()) < 0) {
                     break;
                 }
 
@@ -866,8 +850,7 @@ public class CycleService {
                 entry.setCreatedAt(Instant.now());
                 ledgerEntryRepository.save(entry);
 
-                available = available.subtract(increment);
-                previousThreshold = tier.getVolumeThreshold();
+                available = available.subtract(tier.getVolumeThreshold());
             }
 
             if (finalize) {
