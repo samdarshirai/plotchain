@@ -2,16 +2,16 @@ import { computeSampleEarnings, SampleEarningsPlan, SampleEarningsResult } from 
 
 // Hand-verified baseline scenario (₹10L on each leg, matching the spec's own example):
 //   scenarioVolume = 1,000,000
-//   directIncome   = 1,000,000 * 5/100  = 50,000
+//   directIncome   = 2 * 1,000,000 * 5/100 = 100,000  (each leg's sponsee sale pays the sponsor)
 //   matchingIncome = 1,000,000 * 10/100 = 100,000
 //   sponsorBonus   = 20/100 * 100,000   = 20,000
 //   royaltyBonus   = 1,000,000 * 2/100  = 20,000
-//   grossIncome    = 50,000 + 100,000 + 20,000 + 20,000 = 190,000
-//   adminCharge(PAN)    = 190,000 * 3/100 = 5,700
-//   adminCharge(no PAN) = 190,000 * 8/100 = 15,200
-//   tds                 = 190,000 * 5/100 = 9,500
-//   finalEarnings(PAN)    = 190,000 - 5,700  - 9,500 = 174,800
-//   finalEarnings(no PAN) = 190,000 - 15,200 - 9,500 = 165,300
+//   grossIncome    = 100,000 + 100,000 + 20,000 + 20,000 = 240,000
+//   adminCharge(PAN)    = 240,000 * 3/100 = 7,200
+//   adminCharge(no PAN) = 240,000 * 8/100 = 19,200
+//   tds                 = 240,000 * 5/100 = 12,000
+//   finalEarnings(PAN)    = 240,000 - 7,200  - 12,000 = 220,800
+//   finalEarnings(no PAN) = 240,000 - 19,200 - 12,000 = 208,800
 const basePlan: SampleEarningsPlan = {
   directIncomePct: 5,
   matchingIncomePct: 10,
@@ -22,6 +22,12 @@ const basePlan: SampleEarningsPlan = {
 };
 
 describe('computeSampleEarnings', () => {
+  it('direct income counts both legs\' sponsee sales (paid to their sponsor)', () => {
+    const result = computeSampleEarnings({ scenarioVolume: 1_000_000 }, { ...basePlan, directIncomePct: 6 });
+
+    expect(result.directIncome).toBe(120_000); // compensation-plan-reference.md Round 1
+  });
+
   it('computes matchingIncome as scenarioVolume * matchingIncomePct / 100', () => {
     const scenarioVolume = 1_000_000;
     const result = computeSampleEarnings({ scenarioVolume }, basePlan);
@@ -41,15 +47,15 @@ describe('computeSampleEarnings', () => {
   it('applies the processing fee (adminChargeWithPanPct) to grossIncome', () => {
     const result = computeSampleEarnings({ scenarioVolume: 1_000_000 }, basePlan);
 
-    expect(result.grossIncome).toBe(190_000);
-    expect(result.adminCharge).toBe(5_700);
+    expect(result.grossIncome).toBe(240_000);
+    expect(result.adminCharge).toBe(7_200);
   });
 
   it('computes finalEarnings as grossIncome - adminCharge - tds', () => {
     const result = computeSampleEarnings({ scenarioVolume: 1_000_000 }, basePlan);
 
     expect(result.finalEarnings).toBeCloseTo(result.grossIncome - result.adminCharge - result.tds, 6);
-    expect(result.finalEarnings).toBeCloseTo(174_800, 6);
+    expect(result.finalEarnings).toBeCloseTo(220_800, 6);
   });
 
   it('returns an all-zero result for scenarioVolume: 0 without throwing', () => {

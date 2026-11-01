@@ -321,6 +321,26 @@ describe('IncomeStatementComponent', () => {
     expect(rows[2]['directIncome']).toBe(rows[0]['directIncome'].replace('10,000.00', '20,000.00'));
   });
 
+  it('direct tab shows the selling sponsee and the sale amount, not the viewer', () => {
+    flushInitialRequests();
+    goToDirect([{ ...sampleEntry, grossAmount: 60000, sponseeUserId: 'PC1002', sponseeName: 'A', saleAmount: 1000000 }]);
+
+    const row = fixture.componentInstance.statementRows[0];
+    expect(row['associateId']).toBe('PC1002');
+    expect(row['name']).toBe('A');
+    expect(row['amount']).toContain('1,000,000.00');
+    expect(row['directIncome']).toContain('60,000.00');
+  });
+
+  it('direct tab leaves id and name blank when the sale lookup missed', () => {
+    flushInitialRequests();
+    goToDirect([{ ...sampleEntry, sponseeUserId: null, sponseeName: null, saleAmount: null }]);
+
+    const row = fixture.componentInstance.statementRows[0];
+    expect(row['associateId']).toBe('');
+    expect(row['name']).toBe('');
+  });
+
   it('has no action column and no write inputs — this screen is view-only', () => {
     flushInitialRequests();
     expect(fixture.componentInstance.statementColumns.some(c => c.type === 'action')).toBeFalse();

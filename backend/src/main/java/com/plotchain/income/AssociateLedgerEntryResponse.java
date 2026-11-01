@@ -28,9 +28,13 @@ public record AssociateLedgerEntryResponse(
     UUID sourceRef,
     Instant createdAt,
     LegBreakdown legBreakdown,
-    // SPONSOR_MATCHING rows only (null otherwise): the sponsee whose MATCHING entry (= sourceRef) earned this credit.
+    // SPONSOR_MATCHING rows: the sponsee whose MATCHING entry (= sourceRef) earned this credit.
+    // DIRECT rows: the sponsee who made the sale (= sourceRef). Null otherwise, or on a lookup miss.
     String sponseeUserId,
-    BigDecimal sponseeMatchingAmount) {
+    BigDecimal sponseeMatchingAmount,
+    // DIRECT rows only: the seller's name and the sale amount the 6% was taken from.
+    String sponseeName,
+    BigDecimal saleAmount) {
 
     // MATCHING rows only (null otherwise). calc* == matchingBusiness == min(total left, total right).
     public record LegBreakdown(

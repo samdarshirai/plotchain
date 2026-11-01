@@ -573,13 +573,14 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     if (this.activeIncomeType === 'DIRECT') {
       this.statementRows = (this.page?.entries ?? []).map(entry => ({
         dateTime: this.formatDate(entry.createdAt, DATE_TIME_FORMAT) ?? entry.createdAt,
-        associateId: this.profile?.userId ?? '',
-        name: this.profile?.name ?? '',
-        amount: this.formatCurrency(entry.grossAmount),
+        // Direct Income is the viewer's sponsees' sales: show who sold and for how much.
+        associateId: entry.sponseeUserId ?? '',
+        name: entry.sponseeName ?? '',
+        amount: this.formatCurrency(entry.saleAmount ?? 0),
         directIncome: this.formatCurrency(entry.grossAmount)
       }));
       this.statementRows = this.withTotal(this.statementRows, ['dateTime', 'associateId', 'name', 'amount', 'directIncome'], {
-        amount: this.sum(e => e.grossAmount),
+        amount: this.sum(e => e.saleAmount),
         directIncome: this.sum(e => e.grossAmount)
       });
       return;

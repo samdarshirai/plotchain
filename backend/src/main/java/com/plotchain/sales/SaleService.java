@@ -3,6 +3,7 @@ package com.plotchain.sales;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateRole;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
 import com.plotchain.cycle.Cycle;
@@ -30,6 +31,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -59,6 +61,24 @@ public class SaleService {
         this.saleRepository = saleRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.projectRepository = projectRepository;
+    }
+
+    // Who earns Direct Income for a sale by `seller`: their sponsor. The admin is the one associate
+    // with no sponsor, and earns for no one above them, so an admin's sale yields no Direct Income.
+    // Any other sponsorless seller, or a dangling sponsor id, is a data-integrity error.
+    public static Optional<UUID> directIncomeEarner(Associate seller, AssociateRepository associates) {
+        UUID sponsorId = seller.getSponsorId();
+        if (sponsorId == null) {
+            if (seller.getRole() == AssociateRole.ADMIN) {
+                return Optional.empty();
+            }
+            throw new IllegalStateException(
+                "associate " + seller.getId() + " has no sponsor - every non-admin associate must have one");
+        }
+        if (!associates.existsById(sponsorId)) {
+            throw new IllegalStateException("sponsor row missing for associate " + seller.getId());
+        }
+        return Optional.of(sponsorId);
     }
 
     // Core of recordInstallmentPayment. plot may be null only for legacy plotless sales being voided elsewhere.
@@ -108,29 +128,32 @@ public class SaleService {
             .orElseThrow(() -> new IllegalStateException(
                 "compensation_plan_version row missing - V8 migration seeds it"));
 
-        // Flow step 8: Direct Income, computed synchronously. adminDeduction is the plan's
-        // Processing Fee % (stored as admin_charge_with_pan_pct).
-        BigDecimal grossAmount = sale.getAmount()
-            .multiply(planVersion.getDirectIncomePct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-        BigDecimal tdsDeduction = grossAmount
-            .multiply(planVersion.getTdsPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-        BigDecimal adminDeduction = grossAmount
-            .multiply(planVersion.getAdminChargeWithPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-        BigDecimal netAmount = grossAmount.subtract(tdsDeduction).subtract(adminDeduction);
+        // Flow step 8: Direct Income goes to the seller's sponsor, one hop up (compensation-plan-reference.md
+        // section 1). adminDeduction is the plan's Processing Fee % (stored as admin_charge_with_pan_pct).
+        Optional<UUID> directEarner = directIncomeEarner(associate, associateRepository);
+        if (directEarner.isPresent()) {
+            BigDecimal grossAmount = sale.getAmount()
+                .multiply(planVersion.getDirectIncomePct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+            BigDecimal tdsDeduction = grossAmount
+                .multiply(planVersion.getTdsPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+            BigDecimal adminDeduction = grossAmount
+                .multiply(planVersion.getAdminChargeWithPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+            BigDecimal netAmount = grossAmount.subtract(tdsDeduction).subtract(adminDeduction);
 
-        LedgerEntry ledgerEntry = new LedgerEntry();
-        ledgerEntry.setId(UUID.randomUUID());
-        ledgerEntry.setIncomeType(IncomeType.DIRECT);
-        ledgerEntry.setAssociateId(sale.getAssociateId());
-        ledgerEntry.setCycleId(sale.getCycleId());
-        ledgerEntry.setGrossAmount(grossAmount);
-        ledgerEntry.setTdsDeduction(tdsDeduction);
-        ledgerEntry.setAdminDeduction(adminDeduction);
-        ledgerEntry.setNetAmount(netAmount);
-        ledgerEntry.setStatus(LedgerEntryStatus.PENDING);
-        ledgerEntry.setSourceRef(sale.getId());
-        ledgerEntry.setCreatedAt(Instant.now());
-        ledgerEntryRepository.save(ledgerEntry);
+            LedgerEntry ledgerEntry = new LedgerEntry();
+            ledgerEntry.setId(UUID.randomUUID());
+            ledgerEntry.setIncomeType(IncomeType.DIRECT);
+            ledgerEntry.setAssociateId(directEarner.get());
+            ledgerEntry.setCycleId(sale.getCycleId());
+            ledgerEntry.setGrossAmount(grossAmount);
+            ledgerEntry.setTdsDeduction(tdsDeduction);
+            ledgerEntry.setAdminDeduction(adminDeduction);
+            ledgerEntry.setNetAmount(netAmount);
+            ledgerEntry.setStatus(LedgerEntryStatus.PENDING);
+            ledgerEntry.setSourceRef(sale.getId());
+            ledgerEntry.setCreatedAt(Instant.now());
+            ledgerEntryRepository.save(ledgerEntry);
+        }
 
         // Live income: recompute this open cycle's Matching / Sponsor Matching / Royalty / Reward
         // now, so the whole upline sees it without waiting for cycle close.
@@ -199,15 +222,8 @@ public class SaleService {
         }
 
         // Flow step 5: reverse every ledger entry this sale created at record time (its Direct
-        // Income). Same data-integrity reasoning as the
-        // missing-Plot case above -- recordSale always creates at least one LedgerEntry per Sale
-        // (Direct Income), in the same transaction.
+        // Income). An admin's sale has none (the admin has no sponsor), so an empty list is valid.
         List<LedgerEntry> ledgerEntries = ledgerEntryRepository.findAllBySourceRef(sale.getId());
-        if (ledgerEntries.isEmpty()) {
-            throw new IllegalStateException(
-                "ledger_entry row missing for sale " + sale.getId()
-                    + " - recordSale always creates one in the same transaction");
-        }
         for (LedgerEntry ledgerEntry : ledgerEntries) {
             ledgerEntry.setStatus(LedgerEntryStatus.REVERSED);
             ledgerEntryRepository.save(ledgerEntry);

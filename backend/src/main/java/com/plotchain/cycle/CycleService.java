@@ -21,6 +21,7 @@ import com.plotchain.rank.RankTier;
 import com.plotchain.rank.RankTierRepository;
 import com.plotchain.sales.Sale;
 import com.plotchain.sales.SaleRepository;
+import com.plotchain.sales.SaleService;
 import com.plotchain.sales.SaleStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -52,6 +53,7 @@ public class CycleService {
     private final RoyaltyBonusRateRepository royaltyBonusRateRepository;
     private final RewardTierRepository rewardTierRepository;
     private final ExpenseRepository expenseRepository;
+    private final com.plotchain.wallet.WalletRepository walletRepository;
 
     // Cycle-management unit 2 (GET /api/admin/cycles/{id}, spec lines 95-97): fixed order
     // matching the spec's literal "DIRECT/MATCHING/SPONSOR_MATCHING/ROYALTY/REWARD"
@@ -71,7 +73,8 @@ public class CycleService {
         RankTierRepository rankTierRepository,
         RoyaltyBonusRateRepository royaltyBonusRateRepository,
         RewardTierRepository rewardTierRepository,
-        ExpenseRepository expenseRepository
+        ExpenseRepository expenseRepository,
+        com.plotchain.wallet.WalletRepository walletRepository
     ) {
         this.cycleRepository = cycleRepository;
         this.associateRepository = associateRepository;
@@ -83,6 +86,7 @@ public class CycleService {
         this.royaltyBonusRateRepository = royaltyBonusRateRepository;
         this.rewardTierRepository = rewardTierRepository;
         this.expenseRepository = expenseRepository;
+        this.walletRepository = walletRepository;
     }
 
     public CyclePageResponse list(CycleStatus status, int page, int size) {
@@ -260,7 +264,7 @@ public class CycleService {
             .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
             .orElseThrow(() -> new IllegalStateException(
                 "compensation_plan_version row missing - V8 migration seeds it"));
-        reRateDirectIncome(cycle.getId(), sales, planVersion);
+        reRateDirectIncome(cycle.getId(), sales, associates, planVersion);
         creditMatchingIncome(cycle.getId(), associates, legVolumes, planVersion, finalize);
 
         // Flow step 4 (Decision #7): advance rankId for each ASSOCIATE-role associate to the
@@ -398,28 +402,68 @@ public class CycleService {
     // the same min > 0 guard -- a zero-matched associate's row is left untouched (its unmatched
     // leg, if any, is not carried forward under this unit's implementation; that's the spec's
     // Flow step 3 text taken literally, not an oversight).
-    // Direct Income is written once at payment time (SaleService). Re-rate this cycle's
-    // not-yet-PAID rows in place with today's plan so a mid-cycle rate change reaches them too.
+    // Direct Income is written once at payment time (SaleService). Recalculation keeps this
+    // cycle's rows in line with the current rules:
+    //  - the earner is the seller's sponsor (SaleService.directIncomeEarner); a row on anyone else
+    //    is re-pointed, and if it was already PAID its wallet credit moves with it. An admin's
+    //    sale has no earner, so its row is REVERSED (and un-credited if PAID).
+    //  - not-yet-PAID rows are re-rated in place with today's plan, so a mid-cycle rate change
+    //    reaches them too. PAID amounts are never re-rated.
     // Updated, not deleted and re-inserted, so ids and Payout Approval marks stay put. Rows whose
-    // sale was voided aren't in `sales` and are left as they are.
-    private void reRateDirectIncome(UUID cycleId, List<Sale> sales, CompensationPlanVersion planVersion) {
+    // sale was voided aren't in `sales` and are left as they are; so are REVERSED rows.
+    private void reRateDirectIncome(UUID cycleId, List<Sale> sales, List<Associate> associates,
+            CompensationPlanVersion planVersion) {
         Map<UUID, Sale> salesById = new HashMap<>();
         for (Sale sale : sales) {
             salesById.put(sale.getId(), sale);
         }
-        for (LedgerEntry entry : ledgerEntryRepository.findRecomputable(cycleId, List.of(IncomeType.DIRECT))) {
+        Map<UUID, Associate> associatesById = new HashMap<>();
+        for (Associate associate : associates) {
+            associatesById.put(associate.getId(), associate);
+        }
+        for (LedgerEntry entry : ledgerEntryRepository.findByCycleIdAndIncomeType(cycleId, IncomeType.DIRECT)) {
             Sale sale = salesById.get(entry.getSourceRef());
             if (sale == null || entry.getStatus() == LedgerEntryStatus.REVERSED) {
                 continue;
             }
-            BigDecimal grossAmount = sale.getAmount().multiply(
-                planVersion.getDirectIncomePct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-            Deductions deductions = applyDeductions(grossAmount, planVersion);
-            entry.setGrossAmount(grossAmount);
-            entry.setTdsDeduction(deductions.tdsDeduction());
-            entry.setAdminDeduction(deductions.adminDeduction());
-            entry.setNetAmount(deductions.netAmount());
-            ledgerEntryRepository.save(entry);
+            boolean paid = entry.getStatus() == LedgerEntryStatus.PAID;
+            Optional<UUID> earner = SaleService.directIncomeEarner(
+                associatesById.get(sale.getAssociateId()), associateRepository);
+            if (earner.isEmpty()) {
+                if (paid) {
+                    walletRepository.creditBalance(entry.getAssociateId(), entry.getNetAmount().negate());
+                }
+                entry.setStatus(LedgerEntryStatus.REVERSED);
+                ledgerEntryRepository.save(entry);
+                continue;
+            }
+            boolean changed = false;
+            if (!earner.get().equals(entry.getAssociateId())) {
+                if (paid) {
+                    // ponytail: the seller's balance may go negative if they already withdrew; fine
+                    // while in testing, add a clawback flow before go-live with real money.
+                    walletRepository.creditBalance(entry.getAssociateId(), entry.getNetAmount().negate());
+                    if (!walletRepository.existsById(earner.get())) {
+                        walletRepository.save(com.plotchain.wallet.Wallet.zero(earner.get()));
+                    }
+                    walletRepository.creditBalance(earner.get(), entry.getNetAmount());
+                }
+                entry.setAssociateId(earner.get());
+                changed = true;
+            }
+            if (!paid) {
+                BigDecimal grossAmount = sale.getAmount().multiply(
+                    planVersion.getDirectIncomePct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+                Deductions deductions = applyDeductions(grossAmount, planVersion);
+                entry.setGrossAmount(grossAmount);
+                entry.setTdsDeduction(deductions.tdsDeduction());
+                entry.setAdminDeduction(deductions.adminDeduction());
+                entry.setNetAmount(deductions.netAmount());
+                changed = true;
+            }
+            if (changed) {
+                ledgerEntryRepository.save(entry);
+            }
         }
     }
 
