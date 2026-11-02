@@ -62,6 +62,7 @@
 
 .associate-sidebar__wordmark {
   min-width: 0;
+  overflow: hidden;
   white-space: nowrap;
   display: flex;
   flex-direction: column;
@@ -179,6 +180,13 @@
 
 .associate-sidebar__pin-icon {
   transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Pin toggle sits in the brand row, right-aligned beside the wordmark.
+.associate-sidebar__pin--brand {
+  flex: none;
+  margin-left: auto;
+  padding: 6px;
 }
 
 .associate-sidebar__pin--pinned {

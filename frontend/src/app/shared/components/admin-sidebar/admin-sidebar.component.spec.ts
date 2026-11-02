@@ -88,4 +88,35 @@ describe('AdminSidebarComponent', () => {
     (el.querySelector('.associate-sidebar__logout') as HTMLButtonElement).click();
     expect(logouts).toBe(1);
   });
+
+  it('has a pin button by the logo that collapses the sidebar to an icon rail', () => {
+    const { fixture, el } = render();
+    expect(el.querySelector('.associate-sidebar--expanded')).toBeTruthy();
+    let emitted: boolean | undefined;
+    fixture.componentInstance.pinnedChange.subscribe((v: boolean) => (emitted = v));
+
+    (el.querySelector('.associate-sidebar__brand .associate-sidebar__pin') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(emitted).toBe(false);
+    expect(el.querySelector('.associate-sidebar--expanded')).toBeFalsy();
+    expect(el.querySelectorAll('.associate-sidebar__link-label').length).toBe(0);
+    expect(el.querySelectorAll('.associate-sidebar__subnav').length).toBe(0);
+  });
+
+  it('peeks expanded on hover while unpinned, without re-pinning', () => {
+    const { fixture, el } = render();
+    fixture.componentInstance.togglePin();
+    fixture.componentInstance.onEnter();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.pinned).toBe(false);
+    expect(el.querySelector('.associate-sidebar--expanded')).toBeTruthy();
+  });
+
+  it('shows no pin button in the phone drawer (forceExpanded)', () => {
+    const fixture = TestBed.createComponent(AdminSidebarComponent);
+    fixture.componentInstance.forceExpanded = true;
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.associate-sidebar__pin')).toBeFalsy();
+  });
 });

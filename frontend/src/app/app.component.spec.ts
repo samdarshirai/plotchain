@@ -4,11 +4,13 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { of } from 'rxjs';
-import { AppComponent } from './app.component';
+import { AppComponent, SIDEBAR_PINNED_KEY } from './app.component';
 import { AuthService } from './auth/auth.service';
 import { ADMIN_FAMILY_ROLES } from './admin/admin.guard';
 
 describe('AppComponent', () => {
+  afterEach(() => localStorage.removeItem(SIDEBAR_PINNED_KEY));
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [
@@ -147,12 +149,12 @@ describe('AppComponent', () => {
     ]);
   });
 
-  it('shifts the content column by the sidebar width for both roles; admin is always expanded', () => {
+  it('shifts the content column by the sidebar width for both roles; both follow the shared pin', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const authService = TestBed.inject(AuthService);
     spyOn(authService, 'isAuthenticated').and.returnValue(true);
     spyOn(authService, 'getRole').and.returnValue('ASSOCIATE');
-    fixture.componentInstance.associateSidebarPinned = false;
+    fixture.componentInstance.sidebarPinned = false;
     fixture.detectChanges();
 
     let compiled = fixture.nativeElement as HTMLElement;
@@ -164,7 +166,22 @@ describe('AppComponent', () => {
 
     compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.app-content--sidebar-rail')).toBeTruthy();
+    expect(compiled.querySelector('.app-content--sidebar-expanded')).toBeFalsy();
+
+    fixture.componentInstance.sidebarPinned = true;
+    fixture.detectChanges();
     expect(compiled.querySelector('.app-content--sidebar-expanded')).toBeTruthy();
+  });
+
+  it('remembers the sidebar pin state across reloads, pinned by default', () => {
+    localStorage.removeItem(SIDEBAR_PINNED_KEY);
+    expect(TestBed.createComponent(AppComponent).componentInstance.sidebarPinned).toBe(true);
+
+    TestBed.createComponent(AppComponent).componentInstance.sidebarPinned = false;
+    expect(TestBed.createComponent(AppComponent).componentInstance.sidebarPinned).toBe(false);
+
+    TestBed.createComponent(AppComponent).componentInstance.sidebarPinned = true;
+    expect(TestBed.createComponent(AppComponent).componentInstance.sidebarPinned).toBe(true);
   });
 
   it('hides the Dashboard nav link for every admin-family role', () => {

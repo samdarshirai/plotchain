@@ -10,6 +10,8 @@ import { AssociateIdentityBarComponent } from './shared/components/associate-ide
 import { AssociateSidebarComponent } from './shared/components/associate-sidebar/associate-sidebar.component';
 import { startTableFit } from './shared/utils/table-fit';
 
+export const SIDEBAR_PINNED_KEY = 'sidebarPinned';
+
 // /setup is a guided, pre-launch-only wizard (setupModeGuard) with its own dedicated
 // step-nav -- it stays chromeless (no global chrome) so cross-navigation doesn't undercut the
 // focused wizard UX. Every other authenticated route renders the real global chrome.
@@ -41,9 +43,16 @@ export class AppComponent implements OnInit, OnDestroy {
   private mobileQuery = typeof matchMedia === 'function' ? matchMedia('(max-width: 767px)') : null;
   private onMobileChange = (e: MediaQueryListEvent) => { this.isMobile = e.matches; };
 
-  // Associate sidebar's pin state, owned here (not the sidebar) because .app-content's
-  // margin-left needs it too -- see app.component.html's [(pinned)] binding.
-  associateSidebarPinned = true;
+  // Sidebar pin state (admin and associate), owned here (not the sidebar) because .app-content's
+  // margin-left needs it too -- see app.component.html's [(pinned)] bindings. Saved in
+  // localStorage so it survives reloads; pinned unless the user unpinned it.
+  get sidebarPinned(): boolean {
+    return localStorage.getItem(SIDEBAR_PINNED_KEY) !== 'false';
+  }
+
+  set sidebarPinned(pinned: boolean) {
+    localStorage.setItem(SIDEBAR_PINNED_KEY, String(pinned));
+  }
 
   get showSidebar(): boolean {
     return this.authService.isAuthenticated() && !this.isChromelessRoute;

@@ -129,6 +129,19 @@ describe('AssociateSidebarComponent', () => {
     ]);
   });
 
+  it('puts the pin button in the brand row by the logo, not the footer, and clicking it unpins', () => {
+    const fixture = TestBed.createComponent(AssociateSidebarComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.associate-sidebar__footer .associate-sidebar__pin')).toBeFalsy();
+    let emitted: boolean | undefined;
+    fixture.componentInstance.pinnedChange.subscribe((v: boolean) => (emitted = v));
+
+    (compiled.querySelector('.associate-sidebar__brand .associate-sidebar__pin') as HTMLButtonElement).click();
+
+    expect(emitted).toBe(false);
+  });
+
   it('emits logout when the Log Out control is clicked', () => {
     const fixture = TestBed.createComponent(AssociateSidebarComponent);
     fixture.detectChanges();

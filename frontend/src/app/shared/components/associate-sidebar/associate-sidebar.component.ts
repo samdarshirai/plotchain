@@ -38,6 +38,17 @@ import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap
           <span class="associate-sidebar__wordmark-name">{{ 'brand.wordmark' | translate }}</span>
           <span class="associate-sidebar__wordmark-tagline">{{ 'brand.caption' | translate }}</span>
         </span>
+        <button
+          *ngIf="!forceExpanded && expanded"
+          type="button"
+          class="associate-sidebar__pin associate-sidebar__pin--brand"
+          [class.associate-sidebar__pin--pinned]="pinned"
+          [title]="(pinned ? 'sidebar.unpin' : 'sidebar.pin') | translate"
+          [attr.aria-label]="(pinned ? 'sidebar.unpin' : 'sidebar.pin') | translate"
+          (click)="togglePin()"
+        >
+          <span class="material-symbols-outlined associate-sidebar__pin-icon" aria-hidden="true">push_pin</span>
+        </button>
       </div>
 
       <div class="associate-sidebar__divider"></div>
@@ -91,17 +102,6 @@ import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap
 
       <div class="associate-sidebar__footer">
         <div class="associate-sidebar__divider associate-sidebar__divider--tight"></div>
-        <button
-          *ngIf="!forceExpanded"
-          type="button"
-          class="associate-sidebar__pin"
-          [class.associate-sidebar__pin--pinned]="pinned"
-          [title]="(pinned ? 'sidebar.unpin' : 'sidebar.pin') | translate"
-          (click)="togglePin()"
-        >
-          <span class="material-symbols-outlined associate-sidebar__pin-icon" aria-hidden="true">push_pin</span>
-          <span class="associate-sidebar__pin-label" *ngIf="expanded">{{ (pinned ? 'sidebar.unpin' : 'sidebar.pin') | translate }}</span>
-        </button>
         <button type="button" class="associate-sidebar__logout" title="{{ 'auth.logout' | translate }}" (click)="logout.emit()">
           <span class="material-symbols-outlined associate-sidebar__link-icon" aria-hidden="true">logout</span>
           <span class="associate-sidebar__logout-label" *ngIf="expanded">{{ 'auth.logout' | translate }}</span>
