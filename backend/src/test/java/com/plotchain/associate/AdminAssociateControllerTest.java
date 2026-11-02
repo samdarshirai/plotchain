@@ -57,6 +57,8 @@ class AdminAssociateControllerTest {
     @MockBean LegVolumeRepository legVolumeRepository;
     @MockBean SettingsAuditLogRepository settingsAuditLogRepository;
     @MockBean CycleService cycleService;
+    @MockBean AssociateBankDetailsRepository bankDetailsRepository;
+    @MockBean AssociateNomineeRepository nomineeRepository;
 
     private static final UUID ASSOCIATE_ID = UUID.randomUUID();
     private final RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(5000));
@@ -371,11 +373,88 @@ class AdminAssociateControllerTest {
     }
 
     @Test
-    void managerCannotEditNomineeButAdminCan() throws Exception {
+    void managerCannotChangeAnyOtherIdentityField() throws Exception {
+        when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedAssociate()));
+        String token = tokenFor(AssociateRole.MANAGER);
+        String base = "\"name\":\"Jane Doe\",\"phone\":\"9876543210\",\"panNumber\":\"ABCDE1234F\",\"aadhaarNumber\":\"%s\"";
+        String[] bodies = {
+            "{" + base.formatted("999988887777") + "}",                                  // Aadhaar
+            "{" + base.formatted("123412341234") + ",\"fatherHusbandName\":\"Dad\"}",   // father/husband
+            "{" + base.formatted("123412341234") + ",\"dateOfBirth\":\"1990-01-01\"}",  // DOB
+            "{" + base.formatted("123412341234") + ",\"gender\":\"MALE\"}",             // gender
+            "{" + base.formatted("123412341234") + ",\"maritalStatus\":\"SINGLE\"}"     // marital status
+        };
+        for (String body : bodies) {
+            mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/profile")
+                    .header("Authorization", "Bearer " + token).contentType("application/json").content(body))
+                .andExpect(status().isForbidden());
+        }
+        verify(associateRepository, never()).save(any());
+    }
+
+    @Test
+    void managerContactUpdateStoresStateDistrictAndPostalCode() throws Exception {
+        when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedAssociate()));
+        when(associateRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/profile")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.MANAGER)).contentType("application/json")
+                .content("""
+                    {"name":"Jane Doe","phone":"9876543210","email":"j@x.com","state":"Delhi","district":"Central","postalCode":"110001","panNumber":"ABCDE1234F","aadhaarNumber":"123412341234"}"""))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.email").value("j@x.com"))
+            .andExpect(jsonPath("$.state").value("Delhi"))
+            .andExpect(jsonPath("$.district").value("Central"))
+            .andExpect(jsonPath("$.postalCode").value("110001"));
+    }
+
+    @Test
+    void managerPhoneChangeToAnExistingNumberIsAConflict() throws Exception {
+        when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedAssociate()));
+        when(associateRepository.existsByPhone("9000000000")).thenReturn(true);
+
+        mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/profile")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.MANAGER)).contentType("application/json")
+                .content("""
+                    {"name":"Jane Doe","phone":"9000000000","panNumber":"ABCDE1234F","aadhaarNumber":"123412341234"}"""))
+            .andExpect(status().isConflict());
+        verify(associateRepository, never()).save(any());
+    }
+
+    @Test
+    void managerCanStillEditBankDetails() throws Exception {
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(seedAssociate()));
+        when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedAssociate()));
+        when(bankDetailsRepository.findByAssociateId(ASSOCIATE_ID)).thenReturn(Optional.empty());
+
+        mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/bank-details")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.MANAGER)).contentType("application/json")
+                .content("""
+                    {"bankName":"SBI","accountHolder":"Jane Doe","accountNumber":"123456","ifscCode":"SBIN0001234","accountType":"SAVINGS"}"""))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.bankName").value("SBI"));
+    }
+
+    @Test
+    void managerCannotEditNominee() throws Exception {
         when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedAssociate()));
         mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/nominee")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.MANAGER))
                 .contentType("application/json").content("{\"nomineeName\":\"X\",\"relation\":\"Son\"}"))
             .andExpect(status().isForbidden());
+        verify(nomineeRepository, never()).save(any());
+    }
+
+    @Test
+    void adminCanEditNominee() throws Exception {
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(seedAssociate()));
+        when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedAssociate()));
+        when(nomineeRepository.findByAssociateId(ASSOCIATE_ID)).thenReturn(Optional.empty());
+
+        mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/nominee")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
+                .contentType("application/json").content("{\"nomineeName\":\"X\",\"relation\":\"Son\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.nomineeName").value("X"));
     }
 }

@@ -178,6 +178,8 @@ class CompensationPlanControllerTest {
         String manager = tokenFor(AssociateRole.MANAGER);
         mockMvc.perform(get("/api/company/compensation").header("Authorization", "Bearer " + manager))
             .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/company/compensation/history").header("Authorization", "Bearer " + manager))
+            .andExpect(status().isForbidden());
         mockMvc.perform(put("/api/company/compensation").header("Authorization", "Bearer " + manager)
                 .contentType("application/json").content("{}"))
             .andExpect(status().isForbidden());

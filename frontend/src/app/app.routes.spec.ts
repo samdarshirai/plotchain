@@ -2,11 +2,18 @@ import { routes } from './app.routes';
 import { authGuard } from './auth/auth.guard';
 import { associateOnlyGuard } from './auth/associate-only.guard';
 import { rootRedirectGuard } from './auth/root-redirect.guard';
-import { adminGuard } from './admin/admin.guard';
+import { adminGuard, notManagerGuard } from './admin/admin.guard';
 import { setupModeGuard, launchedModeGuard } from './setup/setup.guard';
 import { ADMIN_NAV_CATEGORIES, ADMIN_USERS_NAV_ITEM } from './admin-nav-categories.model';
 
 describe('routes', () => {
+  it('keeps managers out of the Compensation screen in both settings and the setup wizard', () => {
+    const settings = routes.find(r => r.path === 'admin/settings')!.children!.find(c => c.path === 'compensation');
+    const wizard = routes.find(r => r.path === 'admin/setup')!.children!.find(c => c.path === 'compensation');
+    expect(settings!.canActivate).toContain(notManagerGuard);
+    expect(wizard!.canActivate).toContain(notManagerGuard);
+  });
+
   it('guards the dashboard route with authGuard and associateOnlyGuard', () => {
     const dashboardRoute = routes.find(route => route.path === 'dashboard');
 
