@@ -4,6 +4,8 @@ export interface AdminNavItem {
   path: string;
   // Items that share one screen (Plot Booking tabs) are told apart by query params.
   query?: Record<string, string>;
+  // Hidden from MANAGER users (route is guarded and the API refuses them too).
+  adminOnly?: boolean;
 }
 
 export interface AdminNavCategory {
@@ -104,7 +106,7 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
       { key: 'companyProfile', labelKey: 'settings.sections.companyProfile', path: '/admin/settings/company-profile' },
       { key: 'branding', labelKey: 'settings.sections.branding', path: '/admin/settings/branding' },
       { key: 'paymentsKyc', labelKey: 'settings.sections.paymentsKyc', path: '/admin/settings/payments-kyc' },
-      { key: 'compensation', labelKey: 'settings.sections.compensation', path: '/admin/settings/compensation' }
+      { key: 'compensation', labelKey: 'settings.sections.compensation', path: '/admin/settings/compensation', adminOnly: true }
     ]
   },
   {

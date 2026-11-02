@@ -11,6 +11,8 @@ import com.plotchain.income.DesignationService;
 import com.plotchain.legvolume.LegVolume;
 import com.plotchain.legvolume.LegVolumeRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -137,8 +139,20 @@ public class AdminAssociateService {
     }
 
     @Transactional
-    public AssociateProfileResponse updateProfile(UUID id, AdminUpdateAssociateProfileRequest r, UUID actorId) {
+    public AssociateProfileResponse updateProfile(UUID id, AdminUpdateAssociateProfileRequest r, UUID actorId, AssociateRole actorRole) {
         Associate a = findOrThrow(id);
+        if (actorRole == AssociateRole.MANAGER) {
+            requireManagerSafeProfile(a, r);
+            a.setPhone(r.phone());
+            a.setEmail(r.email());
+            a.setAddress(r.address());
+            a.setState(r.state());
+            a.setDistrict(r.district());
+            a.setPostalCode(r.postalCode());
+            associateRepository.save(a);
+            audit(a, "profile", actorId);
+            return AssociateProfileResponse.from(a);
+        }
         if (r.phone() != null && !r.phone().equals(a.getPhone()) && associateRepository.existsByPhone(r.phone())) {
             throw new PhoneAlreadyRegisteredException(r.phone());
         }
@@ -174,10 +188,27 @@ public class AdminAssociateService {
     }
 
     @Transactional
-    public AssociateNomineeResponse updateNominee(UUID id, AdminUpdateAssociateNomineeRequest r, UUID actorId) {
+    public AssociateNomineeResponse updateNominee(UUID id, AdminUpdateAssociateNomineeRequest r, UUID actorId, AssociateRole actorRole) {
+        if (actorRole == AssociateRole.MANAGER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Managers cannot edit nominee details");
+        }
         AssociateNomineeResponse res = nomineeService.updateNominee(id, r);
         audit(findOrThrow(id), "nominee", actorId);
         return res;
+    }
+
+    // Managers may change contact fields only; every identity field must come back unchanged.
+    private void requireManagerSafeProfile(Associate a, AdminUpdateAssociateProfileRequest r) {
+        if (!Objects.equals(r.name(), a.getName()) || !Objects.equals(r.panNumber(), a.getPanNumber())
+            || !Objects.equals(r.aadhaarNumber(), a.getAadhaarNumber())
+            || !Objects.equals(r.fatherHusbandName(), a.getFatherHusbandName())
+            || !Objects.equals(r.dateOfBirth(), a.getDateOfBirth()) || !Objects.equals(r.gender(), a.getGender())
+            || !Objects.equals(r.maritalStatus(), a.getMaritalStatus())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Managers can only edit contact details");
+        }
+        if (r.phone() != null && !r.phone().equals(a.getPhone()) && associateRepository.existsByPhone(r.phone())) {
+            throw new PhoneAlreadyRegisteredException(r.phone());
+        }
     }
 
     private void audit(Associate a, String what, UUID actorId) {

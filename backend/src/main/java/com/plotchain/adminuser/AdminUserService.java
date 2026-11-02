@@ -50,7 +50,10 @@ public class AdminUserService {
 
     @Transactional
     public AdminUserResponse create(AdminUserRequest request, UUID actorId, AssociateRole actorRole) {
-        AssociateRole role = request.role() == null ? actorRole : request.role();
+        AssociateRole role = request.role() == null ? AssociateRole.MANAGER : request.role();
+        if (role == AssociateRole.ADMIN) { // one seeded admin only; everyone else is a manager
+            throw new AdminUserException(HttpStatus.FORBIDDEN, "Only one admin exists; create a manager instead");
+        }
         if (!visibleRoles(actorRole).contains(role)) {
             throw new AdminUserException(HttpStatus.FORBIDDEN, "You cannot create users with role " + role);
         }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule } from '@ngx-translate/core';
 import { forkJoin, of } from 'rxjs';
+import { AuthService } from '../../auth/auth.service';
 import { AssociateDirectoryService } from '../associate-directory/associate-directory.service';
 import { AdminService } from '../admin.service';
 import { AssociateSummary } from '../models/associate-summary.model';
@@ -75,6 +76,7 @@ export interface PresetParent {
             [initial]="initial"
             [lockSponsor]="!!editAssociateId"
             [showBank]="!!editAssociateId"
+            [lockedFields]="lockedFields"
             [submitLabel]="editAssociateId ? 'admin.associateDirectory.editSubmitAction' : 'admin.associateDirectory.provisionSubmitAction'"
             (submitted)="onSubmit($event)"
             (cancelled)="cancel()"
@@ -87,6 +89,11 @@ export interface PresetParent {
 export class NewAssociatePanelComponent implements OnInit, OnChanges {
   private adminService = inject(AdminService);
   private directoryService = inject(AssociateDirectoryService);
+  // A manager edits contact + bank details only; identity and nominee fields stay read-only (server enforces too).
+  readonly isManager = inject(AuthService).getRole() === 'MANAGER';
+  readonly lockedFields = this.isManager
+    ? ['name', 'fatherHusbandName', 'panNumber', 'aadhaarNumber', 'dateOfBirth', 'gender', 'maritalStatus', 'nomineeName', 'nomineeRelation']
+    : [];
 
   @Input() open = false;
   @Input() presetParent: PresetParent | null = null;
@@ -181,7 +188,7 @@ export class NewAssociatePanelComponent implements OnInit, OnChanges {
         phone: n(v.phone), email: n(v.email), address: n(v.address),
         state: n(v.state), district: n(v.district), postalCode: n(v.postalCode)
       }),
-      this.directoryService.updateNominee(id, { nomineeName: n(v.nomineeName), relation: n(v.nomineeRelation) }),
+      this.isManager ? of(null) : this.directoryService.updateNominee(id, { nomineeName: n(v.nomineeName), relation: n(v.nomineeRelation) }),
       hasBank
         ? this.directoryService.updateBankDetails(id, {
             bankName: v.bankName!, accountHolder: v.accountHolder!, accountNumber: v.accountNumber!,

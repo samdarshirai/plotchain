@@ -17,3 +17,8 @@ export const adminGuard: CanActivateFn = () => {
   const role = authService.getRole();
   return role !== null && ADMIN_FAMILY_ROLES.has(role) ? true : router.parseUrl('/admin/login');
 };
+
+// Admin-only screens (e.g. Compensation): a MANAGER is sent back to the dashboard. UX only; the
+// API refuses managers too (SecurityConfig).
+export const notManagerGuard: CanActivateFn = () =>
+  inject(AuthService).getRole() === 'MANAGER' ? inject(Router).parseUrl('/admin/dashboard') : true;

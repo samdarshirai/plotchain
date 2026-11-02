@@ -3,8 +3,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { AdminUser, AdminUserRole, AdminUsersService } from './admin-users.service';
-import { AuthService } from '../../auth/auth.service';
+import { AdminUser, AdminUsersService } from './admin-users.service';
 import { toFieldErrors } from '../../core/api/field-errors.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
@@ -111,13 +110,6 @@ import { titleCase } from '../../shared/utils/title-case';
               <input type="email" formControlName="email" />
               <app-field-error [message]="fieldError('email')"></app-field-error>
             </div>
-            <div class="admin-users__modal-field admin-users__role-field" *ngIf="canChooseRole && !editing">
-              <label>{{ 'admin.adminUsers.role' | translate }}</label>
-              <select formControlName="role">
-                <option value="ADMIN">{{ 'admin.adminUsers.roleAdmin' | translate }}</option>
-                <option value="MANAGER">{{ 'admin.adminUsers.roleManager' | translate }}</option>
-              </select>
-            </div>
             <div class="admin-users__modal-field">
               <label>{{ 'admin.adminUsers.status' | translate }}</label>
               <select formControlName="status">
@@ -140,8 +132,6 @@ export class AdminUsersComponent implements OnInit {
   private translate = inject(TranslateService);
   private datePipe = inject(DatePipe);
   private fb = inject(FormBuilder);
-  // Only ADMIN may create ADMINs; a MANAGER's new users are always MANAGERs (enforced server-side).
-  readonly canChooseRole = inject(AuthService).getRole() === 'ADMIN';
 
   users: AdminUser[] = [];
   columns: EditableTableColumn[] = [];
@@ -166,8 +156,7 @@ export class AdminUsersComponent implements OnInit {
     name: ['', Validators.required],
     phone: ['', [Validators.required, format('phone')]],
     email: ['', Validators.email],
-    status: ['ACTIVE' as 'ACTIVE' | 'SUSPENDED'],
-    role: ['ADMIN' as AdminUserRole]
+    status: ['ACTIVE' as 'ACTIVE' | 'SUSPENDED']
   });
 
   ngOnInit(): void {
@@ -197,8 +186,7 @@ export class AdminUsersComponent implements OnInit {
       name: user?.name ?? '',
       phone: user?.phone ?? '',
       email: user?.email ?? '',
-      status: user?.status ?? 'ACTIVE',
-      role: user?.role ?? 'ADMIN'
+      status: user?.status ?? 'ACTIVE'
     });
     this.modalOpen = true;
   }
@@ -224,8 +212,7 @@ export class AdminUsersComponent implements OnInit {
       return;
     }
     const raw = this.form.getRawValue();
-    const { role, ...fields } = raw;
-    const request = { ...fields, email: raw.email.trim() || null, ...(this.canChooseRole && !this.editing ? { role } : {}) };
+    const request = { ...raw, email: raw.email.trim() || null }; // new users are always managers (server default)
     const call = this.editing ? this.service.update(this.editing.id, request) : this.service.create(request);
     call.subscribe({
       next: saved => {

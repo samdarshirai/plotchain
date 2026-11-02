@@ -48,11 +48,11 @@ describe('AdminUsersComponent', () => {
   it('showsTemporaryPasswordAfterCreate', () => {
     const c = fixture.componentInstance;
     c.openModal(null);
-    c.form.setValue({ userId: 'ops2', name: 'Op Two', phone: '8888888888', email: '', status: 'ACTIVE', role: 'MANAGER' });
+    c.form.setValue({ userId: 'ops2', name: 'Op Two', phone: '8888888888', email: '', status: 'ACTIVE' });
     c.save();
     const req = httpMock.expectOne({ method: 'POST', url: '/api/admin/users' });
     expect(req.request.body.email).toBeNull();
-    expect(req.request.body.role).toBe('MANAGER');
+    expect('role' in req.request.body).toBeFalse();
     req.flush({ ...user, userId: 'ops2', temporaryPassword: 'Tmp#1234' });
     httpMock.expectOne('/api/admin/users').flush([user]);
     expect(c.tempPassword).toEqual({ userId: 'ops2', value: 'Tmp#1234' });
@@ -69,15 +69,12 @@ describe('AdminUsersComponent', () => {
     expect(el.querySelector('.admin-users__reset-result')?.textContent).toContain('New#1234');
   });
 
-  it('adminSeesRoleChoiceOnAddButNotOnEdit', () => {
+  it('hasNoRoleChoiceBecauseNewUsersAreAlwaysManagers', () => {
     const c = fixture.componentInstance;
-    const el: HTMLElement = fixture.nativeElement;
     c.openModal(null);
     fixture.detectChanges();
-    expect(el.querySelector('.admin-users__role-field')).not.toBeNull();
-    c.openModal(c.users[0]);
-    fixture.detectChanges();
-    expect(el.querySelector('.admin-users__role-field')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.admin-users__role-field')).toBeNull();
+    expect('role' in c.form.controls).toBeFalse();
   });
 });
 

@@ -4,7 +4,8 @@ import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { filter, Subscription } from 'rxjs';
-import { ADMIN_NAV_CATEGORIES, ADMIN_USERS_NAV_ITEM, findNavCategoryForUrl } from '../../../admin-nav-categories.model';
+import { AuthService } from '../../../auth/auth.service';
+import { ADMIN_NAV_CATEGORIES, AdminNavCategory, AdminNavItem, ADMIN_USERS_NAV_ITEM, findNavCategoryForUrl } from '../../../admin-nav-categories.model';
 import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap.service';
 
 // Admin-family left nav. Pins/unpins like AssociateSidebarComponent (pin button by the logo; unpinned =
@@ -75,7 +76,7 @@ import { BrandingBootstrapService } from '../../../core/theme/branding-bootstrap
           </button>
           <div class="associate-sidebar__subnav" *ngIf="expanded && isOpen(category.key)">
             <a
-              *ngFor="let item of category.items"
+              *ngFor="let item of visibleItems(category)"
               class="associate-sidebar__sublink"
               routerLinkActive="associate-sidebar__sublink--active"
               [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'exact', fragment: 'ignored', matrixParams: 'ignored' }"
@@ -130,7 +131,12 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
     this.hovering = false;
   }
 
+  private isManager = inject(AuthService).getRole() === 'MANAGER';
   readonly categories = ADMIN_NAV_CATEGORIES;
+
+  visibleItems(category: AdminNavCategory): AdminNavItem[] {
+    return this.isManager ? category.items.filter(item => !item.adminOnly) : category.items;
+  }
   readonly adminUsers = ADMIN_USERS_NAV_ITEM;
   private openKey: string | null = null;
 

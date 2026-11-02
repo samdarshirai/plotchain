@@ -15,6 +15,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -71,6 +72,11 @@ public class SecurityConfig {
                 // below, or POST /api/auth/login would be swallowed by the ADMIN-only POST
                 // rule and login itself would break.
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                // Compensation plan: ADMIN only. A MANAGER token also carries ADMIN, so exclude it
+                // here, before the blanket write rules (a controller @PreAuthorize would run after
+                // body validation and answer 400 instead of 403).
+                .requestMatchers("/api/company/compensation", "/api/company/compensation/**")
+                    .access(new WebExpressionAuthorizationManager("hasAuthority('ADMIN') and !hasAuthority('MANAGER')"))
                 // Self-service password change: an associate-reachable POST. Must precede the
                 // blanket ADMIN write rules below (first-match-wins) or associates could never
                 // clear their must-change-password state. SecurityConfigTest locks this.

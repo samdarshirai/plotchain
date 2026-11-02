@@ -4,6 +4,8 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { AdminSidebarComponent } from './admin-sidebar.component';
+import { AuthService } from '../../../auth/auth.service';
+import { ADMIN_NAV_CATEGORIES } from '../../../admin-nav-categories.model';
 
 describe('AdminSidebarComponent', () => {
   beforeEach(async () => {
@@ -38,6 +40,19 @@ describe('AdminSidebarComponent', () => {
     expect(groupLabels(el).length).toBe(9);
     expect(el.querySelectorAll('.associate-sidebar__subnav').length).toBe(0);
     expect(el.querySelectorAll('[aria-expanded="true"]').length).toBe(0);
+  });
+
+  it('hides Compensation from a manager but shows it to an admin', () => {
+    const setup = ADMIN_NAV_CATEGORIES.find(c => c.key === 'setup')!;
+    for (const [role, expected] of [['ADMIN', true], ['MANAGER', false]] as const) {
+      TestBed.overrideProvider(AuthService, { useValue: { getRole: () => role } });
+      const fixture = TestBed.createComponent(AdminSidebarComponent);
+      const keys = fixture.componentInstance.visibleItems(setup).map(i => i.key);
+      expect(keys.includes('compensation')).toBe(expected);
+      expect(keys.includes('companyProfile')).toBeTrue();
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ imports: [AdminSidebarComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()] });
+    }
   });
 
   it('opens a group on click to show its links, and closes it on a second click', () => {

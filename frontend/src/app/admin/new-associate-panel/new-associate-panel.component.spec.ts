@@ -4,6 +4,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { NewAssociatePanelComponent } from './new-associate-panel.component';
 import { AssociateProfileFormComponent } from '../../shared/components/associate-profile-form/associate-profile-form.component';
 import { By } from '@angular/platform-browser';
+import { AuthService } from '../../auth/auth.service';
 
 describe('NewAssociatePanelComponent', () => {
   let fixture: ComponentFixture<NewAssociatePanelComponent>;
@@ -196,5 +197,43 @@ describe('NewAssociatePanelComponent', () => {
       httpMock.match(r => r.url.endsWith('/nominee')); // cancelled by forkJoin once profile fails
       expect(fixture.componentInstance.serverErrors).toEqual({ aadhaarNumber: 'Aadhaar already registered' });
     });
+  });
+});
+
+describe('NewAssociatePanelComponent as MANAGER', () => {
+  it('a manager editing an associate has identity and nominee fields locked and skips the nominee save', () => {
+    TestBed.configureTestingModule({
+      imports: [NewAssociatePanelComponent, HttpClientTestingModule, TranslateModule.forRoot()],
+      providers: [{ provide: AuthService, useValue: { getRole: () => 'MANAGER' } }]
+    });
+    const httpMock = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(NewAssociatePanelComponent);
+    fixture.componentInstance.editAssociateId = 'a-1';
+    fixture.componentInstance.open = true;
+    fixture.componentInstance.ngOnChanges({ open: {} as any });
+    fixture.detectChanges();
+    httpMock.expectOne('/api/admin/associates/a-1').flush({ sponsorUserId: null, position: null });
+    httpMock.expectOne('/api/admin/associates/a-1/profile').flush({
+      name: 'N', phone: '9876543210', address: 'A', state: 'Delhi', district: 'C', panNumber: 'ABCDE1234F', aadhaarNumber: '123456789012'
+    });
+    httpMock.expectOne('/api/admin/associates/a-1/nominee').flush({ nomineeName: 'Mom', relation: 'Mother' });
+    httpMock.expectOne('/api/admin/associates/a-1/bank-details').flush({});
+    fixture.detectChanges();
+    const form: AssociateProfileFormComponent = fixture.debugElement.query(By.directive(AssociateProfileFormComponent)).componentInstance;
+    for (const f of ['name', 'panNumber', 'aadhaarNumber', 'nomineeName', 'nomineeRelation', 'fatherHusbandName']) {
+      expect((form.form.get(f) as any).disabled).withContext(f).toBeTrue();
+    }
+    for (const f of ['phone', 'email', 'address', 'bankName']) {
+      expect((form.form.get(f) as any).enabled).withContext(f).toBeTrue();
+    }
+    form.form.patchValue({ phone: '9000000000' });
+    form.submit();
+    const profile = httpMock.expectOne(r => r.method === 'PUT' && r.url.endsWith('/profile'));
+    expect(profile.request.body.name).toBe('N');
+    expect(profile.request.body.panNumber).toBe('ABCDE1234F');
+    expect(profile.request.body.phone).toBe('9000000000');
+    profile.flush({});
+    httpMock.expectNone(r => r.method === 'PUT' && r.url.endsWith('/nominee'));
+    httpMock.verify();
   });
 });

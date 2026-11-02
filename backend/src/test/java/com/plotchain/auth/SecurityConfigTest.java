@@ -177,8 +177,8 @@ class SecurityConfigTest {
     // migration and CompensationPlanControllerTest). That's what makes isOk() the right
     // assertion here rather than the "not 403" used elsewhere in this file for unstubbed paths.
     @ParameterizedTest
-    @EnumSource(value = AssociateRole.class, names = "ASSOCIATE", mode = EnumSource.Mode.EXCLUDE)
-    void compensationIsReachableForAnyAdminFamilyToken(AssociateRole role) throws Exception {
+    @EnumSource(value = AssociateRole.class, names = {"ASSOCIATE", "MANAGER"}, mode = EnumSource.Mode.EXCLUDE)
+    void compensationIsReachableForAdminTokens(AssociateRole role) throws Exception {
         mockMvc.perform(get("/api/company/compensation")
                 .header("Authorization", "Bearer " + tokenFor(role)))
             .andExpect(status().isOk());

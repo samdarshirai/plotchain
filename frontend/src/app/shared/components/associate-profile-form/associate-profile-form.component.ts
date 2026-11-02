@@ -222,6 +222,8 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
   @Input() lockSponsor = false;
   /** Adds the optional Bank details section (admin edit). */
   @Input() showBank = false;
+  /** Form control names rendered read-only (e.g. a manager editing an associate). */
+  @Input() lockedFields: string[] = [];
   @Output() submitted = new EventEmitter<AssociateProfileValue>();
   @Output() cancelled = new EventEmitter<void>();
 
@@ -265,7 +267,7 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['serverErrors'] && this.submitAttempted) { this.issues = collectIssues(this.form, LABELS, this.serverErrors); }
-    if (changes['sponsorRequired'] || changes['showTransactionPassword'] || changes['lockSponsor']) { this.syncValidators(); }
+    if (changes['sponsorRequired'] || changes['showTransactionPassword'] || changes['lockSponsor'] || changes['lockedFields']) { this.syncValidators(); }
     if (changes['initial'] && !changes['initial'].firstChange) { this.applyInitial(); }
     if ((changes['presetSponsorUserId'] || changes['presetPosition']) && !changes['presetSponsorUserId']?.firstChange) { this.applyPreset(); }
   }
@@ -277,6 +279,7 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
     for (const c of [this.form.controls.sponsorUserId, this.form.controls.position]) {
       if (this.lockSponsor) { c.disable({ emitEvent: false }); } else { c.enable({ emitEvent: false }); }
     }
+    for (const name of this.lockedFields) { this.form.get(name)?.disable({ emitEvent: false }); }
     this.form.controls.transactionPassword.setValidators(this.showTransactionPassword ? [Validators.required] : []);
     Object.values(this.form.controls).forEach(c => c.updateValueAndValidity({ emitEvent: false }));
   }
