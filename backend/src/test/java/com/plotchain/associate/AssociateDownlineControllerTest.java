@@ -230,6 +230,20 @@ class AssociateDownlineControllerTest {
     }
 
     @Test
+    void adminBlankRootBeforeTheRootUserExistsReturnsAnEmptyPage() throws Exception {
+        caller.setId(UUID.randomUUID());
+        caller.setRole(AssociateRole.ADMIN);
+        when(associateRepository.findById(caller.getId())).thenReturn(Optional.of(caller));
+        when(associateRepository.findFirstByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)).thenReturn(Optional.empty());
+        String token = jwtService.generateToken(caller);
+
+        mockMvc.perform(get("/api/admin/associates/downline").header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.associates").isEmpty())
+            .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
     void associateCannotCallAdminDownline() throws Exception {
         String token = token();
         mockMvc.perform(get("/api/admin/associates/downline").header("Authorization", "Bearer " + token))

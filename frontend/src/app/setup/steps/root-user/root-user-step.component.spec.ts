@@ -3,6 +3,7 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { RouterTestingModule } from '@angular/router/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { RootUserStepComponent } from './root-user-step.component';
+import { SetupService } from '../../setup.service';
 import { SetupStateResponse } from '../../models/setup-state.model';
 
 describe('RootUserStepComponent', () => {
@@ -42,5 +43,18 @@ describe('RootUserStepComponent', () => {
     expect(fixture.nativeElement.querySelector('app-brand-button')).toBeNull();
     expect(fixture.nativeElement.querySelector('app-inline-banner')).not.toBeNull();
     expect(fixture.componentInstance.isStepValid()).toBeTrue();
+  });
+
+  it('opens the add-associate panel in root mode and refreshes setup state once the root user is created', async () => {
+    await create(false);
+    const refresh = spyOn(TestBed.inject(SetupService), 'refresh');
+
+    fixture.nativeElement.querySelector('app-brand-button button').click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.open).toBeTrue();
+    httpMock.expectOne('/api/associates').flush([]);
+
+    fixture.componentInstance.onCreated();
+    expect(refresh).toHaveBeenCalled();
   });
 });

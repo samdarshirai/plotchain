@@ -82,6 +82,42 @@ class AssociateRepositoryTest {
     }
 
     @Test
+    void rootLookupIgnoresParentlessAdminRowsAndFindsTheParentlessAssociate() {
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        entityManager.persist(rank);
+        Associate admin = newAssociate(null, null, null);
+        admin.setRole(AssociateRole.ADMIN);
+        associateRepository.save(admin);
+        entityManager.flush();
+
+        assertThat(associateRepository.existsByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)).isFalse();
+        assertThat(associateRepository.findFirstByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)).isEmpty();
+
+        Associate root = newAssociate(null, null, rank.getId());
+        Associate child = newAssociate(root.getId(), "L", rank.getId());
+        associateRepository.saveAll(List.of(root, child));
+        entityManager.flush();
+
+        assertThat(associateRepository.existsByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)).isTrue();
+        assertThat(associateRepository.findFirstByParentIdIsNullAndRole(AssociateRole.ASSOCIATE))
+            .map(Associate::getId).contains(root.getId());
+    }
+
+    @Test
+    void findDeepestLegDepthIgnoresParentlessAdminRows() {
+        RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
+        entityManager.persist(rank);
+        Associate admin = newAssociate(null, null, null);
+        admin.setRole(AssociateRole.ADMIN);
+        Associate adminSideChild = newAssociate(admin.getId(), "L", rank.getId());
+        associateRepository.saveAll(List.of(admin, adminSideChild));
+        entityManager.flush();
+
+        // Only an admin-rooted chain exists: it is not part of the tree, so depth is 0.
+        assertThat(associateRepository.findDeepestLegDepth()).isEqualTo(0L);
+    }
+
+    @Test
     void countDownlineJoinedBeforeCountsOnlyAssociatesWhoHadJoinedByTheCutoff() {
         RankTier rank = new RankTier(UUID.randomUUID(), "Sales Associate", 1, BigDecimal.valueOf(10000));
         entityManager.persist(rank);

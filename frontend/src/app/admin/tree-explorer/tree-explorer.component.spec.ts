@@ -61,12 +61,23 @@ describe('TreeExplorerComponent', () => {
     }
   }
 
-  it('auto-loads the whole company tree on init, rooted at the founding admin', () => {
+  it('auto-loads the whole company tree on init, rooted at the root user', () => {
     initWithCompanyTree();
 
     expect(fixture.componentInstance.root?.userId).toBe('admin');
     // The default root is not a search result -- it must not carry the highlight/tag.
     expect(fixture.componentInstance.highlightedNodeId).toBeNull();
+  });
+
+  it('shows the empty state, not an error, before the root user exists', () => {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/associates').flush([]);
+    httpMock.expectOne('/api/admin/tree').flush(null);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.root).toBeNull();
+    expect(fixture.componentInstance.loadError).toBeFalse();
+    expect(fixture.nativeElement.querySelector('.tree-explorer__empty')).not.toBeNull();
   });
 
   it('shows a load error when the initial company-tree fetch fails', () => {

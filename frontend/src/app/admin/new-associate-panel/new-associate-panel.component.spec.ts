@@ -62,6 +62,14 @@ describe('NewAssociatePanelComponent', () => {
     expect(form.form.controls.position.hasError('required')).toBeTrue();
   });
 
+  it('does not require a sponsor in rootMode (onboarding root user)', () => {
+    fixture.componentInstance.rootMode = true;
+    const form = open();
+    form.form.patchValue({ sponsorUserId: '', position: '' });
+    expect(form.form.controls.sponsorUserId.hasError('required')).toBeFalse();
+    expect(form.form.controls.position.hasError('required')).toBeFalse();
+  });
+
   it('posts the full profile and shows the credentials on success', () => {
     const form = open();
     fillValid(form);
@@ -235,5 +243,33 @@ describe('NewAssociatePanelComponent as MANAGER', () => {
     profile.flush({});
     httpMock.expectNone(r => r.method === 'PUT' && r.url.endsWith('/nominee'));
     httpMock.verify();
+  });
+});
+
+describe('NewAssociatePanelComponent sponsor requirement', () => {
+  function setup(associates: unknown[]) {
+    TestBed.configureTestingModule({
+      imports: [NewAssociatePanelComponent, HttpClientTestingModule, TranslateModule.forRoot()]
+    });
+    const fixture = TestBed.createComponent(NewAssociatePanelComponent);
+    const httpMock = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    httpMock.expectOne('/api/associates').flush(associates);
+    return fixture;
+  }
+
+  it('admin and manager rows alone are not tree members, so no sponsor is required', () => {
+    const fixture = setup([
+      { id: 'a', userId: 'admin', name: 'Admin', role: 'ADMIN', status: 'ACTIVE', hasFreeSlot: false },
+      { id: 'm', userId: 'mgr', name: 'Manager', role: 'MANAGER', status: 'ACTIVE', hasFreeSlot: false }
+    ]);
+    expect(fixture.componentInstance.hasTreeMember).toBeFalse();
+  });
+
+  it('an ASSOCIATE row makes a sponsor required', () => {
+    const fixture = setup([
+      { id: 's', userId: 'VP00001', name: 'Root', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: true }
+    ]);
+    expect(fixture.componentInstance.hasTreeMember).toBeTrue();
   });
 });
