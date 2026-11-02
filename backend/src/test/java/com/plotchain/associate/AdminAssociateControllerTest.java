@@ -337,4 +337,45 @@ class AdminAssociateControllerTest {
                 .content(PROFILE_JSON.formatted("abc", "123412341234")))
             .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void managerCanChangeContactDetailsOnly() throws Exception {
+        when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedAssociate()));
+        when(associateRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/profile")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.MANAGER))
+                .contentType("application/json")
+                .content("""
+                    {"name":"Jane Doe","phone":"9000000000","address":"1 Main St","panNumber":"ABCDE1234F","aadhaarNumber":"123412341234"}"""))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.phone").value("9000000000"))
+            .andExpect(jsonPath("$.address").value("1 Main St"));
+    }
+
+    @Test
+    void managerCannotChangePanNameOrAadhaar() throws Exception {
+        when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedAssociate()));
+        String token = tokenFor(AssociateRole.MANAGER);
+
+        mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/profile")
+                .header("Authorization", "Bearer " + token).contentType("application/json")
+                .content(PROFILE_JSON.formatted("ZZZZZ9999Z", "123412341234")))
+            .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/profile")
+                .header("Authorization", "Bearer " + token).contentType("application/json")
+                .content("""
+                    {"name":"Someone Else","phone":"9876543210","panNumber":"ABCDE1234F","aadhaarNumber":"123412341234"}"""))
+            .andExpect(status().isForbidden());
+        verify(associateRepository, never()).save(any());
+    }
+
+    @Test
+    void managerCannotEditNomineeButAdminCan() throws Exception {
+        when(associateRepository.findByIdAndRole(ASSOCIATE_ID, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(seedAssociate()));
+        mockMvc.perform(put("/api/admin/associates/" + ASSOCIATE_ID + "/nominee")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.MANAGER))
+                .contentType("application/json").content("{\"nomineeName\":\"X\",\"relation\":\"Son\"}"))
+            .andExpect(status().isForbidden());
+    }
 }

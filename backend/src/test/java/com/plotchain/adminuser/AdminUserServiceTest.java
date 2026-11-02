@@ -63,12 +63,12 @@ class AdminUserServiceTest {
     }
 
     @Test
-    void createStoresAdminRoleWithTemporaryPasswordThatMustBeChanged() {
+    void createStoresManagerRoleWithTemporaryPasswordThatMustBeChanged() {
         AdminUserResponse response = service.create(request("ops1"), ACTOR, AssociateRole.ADMIN);
 
         ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
         verify(repository).save(saved.capture());
-        assertThat(saved.getValue().getRole()).isEqualTo(AssociateRole.ADMIN);
+        assertThat(saved.getValue().getRole()).isEqualTo(AssociateRole.MANAGER);
         assertThat(saved.getValue().isMustChangePassword()).isTrue();
         assertThat(saved.getValue().getStatus()).isEqualTo(AssociateStatus.ACTIVE);
         assertThat(response.temporaryPassword()).isNotBlank();
@@ -145,10 +145,12 @@ class AdminUserServiceTest {
     }
 
     @Test
-    void managerCannotCreateAnAdmin() {
+    void nobodyCanCreateASecondAdmin() {
         AdminUserRequest asAdmin = new AdminUserRequest("ops1", "Op One", "9999999999", null, null, AssociateRole.ADMIN);
-        assertThatThrownBy(() -> service.create(asAdmin, ACTOR, AssociateRole.MANAGER))
-            .isInstanceOf(AdminUserException.class).hasMessageContaining("cannot create");
+        for (AssociateRole actor : new AssociateRole[] {AssociateRole.MANAGER, AssociateRole.ADMIN}) {
+            assertThatThrownBy(() -> service.create(asAdmin, ACTOR, actor))
+                .isInstanceOf(AdminUserException.class).hasMessageContaining("Only one admin");
+        }
         verify(repository, never()).save(any());
     }
 

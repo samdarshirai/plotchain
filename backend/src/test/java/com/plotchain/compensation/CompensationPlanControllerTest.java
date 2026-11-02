@@ -174,6 +174,16 @@ class CompensationPlanControllerTest {
     }
 
     @Test
+    void managerTokenIsForbiddenFromReadingAndWritingCompensation() throws Exception {
+        String manager = tokenFor(AssociateRole.MANAGER);
+        mockMvc.perform(get("/api/company/compensation").header("Authorization", "Bearer " + manager))
+            .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/company/compensation").header("Authorization", "Bearer " + manager)
+                .contentType("application/json").content("{}"))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
     void putCompensationSavesAndReturnsAnIncrementedVersionLabel() throws Exception {
         when(versionRepository.findFirstByOrderByCreatedAtDesc()).thenReturn(Optional.of(seedVersion()));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());

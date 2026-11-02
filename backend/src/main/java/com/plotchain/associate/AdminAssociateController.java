@@ -5,6 +5,8 @@ import com.plotchain.auth.LoginResponse;
 import com.plotchain.cycle.CycleService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.plotchain.adminuser.AdminUserController;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -77,8 +79,9 @@ public class AdminAssociateController {
     @PutMapping("/{id}/profile")
     @PreAuthorize("hasAuthority('ADMIN')")
     public AssociateProfileResponse updateProfile(@PathVariable UUID id,
-        @Valid @RequestBody AdminUpdateAssociateProfileRequest request, @AuthenticationPrincipal UUID actorId) {
-        return adminAssociateService.updateProfile(id, request, actorId);
+        @Valid @RequestBody AdminUpdateAssociateProfileRequest request, @AuthenticationPrincipal UUID actorId,
+        Authentication auth) {
+        return adminAssociateService.updateProfile(id, request, actorId, AdminUserController.actorRole(auth));
     }
 
     @GetMapping("/{id}/bank-details")
@@ -101,8 +104,9 @@ public class AdminAssociateController {
     @PutMapping("/{id}/nominee")
     @PreAuthorize("hasAuthority('ADMIN')")
     public AssociateNomineeResponse updateNominee(@PathVariable UUID id,
-        @RequestBody AdminUpdateAssociateNomineeRequest request, @AuthenticationPrincipal UUID actorId) {
-        return adminAssociateService.updateNominee(id, request, actorId);
+        @RequestBody AdminUpdateAssociateNomineeRequest request, @AuthenticationPrincipal UUID actorId,
+        Authentication auth) {
+        return adminAssociateService.updateNominee(id, request, actorId, AdminUserController.actorRole(auth));
     }
 
     @PostMapping("/{id}/suspend")

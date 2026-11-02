@@ -6,7 +6,7 @@ import { authGuard } from './auth/auth.guard';
 import { associateOnlyGuard } from './auth/associate-only.guard';
 import { rootRedirectGuard } from './auth/root-redirect.guard';
 import { loginRedirectGuard } from './auth/login-redirect.guard';
-import { adminGuard } from './admin/admin.guard';
+import { adminGuard, notManagerGuard } from './admin/admin.guard';
 import { setupModeGuard, launchedModeGuard } from './setup/setup.guard';
 import { SetupShellComponent } from './setup/setup-shell.component';
 import { CompanyProfileStepComponent } from './setup/steps/company-profile/company-profile-step.component';
@@ -107,7 +107,7 @@ export const routes: Routes = [
     children: [
       { path: 'company-profile', component: CompanyProfileStepComponent, data: { stepKey: 'companyProfile' } },
       { path: 'branding', component: BrandingStepComponent, data: { stepKey: 'branding' } },
-      { path: 'compensation', component: CompensationStepComponent, data: { stepKey: 'compensation' } },
+      { path: 'compensation', component: CompensationStepComponent, canActivate: [notManagerGuard], data: { stepKey: 'compensation' } },
       { path: 'projects', component: ProjectsStepComponent, data: { stepKey: 'projects' } },
       { path: 'payments-kyc', component: PaymentsKycStepComponent, data: { stepKey: 'paymentsKyc' } },
       { path: 'root-user', component: RootUserStepComponent, data: { stepKey: 'rootUser' } },
@@ -122,7 +122,7 @@ export const routes: Routes = [
     children: [
       { path: 'company-profile', component: CompanyProfileStepComponent, data: { sectionKey: 'companyProfile', mode: 'settings' } },
       { path: 'branding', component: BrandingStepComponent, data: { sectionKey: 'branding', mode: 'settings' } },
-      { path: 'compensation', component: CompensationStepComponent, data: { sectionKey: 'compensation', mode: 'settings' } },
+      { path: 'compensation', component: CompensationStepComponent, canActivate: [notManagerGuard], data: { sectionKey: 'compensation', mode: 'settings' } },
       { path: 'payments-kyc', component: PaymentsKycStepComponent, data: { sectionKey: 'paymentsKyc', mode: 'settings' } },
       { path: 'associate-directory', component: AssociateDirectoryComponent, data: { sectionKey: 'associateDirectory' } },
       { path: 'associate-downline', loadComponent: () => import('./my-team/associate-downline.component').then(m => m.AssociateDownlineComponent), data: { sectionKey: 'associateDownline', scope: 'admin' } },

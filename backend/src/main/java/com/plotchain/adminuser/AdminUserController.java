@@ -54,7 +54,7 @@ public class AdminUserController {
     }
 
     // A MANAGER token carries both ADMIN and MANAGER authorities (JwtAuthenticationFilter).
-    static AssociateRole actorRole(Authentication auth) {
+    public static AssociateRole actorRole(Authentication auth) {
         return auth.getAuthorities().stream().anyMatch(a -> "MANAGER".equals(a.getAuthority()))
             ? AssociateRole.MANAGER : AssociateRole.ADMIN;
     }
