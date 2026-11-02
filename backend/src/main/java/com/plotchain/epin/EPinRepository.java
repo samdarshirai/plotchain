@@ -19,6 +19,11 @@ public interface EPinRepository extends JpaRepository<EPin, UUID> {
     // generation loop. The DB-level UNIQUE constraint on code (migration V33) is the real guarantee.
     boolean existsByCode(String code);
 
+    // View Associate Downline: [associateId, first activation redemption time] per associate.
+    @Query("SELECT e.redeemedTo, MIN(e.redeemedAt) FROM EPin e WHERE e.redeemedTo IN :ids "
+        + "AND e.redemptionType = com.plotchain.epin.RedemptionType.ACTIVATION GROUP BY e.redeemedTo")
+    List<Object[]> findActivationTimes(@Param("ids") java.util.Collection<UUID> ids);
+
     // All filters optional (null = don't filter). Same null-safe "(:param IS NULL OR ...)" shape
     // as LedgerEntryRepository.search; UUID/enum/boolean params need no Postgres CAST workaround.
     @Query("""

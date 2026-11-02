@@ -37,6 +37,7 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     icon: 'group',
     items: [
       { key: 'associateDirectory', labelKey: 'settings.sections.associateDirectory', path: '/admin/settings/associate-directory' },
+      { key: 'associateDownline', labelKey: 'settings.sections.associateDownline', path: '/admin/settings/associate-downline' },
       { key: 'treeExplorer', labelKey: 'settings.sections.treeExplorer', path: '/admin/settings/tree-explorer' },
       { key: 'kycQueue', labelKey: 'settings.sections.kycQueue', path: '/admin/settings/kyc-queue' }
     ]

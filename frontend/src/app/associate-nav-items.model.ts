@@ -46,7 +46,8 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
     key: 'myTree', labelKey: 'nav.myTree', icon: 'account_tree', path: '/my-tree',
     children: [
       { key: 'tree', labelKey: 'nav.myTreeView', path: '/my-tree' },
-      { key: 'myTeam', labelKey: 'nav.myTeam', path: '/my-tree/team' }
+      { key: 'myTeam', labelKey: 'nav.myTeam', path: '/my-tree/team' },
+      { key: 'associateDownline', labelKey: 'nav.associateDownline', path: '/my-tree/downline' }
     ]
   },
   {

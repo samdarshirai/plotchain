@@ -21,6 +21,18 @@ public class AssociateDownlineController {
         this.adminAssociateService = adminAssociateService;
     }
 
+    // View Associate Downline: downline of rootUserId (must be inside the caller's own downline).
+    @GetMapping("/of")
+    public AdminAssociatePageResponse listOf(
+        @AuthenticationPrincipal UUID associateId,
+        @RequestParam(required = false) String rootUserId,
+        @RequestParam(required = false) String leg,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size
+    ) {
+        return adminAssociateService.listDownlineOf(associateId, rootUserId, leg, Math.max(page, 0), Math.min(size, 100));
+    }
+
     @GetMapping
     public AdminAssociatePageResponse list(
         @AuthenticationPrincipal UUID associateId,

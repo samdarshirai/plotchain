@@ -16,4 +16,14 @@ export class MyTeamService {
     }
     return this.http.get<AdminAssociatePage>('/api/associates/me/downline', { params });
   }
+
+  // View Associate Downline. scope 'me': rootUserId must be inside the caller's downline (404
+  // otherwise). scope 'admin': any associate; blank = whole company.
+  listFor(scope: 'me' | 'admin', rootUserId: string, leg: string, page: number, size: number): Observable<AdminAssociatePage> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (rootUserId) params = params.set('rootUserId', rootUserId);
+    if (leg) params = params.set('leg', leg);
+    const url = scope === 'admin' ? '/api/admin/associates/downline' : '/api/associates/me/downline/of';
+    return this.http.get<AdminAssociatePage>(url, { params });
+  }
 }

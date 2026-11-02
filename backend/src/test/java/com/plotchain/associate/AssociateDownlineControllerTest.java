@@ -3,6 +3,7 @@ package com.plotchain.associate;
 import com.plotchain.auth.JwtService;
 import com.plotchain.company.SettingsAuditLogRepository;
 import com.plotchain.cycle.CycleRepository;
+import com.plotchain.epin.EPinRepository;
 import com.plotchain.legvolume.LegVolumeRepository;
 import com.plotchain.rank.RankTierRepository;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,7 @@ class AssociateDownlineControllerTest {
     @MockBean CycleRepository cycleRepository;
     @MockBean LegVolumeRepository legVolumeRepository;
     @MockBean SettingsAuditLogRepository settingsAuditLogRepository;
+    @MockBean EPinRepository epinRepository;
 
     private final Associate caller = new Associate();
 
@@ -131,5 +133,104 @@ class AssociateDownlineControllerTest {
     @Test
     void unauthenticatedRejected() throws Exception {
         mockMvc.perform(get("/api/associates/me/downline")).andExpect(status().is4xxClientError());
+    }
+
+    private Associate member(UUID id, String userId) {
+        Associate a = new Associate();
+        a.setId(id);
+        a.setUserId(userId);
+        a.setName("N " + userId);
+        a.setRole(AssociateRole.ASSOCIATE);
+        a.setKycStatus(KycStatus.VERIFIED);
+        a.setStatus(AssociateStatus.ACTIVE);
+        a.setJoinedAt(Instant.now());
+        return a;
+    }
+
+    @Test
+    void ofRootInsideOwnDownlineReturnsThatRootsDownline() throws Exception {
+        String token = token();
+        UUID rootId = UUID.randomUUID(), kidId = UUID.randomUUID();
+        when(associateRepository.findByUserId("VP00002")).thenReturn(Optional.of(member(rootId, "VP00002")));
+        when(associateRepository.findSelfAndDownline(caller.getId())).thenReturn(List.of(caller.getId(), rootId));
+        when(associateRepository.findSelfAndDownline(rootId)).thenReturn(List.of(rootId, kidId));
+        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+            .thenReturn(new PageImpl<>(List.of(member(kidId, "VP00003"))));
+        Instant activated = Instant.parse("2026-01-05T10:00:00Z");
+        when(epinRepository.findActivationTimes(any())).thenReturn(java.util.Collections.singletonList(new Object[] {kidId, activated}));
+
+        mockMvc.perform(get("/api/associates/me/downline/of?rootUserId=VP00002").header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.associates[0].userId").value("VP00003"))
+            .andExpect(jsonPath("$.associates[0].activatedAt").value("2026-01-05T10:00:00Z"));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<UUID>> ids = ArgumentCaptor.forClass(List.class);
+        verify(associateRepository).searchWithinIds(ids.capture(), any(), any(), any(), any(), any(), any(), anyBoolean(), any());
+        assertThat(ids.getValue()).containsExactly(kidId);
+    }
+
+    @Test
+    void ofRootOutsideOwnDownlineIs404() throws Exception {
+        String token = token();
+        UUID otherId = UUID.randomUUID();
+        when(associateRepository.findByUserId("VP09999")).thenReturn(Optional.of(member(otherId, "VP09999")));
+        when(associateRepository.findSelfAndDownline(caller.getId())).thenReturn(List.of(caller.getId()));
+
+        mockMvc.perform(get("/api/associates/me/downline/of?rootUserId=VP09999").header("Authorization", "Bearer " + token))
+            .andExpect(status().isNotFound());
+        verify(associateRepository, never()).searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any());
+    }
+
+    @Test
+    void ofUnknownRootIs404() throws Exception {
+        String token = token();
+        when(associateRepository.findByUserId("NOPE")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/associates/me/downline/of?rootUserId=NOPE").header("Authorization", "Bearer " + token))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void ofWithoutRootDefaultsToCaller() throws Exception {
+        String token = token();
+        UUID kidId = UUID.randomUUID();
+        when(associateRepository.findSelfAndDownline(caller.getId())).thenReturn(List.of(caller.getId(), kidId));
+        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+            .thenReturn(new PageImpl<>(List.of(member(kidId, "VP00003"))));
+
+        mockMvc.perform(get("/api/associates/me/downline/of").header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.associates[0].activatedAt").doesNotExist());
+    }
+
+    @Test
+    void adminBlankRootUsesFoundingAdminAndAnyRootAllowed() throws Exception {
+        caller.setId(UUID.randomUUID());
+        caller.setRole(AssociateRole.ADMIN);
+        when(associateRepository.findById(caller.getId())).thenReturn(Optional.of(caller));
+        String token = jwtService.generateToken(caller);
+        UUID kidId = UUID.randomUUID();
+        when(associateRepository.findSelfAndDownline(AdminAssociateService.FOUNDING_ADMIN_ID))
+            .thenReturn(List.of(AdminAssociateService.FOUNDING_ADMIN_ID, kidId));
+        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+            .thenReturn(new PageImpl<>(List.of(member(kidId, "VP00003"))));
+
+        mockMvc.perform(get("/api/admin/associates/downline").header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.associates[0].userId").value("VP00003"));
+
+        UUID anyId = UUID.randomUUID();
+        when(associateRepository.findByUserId("VP00007")).thenReturn(Optional.of(member(anyId, "VP00007")));
+        when(associateRepository.findSelfAndDownline(anyId)).thenReturn(List.of(anyId, kidId));
+        mockMvc.perform(get("/api/admin/associates/downline?rootUserId=VP00007").header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void associateCannotCallAdminDownline() throws Exception {
+        String token = token();
+        mockMvc.perform(get("/api/admin/associates/downline").header("Authorization", "Bearer " + token))
+            .andExpect(status().isForbidden());
     }
 }

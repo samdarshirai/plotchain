@@ -48,6 +48,7 @@ export const routes: Routes = [
   { path: 'plot-bookings/my-sales', component: SalesHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'sales-history', redirectTo: 'plot-bookings/my-sales' }, // old bookmarks
   { path: 'my-tree', component: MyTreeComponent, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'my-tree/downline', loadComponent: () => import('./my-team/associate-downline.component').then(m => m.AssociateDownlineComponent), data: { scope: 'me' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'my-tree/team', loadComponent: () => import('./my-team/my-team.component').then(m => m.MyTeamComponent), canActivate: [authGuard, associateOnlyGuard] },
   // View Plot = the admin Projects & Plots screen in read-only mode; team/left/right are sibling routes
   // sharing one component (data.scope) so the sidebar sub-items are deep-linkable.
@@ -122,6 +123,7 @@ export const routes: Routes = [
       { path: 'compensation', component: CompensationStepComponent, data: { sectionKey: 'compensation', mode: 'settings' } },
       { path: 'payments-kyc', component: PaymentsKycStepComponent, data: { sectionKey: 'paymentsKyc', mode: 'settings' } },
       { path: 'associate-directory', component: AssociateDirectoryComponent, data: { sectionKey: 'associateDirectory' } },
+      { path: 'associate-downline', loadComponent: () => import('./my-team/associate-downline.component').then(m => m.AssociateDownlineComponent), data: { sectionKey: 'associateDownline', scope: 'admin' } },
       { path: 'tree-explorer', component: TreeExplorerComponent, data: { sectionKey: 'treeExplorer' } },
       { path: 'kyc-queue', component: KycQueueComponent, data: { sectionKey: 'kycQueue' } },
       { path: 'sales-register', component: SalesRegisterComponent, data: { sectionKey: 'salesRegister' } },

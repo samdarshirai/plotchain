@@ -48,6 +48,7 @@ class AdminAssociateServiceTest {
     @Mock LegVolumeRepository legVolumeRepository;
     @Mock SettingsAuditLogRepository settingsAuditLogRepository;
     @Mock AssociateStatusCache associateStatusCache;
+    @Mock com.plotchain.epin.EPinRepository epinRepository;
 
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     AdminAssociateService service;
@@ -61,7 +62,7 @@ class AdminAssociateServiceTest {
             settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
         service = new AdminAssociateService(
             associateRepository, designationService, cycleRepository, legVolumeRepository,
-            passwordEncoder, settingsAuditService, associateStatusCache, null, null);
+            passwordEncoder, settingsAuditService, associateStatusCache, null, null, epinRepository);
     }
 
     private Associate newAssociate(UUID id, String userId) {

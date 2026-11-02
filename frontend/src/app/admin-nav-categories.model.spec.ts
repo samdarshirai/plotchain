@@ -18,7 +18,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
   it('groupsEverySettingsScreenUnderTheirCategory', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => category.items.map(item => item.key))).toEqual([
       ['masterProjects', 'projectsPlots'],
-      ['associateDirectory', 'treeExplorer', 'kycQueue'],
+      ['associateDirectory', 'associateDownline', 'treeExplorer', 'kycQueue'],
       ['epinRegister'],
       ['ledgerRegister', 'salesRegister', 'cycleManagement', 'payoutApproval', 'expenseTypes'],
       ['paymentDetails', 'invoiceExpenses', 'advanceLoans'],

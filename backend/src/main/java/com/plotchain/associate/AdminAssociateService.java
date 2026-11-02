@@ -1,6 +1,7 @@
 package com.plotchain.associate;
 
 import com.plotchain.epin.EPinDuplicateIdentityException;
+import com.plotchain.epin.EPinRepository;
 
 import com.plotchain.company.SettingsAuditService;
 import com.plotchain.cycle.Cycle;
@@ -41,6 +42,7 @@ public class AdminAssociateService {
     private final AssociateStatusCache associateStatusCache;
     private final AssociateBankDetailsService bankDetailsService;
     private final AssociateNomineeService nomineeService;
+    private final EPinRepository epinRepository;
 
     public AdminAssociateService(
         AssociateRepository associateRepository,
@@ -51,8 +53,10 @@ public class AdminAssociateService {
         SettingsAuditService settingsAuditService,
         AssociateStatusCache associateStatusCache,
         AssociateBankDetailsService bankDetailsService,
-        AssociateNomineeService nomineeService
+        AssociateNomineeService nomineeService,
+        EPinRepository epinRepository
     ) {
+        this.epinRepository = epinRepository;
         this.associateRepository = associateRepository;
         this.designationService = designationService;
         this.cycleRepository = cycleRepository;
@@ -78,6 +82,27 @@ public class AdminAssociateService {
 
         List<AdminAssociateSummaryResponse> summaries = toSummaries(result.getContent());
         return new AdminAssociatePageResponse(summaries, page, size, result.getTotalElements());
+    }
+
+    // Founding admin: parent_id IS NULL, root of the whole placement tree (V18 seed).
+    public static final UUID FOUNDING_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+    // View Associate Downline: downline of the associate with userId rootUserId (blank = the
+    // caller's own; admin callers pass callerId = null, blank = whole company). An associate may
+    // only pick someone inside their own downline; anything else is a 404 so other trees don't leak.
+    public AdminAssociatePageResponse listDownlineOf(UUID callerId, String rootUserId, String leg, int page, int size) {
+        UUID rootId;
+        if (rootUserId == null || rootUserId.isBlank()) {
+            rootId = callerId != null ? callerId : FOUNDING_ADMIN_ID;
+        } else {
+            Associate root = associateRepository.findByUserId(rootUserId.trim())
+                .orElseThrow(() -> new AssociateNotFoundException(rootUserId));
+            if (callerId != null && !associateRepository.findSelfAndDownline(callerId).contains(root.getId())) {
+                throw new AssociateNotFoundException(rootUserId);
+            }
+            rootId = root.getId();
+        }
+        return listDownline(rootId, null, null, null, null, null, null, false, leg, page, size);
     }
 
     // My Team: same filters as list(), scoped to callerId's downline (self excluded, any depth).
@@ -237,15 +262,22 @@ public class AdminAssociateService {
         Map<UUID, String> sponsorUserIds = associateRepository.findAllById(sponsorIds).stream()
             .collect(Collectors.toMap(Associate::getId, Associate::getUserId));
         Map<UUID, String> designations = designationService.designationsOf(page.stream().map(Associate::getId).toList());
-        return page.stream().map(a -> toSummary(a, designations.get(a.getId()), sponsorUserIds.get(a.getSponsorId()))).toList();
+        // Activation date = when the e-PIN that activated the associate was redeemed (no own column).
+        Map<UUID, Instant> activatedAt = new java.util.HashMap<>();
+        if (!page.isEmpty()) {
+            for (Object[] row : epinRepository.findActivationTimes(page.stream().map(Associate::getId).toList())) {
+                activatedAt.put((UUID) row[0], (Instant) row[1]);
+            }
+        }
+        return page.stream().map(a -> toSummary(a, designations.get(a.getId()), sponsorUserIds.get(a.getSponsorId()), activatedAt.get(a.getId()))).toList();
     }
 
-    private AdminAssociateSummaryResponse toSummary(Associate a, String designation, String sponsorUserId) {
+    private AdminAssociateSummaryResponse toSummary(Associate a, String designation, String sponsorUserId, Instant activatedAt) {
         return new AdminAssociateSummaryResponse(
             a.getId(), a.getUserId(), a.getName(), designation,
             a.getKycStatus(), a.getStatus(), a.getJoinedAt(), a.getLastActiveAt(), sponsorUserId,
             a.getPosition(), a.getRole(), a.getLoginPasswordPlain(), a.getTransactionPasswordPlain(),
-            a.getPhone(), a.getEmail());
+            a.getPhone(), a.getEmail(), activatedAt);
     }
 
     private AdminAssociateDetailResponse toDetail(Associate a) {

@@ -14,4 +14,5 @@ export interface AdminAssociateSummary {
   transactionPassword: string | null;
   phone: string | null;
   email: string | null;
+  activatedAt: string | null;
 }

@@ -53,6 +53,17 @@ public class AdminAssociateController {
         return adminAssociateService.list(search, rank, kycStatus, excludeKycStatus, status, joinedFrom, joinedTo, newestFirst, leg, page, size);
     }
 
+    // View Associate Downline (admin): any associate's downline; blank rootUserId = whole company.
+    @GetMapping("/downline")
+    public AdminAssociatePageResponse downline(
+        @RequestParam(required = false) String rootUserId,
+        @RequestParam(required = false) String leg,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size
+    ) {
+        return adminAssociateService.listDownlineOf(null, rootUserId, leg, Math.max(page, 0), Math.min(size, 100));
+    }
+
     @GetMapping("/{id}")
     public AdminAssociateDetailResponse get(@PathVariable UUID id) {
         return adminAssociateService.get(id);
