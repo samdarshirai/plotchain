@@ -1,5 +1,7 @@
 package com.plotchain.company;
 
+import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateRole;
 import com.plotchain.compensation.CompensationPlanService;
 import com.plotchain.payments.PaymentConfigService;
 import com.plotchain.payments.PayoutBankAccountService;
@@ -21,7 +23,8 @@ public class SetupStateService {
         new StepDefinition(3, "compensation", true),
         new StepDefinition(4, "projects", false),
         new StepDefinition(5, "paymentsKyc", true),
-        new StepDefinition(6, "reviewLaunch", false)
+        new StepDefinition(6, "rootUser", true),
+        new StepDefinition(7, "reviewLaunch", false)
     );
 
     private final SetupStateRepository setupStateRepository;
@@ -32,6 +35,7 @@ public class SetupStateService {
     private final PayoutBankAccountService payoutBankAccountService;
     private final WithdrawalConfigService withdrawalConfigService;
     private final ProjectService projectService;
+    private final AssociateRepository associateRepository;
 
     public SetupStateService(SetupStateRepository setupStateRepository,
                               CompanyProfileService companyProfileService,
@@ -40,7 +44,8 @@ public class SetupStateService {
                               PaymentConfigService paymentConfigService,
                               PayoutBankAccountService payoutBankAccountService,
                               WithdrawalConfigService withdrawalConfigService,
-                              ProjectService projectService) {
+                              ProjectService projectService,
+                              AssociateRepository associateRepository) {
         this.setupStateRepository = setupStateRepository;
         this.companyProfileService = companyProfileService;
         this.companyBrandingService = companyBrandingService;
@@ -49,6 +54,7 @@ public class SetupStateService {
         this.payoutBankAccountService = payoutBankAccountService;
         this.withdrawalConfigService = withdrawalConfigService;
         this.projectService = projectService;
+        this.associateRepository = associateRepository;
     }
 
     public SetupStateResponse getSetupState() {
@@ -95,6 +101,7 @@ public class SetupStateService {
             case "paymentsKyc" -> paymentConfigService.isComplete() && payoutBankAccountService.isComplete()
                 && withdrawalConfigService.isComplete();
             case "projects" -> projectService.isComplete();
+            case "rootUser" -> associateRepository.existsByParentIdIsNullAndRole(AssociateRole.ASSOCIATE);
             case "reviewLaunch" -> isLaunched();
             default -> false;
         };

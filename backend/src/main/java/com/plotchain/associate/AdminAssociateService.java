@@ -84,16 +84,18 @@ public class AdminAssociateService {
         return new AdminAssociatePageResponse(summaries, page, size, result.getTotalElements());
     }
 
-    // Founding admin: parent_id IS NULL, root of the whole placement tree (V18 seed).
-    public static final UUID FOUNDING_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-
     // View Associate Downline: downline of the associate with userId rootUserId (blank = the
     // caller's own; admin callers pass callerId = null, blank = whole company). An associate may
     // only pick someone inside their own downline; anything else is a 404 so other trees don't leak.
     public AdminAssociatePageResponse listDownlineOf(UUID callerId, String rootUserId, String leg, int page, int size) {
         UUID rootId;
         if (rootUserId == null || rootUserId.isBlank()) {
-            rootId = callerId != null ? callerId : FOUNDING_ADMIN_ID;
+            rootId = callerId != null ? callerId
+                : associateRepository.findFirstByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)
+                    .map(Associate::getId).orElse(null);
+            if (rootId == null) {
+                return new AdminAssociatePageResponse(List.of(), page, size, 0);
+            }
         } else {
             Associate root = associateRepository.findByUserId(rootUserId.trim())
                 .orElseThrow(() -> new AssociateNotFoundException(rootUserId));

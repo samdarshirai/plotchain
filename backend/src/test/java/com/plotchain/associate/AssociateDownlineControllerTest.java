@@ -211,8 +211,10 @@ class AssociateDownlineControllerTest {
         when(associateRepository.findById(caller.getId())).thenReturn(Optional.of(caller));
         String token = jwtService.generateToken(caller);
         UUID kidId = UUID.randomUUID();
-        when(associateRepository.findSelfAndDownline(AdminAssociateService.FOUNDING_ADMIN_ID))
-            .thenReturn(List.of(AdminAssociateService.FOUNDING_ADMIN_ID, kidId));
+        UUID rootUserId = UUID.randomUUID();
+        when(associateRepository.findFirstByParentIdIsNullAndRole(AssociateRole.ASSOCIATE))
+            .thenReturn(Optional.of(member(rootUserId, "VP00001")));
+        when(associateRepository.findSelfAndDownline(rootUserId)).thenReturn(List.of(rootUserId, kidId));
         when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
             .thenReturn(new PageImpl<>(List.of(member(kidId, "VP00003"))));
 

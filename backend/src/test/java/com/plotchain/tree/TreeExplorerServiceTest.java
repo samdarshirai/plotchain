@@ -69,33 +69,30 @@ class TreeExplorerServiceTest {
         assertThatThrownBy(() -> service.subtree(id)).isInstanceOf(AssociateNotFoundException.class);
     }
 
-    private static final UUID FOUNDING_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final UUID ROOT_ID = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
 
     @Test
-    void companyTreeRootsAtTheFoundingAdminAndExpandsItsDownline() {
+    void companyTreeRootsAtTheRootUserAndExpandsItsDownline() {
         UUID childId = UUID.randomUUID();
-        Associate foundingAdmin = newAssociate(FOUNDING_ADMIN_ID, "admin", Instant.now());
-        foundingAdmin.setRole(AssociateRole.ADMIN);
-        foundingAdmin.setRankId(null);
+        Associate rootUser = newAssociate(ROOT_ID, "VP00000", Instant.now());
         Associate child = newAssociate(childId, "VP00001", Instant.now());
 
-        when(associateRepository.findById(FOUNDING_ADMIN_ID)).thenReturn(Optional.of(foundingAdmin));
+        when(associateRepository.findFirstByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)).thenReturn(Optional.of(rootUser));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
-        when(associateRepository.findByParentId(FOUNDING_ADMIN_ID)).thenReturn(List.of(child));
+        when(associateRepository.findByParentId(ROOT_ID)).thenReturn(List.of(child));
 
         TreeNodeResponse response = service.companyTree();
 
-        assertThat(response.userId()).isEqualTo("admin");
-        assertThat(response.designation()).isNull();
+        assertThat(response.userId()).isEqualTo("VP00000");
         assertThat(response.children()).hasSize(1);
         assertThat(response.children().get(0).userId()).isEqualTo("VP00001");
     }
 
     @Test
-    void companyTreeThrowsWhenTheFoundingAdminIsMissing() {
-        when(associateRepository.findById(FOUNDING_ADMIN_ID)).thenReturn(Optional.empty());
+    void companyTreeIsNullUntilTheRootUserExists() {
+        when(associateRepository.findFirstByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.companyTree()).isInstanceOf(AssociateNotFoundException.class);
+        assertThat(service.companyTree()).isNull();
     }
 
     @Test
@@ -261,17 +258,10 @@ class TreeExplorerServiceTest {
     }
 
     @Test
-    void nodeDetailsWorksForTheFoundingAdminRoot() {
-        Associate foundingAdmin = newAssociate(FOUNDING_ADMIN_ID, "admin", Instant.now());
-        foundingAdmin.setRole(AssociateRole.ADMIN);
-        when(associateRepository.findById(FOUNDING_ADMIN_ID)).thenReturn(Optional.of(foundingAdmin));
-        when(associateRepository.findByParentId(FOUNDING_ADMIN_ID)).thenReturn(List.of());
-        when(legVolumeRepository.totalBusiness(FOUNDING_ADMIN_ID))
-            .thenReturn(new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
-        when(saleRepository.sumAmountByAssociateIdAndStatus(FOUNDING_ADMIN_ID, SaleStatus.RECORDED)).thenReturn(BigDecimal.ZERO);
-        when(saleRepository.sumOpenCycleLegBusiness(FOUNDING_ADMIN_ID, "L")).thenReturn(BigDecimal.ZERO);
-        when(saleRepository.sumOpenCycleLegBusiness(FOUNDING_ADMIN_ID, "R")).thenReturn(BigDecimal.ZERO);
+    void nodeDetailsRejectsAnAdminRoleRow() {
+        UUID adminId = UUID.randomUUID();
+        when(associateRepository.findByIdAndRole(adminId, AssociateRole.ASSOCIATE)).thenReturn(Optional.empty());
 
-        assertThat(service.nodeDetails(FOUNDING_ADMIN_ID).userId()).isEqualTo("admin");
+        assertThatThrownBy(() -> service.nodeDetails(adminId)).isInstanceOf(AssociateNotFoundException.class);
     }
 }

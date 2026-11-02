@@ -24,5 +24,6 @@ export const STEP_PATHS: Record<string, string> = {
   compensation: 'compensation',
   projects: 'projects',
   paymentsKyc: 'payments-kyc',
+  rootUser: 'root-user',
   reviewLaunch: 'review-launch'
 };

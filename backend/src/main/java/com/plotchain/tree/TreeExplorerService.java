@@ -30,11 +30,6 @@ public class TreeExplorerService {
     private static final int MAX_LEG_SKEW_RATIO = 10;
     private static final long STAGNANT_THRESHOLD_DAYS = 90;
 
-    // The founding admin seeded by V18__seed_founding_admin.sql: parent_id IS NULL, so it is
-    // the root of the binary placement tree by construction. Role is ADMIN (not ASSOCIATE),
-    // which is why companyTree() cannot go through subtree()'s findByIdAndRole guard.
-    private static final UUID FOUNDING_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-
     private final AssociateRepository associateRepository;
     private final DesignationService designationService;
     private final CycleRepository cycleRepository;
@@ -64,11 +59,8 @@ public class TreeExplorerService {
     // Admin Tree Explorer hover details (lazy, per-node -- see TreeNodeDetailsResponse for why
     // this isn't baked into the bulk tree response).
     public TreeNodeDetailsResponse nodeDetails(UUID associateId) {
-        // The founding admin (tree root, role ADMIN) is a visible card too, so it needs details.
-        Optional<Associate> found = FOUNDING_ADMIN_ID.equals(associateId)
-            ? associateRepository.findById(associateId)
-            : associateRepository.findByIdAndRole(associateId, AssociateRole.ASSOCIATE);
-        Associate a = found.orElseThrow(() -> new AssociateNotFoundException(associateId));
+        Associate a = associateRepository.findByIdAndRole(associateId, AssociateRole.ASSOCIATE)
+            .orElseThrow(() -> new AssociateNotFoundException(associateId));
 
         List<Associate> directChildren = associateRepository.findByParentId(associateId);
         String leftMemberId = directChildren.stream()
@@ -91,13 +83,14 @@ public class TreeExplorerService {
     }
 
     /**
-     * The whole placement tree, rooted at the founding admin (V18). Powers the admin Tree
-     * Explorer's default view -- no search term needed. Unbounded depth.
+     * The whole placement tree, rooted at the root user (the parentless ASSOCIATE created during
+     * onboarding). Powers the admin Tree Explorer's default view -- no search term needed.
+     * Unbounded depth. Null until the root user exists.
      */
     public TreeNodeResponse companyTree() {
-        Associate root = associateRepository.findById(FOUNDING_ADMIN_ID)
-            .orElseThrow(() -> new AssociateNotFoundException(FOUNDING_ADMIN_ID));
-        return buildFrom(root);
+        return associateRepository.findFirstByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)
+            .map(this::buildFrom)
+            .orElse(null);
     }
 
     private TreeNodeResponse buildFrom(Associate root) {

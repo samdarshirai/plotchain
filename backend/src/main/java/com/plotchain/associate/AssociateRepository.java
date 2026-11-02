@@ -147,7 +147,7 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     // ancestor-chain queries need.
     @Query(value = """
         WITH RECURSIVE tree(id, depth) AS (
-            SELECT id, 1 FROM associate WHERE parent_id IS NULL
+            SELECT id, 1 FROM associate WHERE parent_id IS NULL AND role = 'ASSOCIATE'
             UNION ALL
             SELECT a.id, t.depth + 1 FROM associate a JOIN tree t ON a.parent_id = t.id
         )
@@ -156,6 +156,11 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     long findDeepestLegDepth();
 
     Optional<Associate> findByIdAndRole(UUID id, AssociateRole role);
+
+    // The tree root: the one parentless ASSOCIATE. Admin/manager rows are parentless too but are not tree nodes.
+    Optional<Associate> findFirstByParentIdIsNullAndRole(AssociateRole role);
+
+    boolean existsByParentIdIsNullAndRole(AssociateRole role);
 
     List<Associate> findByRoleOrderByUserIdAsc(AssociateRole role);
 

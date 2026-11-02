@@ -69,7 +69,7 @@ class AuthServiceTest {
             // Never invoked here: these tests only exercise isLaunched(), which doesn't touch
             // compensationPlanService/paymentConfigService/payoutBankAccountService/
             // withdrawalConfigService/projectService.
-            null, null, null, null, null);
+            null, null, null, null, null, null);
         authService = new AuthService(associateRepository, passwordEncoder, jwtService, setupStateService, settingsAuditService);
     }
 

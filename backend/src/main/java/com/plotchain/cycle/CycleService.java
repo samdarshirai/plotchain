@@ -276,8 +276,8 @@ public class CycleService {
 
         // Flow step 5 (Decision #9): second pass, requires step 3 (creditMatchingIncome) complete
         // tree-wide. One SPONSOR_MATCHING entry per direct sponsee who earned Matching Income this
-        // cycle, credited to their sponsor. No role guard -- applies to Admin in full (Decision #7:
-        // "Matching and Sponsor Matching... are unaffected and do apply to Admin in full").
+        // cycle, credited to their sponsor. No role guard; the admin is not a tree node, so in
+        // practice this applies to the root user in full.
         creditSponsorMatching(cycle.getId(), associates, planVersion);
 
         // Flow step 6 (Decision #7, #10, #11, #12): Royalty at the associate's POST-rank-advancement
@@ -325,7 +325,10 @@ public class CycleService {
         for (Associate associate : associates) {
             UUID parentId = associate.getParentId();
             if (parentId == null) {
-                rootIds.add(associate.getId());
+                // Parentless admin/manager rows are back-office accounts, not tree nodes.
+                if (associate.getRole() == AssociateRole.ASSOCIATE) {
+                    rootIds.add(associate.getId());
+                }
             } else if ("R".equals(associate.getPosition())) {
                 rightChildOf.put(parentId, associate);
             } else {

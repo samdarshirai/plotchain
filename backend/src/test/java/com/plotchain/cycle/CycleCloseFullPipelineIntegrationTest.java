@@ -251,8 +251,9 @@ class CycleCloseFullPipelineIntegrationTest {
         // --- Tree. ---
         sId = seedAssociate("s-sponsor", null, null, null,
             AssociateRole.ASSOCIATE, KycStatus.VERIFIED, SILVER_RANK_ID, BigDecimal.ZERO);
-        adminId = seedAssociate("fp-admin", null, null, sId,
-            AssociateRole.ADMIN, KycStatus.VERIFIED, null, BigDecimal.ZERO);
+        // adminId names the tree root, now a regular ASSOCIATE (the admin is not a tree node).
+        adminId = seedAssociate("fp-root", null, null, sId,
+            AssociateRole.ASSOCIATE, KycStatus.VERIFIED, SILVER_RANK_ID, BigDecimal.ZERO);
         b1Id = seedAssociate("fp-b1", adminId, "L", sId,
             AssociateRole.ASSOCIATE, KycStatus.PENDING, SILVER_RANK_ID, BigDecimal.ZERO);
         b2Id = seedAssociate("fp-b2", adminId, "R", null,
@@ -305,6 +306,9 @@ class CycleCloseFullPipelineIntegrationTest {
             .filter(lv -> Set.of(sId, adminId, b1Id, b2Id, c1Id, c2Id, c3Id, dId).contains(lv.getAssociateId()))
             .count();
         assertThat(legVolumeRowsForFixture).isEqualTo(8);
+        // The V18-seeded admin is parentless but not a tree node: the rollup must skip it.
+        assertThat(legVolumeRepository.findByAssociateIdAndCycleId(
+            UUID.fromString("00000000-0000-0000-0000-000000000001"), cycleId)).isEmpty();
 
         // --- Leg-volume rollup + carried-forward excess. ---
         LegVolume b1LegVolume = legVolumeRepository.findByAssociateIdAndCycleId(b1Id, cycleId).orElseThrow();
@@ -354,8 +358,8 @@ class CycleCloseFullPipelineIntegrationTest {
         assertThat(c1Reread.getCumulativeMatchedVolume()).isEqualByComparingTo("5"); // unchanged -- no Matching entry of its own
 
         Associate adminReread = associateRepository.findById(adminId).orElseThrow();
-        assertThat(adminReread.getRankId()).isNull(); // Admin: rank progression skipped entirely
-        assertThat(adminReread.getCumulativeMatchedVolume()).isEqualByComparingTo("30"); // still increments (Matching has no role guard)
+        assertThat(adminReread.getRankId()).isEqualTo(SILVER_RANK_ID); // root user: 30 matched, below the next tier
+        assertThat(adminReread.getCumulativeMatchedVolume()).isEqualByComparingTo("30");
 
         // --- Sponsor Matching: one itemized entry per direct sponsee. ---
         List<LedgerEntry> sponsorEntries = findEntries(sId, IncomeType.SPONSOR_MATCHING);

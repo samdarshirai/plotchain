@@ -114,6 +114,14 @@ class AssociateProvisioningServiceTest {
     }
 
     @Test
+    void rejectsAParentlessAssociateOnceTheRootUserExists() {
+        when(associateRepository.existsByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.create(req(null, null, "9990001111")))
+            .isInstanceOf(SponsorRequiredException.class);
+    }
+
+    @Test
     void persistsPhoneFromRequest() {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(lowestRank));
 

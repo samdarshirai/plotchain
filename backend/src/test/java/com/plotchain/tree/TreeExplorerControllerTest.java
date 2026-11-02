@@ -70,25 +70,23 @@ class TreeExplorerControllerTest {
         return a;
     }
 
-    private static final UUID FOUNDING_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-
     @Test
-    void companyTreeReturnsTheFoundingAdminRootForAnAdminToken() throws Exception {
-        Associate foundingAdmin = new Associate();
-        foundingAdmin.setId(FOUNDING_ADMIN_ID);
-        foundingAdmin.setUserId("admin");
-        foundingAdmin.setName("Administrator");
-        foundingAdmin.setRole(AssociateRole.ADMIN);
-        foundingAdmin.setKycStatus(KycStatus.VERIFIED);
-        foundingAdmin.setJoinedAt(Instant.now());
-        when(associateRepository.findById(FOUNDING_ADMIN_ID)).thenReturn(Optional.of(foundingAdmin));
+    void companyTreeReturnsTheRootUserForAnAdminToken() throws Exception {
+        Associate rootUser = new Associate();
+        rootUser.setId(UUID.randomUUID());
+        rootUser.setUserId("VP00000");
+        rootUser.setName("Root User");
+        rootUser.setRole(AssociateRole.ASSOCIATE);
+        rootUser.setKycStatus(KycStatus.VERIFIED);
+        rootUser.setJoinedAt(Instant.now());
+        when(associateRepository.findFirstByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)).thenReturn(Optional.of(rootUser));
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/admin/tree")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.userId").value("admin"));
+            .andExpect(jsonPath("$.userId").value("VP00000"));
     }
 
     @Test

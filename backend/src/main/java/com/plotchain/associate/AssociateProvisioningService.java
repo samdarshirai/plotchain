@@ -47,6 +47,8 @@ public class AssociateProvisioningService {
             }
             sponsorId = sponsor.getId();
             parentId = findFreeSlotParent(sponsor, request.position()).getId();
+        } else if (associateRepository.existsByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)) {
+            throw new SponsorRequiredException();
         }
         String email = request.email() == null || request.email().isBlank() ? null : request.email().trim();
         Associate associate = createPending(request.name().trim(), email, request.phone(),

@@ -135,7 +135,7 @@ describe('ReviewLaunchStepComponent', () => {
 
   it('resolves previousPath to the step before review-launch', async () => {
     await createAndFlush(stateWith(false));
-    expect(fixture.componentInstance.previousPath).toBe('payments-kyc');
+    expect(fixture.componentInstance.previousPath).toBe('root-user');
   });
 
   it('registers its inspector panel template with SetupInspectorService after view init', async () => {

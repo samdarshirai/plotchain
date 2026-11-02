@@ -157,7 +157,8 @@ class CycleCloseRealisticRetryIntegrationTest {
     @Test
     void midBatchFailureOnARealMultiNodeTreeRollsBackCompletelyThenARetrySucceedsWithCorrectNumbers() {
         sId = seedAssociate("retry-s", null, null, null, AssociateRole.ASSOCIATE);
-        adminId = seedAssociate("retry-admin", null, null, null, AssociateRole.ADMIN);
+        // adminId names the tree root, which is now a regular ASSOCIATE (the admin is not a tree node).
+        adminId = seedAssociate("retry-root", null, null, null, AssociateRole.ASSOCIATE);
         b1Id = seedAssociate("retry-b1", adminId, "L", sId, AssociateRole.ASSOCIATE);
         b2Id = seedAssociate("retry-b2", adminId, "R", null, AssociateRole.ASSOCIATE);
         c1Id = seedAssociate("retry-c1", b1Id, "L", null, AssociateRole.ASSOCIATE);

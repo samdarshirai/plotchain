@@ -13,6 +13,7 @@ import { CompanyProfileStepComponent } from './setup/steps/company-profile/compa
 import { BrandingStepComponent } from './setup/steps/branding/branding-step.component';
 import { CompensationStepComponent } from './setup/steps/compensation/compensation-step.component';
 import { PaymentsKycStepComponent } from './setup/steps/payments-kyc/payments-kyc-step.component';
+import { RootUserStepComponent } from './setup/steps/root-user/root-user-step.component';
 import { ProjectsStepComponent } from './setup/steps/projects/projects-step.component';
 import { ReviewLaunchStepComponent } from './setup/steps/review-launch/review-launch-step.component';
 import { SettingsShellComponent } from './settings/settings-shell.component';
@@ -109,6 +110,7 @@ export const routes: Routes = [
       { path: 'compensation', component: CompensationStepComponent, data: { stepKey: 'compensation' } },
       { path: 'projects', component: ProjectsStepComponent, data: { stepKey: 'projects' } },
       { path: 'payments-kyc', component: PaymentsKycStepComponent, data: { stepKey: 'paymentsKyc' } },
+      { path: 'root-user', component: RootUserStepComponent, data: { stepKey: 'rootUser' } },
       { path: 'review-launch', component: ReviewLaunchStepComponent, data: { stepKey: 'reviewLaunch' } },
       { path: '', redirectTo: 'company-profile', pathMatch: 'full' }
     ]

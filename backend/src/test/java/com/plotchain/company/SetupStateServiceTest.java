@@ -2,6 +2,7 @@ package com.plotchain.company;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.associate.AssociateRole;
 import com.plotchain.compensation.CompensationPlanService;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
@@ -87,7 +88,8 @@ class SetupStateServiceTest {
                 new SecretsEncryptionService("test-secrets-key-at-least-32-bytes-long-for-aes"), settingsAuditService),
             new PayoutBankAccountService(payoutBankAccountRepository, settingsAuditService),
             new WithdrawalConfigService(withdrawalConfigRepository, settingsAuditService),
-            new ProjectService(projectRepository, plotRepository, settingsAuditService));
+            new ProjectService(projectRepository, plotRepository, settingsAuditService),
+            associateRepository);
 
         // getSetupState() calls isStepComplete("paymentsKyc") on every invocation, so every test
         // needs this stubbed even if it never asserts on paymentsKyc directly. lenient() because
@@ -198,7 +200,7 @@ class SetupStateServiceTest {
 
         SetupStateResponse response = setupStateService.getSetupState();
 
-        assertThat(response.steps()).hasSize(6);
+        assertThat(response.steps()).hasSize(7);
         assertThat(response.steps()).allMatch(s -> !s.complete() && s.percentComplete() == 0);
         assertThat(response.canGoLive()).isFalse();
         assertThat(response.launchedAt()).isNull();
@@ -215,7 +217,7 @@ class SetupStateServiceTest {
 
         assertThat(response.steps().stream().filter(SetupStateResponse.StepStatus::required)
             .map(SetupStateResponse.StepStatus::key))
-            .containsExactlyInAnyOrder("companyProfile", "compensation", "paymentsKyc");
+            .containsExactlyInAnyOrder("companyProfile", "compensation", "paymentsKyc", "rootUser");
     }
 
     @Test
@@ -289,7 +291,7 @@ class SetupStateServiceTest {
         assertThatThrownBy(() -> setupStateService.launch())
             .isInstanceOf(LaunchBlockedException.class)
             .satisfies(ex -> assertThat(((LaunchBlockedException) ex).getIncompleteSteps())
-                .containsExactlyInAnyOrder("companyProfile", "compensation", "paymentsKyc"));
+                .containsExactlyInAnyOrder("companyProfile", "compensation", "paymentsKyc", "rootUser"));
 
         verify(setupStateRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
     }
@@ -422,10 +424,34 @@ class SetupStateServiceTest {
         stubCompanyBranding(blankBranding());
         stubCompensationComplete();
         stubPaymentsKycComplete();
+        when(associateRepository.existsByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)).thenReturn(true);
 
         SetupStateResponse response = setupStateService.getSetupState();
 
         assertThat(response.canGoLive()).isTrue();
+    }
+
+    @Test
+    void canGoLiveIsFalseUntilTheRootUserExists() {
+        when(setupStateRepository.findAll()).thenReturn(List.of(unlaunchedState()));
+        CompanyProfile filled = new CompanyProfile();
+        filled.setDisplayName("Plotchain Estates");
+        filled.setLegalName("Plotchain Estates Private Limited");
+        filled.setContactName("Jane Doe");
+        filled.setContactPhone("+919876543210");
+        filled.setContactEmail("jane@plotchain.test");
+        filled.setRegisteredAddress("123 MG Road, Bengaluru");
+        stubCompanyProfile(filled);
+        stubCompanyBranding(blankBranding());
+        stubCompensationComplete();
+        stubPaymentsKycComplete();
+        when(associateRepository.existsByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)).thenReturn(false);
+
+        SetupStateResponse response = setupStateService.getSetupState();
+
+        assertThat(response.canGoLive()).isFalse();
+        assertThat(response.steps().stream().filter(s -> s.key().equals("rootUser")).findFirst().orElseThrow().complete())
+            .isFalse();
     }
 
     @Test
@@ -462,6 +488,7 @@ class SetupStateServiceTest {
         stubCompanyBranding(blankBranding());
         stubCompensationComplete();
         stubPaymentsKycComplete();
+        when(associateRepository.existsByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)).thenReturn(true);
 
         SetupStateResponse before = setupStateService.getSetupState();
         assertThat(before.steps().stream()

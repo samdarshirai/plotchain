@@ -514,6 +514,7 @@ class CycleServiceTest {
         associate.setId(UUID.randomUUID());
         associate.setParentId(parentId);
         associate.setPosition(position);
+        associate.setRole(AssociateRole.ASSOCIATE); // rollup roots only at parentless ASSOCIATE rows
         return associate;
     }
 
@@ -2213,15 +2214,13 @@ class CycleServiceTest {
     }
 
     @Test
-    void closeCreditsRewardForAdmin() {
+    void closeCreditsRewardForTheRootUser() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
             rewardTierRepository, expenseRepository, walletRepository);
 
-        // Decision #8: RewardTier has no FK to rank_tier, so unlike Royalty (unit 8, which
-        // explicitly skips Admin), Reward applies to Admin in full.
+        // The tree root is the root user (a parentless ASSOCIATE); the admin is not a tree node.
         Associate admin = associateFixture(null, null);
-        admin.setRole(AssociateRole.ADMIN);
         admin.setKycStatus(KycStatus.VERIFIED);
         admin.setRankId(null);
         Associate left = associateFixture(admin.getId(), "L");

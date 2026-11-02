@@ -65,7 +65,7 @@ export interface PresetParent {
           <app-inline-banner *ngIf="loadError" tone="danger">{{ 'admin.associateDirectory.editLoadError' | translate }}</app-inline-banner>
           <app-associate-profile-form
             *ngIf="!editAssociateId || initial"
-            [sponsorRequired]="associates.length > 0"
+            [sponsorRequired]="!rootMode && hasTreeMember"
             [busy]="busy"
             [error]="submitError"
             [serverErrors]="serverErrors"
@@ -92,6 +92,8 @@ export class NewAssociatePanelComponent implements OnInit, OnChanges {
   @Input() presetParent: PresetParent | null = null;
   /** Set = edit mode: same form, pre-filled from this associate, saves via the admin update endpoints. */
   @Input() editAssociateId: string | null = null;
+  /** Onboarding "create the root user": no sponsor, the new associate becomes the top of the tree. */
+  @Input() rootMode = false;
   @Output() closed = new EventEmitter<void>();
   @Output() created = new EventEmitter<CreateAssociateResponse>();
   @Output() saved = new EventEmitter<void>();
@@ -102,8 +104,13 @@ export class NewAssociatePanelComponent implements OnInit, OnChanges {
   busy = false;
   initial: Record<string, string | null> | null = null;
   loadError = false;
-  // Sponsor is required once the tree has anyone in it; the very first associate is necessarily parentless.
+  // Sponsor is required once the tree has a member; admin/manager rows are not tree members, and
+  // the root user (the first ASSOCIATE) is created parentless via rootMode during onboarding.
   associates: AssociateSummary[] = [];
+
+  get hasTreeMember(): boolean {
+    return this.associates.some(a => a.role === 'ASSOCIATE');
+  }
 
   sponsorLookup = (userId: string) => of(this.associates.find(a => a.userId === userId) ?? null);
 

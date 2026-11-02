@@ -319,10 +319,12 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
     this.loadCompanyTree();
   }
 
-  // Default view: the whole company tree rooted at the founding admin, no search needed.
+  // Default view: the whole company tree rooted at the root user, no search needed.
   private loadCompanyTree(): void {
     this.treeExplorerService.companyTree().subscribe({
       next: node => {
+        // No root user yet (finish onboarding): the backend answers with an empty body.
+        if (!node) { this.root = null; return; }
         this.root = node;
         this.homeId = node.id;
         // The root setter marks node.id as the highlighted node, which paints the

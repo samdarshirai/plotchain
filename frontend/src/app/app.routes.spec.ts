@@ -135,7 +135,7 @@ describe('routes', () => {
       expect(setupRoute!.canActivate).toContain(setupModeGuard);
     });
 
-    it('has all 6 wizard-step children plus the default redirect', () => {
+    it('has all 7 wizard-step children plus the default redirect', () => {
       const childPaths = setupRoute!.children!.map(c => c.path);
       expect(childPaths).toEqual([
         'company-profile',
@@ -143,6 +143,7 @@ describe('routes', () => {
         'compensation',
         'projects',
         'payments-kyc',
+        'root-user',
         'review-launch',
         ''
       ]);

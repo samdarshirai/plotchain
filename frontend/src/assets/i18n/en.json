@@ -1671,7 +1671,14 @@
       "compensation": "Compensation Plan",
       "projects": "Projects & Plots",
       "paymentsKyc": "Payments & KYC",
+      "rootUser": "Root User",
       "reviewLaunch": "Review & Launch"
+    },
+    "rootUser": {
+      "subtitle": "The root user sits at the top of your associate network. The admin account only runs the platform and is not part of the network.",
+      "body": "Create the root user now. Everyone else joins under this person. You will see their user ID and temporary password once.",
+      "createAction": "Create root user",
+      "doneBody": "The root user has been created."
     },
     "optionalLabel": "Optional",
     "percentCompleteSuffix": "Complete",
