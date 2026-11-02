@@ -18,6 +18,8 @@ import com.plotchain.wallet.WalletRepository;
 import com.plotchain.withdrawal.WithdrawalRequestRepository;
 import com.plotchain.cycle.Cycle;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -71,8 +73,10 @@ class AdminStatsControllerTest {
         return jwtService.generateToken(associate);
     }
 
-    @Test
-    void returnsCompanyWideStatsJsonForAnAdminToken() throws Exception {
+    // MANAGER inherits every ADMIN gate (JwtAuthenticationFilter grants it ADMIN too).
+    @ParameterizedTest
+    @EnumSource(value = AssociateRole.class, names = {"ADMIN", "MANAGER"})
+    void returnsCompanyWideStatsJsonForAnAdminFamilyToken(AssociateRole role) throws Exception {
         when(associateRepository.countByRole(AssociateRole.ASSOCIATE)).thenReturn(50L);
         when(associateRepository.countByRoleAndKycStatus(AssociateRole.ASSOCIATE, com.plotchain.associate.KycStatus.PENDING)).thenReturn(1L);
         when(associateRepository.countByRoleAndKycStatus(AssociateRole.ASSOCIATE, com.plotchain.associate.KycStatus.VERIFIED)).thenReturn(48L);
@@ -90,7 +94,7 @@ class AdminStatsControllerTest {
             .thenReturn(new AdminSalePageResponse(List.of(), 0, 5, 0));
 
         mockMvc.perform(get("/api/admin/stats")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+                .header("Authorization", "Bearer " + tokenFor(role)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.totalAssociates").value(50))
             .andExpect(jsonPath("$.totalWalletBalance").value(999.99))

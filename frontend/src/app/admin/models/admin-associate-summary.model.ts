@@ -9,7 +9,7 @@ export interface AdminAssociateSummary {
   sponsorUserId: string | null;
   position: 'L' | 'R' | null;
   lastActiveAt: string | null;
-  role: 'ADMIN' | 'ASSOCIATE';
+  role: 'ADMIN' | 'MANAGER' | 'ASSOCIATE';
   loginPassword: string | null;
   transactionPassword: string | null;
   phone: string | null;

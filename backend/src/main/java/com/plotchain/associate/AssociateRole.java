@@ -1,5 +1,5 @@
 package com.plotchain.associate;
 
 public enum AssociateRole {
-    ADMIN, ASSOCIATE
+    ADMIN, ASSOCIATE, MANAGER
 }

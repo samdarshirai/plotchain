@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface SettingsAuditLogRepository extends JpaRepository<SettingsAuditLog, UUID> {
     Page<SettingsAuditLog> findAllByOrderByChangedAtDesc(Pageable pageable);
     Page<SettingsAuditLog> findAllBySectionOrderByChangedAtDesc(String section, Pageable pageable);
+    Page<SettingsAuditLog> findAllBySectionNotOrderByChangedAtDesc(String section, Pageable pageable);
 }

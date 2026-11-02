@@ -7,7 +7,7 @@ describe('postAuthLandingPath', () => {
   const launchedState: SetupStateResponse = { steps: [], canGoLive: true, launchedAt: '2026-01-01T00:00:00Z' };
 
   it('covers exactly the admin-family set', () => {
-    expect([...ADMIN_FAMILY_ROLES].sort()).toEqual(['ADMIN']);
+    expect([...ADMIN_FAMILY_ROLES].sort()).toEqual(['ADMIN', 'MANAGER']);
   });
 
   it('sends ASSOCIATE to /dashboard regardless of setup state', () => {

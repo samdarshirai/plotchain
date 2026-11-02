@@ -69,7 +69,7 @@ public class SaleService {
     public static Optional<UUID> directIncomeEarner(Associate seller, AssociateRepository associates) {
         UUID sponsorId = seller.getSponsorId();
         if (sponsorId == null) {
-            if (seller.getRole() == AssociateRole.ADMIN) {
+            if (seller.getRole() != AssociateRole.ASSOCIATE) {
                 return Optional.empty();
             }
             throw new IllegalStateException(

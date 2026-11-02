@@ -364,7 +364,7 @@ class SecurityConfigTest {
     void auditLogIsReachableForEveryAdminFamilyTokenAndForbiddenForAssociate(AssociateRole role) throws Exception {
         mockMvc.perform(get("/api/company/audit-log")
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+            .andExpect(status().is(adminFamily(role) ? 200 : 403));
     }
 
     // walletRepository is not @MockBean'd in this class, so it runs for real against the empty H2
@@ -379,7 +379,7 @@ class SecurityConfigTest {
         when(cycleRepository.findAllByOrderByPeriodStartDesc(any())).thenReturn(new PageImpl<>(List.of()));
         mockMvc.perform(get("/api/admin/stats")
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+            .andExpect(status().is(adminFamily(role) ? 200 : 403));
     }
 
     // Deliberately NOT the isAdminFamily() convention used by the other parameterized tests in
@@ -395,7 +395,7 @@ class SecurityConfigTest {
         stubEmptyCyclePage();
         mockMvc.perform(get("/api/admin/cycles")
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+            .andExpect(status().is(adminFamily(role) ? 200 : 403));
     }
 
     // ADMIN-only, cycle-management unit 2's GET /api/admin/cycles/{id} matcher -- same
@@ -419,7 +419,7 @@ class SecurityConfigTest {
 
         mockMvc.perform(get("/api/admin/cycles/{id}", cycleId)
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+            .andExpect(status().is(adminFamily(role) ? 200 : 403));
     }
 
     // ADMIN-only, cycle-management unit 3's POST /api/admin/cycles/{id}/close matcher --
@@ -448,7 +448,7 @@ class SecurityConfigTest {
 
         mockMvc.perform(post("/api/admin/cycles/{id}/close", cycleId)
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+            .andExpect(status().is(adminFamily(role) ? 200 : 403));
     }
 
     // Wallet/withdrawal unit 1 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
@@ -474,7 +474,7 @@ class SecurityConfigTest {
 
         mockMvc.perform(post("/api/admin/cycles/{id}/credit-wallets", cycleId)
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+            .andExpect(status().is(adminFamily(role) ? 200 : 403));
     }
 
     // Wallet/withdrawal unit 5 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
@@ -497,7 +497,7 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content(body))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     // Role-capability unit 7 (docs/superpowers/specs/role-capability/2026-08-03-role-capability-data-visibility-design.md,
@@ -518,7 +518,7 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content(body))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     @Test
@@ -543,7 +543,7 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content(body))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     @Test
@@ -564,7 +564,7 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/admin/support-tickets")
                 .param("associateId", UUID.randomUUID().toString())
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+            .andExpect(status().is(adminFamily(role) ? 200 : 403));
     }
 
     @Test
@@ -593,7 +593,7 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content("{\"status\":\"IN_PROGRESS\"}"))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     @Test
@@ -615,7 +615,7 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content("{\"amount\":100.00,\"paymentRef\":\"UTR-1\",\"paymentMode\":\"CASH\"}"))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     // U2: single and bulk payment confirmation ride the same blanket ADMIN write rule.
@@ -624,7 +624,7 @@ class SecurityConfigTest {
     void adminBookingConfirmPaymentIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
         mockMvc.perform(post("/api/admin/bookings/{id}/installments/1/confirm", UUID.randomUUID())
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     @Test
@@ -640,7 +640,7 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content("{\"items\":[{\"bookingId\":\"" + UUID.randomUUID() + "\",\"installmentNumber\":1}]}"))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     @Test
@@ -667,7 +667,7 @@ class SecurityConfigTest {
     void adminBookingConfirmIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
         mockMvc.perform(post("/api/admin/bookings/{id}/confirm", UUID.randomUUID())
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     @Test
@@ -686,7 +686,7 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content("{\"reason\":\"buyer withdrew\"}"))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     @Test
@@ -706,7 +706,7 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content("{\"associateId\":\"" + UUID.randomUUID() + "\"}"))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     @Test
@@ -725,7 +725,7 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content("{\"installmentCount\":3,\"firstDueDate\":\"2099-01-01\"}"))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     @Test
@@ -745,7 +745,7 @@ class SecurityConfigTest {
     void adminBookingRegisterIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
         mockMvc.perform(get("/api/admin/bookings")
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+            .andExpect(status().is(adminFamily(role) ? 200 : 403));
     }
 
     @Test
@@ -760,7 +760,7 @@ class SecurityConfigTest {
     void adminBookingByIdIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
         mockMvc.perform(get("/api/admin/bookings/{id}", UUID.randomUUID())
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     @Test
@@ -773,7 +773,7 @@ class SecurityConfigTest {
     void adminPaymentsListIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
         mockMvc.perform(get("/api/admin/payments")
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+            .andExpect(status().is(adminFamily(role) ? 200 : 403));
     }
 
     @Test
@@ -845,7 +845,7 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content(body))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 409 : 403));
+            .andExpect(status().is(adminFamily(role) ? 409 : 403));
     }
 
     // epin-domain unit 2 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
@@ -860,7 +860,7 @@ class SecurityConfigTest {
     void adminEpinsListIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
         mockMvc.perform(get("/api/admin/epins")
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+            .andExpect(status().is(adminFamily(role) ? 200 : 403));
     }
 
     // epin-domain unit 3 (docs/superpowers/specs/role-capability/2026-08-03-epin-domain-design.md,
@@ -879,14 +879,14 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content("{\"associateId\":\"" + UUID.randomUUID() + "\",\"redemptionType\":\"ACTIVATION\"}"))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     // e-PIN block/unblock/events are ADMIN-only; events is a GET so it needs its own matcher.
     @ParameterizedTest
     @EnumSource(AssociateRole.class)
     void adminEpinsBlockUnblockAndEventsAreForbiddenForEveryNonAdminRole(AssociateRole role) throws Exception {
-        if (role == AssociateRole.ADMIN) return;
+        if (adminFamily(role)) return;
         String auth = "Bearer " + tokenFor(role);
         UUID id = UUID.randomUUID();
         mockMvc.perform(post("/api/admin/epins/{id}/block", id).header("Authorization", auth)
@@ -1241,7 +1241,7 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content("{\"reason\":\"Buyer backed out\"}"))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     // Sales unit 6: GET /api/admin/sales is ADMIN-only, the same target-role-model pattern as
@@ -1255,7 +1255,7 @@ class SecurityConfigTest {
     void adminSalesListIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
         mockMvc.perform(get("/api/admin/sales")
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+            .andExpect(status().is(adminFamily(role) ? 200 : 403));
     }
 
     // Income/Ledger unit 1: GET /api/admin/ledger is ADMIN-only, the same target-role-model
@@ -1268,7 +1268,7 @@ class SecurityConfigTest {
     void adminLedgerListIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
         mockMvc.perform(get("/api/admin/ledger")
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+            .andExpect(status().is(adminFamily(role) ? 200 : 403));
     }
 
     // Wallet/withdrawal unit 6 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
@@ -1283,7 +1283,7 @@ class SecurityConfigTest {
     void adminWithdrawalsListIsReachableOnlyForAdminAndForbiddenForEveryOtherRole(AssociateRole role) throws Exception {
         mockMvc.perform(get("/api/admin/withdrawals")
                 .header("Authorization", "Bearer " + tokenFor(role)))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 200 : 403));
+            .andExpect(status().is(adminFamily(role) ? 200 : 403));
     }
 
     // Wallet/withdrawal unit 7 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
@@ -1305,7 +1305,7 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content(body))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     // Wallet/withdrawal unit 8 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,
@@ -1327,7 +1327,7 @@ class SecurityConfigTest {
                 .header("Authorization", "Bearer " + tokenFor(role))
                 .contentType("application/json")
                 .content(body))
-            .andExpect(status().is(role == AssociateRole.ADMIN ? 404 : 403));
+            .andExpect(status().is(adminFamily(role) ? 404 : 403));
     }
 
     @Test
@@ -1350,5 +1350,10 @@ class SecurityConfigTest {
     void impersonateIsUnauthorizedWithoutAToken() throws Exception {
         mockMvc.perform(post("/api/admin/associates/" + UUID.randomUUID() + "/impersonate"))
             .andExpect(status().isUnauthorized());
+    }
+
+    // MANAGER carries the ADMIN authority too (JwtAuthenticationFilter), so every ADMIN gate admits it.
+    private static boolean adminFamily(AssociateRole role) {
+        return role == AssociateRole.ADMIN || role == AssociateRole.MANAGER;
     }
 }

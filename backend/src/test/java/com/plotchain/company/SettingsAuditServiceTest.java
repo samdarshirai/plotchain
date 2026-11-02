@@ -137,4 +137,18 @@ class SettingsAuditServiceTest {
         assertThat(response.entries().get(0).changedByName()).isNull();
         assertThat(response.entries().get(0).changedByUserId()).isNull();
     }
+
+    @Test
+    void managerViewerNeverSeesAdminUsersEntries() {
+        when(settingsAuditLogRepository.findAllBySectionNotOrderByChangedAtDesc(eq("ADMIN_USERS"), any()))
+            .thenReturn(Page.empty());
+
+        settingsAuditService.list(null, 0, 20, true);
+        verify(settingsAuditLogRepository).findAllBySectionNotOrderByChangedAtDesc(eq("ADMIN_USERS"), any());
+        verify(settingsAuditLogRepository, org.mockito.Mockito.never()).findAllByOrderByChangedAtDesc(any());
+
+        SettingsAuditPageResponse filtered = settingsAuditService.list("ADMIN_USERS", 0, 20, true);
+        assertThat(filtered.entries()).isEmpty();
+        verify(settingsAuditLogRepository, org.mockito.Mockito.never()).findAllBySectionOrderByChangedAtDesc(any(), any());
+    }
 }

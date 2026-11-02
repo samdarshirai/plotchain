@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export type AdminUserStatus = 'ACTIVE' | 'SUSPENDED';
+export type AdminUserRole = 'ADMIN' | 'MANAGER';
 
 export interface AdminUser {
   id: string;
@@ -10,6 +11,7 @@ export interface AdminUser {
   name: string;
   phone: string;
   email: string | null;
+  role: AdminUserRole;
   status: AdminUserStatus;
   lastLoginAt: string | null;
   // Present only on the create response -- shown once, never retrievable again.
@@ -22,6 +24,8 @@ export interface AdminUserRequest {
   phone: string;
   email: string | null;
   status: AdminUserStatus;
+  // Create only; ignored on update. Omitted = same role as the signed-in user.
+  role?: AdminUserRole;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class SettingsAuditService {
+    private static final String ADMIN_USERS_SECTION = "ADMIN_USERS";
     private final SettingsAuditLogRepository settingsAuditLogRepository;
     private final AssociateRepository associateRepository;
     private final ObjectMapper objectMapper;
@@ -37,9 +38,22 @@ public class SettingsAuditService {
     }
 
     public SettingsAuditPageResponse list(String section, int page, int size) {
-        Page<SettingsAuditLog> result = (section == null || section.isBlank())
-            ? settingsAuditLogRepository.findAllByOrderByChangedAtDesc(PageRequest.of(page, size))
-            : settingsAuditLogRepository.findAllBySectionOrderByChangedAtDesc(section, PageRequest.of(page, size));
+        return list(section, page, size, false);
+    }
+
+    /** hideAdminUsers: MANAGER viewers never see ADMIN_USERS entries (they name ADMIN accounts). */
+    public SettingsAuditPageResponse list(String section, int page, int size, boolean hideAdminUsers) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        Page<SettingsAuditLog> result;
+        if (section == null || section.isBlank()) {
+            result = hideAdminUsers
+                ? settingsAuditLogRepository.findAllBySectionNotOrderByChangedAtDesc(ADMIN_USERS_SECTION, pageRequest)
+                : settingsAuditLogRepository.findAllByOrderByChangedAtDesc(pageRequest);
+        } else if (hideAdminUsers && ADMIN_USERS_SECTION.equals(section)) {
+            result = Page.empty(pageRequest);
+        } else {
+            result = settingsAuditLogRepository.findAllBySectionOrderByChangedAtDesc(section, pageRequest);
+        }
 
         Map<UUID, Associate> actorsById = associateRepository.findAllById(
             result.getContent().stream()

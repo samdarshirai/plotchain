@@ -88,4 +88,12 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
         verify(chain).doFilter(request, response);
     }
+
+    @Test
+    void managerGetsAdminAuthorityPlusManagerMarker() {
+        assertThat(JwtAuthenticationFilter.authorities(AssociateRole.MANAGER))
+            .extracting(Object::toString).containsExactly("ADMIN", "MANAGER");
+        assertThat(JwtAuthenticationFilter.authorities(AssociateRole.ADMIN))
+            .extracting(Object::toString).containsExactly("ADMIN");
+    }
 }

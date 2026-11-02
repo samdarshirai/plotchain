@@ -1,5 +1,6 @@
 package com.plotchain.auth;
 
+import com.plotchain.associate.AssociateRole;
 import com.plotchain.associate.AssociateStatusCache;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -28,6 +29,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.associateStatusCache = associateStatusCache;
     }
 
+    // MANAGER holds every ADMIN power (so all hasAuthority("ADMIN") gates pass) plus its own
+    // MANAGER marker, which AdminUserService/SettingsAuditService use to hide ADMIN users.
+    static List<SimpleGrantedAuthority> authorities(AssociateRole role) {
+        return role == AssociateRole.MANAGER
+            ? List.of(new SimpleGrantedAuthority("ADMIN"), new SimpleGrantedAuthority("MANAGER"))
+            : List.of(new SimpleGrantedAuthority(role.name()));
+    }
+
     @Override
     protected void doFilterInternal(
         @NonNull HttpServletRequest request,
@@ -47,7 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
                 var authentication = new UsernamePasswordAuthenticationToken(
                     authenticated.associateId(), null,
-                    List.of(new SimpleGrantedAuthority(authenticated.role().name())));
+                    authorities(authenticated.role()));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             });
         }
