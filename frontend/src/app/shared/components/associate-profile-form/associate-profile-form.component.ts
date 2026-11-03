@@ -193,6 +193,7 @@ export interface AssociateProfileValue {
       </div>
 
       <div class="associate-profile-form__footer">
+        <div class="associate-profile-form__footer-start"><ng-content select="[footerStart]"></ng-content></div>
         <button type="button" class="associate-profile-form__cancel" (click)="cancelled.emit()">{{ 'epinRegister.join.cancel' | translate }}</button>
         <button type="submit" class="associate-profile-form__submit" [disabled]="busy">{{ submitLabel | translate }}</button>
       </div>

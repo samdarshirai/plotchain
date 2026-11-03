@@ -401,7 +401,7 @@
   gap: 6px;
   height: 36px;
   padding: 0 12px;
-  border: 1px dashed #c9bc9f;
+  border: 1px dashed var(--border-subtle);
   border-radius: 999px;
   background: var(--surface-card);
 
@@ -447,18 +447,17 @@
     table-layout: fixed;
   }
 
-  // 11 columns: ID, Name, Phone, Email, Sponsor, Position, Status, Registration, Login pw, Txn pw, Actions.
-  th:nth-child(1) { width: 8%; }
-  th:nth-child(2) { width: 7%; }
-  th:nth-child(3) { width: 10%; }
-  th:nth-child(4) { width: 11%; }
+  // 10 columns: ID, Name, Phone, Sponsor, Position, Status, Registration, Login pw, Txn pw, Actions.
+  th:nth-child(1) { width: 9%; }
+  th:nth-child(2) { width: 9%; }
+  th:nth-child(3) { width: 11%; }
+  th:nth-child(4) { width: 8%; }
   th:nth-child(5) { width: 7%; }
-  th:nth-child(6) { width: 6%; }
-  th:nth-child(7) { width: 7%; }
-  th:nth-child(8) { width: 10%; }
-  th:nth-child(9) { width: 8%; }
-  th:nth-child(10) { width: 10%; }
-  th:nth-child(11) { width: 16%; }
+  th:nth-child(6) { width: 8%; }
+  th:nth-child(7) { width: 11%; }
+  th:nth-child(8) { width: 8%; }
+  th:nth-child(9) { width: 9%; }
+  th:nth-child(10) { width: 20%; }
 
   thead th {
     padding: 8px 6px;
@@ -525,16 +524,16 @@
     font-weight: 600;
   }
 
-  // Joined (8th column).
-  td:nth-child(8),
-  th:nth-child(8) {
+  // Registration (7th column).
+  td:nth-child(7),
+  th:nth-child(7) {
     text-align: right;
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
   }
 
   // Date + time is longer than the column: wrap between words instead of clipping.
-  tbody td:nth-child(8) > span {
+  tbody td:nth-child(7) > span {
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
@@ -546,15 +545,14 @@
 }
 
 // Sidebar unpinned (rail): the content column is ~180px wider, so give Registration enough room
-// for date + time with seconds on one line. Points come from Phone, Email and Actions; total stays 100%.
+// for date + time with seconds on one line. Points come from Name and Action; total stays 100%.
 @media (min-width: 1024px) {
   .app-content--sidebar-rail:not(.app-content--sidebar-expanded) .associate-directory__table-wrap {
-    th:nth-child(3) { width: 9%; }
-    th:nth-child(4) { width: 10%; }
-    th:nth-child(8) { width: 15%; }
-    th:nth-child(11) { width: 13%; }
+    th:nth-child(2) { width: 8%; }
+    th:nth-child(7) { width: 15%; }
+    th:nth-child(10) { width: 17%; }
 
-    tbody td:nth-child(8) > span {
+    tbody td:nth-child(7) > span {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -579,13 +577,15 @@
 // table stacks into cards on phones.
 .associate-directory__login {
   min-height: 28px;
-  padding: 0 8px;
+  padding: 2px 5px;
+  white-space: nowrap;
+  line-height: 1.15;
   border: 1px solid var(--brand-secondary);
   border-radius: 6px;
   background: var(--brand-secondary);
   color: var(--action-foreground);
   font: inherit;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -593,19 +593,24 @@
 // A div, not a span: the table's `td > span` ellipsis rule would clip the second button.
 .associate-directory__row-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-wrap: nowrap;
+  gap: 3px;
+  max-width: 100%;
 }
+
+// Stacked cards have the room to wrap the buttons.
+.table--stacked .associate-directory__row-actions { flex-wrap: wrap; }
 
 .associate-directory__recalculate {
   min-height: 28px;
-  padding: 0 8px;
+  padding: 0 5px;
+  white-space: nowrap;
   border: 1px solid var(--brand-secondary);
   border-radius: 6px;
   background: transparent;
   color: var(--brand-secondary);
   font: inherit;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
 

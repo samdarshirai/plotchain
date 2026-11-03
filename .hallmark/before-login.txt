@@ -1,0 +1,4 @@
+FAIL 26a http://localhost:4200/login:1 [1440px] focus ring 2.34:1 against what is behind it on button.login-password-toggle "visibility" | fix: A ring at 3:1 or better against the surface it is drawn over: --color-focus, or a ring colour per band
+FAIL 26a http://localhost:4200/login:1 [1440px] focus ring 2.19:1 against what is behind it on button.brand-button "Sign in" | fix: A ring at 3:1 or better against the surface it is drawn over: --color-focus, or a ring colour per band
+FAIL 26a http://localhost:4200/login:1 [1440px] focus ring 2.19:1 against what is behind it on a "Request access" | fix: A ring at 3:1 or better against the surface it is drawn over: --color-focus, or a ring colour per band
+FAIL 26a http://localhost:4200/login:1 [1440px] nothing shows keyboard focus on input.ng-pristine | fix: Give every control a :focus-visible ring; never remove an outline without putting one back

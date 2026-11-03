@@ -7,14 +7,12 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../auth/auth.service';
 import { AssociateDirectoryService } from './associate-directory.service';
 import { AdminAssociatePage, AdminAssociateFilters } from '../models/admin-associate-page.model';
-import { AdminAssociateDetail } from '../models/admin-associate-detail.model';
 import { NewAssociatePanelComponent } from '../new-associate-panel/new-associate-panel.component';
-import { SidePanelComponent } from '../../shared/components/side-panel/side-panel.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
+import { titleCase } from '../../shared/utils/title-case';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/tab-bar.component';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
-import { titleCase } from '../../shared/utils/title-case';
 
 const PAGE_SIZE = 20;
 
@@ -30,7 +28,7 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
 @Component({
   selector: 'app-associate-directory',
   standalone: true,
-  imports: [CommonModule, TranslateModule, SidePanelComponent, InlineBannerComponent, NewAssociatePanelComponent, EditableTableComponent, TabBarComponent, FieldErrorComponent],
+  imports: [CommonModule, TranslateModule, InlineBannerComponent, NewAssociatePanelComponent, EditableTableComponent, TabBarComponent, FieldErrorComponent],
   template: `
     <div class="associate-directory">
       <div class="associate-directory__header">
@@ -105,17 +103,15 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
           [rows]="directoryRows"
           [actionTemplate]="loginTpl"
           [emptyStateLabel]="'admin.associateDirectory.emptyState' | translate"
-          (rowClick)="selectAssociate(page!.associates[$event].id)"
         ></app-editable-table>
-        <!-- Row click opens the side panel, so the button stops propagation. Rows are built from
-             page.associates, so the template's index maps straight back to it. -->
+        <!-- Rows are built from page.associates, so the template's index maps straight back to it. -->
         <ng-template #loginTpl let-i="index">
           <div class="associate-directory__row-actions">
             <button
               *ngIf="canLogin(i)"
               type="button"
               class="associate-directory__login"
-              (click)="$event.stopPropagation(); loginAs(page!.associates[i].id, page!.associates[i].name)"
+              (click)="loginAs(page!.associates[i].id, page!.associates[i].name)"
             >
               {{ 'admin.associateDirectory.loginAction' | translate }}
             </button>
@@ -124,7 +120,7 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
               type="button"
               class="associate-directory__recalculate"
               [disabled]="recalculatingId !== null"
-              (click)="$event.stopPropagation(); recalculate(a.id)"
+              (click)="recalculate(a.id)"
             >
               {{ (recalculatingId === a.id ? 'admin.associateDirectory.recalculatingAction'
                   : recalculatedId === a.id ? 'admin.associateDirectory.recalculatedAction'
@@ -134,10 +130,18 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
               *ngIf="page?.associates?.[i] as a"
               type="button"
               class="associate-directory__recalculate associate-directory__edit"
-              (click)="$event.stopPropagation(); openEdit(a.id)"
+              (click)="openEdit(a.id)"
             >
               {{ 'admin.associateDirectory.editAction' | translate }}
             </button>
+            <ng-container *ngIf="page?.associates?.[i] as a">
+              <button type="button" class="associate-directory__recalculate" *ngIf="a.status === 'ACTIVE'" (click)="suspend(a.id)">
+                {{ 'admin.associateDirectory.suspendAction' | translate }}
+              </button>
+              <button type="button" class="associate-directory__recalculate" *ngIf="a.status === 'SUSPENDED'" (click)="reactivate(a.id)">
+                {{ 'admin.associateDirectory.reactivateAction' | translate }}
+              </button>
+            </ng-container>
           </div>
         </ng-template>
 
@@ -163,101 +167,6 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
       </div>
     </div>
 
-    <app-side-panel [open]="panelOpen" [title]="selected?.userId ?? ''" (closed)="closePanel()">
-      <div *ngIf="selected" class="associate-directory__detail">
-        <div class="associate-detail__identity">
-          <span class="associate-detail__name">{{ selected.name }}</span>
-          <span class="editable-table__rank-badge">{{ selected.designation ?? ('dashboard.designationValue' | translate) }}</span>
-          <span class="associate-detail__status-badge" [ngClass]="'associate-detail__status-badge--' + kycStatusBadgeTone(titleCase(selected.kycStatus))">
-            {{ titleCase(selected.kycStatus) }}
-          </span>
-          <span class="associate-detail__status-badge" [ngClass]="'associate-detail__status-badge--' + statusBadgeTone(titleCase(selected.status))">
-            {{ titleCase(selected.status) }}
-          </span>
-        </div>
-
-        <div class="associate-detail__meta">
-          <div class="cycle-detail__row">
-            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.columnUserId' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.userId }}</span>
-          </div>
-          <div class="cycle-detail__row">
-            <span class="cycle-detail__row-label">{{ 'admin.emailLabel' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.email ?? '—' }}</span>
-          </div>
-          <div class="cycle-detail__row">
-            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.phoneLabel' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.phone ?? '—' }}</span>
-          </div>
-          <div class="cycle-detail__row">
-            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.joinedLabel' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.joinedAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</span>
-          </div>
-          <div class="cycle-detail__row">
-            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.lastActiveLabel' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.lastActiveAt ? (selected.lastActiveAt | date) : '—' }}</span>
-          </div>
-          <div class="cycle-detail__row">
-            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.loginPasswordLabel' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.loginPassword ?? ('admin.associateDirectory.passwordNotAvailable' | translate) }}</span>
-          </div>
-          <div class="cycle-detail__row">
-            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.transactionPasswordLabel' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.transactionPassword ?? ('admin.associateDirectory.passwordNotAvailable' | translate) }}</span>
-          </div>
-        </div>
-
-        <div class="associate-detail__meta">
-          <div class="cycle-detail__row">
-            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.sponsorLabel' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.sponsorUserId ?? '—' }}</span>
-          </div>
-          <div class="cycle-detail__row">
-            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.placementLabel' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.parentUserId ?? '—' }} ({{ selected.position ?? '—' }})</span>
-          </div>
-          <div class="cycle-detail__row">
-            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.downlineLabel' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.directDownlineCount }} / {{ selected.totalDownlineCount }}</span>
-          </div>
-          <div class="cycle-detail__row">
-            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.leftLegVolumeLabel' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.leftLegVolume | currency:'INR':'symbol':'1.0-0' }}</span>
-          </div>
-          <div class="cycle-detail__row">
-            <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.rightLegVolumeLabel' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.rightLegVolume | currency:'INR':'symbol':'1.0-0' }}</span>
-          </div>
-        </div>
-
-        <app-inline-banner *ngIf="temporaryPassword" tone="success">
-          {{ 'admin.associateDirectory.temporaryPasswordNotice' | translate }}: <strong>{{ temporaryPassword }}</strong>
-        </app-inline-banner>
-
-        <app-inline-banner *ngIf="transactionPasswordResetDone" tone="success">
-          {{ 'admin.associateDirectory.resetTransactionPasswordDone' | translate }}: <strong>{{ newTransactionPassword }}</strong>
-        </app-inline-banner>
-
-        <div class="associate-detail__actions">
-          <button type="button" class="brand-button brand-button--danger" *ngIf="selected.status === 'ACTIVE'" (click)="suspendSelected()">
-            {{ 'admin.associateDirectory.suspendAction' | translate }}
-          </button>
-          <button type="button" class="brand-button" *ngIf="selected.status === 'SUSPENDED'" (click)="reactivateSelected()">
-            {{ 'admin.associateDirectory.reactivateAction' | translate }}
-          </button>
-          <button type="button" class="brand-button brand-button--secondary" (click)="openEdit(selected.id)">
-            {{ 'admin.associateDirectory.editAction' | translate }}
-          </button>
-          <button type="button" class="brand-button brand-button--secondary" (click)="resetPasswordForSelected()">
-            {{ 'admin.associateDirectory.resetPasswordAction' | translate }}
-          </button>
-          <button type="button" class="brand-button brand-button--secondary" (click)="resetTransactionPasswordForSelected()">
-            {{ 'admin.associateDirectory.resetTransactionPasswordAction' | translate }}
-          </button>
-        </div>
-      </div>
-    </app-side-panel>
-
     <app-new-associate-panel
       *ngIf="editId"
       [open]="true"
@@ -274,10 +183,6 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
   `
 })
 export class AssociateDirectoryComponent implements OnInit {
-  // Exposed so the detail-panel template can Title Case selected.kycStatus/status the same way
-  // loadPage() already does for the table rows (both feed the same badge-tone methods below).
-  readonly titleCase = titleCase;
-
   private associateDirectoryService = inject(AssociateDirectoryService);
   private translate = inject(TranslateService);
   private route = inject(ActivatedRoute);
@@ -285,12 +190,7 @@ export class AssociateDirectoryComponent implements OnInit {
   private authService = inject(AuthService);
 
   page: AdminAssociatePage | null = null;
-  selected: AdminAssociateDetail | null = null;
-  panelOpen = false;
   editId: string | null = null;
-  temporaryPassword: string | null = null;
-  newTransactionPassword: string | null = null;
-  transactionPasswordResetDone = false;
   loadError = false;
   actionError = false;
   loginError = false;
@@ -317,7 +217,6 @@ export class AssociateDirectoryComponent implements OnInit {
       { key: 'userId', label: this.translate.instant('admin.associateDirectory.columnUserId'), type: 'text' },
       { key: 'name', label: this.translate.instant('admin.associateDirectory.columnName'), type: 'text' },
       { key: 'phone', label: this.translate.instant('admin.associateDirectory.columnPhone'), type: 'text' },
-      { key: 'email', label: this.translate.instant('admin.associateDirectory.columnEmail'), type: 'text' },
       { key: 'sponsorUserId', label: this.translate.instant('admin.associateDirectory.columnSponsorId'), type: 'text' },
       { key: 'position', label: this.translate.instant('admin.associateDirectory.columnPosition'), type: 'text' },
       {
@@ -369,16 +268,6 @@ export class AssociateDirectoryComponent implements OnInit {
     this.loadPage(page);
   }
 
-  selectAssociate(id: string): void {
-    this.temporaryPassword = null;
-    this.newTransactionPassword = null;
-    this.transactionPasswordResetDone = false;
-    this.associateDirectoryService.get(id).subscribe(detail => {
-      this.selected = detail;
-      this.panelOpen = true;
-    });
-  }
-
   // Defensive role guard (the directory only lists associates today); rows can briefly outlive page.associates.
   canLogin(index: number): boolean {
     const a = this.page?.associates[index];
@@ -424,89 +313,28 @@ export class AssociateDirectoryComponent implements OnInit {
     });
   }
 
-  closePanel(): void {
-    this.panelOpen = false;
-  }
-
   openEdit(id: string): void {
     this.editId = id;
   }
 
   onEdited(): void {
-    if (this.selected) {
-      this.associateDirectoryService.get(this.selected.id).subscribe(detail => (this.selected = detail));
-    }
     this.loadPage(this.page?.page ?? 0);
   }
 
-  suspendSelected(): void {
-    if (!this.selected) return;
+  suspend(id: string): void {
     this.actionError = false;
-    this.associateDirectoryService.suspend(this.selected.id).subscribe({
-      next: detail => {
-        this.selected = detail;
-        this.loadPage(this.page?.page ?? 0);
-        this.loadCounts();
-      },
+    this.associateDirectoryService.suspend(id).subscribe({
+      next: () => { this.loadPage(this.page?.page ?? 0); this.loadCounts(); },
       error: () => (this.actionError = true)
     });
   }
 
-  reactivateSelected(): void {
-    if (!this.selected) return;
+  reactivate(id: string): void {
     this.actionError = false;
-    this.associateDirectoryService.reactivate(this.selected.id).subscribe({
-      next: detail => {
-        this.selected = detail;
-        this.loadPage(this.page?.page ?? 0);
-        this.loadCounts();
-      },
+    this.associateDirectoryService.reactivate(id).subscribe({
+      next: () => { this.loadPage(this.page?.page ?? 0); this.loadCounts(); },
       error: () => (this.actionError = true)
     });
-  }
-
-  resetTransactionPasswordForSelected(): void {
-    if (!this.selected) return;
-    if (!window.confirm(this.translate.instant('admin.associateDirectory.resetTransactionPasswordConfirm'))) return;
-    this.actionError = false;
-    this.transactionPasswordResetDone = false;
-    this.newTransactionPassword = null;
-    this.associateDirectoryService.resetTransactionPassword(this.selected.id).subscribe({
-      next: res => {
-        this.newTransactionPassword = res.temporaryPassword;
-        this.transactionPasswordResetDone = true;
-        if (this.selected) this.selected.transactionPassword = res.temporaryPassword;
-      },
-      error: () => (this.actionError = true)
-    });
-  }
-
-  resetPasswordForSelected(): void {
-    if (!this.selected) return;
-    this.actionError = false;
-    this.associateDirectoryService.resetPassword(this.selected.id).subscribe({
-      next: res => {
-        this.temporaryPassword = res.temporaryPassword;
-        if (this.selected) this.selected.loginPassword = res.temporaryPassword;
-      },
-      error: () => (this.actionError = true)
-    });
-  }
-
-  // Colors by the cell's own value, not by which column it renders in -- KYC Status and Status
-  // take different value sets (PENDING/VERIFIED/REJECTED vs ACTIVE/SUSPENDED) so each gets its own
-  // mapping even though both ultimately point at the same three status tokens.
-  kycStatusBadgeTone(value: string | number): BadgeTone {
-    switch (value) {
-      case 'Verified':
-        return 'success';
-      case 'Pending':
-        return 'warning';
-      case 'Rejected':
-        return 'danger';
-      default:
-        return 'default';
-    }
   }
 
   statusBadgeTone(value: string | number): BadgeTone {
@@ -553,7 +381,6 @@ export class AssociateDirectoryComponent implements OnInit {
           // Short glyph, not a column: an extra column pushed the table past its container and into stacked cards.
           name: a.plotBuyer ? `${a.name} 🏞️` : a.name,
           phone: a.phone ?? '—',
-          email: a.email ?? '—',
           sponsorUserId: a.sponsorUserId ?? '—',
           position: a.position ?? '—',
           status: titleCase(a.status),

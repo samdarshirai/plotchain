@@ -8,4 +8,4 @@ public record AdminAssociateSummaryResponse(
     AssociateStatus status, Instant joinedAt, Instant lastActiveAt,
     String sponsorUserId, String position, AssociateRole role,
     String loginPassword, String transactionPassword, String phone, String email, Instant activatedAt,
-    boolean plotBuyer) {}
+    boolean plotBuyer, String parentUserId) {}

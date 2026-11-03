@@ -61,25 +61,8 @@ describe('AssociateDirectoryComponent', () => {
     expect(fixture.componentInstance.page?.associates[0].userId).toBe('VP00001');
   });
 
-  it('opens the detail panel and loads full detail on row selection', () => {
-    fixture.componentInstance.selectAssociate('a1');
-
-    const req = httpMock.expectOne('/api/admin/associates/a1');
-    req.flush({
-      id: 'a1', userId: 'VP00001', name: 'Jane', email: null, phone: null, designation: 'Sales Associate',
-      kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', lastActiveAt: null,
-      sponsorId: null, sponsorUserId: null, parentId: null, parentUserId: null, position: null,
-      directDownlineCount: 0, totalDownlineCount: 0, leftLegVolume: 0, rightLegVolume: 0
-    });
-
-    expect(fixture.componentInstance.selected?.userId).toBe('VP00001');
-    expect(fixture.componentInstance.panelOpen).toBeTrue();
-  });
-
-  it('suspends the selected associate and refreshes detail', () => {
-    fixture.componentInstance.selected = { id: 'a1', userId: 'VP00001', status: 'ACTIVE' } as any;
-
-    fixture.componentInstance.suspendSelected();
+  it('suspends the associate and reloads the page', () => {
+    fixture.componentInstance.suspend('a1');
 
     const req = httpMock.expectOne('/api/admin/associates/a1/suspend');
     req.flush({ id: 'a1', userId: 'VP00001', status: 'SUSPENDED' });
@@ -88,13 +71,10 @@ describe('AssociateDirectoryComponent', () => {
     reloadReq.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
     flushCounts(httpMock);
 
-    expect(fixture.componentInstance.selected?.status).toBe('SUSPENDED');
   });
 
-  it('reactivates the selected associate and refreshes detail', () => {
-    fixture.componentInstance.selected = { id: 'a1', userId: 'VP00001', status: 'SUSPENDED' } as any;
-
-    fixture.componentInstance.reactivateSelected();
+  it('reactivates the associate and reloads the page', () => {
+    fixture.componentInstance.reactivate('a1');
 
     const req = httpMock.expectOne('/api/admin/associates/a1/reactivate');
     req.flush({ id: 'a1', userId: 'VP00001', status: 'ACTIVE' });
@@ -103,53 +83,6 @@ describe('AssociateDirectoryComponent', () => {
     reloadReq.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
     flushCounts(httpMock);
 
-    expect(fixture.componentInstance.selected?.status).toBe('ACTIVE');
-  });
-
-  it('shows the one-time temporary password after a reset', () => {
-    fixture.componentInstance.selected = { id: 'a1', userId: 'VP00001' } as any;
-
-    fixture.componentInstance.resetPasswordForSelected();
-
-    const req = httpMock.expectOne('/api/admin/associates/a1/reset-password');
-    req.flush({ temporaryPassword: 'Temp1234!' });
-
-    expect(fixture.componentInstance.temporaryPassword).toBe('Temp1234!');
-  });
-
-  it('does not reset the transaction password when the confirm is cancelled', () => {
-    spyOn(window, 'confirm').and.returnValue(false);
-    fixture.componentInstance.selected = { id: 'a1', userId: 'VP00001' } as any;
-
-    fixture.componentInstance.resetTransactionPasswordForSelected();
-
-    httpMock.expectNone('/api/admin/associates/a1/reset-transaction-password');
-    expect(fixture.componentInstance.transactionPasswordResetDone).toBeFalse();
-  });
-
-  it('sets a new transaction password and shows it in the done banner', () => {
-    spyOn(window, 'confirm').and.returnValue(true);
-    fixture.componentInstance.selected = { id: 'a1', userId: 'VP00001' } as any;
-
-    fixture.componentInstance.resetTransactionPasswordForSelected();
-
-    httpMock.expectOne('/api/admin/associates/a1/reset-transaction-password').flush({ temporaryPassword: '123456' });
-
-    expect(fixture.componentInstance.transactionPasswordResetDone).toBeTrue();
-    expect(fixture.componentInstance.newTransactionPassword).toBe('123456');
-    expect(fixture.componentInstance.selected?.transactionPassword).toBe('123456');
-  });
-
-  it('flags an action error when the transaction password reset fails', () => {
-    spyOn(window, 'confirm').and.returnValue(true);
-    fixture.componentInstance.selected = { id: 'a1', userId: 'VP00001' } as any;
-
-    fixture.componentInstance.resetTransactionPasswordForSelected();
-
-    httpMock.expectOne('/api/admin/associates/a1/reset-transaction-password')
-      .flush({}, { status: 500, statusText: 'err' });
-
-    expect(fixture.componentInstance.actionError).toBeTrue();
   });
 
   it('shows a load error when the page reload fails, without silently doing nothing', () => {
@@ -165,9 +98,7 @@ describe('AssociateDirectoryComponent', () => {
   });
 
   it('shows an action error when suspend fails, without silently doing nothing', () => {
-    fixture.componentInstance.selected = { id: 'a1', userId: 'VP00001', status: 'ACTIVE', kycStatus: 'VERIFIED' } as any;
-
-    fixture.componentInstance.suspendSelected();
+    fixture.componentInstance.suspend('a1');
 
     const req = httpMock.expectOne('/api/admin/associates/a1/suspend');
     req.flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
@@ -241,22 +172,13 @@ describe('AssociateDirectoryComponent', () => {
     expect(emptyCell?.textContent?.trim()).toBeTruthy();
   });
 
-  it('clicking a rendered row opens the detail panel for that associate', () => {
+  it('clicking a rendered row does nothing (no side panel)', () => {
     fixture.detectChanges();
 
-    const bodyRows = fixture.nativeElement.querySelectorAll('tbody tr');
-    bodyRows[0].click();
+    fixture.nativeElement.querySelectorAll('tbody tr')[0].click();
 
-    const req = httpMock.expectOne('/api/admin/associates/a1');
-    req.flush({
-      id: 'a1', userId: 'VP00001', name: 'Jane', email: null, phone: null, designation: 'Sales Associate',
-      kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', lastActiveAt: null,
-      sponsorId: null, sponsorUserId: null, parentId: null, parentUserId: null, position: null,
-      directDownlineCount: 0, totalDownlineCount: 0, leftLegVolume: 0, rightLegVolume: 0
-    });
-
-    expect(fixture.componentInstance.selected?.userId).toBe('VP00001');
-    expect(fixture.componentInstance.panelOpen).toBeTrue();
+    httpMock.expectNone('/api/admin/associates/a1');
+    expect(fixture.nativeElement.querySelector('app-side-panel')).toBeNull();
   });
 
   describe('Login-as-associate column', () => {
@@ -296,7 +218,6 @@ describe('AssociateDirectoryComponent', () => {
       expect(tab.location.href).toBe('/dashboard');
       expect(navigate).not.toHaveBeenCalled();
       httpMock.expectNone('/api/admin/associates/a1');
-      expect(fixture.componentInstance.panelOpen).toBeFalse();
     });
 
     it('shows the error paragraph when impersonation fails', () => {
@@ -338,8 +259,6 @@ describe('AssociateDirectoryComponent', () => {
 
       httpMock.expectOne({ method: 'POST', url: '/api/admin/associates/a1/recalculate' }).flush({});
       fixture.detectChanges();
-
-      expect(fixture.componentInstance.panelOpen).toBeFalse();
       expect(fixture.componentInstance.recalculatedId).toBe('a1');
       expect(button().disabled).toBeFalse();
     });
@@ -427,19 +346,18 @@ describe('AssociateDirectoryComponent', () => {
       fixture.detectChanges();
     }
 
-    it('shows Mobile and Email columns, blank email as a dash', () => {
+    it('shows the Mobile column and no Email column', () => {
       loadRow();
-      expect(fixture.componentInstance.directoryColumns.map(c => c.key)).toEqual(jasmine.arrayContaining(['phone', 'email']));
+      const keys = fixture.componentInstance.directoryColumns.map(c => c.key);
+      expect(keys).toContain('phone');
+      expect(keys).not.toContain('email');
       expect(fixture.componentInstance.directoryRows[0]['phone']).toBe('9876543210');
-      expect(fixture.componentInstance.directoryRows[0]['email']).toBe('—');
     });
 
     it('opens the pre-filled edit modal for that row without opening the side panel', () => {
       loadRow();
       fixture.nativeElement.querySelector('.associate-directory__edit').click();
       fixture.detectChanges();
-
-      expect(fixture.componentInstance.panelOpen).toBeFalse();
       const panels = fixture.debugElement.queryAll(By.directive(NewAssociatePanelComponent));
       expect(panels.some(p => p.componentInstance.editAssociateId === 'a1')).toBeTrue();
       httpMock.expectOne('/api/admin/associates/a1').flush({});

@@ -1,13 +1,15 @@
 import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { forkJoin, of } from 'rxjs';
 import { AuthService } from '../../auth/auth.service';
 import { AssociateDirectoryService } from '../associate-directory/associate-directory.service';
 import { AdminService } from '../admin.service';
+import { AdminAssociateDetail } from '../models/admin-associate-detail.model';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { CreateAssociateResponse } from '../models/create-associate-response.model';
+import { formatIst } from '../../shared/utils/ist-date';
 import { toFieldErrors } from '../../core/api/field-errors.model';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { AssociateProfileFormComponent, AssociateProfileValue } from '../../shared/components/associate-profile-form/associate-profile-form.component';
@@ -63,6 +65,14 @@ export interface PresetParent {
             {{ (editAssociateId ? 'admin.associateDirectory.editModalSubtitle' : 'admin.associateDirectory.provisionModalSubtitle') | translate }}
           </p>
 
+          <app-inline-banner *ngIf="temporaryPassword" tone="success">
+            {{ 'admin.associateDirectory.temporaryPasswordNotice' | translate }}: <strong>{{ temporaryPassword }}</strong>
+          </app-inline-banner>
+          <app-inline-banner *ngIf="newTransactionPassword" tone="success">
+            {{ 'admin.associateDirectory.resetTransactionPasswordDone' | translate }}: <strong>{{ newTransactionPassword }}</strong>
+          </app-inline-banner>
+          <app-inline-banner *ngIf="resetError" tone="danger">{{ 'admin.associateDirectory.actionError' | translate }}</app-inline-banner>
+
           <app-inline-banner *ngIf="loadError" tone="danger">{{ 'admin.associateDirectory.editLoadError' | translate }}</app-inline-banner>
           <app-associate-profile-form
             *ngIf="!editAssociateId || initial"
@@ -80,7 +90,16 @@ export interface PresetParent {
             [submitLabel]="editAssociateId ? 'admin.associateDirectory.editSubmitAction' : 'admin.associateDirectory.provisionSubmitAction'"
             (submitted)="onSubmit($event)"
             (cancelled)="cancel()"
-          ></app-associate-profile-form>
+          >
+            <ng-container footerStart *ngIf="editAssociateId">
+              <button type="button" (click)="resetPassword()">
+                {{ 'admin.associateDirectory.resetPasswordAction' | translate }}
+              </button>
+              <button type="button" (click)="resetTransactionPassword()">
+                {{ 'admin.associateDirectory.resetTransactionPasswordAction' | translate }}
+              </button>
+            </ng-container>
+          </app-associate-profile-form>
         </ng-template>
       </div>
     </div>
@@ -89,6 +108,7 @@ export interface PresetParent {
 export class NewAssociatePanelComponent implements OnInit, OnChanges {
   private adminService = inject(AdminService);
   private directoryService = inject(AssociateDirectoryService);
+  private translate = inject(TranslateService);
   // A manager edits contact + bank details only; identity and nominee fields stay read-only (server enforces too).
   readonly isManager = inject(AuthService).getRole() === 'MANAGER';
   readonly lockedFields = this.isManager
@@ -111,6 +131,11 @@ export class NewAssociatePanelComponent implements OnInit, OnChanges {
   busy = false;
   initial: Record<string, string | null> | null = null;
   loadError = false;
+  detail: AdminAssociateDetail | null = null;
+  readonly formatIst = formatIst;
+  temporaryPassword: string | null = null;
+  newTransactionPassword: string | null = null;
+  resetError = false;
   // Sponsor is required once the tree has a member; admin/manager rows are not tree members, and
   // the root user (the first ASSOCIATE) is created parentless via rootMode during onboarding.
   associates: AssociateSummary[] = [];
@@ -140,14 +165,38 @@ export class NewAssociatePanelComponent implements OnInit, OnChanges {
       this.busy = false;
       this.initial = null;
       this.loadError = false;
+      this.detail = null;
+      this.temporaryPassword = this.newTransactionPassword = null;
+      this.resetError = false;
       if (this.editAssociateId) { this.loadForEdit(this.editAssociateId); }
     }
+  }
+
+  resetPassword(): void {
+    if (!this.editAssociateId) return;
+    this.resetError = false;
+    this.newTransactionPassword = null;
+    this.directoryService.resetPassword(this.editAssociateId).subscribe({
+      next: res => { this.temporaryPassword = res.temporaryPassword; this.saved.emit(); },
+      error: () => (this.resetError = true)
+    });
+  }
+
+  resetTransactionPassword(): void {
+    if (!this.editAssociateId) return;
+    if (!window.confirm(this.translate.instant('admin.associateDirectory.resetTransactionPasswordConfirm'))) return;
+    this.resetError = false;
+    this.temporaryPassword = null;
+    this.directoryService.resetTransactionPassword(this.editAssociateId).subscribe({
+      next: res => { this.newTransactionPassword = res.temporaryPassword; this.saved.emit(); },
+      error: () => (this.resetError = true)
+    });
   }
 
   private loadForEdit(id: string): void {
     const s = this.directoryService;
     forkJoin([s.get(id), s.getProfile(id), s.getNominee(id), s.getBankDetails(id)]).subscribe({
-      next: ([d, p, n, b]) => (this.initial = {
+      next: ([d, p, n, b]) => (this.detail = d, this.initial = {
         sponsorUserId: d.sponsorUserId, position: d.position,
         name: p.name, fatherHusbandName: p.fatherHusbandName, panNumber: p.panNumber, aadhaarNumber: p.aadhaarNumber,
         dateOfBirth: p.dateOfBirth, gender: p.gender, maritalStatus: p.maritalStatus,

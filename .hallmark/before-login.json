@@ -1,0 +1,105 @@
+{
+ "v": 1,
+ "at": "2026-10-30T22:36:32.975Z",
+ "scope": "app",
+ "summary": {
+  "fails": 0,
+  "reflex": 0,
+  "warns": 0
+ },
+ "files": {},
+ "wiring": {
+  "handlers": [],
+  "links": [],
+  "fields": [],
+  "hooks": [],
+  "ids": []
+ },
+ "scripts": {},
+ "pages": {
+  "http://localhost:4200/login": {
+   "links": [],
+   "fields": [
+    "unnamed select 1",
+    "unnamed text 1",
+    "unnamed password 1"
+   ],
+   "actions": [],
+   "forms": [
+    {
+     "key": "form 1",
+     "attrs": [
+      "method=get",
+      "novalidate"
+     ],
+     "fields": [
+      "unnamed text 1",
+      "unnamed password 1"
+     ],
+     "hidden": [],
+     "submits": 1,
+     "controls": [
+      "input[type=text]",
+      "input[type=password]",
+      "button[type=button]",
+      "button[type=submit]"
+     ]
+    }
+   ],
+   "hooked": [],
+   "headings": [
+    "sign in"
+   ],
+   "figures": [],
+   "images": [
+    "square"
+   ],
+   "controls": 5,
+   "words": 26
+  },
+  "http://localhost:4200/admin/login": {
+   "links": [
+    "/login"
+   ],
+   "fields": [
+    "unnamed select 1",
+    "unnamed text 1",
+    "unnamed password 1"
+   ],
+   "actions": [],
+   "forms": [
+    {
+     "key": "form 1",
+     "attrs": [
+      "method=get",
+      "novalidate"
+     ],
+     "fields": [
+      "unnamed text 1",
+      "unnamed password 1"
+     ],
+     "hidden": [],
+     "submits": 1,
+     "controls": [
+      "input[type=text]",
+      "input[type=password]",
+      "button[type=button]",
+      "button[type=submit]"
+     ]
+    }
+   ],
+   "hooked": [],
+   "headings": [
+    "sign in"
+   ],
+   "figures": [
+    "2026"
+   ],
+   "images": [
+    "square"
+   ],
+   "controls": 5,
+   "words": 36
+  }
+ }
+}

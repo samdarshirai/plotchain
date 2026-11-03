@@ -304,15 +304,22 @@ public class AdminAssociateService {
         }
         Set<UUID> plotBuyers = page.isEmpty() ? Set.of()
             : new java.util.HashSet<>(associateRepository.findPlotBuyerIds(page.stream().map(Associate::getId).toList()));
-        return page.stream().map(a -> toSummary(a, designations.get(a.getId()), sponsorUserIds.get(a.getSponsorId()), activatedAt.get(a.getId()), plotBuyers.contains(a.getId()))).toList();
+        Set<UUID> parentIds = page.stream().map(Associate::getParentId).filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        Map<UUID, String> parentUserIds = associateRepository.findAllById(parentIds).stream()
+            .collect(Collectors.toMap(Associate::getId, Associate::getUserId));
+        return page.stream().map(a -> toSummary(a, designations.get(a.getId()), sponsorUserIds.get(a.getSponsorId()), activatedAt.get(a.getId()), plotBuyers.contains(a.getId()),
+            parentUserIds.get(a.getParentId()))).toList();
     }
 
-    private AdminAssociateSummaryResponse toSummary(Associate a, String designation, String sponsorUserId, Instant activatedAt, boolean plotBuyer) {
+    private AdminAssociateSummaryResponse toSummary(Associate a, String designation, String sponsorUserId, Instant activatedAt, boolean plotBuyer,
+                                                    String parentUserId) {
         return new AdminAssociateSummaryResponse(
             a.getId(), a.getUserId(), a.getName(), designation,
             a.getKycStatus(), a.getStatus(), a.getJoinedAt(), a.getLastActiveAt(), sponsorUserId,
             a.getPosition(), a.getRole(), a.getLoginPasswordPlain(), a.getTransactionPasswordPlain(),
-            a.getPhone(), a.getEmail(), activatedAt, plotBuyer);
+            a.getPhone(), a.getEmail(), activatedAt, plotBuyer,
+            parentUserId);
     }
 
     private AdminAssociateDetailResponse toDetail(Associate a) {

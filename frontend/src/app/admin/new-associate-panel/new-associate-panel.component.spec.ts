@@ -206,6 +206,38 @@ describe('NewAssociatePanelComponent', () => {
       expect(fixture.componentInstance.serverErrors).toEqual({ aadhaarNumber: 'Aadhaar already registered' });
     });
   });
+
+  describe('password resets (edit mode)', () => {
+    beforeEach(() => {
+      fixture.componentInstance.editAssociateId = 'a-1';
+    });
+
+    it('shows the one-time temporary password after a login-password reset', () => {
+      fixture.componentInstance.resetPassword();
+      httpMock.expectOne('/api/admin/associates/a-1/reset-password').flush({ temporaryPassword: 'Temp1234!' });
+      expect(fixture.componentInstance.temporaryPassword).toBe('Temp1234!');
+    });
+
+    it('does not reset the transaction password when the confirm is cancelled', () => {
+      spyOn(window, 'confirm').and.returnValue(false);
+      fixture.componentInstance.resetTransactionPassword();
+      httpMock.expectNone('/api/admin/associates/a-1/reset-transaction-password');
+      expect(fixture.componentInstance.newTransactionPassword).toBeNull();
+    });
+
+    it('shows the new transaction password after a confirmed reset', () => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      fixture.componentInstance.resetTransactionPassword();
+      httpMock.expectOne('/api/admin/associates/a-1/reset-transaction-password').flush({ temporaryPassword: '123456' });
+      expect(fixture.componentInstance.newTransactionPassword).toBe('123456');
+    });
+
+    it('flags an error when the reset fails', () => {
+      fixture.componentInstance.resetPassword();
+      httpMock.expectOne('/api/admin/associates/a-1/reset-password').flush({}, { status: 500, statusText: 'err' });
+      expect(fixture.componentInstance.resetError).toBeTrue();
+    });
+  });
 });
 
 describe('NewAssociatePanelComponent as MANAGER', () => {

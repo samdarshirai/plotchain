@@ -16,4 +16,5 @@ export interface AdminAssociateSummary {
   email: string | null;
   activatedAt: string | null;
   plotBuyer: boolean;
+  parentUserId: string | null;
 }
