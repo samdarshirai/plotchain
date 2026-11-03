@@ -455,10 +455,10 @@
   th:nth-child(5) { width: 7%; }
   th:nth-child(6) { width: 6%; }
   th:nth-child(7) { width: 7%; }
-  th:nth-child(8) { width: 9%; }
+  th:nth-child(8) { width: 10%; }
   th:nth-child(9) { width: 8%; }
   th:nth-child(10) { width: 10%; }
-  th:nth-child(11) { width: 17%; }
+  th:nth-child(11) { width: 16%; }
 
   thead th {
     padding: 8px 6px;
@@ -531,6 +531,13 @@
     text-align: right;
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
+  }
+
+  // Date + time is longer than the column: wrap between words instead of clipping.
+  tbody td:nth-child(8) > span {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
   }
 
   tbody tr:hover {
