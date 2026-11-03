@@ -31,7 +31,7 @@ public class JwtService {
      */
     static final String DEV_DEFAULT_SECRET = "dev-only-change-me-this-needs-to-be-at-least-32-bytes-long";
 
-    static final long IMPERSONATION_MINUTES = 30;
+    static final long IMPERSONATION_MINUTES = 1440;
 
     private final SecretKey key;
     private final long expirationMinutes;
@@ -80,7 +80,7 @@ public class JwtService {
             .compact();
     }
 
-    /** Admin "view as associate" token: fixed short expiry, independent of jwt.expiration-minutes. */
+    /** Admin "view as associate" token: fixed 24h expiry, independent of jwt.expiration-minutes. */
     public String generateImpersonationToken(Associate target, UUID adminId) {
         Instant now = Instant.now();
         return Jwts.builder()

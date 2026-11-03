@@ -47,7 +47,7 @@ class JwtServiceTest {
         String payload = new String(java.util.Base64.getUrlDecoder().decode(token.split("\\.")[1]));
         com.fasterxml.jackson.databind.JsonNode json = new com.fasterxml.jackson.databind.ObjectMapper().readTree(payload);
         assertThat(json.get("impersonatedBy").asText()).isEqualTo(adminId.toString());
-        assertThat(json.get("exp").asLong() - json.get("iat").asLong()).isEqualTo(1800);
+        assertThat(json.get("exp").asLong() - json.get("iat").asLong()).isEqualTo(86400);
     }
 
     @Test
