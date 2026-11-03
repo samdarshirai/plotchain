@@ -112,7 +112,7 @@ export const saleRow = (s: Sale): BookingRow => ({
             <tbody>
               <tr *ngIf="!payments(r).length"><td colspan="6">{{ 'plotBookings.payments.empty' | translate }}</td></tr>
               <tr *ngFor="let i of payments(r)">
-                <td class="booking-table__mono" [attr.data-label]="'plotBookings.payments.paymentDate' | translate">{{ i.confirmedAt ? (i.confirmedAt | date: 'mediumDate') : '—' }}</td>
+                <td class="booking-table__mono" [attr.data-label]="'plotBookings.payments.paymentDate' | translate">{{ i.confirmedAt ? (i.confirmedAt | date: 'd MMM y, h:mm:ss a' : '+0530') : '—' }}</td>
                 <td class="booking-table__mono" [attr.data-label]="'plotBookings.payments.amount' | translate">{{ money(i.amount) }}</td>
                 <td class="booking-table__mono" [attr.data-label]="'plotBookings.payments.receiptNo' | translate">{{ i.receiptNo || '—' }}</td>
                 <td [attr.data-label]="'plotBookings.payments.mode' | translate">{{ i.paymentMode ? ('admin.projectsPlots.paymentMode.' + i.paymentMode | translate) : '—' }}</td>

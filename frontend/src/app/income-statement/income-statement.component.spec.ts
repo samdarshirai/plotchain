@@ -171,7 +171,7 @@ describe('IncomeStatementComponent', () => {
       period: '01 Jan 2026 – 15 Jan 2026',
       direct: '₹10,000.00', matching: '₹2,000.00', sponsor: '₹500.00', royalty: '₹300.00',
       totalIncome: '₹13,800.00', tds: '₹276.00', processing: '₹690.00', payable: '₹12,834.00',
-      paidStatus: 'Paid', paymentDate: '20 Jan 2026'
+      paidStatus: 'Paid', paymentDate: '20 Jan 2026, 15:30:00'
     });
   });
 
@@ -216,7 +216,7 @@ describe('IncomeStatementComponent', () => {
       expect(c.statementColumns.map(col => col.label)).toEqual(['S No', 'Payment Date', 'Associate ID', 'Name',
         'Direct Income', 'Matching Income', 'Total Income', 'TDS', 'Processing Fee', 'Payable Amount', 'Paid Status']);
       expect(c.statementRows[0]).toEqual({
-        sNo: '1', paymentDate: '20 Jan 2026', associateId: 'AS002', name: 'Ravi',
+        sNo: '1', paymentDate: '20 Jan 2026, 15:30:00', associateId: 'AS002', name: 'Ravi',
         direct: '₹1,000.00', matching: '₹500.00', totalIncome: '₹1,500.00', tds: '₹30.00', processing: '₹75.00',
         payable: '₹1,395.00', paidStatus: 'Paid'
       });

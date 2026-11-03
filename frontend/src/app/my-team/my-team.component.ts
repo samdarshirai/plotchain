@@ -1,3 +1,4 @@
+import { formatIst } from '../shared/utils/ist-date';
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
@@ -144,7 +145,7 @@ export class MyTeamComponent implements OnInit {
           sponsorUserId: a.sponsorUserId ?? '—',
           position: a.position ?? '—',
           status: titleCase(a.status),
-          joinedAt: new Date(a.joinedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'medium' })
+          joinedAt: formatIst(a.joinedAt)
         }));
       },
       error: () => (this.loadError = true)

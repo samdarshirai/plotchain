@@ -1,3 +1,4 @@
+import { formatIst } from '../../shared/utils/ist-date';
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -296,7 +297,7 @@ export class LedgerRegisterComponent implements OnInit {
       { key: 'name', labelKey: 'AssociateName', value: e => e.associateName },
       ...this.specsFor(this.incomeType),
       { key: 'payStatus', labelKey: 'PayStatus', value: e => this.translate.instant(e.fulfilledAt ? 'incomeStatement.payStatusPaid' : 'incomeStatement.payStatusUnpaid') },
-      { key: 'paymentDate', labelKey: 'PaymentDate', value: e => this.fmtDate(e.fulfilledAt) },
+      { key: 'paymentDate', labelKey: 'PaymentDate', value: e => formatIst(e.fulfilledAt) },
       { key: 'remarks', labelKey: 'Remarks', value: e => e.fulfilmentRemark ?? '' }
     ];
   }

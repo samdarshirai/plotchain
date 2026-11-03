@@ -1,3 +1,4 @@
+import { formatIst } from '../shared/utils/ist-date';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -295,7 +296,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         period: `${this.formatDate(r.cyclePeriodStart, DATE_FORMAT)} – ${this.formatDate(r.cyclePeriodEnd, DATE_FORMAT)}`,
         ...Object.fromEntries(money.map(k => [k, this.formatCurrency(values[k])])),
         paidStatus: this.translate.instant('incomeStatement.' + status),
-        paymentDate: r.paidAt ? (this.formatDate(r.paidAt, DATE_FORMAT) ?? r.paidAt) : '—'
+        paymentDate: r.paidAt ? formatIst(r.paidAt) : '—'
       };
     });
     if (out.length) {
@@ -349,7 +350,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       const status = r.paidCount === 0 ? 'payStatusUnpaid' : r.paidCount >= r.entryCount ? 'payStatusPaid' : 'payStatusPartial';
       return {
         sNo: String(i + 1),
-        paymentDate: r.paidAt ? (this.formatDate(r.paidAt, DATE_FORMAT) ?? r.paidAt) : '—',
+        paymentDate: r.paidAt ? formatIst(r.paidAt) : '—',
         associateId: r.associateUserId ?? '',
         name: r.associateName ?? '',
         ...Object.fromEntries(DOWNLINE_MONEY.map(k => [k, this.formatCurrency(values[k])])),
@@ -470,7 +471,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
           designation: r.designation ?? '—',
           reward: this.rewardText(r.reward, r.perkDescription),
           payStatus: this.translate.instant(r.paid ? 'incomeStatement.payStatusPaid' : 'incomeStatement.payStatusUnpaid'),
-          paymentDate: r.paymentDate ? (this.formatDate(r.paymentDate, DATE_FORMAT) ?? r.paymentDate) : '—',
+          paymentDate: r.paymentDate ? formatIst(r.paymentDate) : '—',
           remarks: r.remarks ?? '—'
         }));
       },

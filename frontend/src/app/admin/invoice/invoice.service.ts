@@ -12,7 +12,7 @@ export interface LoanRow { id: string; associateId: string; associateUserId: str
 export interface LoanDetail { loan: LoanRow; associatePhone: string | null; repayments: RepaymentRow[] }
 export interface LoanCreate { associateId: string; loanDate: string; amount: number; payMode: PayMode; bankName: string | null; instrumentNo: string | null; remarks: string | null; }
 export interface RepaymentCreate { paymentDate: string; amount: number; payMode: PayMode; bankName: string | null; txnNo: string | null; }
-export interface RepaymentRow { id: string; loanId: string; receiptNo: string; paymentDate: string; associateId: string; associateUserId: string; associateName: string; associatePhone: string; amount: number; payMode: PayMode; bankName: string | null; txnNo: string | null; }
+export interface RepaymentRow { id: string; loanId: string; receiptNo: string; paymentDate: string; associateId: string; associateUserId: string; associateName: string; associatePhone: string; amount: number; payMode: PayMode; bankName: string | null; txnNo: string | null; recordedAt?: string | null; }
 
 // Only filters that are set (non-empty) become query params.
 function params(f: Record<string, string | undefined | null>): HttpParams {

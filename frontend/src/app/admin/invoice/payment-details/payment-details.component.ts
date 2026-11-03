@@ -56,7 +56,7 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
           <tbody>
             <tr *ngFor="let r of rows; let i = index">
               <td [attr.data-label]="'admin.invoicePayments.columnSNo' | translate">{{ i + 1 }}</td>
-              <td [attr.data-label]="'admin.invoicePayments.paymentDate' | translate">{{ r.paymentDate }}</td>
+              <td [attr.data-label]="'admin.invoicePayments.paymentDate' | translate">{{ r.recordedAt ? (r.recordedAt | date: 'd MMM y, h:mm:ss a' : '+0530') : r.paymentDate }}</td>
               <td [attr.data-label]="'admin.invoicePayments.associateId' | translate">{{ r.associateUserId }}</td>
               <td class="editable-table__cell--ellipsis" [attr.title]="r.associateName" [attr.data-label]="'admin.invoicePayments.associateName' | translate">{{ r.associateName }}</td>
               <td [attr.data-label]="'admin.invoicePayments.mobileNo' | translate">{{ r.associatePhone }}</td>

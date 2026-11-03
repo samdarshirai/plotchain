@@ -148,7 +148,7 @@ import { FormIssue, collectIssues, errorMessage } from '../../../shared/validati
               <tbody>
                 <tr *ngFor="let r of d.repayments">
                   <td [attr.data-label]="'admin.invoiceLoans.receiptNo' | translate"><a [routerLink]="['/admin/settings/payment-details/receipt', r.id]" target="_blank" rel="noopener">{{ r.receiptNo }}</a></td>
-                  <td [attr.data-label]="'admin.invoiceLoans.paymentDate' | translate">{{ r.paymentDate }}</td>
+                  <td [attr.data-label]="'admin.invoiceLoans.paymentDate' | translate">{{ r.recordedAt ? (r.recordedAt | date: 'd MMM y, h:mm:ss a' : '+0530') : r.paymentDate }}</td>
                   <td [attr.data-label]="'admin.invoiceLoans.amount' | translate" [class.editable-table__cell--fit-md]="fit(r.amount) === 'md'" [class.editable-table__cell--fit-sm]="fit(r.amount) === 'sm'">{{ r.amount | number:'1.2-2' }}</td>
                   <td [attr.data-label]="'admin.invoiceLoans.payMode' | translate">{{ 'admin.invoiceLoans.payModes.' + r.payMode | translate }}</td>
                   <td [attr.data-label]="'admin.invoiceLoans.bankName' | translate">{{ r.bankName || '—' }}</td>

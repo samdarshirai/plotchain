@@ -20,7 +20,7 @@ import { InvoiceService, RepaymentRow } from '../invoice.service';
           <h1 class="invoice-receipt__title">{{ 'admin.invoiceReceipt.title' | translate }}</h1>
           <dl class="invoice-receipt__fields">
             <dt>{{ 'admin.invoiceReceipt.receiptNo' | translate }}</dt><dd>{{ r.receiptNo }}</dd>
-            <dt>{{ 'admin.invoiceReceipt.paymentDate' | translate }}</dt><dd>{{ r.paymentDate }}</dd>
+            <dt>{{ 'admin.invoiceReceipt.paymentDate' | translate }}</dt><dd>{{ r.recordedAt ? (r.recordedAt | date: 'd MMM y, h:mm:ss a' : '+0530') : r.paymentDate }}</dd>
             <dt>{{ 'admin.invoiceReceipt.associateId' | translate }}</dt><dd>{{ r.associateUserId }}</dd>
             <dt>{{ 'admin.invoiceReceipt.associateName' | translate }}</dt><dd>{{ r.associateName }}</dd>
             <dt>{{ 'admin.invoiceReceipt.mobileNo' | translate }}</dt><dd>{{ r.associatePhone }}</dd>

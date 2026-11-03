@@ -1,3 +1,4 @@
+import { formatIst } from '../../shared/utils/ist-date';
 import { Component, OnInit, ViewEncapsulation, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -313,12 +314,7 @@ export class PlotTransferComponent implements OnInit {
       .sort((a, c) => (c.paidAt ?? '').localeCompare(a.paidAt ?? ''));
   }
 
-  dateTime(iso?: string | null): string {
-    if (!iso) { return '—'; }
-    const d = new Date(iso);
-    const p = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-  }
+  dateTime(iso?: string | null): string { return formatIst(iso); }
 
   historyTotal(b: Booking): number { return round2(this.history(b).reduce((s, i) => s + i.amount, 0)); }
 

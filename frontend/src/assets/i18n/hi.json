@@ -180,7 +180,7 @@
   },
   "plotBookings": {
     "table": {"empty": "दिखाने के लिए कोई डेटा नहीं।", "bookingDate": "बुकिंग तिथि", "associateId": "एसोसिएट आईडी", "name": "नाम", "project": "प्रोजेक्ट", "plotType": "प्लॉट प्रकार", "plotNo": "प्लॉट नं.", "rate": "दर", "area": "क्षेत्रफल", "price": "मूल्य", "extraPrice": "अतिरिक्त मूल्य", "totalPrice": "कुल मूल्य", "paid": "भुगतान राशि", "rest": "शेष राशि", "details": "विवरण", "detailsAction": "देखें", "close": "बंद करें"},
-    "payments": {"paymentDate": "भुगतान तिथि", "amount": "राशि", "receiptNo": "रसीद नं", "mode": "भुगतान माध्यम", "instrumentNo": "चेक/डीडी/NEFT/RTGS नं", "date": "तिथि", "empty": "अभी कोई भुगतान नहीं।"},
+    "payments": {"paymentDate": "भुगतान तिथि और समय", "amount": "राशि", "receiptNo": "रसीद नं", "mode": "भुगतान माध्यम", "instrumentNo": "चेक/डीडी/NEFT/RTGS नं", "date": "तिथि", "empty": "अभी कोई भुगतान नहीं।"},
     "myBookings": { "title": "My Bookings" },
     "team": {
       "title": { "TEAM": "टीम द्वारा खरीदे गए प्लॉट", "LEFT": "लेफ्ट प्लॉट बुकिंग", "RIGHT": "राइट प्लॉट बुकिंग" },
@@ -547,7 +547,7 @@
     "columnDesignation": "पदनाम",
     "columnDate": "तिथि",
     "columnPayStatus": "भुगतान स्थिति",
-    "columnPaymentDate": "भुगतान तिथि",
+    "columnPaymentDate": "भुगतान तिथि और समय",
     "columnRemarks": "टिप्पणी",
     "statusAchieved": "प्राप्त",
     "statusPending": "लंबित",
@@ -1304,14 +1304,14 @@
     "invoicePayments": {
       "eyebrow": "इनवॉइस", "title": "भुगतान विवरण", "subtitle": "एसोसिएट्स से प्राप्त अग्रिम ऋण की किस्तें देखें और रसीदें प्रिंट करें।",
       "filterFrom": "से", "filterTo": "तक", "search": "खोजें", "searchPlaceholder": "एसोसिएट आईडी, नाम या मोबाइल से खोजें", "apply": "लागू करें",
-      "columnSNo": "क्र.सं.", "paymentDate": "भुगतान तिथि", "associateId": "एसोसिएट आईडी", "associateName": "एसोसिएट का नाम", "mobileNo": "मोबाइल नंबर",
+      "columnSNo": "क्र.सं.", "paymentDate": "भुगतान तिथि और समय", "associateId": "एसोसिएट आईडी", "associateName": "एसोसिएट का नाम", "mobileNo": "मोबाइल नंबर",
       "paymentType": "भुगतान प्रकार", "receiptNo": "रसीद संख्या", "amount": "राशि", "payMode": "भुगतान माध्यम", "bankName": "बैंक का नाम", "txnNo": "लेन-देन संख्या", "print": "प्रिंट",
       "paymentTypeLoanRepayment": "ऋण वापसी", "printAction": "प्रिंट", "emptyState": "इन फ़िल्टर के लिए कोई भुगतान नहीं।", "loadError": "भुगतान लोड नहीं हो सके।",
       "filterError": "शुरू की तिथि अंतिम तिथि के बाद की नहीं हो सकती।",
       "payModes": { "CASH": "नकद", "CHEQUE": "चेक", "DD": "डिमांड ड्राफ्ट", "UPI": "यूपीआई", "BANK_TRANSFER": "बैंक ट्रांसफर" }
     },
     "invoiceReceipt": {
-      "title": "ऋण वापसी रसीद", "receiptNo": "रसीद संख्या", "paymentDate": "भुगतान तिथि", "associateId": "एसोसिएट आईडी", "associateName": "एसोसिएट का नाम",
+      "title": "ऋण वापसी रसीद", "receiptNo": "रसीद संख्या", "paymentDate": "भुगतान तिथि और समय", "associateId": "एसोसिएट आईडी", "associateName": "एसोसिएट का नाम",
       "mobileNo": "मोबाइल नंबर", "amount": "राशि", "payMode": "भुगतान माध्यम", "bankName": "बैंक का नाम", "txnNo": "लेन-देन संख्या",
       "printAction": "प्रिंट", "notFound": "यह रसीद नहीं मिली।", "back": "भुगतान विवरण पर वापस जाएँ"
     },
@@ -1344,7 +1344,7 @@
     "viewConfirmedPlot": {
       "title": "भुगतान पुष्टि", "subtitle": "भुगतान तिथि और प्रोजेक्ट के अनुसार भुगतान। अपुष्ट और पुष्ट के बीच बदलें; अपुष्ट भुगतानों को एक साथ पुष्ट करने के लिए चुनें।",
       "from": "भुगतान से", "to": "भुगतान तक", "pending": "अपुष्ट", "confirmed": "पुष्ट", "emptyPending": "इन फ़िल्टर के लिए कोई अपुष्ट भुगतान नहीं।", "emptyConfirmed": "इन फ़िल्टर के लिए कोई पुष्ट भुगतान नहीं।",
-      "col": { "paymentDate": "भुगतान तिथि", "amount": "राशि", "mode": "मोड", "status": "स्थिति", "select": "चुनें" }
+      "col": { "paymentDate": "भुगतान तिथि और समय", "amount": "राशि", "mode": "मोड", "status": "स्थिति", "select": "चुनें" }
     },
     "plotTransfer": {
       "title": "प्लॉट ट्रांसफर", "subtitle": "प्लॉट ट्रांसफर के योग्य सक्रिय बुकिंग। पूरी बुकिंग के लिए विवरण खोलें, या किसी अन्य उपलब्ध प्लॉट पर ले जाने के लिए ट्रांसफर चुनें।", "transfer": "ट्रांसफर",

@@ -1,3 +1,4 @@
+import { formatIst } from '../../shared/utils/ist-date';
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
@@ -190,7 +191,7 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
           </div>
           <div class="cycle-detail__row">
             <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.joinedLabel' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.joinedAt | date: 'd MMM y, h:mm:ss a' }}</span>
+            <span class="cycle-detail__row-value">{{ selected.joinedAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</span>
           </div>
           <div class="cycle-detail__row">
             <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.lastActiveLabel' | translate }}</span>
@@ -555,7 +556,7 @@ export class AssociateDirectoryComponent implements OnInit {
           sponsorUserId: a.sponsorUserId ?? '—',
           position: a.position ?? '—',
           status: titleCase(a.status),
-          joinedAt: new Date(a.joinedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'medium' }),
+          joinedAt: formatIst(a.joinedAt),
           loginPassword: a.loginPassword ?? '—',
           transactionPassword: a.transactionPassword ?? '—'
         }));
