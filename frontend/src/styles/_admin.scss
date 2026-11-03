@@ -548,7 +548,7 @@
 // Sidebar unpinned (rail): the content column is ~180px wider, so give Registration enough room
 // for date + time with seconds on one line. Points come from Phone, Email and Actions; total stays 100%.
 @media (min-width: 1024px) {
-  .app-content--sidebar-rail .associate-directory__table-wrap {
+  .app-content--sidebar-rail:not(.app-content--sidebar-expanded) .associate-directory__table-wrap {
     th:nth-child(3) { width: 9%; }
     th:nth-child(4) { width: 10%; }
     th:nth-child(8) { width: 15%; }
