@@ -52,7 +52,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           <span class="projects-plots__eyebrow">{{ 'admin.projectsPlots.eyebrow' | translate }}<ng-container *ngIf="selectedProject"> · {{ selectedProject.name }}</ng-container></span>
           <h1 class="projects-plots__title">{{ selectedProject ? selectedProject.name + ', ' + selectedProject.location : ('admin.projectsPlots.title' | translate) }}</h1>
         </div>
-        <div class="projects-plots__views" *ngIf="selectedProject && grid" role="group" [attr.aria-label]="'admin.projectsPlots.viewLabel' | translate">
+        <div class="projects-plots__views" role="group" [attr.aria-label]="'admin.projectsPlots.viewLabel' | translate">
           <button type="button" *ngFor="let v of views" [class.projects-plots__view--on]="view === v" [attr.aria-pressed]="view === v" (click)="setView(v)">
             {{ 'admin.projectsPlots.view.' + v | translate }}
           </button>
@@ -60,9 +60,9 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
       </div>
 
       <div class="projects-plots__toolbar">
-        <label class="projects-plots__project-select" *ngIf="projects?.length">
+        <label class="projects-plots__project-select">
           <span class="projects-plots__sr">{{ 'admin.projectsPlots.projectSelectLabel' | translate }}</span>
-          <select (change)="selectProjectById($any($event.target).value)">
+          <select [disabled]="!projects?.length" (change)="selectProjectById($any($event.target).value)">
             <option value="" disabled [selected]="!selectedProject" *ngIf="!selectedProject">{{ 'admin.projectsPlots.projectPlaceholder' | translate }}</option>
             <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === selectedProject?.id">{{ p.name }}</option>
           </select>
@@ -71,7 +71,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'csv' })">{{ 'admin.projectsPlots.importCsvAction' | translate }}</button>
           <button type="button" class="brand-button brand-button--secondary" (click)="openAside({ kind: 'addPlot' })">{{ 'admin.projectsPlots.addPlotAction' | translate }}</button>
         </div>
-        <div class="plot-table-tools" *ngIf="readOnly || (grid?.length && view === 'table')">
+        <div class="plot-table-tools" *ngIf="readOnly || view === 'table'">
           <label class="plot-table-tools__label">
             <span class="projects-plots__sr">{{ 'admin.projectsPlots.table.searchLabel' | translate }}</span>
             <input type="search" class="plot-table-tools__search" [value]="search" [disabled]="!grid?.length" [placeholder]="'admin.projectsPlots.table.searchPlaceholder' | translate" (input)="onSearch($any($event.target).value)">
@@ -102,14 +102,22 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
 
       <ng-template #emptyPlotTable>
         <div class="projects-plots__table-wrap">
-          <table class="projects-plots__table">
+          <table class="projects-plots__table projects-plots__table--book">
             <thead><tr>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.projectsPlots.table.sNo' | translate }}</th>
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'admin.projectsPlots.table.plot' | translate }}</th>
+              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'admin.projectsPlots.table.type' | translate }}</th>
+              <th scope="col" class="projects-plots__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">square_foot</span>{{ 'admin.projectsPlots.table.roadSize' | translate }}</th>
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">square_foot</span>{{ 'admin.projectsPlots.table.area' | translate }}</th>
-              <th scope="col" class="projects-plots__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.projectsPlots.table.total' | translate }}</th>
+              <th scope="col" class="projects-plots__num" *ngIf="!readOnly"><span class="material-symbols-outlined th-icon" aria-hidden="true">sell</span>{{ 'admin.projectsPlots.rateLabel' | translate }}</th>
+              <th scope="col" class="projects-plots__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.projectsPlots.table.price' | translate }}</th>
+              <th scope="col" class="projects-plots__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.projectsPlots.extraPriceLabel' | translate }}</th>
+              <th scope="col" class="projects-plots__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.projectsPlots.table.totalPrice' | translate }}</th>
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'admin.projectsPlots.table.status' | translate }}</th>
+              <th scope="col" *ngIf="canManage"><span class="material-symbols-outlined th-icon" aria-hidden="true">more_horiz</span>{{ 'admin.projectsPlots.table.actions' | translate }}</th>
+              <th scope="col" *ngIf="bookMode"><span class="projects-plots__sr">{{ 'admin.projectsPlots.bookAction' | translate }}</span></th>
             </tr></thead>
-            <tbody><tr><td colspan="4" class="projects-plots__empty-row">{{ 'plotBookings.table.empty' | translate }}</td></tr></tbody>
+            <tbody><tr><td [attr.colspan]="12" class="projects-plots__empty-row">{{ 'plotBookings.table.empty' | translate }}</td></tr></tbody>
           </table>
         </div>
       </ng-template>

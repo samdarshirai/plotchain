@@ -877,14 +877,14 @@ describe('ProjectsPlotsComponent (associate read-only)', () => {
       boot([proj('p1')]);
       http.expectOne('/api/projects/p1/plots/grid').flush([]);
       fixture.detectChanges();
-      expect(el().querySelectorAll('table.projects-plots__table thead th').length).toBe(4);
+      expect(el().querySelectorAll('table.projects-plots__table thead th').length).toBe(9);
       expect(el().querySelector('.projects-plots__empty-row')).toBeTruthy();
       expect(el().textContent).not.toContain('admin.projectsPlots.empty.noPlotsTitle');
     });
 
     it('shows an empty table when there are no projects', () => {
       boot([]);
-      expect(el().querySelectorAll('table.projects-plots__table thead th').length).toBe(4);
+      expect(el().querySelectorAll('table.projects-plots__table thead th').length).toBe(9);
       expect(el().querySelector('.projects-plots__empty-row')).toBeTruthy();
       expect(el().textContent).not.toContain('admin.projectsPlots.empty.noProjectsTitle');
     });
@@ -895,7 +895,7 @@ describe('ProjectsPlotsComponent (associate read-only)', () => {
       fixture.detectChanges();
       expect(select().value).toBe('p1');
       expect(Array.from(select().options).some(o => o.value === '')).toBe(false);
-      expect(el().querySelectorAll('table.projects-plots__table thead th').length).toBe(4);
+      expect(el().querySelectorAll('table.projects-plots__table thead th').length).toBe(9);
       expect(el().querySelector('.projects-plots__empty-row')).toBeTruthy();
       http.verify();
     });
