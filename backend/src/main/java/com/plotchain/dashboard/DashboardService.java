@@ -165,6 +165,11 @@ public class DashboardService {
         BigDecimal totalLeftBusiness = legBusinessTotals.left().add(newLeftBusiness);
         BigDecimal totalRightBusiness = legBusinessTotals.right().add(newRightBusiness);
         BigDecimal totalSelfBusiness = saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED);
+        // This-cycle own business for the Business Summary card, top-up payments split out of self.
+        BigDecimal cycleSelfBusiness = openCycle
+            .map(c -> saleRepository.sumCycleSelfBusiness(associateId, c.getId(), false)).orElse(BigDecimal.ZERO);
+        BigDecimal cycleSelfTopUpBusiness = openCycle
+            .map(c -> saleRepository.sumCycleSelfBusiness(associateId, c.getId(), true)).orElse(BigDecimal.ZERO);
         BigDecimal newBookedAreaSqft = openCycle
             .map(c -> saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, c.getId(), SaleStatus.RECORDED))
             .orElse(BigDecimal.ZERO);
@@ -191,7 +196,7 @@ public class DashboardService {
             new DashboardResponse.NetworkSummary(totalDownline, directCount, leftAssociateCount, rightAssociateCount),
             new DashboardResponse.LegVolumeSummary(
                 leftLegVolume, rightLegVolume, totalLeftBusiness, totalRightBusiness, totalSelfBusiness, newBookedAreaSqft,
-                newLeftBusiness, newRightBusiness, matchedVolume)
+                newLeftBusiness, newRightBusiness, matchedVolume, cycleSelfBusiness, cycleSelfTopUpBusiness)
         );
     }
 

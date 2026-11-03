@@ -96,6 +96,17 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
         @Param("recordedToExclusive") Instant recordedToExclusive,
         Pageable pageable);
 
+    // Dashboard Business Summary: the associate's own RECORDED sales in one cycle, split by whether the
+    // paying installment is an Add Plot EMI top-up. A sale with no installment counts as non-top-up.
+    @Query(value = """
+        SELECT COALESCE(SUM(s.amount), 0) FROM sale s
+        LEFT JOIN emi_installment e ON e.id = s.emi_installment_id
+        WHERE s.associate_id = :associateId AND s.cycle_id = :cycleId AND s.status = 'RECORDED'
+          AND COALESCE(e.top_up, FALSE) = :topUp
+        """, nativeQuery = true)
+    BigDecimal sumCycleSelfBusiness(@Param("associateId") UUID associateId, @Param("cycleId") UUID cycleId,
+                                    @Param("topUp") boolean topUp);
+
     // Live Left/Right Business for the still-OPEN cycle: leg_volume rows only exist once a cycle
     // closes, so without this a fresh sale never shows in its uplines' totals until the next close.
     // Seeded at the :position child, so it sums RECORDED sales of that whole leg's subtree.

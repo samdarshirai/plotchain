@@ -64,6 +64,9 @@ export interface LegVolumeSummary {
   newLeftBusiness: number;
   newRightBusiness: number;
   newMatchingBusiness: number;
+  // This-cycle own business, Add Plot EMI top-ups split out of self.
+  cycleSelfBusiness: number;
+  cycleSelfTopUpBusiness: number;
 }
 
 export interface DashboardResponse {

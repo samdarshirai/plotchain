@@ -38,5 +38,6 @@ public record DashboardResponse(
         BigDecimal leftLegVolume, BigDecimal rightLegVolume,
         BigDecimal totalLeftBusiness, BigDecimal totalRightBusiness,
         BigDecimal totalSelfBusiness, BigDecimal newBookedAreaSqft,
-        BigDecimal newLeftBusiness, BigDecimal newRightBusiness, BigDecimal newMatchingBusiness) {}
+        BigDecimal newLeftBusiness, BigDecimal newRightBusiness, BigDecimal newMatchingBusiness,
+        BigDecimal cycleSelfBusiness, BigDecimal cycleSelfTopUpBusiness) {}
 }

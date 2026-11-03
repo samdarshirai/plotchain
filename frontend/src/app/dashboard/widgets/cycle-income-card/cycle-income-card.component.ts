@@ -36,28 +36,35 @@ import { CycleIncome, LegVolumeSummary, NetworkSummary } from '../../models/dash
         <div class="seal-card__breakdown">
           <div class="seal-card__breakdown-header">
             <span class="seal-card__header-label">{{ 'dashboard.businessBreakdownEyebrow' | translate }}</span>
-            <span class="seal-card__breakdown-hint">{{ 'dashboard.lifetimeVolume' | translate }}</span>
+            <span class="seal-card__breakdown-hint">{{ 'dashboard.thisCycleVolume' | translate }}</span>
           </div>
           <div class="seal-card__breakdown-row">
             <div class="left-business seal-card__breakdown-line">
               <span>{{ 'dashboard.totalLeftBusinessLabel' | translate }}</span>
-              <span>{{ legVolume.totalLeftBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
+              <span>{{ legVolume.newLeftBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
             </div>
-            <div class="seal-card__breakdown-bar"><span [style.width.%]="barPct(legVolume.totalLeftBusiness)"></span></div>
+            <div class="seal-card__breakdown-bar"><span [style.width.%]="barPct(legVolume.newLeftBusiness)"></span></div>
           </div>
           <div class="seal-card__breakdown-row">
             <div class="right-business seal-card__breakdown-line">
               <span>{{ 'dashboard.totalRightBusinessLabel' | translate }}</span>
-              <span>{{ legVolume.totalRightBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
+              <span>{{ legVolume.newRightBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
             </div>
-            <div class="seal-card__breakdown-bar"><span [style.width.%]="barPct(legVolume.totalRightBusiness)"></span></div>
+            <div class="seal-card__breakdown-bar"><span [style.width.%]="barPct(legVolume.newRightBusiness)"></span></div>
           </div>
           <div class="seal-card__breakdown-row">
             <div class="self-business seal-card__breakdown-line">
               <span>{{ 'dashboard.totalSelfBusinessLabel' | translate }}</span>
-              <span>{{ legVolume.totalSelfBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
+              <span>{{ legVolume.cycleSelfBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
             </div>
-            <div class="seal-card__breakdown-bar"><span [style.width.%]="barPct(legVolume.totalSelfBusiness)"></span></div>
+            <div class="seal-card__breakdown-bar"><span [style.width.%]="barPct(legVolume.cycleSelfBusiness)"></span></div>
+          </div>
+          <div class="seal-card__breakdown-row">
+            <div class="self-topup-business seal-card__breakdown-line">
+              <span>{{ 'dashboard.selfTopUpBusinessLabel' | translate }}</span>
+              <span>{{ legVolume.cycleSelfTopUpBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
+            </div>
+            <div class="seal-card__breakdown-bar"><span [style.width.%]="barPct(legVolume.cycleSelfTopUpBusiness)"></span></div>
           </div>
         </div>
       </div>
@@ -88,7 +95,8 @@ export class CycleIncomeCardComponent {
   }
 
   private get volumes(): number[] {
-    return [this.legVolume.totalLeftBusiness, this.legVolume.totalRightBusiness, this.legVolume.totalSelfBusiness];
+    const v = this.legVolume;
+    return [v.newLeftBusiness, v.newRightBusiness, v.cycleSelfBusiness, v.cycleSelfTopUpBusiness];
   }
 
   get totalBusiness(): number {
