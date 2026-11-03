@@ -9,6 +9,7 @@ import { titleCase } from '../shared/utils/title-case';
 
 const PAGE_SIZE = 20;
 const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-GB') : '—');
+const dateTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
 
 // View Associate Downline, shared by associates (scope 'me') and admins (scope 'admin').
 // Reuses the .associate-directory__* global styles (styles/_admin.scss); the table stacks into
@@ -123,7 +124,7 @@ export class AssociateDownlineComponent implements OnInit {
           phone: a.phone ?? '—',
           sponsorUserId: a.sponsorUserId ?? '—',
           position: a.position === 'L' ? 'Left' : a.position === 'R' ? 'Right' : '—',
-          joinedAt: date(a.joinedAt),
+          joinedAt: dateTime(a.joinedAt),
           activatedAt: date(a.activatedAt)
         }));
       },

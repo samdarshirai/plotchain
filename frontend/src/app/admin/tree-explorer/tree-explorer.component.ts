@@ -191,7 +191,7 @@ const CLICK_MOVE_PX = 5;
           <ng-container *ngIf="hoveredDetailsLoading">{{ 'admin.treeExplorer.hoverLoading' | translate }}</ng-container>
           <ng-container *ngIf="hoveredDetails as d">
             <div class="tree-explorer__hover-title">{{ d.name }} ({{ d.userId }})</div>
-            <div>{{ 'admin.treeExplorer.hoverJoinedLabel' | translate }}: {{ d.joinedAt | date }}</div>
+            <div>{{ 'admin.treeExplorer.hoverJoinedLabel' | translate }}: {{ d.joinedAt | date: 'd MMM y, h:mm a' }}</div>
             <div>{{ 'admin.treeExplorer.hoverLeftIdLabel' | translate }}: {{ d.leftMemberId ?? '—' }}</div>
             <div>{{ 'admin.treeExplorer.hoverRightIdLabel' | translate }}: {{ d.rightMemberId ?? '—' }}</div>
             <div>{{ 'admin.treeExplorer.hoverTotalLeftMembersLabel' | translate }}: {{ d.totalLeftMembers }}</div>

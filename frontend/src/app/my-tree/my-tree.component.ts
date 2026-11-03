@@ -185,7 +185,7 @@ const HOVER_DEBOUNCE_MS = 150;
           <ng-container *ngIf="hoveredDetailsLoading">{{ 'myTree.hoverLoading' | translate }}</ng-container>
           <ng-container *ngIf="hoveredDetails as d">
             <div class="tree-explorer__hover-title">{{ d.name }} ({{ d.userId }})</div>
-            <div>{{ 'myTree.hoverJoinedLabel' | translate }}: {{ d.joinedAt | date }}</div>
+            <div>{{ 'myTree.hoverJoinedLabel' | translate }}: {{ d.joinedAt | date: 'd MMM y, h:mm a' }}</div>
             <div>{{ 'myTree.hoverLeftRightIdLabel' | translate }}: {{ d.leftMemberId ?? '—' }}/{{ d.rightMemberId ?? '—' }}</div>
             <div>{{ 'myTree.hoverTotalLeftRightMembersLabel' | translate }}: {{ d.totalLeftMembers }}/{{ d.totalRightMembers }}</div>
             <div>{{ 'myTree.hoverActiveLeftRightMembersLabel' | translate }}: {{ d.activeLeftMembers }}/{{ d.activeRightMembers }}</div>
