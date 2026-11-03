@@ -530,6 +530,9 @@ describe('IncomeStatementComponent', () => {
     flushInitialRequests();
     routeData$.next({ incomeType: 'REWARD' });
     httpMock.expectOne('/api/associates/me/reward-tiers').flush([]);
+    httpMock.expectOne('/api/associates/me/reward-business').flush({
+      totalLeft: 0, totalRight: 0, paidLeft: 0, paidRight: 0, newLeft: 0, newRight: 0
+    });
     httpMock.expectOne('/api/associates/me/rewards-achieved').flush([]);
     fixture.detectChanges();
 
