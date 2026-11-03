@@ -109,7 +109,7 @@ class BookingCancelIntegrationTest {
         }
         if (plotId != null) plotRepository.deleteById(plotId);
         if (projectId != null) projectRepository.deleteById(projectId);
-        if (associateId != null) associateRepository.deleteById(associateId);
+        if (associateId != null) { LegacyScheduleSeed.dropEpins(jdbc, associateId); associateRepository.deleteById(associateId); }
     }
 
     // Plot price is 600000.00. With emiEnabled=true and count=4 every installment is 150000.00.
@@ -174,6 +174,7 @@ class BookingCancelIntegrationTest {
     private BookingResponse seedBooking() {
         plotId = seedAvailablePlot();
         associateId = seedAssociate();
+        LegacyScheduleSeed.grantEpin(jdbc, associateId);
         return LegacyScheduleSeed.book(bookingService, jdbc, plotId, associateId, "Jane Buyer");
     }
 

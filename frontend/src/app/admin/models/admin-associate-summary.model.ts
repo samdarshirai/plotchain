@@ -15,4 +15,5 @@ export interface AdminAssociateSummary {
   phone: string | null;
   email: string | null;
   activatedAt: string | null;
+  plotBuyer: boolean;
 }

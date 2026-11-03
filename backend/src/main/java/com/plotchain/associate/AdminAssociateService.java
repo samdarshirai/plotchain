@@ -302,15 +302,17 @@ public class AdminAssociateService {
                 activatedAt.put((UUID) row[0], (Instant) row[1]);
             }
         }
-        return page.stream().map(a -> toSummary(a, designations.get(a.getId()), sponsorUserIds.get(a.getSponsorId()), activatedAt.get(a.getId()))).toList();
+        Set<UUID> plotBuyers = page.isEmpty() ? Set.of()
+            : new java.util.HashSet<>(associateRepository.findPlotBuyerIds(page.stream().map(Associate::getId).toList()));
+        return page.stream().map(a -> toSummary(a, designations.get(a.getId()), sponsorUserIds.get(a.getSponsorId()), activatedAt.get(a.getId()), plotBuyers.contains(a.getId()))).toList();
     }
 
-    private AdminAssociateSummaryResponse toSummary(Associate a, String designation, String sponsorUserId, Instant activatedAt) {
+    private AdminAssociateSummaryResponse toSummary(Associate a, String designation, String sponsorUserId, Instant activatedAt, boolean plotBuyer) {
         return new AdminAssociateSummaryResponse(
             a.getId(), a.getUserId(), a.getName(), designation,
             a.getKycStatus(), a.getStatus(), a.getJoinedAt(), a.getLastActiveAt(), sponsorUserId,
             a.getPosition(), a.getRole(), a.getLoginPasswordPlain(), a.getTransactionPasswordPlain(),
-            a.getPhone(), a.getEmail(), activatedAt);
+            a.getPhone(), a.getEmail(), activatedAt, plotBuyer);
     }
 
     private AdminAssociateDetailResponse toDetail(Associate a) {

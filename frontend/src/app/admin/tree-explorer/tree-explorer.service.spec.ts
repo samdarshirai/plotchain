@@ -22,7 +22,7 @@ describe('TreeExplorerService', () => {
   it('fetches a subtree', () => {
     const mockNode: TreeNode = {
       id: 'a1', userId: 'VP00001', name: 'Root', designation: null, kycStatus: 'PENDING', position: null,
-      leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
+      leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false, children: []
     };
 
     service.subtree('a1').subscribe(res => expect(res).toEqual(mockNode));
@@ -35,7 +35,7 @@ describe('TreeExplorerService', () => {
   it('fetches the whole company tree', () => {
     const mockNode: TreeNode = {
       id: 'admin', userId: 'admin', name: 'Administrator', designation: null, kycStatus: 'VERIFIED', position: null,
-      leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
+      leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false, children: []
     };
 
     service.companyTree().subscribe(res => expect(res).toEqual(mockNode));

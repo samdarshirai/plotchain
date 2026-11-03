@@ -85,7 +85,7 @@ class BookingPaymentIntegrationTest {
         }
         if (plotId != null) plotRepository.deleteById(plotId);
         if (projectId != null) projectRepository.deleteById(projectId);
-        if (associateId != null) associateRepository.deleteById(associateId);
+        if (associateId != null) { LegacyScheduleSeed.dropEpins(jdbc, associateId); associateRepository.deleteById(associateId); }
     }
 
     private UUID seedAvailablePlot() {
@@ -136,6 +136,7 @@ class BookingPaymentIntegrationTest {
     private BookingResponse seedBooking() {
         plotId = seedAvailablePlot();
         associateId = seedAssociate();
+        LegacyScheduleSeed.grantEpin(jdbc, associateId);
         return LegacyScheduleSeed.book(bookingService, jdbc, plotId, associateId, "Jane Buyer");
     }
 
@@ -151,9 +152,11 @@ class BookingPaymentIntegrationTest {
     void discountedBookingPersistsSnapshotAndTotalAndTheScheduleUsesTheDiscountedTotal() {
         plotId = seedAvailablePlot();
         associateId = seedAssociate();
+        LegacyScheduleSeed.grantEpin(jdbc, associateId);
 
         BookingResponse b = bookingService.createBooking(new CreateBookingRequest(
-            plotId, associateId, "Jane Buyer", null, new BigDecimal("100000"), new BigDecimal("100000")));
+            plotId, associateId, "Jane Buyer", null, new BigDecimal("100000"), new BigDecimal("100000"),
+            null, null, null, null, null, null, null, null, associateId));
 
         PlotBooking saved = plotBookingRepository.findById(b.id()).orElseThrow();
         assertThat(saved.getListPrice()).isEqualByComparingTo("600000.00");

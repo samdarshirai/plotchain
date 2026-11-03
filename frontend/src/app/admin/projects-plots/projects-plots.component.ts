@@ -621,7 +621,7 @@ export class ProjectsPlotsComponent implements OnInit {
     const projectId = this.selectedProject!.id;
     this.bookingBusy = true;
     this.plotsService.createBooking({
-      plotId, associateId: v.associateId, buyerName: v.buyerName, buyerPhone: v.buyerPhone || undefined, tokenAmount: v.tokenAmount,
+      plotId, associateId: v.associateId, buyerAssociateId: v.buyerAssociateId, buyerPhone: v.buyerPhone || undefined, tokenAmount: v.tokenAmount,
       ...(v.paymentMode ? { paymentMode: v.paymentMode } : {}), ...(v.txnNo ? { txnNo: v.txnNo } : {}), ...(v.receiptNo ? { receiptNo: v.receiptNo } : {}), ...(v.txnDate ? { txnDate: v.txnDate } : {}),
       ...(v.bankName ? { bankName: v.bankName } : {}),
       ...(v.firstInstallmentAmount ? { firstInstallmentAmount: v.firstInstallmentAmount } : {}),

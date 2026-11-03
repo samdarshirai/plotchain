@@ -2,7 +2,6 @@ package com.plotchain.booking;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -21,7 +20,7 @@ import java.util.UUID;
 public record CreateBookingRequest(
     @NotNull UUID plotId,
     @NotNull UUID associateId,
-    @NotBlank @Size(max = 200) String buyerName,
+    @Size(max = 200) String buyerName,
     @Size(max = 20) String buyerPhone,
     @NotNull @Positive BigDecimal tokenAmount,
     @PositiveOrZero BigDecimal discount,
@@ -32,8 +31,18 @@ public record CreateBookingRequest(
     LocalDate txnDate,
     @Positive BigDecimal firstInstallmentAmount,
     @DecimalMin("0") @DecimalMax("100") BigDecimal extraPercent,
-    @Size(max = 50) String receiptNo
+    @Size(max = 50) String receiptNo,
+    // The buyer: an existing ACTIVE associate holding an activation e-PIN. buyerName is derived from
+    // it server-side (client value ignored). associateId above stays the sponsor.
+    UUID buyerAssociateId
 ) {
+    public CreateBookingRequest(UUID plotId, UUID associateId, String buyerName, String buyerPhone,
+                                BigDecimal tokenAmount, BigDecimal discount, BigDecimal extraPrice,
+                                PaymentMode paymentMode, String txnNo, String bankName, LocalDate txnDate,
+                                BigDecimal firstInstallmentAmount, BigDecimal extraPercent, String receiptNo) {
+        this(plotId, associateId, buyerName, buyerPhone, tokenAmount, discount, extraPrice, paymentMode, txnNo, bankName, txnDate, firstInstallmentAmount, extraPercent, receiptNo, null);
+    }
+
     public CreateBookingRequest(UUID plotId, UUID associateId, String buyerName, String buyerPhone,
                                 BigDecimal tokenAmount, BigDecimal discount, BigDecimal extraPrice,
                                 PaymentMode paymentMode, String txnNo, String bankName, LocalDate txnDate,

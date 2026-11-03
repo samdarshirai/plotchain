@@ -14,6 +14,18 @@ import java.util.UUID;
 final class LegacyScheduleSeed {
     private LegacyScheduleSeed() {}
 
+    // Plot buyers must hold an ACTIVATION e-PIN; these fixtures use the seeded associate as buyer.
+    static void grantEpin(JdbcTemplate jdbc, UUID associateId) {
+        jdbc.update("INSERT INTO epin (id, code, batch_id, status, generated_by, generated_at, redeemed_to, "
+            + "redeemed_by, redeemed_at, redemption_type) VALUES (?, ?, ?, 'USED', ?, CURRENT_TIMESTAMP, ?, ?, "
+            + "CURRENT_TIMESTAMP, 'ACTIVATION')", UUID.randomUUID(),
+            UUID.randomUUID().toString().substring(0, 24), UUID.randomUUID(), associateId, associateId, associateId);
+    }
+
+    static void dropEpins(JdbcTemplate jdbc, UUID associateId) {
+        jdbc.update("DELETE FROM epin WHERE redeemed_to = ?", associateId);
+    }
+
     static BookingResponse book(BookingService bookingService, JdbcTemplate jdbc,
                                 UUID plotId, UUID associateId, String buyerName) {
         BigDecimal price = jdbc.queryForObject("SELECT price FROM plot WHERE id = ?", BigDecimal.class, plotId);
@@ -22,7 +34,7 @@ final class LegacyScheduleSeed {
         int count = Boolean.TRUE.equals(emi) ? Math.max(configured, 2) : 2;
         BigDecimal token = price.divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
         BookingResponse created = bookingService.createBooking(
-            new CreateBookingRequest(plotId, associateId, buyerName, null, token));
+            new CreateBookingRequest(plotId, associateId, buyerName, null, token, null, null, null, null, null, null, null, null, null, associateId));
         jdbc.update("UPDATE emi_installment SET status = 'PENDING', paid_at = NULL, payment_ref = NULL "
             + "WHERE booking_id = ? AND installment_number = 1", created.id());
         if (!Boolean.TRUE.equals(emi)) {

@@ -284,7 +284,8 @@
     "moreBelowTitle": "नीचे {{count}} और देखने के लिए ज़ूम आउट करें",
     "legendVerifiedLabel": "सत्यापित",
     "legendPendingLabel": "लंबित",
-    "legendRejectedLabel": "अस्वीकृत"
+    "legendRejectedLabel": "अस्वीकृत",
+    "plotBuyerLabel": "Plot buyer"
   },
   "profileKyc": {
     "saveError": "Something went wrong saving your profile. Please try again.",
@@ -798,6 +799,8 @@
       "recalculateAction": "पुनर्गणना करें",
       "recalculatingAction": "पुनर्गणना हो रही है…",
       "recalculatedAction": "पुनर्गणना हो गई",
+      "columnPlotBuyer": "Plot buyer",
+      "plotBuyerYes": "Plot buyer",
       "columnStatus": "Status",
       "previousPageAction": "Previous",
       "nextPageAction": "Next",
@@ -877,7 +880,8 @@
       "moreBelowTitle": "नीचे {{count}} और देखने के लिए ज़ूम आउट करें",
       "legendVerifiedLabel": "सत्यापित",
       "legendPendingLabel": "लंबित",
-      "legendRejectedLabel": "अस्वीकृत"
+      "legendRejectedLabel": "अस्वीकृत",
+      "plotBuyerLabel": "Plot buyer"
     },
     "kycQueue": {
       "title": "KYC Review Queue",
@@ -1212,8 +1216,13 @@
       "bookTitle": "Book plot {{no}}",
       "associateLabel": "Associate",
       "associateHint": "The associate who gets credit for this booking.",
-      "associateRequired": "Choose an associate.",
+      "associateRequired": "Enter the sponsor's ID.",
       "lookupPlaceholder": "Search by ID or name",
+      "buyerIdLabel": "Buyer Associate ID",
+      "buyerIdPlaceholder": "ID of the associate buying the plot",
+      "buyerNotFound": "No active associate with this ID.",
+      "buyerNoEpin": "This associate has no e-PIN, so they cannot buy a plot.",
+      "buyerRequired": "Enter the buying associate's ID.",
       "buyerNameLabel": "Buyer name",
       "buyerNamePlaceholder": "Full name of the buyer",
       "buyerNameRequired": "Enter the buyer's name.",
@@ -1227,10 +1236,10 @@
       "factsLocation": "Location",
       "factsPlotNo": "Plot no.",
       "factsBlock": "Block",
-      "referralHeading": "Referral details",
+      "referralHeading": "Sponsor details",
       "paymentHeading": "Payment details",
-      "associateIdLabel": "Associate ID",
-      "associateNameLabel": "Associate name",
+      "associateIdLabel": "Sponsor ID",
+      "associateNameLabel": "Sponsor name",
       "associateNotFound": "No active associate with this ID.",
       "firstInstallmentLabel": "First installment amount",
       "firstInstallmentInvalid": "Enter an amount above zero that fits in the balance after the booking amount.",

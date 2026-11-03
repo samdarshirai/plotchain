@@ -5,7 +5,7 @@ function node(overrides: Partial<TreeNode>): TreeNode {
   return {
     id: 'id', userId: 'VP00001', name: 'Name', designation: null, kycStatus: 'PENDING',
     position: null, leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false,
-    stagnantFlag: false, children: [],
+    stagnantFlag: false, plotBuyer: false, children: [],
     ...overrides
   };
 }

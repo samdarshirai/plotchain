@@ -8,7 +8,7 @@ const b = (over: Partial<Booking> = {}): Booking => ({
 });
 describe('bookings-emi.util', () => {
   it('labels the associate from the directory, else short id', () => {
-    const dir = [{ id: 'a1', userId: 'VA-1', name: 'Jane', role: 'ASSOCIATE' as const, status: 'ACTIVE' as const, hasFreeSlot: true }];
+    const dir = [{ id: 'a1', userId: 'VA-1', name: 'Jane', role: 'ASSOCIATE' as const, status: 'ACTIVE' as const, hasFreeSlot: true, hasEpin: true }];
     expect(associateLabel(b(), dir)).toBe('Jane (VA-1)');
     expect(associateLabel(b({ associateName: 'Zed' }), dir)).toBe('Zed (VA-1)');
     expect(associateLabel(b({ associateId: 'zzzzzzzzzz' }), dir)).toBe('zzzzzzzz');

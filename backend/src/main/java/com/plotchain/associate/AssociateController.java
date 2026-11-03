@@ -45,8 +45,9 @@ public class AssociateController {
                 occupiedPositions.computeIfAbsent(a.getParentId(), k -> new HashSet<>()).add(a.getPosition());
             }
         }
+        Set<UUID> epinHolders = new HashSet<>(associateRepository.findAllActivationEpinHolderIds());
         return associates.stream()
-            .map(a -> AssociateSummaryResponse.from(a, occupiedPositions.getOrDefault(a.getId(), Set.of()).size() < 2))
+            .map(a -> AssociateSummaryResponse.from(a, occupiedPositions.getOrDefault(a.getId(), Set.of()).size() < 2, epinHolders.contains(a.getId())))
             .toList();
     }
 }

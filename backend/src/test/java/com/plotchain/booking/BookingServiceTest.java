@@ -284,7 +284,7 @@ class BookingServiceTest {
 
     private CreateBookingRequest tokenRequestWithReceipt(String receiptNo) {
         return new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "9999999999", new BigDecimal("100000"),
-            null, null, PaymentMode.CASH, "T1", null, null, null, null, receiptNo);
+            null, null, PaymentMode.CASH, "T1", null, null, null, null, receiptNo, ASSOCIATE_ID);
     }
 
     private EmiInstallment savedTokenInstallment() {
@@ -374,7 +374,8 @@ class BookingServiceTest {
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
 
         bookingService.createBooking(new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "9999999999",
-            new BigDecimal("100000"), new BigDecimal("50000"), new BigDecimal("25000")));
+            new BigDecimal("100000"), new BigDecimal("50000"), new BigDecimal("25000"),
+            null, null, null, null, null, null, null, ASSOCIATE_ID));
 
         ArgumentCaptor<PlotBooking> bc = ArgumentCaptor.forClass(PlotBooking.class);
         verify(plotBookingRepository).save(bc.capture());
@@ -399,7 +400,7 @@ class BookingServiceTest {
 
         BookingResponse response = bookingService.createBooking(new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID,
             "Jane Buyer", "9999999999", new BigDecimal("100000"), new BigDecimal("50000"), new BigDecimal("1"),
-            null, null, null, null, null, new BigDecimal("10")));
+            null, null, null, null, null, new BigDecimal("10"), null, ASSOCIATE_ID));
 
         // 10% of 600000 = 60000 wins over the flat 1; total = 600000 + 60000 - 50000
         assertThat(response.extraPrice()).isEqualByComparingTo("60000.00");
@@ -408,7 +409,8 @@ class BookingServiceTest {
 
     private CreateBookingRequest requestWithDiscount(String token, String discount) {
         return new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "9999999999",
-            new BigDecimal(token), new BigDecimal(discount));
+            new BigDecimal(token), new BigDecimal(discount),
+            null, null, null, null, null, null, null, null, ASSOCIATE_ID);
     }
 
     private Plot plotWithStatusAndPrice(PlotStatus status, String price) {
@@ -421,7 +423,8 @@ class BookingServiceTest {
     }
 
     private CreateBookingRequest requestFor(UUID plotId, UUID associateId, String token) {
-        return new CreateBookingRequest(plotId, associateId, "Jane Buyer", "9999999999", new BigDecimal(token));
+        return new CreateBookingRequest(plotId, associateId, "Jane Buyer", "9999999999", new BigDecimal(token),
+            null, null, null, null, null, null, null, null, null, associateId);
     }
 
     private BookingEmiConfig emiConfig(boolean enabled, int count) {
@@ -439,6 +442,7 @@ class BookingServiceTest {
     private Associate associateWithId(UUID id) {
         Associate associate = new Associate();
         associate.setId(id);
+        associate.setName("Jane Buyer");
         return associate;
     }
 
@@ -446,9 +450,45 @@ class BookingServiceTest {
         when(plotRepository.findByIdForUpdate(PLOT_ID))
             .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, price)));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
+        lenient().when(associateRepository.hasActivationEpin(ASSOCIATE_ID)).thenReturn(true);
         when(bookingEmiConfigRepository.findBySingletonGuardTrue()).thenReturn(Optional.of(config));
         when(plotBookingRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(emiInstallmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+    }
+
+    private void stubPlotAndBuyer(Associate buyer, boolean hasEpin) {
+        when(plotRepository.findByIdForUpdate(PLOT_ID))
+            .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, "600000.00")));
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(buyer));
+        lenient().when(associateRepository.hasActivationEpin(ASSOCIATE_ID)).thenReturn(hasEpin);
+    }
+
+    @Test
+    void createBookingRejectsBuyerWithoutActivationEpin() {
+        stubPlotAndBuyer(associateWithId(ASSOCIATE_ID), false);
+
+        assertThatThrownBy(() -> bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID)))
+            .isInstanceOf(InvalidBuyerException.class);
+        verify(plotBookingRepository, never()).save(any());
+    }
+
+    @Test
+    void createBookingRejectsNonActiveBuyer() {
+        Associate pending = associateWithId(ASSOCIATE_ID);
+        pending.setStatus(com.plotchain.associate.AssociateStatus.PENDING);
+        stubPlotAndBuyer(pending, true);
+
+        assertThatThrownBy(() -> bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID)))
+            .isInstanceOf(InvalidBuyerException.class);
+    }
+
+    @Test
+    void createBookingRejectsMissingBuyerAssociateId() {
+        stubPlotAndBuyer(associateWithId(ASSOCIATE_ID), true);
+
+        assertThatThrownBy(() -> bookingService.createBooking(
+            new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", null, new BigDecimal("1000"))))
+            .isInstanceOf(InvalidBuyerException.class);
     }
 
     @Test
@@ -510,6 +550,7 @@ class BookingServiceTest {
         when(plotRepository.findByIdForUpdate(PLOT_ID))
             .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, "600000.00")));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
+        lenient().when(associateRepository.hasActivationEpin(ASSOCIATE_ID)).thenReturn(true);
         when(bookingEmiConfigRepository.findBySingletonGuardTrue()).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID)))
@@ -535,7 +576,8 @@ class BookingServiceTest {
     void createBookingStoresABlankBuyerPhoneAsNull() {
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
 
-        bookingService.createBooking(new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "   ", new java.math.BigDecimal("1000")));
+        bookingService.createBooking(new CreateBookingRequest(PLOT_ID, ASSOCIATE_ID, "Jane Buyer", "   ", new java.math.BigDecimal("1000"),
+            null, null, null, null, null, null, null, null, null, ASSOCIATE_ID));
 
         ArgumentCaptor<PlotBooking> captor = ArgumentCaptor.forClass(PlotBooking.class);
         verify(plotBookingRepository).save(captor.capture());

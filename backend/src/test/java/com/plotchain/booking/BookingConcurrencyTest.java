@@ -47,6 +47,7 @@ class BookingConcurrencyTest {
     @Autowired PlotRepository plotRepository;
     @Autowired ProjectRepository projectRepository;
     @Autowired AssociateRepository associateRepository;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
     @Autowired PlotBookingRepository plotBookingRepository;
     @Autowired EmiInstallmentRepository emiInstallmentRepository;
     @Autowired BookingEmiConfigRepository bookingEmiConfigRepository;
@@ -77,6 +78,7 @@ class BookingConcurrencyTest {
             projectRepository.deleteById(projectId);
         }
         if (associateId != null) {
+            LegacyScheduleSeed.dropEpins(jdbc, associateId);
             associateRepository.deleteById(associateId);
         }
     }
@@ -121,7 +123,7 @@ class BookingConcurrencyTest {
     }
 
     private CreateBookingRequest bookingRequestFor(UUID plotId, UUID associateId) {
-        return new CreateBookingRequest(plotId, associateId, "Jane Buyer", null, new java.math.BigDecimal("1000"));
+        return new CreateBookingRequest(plotId, associateId, "Jane Buyer", null, new java.math.BigDecimal("1000"), null, null, null, null, null, null, null, null, null, associateId);
     }
 
     private void awaitQuietly(CountDownLatch latch) {
@@ -136,6 +138,7 @@ class BookingConcurrencyTest {
     void secondCreateBookingBlocksUntilFirstTransactionResolvesThenSucceedsIfPlotIsStillAvailable() throws Exception {
         plotId = seedAvailablePlot();
         associateId = seedAssociate();
+        LegacyScheduleSeed.grantEpin(jdbc, associateId);
 
         CountDownLatch lockHeld = new CountDownLatch(1);
         CountDownLatch releaseLock = new CountDownLatch(1);
@@ -175,6 +178,7 @@ class BookingConcurrencyTest {
     void secondCreateBookingBlocksUntilFirstTransactionResolvesThenGetsPlotNotAvailableIfFirstBookedThePlot() throws Exception {
         plotId = seedAvailablePlot();
         associateId = seedAssociate();
+        LegacyScheduleSeed.grantEpin(jdbc, associateId);
 
         CountDownLatch lockHeld = new CountDownLatch(1);
         CountDownLatch releaseLock = new CountDownLatch(1);
@@ -217,6 +221,7 @@ class BookingConcurrencyTest {
     void findByIdForUpdateOnABookingBlocksASecondLockerUntilTheFirstTransactionEnds() throws Exception {
         plotId = seedAvailablePlot();
         associateId = seedAssociate();
+        LegacyScheduleSeed.grantEpin(jdbc, associateId);
         UUID bookingId = bookingService.createBooking(bookingRequestFor(plotId, associateId)).id();
 
         CountDownLatch lockHeld = new CountDownLatch(1);

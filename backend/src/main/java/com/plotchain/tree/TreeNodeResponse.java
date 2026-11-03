@@ -9,4 +9,4 @@ import java.util.UUID;
 public record TreeNodeResponse(
     UUID id, String userId, String name, String designation, KycStatus kycStatus, String position,
     BigDecimal leftLegVolume, BigDecimal rightLegVolume,
-    boolean skewedLegsFlag, boolean stagnantFlag, List<TreeNodeResponse> children) {}
+    boolean skewedLegsFlag, boolean stagnantFlag, boolean plotBuyer, List<TreeNodeResponse> children) {}

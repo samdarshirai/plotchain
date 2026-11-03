@@ -72,6 +72,11 @@ class PlotGridLiveStatusIntegrationTest {
         // ADMIN: chk_associate_rank_required demands a rank for ASSOCIATE rows; also the FK-satisfying actor.
         associate.setRole(AssociateRole.ADMIN);
         associateRepository.saveAndFlush(associate);
+        // plot buyers must hold an ACTIVATION e-PIN
+        jdbc.update("INSERT INTO epin (id, code, batch_id, status, generated_by, generated_at, redeemed_to, "
+            + "redeemed_by, redeemed_at, redemption_type) VALUES (?, ?, ?, 'USED', ?, CURRENT_TIMESTAMP, ?, ?, "
+            + "CURRENT_TIMESTAMP, 'ACTIVATION')", UUID.randomUUID(),
+            UUID.randomUUID().toString().substring(0, 24), UUID.randomUUID(), associateId, associateId, associateId);
     }
 
     @AfterEach
@@ -84,6 +89,7 @@ class PlotGridLiveStatusIntegrationTest {
         jdbc.update("DELETE FROM plot_booking WHERE associate_id = ?", associateId);
         jdbc.update("DELETE FROM plot WHERE project_id = ?", projectId);
         jdbc.update("DELETE FROM project WHERE id = ?", projectId);
+        jdbc.update("DELETE FROM epin WHERE redeemed_to = ?", associateId);
         jdbc.update("DELETE FROM associate WHERE id = ?", associateId);
     }
 
@@ -110,7 +116,8 @@ class PlotGridLiveStatusIntegrationTest {
         assertThat(gridStatusOfPlot2()).isEqualTo(PlotStatus.AVAILABLE);
 
         BookingResponse booking = bookingService.createBooking(
-            new CreateBookingRequest(plotId, associateId, "Jane Buyer", null, new java.math.BigDecimal("1000")));
+            new CreateBookingRequest(plotId, associateId, "Jane Buyer", null, new java.math.BigDecimal("1000"),
+                null, null, null, null, null, null, null, null, null, associateId));
         assertThat(gridStatusOfPlot2()).isEqualTo(PlotStatus.BOOKED);
 
         bookingService.cancelBooking(booking.id(), new CancelBookingRequest("buyer withdrew"), associateId);

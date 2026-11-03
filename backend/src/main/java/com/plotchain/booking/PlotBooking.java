@@ -54,6 +54,9 @@ public class PlotBooking {
     @Column(name = "buyer_name", nullable = false)
     private String buyerName;
 
+    @Column(name = "buyer_associate_id")
+    private UUID buyerAssociateId;
+
     @Column(name = "buyer_phone")
     private String buyerPhone;
 
@@ -70,6 +73,8 @@ public class PlotBooking {
     public void setStatus(BookingStatus status) { this.status = status; }
     public String getBuyerName() { return buyerName; }
     public void setBuyerName(String buyerName) { this.buyerName = buyerName; }
+    public UUID getBuyerAssociateId() { return buyerAssociateId; }
+    public void setBuyerAssociateId(UUID buyerAssociateId) { this.buyerAssociateId = buyerAssociateId; }
     public String getBuyerPhone() { return buyerPhone; }
     public void setBuyerPhone(String buyerPhone) { this.buyerPhone = buyerPhone; }
     public Instant getConfirmedAt() { return confirmedAt; }

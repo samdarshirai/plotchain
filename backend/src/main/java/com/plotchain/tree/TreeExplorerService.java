@@ -18,9 +18,11 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -94,14 +96,16 @@ public class TreeExplorerService {
     }
 
     private TreeNodeResponse buildFrom(Associate root) {
-        Map<UUID, String> designations = designationService.designationsOf(associateRepository.findSelfAndDownline(root.getId()));
+        List<UUID> subtreeIds = associateRepository.findSelfAndDownline(root.getId());
+        Map<UUID, String> designations = designationService.designationsOf(subtreeIds);
+        Set<UUID> plotBuyers = new HashSet<>(associateRepository.findPlotBuyerIds(subtreeIds));
         // leg_volume rows are written only at cycle CLOSE (CycleService#rollUpSubtree), keyed to
         // the cycle being closed -- the currently OPEN cycle never has a row of its own, so this
         // lookup was a structural no-op that always fell through to zero (same bug already fixed
         // in DashboardService, see docs/superpowers/plans/2026-08-18-dashboard-leg-volume-fixes.md).
         // Reading the last CLOSED cycle instead is "current standing as of the last close."
         Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
-        return buildNode(root, designations, latestClosedCycle);
+        return buildNode(root, designations, plotBuyers, latestClosedCycle);
     }
 
     public TreeSearchResponse search(String userId) {
@@ -153,19 +157,19 @@ public class TreeExplorerService {
         return nodeDetails(targetId);
     }
 
-    private TreeNodeResponse buildNode(Associate a, Map<UUID, String> designations,
+    private TreeNodeResponse buildNode(Associate a, Map<UUID, String> designations, Set<UUID> plotBuyers,
                                         Optional<Cycle> latestClosedCycle) {
         BigDecimal[] legs = legVolumesFor(a.getId(), latestClosedCycle);
         // ponytail: 2 queries per node (children + leg volume); batch-load the subtree via
         // the recursive CTE if trees reach thousands of nodes.
         List<TreeNodeResponse> children = associateRepository.findByParentId(a.getId()).stream()
-            .map(child -> buildNode(child, designations, latestClosedCycle))
+            .map(child -> buildNode(child, designations, plotBuyers, latestClosedCycle))
             .toList();
         long directDownlineCount = children.size();
         return new TreeNodeResponse(
             a.getId(), a.getUserId(), a.getName(), designations.get(a.getId()),
             a.getKycStatus(), a.getPosition(), legs[0], legs[1],
-            isSkewed(legs[0], legs[1]), isStagnant(a, directDownlineCount), children);
+            isSkewed(legs[0], legs[1]), isStagnant(a, directDownlineCount), plotBuyers.contains(a.getId()), children);
     }
 
     private boolean isSkewed(BigDecimal left, BigDecimal right) {

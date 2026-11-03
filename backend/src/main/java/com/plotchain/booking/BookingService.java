@@ -99,6 +99,16 @@ public class BookingService {
             throw new InvalidTokenAmountException(token, total);
         }
 
+        if (request.buyerAssociateId() == null) {
+            throw new InvalidBuyerException("Buyer associate is required");
+        }
+        Associate buyer = associateRepository.findById(request.buyerAssociateId())
+            .orElseThrow(() -> new InvalidBuyerException("Buyer associate not found"));
+        if (buyer.getStatus() != com.plotchain.associate.AssociateStatus.ACTIVE
+                || !associateRepository.hasActivationEpin(buyer.getId())) {
+            throw new InvalidBuyerException("Buyer must be an active associate with an e-PIN");
+        }
+
         // Plot -> BOOKED, not SOLD: a booking reserves the plot under an installment plan, it
         // doesn't complete a sale. A BOOKED plot still fails the AVAILABLE check above (and
         // SaleService.recordSale's own AVAILABLE check), so it can't be independently booked or
@@ -130,7 +140,8 @@ public class BookingService {
         booking.setRate(plot.getRate());
         booking.setInstallmentCount(schedule.size());
         booking.setBookedAt(bookedAt);
-        booking.setBuyerName(request.buyerName().trim());
+        booking.setBuyerName(buyer.getName());
+        booking.setBuyerAssociateId(buyer.getId());
         booking.setBuyerPhone(request.buyerPhone() == null || request.buyerPhone().isBlank()
             ? null : request.buyerPhone().trim());
         booking.setStatus(BookingStatus.ACTIVE);

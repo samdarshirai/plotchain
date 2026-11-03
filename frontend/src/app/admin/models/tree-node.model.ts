@@ -9,5 +9,6 @@ export interface TreeNode {
   rightLegVolume: number;
   skewedLegsFlag: boolean;
   stagnantFlag: boolean;
+  plotBuyer: boolean;
   children: TreeNode[];
 }

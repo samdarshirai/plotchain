@@ -32,11 +32,14 @@ import { PAYMENT_MODES } from '../../plot-bookings/models/associate-booking-page
         <div><dt>{{ 'admin.projectsPlots.extraPriceLabel' | translate }}</dt><dd>{{ formatInr(plot.extraPrice ?? 0) }}</dd></div>
         <div><dt>{{ 'admin.projectsPlots.statusLabel' | translate }}</dt><dd>{{ 'plotTile.status.' + plot.status | translate }}</dd></div>
       </dl>
-      <label>{{ 'admin.projectsPlots.buyerNameLabel' | translate }}
-        <input #buyerNameInput type="text" name="buyerName" maxlength="200" autocomplete="off"
-          [placeholder]="'admin.projectsPlots.buyerNamePlaceholder' | translate" [disabled]="busy" [(ngModel)]="buyerName"
+      <label>{{ 'admin.projectsPlots.buyerIdLabel' | translate }}
+        <input #buyerNameInput type="text" name="buyerUserId" maxlength="50" autocomplete="off"
+          [placeholder]="'admin.projectsPlots.buyerIdPlaceholder' | translate" [disabled]="busy" [(ngModel)]="buyerUserId" (ngModelChange)="lookupBuyer()"
           [attr.aria-invalid]="nameInvalid ? 'true' : null" [attr.aria-describedby]="nameInvalid ? 'book-name-err' : null" />
-        <app-field-error id="book-name-err" [message]="(nameInvalid ? 'admin.projectsPlots.buyerNameRequired' : '') | translate"></app-field-error>
+        <app-field-error id="book-name-err" [message]="(buyerErrorKey ? 'admin.projectsPlots.' + buyerErrorKey : '') | translate"></app-field-error>
+      </label>
+      <label>{{ 'admin.projectsPlots.buyerNameLabel' | translate }}
+        <input type="text" name="buyerName" readonly tabindex="-1" [value]="buyerName" />
       </label>
       <label><span>{{ 'admin.projectsPlots.buyerPhoneLabel' | translate }} <span>{{ 'admin.projectsPlots.optional' | translate }}</span></span>
         <input type="tel" name="buyerPhone" maxlength="20" [disabled]="busy" [(ngModel)]="buyerPhone" [attr.aria-invalid]="phoneError ? 'true' : null" />
@@ -134,6 +137,10 @@ export class BookPlotFormComponent implements OnInit {
   @ViewChild('firstInput') firstInput?: ElementRef<HTMLInputElement>;
   @ViewChild('tokenInput') tokenInput?: ElementRef<HTMLInputElement>;
 
+  buyerAssociateId = '';
+  buyerUserId = '';
+  buyerNotFound = false;
+  buyerNoEpin = false;
   associateId = '';
   associateUserId = '';
   associateName = '';
@@ -170,6 +177,20 @@ export class BookPlotFormComponent implements OnInit {
     this.associateError = !!id && !found;
   }
 
+  // Buyer must be an existing associate with an e-PIN (server enforces it too).
+  lookupBuyer(): void {
+    const id = this.buyerUserId.trim().toLowerCase();
+    const found = id ? this.associates.find(a => a.userId.toLowerCase() === id) : undefined;
+    this.buyerAssociateId = found?.id ?? '';
+    this.buyerName = found?.name ?? '';
+    this.buyerNotFound = !!id && !found;
+    this.buyerNoEpin = !!found && !found.hasEpin;
+  }
+  get buyerOk(): boolean { return !!this.buyerAssociateId && !this.buyerNoEpin; }
+  get buyerErrorKey(): string {
+    return this.buyerNotFound ? 'buyerNotFound' : this.buyerNoEpin ? 'buyerNoEpin' : this.tried && !this.buyerAssociateId ? 'buyerRequired' : '';
+  }
+
   get bankRequired(): boolean { return !!this.paymentMode && this.paymentMode !== 'CASH'; }
   get bankError(): boolean { return this.tried && this.bankRequired && !this.bankName.trim(); }
   get dateError(): boolean { return this.tried && (!this.txnDate || this.txnDate > this.today); }
@@ -191,13 +212,13 @@ export class BookPlotFormComponent implements OnInit {
   private buildIssues(): FormIssue[] {
     const out: FormIssue[] = [];
     const add = (id: string, label: string, message: string) => out.push({ id, label, message });
-    if (!this.buyerName.trim()) { add('buyerName', 'Buyer name', 'Buyer name is required. Please fill it in.'); }
+    if (!this.buyerOk) { add('buyerUserId', 'Buyer ID', this.buyerNoEpin ? 'This associate has no e-PIN, so they cannot buy a plot.' : this.buyerNotFound ? 'Buyer ID was not found. Check the ID and retype it.' : "Buyer ID is required. Enter the buying associate's ID."); }
     if (this.phoneError) { add('buyerPhone', 'Buyer phone', this.phoneError); }
     if (this.extraInvalid) { add('extraPercent', 'Extra %', 'Extra % must be between 0 and 100.'); }
     if (this.discountError) { add('discount', 'Discount', this.discountError === 'negative' ? 'Discount cannot be negative. Enter 0 or more.' : 'Discount must be less than the total price. Enter a smaller amount.'); }
     if (this.firstError) { add('firstInstallmentAmount', 'First installment', 'First installment must be above 0 and within the balance after the booking amount.'); }
     if (this.tokenError) { add('tokenAmount', 'Booking amount', this.tokenError === 'required' ? 'Booking amount is required. Enter an amount above 0.' : 'Booking amount must be less than the net total. Enter a smaller amount.'); }
-    if (!this.associateId) { add('associateUserId', 'Associate ID', this.associateError ? 'Associate ID was not found. Check the ID and retype it.' : "Associate ID is required. Enter the referring associate's ID."); }
+    if (!this.associateId) { add('associateUserId', 'Sponsor ID', this.associateError ? 'Sponsor ID was not found. Check the ID and retype it.' : "Sponsor ID is required. Enter the sponsor's ID."); }
     if (!this.paymentMode) { add('paymentMode', 'Payment mode', 'Payment mode is required. Choose one from the list.'); }
     if (!this.txnNo.trim()) { add('txnNo', 'Transaction number', 'Transaction number is required. Please fill it in.'); }
     if (!this.receiptNo.trim()) { add('receiptNo', 'Receipt number', 'Receipt number is required. Please fill it in.'); }
@@ -205,7 +226,7 @@ export class BookPlotFormComponent implements OnInit {
     if (this.dateError) { add('txnDate', 'Transaction date', this.txnDate ? 'Transaction date cannot be in the future. Pick today or earlier.' : 'Transaction date is required. Pick a date.'); }
     return out;
   }
-  get nameInvalid(): boolean { return this.tried && !this.buyerName.trim(); }
+  get nameInvalid(): boolean { return (this.tried || this.buyerNotFound || this.buyerNoEpin) && !this.buyerOk; }
   get priceText(): string { return formatInr(this.plot.price); }
   // The block is the plot number's prefix, as in the grid.
   get block(): string { return this.plot.plotNo.includes('-') ? this.plot.plotNo.slice(0, this.plot.plotNo.indexOf('-')) : ''; }
@@ -260,7 +281,7 @@ export class BookPlotFormComponent implements OnInit {
     this.tried = true;
     this.issues = this.buildIssues();
     if (this.phoneError) { return; }
-    if (!this.buyerName.trim()) {
+    if (!this.buyerOk) {
       this.buyerNameInput?.nativeElement.focus();
       return;
     }
@@ -282,7 +303,7 @@ export class BookPlotFormComponent implements OnInit {
     }
     if (!this.associateId || !this.paymentMode || !this.txnNo.trim() || !this.receiptNo.trim() || this.bankError || this.dateError) { return; }
     this.submitted.emit({ paymentMode: this.paymentMode, txnNo: this.txnNo.trim(), receiptNo: this.receiptNo.trim(), bankName: this.bankName.trim(), txnDate: this.txnDate,
-      firstInstallmentAmount: this.firstInstallmentAmount ?? undefined, associateId: this.associateId, buyerName: this.buyerName.trim(), buyerPhone: this.buyerPhone.trim(), tokenAmount: this.tokenAmount!, discount: this.discount, extraPrice: this.extra, extraPercent: this.extraPercentRaw ?? 0 });
+      firstInstallmentAmount: this.firstInstallmentAmount ?? undefined, associateId: this.associateId, buyerAssociateId: this.buyerAssociateId, buyerPhone: this.buyerPhone.trim(), tokenAmount: this.tokenAmount!, discount: this.discount, extraPrice: this.extra, extraPercent: this.extraPercentRaw ?? 0 });
   }
 }
 

@@ -5,4 +5,5 @@ export interface AssociateSummary {
   role: 'ADMIN' | 'MANAGER' | 'ASSOCIATE';
   status: 'ACTIVE' | 'SUSPENDED' | 'PENDING';
   hasFreeSlot: boolean;
+  hasEpin: boolean;
 }

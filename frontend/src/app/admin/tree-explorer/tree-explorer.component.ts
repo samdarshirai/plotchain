@@ -102,6 +102,7 @@ const CLICK_MOVE_PX = 5;
                 class="tree-explorer__node-card"
                 *ngIf="!entry.vacant"
                 [class.tree-explorer__node-card--highlight]="entry.id === highlightedNodeId"
+                [class.tree-explorer__node-card--buyer]="entry.data.plotBuyer"
                 [attr.data-node-id]="entry.id"
                 [style.left.px]="cardLeft(entry)"
                 [style.top.px]="cardTop(entry)"
@@ -135,6 +136,13 @@ const CLICK_MOVE_PX = 5;
                     [class.tree-explorer__kyc-dot--rejected]="entry.data.kycStatus === 'REJECTED'"
                     [title]="entry.data.kycStatus"
                   ></span>
+                  <span
+                    class="material-symbols-outlined tree-explorer__flag-icon tree-explorer__flag-icon--buyer"
+                    *ngIf="entry.data.plotBuyer"
+                    [title]="'admin.treeExplorer.plotBuyerLabel' | translate"
+                  >
+                    landscape
+                  </span>
                   <span
                     class="material-symbols-outlined tree-explorer__flag-icon tree-explorer__flag-icon--skewed"
                     *ngIf="entry.data.skewedLegsFlag"
@@ -223,6 +231,7 @@ const CLICK_MOVE_PX = 5;
           <span><i class="tree-explorer__legend-dot tree-explorer__legend-dot--verified"></i>{{ 'admin.treeExplorer.legendVerifiedLabel' | translate }}</span>
           <span><i class="tree-explorer__legend-dot tree-explorer__legend-dot--pending"></i>{{ 'admin.treeExplorer.legendPendingLabel' | translate }}</span>
           <span><i class="tree-explorer__legend-dot tree-explorer__legend-dot--rejected"></i>{{ 'admin.treeExplorer.legendRejectedLabel' | translate }}</span>
+          <span><i class="material-symbols-outlined tree-explorer__flag-icon tree-explorer__flag-icon--buyer">landscape</i>{{ 'admin.treeExplorer.plotBuyerLabel' | translate }}</span>
         </div>
       </div>
     </div>

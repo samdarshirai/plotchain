@@ -10,25 +10,25 @@ describe('TreeExplorerComponent', () => {
 
   const rootNode = {
     id: 'a1', userId: 'VP00001', name: 'Root', designation: null, kycStatus: 'PENDING', position: null,
-    leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
+    leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false, children: []
   };
 
   const companyRoot: TreeNode = {
     id: 'admin', userId: 'admin', name: 'Administrator', designation: null, kycStatus: 'VERIFIED', position: null,
-    leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, children: []
+    leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false, children: []
   };
 
   const nestedTree: TreeNode = {
     id: 'a1', userId: 'VP00001', name: 'Root', designation: null, kycStatus: 'PENDING', position: null,
-    leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false,
+    leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false,
     children: [
       {
         id: 'a2', userId: 'VP00002', name: 'Child', designation: null, kycStatus: 'PENDING', position: 'L',
-        leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false,
+        leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false,
         children: [
           {
             id: 'a3', userId: 'VP00003', name: 'Grandchild', designation: null, kycStatus: 'PENDING', position: 'L',
-            leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false,
+            leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false,
             children: []
           }
         ]
@@ -67,6 +67,15 @@ describe('TreeExplorerComponent', () => {
     expect(fixture.componentInstance.root?.userId).toBe('admin');
     // The default root is not a search result -- it must not carry the highlight/tag.
     expect(fixture.componentInstance.highlightedNodeId).toBeNull();
+  });
+
+  it('marks a plot buyer node with the buyer icon, and only that node', () => {
+    initWithCompanyTree({ ...nestedTree, children: [{ ...nestedTree.children[0], plotBuyer: true, children: [] }] });
+    fixture.detectChanges();
+
+    const marks = fixture.nativeElement.querySelectorAll('.tree-explorer__node-card .tree-explorer__flag-icon--buyer');
+    expect(marks.length).toBe(1);
+    expect(fixture.nativeElement.querySelectorAll('.tree-explorer__node-card--buyer').length).toBe(1);
   });
 
   it('shows the empty state, not an error, before the root user exists', () => {

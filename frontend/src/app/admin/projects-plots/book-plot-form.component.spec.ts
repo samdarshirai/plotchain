@@ -7,7 +7,10 @@ import { formatInr } from '../../shared/utils/plot-grid.util';
 describe('BookPlotFormComponent', () => {
   let fixture: ComponentFixture<BookPlotFormComponent>;
   const el = () => fixture.nativeElement as HTMLElement;
-  const associates = [{ id: 'a1', userId: 'VP00001', name: 'Jane', role: 'ASSOCIATE' as const, hasFreeSlot: true }];
+  const associates = [
+    { id: 'a1', userId: 'VP00001', name: 'Jane', role: 'ASSOCIATE' as const, hasFreeSlot: true, hasEpin: true },
+    { id: 'a2', userId: 'VP00002', name: 'Noepin', role: 'ASSOCIATE' as const, hasFreeSlot: true, hasEpin: false }
+  ];
   const plot = { plotId: 'x', plotNo: 'A-12', type: 'NORMAL' as const, area: 1800, price: 5130000, status: 'AVAILABLE' as const };
 
   function setup(emi: unknown = { emiEnabled: true, defaultInstallmentCount: 6 }, busy = false) {
@@ -28,20 +31,37 @@ describe('BookPlotFormComponent', () => {
     i.value = v; i.dispatchEvent(new Event('input'));
   };
 
-  it('blocks submit with a blank buyer name, flags the field and moves focus to it', async () => {
+  it('blocks submit with a blank buyer ID, flags the field and moves focus to it', async () => {
     setup();
     const out: BookingFormValue[] = [];
     fixture.componentInstance.submitted.subscribe(v => out.push(v));
     fixture.componentInstance.associateId = 'a1';
     await fixture.whenStable();
-    typeInto('buyerName', '   ');
+    typeInto('buyerUserId', '   ');
     submitForm();
     fixture.detectChanges();
-    const field = el().querySelector<HTMLInputElement>('[name="buyerName"]')!;
+    const field = el().querySelector<HTMLInputElement>('[name="buyerUserId"]')!;
     expect(out.length).toBe(0);
     expect(field.getAttribute('aria-invalid')).toBe('true');
-    expect(el().textContent).toContain('admin.projectsPlots.buyerNameRequired');
+    expect(el().textContent).toContain('admin.projectsPlots.buyerRequired');
     expect(document.activeElement).toBe(field);
+  });
+
+  it('autofills the buyer name from the ID and rejects unknown or e-PIN-less buyers', async () => {
+    setup();
+    await fixture.whenStable();
+    typeInto('buyerUserId', 'VP00001');
+    fixture.detectChanges();
+    expect(el().querySelector<HTMLInputElement>('[name="buyerName"]')!.value).toBe('Jane');
+
+    typeInto('buyerUserId', 'VP00002');
+    fixture.detectChanges();
+    expect(el().textContent).toContain('admin.projectsPlots.buyerNoEpin');
+    expect(fixture.componentInstance.buyerOk).toBeFalse();
+
+    typeInto('buyerUserId', 'NOPE');
+    fixture.detectChanges();
+    expect(el().textContent).toContain('admin.projectsPlots.buyerNotFound');
   });
 
   it('requires an associate', async () => {
@@ -49,7 +69,7 @@ describe('BookPlotFormComponent', () => {
     const out: BookingFormValue[] = [];
     fixture.componentInstance.submitted.subscribe(v => out.push(v));
     await fixture.whenStable();
-    typeInto('buyerName', 'Rohit');
+    typeInto('buyerUserId', 'VP00001');
     submitForm();
     fixture.detectChanges();
     expect(out.length).toBe(0);
@@ -62,11 +82,11 @@ describe('BookPlotFormComponent', () => {
     fixture.componentInstance.submitted.subscribe(v => out.push(v));
     fixture.componentInstance.associateId = 'a1';
     await fixture.whenStable();
-    typeInto('buyerName', '  Rohit Kulkarni ');
+    typeInto('buyerUserId', ' vp00001 ');
     typeInto('buyerPhone', ' 9876543210 ');
     typeInto('tokenAmount', '100000');
     submitForm();
-    expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit Kulkarni', buyerPhone: '9876543210', tokenAmount: 100000, discount: 0, extraPrice: 0, extraPercent: 0, ...pay }]);
+    expect(out).toEqual([{ associateId: 'a1', buyerAssociateId: 'a1', buyerPhone: '9876543210', tokenAmount: 100000, discount: 0, extraPrice: 0, extraPercent: 0, ...pay }]);
   });
 
   it('blocks submit without a receipt no and flags the field', async () => {
@@ -76,7 +96,7 @@ describe('BookPlotFormComponent', () => {
     Object.assign(fixture.componentInstance, { receiptNo: '  ' });
     fixture.componentInstance.associateId = 'a1';
     await fixture.whenStable();
-    typeInto('buyerName', 'Rohit');
+    typeInto('buyerUserId', 'VP00001');
     typeInto('tokenAmount', '100000');
     submitForm();
     fixture.detectChanges();
@@ -91,7 +111,7 @@ describe('BookPlotFormComponent', () => {
     fixture.componentInstance.submitted.subscribe(v => out.push(v));
     fixture.componentInstance.associateId = 'a1';
     await fixture.whenStable();
-    typeInto('buyerName', 'Rohit');
+    typeInto('buyerUserId', 'VP00001');
     typeInto('tokenAmount', '100000');
     typeInto('receiptNo', '  RCP-42 ');
     submitForm();
@@ -104,7 +124,7 @@ describe('BookPlotFormComponent', () => {
     fixture.componentInstance.submitted.subscribe(v => out.push(v));
     fixture.componentInstance.associateId = 'a1';
     await fixture.whenStable();
-    typeInto('buyerName', 'Rohit');
+    typeInto('buyerUserId', 'VP00001');
     submitForm();
     fixture.detectChanges();
     const field = el().querySelector<HTMLInputElement>('[name="tokenAmount"]')!;
@@ -120,7 +140,7 @@ describe('BookPlotFormComponent', () => {
     fixture.componentInstance.submitted.subscribe(v => out.push(v));
     fixture.componentInstance.associateId = 'a1';
     await fixture.whenStable();
-    typeInto('buyerName', 'Rohit');
+    typeInto('buyerUserId', 'VP00001');
     typeInto('tokenAmount', String(plot.price));
     submitForm();
     fixture.detectChanges();
@@ -165,7 +185,7 @@ describe('BookPlotFormComponent', () => {
     const btn = el().querySelector<HTMLButtonElement>('button[type="submit"]')!;
     expect(btn.disabled).toBeTrue();
     expect(btn.getAttribute('aria-busy')).toBe('true');
-    expect(el().querySelector<HTMLInputElement>('[name="buyerName"]')!.disabled).toBeTrue();
+    expect(el().querySelector<HTMLInputElement>('[name="buyerUserId"]')!.disabled).toBeTrue();
     // Cancel stays enabled while in flight (the request still completes; see container spec).
     expect(el().querySelector<HTMLButtonElement>('.book-form__cancel')!.disabled).toBeFalse();
   });
@@ -175,7 +195,7 @@ describe('BookPlotFormComponent', () => {
     const out: BookingFormValue[] = [];
     fixture.componentInstance.submitted.subscribe(v => out.push(v));
     fixture.componentInstance.associateId = 'a1';
-    fixture.componentInstance.buyerName = 'Rohit';
+    fixture.componentInstance.buyerAssociateId = 'a1';
     fixture.componentInstance.tokenAmount = 100000;
     submitForm();
     expect(out.length).toBe(0);
@@ -189,7 +209,7 @@ describe('BookPlotFormComponent', () => {
       fixture.componentInstance.submitted.subscribe(v => out.push(v));
       fixture.componentInstance.associateId = 'a1';
       await fixture.whenStable();
-      typeInto('buyerName', 'Rohit');
+      typeInto('buyerUserId', 'VP00001');
       return out;
     }
     const settle = async () => { await fixture.whenStable(); fixture.detectChanges(); };
@@ -302,7 +322,7 @@ describe('BookPlotFormComponent', () => {
       const out = await ready();
       typeInto('discount', '130000'); typeInto('tokenAmount', '100000');
       submitForm();
-      expect(out).toEqual([{ associateId: 'a1', buyerName: 'Rohit', buyerPhone: '', tokenAmount: 100000, discount: 130000, extraPrice: 0, extraPercent: 0, ...pay }]);
+      expect(out).toEqual([{ associateId: 'a1', buyerAssociateId: 'a1', buyerPhone: '', tokenAmount: 100000, discount: 130000, extraPrice: 0, extraPercent: 0, ...pay }]);
     });
   });
 
@@ -326,7 +346,7 @@ describe('BookPlotFormComponent', () => {
     c.submitted.subscribe(v => out.push(v));
     c.associateId = 'a1';
     await fixture.whenStable();
-    typeInto('buyerName', 'Rohit'); typeInto('tokenAmount', '100000');
+    typeInto('buyerUserId', 'VP00001'); typeInto('tokenAmount', '100000');
     c.paymentMode = 'BANK_TRANSFER';
     submitForm();
     expect(out.length).toBe(0);

@@ -22,6 +22,20 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     @Query("UPDATE Associate a SET a.status = com.plotchain.associate.AssociateStatus.ACTIVE WHERE a.id = :id AND a.status = com.plotchain.associate.AssociateStatus.PENDING")
     int activateIfPending(@Param("id") UUID id);
 
+    // Plot-buyer mark: those of :ids with at least one non-cancelled booking as buyer.
+    @Query("SELECT DISTINCT b.buyerAssociateId FROM PlotBooking b WHERE b.buyerAssociateId IN :ids "
+        + "AND b.status <> com.plotchain.booking.BookingStatus.CANCELLED")
+    List<UUID> findPlotBuyerIds(@Param("ids") java.util.Collection<UUID> ids);
+
+    @Query("SELECT DISTINCT e.redeemedTo FROM EPin e WHERE e.redeemedTo IS NOT NULL "
+        + "AND e.redemptionType = com.plotchain.epin.RedemptionType.ACTIVATION")
+    List<UUID> findAllActivationEpinHolderIds();
+
+    // Plot sale rule: a buyer must hold an ACTIVATION e-PIN (an epin row redeemed to them).
+    @Query("SELECT COUNT(e) > 0 FROM EPin e WHERE e.redeemedTo = :id "
+        + "AND e.redemptionType = com.plotchain.epin.RedemptionType.ACTIVATION")
+    boolean hasActivationEpin(@Param("id") UUID id);
+
     @Query(value = """
         WITH RECURSIVE downline(id) AS (
             SELECT id FROM associate WHERE parent_id = :associateId
