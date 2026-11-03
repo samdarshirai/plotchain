@@ -38,8 +38,8 @@ type CollapsibleSection = 'businessVolume' | 'networkIncome';
           <h1 class="dashboard__title">{{ 'dashboard.title' | translate }}</h1>
           <div class="dashboard__header-meta">
             <ng-container *ngIf="d.cycleCountdown as cc; else noCycle">
-              <span class="dashboard__cycle-pill">{{ cycleClosesKey(cc.daysRemaining) | translate: { days: cc.daysRemaining } }}</span>
-              <span class="dashboard__cycle-range">{{ 'dashboard.cycleRange' | translate: { number: cc.cycleNumber, start: (cc.periodStart | date:'d MMM'), end: (cc.periodEnd | date:'d MMM') } }}</span>
+              <span class="dashboard__cycle-pill">{{ 'dashboard.cycleOngoing' | translate }}</span>
+              <span class="dashboard__cycle-range">{{ (cc.periodEnd ? 'dashboard.cycleRange' : 'dashboard.cycleRangeOpen') | translate: { number: cc.cycleNumber, start: (cc.periodStart | date:'d MMM'), end: (cc.periodEnd | date:'d MMM') } }}</span>
             </ng-container>
             <ng-template #noCycle><span class="dashboard__cycle-pill">{{ 'dashboard.noActiveCycle' | translate }}</span></ng-template>
           </div>
@@ -143,10 +143,6 @@ export class DashboardComponent implements OnInit {
 
   formatCurrency(value: number): string {
     return this.currencyPipe.transform(value, 'INR', 'symbol', '1.0-0') ?? String(value);
-  }
-
-  cycleClosesKey(days: number): string {
-    return days === 1 ? 'dashboard.cycleClosesSingular' : 'dashboard.cycleCloses';
   }
 
   businessVolumeTiles(d: DashboardResponse): DashboardTile[] {

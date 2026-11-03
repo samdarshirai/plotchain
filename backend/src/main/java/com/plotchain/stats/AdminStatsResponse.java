@@ -50,7 +50,7 @@ public record AdminStatsResponse(
         UUID cycleId,
         LocalDate periodStart,
         LocalDate periodEnd,
-        long daysRemaining,
+        Long daysRemaining,
         BigDecimal directIncome,
         BigDecimal matchingIncome,
         BigDecimal totalIncome,

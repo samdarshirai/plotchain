@@ -64,10 +64,11 @@ describe('CycleManagementService', () => {
   it('closes a cycle by id', () => {
     const mockResponse: CycleCloseResponse = { cycleId: 'c1', status: 'CLOSED', legVolumeRowsWritten: 3, newCycleId: 'c2' };
 
-    service.close('c1').subscribe(res => expect(res).toEqual(mockResponse));
+    service.close('c1', '2026-08-20').subscribe(res => expect(res).toEqual(mockResponse));
 
     const req = httpMock.expectOne('/api/admin/cycles/c1/close');
     expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ endDate: '2026-08-20' });
     req.flush(mockResponse);
   });
 

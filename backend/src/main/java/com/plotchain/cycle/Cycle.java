@@ -11,7 +11,7 @@ public class Cycle {
     private UUID id;
     @Column(name = "period_start", nullable = false)
     private LocalDate periodStart;
-    @Column(name = "period_end", nullable = false)
+    @Column(name = "period_end")
     private LocalDate periodEnd;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

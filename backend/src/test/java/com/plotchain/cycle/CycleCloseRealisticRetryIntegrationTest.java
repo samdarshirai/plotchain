@@ -184,7 +184,7 @@ class CycleCloseRealisticRetryIntegrationTest {
             .thenThrow(new RuntimeException("simulated late mid-batch failure"))
             .thenReturn(List.of());
 
-        assertThatThrownBy(() -> cycleService.close(cycleId)).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> cycleService.close(cycleId, java.time.LocalDate.now())).isInstanceOf(RuntimeException.class);
 
         // --- Full rollback: cycle back to OPEN, zero entries/legvolume for this cycle, associate
         // state exactly as it was before the call. ---
@@ -208,7 +208,7 @@ class CycleCloseRealisticRetryIntegrationTest {
 
         // --- Retry: same cycle, same call, failure removed (second stubbed invocation returns
         // an empty list -- a legitimate "no reward tiers configured" outcome). ---
-        CycleCloseResponse response = cycleService.close(cycleId);
+        CycleCloseResponse response = cycleService.close(cycleId, java.time.LocalDate.now());
 
         assertThat(response.status()).isEqualTo(CycleStatus.CLOSED);
 

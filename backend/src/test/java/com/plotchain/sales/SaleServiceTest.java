@@ -6,7 +6,6 @@ import com.plotchain.associate.AssociateRepository;
 import com.plotchain.associate.KycStatus;
 import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
-import com.plotchain.compensation.SettlementCycle;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleService;
 import com.plotchain.income.IncomeType;
@@ -107,8 +106,7 @@ class SaleServiceTest {
             UUID.randomUUID(), "v1", LocalDate.now().minusDays(1),
             new BigDecimal("10.00"), BigDecimal.ZERO, BigDecimal.ZERO,
             new BigDecimal("5.00"), new BigDecimal("4.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.MONTHLY,
-            Instant.now(), null);
+            BigDecimal.ZERO, BigDecimal.ZERO, Instant.now(), null);
     }
 
     // recordInstallmentPayment: one Sale per confirmed booking payment, amount = that installment.
@@ -259,8 +257,7 @@ class SaleServiceTest {
             UUID.randomUUID(), "reference", LocalDate.now().minusDays(1),
             new BigDecimal("6.00"), BigDecimal.ZERO, BigDecimal.ZERO,
             new BigDecimal("2.00"), new BigDecimal("15.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.MONTHLY,
-            Instant.now(), null);
+            BigDecimal.ZERO, BigDecimal.ZERO, Instant.now(), null);
     }
 
     @Test

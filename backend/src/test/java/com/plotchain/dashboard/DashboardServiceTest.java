@@ -9,7 +9,6 @@ import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
 import com.plotchain.compensation.RoyaltyBonusRate;
 import com.plotchain.compensation.RoyaltyBonusRateRepository;
-import com.plotchain.compensation.SettlementCycle;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.cycle.CycleStatus;
@@ -72,7 +71,7 @@ class DashboardServiceTest {
             UUID.randomUUID(), "v1", LocalDate.now().minusDays(1),
             new BigDecimal("10.00"), matchingIncomePct, new BigDecimal("3.00"), new BigDecimal("5.00"),
             new BigDecimal("4.00"), BigDecimal.ZERO, BigDecimal.ZERO,
-            SettlementCycle.MONTHLY, Instant.now(), null);
+            Instant.now(), null);
     }
 
     // Stubs every call this method makes unconditionally regardless of fixture specifics: the

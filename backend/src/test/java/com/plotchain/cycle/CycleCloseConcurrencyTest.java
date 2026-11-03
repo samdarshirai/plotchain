@@ -110,7 +110,7 @@ class CycleCloseConcurrencyTest {
 
         Future<CycleCloseResponse> second = pool.submit(() -> {
             events.add("second-calling");
-            CycleCloseResponse response = cycleService.close(cycleId);
+            CycleCloseResponse response = cycleService.close(cycleId, java.time.LocalDate.now());
             events.add("second-returned");
             return response;
         });
@@ -157,7 +157,7 @@ class CycleCloseConcurrencyTest {
 
         Future<CycleCloseResponse> second = pool.submit(() -> {
             events.add("second-calling");
-            CycleCloseResponse response = cycleService.close(cycleId);
+            CycleCloseResponse response = cycleService.close(cycleId, java.time.LocalDate.now());
             events.add("second-returned");
             return response;
         });

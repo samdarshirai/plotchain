@@ -39,7 +39,7 @@ const MATCHING_KEYS = ['bflb', 'bfrb', 'nlb', 'nrb', 'tlb', 'trb', 'clb', 'crb']
 export interface CycleOption {
   cycleId: string;
   cyclePeriodStart: string;
-  cyclePeriodEnd: string;
+  cyclePeriodEnd: string | null;
 }
 
 // One date style across every income-statement tab (Reward Statement design): "12 Aug 2026",
@@ -86,7 +86,7 @@ const DATE_FORMAT = 'dd MMM yyyy';
             <select (change)="onDownlineCycleChange($any($event.target).value)">
               <option value="">{{ 'incomeStatement.cycleFilterAllOption' | translate }}</option>
               <option *ngFor="let cycle of downlineCycles" [value]="cycle.cycleId" [selected]="cycle.cycleId === downlineCycleId">
-                {{ formatDate(cycle.cyclePeriodStart) }} – {{ formatDate(cycle.cyclePeriodEnd) }}
+                {{ formatDate(cycle.cyclePeriodStart) }} – {{ formatEndDate(cycle.cyclePeriodEnd) }}
               </option>
             </select>
           </label>
@@ -100,7 +100,7 @@ const DATE_FORMAT = 'dd MMM yyyy';
             <select (change)="onCycleIdChange($any($event.target).value)">
               <option value="">{{ 'incomeStatement.cycleFilterAllOption' | translate }}</option>
               <option *ngFor="let cycle of cycles" [value]="cycle.cycleId">
-                {{ formatDate(cycle.cyclePeriodStart) }} – {{ formatDate(cycle.cyclePeriodEnd) }}
+                {{ formatDate(cycle.cyclePeriodStart) }} – {{ formatEndDate(cycle.cyclePeriodEnd) }}
               </option>
             </select>
           </label>
@@ -292,7 +292,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       money.forEach(k => (totals[k] += values[k]));
       const status = r.paidCount === 0 ? 'payStatusUnpaid' : r.paidCount >= r.entryCount ? 'payStatusPaid' : 'payStatusPartial';
       return {
-        period: `${this.formatDate(r.cyclePeriodStart, DATE_FORMAT)} – ${this.formatDate(r.cyclePeriodEnd, DATE_FORMAT)}`,
+        period: `${this.formatDate(r.cyclePeriodStart, DATE_FORMAT)} – ${this.formatEndDate(r.cyclePeriodEnd, DATE_FORMAT)}`,
         ...Object.fromEntries(money.map(k => [k, this.formatCurrency(values[k])])),
         paidStatus: this.translate.instant('incomeStatement.' + status),
         paymentDate: r.paidAt ? formatIst(r.paidAt) : '—'
@@ -514,7 +514,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       next: res => {
         const byCycleId = new Map<string, CycleOption>();
         for (const entry of res.entries) {
-          if (!entry.cyclePeriodStart || !entry.cyclePeriodEnd) {
+          if (!entry.cyclePeriodStart) {
             continue;
           }
           if (!byCycleId.has(entry.cycleId)) {
@@ -545,7 +545,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         next: rows => {
           this.downlineAll = rows;
           const byCycle = new Map<string, CycleOption>();
-          rows.forEach(r => r.cyclePeriodStart && r.cyclePeriodEnd && !byCycle.has(r.cycleId) &&
+          rows.forEach(r => r.cyclePeriodStart && !byCycle.has(r.cycleId) &&
             byCycle.set(r.cycleId, { cycleId: r.cycleId, cyclePeriodStart: r.cyclePeriodStart, cyclePeriodEnd: r.cyclePeriodEnd }));
           this.downlineCycles = [...byCycle.values()].sort((a, b) => b.cyclePeriodStart.localeCompare(a.cyclePeriodStart));
           this.updateDownlineRows();
@@ -594,6 +594,11 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     return this.datePipe.transform(value, format, undefined, 'en-US');
   }
 
+  // A cycle with no end date yet is still running.
+  protected formatEndDate(value: string | null | undefined, format: string = DATE_FORMAT): string {
+    return this.formatDate(value, format) ?? this.translate.instant('admin.cycleManagement.ongoing');
+  }
+
   protected formatCurrency(amount: number): string {
     return this.currencyPipe.transform(amount, 'INR', 'symbol', '1.0-0') ?? String(amount);
   }
@@ -618,7 +623,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     this.statementRows = (this.page?.entries ?? []).map((entry, i) => {
       const b = entry.legBreakdown;
       return {
-        period: `${this.formatDate(entry.cyclePeriodStart, DATE_FORMAT)} – ${this.formatDate(entry.cyclePeriodEnd, DATE_FORMAT)}`,
+        period: `${this.formatDate(entry.cyclePeriodStart, DATE_FORMAT)} – ${this.formatEndDate(entry.cyclePeriodEnd, DATE_FORMAT)}`,
         bflb: n(b?.bfLeft),
         bfrb: n(b?.bfRight),
         nlb: n(b?.newLeft),
@@ -648,7 +653,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     if (this.activeIncomeType === 'ROYALTY') {
       const n = (v: number | undefined) => this.formatCurrency(v ?? 0);
       this.statementRows = (this.page?.entries ?? []).map(entry => ({
-        date: `${this.formatDate(entry.cyclePeriodStart, DATE_FORMAT)} – ${this.formatDate(entry.cyclePeriodEnd, DATE_FORMAT)}`,
+        date: `${this.formatDate(entry.cyclePeriodStart, DATE_FORMAT)} – ${this.formatEndDate(entry.cyclePeriodEnd, DATE_FORMAT)}`,
         newLeft: n(entry.legBreakdown?.newLeft),
         newRight: n(entry.legBreakdown?.newRight),
         newMatching: n(entry.legBreakdown?.matchingBusiness),

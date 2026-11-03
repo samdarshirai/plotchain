@@ -89,7 +89,7 @@ describe('AdminDashboardComponent', () => {
     translate.use('en');
     translate.setTranslation('en', {
       adminDashboard: {
-        cycleClosesShort: '{{days}} days left', cycleClosesShortSingular: '1 day left',
+        cycleSince: 'since {{start}}',
         deltaUp: '+{{amount}} vs last cycle', deltaDown: '-{{amount}} vs last cycle',
         decisionOldest: 'oldest {{days}} days',
         messagesMore: '{{count}} more messages', messagesMoreSingular: '1 more message'

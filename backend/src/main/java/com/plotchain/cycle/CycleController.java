@@ -5,6 +5,7 @@ import com.plotchain.wallet.WalletCreditingService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,8 +46,8 @@ public class CycleController {
     }
 
     @PostMapping("/{id}/close")
-    public CycleCloseResponse close(@PathVariable UUID id) {
-        return cycleService.close(id);
+    public CycleCloseResponse close(@PathVariable UUID id, @RequestBody(required = false) CycleCloseRequest request) {
+        return cycleService.close(id, request == null ? null : request.endDate());
     }
 
     // Wallet/withdrawal unit 1 (docs/superpowers/specs/role-capability/2026-08-04-wallet-withdrawal-domain-design.md,

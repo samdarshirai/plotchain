@@ -10,7 +10,6 @@ import com.plotchain.compensation.RewardTier;
 import com.plotchain.compensation.RewardTierRepository;
 import com.plotchain.compensation.RoyaltyBonusRate;
 import com.plotchain.compensation.RoyaltyBonusRateRepository;
-import com.plotchain.compensation.SettlementCycle;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntry;
 import com.plotchain.income.LedgerEntryRepository;
@@ -188,7 +187,7 @@ class CycleCloseCompensationReferenceIntegrationTest {
             UUID.randomUUID(), "comp-ref", LocalDate.of(2025, 6, 1),
             new BigDecimal("6.00"), new BigDecimal("7.00"), new BigDecimal("11.00"),
             new BigDecimal("2.00"), new BigDecimal("15.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null);
+            BigDecimal.ZERO, BigDecimal.ZERO, Instant.now(), null);
         compensationPlanVersionRepository.saveAndFlush(planVersion);
         planVersionId = planVersion.getId();
 
@@ -237,7 +236,7 @@ class CycleCloseCompensationReferenceIntegrationTest {
         seedSale(fId, cycleId, plotId, new BigDecimal("1700000")); // F: ₹17L
 
         // --- Run the real batch, once. ---
-        cycleService.close(cycleId);
+        cycleService.close(cycleId, java.time.LocalDate.now());
 
         // Your MATCHING: left leg (A's subtree) = C+D = ₹50L, right leg (B's subtree) = E+F = ₹40L
         // -> matched = min(50L,40L) = ₹40L, gross = 40,00,000 * 7% = 2,80,000.

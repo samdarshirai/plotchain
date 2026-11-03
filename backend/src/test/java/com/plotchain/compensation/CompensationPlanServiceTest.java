@@ -75,7 +75,6 @@ class CompensationPlanServiceTest {
             new BigDecimal("15.00"),
             new BigDecimal("1100.00"),
             new BigDecimal("500.00"),
-            SettlementCycle.SEMI_MONTHLY,
             Instant.parse("2020-01-01T00:00:00Z"),
             null
         );
@@ -97,7 +96,6 @@ class CompensationPlanServiceTest {
             new BigDecimal("15.00"),
             new BigDecimal("1100.00"),
             new BigDecimal("500.00"),
-            SettlementCycle.SEMI_MONTHLY,
             Instant.now(),
             createdBy
         );
@@ -108,10 +106,10 @@ class CompensationPlanServiceTest {
     }
 
     private CompensationPlanRequest requestWithTiersAndEffectiveFrom(List<RewardTierInput> tiers, LocalDate effectiveFrom) {
-        return requestWithSettlementCycle("SEMI_MONTHLY", tiers, effectiveFrom);
+        return requestWith(tiers, effectiveFrom);
     }
 
-    private CompensationPlanRequest requestWithSettlementCycle(String settlementCycle, List<RewardTierInput> tiers, LocalDate effectiveFrom) {
+    private CompensationPlanRequest requestWith(List<RewardTierInput> tiers, LocalDate effectiveFrom) {
         return new CompensationPlanRequest(
             new BigDecimal("10.00"),
             new BigDecimal("7.00"),
@@ -120,7 +118,6 @@ class CompensationPlanServiceTest {
             new BigDecimal("5.00"),
             new BigDecimal("1100.00"),
             new BigDecimal("500.00"),
-            settlementCycle,
             List.of(new RoyaltyBonusRateInput(new BigDecimal("40"), new BigDecimal("3.00"))),
             tiers,
             effectiveFrom
@@ -268,21 +265,6 @@ class CompensationPlanServiceTest {
         assertThat(saved.getVersionLabel()).isEqualTo("v2");
         assertThat(saved.getCreatedByAssociateId()).isEqualTo(ADMIN_ID);
         assertThat(response.versionLabel()).isEqualTo("v2");
-    }
-
-    @Test
-    void updatePlanAcceptsHalfYearlyAndYearlySettlementCycles() {
-        when(versionRepository.findFirstByOrderByCreatedAtDesc()).thenReturn(Optional.of(seedVersion()));
-        lenient().when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
-
-        CompensationPlanResponse halfYearly = compensationPlanService.updatePlan(
-            requestWithSettlementCycle("HALF_YEARLY", List.of(), null), ADMIN_ID);
-        assertThat(halfYearly.settlementCycle()).isEqualTo("HALF_YEARLY");
-
-        when(versionRepository.findFirstByOrderByCreatedAtDesc()).thenReturn(Optional.of(seedVersion()));
-        CompensationPlanResponse yearly = compensationPlanService.updatePlan(
-            requestWithSettlementCycle("YEARLY", List.of(), null), ADMIN_ID);
-        assertThat(yearly.settlementCycle()).isEqualTo("YEARLY");
     }
 
     @Test

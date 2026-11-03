@@ -94,7 +94,7 @@ class CycleCloseRollbackTest {
         associateId = seedRootAssociate();
         when(legVolumeRepository.saveAll(anyList())).thenThrow(new RuntimeException("simulated mid-batch failure"));
 
-        assertThatThrownBy(() -> cycleService.close(cycleId)).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> cycleService.close(cycleId, java.time.LocalDate.now())).isInstanceOf(RuntimeException.class);
 
         Cycle reread = cycleRepository.findById(cycleId).orElseThrow();
         assertThat(reread.getStatus()).isEqualTo(CycleStatus.OPEN);

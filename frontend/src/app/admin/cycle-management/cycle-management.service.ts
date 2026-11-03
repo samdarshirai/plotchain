@@ -26,8 +26,8 @@ export class CycleManagementService {
     return this.http.post<CycleSummary>('/api/admin/cycles/open', {});
   }
 
-  close(id: string): Observable<CycleCloseResponse> {
-    return this.http.post<CycleCloseResponse>(`/api/admin/cycles/${id}/close`, {});
+  close(id: string, endDate: string): Observable<CycleCloseResponse> {
+    return this.http.post<CycleCloseResponse>(`/api/admin/cycles/${id}/close`, { endDate });
   }
 
   creditWallets(id: string): Observable<WalletCreditingResult> {

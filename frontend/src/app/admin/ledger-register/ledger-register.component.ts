@@ -89,7 +89,7 @@ const LEG_FIELD: Record<string, string> = {
             <select (change)="onCycleIdChange($any($event.target).value)">
               <option value="">{{ 'admin.ledgerRegister.cycleFilterAllOption' | translate }}</option>
               <option *ngFor="let cycle of cycles" [value]="cycle.id" [selected]="cycle.id === cycleId">
-                {{ datePipe.transform(cycle.periodStart, 'mediumDate') }} – {{ datePipe.transform(cycle.periodEnd, 'mediumDate') }}
+                {{ datePipe.transform(cycle.periodStart, 'mediumDate') }} – {{ (datePipe.transform(cycle.periodEnd, 'mediumDate') || ('admin.cycleManagement.ongoing' | translate)) }}
               </option>
             </select>
           </label>
@@ -233,12 +233,16 @@ export class LedgerRegisterComponent implements OnInit {
     return (value && this.datePipe.transform(value, format, format === DATE_TIME_FORMAT ? '+0530' : undefined)) || '';
   }
 
+  private fmtEnd(value: string | null | undefined): string {
+    return this.fmtDate(value) || this.translate.instant('admin.cycleManagement.ongoing');
+  }
+
   private money(amount: number): string {
     return this.currencyPipe.transform(amount, 'INR', 'symbol', '1.0-0') ?? String(amount);
   }
 
   private cyclePeriod(e: AdminLedgerEntry): string {
-    return `${this.fmtDate(e.cyclePeriodStart)} – ${this.fmtDate(e.cyclePeriodEnd)}`;
+    return `${this.fmtDate(e.cyclePeriodStart)} – ${this.fmtEnd(e.cyclePeriodEnd)}`;
   }
 
   // Per-income-type layout, mirroring the associate Income Statement (income-statement.component.ts).
@@ -438,7 +442,7 @@ export class LedgerRegisterComponent implements OnInit {
         id: `${r.associateId}|${r.cycleId}`,
         associateId: r.associateUserId ?? '',
         name: r.associateName ?? '',
-        cyclePeriod: `${this.fmtDate(r.cyclePeriodStart)} – ${this.fmtDate(r.cyclePeriodEnd)}`,
+        cyclePeriod: `${this.fmtDate(r.cyclePeriodStart)} – ${this.fmtEnd(r.cyclePeriodEnd)}`,
         totalGross: this.money(r.totalGross),
         tds: this.money(r.tds),
         adminCharges: this.money(r.adminCharges),

@@ -185,7 +185,7 @@ class CycleCloseSponsorMatchingIntegrationTest {
         seedSale(leftId, cycleId, plotId, new BigDecimal("10000"));
         seedSale(rightId, cycleId, plotId, new BigDecimal("10000"));
 
-        cycleService.close(cycleId);
+        cycleService.close(cycleId, java.time.LocalDate.now());
 
         // Sponsee's own Matching entry: matched volume = min(100,100) = 100, gross = 100 * 7.00%
         // (V8-seeded plan version's matching_income_pct) = 7.00.
@@ -239,7 +239,7 @@ class CycleCloseSponsorMatchingIntegrationTest {
         seedSale(a6, cycleId, plotId, new BigDecimal("10000"));
         seedSale(a7, cycleId, plotId, new BigDecimal("10000"));
 
-        cycleService.close(cycleId);
+        cycleService.close(cycleId, java.time.LocalDate.now());
 
         // 5's Matching: min(100, 100) * 7.00% = 7.00
         LedgerEntry fiveMatching = ledgerEntryRepository

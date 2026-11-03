@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { catchError, forkJoin, of } from 'rxjs';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { CycleManagementService } from './cycle-management.service';
@@ -31,6 +32,7 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     TranslateModule,
     EditableTableComponent,
     InlineBannerComponent,
@@ -48,15 +50,12 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
         <div class="cycle-management__current-head">
           <div class="cycle-management__current-meta">
             <span class="cycle-management__current-eyebrow">{{ 'admin.cycleManagement.currentCycleTitle' | translate }}</span>
-            <span class="cycle-management__current-period">{{ open.periodStart }} – {{ open.periodEnd }}</span>
+            <span class="cycle-management__current-period">{{ open.periodStart }} – {{ open.periodEnd || ('admin.cycleManagement.ongoing' | translate) }}</span>
             <ng-container *ngTemplateOutlet="cycleRailTpl; context: { status: open.status }"></ng-container>
           </div>
           <ng-container *ngIf="currentCycleStats as stats">
           <div class="cycle-progress">
-            <div class="cycle-progress__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progressPercent">
-              <span class="cycle-progress__fill" [style.width.%]="progressPercent"></span>
-            </div>
-            <span class="cycle-progress__label">{{ stats.daysRemaining }} {{ 'admin.cycleManagement.daysRemainingLabel' | translate }}</span>
+            <span class="cycle-progress__label">{{ daysElapsed }} {{ 'admin.cycleManagement.daysElapsedLabel' | translate }}</span>
           </div>
           </ng-container>
           <div class="cycle-management__current-actions">
@@ -98,6 +97,21 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
           </div>
         </ng-container>
       </section>
+
+      <div class="cycle-popup__overlay" *ngIf="closeDialogOpen && currentOpenCycle as open">
+        <form class="cycle-popup cycle-management__close-dialog" role="dialog" aria-modal="true" aria-labelledby="close-cycle-title" (ngSubmit)="confirmClose()">
+          <h2 class="cycle-popup__title" id="close-cycle-title">{{ 'admin.cycleManagement.closeDialogTitle' | translate }}</h2>
+          <p>{{ 'admin.cycleManagement.closeDialogHelp' | translate }}</p>
+          <label class="cycle-management__end-date">
+            {{ 'admin.cycleManagement.endDateLabel' | translate }}
+            <input type="date" name="endDate" required [(ngModel)]="closeEndDate" [min]="open.periodStart" [max]="today" />
+          </label>
+          <div class="cycle-popup__footer">
+            <button type="button" class="brand-button brand-button--secondary" (click)="closeDialogOpen = false">{{ 'admin.cycleManagement.closeDialogCancel' | translate }}</button>
+            <button type="submit" class="brand-button cycle-management__confirm-close" [disabled]="!closeEndDate || closeEndDate < open.periodStart || closeEndDate > today">{{ 'admin.cycleManagement.closeDialogConfirm' | translate }}</button>
+          </div>
+        </form>
+      </div>
 
       <div class="cycle-popup__overlay" *ngIf="closeResult || closeError">
         <div class="cycle-popup" role="dialog" aria-modal="true">
@@ -219,19 +233,18 @@ export class CycleManagementComponent implements OnInit {
   currentCycleStats: CurrentCycleStats | null = null;
   closeResult: CycleCloseResponse | null = null;
   closeError: string | null = null;
+  closeDialogOpen = false;
+  closeEndDate = '';
+  readonly today = new Date().toLocaleDateString('en-CA'); // local YYYY-MM-DD
   openError: string | null = null;
   creditResult: WalletCreditingResult | null = null;
   creditError: 'conflict' | 'generic' | null = null;
   private status: CycleStatus | '' = '';
 
-  // Share of the current cycle's days already elapsed (daysRemaining comes from the stats endpoint).
-  get progressPercent(): number {
-    const stats = this.currentCycleStats;
-    if (!stats) {
-      return 0;
-    }
-    const days = (new Date(stats.periodEnd).getTime() - new Date(stats.periodStart).getTime()) / 86400000 + 1;
-    return Math.min(100, Math.max(0, Math.round(((days - stats.daysRemaining) / days) * 100)));
+  // Cycles have no fixed length: just how many days the open cycle has been running (start day = day 1).
+  get daysElapsed(): number {
+    const start = this.currentCycleStats?.periodStart;
+    return start ? Math.floor((new Date(this.today).getTime() - new Date(start).getTime()) / 86400000) + 1 : 0;
   }
 
   // % change of total income vs the previous cycle; null when there's nothing to compare against.
@@ -320,7 +333,7 @@ export class CycleManagementComponent implements OnInit {
 
   private toRow(cycle: CycleSummary, detail: CycleDetail | null): Record<string, string> {
     const row: Record<string, string> = {
-      period: `${cycle.periodStart} – ${cycle.periodEnd}`,
+      period: `${cycle.periodStart} – ${cycle.periodEnd ?? this.translate.instant('admin.cycleManagement.ongoing')}`,
       status: cycle.status
     };
     for (const t of INCOME_TYPES) {
@@ -392,18 +405,29 @@ export class CycleManagementComponent implements OnInit {
     });
   }
 
+  // Opens the end-date dialog (default today); confirmClose() does the actual call.
   closeCycle(): void {
     if (!this.currentOpenCycle) {
       return;
     }
+    this.closeEndDate = this.today;
+    this.closeDialogOpen = true;
+  }
+
+  confirmClose(): void {
+    if (!this.currentOpenCycle || !this.closeEndDate) {
+      return;
+    }
     this.closeError = null;
-    this.cycleManagementService.close(this.currentOpenCycle.id).subscribe({
+    this.closeDialogOpen = false;
+    this.cycleManagementService.close(this.currentOpenCycle.id, this.closeEndDate).subscribe({
       next: result => {
         this.closeResult = result;
       },
       error: (err: HttpErrorResponse) => {
         this.closeResult = null;
-        this.closeError = err.error?.error || this.translate.instant('admin.cycleManagement.closeGenericError');
+        this.closeError = err.error?.error
+          || this.translate.instant(err.status === 409 ? 'admin.cycleManagement.closeConflictError' : 'admin.cycleManagement.closeGenericError');
       }
     });
   }

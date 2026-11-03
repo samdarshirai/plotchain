@@ -10,7 +10,7 @@ export interface CycleIncomeTypeTotal {
 export interface CycleDetail {
   id: string;
   periodStart: string;
-  periodEnd: string;
+  periodEnd: string | null;
   status: CycleStatus;
   incomeTypeTotals: CycleIncomeTypeTotal[];
   totalNet: number;

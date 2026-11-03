@@ -18,6 +18,12 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
     // own units never needed it -- the settlement batch's one query to load this cycle's
     // RECORDED sale volume for the in-memory leg-volume rollup. VOIDED sales are excluded by
     // the status filter; the batch never sees them.
+    // Cycle close: sales recorded after the admin-chosen end date move to the next cycle.
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true)
+    @Query("UPDATE Sale s SET s.cycleId = :toCycleId WHERE s.cycleId = :fromCycleId AND s.recordedAt >= :from")
+    int moveSalesRecordedFrom(@Param("fromCycleId") UUID fromCycleId, @Param("toCycleId") UUID toCycleId,
+                              @Param("from") java.time.Instant from);
+
     List<Sale> findByCycleIdAndStatus(UUID cycleId, SaleStatus status);
 
     long countByCycleIdAndStatus(UUID cycleId, SaleStatus status);

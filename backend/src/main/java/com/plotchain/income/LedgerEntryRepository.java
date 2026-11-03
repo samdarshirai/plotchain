@@ -15,6 +15,13 @@ import java.util.UUID;
 
 public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> {
 
+    // Cycle close: sale-linked rows (Direct, Self Performance) follow their sale, which has already
+    // been moved to toCycleId, out of fromCycleId.
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true)
+    @Query("UPDATE LedgerEntry l SET l.cycleId = :toCycleId WHERE l.cycleId = :fromCycleId "
+        + "AND l.sourceRef IN (SELECT s.id FROM com.plotchain.sales.Sale s WHERE s.cycleId = :toCycleId)")
+    int moveSaleEntries(@Param("fromCycleId") UUID fromCycleId, @Param("toCycleId") UUID toCycleId);
+
     @Query("SELECT COALESCE(SUM(l.netAmount), 0) FROM LedgerEntry l WHERE l.associateId = :associateId AND l.cycleId = :cycleId AND l.incomeType = :type")
     BigDecimal sumNetAmountByAssociateCycleAndType(@Param("associateId") UUID associateId, @Param("cycleId") UUID cycleId, @Param("type") IncomeType type);
 

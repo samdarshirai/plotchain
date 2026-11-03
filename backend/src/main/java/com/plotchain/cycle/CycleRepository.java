@@ -33,7 +33,9 @@ public interface CycleRepository extends JpaRepository<Cycle, UUID> {
     Page<Cycle> findByStatusOrderByPeriodStartDesc(CycleStatus status, Pageable pageable);
 
     // Any cycle whose [periodStart, periodEnd] intersects the given range (duplicate/overlap guard).
-    boolean existsByPeriodStartLessThanEqualAndPeriodEndGreaterThanEqual(LocalDate end, LocalDate start);
+    // A null periodEnd is an open-ended cycle and overlaps everything from its start onwards.
+    @Query("SELECT COUNT(c) > 0 FROM Cycle c WHERE c.periodStart <= :end AND (c.periodEnd IS NULL OR c.periodEnd >= :start)")
+    boolean existsOverlapping(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
     // Associate dashboard header's "Cycle 09" ordinal: how many cycles have started on or
     // before this one's periodStart (1-indexed, so the very first cycle ever is "Cycle 1").

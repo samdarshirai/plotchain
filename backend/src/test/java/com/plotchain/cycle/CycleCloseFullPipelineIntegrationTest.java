@@ -10,7 +10,6 @@ import com.plotchain.compensation.RewardTier;
 import com.plotchain.compensation.RewardTierRepository;
 import com.plotchain.compensation.RoyaltyBonusRate;
 import com.plotchain.compensation.RoyaltyBonusRateRepository;
-import com.plotchain.compensation.SettlementCycle;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntry;
 import com.plotchain.income.LedgerEntryRepository;
@@ -220,7 +219,7 @@ class CycleCloseFullPipelineIntegrationTest {
             UUID.randomUUID(), "full-pipeline", LocalDate.of(2025, 6, 1),
             new BigDecimal("10.00"), new BigDecimal("10.00"), new BigDecimal("10.00"),
             new BigDecimal("5.00"), new BigDecimal("4.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null);
+            BigDecimal.ZERO, BigDecimal.ZERO, Instant.now(), null);
         compensationPlanVersionRepository.saveAndFlush(planVersion);
         planVersionId = planVersion.getId();
 
@@ -291,7 +290,7 @@ class CycleCloseFullPipelineIntegrationTest {
         // d sells nothing this cycle.
 
         // --- Run the real batch, once. ---
-        CycleCloseResponse response = cycleService.close(cycleId);
+        CycleCloseResponse response = cycleService.close(cycleId, java.time.LocalDate.now());
 
         assertThat(response.status()).isEqualTo(CycleStatus.CLOSED);
         // Scoped to this test's own fixture associates, not response.legVolumeRowsWritten()'s raw

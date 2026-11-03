@@ -8,7 +8,6 @@ import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
 import com.plotchain.compensation.RewardTierRepository;
 import com.plotchain.compensation.RoyaltyBonusRateRepository;
-import com.plotchain.compensation.SettlementCycle;
 import com.plotchain.payments.PaymentConfig;
 import com.plotchain.payments.PaymentConfigRepository;
 import com.plotchain.payments.PaymentConfigService;
@@ -159,7 +158,6 @@ class SetupStateServiceTest {
             new BigDecimal("15.00"),
             new BigDecimal("1100.00"),
             new BigDecimal("500.00"),
-            SettlementCycle.SEMI_MONTHLY,
             Instant.parse("2020-01-01T00:00:00Z"),
             null);
     }
@@ -176,7 +174,6 @@ class SetupStateServiceTest {
             new BigDecimal("15.00"),
             new BigDecimal("1100.00"),
             new BigDecimal("500.00"),
-            SettlementCycle.SEMI_MONTHLY,
             Instant.now(),
             createdByAssociateId);
     }

@@ -15,7 +15,6 @@ public record CompensationPlanResponse(
     BigDecimal adminChargeWithPanPct,
     BigDecimal activationFee,
     BigDecimal minWithdrawal,
-    String settlementCycle,
     List<RoyaltyBonusRateDto> royaltyBonusRates,
     List<RewardTierDto> rewardTiers,
     List<RankOptionDto> availableRanks,

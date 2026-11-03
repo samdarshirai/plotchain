@@ -152,7 +152,7 @@ class CycleControllerTest {
     void closeReturnsTheSettlementResultForAnAdminToken() throws Exception {
         UUID cycleId = UUID.randomUUID();
         UUID newCycleId = UUID.randomUUID();
-        when(cycleService.close(cycleId))
+        when(cycleService.close(cycleId, null))
             .thenReturn(new CycleCloseResponse(cycleId, CycleStatus.CLOSED, 3, newCycleId));
 
         mockMvc.perform(post("/api/admin/cycles/{id}/close", cycleId)
@@ -167,7 +167,7 @@ class CycleControllerTest {
     @Test
     void closeReturns404WhenTheCycleDoesNotExist() throws Exception {
         UUID cycleId = UUID.randomUUID();
-        when(cycleService.close(cycleId)).thenThrow(new CycleNotFoundException(cycleId));
+        when(cycleService.close(cycleId, null)).thenThrow(new CycleNotFoundException(cycleId));
 
         mockMvc.perform(post("/api/admin/cycles/{id}/close", cycleId)
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
@@ -177,7 +177,7 @@ class CycleControllerTest {
     @Test
     void closeReturns409WhenTheCycleIsNotOpen() throws Exception {
         UUID cycleId = UUID.randomUUID();
-        when(cycleService.close(cycleId)).thenThrow(new CycleAlreadyClosedException(cycleId));
+        when(cycleService.close(cycleId, null)).thenThrow(new CycleAlreadyClosedException(cycleId));
 
         mockMvc.perform(post("/api/admin/cycles/{id}/close", cycleId)
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))

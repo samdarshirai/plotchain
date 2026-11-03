@@ -10,7 +10,6 @@ import com.plotchain.compensation.RewardTier;
 import com.plotchain.compensation.RewardTierRepository;
 import com.plotchain.compensation.RoyaltyBonusRate;
 import com.plotchain.compensation.RoyaltyBonusRateRepository;
-import com.plotchain.compensation.SettlementCycle;
 import com.plotchain.income.IncomeType;
 import com.plotchain.income.LedgerEntry;
 import com.plotchain.income.LedgerEntryRepository;
@@ -193,7 +192,7 @@ class CycleServiceTest {
         UUID id = UUID.randomUUID();
         when(cycleRepository.findByIdForUpdate(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.close(id)).isInstanceOf(CycleNotFoundException.class);
+        assertThatThrownBy(() -> service.close(id, java.time.LocalDate.now())).isInstanceOf(CycleNotFoundException.class);
     }
 
     @Test
@@ -204,19 +203,42 @@ class CycleServiceTest {
         Cycle cycle = newCycle(CycleStatus.CLOSED);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
 
-        assertThatThrownBy(() -> service.close(cycle.getId())).isInstanceOf(CycleAlreadyClosedException.class);
+        assertThatThrownBy(() -> service.close(cycle.getId(), java.time.LocalDate.now())).isInstanceOf(CycleAlreadyClosedException.class);
     }
 
     @Test
-    void closeThrowsCycleValidationExceptionWhenPeriodHasNotEnded() {
+    void closeRejectsAnEndDateInTheFutureOrBeforeTheCycleStart() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
             rewardTierRepository, expenseRepository, walletRepository);
-        Cycle cycle = newCycleWithBounds(LocalDate.now().minusDays(1), LocalDate.now(), CycleStatus.OPEN);
+        Cycle cycle = newCycleWithBounds(LocalDate.now().minusDays(5), null, CycleStatus.OPEN);
         when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
 
-        assertThatThrownBy(() -> service.close(cycle.getId())).isInstanceOf(CycleValidationException.class);
+        assertThatThrownBy(() -> service.close(cycle.getId(), LocalDate.now().plusDays(1)))
+            .isInstanceOf(CycleValidationException.class);
+        assertThatThrownBy(() -> service.close(cycle.getId(), LocalDate.now().minusDays(6)))
+            .isInstanceOf(CycleValidationException.class);
         assertThat(cycle.getStatus()).isEqualTo(CycleStatus.OPEN);
+    }
+
+    @Test
+    void closeUsesTheChosenEndDateAndMovesLaterSalesToTheNextCycle() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository, expenseRepository, walletRepository);
+        LocalDate endDate = LocalDate.now().minusDays(2);
+        Cycle cycle = newCycleWithBounds(LocalDate.now().minusDays(10), null, CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
+            .thenReturn(Optional.of(planVersionFixture()));
+
+        CycleCloseResponse response = service.close(cycle.getId(), endDate);
+
+        assertThat(cycle.getPeriodEnd()).isEqualTo(endDate);
+        verify(saleRepository).moveSalesRecordedFrom(eq(cycle.getId()), eq(response.newCycleId()),
+            eq(endDate.plusDays(1).atStartOfDay(java.time.ZoneOffset.UTC).toInstant()));
+        verify(ledgerEntryRepository).moveSaleEntries(cycle.getId(), response.newCycleId());
     }
 
     @Test
@@ -244,7 +266,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         verify(compensationPlanVersionRepository).findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now());
     }
@@ -380,7 +402,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        CycleCloseResponse response = service.close(cycle.getId());
+        CycleCloseResponse response = service.close(cycle.getId(), java.time.LocalDate.now());
 
         assertThat(response.cycleId()).isEqualTo(cycle.getId());
         assertThat(response.status()).isEqualTo(CycleStatus.CLOSED);
@@ -405,7 +427,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<Cycle> savedCycles = ArgumentCaptor.forClass(Cycle.class);
         verify(cycleRepository, atLeastOnce()).save(savedCycles.capture());
@@ -419,7 +441,7 @@ class CycleServiceTest {
 
         LocalDate expectedStart = LocalDate.now().plusDays(1);
         assertThat(nextCycle.getPeriodStart()).isEqualTo(expectedStart);
-        assertThat(nextCycle.getPeriodEnd()).isEqualTo(expectedPeriodEnd(expectedStart));
+        assertThat(nextCycle.getPeriodEnd()).isNull();
         assertThat(nextCycle.getPeriodStart()).isNotEqualTo(cycle.getPeriodStart());
     }
 
@@ -472,7 +494,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        CycleCloseResponse response = service.close(cycle.getId());
+        CycleCloseResponse response = service.close(cycle.getId(), java.time.LocalDate.now());
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<LegVolume>> legVolumesCaptor = ArgumentCaptor.forClass(List.class);
@@ -531,8 +553,7 @@ class CycleServiceTest {
             UUID.randomUUID(), "v1", LocalDate.of(2026, 1, 1),
             BigDecimal.ZERO, new BigDecimal("10.00"), new BigDecimal("11.00"),
             new BigDecimal("5.00"), new BigDecimal("4.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY,
-            Instant.now(), null);
+            BigDecimal.ZERO, BigDecimal.ZERO, Instant.now(), null);
     }
 
     // Doc-fixture-accuracy tests use compensation-plan-reference.md's real published rates
@@ -544,8 +565,7 @@ class CycleServiceTest {
             UUID.randomUUID(), "reference", LocalDate.of(2026, 1, 1),
             new BigDecimal("6.00"), new BigDecimal("7.00"), new BigDecimal("11.00"),
             new BigDecimal("2.00"), new BigDecimal("15.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY,
-            Instant.now(), null);
+            BigDecimal.ZERO, BigDecimal.ZERO, Instant.now(), null);
     }
 
     private LedgerEntry matchingEntryFixture(UUID associateId, UUID cycleId, BigDecimal grossAmount) {
@@ -605,7 +625,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<LegVolume>> legVolumesCaptor = ArgumentCaptor.forClass(List.class);
@@ -678,7 +698,7 @@ class CycleServiceTest {
                 eq(planVersion.getId()), argThat(v -> v.compareTo(new BigDecimal("50")) == 0)))
             .thenReturn(Optional.of(royaltyBonusRateFixture(planVersion.getId(), new BigDecimal("50"), new BigDecimal("1"))));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository, atLeastOnce()).save(entryCaptor.capture());
@@ -715,7 +735,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(referencePlanVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository).save(entryCaptor.capture());
@@ -751,12 +771,11 @@ class CycleServiceTest {
             UUID.randomUUID(), "processing-fee", LocalDate.of(2026, 1, 1),
             BigDecimal.ZERO, new BigDecimal("10.00"), BigDecimal.ZERO,
             new BigDecimal("2.00"), new BigDecimal("5.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY,
-            Instant.now(), null);
+            BigDecimal.ZERO, BigDecimal.ZERO, Instant.now(), null);
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersion));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository).save(entryCaptor.capture());
@@ -791,7 +810,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
         verify(associateRepository, never()).save(any(Associate.class));
@@ -823,7 +842,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LegVolume> savedLegVolumeCaptor = ArgumentCaptor.forClass(LegVolume.class);
         verify(legVolumeRepository).save(savedLegVolumeCaptor.capture());
@@ -859,7 +878,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LegVolume> savedLegVolumeCaptor = ArgumentCaptor.forClass(LegVolume.class);
         verify(legVolumeRepository).save(savedLegVolumeCaptor.capture());
@@ -895,7 +914,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<Associate> savedAssociateCaptor = ArgumentCaptor.forClass(Associate.class);
         verify(associateRepository).save(savedAssociateCaptor.capture());
@@ -930,7 +949,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository).save(entryCaptor.capture());
@@ -962,7 +981,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository).save(entryCaptor.capture());
@@ -999,7 +1018,7 @@ class CycleServiceTest {
             eq(root.getId()), eq(cycle.getId()), eq(IncomeType.MATCHING), any(UUID.class)))
             .thenReturn(true);
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
         verify(legVolumeRepository, never()).save(any(LegVolume.class));
@@ -1018,8 +1037,8 @@ class CycleServiceTest {
 
         Cycle result = service.getOrOpenCurrent();
 
-        assertThat(result.getPeriodStart()).isEqualTo(expectedPeriodStart(today));
-        assertThat(result.getPeriodEnd()).isEqualTo(expectedPeriodEnd(today));
+        assertThat(result.getPeriodStart()).isEqualTo(today);
+        assertThat(result.getPeriodEnd()).isNull();
         assertThat(result.getStatus()).isEqualTo(CycleStatus.OPEN);
         assertThat(result.getId()).isNotNull();
         verify(cycleRepository).save(any(Cycle.class));
@@ -1103,7 +1122,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         assertThat(root.getRankId()).isEqualTo(silverId);
         assertThat(root.getRankChangedAt()).isNotNull();
@@ -1145,7 +1164,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         assertThat(root.getRankId()).isEqualTo(goldId);
     }
@@ -1179,7 +1198,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         assertThat(root.getRankId()).isEqualTo(goldId);
         verify(associateRepository, never()).save(root);
@@ -1214,7 +1233,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         assertThat(admin.getRankId()).isNull();
         verify(associateRepository, never()).save(admin);
@@ -1249,7 +1268,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         assertThat(financeStaff.getRankId()).isNull();
         verify(associateRepository, never()).save(financeStaff);
@@ -1291,7 +1310,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         assertThat(root.getCumulativeMatchedVolume()).isEqualByComparingTo("200");
         assertThat(root.getRankId()).isEqualTo(silverId);
@@ -1323,7 +1342,7 @@ class CycleServiceTest {
         when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponsee.getId(), cycle.getId(), IncomeType.MATCHING))
             .thenReturn(Optional.of(sponseeMatchingEntry));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository).save(entryCaptor.capture());
@@ -1376,7 +1395,7 @@ class CycleServiceTest {
         when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(b.getId(), cycle.getId(), IncomeType.MATCHING))
             .thenReturn(Optional.of(bMatchingEntry));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(entryCaptor.capture());
@@ -1422,7 +1441,7 @@ class CycleServiceTest {
         when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponseeTwo.getId(), cycle.getId(), IncomeType.MATCHING))
             .thenReturn(Optional.of(sponseeTwoMatchingEntry));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(entryCaptor.capture());
@@ -1459,7 +1478,7 @@ class CycleServiceTest {
         when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponsee.getId(), cycle.getId(), IncomeType.MATCHING))
             .thenReturn(Optional.empty());
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
     }
@@ -1500,7 +1519,7 @@ class CycleServiceTest {
         when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponsee.getId(), cycle.getId(), IncomeType.MATCHING))
             .thenReturn(Optional.of(sponseeMatchingEntry));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository).save(entryCaptor.capture());
@@ -1534,7 +1553,7 @@ class CycleServiceTest {
         when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponsee.getId(), cycle.getId(), IncomeType.MATCHING))
             .thenReturn(Optional.of(sponseeMatchingEntry));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository).save(entryCaptor.capture());
@@ -1569,7 +1588,7 @@ class CycleServiceTest {
             sponsor.getId(), cycle.getId(), IncomeType.SPONSOR_MATCHING, sponseeMatchingEntry.getId()))
             .thenReturn(true);
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
     }
@@ -1597,7 +1616,7 @@ class CycleServiceTest {
             UUID.randomUUID(), "v1", LocalDate.of(2026, 1, 1),
             BigDecimal.ZERO, new BigDecimal("10.00"), BigDecimal.ZERO,
             new BigDecimal("5.00"), new BigDecimal("4.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null);
+            BigDecimal.ZERO, BigDecimal.ZERO, Instant.now(), null);
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(zeroSponsorMatchingPlanVersion));
 
@@ -1606,7 +1625,7 @@ class CycleServiceTest {
         when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponsee.getId(), cycle.getId(), IncomeType.MATCHING))
             .thenReturn(Optional.of(sponseeMatchingEntry));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
     }
@@ -1640,7 +1659,7 @@ class CycleServiceTest {
         when(ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(sponsee.getId(), cycle.getId(), IncomeType.MATCHING))
             .thenReturn(Optional.of(sponseeMatchingEntry));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository).save(entryCaptor.capture());
@@ -1681,7 +1700,7 @@ class CycleServiceTest {
             planVersion.getId(), new BigDecimal("50")))
             .thenReturn(Optional.of(royaltyBonusRateFixture(planVersion.getId(), new BigDecimal("40"), new BigDecimal("3.00"))));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         // Two saves this cycle: the MATCHING entry (unit 5) and the ROYALTY entry (this unit).
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
@@ -1735,7 +1754,7 @@ class CycleServiceTest {
         // an Optional-returning method is Optional.empty(), i.e. "no slab rate configured at or
         // below this associate's matched volume."
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.ROYALTY));
     }
@@ -1766,7 +1785,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         // Admin still earns Matching (Decision #7: "Matching and Sponsor Matching... apply to
         // Admin in full") but never Royalty.
@@ -1801,7 +1820,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.ROYALTY));
     }
@@ -1834,7 +1853,7 @@ class CycleServiceTest {
             planVersion.getId(), new BigDecimal("50")))
             .thenReturn(Optional.of(royaltyBonusRateFixture(planVersion.getId(), new BigDecimal("40"), new BigDecimal("3.00"))));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(entryCaptor.capture());
@@ -1882,7 +1901,7 @@ class CycleServiceTest {
             eq(root.getId()), eq(cycle.getId()), eq(IncomeType.ROYALTY), any(UUID.class)))
             .thenReturn(true);
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         // MATCHING still gets written (its own idempotency check is untouched by this stub) --
         // only ROYALTY is skipped.
@@ -1920,7 +1939,7 @@ class CycleServiceTest {
             planVersion.getId(), new BigDecimal("50")))
             .thenReturn(Optional.of(royaltyBonusRateFixture(planVersion.getId(), new BigDecimal("40"), BigDecimal.ZERO)));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.ROYALTY));
     }
@@ -1950,7 +1969,7 @@ class CycleServiceTest {
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
             .thenReturn(Optional.of(planVersionFixture()));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
     }
@@ -1988,7 +2007,7 @@ class CycleServiceTest {
             planVersion.getId(), new BigDecimal("4000000")))
             .thenReturn(Optional.of(royaltyBonusRateFixture(planVersion.getId(), new BigDecimal("4000000"), new BigDecimal("1.5"))));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository, org.mockito.Mockito.atLeastOnce()).save(entryCaptor.capture());
@@ -2030,7 +2049,7 @@ class CycleServiceTest {
             planVersion.getId(), new BigDecimal("2000000")))
             .thenReturn(Optional.of(royaltyBonusRateFixture(planVersion.getId(), new BigDecimal("2000000"), new BigDecimal("1.0"))));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository, org.mockito.Mockito.atLeastOnce()).save(entryCaptor.capture());
@@ -2070,7 +2089,7 @@ class CycleServiceTest {
         // Deliberately NOT stubbing royaltyBonusRateRepository -- no slab configured at or below
         // ₹10,00,000, so Mockito's default empty Optional is exactly right.
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.ROYALTY));
     }
@@ -2107,7 +2126,7 @@ class CycleServiceTest {
             rewardTierFixture(planVersion.getId(), 1, new BigDecimal("40"), new BigDecimal("1000.00"))
         ));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         // Two saves this cycle: the MATCHING entry (unit 5) and the REWARD entry (this unit).
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
@@ -2158,7 +2177,7 @@ class CycleServiceTest {
             rewardTierFixture(planVersion.getId(), 1, new BigDecimal("500"), new BigDecimal("1000.00"))
         ));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.REWARD));
     }
@@ -2196,7 +2215,7 @@ class CycleServiceTest {
             rewardTierFixture(planVersion.getId(), 2, new BigDecimal("100"), new BigDecimal("5000.00"))
         ));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         // Three saves: MATCHING (unit 5) + two REWARD entries, one per newly-crossed tier.
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
@@ -2241,7 +2260,7 @@ class CycleServiceTest {
             rewardTierFixture(planVersion.getId(), 1, new BigDecimal("40"), new BigDecimal("1000.00"))
         ));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         LedgerEntry rewardEntry = verifyAndCaptureRewardEntry();
         assertThat(rewardEntry.getAssociateId()).isEqualTo(admin.getId());
@@ -2283,7 +2302,7 @@ class CycleServiceTest {
             rewardTierFixture(planVersion.getId(), 1, new BigDecimal("40"), new BigDecimal("1000.00"))
         ));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         LedgerEntry rewardEntry = verifyAndCaptureRewardEntry();
         assertThat(rewardEntry.getStatus()).isEqualTo(LedgerEntryStatus.CARRIED_FORWARD);
@@ -2321,7 +2340,7 @@ class CycleServiceTest {
         when(ledgerEntryRepository.existsByAssociateIdAndIncomeTypeAndSourceRef(root.getId(), IncomeType.REWARD, tier.getId()))
             .thenReturn(true);
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         // MATCHING still gets written (its own idempotency check is untouched by this stub) --
         // only REWARD is skipped.
@@ -2360,7 +2379,7 @@ class CycleServiceTest {
             rewardTierFixture(planVersion.getId(), 1, new BigDecimal("40"), BigDecimal.ZERO)
         ));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.REWARD));
     }
@@ -2392,7 +2411,7 @@ class CycleServiceTest {
         // List-returning method is an empty List, i.e. "no reward tiers configured for this plan
         // version", exercising creditReward's early-return.
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.REWARD));
     }
@@ -2430,7 +2449,7 @@ class CycleServiceTest {
             rewardTierFixture(planVersion.getId(), 2, new BigDecimal("1000000"), new BigDecimal("20000.00"))
         ));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         // Leg volume resets after each level: Level 1 spends ₹5,00,000, leaving ₹5,00,000 --
         // short of Level 2's own fresh ₹10,00,000 -- which carries forward.
@@ -2479,7 +2498,7 @@ class CycleServiceTest {
             rewardTierFixture(planVersion.getId(), 4, new BigDecimal("4000000"), new BigDecimal("90000.00"))
         ));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         // Four saves this cycle: the MATCHING entry (unit 5) and three REWARD entries (Levels 1-3).
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
@@ -2529,7 +2548,7 @@ class CycleServiceTest {
         when(ledgerEntryRepository.existsByAssociateIdAndIncomeTypeAndSourceRef(root.getId(), IncomeType.REWARD, tier1.getId()))
             .thenReturn(true);
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         // Two saves this cycle: the MATCHING entry (unit 5) and the one REWARD entry (Level 2 --
         // Level 1's already-awarded, so it's skipped without a new save).
@@ -2573,7 +2592,7 @@ class CycleServiceTest {
         RewardTier tier2 = rewardTierFixture(planVersion.getId(), 2, new BigDecimal("2000000"), new BigDecimal("20000.00"));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(tier1, tier2));
 
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
 
         // 10L exactly clears Level 1; Level 2 then needs a fresh 20L, so nothing carries.
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
@@ -2648,7 +2667,7 @@ class CycleServiceTest {
             .thenReturn(Optional.of(planVersion));
 
         long start = System.nanoTime();
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
         long elapsedMs = (System.nanoTime() - start) / 1_000_000;
         System.out.println("close() on balanced " + size + "-associate tree: " + elapsedMs + "ms");
 
@@ -2735,7 +2754,7 @@ class CycleServiceTest {
             .thenReturn(Optional.of(planVersion));
 
         long start = System.nanoTime();
-        service.close(cycle.getId());
+        service.close(cycle.getId(), java.time.LocalDate.now());
         long elapsedMs = (System.nanoTime() - start) / 1_000_000;
         System.out.println("close() on deep " + depth + "-level chain: " + elapsedMs + "ms");
 

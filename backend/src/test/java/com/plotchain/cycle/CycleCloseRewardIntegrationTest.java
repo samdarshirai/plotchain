@@ -181,7 +181,7 @@ class CycleCloseRewardIntegrationTest {
         seedSale(leftId, firstCycleId, plotId, new BigDecimal("100"));
         seedSale(rightId, firstCycleId, plotId, new BigDecimal("100"));
 
-        CycleCloseResponse firstClose = cycleService.close(firstCycleId);
+        CycleCloseResponse firstClose = cycleService.close(firstCycleId, java.time.LocalDate.now());
 
         List<LedgerEntry> rewardEntriesAfterFirstClose = ledgerEntryRepository.findAll().stream()
             .filter(e -> rootId.equals(e.getAssociateId()) && e.getIncomeType() == IncomeType.REWARD)
@@ -196,7 +196,7 @@ class CycleCloseRewardIntegrationTest {
         // Only one OPEN cycle may exist: drop the one the first close() opened for "tomorrow".
         cycleRepository.deleteById(firstClose.newCycleId());
         secondCycleId = seedOpenCycle(LocalDate.of(2026, 7, 16), LocalDate.of(2026, 7, 31));
-        cycleService.close(secondCycleId);
+        cycleService.close(secondCycleId, java.time.LocalDate.now());
 
         List<LedgerEntry> rewardEntriesAfterSecondClose = ledgerEntryRepository.findAll().stream()
             .filter(e -> rootId.equals(e.getAssociateId()) && e.getIncomeType() == IncomeType.REWARD)

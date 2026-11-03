@@ -34,9 +34,6 @@ public class CompensationPlanVersion {
     private BigDecimal activationFee;
     @Column(name = "min_withdrawal")
     private BigDecimal minWithdrawal;
-    @Enumerated(EnumType.STRING)
-    @Column(name = "settlement_cycle")
-    private SettlementCycle settlementCycle;
     @Column(name = "created_at")
     private Instant createdAt;
     @Column(name = "created_by_associate_id")
@@ -55,7 +52,6 @@ public class CompensationPlanVersion {
             BigDecimal adminChargeWithPanPct,
             BigDecimal activationFee,
             BigDecimal minWithdrawal,
-            SettlementCycle settlementCycle,
             Instant createdAt,
             UUID createdByAssociateId) {
         this.id = id;
@@ -68,7 +64,6 @@ public class CompensationPlanVersion {
         this.adminChargeWithPanPct = adminChargeWithPanPct;
         this.activationFee = activationFee;
         this.minWithdrawal = minWithdrawal;
-        this.settlementCycle = settlementCycle;
         this.createdAt = createdAt;
         this.createdByAssociateId = createdByAssociateId;
     }
@@ -83,7 +78,6 @@ public class CompensationPlanVersion {
     public BigDecimal getAdminChargeWithPanPct() { return adminChargeWithPanPct; }
     public BigDecimal getActivationFee() { return activationFee; }
     public BigDecimal getMinWithdrawal() { return minWithdrawal; }
-    public SettlementCycle getSettlementCycle() { return settlementCycle; }
     public Instant getCreatedAt() { return createdAt; }
     public UUID getCreatedByAssociateId() { return createdByAssociateId; }
 }

@@ -10,7 +10,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
 
 // status is nullable: PlotCsvService and manual creation both default a blank status to
-// AVAILABLE in the service layer, matching CompensationPlanRequest's settlementCycle pattern
+// AVAILABLE in the service layer, matching CompensationPlanRequest's defaulted-field pattern
 // of validating the string shape here and resolving it to an enum in the service.
 public record PlotRequest(
     @NotBlank String plotNo,

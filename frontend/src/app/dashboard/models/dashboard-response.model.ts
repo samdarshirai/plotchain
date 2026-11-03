@@ -32,10 +32,10 @@ export interface WalletSummary {
 
 export interface CycleCountdown {
   cycleId: string;
-  daysRemaining: number;
+  daysRemaining: number | null;
   cycleNumber: number;
   periodStart: string;
-  periodEnd: string;
+  periodEnd: string | null;
 }
 
 export interface SalesSummary {

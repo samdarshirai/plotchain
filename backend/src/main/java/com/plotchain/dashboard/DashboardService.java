@@ -176,7 +176,7 @@ public class DashboardService {
 
         DashboardResponse.CycleCountdown countdown = openCycle.map(c -> new DashboardResponse.CycleCountdown(
             c.getId(),
-            Math.max(0, ChronoUnit.DAYS.between(LocalDate.now(), c.getPeriodEnd())),
+            c.getPeriodEnd() == null ? null : Math.max(0L, ChronoUnit.DAYS.between(LocalDate.now(), c.getPeriodEnd())),
             (int) cycleRepository.countByPeriodStartLessThanEqual(c.getPeriodStart()),
             c.getPeriodStart(), c.getPeriodEnd())).orElse(null);
 

@@ -254,7 +254,7 @@ class LiveIncomeIntegrationTest {
         live.setFulfilmentRemark("paid early");
         ledgerEntryRepository.saveAndFlush(live);
 
-        cycleService.close(cycleId);
+        cycleService.close(cycleId, java.time.LocalDate.now());
 
         assertThat(entries(sponseeId, IncomeType.MATCHING)).singleElement().satisfies(e -> {
             assertThat(e.getGrossAmount()).isEqualByComparingTo("420");
@@ -273,7 +273,7 @@ class LiveIncomeIntegrationTest {
         seedTree();
         seedSale(leftId, cycleId, plotId, new BigDecimal("10000"));
         seedSale(rightId, cycleId, plotId, new BigDecimal("10000"));
-        cycleService.close(cycleId);
+        cycleService.close(cycleId, java.time.LocalDate.now());
         UUID finalId = entries(sponseeId, IncomeType.MATCHING).get(0).getId();
 
         cycleService.refreshLiveIncome(cycleId);
@@ -309,6 +309,24 @@ class LiveIncomeIntegrationTest {
         assertThat(designationService.designationOf(sponseeId)).isNull();
     }
 
+    // End date picked at close: sales recorded after it belong to the next cycle.
+    @Test
+    void closeMovesSalesRecordedAfterTheEndDateToTheNextCycle() {
+        seedTree();
+        UUID lateSale = seedSale(leftId, cycleId, plotId, new BigDecimal("20000"));
+        Sale early = saleRepository.findById(seedSale(rightId, cycleId, plotId, new BigDecimal("10000"))).orElseThrow();
+        early.setRecordedAt(java.time.LocalDate.now().minusDays(3).atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
+        saleRepository.saveAndFlush(early);
+
+        nextCycleId = cycleService.close(cycleId, java.time.LocalDate.now().minusDays(1)).newCycleId();
+
+        assertThat(saleRepository.findById(lateSale).orElseThrow().getCycleId()).isEqualTo(nextCycleId);
+        assertThat(saleRepository.findById(early.getId()).orElseThrow().getCycleId()).isEqualTo(cycleId);
+        assertThat(cycleRepository.findById(cycleId).orElseThrow().getPeriodEnd())
+            .isEqualTo(java.time.LocalDate.now().minusDays(1));
+        assertThat(cycleRepository.findById(nextCycleId).orElseThrow().getPeriodEnd()).isNull();
+    }
+
     // A cycle closing with business on one leg only must carry that whole leg forward (min = 0
     // is still "excess on the larger leg"), so when the other leg fills next cycle the reward is
     // achieved live -- before that cycle closes -- matching the reward screen's leg totals.
@@ -321,7 +339,7 @@ class LiveIncomeIntegrationTest {
         rewardTierId = tier.getId();
         seedSale(leftId, cycleId, plotId, new BigDecimal("20000"));
 
-        nextCycleId = cycleService.close(cycleId).newCycleId();
+        nextCycleId = cycleService.close(cycleId, java.time.LocalDate.now()).newCycleId();
 
         assertThat(legVolumeRepository.findByAssociateIdAndCycleId(sponseeId, cycleId).orElseThrow().getCarriedForwardLeft())
             .isEqualByComparingTo("20000");
@@ -345,7 +363,7 @@ class LiveIncomeIntegrationTest {
         rewardTierRepository.saveAndFlush(tier);
         rewardTierId = tier.getId();
         seedSale(leftId, cycleId, plotId, new BigDecimal("20000"));
-        nextCycleId = cycleService.close(cycleId).newCycleId();
+        nextCycleId = cycleService.close(cycleId, java.time.LocalDate.now()).newCycleId();
         walletCreditingService.creditWallets(cycleId);
         assertThat(cycleRepository.findById(cycleId).orElseThrow().getStatus()).isEqualTo(CycleStatus.CLOSED);
 

@@ -11,8 +11,8 @@ export interface KycBreakdown {
 export interface CurrentCycleStats {
   cycleId: string;
   periodStart: string;
-  periodEnd: string;
-  daysRemaining: number;
+  periodEnd: string | null;
+  daysRemaining: number | null;
   directIncome: number;
   matchingIncome: number;
   totalIncome: number;

@@ -104,7 +104,7 @@ public class AdminStatsService {
 
         List<AdminStatsResponse.NetworkGrowthPoint> networkGrowth = new ArrayList<>();
         for (Cycle c : lastCycles) {
-            Instant cutoffExclusive = c.getPeriodEnd().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+            Instant cutoffExclusive = endExclusive(c);
             networkGrowth.add(new AdminStatsResponse.NetworkGrowthPoint(
                 CYCLE_LABEL_FORMAT.format(c.getPeriodStart()),
                 associateRepository.countByRoleAndJoinedBefore(AssociateRole.ASSOCIATE, cutoffExclusive)));
@@ -162,13 +162,14 @@ public class AdminStatsService {
         BigDecimal matching = ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), IncomeType.MATCHING);
         BigDecimal total = ledgerEntryRepository.sumNetAmountByCycle(cycle.getId());
 
-        long daysRemaining = Math.max(0, ChronoUnit.DAYS.between(LocalDate.now(), cycle.getPeriodEnd()));
+        Long daysRemaining = cycle.getPeriodEnd() == null ? null
+            : Math.max(0L, ChronoUnit.DAYS.between(LocalDate.now(), cycle.getPeriodEnd()));
 
         // :end is an EXCLUSIVE upper bound, same convention as AdminAssociateService.list /
         // AssociateRepository#searchDirectory: pass the day *after* periodEnd to include
         // associates who joined on periodEnd itself.
         Instant start = cycle.getPeriodStart().atStartOfDay(ZoneOffset.UTC).toInstant();
-        Instant endExclusive = cycle.getPeriodEnd().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant endExclusive = endExclusive(cycle);
         long newAssociates = associateRepository.countByRoleAndJoinedBetween(AssociateRole.ASSOCIATE, start, endExclusive);
 
         long salesThisCycle = saleRepository.countByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED);
@@ -188,5 +189,11 @@ public class AdminStatsService {
             direct, matching, total, newAssociates, salesThisCycle, revenueThisCycle,
             previousCycleTotalIncome, incomeTrend
         );
+    }
+
+    // Open-ended cycle (no end date yet) runs up to now.
+    private static Instant endExclusive(Cycle c) {
+        return c.getPeriodEnd() == null ? Instant.now()
+            : c.getPeriodEnd().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
     }
 }

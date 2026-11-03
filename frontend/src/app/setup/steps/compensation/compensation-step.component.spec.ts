@@ -26,7 +26,6 @@ describe('CompensationStepComponent', () => {
     adminChargeWithPanPct: 5,
     activationFee: 1100,
     minWithdrawal: 100,
-    settlementCycle: 'SEMI_MONTHLY',
     royaltyBonusRates: [{ volumeThreshold: 2000000, royaltyPct: 1 }],
     rewardTiers: [
       { tierLevel: 1, volumeThreshold: 100000, cashReward: 1000, perkDescription: 'Certificate', designation: '' },
@@ -84,7 +83,6 @@ describe('CompensationStepComponent', () => {
     const component = fixture.componentInstance;
 
     expect(component.form.value.directIncomePct).toBe(10);
-    expect(component.form.value.settlementCycle).toBe('SEMI_MONTHLY');
     expect(component.royaltyRows).toEqual([{ volumeThreshold: 2000000, royaltyPct: 1 }]);
     expect(component.rewardTierRows).toEqual([
       { volumeThreshold: 100000, cashReward: 1000, perkDescription: 'Certificate', designation: '' },
@@ -94,19 +92,6 @@ describe('CompensationStepComponent', () => {
     tick(500);
     httpMock.expectNone('/api/company/compensation');
   }));
-
-  it('offers Half Yearly and Yearly as Settlement Cycle toggle options, selectable via setSettlementCycle', () => {
-    const component = fixture.componentInstance;
-    const values = component.settlementCycleOptions.map(option => option.value);
-
-    expect(values).toEqual(['SEMI_MONTHLY', 'MONTHLY', 'HALF_YEARLY', 'YEARLY', 'CUSTOM']);
-
-    component.setSettlementCycle('HALF_YEARLY');
-    expect(component.form.value.settlementCycle).toBe('HALF_YEARLY');
-
-    component.setSettlementCycle('YEARLY');
-    expect(component.form.value.settlementCycle).toBe('YEARLY');
-  });
 
   it('hides the legacy minWithdrawal field from the visible form layout (B2: not the real Go-Live-gating setting)', () => {
     expect(fixture.nativeElement.querySelector('input[formcontrolname="minWithdrawal"]')).toBeNull();
@@ -232,12 +217,12 @@ describe('CompensationStepComponent', () => {
     expect(fixture.componentInstance.savedJustNow).toBeFalse();
   }));
 
-  it('sets a translated submitError on a 400 keyed to a field with no visible field-error slot (settlementCycle)', fakeAsync(() => {
+  it('sets a translated submitError on a 400 keyed to a field with no visible field-error slot (royaltyBonusRates)', fakeAsync(() => {
     fixture.componentInstance.form.get('directIncomePct')?.setValue(20);
 
     tick(400);
     httpMock.expectOne('/api/company/compensation').flush(
-      { error: 'validation failed', fields: { settlementCycle: 'unsupported cycle' } },
+      { error: 'validation failed', fields: { royaltyBonusRates: 'invalid rates' } },
       { status: 400, statusText: 'Bad Request' }
     );
 

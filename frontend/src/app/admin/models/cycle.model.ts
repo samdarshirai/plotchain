@@ -3,7 +3,7 @@ export type CycleStatus = 'OPEN' | 'CALCULATING' | 'CLOSED';
 export interface CycleSummary {
   id: string;
   periodStart: string;
-  periodEnd: string;
+  periodEnd: string | null;
   status: CycleStatus;
 }
 

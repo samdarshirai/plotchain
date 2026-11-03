@@ -26,14 +26,11 @@ export interface CompensationPlanResponse {
   adminChargeWithPanPct: number;
   activationFee: number;
   minWithdrawal: number;
-  settlementCycle: 'SEMI_MONTHLY' | 'MONTHLY' | 'HALF_YEARLY' | 'YEARLY' | 'CUSTOM';
   royaltyBonusRates: RoyaltyBonusRate[];
   rewardTiers: RewardTier[];
   availableRanks: RankOption[];
   createdAt: string | null;
 }
-
-export type SettlementCycle = CompensationPlanResponse['settlementCycle'];
 
 export type CompensationPlanRequest = Omit<
   CompensationPlanResponse,

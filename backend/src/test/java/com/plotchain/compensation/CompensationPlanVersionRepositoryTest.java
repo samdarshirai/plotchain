@@ -98,7 +98,7 @@ class CompensationPlanVersionRepositoryTest {
             UUID.randomUUID(), "royalty-test", effectiveFrom,
             BigDecimal.ZERO, new BigDecimal("7.00"), BigDecimal.ZERO,
             new BigDecimal("2.00"), new BigDecimal("15.00"),
-            BigDecimal.ZERO, BigDecimal.ZERO, SettlementCycle.SEMI_MONTHLY, Instant.now(), null);
+            BigDecimal.ZERO, BigDecimal.ZERO, Instant.now(), null);
         entityManager.persist(version);
         return version;
     }
@@ -166,28 +166,7 @@ class CompensationPlanVersionRepositoryTest {
         assertThat(tiers).extracting(RewardTier::getTierLevel).containsExactly(1, 2);
     }
 
-    @Test
-    void persistsAVersionWithHalfYearlyOrYearlySettlementCycle() {
-        // Exercises the real chk_settlement_cycle DB CHECK constraint (not mocked) -- per the
-        // V25/V26 lesson, a Java-enum-only widening would pass every mocked-repository test while
-        // still blowing up here.
-        CompensationPlanVersion halfYearly = newVersion("half-yearly", LocalDate.of(2028, 1, 1), SettlementCycle.HALF_YEARLY);
-        CompensationPlanVersion yearly = newVersion("yearly", LocalDate.of(2028, 2, 1), SettlementCycle.YEARLY);
-
-        entityManager.persist(halfYearly);
-        entityManager.persist(yearly);
-        entityManager.flush();
-
-        assertThat(compensationPlanVersionRepository.findAllByOrderByEffectiveFromDesc())
-            .extracting(CompensationPlanVersion::getSettlementCycle)
-            .contains(SettlementCycle.HALF_YEARLY, SettlementCycle.YEARLY);
-    }
-
     private CompensationPlanVersion newVersion(String label, LocalDate effectiveFrom) {
-        return newVersion(label, effectiveFrom, SettlementCycle.SEMI_MONTHLY);
-    }
-
-    private CompensationPlanVersion newVersion(String label, LocalDate effectiveFrom, SettlementCycle settlementCycle) {
         return new CompensationPlanVersion(
                 UUID.randomUUID(),
                 label,
@@ -199,7 +178,6 @@ class CompensationPlanVersionRepositoryTest {
                 new BigDecimal("15.00"),
                 new BigDecimal("1100.00"),
                 new BigDecimal("500.00"),
-                settlementCycle,
                 Instant.now(),
                 null);
     }

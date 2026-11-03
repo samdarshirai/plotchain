@@ -17,7 +17,6 @@ describe('CompensationPlanService', () => {
     adminChargeWithPanPct: 2,
     activationFee: 500,
     minWithdrawal: 1000,
-    settlementCycle: 'MONTHLY',
     royaltyBonusRates: [],
     rewardTiers: [],
     availableRanks: [],
@@ -77,7 +76,6 @@ describe('CompensationPlanService', () => {
       adminChargeWithPanPct: response.adminChargeWithPanPct,
       activationFee: response.activationFee,
       minWithdrawal: response.minWithdrawal,
-      settlementCycle: response.settlementCycle,
       rewardTiers: response.rewardTiers,
       royaltyBonusRates: []
     };

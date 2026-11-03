@@ -35,11 +35,13 @@ import { AdminRecentSalesTableComponent } from './widgets/recent-sales-table/rec
             <h1 class="admin-dashboard__title">{{ 'adminDashboard.operationsTitle' | translate }}</h1>
             <p class="admin-dashboard__cycle-caption">
               <ng-container *ngIf="s.currentCycle as cycle; else noCycleCaption">
-                {{ 'adminDashboard.cyclePeriod' | translate: {
-                  start: (cycle.periodStart | date: 'd'),
-                  end: (cycle.periodEnd | date: 'd MMM')
-                } }},
-                <span class="admin-dashboard__cycle-closes">{{ cycleClosesKey(cycle.daysRemaining) | translate: { days: cycle.daysRemaining } }}</span>
+                <ng-container *ngIf="cycle.periodEnd; else openEnded">
+                  {{ 'adminDashboard.cyclePeriod' | translate: {
+                    start: (cycle.periodStart | date: 'd'),
+                    end: (cycle.periodEnd | date: 'd MMM')
+                  } }}
+                </ng-container>
+                <ng-template #openEnded>{{ 'adminDashboard.cycleSince' | translate: { start: (cycle.periodStart | date: 'd MMM') } }}</ng-template>
               </ng-container>
               <ng-template #noCycleCaption>{{ 'adminDashboard.noCycleEmptyState' | translate }}</ng-template>
             </p>
@@ -188,10 +190,6 @@ export class AdminDashboardComponent implements OnInit {
 
   formatCurrency(value: number): string {
     return this.currencyPipe.transform(value, 'INR', 'symbol', '1.0-0') ?? String(value);
-  }
-
-  cycleClosesKey(days: number): string {
-    return days === 1 ? 'adminDashboard.cycleClosesShortSingular' : 'adminDashboard.cycleClosesShort';
   }
 
   cycleDelta(cycle: CurrentCycleStats): number {

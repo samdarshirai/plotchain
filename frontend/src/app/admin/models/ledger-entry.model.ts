@@ -13,7 +13,7 @@ export interface AdminLedgerEntry {
   incomeType: IncomeType;
   cycleId: string;
   cyclePeriodStart: string;
-  cyclePeriodEnd: string;
+  cyclePeriodEnd: string | null;
   grossAmount: number;
   tdsDeduction: number;
   adminDeduction: number;

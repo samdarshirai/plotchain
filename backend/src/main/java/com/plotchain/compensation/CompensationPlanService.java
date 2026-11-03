@@ -190,7 +190,6 @@ public class CompensationPlanService {
             request.adminChargeWithPanPct(),
             request.activationFee(),
             request.minWithdrawal(),
-            SettlementCycle.valueOf(request.settlementCycle()),
             Instant.now(),
             adminId
         );
@@ -332,7 +331,6 @@ public class CompensationPlanService {
             version.getAdminChargeWithPanPct(),
             version.getActivationFee(),
             version.getMinWithdrawal(),
-            version.getSettlementCycle().name(),
             royaltyDtos,
             tierDtos,
             availableRanks,

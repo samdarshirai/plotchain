@@ -28,7 +28,7 @@ public record DashboardResponse(
         BigDecimal matchingIncomeLifetime, BigDecimal sponsorMatchingIncomeLifetime) {}
     public record WalletSummary(BigDecimal balance) {}
     // cycleNumber is 1-indexed (the first cycle ever is "Cycle 1"), per CycleRepository#countByPeriodStartLessThanEqual.
-    public record CycleCountdown(UUID cycleId, long daysRemaining, int cycleNumber, LocalDate periodStart, LocalDate periodEnd) {}
+    public record CycleCountdown(UUID cycleId, Long daysRemaining, int cycleNumber, LocalDate periodStart, LocalDate periodEnd) {}
     public record SalesSummary(int salesThisCycle, BigDecimal revenueBookedThisCycle, BigDecimal revenueBookedChangePct) {}
     public record NetworkSummary(long totalDownline, long directCount, long leftAssociateCount, long rightAssociateCount) {}
     // totalLeftBusiness/totalRightBusiness are lifetime (carry-corrected, see DashboardService),

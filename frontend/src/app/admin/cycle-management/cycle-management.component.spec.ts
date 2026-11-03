@@ -125,7 +125,7 @@ describe('CycleManagementComponent', () => {
     expect(fixture.componentInstance.currentCycleStats?.totalIncome).toBe(1500);
     const stats: HTMLElement = fixture.nativeElement.querySelector('.cycle-management__stats');
     expect(stats).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.cycle-progress__label').textContent).toContain('12'); // daysRemaining
+    expect(fixture.nativeElement.querySelector('.cycle-progress__label').textContent).toMatch(/^\s*\d+/); // days elapsed
     expect(stats.textContent).toContain('3'); // newAssociatesThisCycle
   });
 
@@ -153,9 +153,29 @@ describe('CycleManagementComponent', () => {
     expect(fixture.componentInstance.currentOpenCycle?.id).toBe('c2');
   });
 
+  it('asks for the end date first (default today) and sends it with the close call', () => {
+    fixture.detectChanges();
+    fixture.componentInstance.closeCycle();
+    fixture.detectChanges();
+
+    httpMock.expectNone('/api/admin/cycles/c2/close');
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('.cycle-management__close-dialog input[type=date]');
+    expect(input.min).toBe('2026-08-16');
+    expect(input.max).toBe(fixture.componentInstance.today);
+    expect(fixture.componentInstance.closeEndDate).toBe(fixture.componentInstance.today);
+
+    fixture.componentInstance.closeEndDate = '2026-08-30';
+    fixture.componentInstance.confirmClose();
+    const req = httpMock.expectOne('/api/admin/cycles/c2/close');
+    expect(req.request.body).toEqual({ endDate: '2026-08-30' });
+    expect(fixture.componentInstance.closeDialogOpen).toBeFalse();
+    req.flush({ cycleId: 'c2', status: 'CLOSED', legVolumeRowsWritten: 0, newCycleId: 'c3' });
+  });
+
   it('closes the current cycle and shows the SettlementResult monitor banner', () => {
     fixture.detectChanges();
     fixture.componentInstance.closeCycle();
+    fixture.componentInstance.confirmClose();
 
     const req = httpMock.expectOne('/api/admin/cycles/c2/close');
     expect(req.request.method).toBe('POST');
@@ -180,6 +200,7 @@ describe('CycleManagementComponent', () => {
   it('shows a conflict error on a 409 without crashing', () => {
     fixture.detectChanges();
     fixture.componentInstance.closeCycle();
+    fixture.componentInstance.confirmClose();
 
     const req = httpMock.expectOne('/api/admin/cycles/c2/close');
     req.flush({ error: 'Cycle is not open, cannot close' }, { status: 409, statusText: 'Conflict' });
@@ -191,6 +212,7 @@ describe('CycleManagementComponent', () => {
   it('shows a generic error on a non-409 close failure', () => {
     fixture.detectChanges();
     fixture.componentInstance.closeCycle();
+    fixture.componentInstance.confirmClose();
 
     const req = httpMock.expectOne('/api/admin/cycles/c2/close');
     req.flush({ error: 'boom' }, { status: 500, statusText: 'Server Error' });

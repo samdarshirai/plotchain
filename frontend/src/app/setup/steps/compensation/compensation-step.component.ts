@@ -8,7 +8,6 @@ import { debounceTime, takeUntil, tap } from 'rxjs/operators';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { StatTileComponent } from '../../../shared/components/stat-tile/stat-tile.component';
-import { ToggleGroupComponent, ToggleOption } from '../../../shared/components/toggle-group/toggle-group.component';
 import { EditableTableColumn, EditableTableComponent } from '../../../shared/components/editable-table/editable-table.component';
 import { SetupStepNavComponent } from '../../../shared/components/setup-step-nav/setup-step-nav.component';
 import { ErrorSummaryComponent } from '../../../shared/components/error-summary/error-summary.component';
@@ -18,23 +17,16 @@ import { CompensationPlanService } from './compensation-plan.service';
 import { computeSampleEarnings, SampleEarningsResult } from './sample-earnings';
 import { SetupService } from '../../setup.service';
 import { SetupInspectorService, SetupStepController } from '../../setup-inspector.service';
-import { CompensationPlanRequest, SettlementCycle } from '../../models/compensation-plan.model';
+import { CompensationPlanRequest } from '../../models/compensation-plan.model';
 
 const LABELS: Record<string, string> = {
   directIncomePct: 'Direct income %', matchingIncomePct: 'Matching income %', sponsorMatchingPct: 'Sponsor matching %',
   tdsPct: 'TDS %', adminChargeWithPanPct: 'Processing fee %',
   activationFee: 'Activation fee'
 };
-// ponytail: minWithdrawal/settlementCycle stay un-surfaced -- minWithdrawal is intentionally hidden (QA B2), settlementCycle is a
-// defaulted toggle that cannot be invalid; royalty/reward table cells already gate on isComplete*Row, add cell errors if needed.
+// ponytail: minWithdrawal stays un-surfaced (intentionally hidden, QA B2); royalty/reward table cells already gate on isComplete*Row, add cell errors if needed.
 
 const DEFAULT_SCENARIO_VOLUME = 1000000; // spec example: "sells ₹10L on each leg"
-
-const SETTLEMENT_CYCLES: SettlementCycle[] = ['SEMI_MONTHLY', 'MONTHLY', 'HALF_YEARLY', 'YEARLY', 'CUSTOM'];
-
-function isSettlementCycle(value: string): value is SettlementCycle {
-  return SETTLEMENT_CYCLES.some(cycle => cycle === value);
-}
 
 type CollapsibleSection = 'rewardTiers' | 'royalty' | 'fees';
 
@@ -55,7 +47,7 @@ function isCompleteRewardTierRow(row: Record<string, string | number>): boolean 
 }
 
 // The only form fields with a visible <app-field-error> in the template. A server-side
-// field error keyed on anything else (settlementCycle, royaltyBonusRates, rewardTiers,
+// field error keyed on anything else (royaltyBonusRates, rewardTiers,
 // minWithdrawal -- hidden per B2, see the template comment where it used to render -- or an
 // unkeyed 500) would otherwise render nothing at all -- those get routed to submitError instead.
 const RENDERED_FIELD_ERROR_KEYS = [
@@ -78,7 +70,6 @@ const RENDERED_FIELD_ERROR_KEYS = [
     ErrorSummaryComponent,
     InlineBannerComponent,
     StatTileComponent,
-    ToggleGroupComponent,
     EditableTableComponent,
     SetupStepNavComponent
   ],
@@ -250,15 +241,6 @@ const RENDERED_FIELD_ERROR_KEYS = [
             class="compensation-step__accordion-body"
             [hidden]="!isExpanded('fees')"
           >
-          <label>
-            {{ 'setup.compensation.settlementCycleLabel' | translate }}
-            <app-toggle-group
-              [options]="settlementCycleOptions"
-              [value]="form.value.settlementCycle || null"
-              (valueChange)="setSettlementCycle($event)"
-            ></app-toggle-group>
-          </label>
-
           <div class="compensation-step__row">
             <label>
               {{ 'setup.compensation.tdsLabel' | translate }}
@@ -392,7 +374,6 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     directIncomePct: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     matchingIncomePct: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     sponsorMatchingPct: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
-    settlementCycle: this.fb.nonNullable.control<SettlementCycle>('SEMI_MONTHLY', Validators.required),
     tdsPct: [2, [Validators.required, Validators.min(0), Validators.max(100)]],
     adminChargeWithPanPct: [5, [Validators.required, Validators.min(0), Validators.max(100)]],
     activationFee: [1100, [Validators.required, Validators.min(0)]],
@@ -464,10 +445,9 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     merge(this.form.valueChanges, this.rowsChanged$)
       .pipe(
         takeUntil(this.destroyed$),
-        // Marked here rather than relying solely on Angular's own dirty tracking -- settlementCycle
-        // is set programmatically via setSettlementCycle() (the toggle group's output), and the
-        // royalty/reward-tier rows aren't form controls at all, so neither marks the form dirty
-        // on its own.
+        // Marked here rather than relying solely on Angular's own dirty tracking -- the
+        // royalty/reward-tier rows aren't form controls at all, so they don't mark the form dirty
+        // on their own.
         tap(() => this.form.markAsDirty()),
         debounceTime(400)
       )
@@ -539,16 +519,6 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     ]);
   }
 
-  get settlementCycleOptions(): ToggleOption[] {
-    return [
-      { value: 'SEMI_MONTHLY', label: this.translate.instant('setup.compensation.settlementCycleSemiMonthlyLabel') },
-      { value: 'MONTHLY', label: this.translate.instant('setup.compensation.settlementCycleMonthlyLabel') },
-      { value: 'HALF_YEARLY', label: this.translate.instant('setup.compensation.settlementCycleHalfYearlyLabel') },
-      { value: 'YEARLY', label: this.translate.instant('setup.compensation.settlementCycleYearlyLabel') },
-      { value: 'CUSTOM', label: this.translate.instant('setup.compensation.settlementCycleCustomLabel') }
-    ];
-  }
-
   isExpanded(section: CollapsibleSection): boolean {
     return this.expandedSections.has(section);
   }
@@ -584,9 +554,7 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
 
   get feesSummary(): string {
     const raw = this.form.value;
-    const cycleLabel = this.settlementCycleOptions.find(option => option.value === raw.settlementCycle)?.label ?? '';
     return this.translate.instant('setup.compensation.accordion.feesSummary', {
-      cycle: cycleLabel,
       tds: raw.tdsPct ?? 0,
       withPan: raw.adminChargeWithPanPct ?? 0
     });
@@ -607,14 +575,6 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
     this.recomputeSampleEarnings();
     if (rows.length > 0 && rows.every(isCompleteRewardTierRow)) {
       this.rowsChanged$.next();
-    }
-  }
-
-  setSettlementCycle(value: string): void {
-    // Narrowed rather than cast: the toggle group is built from SETTLEMENT_CYCLES, so anything
-    // else is not a value this form can hold.
-    if (isSettlementCycle(value)) {
-      this.form.controls.settlementCycle.setValue(value);
     }
   }
 
@@ -721,7 +681,7 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
           this.serverFieldErrors = fields;
         } else {
           // Nothing in `fields` (a plain 500) or only keys with no visible field-error slot
-          // (settlementCycle, royaltyBonusRates, rewardTiers) -- without this, the error would
+          // (royaltyBonusRates, rewardTiers) -- without this, the error would
           // be entirely invisible since autosave is the only save path.
           this.serverFieldErrors = {};
           this.submitError = this.translate.instant('setup.compensation.validation.genericSaveError');

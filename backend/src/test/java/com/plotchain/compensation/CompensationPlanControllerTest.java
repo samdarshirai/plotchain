@@ -70,7 +70,6 @@ class CompensationPlanControllerTest {
             new BigDecimal("5.00"),
             new BigDecimal("1100.00"),
             new BigDecimal("500.00"),
-            SettlementCycle.SEMI_MONTHLY,
             Instant.parse("2020-01-01T00:00:00Z"),
             null
         );
@@ -85,7 +84,6 @@ class CompensationPlanControllerTest {
           "adminChargeWithPanPct": 5.00,
           "activationFee": 1100.00,
           "minWithdrawal": 500.00,
-          "settlementCycle": "SEMI_MONTHLY",
           "royaltyBonusRates": [],
           "rewardTiers": [
             {"tierLevel": 1, "volumeThreshold": 1000.00, "cashReward": 100.00, "perkDescription": "Tier 1"},
@@ -103,42 +101,11 @@ class CompensationPlanControllerTest {
           "adminChargeWithPanPct": 5.00,
           "activationFee": 1100.00,
           "minWithdrawal": 500.00,
-          "settlementCycle": "SEMI_MONTHLY",
           "royaltyBonusRates": [],
           "rewardTiers": [
             {"tierLevel": 1, "volumeThreshold": 1000.00, "cashReward": 100.00, "perkDescription": "Tier 1"},
             {"tierLevel": 3, "volumeThreshold": 2000.00, "cashReward": 200.00, "perkDescription": "Tier 3"}
           ]
-        }
-        """;
-
-    private static final String HALF_YEARLY_PUT_JSON = """
-        {
-          "directIncomePct": 10.00,
-          "matchingIncomePct": 8.00,
-          "sponsorMatchingPct": 5.00,
-          "tdsPct": 2.00,
-          "adminChargeWithPanPct": 5.00,
-          "activationFee": 1100.00,
-          "minWithdrawal": 500.00,
-          "settlementCycle": "HALF_YEARLY",
-          "royaltyBonusRates": [],
-          "rewardTiers": []
-        }
-        """;
-
-    private static final String BLANK_SETTLEMENT_CYCLE_PUT_JSON = """
-        {
-          "directIncomePct": 10.00,
-          "matchingIncomePct": 8.00,
-          "sponsorMatchingPct": 5.00,
-          "tdsPct": 2.00,
-          "adminChargeWithPanPct": 5.00,
-          "activationFee": 1100.00,
-          "minWithdrawal": 500.00,
-          "settlementCycle": "",
-          "royaltyBonusRates": [],
-          "rewardTiers": []
         }
         """;
 
@@ -156,8 +123,7 @@ class CompensationPlanControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.versionLabel").value("v1"))
             .andExpect(jsonPath("$.matchingIncomePct").value(7.00))
-            .andExpect(jsonPath("$.directIncomePct").value(10.00))
-            .andExpect(jsonPath("$.settlementCycle").value("SEMI_MONTHLY"));
+            .andExpect(jsonPath("$.directIncomePct").value(10.00));
     }
 
     // Test case 2 from the task brief. Deliberately deferred out of this file in Task 6 because
@@ -200,19 +166,6 @@ class CompensationPlanControllerTest {
     }
 
     @Test
-    void putCompensationWithHalfYearlySettlementCycleSucceeds() throws Exception {
-        when(versionRepository.findFirstByOrderByCreatedAtDesc()).thenReturn(Optional.of(seedVersion()));
-        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of());
-
-        mockMvc.perform(put("/api/company/compensation")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
-                .contentType("application/json")
-                .content(HALF_YEARLY_PUT_JSON))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.settlementCycle").value("HALF_YEARLY"));
-    }
-
-    @Test
     void putCompensationWithGappedRewardTiersReturnsConflict() throws Exception {
         mockMvc.perform(put("/api/company/compensation")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
@@ -222,13 +175,4 @@ class CompensationPlanControllerTest {
             .andExpect(jsonPath("$.error").isNotEmpty());
     }
 
-    @Test
-    void putCompensationWithBlankSettlementCycleReturnsFieldError() throws Exception {
-        mockMvc.perform(put("/api/company/compensation")
-                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN))
-                .contentType("application/json")
-                .content(BLANK_SETTLEMENT_CYCLE_PUT_JSON))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.fields.settlementCycle").isNotEmpty());
-    }
 }

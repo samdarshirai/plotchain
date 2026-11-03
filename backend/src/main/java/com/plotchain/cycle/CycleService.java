@@ -34,6 +34,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -118,7 +119,8 @@ public class CycleService {
         BigDecimal totalGross = ledgerEntryRepository.sumGrossAmount(null, null, cycle.getId(), null);
         BigDecimal totalBusiness = saleRepository.sumAmountByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED);
         BigDecimal tripExpense = expenseRepository.sumAmountByTypeNameBetween(
-            "Trip", cycle.getPeriodStart(), cycle.getPeriodEnd());
+            "Trip", cycle.getPeriodStart(),
+            cycle.getPeriodEnd() == null ? LocalDate.now() : cycle.getPeriodEnd());
 
         return new CycleDetailResponse(
             cycle.getId(), cycle.getPeriodStart(), cycle.getPeriodEnd(), cycle.getStatus(),
@@ -133,22 +135,36 @@ public class CycleService {
     // batch calls for is now implemented; unit 10 is atomicity/re-run hardening across the whole
     // pipeline above, not a new flow step of its own.
     @Transactional
-    public CycleCloseResponse close(UUID id) {
+    public CycleCloseResponse close(UUID id, LocalDate endDate) {
         Cycle cycle = cycleRepository.findByIdForUpdate(id)
             .orElseThrow(() -> new CycleNotFoundException(id));
 
         if (cycle.getStatus() != CycleStatus.OPEN) {
             throw new CycleAlreadyClosedException(cycle.getId());
         }
-        if (!LocalDate.now().isAfter(cycle.getPeriodEnd())) {
-            throw new CycleValidationException("Cycle period has not ended yet (ends " + cycle.getPeriodEnd() + "), cannot close: " + id);
+        // Cycles have no fixed term: the admin picks the end date, anywhere from the cycle's
+        // first day up to today.
+        if (endDate == null) {
+            endDate = LocalDate.now();
+        }
+        if (endDate.isBefore(cycle.getPeriodStart()) || endDate.isAfter(LocalDate.now())) {
+            throw new CycleValidationException("End date must be between " + cycle.getPeriodStart()
+                + " and today, got " + endDate + ": " + id);
         }
 
         // Flow step 1 (partial): write only, not a separate commit -- Decision #2 -- so this
         // isn't externally observable mid-batch under this design, and rolls back along with
         // everything else if a later step throws.
         cycle.setStatus(CycleStatus.CALCULATING);
+        cycle.setPeriodEnd(endDate);
         cycleRepository.save(cycle);
+
+        // Sales recorded after the chosen end date belong to the next cycle. The next cycle is
+        // opened first so they have somewhere to move to; its own live income is refreshed below.
+        Cycle nextCycle = createCycle(endDate.plusDays(1), null);
+        Instant lateFrom = endDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+        saleRepository.moveSalesRecordedFrom(cycle.getId(), nextCycle.getId(), lateFrom);
+        ledgerEntryRepository.moveSaleEntries(cycle.getId(), nextCycle.getId());
 
         // Live income rows written by refreshLiveIncome during the cycle are replaced by the
         // final run below (same math, plus the carry-forward/rank/reward-carry side effects).
@@ -156,13 +172,10 @@ public class CycleService {
         List<LegVolume> legVolumes = computeIncome(cycle, true);
         restoreFulfilment(cycle.getId(), provisional);
 
-        // Flow step 8. Opens the next cycle starting the day after THIS close (m9 fix) rather
-        // than reusing getOrOpenCurrent()'s bucket-for-today logic, which would hand the new
-        // cycle the same date range as the one just closed when closing early (before the
-        // current bucket's natural end) -- see openCycleStartingAfterClose's comment.
+        // Flow step 8. The next cycle was opened above (starts the day after the end date).
         cycle.setStatus(CycleStatus.CLOSED);
         cycleRepository.save(cycle);
-        Cycle nextCycle = openCycleStartingAfterClose(LocalDate.now());
+        refreshLiveIncome(nextCycle.getId());
 
         return new CycleCloseResponse(cycle.getId(), cycle.getStatus(), legVolumes.size(), nextCycle.getId());
     }
@@ -870,29 +883,22 @@ public class CycleService {
 
     public Cycle getOrOpenCurrent() {
         return cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)
-            .orElseGet(() -> openNewCycle(LocalDate.now()));
+            .orElseGet(() -> {
+                LocalDate start = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)
+                    .map(c -> c.getPeriodEnd().plusDays(1))
+                    .orElse(LocalDate.now());
+                return createCycle(start, null);
+            });
     }
 
-    private Cycle openNewCycle(LocalDate today) {
-        return createCycle(periodStartFor(today), periodEndFor(today));
-    }
-
-    // m9 fix: closing a cycle early must not hand the new cycle the same bucket-for-today range
-    // as the one just closed (periodStartFor(today) snaps back to the bucket start, which is
-    // still inside the just-closed period if closed before that bucket's natural end). The new
-    // cycle instead starts the day after the actual close date and runs to the natural end of
-    // whichever half-month that start falls into -- the two cycles' ranges can never collide.
-    private Cycle openCycleStartingAfterClose(LocalDate closeDate) {
-        LocalDate start = closeDate.plusDays(1);
-        return createCycle(start, periodEndFor(start));
-    }
-
+    // periodEnd null = open-ended: the cycle runs until the admin closes it and picks an end date.
     private Cycle createCycle(LocalDate periodStart, LocalDate periodEnd) {
         if (cycleRepository.existsByStatus(CycleStatus.OPEN)) {
             throw new CycleValidationException("An OPEN cycle already exists; close it before opening another");
         }
-        if (cycleRepository.existsByPeriodStartLessThanEqualAndPeriodEndGreaterThanEqual(periodEnd, periodStart)) {
-            throw new CycleValidationException("A cycle already exists overlapping " + periodStart + " to " + periodEnd);
+        if (cycleRepository.existsOverlapping(periodStart, periodEnd == null ? LocalDate.of(9999, 12, 31) : periodEnd)) {
+            throw new CycleValidationException("A cycle already exists overlapping " + periodStart
+                + (periodEnd == null ? " onwards" : " to " + periodEnd));
         }
         Cycle cycle = new Cycle();
         cycle.setId(UUID.randomUUID());
@@ -900,16 +906,6 @@ public class CycleService {
         cycle.setPeriodEnd(periodEnd);
         cycle.setStatus(CycleStatus.OPEN);
         return cycleRepository.save(cycle);
-    }
-
-    private LocalDate periodStartFor(LocalDate date) {
-        return date.getDayOfMonth() <= 15 ? date.withDayOfMonth(1) : date.withDayOfMonth(16);
-    }
-
-    private LocalDate periodEndFor(LocalDate date) {
-        return date.getDayOfMonth() <= 15
-            ? date.withDayOfMonth(15)
-            : date.withDayOfMonth(date.lengthOfMonth());
     }
 
     private CycleSummaryResponse toSummary(Cycle cycle) {
