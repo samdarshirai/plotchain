@@ -1,5 +1,6 @@
 package com.plotchain.projects;
 
+import com.plotchain.common.Money;
 import com.plotchain.company.SettingsAuditService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -107,7 +108,7 @@ public class PlotService {
         BigDecimal pct = request.extraPercent();
         plot.setExtraPercent(pct);
         plot.setExtraPrice(pct == null ? request.extraPrice()
-            : request.price().multiply(pct).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP));
+            : Money.percentOf(request.price(), pct));
     }
 
     private static PlotStatus resolveStatus(String status) {

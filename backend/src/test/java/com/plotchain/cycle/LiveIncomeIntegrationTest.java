@@ -200,15 +200,15 @@ class LiveIncomeIntegrationTest {
     @Test
     void refreshCreditsMatchingAndSponsorMatchingWhileTheCycleIsStillOpen() {
         seedTree();
-        seedSale(leftId, cycleId, plotId, new BigDecimal("100"));
-        seedSale(rightId, cycleId, plotId, new BigDecimal("100"));
+        seedSale(leftId, cycleId, plotId, new BigDecimal("10000"));
+        seedSale(rightId, cycleId, plotId, new BigDecimal("10000"));
 
         cycleService.refreshLiveIncome(cycleId);
 
         assertThat(entries(sponseeId, IncomeType.MATCHING)).singleElement()
-            .satisfies(e -> assertThat(e.getGrossAmount()).isEqualByComparingTo("7.00"));
+            .satisfies(e -> assertThat(e.getGrossAmount()).isEqualByComparingTo("700"));
         assertThat(entries(sponsorId, IncomeType.SPONSOR_MATCHING)).singleElement()
-            .satisfies(e -> assertThat(e.getGrossAmount()).isEqualByComparingTo("0.35"));
+            .satisfies(e -> assertThat(e.getGrossAmount()).isEqualByComparingTo("35"));
         // Live runs leave close-only state alone.
         assertThat(cycleRepository.findById(cycleId).orElseThrow().getStatus()).isEqualTo(CycleStatus.OPEN);
         assertThat(associateRepository.findById(sponseeId).orElseThrow().getCumulativeMatchedVolume()).isEqualByComparingTo("0");
@@ -218,17 +218,17 @@ class LiveIncomeIntegrationTest {
     @Test
     void refreshReplacesRatherThanDuplicatesAndDropsIncomeWhenASaleIsVoided() {
         seedTree();
-        seedSale(leftId, cycleId, plotId, new BigDecimal("100"));
-        UUID rightSale = seedSale(rightId, cycleId, plotId, new BigDecimal("100"));
+        seedSale(leftId, cycleId, plotId, new BigDecimal("10000"));
+        UUID rightSale = seedSale(rightId, cycleId, plotId, new BigDecimal("10000"));
         cycleService.refreshLiveIncome(cycleId);
 
-        seedSale(rightId, cycleId, plotId, new BigDecimal("50"));
-        seedSale(leftId, cycleId, plotId, new BigDecimal("100"));
+        seedSale(rightId, cycleId, plotId, new BigDecimal("5000"));
+        seedSale(leftId, cycleId, plotId, new BigDecimal("10000"));
         cycleService.refreshLiveIncome(cycleId);
 
         // min(200, 150) = 150 -> 10.50
         assertThat(entries(sponseeId, IncomeType.MATCHING)).singleElement()
-            .satisfies(e -> assertThat(e.getGrossAmount()).isEqualByComparingTo("10.50"));
+            .satisfies(e -> assertThat(e.getGrossAmount()).isEqualByComparingTo("1050"));
         assertThat(entries(sponsorId, IncomeType.SPONSOR_MATCHING)).hasSize(1);
 
         Sale voided = saleRepository.findById(rightSale).orElseThrow();
@@ -238,14 +238,14 @@ class LiveIncomeIntegrationTest {
 
         // min(200, 50) = 50 -> 3.50
         assertThat(entries(sponseeId, IncomeType.MATCHING)).singleElement()
-            .satisfies(e -> assertThat(e.getGrossAmount()).isEqualByComparingTo("3.50"));
+            .satisfies(e -> assertThat(e.getGrossAmount()).isEqualByComparingTo("350"));
     }
 
     @Test
     void closeReplacesLiveRowsKeepingAdminPayoutMarksAndAppliesCloseOnlySideEffects() {
         seedTree();
-        seedSale(leftId, cycleId, plotId, new BigDecimal("100"));
-        seedSale(rightId, cycleId, plotId, new BigDecimal("60"));
+        seedSale(leftId, cycleId, plotId, new BigDecimal("10000"));
+        seedSale(rightId, cycleId, plotId, new BigDecimal("6000"));
         cycleService.refreshLiveIncome(cycleId);
 
         LedgerEntry live = entries(sponseeId, IncomeType.MATCHING).get(0);
@@ -257,22 +257,22 @@ class LiveIncomeIntegrationTest {
         cycleService.close(cycleId);
 
         assertThat(entries(sponseeId, IncomeType.MATCHING)).singleElement().satisfies(e -> {
-            assertThat(e.getGrossAmount()).isEqualByComparingTo("4.20");
+            assertThat(e.getGrossAmount()).isEqualByComparingTo("420");
             assertThat(e.getFulfilledAt()).isEqualTo(paidAt);
             assertThat(e.getFulfilmentRemark()).isEqualTo("paid early");
             assertThat(e.getStatus()).isEqualTo(LedgerEntryStatus.PENDING);
         });
         assertThat(entries(sponsorId, IncomeType.SPONSOR_MATCHING)).hasSize(1);
-        assertThat(associateRepository.findById(sponseeId).orElseThrow().getCumulativeMatchedVolume()).isEqualByComparingTo("60");
+        assertThat(associateRepository.findById(sponseeId).orElseThrow().getCumulativeMatchedVolume()).isEqualByComparingTo("6000");
         assertThat(legVolumeRepository.findByAssociateIdAndCycleId(sponseeId, cycleId).orElseThrow().getCarriedForwardLeft())
-            .isEqualByComparingTo("40");
+            .isEqualByComparingTo("4000");
     }
 
     @Test
     void refreshIsANoOpOnceTheCycleHasClosed() {
         seedTree();
-        seedSale(leftId, cycleId, plotId, new BigDecimal("100"));
-        seedSale(rightId, cycleId, plotId, new BigDecimal("100"));
+        seedSale(leftId, cycleId, plotId, new BigDecimal("10000"));
+        seedSale(rightId, cycleId, plotId, new BigDecimal("10000"));
         cycleService.close(cycleId);
         UUID finalId = entries(sponseeId, IncomeType.MATCHING).get(0).getId();
 
@@ -289,8 +289,8 @@ class LiveIncomeIntegrationTest {
             new BigDecimal("100"), new BigDecimal("50"), "Mobile", "Sales Manager");
         rewardTierRepository.saveAndFlush(tier);
         rewardTierId = tier.getId();
-        seedSale(leftId, cycleId, plotId, new BigDecimal("200"));
-        UUID rightSale = seedSale(rightId, cycleId, plotId, new BigDecimal("200"));
+        seedSale(leftId, cycleId, plotId, new BigDecimal("20000"));
+        UUID rightSale = seedSale(rightId, cycleId, plotId, new BigDecimal("20000"));
         assertThat(designationService.designationOf(sponseeId)).isNull();
 
         cycleService.refreshLiveIncome(cycleId);
@@ -319,14 +319,14 @@ class LiveIncomeIntegrationTest {
             new BigDecimal("100"), new BigDecimal("50"), "Mobile", "Sales Manager");
         rewardTierRepository.saveAndFlush(tier);
         rewardTierId = tier.getId();
-        seedSale(leftId, cycleId, plotId, new BigDecimal("200"));
+        seedSale(leftId, cycleId, plotId, new BigDecimal("20000"));
 
         nextCycleId = cycleService.close(cycleId).newCycleId();
 
         assertThat(legVolumeRepository.findByAssociateIdAndCycleId(sponseeId, cycleId).orElseThrow().getCarriedForwardLeft())
-            .isEqualByComparingTo("200");
+            .isEqualByComparingTo("20000");
 
-        seedSale(rightId, nextCycleId, plotId, new BigDecimal("200"));
+        seedSale(rightId, nextCycleId, plotId, new BigDecimal("20000"));
         cycleService.refreshLiveIncome(nextCycleId);
 
         assertThat(ledgerEntryRepository.findAll().stream()
@@ -344,12 +344,12 @@ class LiveIncomeIntegrationTest {
             new BigDecimal("100"), new BigDecimal("50"), "Mobile", "Sales Manager");
         rewardTierRepository.saveAndFlush(tier);
         rewardTierId = tier.getId();
-        seedSale(leftId, cycleId, plotId, new BigDecimal("200"));
+        seedSale(leftId, cycleId, plotId, new BigDecimal("20000"));
         nextCycleId = cycleService.close(cycleId).newCycleId();
         walletCreditingService.creditWallets(cycleId);
         assertThat(cycleRepository.findById(cycleId).orElseThrow().getStatus()).isEqualTo(CycleStatus.CLOSED);
 
-        seedSale(rightId, nextCycleId, plotId, new BigDecimal("200"));
+        seedSale(rightId, nextCycleId, plotId, new BigDecimal("20000"));
         cycleService.refreshLiveIncome(nextCycleId);
 
         assertThat(ledgerEntryRepository.findAll().stream()

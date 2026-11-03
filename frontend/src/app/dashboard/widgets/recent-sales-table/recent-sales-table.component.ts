@@ -53,7 +53,7 @@ export class RecentSalesTableComponent implements OnInit {
         this.rows = res.sales.map(sale => ({
           plotNo: sale.plotNo ?? '',
           projectName: sale.projectName ?? '',
-          amount: this.currencyPipe.transform(sale.amount, 'INR', 'symbol', '1.2-2') ?? '',
+          amount: this.currencyPipe.transform(sale.amount, 'INR', 'symbol', '1.0-0') ?? '',
           date: this.datePipe.transform(sale.recordedAt, 'd MMM') ?? '',
           status: t(sale.status === 'VOIDED' ? 'saleStatusVoided' : 'saleStatusRecorded')
         }));

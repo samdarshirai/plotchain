@@ -44,7 +44,7 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
         </label>
         <label>{{ 'admin.projectsPlots.extraPercentLabel' | translate }}
           <input type="number" name="extraPercent" min="0" max="100" step="any" [(ngModel)]="extraPercent" />
-          <small>{{ 'admin.projectsPlots.extraPercentHint' | translate }}<ng-container *ngIf="defaultParts.length"> (<ng-container *ngFor="let x of defaultParts; let last = last">{{ x.key | translate }} {{ x.pct }}%{{ last ? '' : ' + ' }}</ng-container>)</ng-container> = {{ extraPrice | currency:'INR':'symbol':'1.2-2' }}</small>
+          <small>{{ 'admin.projectsPlots.extraPercentHint' | translate }}<ng-container *ngIf="defaultParts.length"> (<ng-container *ngFor="let x of defaultParts; let last = last">{{ x.key | translate }} {{ x.pct }}%{{ last ? '' : ' + ' }}</ng-container>)</ng-container> = {{ extraPrice | currency:'INR':'symbol':'1.0-0' }}</small>
           <app-field-error [message]="(validExtra || !submitted_ ? '' : 'admin.projectsPlots.error.generic') | translate"></app-field-error>
         </label>
         <label>{{ 'admin.projectsPlots.roadSizeLabel' | translate }}
@@ -110,7 +110,7 @@ export class PlotFormComponent implements OnChanges {
     ];
   }
 
-  get extraPrice(): number { return Math.round((this.areaSqft ?? 0) * (this.rate ?? 0) * (this.extraPercent ?? 0)) / 100; }
+  get extraPrice(): number { return Math.round((this.areaSqft ?? 0) * (this.rate ?? 0) * (this.extraPercent ?? 0) / 100); }
 
   get validExtra(): boolean { return this.extraPercent == null || (this.extraPercent >= 0 && this.extraPercent <= 100); }
 

@@ -15,7 +15,7 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 
 const PAGE_SIZE = 20;
-const round2 = (n: number): number => Math.round(n * 100) / 100;
+const round2 = (n: number): number => Math.round(n); // whole rupees
 const isoDate = (d: Date): string => {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;

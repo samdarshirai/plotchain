@@ -48,7 +48,7 @@ export class AdminRecentSalesTableComponent implements OnChanges {
       plotNo: sale.plotNo ?? '',
       projectName: sale.projectName ?? '',
       associateName: sale.associateName ?? '',
-      amount: this.currencyPipe.transform(sale.amount, 'INR', 'symbol', '1.2-2') ?? '',
+      amount: this.currencyPipe.transform(sale.amount, 'INR', 'symbol', '1.0-0') ?? '',
       date: this.datePipe.transform(sale.recordedAt, 'd MMM') ?? '',
       status: t(sale.status === 'VOIDED' ? 'saleStatusVoided' : 'saleStatusRecorded')
     }));

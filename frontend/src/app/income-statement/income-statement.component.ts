@@ -595,7 +595,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   protected formatCurrency(amount: number): string {
-    return this.currencyPipe.transform(amount, 'INR', 'symbol', '1.2-2') ?? String(amount);
+    return this.currencyPipe.transform(amount, 'INR', 'symbol', '1.0-0') ?? String(amount);
   }
 
   // Appends the bold Total row (label in the first column, '' elsewhere unless summed).

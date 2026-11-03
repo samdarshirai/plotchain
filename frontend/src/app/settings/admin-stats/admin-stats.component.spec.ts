@@ -67,7 +67,7 @@ describe('AdminStatsComponent', () => {
 
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('settings.adminStats.totalWalletBalanceLabel');
-    expect(text).toContain('₹1,234,567.5');
+    expect(text).toContain('₹1,234,568');
   });
 
   it('gives every tile the same vertical layout as the other six', () => {

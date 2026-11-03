@@ -329,8 +329,8 @@ class BookingServiceTest {
         assertThat(b.getTotalAmount()).isEqualByComparingTo("500000.00");
         assertThat(response.installments()).extracting(EmiInstallmentResponse::amount)
             .usingComparatorForType(BigDecimal::compareTo, BigDecimal.class)
-            .containsExactly(new BigDecimal("100000"), new BigDecimal("133333.33"),
-                new BigDecimal("133333.33"), new BigDecimal("133333.34"));
+            .containsExactly(new BigDecimal("100000"), new BigDecimal("133333"),
+                new BigDecimal("133333"), new BigDecimal("133334"));
         assertThat(response.totalAmount()).isEqualByComparingTo("500000.00");
     }
 
@@ -616,11 +616,11 @@ class BookingServiceTest {
     void createBookingRoundingRemainderLandsOnTheLastInstallmentNotAnEarlierOne() {
         stubHappyPathGuardsAndDependencies("100000.00", emiConfig(true, 4));
 
-        BookingResponse response = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "0.01"));
+        BookingResponse response = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "2"));
 
-        assertThat(response.installments().get(1).amount()).isEqualByComparingTo("33333.33");
-        assertThat(response.installments().get(2).amount()).isEqualByComparingTo("33333.33");
-        assertThat(response.installments().get(3).amount()).isEqualByComparingTo("33333.33");
+        assertThat(response.installments().get(1).amount()).isEqualByComparingTo("33332");
+        assertThat(response.installments().get(2).amount()).isEqualByComparingTo("33332");
+        assertThat(response.installments().get(3).amount()).isEqualByComparingTo("33334");
         BigDecimal sum = response.installments().stream()
             .map(EmiInstallmentResponse::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
         assertThat(sum).isEqualByComparingTo("100000.00");

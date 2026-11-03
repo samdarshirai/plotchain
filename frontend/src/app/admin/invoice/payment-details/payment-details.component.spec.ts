@@ -80,9 +80,9 @@ describe('PaymentDetailsComponent', () => {
     c.filters.patchValue({ q: 'x' });
     c.apply();
     httpMock.expectOne(r => r.url === '/api/admin/loan-repayments').flush([
-      { ...row, id: 'a', amount: 999999.99 },
-      { ...row, id: 'b', amount: 9999999.99 },
-      { ...row, id: 'c', amount: 999999999999.99 }
+      { ...row, id: 'a', amount: 999999 },
+      { ...row, id: 'b', amount: 999999999 },
+      { ...row, id: 'c', amount: 999999999999 }
     ]);
     fixture.detectChanges();
     const amountCell = (i: number) => (fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr')[i].querySelectorAll('td')[7];

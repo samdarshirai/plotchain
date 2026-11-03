@@ -5,15 +5,15 @@ const plot = (plotNo: string, status: PlotGridItem['status'] = 'AVAILABLE'): Plo
 
 describe('plot-grid.util', () => {
   it('formats rupees with Indian grouping', () => {
-    expect(formatInr(5130000).replace(/\s/g, '')).toBe('₹51,30,000.00');
-    expect(formatInr(333333.333)).toBe('₹3,33,333.33');
-    expect(formatAmount(1000000)).toBe('10,00,000.00');
+    expect(formatInr(5130000).replace(/\s/g, '')).toBe('₹51,30,000');
+    expect(formatInr(333333.333)).toBe('₹3,33,333');
+    expect(formatAmount(1000000)).toBe('10,00,000');
   });
 
   it('formats lakh shorthand, falling back to full rupees under one lakh', () => {
     expect(formatLakh(5130000)).toBe('₹51.3 L');
     expect(formatLakh(4500000)).toBe('₹45.0 L');
-    expect(formatLakh(75000).replace(/\s/g, '')).toBe('₹75,000.00');
+    expect(formatLakh(75000).replace(/\s/g, '')).toBe('₹75,000');
   });
 
   it('formats area with Indian grouping', () => {

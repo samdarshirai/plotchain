@@ -173,9 +173,9 @@ class CycleCloseRealisticRetryIntegrationTest {
         cycleRepository.saveAndFlush(cycle);
         cycleId = cycle.getId();
 
-        seedSale(c1Id, cycleId, plotId, new BigDecimal("100"));
-        seedSale(c2Id, cycleId, plotId, new BigDecimal("40"));
-        seedSale(b2Id, cycleId, plotId, new BigDecimal("30"));
+        seedSale(c1Id, cycleId, plotId, new BigDecimal("10000"));
+        seedSale(c2Id, cycleId, plotId, new BigDecimal("4000"));
+        seedSale(b2Id, cycleId, plotId, new BigDecimal("3000"));
 
         // First call: RewardTierRepository throws on its single invocation inside creditReward --
         // by then, Matching (b1, admin), rank progression, and Sponsor Matching (S) have all
@@ -215,35 +215,29 @@ class CycleCloseRealisticRetryIntegrationTest {
         Cycle cycleAfterRetry = cycleRepository.findById(cycleId).orElseThrow();
         assertThat(cycleAfterRetry.getStatus()).isEqualTo(CycleStatus.CLOSED);
 
-        // tds/admin/net are computed in Java to full precision but ledger_entry's columns are
-        // NUMERIC(14,2) (V1__create_dashboard_tables.sql) -- the DB rounds HALF_UP to 2 decimal
-        // places on persist, independently per column (verified empirically against this suite's
-        // exact H2 2.2.224/MODE=PostgreSQL datasource, same as CycleCloseFullPipelineIntegrationTest).
-        // grossAmount lands on exact 2dp already in every entry below, unaffected.
+        // Every amount is a whole rupee (Money, HALF_UP), each component rounded independently.
         LedgerEntry b1Matching = ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(b1Id, cycleId, IncomeType.MATCHING)
             .orElseThrow(() -> new AssertionError("expected a MATCHING entry for b1 after retry"));
-        assertThat(b1Matching.getGrossAmount()).isEqualByComparingTo("2.80");
-        // tds = 2.80 * 2% = 0.056 unrounded -> DB rounds HALF_UP to 0.06.
-        assertThat(b1Matching.getTdsDeduction()).isEqualByComparingTo("0.06");
-        // processing fee = 2.80 * 5% = 0.14.
-        assertThat(b1Matching.getAdminDeduction()).isEqualByComparingTo("0.14");
-        // net = 2.80 - 0.056(tds) - 0.14(fee) = 2.604 unrounded -> DB rounds HALF_UP to 2.60.
-        assertThat(b1Matching.getNetAmount()).isEqualByComparingTo("2.60");
+        assertThat(b1Matching.getGrossAmount()).isEqualByComparingTo("280");
+        // tds = 280 * 2% = 5.6 -> 6; processing fee = 280 * 5% = 14; net = 280 - 6 - 14 = 260.
+        assertThat(b1Matching.getTdsDeduction()).isEqualByComparingTo("6");
+        assertThat(b1Matching.getAdminDeduction()).isEqualByComparingTo("14");
+        assertThat(b1Matching.getNetAmount()).isEqualByComparingTo("260");
 
         LedgerEntry adminMatching = ledgerEntryRepository.findByAssociateIdAndCycleIdAndIncomeType(adminId, cycleId, IncomeType.MATCHING)
             .orElseThrow(() -> new AssertionError("expected a MATCHING entry for admin after retry"));
-        assertThat(adminMatching.getGrossAmount()).isEqualByComparingTo("2.10");
-        // net = 2.10 - 0.042(tds) - 0.105(fee) = 1.953 unrounded -> DB rounds HALF_UP to 1.95.
-        assertThat(adminMatching.getNetAmount()).isEqualByComparingTo("1.95");
+        assertThat(adminMatching.getGrossAmount()).isEqualByComparingTo("210");
+        // tds = 4.2 -> 4; fee = 10.5 -> 11; net = 210 - 4 - 11 = 195.
+        assertThat(adminMatching.getNetAmount()).isEqualByComparingTo("195");
 
         List<LedgerEntry> sponsorEntries = ledgerEntryRepository.findAll().stream()
             .filter(e -> sId.equals(e.getAssociateId()) && e.getIncomeType() == IncomeType.SPONSOR_MATCHING
                 && cycleId.equals(e.getCycleId()))
             .toList();
         assertThat(sponsorEntries).hasSize(1);
-        assertThat(sponsorEntries.get(0).getGrossAmount()).isEqualByComparingTo("0.14");
-        // net = 0.14 - 0.0028(tds) - 0.007(fee) = 0.1302 unrounded -> DB rounds HALF_UP to 0.13.
-        assertThat(sponsorEntries.get(0).getNetAmount()).isEqualByComparingTo("0.13");
+        assertThat(sponsorEntries.get(0).getGrossAmount()).isEqualByComparingTo("14");
+        // tds = 0.28 -> 0; fee = 0.7 -> 1; net = 13.
+        assertThat(sponsorEntries.get(0).getNetAmount()).isEqualByComparingTo("13");
         assertThat(sponsorEntries.get(0).getSourceRef()).isEqualTo(b1Matching.getId());
 
         long ledgerEntriesAfterRetry = ledgerEntryRepository.findAll().stream()
@@ -262,10 +256,10 @@ class CycleCloseRealisticRetryIntegrationTest {
         assertThat(legVolumesAfterRetry).isEqualTo(6); // admin, b1, b2, c1, c2, S
 
         Associate b1AfterRetry = associateRepository.findById(b1Id).orElseThrow();
-        assertThat(b1AfterRetry.getCumulativeMatchedVolume()).isEqualByComparingTo("40");
+        assertThat(b1AfterRetry.getCumulativeMatchedVolume()).isEqualByComparingTo("4000");
         assertThat(b1AfterRetry.getRankId()).isEqualTo(SILVER_RANK_ID); // 40 doesn't cross any real seeded tier beyond Silver
 
         Associate adminAfterRetry = associateRepository.findById(adminId).orElseThrow();
-        assertThat(adminAfterRetry.getCumulativeMatchedVolume()).isEqualByComparingTo("30");
+        assertThat(adminAfterRetry.getCumulativeMatchedVolume()).isEqualByComparingTo("3000");
     }
 }

@@ -62,7 +62,7 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
               <td [attr.data-label]="'admin.invoicePayments.mobileNo' | translate">{{ r.associatePhone }}</td>
               <td class="editable-table__cell--ellipsis" [attr.title]="'admin.invoicePayments.paymentTypeLoanRepayment' | translate" [attr.data-label]="'admin.invoicePayments.paymentType' | translate">{{ 'admin.invoicePayments.paymentTypeLoanRepayment' | translate }}</td>
               <td [attr.data-label]="'admin.invoicePayments.receiptNo' | translate">{{ r.receiptNo }}</td>
-              <td [class.editable-table__cell--fit-md]="fit(r.amount) === 'md'" [class.editable-table__cell--fit-sm]="fit(r.amount) === 'sm'" [attr.data-label]="'admin.invoicePayments.amount' | translate">{{ r.amount | number:'1.2-2' }}</td>
+              <td [class.editable-table__cell--fit-md]="fit(r.amount) === 'md'" [class.editable-table__cell--fit-sm]="fit(r.amount) === 'sm'" [attr.data-label]="'admin.invoicePayments.amount' | translate">{{ r.amount | number:'1.0-0' }}</td>
               <td class="editable-table__cell--ellipsis" [attr.title]="'admin.invoicePayments.payModes.' + r.payMode | translate" [attr.data-label]="'admin.invoicePayments.payMode' | translate">{{ 'admin.invoicePayments.payModes.' + r.payMode | translate }}</td>
               <td class="editable-table__cell--ellipsis" [attr.title]="r.bankName" [attr.data-label]="'admin.invoicePayments.bankName' | translate">{{ r.bankName }}</td>
               <td class="editable-table__cell--ellipsis" [attr.title]="r.txnNo" [attr.data-label]="'admin.invoicePayments.txnNo' | translate">{{ r.txnNo }}</td>

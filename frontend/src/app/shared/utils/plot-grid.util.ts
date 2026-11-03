@@ -35,10 +35,10 @@ export interface PlotBlock {
 
 export type StatusCounts = Record<PlotStatus, number>;
 
-// Every money figure reads Indian-grouped with paise: ₹10,00,000.00.
-const inr = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// Every money figure reads Indian-grouped with whole rupees: ₹10,00,000.
+const inr = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const grouped = new Intl.NumberFormat('en-IN');
-const amount2 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const amount2 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const natural = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true });
 
 export const formatInr = (n: number): string => inr.format(n);

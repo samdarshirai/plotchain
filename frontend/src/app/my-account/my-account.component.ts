@@ -724,7 +724,7 @@ export class MyAccountComponent implements OnInit, OnDestroy {
   }
 
   formatCurrency(value: number): string {
-    return this.currencyPipe.transform(value, 'INR', 'symbol', '1.2-2') ?? String(value);
+    return this.currencyPipe.transform(value, 'INR', 'symbol', '1.0-0') ?? String(value);
   }
 
   onSaveChanges(): void {

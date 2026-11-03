@@ -73,7 +73,7 @@ import { FormIssue, collectIssues, errorMessage } from '../../../shared/validati
             </div>
             <div class="invoice-loans__field invoice-loans__modal-field">
               <label>{{ 'admin.invoiceLoans.previousDues' | translate }}</label>
-              <input type="text" readonly [value]="previousDues | number:'1.2-2'" />
+              <input type="text" readonly [value]="previousDues | number:'1.0-0'" />
             </div>
             <div class="invoice-loans__field invoice-loans__modal-field">
               <label>{{ 'admin.invoiceLoans.loanDate' | translate }}</label>
@@ -123,10 +123,10 @@ import { FormIssue, collectIssues, errorMessage } from '../../../shared/validati
               <div><dt>{{ 'admin.invoiceLoans.associateName' | translate }}</dt><dd>{{ d.loan.associateName }}</dd></div>
               <div><dt>{{ 'admin.invoiceLoans.mobileNo' | translate }}</dt><dd>{{ d.associatePhone || '—' }}</dd></div>
               <div><dt>{{ 'admin.invoiceLoans.detailLoanDate' | translate }}</dt><dd>{{ d.loan.loanDate }}</dd></div>
-              <div><dt>{{ 'admin.invoiceLoans.amount' | translate }}</dt><dd>{{ d.loan.amount | number:'1.2-2' }}</dd></div>
-              <div><dt>{{ 'admin.invoiceLoans.previousDues' | translate }}</dt><dd>{{ d.loan.previousDues | number:'1.2-2' }}</dd></div>
-              <div><dt>{{ 'admin.invoiceLoans.repaid' | translate }}</dt><dd>{{ d.loan.repaid | number:'1.2-2' }}</dd></div>
-              <div><dt>{{ 'admin.invoiceLoans.outstanding' | translate }}</dt><dd>{{ d.loan.outstanding | number:'1.2-2' }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.amount' | translate }}</dt><dd>{{ d.loan.amount | number:'1.0-0' }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.previousDues' | translate }}</dt><dd>{{ d.loan.previousDues | number:'1.0-0' }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.repaid' | translate }}</dt><dd>{{ d.loan.repaid | number:'1.0-0' }}</dd></div>
+              <div><dt>{{ 'admin.invoiceLoans.outstanding' | translate }}</dt><dd>{{ d.loan.outstanding | number:'1.0-0' }}</dd></div>
               <div><dt>{{ 'admin.invoiceLoans.payMode' | translate }}</dt><dd>{{ 'admin.invoiceLoans.payModes.' + d.loan.payMode | translate }}</dd></div>
               <div><dt>{{ 'admin.invoiceLoans.bankName' | translate }}</dt><dd>{{ d.loan.bankName || '—' }}</dd></div>
               <div><dt>{{ 'admin.invoiceLoans.instrumentNo' | translate }}</dt><dd>{{ d.loan.instrumentNo || '—' }}</dd></div>
@@ -149,7 +149,7 @@ import { FormIssue, collectIssues, errorMessage } from '../../../shared/validati
                 <tr *ngFor="let r of d.repayments">
                   <td [attr.data-label]="'admin.invoiceLoans.receiptNo' | translate"><a [routerLink]="['/admin/settings/payment-details/receipt', r.id]" target="_blank" rel="noopener">{{ r.receiptNo }}</a></td>
                   <td [attr.data-label]="'admin.invoiceLoans.paymentDate' | translate">{{ r.recordedAt ? (r.recordedAt | date: 'd MMM y, h:mm:ss a' : '+0530') : r.paymentDate }}</td>
-                  <td [attr.data-label]="'admin.invoiceLoans.amount' | translate" [class.editable-table__cell--fit-md]="fit(r.amount) === 'md'" [class.editable-table__cell--fit-sm]="fit(r.amount) === 'sm'">{{ r.amount | number:'1.2-2' }}</td>
+                  <td [attr.data-label]="'admin.invoiceLoans.amount' | translate" [class.editable-table__cell--fit-md]="fit(r.amount) === 'md'" [class.editable-table__cell--fit-sm]="fit(r.amount) === 'sm'">{{ r.amount | number:'1.0-0' }}</td>
                   <td [attr.data-label]="'admin.invoiceLoans.payMode' | translate">{{ 'admin.invoiceLoans.payModes.' + r.payMode | translate }}</td>
                   <td [attr.data-label]="'admin.invoiceLoans.bankName' | translate">{{ r.bankName || '—' }}</td>
                   <td [attr.data-label]="'admin.invoiceLoans.txnNo' | translate">{{ r.txnNo || '—' }}</td>
@@ -166,7 +166,7 @@ import { FormIssue, collectIssues, errorMessage } from '../../../shared/validati
       <div class="invoice-loans__modal-overlay" *ngIf="repayOpen">
         <div class="invoice-loans__modal">
           <h2 class="invoice-loans__modal-title">{{ 'admin.invoiceLoans.repayTitle' | translate }}</h2>
-          <p *ngIf="repayLoan">{{ 'admin.invoiceLoans.outstandingHint' | translate }}: {{ repayLoan.outstanding | number:'1.2-2' }}</p>
+          <p *ngIf="repayLoan">{{ 'admin.invoiceLoans.outstandingHint' | translate }}: {{ repayLoan.outstanding | number:'1.0-0' }}</p>
           <app-inline-banner *ngIf="repayError" tone="danger">{{ repayError }}</app-inline-banner>
           <form [formGroup]="repayForm" [class.was-submitted]="repaySubmitted" (ngSubmit)="saveRepay()" novalidate>
             <app-error-summary [issues]="repayIssues"></app-error-summary>

@@ -45,7 +45,7 @@ describe('AddPlotEmiComponent', () => {
 
   it('rejects an amount above pending and a missing bank for non-cash modes', () => {
     c.openPay(booking());
-    c.amount = 90000.01;
+    c.amount = 90001;
     expect(c.amountInvalid).toBeTrue();
     c.amount = 90000;
     expect(c.amountInvalid).toBeFalse();

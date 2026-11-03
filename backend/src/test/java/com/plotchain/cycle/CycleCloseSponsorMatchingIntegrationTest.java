@@ -182,8 +182,8 @@ class CycleCloseSponsorMatchingIntegrationTest {
         leftId = seedAssociate("leftleaf01", sponseeId, "L", null);
         rightId = seedAssociate("rightleaf01", sponseeId, "R", null);
         plotId = seedPlot();
-        seedSale(leftId, cycleId, plotId, new BigDecimal("100"));
-        seedSale(rightId, cycleId, plotId, new BigDecimal("100"));
+        seedSale(leftId, cycleId, plotId, new BigDecimal("10000"));
+        seedSale(rightId, cycleId, plotId, new BigDecimal("10000"));
 
         cycleService.close(cycleId);
 
@@ -192,7 +192,7 @@ class CycleCloseSponsorMatchingIntegrationTest {
         LedgerEntry sponseeMatchingEntry = ledgerEntryRepository
             .findByAssociateIdAndCycleIdAndIncomeType(sponseeId, cycleId, IncomeType.MATCHING)
             .orElseThrow(() -> new AssertionError("expected a MATCHING entry for the sponsee"));
-        assertThat(sponseeMatchingEntry.getGrossAmount()).isEqualByComparingTo("7.00");
+        assertThat(sponseeMatchingEntry.getGrossAmount()).isEqualByComparingTo("700");
 
         // The critical assertion: creditSponsorMatching's fresh query, running LATER in the SAME
         // transaction as creditMatchingIncome's save() above, found this exact entry -- proving
@@ -204,7 +204,7 @@ class CycleCloseSponsorMatchingIntegrationTest {
         LedgerEntry sponsorEntry = sponsorEntries.get(0);
         assertThat(sponsorEntry.getSourceRef()).isEqualTo(sponseeMatchingEntry.getId());
         // gross = 7.00 (sponsee's Matching gross) * 5.00% (V8-seeded sponsor_matching_pct) = 0.3500
-        assertThat(sponsorEntry.getGrossAmount()).isEqualByComparingTo("0.35");
+        assertThat(sponsorEntry.getGrossAmount()).isEqualByComparingTo("35");
     }
 
     // Product-owner example (2026-10-31): Sponsor Matching follows sponsor_id only, never parent_id,
@@ -236,8 +236,8 @@ class CycleCloseSponsorMatchingIntegrationTest {
         UUID a7 = seedAssociate("tree07", a5, "R", a5);
         extraIds.add(a7);
         plotId = seedPlot();
-        seedSale(a6, cycleId, plotId, new BigDecimal("100"));
-        seedSale(a7, cycleId, plotId, new BigDecimal("100"));
+        seedSale(a6, cycleId, plotId, new BigDecimal("10000"));
+        seedSale(a7, cycleId, plotId, new BigDecimal("10000"));
 
         cycleService.close(cycleId);
 
@@ -245,7 +245,7 @@ class CycleCloseSponsorMatchingIntegrationTest {
         LedgerEntry fiveMatching = ledgerEntryRepository
             .findByAssociateIdAndCycleIdAndIncomeType(a5, cycleId, IncomeType.MATCHING)
             .orElseThrow(() -> new AssertionError("expected a MATCHING entry for associate 5"));
-        assertThat(fiveMatching.getGrossAmount()).isEqualByComparingTo("7.00");
+        assertThat(fiveMatching.getGrossAmount()).isEqualByComparingTo("700");
 
         List<LedgerEntry> creditsOnFive = ledgerEntryRepository.findAll().stream()
             .filter(e -> e.getIncomeType() == IncomeType.SPONSOR_MATCHING)
@@ -254,6 +254,6 @@ class CycleCloseSponsorMatchingIntegrationTest {
         assertThat(creditsOnFive).hasSize(1);
         assertThat(creditsOnFive.get(0).getAssociateId()).isEqualTo(a3);
         // 7.00 * 5.00% (V8-seeded sponsor_matching_pct in the test DB) = 0.35
-        assertThat(creditsOnFive.get(0).getGrossAmount()).isEqualByComparingTo("0.35");
+        assertThat(creditsOnFive.get(0).getGrossAmount()).isEqualByComparingTo("35");
     }
 }

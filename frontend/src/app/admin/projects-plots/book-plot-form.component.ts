@@ -158,7 +158,7 @@ export class BookPlotFormComponent implements OnInit {
   // with only a flat amount show the equivalent %.
   ngOnInit(): void {
     const { extraPercent, extraPrice, price } = this.plot;
-    this.extraPercentRaw = extraPercent || (extraPrice && price ? round2(extraPrice / price * 100) : 0);
+    this.extraPercentRaw = extraPercent || (extraPrice && price ? roundPct(extraPrice / price * 100) : 0);
   }
 
   // Associate is looked up client-side by its ID against the already-loaded list.
@@ -211,7 +211,7 @@ export class BookPlotFormComponent implements OnInit {
   get block(): string { return this.plot.plotNo.includes('-') ? this.plot.plotNo.slice(0, this.plot.plotNo.indexOf('-')) : ''; }
   get areaText(): string { return formatArea(this.plot.area); }
 
-  // Mirrors the server: 2dp HALF_UP, 0 <= discount < price; token in (0, price - discount).
+  // Mirrors the server: whole-rupee HALF_UP, 0 <= discount < price; token in (0, price - discount).
   get discount(): number { return round2(this.discountRaw ?? 0); }
   // Validity is independent of `tried` so the live summary never shows a bogus total.
   get discountInvalid(): boolean { return this.discount < 0 || this.discount >= this.plot.price + this.extra; }
@@ -287,4 +287,5 @@ export class BookPlotFormComponent implements OnInit {
 }
 
 // Half-up at 2dp via decimal-string shift (float *100 mis-rounds 1.005); sign handled apart so -0.005 -> -0.01, not 0.
-const round2 = (n: number): number => Math.sign(n) * Number(Math.round(Number(Math.abs(n) + 'e2')) + 'e-2');
+const roundPct = (n: number): number => Math.sign(n) * Number(Math.round(Number(Math.abs(n) + "e2")) + "e-2");
+const round2 = (n: number): number => Math.sign(n) * Math.round(Math.abs(n)); // whole rupees, half away from zero like the server HALF_UP

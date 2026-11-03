@@ -221,24 +221,24 @@ describe('BookPlotFormComponent', () => {
       expect(document.activeElement).toBe(f);
     });
 
-    it('rejects a discount equal to the plot price; accepts price - 0.01', async () => {
+    it('rejects a discount equal to the plot price; accepts price - 1', async () => {
       const out = await ready();
-      typeInto('tokenAmount', '0.005');
+      typeInto('tokenAmount', '0.5');
       typeInto('discount', String(plot.price));
       submitForm(); await settle();
       expect(el().textContent).toContain(K + 'discount.tooHigh');
       expect(out.length).toBe(0);
-      typeInto('discount', String(plot.price - 0.01));
+      typeInto('discount', String(plot.price - 1));
       submitForm(); await settle();
       expect(el().textContent).not.toContain(K + 'discount.tooHigh');
       expect(out.length).toBe(1);
     });
 
-    it('rounds the discount to 2dp before validating and emitting', async () => {
+    it('rounds the discount to whole rupees before validating and emitting', async () => {
       const out = await ready();
-      typeInto('discount', '1000.005'); typeInto('tokenAmount', '100000');
+      typeInto('discount', '1000.5'); typeInto('tokenAmount', '100000');
       submitForm();
-      expect(out[0].discount).toBe(1000.01);
+      expect(out[0].discount).toBe(1001);
     });
 
     it('token must be below the discounted total', async () => {
@@ -267,18 +267,18 @@ describe('BookPlotFormComponent', () => {
       expect(fixture.componentInstance.previewParams.amount).toBe(formatInr(900000));
     });
 
-    it('rounds half-up at 2dp on boundaries (matches server BigDecimal HALF_UP)', async () => {
+    it('rounds half-up at whole rupees on boundaries (matches server BigDecimal HALF_UP)', async () => {
       await ready();
       const c = fixture.componentInstance;
-      for (const [raw, want] of [[1.005, 1.01], [1000.005, 1000.01], [0.005, 0.01], [-0.005, -0.01]]) {
+      for (const [raw, want] of [[1.5, 2], [1000.5, 1001], [0.5, 1], [-0.5, -1], [1.4, 1]]) {
         c.discountRaw = raw;
         expect(c.discount).toBe(want);
       }
     });
 
-    it('treats -0.005 as a negative discount, not zero', async () => {
+    it('treats -0.5 as a negative discount, not zero', async () => {
       const out = await ready();
-      typeInto('discount', '-0.005'); typeInto('tokenAmount', '100000');
+      typeInto('discount', '-0.5'); typeInto('tokenAmount', '100000');
       submitForm(); await settle();
       expect(el().textContent).toContain(K + 'discount.negative');
       expect(out.length).toBe(0);

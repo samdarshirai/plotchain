@@ -26,7 +26,7 @@ describe('PaymentReceiptComponent', () => {
     httpMock.expectOne('/api/admin/loan-repayments/r1').flush(row);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    ['RCP-000001', '250.00', 'Asha'].forEach(s => expect(el.textContent).toContain(s));
+    ['RCP-000001', '250', 'Asha'].forEach(s => expect(el.textContent).toContain(s));
     expect(el.querySelector('.invoice-receipt__print')).not.toBeNull();
   });
 

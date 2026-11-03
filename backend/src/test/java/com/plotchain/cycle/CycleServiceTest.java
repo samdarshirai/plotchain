@@ -622,13 +622,13 @@ class CycleServiceTest {
         assertThat(entry.getCycleId()).isEqualTo(cycle.getId());
         assertThat(entry.getSourceRef()).isEqualTo(rootLegVolume.getId());
         // min(left=100, right=50) = 50 matched. gross = 50 * 10% = 5.00
-        assertThat(entry.getGrossAmount()).isEqualByComparingTo("5.00");
-        // tds = 5.00 * 5% = 0.25
-        assertThat(entry.getTdsDeduction()).isEqualByComparingTo("0.25");
-        // admin = 5.00 * 4% = 0.20
-        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("0.20");
-        // net = 5.00 - 0.25 - 0.20 = 4.55
-        assertThat(entry.getNetAmount()).isEqualByComparingTo("4.55");
+        assertThat(entry.getGrossAmount()).isEqualByComparingTo("5");
+        // tds = 0.25 -> 0 (whole rupees)
+        assertThat(entry.getTdsDeduction()).isEqualByComparingTo("0");
+        // admin = 0.20 -> 0
+        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("0");
+        // net = 5 - 0 - 0 = 5
+        assertThat(entry.getNetAmount()).isEqualByComparingTo("5");
         assertThat(entry.getStatus()).isEqualTo(LedgerEntryStatus.PENDING);
         assertThat(entry.getCreatedAt()).isNotNull();
     }
@@ -685,8 +685,8 @@ class CycleServiceTest {
         List<LedgerEntry> royalties = entryCaptor.getAllValues().stream()
             .filter(e -> e.getIncomeType() == IncomeType.ROYALTY).toList();
         assertThat(royalties).hasSize(1);
-        // 50 * 1% = 0.50
-        assertThat(royalties.get(0).getGrossAmount()).isEqualByComparingTo("0.50");
+        // 50 * 1% = 0.50 -> 1
+        assertThat(royalties.get(0).getGrossAmount()).isEqualByComparingTo("1");
     }
 
     @Test
@@ -762,8 +762,8 @@ class CycleServiceTest {
         verify(ledgerEntryRepository).save(entryCaptor.capture());
         LedgerEntry entry = entryCaptor.getValue();
 
-        // gross = min(100,50)=50 * 10% = 5.00; 5% processing fee = 0.25.
-        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("0.25");
+        // gross = 5; 5% processing fee = 0.25, rounded to whole rupees = 0.
+        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("0");
     }
 
     @Test
@@ -1334,13 +1334,12 @@ class CycleServiceTest {
         assertThat(entry.getCycleId()).isEqualTo(cycle.getId());
         assertThat(entry.getSourceRef()).isEqualTo(sponseeMatchingEntry.getId());
         // gross = 50.00 * 11% = 5.5000
-        assertThat(entry.getGrossAmount()).isEqualByComparingTo("5.50");
-        // tds = 5.5000 * 5% = 0.2750
-        assertThat(entry.getTdsDeduction()).isEqualByComparingTo("0.275");
-        // admin = 5.5000 * 4% = 0.2200
-        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("0.22");
-        // net = 5.5000 - 0.2750 - 0.2200 = 5.0050
-        assertThat(entry.getNetAmount()).isEqualByComparingTo("5.005");
+        assertThat(entry.getGrossAmount()).isEqualByComparingTo("6");
+        // gross 5.5 -> 6; tds 0.3 -> 0; admin 0.24 -> 0
+        assertThat(entry.getTdsDeduction()).isEqualByComparingTo("0");
+        assertThat(entry.getAdminDeduction()).isEqualByComparingTo("0");
+        // net = 6
+        assertThat(entry.getNetAmount()).isEqualByComparingTo("6");
         assertThat(entry.getStatus()).isEqualTo(LedgerEntryStatus.PENDING);
         assertThat(entry.getCreatedAt()).isNotNull();
     }
@@ -1699,13 +1698,12 @@ class CycleServiceTest {
         assertThat(royaltyEntry.getCycleId()).isEqualTo(cycle.getId());
         assertThat(royaltyEntry.getSourceRef()).isEqualTo(rootLegVolume.getId());
         // matched volume 50 * 3% = 1.500000
-        assertThat(royaltyEntry.getGrossAmount()).isEqualByComparingTo("1.50");
-        // tds = 1.50 * 5% = 0.075
-        assertThat(royaltyEntry.getTdsDeduction()).isEqualByComparingTo("0.075");
-        // admin = 1.50 * 4% = 0.06
-        assertThat(royaltyEntry.getAdminDeduction()).isEqualByComparingTo("0.06");
-        // net = 1.50 - 0.075 - 0.06 = 1.365
-        assertThat(royaltyEntry.getNetAmount()).isEqualByComparingTo("1.365");
+        assertThat(royaltyEntry.getGrossAmount()).isEqualByComparingTo("2");
+        // gross 1.5 -> 2; tds 0.1 -> 0; admin 0.08 -> 0
+        assertThat(royaltyEntry.getTdsDeduction()).isEqualByComparingTo("0");
+        assertThat(royaltyEntry.getAdminDeduction()).isEqualByComparingTo("0");
+        // net = 2
+        assertThat(royaltyEntry.getNetAmount()).isEqualByComparingTo("2");
         assertThat(royaltyEntry.getStatus()).isEqualTo(LedgerEntryStatus.PENDING);
         assertThat(royaltyEntry.getCreatedAt()).isNotNull();
     }

@@ -329,21 +329,18 @@ class CycleCloseFullPipelineIntegrationTest {
         assertThat(b2LegVolume.getCarriedForwardLeft()).isEqualByComparingTo("30"); // no match -> whole leg carries
 
         // --- Matching Income. ---
-        // tdsDeduction/netAmount are computed in Java to full precision (0.275, 5.005) but
-        // ledger_entry's columns are NUMERIC(14,2) (V1__create_dashboard_tables.sql) -- the DB
-        // rounds HALF_UP to 2 decimal places on persist, independently per column. Verified
-        // empirically against this suite's exact H2 2.2.224/MODE=PostgreSQL datasource: 0.275 ->
-        // 0.28, 5.005 -> 5.01. grossAmount/adminDeduction land on exact 2dp already, unaffected.
+        // Every money amount is a whole rupee (Money, HALF_UP), each component rounded
+        // independently: gross 5.5 -> 6; tds 0.3 -> 0; admin 0.24 -> 0; net = 6 - 0 - 0.
         LedgerEntry b1Matching = findEntry(b1Id, IncomeType.MATCHING);
-        assertThat(b1Matching.getGrossAmount()).isEqualByComparingTo("5.50");
-        assertThat(b1Matching.getTdsDeduction()).isEqualByComparingTo("0.28");
-        assertThat(b1Matching.getAdminDeduction()).isEqualByComparingTo("0.22");
-        assertThat(b1Matching.getNetAmount()).isEqualByComparingTo("5.01");
+        assertThat(b1Matching.getGrossAmount()).isEqualByComparingTo("6");
+        assertThat(b1Matching.getTdsDeduction()).isEqualByComparingTo("0");
+        assertThat(b1Matching.getAdminDeduction()).isEqualByComparingTo("0");
+        assertThat(b1Matching.getNetAmount()).isEqualByComparingTo("6");
         assertThat(b1Matching.getStatus()).isEqualTo(LedgerEntryStatus.CARRIED_FORWARD); // KYC PENDING
 
         LedgerEntry adminMatching = findEntry(adminId, IncomeType.MATCHING);
-        assertThat(adminMatching.getGrossAmount()).isEqualByComparingTo("3.00");
-        assertThat(adminMatching.getNetAmount()).isEqualByComparingTo("2.73");
+        assertThat(adminMatching.getGrossAmount()).isEqualByComparingTo("3");
+        assertThat(adminMatching.getNetAmount()).isEqualByComparingTo("3"); // tds 0.15 and fee 0.12 round to 0
         assertThat(adminMatching.getStatus()).isEqualTo(LedgerEntryStatus.PENDING); // KYC VERIFIED
 
         assertThat(findEntries(b2Id, IncomeType.MATCHING)).isEmpty(); // matched = min(30,0) = 0
@@ -362,28 +359,22 @@ class CycleCloseFullPipelineIntegrationTest {
         assertThat(adminReread.getCumulativeMatchedVolume()).isEqualByComparingTo("30");
 
         // --- Sponsor Matching: one itemized entry per direct sponsee. ---
+        // Sponsor gross = 10% of the sponsee's (rounded) Matching gross. From b1: 6 * 10% = 0.6 -> 1.
+        // From admin: 3 * 10% = 0.3 -> 0, so no entry is created for it.
         List<LedgerEntry> sponsorEntries = findEntries(sId, IncomeType.SPONSOR_MATCHING);
-        assertThat(sponsorEntries).hasSize(2);
-        LedgerEntry sponsorFromB1 = sponsorEntries.stream()
-            .filter(e -> e.getSourceRef().equals(b1Matching.getId())).findFirst().orElseThrow();
-        assertThat(sponsorFromB1.getGrossAmount()).isEqualByComparingTo("0.55");
-        // net = 0.55 - 0.0275(tds) - 0.022(admin) = 0.5005 unrounded -> DB rounds HALF_UP to 0.50
-        // (NUMERIC(14,2), same rounding as b1Matching above).
-        assertThat(sponsorFromB1.getNetAmount()).isEqualByComparingTo("0.50");
+        assertThat(sponsorEntries).hasSize(1);
+        LedgerEntry sponsorFromB1 = sponsorEntries.get(0);
+        assertThat(sponsorFromB1.getSourceRef()).isEqualTo(b1Matching.getId());
+        assertThat(sponsorFromB1.getGrossAmount()).isEqualByComparingTo("1");
+        assertThat(sponsorFromB1.getNetAmount()).isEqualByComparingTo("1");
         assertThat(sponsorFromB1.getStatus()).isEqualTo(LedgerEntryStatus.PENDING); // S is KYC VERIFIED
-        LedgerEntry sponsorFromAdmin = sponsorEntries.stream()
-            .filter(e -> e.getSourceRef().equals(adminMatching.getId())).findFirst().orElseThrow();
-        assertThat(sponsorFromAdmin.getGrossAmount()).isEqualByComparingTo("0.30");
-        // net = 0.30 - 0.015(tds) - 0.012(admin) = 0.273 unrounded -> DB rounds HALF_UP to 0.27.
-        assertThat(sponsorFromAdmin.getNetAmount()).isEqualByComparingTo("0.27");
 
         // --- Royalty: b1 only -- THIS cycle's matched volume is 50 (55 total minus the 5 carried
         // in on the right leg from the prior cycle) and meets the seeded 50 slab threshold. Admin
         // is excluded by the role guard regardless of its own matched volume (30). ---
         LedgerEntry b1Royalty = findEntry(b1Id, IncomeType.ROYALTY);
-        assertThat(b1Royalty.getGrossAmount()).isEqualByComparingTo("1.50");
-        // net = 1.50 - 0.075(tds) - 0.06(admin) = 1.365 unrounded -> DB rounds HALF_UP to 1.37.
-        assertThat(b1Royalty.getNetAmount()).isEqualByComparingTo("1.37");
+        assertThat(b1Royalty.getGrossAmount()).isEqualByComparingTo("2"); // 50 * 3% = 1.5 -> 2
+        assertThat(b1Royalty.getNetAmount()).isEqualByComparingTo("2"); // tds 0.1 and fee 0.08 round to 0
         assertThat(b1Royalty.getStatus()).isEqualTo(LedgerEntryStatus.CARRIED_FORWARD);
         assertThat(b1Royalty.getSourceRef()).isEqualTo(b1LegVolume.getId());
         assertThat(findEntries(adminId, IncomeType.ROYALTY)).isEmpty();
@@ -406,9 +397,9 @@ class CycleCloseFullPipelineIntegrationTest {
             assertThat(findEntries(noRewardId, IncomeType.REWARD)).isEmpty();
         }
 
-        // --- Grand total: 2 MATCHING + 2 SPONSOR_MATCHING + 1 ROYALTY + 3 REWARD = 8. ---
+        // --- Grand total: 2 MATCHING + 1 SPONSOR_MATCHING + 1 ROYALTY + 3 REWARD = 7. ---
         long totalEntriesThisCycle = ledgerEntryRepository.findAll().stream()
             .filter(e -> cycleId.equals(e.getCycleId())).count();
-        assertThat(totalEntriesThisCycle).isEqualTo(8);
+        assertThat(totalEntriesThisCycle).isEqualTo(7);
     }
 }

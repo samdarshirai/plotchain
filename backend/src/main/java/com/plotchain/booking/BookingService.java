@@ -1,5 +1,6 @@
 package com.plotchain.booking;
 
+import com.plotchain.common.Money;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
@@ -83,17 +84,17 @@ public class BookingService {
 
         BigDecimal listPrice = plot.getPrice();
         BigDecimal discount = request.discount() == null ? BigDecimal.ZERO
-            : request.discount().setScale(2, RoundingMode.HALF_UP);
+            : request.discount().setScale(0, RoundingMode.HALF_UP);
         if (discount.signum() < 0 || discount.compareTo(listPrice) >= 0) {
             throw new InvalidDiscountException(discount, listPrice);
         }
         // Booking's extraPercent (of list price) wins, then its flat extraPrice; null = the plot's default.
         BigDecimal extraPrice = (request.extraPercent() != null
-            ? listPrice.multiply(request.extraPercent()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP)
+            ? Money.percentOf(listPrice, request.extraPercent())
             : request.extraPrice() != null ? request.extraPrice() : plot.getExtraPrice())
-            .setScale(2, RoundingMode.HALF_UP);
+            .setScale(0, RoundingMode.HALF_UP);
         BigDecimal total = listPrice.add(extraPrice).subtract(discount);
-        BigDecimal token = request.tokenAmount();
+        BigDecimal token = Money.round(request.tokenAmount());
         if (token.compareTo(total) >= 0) {
             throw new InvalidTokenAmountException(token, total);
         }
@@ -206,7 +207,7 @@ public class BookingService {
         List<EmiInstallment> installments = new ArrayList<>(
             emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
         BigDecimal pending = sumByStatus(installments, InstallmentStatus.PENDING);
-        BigDecimal amount = request.amount().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal amount = request.amount().setScale(0, RoundingMode.HALF_UP);
         if (amount.signum() <= 0 || amount.compareTo(pending) > 0) {
             throw new InvalidTopUpException("Top up amount must be between 0.01 and the remaining pending amount "
                 + pending.toPlainString());
@@ -446,7 +447,7 @@ public class BookingService {
         booking.setCancelReason(reason);
         plotBookingRepository.save(booking);
 
-        BigDecimal paid = sumByStatus(installments, InstallmentStatus.PAID).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal paid = sumByStatus(installments, InstallmentStatus.PAID).setScale(0, RoundingMode.HALF_UP);
         bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.CANCELLED, actorId,
             "reason: " + reason + "; paid: " + paid.toPlainString()
                 + "; unconfirmed payments voided: " + voidedEntered + plotNote, now));
@@ -491,14 +492,14 @@ public class BookingService {
         if (discount.compareTo(listPrice) >= 0) {
             throw new InvalidDiscountException(discount, listPrice);
         }
-        BigDecimal extraPrice = newPlot.getExtraPrice().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal extraPrice = newPlot.getExtraPrice().setScale(0, RoundingMode.HALF_UP);
         BigDecimal newTotal = listPrice.add(extraPrice).subtract(discount);
 
         List<EmiInstallment> installments = new ArrayList<>(
             emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
         BigDecimal committed = sumByStatus(installments, InstallmentStatus.PAID)
             .add(sumByStatus(installments, InstallmentStatus.ENTERED));
-        BigDecimal balance = newTotal.subtract(committed).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal balance = newTotal.subtract(committed).setScale(0, RoundingMode.HALF_UP);
         if (balance.signum() <= 0) {
             throw new InvalidPlotTransferException("New plot total " + newTotal.toPlainString()
                 + " does not exceed the amount already paid " + committed.toPlainString());
@@ -513,7 +514,7 @@ public class BookingService {
         }
         if (dueDates.isEmpty()) { dueDates.add(LocalDate.now(clock)); }
         int count = dueDates.size();
-        BigDecimal base = balance.divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
+        BigDecimal base = balance.divide(BigDecimal.valueOf(count), 0, RoundingMode.DOWN);
         int nextNumber = installments.stream().mapToInt(EmiInstallment::getInstallmentNumber).max().orElse(0) + 1;
         BigDecimal running = BigDecimal.ZERO;
         for (int k = 0; k < count; k++) {
@@ -649,13 +650,13 @@ public class BookingService {
         LocalDate bookedDate = bookedAt.atZone(ZoneOffset.UTC).toLocalDate();
         BigDecimal balance = totalAmount.subtract(token);
         // Optional explicit first EMI (installment 2); the rest of the balance splits over the others.
-        BigDecimal first = firstInstallment == null ? null : firstInstallment.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal first = firstInstallment == null ? null : firstInstallment.setScale(0, RoundingMode.HALF_UP);
         if (first != null && balanceCount == 1 && first.compareTo(balance) != 0) {
             throw new InvalidFirstInstallmentException(first, balance);
         }
         BigDecimal rest = first == null ? balance : balance.subtract(first);
         int restCount = first == null ? balanceCount : balanceCount - 1;
-        BigDecimal base = restCount == 0 ? BigDecimal.ZERO : rest.divide(BigDecimal.valueOf(restCount), 2, RoundingMode.DOWN);
+        BigDecimal base = restCount == 0 ? BigDecimal.ZERO : rest.divide(BigDecimal.valueOf(restCount), 0, RoundingMode.DOWN);
 
         List<EmiInstallment> schedule = new ArrayList<>();
         EmiInstallment tokenInstallment = new EmiInstallment();

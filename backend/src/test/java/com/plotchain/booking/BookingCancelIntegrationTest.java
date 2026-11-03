@@ -225,7 +225,7 @@ class BookingCancelIntegrationTest {
         // PAID rows keep their payment fields
         assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'PAID' AND payment_ref IS NOT NULL AND paid_at IS NOT NULL", b.id())).isEqualTo(2);
         assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'CANCELLED' AND actor_id = ?", b.id(), associateId)).isEqualTo(1);
-        assertThat(eventDetail(b.id(), "CANCELLED")).isEqualTo("reason: buyer withdrew; paid: 300000.00; unconfirmed payments voided: 0");
+        assertThat(eventDetail(b.id(), "CANCELLED")).isEqualTo("reason: buyer withdrew; paid: 300000; unconfirmed payments voided: 0");
         // each confirmed payment was credited as business when confirmed; cancel retains amounts (no refunds)
         assertThat(count("SELECT COUNT(*) FROM sale WHERE booking_id = ?", b.id())).isEqualTo(2);
     }
@@ -551,7 +551,7 @@ class BookingCancelIntegrationTest {
         }
         int entered = r.get(1) == null ? 1 : 0;
         assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id())).isEqualTo(entered);
-        assertThat(eventDetail(b.id(), "CANCELLED")).isEqualTo("reason: x; paid: 0.00; unconfirmed payments voided: " + entered);
+        assertThat(eventDetail(b.id(), "CANCELLED")).isEqualTo("reason: x; paid: 0; unconfirmed payments voided: " + entered);
         assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'VOID'", b.id())).isEqualTo(4);
         assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
         assertThat(plotStatus()).isEqualTo("AVAILABLE");

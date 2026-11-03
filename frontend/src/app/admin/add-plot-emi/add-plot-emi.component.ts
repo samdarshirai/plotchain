@@ -17,7 +17,7 @@ import { FormIssue } from '../../shared/validation/validation';
 import { ExportColumn, copyTable, exportCsv, exportExcel, printTable } from '../../shared/utils/table-export.util';
 
 const PAGE_SIZE = 20;
-const round2 = (n: number): number => Math.round(n * 100) / 100;
+const round2 = (n: number): number => Math.round(n); // whole rupees
 
 @Component({
   selector: 'app-add-plot-emi',

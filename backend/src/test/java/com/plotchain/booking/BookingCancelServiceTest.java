@@ -127,7 +127,7 @@ class BookingCancelServiceTest {
         assertThat(ev.getValue().getBookingId()).isEqualTo(b.getId());
         assertThat(ev.getValue().getActorId()).isEqualTo(ACTOR_ID);
         assertThat(ev.getValue().getCreatedAt()).isEqualTo(NOW);
-        assertThat(ev.getValue().getDetail()).isEqualTo("reason: buyer withdrew; paid: 150000.00; unconfirmed payments voided: 0");
+        assertThat(ev.getValue().getDetail()).isEqualTo("reason: buyer withdrew; paid: 150000; unconfirmed payments voided: 0");
 
         assertThat(r.status()).isEqualTo(BookingStatus.CANCELLED);
         assertThat(r.paidAmount()).isEqualByComparingTo("150000.00");
@@ -152,7 +152,7 @@ class BookingCancelServiceTest {
         ArgumentCaptor<BookingEvent> ev = ArgumentCaptor.forClass(BookingEvent.class);
         verify(bookingEventRepository).save(ev.capture());
         assertThat(ev.getValue().getDetail())
-            .isEqualTo("reason: x; paid: 150000.00; unconfirmed payments voided: 1");
+            .isEqualTo("reason: x; paid: 150000; unconfirmed payments voided: 1");
     }
 
     @Test
@@ -164,7 +164,7 @@ class BookingCancelServiceTest {
 
         ArgumentCaptor<BookingEvent> ev = ArgumentCaptor.forClass(BookingEvent.class);
         verify(bookingEventRepository).save(ev.capture());
-        assertThat(ev.getValue().getDetail()).isEqualTo("reason: x; paid: 0.00; unconfirmed payments voided: 0");
+        assertThat(ev.getValue().getDetail()).isEqualTo("reason: x; paid: 0; unconfirmed payments voided: 0");
     }
 
     @Test
@@ -222,7 +222,7 @@ class BookingCancelServiceTest {
         verify(plotRepository, never()).save(any());
         ArgumentCaptor<BookingEvent> ev = ArgumentCaptor.forClass(BookingEvent.class);
         verify(bookingEventRepository).save(ev.capture());
-        assertThat(ev.getValue().getDetail()).isEqualTo("reason: drift; paid: 0.00; unconfirmed payments voided: 0; plot left SOLD");
+        assertThat(ev.getValue().getDetail()).isEqualTo("reason: drift; paid: 0; unconfirmed payments voided: 0; plot left SOLD");
     }
 
     @Test
@@ -260,7 +260,7 @@ class BookingCancelServiceTest {
         ArgumentCaptor<BookingEvent> ev = ArgumentCaptor.forClass(BookingEvent.class);
         verify(bookingEventRepository).save(ev.capture());
         assertThat(ev.getValue().getDetail())
-            .isEqualTo("reason: stale; paid: 0.00; unconfirmed payments voided: 0; plot kept: held by booking " + other.getId());
+            .isEqualTo("reason: stale; paid: 0; unconfirmed payments voided: 0; plot kept: held by booking " + other.getId());
     }
 
     // Normal case: no other holder -> plot freed, no suffix. The guard query is asked with exactly

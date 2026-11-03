@@ -169,8 +169,8 @@ describe('IncomeStatementComponent', () => {
     const row = fixture.componentInstance.statementRows[0];
     expect(row).toEqual({
       period: '01 Jan 2026 – 15 Jan 2026',
-      direct: '₹10,000.00', matching: '₹2,000.00', sponsor: '₹500.00', royalty: '₹300.00',
-      totalIncome: '₹13,800.00', tds: '₹276.00', processing: '₹690.00', payable: '₹12,834.00',
+      direct: '₹10,000', matching: '₹2,000', sponsor: '₹500', royalty: '₹300',
+      totalIncome: '₹13,800', tds: '₹276', processing: '₹690', payable: '₹12,834',
       paidStatus: 'Paid', paymentDate: '20 Jan 2026, 15:30:00'
     });
   });
@@ -185,11 +185,11 @@ describe('IncomeStatementComponent', () => {
     expect(rows.length).toBe(3);
     expect(rows[1]['paidStatus']).toBe('Unpaid');
     expect(rows[1]['paymentDate']).toBe('—');
-    expect(rows[1]['matching']).toBe('₹0.00');
+    expect(rows[1]['matching']).toBe('₹0');
     expect(rows[2]).toEqual({
       period: 'Total',
-      direct: '₹11,000.00', matching: '₹2,000.00', sponsor: '₹500.00', royalty: '₹300.00',
-      totalIncome: '₹14,800.00', tds: '₹296.00', processing: '₹740.00', payable: '₹13,764.00',
+      direct: '₹11,000', matching: '₹2,000', sponsor: '₹500', royalty: '₹300',
+      totalIncome: '₹14,800', tds: '₹296', processing: '₹740', payable: '₹13,764',
       paidStatus: '', paymentDate: ''
     });
   });
@@ -217,14 +217,14 @@ describe('IncomeStatementComponent', () => {
         'Direct Income', 'Matching Income', 'Total Income', 'TDS', 'Processing Fee', 'Payable Amount', 'Paid Status']);
       expect(c.statementRows[0]).toEqual({
         sNo: '1', paymentDate: '20 Jan 2026, 15:30:00', associateId: 'AS002', name: 'Ravi',
-        direct: '₹1,000.00', matching: '₹500.00', totalIncome: '₹1,500.00', tds: '₹30.00', processing: '₹75.00',
-        payable: '₹1,395.00', paidStatus: 'Paid'
+        direct: '₹1,000', matching: '₹500', totalIncome: '₹1,500', tds: '₹30', processing: '₹75',
+        payable: '₹1,395', paidStatus: 'Paid'
       });
       expect(c.statementRows[1]['paidStatus']).toBe('Unpaid');
       expect(c.statementRows[2]).toEqual({
         sNo: 'Total', paymentDate: '', associateId: '', name: '',
-        direct: '₹1,000.00', matching: '₹700.00', totalIncome: '₹1,700.00', tds: '₹34.00', processing: '₹85.00',
-        payable: '₹1,581.00', paidStatus: ''
+        direct: '₹1,000', matching: '₹700', totalIncome: '₹1,700', tds: '₹34', processing: '₹85',
+        payable: '₹1,581', paidStatus: ''
       });
     });
 
@@ -239,7 +239,7 @@ describe('IncomeStatementComponent', () => {
       c.onDownlineCycleChange('c0');
       expect(c.statementRows.length).toBe(2);
       expect(c.statementRows[0]['associateId']).toBe('AS003');
-      expect(c.statementRows[1]['totalIncome']).toBe('₹200.00');
+      expect(c.statementRows[1]['totalIncome']).toBe('₹200');
       httpMock.expectNone(DOWNLINE_URL);
     });
   });
@@ -370,7 +370,7 @@ describe('IncomeStatementComponent', () => {
     const rows = fixture.componentInstance.statementRows;
     expect(rows.length).toBe(3); // 2 entries + Total
     expect(rows[2]['dateTime']).toBe('Total');
-    expect(rows[2]['directIncome']).toBe(rows[0]['directIncome'].replace('10,000.00', '20,000.00'));
+    expect(rows[2]['directIncome']).toBe(rows[0]['directIncome'].replace('10,000', '20,000'));
   });
 
   it('direct tab shows the selling sponsee and the sale amount, not the viewer', () => {
@@ -380,8 +380,8 @@ describe('IncomeStatementComponent', () => {
     const row = fixture.componentInstance.statementRows[0];
     expect(row['associateId']).toBe('PC1002');
     expect(row['name']).toBe('A');
-    expect(row['amount']).toContain('1,000,000.00');
-    expect(row['directIncome']).toContain('60,000.00');
+    expect(row['amount']).toContain('1,000,000');
+    expect(row['directIncome']).toContain('60,000');
   });
 
   it('direct tab leaves id and name blank when the sale lookup missed', () => {
@@ -403,7 +403,7 @@ describe('IncomeStatementComponent', () => {
     flushInitialRequests();
     fixture.detectChanges();
     const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
-    expect(rowText).toContain('₹10,000.00');
+    expect(rowText).toContain('₹10,000');
     expect(rowText).not.toContain('10000');
   });
 
@@ -448,7 +448,7 @@ describe('IncomeStatementComponent', () => {
     expect(fixture.nativeElement.querySelector('.income-statement__legend').textContent).toContain('Calculate Right Business');
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
-    expect(cells).toEqual(jasmine.arrayContaining(['02 Jun 2026 – 16 Jun 2026', '₹1,000,000.00', '₹500,000.00', '₹35,000.00']));
+    expect(cells).toEqual(jasmine.arrayContaining(['02 Jun 2026 – 16 Jun 2026', '₹1,000,000', '₹500,000', '₹35,000']));
   });
 
   it('Royalty tab shows date, new left/right/matching business and royalty bonus', () => {
@@ -471,7 +471,7 @@ describe('IncomeStatementComponent', () => {
     ]);
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
-    expect(cells).toEqual(jasmine.arrayContaining(['02 Jun 2026 – 16 Jun 2026', '₹0.00', '₹500,000.00']));
+    expect(cells).toEqual(jasmine.arrayContaining(['02 Jun 2026 – 16 Jun 2026', '₹0', '₹500,000']));
   });
 
   it('Sponsor Matching tab shows Date, Member ID, Matching Income and Sponsor Matching Income', () => {
@@ -490,7 +490,7 @@ describe('IncomeStatementComponent', () => {
     ]);
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
-    expect(cells).toEqual(jasmine.arrayContaining(['PC200', '₹35,000.00', '₹3,500.00']));
+    expect(cells).toEqual(jasmine.arrayContaining(['PC200', '₹35,000', '₹3,500']));
   });
 
   const tier = (n: number, threshold: number, reqL: number, reqR: number, achieved: boolean) => ({
@@ -514,7 +514,7 @@ describe('IncomeStatementComponent', () => {
 
     const values: string[] = Array.from(fixture.nativeElement.querySelectorAll('.income-statement__card-value'))
       .map((e: any) => e.textContent.trim());
-    expect(values).toEqual(['₹1,250.00', '1']);
+    expect(values).toEqual(['₹1,250', '1']);
   });
 
   it('All tab shows the paid status as a success badge', () => {
@@ -540,10 +540,10 @@ describe('IncomeStatementComponent', () => {
       [{ achievedDate: '2026-01-05T00:00:00Z', designation: 'T1', reward: 15000, perkDescription: '+ Smart Watch', paid: false, paymentDate: null, remarks: null }]
     );
     expect(c.currentRank).toBe('T1');
-    expect(c.rewardCards.map(x => x.value)).toEqual(['₹1,300,000.00', '₹300,000.00', '₹300,000.00']);
+    expect(c.rewardCards.map(x => x.value)).toEqual(['₹1,300,000', '₹300,000', '₹300,000']);
     expect(c.rewardTierRows.map(t => t['status'])).toEqual(['Achieved', 'In progress', 'Pending']);
     expect(c.rewardTierRows[1]['designation']).toBe('T2');
-    expect(c.rewardTierRows[1]['volume']).toBe('₹2,000,000.00');
+    expect(c.rewardTierRows[1]['volume']).toBe('₹2,000,000');
     expect(c.rewardTierRows[1]['left']).toBe('₹7 L');
     expect(c.rewardTierRows[1]['right']).toBe('₹17 L');
     expect(c.achievedRows[0]['payStatus']).toBe('Unpaid');

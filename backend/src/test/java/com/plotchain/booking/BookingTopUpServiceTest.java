@@ -91,7 +91,8 @@ class BookingTopUpServiceTest {
 
         assertThat(r.installments()).extracting(EmiInstallmentResponse::status).containsExactly(
             InstallmentStatus.PAID, InstallmentStatus.PENDING, InstallmentStatus.PENDING, InstallmentStatus.ENTERED);
-        assertThat(r.installments()).extracting(EmiInstallmentResponse::amount).containsExactly(
+        assertThat(r.installments()).extracting(EmiInstallmentResponse::amount)
+            .usingComparatorForType(BigDecimal::compareTo, BigDecimal.class).containsExactly(
             new BigDecimal("10000.00"), new BigDecimal("25000.00"), new BigDecimal("45000.00"), new BigDecimal("20000.00"));
         EmiInstallmentResponse pay = r.installments().get(3);
         assertThat(pay.installmentNumber()).isEqualTo(4);
@@ -128,7 +129,7 @@ class BookingTopUpServiceTest {
     @Test
     void rejectsAmountAbovePending() {
         PlotBooking b = booking(BookingStatus.ACTIVE);
-        assertThatThrownBy(() -> bookingService.topUp(b.getId(), req("90000.01", PaymentMode.CASH, null), ACTOR_ID))
+        assertThatThrownBy(() -> bookingService.topUp(b.getId(), req("90001", PaymentMode.CASH, null), ACTOR_ID))
             .isInstanceOf(InvalidTopUpException.class);
         verify(emiInstallmentRepository, never()).saveAll(org.mockito.ArgumentMatchers.anyList());
     }

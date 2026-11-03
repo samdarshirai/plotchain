@@ -70,18 +70,18 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
           <div class="cycle-management__stats">
             <div class="cycle-metric cycle-metric--hero">
               <span class="cycle-metric__label">{{ 'admin.cycleManagement.totalIncomeLabel' | translate }}</span>
-              <span class="cycle-metric__value">{{ stats.totalIncome | currency:'INR':'symbol':'1.2-2' }}</span>
+              <span class="cycle-metric__value">{{ stats.totalIncome | currency:'INR':'symbol':'1.0-0' }}</span>
               <span class="cycle-metric__delta" *ngIf="incomeDelta !== null" [class.cycle-metric__delta--down]="incomeDelta < 0">
                 {{ incomeDelta >= 0 ? '▲' : '▼' }} {{ incomeDelta | number:'1.0-1' }}% {{ 'admin.cycleManagement.vsPreviousCycleLabel' | translate }}
               </span>
             </div>
             <div class="cycle-metric">
               <span class="cycle-metric__label">{{ 'admin.cycleManagement.directIncomeLabel' | translate }}</span>
-              <span class="cycle-metric__value">{{ stats.directIncome | currency:'INR':'symbol':'1.2-2' }}</span>
+              <span class="cycle-metric__value">{{ stats.directIncome | currency:'INR':'symbol':'1.0-0' }}</span>
             </div>
             <div class="cycle-metric">
               <span class="cycle-metric__label">{{ 'admin.cycleManagement.matchingIncomeLabel' | translate }}</span>
-              <span class="cycle-metric__value">{{ stats.matchingIncome | currency:'INR':'symbol':'1.2-2' }}</span>
+              <span class="cycle-metric__value">{{ stats.matchingIncome | currency:'INR':'symbol':'1.0-0' }}</span>
             </div>
             <div class="cycle-metric">
               <span class="cycle-metric__label">{{ 'admin.cycleManagement.newAssociatesLabel' | translate }}</span>
@@ -93,7 +93,7 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
             </div>
             <div class="cycle-metric">
               <span class="cycle-metric__label">{{ 'admin.cycleManagement.revenueThisCycleLabel' | translate }}</span>
-              <span class="cycle-metric__value">{{ stats.revenueThisCycle | currency:'INR':'symbol':'1.2-2' }}</span>
+              <span class="cycle-metric__value">{{ stats.revenueThisCycle | currency:'INR':'symbol':'1.0-0' }}</span>
             </div>
           </div>
         </ng-container>

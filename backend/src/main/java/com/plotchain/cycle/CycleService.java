@@ -1,5 +1,6 @@
 package com.plotchain.cycle;
 
+import com.plotchain.common.Money;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.compensation.CompensationPlanVersion;
@@ -455,8 +456,7 @@ public class CycleService {
                 changed = true;
             }
             if (!paid) {
-                BigDecimal grossAmount = sale.getAmount().multiply(
-                    planVersion.getDirectIncomePct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+                BigDecimal grossAmount = Money.percentOf(sale.getAmount(), planVersion.getDirectIncomePct());
                 Deductions deductions = applyDeductions(grossAmount, planVersion);
                 entry.setGrossAmount(grossAmount);
                 entry.setTdsDeduction(deductions.tdsDeduction());
@@ -483,10 +483,8 @@ public class CycleService {
     // resolved once per computeIncome() run against today (Decision #10) -- every income
     // type in this batch shares that one resolved version; no caller re-resolves its own.
     private Deductions applyDeductions(BigDecimal grossAmount, CompensationPlanVersion planVersion) {
-        BigDecimal tdsDeduction = grossAmount.multiply(
-            planVersion.getTdsPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-        BigDecimal adminDeduction = grossAmount.multiply(
-            planVersion.getAdminChargeWithPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+        BigDecimal tdsDeduction = Money.percentOf(grossAmount, planVersion.getTdsPct());
+        BigDecimal adminDeduction = Money.percentOf(grossAmount, planVersion.getAdminChargeWithPanPct());
         BigDecimal netAmount = grossAmount.subtract(tdsDeduction).subtract(adminDeduction);
         return new Deductions(tdsDeduction, adminDeduction, netAmount);
     }
@@ -537,8 +535,7 @@ public class CycleService {
                 continue;
             }
 
-            BigDecimal grossAmount = matchedVolume.multiply(
-                planVersion.getMatchingIncomePct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+            BigDecimal grossAmount = Money.percentOf(matchedVolume, planVersion.getMatchingIncomePct());
             Deductions deductions = applyDeductions(grossAmount, planVersion);
 
             LedgerEntry entry = new LedgerEntry();
@@ -674,8 +671,7 @@ public class CycleService {
                 }
 
                 // Decision #9: percentage of the sponsee's Matching grossAmount, never netAmount.
-                BigDecimal grossAmount = matchingEntry.getGrossAmount().multiply(
-                    planVersion.getSponsorMatchingPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+                BigDecimal grossAmount = Money.percentOf(matchingEntry.getGrossAmount(), planVersion.getSponsorMatchingPct());
                 if (grossAmount.compareTo(BigDecimal.ZERO) <= 0) {
                     continue;
                 }
@@ -769,8 +765,7 @@ public class CycleService {
                 continue;
             }
 
-            BigDecimal grossAmount = matchedVolume.multiply(
-                rate.get().getRoyaltyPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+            BigDecimal grossAmount = Money.percentOf(matchedVolume, rate.get().getRoyaltyPct());
             if (grossAmount.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
@@ -832,7 +827,7 @@ public class CycleService {
                     break;
                 }
 
-                BigDecimal grossAmount = tier.getCashReward();
+                BigDecimal grossAmount = Money.round(tier.getCashReward());
                 if (grossAmount.compareTo(BigDecimal.ZERO) <= 0) {
                     continue;
                 }

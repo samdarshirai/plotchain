@@ -46,17 +46,17 @@ describe('LegBalanceComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('matching pays on the weaker leg');
   });
 
-  it('renders left and right leg figures as currency with paise', () => {
+  it('renders left and right leg figures as currency as whole rupees', () => {
     createComponent(legVolume({ leftLegVolume: 300000, rightLegVolume: 200000 }));
     const values = fixture.nativeElement.querySelectorAll('.leg-balance__figure-value');
-    expect(values[0].textContent.trim()).toBe('₹300,000.00');
-    expect(values[1].textContent.trim()).toBe('₹200,000.00');
+    expect(values[0].textContent.trim()).toBe('₹300,000');
+    expect(values[1].textContent.trim()).toBe('₹200,000');
   });
 
-  it('renders a zero figure with paise', () => {
+  it('renders a zero figure as whole rupees', () => {
     createComponent(legVolume({ leftLegVolume: 0, rightLegVolume: 0 }));
     const values = fixture.nativeElement.querySelectorAll('.leg-balance__figure-value');
-    expect(values[0].textContent.trim()).toBe('₹0.00');
+    expect(values[0].textContent.trim()).toBe('₹0');
   });
 
   it('renders the eyebrow label flush left, followed by a single fill rule, with the caption flush right (matches mockup, not the recent-sales double-rule style)', () => {

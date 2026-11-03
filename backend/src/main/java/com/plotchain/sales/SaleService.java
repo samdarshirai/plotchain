@@ -1,5 +1,6 @@
 package com.plotchain.sales;
 
+import com.plotchain.common.Money;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
@@ -132,12 +133,9 @@ public class SaleService {
         // section 1). adminDeduction is the plan's Processing Fee % (stored as admin_charge_with_pan_pct).
         Optional<UUID> directEarner = directIncomeEarner(associate, associateRepository);
         if (directEarner.isPresent()) {
-            BigDecimal grossAmount = sale.getAmount()
-                .multiply(planVersion.getDirectIncomePct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-            BigDecimal tdsDeduction = grossAmount
-                .multiply(planVersion.getTdsPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
-            BigDecimal adminDeduction = grossAmount
-                .multiply(planVersion.getAdminChargeWithPanPct().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+            BigDecimal grossAmount = Money.percentOf(sale.getAmount(), planVersion.getDirectIncomePct());
+            BigDecimal tdsDeduction = Money.percentOf(grossAmount, planVersion.getTdsPct());
+            BigDecimal adminDeduction = Money.percentOf(grossAmount, planVersion.getAdminChargeWithPanPct());
             BigDecimal netAmount = grossAmount.subtract(tdsDeduction).subtract(adminDeduction);
 
             LedgerEntry ledgerEntry = new LedgerEntry();

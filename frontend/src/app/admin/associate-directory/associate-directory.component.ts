@@ -222,11 +222,11 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
           </div>
           <div class="cycle-detail__row">
             <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.leftLegVolumeLabel' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.leftLegVolume | currency:'INR':'symbol':'1.2-2' }}</span>
+            <span class="cycle-detail__row-value">{{ selected.leftLegVolume | currency:'INR':'symbol':'1.0-0' }}</span>
           </div>
           <div class="cycle-detail__row">
             <span class="cycle-detail__row-label">{{ 'admin.associateDirectory.rightLegVolumeLabel' | translate }}</span>
-            <span class="cycle-detail__row-value">{{ selected.rightLegVolume | currency:'INR':'symbol':'1.2-2' }}</span>
+            <span class="cycle-detail__row-value">{{ selected.rightLegVolume | currency:'INR':'symbol':'1.0-0' }}</span>
           </div>
         </div>
 

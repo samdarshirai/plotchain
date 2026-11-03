@@ -234,7 +234,7 @@ export class LedgerRegisterComponent implements OnInit {
   }
 
   private money(amount: number): string {
-    return this.currencyPipe.transform(amount, 'INR', 'symbol', '1.2-2') ?? String(amount);
+    return this.currencyPipe.transform(amount, 'INR', 'symbol', '1.0-0') ?? String(amount);
   }
 
   private cyclePeriod(e: AdminLedgerEntry): string {
