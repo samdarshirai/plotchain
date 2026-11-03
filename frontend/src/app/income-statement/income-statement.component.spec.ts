@@ -228,6 +228,11 @@ describe('IncomeStatementComponent', () => {
       });
     });
 
+    it('header reads My Downline Income Report, not the own-income title', () => {
+      expect(fixture.nativeElement.querySelector('.income-statement__title').textContent.trim())
+        .toBe('My Downline Income Report');
+    });
+
     it('cycle filter narrows rows client-side without a new request', () => {
       const c = fixture.componentInstance;
       expect(c.downlineCycles.map(x => x.cycleId)).toEqual(['c1', 'c0']);

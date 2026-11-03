@@ -55,7 +55,7 @@ const DATE_FORMAT = 'dd MMM yyyy';
     <div class="income-statement" [attr.data-income-type]="activeIncomeType" [class.income-statement--matching]="activeIncomeType === 'MATCHING'" [class.income-statement--reward]="activeIncomeType === 'REWARD'" [class.income-statement--direct]="activeIncomeType === 'DIRECT'" [class.income-statement--all]="activeIncomeType === 'ALL'">
       <div class="income-statement__head">
         <div class="income-statement__intro">
-          <h1 class="income-statement__title">{{ 'incomeStatement.title' | translate }}</h1>
+          <h1 class="income-statement__title">{{ (activeIncomeType === 'DOWNLINE' ? 'incomeStatement.tabDownline' : 'incomeStatement.title') | translate }}</h1>
           <p class="income-statement__subtitle">{{ 'incomeStatement.subtitle' | translate }}</p>
         </div>
 
