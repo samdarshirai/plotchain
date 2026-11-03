@@ -161,13 +161,13 @@
     "myBusiness": { "title": "My Business Datewise", "left": "Left Business", "right": "Right Business" },
     "emi": { "title": "EMI Report" },
     "column": {
-      "number": "Number", "paymentDate": "Payment Date & Time", "confirmDate": "Confirm Date", "associateId": "Associate Id",
+      "number": "Number", "paymentDate": "Payment Date", "confirmDate": "Confirm Date", "associateId": "Associate Id",
       "name": "Name", "project": "Project", "plotNumber": "Plot Number", "business": "Business", "amount": "Amount", "mode": "Mode"
     }
   },
   "plotBookings": {
     "table": {"empty": "No data to show.", "bookingDate": "Booking Date", "associateId": "Associate ID", "name": "Name", "project": "Project", "plotType": "Plot Type", "plotNo": "Plot No.", "rate": "Rate", "area": "Area", "price": "Price", "extraPrice": "Extra Price", "totalPrice": "Total Price", "paid": "Paid Amount", "rest": "Rest Amount", "details": "Details", "detailsAction": "View", "close": "Close"},
-    "payments": {"paymentDate": "Payment Date & Time", "amount": "Amount", "receiptNo": "Receipt No", "mode": "Payment Mode", "instrumentNo": "Cheque/DD/NEFT/RTGS No", "date": "Date", "empty": "No payments yet."},
+    "payments": {"paymentDate": "Payment Date", "amount": "Amount", "receiptNo": "Receipt No", "mode": "Payment Mode", "instrumentNo": "Cheque/DD/NEFT/RTGS No", "date": "Date", "empty": "No payments yet."},
     "myBookings": { "title": "My Bookings" },
     "team": {
       "title": { "TEAM": "Team Purchase Plots", "LEFT": "Left Plot Booking", "RIGHT": "Right Plot Booking" },
@@ -535,7 +535,7 @@
     "columnDesignation": "Designation",
     "columnDate": "Date",
     "columnPayStatus": "Pay Status",
-    "columnPaymentDate": "Payment Date & Time",
+    "columnPaymentDate": "Payment Date",
     "columnRemarks": "Remarks",
     "statusAchieved": "Achieved",
     "statusPending": "Pending",
@@ -1394,14 +1394,14 @@
     "invoicePayments": {
       "eyebrow": "Invoice", "title": "Payment Details", "subtitle": "Review advance loan repayments received from associates and print receipts.",
       "filterFrom": "From", "filterTo": "To", "search": "Search", "searchPlaceholder": "Search by Associate Id, name or mobile", "apply": "Apply",
-      "columnSNo": "S No", "paymentDate": "Payment Date & Time", "associateId": "Associate Id", "associateName": "Associate Name", "mobileNo": "Mobile No",
+      "columnSNo": "S No", "paymentDate": "Payment Date", "associateId": "Associate Id", "associateName": "Associate Name", "mobileNo": "Mobile No",
       "paymentType": "Payment Type", "receiptNo": "Receipt No", "amount": "Amount", "payMode": "Payment Mode", "bankName": "Bank Name", "txnNo": "TXN No", "print": "Print",
       "paymentTypeLoanRepayment": "Loan Repayment", "printAction": "Print", "emptyState": "No payments for these filters.", "loadError": "Could not load payments.",
       "filterError": "The From date cannot be after the To date.",
       "payModes": { "CASH": "Cash", "CHEQUE": "Cheque", "DD": "Demand Draft", "UPI": "UPI", "BANK_TRANSFER": "Bank Transfer" }
     },
     "invoiceReceipt": {
-      "title": "Repayment Receipt", "receiptNo": "Receipt No", "paymentDate": "Payment Date & Time", "associateId": "Associate Id", "associateName": "Associate Name",
+      "title": "Repayment Receipt", "receiptNo": "Receipt No", "paymentDate": "Payment Date", "associateId": "Associate Id", "associateName": "Associate Name",
       "mobileNo": "Mobile No", "amount": "Amount", "payMode": "Payment Mode", "bankName": "Bank Name", "txnNo": "TXN No",
       "printAction": "Print", "notFound": "This receipt could not be found.", "back": "Back to Payment Details"
     },
@@ -1434,7 +1434,7 @@
     "viewConfirmedPlot": {
       "title": "Confirm Payments", "subtitle": "Payments by payment date and project. Switch between Unconfirmed and Confirmed; select Unconfirmed payments to confirm them together.",
       "from": "Payment from", "to": "Payment to", "pending": "Unconfirmed", "confirmed": "Confirmed", "emptyPending": "No unconfirmed payments for these filters.", "emptyConfirmed": "No confirmed payments for these filters.",
-      "col": { "paymentDate": "Payment Date & Time", "amount": "Amount", "mode": "Mode", "status": "Status", "select": "Select" }
+      "col": { "paymentDate": "Payment Date", "amount": "Amount", "mode": "Mode", "status": "Status", "select": "Select" }
     },
     "plotTransfer": {
       "title": "Plot Transfer", "subtitle": "Active bookings eligible for plot transfer. Open Details for the full booking, or Transfer to move it to another available plot.", "transfer": "Transfer",
@@ -1554,7 +1554,7 @@
         "notActive": "This booking is no longer active."
       },
       "success": "Payment of {{amount}} added for plot {{plot}}. Confirm it from the payments queue.",
-      "hist": { "receiptNo": "Receipt No", "sNo": "S No", "paymentDate": "Payment Date & Time", "txnDate": "TXN Date", "confirmedDate": "Confirmed Date", 
+      "hist": { "receiptNo": "Receipt No", "sNo": "S No", "paymentDate": "Payment Date", "txnDate": "TXN Date", "confirmedDate": "Confirmed Date", 
         "empty": "No payments yet.",
         "date": "Date",
         "amount": "Amount",

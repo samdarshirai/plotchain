@@ -341,6 +341,9 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
 
     tbody tr { height: 48px; }
 
+    // Date + time cells (Payment Date): wrap between words instead of clipping; two 12px lines fit the 48px row.
+    td.editable-table__cell--wrap { white-space: normal !important; text-overflow: clip; }
+
     // Very large amounts step the font down so the whole number stays visible (see fit-text.util.ts).
     td.editable-table__cell--fit-md { font-size: 10.5px; }
     td.editable-table__cell--fit-sm { font-size: 9px; }
@@ -375,7 +378,7 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
 
   .invoice-payments .editable-table {
     th:nth-child(1) { width: 36px; }
-    th:nth-child(2) { width: 92px; }
+    th:nth-child(2) { width: 112px; }
     th:nth-child(3) { width: 80px; }
     th:nth-child(5) { width: 92px; }
     th:nth-child(6) { width: 108px; }
