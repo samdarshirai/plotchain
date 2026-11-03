@@ -117,7 +117,7 @@ public class AdvanceLoanService {
 
     private static LoanRepaymentResponse toResponse(LoanRepayment p, Associate a) {
         return new LoanRepaymentResponse(p.getId(), p.getLoanId(), p.getReceiptNo(), p.getPaymentDate(), a.getId(),
-            a.getUserId(), a.getName(), a.getPhone(), p.getAmount(), p.getPayMode(), p.getBankName(), p.getTxnNo());
+            a.getUserId(), a.getName(), a.getPhone(), p.getAmount(), p.getPayMode(), p.getBankName(), p.getTxnNo(), p.getCreatedAt());
     }
 
     private static AdvanceLoanResponse toResponse(AdvanceLoan l, Associate a, BigDecimal repaid) {

@@ -128,7 +128,7 @@ class AdvanceLoanControllerTest {
             new BigDecimal("1000.00"), BigDecimal.ZERO, new BigDecimal("400.00"), new BigDecimal("600.00"),
             com.plotchain.expense.PayMode.CASH, null, null, null);
         LoanRepaymentResponse rep = new LoanRepaymentResponse(UUID.randomUUID(), id, "RCP-000001", java.time.LocalDate.of(2026, 10, 2),
-            assoc, "VP00001", "Asha", "9999999999", new BigDecimal("400.00"), com.plotchain.expense.PayMode.UPI, null, null);
+            assoc, "VP00001", "Asha", "9999999999", new BigDecimal("400.00"), com.plotchain.expense.PayMode.UPI, null, null, java.time.Instant.parse("2026-10-02T09:30:15Z"));
         return new AdvanceLoanDetailResponse(loan, "9999999999", java.util.List.of(rep));
     }
 

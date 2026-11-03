@@ -105,6 +105,7 @@ class AdvanceLoanServiceTest {
         LoanRepaymentResponse r = service.repay(l.getId(), repayRequest("600"), UUID.randomUUID());
         assertThat(r.receiptNo()).isEqualTo("RCP-000123");
         assertThat(r.associateUserId()).isEqualTo("VP00001");
+        assertThat(r.recordedAt()).isNotNull();
         verify(loans).findByIdForUpdate(l.getId());
         verify(repayments).save(any(LoanRepayment.class));
     }

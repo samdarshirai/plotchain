@@ -55,6 +55,7 @@ public class LoanRepayment {
     public UUID getLoanId() { return loanId; }
     public String getReceiptNo() { return receiptNo; }
     public LocalDate getPaymentDate() { return paymentDate; }
+    public Instant getCreatedAt() { return createdAt; }
     public BigDecimal getAmount() { return amount; }
     public PayMode getPayMode() { return payMode; }
     public String getBankName() { return bankName; }
