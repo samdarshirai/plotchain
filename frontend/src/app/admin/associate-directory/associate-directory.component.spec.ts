@@ -47,6 +47,15 @@ describe('AssociateDirectoryComponent', () => {
 
   afterEach(() => httpMock.verify());
 
+  it('marks a plot buyer in the name cell instead of adding a column', () => {
+    fixture.componentInstance.loadPage(0);
+    httpMock.expectOne('/api/admin/associates?page=0&size=20')
+      .flush({ associates: [{ id: 'a1', userId: 'VP00001', name: 'Jane', designation: null, kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: 'VP00000', position: 'L', lastActiveAt: null, role: 'ASSOCIATE', plotBuyer: true }], page: 0, size: 20, totalElements: 1 });
+
+    expect(fixture.componentInstance.directoryRows[0]['name']).toBe('Jane 🏞️');
+    expect(fixture.componentInstance.directoryColumns.some(c => c.key === 'plotBuyer')).toBeFalse();
+  });
+
   it('loads and displays the first page of associates', () => {
     expect(fixture.componentInstance.page?.associates.length).toBe(1);
     expect(fixture.componentInstance.page?.associates[0].userId).toBe('VP00001');

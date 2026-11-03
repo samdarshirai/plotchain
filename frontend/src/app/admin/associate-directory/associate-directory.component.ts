@@ -326,12 +326,6 @@ export class AssociateDirectoryComponent implements OnInit {
         type: 'badge',
         badgeTone: value => this.statusBadgeTone(value)
       },
-      {
-        key: 'plotBuyer',
-        label: this.translate.instant('admin.associateDirectory.columnPlotBuyer'),
-        type: 'badge',
-        badgeTone: value => (value === this.translate.instant('admin.associateDirectory.plotBuyerYes') ? 'success' : 'default')
-      },
       { key: 'joinedAt', label: this.translate.instant('admin.associateDirectory.columnRegistrationDate'), type: 'text' },
       { key: 'loginPassword', label: this.translate.instant('admin.associateDirectory.loginPasswordLabel'), type: 'text', icon: 'key' },
       { key: 'transactionPassword', label: this.translate.instant('admin.associateDirectory.transactionPasswordLabel'), type: 'text', icon: 'lock' },
@@ -556,13 +550,13 @@ export class AssociateDirectoryComponent implements OnInit {
         this.page = res;
         this.directoryRows = (this.page?.associates ?? []).map(a => ({
           userId: a.userId,
-          name: a.name,
+          // Short glyph, not a column: an extra column pushed the table past its container and into stacked cards.
+          name: a.plotBuyer ? `${a.name} 🏞️` : a.name,
           phone: a.phone ?? '—',
           email: a.email ?? '—',
           sponsorUserId: a.sponsorUserId ?? '—',
           position: a.position ?? '—',
           status: titleCase(a.status),
-          plotBuyer: a.plotBuyer ? this.translate.instant('admin.associateDirectory.plotBuyerYes') : '—',
           joinedAt: formatIst(a.joinedAt),
           loginPassword: a.loginPassword ?? '—',
           transactionPassword: a.transactionPassword ?? '—'
