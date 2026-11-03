@@ -369,6 +369,16 @@ public class LedgerService {
         return rows;
     }
 
+    public AssociateRewardBusiness myRewardBusiness(UUID associateId) {
+        LegVolumeRepository.LegBusinessTotals closed = legVolumeRepository.totalBusiness(associateId);
+        BigDecimal newLeft = saleRepository.sumOpenCycleLegBusiness(associateId, "L");
+        BigDecimal newRight = saleRepository.sumOpenCycleLegBusiness(associateId, "R");
+        return new AssociateRewardBusiness(
+            closed.left().add(newLeft), closed.right().add(newRight),
+            closed.left(), closed.right(),
+            newLeft, newRight);
+    }
+
     // Achieved rewards in tier order, with admin fulfilment (pay status/date/remark).
     public List<AssociateRewardAchievedRow> myRewardsAchieved(UUID associateId) {
         Map<UUID, LedgerEntry> bySourceRef = rewardEntriesBySourceRef(associateId);

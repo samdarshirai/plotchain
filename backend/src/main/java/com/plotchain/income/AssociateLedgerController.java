@@ -61,6 +61,11 @@ public class AssociateLedgerController {
         return ledgerService.myRewardTiers(associateId);
     }
 
+    @GetMapping("/api/associates/me/reward-business")
+    public AssociateRewardBusiness getMyRewardBusiness(@AuthenticationPrincipal UUID associateId) {
+        return ledgerService.myRewardBusiness(associateId);
+    }
+
     @GetMapping("/api/associates/me/rewards-achieved")
     public List<AssociateRewardAchievedRow> getMyRewardsAchieved(@AuthenticationPrincipal UUID associateId) {
         return ledgerService.myRewardsAchieved(associateId);

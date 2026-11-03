@@ -459,6 +459,24 @@ class LedgerServiceTest {
     }
 
     @Test
+    void myRewardBusiness_splitsPaidClosedAndNewOpenPerLeg() {
+        UUID me = UUID.randomUUID();
+        when(legVolumeRepository.totalBusiness(me)).thenReturn(
+            new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("1000000"), new BigDecimal("200000")));
+        when(saleRepository.sumOpenCycleLegBusiness(me, "L")).thenReturn(new BigDecimal("300000"));
+        when(saleRepository.sumOpenCycleLegBusiness(me, "R")).thenReturn(new BigDecimal("100000"));
+
+        AssociateRewardBusiness b = service.myRewardBusiness(me);
+
+        assertThat(b.paidLeft()).isEqualByComparingTo("1000000");
+        assertThat(b.paidRight()).isEqualByComparingTo("200000");
+        assertThat(b.newLeft()).isEqualByComparingTo("300000");
+        assertThat(b.newRight()).isEqualByComparingTo("100000");
+        assertThat(b.totalLeft()).isEqualByComparingTo("1300000");
+        assertThat(b.totalRight()).isEqualByComparingTo("300000");
+    }
+
+    @Test
     void myRewardTiers_joinsLedgerRowToTier_andLeavesUnachievedNull() {
         UUID me = UUID.randomUUID();
         UUID t1 = UUID.randomUUID();

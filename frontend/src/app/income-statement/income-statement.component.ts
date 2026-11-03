@@ -430,16 +430,6 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     this.page = null;
     this.incomeStatementService.rewardTiers().subscribe({
       next: tiers => {
-        // API only exposes remaining volume per leg (max(0, threshold - total)), so recover the
-        // total from the first tier still short on that leg; if none, the leg already covers the
-        // top tier -- use its threshold as a lower bound.
-        const top = tiers.length ? Math.max(...tiers.map(t => t.matchingBusiness)) : 0;
-        const legTotal = (req: (t: RewardTierRow) => number): number => {
-          const short = tiers.find(t => req(t) > 0);
-          return short ? short.matchingBusiness - req(short) : top;
-        };
-        const left = legTotal(t => t.requiredLeftBusiness);
-        const right = legTotal(t => t.requiredRightBusiness);
         const firstOpen = tiers.findIndex(t => !t.status);
         this.rewardTierRows = tiers.map((t, i) => {
           const state = t.status ? 'achieved' : i === firstOpen ? 'progress' : 'pending';
@@ -455,10 +445,18 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         });
         const achievedTiers = tiers.filter(t => t.status);
         this.currentRank = achievedTiers.length ? (achievedTiers[achievedTiers.length - 1].designation ?? '—') : '—';
+      },
+      error: () => (this.loadError = true)
+    });
+    this.incomeStatementService.rewardBusiness().subscribe({
+      next: b => {
         this.rewardCards = [
-          { labelKey: 'incomeStatement.leftBusiness', value: this.formatCurrency(left) },
-          { labelKey: 'incomeStatement.rightBusiness', value: this.formatCurrency(right) },
-          { labelKey: 'incomeStatement.matchingBusiness', value: this.formatCurrency(Math.min(left, right)) }
+          { labelKey: 'incomeStatement.totalLeftBusiness', value: this.formatCurrency(b.totalLeft) },
+          { labelKey: 'incomeStatement.totalRightBusiness', value: this.formatCurrency(b.totalRight) },
+          { labelKey: 'incomeStatement.paidLeftBusiness', value: this.formatCurrency(b.paidLeft) },
+          { labelKey: 'incomeStatement.paidRightBusiness', value: this.formatCurrency(b.paidRight) },
+          { labelKey: 'incomeStatement.newLeftBusiness', value: this.formatCurrency(b.newLeft) },
+          { labelKey: 'incomeStatement.newRightBusiness', value: this.formatCurrency(b.newRight) }
         ];
       },
       error: () => (this.loadError = true)

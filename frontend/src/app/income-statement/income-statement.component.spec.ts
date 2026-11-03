@@ -502,6 +502,9 @@ describe('IncomeStatementComponent', () => {
     flushInitialRequests();
     routeData$.next({ incomeType: 'REWARD' });
     httpMock.expectOne('/api/associates/me/reward-tiers').flush(tiers);
+    httpMock.expectOne('/api/associates/me/reward-business').flush({
+      totalLeft: 1300000, totalRight: 300000, paidLeft: 1000000, paidRight: 200000, newLeft: 300000, newRight: 100000
+    });
     httpMock.expectOne('/api/associates/me/rewards-achieved').flush(achieved);
     fixture.detectChanges();
     return fixture.componentInstance;
@@ -540,7 +543,10 @@ describe('IncomeStatementComponent', () => {
       [{ achievedDate: '2026-01-05T00:00:00Z', designation: 'T1', reward: 15000, perkDescription: '+ Smart Watch', paid: false, paymentDate: null, remarks: null }]
     );
     expect(c.currentRank).toBe('T1');
-    expect(c.rewardCards.map(x => x.value)).toEqual(['₹1,300,000', '₹300,000', '₹300,000']);
+    expect(c.rewardCards.map(x => x.value)).toEqual([
+      '₹1,300,000', '₹300,000', '₹1,000,000', '₹200,000', '₹300,000', '₹100,000'
+    ]);
+    expect(c.rewardCards.length).toBe(6);
     expect(c.rewardTierRows.map(t => t['status'])).toEqual(['Achieved', 'In progress', 'Pending']);
     expect(c.rewardTierRows[1]['designation']).toBe('T2');
     expect(c.rewardTierRows[1]['volume']).toBe('₹2,000,000');
