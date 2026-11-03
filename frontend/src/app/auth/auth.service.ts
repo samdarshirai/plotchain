@@ -16,6 +16,15 @@ const KEYS = {
 } as const;
 const IMPERSONATING_KEY = 'plotchain.auth.impersonating';
 
+// An impersonation session lives in the impersonated tab's own sessionStorage, so several can run
+// side by side (and beside a real associate login in localStorage). Reads prefer the tab's slot.
+function read(key: string): string | null {
+  return sessionStorage.getItem(key) ?? localStorage.getItem(key);
+}
+function tabIsImpersonating(): boolean {
+  return sessionStorage.getItem(IMPERSONATING_KEY) !== null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   constructor(private http: HttpClient, private router: Router) {}
@@ -38,7 +47,9 @@ export class AuthService {
           throw new HttpErrorResponse({ status: 401 });
         }
         if (realm === 'associate') {
-          localStorage.removeItem(IMPERSONATING_KEY);
+          // A real login in an impersonated tab ends that tab's impersonation.
+          Object.values(KEYS.associate).forEach(k => sessionStorage.removeItem(k));
+          sessionStorage.removeItem(IMPERSONATING_KEY);
         }
         this.store(realm, response);
       })
@@ -47,38 +58,40 @@ export class AuthService {
 
   logout(realm: AuthRealm = this.currentRealm()): void {
     const keys = KEYS[realm];
-    localStorage.removeItem(keys.token);
-    localStorage.removeItem(keys.mustChange);
-    localStorage.removeItem(keys.role);
+    // Leaving an impersonation clears only this tab; other tabs' sessions stay signed in.
+    const storage = realm === 'associate' && tabIsImpersonating() ? sessionStorage : localStorage;
+    storage.removeItem(keys.token);
+    storage.removeItem(keys.mustChange);
+    storage.removeItem(keys.role);
     if (realm === 'associate') {
-      localStorage.removeItem(IMPERSONATING_KEY);
+      storage.removeItem(IMPERSONATING_KEY);
     }
   }
 
-  private store(realm: AuthRealm, response: LoginResponse): void {
+  private store(realm: AuthRealm, response: LoginResponse, storage: Storage = localStorage): void {
     const keys = KEYS[realm];
-    localStorage.setItem(keys.token, response.token);
-    localStorage.setItem(keys.mustChange, String(response.mustChangePassword));
-    localStorage.setItem(keys.role, response.role);
+    storage.setItem(keys.token, response.token);
+    storage.setItem(keys.mustChange, String(response.mustChangePassword));
+    storage.setItem(keys.role, response.role);
   }
 
-  // Writes the associate session only; the admin session is left alone and the caller opens the
-  // associate app in a new tab.
-  impersonate(associateId: string, displayName: string): Observable<LoginResponse> {
+  // Writes the associate session into the target tab's sessionStorage only; the admin session and
+  // any other tab are left alone. The caller passes the same-origin tab it opened for the session.
+  impersonate(associateId: string, displayName: string, target: Window): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`/api/admin/associates/${associateId}/impersonate`, {}).pipe(
       tap(response => {
-        this.store('associate', response);
-        localStorage.setItem(IMPERSONATING_KEY, displayName);
+        this.store('associate', response, target.sessionStorage);
+        target.sessionStorage.setItem(IMPERSONATING_KEY, displayName);
       })
     );
   }
 
   isImpersonating(): boolean {
-    return this.currentRealm() === 'associate' && localStorage.getItem(IMPERSONATING_KEY) !== null;
+    return this.currentRealm() === 'associate' && tabIsImpersonating();
   }
 
   getImpersonatedName(): string | null {
-    return localStorage.getItem(IMPERSONATING_KEY);
+    return sessionStorage.getItem(IMPERSONATING_KEY);
   }
 
   exitImpersonation(): void {
@@ -86,11 +99,11 @@ export class AuthService {
   }
 
   getToken(realm: AuthRealm = this.currentRealm()): string | null {
-    return localStorage.getItem(KEYS[realm].token);
+    return read(KEYS[realm].token);
   }
 
   getRole(realm: AuthRealm = this.currentRealm()): string | null {
-    return localStorage.getItem(KEYS[realm].role);
+    return read(KEYS[realm].role);
   }
 
   isAuthenticated(realm: AuthRealm = this.currentRealm()): boolean {
@@ -102,12 +115,12 @@ export class AuthService {
   }
 
   mustChangePassword(): boolean {
-    return localStorage.getItem(KEYS[this.currentRealm()].mustChange) === 'true';
+    return read(KEYS[this.currentRealm()].mustChange) === 'true';
   }
 
   changePassword(currentPassword: string, newPassword: string): Observable<void> {
     return this.http.post<void>('/api/associates/me/password', { currentPassword, newPassword }).pipe(
-      tap(() => localStorage.setItem(KEYS[this.currentRealm()].mustChange, 'false'))
+      tap(() => (tabIsImpersonating() ? sessionStorage : localStorage).setItem(KEYS[this.currentRealm()].mustChange, 'false'))
     );
   }
 

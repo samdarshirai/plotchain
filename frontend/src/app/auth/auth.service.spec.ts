@@ -11,6 +11,7 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule, RouterTestingModule],
       providers: [AuthService]
@@ -22,6 +23,7 @@ describe('AuthService', () => {
   afterEach(() => {
     httpMock.verify();
     localStorage.clear();
+    sessionStorage.clear();
   });
 
   function tokenExpiringAt(secondsFromNow: number): string {
@@ -142,8 +144,8 @@ describe('AuthService', () => {
   });
 
   describe('impersonation', () => {
-    function startImpersonation(id: string, name: string, token: string) {
-      service.impersonate(id, name).subscribe();
+    function startImpersonation(id: string, name: string, token: string, target: Window = window) {
+      service.impersonate(id, name, target).subscribe();
       const req = httpMock.expectOne(`/api/admin/associates/${id}/impersonate`);
       expect(req.request.method).toBe('POST');
       req.flush({ token, associateId: id, role: 'ASSOCIATE', mustChangePassword: false } as LoginResponse);
@@ -170,6 +172,27 @@ describe('AuthService', () => {
       expect(service.getToken('associate')).toBeNull();
       expect(service.getImpersonatedName()).toBeNull();
       expect(service.getToken('admin')).toBe('admin-token');
+    });
+
+    it('keeps a separate session per target tab and leaves a real associate login alone', () => {
+      localStorage.setItem('plotchain.auth.token', 'real-token');
+      const tabA = { sessionStorage: window.sessionStorage } as Window;
+      const store = new Map<string, string>();
+      const tabB = { sessionStorage: {
+        getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v)
+      } } as unknown as Window;
+      startImpersonation('a-1', 'Jane Doe', 'token-a', tabA);
+      startImpersonation('a-2', 'John Roe', 'token-b', tabB);
+      expect(sessionStorage.getItem('plotchain.auth.token')).toBe('token-a');
+      expect(store.get('plotchain.auth.token')).toBe('token-b');
+      expect(localStorage.getItem('plotchain.auth.token')).toBe('real-token');
+    });
+
+    it('exitImpersonation leaves a real associate login in localStorage signed in', () => {
+      localStorage.setItem('plotchain.auth.token', 'real-token');
+      startImpersonation('a-1', 'Jane Doe', 'imp-token');
+      service.exitImpersonation();
+      expect(service.getToken('associate')).toBe('real-token');
     });
 
     it('a normal associate login clears a leftover impersonation flag', () => {

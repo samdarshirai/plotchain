@@ -388,15 +388,18 @@ export class AssociateDirectoryComponent implements OnInit {
   // The tab is opened up front, inside the click, so popup blockers allow it.
   loginAs(id: string, name: string): void {
     this.loginError = false;
+    // No noopener: the session is written into this tab's own sessionStorage.
     const tab = window.open('', '_blank');
-    this.authService.impersonate(id, name).subscribe({
+    if (!tab) {
+      this.loginError = true;
+      return;
+    }
+    this.authService.impersonate(id, name, tab).subscribe({
       next: () => {
-        if (tab) {
-          tab.location.href = '/dashboard';
-        }
+        tab.location.href = '/dashboard';
       },
       error: () => {
-        tab?.close();
+        tab.close();
         this.loginError = true;
       }
     });

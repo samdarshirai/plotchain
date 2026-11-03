@@ -282,7 +282,7 @@ describe('AssociateDirectoryComponent', () => {
 
       buttons()[0].click();
 
-      expect(impersonate).toHaveBeenCalledWith('a1', 'Jane');
+      expect(impersonate).toHaveBeenCalledWith('a1', 'Jane', tab as unknown as Window);
       expect(open).toHaveBeenCalledWith('', '_blank');
       expect(tab.location.href).toBe('/dashboard');
       expect(navigate).not.toHaveBeenCalled();
