@@ -34,7 +34,7 @@ Also configurable, with defaults:
 
 ```
 jwt:
-  expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
+  expiration-minutes: ${JWT_EXPIRATION_MINUTES:43200}
 ```
 
 ### `PLOTCHAIN_SECRETS_KEY` — required outside `dev`/`test`
