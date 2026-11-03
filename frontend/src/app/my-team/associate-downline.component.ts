@@ -9,7 +9,6 @@ import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../share
 import { titleCase } from '../shared/utils/title-case';
 
 const PAGE_SIZE = 20;
-const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-GB') : '—');
 const dateTime = (iso: string | null) => formatIst(iso);
 
 // View Associate Downline, shared by associates (scope 'me') and admins (scope 'admin').
@@ -126,7 +125,7 @@ export class AssociateDownlineComponent implements OnInit {
           sponsorUserId: a.sponsorUserId ?? '—',
           position: a.position === 'L' ? 'Left' : a.position === 'R' ? 'Right' : '—',
           joinedAt: dateTime(a.joinedAt),
-          activatedAt: date(a.activatedAt)
+          activatedAt: a.activatedAt ? dateTime(a.activatedAt) : '—'
         }));
       },
       error: err => {

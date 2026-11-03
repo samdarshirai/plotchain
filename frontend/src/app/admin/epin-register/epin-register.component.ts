@@ -159,7 +159,7 @@ type Panel =
                   </td>
                   <td>{{ 'admin.epinRegister.pinType.' + p.pinType | translate }}</td>
                   <td [attr.title]="p.batchId">{{ p.batchId.slice(0, 8) }}</td>
-                  <td [class.epin-register__expired-date]="p.expired">{{ p.expiresAt ? datePipe.transform(p.expiresAt, 'mediumDate') : '—' }}</td>
+                  <td [class.epin-register__expired-date]="p.expired">{{ p.expiresAt ? datePipe.transform(p.expiresAt, 'd MMM y, h:mm:ss a', '+0530') : '—' }}</td>
                   <td>{{ userId(p.allocatedTo) }}</td>
                 </tr>
                 <tr *ngIf="!page?.epins?.length">
@@ -246,7 +246,7 @@ type Panel =
               <dl class="epin-register__meta">
                 <div><dt>{{ 'admin.epinRegister.pinTypeLabel' | translate }}</dt><dd>{{ 'admin.epinRegister.pinType.' + p.pinType | translate }}</dd></div>
                 <div><dt>{{ 'admin.epinRegister.colBatch' | translate }}</dt><dd class="epin-register__code">{{ p.batchId.slice(0, 8) }}</dd></div>
-                <div><dt>{{ 'admin.epinRegister.colExpires' | translate }}</dt><dd>{{ p.expiresAt ? datePipe.transform(p.expiresAt, 'mediumDate') : '—' }}</dd></div>
+                <div><dt>{{ 'admin.epinRegister.colExpires' | translate }}</dt><dd>{{ p.expiresAt ? datePipe.transform(p.expiresAt, 'd MMM y, h:mm:ss a', '+0530') : '—' }}</dd></div>
                 <div><dt>{{ 'admin.epinRegister.colHolder' | translate }}</dt><dd class="epin-register__code">{{ userId(p.allocatedTo) }}</dd></div>
                 <div><dt>{{ 'admin.epinRegister.colRedeemedTo' | translate }}</dt><dd class="epin-register__code">{{ userId(p.redeemedTo) }}</dd></div>
               </dl>

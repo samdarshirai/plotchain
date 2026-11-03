@@ -62,9 +62,9 @@ const PAGE_SIZE = 20;
             <tr *ngFor="let t of page.entries; trackBy: trackById" class="ticket-history__row--clickable" tabindex="0" role="button" [attr.aria-label]="('supportTickets.openDetails' | translate) + ': ' + t.subject" (click)="open(t)" (keydown.enter)="open(t)" (keydown.space)="$event.preventDefault(); open(t)">
               <td><span class="ticket-history__subject">{{ t.subject }}</span><span class="ticket-history__description">{{ t.description }}</span></td>
               <td [attr.data-label]="'supportTickets.columnStatus' | translate">{{ 'supportTickets.status.' + t.status | translate }}</td>
-              <td [attr.data-label]="'supportTickets.columnCreatedAt' | translate">{{ t.createdAt | date: 'medium' }}</td>
+              <td [attr.data-label]="'supportTickets.columnCreatedAt' | translate">{{ t.createdAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
               <td [attr.data-label]="'supportTickets.columnResponse' | translate">
-                <span class="ticket-history__reply" *ngIf="t.response?.trim(); else awaiting"><span class="ticket-history__reply-text">{{ t.response }}</span><span class="ticket-history__reply-stamp" *ngIf="t.respondedAt">{{ t.respondedAt | date: 'medium' }}</span></span>
+                <span class="ticket-history__reply" *ngIf="t.response?.trim(); else awaiting"><span class="ticket-history__reply-text">{{ t.response }}</span><span class="ticket-history__reply-stamp" *ngIf="t.respondedAt">{{ t.respondedAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</span></span>
                 <ng-template #awaiting><span class="ticket-history__awaiting">{{ 'supportTickets.awaitingReply' | translate }}</span></ng-template>
               </td>
             </tr>
@@ -88,14 +88,14 @@ const PAGE_SIZE = 20;
         <div class="ticket-history__dialog-body" *ngIf="selected as t">
           <h2 id="ticket-history-dialog-title" class="ticket-history__detail-subject">{{ t.subject }}</h2>
           <p class="ticket-history__detail-meta">
-            {{ 'supportTickets.status.' + t.status | translate }} &middot; {{ 'supportTickets.detailsSent' | translate }} {{ t.createdAt | date: 'medium' }}
+            {{ 'supportTickets.status.' + t.status | translate }} &middot; {{ 'supportTickets.detailsSent' | translate }} {{ t.createdAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}
           </p>
           <h3 class="ticket-history__detail-heading">{{ 'supportTickets.detailsMessage' | translate }}</h3>
           <p class="ticket-history__detail-text">{{ t.description }}</p>
           <h3 class="ticket-history__detail-heading">{{ 'supportTickets.detailsReply' | translate }}</h3>
           <div class="ticket-history__reply" *ngIf="t.response?.trim(); else detailAwaiting">
             <p class="ticket-history__detail-text">{{ t.response }}</p>
-            <span class="ticket-history__reply-stamp" *ngIf="t.respondedAt">{{ t.respondedAt | date: 'medium' }}</span>
+            <span class="ticket-history__reply-stamp" *ngIf="t.respondedAt">{{ t.respondedAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</span>
           </div>
           <ng-template #detailAwaiting><span class="ticket-history__awaiting">{{ 'supportTickets.awaitingReply' | translate }}</span></ng-template>
           <button type="button" class="brand-button brand-button--secondary ticket-history__detail-close" (click)="closeDetails()">{{ 'supportTickets.detailsClose' | translate }}</button>

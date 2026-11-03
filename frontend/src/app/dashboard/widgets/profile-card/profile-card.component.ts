@@ -38,12 +38,12 @@ import { AssociateSummary } from '../../models/dashboard-response.model';
         <div class="profile-card__row">
           <span class="material-symbols-outlined profile-card__row-icon">calendar_month</span>
           <span class="profile-card__row-label">{{ 'dashboard.profileRegistered' | translate }}</span>
-          <span class="profile-card__row-value">{{ associate.joinedAt | date:'d MMM y, h:mm a' }}</span>
+          <span class="profile-card__row-value">{{ associate.joinedAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</span>
         </div>
         <div class="profile-card__row" *ngIf="associate.lastLoginAt">
           <span class="material-symbols-outlined profile-card__row-icon">schedule</span>
           <span class="profile-card__row-label">{{ 'dashboard.profileLastLogin' | translate }}</span>
-          <span class="profile-card__row-value">{{ associate.lastLoginAt | date:'d MMM y, h:mm a' }}</span>
+          <span class="profile-card__row-value">{{ associate.lastLoginAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</span>
         </div>
       </div>
     </div>

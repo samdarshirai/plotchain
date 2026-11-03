@@ -328,7 +328,7 @@ export class KycQueueComponent implements OnInit {
     this.kycRows = (this.page?.entries ?? []).map(entry => ({
       userId: entry.userId,
       name: entry.name,
-      joinedAt: this.datePipe.transform(entry.joinedAt, 'dd-MMM-yyyy HH:mm') ?? entry.joinedAt,
+      joinedAt: this.datePipe.transform(entry.joinedAt, 'dd-MMM-yyyy, hh:mm:ss a', '+0530') ?? entry.joinedAt,
       status: titleCase(entry.kycStatus)
     }));
   }

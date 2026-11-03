@@ -19,7 +19,7 @@ import { AdminLedgerSummaryPage, AdminLedgerSummaryRow } from '../models/ledger-
 const PAGE_SIZE = 20;
 const CYCLE_LOOKUP_SIZE = 100;
 const DATE_FORMAT = 'dd MMM yyyy';
-const DATE_TIME_FORMAT = 'dd MMM yyyy, HH:mm';
+const DATE_TIME_FORMAT = 'dd MMM yyyy, hh:mm:ss a';
 const MATCHING_KEYS = ['bflb', 'bfrb', 'nlb', 'nrb', 'tlb', 'trb', 'clb', 'crb'];
 
 // One column of the per-income-type layout. Labels reuse the associate Income Statement's i18n
@@ -230,7 +230,7 @@ export class LedgerRegisterComponent implements OnInit {
   }
 
   private fmtDate(value: string | null | undefined, format = DATE_FORMAT): string {
-    return (value && this.datePipe.transform(value, format)) || '';
+    return (value && this.datePipe.transform(value, format, format === DATE_TIME_FORMAT ? '+0530' : undefined)) || '';
   }
 
   private money(amount: number): string {
@@ -276,7 +276,7 @@ export class LedgerRegisterComponent implements OnInit {
         ];
       case 'REWARD':
         return [
-          text('achievedDate', 'AchievedDate', e => this.fmtDate(e.createdAt)),
+          text('achievedDate', 'AchievedDate', e => this.fmtDate(e.createdAt, DATE_TIME_FORMAT)),
           text('reward', 'Reward', e => this.money(e.grossAmount))
         ];
       default:

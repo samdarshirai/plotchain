@@ -447,7 +447,7 @@ const BANK_LABELS = { bankName: 'Bank name', accountHolder: 'Account holder', ac
           <div class="kyc-card__row" *ngFor="let docType of documentTypes">
             <span class="kyc-card__row-label">{{ 'profileKyc.kyc.documentType.' + docType | translate }}</span>
             <span *ngIf="submittedDocument(docType) as doc" class="kyc-card__row-meta">
-              {{ 'profileKyc.kyc.submittedOn' | translate: { date: (doc.uploadedAt | date: 'mediumDate') } }}
+              {{ 'profileKyc.kyc.submittedOn' | translate: { date: (doc.uploadedAt | date: 'd MMM y, h:mm:ss a' : '+0530') } }}
             </span>
             <span *ngIf="!submittedDocument(docType)" class="kyc-card__row-meta">
               {{ 'profileKyc.kyc.notSubmitted' | translate }}

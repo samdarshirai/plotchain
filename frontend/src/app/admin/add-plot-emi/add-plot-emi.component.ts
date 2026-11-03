@@ -92,7 +92,7 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
             </thead>
             <tbody>
               <tr *ngFor="let b of page?.bookings">
-                <td [attr.data-label]="'admin.addPlotEmi.col.bookedOn' | translate">{{ b.bookedAt ? b.bookedAt.slice(0, 10) : '—' }}</td>
+                <td [attr.data-label]="'admin.addPlotEmi.col.bookedOn' | translate">{{ b.bookedAt ? (b.bookedAt | date: 'd MMM y, h:mm:ss a' : '+0530') : '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ b.associateCode || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ b.associateName || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.mobile' | translate">{{ b.associatePhone || '—' }}</td>
@@ -392,7 +392,7 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
   private columns(): ExportColumn<Booking>[] {
     const t = (k: string) => this.translate.instant('admin.addPlotEmi.col.' + k);
     return [
-      { header: t('bookedOn'), value: b => b.bookedAt?.slice(0, 10) },
+      { header: t('bookedOn'), value: b => formatIst(b.bookedAt) },
       { header: t('associateId'), value: b => b.associateCode },
       { header: t('associate'), value: b => b.associateName },
       { header: t('mobile'), value: b => b.associatePhone },

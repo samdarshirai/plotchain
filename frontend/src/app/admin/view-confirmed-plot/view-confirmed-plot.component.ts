@@ -109,7 +109,7 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
                 </td>
                 <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ (page?.page ?? 0) * pageSize + i + 1 }}</td>
                 <td [attr.data-label]="'admin.viewConfirmedPlot.col.paymentDate' | translate">{{ r.paymentDate ? (r.paymentDate | date: 'd MMM y, h:mm:ss a' : '+0530') : '—' }}</td>
-                <td [attr.data-label]="'admin.addPlotEmi.col.bookedOn' | translate">{{ r.bookedAt ? r.bookedAt.slice(0, 10) : '—' }}</td>
+                <td [attr.data-label]="'admin.addPlotEmi.col.bookedOn' | translate">{{ r.bookedAt ? (r.bookedAt | date: 'd MMM y, h:mm:ss a' : '+0530') : '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ r.associateCode || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ r.associateName || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.mobile' | translate">{{ r.associatePhone || '—' }}</td>

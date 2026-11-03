@@ -49,8 +49,8 @@ import { BusinessReport, BusinessReportRow, ReportsService } from './reports.ser
                 <tr *ngIf="!leg.rows.length && !loading && !error"><td colspan="8" class="report__empty" role="status">{{ 'plotBookings.table.empty' | translate }}</td></tr>
                 <tr *ngFor="let r of leg.rows; let i = index">
                   <td>{{ i + 1 }}</td>
-                  <td>{{ r.paymentDate | date: 'mediumDate' }}</td>
-                  <td>{{ r.confirmDate ? (r.confirmDate | date: 'mediumDate') : '—' }}</td>
+                  <td>{{ r.paymentDate | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
+                  <td>{{ r.confirmDate ? (r.confirmDate | date: 'd MMM y, h:mm:ss a' : '+0530') : '—' }}</td>
                   <td>{{ r.associateId }}</td>
                   <td>{{ r.name }}</td>
                   <td>{{ r.project }}</td>

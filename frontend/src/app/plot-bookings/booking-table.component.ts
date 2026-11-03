@@ -71,7 +71,7 @@ export const saleRow = (s: Sale): BookingRow => ({
           </tr>
           <ng-container *ngFor="let r of rows; trackBy: trackKey">
             <tr [class.booking-table__row--selected]="r.key === selectedKey" [attr.data-booking-id]="r.key">
-              <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.bookingDate' | translate">{{ r.bookedAt | date: 'mediumDate' }}</td>
+              <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.bookingDate' | translate">{{ r.bookedAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.associateId' | translate">{{ r.associateCode || '—' }}</td>
               <td [attr.data-label]="'plotBookings.table.name' | translate">{{ r.associateName || '—' }}</td>
               <td class="booking-table__wrap" [attr.data-label]="'plotBookings.table.project' | translate">{{ r.projectName || '—' }}</td>

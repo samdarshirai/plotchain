@@ -69,7 +69,7 @@ const isoDate = (d: Date): string => {
             <tbody>
               <tr *ngFor="let r of page?.transfers; let i = index">
                 <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ (page?.page ?? 0) * pageSize + i + 1 }}</td>
-                <td [attr.data-label]="'admin.viewTransferredPlot.col.transferDate' | translate">{{ r.transferDate.slice(0, 10) }}</td>
+                <td [attr.data-label]="'admin.viewTransferredPlot.col.transferDate' | translate">{{ r.transferDate | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ r.associateCode || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ r.associateName || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.mobile' | translate">{{ r.associatePhone || '—' }}</td>

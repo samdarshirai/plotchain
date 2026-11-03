@@ -160,7 +160,7 @@ import { AdminRecentSalesTableComponent } from './widgets/recent-sales-table/rec
                 <span class="admin-dashboard__message-subject">{{ m.subject }}</span>
                 <span class="admin-dashboard__message-meta">
                   <span>{{ m.associateName }} ({{ m.associateUserId }})</span>
-                  <span>{{ m.createdAt | date: 'd MMM, h:mm a' }}</span>
+                  <span>{{ m.createdAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</span>
                 </span>
               </a>
               <a

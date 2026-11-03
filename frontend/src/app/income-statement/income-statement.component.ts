@@ -45,7 +45,6 @@ export interface CycleOption {
 // One date style across every income-statement tab (Reward Statement design): "12 Aug 2026",
 // date-times "12 Aug 2026, 14:32", ranges "01 Aug 2026 – 15 Aug 2026".
 const DATE_FORMAT = 'dd MMM yyyy';
-const DATE_TIME_FORMAT = 'dd MMM yyyy, HH:mm';
 
 @Component({
   selector: 'app-income-statement',
@@ -665,7 +664,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     }
     if (this.activeIncomeType === 'DIRECT') {
       this.statementRows = (this.page?.entries ?? []).map(entry => ({
-        dateTime: this.formatDate(entry.createdAt, DATE_TIME_FORMAT) ?? entry.createdAt,
+        dateTime: formatIst(entry.createdAt),
         // Direct Income is the viewer's sponsees' sales: show who sold and for how much.
         associateId: entry.sponseeUserId ?? '',
         name: entry.sponseeName ?? '',
@@ -680,7 +679,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     }
     if (this.activeIncomeType === 'SPONSOR_MATCHING') {
       this.statementRows = (this.page?.entries ?? []).map(entry => ({
-        date: this.formatDate(entry.createdAt, DATE_TIME_FORMAT) ?? entry.createdAt,
+        date: formatIst(entry.createdAt),
         memberId: entry.sponseeUserId ?? '',
         matchingIncome: entry.sponseeMatchingAmount == null ? '' : this.formatCurrency(entry.sponseeMatchingAmount),
         sponsorMatchingIncome: this.formatCurrency(entry.grossAmount)

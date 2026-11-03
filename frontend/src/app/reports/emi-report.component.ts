@@ -46,7 +46,7 @@ import { EmiReportRow, ReportsService } from './reports.service';
               <td>{{ i + 1 }}</td>
               <td>{{ r.associateId }}</td>
               <td>{{ r.name }}</td>
-              <td>{{ r.paymentDate | date: 'mediumDate' }}</td>
+              <td>{{ r.paymentDate | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
               <td class="table-number">{{ money(r.amount) }}</td>
               <td>{{ r.mode ? ('admin.bookingsEmi.paymentMode.' + r.mode | translate) : '—' }}</td>
             </tr>

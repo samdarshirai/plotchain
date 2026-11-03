@@ -96,7 +96,7 @@ const NO_FILTERS: TicketFilters = { status: '', associateId: '' };
                 <td [attr.data-label]="'admin.supportTickets.col.status' | translate">
                   <span class="support-tickets__chip support-tickets__chip--{{ t.status | lowercase }}">{{ 'admin.supportTickets.status.' + t.status | translate }}</span>
                 </td>
-                <td class="support-tickets__date" [attr.data-label]="'admin.supportTickets.col.logged' | translate">{{ t.createdAt | date: 'mediumDate' }}</td>
+                <td class="support-tickets__date" [attr.data-label]="'admin.supportTickets.col.logged' | translate">{{ t.createdAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
               </tr>
             </tbody>
           </table>

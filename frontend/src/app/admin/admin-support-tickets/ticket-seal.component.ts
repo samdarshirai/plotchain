@@ -30,13 +30,13 @@ import { FlashMessage, TicketErrorKind, classifyTicketError, replyRequired, resp
           <dl class="ticket-seal__meta">
             <dt>{{ 'admin.supportTickets.col.status' | translate }}</dt>
             <dd><span class="support-tickets__chip support-tickets__chip--{{ t.status | lowercase }}">{{ 'admin.supportTickets.status.' + t.status | translate }}</span></dd>
-            <dt>{{ 'admin.supportTickets.seal.logged' | translate }}</dt><dd>{{ t.createdAt | date: 'mediumDate' }}</dd>
+            <dt>{{ 'admin.supportTickets.seal.logged' | translate }}</dt><dd>{{ t.createdAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</dd>
           </dl>
           <h3 class="ticket-seal__label">{{ 'admin.supportTickets.seal.description' | translate }}</h3>
           <p class="ticket-seal__text">{{ t.description }}</p>
           <ng-container *ngIf="t.response; else noReply">
             <h3 class="ticket-seal__label">{{ 'admin.supportTickets.seal.currentReply' | translate }}
-              <span class="ticket-seal__replied" *ngIf="t.respondedAt">{{ 'admin.supportTickets.seal.repliedOn' | translate: { date: (t.respondedAt | date: 'mediumDate') } }}</span></h3>
+              <span class="ticket-seal__replied" *ngIf="t.respondedAt">{{ 'admin.supportTickets.seal.repliedOn' | translate: { date: (t.respondedAt | date: 'd MMM y, h:mm:ss a' : '+0530') } }}</span></h3>
             <blockquote class="ticket-seal__reply-quote">{{ t.response }}</blockquote>
           </ng-container>
           <ng-template #noReply><p class="ticket-seal__muted">{{ 'admin.supportTickets.seal.noReply' | translate }}</p></ng-template>
