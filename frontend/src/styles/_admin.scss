@@ -108,7 +108,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1120px;
+  max-width: var(--page-max, 1120px);
   margin: 0 auto;
   padding: 1.5rem 2rem;
   font-family: 'Inter', var(--font-sans);
@@ -164,7 +164,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1200px;
+  max-width: var(--page-max, 1200px);
   margin: 0 auto;
 }
 
@@ -1071,7 +1071,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1200px;
+  max-width: var(--page-max, 1200px);
   margin: 0 auto;
 }
 
@@ -1864,7 +1864,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1180px;
+  max-width: var(--page-max, 1180px);
   margin: 0 auto;
   padding: 1.5rem 2rem;
   font-family: 'Inter', var(--font-sans);
@@ -2849,7 +2849,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1040px;
+  max-width: var(--page-max, 1040px);
   margin: 0 auto;
   padding: 1.5rem 2rem;
   font-family: 'Inter', var(--font-sans);
@@ -3777,7 +3777,7 @@ button.tree-explorer__vacant-card {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  max-width: 1100px;
+  max-width: var(--page-max, 1100px);
   margin: 0 auto;
 }
 
@@ -4224,7 +4224,7 @@ button.tree-explorer__vacant-card {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  max-width: 1440px;
+  max-width: var(--page-max, 1440px);
   margin: 0 auto;
   padding: var(--space-6) var(--space-8);
 
@@ -4804,7 +4804,7 @@ button.tree-explorer__vacant-card {
 
 .epin-register {
   display: flex; flex-direction: column; gap: 1.5rem;
-  max-width: 1180px; margin: 0 auto; padding: 1.5rem 2rem;
+  max-width: var(--page-max, 1180px); margin: 0 auto; padding: 1.5rem 2rem;
   font-family: 'Inter', var(--font-sans);
 
   &__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 1.5rem; }
@@ -5206,7 +5206,7 @@ button.tree-explorer__vacant-card {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1040px;
+  max-width: var(--page-max, 1040px);
   margin: 0 auto;
   padding: 1.5rem 2rem;
   font-family: 'Inter', var(--font-sans);
@@ -5368,7 +5368,7 @@ button.tree-explorer__vacant-card {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1180px;
+  max-width: var(--page-max, 1180px);
   margin: 0 auto;
   padding: 1.5rem 2rem;
   font-family: 'Inter', var(--font-sans);
@@ -5530,7 +5530,7 @@ button.tree-explorer__vacant-card {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1180px;
+  max-width: var(--page-max, 1180px);
   margin: 0 auto;
   padding: 1.5rem 2rem;
   font-family: 'Inter', var(--font-sans);
@@ -5739,7 +5739,7 @@ button.tree-explorer__vacant-card {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1180px;
+  max-width: var(--page-max, 1180px);
   margin: 0 auto;
   padding: 1.5rem 2rem;
   font-family: 'Inter', var(--font-sans);
@@ -5879,7 +5879,7 @@ button.tree-explorer__vacant-card {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1180px;
+  max-width: var(--page-max, 1180px);
   margin: 0 auto;
   padding: 1.5rem 2rem;
   font-family: 'Inter', var(--font-sans);
@@ -6006,7 +6006,7 @@ button.tree-explorer__vacant-card {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1180px;
+  max-width: var(--page-max, 1180px);
   margin: 0 auto;
   padding: 1.5rem 2rem;
   font-family: 'Inter', var(--font-sans);
@@ -6148,7 +6148,7 @@ button.tree-explorer__vacant-card {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1180px;
+  max-width: var(--page-max, 1180px);
   margin: 0 auto;
   padding: 1.5rem 2rem;
   font-family: 'Inter', var(--font-sans);
@@ -6344,7 +6344,7 @@ button.tree-explorer__vacant-card {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1180px;
+  max-width: var(--page-max, 1180px);
   margin: 0 auto;
   padding: 1.5rem 2rem;
   font-family: 'Inter', var(--font-sans);

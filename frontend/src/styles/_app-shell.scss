@@ -236,6 +236,12 @@
   margin-left: var(--sidebar-expanded-width);
 }
 
+// Sidebar collapsed to the rail: pages drop their fixed max-width caps (var(--page-max, <px>) in
+// _admin.scss) and use the whole content column.
+.app-content--sidebar-rail:not(.app-content--sidebar-expanded) {
+  --page-max: 100%;
+}
+
 // Admin mobile chrome: under 768px the sidebar becomes an off-canvas drawer opened from a sticky
 // top bar, and the content column drops its sidebar margin to use the full width.
 .mobile-topbar,
