@@ -67,11 +67,10 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
         <button type="button" class="add-plot-emi__link" (click)="load()">{{ 'admin.addPlotEmi.retry' | translate }}</button>
       </app-inline-banner>
 
-      <p class="add-plot-emi__hint" *ngIf="!projectId">{{ 'admin.addPlotEmi.pickProject' | translate }}</p>
 
-      <div class="add-plot-emi__list" *ngIf="projectId && page" [attr.aria-busy]="loading">
+      <div class="add-plot-emi__list" [attr.aria-busy]="loading">
         <div class="add-plot-emi__scroll">
-          <table #tbl class="add-plot-emi__table" [attr.aria-label]="'admin.addPlotEmi.title' | translate" *ngIf="page.bookings.length">
+          <table #tbl class="add-plot-emi__table" [attr.aria-label]="'admin.addPlotEmi.title' | translate">
             <thead>
               <tr>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.addPlotEmi.col.bookedOn' | translate }}</th>
@@ -91,7 +90,7 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let b of page.bookings">
+              <tr *ngFor="let b of page?.bookings">
                 <td [attr.data-label]="'admin.addPlotEmi.col.bookedOn' | translate">{{ b.bookedAt ? b.bookedAt.slice(0, 10) : '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ b.associateCode || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ b.associateName || '—' }}</td>
@@ -111,11 +110,13 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
                   <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" *ngIf="b.status === 'ACTIVE'" (click)="openCancel(b)">{{ 'admin.addPlotEmi.cancelBooking.button' | translate }}</button>
                 </td>
               </tr>
+              <tr *ngIf="!page?.bookings?.length">
+                <td class="add-plot-emi__empty-cell" [attr.colspan]="14">{{ (projectId ? 'admin.addPlotEmi.empty' : 'admin.addPlotEmi.pickProject') | translate }}</td>
+              </tr>
             </tbody>
           </table>
         </div>
-        <p class="add-plot-emi__hint" *ngIf="!page.bookings.length">{{ 'admin.addPlotEmi.empty' | translate }}</p>
-        <div class="add-plot-emi__pager" *ngIf="page.bookings.length">
+        <div class="add-plot-emi__pager" *ngIf="page && page.bookings.length">
           <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="page.page === 0" (click)="goTo(page.page - 1)">{{ 'admin.addPlotEmi.previous' | translate }}</button>
           <span>{{ 'admin.addPlotEmi.pager' | translate: { page: page.page + 1, totalPages: totalPages, count: page.totalElements } }}</span>
           <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="page.page + 1 >= totalPages" (click)="goTo(page.page + 1)">{{ 'admin.addPlotEmi.next' | translate }}</button>

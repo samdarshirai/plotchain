@@ -74,9 +74,9 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
         <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="busy" (click)="asking = false">{{ 'admin.bookingsEmi.action.back' | translate }}</button>
       </div>
 
-      <div class="add-plot-emi__list" *ngIf="page" [attr.aria-busy]="loading">
+      <div class="add-plot-emi__list" [attr.aria-busy]="loading">
         <div class="add-plot-emi__scroll">
-          <table class="add-plot-emi__table" [attr.aria-label]="'admin.viewConfirmedPlot.title' | translate" *ngIf="page.payments.length">
+          <table class="add-plot-emi__table" [attr.aria-label]="'admin.viewConfirmedPlot.title' | translate">
             <thead>
               <tr>
                 <th scope="col" *ngIf="status === 'ENTERED'"><span class="material-symbols-outlined th-icon" aria-hidden="true">check_box</span>{{ 'admin.viewConfirmedPlot.col.select' | translate }}</th>
@@ -102,12 +102,12 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let r of page.payments; let i = index">
+              <tr *ngFor="let r of page?.payments; let i = index">
                 <td *ngIf="status === 'ENTERED'" [attr.data-label]="'admin.viewConfirmedPlot.col.select' | translate">
                   <input type="checkbox" [checked]="selected.has(key(r))" [disabled]="busy || loading" (change)="toggle(r)"
                     [attr.aria-label]="('admin.viewConfirmedPlot.col.select' | translate) + ' ' + (r.associateCode || '') + ' ' + (r.plotNo || '') + ' #' + r.installmentNumber" />
                 </td>
-                <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ page.page * pageSize + i + 1 }}</td>
+                <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ (page?.page ?? 0) * pageSize + i + 1 }}</td>
                 <td [attr.data-label]="'admin.viewConfirmedPlot.col.paymentDate' | translate">{{ r.paymentDate ? r.paymentDate.slice(0, 10) : '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.bookedOn' | translate">{{ r.bookedAt ? r.bookedAt.slice(0, 10) : '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ r.associateCode || '—' }}</td>
@@ -127,11 +127,13 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
                 <td [attr.data-label]="'admin.viewConfirmedPlot.col.mode' | translate">{{ r.paymentMode ? ('admin.bookingsEmi.paymentMode.' + r.paymentMode | translate) : '—' }}</td>
                 <td [attr.data-label]="'admin.viewConfirmedPlot.col.status' | translate">{{ (status === 'ENTERED' ? 'admin.viewConfirmedPlot.pending' : 'admin.viewConfirmedPlot.confirmed') | translate }}</td>
               </tr>
+              <tr *ngIf="!page?.payments?.length">
+                <td class="add-plot-emi__empty-cell" [attr.colspan]="status === 'ENTERED' ? 20 : 19">{{ (status === 'ENTERED' ? 'admin.viewConfirmedPlot.emptyPending' : 'admin.viewConfirmedPlot.emptyConfirmed') | translate }}</td>
+              </tr>
             </tbody>
           </table>
         </div>
-        <p class="add-plot-emi__hint" *ngIf="!page.payments.length">{{ (status === 'ENTERED' ? 'admin.viewConfirmedPlot.emptyPending' : 'admin.viewConfirmedPlot.emptyConfirmed') | translate }}</p>
-        <div class="add-plot-emi__pager" *ngIf="page.payments.length">
+        <div class="add-plot-emi__pager" *ngIf="page && page.payments.length">
           <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="busy || page.page === 0" (click)="load(page.page - 1)">{{ 'admin.addPlotEmi.previous' | translate }}</button>
           <span>{{ 'admin.addPlotEmi.pager' | translate: { page: page.page + 1, totalPages: totalPages, count: page.totalElements } }}</span>
           <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="busy || page.page + 1 >= totalPages" (click)="load(page.page + 1)">{{ 'admin.addPlotEmi.next' | translate }}</button>

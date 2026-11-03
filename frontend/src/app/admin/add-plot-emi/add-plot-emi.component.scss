@@ -7,6 +7,7 @@
   &__title { margin: 4px 0; font-family: var(--font-display); font-size: 28px; font-weight: 600; }
   &__subtitle { margin: 0; color: var(--text-muted); font-size: 14px; }
   &__hint { margin: 0; padding: 24px; text-align: center; color: var(--text-muted); background: var(--surface-card); border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm); }
+  &__empty-cell { padding: 24px; text-align: center; color: var(--text-muted); }
 
   &__filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; padding: 20px 24px; background: var(--surface-raised); border-radius: var(--radius-sm); }
   &__field { display: flex; flex-direction: column; gap: 6px; min-width: 170px; flex: 1 1 170px; margin: 0;

@@ -49,9 +49,9 @@ const isoDate = (d: Date): string => {
         <button type="button" class="add-plot-emi__link" (click)="load()">{{ 'admin.addPlotEmi.retry' | translate }}</button>
       </app-inline-banner>
 
-      <div class="add-plot-emi__list" *ngIf="page" [attr.aria-busy]="loading">
+      <div class="add-plot-emi__list" [attr.aria-busy]="loading">
         <div class="add-plot-emi__scroll">
-          <table class="add-plot-emi__table" [attr.aria-label]="'admin.viewTransferredPlot.title' | translate" *ngIf="page.transfers.length">
+          <table class="add-plot-emi__table" [attr.aria-label]="'admin.viewTransferredPlot.title' | translate">
             <thead>
               <tr>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.viewBookedPlot.col.sNo' | translate }}</th>
@@ -67,8 +67,8 @@ const isoDate = (d: Date): string => {
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let r of page.transfers; let i = index">
-                <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ page.page * pageSize + i + 1 }}</td>
+              <tr *ngFor="let r of page?.transfers; let i = index">
+                <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ (page?.page ?? 0) * pageSize + i + 1 }}</td>
                 <td [attr.data-label]="'admin.viewTransferredPlot.col.transferDate' | translate">{{ r.transferDate.slice(0, 10) }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ r.associateCode || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ r.associateName || '—' }}</td>
@@ -79,11 +79,13 @@ const isoDate = (d: Date): string => {
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.viewTransferredPlot.col.paid' | translate">{{ money(r.paidAmount) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.viewTransferredPlot.col.rest' | translate">{{ money(r.restAmount) }}</td>
               </tr>
+              <tr *ngIf="!page?.transfers?.length">
+                <td class="add-plot-emi__empty-cell" [attr.colspan]="10">{{ 'admin.viewTransferredPlot.empty' | translate }}</td>
+              </tr>
             </tbody>
           </table>
         </div>
-        <p class="add-plot-emi__hint" *ngIf="!page.transfers.length">{{ 'admin.viewTransferredPlot.empty' | translate }}</p>
-        <div class="add-plot-emi__pager" *ngIf="page.transfers.length">
+        <div class="add-plot-emi__pager" *ngIf="page && page.transfers.length">
           <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="page.page === 0" (click)="load(page.page - 1)">{{ 'admin.addPlotEmi.previous' | translate }}</button>
           <span>{{ 'admin.addPlotEmi.pager' | translate: { page: page.page + 1, totalPages: totalPages, count: page.totalElements } }}</span>
           <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="page.page + 1 >= totalPages" (click)="load(page.page + 1)">{{ 'admin.addPlotEmi.next' | translate }}</button>

@@ -49,9 +49,9 @@ const isoDate = (d: Date): string => {
         <button type="button" class="add-plot-emi__link" (click)="load()">{{ 'admin.addPlotEmi.retry' | translate }}</button>
       </app-inline-banner>
 
-      <div class="add-plot-emi__list" *ngIf="page" [attr.aria-busy]="loading">
+      <div class="add-plot-emi__list" [attr.aria-busy]="loading">
         <div class="add-plot-emi__scroll">
-          <table class="add-plot-emi__table" [attr.aria-label]="'admin.viewCancelledPlot.title' | translate" *ngIf="page.bookings.length">
+          <table class="add-plot-emi__table" [attr.aria-label]="'admin.viewCancelledPlot.title' | translate">
             <thead>
               <tr>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.viewBookedPlot.col.sNo' | translate }}</th>
@@ -76,8 +76,8 @@ const isoDate = (d: Date): string => {
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let b of page.bookings; let i = index">
-                <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ page.page * pageSize + i + 1 }}</td>
+              <tr *ngFor="let b of page?.bookings; let i = index">
+                <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ (page?.page ?? 0) * pageSize + i + 1 }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.bookedOn' | translate">{{ b.bookedAt ? b.bookedAt.slice(0, 10) : '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ b.associateCode || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ b.associateName || '—' }}</td>
@@ -97,11 +97,13 @@ const isoDate = (d: Date): string => {
                 <td [attr.data-label]="'admin.bookingsEmi.col.cancelledOn' | translate">{{ b.cancelledAt ? b.cancelledAt.slice(0, 10) : '—' }}</td>
                 <td [attr.data-label]="'admin.bookingsEmi.col.cancelReason' | translate">{{ b.cancelReason || '—' }}</td>
               </tr>
+              <tr *ngIf="!page?.bookings?.length">
+                <td class="add-plot-emi__empty-cell" [attr.colspan]="19">{{ 'admin.viewCancelledPlot.empty' | translate }}</td>
+              </tr>
             </tbody>
           </table>
         </div>
-        <p class="add-plot-emi__hint" *ngIf="!page.bookings.length">{{ 'admin.viewCancelledPlot.empty' | translate }}</p>
-        <div class="add-plot-emi__pager" *ngIf="page.bookings.length">
+        <div class="add-plot-emi__pager" *ngIf="page && page.bookings.length">
           <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="page.page === 0" (click)="load(page.page - 1)">{{ 'admin.addPlotEmi.previous' | translate }}</button>
           <span>{{ 'admin.addPlotEmi.pager' | translate: { page: page.page + 1, totalPages: totalPages, count: page.totalElements } }}</span>
           <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="page.page + 1 >= totalPages" (click)="load(page.page + 1)">{{ 'admin.addPlotEmi.next' | translate }}</button>

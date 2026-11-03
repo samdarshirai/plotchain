@@ -114,7 +114,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
         </div>
       </ng-template>
 
-      <ng-container *ngIf="projects && !projects.length && readOnly"><ng-container *ngTemplateOutlet="emptyPlotTable"></ng-container></ng-container>
+      <ng-container *ngIf="projects && !projects.length"><ng-container *ngTemplateOutlet="emptyPlotTable"></ng-container></ng-container>
       <div class="projects-plots__empty" *ngIf="projects && !projects.length && !readOnly">
         <h2>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoProjectsTitle' : 'admin.projectsPlots.empty.noProjectsTitle') | translate }}</h2>
         <p>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoProjectsBody' : 'admin.projectsPlots.empty.noProjectsBody') | translate }}</p>
@@ -172,12 +172,13 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
               </div>
             </ng-template>
 
-            <ng-container *ngIf="!grid.length && readOnly"><ng-container *ngTemplateOutlet="emptyPlotTable"></ng-container></ng-container>
+            <ng-container *ngIf="!grid.length"><ng-container *ngTemplateOutlet="emptyPlotTable"></ng-container></ng-container>
             <div class="projects-plots__empty" *ngIf="!grid.length && !readOnly">
               <h2>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoPlotsTitle' : 'admin.projectsPlots.empty.noPlotsTitle') | translate }}</h2>
               <p>{{ (readOnly ? 'admin.projectsPlots.empty.assocNoPlotsBody' : 'admin.projectsPlots.empty.noPlotsBody') | translate }}</p>
             </div>
             <p class="projects-plots__empty" role="status" *ngIf="grid.length && !visibleBlocks.length">{{ (search.trim() ? 'admin.projectsPlots.table.noMatch' : 'admin.projectsPlots.empty.filter') | translate }}</p>
+
 
             <p class="projects-plots__empty" role="status" *ngIf="view === 'table' && !readOnly && grid.length && visibleBlocks.length && !tableRows.length">{{ 'admin.projectsPlots.table.noMatch' | translate }}</p>
             <div class="projects-plots__table-wrap" *ngIf="view === 'table' && tableRows.length">
