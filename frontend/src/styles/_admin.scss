@@ -545,6 +545,23 @@
   }
 }
 
+// Sidebar unpinned (rail): the content column is ~180px wider, so give Registration enough room
+// for date + time with seconds on one line. Points come from Phone, Email and Actions; total stays 100%.
+@media (min-width: 1024px) {
+  .app-content--sidebar-rail .associate-directory__table-wrap {
+    th:nth-child(3) { width: 9%; }
+    th:nth-child(4) { width: 10%; }
+    th:nth-child(8) { width: 15%; }
+    th:nth-child(11) { width: 13%; }
+
+    tbody td:nth-child(8) > span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+
 // Plain centered "Previous"/"Next" text -- deliberately simpler than the bordered-button
 // pagination other admin screens use; no page count, per Viraj_Acres_Settings.dc.html line 303-305.
 .associate-directory__pagination {

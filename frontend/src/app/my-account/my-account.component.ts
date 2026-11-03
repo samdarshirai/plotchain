@@ -88,7 +88,7 @@ const BANK_LABELS = { bankName: 'Bank name', accountHolder: 'Account holder', ac
           <div class="my-account__meta">
             <span>{{ profile.userId }}</span>
             <span>&middot;</span>
-            <span>{{ 'myAccount.joinedOn' | translate: { date: (profile.joinedAt | date: 'd-MMM-yyyy, h:mm a') } }}</span>
+            <span>{{ 'myAccount.joinedOn' | translate: { date: (profile.joinedAt | date: 'd-MMM-yyyy, h:mm:ss a') } }}</span>
             <span *ngIf="kycStatus as k" class="my-account__status" [class.my-account__status--verified]="k.kycStatus === 'VERIFIED'">
               {{ 'myAccount.statusLabel' | translate: { status: kycStatusLabel(k.kycStatus) } }}
             </span>
@@ -130,7 +130,7 @@ const BANK_LABELS = { bankName: 'Bank name', accountHolder: 'Account holder', ac
                   </span>
                 </div>
                 <div class="profile-hero__meta profile-hero__meta--secondary">
-                  <span>{{ 'myAccount.joinedOn' | translate: { date: (profile.joinedAt | date: 'd-MMM-yyyy, h:mm a') } }}</span>
+                  <span>{{ 'myAccount.joinedOn' | translate: { date: (profile.joinedAt | date: 'd-MMM-yyyy, h:mm:ss a') } }}</span>
                   <span *ngIf="kycStatus as k" class="profile-hero__kyc" [class.profile-hero__kyc--verified]="k.kycStatus === 'VERIFIED'">
                     {{ 'myAccount.statusLabel' | translate: { status: kycStatusLabel(k.kycStatus) } }}
                   </span>

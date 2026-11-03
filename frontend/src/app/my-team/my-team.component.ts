@@ -144,7 +144,7 @@ export class MyTeamComponent implements OnInit {
           sponsorUserId: a.sponsorUserId ?? '—',
           position: a.position ?? '—',
           status: titleCase(a.status),
-          joinedAt: new Date(a.joinedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
+          joinedAt: new Date(a.joinedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'medium' })
         }));
       },
       error: () => (this.loadError = true)

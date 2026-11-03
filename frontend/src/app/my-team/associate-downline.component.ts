@@ -9,7 +9,7 @@ import { titleCase } from '../shared/utils/title-case';
 
 const PAGE_SIZE = 20;
 const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-GB') : '—');
-const dateTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
+const dateTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'medium' }) : '—');
 
 // View Associate Downline, shared by associates (scope 'me') and admins (scope 'admin').
 // Reuses the .associate-directory__* global styles (styles/_admin.scss); the table stacks into

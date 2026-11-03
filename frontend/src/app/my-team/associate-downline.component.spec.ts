@@ -28,7 +28,7 @@ describe('AssociateDownlineComponent', () => {
     const c = setup('me', of({ associates: [row('VP2', { phone: null, activatedAt: null, position: 'R' })], page: 0, size: 20, totalElements: 1 }));
     expect(c.componentInstance.columns.length).toBe(9);
     expect(c.componentInstance.rows[0]).toEqual(jasmine.objectContaining({ serial: '1', userId: 'VP2', phone: '—', activatedAt: '—', position: 'Right' }));
-    expect(c.componentInstance.rows[0]['joinedAt']).toMatch(/2026, \d{2}:\d{2}$/);
+    expect(c.componentInstance.rows[0]['joinedAt']).toMatch(/2026, \d{2}:\d{2}:\d{2}$/);
   });
 
   it('serial numbers continue across pages', () => {
