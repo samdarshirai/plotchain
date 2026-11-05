@@ -487,8 +487,8 @@ class LedgerServiceTest {
             new com.plotchain.compensation.RewardTier(t2, planId, 2, new BigDecimal("1500000"), new BigDecimal("15000"), null)));
         LedgerEntry e = newEntry(UUID.randomUUID(), me, UUID.randomUUID(), t1);
         e.setIncomeType(IncomeType.REWARD);
+        e.setTierLevel(1);
         when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(e));
-        when(compensationPlanService.rewardTierLevelsById()).thenReturn(java.util.Map.of(t1, 1, t2, 2));
         when(legVolumeRepository.totalBusiness(me)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("1600000"), new BigDecimal("300000")));
         // Open-cycle leg sales count immediately, not only after close.
@@ -525,12 +525,12 @@ class LedgerServiceTest {
             new com.plotchain.compensation.RewardTier(newT1, newPlan, 1, new BigDecimal("1000000"), new BigDecimal("20000"), null, "Sales Executive"),
             new com.plotchain.compensation.RewardTier(newT2, newPlan, 2, new BigDecimal("2000000"), new BigDecimal("45000"), null, "Sr. Sales Executive"),
             new com.plotchain.compensation.RewardTier(newT3, newPlan, 3, new BigDecimal("4000000"), new BigDecimal("90000"), null, "Sales Manager")));
-        when(compensationPlanService.rewardTierLevelsById()).thenReturn(java.util.Map.of(
-            oldT1, 1, oldT2, 2, newT1, 1, newT2, 2, newT3, 3));
         LedgerEntry r1 = newEntry(UUID.randomUUID(), me, UUID.randomUUID(), oldT1);
         r1.setIncomeType(IncomeType.REWARD);
+        r1.setTierLevel(1);
         LedgerEntry r2 = newEntry(UUID.randomUUID(), me, UUID.randomUUID(), oldT2);
         r2.setIncomeType(IncomeType.REWARD);
+        r2.setTierLevel(2);
         when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(r1, r2));
         when(legVolumeRepository.totalBusiness(me)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("6300000"), new BigDecimal("5700000")));
@@ -576,10 +576,10 @@ class LedgerServiceTest {
             new com.plotchain.compensation.RewardTier(t2, planId, 2, new BigDecimal("1000000"), new BigDecimal("20000"), "+ Manali", "Sales Executive")));
         LedgerEntry paid = newEntry(UUID.randomUUID(), me, UUID.randomUUID(), t1);
         paid.setIncomeType(IncomeType.REWARD);
+        paid.setTierLevel(1);
         paid.setFulfilledAt(Instant.parse("2026-06-20T00:00:00Z"));
         paid.setFulfilmentRemark("Watch couriered");
         when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(paid));
-        when(compensationPlanService.rewardTierLevelsById()).thenReturn(java.util.Map.of(t1, 1, t2, 2));
 
         List<AssociateRewardAchievedRow> rows = service.myRewardsAchieved(me);
 

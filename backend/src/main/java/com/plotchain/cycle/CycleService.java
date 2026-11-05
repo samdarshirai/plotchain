@@ -246,11 +246,11 @@ public class CycleService {
     }
 
     // Stable identity of a cycle-derived row across recomputes (ids and leg-volume sourceRefs are
-    // regenerated each run): REWARD by tier, SPONSOR_MATCHING by the sponsee whose MATCHING row it
+    // regenerated each run): REWARD by tier level, SPONSOR_MATCHING by the sponsee whose MATCHING row it
     // pays on, the rest are one-per-associate-per-cycle.
     private String fulfilmentKey(LedgerEntry e, List<LedgerEntry> sameRun) {
         String discriminator = switch (e.getIncomeType()) {
-            case REWARD -> String.valueOf(e.getSourceRef());
+            case REWARD -> String.valueOf(e.getTierLevel());
             case SPONSOR_MATCHING -> sameRun.stream()
                 .filter(m -> m.getId().equals(e.getSourceRef()))
                 .map(m -> String.valueOf(m.getAssociateId()))
@@ -828,7 +828,7 @@ public class CycleService {
         List<BigDecimal> reachedAt = RewardTierRule.cumulativeThresholds(tiers);
 
         Map<UUID, Set<Integer>> awardedLevels = new HashMap<>();
-        ledgerEntryRepository.findAchievedRewardTiers(associates.stream().map(Associate::getId).toList())
+        ledgerEntryRepository.findAwardedRewardLevels(associates.stream().map(Associate::getId).toList())
             .forEach(row -> awardedLevels
                 .computeIfAbsent(row.getAssociateId(), id -> new HashSet<>())
                 .add(row.getTierLevel()));
@@ -850,17 +850,16 @@ public class CycleService {
                     continue;
                 }
 
+                // A perk-only tier (cashReward 0) still gets a (zero-amount) row: the row IS the
+                // achievement record the ladder and the designation read.
                 BigDecimal grossAmount = Money.round(tier.getCashReward());
-                if (grossAmount.compareTo(BigDecimal.ZERO) <= 0) {
-                    continue;
-                }
-
                 Deductions deductions = applyDeductions(grossAmount, planVersion);
 
                 LedgerEntry entry = new LedgerEntry();
                 entry.setId(UUID.randomUUID());
                 entry.setAssociateId(associate.getId());
                 entry.setIncomeType(IncomeType.REWARD);
+                entry.setTierLevel(tier.getTierLevel());
                 entry.setCycleId(cycleId);
                 entry.setGrossAmount(grossAmount);
                 entry.setTdsDeduction(deductions.tdsDeduction());

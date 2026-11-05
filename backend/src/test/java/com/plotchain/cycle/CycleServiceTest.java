@@ -2135,6 +2135,7 @@ class CycleServiceTest {
             .filter(e -> e.getIncomeType() == IncomeType.REWARD).findFirst().orElseThrow();
 
         assertThat(rewardEntry.getAssociateId()).isEqualTo(root.getId());
+        assertThat(rewardEntry.getTierLevel()).isEqualTo(1);
         assertThat(rewardEntry.getCycleId()).isEqualTo(cycle.getId());
         assertThat(rewardEntry.getGrossAmount()).isEqualByComparingTo("1000.00");
         // tds = 1000 * 5% = 50.00, admin = 1000 * 4% = 40.00, net = 910.00 -- same planVersionFixture()
@@ -2337,7 +2338,7 @@ class CycleServiceTest {
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(tier));
         // Simulates "already awarded in an earlier cycle" -- no cycleId argument exists on this
         // method at all, which is exactly the point (Decision #8).
-        when(ledgerEntryRepository.findAchievedRewardTiers(any())).thenReturn(List.of(awardedLevel(root.getId(), 1)));
+        when(ledgerEntryRepository.findAwardedRewardLevels(any())).thenReturn(List.of(awardedLevel(root.getId(), 1)));
 
         service.close(cycle.getId(), java.time.LocalDate.now());
 
@@ -2348,7 +2349,7 @@ class CycleServiceTest {
     }
 
     @Test
-    void closeSkipsRewardWriteWhenTierCashRewardIsZero() {
+    void closeWritesAZeroAmountRewardRowForAPerkOnlyTier() {
         service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
             compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
             rewardTierRepository, expenseRepository, walletRepository);
@@ -2380,7 +2381,15 @@ class CycleServiceTest {
 
         service.close(cycle.getId(), java.time.LocalDate.now());
 
-        verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.REWARD));
+        // The row is the achievement record the ladder and designation read, so it is written even
+        // though there is no cash to pay.
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.atLeastOnce()).save(entryCaptor.capture());
+        LedgerEntry reward = entryCaptor.getAllValues().stream()
+            .filter(e -> e.getIncomeType() == IncomeType.REWARD).findFirst().orElseThrow();
+        assertThat(reward.getGrossAmount()).isEqualByComparingTo("0");
+        assertThat(reward.getNetAmount()).isEqualByComparingTo("0");
+        assertThat(reward.getTierLevel()).isEqualTo(1);
     }
 
     @Test
@@ -2542,7 +2551,7 @@ class CycleServiceTest {
         RewardTier tier1 = rewardTierFixture(planVersion.getId(), 1, new BigDecimal("1000000"), new BigDecimal("15000.00"));
         RewardTier tier2 = rewardTierFixture(planVersion.getId(), 2, new BigDecimal("2000000"), new BigDecimal("20000.00"));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(tier1, tier2));
-        when(ledgerEntryRepository.findAchievedRewardTiers(any())).thenReturn(List.of(awardedLevel(root.getId(), 1)));
+        when(ledgerEntryRepository.findAwardedRewardLevels(any())).thenReturn(List.of(awardedLevel(root.getId(), 1)));
 
         service.close(cycle.getId(), java.time.LocalDate.now());
 
@@ -2624,7 +2633,7 @@ class CycleServiceTest {
             rewardTierFixture(planV2.getId(), 2, new BigDecimal("2000000"), new BigDecimal("45000.00")),
             rewardTierFixture(planV2.getId(), 3, new BigDecimal("4000000"), new BigDecimal("90000.00"))
         ));
-        when(ledgerEntryRepository.findAchievedRewardTiers(any())).thenReturn(
+        when(ledgerEntryRepository.findAwardedRewardLevels(any())).thenReturn(
             List.of(awardedLevel(root.getId(), 1), awardedLevel(root.getId(), 2)));
 
         service.refreshLiveIncome(cycle.getId());
@@ -2658,7 +2667,7 @@ class CycleServiceTest {
             tier2,
             rewardTierFixture(planVersion.getId(), 3, new BigDecimal("4000000"), new BigDecimal("90000.00"))
         ));
-        when(ledgerEntryRepository.findAchievedRewardTiers(any())).thenReturn(List.of(awardedLevel(root.getId(), 1)));
+        when(ledgerEntryRepository.findAwardedRewardLevels(any())).thenReturn(List.of(awardedLevel(root.getId(), 1)));
 
         service.refreshLiveIncome(cycle.getId());
 
@@ -2668,11 +2677,10 @@ class CycleServiceTest {
             .extracting(LedgerEntry::getSourceRef).containsExactly(tier2.getId());
     }
 
-    private LedgerEntryRepository.AchievedRewardTierRow awardedLevel(UUID associateId, int tierLevel) {
-        return new LedgerEntryRepository.AchievedRewardTierRow() {
+    private LedgerEntryRepository.AwardedRewardLevelRow awardedLevel(UUID associateId, int tierLevel) {
+        return new LedgerEntryRepository.AwardedRewardLevelRow() {
             public UUID getAssociateId() { return associateId; }
             public int getTierLevel() { return tierLevel; }
-            public String getDesignation() { return null; }
         };
     }
 

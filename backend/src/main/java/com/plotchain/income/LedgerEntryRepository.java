@@ -190,19 +190,18 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
     @Query("DELETE FROM LedgerEntry l WHERE l.cycleId = :cycleId AND l.incomeType IN :types AND l.status <> com.plotchain.income.LedgerEntryStatus.PAID")
     void deleteRecomputable(@Param("cycleId") UUID cycleId, @Param("types") List<IncomeType> types);
 
-    // DesignationService: every achieved reward tier (REWARD row -> reward_tier via sourceRef) for
-    // the given associates, so the caller can pick the highest tierLevel per associate.
+    // Reward levels already awarded to the given associates (any plan version, any cycle). Read by
+    // CycleService#creditReward (award each level once) and DesignationService (highest level).
     @Query("""
-        SELECT l.associateId AS associateId, t.tierLevel AS tierLevel, t.designation AS designation
-        FROM LedgerEntry l, com.plotchain.compensation.RewardTier t
-        WHERE t.id = l.sourceRef AND l.incomeType = com.plotchain.income.IncomeType.REWARD
+        SELECT l.associateId AS associateId, l.tierLevel AS tierLevel
+        FROM LedgerEntry l
+        WHERE l.incomeType = com.plotchain.income.IncomeType.REWARD AND l.tierLevel IS NOT NULL
         AND l.associateId IN :associateIds
         """)
-    List<AchievedRewardTierRow> findAchievedRewardTiers(@Param("associateIds") Collection<UUID> associateIds);
+    List<AwardedRewardLevelRow> findAwardedRewardLevels(@Param("associateIds") Collection<UUID> associateIds);
 
-    interface AchievedRewardTierRow {
+    interface AwardedRewardLevelRow {
         UUID getAssociateId();
         int getTierLevel();
-        String getDesignation();
     }
 }

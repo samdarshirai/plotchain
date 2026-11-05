@@ -335,9 +335,11 @@ public class LedgerService {
     public List<AssociateRewardTierRow> myRewardTiers(UUID associateId) {
         Map<Integer, LedgerEntry> byLevel = rewardEntriesByTierLevel(associateId);
         LegVolumeRepository.LegBusinessTotals closed = legVolumeRepository.totalBusiness(associateId);
-        BigDecimal left = closed.left().add(saleRepository.sumOpenCycleLegBusiness(associateId, "L"));
-        BigDecimal right = closed.right().add(saleRepository.sumOpenCycleLegBusiness(associateId, "R"));
-        BigDecimal matched = left.min(right);
+        BigDecimal openLeft = saleRepository.sumOpenCycleLegBusiness(associateId, "L");
+        BigDecimal openRight = saleRepository.sumOpenCycleLegBusiness(associateId, "R");
+        BigDecimal left = closed.left().add(openLeft);
+        BigDecimal right = closed.right().add(openRight);
+        BigDecimal matched = RewardTierRule.lifetimeMatched(closed, openLeft, openRight);
         List<AssociateRewardTierRow> rows = new ArrayList<>();
         List<RewardTier> tiers = compensationPlanService.currentRewardTiers();
         List<BigDecimal> reachedAt = RewardTierRule.cumulativeThresholds(tiers);
@@ -442,16 +444,15 @@ public class LedgerService {
         }
     }
 
-    // The associate's REWARD rows by tier LEVEL, not tier id: every plan save makes new reward_tier
-    // ids, so a level awarded under an earlier plan version must still count as achieved. If a level
-    // has several rows (legacy duplicates), the earliest is the original award.
+    // The associate's REWARD rows by tier LEVEL (ledger_entry.tier_level), not tier id: every plan
+    // save makes new reward_tier ids, so a level awarded under an earlier plan version must still
+    // count as achieved. If a level has several rows (legacy duplicates), the earliest is the
+    // original award.
     private Map<Integer, LedgerEntry> rewardEntriesByTierLevel(UUID associateId) {
-        Map<UUID, Integer> levelByTierId = compensationPlanService.rewardTierLevelsById();
         Map<Integer, LedgerEntry> byLevel = new HashMap<>();
         for (LedgerEntry e : ledgerEntryRepository.findByAssociateIdAndIncomeType(associateId, IncomeType.REWARD)) {
-            Integer level = e.getSourceRef() == null ? null : levelByTierId.get(e.getSourceRef());
-            if (level != null) {
-                byLevel.merge(level, e, (a, b) -> b.getCreatedAt().isBefore(a.getCreatedAt()) ? b : a);
+            if (e.getTierLevel() != null) {
+                byLevel.merge(e.getTierLevel(), e, (a, b) -> b.getCreatedAt().isBefore(a.getCreatedAt()) ? b : a);
             }
         }
         return byLevel;

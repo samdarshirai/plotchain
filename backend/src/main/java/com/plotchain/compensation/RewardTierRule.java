@@ -1,5 +1,7 @@
 package com.plotchain.compensation;
 
+import com.plotchain.legvolume.LegVolumeRepository;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,5 +23,16 @@ public final class RewardTierRule {
             result.add(running);
         }
         return result;
+    }
+
+    // Lifetime matched volume as the associate sees it: closed-cycle leg totals plus the OPEN
+    // cycle's leg sales, matched = min(left, right). The reward ladder and the rank-progress card
+    // both use this. CycleService#creditReward reads cumulative_matched_volume (+ this cycle's
+    // matched) instead because it runs for every associate at once; the two are equal by
+    // construction (carry-forward keeps unmatched volume on its leg).
+    public static BigDecimal lifetimeMatched(
+        LegVolumeRepository.LegBusinessTotals closed, BigDecimal openLeft, BigDecimal openRight
+    ) {
+        return closed.left().add(openLeft).min(closed.right().add(openRight));
     }
 }

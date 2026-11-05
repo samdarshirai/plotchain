@@ -1,6 +1,5 @@
 package com.plotchain.compensation;
 
-import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.company.SettingsAuditService;
@@ -79,33 +78,31 @@ public class CompensationPlanService {
     //
     // Progress is toward the next reward tier (whose designation the associate is promoted to);
     // `designation` is the live one from DesignationService (highest tier with a REWARD row). The
-    // reward-tier `achieved` predicate mirrors CycleService#creditReward: per-level thresholds,
-    // summed, against cumulativeMatchedVolume. cumulativeMatchedVolume only advances
-    // at cycle close, so the OPEN cycle's live matched volume (carry-in + this cycle's leg sales,
-    // same as DashboardService's New Matching Business) is added on top.
+    // reward-tier `achieved` predicate is RewardTierRule, the same one the awarding and the reward
+    // ladder use: lifetime matched volume (closed cycles + the open cycle's leg sales) against the
+    // summed thresholds.
     public AssociateRankProgressResponse getMyRankProgress(UUID associateId) {
-        Associate associate = associateRepository.findById(associateId)
-            .orElseThrow(() -> new AssociateNotFoundException(associateId));
-        LegVolumeRepository.LegBusinessTotals carry = legVolumeRepository.carriedForward(associateId);
-        BigDecimal liveMatched = carry.left().add(saleRepository.sumOpenCycleLegBusiness(associateId, "L"))
-            .min(carry.right().add(saleRepository.sumOpenCycleLegBusiness(associateId, "R")));
-        BigDecimal cumulative = associate.getCumulativeMatchedVolume().add(liveMatched);
+        if (!associateRepository.existsById(associateId)) {
+            throw new AssociateNotFoundException(associateId);
+        }
+        BigDecimal cumulative = RewardTierRule.lifetimeMatched(
+            legVolumeRepository.totalBusiness(associateId),
+            saleRepository.sumOpenCycleLegBusiness(associateId, "L"),
+            saleRepository.sumOpenCycleLegBusiness(associateId, "R"));
 
         CompensationPlanVersion version = currentVersion();
         List<RewardTier> tiers = rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(version.getId());
-        // Leg volume resets after each level: a tier is reached once cumulative covers the sum of
-        // thresholds up to it. Progress is within the next level only.
+        List<BigDecimal> reachedAt = RewardTierRule.cumulativeThresholds(tiers);
+        // Progress is within the next level only.
         RewardTier nextTier = null;
         BigDecimal neededBeforeNext = BigDecimal.ZERO;
-        BigDecimal needed = BigDecimal.ZERO;
         List<AssociateRewardTierDto> tierDtos = new ArrayList<>();
-        for (RewardTier t : tiers) {
-            BigDecimal before = needed;
-            needed = needed.add(t.getVolumeThreshold());
-            boolean achieved = needed.compareTo(cumulative) <= 0;
+        for (int i = 0; i < tiers.size(); i++) {
+            RewardTier t = tiers.get(i);
+            boolean achieved = reachedAt.get(i).compareTo(cumulative) <= 0;
             if (!achieved && nextTier == null) {
                 nextTier = t;
-                neededBeforeNext = before;
+                neededBeforeNext = reachedAt.get(i).subtract(t.getVolumeThreshold());
             }
             tierDtos.add(new AssociateRewardTierDto(
                 t.getTierLevel(), t.getVolumeThreshold(), t.getCashReward(), t.getPerkDescription(), achieved));
@@ -218,13 +215,6 @@ public class CompensationPlanService {
 
     public List<RewardTier> currentRewardTiers() {
         return rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(currentVersion().getId());
-    }
-
-    // reward_tier id -> tierLevel across every plan version, so a REWARD ledger row (sourceRef =
-    // tier id) can be read by level after the plan has been re-saved with new tier ids.
-    public Map<UUID, Integer> rewardTierLevelsById() {
-        return rewardTierRepository.findAll().stream()
-            .collect(Collectors.toMap(RewardTier::getId, RewardTier::getTierLevel));
     }
 
     private CompensationPlanVersion currentVersion() {

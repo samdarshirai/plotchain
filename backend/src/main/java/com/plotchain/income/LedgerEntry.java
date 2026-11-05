@@ -32,6 +32,9 @@ public class LedgerEntry {
     private Instant createdAt;
     @Column(name = "source_ref")
     private UUID sourceRef;
+    // REWARD rows only: the reward level this row awards (see V83). Null for every other income type.
+    @Column(name = "tier_level")
+    private Integer tierLevel;
     // REWARD rows only: admin marks the reward (cash + perk) handed over. Independent of status,
     // which only means the cash was credited to the wallet.
     @Column(name = "fulfilled_at")
@@ -61,6 +64,8 @@ public class LedgerEntry {
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public UUID getSourceRef() { return sourceRef; }
     public void setSourceRef(UUID sourceRef) { this.sourceRef = sourceRef; }
+    public Integer getTierLevel() { return tierLevel; }
+    public void setTierLevel(Integer tierLevel) { this.tierLevel = tierLevel; }
     public Instant getFulfilledAt() { return fulfilledAt; }
     public void setFulfilledAt(Instant fulfilledAt) { this.fulfilledAt = fulfilledAt; }
     public String getFulfilmentRemark() { return fulfilmentRemark; }

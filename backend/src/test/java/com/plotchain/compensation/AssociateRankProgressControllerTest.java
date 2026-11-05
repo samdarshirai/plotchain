@@ -69,7 +69,8 @@ class AssociateRankProgressControllerTest {
         associate.setRankId(currentRankId);
         associate.setCumulativeMatchedVolume(BigDecimal.ZERO);
 
-        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate)); // JWT auth filter
+        when(associateRepository.existsById(associateId)).thenReturn(true);
         when(versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
             .thenReturn(Optional.of(version(versionId)));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(versionId)).thenReturn(List.of());
