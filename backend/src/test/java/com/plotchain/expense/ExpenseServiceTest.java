@@ -1,6 +1,7 @@
 package com.plotchain.expense;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.company.SettingsAuditLogRepository;
 import com.plotchain.company.SettingsAuditService;
@@ -40,7 +41,7 @@ class ExpenseServiceTest {
     @BeforeEach
     void setUp() {
         SettingsAuditService audit = new SettingsAuditService(auditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
-        service = new ExpenseService(repository, typeRepository, projectRepository, audit);
+        service = new ExpenseService(repository, typeRepository, projectRepository, audit, associateRepository);
     }
 
     private ExpenseType activeType() {
@@ -58,6 +59,8 @@ class ExpenseServiceTest {
     void createTrimsTextAndStoresBlankTxnAsNull() {
         when(typeRepository.findById(typeId)).thenReturn(Optional.of(activeType()));
         ExpenseResponse r = service.create(request("100.50"), UUID.randomUUID());
+        assertThat(r.associateId()).isNull();
+        assertThat(r.associateUserId()).isNull();
         assertThat(r.payTo()).isEqualTo("Vendor");
         assertThat(r.bankName()).isEqualTo("HDFC");
         assertThat(r.txnNo()).isNull();
@@ -91,6 +94,38 @@ class ExpenseServiceTest {
     void listRejectsFromAfterTo() {
         assertThatThrownBy(() -> service.list(LocalDate.of(2026, 10, 5), LocalDate.of(2026, 10, 1), null, null))
             .isInstanceOf(ExpenseException.class);
+    }
+
+    @Test
+    void listResolvesRewardAssociateIdsInOneBatchAndKeepsSavedNames() {
+        UUID associateId = UUID.randomUUID();
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setUserId("VP00001");
+        associate.setName("Updated name");
+        Expense reward = new Expense(UUID.randomUUID(), LocalDate.of(2026, 10, 1), typeId, null,
+            "Saved name", new BigDecimal("100.00"), PayMode.CASH, null, null, null);
+        reward.setRewardSource(associateId, 1);
+        Expense secondReward = new Expense(UUID.randomUUID(), reward.getExpenseDate(), typeId, null,
+            "Saved name", new BigDecimal("200.00"), PayMode.CASH, null, null, null);
+        secondReward.setRewardSource(associateId, 2);
+        Expense manual = new Expense(UUID.randomUUID(), reward.getExpenseDate(), typeId, null,
+            "Vendor", BigDecimal.ONE, PayMode.CASH, null, null, null);
+        when(repository.findByExpenseDateBetweenOrderByExpenseDateDescCreatedAtDesc(any(), any()))
+            .thenReturn(List.of(reward, secondReward, manual));
+        when(typeRepository.findAllById(any())).thenReturn(List.of(activeType()));
+        when(associateRepository.findAllById(List.of(associateId))).thenReturn(List.of(associate));
+
+        List<ExpenseResponse> result = service.list(null, null, null, null);
+
+        assertThat(result.get(0).associateId()).isEqualTo(associateId);
+        assertThat(result.get(0).associateUserId()).isEqualTo("VP00001");
+        assertThat(result.get(0).payTo()).isEqualTo("Saved name");
+        assertThat(result.get(1).associateUserId()).isEqualTo("VP00001");
+        assertThat(result.get(2).associateId()).isNull();
+        assertThat(result.get(2).associateUserId()).isNull();
+        assertThat(result.get(2).payTo()).isEqualTo("Vendor");
+        verify(associateRepository).findAllById(List.of(associateId));
     }
 
     @Test

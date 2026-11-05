@@ -9,7 +9,7 @@ describe('ExpensesComponent', () => {
   const type = { id: 't1', name: 'Travel', status: 'ACTIVE' as const };
   const inactive = { id: 't2', name: 'Old', status: 'INACTIVE' as const };
   const row = { id: 'x1', expenseDate: '2026-10-01', expenseTypeId: 't1', expenseTypeName: 'Travel', projectId: null, projectName: null,
-    payTo: 'Vendor', amount: 100, payMode: 'CASH', bankName: null, txnNo: null, remarks: null };
+    associateId: null, associateUserId: null, payTo: 'Vendor', amount: 100, payMode: 'CASH', bankName: null, txnNo: null, remarks: null };
 
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [ExpensesComponent, HttpClientTestingModule, TranslateModule.forRoot()] });
@@ -26,6 +26,21 @@ describe('ExpensesComponent', () => {
 
   it('rendersListRow', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Vendor');
+  });
+
+  it('showsPublicAssociateIdBesideTheSavedPayToNameForRewardExpenses', () => {
+    fixture.componentInstance.filters.patchValue({ typeId: 't1' });
+    httpMock.expectOne(r => r.url === '/api/admin/expenses').flush([
+      { ...row, associateId: 'a1', associateUserId: 'VP00001', payTo: 'Asha' }, row
+    ]);
+    fixture.detectChanges();
+    const tableRows = (fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr');
+    expect(tableRows[0].textContent).toContain('VP00001');
+    expect(tableRows[0].textContent).toContain('Asha');
+    expect(tableRows[1].textContent).toContain('—');
+    expect(tableRows[1].textContent).toContain('Vendor');
+    const keys = fixture.componentInstance.columns.map(c => c.key);
+    expect(keys.indexOf('associateUserId') + 1).toBe(keys.indexOf('payTo'));
   });
 
   it('offersOnlyActiveExpenseTypes', () => {

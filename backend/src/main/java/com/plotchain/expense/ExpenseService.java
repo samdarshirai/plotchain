@@ -1,5 +1,7 @@
 package com.plotchain.expense;
 
+import com.plotchain.associate.Associate;
+import com.plotchain.associate.AssociateRepository;
 import com.plotchain.company.SettingsAuditService;
 import com.plotchain.expensetype.ExpenseType;
 import com.plotchain.expensetype.ExpenseTypeRepository;
@@ -27,13 +29,16 @@ public class ExpenseService {
     private final ExpenseTypeRepository typeRepository;
     private final ProjectRepository projectRepository;
     private final SettingsAuditService auditService;
+    private final AssociateRepository associateRepository;
 
     public ExpenseService(ExpenseRepository repository, ExpenseTypeRepository typeRepository,
-                          ProjectRepository projectRepository, SettingsAuditService auditService) {
+                          ProjectRepository projectRepository, SettingsAuditService auditService,
+                          AssociateRepository associateRepository) {
         this.repository = repository;
         this.typeRepository = typeRepository;
         this.projectRepository = projectRepository;
         this.auditService = auditService;
+        this.associateRepository = associateRepository;
     }
 
     @Transactional
@@ -54,7 +59,7 @@ public class ExpenseService {
         repository.save(e);
         auditService.record(AUDIT_SECTION, "Recorded expense " + r.amount() + " to " + e.getPayTo(),
             Map.of("id", e.getId().toString(), "amount", r.amount().toPlainString()), actorId);
-        return toResponse(e, type.getName(), project == null ? null : project.getName());
+        return toResponse(e, type.getName(), project == null ? null : project.getName(), null);
     }
 
     // ponytail: filters typeId/projectId applied in memory over a date-bounded list; push into the query if row counts grow.
@@ -73,12 +78,18 @@ public class ExpenseService {
         Map<UUID, String> projectNames = projectRepository.findAllById(
                 rows.stream().map(Expense::getProjectId).filter(java.util.Objects::nonNull).distinct().toList())
             .stream().collect(Collectors.toMap(Project::getId, Project::getName));
-        return rows.stream().map(e -> toResponse(e, typeNames.get(e.getExpenseTypeId()), projectNames.get(e.getProjectId()))).toList();
+        List<UUID> associateIds = rows.stream().map(Expense::getSourceAssociateId)
+            .filter(java.util.Objects::nonNull).distinct().toList();
+        Map<UUID, String> associateUserIds = associateIds.isEmpty() ? Map.of() : associateRepository.findAllById(associateIds)
+            .stream().collect(Collectors.toMap(Associate::getId, Associate::getUserId));
+        return rows.stream().map(e -> toResponse(e, typeNames.get(e.getExpenseTypeId()), projectNames.get(e.getProjectId()),
+            e.getSourceAssociateId() == null ? null : associateUserIds.get(e.getSourceAssociateId()))).toList();
     }
 
-    private static ExpenseResponse toResponse(Expense e, String typeName, String projectName) {
+    private static ExpenseResponse toResponse(Expense e, String typeName, String projectName, String associateUserId) {
         return new ExpenseResponse(e.getId(), e.getExpenseDate(), e.getExpenseTypeId(), typeName, e.getProjectId(),
-            projectName, e.getPayTo(), e.getAmount(), e.getPayMode(), e.getBankName(), e.getTxnNo(), e.getRemarks());
+            projectName, e.getPayTo(), e.getAmount(), e.getPayMode(), e.getBankName(), e.getTxnNo(), e.getRemarks(),
+            e.getSourceAssociateId(), associateUserId);
     }
 
     static void requireTwoDecimals(BigDecimal amount) {

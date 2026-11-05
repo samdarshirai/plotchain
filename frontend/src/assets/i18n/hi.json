@@ -1344,6 +1344,7 @@
       "printAction": "प्रिंट", "notFound": "यह रसीद नहीं मिली।", "back": "भुगतान विवरण पर वापस जाएँ"
     },
     "invoiceExpenses": {
+      "associateId": "एसोसिएट आईडी",
       "eyebrow": "इनवॉइस", "title": "व्यय जोड़ें / देखें", "subtitle": "कंपनी के व्यय दर्ज करें और उन्हें तिथि, प्रकार और प्रोजेक्ट के अनुसार देखें।",
       "expenseDate": "तिथि", "expenseType": "व्यय प्रकार", "project": "प्रोजेक्ट", "payTo": "भुगतान प्राप्तकर्ता", "amount": "राशि", "payMode": "भुगतान माध्यम",
       "bankName": "बैंक का नाम", "txnNo": "लेन-देन संख्या", "remarks": "टिप्पणी", "addTitle": "व्यय जोड़ें", "cancelAction": "रद्द करें", "saveAction": "सहेजें", "addAction": "व्यय जोड़ें", "columnSNo": "क्र.सं.",

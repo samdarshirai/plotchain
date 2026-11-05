@@ -1434,6 +1434,7 @@
       "printAction": "Print", "notFound": "This receipt could not be found.", "back": "Back to Payment Details"
     },
     "invoiceExpenses": {
+      "associateId": "Associate ID",
       "eyebrow": "Invoice", "title": "Add / View Expense", "subtitle": "Record company expenses and review them by date, type and project.",
       "expenseDate": "Date", "expenseType": "Expense Type", "project": "Project", "payTo": "Pay To", "amount": "Amount", "payMode": "Pay Mode",
       "bankName": "Bank Name", "txnNo": "TXN No", "remarks": "Remarks", "addTitle": "Add Expense", "cancelAction": "Cancel", "saveAction": "Save", "addAction": "Add Expense", "columnSNo": "S No",

@@ -6,4 +6,4 @@ import java.util.UUID;
 
 public record ExpenseResponse(UUID id, LocalDate expenseDate, UUID expenseTypeId, String expenseTypeName, UUID projectId,
                               String projectName, String payTo, BigDecimal amount, PayMode payMode, String bankName,
-                              String txnNo, String remarks) {}
+                              String txnNo, String remarks, UUID associateId, String associateUserId) {}

@@ -4,7 +4,7 @@ import { Observable, map } from 'rxjs';
 
 export type PayMode = 'CASH' | 'CHEQUE' | 'DD' | 'UPI' | 'BANK_TRANSFER';
 export const PAY_MODES: PayMode[] = ['CASH', 'CHEQUE', 'DD', 'UPI', 'BANK_TRANSFER'];
-export interface ExpenseRow { id: string; expenseDate: string; expenseTypeId: string; expenseTypeName: string; projectId: string | null; projectName: string | null; payTo: string; amount: number; payMode: PayMode; bankName: string | null; txnNo: string | null; remarks: string | null; }
+export interface ExpenseRow { associateId: string | null; associateUserId: string | null; id: string; expenseDate: string; expenseTypeId: string; expenseTypeName: string; projectId: string | null; projectName: string | null; payTo: string; amount: number; payMode: PayMode; bankName: string | null; txnNo: string | null; remarks: string | null; }
 export interface ExpenseCreate { expenseDate: string; expenseTypeId: string; projectId: string | null; payTo: string; amount: number; payMode: PayMode; bankName: string | null; txnNo: string | null; remarks: string | null; }
 export interface AssociateOption { id: string; userId: string; name: string; }
 export interface ProjectOption { id: string; name: string; }
