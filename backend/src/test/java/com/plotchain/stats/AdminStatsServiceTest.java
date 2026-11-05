@@ -114,6 +114,10 @@ class AdminStatsServiceTest {
         when(saleService.list(null, null, null, null, 0, 5))
             .thenReturn(new AdminSalePageResponse(List.of(), 0, 5, 0));
 
+        when(ledgerEntryRepository.sumGrossAmount(null, IncomeType.DIRECT, cycleId, null, null, null)).thenReturn(new BigDecimal("1200"));
+        when(ledgerEntryRepository.sumGrossAmount(null, IncomeType.MATCHING, cycleId, null, null, null)).thenReturn(new BigDecimal("600"));
+        when(ledgerEntryRepository.sumGrossAmount(null, null, cycleId, null, null, null)).thenReturn(new BigDecimal("1800"));
+
         AdminStatsResponse response = adminStatsService.getStats();
 
         assertThat(response.totalAssociates()).isEqualTo(42L);
@@ -133,6 +137,10 @@ class AdminStatsServiceTest {
         assertThat(response.currentCycle().newAssociatesThisCycle()).isEqualTo(3L);
         assertThat(response.currentCycle().salesThisCycle()).isEqualTo(12L);
         assertThat(response.currentCycle().revenueThisCycle()).isEqualByComparingTo("2400000");
+        assertThat(response.currentCycle().directGrossIncome()).isEqualByComparingTo("1200");
+        assertThat(response.currentCycle().matchingGrossIncome()).isEqualByComparingTo("600");
+        assertThat(response.currentCycle().totalGrossIncome()).isEqualByComparingTo("1800");
+        assertThat(response.currentCycle().previousCycleTotalGrossIncome()).isEqualByComparingTo("0");
         // No CLOSED cycle stubbed -- degrades to zero, same as DashboardService's own fallback.
         assertThat(response.currentCycle().previousCycleTotalIncome()).isEqualByComparingTo("0");
         assertThat(response.currentCycle().incomeTrend()).containsExactly(new BigDecimal("1500"));
@@ -197,9 +205,15 @@ class AdminStatsServiceTest {
         when(saleService.list(null, null, null, null, 0, 5))
             .thenReturn(new AdminSalePageResponse(List.of(recentSale), 0, 5, 1));
 
+        when(ledgerEntryRepository.sumGrossAmount(null, IncomeType.DIRECT, cycleId, null, null, null)).thenReturn(BigDecimal.ZERO);
+        when(ledgerEntryRepository.sumGrossAmount(null, IncomeType.MATCHING, cycleId, null, null, null)).thenReturn(BigDecimal.ZERO);
+        when(ledgerEntryRepository.sumGrossAmount(null, null, cycleId, null, null, null)).thenReturn(BigDecimal.ZERO);
+        when(ledgerEntryRepository.sumGrossAmount(null, null, closedCycleId, null, null, null)).thenReturn(new BigDecimal("1400"));
+
         AdminStatsResponse response = adminStatsService.getStats();
 
         assertThat(response.currentCycle().previousCycleTotalIncome()).isEqualByComparingTo("1200");
+        assertThat(response.currentCycle().previousCycleTotalGrossIncome()).isEqualByComparingTo("1400");
         // lastCycles is oldest-first (closedCycle, cycle) -- same ordering DashboardService uses.
         assertThat(response.currentCycle().incomeTrend()).containsExactly(new BigDecimal("1200"), new BigDecimal("1500"));
         assertThat(response.recentSales()).hasSize(1);

@@ -108,7 +108,7 @@ class CycleControllerTest {
             new CycleDetailResponse(cycleId, java.time.LocalDate.of(2026, 7, 1),
                 java.time.LocalDate.of(2026, 7, 15), CycleStatus.CLOSED,
                 List.of(new CycleIncomeTypeTotal(com.plotchain.income.IncomeType.DIRECT,
-                    java.math.BigDecimal.valueOf(100))),
+                    java.math.BigDecimal.valueOf(100), java.math.BigDecimal.valueOf(120))),
                 java.math.BigDecimal.valueOf(100),
                 java.math.BigDecimal.valueOf(1000), java.math.BigDecimal.valueOf(120), java.math.BigDecimal.valueOf(30)));
 
@@ -119,6 +119,7 @@ class CycleControllerTest {
             .andExpect(jsonPath("$.status").value("CLOSED"))
             .andExpect(jsonPath("$.incomeTypeTotals[0].incomeType").value("DIRECT"))
             .andExpect(jsonPath("$.incomeTypeTotals[0].totalNet").value(100))
+            .andExpect(jsonPath("$.incomeTypeTotals[0].totalGross").value(120))
             .andExpect(jsonPath("$.totalNet").value(100))
             .andExpect(jsonPath("$.totalBusiness").value(1000))
             .andExpect(jsonPath("$.totalGross").value(120))

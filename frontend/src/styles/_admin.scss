@@ -1401,13 +1401,20 @@
 // Keep the action column fitted to its button and reserve space for Trip Expense.
 @media (min-width: 769px) {
   .cycle-management .editable-table {
+    // Override the shared desktop table compaction for this scrollable report.
+    min-width: 1400px !important;
+
+    th, td {
+      white-space: nowrap !important;
+    }
+
     th:last-child, td:last-child {
       width: 1%;
-      padding-inline: 0.75rem;
+      padding-inline: 0.75rem !important;
     }
 
     th:nth-child(10), td:nth-child(10) {
-      min-width: 160px;
+      min-width: 160px !important;
     }
   }
 }

@@ -21,6 +21,10 @@ export interface CurrentCycleStats {
   revenueThisCycle: number;
   previousCycleTotalIncome: number;
   incomeTrend: number[];
+  directGrossIncome: number;
+  matchingGrossIncome: number;
+  totalGrossIncome: number;
+  previousCycleTotalGrossIncome: number;
 }
 
 // Org-wide sibling of dashboard-response.model.ts's own NetworkGrowthPoint (which is scoped to

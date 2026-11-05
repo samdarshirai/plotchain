@@ -18,13 +18,13 @@ import { formatInr } from '../../shared/utils/plot-grid.util';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 
 const INCOME_TYPES: CycleIncomeType[] = ['DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'ROYALTY', 'REWARD'];
-// Key order = table order; 'totalNet' sits between ROYALTY and REWARD, so the loop below can't be a single map.
+// Key order = table order; 'totalGross' sits between ROYALTY and REWARD, so the loop below can't be a single map.
 const COLUMN_KEYS = [
-  'DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'ROYALTY', 'totalNet', 'REWARD'
+  'DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'ROYALTY', 'totalGross', 'REWARD'
 ];
 const COLUMN_LABEL_KEYS: Record<string, string> = {
   DIRECT: 'columnDirect', MATCHING: 'columnMatching', SPONSOR_MATCHING: 'columnSponsor',
-  ROYALTY: 'columnRoyalty', totalNet: 'columnTotalIncome', REWARD: 'columnReward'
+  ROYALTY: 'columnRoyalty', totalGross: 'columnTotalIncome', REWARD: 'columnReward'
 };
 
 @Component({
@@ -43,6 +43,7 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
       <div class="cycle-management__intro">
         <span class="cycle-management__eyebrow">{{ 'admin.cycleManagement.eyebrow' | translate }}</span>
         <h1 class="cycle-management__title">{{ 'admin.cycleManagement.title' | translate }}</h1>
+        <p class="cycle-management__income-note">{{ 'admin.cycleManagement.grossIncomeNote' | translate }}</p>
         <p class="cycle-management__subtitle">{{ 'admin.cycleManagement.subtitle' | translate }}</p>
       </div>
 
@@ -69,18 +70,18 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
           <div class="cycle-management__stats">
             <div class="cycle-metric cycle-metric--hero">
               <span class="cycle-metric__label">{{ 'admin.cycleManagement.totalIncomeLabel' | translate }}</span>
-              <span class="cycle-metric__value">{{ stats.totalIncome | currency:'INR':'symbol':'1.0-0' }}</span>
+              <span class="cycle-metric__value">{{ stats.totalGrossIncome | currency:'INR':'symbol':'1.0-0' }}</span>
               <span class="cycle-metric__delta" *ngIf="incomeDelta !== null" [class.cycle-metric__delta--down]="incomeDelta < 0">
                 {{ incomeDelta >= 0 ? '▲' : '▼' }} {{ incomeDelta | number:'1.0-1' }}% {{ 'admin.cycleManagement.vsPreviousCycleLabel' | translate }}
               </span>
             </div>
             <div class="cycle-metric">
               <span class="cycle-metric__label">{{ 'admin.cycleManagement.directIncomeLabel' | translate }}</span>
-              <span class="cycle-metric__value">{{ stats.directIncome | currency:'INR':'symbol':'1.0-0' }}</span>
+              <span class="cycle-metric__value">{{ stats.directGrossIncome | currency:'INR':'symbol':'1.0-0' }}</span>
             </div>
             <div class="cycle-metric">
               <span class="cycle-metric__label">{{ 'admin.cycleManagement.matchingIncomeLabel' | translate }}</span>
-              <span class="cycle-metric__value">{{ stats.matchingIncome | currency:'INR':'symbol':'1.0-0' }}</span>
+              <span class="cycle-metric__value">{{ stats.matchingGrossIncome | currency:'INR':'symbol':'1.0-0' }}</span>
             </div>
             <div class="cycle-metric">
               <span class="cycle-metric__label">{{ 'admin.cycleManagement.newAssociatesLabel' | translate }}</span>
@@ -164,6 +165,7 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
 
       <div class="card">
         <app-editable-table
+          data-table-scroll="(min-width: 769px)"
           [readOnly]="true"
           [columns]="historyColumns"
           [rows]="historyRows"
@@ -239,7 +241,7 @@ export class CycleManagementComponent implements OnInit {
   // % change of total income vs the previous cycle; null when there's nothing to compare against.
   get incomeDelta(): number | null {
     const stats = this.currentCycleStats;
-    return stats?.previousCycleTotalIncome ? ((stats.totalIncome - stats.previousCycleTotalIncome) / stats.previousCycleTotalIncome) * 100 : null;
+    return stats?.previousCycleTotalGrossIncome ? ((stats.totalGrossIncome - stats.previousCycleTotalGrossIncome) / stats.previousCycleTotalGrossIncome) * 100 : null;
   }
 
   ngOnInit(): void {
@@ -312,9 +314,9 @@ export class CycleManagementComponent implements OnInit {
       status: cycle.status
     };
     for (const t of INCOME_TYPES) {
-      row[t] = detail ? formatInr(detail.incomeTypeTotals.find(x => x.incomeType === t)?.totalNet ?? 0) : '';
+      row[t] = detail ? formatInr(detail.incomeTypeTotals.find(x => x.incomeType === t)?.totalGross ?? 0) : '';
     }
-    row['totalNet'] = detail ? formatInr(detail.totalNet) : '';
+    row['totalGross'] = detail ? formatInr(detail.totalGross) : '';
     row['business'] = detail ? formatInr(detail.totalBusiness) : '';
     row['tripExpense'] = detail ? formatInr(detail.tripExpense) : '';
     // Commission = gross ledger income (before TDS/admin deductions) + trip expense.

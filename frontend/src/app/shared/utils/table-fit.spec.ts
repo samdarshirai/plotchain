@@ -44,6 +44,16 @@ describe('fitTable', () => {
     expect(table.tBodies[0].rows[1].cells[0].hasAttribute('data-label')).toBeFalse();
   });
 
+  it('preserves scrolling only while the screen opt-in media query matches', () => {
+    const table = mount(60);
+    box.setAttribute('data-table-scroll', '(min-width: 0px)');
+    fitTable(table);
+    expect(table.classList).not.toContain(STACKED_CLASS);
+    box.setAttribute('data-table-scroll', '(max-width: 0px)');
+    fitTable(table);
+    expect(table.classList).toContain(STACKED_CLASS);
+  });
+
   it('unstacks once the container is wide enough again', () => {
     const table = mount(60);
     fitTable(table);

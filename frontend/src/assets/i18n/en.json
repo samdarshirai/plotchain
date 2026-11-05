@@ -988,6 +988,7 @@
       "voidedTag": "Voided"
     },
     "cycleManagement": {
+      "grossIncomeNote": "Income figures are shown before TDS and admin deductions.",
       "eyebrow": "Admin · Closing Report",
       "title": "Closing Report",
       "subtitle": "Review past settlement cycles and trigger the close for the current one.",

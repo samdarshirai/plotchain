@@ -24,6 +24,7 @@ describe('AdminDashboardService', () => {
       salesThisCycle: 12,
       revenueThisCycle: 2400000,
       previousCycleTotalIncome: 1200,
+      directGrossIncome: 1200, matchingGrossIncome: 600, totalGrossIncome: 1800, previousCycleTotalGrossIncome: 1400,
       incomeTrend: [1000, 1100, 1300, 1500]
     },
     activePlots: 21,

@@ -187,7 +187,13 @@ public class AdminStatsService {
         return new AdminStatsResponse.CurrentCycleStats(
             cycle.getId(), cycle.getPeriodStart(), cycle.getPeriodEnd(), daysRemaining,
             direct, matching, total, newAssociates, salesThisCycle, revenueThisCycle,
-            previousCycleTotalIncome, incomeTrend
+            previousCycleTotalIncome, incomeTrend,
+            ledgerEntryRepository.sumGrossAmount(null, IncomeType.DIRECT, cycle.getId(), null, null, null),
+            ledgerEntryRepository.sumGrossAmount(null, IncomeType.MATCHING, cycle.getId(), null, null, null),
+            ledgerEntryRepository.sumGrossAmount(null, null, cycle.getId(), null, null, null),
+            latestClosedCycle
+                .map(closed -> ledgerEntryRepository.sumGrossAmount(null, null, closed.getId(), null, null, null))
+                .orElse(BigDecimal.ZERO)
         );
     }
 

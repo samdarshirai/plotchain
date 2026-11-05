@@ -58,7 +58,11 @@ public record AdminStatsResponse(
         long salesThisCycle,
         BigDecimal revenueThisCycle,
         BigDecimal previousCycleTotalIncome,
-        List<BigDecimal> incomeTrend
+        List<BigDecimal> incomeTrend,
+        BigDecimal directGrossIncome,
+        BigDecimal matchingGrossIncome,
+        BigDecimal totalGrossIncome,
+        BigDecimal previousCycleTotalGrossIncome
     ) {}
 
     // Admin Dashboard rebuild's Network Growth chart (2026-08-23-admin-dashboard-mockup-design.md

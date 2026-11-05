@@ -958,6 +958,7 @@
       "voidedTag": "Voided"
     },
     "cycleManagement": {
+      "grossIncomeNote": "आय के आंकड़े टीडीएस और प्रशासनिक कटौतियों से पहले के हैं।",
       "eyebrow": "Admin · Closing Report",
       "title": "Closing Report",
       "subtitle": "Review past settlement cycles and trigger the close for the current one.",

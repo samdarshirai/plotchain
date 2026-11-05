@@ -155,6 +155,11 @@ class CycleServiceTest {
         when(expenseRepository.sumAmountByTypeNameBetween("Trip", cycle.getPeriodStart(), cycle.getPeriodEnd()))
             .thenReturn(BigDecimal.valueOf(40));
 
+        for (IncomeType type : List.of(IncomeType.DIRECT, IncomeType.MATCHING, IncomeType.SPONSOR_MATCHING, IncomeType.ROYALTY, IncomeType.REWARD)) {
+            when(ledgerEntryRepository.sumGrossAmount(null, type, cycle.getId(), null, null, null))
+                .thenReturn(BigDecimal.valueOf(type == IncomeType.DIRECT ? 120 : type == IncomeType.MATCHING ? 60 : type == IncomeType.SPONSOR_MATCHING ? 12 : type == IncomeType.ROYALTY ? 6 : 2));
+        }
+
         CycleDetailResponse response = service.getDetail(cycle.getId());
 
         assertThat(response.id()).isEqualTo(cycle.getId());
@@ -166,11 +171,11 @@ class CycleServiceTest {
         assertThat(response.totalBusiness()).isEqualByComparingTo(BigDecimal.valueOf(5000));
         assertThat(response.tripExpense()).isEqualByComparingTo(BigDecimal.valueOf(40));
         assertThat(response.incomeTypeTotals()).containsExactly(
-            new CycleIncomeTypeTotal(IncomeType.DIRECT, BigDecimal.valueOf(100)),
-            new CycleIncomeTypeTotal(IncomeType.MATCHING, BigDecimal.valueOf(50)),
-            new CycleIncomeTypeTotal(IncomeType.SPONSOR_MATCHING, BigDecimal.valueOf(10)),
-            new CycleIncomeTypeTotal(IncomeType.ROYALTY, BigDecimal.valueOf(5)),
-            new CycleIncomeTypeTotal(IncomeType.REWARD, BigDecimal.valueOf(2)));
+            new CycleIncomeTypeTotal(IncomeType.DIRECT, BigDecimal.valueOf(100), BigDecimal.valueOf(120)),
+            new CycleIncomeTypeTotal(IncomeType.MATCHING, BigDecimal.valueOf(50), BigDecimal.valueOf(60)),
+            new CycleIncomeTypeTotal(IncomeType.SPONSOR_MATCHING, BigDecimal.valueOf(10), BigDecimal.valueOf(12)),
+            new CycleIncomeTypeTotal(IncomeType.ROYALTY, BigDecimal.valueOf(5), BigDecimal.valueOf(6)),
+            new CycleIncomeTypeTotal(IncomeType.REWARD, BigDecimal.valueOf(2), BigDecimal.valueOf(2)));
     }
 
     @Test

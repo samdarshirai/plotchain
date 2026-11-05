@@ -16,6 +16,11 @@ const STATS_RESPONSE = {
     directIncome: 1000,
     matchingIncome: 500,
     totalIncome: 1500,
+    directGrossIncome: 1200,
+    matchingGrossIncome: 600,
+    totalGrossIncome: 1800,
+    previousCycleTotalIncome: 1000,
+    previousCycleTotalGrossIncome: 1200,
     newAssociatesThisCycle: 3,
     salesThisCycle: 4,
     revenueThisCycle: 200000
@@ -53,7 +58,9 @@ describe('CycleManagementComponent', () => {
     httpMock.match(r => /^\/api\/admin\/cycles\/[^/]+$/.test(r.url)).forEach(req =>
       req.flush({
         id: 'c1', periodStart: '', periodEnd: '', status: 'CLOSED', totalNet: 730, totalBusiness: 1000, totalGross: 800, tripExpense: 100,
-        incomeTypeTotals: [{ incomeType: 'DIRECT', totalNet: 500 }, { incomeType: 'MATCHING', totalNet: 230 }]
+        incomeTypeTotals: [{ incomeType: 'DIRECT', totalNet: 500, totalGross: 550 }, { incomeType: 'MATCHING', totalNet: 180, totalGross: 200 },
+          { incomeType: 'SPONSOR_MATCHING', totalNet: 25, totalGross: 25 }, { incomeType: 'ROYALTY', totalNet: 15, totalGross: 15 },
+          { incomeType: 'REWARD', totalNet: 10, totalGross: 10 }]
       })
     );
 
@@ -65,12 +72,50 @@ describe('CycleManagementComponent', () => {
   it('shows per-income-type and total columns on each row', () => {
     flushDetails();
     const row = fixture.componentInstance.historyRows[0];
-    expect(row['DIRECT']).toBe('₹500');
-    expect(row['ROYALTY']).toBe('₹0');
-    expect(row['totalNet']).toBe('₹730');
+    expect(row['DIRECT']).toBe('₹550');
+    expect(row['MATCHING']).toBe('₹200');
+    expect(row['SPONSOR_MATCHING']).toBe('₹25');
+    expect(row['REWARD']).toBe('₹10');
+    expect(row['ROYALTY']).toBe('₹15');
+    expect(row['totalGross']).toBe('₹800');
     expect(row['business']).toBe('₹1,000');
     expect(row['commissionExpense']).toBe('₹900');
     expect(row['commissionPct']).toBe('90.00%');
+  });
+
+  it('sums gross income in the footer', () => {
+    flushDetails();
+    fixture.detectChanges();
+    const totals = Array.from(fixture.nativeElement.querySelectorAll('tfoot td') as NodeListOf<HTMLElement>).map(el => el.textContent?.trim());
+    expect(totals.slice(3, 9)).toEqual(['₹1,100', '₹400', '₹50', '₹30', '₹1,600', '₹20']);
+  });
+
+  it('shows zero for missing income types and zero income', () => {
+    httpMock.match(r => /^\/api\/admin\/cycles\/[^/]+$/.test(r.url)).forEach(req => req.flush({
+      incomeTypeTotals: [], totalGross: 0, totalNet: 0, totalBusiness: 0, tripExpense: 0
+    }));
+    const row = fixture.componentInstance.historyRows[0];
+    for (const key of ['DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'ROYALTY', 'REWARD', 'totalGross']) {
+      expect(row[key]).toBe('₹0');
+    }
+    expect(row['commissionPct']).toBe('—');
+  });
+
+  it('leaves income blank if a detail load fails while retaining successful rows', () => {
+    httpMock.expectOne('/api/admin/cycles/c1').flush({}, { status: 500, statusText: 'Error' });
+    flushDetails();
+    expect(fixture.componentInstance.historyRows[0]['totalGross']).toBe('');
+    expect(fixture.componentInstance.historyRows[1]['totalGross']).toBe('₹800');
+  });
+
+  it('omits comparisons without previous income and supports zero current income', () => {
+    const stats = fixture.componentInstance.currentCycleStats!;
+    fixture.componentInstance.currentCycleStats = { ...stats, totalGrossIncome: 0 };
+    expect(fixture.componentInstance.incomeDelta).toBe(-100);
+    fixture.componentInstance.currentCycleStats = { ...stats, previousCycleTotalGrossIncome: 0 };
+    expect(fixture.componentInstance.incomeDelta).toBeNull();
+    fixture.componentInstance.currentCycleStats = null;
+    expect(fixture.componentInstance.incomeDelta).toBeNull();
   });
 
   it('loads the first page of cycle history on init', () => {
@@ -104,7 +149,9 @@ describe('CycleManagementComponent', () => {
   it('loads and shows the current cycle\'s income stats relocated from the dashboard', () => {
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.currentCycleStats?.totalIncome).toBe(1500);
+    expect(fixture.componentInstance.incomeDelta).toBe(50);
+    const values = Array.from(fixture.nativeElement.querySelectorAll('.cycle-metric__value') as NodeListOf<HTMLElement>).map(el => el.textContent?.trim());
+    expect(values.slice(0, 3)).toEqual(['₹1,800', '₹1,200', '₹600']);
     const stats: HTMLElement = fixture.nativeElement.querySelector('.cycle-management__stats');
     expect(stats).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.cycle-progress__label').textContent).toMatch(/^\s*\d+/); // days elapsed

@@ -4,6 +4,7 @@ export type CycleIncomeType = 'DIRECT' | 'MATCHING' | 'SPONSOR_MATCHING' | 'ROYA
 
 export interface CycleIncomeTypeTotal {
   incomeType: CycleIncomeType;
+  totalGross: number;
   totalNet: number;
 }
 

@@ -119,7 +119,8 @@ public class CycleService {
 
         List<CycleIncomeTypeTotal> incomeTypeTotals = BREAKDOWN_INCOME_TYPES.stream()
             .map(type -> new CycleIncomeTypeTotal(
-                type, ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), type)))
+                type, ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), type),
+                ledgerEntryRepository.sumGrossAmount(null, type, cycle.getId(), null, null, null)))
             .toList();
 
         BigDecimal totalNet = ledgerEntryRepository.sumNetAmountByCycle(cycle.getId());

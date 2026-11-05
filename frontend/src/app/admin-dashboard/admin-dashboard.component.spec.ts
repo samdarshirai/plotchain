@@ -26,6 +26,7 @@ describe('AdminDashboardComponent', () => {
       salesThisCycle: 12,
       revenueThisCycle: 2400000,
       previousCycleTotalIncome: 400000,
+      directGrossIncome: 1200, matchingGrossIncome: 600, totalGrossIncome: 1800, previousCycleTotalGrossIncome: 1400,
       incomeTrend: [380000, 400000, 482600]
     },
     activePlots: 21,
