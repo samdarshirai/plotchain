@@ -2492,38 +2492,12 @@
   margin: 0;
 }
 
-// The payslip-ladder table (9 nowrap columns, including a full-UUID Source Ref) is wider than
-// this card at desktop sizes and already scrolls within it via overflow-x: auto above -- but the
-// OS's default overlay scrollbar is invisible until hover/scroll, so content past the right edge
-// (Created At, and part of Source Ref) reads as silently clipped rather than "scroll for more".
-// Force a slim, always-visible scrollbar (not hidden, unlike .income-statement__tabs above --
-// this content isn't pill-shaped and DESIGN.md never calls for hiding it) so the cutoff is
-// legible as scrollable. This is the M6 QA finding's actual current cause (verified against a
-// live render at 1512px: the table already stays contained inside the card -- overflow-x: auto
-// correctly wins over %admin-screen-card's overflow: hidden for the x-axis -- so the page itself
-// never overflows; what's missing is purely the discoverability affordance).
-// No card chrome (border/shadow/padding): the table sits directly on the page and takes the full
-// screen width on every /income-statement tab.
+// No card chrome padding: the table sits directly on the page at full width. It never scrolls
+// sideways -- table-fit.ts stacks it into cards when its columns don't fit (see CLAUDE.md).
 .income-statement__table {
   width: 100%;
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-subtle) transparent;
-
-  &::-webkit-scrollbar {
-    height: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: var(--border-subtle);
-    border-radius: 999px;
-  }
 }
 
 .income-statement .editable-table {
@@ -2535,10 +2509,6 @@
 // mid-word breaks. Period wraps to two dates at most, never one word per line.
 .income-statement .editable-table th {
   overflow-wrap: normal;
-}
-
-.income-statement .editable-table td[data-label]:first-child {
-  min-width: 7.5rem !important;
 }
 
 .income-statement .editable-table thead th {
@@ -2607,17 +2577,22 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
-  background: #ede6d6;
+  background: var(--surface-raised);
+}
+
+.income-statement .editable-table__badge--warning {
+  color: var(--status-warning-text);
+  background: color-mix(in srgb, var(--status-warning) 14%, var(--surface-card));
 }
 
 .income-statement .editable-table__badge--success {
   color: var(--status-success);
-  background: #e3ebdd;
+  background: color-mix(in srgb, var(--status-success) 14%, var(--surface-card));
 }
 
 .income-statement .editable-table__badge--danger {
   color: var(--status-danger);
-  background: #f4e1de;
+  background: color-mix(in srgb, var(--status-danger) 14%, var(--surface-card));
 }
 
 // Belt-and-suspenders for the empty-state row: it's a single colspan="6" cell, but it's still
@@ -2828,6 +2803,10 @@
 }
 
 @media (max-width: 768px) {
+  .income-statement {
+    padding: 1rem;
+  }
+
   .income-statement__filters {
     flex-direction: column;
     align-items: stretch;
