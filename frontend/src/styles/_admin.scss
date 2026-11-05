@@ -1398,6 +1398,25 @@
   white-space: nowrap;
 }
 
+// Keep the action column fitted to its button and reserve space for Trip Expense.
+@media (min-width: 769px) {
+  .cycle-management .editable-table {
+    th:last-child, td:last-child {
+      width: 1%;
+      padding-inline: 0.75rem;
+    }
+
+    th:nth-child(10), td:nth-child(10) {
+      min-width: 160px;
+    }
+  }
+}
+
+.cycle-management__income-note {
+  color: var(--text-muted);
+  margin: 0;
+}
+
 .cycle-management .editable-table thead th {
   @extend %admin-screen-table-head;
 }
@@ -1432,8 +1451,7 @@
   @extend %admin-screen-pagination-secondary-button;
 }
 
-// Action column now holds two buttons per CLOSED row (View Detail, Credit Wallets) --
-// a plain flex/gap wrapper, no new tokens.
+// Keep the Credit Wallets action aligned within its cell.
 .cycle-management__row-actions {
   display: flex;
   align-items: center;
@@ -6483,4 +6501,58 @@ button.tree-explorer__vacant-card {
   .admin-recent-sales-table th:first-child {
     background: var(--ink);
   }
+}
+
+// <app-date-range> inside a filter bar: drop its own padded box so From/To become flex items of the
+// bar (same row, gap, width and label type as the selects). Selectors lead with the bar class plus
+// the element so they out-rank the component's own encapsulated styles.
+%filter-bar-date-range {
+  app-date-range,
+  app-date-range .date-range,
+  app-date-range app-field-error {
+    display: contents;
+  }
+
+  app-date-range .date-range {
+    padding: 0;
+    background: none;
+  }
+
+  app-date-range .date-range .date-range__field {
+    flex: 1 1 var(--filter-field-min);
+    min-width: var(--filter-field-min);
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: var(--filter-label-weight);
+    letter-spacing: var(--filter-label-tracking);
+  }
+
+  // Extra .date-range in the chain beats the component's encapsulated input rule; sizing copies the selects.
+  app-date-range .date-range .date-range__field input {
+    min-height: 0;
+    padding: 10px 14px;
+    border-radius: 0;
+    font-size: 0.6875rem;
+  }
+
+  @media (max-width: 767px) {
+    app-date-range .date-range .date-range__field {
+      flex: none;
+      min-width: 0;
+    }
+  }
+}
+
+.ledger-register__filters {
+  --filter-field-min: 200px;
+  --filter-label-weight: 600;
+  --filter-label-tracking: 0.06em;
+  @extend %filter-bar-date-range;
+}
+
+.income-statement__filters {
+  --filter-field-min: 220px;
+  --filter-label-weight: 500;
+  --filter-label-tracking: 0.04em;
+  @extend %filter-bar-date-range;
 }

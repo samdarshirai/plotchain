@@ -205,10 +205,10 @@ class LedgerServiceTest {
         when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(entry), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(cycleId))).thenReturn(List.of(cycle));
-        when(ledgerEntryRepository.sumGrossAmount(eq(associateId), isNull(), isNull(), isNull()))
+        when(ledgerEntryRepository.sumGrossAmount(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull()))
             .thenReturn(new BigDecimal("250.00"));
 
-        AssociateLedgerPageResponse response = service.myList(associateId, null, null, null, 0, 20);
+        AssociateLedgerPageResponse response = service.myList(associateId, null, null, null, null, null, 0, 20);
 
         assertThat(response.totalElements()).isEqualTo(1);
         assertThat(response.totalGrossAmount()).isEqualByComparingTo("250.00");
@@ -244,7 +244,7 @@ class LedgerServiceTest {
         when(associateRepository.findAllById(List.of(sponseeId)))
             .thenReturn(List.of(newAssociate(sponseeId, "PC200", "Sponsee")));
 
-        AssociateLedgerEntryResponse row = service.myList(associateId, null, null, null, 0, 20).entries().get(0);
+        AssociateLedgerEntryResponse row = service.myList(associateId, null, null, null, null, null, 0, 20).entries().get(0);
 
         assertThat(row.sponseeUserId()).isEqualTo("PC200");
         assertThat(row.sponseeMatchingAmount()).isEqualByComparingTo("100.00");
@@ -269,7 +269,7 @@ class LedgerServiceTest {
         when(associateRepository.findAllById(List.of(sellerId)))
             .thenReturn(List.of(newAssociate(sellerId, "PC1002", "A")));
 
-        AssociateLedgerEntryResponse row = service.myList(sponsorId, null, null, null, 0, 20).entries().get(0);
+        AssociateLedgerEntryResponse row = service.myList(sponsorId, null, null, null, null, null, 0, 20).entries().get(0);
 
         assertThat(row.sponseeUserId()).isEqualTo("PC1002");
         assertThat(row.sponseeName()).isEqualTo("A");
@@ -288,7 +288,7 @@ class LedgerServiceTest {
             .thenReturn(List.of(newCycle(cycleId, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
         when(saleRepository.findAllById(List.of(saleId))).thenReturn(List.of());
 
-        AssociateLedgerEntryResponse row = service.myList(sponsorId, null, null, null, 0, 20).entries().get(0);
+        AssociateLedgerEntryResponse row = service.myList(sponsorId, null, null, null, null, null, 0, 20).entries().get(0);
 
         assertThat(row.sponseeUserId()).isNull();
         assertThat(row.sponseeName()).isNull();
@@ -315,7 +315,7 @@ class LedgerServiceTest {
         when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId))
             .thenReturn(List.of(lv1, lv2));
 
-        var b = service.myList(associateId, null, null, null, 0, 20).entries().get(0).legBreakdown();
+        var b = service.myList(associateId, null, null, null, null, null, 0, 20).entries().get(0).legBreakdown();
 
         assertThat(b.bfLeft()).isEqualByComparingTo("1000000");
         assertThat(b.bfRight()).isEqualByComparingTo("0");
@@ -343,7 +343,7 @@ class LedgerServiceTest {
         when(legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(associateId))
             .thenReturn(List.of(lv1));
 
-        var b = service.myList(associateId, null, null, null, 0, 20).entries().get(0).legBreakdown();
+        var b = service.myList(associateId, null, null, null, null, null, 0, 20).entries().get(0).legBreakdown();
 
         assertThat(b.newLeft()).isEqualByComparingTo("2000000");
         assertThat(b.newRight()).isEqualByComparingTo("1000000");
@@ -371,7 +371,7 @@ class LedgerServiceTest {
         when(saleRepository.sumOpenCycleLegBusiness(associateId, "L")).thenReturn(new BigDecimal("2160000"));
         when(saleRepository.sumOpenCycleLegBusiness(associateId, "R")).thenReturn(new BigDecimal("1240000"));
 
-        var b = service.myList(associateId, null, null, null, 0, 20).entries().get(0).legBreakdown();
+        var b = service.myList(associateId, null, null, null, null, null, 0, 20).entries().get(0).legBreakdown();
 
         assertThat(b.bfLeft()).isEqualByComparingTo("1000000");
         assertThat(b.bfRight()).isEqualByComparingTo("0");
@@ -396,7 +396,7 @@ class LedgerServiceTest {
             isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
-        service.myList(associateId, IncomeType.MATCHING, cycleId, LedgerEntryStatus.PENDING, 0, 20);
+        service.myList(associateId, IncomeType.MATCHING, cycleId, LedgerEntryStatus.PENDING, null, null, 0, 20);
 
         verify(ledgerEntryRepository).search(
             eq(associateId), eq(IncomeType.MATCHING), eq(cycleId), eq(LedgerEntryStatus.PENDING),
@@ -414,7 +414,7 @@ class LedgerServiceTest {
             .thenReturn(new PageImpl<>(List.of(entry), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(cycleId))).thenReturn(List.of());
 
-        AssociateLedgerEntryResponse row = service.myList(associateId, null, null, null, 0, 20).entries().get(0);
+        AssociateLedgerEntryResponse row = service.myList(associateId, null, null, null, null, null, 0, 20).entries().get(0);
 
         assertThat(row.cyclePeriodStart()).isNull();
         assertThat(row.cyclePeriodEnd()).isNull();
@@ -427,7 +427,7 @@ class LedgerServiceTest {
         when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
-        AssociateLedgerPageResponse response = service.myList(associateId, null, null, null, 0, 20);
+        AssociateLedgerPageResponse response = service.myList(associateId, null, null, null, null, null, 0, 20);
 
         assertThat(response.entries()).isEmpty();
         assertThat(response.totalElements()).isZero();
@@ -543,7 +543,7 @@ class LedgerServiceTest {
         assertThat(tiers.get(1).status()).isNotNull();
         assertThat(tiers.get(1).requiredLeftBusiness()).isZero();
         assertThat(tiers.get(2).status()).isNull();
-        assertThat(service.myRewardsAchieved(me)).extracting(AssociateRewardAchievedRow::designation)
+        assertThat(service.myRewardsAchieved(me, null, null)).extracting(AssociateRewardAchievedRow::designation)
             .containsExactly("Sales Executive", "Sr. Sales Executive");
     }
 
@@ -581,7 +581,7 @@ class LedgerServiceTest {
         paid.setFulfilmentRemark("Watch couriered");
         when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(paid));
 
-        List<AssociateRewardAchievedRow> rows = service.myRewardsAchieved(me);
+        List<AssociateRewardAchievedRow> rows = service.myRewardsAchieved(me, null, null);
 
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).paid()).isTrue();

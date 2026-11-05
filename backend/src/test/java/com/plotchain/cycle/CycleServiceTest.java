@@ -150,7 +150,7 @@ class CycleServiceTest {
         when(ledgerEntryRepository.sumNetAmountByCycleAndType(cycle.getId(), IncomeType.REWARD))
             .thenReturn(BigDecimal.valueOf(2));
         when(ledgerEntryRepository.sumNetAmountByCycle(cycle.getId())).thenReturn(BigDecimal.valueOf(170));
-        when(ledgerEntryRepository.sumGrossAmount(null, null, cycle.getId(), null)).thenReturn(BigDecimal.valueOf(200));
+        when(ledgerEntryRepository.sumGrossAmount(null, null, cycle.getId(), null, null, null)).thenReturn(BigDecimal.valueOf(200));
         when(saleRepository.sumAmountByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(BigDecimal.valueOf(5000));
         when(expenseRepository.sumAmountByTypeNameBetween("Trip", cycle.getPeriodStart(), cycle.getPeriodEnd()))
             .thenReturn(BigDecimal.valueOf(40));

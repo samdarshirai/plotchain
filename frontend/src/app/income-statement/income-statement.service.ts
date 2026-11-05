@@ -44,7 +44,7 @@ export class IncomeStatementService {
     return this.http.get<RewardBusiness>('/api/associates/me/reward-business');
   }
 
-  rewardsAchieved():Observable<RewardAchievedRow[]> {
-    return this.http.get<RewardAchievedRow[]>('/api/associates/me/rewards-achieved');
+  rewardsAchieved(from = '', to = ''): Observable<RewardAchievedRow[]> {
+    return this.http.get<RewardAchievedRow[]>('/api/associates/me/rewards-achieved', { params: dateParams(from, to) });
   }
 }

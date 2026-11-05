@@ -123,6 +123,7 @@ const DATE_FORMAT = 'dd MMM yyyy';
             </select>
           </label>
         </div>
+        <app-date-range [from]="dateFrom" [to]="dateTo" (rangeChange)="onDateRangeChange($event)"></app-date-range>
       </div>
 
       <app-inline-banner *ngIf="loadError" tone="danger" class="income-statement__load-error">
@@ -155,6 +156,7 @@ const DATE_FORMAT = 'dd MMM yyyy';
         </div>
 
         <h2 class="income-statement__reward-heading">{{ 'incomeStatement.achievedRewardsTitle' | translate }}</h2>
+        <app-date-range [from]="dateFrom" [to]="dateTo" (rangeChange)="onDateRangeChange($event)"></app-date-range>
         <div class="income-statement__table">
           <app-editable-table
             [readOnly]="true"
@@ -471,7 +473,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       },
       error: () => (this.loadError = true)
     });
-    this.incomeStatementService.rewardsAchieved().subscribe({
+    this.incomeStatementService.rewardsAchieved(this.dateFrom, this.dateTo).subscribe({
       next: rows => {
         this.achievedRows = rows.map(r => ({
           date: this.formatDate(r.achievedDate, DATE_FORMAT) ?? r.achievedDate,
@@ -584,6 +586,8 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     if (this.status) {
       filters.status = this.status as AssociateLedgerFilters['status'];
     }
+    if (this.dateFrom) filters.from = this.dateFrom;
+    if (this.dateTo) filters.to = this.dateTo;
     this.incomeStatementService.list(filters, 0, PAGE_SIZE).pipe(
       expand(res => (res.entries.length && (res.page + 1) * res.size < res.totalElements
         ? this.incomeStatementService.list(filters, res.page + 1, PAGE_SIZE) : EMPTY)),

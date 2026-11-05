@@ -13,4 +13,6 @@ export interface AssociateLedgerFilters {
   incomeType?: IncomeType;
   cycleId?: string;
   status?: LedgerEntryStatus;
+  from?: string;
+  to?: string;
 }

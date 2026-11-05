@@ -135,12 +135,16 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         AND (:incomeType IS NULL OR l.incomeType = :incomeType)
         AND (:cycleId IS NULL OR l.cycleId = :cycleId)
         AND (:status IS NULL OR l.status = :status)
+        AND (CAST(:from AS timestamp) IS NULL OR l.createdAt >= :from)
+        AND (CAST(:toExclusive AS timestamp) IS NULL OR l.createdAt < :toExclusive)
         """)
     BigDecimal sumGrossAmount(
         @Param("associateId") UUID associateId,
         @Param("incomeType") IncomeType incomeType,
         @Param("cycleId") UUID cycleId,
-        @Param("status") LedgerEntryStatus status);
+        @Param("status") LedgerEntryStatus status,
+        @Param("from") Instant from,
+        @Param("toExclusive") Instant toExclusive);
 
     // Admin Summary tab: gross income per type, plus gross/TDS/admin/net totals, one row per associate x cycle. Unpaged on purpose
     // (ponytail: rows = associates x cycles; LedgerService pages in memory -- push paging into SQL

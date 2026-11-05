@@ -123,7 +123,7 @@ public class CycleService {
             .toList();
 
         BigDecimal totalNet = ledgerEntryRepository.sumNetAmountByCycle(cycle.getId());
-        BigDecimal totalGross = ledgerEntryRepository.sumGrossAmount(null, null, cycle.getId(), null);
+        BigDecimal totalGross = ledgerEntryRepository.sumGrossAmount(null, null, cycle.getId(), null, null, null);
         BigDecimal totalBusiness = saleRepository.sumAmountByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED);
         BigDecimal tripExpense = expenseRepository.sumAmountByTypeNameBetween(
             "Trip", cycle.getPeriodStart(),

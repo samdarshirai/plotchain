@@ -67,7 +67,7 @@ class AssociateLedgerControllerTest {
             LedgerEntryStatus.PAID, UUID.randomUUID(), Instant.now(), null, null, null, null, null);
         AssociateLedgerPageResponse page = new AssociateLedgerPageResponse(List.of(row), 0, 20, 1, java.math.BigDecimal.TEN);
         when(ledgerService.myList(
-            eq(associateId), eq(IncomeType.DIRECT), eq(cycleId), eq(LedgerEntryStatus.PAID), eq(0), eq(20)))
+            eq(associateId), eq(IncomeType.DIRECT), eq(cycleId), eq(LedgerEntryStatus.PAID), isNull(), isNull(), eq(0), eq(20)))
             .thenReturn(page);
 
         mockMvc.perform(get("/api/associates/me/ledger")
@@ -125,7 +125,7 @@ class AssociateLedgerControllerTest {
     @Test
     void getMyLedgerReturns200WithAnEmptyPageWhenUnfiltered() throws Exception {
         UUID associateId = UUID.randomUUID();
-        when(ledgerService.myList(eq(associateId), isNull(), isNull(), isNull(), eq(0), eq(20)))
+        when(ledgerService.myList(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(20)))
             .thenReturn(new AssociateLedgerPageResponse(List.of(), 0, 20, 0, java.math.BigDecimal.ZERO));
 
         mockMvc.perform(get("/api/associates/me/ledger")
@@ -142,7 +142,7 @@ class AssociateLedgerControllerTest {
     void getMyLedgerIgnoresAnAssociateIdQueryParameterIfOnePassed() throws Exception {
         UUID callerId = UUID.randomUUID();
         UUID otherAssociateId = UUID.randomUUID();
-        when(ledgerService.myList(eq(callerId), isNull(), isNull(), isNull(), eq(0), eq(20)))
+        when(ledgerService.myList(eq(callerId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(20)))
             .thenReturn(new AssociateLedgerPageResponse(List.of(), 0, 20, 0, java.math.BigDecimal.ZERO));
 
         mockMvc.perform(get("/api/associates/me/ledger")
@@ -150,33 +150,33 @@ class AssociateLedgerControllerTest {
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, callerId)))
             .andExpect(status().isOk());
 
-        verify(ledgerService).myList(eq(callerId), isNull(), isNull(), isNull(), eq(0), eq(20));
+        verify(ledgerService).myList(eq(callerId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(20));
     }
 
     @Test
     void getMyLedgerClampsAnOversizedPageSizeToTheServerSideMaximum() throws Exception {
         UUID associateId = UUID.randomUUID();
-        when(ledgerService.myList(eq(associateId), isNull(), isNull(), isNull(), eq(0), eq(100)))
+        when(ledgerService.myList(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(100)))
             .thenReturn(new AssociateLedgerPageResponse(List.of(), 0, 100, 0, java.math.BigDecimal.ZERO));
 
         mockMvc.perform(get("/api/associates/me/ledger").param("size", "999999")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
             .andExpect(status().isOk());
 
-        verify(ledgerService).myList(eq(associateId), isNull(), isNull(), isNull(), eq(0), eq(100));
+        verify(ledgerService).myList(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(100));
     }
 
     @Test
     void getMyLedgerClampsANegativePageToZeroInsteadOfThrowing() throws Exception {
         UUID associateId = UUID.randomUUID();
-        when(ledgerService.myList(eq(associateId), isNull(), isNull(), isNull(), eq(0), eq(20)))
+        when(ledgerService.myList(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(20)))
             .thenReturn(new AssociateLedgerPageResponse(List.of(), 0, 20, 0, java.math.BigDecimal.ZERO));
 
         mockMvc.perform(get("/api/associates/me/ledger").param("page", "-5")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
             .andExpect(status().isOk());
 
-        verify(ledgerService).myList(eq(associateId), isNull(), isNull(), isNull(), eq(0), eq(20));
+        verify(ledgerService).myList(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(20));
     }
 
     @Test

@@ -39,12 +39,14 @@ public class AssociateLedgerController {
             @RequestParam(required = false) IncomeType incomeType,
             @RequestParam(required = false) UUID cycleId,
             @RequestParam(required = false) LedgerEntryStatus status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
-        return ledgerService.myList(associateId, incomeType, cycleId, status, page, size);
+        return ledgerService.myList(associateId, incomeType, cycleId, status, from, to, page, size);
     }
 
     @GetMapping("/api/associates/me/income-summary")
@@ -75,7 +77,10 @@ public class AssociateLedgerController {
     }
 
     @GetMapping("/api/associates/me/rewards-achieved")
-    public List<AssociateRewardAchievedRow> getMyRewardsAchieved(@AuthenticationPrincipal UUID associateId) {
-        return ledgerService.myRewardsAchieved(associateId);
+    public List<AssociateRewardAchievedRow> getMyRewardsAchieved(
+            @AuthenticationPrincipal UUID associateId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ledgerService.myRewardsAchieved(associateId, from, to);
     }
 }

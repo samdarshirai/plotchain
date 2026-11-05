@@ -160,9 +160,10 @@ public class LedgerService {
     // cyclesById() batch-load helper as adminList() above; no associate lookup is needed since
     // every row belongs to the caller.
     public AssociateLedgerPageResponse myList(
-            UUID associateId, IncomeType incomeType, UUID cycleId, LedgerEntryStatus status, int page, int size) {
+            UUID associateId, IncomeType incomeType, UUID cycleId, LedgerEntryStatus status,
+            LocalDate from, LocalDate to, int page, int size) {
         Page<LedgerEntry> result = ledgerEntryRepository.search(
-            associateId, incomeType, cycleId, status, null, null, PageRequest.of(page, size));
+            associateId, incomeType, cycleId, status, startOf(from), endExclusive(to), PageRequest.of(page, size));
 
         List<LedgerEntry> content = result.getContent();
         Map<UUID, Cycle> cyclesById = cyclesById(content);
@@ -190,7 +191,8 @@ public class LedgerService {
                     sale == null ? null : sale.getAmount());
             })
             .toList();
-        BigDecimal totalGross = ledgerEntryRepository.sumGrossAmount(associateId, incomeType, cycleId, status);
+        BigDecimal totalGross = ledgerEntryRepository.sumGrossAmount(
+            associateId, incomeType, cycleId, status, startOf(from), endExclusive(to));
         return new AssociateLedgerPageResponse(entries, page, size, result.getTotalElements(), totalGross);
     }
 
@@ -400,10 +402,16 @@ public class LedgerService {
     }
 
     // Achieved rewards in tier order, with admin fulfilment (pay status/date/remark).
-    public List<AssociateRewardAchievedRow> myRewardsAchieved(UUID associateId) {
+    public List<AssociateRewardAchievedRow> myRewardsAchieved(UUID associateId, LocalDate from, LocalDate to) {
         Map<Integer, LedgerEntry> byLevel = rewardEntriesByTierLevel(associateId);
+        Instant start = startOf(from);
+        Instant end = endExclusive(to);
         return compensationPlanService.currentRewardTiers().stream()
             .filter(t -> byLevel.containsKey(t.getTierLevel()))
+            .filter(t -> {
+                Instant at = byLevel.get(t.getTierLevel()).getCreatedAt();
+                return (start == null || !at.isBefore(start)) && (end == null || at.isBefore(end));
+            })
             .map(t -> {
                 LedgerEntry e = byLevel.get(t.getTierLevel());
                 return new AssociateRewardAchievedRow(

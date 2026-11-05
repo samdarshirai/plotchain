@@ -240,11 +240,11 @@ class LedgerEntryRepositoryTest {
         ledgerEntryRepository.saveAndFlush(
             newEntry(associateB.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID()));
 
-        assertThat(ledgerEntryRepository.sumGrossAmount(associateA.getId(), null, null, null)).isEqualByComparingTo("200.00");
-        assertThat(ledgerEntryRepository.sumGrossAmount(associateA.getId(), IncomeType.DIRECT, null, null)).isEqualByComparingTo("100.00");
-        assertThat(ledgerEntryRepository.sumGrossAmount(associateA.getId(), null, null, LedgerEntryStatus.PAID)).isEqualByComparingTo("100.00");
-        assertThat(ledgerEntryRepository.sumGrossAmount(null, null, null, null)).isEqualByComparingTo("300.00");
-        assertThat(ledgerEntryRepository.sumGrossAmount(associateA.getId(), IncomeType.ROYALTY, null, null)).isEqualByComparingTo("0");
+        assertThat(ledgerEntryRepository.sumGrossAmount(associateA.getId(), null, null, null, null, null)).isEqualByComparingTo("200.00");
+        assertThat(ledgerEntryRepository.sumGrossAmount(associateA.getId(), IncomeType.DIRECT, null, null, null, null)).isEqualByComparingTo("100.00");
+        assertThat(ledgerEntryRepository.sumGrossAmount(associateA.getId(), null, null, LedgerEntryStatus.PAID, null, null)).isEqualByComparingTo("100.00");
+        assertThat(ledgerEntryRepository.sumGrossAmount(null, null, null, null, null, null)).isEqualByComparingTo("300.00");
+        assertThat(ledgerEntryRepository.sumGrossAmount(associateA.getId(), IncomeType.ROYALTY, null, null, null, null)).isEqualByComparingTo("0");
     }
 
     @Test
@@ -386,6 +386,8 @@ class LedgerEntryRepositoryTest {
             .extracting(LedgerEntry::getId).containsExactly(e2.getId());
         assertThat(ledgerEntryRepository.search(null, IncomeType.DIRECT, null, null, from, toEx, pr).getContent()).isEmpty();
 
+        assertThat(ledgerEntryRepository.sumGrossAmount(a.getId(), null, null, null, from, toEx)).isEqualByComparingTo("100.00");
+        assertThat(ledgerEntryRepository.sumGrossAmount(a.getId(), null, null, null, null, null)).isEqualByComparingTo("300.00");
         assertThat(ledgerEntryRepository.summarise(a.getId(), null, from, toEx).get(0).getEntryCount()).isEqualTo(1);
         assertThat(ledgerEntryRepository.summarise(a.getId(), null, null, null).get(0).getEntryCount()).isEqualTo(3);
         assertThat(ledgerEntryRepository.summariseDownline(List.of(a.getId()), from, toEx).get(0).getEntryCount()).isEqualTo(1);

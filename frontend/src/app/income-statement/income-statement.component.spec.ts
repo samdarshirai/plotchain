@@ -358,6 +358,29 @@ describe('IncomeStatementComponent', () => {
     req.flush({ entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 });
   });
 
+  it('per-type tab reloads with from/to, alone or combined with status', () => {
+    flushInitialRequests();
+    goToDirect();
+    fixture.componentInstance.onDateRangeChange({ from: '2026-10-01', to: '' });
+    httpMock.expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('from') === '2026-10-01' && !r.params.has('to'))
+      .flush({ entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 });
+    fixture.componentInstance.onStatusChange('PAID');
+    httpMock.expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('from') === '2026-10-01' && r.params.get('status') === 'PAID')
+      .flush({ entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 });
+  });
+
+  it('Reward tab passes from/to to the achieved-rewards request', () => {
+    flushInitialRequests();
+    routeData$.next({ incomeType: 'REWARD' });
+    httpMock.expectOne('/api/associates/me/reward-tiers').flush([]);
+    httpMock.expectOne('/api/associates/me/reward-business').flush({ totalLeft: 0, totalRight: 0, paidLeft: 0, paidRight: 0, newLeft: 0, newRight: 0 });
+    httpMock.expectOne('/api/associates/me/rewards-achieved').flush([]);
+    fixture.componentInstance.onDateRangeChange({ from: '', to: '2026-10-31' });
+    httpMock.expectOne('/api/associates/me/reward-tiers').flush([]);
+    httpMock.expectOne('/api/associates/me/reward-business').flush({ totalLeft: 0, totalRight: 0, paidLeft: 0, paidRight: 0, newLeft: 0, newRight: 0 });
+    httpMock.expectOne(r => r.url === '/api/associates/me/rewards-achieved' && r.params.get('to') === '2026-10-31' && !r.params.has('from')).flush([]);
+  });
+
   it('combines tab, cycle, and status filters into one request', () => {
     flushInitialRequests();
     routeData$.next({ incomeType: 'MATCHING' });
