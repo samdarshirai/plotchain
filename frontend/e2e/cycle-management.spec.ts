@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-for (const width of [390, 1024, 1440]) {
+for (const width of [390, 1024, 1440, 1920]) {
   test(`cycle gross income and column layout at ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
     await page.addInitScript(() => {
@@ -43,14 +43,16 @@ for (const width of [390, 1024, 1440]) {
     await expect(button).toBeVisible();
     if (width > 768) {
       await expect(table).not.toHaveClass(/table--stacked/);
-      const trip = await table.locator('thead th').nth(9).boundingBox();
-      expect(trip!.width).toBeGreaterThanOrEqual(160);
-      const action = await table.locator('tbody tr:first-child td:last-child').boundingBox();
-      const control = await button.boundingBox();
-      expect(action!.width - control!.width).toBeLessThanOrEqual(26);
       const card = page.locator('.cycle-management .card');
-      expect(await card.evaluate(el => el.scrollWidth > el.clientWidth)).toBeTruthy();
-      await button.scrollIntoViewIfNeeded();
+      expect(await card.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+      const aligned = await table.evaluate(el => {
+        const headers = Array.from(el.querySelectorAll('thead th'));
+        const cells = Array.from(el.querySelectorAll('tbody tr:first-child td'));
+        return cells.every((cell, i) => Math.abs(cell.getBoundingClientRect().left - headers[i].getBoundingClientRect().left) < 1);
+      });
+      expect(aligned).toBe(true);
+      const bounds = await table.locator('tbody tr:first-child td').evaluateAll(cells => cells.every(cell => cell.scrollWidth <= cell.clientWidth + 1));
+      expect(bounds).toBe(true);
       await expect(button).toBeInViewport();
       const clipped = await button.evaluate(el => el.scrollWidth > el.clientWidth);
       expect(clipped).toBe(false);

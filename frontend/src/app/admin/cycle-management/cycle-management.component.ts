@@ -165,7 +165,6 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
 
       <div class="card">
         <app-editable-table
-          data-table-scroll="(min-width: 769px)"
           [readOnly]="true"
           [columns]="historyColumns"
           [rows]="historyRows"

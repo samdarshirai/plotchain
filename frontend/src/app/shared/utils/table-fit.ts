@@ -1,5 +1,4 @@
-// Default rule: tables stack when they overflow. Screens can opt into scrolling with
-// data-table-scroll="<media query>" on a table or ancestor. Any <table> wider than its container is switched
+// Project rule: no table ever scrolls sideways. Any <table> wider than its container is switched
 // to stacked cards (`table--stacked`, see _tables.scss): one card per row, each cell labelled
 // with its column header. Runs app-wide, so new tables get this for free.
 // ponytail: re-measures every table on any DOM change; scope the MutationObserver if it ever shows in a profile.
@@ -52,10 +51,6 @@ export function fitTable(table: HTMLTableElement): void {
     return;
   }
   table.classList.remove(STACKED_CLASS);
-  const scrollQuery = table.closest('[data-table-scroll]')?.getAttribute('data-table-scroll');
-  if (scrollQuery && matchMedia(scrollQuery).matches) {
-    return;
-  }
   if (table.offsetWidth > parent.clientWidth + 1 || parent.scrollWidth > parent.clientWidth + 1) {
     labelCells(table);
     table.classList.add(STACKED_CLASS);

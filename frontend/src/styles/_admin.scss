@@ -1385,37 +1385,58 @@
 
 .cycle-management .card {
   @extend %admin-screen-card;
-  overflow-x: auto; // 14 columns: scroll inside the card instead of overflowing the page
+  min-width: 0;
 }
 
 .cycle-management .editable-table {
   margin: 0;
-  min-width: 1400px;
+  width: 100%;
+  min-width: 0;
 }
 
-.cycle-management .editable-table th,
-.cycle-management .editable-table td {
-  white-space: nowrap;
-}
-
-// Keep the action column fitted to its button and reserve space for Trip Expense.
+// Keep every column visible on desktop; long amounts and action text wrap in place.
 @media (min-width: 769px) {
   .cycle-management .editable-table {
-    // Override the shared desktop table compaction for this scrollable report.
-    min-width: 1400px !important;
+    table-layout: fixed;
 
-    th, td {
-      white-space: nowrap !important;
+    th .th-icon {
+      width: 1rem;
+      height: 1rem;
+      overflow: hidden;
     }
 
-    th:last-child, td:last-child {
-      width: 1%;
-      padding-inline: 0.75rem !important;
+    th:nth-child(1) { width: 10%; }
+    th:nth-child(2) { width: 7%; }
+    th:nth-child(3), th:nth-child(4) { width: 8%; }
+    th:nth-child(5), th:nth-child(6) { width: 7%; }
+    th:nth-child(7) { width: 6%; }
+    th:nth-child(8) { width: 8%; }
+    th:nth-child(9) { width: 6%; }
+    th:nth-child(10) { width: 8%; }
+    th:nth-child(11) { width: 9%; }
+    th:nth-child(12) { width: 6%; }
+    th:nth-child(13) { width: 10%; }
+
+    td {
+      overflow-wrap: anywhere;
+      font-size: 0.75rem;
     }
 
-    th:nth-child(10), td:nth-child(10) {
-      min-width: 160px !important;
+    .editable-table__badge {
+      max-width: 100%;
+      white-space: normal !important;
+      overflow-wrap: anywhere;
+      font-size: 0.625rem;
+      padding-inline: 4px;
     }
+  }
+
+  .cycle-management .cycle-management__credit-wallets-action {
+    width: 100%;
+    min-width: 0;
+    padding: 8px 4px;
+    font-size: 0.75rem;
+    white-space: normal !important;
   }
 }
 
