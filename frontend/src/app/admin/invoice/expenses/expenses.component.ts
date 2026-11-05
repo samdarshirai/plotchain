@@ -194,7 +194,7 @@ export class ExpensesComponent implements OnInit {
       { key: 'project', label: t('project'), type: 'text' },
       { key: 'associateUserId', label: t('associateId'), type: 'text' },
       { key: 'payTo', label: t('payTo'), type: 'text' },
-      { key: 'amount', label: t('amount'), type: 'text' },
+      { key: 'amount', label: t('amount'), type: 'text', sum: true },
       { key: 'mode', label: t('payMode'), type: 'text' },
       { key: 'bank', label: t('bankName'), type: 'text' },
       { key: 'txn', label: t('txnNo'), type: 'text' },

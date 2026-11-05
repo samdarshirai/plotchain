@@ -226,6 +226,22 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
                     <td *ngIf="bookMode"><button type="button" class="brand-button projects-plots__row-book" [disabled]="p.status !== 'AVAILABLE'" (click)="selectPlot(p); openAside({ kind: 'book' })">{{ 'admin.projectsPlots.bookShort' | translate }}</button></td>
                   </tr>
                 </tbody>
+                <tfoot *ngIf="tableRows.length">
+                  <tr class="editable-table__total">
+                    <td>{{ 'common.total' | translate }}</td>
+                    <td *ngIf="fullTable"></td>
+                    <td *ngIf="fullTable"></td>
+                    <td *ngIf="fullTable"></td>
+                    <td></td>
+                    <td *ngIf="!readOnly"></td>
+                    <td class="projects-plots__num" [attr.data-label]="(fullTable ? 'admin.projectsPlots.table.price' : 'admin.projectsPlots.table.total') | translate">{{ priceText(sumPlots(fullTable ? base : price)) }}</td>
+                    <td class="projects-plots__num" *ngIf="fullTable" [attr.data-label]="'admin.projectsPlots.extraPriceLabel' | translate">{{ priceText(sumPlots(extra)) }}</td>
+                    <td class="projects-plots__num" *ngIf="fullTable" [attr.data-label]="'admin.projectsPlots.table.totalPrice' | translate">{{ priceText(sumPlots(fullPrice)) }}</td>
+                    <td></td>
+                    <td *ngIf="canManage"></td>
+                    <td *ngIf="bookMode"></td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
             <ng-container *ngIf="view === 'table' && grid.length"><ng-container *ngTemplateOutlet="legendTpl"></ng-container></ng-container>
@@ -458,6 +474,15 @@ export class ProjectsPlotsComponent implements OnInit {
   }
 
   // Rate × size; falls back to the stored price until rates load.
+  // Total row sums.
+  readonly base = (p: PlotGridItem): number => this.basePrice(p);
+  readonly price = (p: PlotGridItem): number => p.price;
+  readonly extra = (p: PlotGridItem): number => p.extraPrice ?? 0;
+  readonly fullPrice = (p: PlotGridItem): number => this.basePrice(p) + (p.extraPrice ?? 0);
+  sumPlots(f: (p: PlotGridItem) => number): number {
+    return this.tableRows.reduce((acc, p) => acc + f(p), 0);
+  }
+
   basePrice(p: PlotGridItem): number {
     const r = this.rates?.[p.plotId];
     return r != null ? r * p.area : p.price;

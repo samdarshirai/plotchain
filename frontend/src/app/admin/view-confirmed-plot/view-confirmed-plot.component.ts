@@ -8,8 +8,8 @@ import { FlashMessage, PaymentPage, PaymentRow } from '../admin-bookings-emi/boo
 import { formatMoney } from '../admin-bookings-emi/bookings-emi.util';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 
-const PAGE_SIZE = 20;
 type Status = 'ENTERED' | 'PAID';
 const isoDate = (d: Date): string => {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -107,7 +107,7 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
                   <input type="checkbox" [checked]="selected.has(key(r))" [disabled]="busy || loading" (change)="toggle(r)"
                     [attr.aria-label]="('admin.viewConfirmedPlot.col.select' | translate) + ' ' + (r.associateCode || '') + ' ' + (r.plotNo || '') + ' #' + r.installmentNumber" />
                 </td>
-                <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ (page?.page ?? 0) * pageSize + i + 1 }}</td>
+                <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ i + 1 }}</td>
                 <td [attr.data-label]="'admin.viewConfirmedPlot.col.paymentDate' | translate">{{ r.paymentDate ? (r.paymentDate | date: 'd MMM y, h:mm:ss a' : '+0530') : '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.bookedOn' | translate">{{ r.bookedAt ? (r.bookedAt | date: 'd MMM y, h:mm:ss a' : '+0530') : '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ r.associateCode || '—' }}</td>
@@ -131,12 +131,31 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
                 <td class="add-plot-emi__empty-cell" [attr.colspan]="status === 'ENTERED' ? 20 : 19">{{ (status === 'ENTERED' ? 'admin.viewConfirmedPlot.emptyPending' : 'admin.viewConfirmedPlot.emptyConfirmed') | translate }}</td>
               </tr>
             </tbody>
+          <tfoot *ngIf="page?.payments?.length">
+            <tr class="editable-table__total">
+              <td *ngIf="status === 'ENTERED'"></td>
+              <td>{{ 'common.total' | translate }}</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.viewConfirmedPlot.col.amount' | translate">{{ money(sumOf('amount')) }}</td>
+              <td></td>
+              <td></td>
+            </tr>
+          </tfoot>
           </table>
-        </div>
-        <div class="add-plot-emi__pager" *ngIf="page && page.payments.length">
-          <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="busy || page.page === 0" (click)="load(page.page - 1)">{{ 'admin.addPlotEmi.previous' | translate }}</button>
-          <span>{{ 'admin.addPlotEmi.pager' | translate: { page: page.page + 1, totalPages: totalPages, count: page.totalElements } }}</span>
-          <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="busy || page.page + 1 >= totalPages" (click)="load(page.page + 1)">{{ 'admin.addPlotEmi.next' | translate }}</button>
         </div>
       </div>
     </div>
@@ -146,7 +165,6 @@ export class ViewConfirmedPlotComponent implements OnInit {
   private service = inject(BookingsEmiService);
   private projectsService = inject(ProjectsService);
 
-  readonly pageSize = PAGE_SIZE;
   money = formatMoney;
   key = keyOf;
 
@@ -165,30 +183,29 @@ export class ViewConfirmedPlotComponent implements OnInit {
   banner: { tone: 'success' | 'danger'; msg: FlashMessage } | null = null;
   private seq = 0;
 
-  get totalPages(): number { return this.page ? Math.max(1, Math.ceil(this.page.totalElements / PAGE_SIZE)) : 1; }
   get selectedRows(): PaymentRow[] { return (this.page?.payments ?? []).filter(r => this.selected.has(keyOf(r))); }
   get selectedTotal(): number { return this.selectedRows.reduce((s, r) => s + r.amount, 0); }
 
   ngOnInit(): void {
     this.projectsService.listProjects().subscribe({
-      next: p => { this.projects = p; this.projectId = p[0]?.id ?? ''; this.load(0); },
+      next: p => { this.projects = p; this.projectId = p[0]?.id ?? ''; this.load(); },
       error: () => (this.loadError = true)
     });
   }
 
-  onProject(id: string): void { this.projectId = id; this.load(0); }
+  onProject(id: string): void { this.projectId = id; this.load(); }
 
   onDate(which: 'from' | 'to', v: string): void {
     this[which] = v;
     this.rangeError = !!this.from && !!this.to && this.from > this.to;
-    if (!this.rangeError) { this.load(0); } // an inverted range keeps the last valid list
+    if (!this.rangeError) { this.load(); } // an inverted range keeps the last valid list
   }
 
   setStatus(s: Status): void {
     if (this.busy || s === this.status) { return; }
     this.status = s;
     this.banner = null;
-    this.load(0);
+    this.load();
   }
 
   toggle(r: PaymentRow): void {
@@ -212,32 +229,34 @@ export class ViewConfirmedPlotComponent implements OnInit {
         this.banner = { tone: 'success', msg: auto
           ? { key: `admin.bookingsEmi.ok.confirmed${one}Auto`, params: { count: items.length, auto } }
           : { key: `admin.bookingsEmi.ok.confirmed${one}`, params: { count: items.length } } };
-        this.load(this.page?.page ?? 0);
+        this.load();
       },
       error: err => {
         this.busy = false;
         this.banner = { tone: 'danger', msg: { key: 'admin.bookingsEmi.err.' + (err.status === 0 ? 'confirmManyNetwork' : 'confirmMany') } };
-        this.load(this.page?.page ?? 0); // stale rows are the usual cause; show the truth
+        this.load(); // stale rows are the usual cause; show the truth
       }
     });
   }
 
-  load(p = this.page?.page ?? 0): void {
+  load(): void {
     if (!this.projectId) { return; }
     const seq = ++this.seq;
     this.loading = true;
     this.loadError = false;
     this.selected.clear();
     this.asking = false;
-    this.service.payments(this.status, { from: this.from, to: this.to, projectId: this.projectId }, p, PAGE_SIZE).subscribe({
+    fetchAllPages((p, size) => this.service.payments(this.status, { from: this.from, to: this.to, projectId: this.projectId }, p, size)).subscribe({
       next: r => {
         if (seq !== this.seq) { return; }
-        // A bulk confirm can empty the last page: step back to one that still exists.
-        if (!r.payments.length && r.totalElements > 0 && p > 0) { this.load(Math.ceil(r.totalElements / PAGE_SIZE) - 1); return; }
         this.page = r;
         this.loading = false;
       },
       error: () => { if (seq === this.seq) { this.loading = false; this.loadError = true; } }
     });
+  }
+
+  sumOf(field: string): number {
+    return Math.round((this.page?.payments ?? []).reduce((acc, r) => acc + ((r as unknown as Record<string, number | null | undefined>)[field] ?? 0), 0) * 100) / 100;
   }
 }

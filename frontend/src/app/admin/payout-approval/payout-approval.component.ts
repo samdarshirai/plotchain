@@ -17,8 +17,8 @@ import { ErrorSummaryComponent } from '../../shared/components/error-summary/err
 import { FormIssue, collectIssues, errorMessage } from '../../shared/validation/validation';
 import { AdminDashboardService } from '../../admin-dashboard/admin-dashboard.service';
 import { titleCase } from '../../shared/utils/title-case';
+import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 
-const PAGE_SIZE = 20;
 
 // The shared titleCase() converts SHOUTED_CASE / SNAKE_CASE to Title Case:
 // REQUESTED → Requested, APPROVED → Approved, REJECTED → Rejected, DISBURSED → Disbursed.
@@ -140,17 +140,6 @@ const PAGE_SIZE = 20;
         </ng-container>
       </ng-template>
 
-      <div class="payout-approval__pagination" *ngIf="page">
-        <button type="button" class="brand-button brand-button--secondary" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
-          {{ 'admin.payoutApproval.previousPageAction' | translate }}
-        </button>
-        <span class="payout-approval__page-indicator">
-          {{ 'admin.payoutApproval.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
-        </span>
-        <button type="button" class="brand-button brand-button--secondary" [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="goToPage(page.page + 1)">
-          {{ 'admin.payoutApproval.nextPageAction' | translate }}
-        </button>
-      </div>
     </div>
 
     <div class="payout-approval__modal-overlay" *ngIf="modalOpen">
@@ -237,21 +226,10 @@ export class PayoutApprovalComponent implements OnInit {
     amount: [null as number | null, [Validators.required, Validators.min(0.01), this.maxAmountValidator()]]
   });
 
-  get currentPage(): number {
-    return (this.page?.page ?? 0) + 1;
-  }
-
-  get totalPages(): number {
-    if (!this.page || this.page.size === 0) {
-      return 1;
-    }
-    return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
-  }
-
   ngOnInit(): void {
     this.registerColumns = [
       { key: 'associate', label: this.translate.instant('admin.payoutApproval.columnAssociate'), type: 'text' },
-      { key: 'amount', label: this.translate.instant('admin.payoutApproval.columnAmount'), type: 'text' },
+      { key: 'amount', label: this.translate.instant('admin.payoutApproval.columnAmount'), type: 'text', sum: true },
       {
         key: 'status',
         label: this.translate.instant('admin.payoutApproval.columnStatus'),
@@ -278,14 +256,10 @@ export class PayoutApprovalComponent implements OnInit {
     this.loadPage(0);
   }
 
-  goToPage(page: number): void {
-    this.loadPage(page);
-  }
-
   approve(id: string): void {
     this.actionError = false;
     this.payoutApprovalService.decide(id, 'APPROVED').subscribe({
-      next: () => this.loadPage(this.page?.page ?? 0),
+      next: () => this.loadPage(0),
       error: () => (this.actionError = true)
     });
   }
@@ -300,7 +274,7 @@ export class PayoutApprovalComponent implements OnInit {
     this.payoutApprovalService.decide(id, 'REJECTED', this.decisionReasons[id]).subscribe({
       next: () => {
         delete this.decisionReasons[id];
-        this.loadPage(this.page?.page ?? 0);
+        this.loadPage(0);
       },
       error: () => (this.actionError = true)
     });
@@ -316,7 +290,7 @@ export class PayoutApprovalComponent implements OnInit {
     this.payoutApprovalService.disburse(id, this.bankReferences[id] ?? '').subscribe({
       next: () => {
         delete this.bankReferences[id];
-        this.loadPage(this.page?.page ?? 0);
+        this.loadPage(0);
       },
       error: () => (this.actionError = true)
     });
@@ -327,7 +301,7 @@ export class PayoutApprovalComponent implements OnInit {
     const filters: AdminWithdrawalFilters = {};
     if (this.associateId) filters.associateId = this.associateId;
     if (this.status) filters.status = this.status as AdminWithdrawalFilters['status'];
-    this.payoutApprovalService.list(filters, page, PAGE_SIZE).subscribe({
+    fetchAllPages((p, size) => this.payoutApprovalService.list(filters, p, size)).subscribe({
       next: res => {
         this.page = res;
         this.updateTableRows();
@@ -404,7 +378,7 @@ export class PayoutApprovalComponent implements OnInit {
     this.payoutApprovalService.submit({ associateId, amount: amount as number }).subscribe({
       next: () => {
         this.modalOpen = false;
-        this.loadPage(this.page?.page ?? 0);
+        this.loadPage(0);
         this.adminDashboardService.getStats().subscribe(res => (this.pendingWithdrawals = res.pendingWithdrawals));
       },
       error: (err: HttpErrorResponse) => {

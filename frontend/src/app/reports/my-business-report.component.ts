@@ -58,6 +58,12 @@ import { BusinessReport, BusinessReportRow, ReportsService } from './reports.ser
                   <td class="table-number">{{ money(r.business) }}</td>
                 </tr>
               </tbody>
+              <tfoot *ngIf="leg.rows.length">
+                <tr class="editable-table__total">
+                  <td>{{ 'common.total' | translate }}</td><td></td><td></td><td></td><td></td><td></td><td></td>
+                  <td class="table-number" [attr.data-label]="'reports.column.business' | translate">{{ money(total(leg.rows)) }}</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </ng-container>
@@ -75,6 +81,10 @@ export class MyBusinessReportComponent {
   loading = false;
   error = false;
   money = formatInr;
+
+  total(rows: BusinessReportRow[]): number {
+    return rows.reduce((acc, r) => acc + r.business, 0);
+  }
   private seq = 0;
 
   constructor() { this.load(); }

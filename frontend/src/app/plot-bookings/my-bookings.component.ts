@@ -6,8 +6,8 @@ import { DateRangeComponent, last30Days } from '../shared/components/date-range/
 import { AssociateBookingPage, Booking } from './models/associate-booking-page.model';
 import { BookingTableComponent, bookingRow } from './booking-table.component';
 import { PlotBookingsService } from './plot-bookings.service';
+import { fetchAllPages } from '../shared/utils/fetch-all-pages';
 
-const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-my-bookings',
@@ -32,16 +32,6 @@ const PAGE_SIZE = 20;
       <ng-container *ngIf="page">
         <p class="my-bookings__note">{{ 'plotBookings.bookingsNote' | translate }}</p>
         <app-booking-table [rows]="rows" [inline]="true" [label]="'plotBookings.myBookings.title' | translate"></app-booking-table>
-
-        <div class="my-bookings__pager">
-          <button type="button" class="brand-button brand-button--secondary my-bookings__prev" [disabled]="page!.page === 0" (click)="goTo(page!.page - 1)">
-            {{ 'plotBookings.previousPageAction' | translate }}
-          </button>
-          <span>{{ 'plotBookings.pageIndicator' | translate: { page: page!.page + 1, totalPages: totalPages } }}</span>
-          <button type="button" class="brand-button brand-button--secondary my-bookings__next" [disabled]="page!.page + 1 >= totalPages" (click)="goTo(page!.page + 1)">
-            {{ 'plotBookings.nextPageAction' | translate }}
-          </button>
-        </div>
       </ng-container>
     </div>
   `
@@ -58,11 +48,6 @@ export class MyBookingsComponent implements OnInit {
 
   get rows() { return (this.page?.bookings ?? []).map(bookingRow); }
 
-  get totalPages(): number {
-    if (!this.page || this.page.size === 0) { return 1; }
-    return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
-  }
-
   ngOnInit(): void { this.load(0); }
 
   onRange(r: { from: string; to: string }): void { this.from = r.from; this.to = r.to; this.load(0); }
@@ -72,7 +57,7 @@ export class MyBookingsComponent implements OnInit {
     this.requestedPage = p;
     this.loading = true;
     this.error = false;
-    this.service.getMyBookings(p, PAGE_SIZE, this.from, this.to).subscribe({
+    fetchAllPages((pg, size) => this.service.getMyBookings(pg, size, this.from, this.to)).subscribe({
       next: res => {
         if (p !== this.requestedPage) { return; }
         this.loading = false;
@@ -84,8 +69,6 @@ export class MyBookingsComponent implements OnInit {
       }
     });
   }
-
-  goTo(p: number): void { this.load(p); }
 
   dueKey(b: Booking): string {
     if (b.status === 'CANCELLED') { return 'plotBookings.noFurtherDues'; }

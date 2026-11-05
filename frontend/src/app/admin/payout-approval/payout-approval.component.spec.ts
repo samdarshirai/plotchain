@@ -19,7 +19,7 @@ describe('PayoutApprovalComponent', () => {
     httpMock.expectOne(req => req.url === '/api/associates' && req.method === 'GET').flush([
       { id: 'a1', userId: 'VP00001', name: 'Jane Doe' }
     ]);
-    httpMock.expectOne('/api/admin/withdrawals?page=0&size=20').flush({
+    httpMock.expectOne('/api/admin/withdrawals?page=0&size=100').flush({
       requests: [
         {
           id: 'w1', associateId: 'a1', associateUserId: 'VP00001', associateName: 'Jane Doe',
@@ -80,24 +80,6 @@ describe('PayoutApprovalComponent', () => {
     req.flush({ requests: [], page: 0, size: 20, totalElements: 0 });
   });
 
-  it('shows a load error when the reload fails, without silently doing nothing', () => {
-    fixture.componentInstance.goToPage(1);
-    httpMock.expectOne('/api/admin/withdrawals?page=1&size=20').flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
-    fixture.detectChanges();
-
-    expect(fixture.componentInstance.loadError).toBe(true);
-    const errorEl: HTMLElement | null = fixture.nativeElement.querySelector('.payout-approval__load-error');
-    expect(errorEl?.textContent?.trim()).toBeTruthy();
-  });
-
-  it('clicking Next loads the next page', () => {
-    fixture.componentInstance.goToPage(1);
-    const req = httpMock.expectOne('/api/admin/withdrawals?page=1&size=20');
-    req.flush({ requests: [], page: 1, size: 20, totalElements: 21 });
-
-    expect(fixture.componentInstance.page?.page).toBe(1);
-  });
-
   it('shows an empty-state row when no requests match', () => {
     fixture.componentInstance.onStatusChange('REJECTED');
     httpMock.expectOne(r => r.params.get('status') === 'REJECTED').flush({ requests: [], page: 0, size: 20, totalElements: 0 });
@@ -130,7 +112,7 @@ describe('PayoutApprovalComponent', () => {
       requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: null
     });
 
-    const reload = httpMock.expectOne('/api/admin/withdrawals?page=0&size=20');
+    const reload = httpMock.expectOne('/api/admin/withdrawals?page=0&size=100');
     reload.flush({ requests: [], page: 0, size: 20, totalElements: 0 });
   });
 
@@ -146,7 +128,7 @@ describe('PayoutApprovalComponent', () => {
       requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: null
     });
 
-    const reload = httpMock.expectOne('/api/admin/withdrawals?page=0&size=20');
+    const reload = httpMock.expectOne('/api/admin/withdrawals?page=0&size=100');
     reload.flush({ requests: [], page: 0, size: 20, totalElements: 0 });
 
     expect(fixture.componentInstance.decisionReasons['w1']).toBeUndefined();
@@ -182,7 +164,7 @@ describe('PayoutApprovalComponent', () => {
       requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: null
     });
 
-    httpMock.expectOne('/api/admin/withdrawals?page=0&size=20').flush({ requests: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne('/api/admin/withdrawals?page=0&size=100').flush({ requests: [], page: 0, size: 20, totalElements: 0 });
   });
 
   it('disburses an APPROVED row with a bank reference', () => {
@@ -198,7 +180,7 @@ describe('PayoutApprovalComponent', () => {
       requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: '2026-08-15T02:00:00Z'
     });
 
-    httpMock.expectOne('/api/admin/withdrawals?page=0&size=20').flush({ requests: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne('/api/admin/withdrawals?page=0&size=100').flush({ requests: [], page: 0, size: 20, totalElements: 0 });
 
     expect(fixture.componentInstance.bankReferences['w2']).toBeUndefined();
   });
@@ -256,7 +238,7 @@ describe('PayoutApprovalComponent', () => {
       amount: 5000, status: 'REJECTED', reason: 'Reason for w1', bankReference: null,
       requestedAt: '2026-08-15T00:00:00Z', decidedAt: '2026-08-15T01:00:00Z', disbursedAt: null
     });
-    httpMock.expectOne('/api/admin/withdrawals?page=0&size=20').flush({ requests: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne('/api/admin/withdrawals?page=0&size=100').flush({ requests: [], page: 0, size: 20, totalElements: 0 });
 
     expect(fixture.componentInstance.decisionReasons['w1']).toBeUndefined();
     expect(fixture.componentInstance.decisionReasons['w2']).toBe('Reason for w2');
@@ -403,7 +385,7 @@ describe('PayoutApprovalComponent', () => {
       });
 
       expect(fixture.componentInstance.modalOpen).toBe(false);
-      httpMock.expectOne('/api/admin/withdrawals?page=0&size=20').flush({ requests: [], page: 0, size: 20, totalElements: 0 });
+      httpMock.expectOne('/api/admin/withdrawals?page=0&size=100').flush({ requests: [], page: 0, size: 20, totalElements: 0 });
       httpMock.expectOne('/api/admin/stats').flush({
         totalAssociates: 0, kycBreakdown: { pending: 0, verified: 0, rejected: 0 }, totalWalletBalance: 0,
         pendingWithdrawals: 8, currentCycle: null, activePlots: 0, totalSalesRecorded: 0, cyclesCompleted: 0

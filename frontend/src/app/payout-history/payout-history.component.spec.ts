@@ -195,17 +195,6 @@ describe('PayoutHistoryComponent', () => {
     expect(emptyCell?.textContent?.trim()).toBeTruthy();
   });
 
-  it('clicking Next loads the next page', () => {
-    flushInitialRequests();
-    fixture.componentInstance.goToPage(1);
-    const req = httpMock.expectOne(
-      r => r.url === '/api/associates/me/withdrawals' && r.params.get('page') === '1' && r.params.get('size') === '20'
-    );
-    req.flush({ requests: [], page: 1, size: 20, totalElements: 21 });
-
-    expect(fixture.componentInstance.page?.page).toBe(1);
-  });
-
   it('has no action column and no write inputs -- this screen is view-only', () => {
     flushInitialRequests();
     expect(fixture.componentInstance.historyColumns.some(c => c.type === 'action')).toBeFalse();

@@ -4,12 +4,11 @@ import { ActivatedRoute } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { DateRangeComponent, last30Days } from '../shared/components/date-range/date-range.component';
-import { PagerComponent } from '../shared/components/pager/pager.component';
+import { fetchAllPages } from '../shared/utils/fetch-all-pages';
 import { AssociateBookingPage } from './models/associate-booking-page.model';
 import { BookingTableComponent, bookingRow } from './booking-table.component';
 import { PlotBookingsService } from './plot-bookings.service';
 
-const PAGE_SIZE = 20;
 type Scope = 'TEAM' | 'LEFT' | 'RIGHT';
 const LEG: Record<Scope, 'ALL' | 'L' | 'R'> = { TEAM: 'ALL', LEFT: 'L', RIGHT: 'R' };
 
@@ -18,7 +17,7 @@ const LEG: Record<Scope, 'ALL' | 'L' | 'R'> = { TEAM: 'ALL', LEFT: 'L', RIGHT: '
 @Component({
   selector: 'app-team-plot-bookings',
   standalone: true,
-  imports: [CommonModule, TranslateModule, InlineBannerComponent, PagerComponent, BookingTableComponent, DateRangeComponent],
+  imports: [CommonModule, TranslateModule, InlineBannerComponent, BookingTableComponent, DateRangeComponent],
   template: `
     <div class="team-bookings booking-page" [attr.aria-busy]="loading">
       <h1>{{ 'plotBookings.team.title.' + scope | translate }}</h1>
@@ -34,7 +33,6 @@ const LEG: Record<Scope, 'ALL' | 'L' | 'R'> = { TEAM: 'ALL', LEFT: 'L', RIGHT: '
 
       <ng-container *ngIf="page">
         <app-booking-table [rows]="rows" [inline]="true" [label]="'plotBookings.team.title.' + scope | translate"></app-booking-table>
-        <app-pager [page]="page!.page" [size]="page!.size" [total]="page!.totalElements" [disabled]="loading" (pageChange)="load($event)"></app-pager>
       </ng-container>
     </div>
   `,
@@ -71,7 +69,7 @@ export class TeamPlotBookingsComponent implements OnInit {
     this.loading = true;
     this.error = false;
     const scope = this.scope;
-    this.service.getTeamBookings(LEG[scope], p, PAGE_SIZE, this.from, this.to).subscribe({
+    fetchAllPages((pg, size) => this.service.getTeamBookings(LEG[scope], pg, size, this.from, this.to)).subscribe({
       next: res => {
         if (p !== this.requestedPage || scope !== this.scope) { return; }
         this.loading = false;

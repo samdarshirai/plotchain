@@ -40,7 +40,7 @@ export class AdminRecentSalesTableComponent implements OnChanges {
       { key: 'plotNo', label: t('recentSalesColumnPlot'), type: 'text' },
       { key: 'projectName', ellipsis: true, label: t('recentSalesColumnProject'), type: 'text' },
       { key: 'associateName', label: t('recentSalesColumnAssociate'), type: 'text' },
-      { key: 'amount', label: t('recentSalesColumnValue'), type: 'text' },
+      { key: 'amount', label: t('recentSalesColumnValue'), type: 'text', sum: true },
       { key: 'date', label: t('recentSalesColumnDate'), type: 'text' },
       { key: 'status', label: t('recentSalesColumnStatus'), type: 'badge', badgeTone: v => (v === recorded ? 'success' : 'danger') }
     ];

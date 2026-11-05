@@ -1,4 +1,5 @@
-import { Component, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Optional, Output, TemplateRef } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { fitSize } from '../../utils/fit-text.util';
 import { headerIcon } from '../../utils/header-icon';
@@ -33,6 +34,26 @@ export interface EditableTableColumn {
   fitText?: boolean;
   // Optional header icon (Material Symbols name); defaults to a guess from `key`.
   icon?: string;
+  // Optional: money column -- summed into the Total row (last row) from the cells' formatted text.
+  sum?: boolean;
+}
+
+// Sums a column of pre-formatted money cells ("₹1,00,000", "50,000", "10 INR") and formats the
+// result like its first non-empty cell: same prefix/suffix, same decimals, Indian grouping.
+// ponytail: parses display text; swap for raw numbers if a column ever formats non-numerically.
+export function sumColumn(values: (string | number | undefined)[]): string {
+  const texts = values.map(v => String(v ?? '')).filter(t => /\d/.test(t));
+  if (!texts.length) {
+    return '';
+  }
+  const num = (t: string) => (/[-−]/.test(t.slice(0, t.search(/\d/))) ? -1 : 1) * Number(t.replace(/[^\d.]/g, ''));
+  const total = texts.reduce((acc, t) => acc + num(t), 0);
+  const sample = texts[0];
+  const first = sample.search(/\d/);
+  const last = sample.length - [...sample].reverse().findIndex(c => /\d/.test(c));
+  const decimals = sample.slice(first, last).split('.')[1]?.length ?? 0;
+  const body = new Intl.NumberFormat('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(Math.abs(total));
+  return `${total < 0 ? '-' : ''}${sample.slice(0, first).replace(/[-−+]/g, '')}${body}${sample.slice(last)}`;
 }
 
 @Component({
@@ -118,6 +139,13 @@ export interface EditableTableColumn {
           </td>
         </tr>
       </tbody>
+      <tfoot *ngIf="totalRow" class="editable-table__total">
+        <tr>
+          <td *ngIf="selectable"></td>
+          <td *ngFor="let t of totalRow" [attr.data-label]="t.label">{{ t.value }}</td>
+          <td *ngIf="!readOnly"></td>
+        </tr>
+      </tfoot>
       <ng-template #emptyState>
         <tbody>
           <tr>
@@ -133,7 +161,10 @@ export interface EditableTableColumn {
     </button>
   `
 })
-export class EditableTableComponent {
+export class EditableTableComponent implements OnChanges {
+  constructor(@Optional() private readonly translate?: TranslateService) {}
+
+  totalRow: { label: string; value: string }[] | null = null;
   readonly headerIcon = headerIcon;
   @Input({ required: true }) columns: EditableTableColumn[] = [];
   @Input({ required: true }) rows: Record<string, string | number>[] = [];
@@ -148,6 +179,14 @@ export class EditableTableComponent {
   @Output() selectionChange = new EventEmitter<string[]>();
   @Output() rowsChange = new EventEmitter<Record<string, string | number>[]>();
   @Output() rowClick = new EventEmitter<number>();
+
+  ngOnChanges(): void {
+    const sums = this.columns.some(c => c.sum) && this.rows.length > 0;
+    const label = this.translate?.instant('common.total') ?? 'Total';
+    this.totalRow = sums
+      ? this.columns.map((c, i) => ({ label: c.label, value: c.sum ? sumColumn(this.rows.map(r => r[c.key])) : i === 0 ? label : '' }))
+      : null;
+  }
 
   get allSelected(): boolean {
     return this.rows.length > 0 && this.rows.every((r) => this.selectedIds.includes('' + r['id']));

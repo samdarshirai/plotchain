@@ -15,8 +15,8 @@ import { BrandButtonComponent } from '../../shared/components/brand-button/brand
 import { AdminDashboardService } from '../../admin-dashboard/admin-dashboard.service';
 import { CurrentCycleStats } from '../../admin-dashboard/admin-dashboard.model';
 import { formatInr } from '../../shared/utils/plot-grid.util';
+import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 
-const PAGE_SIZE = 20;
 const INCOME_TYPES: CycleIncomeType[] = ['DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'ROYALTY', 'REWARD'];
 // Key order = table order; 'totalNet' sits between ROYALTY and REWARD, so the loop below can't be a single map.
 const COLUMN_KEYS = [
@@ -184,17 +184,6 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
         </div>
       </ng-template>
 
-      <div class="cycle-management__pagination" *ngIf="page">
-        <button type="button" class="brand-button brand-button--secondary" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
-          {{ 'admin.cycleManagement.previousPageAction' | translate }}
-        </button>
-        <span class="cycle-management__page-indicator">
-          {{ 'admin.cycleManagement.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
-        </span>
-        <button type="button" class="brand-button brand-button--secondary" [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="goToPage(page.page + 1)">
-          {{ 'admin.cycleManagement.nextPageAction' | translate }}
-        </button>
-      </div>
 
       <ng-template #cycleRailTpl let-status="status">
         <ol class="cycle-rail" [attr.aria-label]="'Cycle status: ' + status">
@@ -253,17 +242,6 @@ export class CycleManagementComponent implements OnInit {
     return stats?.previousCycleTotalIncome ? ((stats.totalIncome - stats.previousCycleTotalIncome) / stats.previousCycleTotalIncome) * 100 : null;
   }
 
-  get currentPage(): number {
-    return (this.page?.page ?? 0) + 1;
-  }
-
-  get totalPages(): number {
-    if (!this.page || this.page.size === 0) {
-      return 1;
-    }
-    return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
-  }
-
   ngOnInit(): void {
     this.historyColumns = [
       { key: 'period', label: this.translate.instant('admin.cycleManagement.columnPeriod'), type: 'text' },
@@ -273,14 +251,15 @@ export class CycleManagementComponent implements OnInit {
         type: 'badge',
         badgeTone: value => this.statusBadgeTone(value)
       },
-      { key: 'business', label: this.translate.instant('admin.cycleManagement.columnBusiness'), type: 'text' },
+      { key: 'business', label: this.translate.instant('admin.cycleManagement.columnBusiness'), type: 'text', sum: true },
       ...COLUMN_KEYS.map(k => ({
         key: k,
         label: this.translate.instant('admin.cycleManagement.' + COLUMN_LABEL_KEYS[k]),
-        type: 'text' as const
+        type: 'text' as const,
+        sum: true
       })),
-      { key: 'tripExpense', label: this.translate.instant('admin.cycleManagement.columnTripExpense'), type: 'text' },
-      { key: 'commissionExpense', label: this.translate.instant('admin.cycleManagement.columnCommissionExpense'), type: 'text' },
+      { key: 'tripExpense', label: this.translate.instant('admin.cycleManagement.columnTripExpense'), type: 'text', sum: true },
+      { key: 'commissionExpense', label: this.translate.instant('admin.cycleManagement.columnCommissionExpense'), type: 'text', sum: true },
       { key: 'commissionPct', label: this.translate.instant('admin.cycleManagement.columnCommissionPct'), type: 'text' },
       { key: 'actions', label: this.translate.instant('admin.cycleManagement.columnActions'), type: 'action' }
     ];
@@ -297,13 +276,9 @@ export class CycleManagementComponent implements OnInit {
     this.loadPage(0);
   }
 
-  goToPage(page: number): void {
-    this.loadPage(page);
-  }
-
   protected loadPage(page: number): void {
     this.loadError = false;
-    this.cycleManagementService.list(this.status, page, PAGE_SIZE).subscribe({
+    fetchAllPages((p, size) => this.cycleManagementService.list(this.status, p, size)).subscribe({
       next: res => {
         this.page = res;
         this.updateTableRows();
@@ -448,7 +423,7 @@ export class CycleManagementComponent implements OnInit {
     this.cycleManagementService.creditWallets(id).subscribe({
       next: result => {
         this.creditResult = result;
-        this.loadPage(this.page?.page ?? 0);
+        this.loadPage(0);
       },
       error: (err: HttpErrorResponse) => {
         this.creditResult = null;

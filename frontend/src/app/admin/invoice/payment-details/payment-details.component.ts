@@ -74,6 +74,11 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
               <td [attr.colspan]="columns.length" class="editable-table__empty">{{ 'admin.invoicePayments.emptyState' | translate }}</td>
             </tr>
           </tbody>
+          <tfoot *ngIf="rows.length">
+            <tr class="editable-table__total">
+              <td *ngFor="let c of columns" [attr.data-label]="'admin.invoicePayments.' + c | translate">{{ c === 'columnSNo' ? ('common.total' | translate) : c === 'amount' ? (total | number:'1.0-0') : '' }}</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>
@@ -88,6 +93,10 @@ export class PaymentDetailsComponent implements OnInit {
   readonly headerIcon = headerIcon;
   readonly columns = ['columnSNo', 'paymentDate', 'associateId', 'associateName', 'mobileNo', 'paymentType', 'receiptNo', 'amount', 'payMode', 'bankName', 'txnNo', 'print'];
   rows: RepaymentRow[] = [];
+
+  get total(): number {
+    return this.rows.reduce((acc, r) => acc + r.amount, 0);
+  }
   loadError = false;
   filterError = false;
   filters = this.fb.nonNullable.group({ from: [''], to: [''], q: [''] });

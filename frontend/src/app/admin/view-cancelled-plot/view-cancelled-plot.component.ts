@@ -8,8 +8,8 @@ import { BookingPage, RegisterFilters } from '../admin-bookings-emi/bookings-emi
 import { formatMoney, plotText } from '../admin-bookings-emi/bookings-emi.util';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 
-const PAGE_SIZE = 20;
 const isoDate = (d: Date): string => {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
@@ -77,7 +77,7 @@ const isoDate = (d: Date): string => {
             </thead>
             <tbody>
               <tr *ngFor="let b of page?.bookings; let i = index">
-                <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ (page?.page ?? 0) * pageSize + i + 1 }}</td>
+                <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ i + 1 }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.bookedOn' | translate">{{ b.bookedAt ? (b.bookedAt | date: 'd MMM y, h:mm:ss a' : '+0530') : '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ b.associateCode || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ b.associateName || '—' }}</td>
@@ -101,12 +101,30 @@ const isoDate = (d: Date): string => {
                 <td class="add-plot-emi__empty-cell" [attr.colspan]="19">{{ 'admin.viewCancelledPlot.empty' | translate }}</td>
               </tr>
             </tbody>
+          <tfoot *ngIf="page?.bookings?.length">
+            <tr class="editable-table__total">
+              <td>{{ 'common.total' | translate }}</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.viewBookedPlot.col.extra' | translate">{{ money(sumOf('extraPrice')) }}</td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.discount' | translate">{{ money(sumOf('discount')) }}</td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.total' | translate">{{ money(sumOf('totalAmount')) }}</td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.paid' | translate">{{ money(sumOf('paidAmount')) }}</td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.remaining' | translate">{{ money(sumOf('dueAmount')) }}</td>
+              <td></td>
+              <td></td>
+            </tr>
+          </tfoot>
           </table>
-        </div>
-        <div class="add-plot-emi__pager" *ngIf="page && page.bookings.length">
-          <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="page.page === 0" (click)="load(page.page - 1)">{{ 'admin.addPlotEmi.previous' | translate }}</button>
-          <span>{{ 'admin.addPlotEmi.pager' | translate: { page: page.page + 1, totalPages: totalPages, count: page.totalElements } }}</span>
-          <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="page.page + 1 >= totalPages" (click)="load(page.page + 1)">{{ 'admin.addPlotEmi.next' | translate }}</button>
         </div>
       </div>
     </div>
@@ -117,7 +135,6 @@ export class ViewCancelledPlotComponent implements OnInit {
   private service = inject(BookingsEmiService);
   private projectsService = inject(ProjectsService);
 
-  readonly pageSize = PAGE_SIZE;
   money = formatMoney;
   plot = plotText;
 
@@ -131,21 +148,19 @@ export class ViewCancelledPlotComponent implements OnInit {
   rangeError = false;
   private seq = 0;
 
-  get totalPages(): number { return this.page ? Math.max(1, Math.ceil(this.page.totalElements / PAGE_SIZE)) : 1; }
-
   ngOnInit(): void {
     this.projectsService.listProjects().subscribe({
-      next: p => { this.projects = p; this.projectId = p[0]?.id ?? ''; this.load(0); },
+      next: p => { this.projects = p; this.projectId = p[0]?.id ?? ''; this.load(); },
       error: () => (this.loadError = true)
     });
   }
 
-  onProject(id: string): void { this.projectId = id; this.load(0); }
+  onProject(id: string): void { this.projectId = id; this.load(); }
 
   onDate(which: 'from' | 'to', v: string): void {
     this[which] = v;
     this.rangeError = !!this.from && !!this.to && this.from > this.to;
-    if (!this.rangeError) { this.load(0); } // an inverted range keeps the last valid list
+    if (!this.rangeError) { this.load(); } // an inverted range keeps the last valid list
   }
 
   private filters(): RegisterFilters {
@@ -153,14 +168,18 @@ export class ViewCancelledPlotComponent implements OnInit {
       cancelledFrom: this.from, cancelledTo: this.to };
   }
 
-  load(page = this.page?.page ?? 0): void {
+  load(): void {
     if (!this.projectId) { return; }
     const seq = ++this.seq;
     this.loading = true;
     this.loadError = false;
-    this.service.list(this.filters(), page, PAGE_SIZE).subscribe({
+    fetchAllPages((p, size) => this.service.list(this.filters(), p, size)).subscribe({
       next: r => { if (seq === this.seq) { this.page = r; this.loading = false; } },
       error: () => { if (seq === this.seq) { this.loading = false; this.loadError = true; } }
     });
+  }
+
+  sumOf(field: string): number {
+    return Math.round((this.page?.bookings ?? []).reduce((acc, b) => acc + ((b as unknown as Record<string, number | null | undefined>)[field] ?? 0), 0) * 100) / 100;
   }
 }

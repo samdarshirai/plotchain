@@ -18,8 +18,8 @@ import { ProjectsService } from './projects.service';
 import { SetupService } from '../../setup.service';
 import { SetupInspectorService, SetupStepController } from '../../setup-inspector.service';
 import { CsvValidationResponse, PLOT_TYPES, PlotPageResponse, PlotStatus, PlotType, Project } from '../../models/project.model';
+import { fetchAllPages } from '../../../shared/utils/fetch-all-pages';
 
-const PAGE_SIZE = 20;
 
 const PLOT_TYPE_LABELS: Record<PlotType, string> = {
   NORMAL: 'setup.projects.plotTypeNormalLabel',
@@ -261,21 +261,18 @@ const PLOT_TYPE_LABELS: Record<PlotType, string> = {
                 </td>
               </tr>
             </tbody>
+            <tfoot *ngIf="plotPage?.plots?.length">
+              <tr class="editable-table__total">
+                <td>{{ 'common.total' | translate }}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td [attr.data-label]="'setup.projects.priceLabel' | translate">{{ totalPrice | currency:'INR':'symbol':'1.0-0' }}</td>
+                <td></td>
+                <td></td>
+              </tr>
+            </tfoot>
           </table>
-
-          <div class="projects-step__pagination" *ngIf="plotPage">
-            <app-brand-button variant="ghost" [disabled]="plotPage.page === 0" (clicked)="goToPage(plotPage.page - 1)">
-              {{ 'setup.projects.previousPageAction' | translate }}
-            </app-brand-button>
-            <span class="projects-step__pagination-label">{{ 'setup.projects.showingLabel' | translate }}</span>
-            <app-brand-button
-              variant="ghost"
-              [disabled]="(plotPage.page + 1) * plotPage.size >= plotPage.totalElements"
-              (clicked)="goToPage(plotPage.page + 1)"
-            >
-              {{ 'setup.projects.nextPageAction' | translate }}
-            </app-brand-button>
-          </div>
         </div>
 
         <div class="projects-step__csv-panel" *ngIf="activeTab === 'importCsv'">
@@ -340,6 +337,10 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
   selectedProjectId: string | null = null;
   activeTab: 'plotList' | 'importCsv' = 'plotList';
   plotPage: PlotPageResponse | null = null;
+
+  get totalPrice(): number {
+    return (this.plotPage?.plots ?? []).reduce((acc, p) => acc + p.price, 0);
+  }
 
   plotForm = this.fb.nonNullable.group({
     plotNo: ['', Validators.required],
@@ -533,7 +534,7 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
     this.csvFile = null;
     this.csvValidation = null;
     this.csvSubmitError = null;
-    this.loadPlots(0);
+    this.loadPlots();
   }
 
   onTabChange(tabId: string): void {
@@ -542,15 +543,12 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
     }
   }
 
-  loadPlots(page: number): void {
+  loadPlots(): void {
     if (!this.selectedProjectId) {
       return;
     }
-    this.projectsService.listPlots(this.selectedProjectId, page, PAGE_SIZE).subscribe(res => (this.plotPage = res));
-  }
-
-  goToPage(page: number): void {
-    this.loadPlots(page);
+    const id = this.selectedProjectId;
+    fetchAllPages((p, size) => this.projectsService.listPlots(id, p, size)).subscribe(res => (this.plotPage = res));
   }
 
   projectSubmitted = false;
@@ -569,7 +567,7 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
       this.plotForm.reset({ plotNo: '', plotType: 'NORMAL', areaSqft: 0, rate: 0, price: 0, status: 'AVAILABLE' });
       this.plotSubmitted = false;
       this.plotIssues = [];
-      this.loadPlots(0);
+      this.loadPlots();
       this.setupService.refresh();
     });
   }
@@ -578,9 +576,8 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
     if (!this.selectedProjectId) {
       return;
     }
-    const page = this.plotPage?.page ?? 0;
     this.projectsService.deletePlot(this.selectedProjectId, plotId).subscribe(() => {
-      this.loadPlots(page);
+      this.loadPlots();
       this.setupService.refresh();
     });
   }
@@ -612,7 +609,7 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
       next: () => {
         this.csvFile = null;
         this.csvValidation = null;
-        this.loadPlots(0);
+        this.loadPlots();
         this.setupService.refresh();
       },
       error: err => {

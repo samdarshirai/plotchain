@@ -11,20 +11,19 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
 import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
 import { FormIssue } from '../../shared/validation/validation';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
-import { PagerComponent } from '../../shared/components/pager/pager.component';
+import { collectPages } from '../../admin/admin-bookings-emi/bookings-emi.util';
 import { ExportColumn, exportCsv, printTable, toCsv } from '../../shared/utils/table-export.util';
 
 type Mode = 'new' | 'transfer' | 'used';
 type Row = EPinUnusedRow & EPinUsedRow;
 interface Col { key: string; labelKey: string; value: (r: Row, i: number) => string; visible: boolean; mono?: boolean; chip?: boolean; }
 
-const PAGE_SIZE = 20;
 
 // One routed component, three screens (data.mode), like team-plot-bookings' data.scope.
 @Component({
   selector: 'app-epin-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent, PagerComponent, PasswordToggleDirective],
+  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent, PasswordToggleDirective],
   providers: [DatePipe],
   styleUrl: './epin-register.component.scss',
   template: `
@@ -110,11 +109,13 @@ const PAGE_SIZE = 20;
               </tr>
               <tr *ngIf="!rows.length"><td [attr.colspan]="cols.length + 1" class="epin-reg__empty">{{ 'epinRegister.empty' | translate }}</td></tr>
             </tbody>
+            <tfoot *ngIf="rows.length">
+              <tr class="editable-table__total">
+                <ng-container *ngFor="let c of cols"><td *ngIf="c.visible" [attr.data-label]="c.labelKey | translate">{{ c.key === 'sl' ? ('common.total' | translate) : c.key === 'pinValue' ? pinTotal + ' INR' : '' }}</td></ng-container>
+                <td *ngIf="mode === 'new'"></td>
+              </tr>
+            </tfoot>
           </table>
-        </div>
-
-        <div class="epin-reg__foot">
-          <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="go($event)"></app-pager>
         </div>
       </div>
 
@@ -136,7 +137,7 @@ export class EPinRegisterComponent implements OnInit {
   rows: Row[] = [];
   total = 0;
   page = 0;
-  size = PAGE_SIZE;
+  readonly size = 100;
   q = '';
   type: EPinType | '' = '';
   loadError = false;
@@ -168,17 +169,20 @@ export class EPinRegisterComponent implements OnInit {
     this.load();
   }
 
+  get pinTotal(): number {
+    return this.rows.reduce((acc, r) => acc + Number(r.pinValue), 0);
+  }
+
   reload(): void { this.page = 0; this.load(); }
-  go(p: number): void { this.page = p; this.load(); }
 
   load(): void {
     this.loadError = false;
     const seq = ++this.seq;
-    const call = this.mode === 'used'
-      ? this.service.used(this.type, this.q, this.page, this.size)
-      : this.service.unused(this.type, this.q, false, this.page, this.size);
-    (call as unknown as import('rxjs').Observable<{ rows: Row[]; totalElements: number }>).subscribe({
-      next: res => { if (seq === this.seq) { this.rows = res.rows; this.total = res.totalElements; } },
+    const call = (p: number) => (this.mode === 'used'
+      ? this.service.used(this.type, this.q, p, this.size)
+      : this.service.unused(this.type, this.q, false, p, this.size)) as unknown as import('rxjs').Observable<{ rows: Row[]; totalElements: number }>;
+    collectPages<Row>(call, this.size).subscribe({
+      next: rows => { if (seq === this.seq) { this.rows = rows; this.total = rows.length; } },
       error: (e: HttpErrorResponse) => { if (seq === this.seq && !this.relock(e)) { this.loadError = true; } }
     });
   }

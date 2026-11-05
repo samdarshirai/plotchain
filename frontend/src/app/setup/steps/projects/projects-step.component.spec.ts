@@ -113,11 +113,11 @@ describe('ProjectsStepComponent', () => {
   it('selecting a project loads its first page of plots', () => {
     flushProjectsList();
     const component = fixture.componentInstance;
-    const page: PlotPageResponse = { plots: [plot], page: 0, size: 20, totalElements: 1 };
+    const page: PlotPageResponse = { plots: [plot], page: 0, size: 100, totalElements: 1 };
 
     component.selectProject('p1');
 
-    const req = httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=20');
+    const req = httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=100');
     req.flush(page);
 
     expect(component.plotPage).toEqual(page);
@@ -129,8 +129,8 @@ describe('ProjectsStepComponent', () => {
     const component = fixture.componentInstance;
     component.selectProject('p1');
 
-    const req = httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=20');
-    req.flush({ plots: [plot], page: 0, size: 20, totalElements: 1 });
+    const req = httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=100');
+    req.flush({ plots: [plot], page: 0, size: 100, totalElements: 1 });
     fixture.detectChanges();
 
     const rowText: string = fixture.nativeElement.querySelector('.projects-step__plot-table tbody tr').textContent;
@@ -142,8 +142,8 @@ describe('ProjectsStepComponent', () => {
     flushProjectsList();
     const component = fixture.componentInstance;
     component.selectProject('p1');
-    httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=20')
-      .flush({ plots: [plot], page: 0, size: 20, totalElements: 1 });
+    httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=100')
+      .flush({ plots: [plot], page: 0, size: 100, totalElements: 1 });
 
     component.onTabChange('importCsv');
     expect(component.activeTab).toBe('importCsv');
@@ -157,8 +157,8 @@ describe('ProjectsStepComponent', () => {
     flushProjectsList();
     const component = fixture.componentInstance;
     component.selectProject('p1');
-    httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=20')
-      .flush({ plots: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=100')
+      .flush({ plots: [], page: 0, size: 100, totalElements: 0 });
 
     component.plotForm.setValue({
       plotNo: 'A-101', plotType: 'NORMAL', areaSqft: 1200, rate: 500, price: 600000, status: 'AVAILABLE'
@@ -169,8 +169,8 @@ describe('ProjectsStepComponent', () => {
     expect(createReq.request.method).toBe('POST');
     createReq.flush(plot);
 
-    const reloadReq = httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=20');
-    reloadReq.flush({ plots: [plot], page: 0, size: 20, totalElements: 1 });
+    const reloadReq = httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=100');
+    reloadReq.flush({ plots: [plot], page: 0, size: 100, totalElements: 1 });
     flushSetupState();
 
     expect(component.plotPage?.plots).toEqual([plot]);
@@ -195,8 +195,8 @@ describe('ProjectsStepComponent', () => {
     flushProjectsList();
     const component = fixture.componentInstance;
     component.selectProject('p1');
-    httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=20')
-      .flush({ plots: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=100')
+      .flush({ plots: [], page: 0, size: 100, totalElements: 0 });
 
     const file = new File(['plot_no\n'], 'plots.csv', { type: 'text/csv' });
     component.onCsvFileSelected({ target: { files: [file] } } as unknown as Event);
@@ -218,8 +218,8 @@ describe('ProjectsStepComponent', () => {
     flushProjectsList();
     const component = fixture.componentInstance;
     component.selectProject('p1');
-    httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=20')
-      .flush({ plots: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=100')
+      .flush({ plots: [], page: 0, size: 100, totalElements: 0 });
 
     const file = new File(['plot_no\n'], 'plots.csv', { type: 'text/csv' });
     component.onCsvFileSelected({ target: { files: [file] } } as unknown as Event);
@@ -229,8 +229,8 @@ describe('ProjectsStepComponent', () => {
     const req = httpMock.expectOne('/api/company/projects/p1/plots/csv/commit');
     req.flush(null);
 
-    const reloadReq = httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=20');
-    reloadReq.flush({ plots: [plot], page: 0, size: 20, totalElements: 1 });
+    const reloadReq = httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=100');
+    reloadReq.flush({ plots: [plot], page: 0, size: 100, totalElements: 1 });
     flushSetupState();
 
     expect(component.csvValidation).toBeNull();
@@ -242,8 +242,8 @@ describe('ProjectsStepComponent', () => {
     flushProjectsList();
     const component = fixture.componentInstance;
     component.selectProject('p1');
-    httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=20')
-      .flush({ plots: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=100')
+      .flush({ plots: [], page: 0, size: 100, totalElements: 0 });
 
     const file = new File(['plot_no\n'], 'plots.csv', { type: 'text/csv' });
     component.onCsvFileSelected({ target: { files: [file] } } as unknown as Event);
@@ -257,21 +257,6 @@ describe('ProjectsStepComponent', () => {
     );
 
     expect(component.csvValidation?.errors).toEqual(errors);
-  });
-
-  it('changing pages requests the new page from the server', () => {
-    flushProjectsList();
-    const component = fixture.componentInstance;
-    component.selectProject('p1');
-    httpMock.expectOne('/api/company/projects/p1/plots?page=0&size=20')
-      .flush({ plots: [plot], page: 0, size: 20, totalElements: 25 });
-
-    component.goToPage(1);
-
-    const req = httpMock.expectOne('/api/company/projects/p1/plots?page=1&size=20');
-    req.flush({ plots: [], page: 1, size: 20, totalElements: 25 });
-
-    expect(component.plotPage?.page).toBe(1);
   });
 
   it('does not render the inline step-nav when mode is setup (shell owns navigation there)', () => {

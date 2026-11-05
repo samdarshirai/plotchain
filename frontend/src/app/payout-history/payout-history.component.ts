@@ -7,8 +7,8 @@ import { PayoutHistoryService } from './payout-history.service';
 import { AssociateWithdrawalPage, AssociateWithdrawalFilters } from './models/associate-withdrawal-page.model';
 import { EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
+import { fetchAllPages } from '../shared/utils/fetch-all-pages';
 
-const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-payout-history',
@@ -58,17 +58,6 @@ const PAGE_SIZE = 20;
         ></app-editable-table>
       </div>
 
-      <div class="payout-history__pagination" *ngIf="page">
-        <span class="payout-history__page-indicator">
-          {{ 'payoutHistory.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
-        </span>
-        <button type="button" class="brand-button brand-button--secondary" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
-          {{ 'payoutHistory.previousPageAction' | translate }}
-        </button>
-        <button type="button" class="brand-button brand-button--secondary" [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="goToPage(page.page + 1)">
-          {{ 'payoutHistory.nextPageAction' | translate }}
-        </button>
-      </div>
     </div>
   `
 })
@@ -95,17 +84,6 @@ export class PayoutHistoryComponent implements OnInit, OnDestroy {
       return '';
     }
     return this.formatCurrency(this.walletBalance);
-  }
-
-  get currentPage(): number {
-    return (this.page?.page ?? 0) + 1;
-  }
-
-  get totalPages(): number {
-    if (!this.page || this.page.size === 0) {
-      return 1;
-    }
-    return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
   }
 
   ngOnInit(): void {
@@ -138,7 +116,7 @@ export class PayoutHistoryComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroyed$))
       .subscribe(t => {
         this.historyColumns = [
-          { key: 'amount', label: t['payoutHistory.columnAmount'], type: 'text' },
+          { key: 'amount', label: t['payoutHistory.columnAmount'], type: 'text', sum: true },
           { key: 'status', label: t['payoutHistory.columnStatus'], type: 'text' },
           { key: 'reason', label: t['payoutHistory.columnReason'], type: 'text' },
           { key: 'bankReference', label: t['payoutHistory.columnBankReference'], type: 'text' },
@@ -152,10 +130,6 @@ export class PayoutHistoryComponent implements OnInit, OnDestroy {
   onStatusChange(value: string): void {
     this.status = value;
     this.loadPage(0);
-  }
-
-  goToPage(page: number): void {
-    this.loadPage(page);
   }
 
   // A wallet-lookup failure only degrades the balance display to a placeholder -- it never sets
@@ -175,7 +149,7 @@ export class PayoutHistoryComponent implements OnInit, OnDestroy {
     if (this.status) {
       filters.status = this.status as AssociateWithdrawalFilters['status'];
     }
-    this.payoutHistoryService.list(filters, page, PAGE_SIZE).subscribe({
+    fetchAllPages((p, size) => this.payoutHistoryService.list(filters, p, size)).subscribe({
       next: res => {
         this.page = res;
         this.updateTableRows();

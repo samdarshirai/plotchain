@@ -15,12 +15,14 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
 import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/tab-bar.component';
 import { AdminLedgerEntry } from '../models/ledger-entry.model';
 import { AdminLedgerSummaryPage, AdminLedgerSummaryRow } from '../models/ledger-summary.model';
+import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 
-const PAGE_SIZE = 20;
 const CYCLE_LOOKUP_SIZE = 100;
 const DATE_FORMAT = 'dd MMM yyyy';
 const DATE_TIME_FORMAT = 'dd MMM yyyy, hh:mm:ss a';
 const MATCHING_KEYS = ['bflb', 'bfrb', 'nlb', 'nrb', 'tlb', 'trb', 'clb', 'crb'];
+// Entry-mode columns summed into the Total row; bf/total/calc leg columns are balances, not additive.
+const ENTRY_SUM_KEYS = ['amount', 'directIncome', 'matchingIncome', 'sponsorMatchingIncome', 'royaltyBonus', 'reward', 'grossAmount', 'newLeft', 'newRight', 'newMatching', 'matchingBusiness', 'nlb', 'nrb'];
 
 // One column of the per-income-type layout. Labels reuse the associate Income Statement's i18n
 // keys so both screens read the same.
@@ -155,17 +157,6 @@ const LEG_FIELD: Record<string, string> = {
         <button type="button" class="brand-button brand-button--secondary" (click)="fulfilIds = []">{{ 'admin.ledgerRegister.fulfilCancelAction' | translate }}</button>
       </form>
 
-      <div class="ledger-register__pagination" *ngIf="page">
-        <span class="ledger-register__page-indicator">
-          {{ 'admin.ledgerRegister.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
-        </span>
-        <button type="button" class="brand-button brand-button--secondary" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
-          {{ 'admin.ledgerRegister.previousPageAction' | translate }}
-        </button>
-        <button type="button" class="brand-button brand-button--secondary" [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="goToPage(page.page + 1)">
-          {{ 'admin.ledgerRegister.nextPageAction' | translate }}
-        </button>
-      </div>
     </div>
   `
 })
@@ -202,17 +193,6 @@ export class LedgerRegisterComponent implements OnInit {
 
   get tabs(): TabDefinition[] {
     return INCOME_TYPE_TABS.map(t => ({ id: t.id, label: this.translate.instant(t.labelKey) }));
-  }
-
-  get currentPage(): number {
-    return (this.page?.page ?? 0) + 1;
-  }
-
-  get totalPages(): number {
-    if (!this.page || this.page.size === 0) {
-      return 1;
-    }
-    return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
   }
 
   ngOnInit(): void {
@@ -308,11 +288,11 @@ export class LedgerRegisterComponent implements OnInit {
 
   private buildSummaryColumns(): EditableTableColumn[] {
     const t = (k: string) => this.translate.instant(k);
-    const text = (key: string, label: string): EditableTableColumn => ({ key, label, type: 'text' });
+    const text = (key: string, label: string, sum = true): EditableTableColumn => ({ key, label, type: 'text', sum });
     return [
-      text('associateId', t('incomeStatement.columnAssociateId')),
-      text('name', t('incomeStatement.columnAssociateName')),
-      text('cyclePeriod', t('incomeStatement.columnCyclePeriod')),
+      text('associateId', t('incomeStatement.columnAssociateId'), false),
+      text('name', t('incomeStatement.columnAssociateName'), false),
+      text('cyclePeriod', t('incomeStatement.columnCyclePeriod'), false),
       ...SUMMARY_TYPES.map(c => text(c.type, t(c.labelKey))),
       text('totalGross', t('admin.ledgerRegister.columnTotalIncome')),
       text('tds', t('incomeStatement.columnTdsDeduction')),
@@ -328,6 +308,7 @@ export class LedgerRegisterComponent implements OnInit {
       key: c.key,
       label: this.translate.instant('incomeStatement.' + (c.labelKey.endsWith('Abbr') ? c.labelKey : 'column' + c.labelKey)),
       type: c.badge ? 'badge' : 'text',
+      sum: ENTRY_SUM_KEYS.includes(c.key),
       ...(c.badge ? { badgeTone: (v: string | number) => this.statusBadgeTone(v) } : {})
     }));
     if (this.incomeType === 'REWARD') {
@@ -392,21 +373,16 @@ export class LedgerRegisterComponent implements OnInit {
       next: () => {
         this.fulfilIds = [];
         this.selectedIds = [];
-        this.loadPage(this.page?.page ?? 0);
+        this.loadPage(0);
       },
       error: () => (this.fulfilError = true)
     });
   }
 
-  goToPage(page: number): void {
-    this.selectedIds = [];
-    this.loadPage(page);
-  }
-
   protected loadPage(page: number): void {
     this.loadError = false;
     if (this.isSummary) {
-      this.ledgerRegisterService.summary(this.associateId, this.cycleId, page, PAGE_SIZE).subscribe({
+      fetchAllPages((p, size) => this.ledgerRegisterService.summary(this.associateId, this.cycleId, p, size)).subscribe({
         next: res => {
           this.summaryPage = res;
           // Shared pagination footer reads page/size/totalElements only.
@@ -422,7 +398,7 @@ export class LedgerRegisterComponent implements OnInit {
     if (this.incomeType) filters.incomeType = this.incomeType as AdminLedgerFilters['incomeType'];
     if (this.cycleId) filters.cycleId = this.cycleId;
     if (this.status) filters.status = this.status as AdminLedgerFilters['status'];
-    this.ledgerRegisterService.list(filters, page, PAGE_SIZE).subscribe({
+    fetchAllPages((p, size) => this.ledgerRegisterService.list(filters, p, size)).subscribe({
       next: res => {
         this.page = res;
         this.updateTableRows();

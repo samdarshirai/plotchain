@@ -8,8 +8,8 @@ import { PlotTransferPage } from '../admin-bookings-emi/bookings-emi.model';
 import { formatMoney } from '../admin-bookings-emi/bookings-emi.util';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 
-const PAGE_SIZE = 20;
 const isoDate = (d: Date): string => {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
@@ -68,7 +68,7 @@ const isoDate = (d: Date): string => {
             </thead>
             <tbody>
               <tr *ngFor="let r of page?.transfers; let i = index">
-                <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ (page?.page ?? 0) * pageSize + i + 1 }}</td>
+                <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ i + 1 }}</td>
                 <td [attr.data-label]="'admin.viewTransferredPlot.col.transferDate' | translate">{{ r.transferDate | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ r.associateCode || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ r.associateName || '—' }}</td>
@@ -83,12 +83,21 @@ const isoDate = (d: Date): string => {
                 <td class="add-plot-emi__empty-cell" [attr.colspan]="10">{{ 'admin.viewTransferredPlot.empty' | translate }}</td>
               </tr>
             </tbody>
+          <tfoot *ngIf="page?.transfers?.length">
+            <tr class="editable-table__total">
+              <td>{{ 'common.total' | translate }}</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.viewTransferredPlot.col.paid' | translate">{{ money(sumOf('paidAmount')) }}</td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.viewTransferredPlot.col.rest' | translate">{{ money(sumOf('restAmount')) }}</td>
+            </tr>
+          </tfoot>
           </table>
-        </div>
-        <div class="add-plot-emi__pager" *ngIf="page && page.transfers.length">
-          <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="page.page === 0" (click)="load(page.page - 1)">{{ 'admin.addPlotEmi.previous' | translate }}</button>
-          <span>{{ 'admin.addPlotEmi.pager' | translate: { page: page.page + 1, totalPages: totalPages, count: page.totalElements } }}</span>
-          <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="page.page + 1 >= totalPages" (click)="load(page.page + 1)">{{ 'admin.addPlotEmi.next' | translate }}</button>
         </div>
       </div>
     </div>
@@ -98,7 +107,6 @@ export class ViewTransferredPlotComponent implements OnInit {
   private service = inject(BookingsEmiService);
   private projectsService = inject(ProjectsService);
 
-  readonly pageSize = PAGE_SIZE;
   money = formatMoney;
 
   projects: Project[] = [];
@@ -111,31 +119,33 @@ export class ViewTransferredPlotComponent implements OnInit {
   rangeError = false;
   private seq = 0;
 
-  get totalPages(): number { return this.page ? Math.max(1, Math.ceil(this.page.totalElements / PAGE_SIZE)) : 1; }
-
   ngOnInit(): void {
     this.projectsService.listProjects().subscribe({
-      next: p => { this.projects = p; this.projectId = p[0]?.id ?? ''; this.load(0); },
+      next: p => { this.projects = p; this.projectId = p[0]?.id ?? ''; this.load(); },
       error: () => (this.loadError = true)
     });
   }
 
-  onProject(id: string): void { this.projectId = id; this.load(0); }
+  onProject(id: string): void { this.projectId = id; this.load(); }
 
   onDate(which: 'from' | 'to', v: string): void {
     this[which] = v;
     this.rangeError = !!this.from && !!this.to && this.from > this.to;
-    if (!this.rangeError) { this.load(0); } // an inverted range keeps the last valid list
+    if (!this.rangeError) { this.load(); } // an inverted range keeps the last valid list
   }
 
-  load(p = this.page?.page ?? 0): void {
+  load(): void {
     if (!this.projectId) { return; }
     const seq = ++this.seq;
     this.loading = true;
     this.loadError = false;
-    this.service.plotTransfers({ from: this.from, to: this.to, projectId: this.projectId }, p, PAGE_SIZE).subscribe({
+    fetchAllPages((p, size) => this.service.plotTransfers({ from: this.from, to: this.to, projectId: this.projectId }, p, size)).subscribe({
       next: r => { if (seq === this.seq) { this.page = r; this.loading = false; } },
       error: () => { if (seq === this.seq) { this.loading = false; this.loadError = true; } }
     });
+  }
+
+  sumOf(field: string): number {
+    return Math.round((this.page?.transfers ?? []).reduce((acc, r) => acc + ((r as unknown as Record<string, number | null | undefined>)[field] ?? 0), 0) * 100) / 100;
   }
 }

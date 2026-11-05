@@ -16,7 +16,7 @@ describe('MyBookingsComponent', () => {
     totalAmount: 400000, installmentCount: 4, bookedAt: '2026-02-01T00:00:00Z', paidAmount: 100000, dueAmount: 300000,
     installments: [inst(1, { status: 'PAID', paidAt: '2026-02-05T00:00:00Z' }), inst(2, { overdue: true }), inst(3), inst(4)], ...over
   });
-  const pageOf = (bookings: unknown[], page = 0, total = bookings.length) => ({ bookings, page, size: 20, totalElements: total });
+  const pageOf = (bookings: unknown[], page = 0, total = bookings.length) => ({ bookings, page, size: 100, totalElements: total });
 
   function boot(bookings: unknown[] = [booking('b1'), booking('b2', { status: 'CANCELLED', paidAmount: 100000, dueAmount: 0, installments: [inst(1, { status: 'PAID' }), inst(2, { status: 'VOID' })] })]) {
     http.expectOne(r => r.url === '/api/associates/me/bookings').flush(pageOf(bookings));
@@ -77,52 +77,6 @@ describe('MyBookingsComponent', () => {
     expect(el().textContent).toContain('plotBookings.bookingsLoadError');
     el().querySelector<HTMLButtonElement>('.my-bookings__retry')!.click();
     http.expectOne(r => r.url === '/api/associates/me/bookings').flush(pageOf([]));
-  });
-
-  it('pages with Next/Previous and keeps the previous page visible if the next load fails', () => {
-    http.expectOne(r => r.url === '/api/associates/me/bookings').flush(pageOf([booking('b1')], 0, 25));
-    fixture.detectChanges();
-    el().querySelector<HTMLButtonElement>('.my-bookings__next')!.click();
-    const req = http.expectOne(r => r.url === '/api/associates/me/bookings');
-    expect(req.request.params.get('page')).toBe('1');
-    req.flush('x', { status: 500, statusText: 'err' });
-    fixture.detectChanges();
-    expect(el().querySelectorAll('.booking-table tbody tr').length).toBe(1);
-    expect(el().textContent).toContain('plotBookings.bookingsLoadError');
-  });
-
-  it('Retry after a failed page-N load re-requests that page and keeps page 1 visible', () => {
-    http.expectOne(r => r.url === '/api/associates/me/bookings').flush(pageOf([booking('b1')], 0, 25));
-    fixture.detectChanges();
-    el().querySelector<HTMLButtonElement>('.my-bookings__next')!.click();
-    http.expectOne(r => r.url === '/api/associates/me/bookings').flush('x', { status: 500, statusText: 'err' });
-    fixture.detectChanges();
-    expect(el().querySelectorAll('.booking-table tbody tr').length).toBe(1);
-    el().querySelector<HTMLButtonElement>('.my-bookings__retry')!.click();
-    const retry = http.expectOne(r => r.url === '/api/associates/me/bookings');
-    expect(retry.request.params.get('page')).toBe('1');
-    retry.flush(pageOf([booking('b9')], 1, 25));
-  });
-
-  it('ignores an out-of-order page response (success and error) from a superseded request', () => {
-    http.expectOne(r => r.url === '/api/associates/me/bookings').flush(pageOf([booking('b1')], 0, 60));
-    fixture.detectChanges();
-    const c = fixture.componentInstance;
-    c.goTo(1);
-    c.goTo(2);
-    const reqs = http.match(r => r.url === '/api/associates/me/bookings');
-    expect(reqs.length).toBe(2);
-    reqs[1].flush(pageOf([booking('p2')], 2, 60));
-    reqs[0].flush(pageOf([booking('p1')], 1, 60));
-    fixture.detectChanges();
-    expect(c.page!.page).toBe(2);
-    c.goTo(1);
-    c.goTo(2);
-    const r2 = http.match(r => r.url === '/api/associates/me/bookings');
-    r2[1].flush(pageOf([booking('p2')], 2, 60));
-    r2[0].flush('x', { status: 500, statusText: 'err' });
-    expect(c.error).toBeFalse();
-    expect(c.loading).toBeFalse();
   });
 
   it('sends the last-30-days from/to and refetches page 0 when the range changes', () => {

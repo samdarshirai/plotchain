@@ -15,8 +15,8 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
 import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
 import { FormIssue } from '../../shared/validation/validation';
 import { ExportColumn, copyTable, exportCsv, exportExcel, printTable } from '../../shared/utils/table-export.util';
+import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 
-const PAGE_SIZE = 20;
 const round2 = (n: number): number => Math.round(n); // whole rupees
 
 @Component({
@@ -115,12 +115,25 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
                 <td class="add-plot-emi__empty-cell" [attr.colspan]="14">{{ (projectId ? 'admin.addPlotEmi.empty' : 'admin.addPlotEmi.pickProject') | translate }}</td>
               </tr>
             </tbody>
+          <tfoot *ngIf="page?.bookings?.length">
+            <tr class="editable-table__total">
+              <td>{{ 'common.total' | translate }}</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.price' | translate">{{ money(sumOf('listPrice')) }}</td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.discount' | translate">{{ money(sumOf('discount')) }}</td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.total' | translate">{{ money(sumOf('totalAmount')) }}</td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.paid' | translate">{{ money(sumOf('paidAmount')) }}</td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.remaining' | translate">{{ money(sumOf('dueAmount')) }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
           </table>
-        </div>
-        <div class="add-plot-emi__pager" *ngIf="page && page.bookings.length">
-          <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="page.page === 0" (click)="goTo(page.page - 1)">{{ 'admin.addPlotEmi.previous' | translate }}</button>
-          <span>{{ 'admin.addPlotEmi.pager' | translate: { page: page.page + 1, totalPages: totalPages, count: page.totalElements } }}</span>
-          <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="page.page + 1 >= totalPages" (click)="goTo(page.page + 1)">{{ 'admin.addPlotEmi.next' | translate }}</button>
         </div>
       </div>
     </div>
@@ -320,8 +333,6 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
   saving = false;
   formError = '';
 
-  get totalPages(): number { return this.page ? Math.max(1, Math.ceil(this.page.totalElements / PAGE_SIZE)) : 1; }
-
   ngOnInit(): void {
     this.projectsService.listProjects().subscribe({ next: p => (this.projects = p), error: () => (this.loadError = true) });
   }
@@ -348,40 +359,39 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
   onProject(id: string): void {
     this.projectId = id;
     this.page = null;
-    if (id) { this.load(0); }
+    if (id) { this.load(); }
   }
 
   onSearch(v: string): void {
     this.q = v;
     clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.load(0), 300);
+    this.timer = setTimeout(() => this.load(), 300);
   }
 
   onDate(which: 'from' | 'to', v: string): void {
     this[which] = v;
     this.rangeError = !!this.from && !!this.to && this.from > this.to;
-    if (!this.rangeError) { this.load(0); } // an inverted range keeps the last valid list
+    if (!this.rangeError) { this.load(); } // an inverted range keeps the last valid list
   }
 
   reset(): void {
     this.q = this.from = this.to = '';
     this.rangeError = false;
-    this.load(0);
+    this.load();
   }
 
-  goTo(p: number): void { this.load(p); }
 
   private filters(): RegisterFilters {
     return { status: '', associateId: '', plotId: '', projectId: this.projectId, overdue: false,
       bookedFrom: this.from, bookedTo: this.to, q: this.q.trim(), hasPending: true };
   }
 
-  load(page = this.page?.page ?? 0): void {
+  load(): void {
     if (!this.projectId) { return; }
     const seq = ++this.seq;
     this.loading = true;
     this.loadError = false;
-    this.service.list(this.filters(), page, PAGE_SIZE).subscribe({
+    fetchAllPages((p, size) => this.service.list(this.filters(), p, size)).subscribe({
       next: r => { if (seq === this.seq) { this.page = r; this.loading = false; } },
       error: () => { if (seq === this.seq) { this.loading = false; this.loadError = true; } }
     });
@@ -527,5 +537,9 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  sumOf(field: string): number {
+    return Math.round((this.page?.bookings ?? []).reduce((acc, b) => acc + ((b as unknown as Record<string, number | null | undefined>)[field] ?? 0), 0) * 100) / 100;
   }
 }

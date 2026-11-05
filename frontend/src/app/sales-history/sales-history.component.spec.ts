@@ -33,7 +33,7 @@ describe('SalesHistoryComponent', () => {
   });
 
   const flushFirst = (sales: object[], totalElements = sales.length) =>
-    httpMock.expectOne(r => r.urlWithParams.startsWith('/api/associates/me/sales?page=0&size=20')).flush({ sales, page: 0, size: 20, totalElements });
+    httpMock.expectOne(r => r.urlWithParams.startsWith('/api/associates/me/sales?page=0&size=100')).flush({ sales, page: 0, size: 100, totalElements });
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -83,24 +83,6 @@ describe('SalesHistoryComponent', () => {
       cells.forEach((td: HTMLElement) => expect(td.getAttribute('data-label')).toBeTruthy());
     });
 
-    it('uses the shared pager and no hand-rolled one', () => {
-      expect(q('app-pager')).toBeTruthy();
-      expect(q('.sales-history__pagination')).toBeNull();
-    });
-
-    it('requests the next page when the pager emits', () => {
-      fixture.debugElement.query(By.directive(PagerComponent)).componentInstance.pageChange.emit(1);
-      httpMock.expectOne(r => r.urlWithParams.startsWith('/api/associates/me/sales?page=1&size=20')).flush({ sales: [], page: 1, size: 20, totalElements: 25 });
-      expect(fixture.componentInstance.page?.page).toBe(1);
-    });
-
-    it('shows a load error when a later load fails', () => {
-      fixture.componentInstance.goToPage(1);
-      httpMock.expectOne(r => r.urlWithParams.startsWith('/api/associates/me/sales?page=1&size=20')).flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
-      fixture.detectChanges();
-      expect(q('.my-sales__load-error')?.textContent?.trim()).toBeTruthy();
-    });
-
     it('renders real translated headers and follows a language switch', () => {
       expect(q('.booking-table thead').textContent).toContain('Name');
       translateService.use('fr');
@@ -108,41 +90,11 @@ describe('SalesHistoryComponent', () => {
       expect(q('.booking-table thead').textContent).toContain('Nom');
     });
 
-    it('ignores a stale response for a page that is no longer requested', () => {
-      const comp = fixture.componentInstance;
-      comp.goToPage(1);
-      comp.goToPage(2);
-      const reqs = httpMock.match(r => r.url === '/api/associates/me/sales');
-      reqs[1].flush({ sales: [sale({ buyerName: 'Two' })], page: 2, size: 20, totalElements: 60 });
-      reqs[0].flush({ sales: [sale({ buyerName: 'One' })], page: 1, size: 20, totalElements: 60 });
-      expect(comp.page?.page).toBe(2);
-      expect(comp.loading).toBe(false);
-    });
-
-    it('disables the pager while loading and re-enables after an error', () => {
-      fixture.componentInstance.goToPage(1);
-      fixture.detectChanges();
-      expect(fixture.debugElement.query(By.directive(PagerComponent)).componentInstance.disabled).toBe(true);
-      httpMock.expectOne(r => r.urlWithParams.startsWith('/api/associates/me/sales?page=1&size=20')).flush({}, { status: 500, statusText: 'x' });
-      fixture.detectChanges();
-      expect(fixture.componentInstance.loading).toBe(false);
-      expect(fixture.debugElement.query(By.directive(PagerComponent)).componentInstance.disabled).toBe(false);
-    });
-
     it('is view-only: no button, select or input in the table', () => {
       expect(q('.booking-table')).toBeTruthy();
       expect(fixture.nativeElement.querySelectorAll('.booking-table button, .booking-table select, .booking-table input').length).toBe(0);
     });
 
-    it('renders an em dash when the associate ID or name is missing', () => {
-      fixture.componentInstance.goToPage(0);
-      httpMock.expectOne(r => r.urlWithParams.startsWith('/api/associates/me/sales?page=0&size=20')).flush({
-        sales: [sale({ associateUserId: null, associateName: null })], page: 0, size: 20, totalElements: 1
-      });
-      fixture.detectChanges();
-      expect(q('td[data-label="Associate ID"]').textContent!.trim()).toBe('—');
-      expect(q('td[data-label="Name"]').textContent!.trim()).toBe('—');
-    });
   });
 
   it('shows the empty state when there are no sales', () => {

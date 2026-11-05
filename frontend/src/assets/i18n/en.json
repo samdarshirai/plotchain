@@ -1,4 +1,5 @@
 {
+  "common": { "total": "Total" },
   "dashboard": {
     "title": "Dashboard",
     "kycBanner": "Complete your KYC verification to unlock payouts.",

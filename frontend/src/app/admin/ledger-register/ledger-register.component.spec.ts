@@ -40,7 +40,7 @@ describe('LedgerRegisterComponent', () => {
     httpMock
       .expectOne(req => req.url === '/api/admin/cycles' && req.method === 'GET')
       .flush({ cycles: [], page: 0, size: 100, totalElements: 0 });
-    httpMock.expectOne('/api/admin/ledger?page=0&size=20').flush({
+    httpMock.expectOne('/api/admin/ledger?page=0&size=100').flush({
       entries: [sampleEntry],
       page: 0,
       size: 20,
@@ -103,24 +103,6 @@ describe('LedgerRegisterComponent', () => {
 
     const req = httpMock.expectOne(r => r.url === '/api/admin/ledger' && r.params.get('status') === 'REVERSED');
     req.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
-  });
-
-  it('shows a load error when the initial load fails, without silently doing nothing', () => {
-    fixture.componentInstance.goToPage(1);
-    httpMock.expectOne('/api/admin/ledger?page=1&size=20').flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
-    fixture.detectChanges();
-
-    expect(fixture.componentInstance.loadError).toBe(true);
-    const errorEl: HTMLElement | null = fixture.nativeElement.querySelector('.ledger-register__load-error');
-    expect(errorEl?.textContent?.trim()).toBeTruthy();
-  });
-
-  it('clicking Next loads the next page', () => {
-    fixture.componentInstance.goToPage(1);
-    const req = httpMock.expectOne('/api/admin/ledger?page=1&size=20');
-    req.flush({ entries: [], page: 1, size: 20, totalElements: 21 });
-
-    expect(fixture.componentInstance.page?.page).toBe(1);
   });
 
   it('shows an empty-state row when no entries match', () => {

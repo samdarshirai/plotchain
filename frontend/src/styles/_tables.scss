@@ -179,6 +179,13 @@ th {
   }
 }
 
+// Total row (last row): bold, money stays on one line.
+.editable-table__total td {
+  font-weight: 700;
+  white-space: nowrap;
+  border-top: 2px solid var(--border-subtle);
+}
+
 // Project rule: tables never scroll sideways. table-fit.ts adds .table--stacked to any table wider
 // than its container; each row becomes a card of label/value pairs (labels from data-label, copied
 // from the column headers). !important because screen rules style cells by position and width.
@@ -206,7 +213,8 @@ table.table--stacked {
     border-bottom: 1px solid var(--border-subtle);
   }
 
-  > tbody > tr:last-child {
+  > tbody > tr:last-child,
+  > tfoot > tr:last-child {
     border-bottom: none;
   }
 
@@ -243,12 +251,14 @@ table.table--stacked {
   }
 
   // First column (period, name, ID) heads the card.
-  > tbody > tr > td:first-child:not([colspan]) {
+  > tbody > tr > td:first-child:not([colspan]),
+  > tfoot > tr > td:first-child:not([colspan]) {
     grid-column: 1 / -1;
     font-weight: 600;
   }
 
-  > tbody > tr > td:first-child::before {
+  > tbody > tr > td:first-child::before,
+  > tfoot > tr > td:first-child::before {
     display: none;
   }
 

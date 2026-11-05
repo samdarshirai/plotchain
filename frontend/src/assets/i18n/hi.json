@@ -1,4 +1,5 @@
 {
+  "common": { "total": "कुल" },
   "epins": {
     "errorUserIdRequired": "एसोसिएट आईडी दर्ज करें।",
     "errorNotFound": "ऐसा कोई पिन या एसोसिएट नहीं मिला।",

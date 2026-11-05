@@ -155,6 +155,16 @@ import { FormIssue, collectIssues, errorMessage } from '../../../shared/validati
                   <td [attr.data-label]="'admin.invoiceLoans.txnNo' | translate">{{ r.txnNo || '—' }}</td>
                 </tr>
               </tbody>
+              <tfoot>
+                <tr class="editable-table__total">
+                  <td>{{ 'common.total' | translate }}</td>
+                  <td></td>
+                  <td>{{ total(d.repayments) | number:'1.0-0' }}</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tfoot>
             </table>
           </ng-container>
           <div class="invoice-loans__modal-footer">
@@ -279,10 +289,10 @@ export class AdvanceLoansComponent implements OnInit {
       { key: 'date', label: t('loanDate'), type: 'text' },
       { key: 'userId', label: t('associateId'), type: 'text' },
       { key: 'name', ellipsis: true, label: t('associateName'), type: 'text' },
-      { key: 'amount', fitText: true, label: t('amount'), type: 'text' },
-      { key: 'previousDues', fitText: true, label: t('previousDues'), type: 'text' },
-      { key: 'repaid', fitText: true, label: t('repaid'), type: 'text' },
-      { key: 'outstanding', fitText: true, label: t('outstanding'), type: 'text' },
+      { key: 'amount', fitText: true, label: t('amount'), type: 'text', sum: true },
+      { key: 'previousDues', fitText: true, label: t('previousDues'), type: 'text', sum: true },
+      { key: 'repaid', fitText: true, label: t('repaid'), type: 'text', sum: true },
+      { key: 'outstanding', fitText: true, label: t('outstanding'), type: 'text', sum: true },
       { key: 'mode', ellipsis: true, label: t('payMode'), type: 'text' },
       { key: 'bank', ellipsis: true, label: t('bankName'), type: 'text' },
       { key: 'instrumentNo', ellipsis: true, label: t('instrumentNo'), type: 'text' },
@@ -322,6 +332,10 @@ export class AdvanceLoansComponent implements OnInit {
     } else if (this.detailOpen) {
       this.closeDetail();
     }
+  }
+
+  total(repayments: { amount: number }[]): number {
+    return repayments.reduce((acc, r) => acc + r.amount, 0);
   }
 
   fit(amount: number) {

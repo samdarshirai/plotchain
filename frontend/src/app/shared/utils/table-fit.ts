@@ -19,7 +19,7 @@ function labelCells(table: HTMLTableElement): void {
   if (!heads.length) {
     return;
   }
-  for (const body of Array.from(table.tBodies)) {
+  for (const body of [...Array.from(table.tBodies), ...(table.tFoot ? [table.tFoot] : [])]) {
     for (const row of Array.from(body.rows)) {
       if (row.cells.length !== heads.length) {
         continue; // colspan rows (empty state, group headings) keep their own layout

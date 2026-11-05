@@ -38,7 +38,7 @@ describe('CycleManagementComponent', () => {
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
 
-    httpMock.expectOne('/api/admin/cycles?page=0&size=20').flush({
+    httpMock.expectOne('/api/admin/cycles?page=0&size=100').flush({
       cycles: [
         { id: 'c1', periodStart: '2026-08-01', periodEnd: '2026-08-15', status: 'CLOSED' },
         { id: 'c2', periodStart: '2026-08-16', periodEnd: '2026-08-31', status: 'OPEN' }
@@ -82,24 +82,6 @@ describe('CycleManagementComponent', () => {
 
     const req = httpMock.expectOne(r => r.url === '/api/admin/cycles' && r.params.get('status') === 'OPEN');
     req.flush({ cycles: [], page: 0, size: 20, totalElements: 0 });
-  });
-
-  it('shows a load error when the initial load fails, without silently doing nothing', () => {
-    fixture.componentInstance.goToPage(1);
-    httpMock.expectOne('/api/admin/cycles?page=1&size=20').flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
-    fixture.detectChanges();
-
-    expect(fixture.componentInstance.loadError).toBe(true);
-    const errorEl: HTMLElement | null = fixture.nativeElement.querySelector('.cycle-management__load-error');
-    expect(errorEl?.textContent?.trim()).toBeTruthy();
-  });
-
-  it('clicking Next loads the next page', () => {
-    fixture.componentInstance.goToPage(1);
-    const req = httpMock.expectOne('/api/admin/cycles?page=1&size=20');
-    req.flush({ cycles: [], page: 1, size: 20, totalElements: 21 });
-
-    expect(fixture.componentInstance.page?.page).toBe(1);
   });
 
   it('shows an empty-state row when no cycles match', () => {
@@ -186,7 +168,7 @@ describe('CycleManagementComponent', () => {
 
     // Dismissing the success popup reloads the list and stats.
     fixture.componentInstance.dismissClosePopup();
-    httpMock.expectOne('/api/admin/cycles?page=0&size=20').flush({
+    httpMock.expectOne('/api/admin/cycles?page=0&size=100').flush({
       cycles: [
         { id: 'c2', periodStart: '2026-08-16', periodEnd: '2026-08-31', status: 'CLOSED' },
         { id: 'c3', periodStart: '2026-09-01', periodEnd: '2026-09-15', status: 'OPEN' }
@@ -234,7 +216,7 @@ describe('CycleManagementComponent', () => {
     expect(req.request.method).toBe('POST');
     req.flush({ cycleId: 'c1', entriesCredited: 12, totalAmountCredited: 4500, newCycleStatus: 'CLOSED' });
 
-    httpMock.expectOne('/api/admin/cycles?page=0&size=20').flush({
+    httpMock.expectOne('/api/admin/cycles?page=0&size=100').flush({
       cycles: [
         { id: 'c1', periodStart: '2026-08-01', periodEnd: '2026-08-15', status: 'CLOSED' },
         { id: 'c2', periodStart: '2026-08-16', periodEnd: '2026-08-31', status: 'OPEN' }

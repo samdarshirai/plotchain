@@ -202,7 +202,7 @@ export class MasterProjectsComponent implements OnInit, OnDestroy {
       { key: 'name', label: t('projectName'), type: 'text' },
       { key: 'type', label: t('type'), type: 'text' },
       { key: 'cityState', label: t('cityState'), type: 'text' },
-      { key: 'business', label: t('business'), type: 'text' },
+      { key: 'business', label: t('business'), type: 'text', sum: true },
       { key: 'rate', label: t('rate'), type: 'text' },
       { key: 'locationMap', label: t('locationMap'), type: 'text' },
       { key: 'projectMap', label: t('projectMap'), type: 'text' },

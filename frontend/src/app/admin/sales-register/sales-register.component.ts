@@ -10,8 +10,8 @@ import { AssociateSummary } from '../models/associate-summary.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { titleCase } from '../../shared/utils/title-case';
+import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 
-const PAGE_SIZE = 20;
 
 // The backend's SaleStatus enum is shouty-uppercase (RECORDED/VOIDED); the mockup renders
 // per-value colored status text Title Case (Viraj_Acres_Settings.dc.html, isSales section,
@@ -92,18 +92,6 @@ const PAGE_SIZE = 20;
           </ng-template>
         </div>
       </ng-template>
-
-      <div class="sales-register__pagination" *ngIf="page">
-        <button type="button" class="brand-button brand-button--secondary" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
-          {{ 'admin.salesRegister.previousPageAction' | translate }}
-        </button>
-        <span class="sales-register__page-indicator">
-          {{ 'admin.salesRegister.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
-        </span>
-        <button type="button" class="brand-button brand-button--secondary" [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="goToPage(page.page + 1)">
-          {{ 'admin.salesRegister.nextPageAction' | translate }}
-        </button>
-      </div>
     </div>
   `
 })
@@ -126,23 +114,12 @@ export class SalesRegisterComponent implements OnInit {
   private recordedFrom = '';
   private recordedTo = '';
 
-  get currentPage(): number {
-    return (this.page?.page ?? 0) + 1;
-  }
-
-  get totalPages(): number {
-    if (!this.page || this.page.size === 0) {
-      return 1;
-    }
-    return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
-  }
-
   ngOnInit(): void {
     this.registerColumns = [
       { key: 'projectName', label: this.translate.instant('admin.salesRegister.columnProjectName'), type: 'text' },
       { key: 'buyerName', label: this.translate.instant('admin.salesRegister.columnBuyerName'), type: 'text' },
       { key: 'buyerPhone', label: this.translate.instant('admin.salesRegister.columnBuyerPhone'), type: 'text' },
-      { key: 'amount', label: this.translate.instant('admin.salesRegister.columnAmount'), type: 'text' },
+      { key: 'amount', label: this.translate.instant('admin.salesRegister.columnAmount'), type: 'text', sum: true },
       { key: 'legCredited', label: this.translate.instant('admin.salesRegister.columnLegCredited'), type: 'text' },
       { key: 'note', label: this.translate.instant('admin.salesRegister.columnNote'), type: 'text' },
       {
@@ -178,16 +155,12 @@ export class SalesRegisterComponent implements OnInit {
     this.loadPage(0);
   }
 
-  goToPage(page: number): void {
-    this.loadPage(page);
-  }
-
   voidSale(id: string): void {
     this.actionError = false;
     this.salesRegisterService.voidSale(id, this.voidReasons[id] ?? '').subscribe({
       next: () => {
         delete this.voidReasons[id];
-        this.loadPage(this.page?.page ?? 0);
+        this.loadPage(0);
       },
       error: () => (this.actionError = true)
     });
@@ -200,7 +173,7 @@ export class SalesRegisterComponent implements OnInit {
     if (this.status) filters.status = this.status as AdminSaleFilters['status'];
     if (this.recordedFrom) filters.recordedFrom = this.recordedFrom;
     if (this.recordedTo) filters.recordedTo = this.recordedTo;
-    this.salesRegisterService.list(filters, page, PAGE_SIZE).subscribe({
+    fetchAllPages((p, size) => this.salesRegisterService.list(filters, p, size)).subscribe({
       next: res => {
         this.page = res;
         this.updateTableRows();

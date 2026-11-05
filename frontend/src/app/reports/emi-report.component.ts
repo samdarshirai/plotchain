@@ -51,6 +51,13 @@ import { EmiReportRow, ReportsService } from './reports.service';
               <td>{{ r.mode ? ('admin.bookingsEmi.paymentMode.' + r.mode | translate) : '—' }}</td>
             </tr>
           </tbody>
+          <tfoot *ngIf="rows?.length">
+            <tr class="editable-table__total">
+              <td>{{ 'common.total' | translate }}</td><td></td><td></td><td></td>
+              <td class="table-number" [attr.data-label]="'reports.column.amount' | translate">{{ money(total) }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>
@@ -66,6 +73,10 @@ export class EmiReportComponent {
   loading = false;
   error = false;
   money = formatInr;
+
+  get total(): number {
+    return (this.rows ?? []).reduce((acc, r) => acc + r.amount, 0);
+  }
   private seq = 0;
 
   constructor() { this.load(); }

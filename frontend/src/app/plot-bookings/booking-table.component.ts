@@ -93,6 +93,18 @@ export const saleRow = (s: Sale): BookingRow => ({
             </tr>
           </ng-container>
         </tbody>
+        <tfoot *ngIf="rows.length">
+          <tr class="editable-table__total">
+            <td>{{ 'common.total' | translate }}</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            <td class="booking-table__num" [attr.data-label]="'plotBookings.table.price' | translate">{{ money(sum('price')) }}</td>
+            <td class="booking-table__num" [attr.data-label]="'plotBookings.table.extraPrice' | translate">{{ money(sum('extraPrice')) }}</td>
+            <td class="booking-table__num" [attr.data-label]="'plotBookings.table.totalPrice' | translate">{{ money(sum('total')) }}</td>
+            <td class="booking-table__num" [attr.data-label]="'plotBookings.table.paid' | translate">{{ money(sum('paid')) }}</td>
+            <td class="booking-table__num" [attr.data-label]="'plotBookings.table.rest' | translate">{{ money(sum('rest')) }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
     <div class="booking-modal" *ngIf="inline && popupRow as r" (keydown.escape)="expandedKey = null"
@@ -141,6 +153,10 @@ export class BookingTableComponent {
 
   money = (n: number | null | undefined): string => (n == null ? '—' : formatInr(n));
   area = formatArea;
+
+  sum(field: 'price' | 'extraPrice' | 'total' | 'paid' | 'rest'): number {
+    return this.rows.reduce((acc, r) => acc + (r[field] ?? 0), 0);
+  }
 
   trackKey = (_: number, r: BookingRow): string => r.key;
 

@@ -20,7 +20,7 @@ describe('SalesRegisterComponent', () => {
     fixture.detectChanges();
 
     httpMock.expectOne(req => req.url === '/api/associates' && req.method === 'GET').flush([]);
-    httpMock.expectOne('/api/admin/sales?page=0&size=20').flush({
+    httpMock.expectOne('/api/admin/sales?page=0&size=100').flush({
       sales: [
         {
           id: 's1', plotId: 'p1', associateId: 'a1', buyerName: 'Jane', buyerPhone: '9999999999',
@@ -79,24 +79,6 @@ describe('SalesRegisterComponent', () => {
     httpMock.expectOne(r => r.params.get('recordedTo') === '2026-01-31').flush({ sales: [], page: 0, size: 20, totalElements: 0 });
   });
 
-  it('shows a load error when the initial load fails, without silently doing nothing', () => {
-    fixture.componentInstance.goToPage(1);
-    httpMock.expectOne('/api/admin/sales?page=1&size=20').flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
-    fixture.detectChanges();
-
-    expect(fixture.componentInstance.loadError).toBe(true);
-    const errorEl: HTMLElement | null = fixture.nativeElement.querySelector('.sales-register__load-error');
-    expect(errorEl?.textContent?.trim()).toBeTruthy();
-  });
-
-  it('clicking Next loads the next page', () => {
-    fixture.componentInstance.goToPage(1);
-    const req = httpMock.expectOne('/api/admin/sales?page=1&size=20');
-    req.flush({ sales: [], page: 1, size: 20, totalElements: 21 });
-
-    expect(fixture.componentInstance.page?.page).toBe(1);
-  });
-
   it('shows an empty-state row when no sales match', () => {
     fixture.componentInstance.onStatusChange('VOIDED');
     httpMock.expectOne(r => r.params.get('status') === 'VOIDED').flush({ sales: [], page: 0, size: 20, totalElements: 0 });
@@ -145,7 +127,7 @@ describe('SalesRegisterComponent', () => {
       voidReason: 'Buyer cancelled', recordedAt: '2026-01-01T00:00:00Z'
     });
 
-    httpMock.expectOne('/api/admin/sales?page=0&size=20').flush({ sales: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne('/api/admin/sales?page=0&size=100').flush({ sales: [], page: 0, size: 20, totalElements: 0 });
 
     expect(fixture.componentInstance.voidReasons['s1']).toBeUndefined();
   });
@@ -168,6 +150,6 @@ describe('SalesRegisterComponent', () => {
     const req = httpMock.expectOne('/api/admin/sales/s1/void');
     expect(req.request.body).toEqual({ reason: '' });
     req.flush({ id: 's1', status: 'VOIDED' } as any);
-    httpMock.expectOne('/api/admin/sales?page=0&size=20').flush({ sales: [], page: 0, size: 20, totalElements: 0 });
+    httpMock.expectOne('/api/admin/sales?page=0&size=100').flush({ sales: [], page: 0, size: 20, totalElements: 0 });
   });
 });
