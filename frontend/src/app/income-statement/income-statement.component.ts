@@ -30,9 +30,9 @@ const TAB_ROUTES = [
   { id: 'DOWNLINE', labelKey: 'incomeStatement.tabDownline', path: '/income-statement/downline' }
 ];
 
-const DOWNLINE_KEYS = ['sNo', 'paymentDate', 'associateId', 'name', 'direct', 'matching', 'totalIncome',
+const DOWNLINE_KEYS = ['sNo', 'paymentDate', 'associateId', 'name', 'direct', 'matching', 'royalty', 'rewards', 'totalIncome',
   'tds', 'processing', 'payable', 'paidStatus'];
-const DOWNLINE_MONEY = ['direct', 'matching', 'totalIncome', 'tds', 'processing', 'payable'] as const;
+const DOWNLINE_MONEY = ['direct', 'matching', 'royalty', 'rewards', 'totalIncome', 'tds', 'processing', 'payable'] as const;
 
 const MATCHING_KEYS = ['bflb', 'bfrb', 'nlb', 'nrb', 'tlb', 'trb', 'clb', 'crb'];
 
@@ -309,10 +309,10 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     this.statementRows = out;
   }
 
-  // My Downline Income Report: one row per downline associate x cycle (Direct + Matching only,
-  // so Total/TDS/fee/payable cover just those two), then a Total row.
+  // My Downline Income Report: one row per downline associate x cycle covering
+  // Direct, Matching, Royalty and Rewards, then a Total row.
   private buildDownlineColumns(): void {
-    const keys = ['SNo', 'PaymentDate', 'AssociateId', 'AssociateName', 'DirectIncome', 'MatchingIncome', 'TotalIncome',
+    const keys = ['SNo', 'PaymentDate', 'AssociateId', 'AssociateName', 'DirectIncome', 'MatchingIncome', 'RoyaltyIncome', 'Rewards', 'TotalIncome',
       'Tds', 'ProcessingFee', 'PayableAmount', 'PaidStatus'];
     this.translate
       .get(keys.map(k => 'incomeStatement.column' + k))
@@ -340,6 +340,8 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       const values: Record<string, number> = {
         direct: r.gross.DIRECT ?? 0,
         matching: r.gross.MATCHING ?? 0,
+        royalty: r.gross.ROYALTY ?? 0,
+        rewards: r.gross.REWARD ?? 0,
         totalIncome: r.totalGross,
         tds: r.tds,
         processing: r.adminCharges,

@@ -389,15 +389,22 @@ class LedgerEntryRepositoryTest {
     }
 
     @Test
-    void summariseDownlineCoversOnlyListedAssociatesAndOnlyDirectPlusMatching() {
+    void summariseDownlineCoversFourIncomeTypesAndExcludesUnlistedAssociatesAndSponsorMatching() {
         Associate a = seedAssociate();
         Associate outsider = seedAssociate();
         Cycle cycle = seedCycle();
-        ledgerEntryRepository.save(newEntry(a.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID()));
-        ledgerEntryRepository.save(newEntry(a.getId(), cycle.getId(), IncomeType.MATCHING, UUID.randomUUID()));
-        ledgerEntryRepository.save(newEntry(a.getId(), cycle.getId(), IncomeType.ROYALTY, UUID.randomUUID()));
-        ledgerEntryRepository.save(newEntry(a.getId(), cycle.getId(), IncomeType.SPONSOR_MATCHING, UUID.randomUUID()));
-        ledgerEntryRepository.save(newEntry(outsider.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID()));
+        Instant paidAt = Instant.parse("2026-10-20T10:00:00Z");
+        for (IncomeType type : IncomeType.values()) {
+            LedgerEntry entry = newEntry(a.getId(), cycle.getId(), type, UUID.randomUUID());
+            // Only the newly included types are paid; Sponsor Matching must not affect metadata.
+            if (type == IncomeType.ROYALTY || type == IncomeType.REWARD) {
+                entry.setFulfilledAt(paidAt);
+            } else if (type == IncomeType.SPONSOR_MATCHING) {
+                entry.setFulfilledAt(paidAt.plusSeconds(60));
+            }
+            ledgerEntryRepository.save(entry);
+            ledgerEntryRepository.save(newEntry(outsider.getId(), cycle.getId(), type, UUID.randomUUID()));
+        }
         ledgerEntryRepository.flush();
 
         List<LedgerSummaryRow> rows = ledgerEntryRepository.summariseDownline(List.of(a.getId()));
@@ -405,11 +412,47 @@ class LedgerEntryRepositoryTest {
         assertThat(rows).hasSize(1);
         LedgerSummaryRow row = rows.get(0);
         assertThat(row.getAssociateId()).isEqualTo(a.getId());
-        assertThat(row.getTotalGross()).isEqualByComparingTo("200.00");
-        assertThat(row.getTds()).isEqualByComparingTo("10.00");
-        assertThat(row.getAdminCharges()).isEqualByComparingTo("8.00");
-        assertThat(row.getTotalNet()).isEqualByComparingTo("182.00");
-        assertThat(row.getRoyalty()).isEqualByComparingTo("0");
-        assertThat(row.getEntryCount()).isEqualTo(2);
+        assertThat(row.getDirect()).isEqualByComparingTo("100.00");
+        assertThat(row.getMatching()).isEqualByComparingTo("100.00");
+        assertThat(row.getRoyalty()).isEqualByComparingTo("100.00");
+        assertThat(row.getReward()).isEqualByComparingTo("100.00");
+        assertThat(row.getSponsorMatching()).isEqualByComparingTo("0");
+        assertThat(row.getTotalGross()).isEqualByComparingTo("400.00");
+        assertThat(row.getTds()).isEqualByComparingTo("20.00");
+        assertThat(row.getAdminCharges()).isEqualByComparingTo("16.00");
+        assertThat(row.getTotalNet()).isEqualByComparingTo("364.00");
+        assertThat(row.getEntryCount()).isEqualTo(4);
+        assertThat(row.getPaidCount()).isEqualTo(2);
+        assertThat(row.getPaidAt()).isEqualTo(paidAt);
+    }
+
+    @Test
+    void summariseDownlineIncludesRoyaltyOnlyAndRewardOnlyAssociates() {
+        Associate royaltyOnly = seedAssociate();
+        Associate rewardOnly = seedAssociate();
+        Cycle cycle = seedCycle();
+        LedgerEntry royalty = newEntry(royaltyOnly.getId(), cycle.getId(), IncomeType.ROYALTY, UUID.randomUUID());
+        Instant paidAt = Instant.parse("2026-10-20T10:00:00Z");
+        royalty.setFulfilledAt(paidAt);
+        ledgerEntryRepository.save(royalty);
+        ledgerEntryRepository.save(newEntry(rewardOnly.getId(), cycle.getId(), IncomeType.REWARD, UUID.randomUUID()));
+        ledgerEntryRepository.flush();
+
+        List<LedgerSummaryRow> rows = ledgerEntryRepository.summariseDownline(List.of(royaltyOnly.getId(), rewardOnly.getId()));
+        assertThat(rows).hasSize(2);
+        for (LedgerSummaryRow row : rows) {
+            boolean isRoyalty = row.getAssociateId().equals(royaltyOnly.getId());
+            assertThat(row.getRoyalty()).isEqualByComparingTo(isRoyalty ? "100" : "0");
+            assertThat(row.getReward()).isEqualByComparingTo(isRoyalty ? "0" : "100");
+            assertThat(row.getDirect()).isEqualByComparingTo("0");
+            assertThat(row.getMatching()).isEqualByComparingTo("0");
+            assertThat(row.getTotalGross()).isEqualByComparingTo("100");
+            assertThat(row.getTds()).isEqualByComparingTo("5");
+            assertThat(row.getAdminCharges()).isEqualByComparingTo("4");
+            assertThat(row.getTotalNet()).isEqualByComparingTo("91");
+            assertThat(row.getEntryCount()).isEqualTo(1);
+            assertThat(row.getPaidCount()).isEqualTo(isRoyalty ? 1 : 0);
+            assertThat(row.getPaidAt()).isEqualTo(isRoyalty ? paidAt : null);
+        }
     }
 }

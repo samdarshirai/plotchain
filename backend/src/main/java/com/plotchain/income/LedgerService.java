@@ -99,7 +99,7 @@ public class LedgerService {
     }
 
     // Associate "My Downline Income Report": every associate below the caller (whole tree, self
-    // excluded), one row per associate x cycle, DIRECT + MATCHING only. Newest cycle first.
+    // excluded), one row per associate x cycle, Direct + Matching + Royalty + Rewards. Newest cycle first.
     public List<AdminLedgerSummaryRow> myDownlineSummary(UUID associateId) {
         List<UUID> ids = associateRepository.findSelfAndDownline(associateId).stream()
             .filter(id -> !id.equals(associateId)).toList();

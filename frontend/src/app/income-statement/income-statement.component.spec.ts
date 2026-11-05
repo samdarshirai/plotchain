@@ -131,7 +131,7 @@ describe('IncomeStatementComponent', () => {
         columnDesignation: 'Designation', columnDate: 'Date', columnPayStatus: 'Pay Status',
         columnPaymentDate: 'Payment Date', columnRemarks: 'Remarks', statusAchieved: 'Achieved', statusPending: 'Pending',
         statusInProgress: 'In progress', leftLeg: 'Left leg', rightLeg: 'Right leg', columnAchieved: 'Achieved', columnMatchingVolume: 'Matching Income Volume', payStatusPaid: 'Paid', payStatusUnpaid: 'Unpaid', payStatusPartial: 'Partially Paid', totalRow: 'Total',
-        columnDirectIncome: 'Direct Income', columnSponsorIncome: 'Sponsor Income', columnTotalIncome: 'Total Income', columnTds: 'TDS',
+        columnRoyaltyIncome: 'Royalty Income', columnRewards: 'Rewards', columnDirectIncome: 'Direct Income', columnSponsorIncome: 'Sponsor Income', columnTotalIncome: 'Total Income', columnTds: 'TDS',
         columnProcessingCharge: 'Processing Charge', columnPayableAmount: 'Payable Amount', columnPaidStatus: 'Paid Status',
         tabDownline: 'My Downline Income Report', columnSNo: 'S No', columnProcessingFee: 'Processing Fee',
         columnAssociateId: 'Associate ID', columnAssociateName: 'Name',
@@ -197,8 +197,8 @@ describe('IncomeStatementComponent', () => {
   describe('My Downline Income Report', () => {
     const DOWNLINE_URL = '/api/associates/me/downline-income';
     const downlineRows = [
-      summaryRow({ associateUserId: 'AS002', associateName: 'Ravi', gross: { DIRECT: 1000, MATCHING: 500 },
-        totalGross: 1500, tds: 30, adminCharges: 75, totalNet: 1395, entryCount: 2, paidCount: 2 }),
+      summaryRow({ associateUserId: 'AS002', associateName: 'Ravi', gross: { DIRECT: 1000, MATCHING: 500, ROYALTY: 300, REWARD: 200 },
+        totalGross: 2000, tds: 40, adminCharges: 100, totalNet: 1860, entryCount: 4, paidCount: 2 }),
       summaryRow({ associateUserId: 'AS003', associateName: 'Sita', cycleId: 'c0', cyclePeriodStart: '2025-12-16',
         cyclePeriodEnd: '2025-12-31', gross: { MATCHING: 200 }, totalGross: 200, tds: 4, adminCharges: 10, totalNet: 186,
         entryCount: 1, paidCount: 0, paidAt: null })
@@ -214,18 +214,53 @@ describe('IncomeStatementComponent', () => {
     it('lists each downline associate x cycle, then a Total row summing every money column', () => {
       const c = fixture.componentInstance;
       expect(c.statementColumns.map(col => col.label)).toEqual(['S No', 'Payment Date', 'Associate ID', 'Name',
-        'Direct Income', 'Matching Income', 'Total Income', 'TDS', 'Processing Fee', 'Payable Amount', 'Paid Status']);
+        'Direct Income', 'Matching Income', 'Royalty Income', 'Rewards', 'Total Income', 'TDS', 'Processing Fee', 'Payable Amount', 'Paid Status']);
       expect(c.statementRows[0]).toEqual({
         sNo: '1', paymentDate: '20 Jan 2026, 15:30:00', associateId: 'AS002', name: 'Ravi',
-        direct: '₹1,000', matching: '₹500', totalIncome: '₹1,500', tds: '₹30', processing: '₹75',
-        payable: '₹1,395', paidStatus: 'Paid'
+        direct: '₹1,000', matching: '₹500', royalty: '₹300', rewards: '₹200', totalIncome: '₹2,000', tds: '₹40', processing: '₹100',
+        payable: '₹1,860', paidStatus: 'Partially Paid'
       });
       expect(c.statementRows[1]['paidStatus']).toBe('Unpaid');
       expect(c.statementRows[2]).toEqual({
         sNo: 'Total', paymentDate: '', associateId: '', name: '',
-        direct: '₹1,000', matching: '₹700', totalIncome: '₹1,700', tds: '₹34', processing: '₹85',
-        payable: '₹1,581', paidStatus: ''
+        direct: '₹1,000', matching: '₹700', royalty: '₹300', rewards: '₹200', totalIncome: '₹2,200', tds: '₹44', processing: '₹110',
+        payable: '₹2,046', paidStatus: ''
       });
+    });
+
+    it('renders Royalty-only and Rewards-only associates with zero for absent income types', () => {
+      routeData$.next({ incomeType: 'DOWNLINE' });
+      httpMock.expectOne(DOWNLINE_URL).flush([
+        summaryRow({ associateUserId: 'AS004', gross: { ROYALTY: 300 }, totalGross: 300,
+          tds: 6, adminCharges: 15, totalNet: 279, entryCount: 1, paidCount: 1 }),
+        summaryRow({ associateUserId: 'AS005', gross: { REWARD: 200 }, totalGross: 200,
+          tds: 4, adminCharges: 10, totalNet: 186, entryCount: 1, paidCount: 0, paidAt: null })
+      ]);
+      fixture.detectChanges();
+      const rows = fixture.componentInstance.statementRows;
+      expect(rows[0]).toEqual(jasmine.objectContaining({
+        direct: '₹0', matching: '₹0', royalty: '₹300', rewards: '₹0', totalIncome: '₹300', paidStatus: 'Paid'
+      }));
+      expect(rows[1]).toEqual(jasmine.objectContaining({
+        direct: '₹0', matching: '₹0', royalty: '₹0', rewards: '₹200', totalIncome: '₹200',
+        paymentDate: '—', paidStatus: 'Unpaid'
+      }));
+      expect(rows[2]).toEqual(jasmine.objectContaining({
+        royalty: '₹300', rewards: '₹200', totalIncome: '₹500', tds: '₹10', processing: '₹25', payable: '₹465'
+      }));
+      const headers = Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('thead th'))
+        .map(th => th.textContent ?? '');
+      expect(headers[6]).toContain('Royalty Income');
+      expect(headers[7]).toContain('Rewards');
+      expect(fixture.nativeElement.querySelector('tbody').textContent).toContain('₹300');
+    });
+
+    it('keeps an empty downline empty without a Total row', () => {
+      routeData$.next({ incomeType: 'DOWNLINE' });
+      httpMock.expectOne(DOWNLINE_URL).flush([]);
+      fixture.detectChanges();
+      expect(fixture.componentInstance.statementRows).toEqual([]);
+      expect(fixture.componentInstance.downlineCycles).toEqual([]);
     });
 
     it('header reads My Downline Income Report, not the own-income title', () => {
@@ -239,7 +274,16 @@ describe('IncomeStatementComponent', () => {
       c.onDownlineCycleChange('c0');
       expect(c.statementRows.length).toBe(2);
       expect(c.statementRows[0]['associateId']).toBe('AS003');
-      expect(c.statementRows[1]['totalIncome']).toBe('₹200');
+      expect(c.statementRows[1]).toEqual({
+        sNo: 'Total', paymentDate: '', associateId: '', name: '', direct: '₹0', matching: '₹200',
+        royalty: '₹0', rewards: '₹0', totalIncome: '₹200', tds: '₹4', processing: '₹10', payable: '₹186', paidStatus: ''
+      });
+      c.onDownlineCycleChange('c1');
+      expect(c.statementRows[1]['royalty']).toBe('₹300');
+      expect(c.statementRows[1]['rewards']).toBe('₹200');
+      expect(c.statementRows[1]['totalIncome']).toBe('₹2,000');
+      c.onDownlineCycleChange('missing');
+      expect(c.statementRows).toEqual([]);
       httpMock.expectNone(DOWNLINE_URL);
     });
   });
