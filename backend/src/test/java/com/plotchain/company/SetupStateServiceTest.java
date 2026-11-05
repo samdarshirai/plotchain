@@ -82,7 +82,7 @@ class SetupStateServiceTest {
                 new CompanyProfileService(companyProfileRepository, settingsAuditService), settingsAuditService),
             new CompensationPlanService(
                 compensationPlanVersionRepository, royaltyBonusRateRepository, rewardTierRepository, rankTierRepository,
-                settingsAuditService, associateRepository, null, null, null),
+                settingsAuditService, associateRepository, null, null, null, null),
             new PaymentConfigService(paymentConfigRepository,
                 new SecretsEncryptionService("test-secrets-key-at-least-32-bytes-long-for-aes"), settingsAuditService),
             new PayoutBankAccountService(payoutBankAccountRepository, settingsAuditService),

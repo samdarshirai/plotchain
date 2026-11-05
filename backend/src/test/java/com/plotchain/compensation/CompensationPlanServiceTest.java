@@ -41,6 +41,7 @@ class CompensationPlanServiceTest {
     @Mock RoyaltyBonusRateRepository royaltyBonusRateRepository;
     @Mock RewardTierRepository rewardTierRepository;
     @Mock RankTierRepository rankTierRepository;
+    @Mock com.plotchain.expensetype.ExpenseTypeRepository expenseTypeRepository;
     @Mock SettingsAuditLogRepository settingsAuditLogRepository;
     @Mock AssociateRepository associateRepository;
     @Mock DesignationService designationService;
@@ -58,7 +59,8 @@ class CompensationPlanServiceTest {
             settingsAuditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
         compensationPlanService = new CompensationPlanService(
             versionRepository, royaltyBonusRateRepository, rewardTierRepository, rankTierRepository,
-            settingsAuditService, associateRepository, designationService, legVolumeRepository, saleRepository);
+            settingsAuditService, associateRepository, designationService, legVolumeRepository, saleRepository,
+            expenseTypeRepository);
     }
 
     // -- fixtures --------------------------------------------------------
@@ -219,6 +221,30 @@ class CompensationPlanServiceTest {
     }
 
     // -- contiguity validation --------------------------------------------
+
+    @Test
+    void updatePlanThrowsWhenPerkTypeAndValueAreNotSetTogether() {
+        List<RewardTierInput> tiers = List.of(
+            new RewardTierInput(1, new BigDecimal("1000"), new BigDecimal("100"), "Tier 1", null, UUID.randomUUID(), null));
+
+        assertThatThrownBy(() -> compensationPlanService.updatePlan(requestWithTiers(tiers), ADMIN_ID))
+            .isInstanceOf(RewardTierGapException.class)
+            .hasMessageContaining("together");
+
+        verify(versionRepository, never()).save(any());
+    }
+
+    @Test
+    void updatePlanThrowsWhenPerkTypeIsUnknownOrInactive() {
+        UUID typeId = UUID.randomUUID();
+        when(expenseTypeRepository.findById(typeId)).thenReturn(java.util.Optional.empty());
+        List<RewardTierInput> tiers = List.of(
+            new RewardTierInput(1, new BigDecimal("1000"), new BigDecimal("100"), "Tier 1", null, typeId, new BigDecimal("500")));
+
+        assertThatThrownBy(() -> compensationPlanService.updatePlan(requestWithTiers(tiers), ADMIN_ID))
+            .isInstanceOf(RewardTierGapException.class)
+            .hasMessageContaining("active expense type");
+    }
 
     @Test
     void updatePlanThrowsWhenTierLevelsHaveAGap() {

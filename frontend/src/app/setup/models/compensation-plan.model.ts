@@ -9,6 +9,8 @@ export interface RewardTier {
   cashReward: number;
   perkDescription: string;
   designation?: string | null;
+  perkExpenseTypeId?: string | null;
+  perkValue?: number | null;
 }
 
 export interface RankOption {

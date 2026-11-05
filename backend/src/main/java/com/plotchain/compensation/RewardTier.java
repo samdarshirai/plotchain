@@ -20,6 +20,10 @@ public class RewardTier {
     @Column(name = "perk_description")
     private String perkDescription;
     private String designation;
+    @Column(name = "perk_expense_type_id")
+    private UUID perkExpenseTypeId;
+    @Column(name = "perk_value")
+    private BigDecimal perkValue;
 
     protected RewardTier() {}
 
@@ -41,6 +45,19 @@ public class RewardTier {
             BigDecimal cashReward,
             String perkDescription,
             String designation) {
+        this(id, planVersionId, tierLevel, volumeThreshold, cashReward, perkDescription, designation, null, null);
+    }
+
+    public RewardTier(
+            UUID id,
+            UUID planVersionId,
+            int tierLevel,
+            BigDecimal volumeThreshold,
+            BigDecimal cashReward,
+            String perkDescription,
+            String designation,
+            UUID perkExpenseTypeId,
+            BigDecimal perkValue) {
         this.id = id;
         this.planVersionId = planVersionId;
         this.tierLevel = tierLevel;
@@ -48,6 +65,8 @@ public class RewardTier {
         this.cashReward = cashReward;
         this.perkDescription = perkDescription;
         this.designation = designation;
+        this.perkExpenseTypeId = perkExpenseTypeId;
+        this.perkValue = perkValue;
     }
 
     public UUID getId() { return id; }
@@ -57,4 +76,6 @@ public class RewardTier {
     public BigDecimal getCashReward() { return cashReward; }
     public String getPerkDescription() { return perkDescription; }
     public String getDesignation() { return designation; }
+    public UUID getPerkExpenseTypeId() { return perkExpenseTypeId; }
+    public BigDecimal getPerkValue() { return perkValue; }
 }

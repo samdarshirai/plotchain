@@ -25,13 +25,14 @@ class ExpenseTypeServiceTest {
     @Mock ExpenseTypeRepository repository;
     @Mock SettingsAuditLogRepository auditLogRepository;
     @Mock AssociateRepository associateRepository;
+    @Mock com.plotchain.compensation.RewardTierRepository rewardTierRepository;
 
     ExpenseTypeService service;
 
     @BeforeEach
     void setUp() {
         SettingsAuditService audit = new SettingsAuditService(auditLogRepository, associateRepository, new ObjectMapper().findAndRegisterModules());
-        service = new ExpenseTypeService(repository, audit);
+        service = new ExpenseTypeService(repository, audit, rewardTierRepository);
     }
 
     @Test
@@ -56,5 +57,19 @@ class ExpenseTypeServiceTest {
         ExpenseTypeResponse r = service.update(id, new ExpenseTypeRequest("Fuel", ExpenseType.Status.INACTIVE), UUID.randomUUID());
         assertThat(r.name()).isEqualTo("Fuel");
         assertThat(r.status()).isEqualTo(ExpenseType.Status.INACTIVE);
+    }
+
+    @Test
+    void deactivatingATypeUsedByARewardTierPerkIsRejected() {
+        UUID id = UUID.randomUUID();
+        ExpenseType type = new ExpenseType(id);
+        type.setName("Trip");
+        when(repository.findById(id)).thenReturn(java.util.Optional.of(type));
+        when(rewardTierRepository.existsByPerkExpenseTypeId(id)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.update(id,
+            new ExpenseTypeRequest("Trip", ExpenseType.Status.INACTIVE), UUID.randomUUID()))
+            .isInstanceOf(ExpenseTypeException.class)
+            .hasMessageContaining("reward tier");
     }
 }

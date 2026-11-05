@@ -57,6 +57,8 @@ class LiveIncomeIntegrationTest {
     @Autowired DesignationService designationService;
     @Autowired WalletCreditingService walletCreditingService;
     @Autowired WalletRepository walletRepository;
+    @Autowired com.plotchain.expense.ExpenseRepository expenseRepository;
+    @Autowired com.plotchain.expensetype.ExpenseTypeRepository expenseTypeRepository;
 
     // V13__seed_default_rank_tiers.sql's lowest-order seeded rank -- chk_associate_rank_required
     // (V4__user_id_login_and_admin_roles.sql) requires rank_id NOT NULL for role = 'ASSOCIATE',
@@ -73,6 +75,7 @@ class LiveIncomeIntegrationTest {
     private UUID projectId;
     private UUID plotId;
     private UUID rewardTierId;
+    private UUID perkTypeId;
 
     // V8__compensation_plan.sql's genesis compensation_plan_version row -- reward_tier FKs to it.
     private static final UUID PLAN_VERSION_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -98,6 +101,7 @@ class LiveIncomeIntegrationTest {
                 .filter(c -> c.getStatus() == CycleStatus.OPEN && c.getPeriodStart().isAfter(LocalDate.now()))
                 .forEach(cycleRepository::delete);
         }
+        expenseRepository.deleteAll(expenseRepository.findBySourceAssociateIdIsNotNull());
         for (UUID id : new UUID[] {leftId, rightId, sponseeId, sponsorId}) {
             if (id != null) {
                 walletRepository.deleteById(id);
@@ -106,6 +110,9 @@ class LiveIncomeIntegrationTest {
         }
         if (rewardTierId != null) {
             rewardTierRepository.deleteById(rewardTierId);
+        }
+        if (perkTypeId != null) {
+            expenseTypeRepository.deleteById(perkTypeId);
         }
         if (plotId != null) {
             plotRepository.deleteById(plotId);
@@ -307,6 +314,41 @@ class LiveIncomeIntegrationTest {
 
         assertThat(entries(sponseeId, IncomeType.REWARD)).isEmpty();
         assertThat(designationService.designationOf(sponseeId)).isNull();
+    }
+
+    // Reward perk: reaching the tier auto-creates one CASH expense (type + value from the tier) for
+    // the associate; a second refresh doesn't duplicate it; a void reverts the reward and removes it.
+    @Test
+    void rewardPerkCreatesOneExpenseWhenAchievedAndAVoidRemovesIt() {
+        seedTree();
+        com.plotchain.expensetype.ExpenseType type = new com.plotchain.expensetype.ExpenseType(UUID.randomUUID());
+        type.setName("Perk test " + UUID.randomUUID());
+        expenseTypeRepository.saveAndFlush(type);
+        perkTypeId = type.getId();
+        RewardTier tier = new RewardTier(UUID.randomUUID(), PLAN_VERSION_ID, 1,
+            new BigDecimal("100"), new BigDecimal("50"), "Mobile", "Sales Manager", perkTypeId, new BigDecimal("7500.00"));
+        rewardTierRepository.saveAndFlush(tier);
+        rewardTierId = tier.getId();
+        seedSale(leftId, cycleId, plotId, new BigDecimal("20000"));
+        UUID rightSale = seedSale(rightId, cycleId, plotId, new BigDecimal("20000"));
+
+        cycleService.refreshLiveIncome(cycleId);
+        cycleService.refreshLiveIncome(cycleId);
+
+        assertThat(expenseRepository.findBySourceAssociateIdIsNotNull()).singleElement().satisfies(e -> {
+            assertThat(e.getSourceAssociateId()).isEqualTo(sponseeId);
+            assertThat(e.getSourceTierLevel()).isEqualTo(1);
+            assertThat(e.getExpenseTypeId()).isEqualTo(perkTypeId);
+            assertThat(e.getAmount()).isEqualByComparingTo("7500.00");
+            assertThat(e.getPayMode()).isEqualTo(com.plotchain.expense.PayMode.CASH);
+        });
+
+        Sale voided = saleRepository.findById(rightSale).orElseThrow();
+        voided.setStatus(SaleStatus.VOIDED);
+        saleRepository.saveAndFlush(voided);
+        cycleService.refreshLiveIncome(cycleId);
+
+        assertThat(expenseRepository.findBySourceAssociateIdIsNotNull()).isEmpty();
     }
 
     // End date picked at close: sales recorded after it belong to the next cycle.

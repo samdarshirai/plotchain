@@ -68,6 +68,8 @@ public class CycleService {
         IncomeType.DIRECT, IncomeType.MATCHING, IncomeType.SPONSOR_MATCHING,
         IncomeType.ROYALTY, IncomeType.REWARD);
 
+    private final com.plotchain.expense.RewardPerkExpenseService rewardPerkExpenseService;
+
     public CycleService(
         CycleRepository cycleRepository,
         AssociateRepository associateRepository,
@@ -79,8 +81,10 @@ public class CycleService {
         RoyaltyBonusRateRepository royaltyBonusRateRepository,
         RewardTierRepository rewardTierRepository,
         ExpenseRepository expenseRepository,
-        com.plotchain.wallet.WalletRepository walletRepository
+        com.plotchain.wallet.WalletRepository walletRepository,
+        com.plotchain.expense.RewardPerkExpenseService rewardPerkExpenseService
     ) {
+        this.rewardPerkExpenseService = rewardPerkExpenseService;
         this.cycleRepository = cycleRepository;
         this.associateRepository = associateRepository;
         this.legVolumeRepository = legVolumeRepository;
@@ -174,6 +178,7 @@ public class CycleService {
         List<LedgerEntry> provisional = clearProvisionalIncome(cycle.getId());
         List<LegVolume> legVolumes = computeIncome(cycle, true);
         restoreFulfilment(cycle.getId(), provisional);
+        rewardPerkExpenseService.sync();
 
         // Flow step 8. The next cycle was opened above (starts the day after the end date).
         cycle.setStatus(CycleStatus.CLOSED);
@@ -200,6 +205,7 @@ public class CycleService {
         List<LedgerEntry> provisional = clearProvisionalIncome(cycleId);
         computeIncome(cycle, false);
         restoreFulfilment(cycleId, provisional);
+        rewardPerkExpenseService.sync();
     }
 
     // Admin "Recalculate" (Associate Directory): re-runs live income for every OPEN cycle, oldest

@@ -40,6 +40,7 @@ public class CompensationPlanService {
     private final DesignationService designationService;
     private final LegVolumeRepository legVolumeRepository;
     private final SaleRepository saleRepository;
+    private final com.plotchain.expensetype.ExpenseTypeRepository expenseTypeRepository;
 
     public CompensationPlanService(
             CompensationPlanVersionRepository versionRepository,
@@ -50,7 +51,9 @@ public class CompensationPlanService {
             AssociateRepository associateRepository,
             DesignationService designationService,
             LegVolumeRepository legVolumeRepository,
-            SaleRepository saleRepository) {
+            SaleRepository saleRepository,
+            com.plotchain.expensetype.ExpenseTypeRepository expenseTypeRepository) {
+        this.expenseTypeRepository = expenseTypeRepository;
         this.versionRepository = versionRepository;
         this.royaltyBonusRateRepository = royaltyBonusRateRepository;
         this.rewardTierRepository = rewardTierRepository;
@@ -143,6 +146,7 @@ public class CompensationPlanService {
         // Contiguity validation MUST run before any repository write or delete, so a bad request
         // never creates a partial/orphaned version row nor destroys the existing one.
         validateRewardTierContiguity(request.rewardTiers());
+        validateRewardTierPerks(request.rewardTiers());
 
         LocalDate effectiveFrom = request.effectiveFrom() != null ? request.effectiveFrom() : LocalDate.now();
 
@@ -272,10 +276,35 @@ public class CompensationPlanService {
                 input.volumeThreshold(),
                 input.cashReward(),
                 input.perkDescription(),
-                input.designation()))
+                input.designation(),
+                input.perkExpenseTypeId(),
+                input.perkValue()))
             .collect(Collectors.toList());
         entities.forEach(rewardTierRepository::save);
         return entities;
+    }
+
+    // Perk type and perk value go together; the type must be an existing ACTIVE expense type, since
+    // the achieved reward auto-creates an expense of that type.
+    private void validateRewardTierPerks(List<RewardTierInput> tiers) {
+        if (tiers == null) {
+            return;
+        }
+        for (RewardTierInput tier : tiers) {
+            if ((tier.perkExpenseTypeId() == null) != (tier.perkValue() == null)) {
+                throw new RewardTierGapException(
+                    "Reward tier " + tier.tierLevel() + ": perk type and perk value must be set together");
+            }
+            if (tier.perkExpenseTypeId() != null) {
+                boolean active = expenseTypeRepository.findById(tier.perkExpenseTypeId())
+                    .map(t -> t.getStatus() == com.plotchain.expensetype.ExpenseType.Status.ACTIVE)
+                    .orElse(false);
+                if (!active) {
+                    throw new RewardTierGapException(
+                        "Reward tier " + tier.tierLevel() + ": perk type must be an active expense type");
+                }
+            }
+        }
     }
 
     // Gives concrete meaning to the spec's undefined "ordered, no gaps allowed"
@@ -311,7 +340,7 @@ public class CompensationPlanService {
             .collect(Collectors.toList());
 
         List<RewardTierDto> tierDtos = tiers.stream()
-            .map(t -> new RewardTierDto(t.getTierLevel(), t.getVolumeThreshold(), t.getCashReward(), t.getPerkDescription(), t.getDesignation()))
+            .map(t -> new RewardTierDto(t.getTierLevel(), t.getVolumeThreshold(), t.getCashReward(), t.getPerkDescription(), t.getDesignation(), t.getPerkExpenseTypeId(), t.getPerkValue()))
             .collect(Collectors.toList());
 
         List<RankOptionDto> availableRanks = rankTiers.stream()

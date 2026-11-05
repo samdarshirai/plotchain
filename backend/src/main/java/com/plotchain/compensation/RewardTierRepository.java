@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface RewardTierRepository extends JpaRepository<RewardTier, UUID> {
     List<RewardTier> findAllByPlanVersionIdOrderByTierLevel(UUID planVersionId);
+    boolean existsByPerkExpenseTypeId(UUID expenseTypeId);
 }

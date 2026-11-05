@@ -158,19 +158,22 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
     List<LedgerSummaryRow> summarise(@Param("associateId") UUID associateId, @Param("cycleId") UUID cycleId);
 
     // Associate "My Downline Income Report": same per associate x cycle rows as summarise, but for
-    // a set of associates and only DIRECT + MATCHING entries, so Total/TDS/fee/payable cover just
-    // those two types. Unpaged (ponytail: rows = downline x cycles; add paging/cycle param if large).
+    // a set of associates and DIRECT, MATCHING, ROYALTY and REWARD entries. Totals, deductions
+    // and payment metadata cover all four types. Unpaged (ponytail: rows = downline x cycles; add paging/cycle param if large).
     @Query("""
         SELECT l.associateId AS associateId, l.cycleId AS cycleId,
           COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.DIRECT THEN l.grossAmount ELSE 0 END), 0) AS direct,
           COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.MATCHING THEN l.grossAmount ELSE 0 END), 0) AS matching,
-          0 AS sponsorMatching, 0 AS royalty, 0 AS reward,
+          0 AS sponsorMatching,
+          COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.ROYALTY THEN l.grossAmount ELSE 0 END), 0) AS royalty,
+          COALESCE(SUM(CASE WHEN l.incomeType = com.plotchain.income.IncomeType.REWARD THEN l.grossAmount ELSE 0 END), 0) AS reward,
           COALESCE(SUM(l.grossAmount), 0) AS totalGross, COALESCE(SUM(l.tdsDeduction), 0) AS tds,
           COALESCE(SUM(l.adminDeduction), 0) AS adminCharges, COALESCE(SUM(l.netAmount), 0) AS totalNet,
           COUNT(l) AS entryCount, COUNT(l.fulfilledAt) AS paidCount, MAX(l.fulfilledAt) AS paidAt
         FROM LedgerEntry l
         WHERE l.associateId IN :associateIds
-        AND l.incomeType IN (com.plotchain.income.IncomeType.DIRECT, com.plotchain.income.IncomeType.MATCHING)
+        AND l.incomeType IN (com.plotchain.income.IncomeType.DIRECT, com.plotchain.income.IncomeType.MATCHING,
+          com.plotchain.income.IncomeType.ROYALTY, com.plotchain.income.IncomeType.REWARD)
         GROUP BY l.associateId, l.cycleId
         """)
     List<LedgerSummaryRow> summariseDownline(@Param("associateIds") Collection<UUID> associateIds);
@@ -199,6 +202,14 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         AND l.associateId IN :associateIds
         """)
     List<AwardedRewardLevelRow> findAwardedRewardLevels(@Param("associateIds") Collection<UUID> associateIds);
+
+    // Every awarded reward level across all associates; RewardPerkExpenseService reconciles perk expenses against it.
+    @Query("""
+        SELECT l.associateId AS associateId, l.tierLevel AS tierLevel
+        FROM LedgerEntry l
+        WHERE l.incomeType = com.plotchain.income.IncomeType.REWARD AND l.tierLevel IS NOT NULL
+        """)
+    List<AwardedRewardLevelRow> findAllAwardedRewardLevels();
 
     interface AwardedRewardLevelRow {
         UUID getAssociateId();

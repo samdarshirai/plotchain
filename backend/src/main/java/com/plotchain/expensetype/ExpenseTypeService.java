@@ -16,8 +16,11 @@ public class ExpenseTypeService {
 
     private final ExpenseTypeRepository repository;
     private final SettingsAuditService auditService;
+    private final com.plotchain.compensation.RewardTierRepository rewardTierRepository;
 
-    public ExpenseTypeService(ExpenseTypeRepository repository, SettingsAuditService auditService) {
+    public ExpenseTypeService(ExpenseTypeRepository repository, SettingsAuditService auditService,
+                              com.plotchain.compensation.RewardTierRepository rewardTierRepository) {
+        this.rewardTierRepository = rewardTierRepository;
         this.repository = repository;
         this.auditService = auditService;
     }
@@ -48,6 +51,10 @@ public class ExpenseTypeService {
         String name = request.name().trim();
         if (repository.existsByNameIgnoreCaseAndIdNot(name, id)) {
             throw new ExpenseTypeException(HttpStatus.CONFLICT, "Expense type already exists: " + name);
+        }
+        if (request.status() == ExpenseType.Status.INACTIVE && rewardTierRepository.existsByPerkExpenseTypeId(id)) {
+            throw new ExpenseTypeException(HttpStatus.CONFLICT,
+                "Expense type is used by a reward tier perk and cannot be deactivated: " + name);
         }
         type.setName(name);
         if (request.status() != null) type.setStatus(request.status());

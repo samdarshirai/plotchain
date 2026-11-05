@@ -61,6 +61,11 @@ describe('CompensationStepComponent', () => {
     return container;
   }
 
+  const expenseTypes = [
+    { id: 'type-trip', name: 'Trip', status: 'ACTIVE' },
+    { id: 'type-old', name: 'Old', status: 'INACTIVE' }
+  ];
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [CompensationStepComponent, HttpClientTestingModule, RouterTestingModule, TranslateModule.forRoot()]
@@ -70,12 +75,15 @@ describe('CompensationStepComponent', () => {
     httpMock = TestBed.inject(HttpTestingController);
     setupService = TestBed.inject(SetupService);
     fixture.detectChanges();
+    httpMock.expectOne('/api/admin/expense-types').flush(expenseTypes);
     httpMock.expectOne('/api/company/compensation').flush(emptyPlan);
     httpMock.expectOne('/api/company/setup-state').flush(setupState);
     fixture.detectChanges();
   });
 
   afterEach(() => {
+    // Extra component instances created inside a spec also request the types; they're irrelevant there.
+    httpMock.match('/api/admin/expense-types').forEach(r => r.flush([]));
     httpMock.verify();
   });
 
@@ -85,12 +93,34 @@ describe('CompensationStepComponent', () => {
     expect(component.form.value.directIncomePct).toBe(10);
     expect(component.royaltyRows).toEqual([{ volumeThreshold: 2000000, royaltyPct: 1 }]);
     expect(component.rewardTierRows).toEqual([
-      { volumeThreshold: 100000, cashReward: 1000, perkDescription: 'Certificate', designation: '' },
-      { volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy', designation: '' }
+      { volumeThreshold: 100000, cashReward: 1000, perkDescription: 'Certificate', designation: '', perkExpenseTypeId: '', perkValue: 0 },
+      { volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy', designation: '', perkExpenseTypeId: '', perkValue: 0 }
     ]);
 
     tick(500);
     httpMock.expectNone('/api/company/compensation');
+  }));
+
+  it('offers only ACTIVE expense types as the perk type options', () => {
+    const perkColumn = fixture.componentInstance.rewardTierColumns.find(c => c.key === 'perkExpenseTypeId');
+    expect(perkColumn?.options?.map(o => o.value)).toEqual(['', 'type-trip']);
+  });
+
+  it('sends perk type and value on save, and holds the autosave while only one of the two is set', fakeAsync(() => {
+    const component = fixture.componentInstance;
+    const row = { volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy' };
+
+    component.onRewardTierRowsChange([{ ...row, perkExpenseTypeId: 'type-trip', perkValue: 0 }]);
+    tick(500);
+    httpMock.expectNone('/api/company/compensation');
+
+    component.onRewardTierRowsChange([{ ...row, perkExpenseTypeId: 'type-trip', perkValue: 7500 }]);
+    tick(500);
+    const req = httpMock.expectOne('/api/company/compensation');
+    expect(req.request.body.rewardTiers[0].perkExpenseTypeId).toBe('type-trip');
+    expect(req.request.body.rewardTiers[0].perkValue).toBe(7500);
+    req.flush(emptyPlan);
+    httpMock.expectOne('/api/company/setup-state').flush(setupState);
   }));
 
   it('hides the legacy minWithdrawal field from the visible form layout (B2: not the real Go-Live-gating setting)', () => {
@@ -159,7 +189,7 @@ describe('CompensationStepComponent', () => {
     expect(req.request.method).toBe('PUT');
     expect(req.request.body.royaltyBonusRates).toEqual([{ volumeThreshold: 4000000, royaltyPct: 3 }]);
     expect(req.request.body.rewardTiers).toEqual([
-      { tierLevel: 1, volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy', designation: null }
+      { tierLevel: 1, volumeThreshold: 200000, cashReward: 2000, perkDescription: 'Trophy', designation: null, perkExpenseTypeId: null, perkValue: null }
     ]);
     req.flush(emptyPlan);
     httpMock.expectOne('/api/company/setup-state').flush(setupState);

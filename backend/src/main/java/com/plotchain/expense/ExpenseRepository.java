@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
+    List<Expense> findBySourceAssociateIdIsNotNull();
+
     List<Expense> findByExpenseDateBetweenOrderByExpenseDateDescCreatedAtDesc(LocalDate from, LocalDate to);
 
     // Cycle-management "Trip Expense": expenses whose type is named typeName (case-insensitive) in [from, to].

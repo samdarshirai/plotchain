@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject, Subscription, merge } from 'rxjs';
 import { debounceTime, takeUntil, tap } from 'rxjs/operators';
+import { ExpenseTypesService } from '../../../admin/expense-types/expense-types.service';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
 import { StatTileComponent } from '../../../shared/components/stat-tile/stat-tile.component';
@@ -42,8 +43,19 @@ function isCompleteRoyaltyRow(row: Record<string, string | number>): boolean {
   return isFilledNumber(row['volumeThreshold']) && Number(row['volumeThreshold']) > 0 && isFilledNumber(row['royaltyPct']);
 }
 
+// Perk type and perk value go together: both blank (value 0 counts as blank) or both set.
+function hasPerk(row: Record<string, string | number>): boolean {
+  return !!row['perkExpenseTypeId'];
+}
+
 function isCompleteRewardTierRow(row: Record<string, string | number>): boolean {
-  return isFilledNumber(row['volumeThreshold']) && Number(row['volumeThreshold']) > 0 && isFilledNumber(row['cashReward']);
+  const perkValue = Number(row['perkValue'] ?? 0);
+  return (
+    isFilledNumber(row['volumeThreshold']) &&
+    Number(row['volumeThreshold']) > 0 &&
+    isFilledNumber(row['cashReward']) &&
+    (hasPerk(row) ? perkValue > 0 : perkValue === 0)
+  );
 }
 
 // The only form fields with a visible <app-field-error> in the template. A server-side
@@ -359,6 +371,7 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
   private setupService = inject(SetupService);
   private inspectorService = inject(SetupInspectorService);
   private translate = inject(TranslateService);
+  private expenseTypesService = inject(ExpenseTypesService);
   private route = inject(ActivatedRoute);
   private destroyed$ = new Subject<void>();
   private planSubscription?: Subscription;
@@ -411,13 +424,22 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
 
   ngOnInit(): void {
     this.mode = (this.route.snapshot.data['mode'] as 'setup' | 'settings') ?? 'setup';
+    this.expenseTypesService.list().subscribe({
+      next: types => {
+        this.perkTypeOptions = types.filter(t => t.status === 'ACTIVE').map(t => ({ value: t.id, label: t.name }));
+        this.rewardTierColumnsCache = undefined;
+        // New row objects make the table rebuild its <select>s, now that their options exist.
+        this.rewardTierRows = this.rewardTierRows.map(r => ({ ...r }));
+      },
+      error: () => {} // perk-type dropdown just stays empty; the rest of the plan still works
+    });
     this.planSubscription = this.compensationPlanService.getCurrent().subscribe({
       next: res => {
         this.form.patchValue(res, { emitEvent: false });
         this.royaltyRows = res.royaltyBonusRates.map(r => ({ volumeThreshold: r.volumeThreshold, royaltyPct: r.royaltyPct }));
         this.rewardTierRows = [...res.rewardTiers]
           .sort((a, b) => a.tierLevel - b.tierLevel)
-          .map(t => ({ volumeThreshold: t.volumeThreshold, cashReward: t.cashReward, perkDescription: t.perkDescription, designation: t.designation ?? '' }));
+          .map(t => ({ volumeThreshold: t.volumeThreshold, cashReward: t.cashReward, perkDescription: t.perkDescription, designation: t.designation ?? '', perkExpenseTypeId: t.perkExpenseTypeId ?? '', perkValue: t.perkValue ?? 0 }));
         // patchValue with emitEvent:false suppresses both the preview and the debounced-save
         // arms below -- so the initial preview needs this explicit one-time call.
         this.recomputeSampleEarnings();
@@ -502,6 +524,7 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
   // re-create every cell (and so every <input>) on each click/keystroke, dropping focus.
   private royaltyColumnsCache?: EditableTableColumn[];
   private rewardTierColumnsCache?: EditableTableColumn[];
+  private perkTypeOptions: { value: string; label: string }[] = [];
 
   get royaltyColumns(): EditableTableColumn[] {
     return (this.royaltyColumnsCache ??= [
@@ -515,6 +538,13 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
       { key: 'volumeThreshold', label: this.translate.instant('setup.compensation.volumeThresholdColumnLabel'), type: 'number' },
       { key: 'cashReward', label: this.translate.instant('setup.compensation.cashRewardColumnLabel'), type: 'number' },
       { key: 'perkDescription', label: this.translate.instant('setup.compensation.perkDescriptionColumnLabel'), type: 'text' },
+      {
+        key: 'perkExpenseTypeId',
+        label: this.translate.instant('setup.compensation.perkTypeColumnLabel'),
+        type: 'select',
+        options: [{ value: '', label: '—' }, ...this.perkTypeOptions]
+      },
+      { key: 'perkValue', label: this.translate.instant('setup.compensation.perkValueColumnLabel'), type: 'number' },
       { key: 'designation', label: this.translate.instant('setup.compensation.designationColumnLabel'), type: 'text' }
     ]);
   }
@@ -644,7 +674,9 @@ export class CompensationStepComponent implements OnInit, AfterViewInit, OnDestr
         volumeThreshold: Number(row['volumeThreshold']),
         cashReward: Number(row['cashReward']),
         perkDescription: String(row['perkDescription']),
-        designation: row['designation'] ? String(row['designation']) : null
+        designation: row['designation'] ? String(row['designation']) : null,
+        perkExpenseTypeId: hasPerk(row) ? String(row['perkExpenseTypeId']) : null,
+        perkValue: hasPerk(row) ? Number(row['perkValue']) : null
       }))
     };
 

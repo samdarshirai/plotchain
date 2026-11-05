@@ -21,6 +21,8 @@ public class Expense {
     @Column(name = "txn_no") private String txnNo;
     private String remarks;
     @Column(name = "created_at") private Instant createdAt;
+    @Column(name = "source_associate_id") private UUID sourceAssociateId;
+    @Column(name = "source_tier_level") private Integer sourceTierLevel;
 
     protected Expense() {}
 
@@ -39,6 +41,13 @@ public class Expense {
         this.createdAt = Instant.now();
     }
 
+    // Marks this row as the auto-created perk expense of an achieved reward tier.
+    public void setRewardSource(UUID associateId, int tierLevel) {
+        this.sourceAssociateId = associateId;
+        this.sourceTierLevel = tierLevel;
+    }
+    public UUID getSourceAssociateId() { return sourceAssociateId; }
+    public Integer getSourceTierLevel() { return sourceTierLevel; }
     public UUID getId() { return id; }
     public LocalDate getExpenseDate() { return expenseDate; }
     public UUID getExpenseTypeId() { return expenseTypeId; }
