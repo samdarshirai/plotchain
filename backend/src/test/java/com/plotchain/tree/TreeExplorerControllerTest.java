@@ -86,7 +86,9 @@ class TreeExplorerControllerTest {
         mockMvc.perform(get("/api/admin/tree")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.userId").value("VP00000"));
+            .andExpect(jsonPath("$.userId").value("VP00000"))
+            .andExpect(jsonPath("$.totalLeftBusiness").value(0))
+            .andExpect(jsonPath("$.totalRightBusiness").value(0));
     }
 
     @Test

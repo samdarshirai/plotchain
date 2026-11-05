@@ -161,8 +161,8 @@ const HOVER_DEBOUNCE_MS = 150;
                   <div class="tree-explorer__vol-bar-fill" [style.width.%]="legLeftPercent(entry.data)"></div>
                 </div>
                 <div class="tree-explorer__vol-row">
-                  <span>{{ 'myTree.leftLegLabel' | translate }}: &#8377;{{ entry.data.leftLegVolume | number }}</span>
-                  <span>{{ 'myTree.rightLegLabel' | translate }}: &#8377;{{ entry.data.rightLegVolume | number }}</span>
+                  <span>{{ 'myTree.leftLegLabel' | translate }}: &#8377;{{ entry.data.totalLeftBusiness | number }}</span>
+                  <span>{{ 'myTree.rightLegLabel' | translate }}: &#8377;{{ entry.data.totalRightBusiness | number }}</span>
                 </div>
 
                 <button
@@ -350,8 +350,8 @@ export class MyTreeComponent implements OnInit, OnDestroy {
   }
 
   legLeftPercent(node: TreeNode): number {
-    const total = node.leftLegVolume + node.rightLegVolume;
-    return total === 0 ? 50 : (node.leftLegVolume / total) * 100;
+    const total = node.totalLeftBusiness + node.totalRightBusiness;
+    return total === 0 ? 50 : (node.totalLeftBusiness / total) * 100;
   }
 
   legRightPercent(node: TreeNode): number {

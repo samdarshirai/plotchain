@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -75,13 +76,14 @@ public class TreeExplorerService {
         long activeLeftMembers = associateRepository.countDownlineByPositionAndStatus(associateId, "L", AssociateStatus.ACTIVE.name());
         long activeRightMembers = associateRepository.countDownlineByPositionAndStatus(associateId, "R", AssociateStatus.ACTIVE.name());
 
-        LegVolumeRepository.LegBusinessTotals business = legVolumeRepository.totalBusiness(associateId);
+        LegVolumeRepository.LegBusinessTotals business = legVolumeRepository.totalBusiness(associateId)
+            .plus(saleRepository.sumOpenCycleLegBusiness(associateId, "L"),
+                saleRepository.sumOpenCycleLegBusiness(associateId, "R"));
         BigDecimal totalSelfBusiness = saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED);
 
         return new TreeNodeDetailsResponse(a.getName(), a.getUserId(), a.getJoinedAt(), leftMemberId, rightMemberId,
             totalLeftMembers, totalRightMembers, activeLeftMembers, activeRightMembers,
-            business.left().add(saleRepository.sumOpenCycleLegBusiness(associateId, "L")),
-            business.right().add(saleRepository.sumOpenCycleLegBusiness(associateId, "R")), totalSelfBusiness);
+            business.left(), business.right(), totalSelfBusiness);
     }
 
     /**
@@ -105,7 +107,27 @@ public class TreeExplorerService {
         // in DashboardService, see docs/superpowers/plans/2026-08-18-dashboard-leg-volume-fixes.md).
         // Reading the last CLOSED cycle instead is "current standing as of the last close."
         Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
-        return buildNode(root, designations, plotBuyers, latestClosedCycle);
+        return buildNode(root, designations, plotBuyers, latestClosedCycle, businessTotals(subtreeIds));
+    }
+
+    private Map<UUID, LegVolumeRepository.LegBusinessTotals> businessTotals(List<UUID> ids) {
+        Map<UUID, LegVolumeRepository.LegBusinessTotals> totals = new HashMap<>();
+        if (ids.isEmpty()) {
+            return totals;
+        }
+        legVolumeRepository.findByAssociateIdInOrderByCyclePeriodStartAsc(ids).stream()
+            .collect(Collectors.groupingBy(LegVolume::getAssociateId))
+            .forEach((id, history) -> totals.put(id, LegVolumeRepository.totalBusinessFromHistory(history)));
+        for (SaleRepository.OpenCycleLegBusiness row : saleRepository.sumOpenCycleLegBusinessByAssociateIds(ids)) {
+            totals.compute(row.getAssociateId(), (id, closed) -> {
+                if (closed == null) {
+                    closed = new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO);
+                }
+                return closed.plus("L".equals(row.getPosition()) ? row.getAmount() : BigDecimal.ZERO,
+                    "R".equals(row.getPosition()) ? row.getAmount() : BigDecimal.ZERO);
+            });
+        }
+        return totals;
     }
 
     public TreeSearchResponse search(String userId) {
@@ -158,17 +180,19 @@ public class TreeExplorerService {
     }
 
     private TreeNodeResponse buildNode(Associate a, Map<UUID, String> designations, Set<UUID> plotBuyers,
-                                        Optional<Cycle> latestClosedCycle) {
+                                        Optional<Cycle> latestClosedCycle, Map<UUID, LegVolumeRepository.LegBusinessTotals> totals) {
         BigDecimal[] legs = legVolumesFor(a.getId(), latestClosedCycle);
         // ponytail: 2 queries per node (children + leg volume); batch-load the subtree via
         // the recursive CTE if trees reach thousands of nodes.
         List<TreeNodeResponse> children = associateRepository.findByParentId(a.getId()).stream()
-            .map(child -> buildNode(child, designations, plotBuyers, latestClosedCycle))
+            .map(child -> buildNode(child, designations, plotBuyers, latestClosedCycle, totals))
             .toList();
         long directDownlineCount = children.size();
+        LegVolumeRepository.LegBusinessTotals business = totals.getOrDefault(a.getId(),
+            new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
         return new TreeNodeResponse(
             a.getId(), a.getUserId(), a.getName(), designations.get(a.getId()),
-            a.getKycStatus(), a.getPosition(), legs[0], legs[1],
+            a.getKycStatus(), a.getPosition(), legs[0], legs[1], business.left(), business.right(),
             isSkewed(legs[0], legs[1]), isStagnant(a, directDownlineCount), plotBuyers.contains(a.getId()), children);
     }
 

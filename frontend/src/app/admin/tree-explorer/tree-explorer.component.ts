@@ -167,8 +167,8 @@ const CLICK_MOVE_PX = 5;
                   <div class="tree-explorer__vol-bar-fill" [style.width.%]="legLeftPercent(entry.data)"></div>
                 </div>
                 <div class="tree-explorer__vol-row">
-                  <span>{{ 'admin.treeExplorer.leftLegLabel' | translate }}: {{ entry.data.leftLegVolume | currency:'INR':'symbol':'1.0-0' }}</span>
-                  <span>{{ 'admin.treeExplorer.rightLegLabel' | translate }}: {{ entry.data.rightLegVolume | currency:'INR':'symbol':'1.0-0' }}</span>
+                  <span>{{ 'admin.treeExplorer.leftLegLabel' | translate }}: {{ entry.data.totalLeftBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
+                  <span>{{ 'admin.treeExplorer.rightLegLabel' | translate }}: {{ entry.data.totalRightBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
                 </div>
 
                 <button
@@ -476,8 +476,8 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
   }
 
   legLeftPercent(node: TreeNode): number {
-    const total = node.leftLegVolume + node.rightLegVolume;
-    return total === 0 ? 50 : (node.leftLegVolume / total) * 100;
+    const total = node.totalLeftBusiness + node.totalRightBusiness;
+    return total === 0 ? 50 : (node.totalLeftBusiness / total) * 100;
   }
 
   legRightPercent(node: TreeNode): number {

@@ -79,7 +79,9 @@ class AssociateTreeControllerTest {
         mockMvc.perform(get("/api/associates/me/tree")
                 .header("Authorization", "Bearer " + tokenForAssociate(self)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.userId").value("VP00042"));
+            .andExpect(jsonPath("$.userId").value("VP00042"))
+            .andExpect(jsonPath("$.totalLeftBusiness").value(0))
+            .andExpect(jsonPath("$.totalRightBusiness").value(0));
     }
 
     @Test

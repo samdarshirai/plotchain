@@ -21,7 +21,7 @@ describe('MyTreeService', () => {
   it('fetches the caller\'s own subtree with no associate id in the request', () => {
     const mockNode: TreeNode = {
       id: 'a1', userId: 'VP00001', name: 'Self', designation: null, kycStatus: 'PENDING', position: null,
-      leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false, children: []
+      leftLegVolume: 0, rightLegVolume: 0, totalLeftBusiness: 0, totalRightBusiness: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false, children: []
     };
 
     service.getMyTree().subscribe(res => expect(res).toEqual(mockNode));

@@ -4,7 +4,7 @@ import { TreeNode } from '../models/tree-node.model';
 function node(overrides: Partial<TreeNode>): TreeNode {
   return {
     id: 'id', userId: 'VP00001', name: 'Name', designation: null, kycStatus: 'PENDING',
-    position: null, leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false,
+    position: null, leftLegVolume: 0, rightLegVolume: 0, totalLeftBusiness: 0, totalRightBusiness: 0, skewedLegsFlag: false,
     stagnantFlag: false, plotBuyer: false, children: [],
     ...overrides
   };

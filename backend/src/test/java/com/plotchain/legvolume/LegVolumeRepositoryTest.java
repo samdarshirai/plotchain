@@ -86,6 +86,8 @@ class LegVolumeRepositoryTest {
         assertThat(rows).hasSize(2);
         assertThat(rows.get(0).getCycleId()).isEqualTo(older.getId());
         assertThat(rows.get(1).getCycleId()).isEqualTo(newer.getId());
+        assertThat(legVolumeRepository.findByAssociateIdInOrderByCyclePeriodStartAsc(List.of(associate.getId())))
+            .extracting(LegVolume::getCycleId).containsExactly(older.getId(), newer.getId());
     }
 
     @Test
@@ -102,6 +104,8 @@ class LegVolumeRepositoryTest {
 
         List<LegVolume> rows = legVolumeRepository.findByAssociateIdOrderByCyclePeriodStartAsc(target.getId());
 
+        assertThat(legVolumeRepository.findByAssociateIdInOrderByCyclePeriodStartAsc(List.of(target.getId())))
+            .extracting(LegVolume::getAssociateId).containsExactly(target.getId());
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).getLeftLegVolume()).isEqualByComparingTo("100000");
     }

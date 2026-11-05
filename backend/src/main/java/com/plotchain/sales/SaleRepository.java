@@ -128,4 +128,29 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
         WHERE s.status = 'RECORDED' AND c.status = 'OPEN'
         """, nativeQuery = true)
     BigDecimal sumOpenCycleLegBusiness(@Param("associateId") UUID associateId, @Param("position") String position);
+
+    interface OpenCycleLegBusiness {
+        // Text keeps native UUID projection consistent across PostgreSQL and H2.
+        String getAssociateKey();
+        default UUID getAssociateId() {
+            return UUID.fromString(getAssociateKey());
+        }
+        String getPosition();
+        BigDecimal getAmount();
+    }
+
+    // Seed each requested node at its children: self sales never enter its own leg totals.
+    @Query(value = """
+        WITH RECURSIVE downline(root_id, position, id) AS (
+            SELECT parent_id, position, id FROM associate WHERE parent_id IN (:associateIds)
+            UNION ALL
+            SELECT d.root_id, d.position, a.id FROM associate a JOIN downline d ON a.parent_id = d.id
+        )
+        SELECT CAST(d.root_id AS VARCHAR(36)) AS "associateKey", d.position AS "position", SUM(s.amount) AS "amount"
+        FROM downline d JOIN sale s ON s.associate_id = d.id
+        JOIN cycle c ON c.id = s.cycle_id
+        WHERE s.status = 'RECORDED' AND c.status = 'OPEN'
+        GROUP BY d.root_id, d.position
+        """, nativeQuery = true)
+    List<OpenCycleLegBusiness> sumOpenCycleLegBusinessByAssociateIds(@Param("associateIds") List<UUID> associateIds);
 }

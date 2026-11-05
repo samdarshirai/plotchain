@@ -89,6 +89,45 @@ class SaleRepositoryTest {
     }
 
     @Test
+    void batchedOpenBusinessMatchesEachHoverLegAndExcludesSelfVoidedAndClosedSales() {
+        UUID root = persistAssociate();
+        UUID child = persistAssociate();
+        UUID grandchild = persistAssociate();
+        entityManager.find(Associate.class, child).setParentId(root);
+        entityManager.find(Associate.class, grandchild).setParentId(child);
+        entityManager.find(Associate.class, grandchild).setPosition("R");
+        UUID project = persistProject();
+        UUID plot = persistPlot(project);
+        UUID cycle = persistCycle();
+        persistSale(project, root, plot, cycle, SaleStatus.RECORDED, Instant.now());
+        persistSale(project, child, plot, cycle, SaleStatus.RECORDED, Instant.now());
+        persistSale(project, grandchild, plot, cycle, SaleStatus.RECORDED, Instant.now());
+        persistSale(project, grandchild, plot, cycle, SaleStatus.VOIDED, Instant.now());
+        Cycle closed = new Cycle();
+        closed.setId(UUID.randomUUID());
+        closed.setPeriodStart(LocalDate.of(2025, 12, 1));
+        closed.setPeriodEnd(LocalDate.of(2025, 12, 15));
+        closed.setStatus(CycleStatus.CLOSED);
+        entityManager.persist(closed);
+        persistSale(project, grandchild, plot, closed.getId(), SaleStatus.RECORDED, Instant.now());
+        entityManager.flush();
+        var rows = saleRepository.sumOpenCycleLegBusinessByAssociateIds(List.of(root, child, grandchild));
+        assertThat(rows).hasSize(2);
+        for (var row : rows) {
+            assertThat(row.getAmount()).isEqualByComparingTo(
+                saleRepository.sumOpenCycleLegBusiness(row.getAssociateId(), row.getPosition()));
+        }
+        assertThat(rows).filteredOn(r -> r.getAssociateId().equals(root)).singleElement()
+            .satisfies(r -> {
+                assertThat(r.getPosition()).isEqualTo("L");
+                assertThat(r.getAmount()).isEqualByComparingTo("1200000");
+            });
+        assertThat(rows).filteredOn(r -> r.getAssociateId().equals(child)).singleElement()
+            .satisfies(r -> assertThat(r.getAmount()).isEqualByComparingTo("600000"));
+        assertThat(saleRepository.sumOpenCycleLegBusinessByAssociateIds(List.of(grandchild))).isEmpty();
+    }
+
+    @Test
     void searchRegisterFiltersByAssociateIdAndStatus() {
         UUID projectId = persistProject();
         UUID plotId = persistPlot(projectId);

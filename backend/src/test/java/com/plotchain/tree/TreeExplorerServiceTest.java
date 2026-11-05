@@ -62,6 +62,72 @@ class TreeExplorerServiceTest {
     }
 
     @Test
+    void cardTotalsMatchHoverWhilePreservingLatestCycleVolumes() {
+        UUID id = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        Associate root = newAssociate(id, "VP00001", Instant.now());
+        Cycle cycle = new Cycle();
+        cycle.setId(cycleId);
+        LegVolume first = new LegVolume(UUID.randomUUID(), id, UUID.randomUUID(),
+            new BigDecimal("100"), new BigDecimal("40"), new BigDecimal("60"), BigDecimal.ZERO);
+        LegVolume second = new LegVolume(UUID.randomUUID(), id, UUID.randomUUID(),
+            new BigDecimal("60"), BigDecimal.ZERO, new BigDecimal("60"), BigDecimal.ZERO);
+        LegVolume latest = new LegVolume(UUID.randomUUID(), id, cycleId,
+            new BigDecimal("80"), new BigDecimal("10"), new BigDecimal("70"), BigDecimal.ZERO);
+        when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(root));
+        when(associateRepository.findFirstByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)).thenReturn(Optional.of(root));
+        when(associateRepository.findSelfAndDownline(id)).thenReturn(List.of(id));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(cycle));
+        when(legVolumeRepository.findByAssociateIdAndCycleId(id, cycleId)).thenReturn(Optional.of(latest));
+        when(legVolumeRepository.findByAssociateIdInOrderByCyclePeriodStartAsc(List.of(id)))
+            .thenReturn(List.of(first, second, latest));
+        when(legVolumeRepository.totalBusiness(id)).thenReturn(LegVolumeRepository.totalBusinessFromHistory(List.of(first, second, latest)));
+        SaleRepository.OpenCycleLegBusiness open = org.mockito.Mockito.mock(SaleRepository.OpenCycleLegBusiness.class);
+        when(open.getAssociateId()).thenReturn(id);
+        when(open.getPosition()).thenReturn("L");
+        when(open.getAmount()).thenReturn(new BigDecimal("30"));
+        when(saleRepository.sumOpenCycleLegBusinessByAssociateIds(List.of(id))).thenReturn(List.of(open));
+        when(saleRepository.sumOpenCycleLegBusiness(id, "L")).thenReturn(new BigDecimal("30"));
+        when(saleRepository.sumOpenCycleLegBusiness(id, "R")).thenReturn(BigDecimal.ZERO);
+        TreeNodeDetailsResponse hover = service.nodeDetails(id);
+        for (TreeNodeResponse card : List.of(service.companyTree(), service.subtreeWithinDownline(id, id))) {
+            assertThat(card.totalLeftBusiness()).isEqualByComparingTo("150");
+            assertThat(card.totalRightBusiness()).isEqualByComparingTo("50");
+            assertThat(card.totalLeftBusiness()).isEqualByComparingTo(hover.totalLeftBusiness());
+            assertThat(card.totalRightBusiness()).isEqualByComparingTo(hover.totalRightBusiness());
+            assertThat(card.leftLegVolume()).isEqualByComparingTo("80");
+        }
+        org.mockito.Mockito.verify(saleRepository, org.mockito.Mockito.times(2))
+            .sumOpenCycleLegBusinessByAssociateIds(List.of(id));
+    }
+
+    @Test
+    void openBusinessBeforeFirstCloseAndMissingHistoryDefaultToZero() {
+        UUID id = UUID.randomUUID();
+        UUID childId = UUID.randomUUID();
+        Associate root = newAssociate(id, "VP00001", Instant.now());
+        Associate child = newAssociate(childId, "VP00002", Instant.now());
+        when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(root));
+        when(associateRepository.findSelfAndDownline(id)).thenReturn(List.of(id, childId));
+        when(associateRepository.findByParentId(id)).thenReturn(List.of(child));
+        SaleRepository.OpenCycleLegBusiness open = org.mockito.Mockito.mock(SaleRepository.OpenCycleLegBusiness.class);
+        when(open.getAssociateId()).thenReturn(id);
+        when(open.getPosition()).thenReturn("R");
+        when(open.getAmount()).thenReturn(new BigDecimal("75"));
+        when(saleRepository.sumOpenCycleLegBusinessByAssociateIds(List.of(id, childId))).thenReturn(List.of(open));
+        TreeNodeResponse card = service.subtree(id);
+        assertThat(card.totalLeftBusiness()).isZero();
+        assertThat(card.totalRightBusiness()).isEqualByComparingTo("75");
+        assertThat(card.leftLegVolume()).isZero();
+        assertThat(card.children().get(0).totalLeftBusiness()).isZero();
+        assertThat(card.children().get(0).totalRightBusiness()).isZero();
+        org.mockito.Mockito.verify(saleRepository, org.mockito.Mockito.never())
+            .sumOpenCycleLegBusiness(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        org.mockito.Mockito.verify(legVolumeRepository, org.mockito.Mockito.never())
+            .totalBusiness(org.mockito.ArgumentMatchers.any(UUID.class));
+    }
+
+    @Test
     void subtreeThrowsWhenRootNotFound() {
         UUID id = UUID.randomUUID();
         when(associateRepository.findByIdAndRole(id, AssociateRole.ASSOCIATE)).thenReturn(Optional.empty());

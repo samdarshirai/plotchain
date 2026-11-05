@@ -10,31 +10,45 @@ describe('TreeExplorerComponent', () => {
 
   const rootNode = {
     id: 'a1', userId: 'VP00001', name: 'Root', designation: null, kycStatus: 'PENDING', position: null,
-    leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false, children: []
+    leftLegVolume: 0, rightLegVolume: 0, totalLeftBusiness: 0, totalRightBusiness: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false, children: []
   };
 
   const companyRoot: TreeNode = {
     id: 'admin', userId: 'admin', name: 'Administrator', designation: null, kycStatus: 'VERIFIED', position: null,
-    leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false, children: []
+    leftLegVolume: 0, rightLegVolume: 0, totalLeftBusiness: 0, totalRightBusiness: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false, children: []
   };
 
   const nestedTree: TreeNode = {
     id: 'a1', userId: 'VP00001', name: 'Root', designation: null, kycStatus: 'PENDING', position: null,
-    leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false,
+    leftLegVolume: 0, rightLegVolume: 0, totalLeftBusiness: 0, totalRightBusiness: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false,
     children: [
       {
         id: 'a2', userId: 'VP00002', name: 'Child', designation: null, kycStatus: 'PENDING', position: 'L',
-        leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false,
+        leftLegVolume: 0, rightLegVolume: 0, totalLeftBusiness: 0, totalRightBusiness: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false,
         children: [
           {
             id: 'a3', userId: 'VP00003', name: 'Grandchild', designation: null, kycStatus: 'PENDING', position: 'L',
-            leftLegVolume: 0, rightLegVolume: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false,
+            leftLegVolume: 0, rightLegVolume: 0, totalLeftBusiness: 0, totalRightBusiness: 0, skewedLegsFlag: false, stagnantFlag: false, plotBuyer: false,
             children: []
           }
         ]
       }
     ]
   };
+
+  it('renders lifetime business and its balance on initial load without details requests', () => {
+    const node: TreeNode = { ...nestedTree, children: [], leftLegVolume: 9, rightLegVolume: 1,
+      totalLeftBusiness: 12000, totalRightBusiness: 36000 };
+    initWithCompanyTree(node);
+    fixture.detectChanges();
+    const card: HTMLElement = fixture.nativeElement.querySelector('.tree-explorer__node-card');
+    expect(card.textContent).toContain('12,000');
+    expect(card.textContent).toContain('36,000');
+    const fill: HTMLElement = card.querySelector('.tree-explorer__vol-bar-fill')!;
+    expect(fill.style.width).toBe('25%');
+    httpMock.expectNone(req => req.url.endsWith('/details'));
+    expect(fixture.componentInstance.legLeftPercent({ ...node, totalLeftBusiness: 0, totalRightBusiness: 0 })).toBe(50);
+  });
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({

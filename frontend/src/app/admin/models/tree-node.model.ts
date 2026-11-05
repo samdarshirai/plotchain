@@ -7,6 +7,8 @@ export interface TreeNode {
   position: string | null;
   leftLegVolume: number;
   rightLegVolume: number;
+  totalLeftBusiness: number;
+  totalRightBusiness: number;
   skewedLegsFlag: boolean;
   stagnantFlag: boolean;
   plotBuyer: boolean;

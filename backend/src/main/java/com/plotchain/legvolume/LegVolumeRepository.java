@@ -24,14 +24,25 @@ public interface LegVolumeRepository extends JpaRepository<LegVolume, UUID> {
         "WHERE l.associateId = :associateId ORDER BY c.periodStart ASC")
     List<LegVolume> findByAssociateIdOrderByCyclePeriodStartAsc(@Param("associateId") UUID associateId);
 
-    record LegBusinessTotals(BigDecimal left, BigDecimal right) {}
+    @Query("SELECT l FROM LegVolume l JOIN Cycle c ON c.id = l.cycleId " +
+        "WHERE l.associateId IN :associateIds ORDER BY c.periodStart ASC")
+    List<LegVolume> findByAssociateIdInOrderByCyclePeriodStartAsc(@Param("associateIds") List<UUID> associateIds);
+
+    record LegBusinessTotals(BigDecimal left, BigDecimal right) {
+        public LegBusinessTotals plus(BigDecimal openLeft, BigDecimal openRight) {
+            return new LegBusinessTotals(left.add(openLeft), right.add(openRight));
+        }
+    }
 
     // Single home for the carry-forward-adjusted summation above (see the comment on
     // findByAssociateIdOrderByCyclePeriodStartAsc) -- both DashboardService (self-scoped) and
     // the admin Tree Explorer's per-node hover details (arbitrary associate) need this exact
     // computation, and it's easy to get the carry-subtraction subtly wrong if reimplemented.
     default LegBusinessTotals totalBusiness(UUID associateId) {
-        List<LegVolume> history = findByAssociateIdOrderByCyclePeriodStartAsc(associateId);
+        return totalBusinessFromHistory(findByAssociateIdOrderByCyclePeriodStartAsc(associateId));
+    }
+
+    static LegBusinessTotals totalBusinessFromHistory(List<LegVolume> history) {
         BigDecimal totalLeft = BigDecimal.ZERO;
         BigDecimal totalRight = BigDecimal.ZERO;
         BigDecimal incomingCarryLeft = BigDecimal.ZERO;
