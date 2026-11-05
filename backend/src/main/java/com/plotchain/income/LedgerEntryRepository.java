@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -113,6 +114,8 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         AND (:incomeType IS NULL OR l.incomeType = :incomeType)
         AND (:cycleId IS NULL OR l.cycleId = :cycleId)
         AND (:status IS NULL OR l.status = :status)
+        AND (CAST(:from AS timestamp) IS NULL OR l.createdAt >= :from)
+        AND (CAST(:toExclusive AS timestamp) IS NULL OR l.createdAt < :toExclusive)
         ORDER BY l.createdAt DESC
         """)
     Page<LedgerEntry> search(
@@ -120,6 +123,8 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         @Param("incomeType") IncomeType incomeType,
         @Param("cycleId") UUID cycleId,
         @Param("status") LedgerEntryStatus status,
+        @Param("from") Instant from,
+        @Param("toExclusive") Instant toExclusive,
         Pageable pageable);
 
     // Same null-safe filter as search(), summed over the whole filtered set (not one page) -- feeds
@@ -153,9 +158,14 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         FROM LedgerEntry l
         WHERE (:associateId IS NULL OR l.associateId = :associateId)
         AND (:cycleId IS NULL OR l.cycleId = :cycleId)
+        AND (CAST(:from AS timestamp) IS NULL OR l.createdAt >= :from)
+        AND (CAST(:toExclusive AS timestamp) IS NULL OR l.createdAt < :toExclusive)
         GROUP BY l.associateId, l.cycleId
         """)
-    List<LedgerSummaryRow> summarise(@Param("associateId") UUID associateId, @Param("cycleId") UUID cycleId);
+    List<LedgerSummaryRow> summarise(
+        @Param("associateId") UUID associateId, @Param("cycleId") UUID cycleId,
+        @Param("from") Instant from,
+        @Param("toExclusive") Instant toExclusive);
 
     // Associate "My Downline Income Report": same per associate x cycle rows as summarise, but for
     // a set of associates and DIRECT, MATCHING, ROYALTY and REWARD entries. Totals, deductions
@@ -174,9 +184,14 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         WHERE l.associateId IN :associateIds
         AND l.incomeType IN (com.plotchain.income.IncomeType.DIRECT, com.plotchain.income.IncomeType.MATCHING,
           com.plotchain.income.IncomeType.ROYALTY, com.plotchain.income.IncomeType.REWARD)
+        AND (CAST(:from AS timestamp) IS NULL OR l.createdAt >= :from)
+        AND (CAST(:toExclusive AS timestamp) IS NULL OR l.createdAt < :toExclusive)
         GROUP BY l.associateId, l.cycleId
         """)
-    List<LedgerSummaryRow> summariseDownline(@Param("associateIds") Collection<UUID> associateIds);
+    List<LedgerSummaryRow> summariseDownline(
+        @Param("associateIds") Collection<UUID> associateIds,
+        @Param("from") Instant from,
+        @Param("toExclusive") Instant toExclusive);
 
     List<LedgerEntry> findByAssociateIdAndCycleId(UUID associateId, UUID cycleId);
 

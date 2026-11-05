@@ -91,14 +91,14 @@ class LedgerServiceTest {
         UUID self = UUID.randomUUID();
         UUID child = UUID.randomUUID();
         when(associateRepository.findSelfAndDownline(self)).thenReturn(List.of(self, child));
-        when(ledgerEntryRepository.summariseDownline(List.of(child))).thenReturn(List.of());
+        when(ledgerEntryRepository.summariseDownline(eq(List.of(child)), isNull(), isNull())).thenReturn(List.of());
 
-        assertThat(service.myDownlineSummary(self)).isEmpty();
-        verify(ledgerEntryRepository).summariseDownline(List.of(child));
+        assertThat(service.myDownlineSummary(self, null, null)).isEmpty();
+        verify(ledgerEntryRepository).summariseDownline(eq(List.of(child)), isNull(), isNull());
 
         UUID loner = UUID.randomUUID();
         when(associateRepository.findSelfAndDownline(loner)).thenReturn(List.of(loner));
-        assertThat(service.myDownlineSummary(loner)).isEmpty();
+        assertThat(service.myDownlineSummary(loner, null, null)).isEmpty();
     }
 
     @Test
@@ -111,12 +111,12 @@ class LedgerServiceTest {
         Associate associate = newAssociate(associateId, "VP00001", "Jane Doe");
         Cycle cycle = newCycle(cycleId, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 15));
 
-        when(ledgerEntryRepository.search(isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(entry), PageRequest.of(0, 20), 1));
         when(associateRepository.findAllById(List.of(associateId))).thenReturn(List.of(associate));
         when(cycleRepository.findAllById(List.of(cycleId))).thenReturn(List.of(cycle));
 
-        AdminLedgerPageResponse response = service.adminList(null, null, null, null, 0, 20);
+        AdminLedgerPageResponse response = service.adminList(null, null, null, null, null, null, 0, 20);
 
         assertThat(response.totalElements()).isEqualTo(1);
         assertThat(response.page()).isEqualTo(0);
@@ -143,14 +143,14 @@ class LedgerServiceTest {
         UUID cycleId = UUID.randomUUID();
         when(ledgerEntryRepository.search(
             eq(associateId), eq(IncomeType.MATCHING), eq(cycleId), eq(LedgerEntryStatus.PENDING),
-            eq(PageRequest.of(0, 20))))
+            isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
-        service.adminList(associateId, IncomeType.MATCHING, cycleId, LedgerEntryStatus.PENDING, 0, 20);
+        service.adminList(associateId, IncomeType.MATCHING, cycleId, LedgerEntryStatus.PENDING, null, null, 0, 20);
 
         verify(ledgerEntryRepository).search(
             eq(associateId), eq(IncomeType.MATCHING), eq(cycleId), eq(LedgerEntryStatus.PENDING),
-            eq(PageRequest.of(0, 20)));
+            isNull(), isNull(), eq(PageRequest.of(0, 20)));
     }
 
     // Flow "Admin ledger register" step 6: a lookup miss leaves the response field null instead
@@ -163,12 +163,12 @@ class LedgerServiceTest {
         UUID cycleId = UUID.randomUUID();
         LedgerEntry entry = newEntry(entryId, associateId, cycleId, null);
 
-        when(ledgerEntryRepository.search(isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(entry), PageRequest.of(0, 20), 1));
         when(associateRepository.findAllById(List.of(associateId))).thenReturn(List.of());
         when(cycleRepository.findAllById(List.of(cycleId))).thenReturn(List.of());
 
-        AdminLedgerEntryResponse row = service.adminList(null, null, null, null, 0, 20).entries().get(0);
+        AdminLedgerEntryResponse row = service.adminList(null, null, null, null, null, null, 0, 20).entries().get(0);
 
         assertThat(row.associateUserId()).isNull();
         assertThat(row.associateName()).isNull();
@@ -179,10 +179,10 @@ class LedgerServiceTest {
 
     @Test
     void adminListReturnsAnEmptyPageWhenSearchFindsNothingWithoutCallingBatchLookups() {
-        when(ledgerEntryRepository.search(isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
-        AdminLedgerPageResponse response = service.adminList(null, null, null, null, 0, 20);
+        AdminLedgerPageResponse response = service.adminList(null, null, null, null, null, null, 0, 20);
 
         assertThat(response.entries()).isEmpty();
         assertThat(response.totalElements()).isZero();
@@ -202,7 +202,7 @@ class LedgerServiceTest {
         LedgerEntry entry = newEntry(entryId, associateId, cycleId, sourceRef);
         Cycle cycle = newCycle(cycleId, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 15));
 
-        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(entry), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(cycleId))).thenReturn(List.of(cycle));
         when(ledgerEntryRepository.sumGrossAmount(eq(associateId), isNull(), isNull(), isNull()))
@@ -236,7 +236,7 @@ class LedgerServiceTest {
         LedgerEntry sm = newEntry(UUID.randomUUID(), associateId, cycleId, matching.getId());
         sm.setIncomeType(IncomeType.SPONSOR_MATCHING);
 
-        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(sm), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(cycleId)))
             .thenReturn(List.of(newCycle(cycleId, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
@@ -261,7 +261,7 @@ class LedgerServiceTest {
         sale.setAssociateId(sellerId);
         sale.setAmount(new BigDecimal("1000000.00"));
 
-        when(ledgerEntryRepository.search(eq(sponsorId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(sponsorId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(direct), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(cycleId)))
             .thenReturn(List.of(newCycle(cycleId, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
@@ -282,7 +282,7 @@ class LedgerServiceTest {
         LedgerEntry direct = newEntry(UUID.randomUUID(), sponsorId, cycleId, saleId);
         direct.setIncomeType(IncomeType.DIRECT);
 
-        when(ledgerEntryRepository.search(eq(sponsorId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(sponsorId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(direct), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(cycleId)))
             .thenReturn(List.of(newCycle(cycleId, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
@@ -308,7 +308,7 @@ class LedgerServiceTest {
         LedgerEntry e2 = newEntry(UUID.randomUUID(), associateId, c2, lv2.getId());
         e2.setIncomeType(IncomeType.MATCHING);
 
-        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(e2), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(c2)))
             .thenReturn(List.of(newCycle(c2, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
@@ -336,7 +336,7 @@ class LedgerServiceTest {
         LedgerEntry e1 = newEntry(UUID.randomUUID(), associateId, c1, lv1.getId());
         e1.setIncomeType(IncomeType.ROYALTY);
 
-        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(e1), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(c1)))
             .thenReturn(List.of(newCycle(c1, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
@@ -362,7 +362,7 @@ class LedgerServiceTest {
         LedgerEntry live = newEntry(UUID.randomUUID(), associateId, open, UUID.randomUUID());
         live.setIncomeType(IncomeType.MATCHING);
 
-        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(live), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(open)))
             .thenReturn(List.of(newCycle(open, LocalDate.of(2026, 10, 16), LocalDate.of(2026, 10, 31))));
@@ -393,14 +393,14 @@ class LedgerServiceTest {
         UUID cycleId = UUID.randomUUID();
         when(ledgerEntryRepository.search(
             eq(associateId), eq(IncomeType.MATCHING), eq(cycleId), eq(LedgerEntryStatus.PENDING),
-            eq(PageRequest.of(0, 20))))
+            isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
         service.myList(associateId, IncomeType.MATCHING, cycleId, LedgerEntryStatus.PENDING, 0, 20);
 
         verify(ledgerEntryRepository).search(
             eq(associateId), eq(IncomeType.MATCHING), eq(cycleId), eq(LedgerEntryStatus.PENDING),
-            eq(PageRequest.of(0, 20)));
+            isNull(), isNull(), eq(PageRequest.of(0, 20)));
     }
 
     @Test
@@ -410,7 +410,7 @@ class LedgerServiceTest {
         UUID cycleId = UUID.randomUUID();
         LedgerEntry entry = newEntry(entryId, associateId, cycleId, null);
 
-        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(entry), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(cycleId))).thenReturn(List.of());
 
@@ -424,7 +424,7 @@ class LedgerServiceTest {
     @Test
     void myListReturnsAnEmptyPageWhenSearchFindsNothing() {
         UUID associateId = UUID.randomUUID();
-        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
         AssociateLedgerPageResponse response = service.myList(associateId, null, null, null, 0, 20);

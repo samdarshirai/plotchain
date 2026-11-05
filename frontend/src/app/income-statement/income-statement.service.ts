@@ -7,6 +7,13 @@ import { RewardAchievedRow } from './models/reward-achieved-row.model';
 import { AssociateLedgerFilters, AssociateLedgerPage } from './models/associate-ledger-page.model';
 import { IncomeSummaryRow } from './models/income-summary-row.model';
 
+const dateParams = (from: string, to: string): HttpParams => {
+  let p = new HttpParams();
+  if (from) p = p.set('from', from);
+  if (to) p = p.set('to', to);
+  return p;
+};
+
 @Injectable({ providedIn: 'root' })
 export class IncomeStatementService {
   private http = inject(HttpClient);
@@ -21,12 +28,12 @@ export class IncomeStatementService {
     return this.http.get<AssociateLedgerPage>('/api/associates/me/ledger', { params });
   }
 
-  summary(): Observable<IncomeSummaryRow[]> {
-    return this.http.get<IncomeSummaryRow[]>('/api/associates/me/income-summary');
+  summary(from = '', to = ''): Observable<IncomeSummaryRow[]> {
+    return this.http.get<IncomeSummaryRow[]>('/api/associates/me/income-summary', { params: dateParams(from, to) });
   }
 
-  downlineIncome(): Observable<IncomeSummaryRow[]> {
-    return this.http.get<IncomeSummaryRow[]>('/api/associates/me/downline-income');
+  downlineIncome(from = '', to = ''): Observable<IncomeSummaryRow[]> {
+    return this.http.get<IncomeSummaryRow[]>('/api/associates/me/downline-income', { params: dateParams(from, to) });
   }
 
   rewardTiers(): Observable<RewardTierRow[]> {

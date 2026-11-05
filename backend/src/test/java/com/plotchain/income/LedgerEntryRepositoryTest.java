@@ -201,29 +201,29 @@ class LedgerEntryRepositoryTest {
             newEntry(associateB.getId(), cycleA.getId(), IncomeType.DIRECT, UUID.randomUUID()));
 
         Page<LedgerEntry> byAssociate = ledgerEntryRepository.search(
-            associateA.getId(), null, null, null, PageRequest.of(0, 20));
+            associateA.getId(), null, null, null, null, null, PageRequest.of(0, 20));
         assertThat(byAssociate.getContent()).extracting(LedgerEntry::getId)
             .containsExactlyInAnyOrder(direct.getId(), matching.getId());
 
         Page<LedgerEntry> byIncomeType = ledgerEntryRepository.search(
-            null, IncomeType.DIRECT, null, null, PageRequest.of(0, 20));
+            null, IncomeType.DIRECT, null, null, null, null, PageRequest.of(0, 20));
         assertThat(byIncomeType.getContent()).extracting(LedgerEntry::getId)
             .containsExactlyInAnyOrder(direct.getId(), otherAssociate.getId());
 
         Page<LedgerEntry> byCycleId = ledgerEntryRepository.search(
-            null, null, cycleB.getId(), null, PageRequest.of(0, 20));
+            null, null, cycleB.getId(), null, null, null, PageRequest.of(0, 20));
         assertThat(byCycleId.getContent()).extracting(LedgerEntry::getId).containsExactly(matching.getId());
 
         Page<LedgerEntry> byStatus = ledgerEntryRepository.search(
-            null, null, null, LedgerEntryStatus.PAID, PageRequest.of(0, 20));
+            null, null, null, LedgerEntryStatus.PAID, null, null, PageRequest.of(0, 20));
         assertThat(byStatus.getContent()).extracting(LedgerEntry::getId).containsExactly(direct.getId());
 
         Page<LedgerEntry> combined = ledgerEntryRepository.search(
-            associateA.getId(), IncomeType.DIRECT, cycleA.getId(), LedgerEntryStatus.PAID, PageRequest.of(0, 20));
+            associateA.getId(), IncomeType.DIRECT, cycleA.getId(), LedgerEntryStatus.PAID, null, null, PageRequest.of(0, 20));
         assertThat(combined.getContent()).extracting(LedgerEntry::getId).containsExactly(direct.getId());
 
         Page<LedgerEntry> unfiltered = ledgerEntryRepository.search(
-            null, null, null, null, PageRequest.of(0, 20));
+            null, null, null, null, null, null, PageRequest.of(0, 20));
         assertThat(unfiltered.getTotalElements()).isEqualTo(3);
     }
 
@@ -261,12 +261,12 @@ class LedgerEntryRepositoryTest {
         latest.setCreatedAt(Instant.parse("2026-01-30T00:00:00Z"));
         ledgerEntryRepository.saveAndFlush(latest);
 
-        Page<LedgerEntry> firstPage = ledgerEntryRepository.search(null, null, null, null, PageRequest.of(0, 2));
+        Page<LedgerEntry> firstPage = ledgerEntryRepository.search(null, null, null, null, null, null, PageRequest.of(0, 2));
         assertThat(firstPage.getContent()).extracting(LedgerEntry::getId)
             .containsExactly(latest.getId(), later.getId());
         assertThat(firstPage.getTotalElements()).isEqualTo(3);
 
-        Page<LedgerEntry> secondPage = ledgerEntryRepository.search(null, null, null, null, PageRequest.of(1, 2));
+        Page<LedgerEntry> secondPage = ledgerEntryRepository.search(null, null, null, null, null, null, PageRequest.of(1, 2));
         assertThat(secondPage.getContent()).extracting(LedgerEntry::getId).containsExactly(earlier.getId());
     }
 
@@ -276,7 +276,7 @@ class LedgerEntryRepositoryTest {
         seedCycle();
 
         Page<LedgerEntry> result = ledgerEntryRepository.search(
-            UUID.randomUUID(), null, null, null, PageRequest.of(0, 20));
+            UUID.randomUUID(), null, null, null, null, null, PageRequest.of(0, 20));
 
         assertThat(result.getContent()).isEmpty();
         assertThat(result.getTotalElements()).isZero();
@@ -360,6 +360,38 @@ class LedgerEntryRepositoryTest {
     }
 
     @Test
+    void dateRangeFiltersSearchAndSummariesAloneOrCombinedWithOtherFilters() {
+        Associate a = seedAssociate();
+        Cycle cycle = seedCycle();
+        Instant d1 = Instant.parse("2026-10-01T10:00:00Z");
+        Instant d2 = Instant.parse("2026-10-05T23:30:00Z");
+        Instant d3 = Instant.parse("2026-10-10T00:00:00Z");
+        LedgerEntry e1 = newEntry(a.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID());
+        e1.setCreatedAt(d1);
+        LedgerEntry e2 = newEntry(a.getId(), cycle.getId(), IncomeType.MATCHING, UUID.randomUUID());
+        e2.setCreatedAt(d2);
+        LedgerEntry e3 = newEntry(a.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID());
+        e3.setCreatedAt(d3);
+        ledgerEntryRepository.saveAll(List.of(e1, e2, e3));
+        ledgerEntryRepository.flush();
+        PageRequest pr = PageRequest.of(0, 20);
+        Instant from = Instant.parse("2026-10-02T00:00:00Z");
+        Instant toEx = Instant.parse("2026-10-06T00:00:00Z"); // 5th inclusive
+
+        assertThat(ledgerEntryRepository.search(null, null, null, null, from, null, pr).getContent())
+            .extracting(LedgerEntry::getId).containsExactlyInAnyOrder(e2.getId(), e3.getId());
+        assertThat(ledgerEntryRepository.search(null, null, null, null, null, toEx, pr).getContent())
+            .extracting(LedgerEntry::getId).containsExactlyInAnyOrder(e1.getId(), e2.getId());
+        assertThat(ledgerEntryRepository.search(null, null, null, null, from, toEx, pr).getContent())
+            .extracting(LedgerEntry::getId).containsExactly(e2.getId());
+        assertThat(ledgerEntryRepository.search(null, IncomeType.DIRECT, null, null, from, toEx, pr).getContent()).isEmpty();
+
+        assertThat(ledgerEntryRepository.summarise(a.getId(), null, from, toEx).get(0).getEntryCount()).isEqualTo(1);
+        assertThat(ledgerEntryRepository.summarise(a.getId(), null, null, null).get(0).getEntryCount()).isEqualTo(3);
+        assertThat(ledgerEntryRepository.summariseDownline(List.of(a.getId()), from, toEx).get(0).getEntryCount()).isEqualTo(1);
+    }
+
+    @Test
     void summariseGroupsNetByAssociateAndCycleWithPerTypeColumns() {
         Associate a = seedAssociate();
         Associate b = seedAssociate();
@@ -372,10 +404,10 @@ class LedgerEntryRepositoryTest {
         ledgerEntryRepository.save(newEntry(b.getId(), cycle.getId(), IncomeType.DIRECT, UUID.randomUUID()));
         ledgerEntryRepository.flush();
 
-        List<LedgerSummaryRow> all = ledgerEntryRepository.summarise(null, null);
+        List<LedgerSummaryRow> all = ledgerEntryRepository.summarise(null, null, null, null);
         assertThat(all).hasSize(2);
 
-        LedgerSummaryRow rowA = ledgerEntryRepository.summarise(a.getId(), cycle.getId()).get(0);
+        LedgerSummaryRow rowA = ledgerEntryRepository.summarise(a.getId(), cycle.getId(), null, null).get(0);
         assertThat(rowA.getDirect()).isEqualByComparingTo("100.00");
         assertThat(rowA.getMatching()).isEqualByComparingTo("100.00");
         assertThat(rowA.getTotalGross()).isEqualByComparingTo("200.00");
@@ -407,7 +439,7 @@ class LedgerEntryRepositoryTest {
         }
         ledgerEntryRepository.flush();
 
-        List<LedgerSummaryRow> rows = ledgerEntryRepository.summariseDownline(List.of(a.getId()));
+        List<LedgerSummaryRow> rows = ledgerEntryRepository.summariseDownline(List.of(a.getId()), null, null);
 
         assertThat(rows).hasSize(1);
         LedgerSummaryRow row = rows.get(0);
@@ -438,7 +470,7 @@ class LedgerEntryRepositoryTest {
         ledgerEntryRepository.save(newEntry(rewardOnly.getId(), cycle.getId(), IncomeType.REWARD, UUID.randomUUID()));
         ledgerEntryRepository.flush();
 
-        List<LedgerSummaryRow> rows = ledgerEntryRepository.summariseDownline(List.of(royaltyOnly.getId(), rewardOnly.getId()));
+        List<LedgerSummaryRow> rows = ledgerEntryRepository.summariseDownline(List.of(royaltyOnly.getId(), rewardOnly.getId()), null, null);
         assertThat(rows).hasSize(2);
         for (LedgerSummaryRow row : rows) {
             boolean isRoyalty = row.getAssociateId().equals(royaltyOnly.getId());

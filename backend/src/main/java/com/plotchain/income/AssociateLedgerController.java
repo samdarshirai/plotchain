@@ -1,6 +1,8 @@
 package com.plotchain.income;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,14 +48,20 @@ public class AssociateLedgerController {
     }
 
     @GetMapping("/api/associates/me/income-summary")
-    public List<AdminLedgerSummaryRow> getMyIncomeSummary(@AuthenticationPrincipal UUID associateId) {
-        return ledgerService.mySummary(associateId);
+    public List<AdminLedgerSummaryRow> getMyIncomeSummary(
+            @AuthenticationPrincipal UUID associateId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ledgerService.mySummary(associateId, from, to);
     }
 
     // Self-scoped like the routes above: the downline is always the JWT caller's own.
     @GetMapping("/api/associates/me/downline-income")
-    public List<AdminLedgerSummaryRow> getMyDownlineIncome(@AuthenticationPrincipal UUID associateId) {
-        return ledgerService.myDownlineSummary(associateId);
+    public List<AdminLedgerSummaryRow> getMyDownlineIncome(
+            @AuthenticationPrincipal UUID associateId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ledgerService.myDownlineSummary(associateId, from, to);
     }
 
         @GetMapping("/api/associates/me/reward-tiers")

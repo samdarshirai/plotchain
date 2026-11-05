@@ -44,4 +44,15 @@ describe('IncomeStatementService', () => {
     const req = httpMock.expectOne('/api/associates/me/ledger?page=1&size=100');
     req.flush({ entries: [], page: 1, size: 100, totalElements: 0, totalGrossAmount: 0 });
   });
+
+  it('sends from/to on summary and downline income only when set', () => {
+    service.summary('2026-10-01', '').subscribe();
+    httpMock.expectOne(r => r.url === '/api/associates/me/income-summary' && r.params.get('from') === '2026-10-01' && !r.params.has('to')).flush([]);
+
+    service.downlineIncome('2026-10-01', '2026-10-31').subscribe();
+    httpMock.expectOne(r => r.url === '/api/associates/me/downline-income' && r.params.get('from') === '2026-10-01' && r.params.get('to') === '2026-10-31').flush([]);
+
+    service.downlineIncome().subscribe();
+    httpMock.expectOne('/api/associates/me/downline-income').flush([]);
+  });
 });

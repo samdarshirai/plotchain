@@ -43,4 +43,17 @@ describe('LedgerRegisterService', () => {
     const req = httpMock.expectOne('/api/admin/ledger?page=0&size=20');
     req.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
   });
+
+  it('sends from/to alone or together on list and summary, omitting them when empty', () => {
+    service.list({ from: '2026-10-01' }, 0, 20).subscribe();
+    httpMock.expectOne(r => r.url === '/api/admin/ledger' && r.params.get('from') === '2026-10-01' && !r.params.has('to'))
+      .flush({ entries: [], page: 0, size: 20, totalElements: 0 });
+
+    service.summary('', '', 0, 20, '', '2026-10-31').subscribe();
+    httpMock.expectOne(r => r.url === '/api/admin/ledger/summary' && r.params.get('to') === '2026-10-31' && !r.params.has('from'))
+      .flush({ rows: [], page: 0, size: 20, totalElements: 0 });
+
+    service.summary('', '', 0, 20).subscribe();
+    httpMock.expectOne('/api/admin/ledger/summary?page=0&size=20').flush({ rows: [], page: 0, size: 20, totalElements: 0 });
+  });
 });

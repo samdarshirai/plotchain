@@ -27,10 +27,12 @@ export class LedgerRegisterService {
     return this.http.post<void>('/api/admin/ledger/mark-paid', { ids, fulfilledAt, remark });
   }
 
-  summary(associateId: string, cycleId: string, page: number, size: number): Observable<AdminLedgerSummaryPage> {
+  summary(associateId: string, cycleId: string, page: number, size: number, from = '', to = ''): Observable<AdminLedgerSummaryPage> {
     let params = new HttpParams().set('page', page).set('size', size);
     if (associateId) params = params.set('associateId', associateId);
     if (cycleId) params = params.set('cycleId', cycleId);
+    if (from) params = params.set('from', from);
+    if (to) params = params.set('to', to);
     return this.http.get<AdminLedgerSummaryPage>('/api/admin/ledger/summary', { params });
   }
 

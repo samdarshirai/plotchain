@@ -15,6 +15,7 @@ import { AssociateLedgerPage, AssociateLedgerFilters } from './models/associate-
 import { IncomeSummaryRow } from './models/income-summary-row.model';
 import { TabBarComponent, TabDefinition } from '../shared/components/tab-bar/tab-bar.component';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
+import { DateRangeComponent } from '../shared/components/date-range/date-range.component';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 
 const PAGE_SIZE = 100; // backend max; all pages are fetched so the Total row covers every entry
@@ -49,7 +50,7 @@ const DATE_FORMAT = 'dd MMM yyyy';
 @Component({
   selector: 'app-income-statement',
   standalone: true,
-  imports: [CommonModule, TranslateModule, TabBarComponent, EditableTableComponent, InlineBannerComponent],
+  imports: [CommonModule, TranslateModule, TabBarComponent, EditableTableComponent, InlineBannerComponent, DateRangeComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="income-statement" [attr.data-income-type]="activeIncomeType" [class.income-statement--matching]="activeIncomeType === 'MATCHING'" [class.income-statement--reward]="activeIncomeType === 'REWARD'" [class.income-statement--direct]="activeIncomeType === 'DIRECT'" [class.income-statement--all]="activeIncomeType === 'ALL'">
@@ -91,6 +92,11 @@ const DATE_FORMAT = 'dd MMM yyyy';
             </select>
           </label>
         </div>
+        <app-date-range [from]="dateFrom" [to]="dateTo" (rangeChange)="onDateRangeChange($event)"></app-date-range>
+      </div>
+
+      <div class="income-statement__filters" *ngIf="activeIncomeType === 'ALL'">
+        <app-date-range [from]="dateFrom" [to]="dateTo" (rangeChange)="onDateRangeChange($event)"></app-date-range>
       </div>
 
       <div class="income-statement__filters" *ngIf="activeIncomeType !== 'REWARD' && activeIncomeType !== 'ALL' && activeIncomeType !== 'DOWNLINE'">
@@ -188,6 +194,8 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   achievedColumns: EditableTableColumn[] = [];
   achievedRows: Record<string, string>[] = [];
   private cycleId = '';
+  dateFrom = '';
+  dateTo = '';
   private status = '';
   downlineCycles: CycleOption[] = [];
   downlineCycleId = '';
@@ -500,6 +508,12 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     this.loadPage();
   }
 
+  onDateRangeChange(r: { from: string; to: string }): void {
+    this.dateFrom = r.from;
+    this.dateTo = r.to;
+    this.loadPage();
+  }
+
   onStatusChange(value: string): void {
     this.status = value;
     this.loadPage();
@@ -541,7 +555,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     this.loadError = false;
     if (this.activeIncomeType === 'DOWNLINE') {
       this.page = null;
-      this.incomeStatementService.downlineIncome().subscribe({
+      this.incomeStatementService.downlineIncome(this.dateFrom, this.dateTo).subscribe({
         next: rows => {
           this.downlineAll = rows;
           const byCycle = new Map<string, CycleOption>();
@@ -556,7 +570,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     }
     if (this.activeIncomeType === 'ALL') {
       this.page = null;
-      this.incomeStatementService.summary().subscribe({
+      this.incomeStatementService.summary(this.dateFrom, this.dateTo).subscribe({
         next: rows => this.updateSummaryRows(rows),
         error: () => (this.loadError = true)
       });

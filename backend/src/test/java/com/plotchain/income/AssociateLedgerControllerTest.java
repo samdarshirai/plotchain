@@ -95,7 +95,7 @@ class AssociateLedgerControllerTest {
             associateId, "VP00001", "Jane", cycleId, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 15),
             gross, new BigDecimal("100.00"), new BigDecimal("2.00"), new BigDecimal("5.00"), new BigDecimal("93.00"),
             1, 1, Instant.parse("2026-01-20T00:00:00Z"));
-        when(ledgerService.mySummary(associateId)).thenReturn(List.of(row));
+        when(ledgerService.mySummary(eq(associateId), isNull(), isNull())).thenReturn(List.of(row));
 
         mockMvc.perform(get("/api/associates/me/income-summary")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
@@ -113,7 +113,7 @@ class AssociateLedgerControllerTest {
             UUID.randomUUID(), "VP00002", "Ravi", UUID.randomUUID(), LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 15),
             new java.util.EnumMap<>(IncomeType.class), new BigDecimal("100.00"), new BigDecimal("2.00"), new BigDecimal("5.00"),
             new BigDecimal("93.00"), 1, 0, null);
-        when(ledgerService.myDownlineSummary(associateId)).thenReturn(List.of(row));
+        when(ledgerService.myDownlineSummary(eq(associateId), isNull(), isNull())).thenReturn(List.of(row));
 
         mockMvc.perform(get("/api/associates/me/downline-income")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))

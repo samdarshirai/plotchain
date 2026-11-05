@@ -296,9 +296,17 @@ describe('IncomeStatementComponent', () => {
   it('All tab hides the cycle/status filters, cards and pagination', () => {
     flushInitialRequests();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.income-statement__filters')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.income-statement__filters select')).toBeNull();
     expect(fixture.nativeElement.querySelector('.income-statement__cards--summary')).toBeNull();
     expect(fixture.nativeElement.querySelector('.income-statement__pagination')).toBeNull();
+  });
+
+  it('All tab reloads the summary with from/to when the date range changes, either side alone', () => {
+    flushInitialRequests();
+    fixture.componentInstance.onDateRangeChange({ from: '2026-10-01', to: '' });
+    httpMock.expectOne(r => r.url === SUMMARY_URL && r.params.get('from') === '2026-10-01' && !r.params.has('to')).flush([]);
+    fixture.componentInstance.onDateRangeChange({ from: '', to: '2026-10-31' });
+    httpMock.expectOne(r => r.url === SUMMARY_URL && r.params.get('to') === '2026-10-31' && !r.params.has('from')).flush([]);
   });
 
   it('derives the cycle filter options from the unfiltered lookup, deduped by cycleId, newest first', () => {
@@ -440,7 +448,7 @@ describe('IncomeStatementComponent', () => {
   it('has no action column and no write inputs — this screen is view-only', () => {
     flushInitialRequests();
     expect(fixture.componentInstance.statementColumns.some(c => c.type === 'action')).toBeFalse();
-    expect(fixture.nativeElement.querySelectorAll('input').length).toBe(0);
+    expect(fixture.nativeElement.querySelectorAll('input:not([type=date])').length).toBe(0);
   });
 
   it('formats money as currency with thousands separators, not raw numbers', () => {

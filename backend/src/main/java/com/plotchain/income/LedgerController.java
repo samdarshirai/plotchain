@@ -1,6 +1,8 @@
 package com.plotchain.income;
 
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,22 +37,26 @@ public class LedgerController {
             @RequestParam(required = false) IncomeType incomeType,
             @RequestParam(required = false) UUID cycleId,
             @RequestParam(required = false) LedgerEntryStatus status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
-        return ledgerService.adminList(associateId, incomeType, cycleId, status, page, size);
+        return ledgerService.adminList(associateId, incomeType, cycleId, status, from, to, page, size);
     }
 
     @GetMapping("/summary")
     public AdminLedgerSummaryPageResponse summary(
             @RequestParam(required = false) UUID associateId,
             @RequestParam(required = false) UUID cycleId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ledgerService.adminSummary(associateId, cycleId, Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        return ledgerService.adminSummary(associateId, cycleId, from, to, Math.max(page, 0), Math.min(Math.max(size, 1), 100));
     }
 
     @PostMapping("/summary/mark-paid")

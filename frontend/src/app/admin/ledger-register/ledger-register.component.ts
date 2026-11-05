@@ -10,6 +10,7 @@ import { AssociateSummary } from '../models/associate-summary.model';
 import { CycleManagementService } from '../cycle-management/cycle-management.service';
 import { CycleSummary } from '../models/cycle.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
+import { DateRangeComponent } from '../../shared/components/date-range/date-range.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/tab-bar.component';
@@ -59,7 +60,7 @@ const LEG_FIELD: Record<string, string> = {
 @Component({
   selector: 'app-ledger-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, TabBarComponent, FieldErrorComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, TabBarComponent, FieldErrorComponent, DateRangeComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="ledger-register">
@@ -108,6 +109,7 @@ const LEG_FIELD: Record<string, string> = {
             </select>
           </label>
         </div>
+        <app-date-range [from]="dateFrom" [to]="dateTo" (rangeChange)="onDateRangeChange($event)"></app-date-range>
       </div>
 
       <app-inline-banner *ngIf="loadError" tone="danger" class="ledger-register__load-error">
@@ -177,6 +179,8 @@ export class LedgerRegisterComponent implements OnInit {
   private associateId = '';
   incomeType = '';
   cycleId = '';
+  dateFrom = '';
+  dateTo = '';
   private status = '';
   private summaryPage: AdminLedgerSummaryPage | null = null;
   legendKeys = ['bflb', 'nlb', 'tlb', 'clb', 'bfrb', 'nrb', 'trb', 'crb'];
@@ -335,6 +339,12 @@ export class LedgerRegisterComponent implements OnInit {
     this.loadPage(0);
   }
 
+  onDateRangeChange(r: { from: string; to: string }): void {
+    this.dateFrom = r.from;
+    this.dateTo = r.to;
+    this.loadPage(0);
+  }
+
   onStatusChange(value: string): void {
     this.status = value;
     this.loadPage(0);
@@ -382,7 +392,7 @@ export class LedgerRegisterComponent implements OnInit {
   protected loadPage(page: number): void {
     this.loadError = false;
     if (this.isSummary) {
-      fetchAllPages((p, size) => this.ledgerRegisterService.summary(this.associateId, this.cycleId, p, size)).subscribe({
+      fetchAllPages((p, size) => this.ledgerRegisterService.summary(this.associateId, this.cycleId, p, size, this.dateFrom, this.dateTo)).subscribe({
         next: res => {
           this.summaryPage = res;
           // Shared pagination footer reads page/size/totalElements only.
@@ -398,6 +408,8 @@ export class LedgerRegisterComponent implements OnInit {
     if (this.incomeType) filters.incomeType = this.incomeType as AdminLedgerFilters['incomeType'];
     if (this.cycleId) filters.cycleId = this.cycleId;
     if (this.status) filters.status = this.status as AdminLedgerFilters['status'];
+    if (this.dateFrom) filters.from = this.dateFrom;
+    if (this.dateTo) filters.to = this.dateTo;
     fetchAllPages((p, size) => this.ledgerRegisterService.list(filters, p, size)).subscribe({
       next: res => {
         this.page = res;
