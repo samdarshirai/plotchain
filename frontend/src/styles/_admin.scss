@@ -3459,8 +3459,13 @@
   position: fixed;
   z-index: 20;
   width: max-content;
-  min-width: 240px;
-  max-width: 340px;
+  min-width: min(240px, calc(100vw - 16px));
+  max-width: min(340px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
   padding: 0.75rem 0.875rem;
   border-radius: 14px;
   border: 1.5px solid var(--border-subtle);
@@ -3469,11 +3474,12 @@
   border: 1px solid var(--border-subtle);
   font-size: 0.8rem;
   line-height: 1.5;
-  pointer-events: none;
+  pointer-events: auto;
+  touch-action: pan-y;
 
   > div + div {
     color: var(--text-secondary);
-    white-space: nowrap;
+    white-space: normal;
   }
 }
 

@@ -207,6 +207,51 @@ describe('MyTreeComponent', () => {
     expect(fixture.componentInstance.root?.id).toBe('a1');
   });
 
+
+  it('keeps loaded details open while entering the popup and dismisses after leaving it', () => {
+    jasmine.clock().install();
+    try {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
+      fixture.detectChanges();
+      jasmine.clock().tick(0);
+      const component = fixture.componentInstance;
+      component.hoveredNodeId = 'a1';
+      component.hoveredDetailsLoading = true;
+      component.onCardHoverEnd();
+      jasmine.clock().tick(60);
+      component.keepHoverOpen();
+      jasmine.clock().tick(120);
+      expect(component.hoveredNodeId).toBe('a1');
+      component.onCardHoverEnd();
+      jasmine.clock().tick(120);
+      expect(component.hoveredNodeId).toBeNull();
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('ignores details that arrive after the hover is dismissed', () => {
+    jasmine.clock().install();
+    try {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
+      fixture.detectChanges();
+      jasmine.clock().tick(0); // Finish the initial deferred fit before hovering.
+      const card: HTMLElement = fixture.nativeElement.querySelector('.tree-explorer__node-card');
+      card.dispatchEvent(new MouseEvent('mouseenter'));
+      jasmine.clock().tick(150);
+      const request = httpMock.expectOne(req => req.url.endsWith('/details'));
+      fixture.componentInstance.dismissHover();
+      request.flush({ name: 'Stale response' });
+      fixture.detectChanges();
+      expect(fixture.componentInstance.hoveredDetails).toBeNull();
+      expect(fixture.nativeElement.querySelector('.tree-explorer__hover-card')).toBeNull();
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
   it('hovering a card past the debounce fires the details request and renders the tooltip', () => {
     jasmine.clock().install();
     try {
@@ -214,6 +259,7 @@ describe('MyTreeComponent', () => {
       httpMock.expectOne('/api/associates/me/tree').flush(nestedTree);
       fixture.detectChanges();
 
+      jasmine.clock().tick(0); // Finish the initial deferred fit before hovering.
       const card: HTMLElement = fixture.nativeElement.querySelector('[data-associate-id="a2"]');
       card.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
       jasmine.clock().tick(150);

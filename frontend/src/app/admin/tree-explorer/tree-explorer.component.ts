@@ -1,3 +1,4 @@
+import { TreeHoverPositionDirective } from '../../shared/directives/tree-hover-position.directive';
 import { Component, ElementRef, Injector, NgZone, OnDestroy, OnInit, ViewChild, afterNextRender, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -21,7 +22,7 @@ const CLICK_MOVE_PX = 5;
 @Component({
   selector: 'app-tree-explorer',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, BrandButtonComponent, NewAssociatePanelComponent],
+  imports: [TreeHoverPositionDirective, CommonModule, FormsModule, TranslateModule, InlineBannerComponent, BrandButtonComponent, NewAssociatePanelComponent],
   template: `
     <div class="tree-explorer card">
       <div class="tree-explorer__intro">
@@ -192,9 +193,11 @@ const CLICK_MOVE_PX = 5;
              instead of escaping to the viewport. -->
         <div
           class="tree-explorer__hover-card"
-          *ngIf="hoveredNodeId"
-          [style.left.px]="hoverPos?.left"
-          [style.top.px]="hoverPos?.top"
+          *ngIf="hoveredNodeId && (hoveredDetailsLoading || hoveredDetails)"
+          [appTreeHoverPosition]="hoverAnchor"
+          (hoverPositionDismiss)="dismissHover()"
+          (mouseenter)="keepHoverOpen()"
+          (mouseleave)="onCardHoverEnd()"
         >
           <ng-container *ngIf="hoveredDetailsLoading">{{ 'admin.treeExplorer.hoverLoading' | translate }}</ng-container>
           <ng-container *ngIf="hoveredDetails as d">
@@ -263,7 +266,8 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
   hoveredNodeId: string | null = null;
   hoveredDetails: TreeNodeDetails | null = null;
   hoveredDetailsLoading = false;
-  hoverPos: { left: number; top: number } | null = null;
+  hoverAnchor: HTMLElement | null = null;
+  private hoverDismissTimer: ReturnType<typeof setTimeout> | null = null;
   private hoverTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Re-runs whichever load produced the currently visible tree (default company-tree load or a
@@ -352,25 +356,44 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
     window.removeEventListener('resize', this.resizeListener);
     if (this.hintTimeoutId !== null) clearTimeout(this.hintTimeoutId);
     if (this.hoverTimer !== null) clearTimeout(this.hoverTimer);
+    this.keepHoverOpen();
     this.detachCanvasListeners();
   }
 
   onCardHoverStart(entry: FilledEntry, event: MouseEvent): void {
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    this.hoverPos = { left: rect.right + 12, top: rect.top };
+    this.keepHoverOpen();
+    this.hoverAnchor = event.currentTarget as HTMLElement;
     this.hoveredNodeId = entry.id;
     this.hoveredDetails = null;
+    this.hoveredDetailsLoading = false;
     if (this.hoverTimer !== null) clearTimeout(this.hoverTimer);
     this.hoverTimer = setTimeout(() => this.loadNodeDetails(entry.id), HOVER_DEBOUNCE_MS);
+  }
+
+  keepHoverOpen(): void {
+    if (this.hoverDismissTimer !== null) clearTimeout(this.hoverDismissTimer);
+    this.hoverDismissTimer = null;
   }
 
   onCardHoverEnd(): void {
     if (this.hoverTimer !== null) clearTimeout(this.hoverTimer);
     this.hoverTimer = null;
+    this.keepHoverOpen();
+    if (!this.hoveredDetails && !this.hoveredDetailsLoading) {
+      this.dismissHover();
+      return;
+    }
+    this.hoverDismissTimer = setTimeout(() => this.dismissHover(), 120);
+  }
+
+  dismissHover(): void {
+    this.keepHoverOpen();
+    if (this.hoverTimer !== null) clearTimeout(this.hoverTimer);
+    this.hoverTimer = null;
     this.hoveredNodeId = null;
     this.hoveredDetails = null;
     this.hoveredDetailsLoading = false;
-    this.hoverPos = null;
+    this.hoverAnchor = null;
   }
 
   private loadNodeDetails(associateId: string): void {
@@ -562,6 +585,7 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
   }
 
   private applyTransform(next: PanZoomState, animate: boolean): void {
+    if (this.hoveredNodeId) this.ngZone.run(() => this.dismissHover());
     next = this.syncDepth(next);
     this.panZoom = next;
     const inner = this.canvasInnerRef?.nativeElement;
@@ -588,6 +612,7 @@ export class TreeExplorerComponent implements OnInit, OnDestroy {
         // including click -- retarget to the capturing element), silently swallowing the
         // button's own (click) binding. Let clicks on controls pass through untouched.
         if ((e.target as HTMLElement).closest('button')) return;
+        this.ngZone.run(() => this.dismissHover());
         this.dismissHint();
         const cardEl = (e.target as HTMLElement).closest('[data-node-id]');
         this.downCard = cardEl ? { id: cardEl.getAttribute('data-node-id')!, x: e.clientX, y: e.clientY } : null;

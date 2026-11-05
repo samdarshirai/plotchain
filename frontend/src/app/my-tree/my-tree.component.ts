@@ -1,3 +1,4 @@
+import { TreeHoverPositionDirective } from '../shared/directives/tree-hover-position.directive';
 import { Component, ElementRef, Injector, NgZone, OnDestroy, OnInit, ViewChild, afterNextRender, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -23,7 +24,7 @@ const HOVER_DEBOUNCE_MS = 150;
 @Component({
   selector: 'app-my-tree',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, BrandButtonComponent],
+  imports: [TreeHoverPositionDirective, CommonModule, FormsModule, TranslateModule, InlineBannerComponent, BrandButtonComponent],
   template: `
     <div class="my-tree card">
       <div class="tree-explorer__intro">
@@ -186,9 +187,11 @@ const HOVER_DEBOUNCE_MS = 150;
              instead of escaping to the viewport. -->
         <div
           class="tree-explorer__hover-card"
-          *ngIf="hoveredNodeId"
-          [style.left.px]="hoverPos?.left"
-          [style.top.px]="hoverPos?.top"
+          *ngIf="hoveredNodeId && (hoveredDetailsLoading || hoveredDetails)"
+          [appTreeHoverPosition]="hoverAnchor"
+          (hoverPositionDismiss)="dismissHover()"
+          (mouseenter)="keepHoverOpen()"
+          (mouseleave)="onCardHoverEnd()"
         >
           <ng-container *ngIf="hoveredDetailsLoading">{{ 'myTree.hoverLoading' | translate }}</ng-container>
           <ng-container *ngIf="hoveredDetails as d">
@@ -249,7 +252,8 @@ export class MyTreeComponent implements OnInit, OnDestroy {
   hoveredNodeId: string | null = null;
   hoveredDetails: TreeNodeDetails | null = null;
   hoveredDetailsLoading = false;
-  hoverPos: { left: number; top: number } | null = null;
+  hoverAnchor: HTMLElement | null = null;
+  private hoverDismissTimer: ReturnType<typeof setTimeout> | null = null;
   private hoverTimer: ReturnType<typeof setTimeout> | null = null;
 
   private _root: TreeNode | null = null;
@@ -308,25 +312,44 @@ export class MyTreeComponent implements OnInit, OnDestroy {
     window.removeEventListener('resize', this.resizeListener);
     if (this.hintTimeoutId !== null) clearTimeout(this.hintTimeoutId);
     if (this.hoverTimer !== null) clearTimeout(this.hoverTimer);
+    this.keepHoverOpen();
     this.detachCanvasListeners();
   }
 
   onCardHoverStart(entry: FilledEntry, event: MouseEvent): void {
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    this.hoverPos = { left: rect.right + 12, top: rect.top };
+    this.keepHoverOpen();
+    this.hoverAnchor = event.currentTarget as HTMLElement;
     this.hoveredNodeId = entry.id;
     this.hoveredDetails = null;
+    this.hoveredDetailsLoading = false;
     if (this.hoverTimer !== null) clearTimeout(this.hoverTimer);
     this.hoverTimer = setTimeout(() => this.loadNodeDetails(entry.id), HOVER_DEBOUNCE_MS);
+  }
+
+  keepHoverOpen(): void {
+    if (this.hoverDismissTimer !== null) clearTimeout(this.hoverDismissTimer);
+    this.hoverDismissTimer = null;
   }
 
   onCardHoverEnd(): void {
     if (this.hoverTimer !== null) clearTimeout(this.hoverTimer);
     this.hoverTimer = null;
+    this.keepHoverOpen();
+    if (!this.hoveredDetails && !this.hoveredDetailsLoading) {
+      this.dismissHover();
+      return;
+    }
+    this.hoverDismissTimer = setTimeout(() => this.dismissHover(), 120);
+  }
+
+  dismissHover(): void {
+    this.keepHoverOpen();
+    if (this.hoverTimer !== null) clearTimeout(this.hoverTimer);
+    this.hoverTimer = null;
     this.hoveredNodeId = null;
     this.hoveredDetails = null;
     this.hoveredDetailsLoading = false;
-    this.hoverPos = null;
+    this.hoverAnchor = null;
   }
 
   private loadNodeDetails(associateId: string): void {
@@ -513,6 +536,7 @@ export class MyTreeComponent implements OnInit, OnDestroy {
   }
 
   private applyTransform(next: PanZoomState, animate: boolean): void {
+    if (this.hoveredNodeId) this.ngZone.run(() => this.dismissHover());
     next = this.syncDepth(next);
     this.panZoom = next;
     const inner = this.canvasInnerRef?.nativeElement;
@@ -537,6 +561,7 @@ export class MyTreeComponent implements OnInit, OnDestroy {
       const onPointerDown = (e: PointerEvent) => {
         if ((e.target as HTMLElement).closest('button')) return;
         if (this.activePointers.size >= 1) return; // single-finger pan only, no pinch zoom (+/- buttons remain)
+        this.ngZone.run(() => this.dismissHover());
         this.dismissHint();
         wrap.setPointerCapture(e.pointerId);
         this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
