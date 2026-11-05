@@ -220,6 +220,13 @@ public class CompensationPlanService {
         return rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(currentVersion().getId());
     }
 
+    // reward_tier id -> tierLevel across every plan version, so a REWARD ledger row (sourceRef =
+    // tier id) can be read by level after the plan has been re-saved with new tier ids.
+    public Map<UUID, Integer> rewardTierLevelsById() {
+        return rewardTierRepository.findAll().stream()
+            .collect(Collectors.toMap(RewardTier::getId, RewardTier::getTierLevel));
+    }
+
     private CompensationPlanVersion currentVersion() {
         return versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
             .orElseThrow(() -> new IllegalStateException(

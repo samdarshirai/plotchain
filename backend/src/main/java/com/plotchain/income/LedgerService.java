@@ -4,6 +4,7 @@ import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRepository;
 import com.plotchain.compensation.CompensationPlanService;
 import com.plotchain.compensation.RewardTier;
+import com.plotchain.compensation.RewardTierRule;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleRepository;
 import com.plotchain.legvolume.LegVolume;
@@ -332,15 +333,18 @@ public class LedgerService {
     // this OPEN cycle's leg sales, same as DashboardService's Total Left/Right Business.
     // No row = NOT_ACHIEVED.
     public List<AssociateRewardTierRow> myRewardTiers(UUID associateId) {
-        Map<UUID, LedgerEntry> bySourceRef = rewardEntriesBySourceRef(associateId);
+        Map<Integer, LedgerEntry> byLevel = rewardEntriesByTierLevel(associateId);
         LegVolumeRepository.LegBusinessTotals closed = legVolumeRepository.totalBusiness(associateId);
         BigDecimal left = closed.left().add(saleRepository.sumOpenCycleLegBusiness(associateId, "L"));
         BigDecimal right = closed.right().add(saleRepository.sumOpenCycleLegBusiness(associateId, "R"));
         BigDecimal matched = left.min(right);
         List<AssociateRewardTierRow> rows = new ArrayList<>();
+        List<RewardTier> tiers = compensationPlanService.currentRewardTiers();
+        List<BigDecimal> reachedAt = RewardTierRule.cumulativeThresholds(tiers);
         BigDecimal before = BigDecimal.ZERO;
-        for (RewardTier t : compensationPlanService.currentRewardTiers()) {
-            BigDecimal through = before.add(t.getVolumeThreshold());
+        for (int i = 0; i < tiers.size(); i++) {
+            RewardTier t = tiers.get(i);
+            BigDecimal through = reachedAt.get(i);
             BigDecimal requiredLeft;
             BigDecimal requiredRight;
             if (matched.compareTo(through) >= 0) {
@@ -353,7 +357,7 @@ public class LedgerService {
                 requiredLeft = t.getVolumeThreshold();
                 requiredRight = t.getVolumeThreshold();
             }
-            LedgerEntry e = bySourceRef.get(t.getId());
+            LedgerEntry e = byLevel.get(t.getTierLevel());
             rows.add(new AssociateRewardTierRow(
                 t.getTierLevel(),
                 t.getVolumeThreshold(),
@@ -381,11 +385,11 @@ public class LedgerService {
 
     // Achieved rewards in tier order, with admin fulfilment (pay status/date/remark).
     public List<AssociateRewardAchievedRow> myRewardsAchieved(UUID associateId) {
-        Map<UUID, LedgerEntry> bySourceRef = rewardEntriesBySourceRef(associateId);
+        Map<Integer, LedgerEntry> byLevel = rewardEntriesByTierLevel(associateId);
         return compensationPlanService.currentRewardTiers().stream()
-            .filter(t -> bySourceRef.containsKey(t.getId()))
+            .filter(t -> byLevel.containsKey(t.getTierLevel()))
             .map(t -> {
-                LedgerEntry e = bySourceRef.get(t.getId());
+                LedgerEntry e = byLevel.get(t.getTierLevel());
                 return new AssociateRewardAchievedRow(
                     e.getCreatedAt(), t.getDesignation(), t.getCashReward(), t.getPerkDescription(),
                     e.getFulfilledAt() != null, e.getFulfilledAt(), e.getFulfilmentRemark());
@@ -438,12 +442,19 @@ public class LedgerService {
         }
     }
 
-    private Map<UUID, LedgerEntry> rewardEntriesBySourceRef(UUID associateId) {
-        Map<UUID, LedgerEntry> bySourceRef = new HashMap<>();
+    // The associate's REWARD rows by tier LEVEL, not tier id: every plan save makes new reward_tier
+    // ids, so a level awarded under an earlier plan version must still count as achieved. If a level
+    // has several rows (legacy duplicates), the earliest is the original award.
+    private Map<Integer, LedgerEntry> rewardEntriesByTierLevel(UUID associateId) {
+        Map<UUID, Integer> levelByTierId = compensationPlanService.rewardTierLevelsById();
+        Map<Integer, LedgerEntry> byLevel = new HashMap<>();
         for (LedgerEntry e : ledgerEntryRepository.findByAssociateIdAndIncomeType(associateId, IncomeType.REWARD)) {
-            if (e.getSourceRef() != null) bySourceRef.put(e.getSourceRef(), e);
+            Integer level = e.getSourceRef() == null ? null : levelByTierId.get(e.getSourceRef());
+            if (level != null) {
+                byLevel.merge(level, e, (a, b) -> b.getCreatedAt().isBefore(a.getCreatedAt()) ? b : a);
+            }
         }
-        return bySourceRef;
+        return byLevel;
     }
 
     private static BigDecimal remaining(BigDecimal threshold, BigDecimal achieved) {

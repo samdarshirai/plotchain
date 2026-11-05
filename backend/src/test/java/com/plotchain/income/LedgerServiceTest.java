@@ -488,6 +488,7 @@ class LedgerServiceTest {
         LedgerEntry e = newEntry(UUID.randomUUID(), me, UUID.randomUUID(), t1);
         e.setIncomeType(IncomeType.REWARD);
         when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(e));
+        when(compensationPlanService.rewardTierLevelsById()).thenReturn(java.util.Map.of(t1, 1, t2, 2));
         when(legVolumeRepository.totalBusiness(me)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("1600000"), new BigDecimal("300000")));
         // Open-cycle leg sales count immediately, not only after close.
@@ -507,6 +508,43 @@ class LedgerServiceTest {
         assertThat(rows.get(1).requiredRightBusiness()).isEqualByComparingTo("1500000");
         assertThat(rows.get(1).status()).isNull();
         assertThat(rows.get(1).achievedDate()).isNull();
+    }
+
+    // The plan was re-saved after the levels were awarded: the REWARD rows point at the OLD plan
+    // version's tier ids, but the ladder must still show those levels as achieved.
+    @Test
+    void myRewardTiers_andMyRewardsAchieved_matchRowsByTierLevelAcrossPlanVersions() {
+        UUID me = UUID.randomUUID();
+        UUID oldT1 = UUID.randomUUID();
+        UUID oldT2 = UUID.randomUUID();
+        UUID newT1 = UUID.randomUUID();
+        UUID newT2 = UUID.randomUUID();
+        UUID newT3 = UUID.randomUUID();
+        UUID newPlan = UUID.randomUUID();
+        when(compensationPlanService.currentRewardTiers()).thenReturn(List.of(
+            new com.plotchain.compensation.RewardTier(newT1, newPlan, 1, new BigDecimal("1000000"), new BigDecimal("20000"), null, "Sales Executive"),
+            new com.plotchain.compensation.RewardTier(newT2, newPlan, 2, new BigDecimal("2000000"), new BigDecimal("45000"), null, "Sr. Sales Executive"),
+            new com.plotchain.compensation.RewardTier(newT3, newPlan, 3, new BigDecimal("4000000"), new BigDecimal("90000"), null, "Sales Manager")));
+        when(compensationPlanService.rewardTierLevelsById()).thenReturn(java.util.Map.of(
+            oldT1, 1, oldT2, 2, newT1, 1, newT2, 2, newT3, 3));
+        LedgerEntry r1 = newEntry(UUID.randomUUID(), me, UUID.randomUUID(), oldT1);
+        r1.setIncomeType(IncomeType.REWARD);
+        LedgerEntry r2 = newEntry(UUID.randomUUID(), me, UUID.randomUUID(), oldT2);
+        r2.setIncomeType(IncomeType.REWARD);
+        when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(r1, r2));
+        when(legVolumeRepository.totalBusiness(me)).thenReturn(
+            new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("6300000"), new BigDecimal("5700000")));
+        when(saleRepository.sumOpenCycleLegBusiness(me, "L")).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumOpenCycleLegBusiness(me, "R")).thenReturn(BigDecimal.ZERO);
+
+        List<AssociateRewardTierRow> tiers = service.myRewardTiers(me);
+
+        assertThat(tiers.get(0).status()).isNotNull();
+        assertThat(tiers.get(1).status()).isNotNull();
+        assertThat(tiers.get(1).requiredLeftBusiness()).isZero();
+        assertThat(tiers.get(2).status()).isNull();
+        assertThat(service.myRewardsAchieved(me)).extracting(AssociateRewardAchievedRow::designation)
+            .containsExactly("Sales Executive", "Sr. Sales Executive");
     }
 
     @Test
@@ -541,6 +579,7 @@ class LedgerServiceTest {
         paid.setFulfilledAt(Instant.parse("2026-06-20T00:00:00Z"));
         paid.setFulfilmentRemark("Watch couriered");
         when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(paid));
+        when(compensationPlanService.rewardTierLevelsById()).thenReturn(java.util.Map.of(t1, 1, t2, 2));
 
         List<AssociateRewardAchievedRow> rows = service.myRewardsAchieved(me);
 

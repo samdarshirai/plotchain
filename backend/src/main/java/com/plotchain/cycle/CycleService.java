@@ -7,6 +7,7 @@ import com.plotchain.compensation.CompensationPlanVersion;
 import com.plotchain.compensation.CompensationPlanVersionRepository;
 import com.plotchain.compensation.RewardTier;
 import com.plotchain.compensation.RewardTierRepository;
+import com.plotchain.compensation.RewardTierRule;
 import com.plotchain.compensation.RoyaltyBonusRate;
 import com.plotchain.compensation.RoyaltyBonusRateRepository;
 import com.plotchain.associate.KycStatus;
@@ -37,9 +38,11 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -184,7 +187,7 @@ public class CycleService {
     // caller's transaction, so MATCHING / SPONSOR_MATCHING / ROYALTY / REWARD show up for the open
     // cycle immediately instead of only at close. Replaces this cycle's previous provisional rows
     // with a fresh run of the same math close() uses, minus close's persistent side effects
-    // (leg-volume rows, carry-forward, cumulativeMatchedVolume, ranks, reward carry). No-op once
+    // (leg-volume rows, carry-forward, cumulativeMatchedVolume, ranks). No-op once
     // the cycle has left OPEN. Row lock serializes concurrent payments and a concurrent close().
     // ponytail: full-tree recompute per payment, O(associates) queries; switch to ancestor-only
     // incremental updates if payment recording gets slow.
@@ -259,7 +262,7 @@ public class CycleService {
 
     // Settlement batch flow steps 2-7, shared by close() (finalize = true) and refreshLiveIncome
     // (finalize = false). Ledger rows are written either way; only a finalizing run persists
-    // leg-volume rows and mutates carry-forward, cumulativeMatchedVolume, ranks, and reward carry.
+    // leg-volume rows and mutates carry-forward, cumulativeMatchedVolume, and ranks.
     private List<LegVolume> computeIncome(Cycle cycle, boolean finalize) {
         List<Associate> associates = associateRepository.findAll();
         List<Sale> sales = saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED);
@@ -304,9 +307,10 @@ public class CycleService {
 
         // Flow step 7 (Decision #8): for EVERY associate, including Admin -- RewardTier has no FK
         // to rank_tier, so nothing here excludes any role, unlike Royalty above. Idempotency is
-        // checked WITHOUT a cycleId (Decision #8: a tier is awarded once EVER, in whichever cycle
-        // first crosses it). This is this unit's own insertion point; unit 10's atomicity/re-run
-        // hardening depends on this step existing but is not expected to insert a new call here.
+        // checked WITHOUT a cycleId, by tierLevel (Decision #8: a tier is awarded once EVER, in
+        // whichever cycle first crosses it). This is this unit's own insertion point; unit 10's
+        // atomicity/re-run hardening depends on this step existing but is not expected to insert a
+        // new call here.
         // matchedVolumeThisCycle mirrors the exact same min(left,right) predicate creditMatchingIncome
         // (step 3) used, re-derived independently from legVolumes rather than threaded through
         // creditMatchingIncome's own signature.
@@ -802,16 +806,14 @@ public class CycleService {
     }
 
     // Flow step 7: for EVERY associate (Admin included -- RewardTier has no FK to rank_tier,
-    // unlike Royalty, so nothing here excludes any role), walk RewardTiers in ascending tierLevel
-    // order and spend this cycle's matched volume (min(left,right), same as creditMatchingIncome)
-    // plus Associate.rewardVolumeCarriedForward on each not-yet-awarded tier in turn. Leg volume
-    // resets after every level: each tier needs its OWN volumeThreshold of fresh matched volume
-    // (tiers 10L, 20L -> Level 2 needs 20L more after Level 1, 30L total), and reaching the
-    // threshold exactly is enough. Whatever is left is written back to rewardVolumeCarriedForward
-    // for the next cycle. Idempotency is checked WITHOUT a cycleId filter: a tier is awarded once
-    // EVER, and an already-awarded tier's volume was spent when it was awarded, so it's skipped
-    // without consuming the pool. Several tiers can be crossed in one cycle, each its own entry,
-    // sourceRef = tier.id. perkDescription stays on the RewardTier row, not a ledger line.
+    // unlike Royalty, so nothing here excludes any role), award every reward level their lifetime
+    // matched volume has reached (RewardTierRule: level N needs the sum of thresholds 1..N). Lifetime
+    // matched = cumulativeMatchedVolume, plus this cycle's matched volume on a live run (a
+    // finalizing run has already folded it in via creditMatchingIncome). A level is awarded once
+    // EVER, identified by tierLevel: every plan save makes new reward_tier ids, so matching on the
+    // tier id would re-award levels earned under an earlier plan version. Several levels can be
+    // crossed in one cycle, each its own entry, sourceRef = the current plan's tier.id.
+    // perkDescription stays on the RewardTier row, not a ledger line.
     private void creditReward(
         UUID cycleId,
         List<Associate> associates,
@@ -823,21 +825,29 @@ public class CycleService {
         if (tiers.isEmpty()) {
             return;
         }
+        List<BigDecimal> reachedAt = RewardTierRule.cumulativeThresholds(tiers);
+
+        Map<UUID, Set<Integer>> awardedLevels = new HashMap<>();
+        ledgerEntryRepository.findAchievedRewardTiers(associates.stream().map(Associate::getId).toList())
+            .forEach(row -> awardedLevels
+                .computeIfAbsent(row.getAssociateId(), id -> new HashSet<>())
+                .add(row.getTierLevel()));
 
         for (Associate associate : associates) {
-            BigDecimal available = matchedVolumeThisCycle
-                .getOrDefault(associate.getId(), BigDecimal.ZERO)
-                .add(associate.getRewardVolumeCarriedForward());
+            BigDecimal lifetimeMatched = associate.getCumulativeMatchedVolume();
+            if (!finalize) {
+                lifetimeMatched = lifetimeMatched.add(
+                    matchedVolumeThisCycle.getOrDefault(associate.getId(), BigDecimal.ZERO));
+            }
+            Set<Integer> awarded = awardedLevels.getOrDefault(associate.getId(), Set.of());
 
-            for (RewardTier tier : tiers) {
-                boolean alreadyAwarded = ledgerEntryRepository.existsByAssociateIdAndIncomeTypeAndSourceRef(
-                    associate.getId(), IncomeType.REWARD, tier.getId());
-                if (alreadyAwarded) {
-                    continue;
-                }
-
-                if (available.compareTo(tier.getVolumeThreshold()) < 0) {
+            for (int i = 0; i < tiers.size(); i++) {
+                RewardTier tier = tiers.get(i);
+                if (lifetimeMatched.compareTo(reachedAt.get(i)) < 0) {
                     break;
+                }
+                if (awarded.contains(tier.getTierLevel())) {
+                    continue;
                 }
 
                 BigDecimal grossAmount = Money.round(tier.getCashReward());
@@ -860,13 +870,6 @@ public class CycleService {
                 entry.setSourceRef(tier.getId());
                 entry.setCreatedAt(Instant.now());
                 ledgerEntryRepository.save(entry);
-
-                available = available.subtract(tier.getVolumeThreshold());
-            }
-
-            if (finalize) {
-                associate.setRewardVolumeCarriedForward(available);
-                associateRepository.save(associate);
             }
         }
     }

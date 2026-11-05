@@ -2337,8 +2337,7 @@ class CycleServiceTest {
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(tier));
         // Simulates "already awarded in an earlier cycle" -- no cycleId argument exists on this
         // method at all, which is exactly the point (Decision #8).
-        when(ledgerEntryRepository.existsByAssociateIdAndIncomeTypeAndSourceRef(root.getId(), IncomeType.REWARD, tier.getId()))
-            .thenReturn(true);
+        when(ledgerEntryRepository.findAchievedRewardTiers(any())).thenReturn(List.of(awardedLevel(root.getId(), 1)));
 
         service.close(cycle.getId(), java.time.LocalDate.now());
 
@@ -2451,8 +2450,8 @@ class CycleServiceTest {
 
         service.close(cycle.getId(), java.time.LocalDate.now());
 
-        // Leg volume resets after each level: Level 1 spends ₹5,00,000, leaving ₹5,00,000 --
-        // short of Level 2's own fresh ₹10,00,000 -- which carries forward.
+        // Leg volume resets after each level: Level 2 needs 5L + 10L = ₹15,00,000 matched in
+        // total; ₹10,00,000 only reaches Level 1.
         // Two saves this cycle: the MATCHING entry (unit 5) and the one REWARD entry (Level 1).
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository, org.mockito.Mockito.times(2)).save(entryCaptor.capture());
@@ -2460,7 +2459,6 @@ class CycleServiceTest {
             .filter(e -> e.getIncomeType() == IncomeType.REWARD).toList();
         assertThat(rewardEntries).hasSize(1);
         assertThat(rewardEntries.get(0).getGrossAmount()).isEqualByComparingTo("15000.00");
-        assertThat(root.getRewardVolumeCarriedForward()).isEqualByComparingTo("500000");
     }
 
     @Test
@@ -2509,8 +2507,7 @@ class CycleServiceTest {
         BigDecimal rewardTotal = rewardEntries.stream().map(LedgerEntry::getGrossAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
         assertThat(rewardTotal).isEqualByComparingTo("80000.00");
         assertThat(rewardEntries).noneMatch(e -> e.getGrossAmount().compareTo(new BigDecimal("90000.00")) == 0);
-        // Levels 1-3 spend 5L + 10L + 20L = 35L of the 40L; the 5L left is short of Level 4's own 40L.
-        assertThat(root.getRewardVolumeCarriedForward()).isEqualByComparingTo("500000");
+        // Levels 1-3 are reached at 5L, 15L and 35L; 40L matched is short of Level 4's 75L.
     }
 
     @Test
@@ -2522,8 +2519,8 @@ class CycleServiceTest {
         Associate root = associateFixture(null, null);
         root.setRole(AssociateRole.ASSOCIATE);
         root.setKycStatus(KycStatus.VERIFIED);
-        // Level 1 (10L) already awarded in a prior cycle, 5L left over and carried into this one.
-        root.setRewardVolumeCarriedForward(new BigDecimal("500000"));
+        // Level 1 (10L) already awarded in a prior cycle, with 5L matched on top of it.
+        root.setCumulativeMatchedVolume(new BigDecimal("1500000"));
         Associate left = associateFixture(root.getId(), "L");
         Associate right = associateFixture(root.getId(), "R");
         when(associateRepository.findAll()).thenReturn(List.of(root, left, right));
@@ -2545,8 +2542,7 @@ class CycleServiceTest {
         RewardTier tier1 = rewardTierFixture(planVersion.getId(), 1, new BigDecimal("1000000"), new BigDecimal("15000.00"));
         RewardTier tier2 = rewardTierFixture(planVersion.getId(), 2, new BigDecimal("2000000"), new BigDecimal("20000.00"));
         when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(tier1, tier2));
-        when(ledgerEntryRepository.existsByAssociateIdAndIncomeTypeAndSourceRef(root.getId(), IncomeType.REWARD, tier1.getId()))
-            .thenReturn(true);
+        when(ledgerEntryRepository.findAchievedRewardTiers(any())).thenReturn(List.of(awardedLevel(root.getId(), 1)));
 
         service.close(cycle.getId(), java.time.LocalDate.now());
 
@@ -2559,8 +2555,6 @@ class CycleServiceTest {
         assertThat(rewardEntries).hasSize(1);
         assertThat(rewardEntries.get(0).getSourceRef()).isEqualTo(tier2.getId());
         assertThat(rewardEntries.get(0).getGrossAmount()).isEqualByComparingTo("20000.00");
-        // 5L carried + 15L this cycle - 20L (Level 2) = 0
-        assertThat(root.getRewardVolumeCarriedForward()).isEqualByComparingTo("0");
     }
 
     @Test
@@ -2594,13 +2588,92 @@ class CycleServiceTest {
 
         service.close(cycle.getId(), java.time.LocalDate.now());
 
-        // 10L exactly clears Level 1; Level 2 then needs a fresh 20L, so nothing carries.
+        // 10L exactly clears Level 1; Level 2 needs 30L in total.
         ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
         verify(ledgerEntryRepository, org.mockito.Mockito.atLeastOnce()).save(entryCaptor.capture());
         List<LedgerEntry> rewardEntries = entryCaptor.getAllValues().stream()
             .filter(e -> e.getIncomeType() == IncomeType.REWARD).toList();
         assertThat(rewardEntries).extracting(LedgerEntry::getSourceRef).containsExactly(tier1.getId());
-        assertThat(root.getRewardVolumeCarriedForward()).isEqualByComparingTo("0");
+    }
+
+    // Plan v1 awarded tier level 1 and 2; the plan was re-saved (v2, brand-new tier ids). A live
+    // refresh must recognise the levels by tierLevel and award nothing again, even though the v2
+    // tier ids have no REWARD row.
+    @Test
+    void liveRefreshDoesNotReAwardLevelsEarnedUnderAnEarlierPlanVersion() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository, expenseRepository, walletRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setRole(AssociateRole.ASSOCIATE);
+        root.setKycStatus(KycStatus.VERIFIED);
+        // 57L matched before this cycle: levels 1 (10L) and 2 (30L cumulative) reached, level 3 (70L) not.
+        root.setCumulativeMatchedVolume(new BigDecimal("5700000"));
+        when(associateRepository.findAll()).thenReturn(List.of(root));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
+
+        CompensationPlanVersion planV2 = referencePlanVersionFixture();
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
+            .thenReturn(Optional.of(planV2));
+        when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planV2.getId())).thenReturn(List.of(
+            rewardTierFixture(planV2.getId(), 1, new BigDecimal("1000000"), new BigDecimal("20000.00")),
+            rewardTierFixture(planV2.getId(), 2, new BigDecimal("2000000"), new BigDecimal("45000.00")),
+            rewardTierFixture(planV2.getId(), 3, new BigDecimal("4000000"), new BigDecimal("90000.00"))
+        ));
+        when(ledgerEntryRepository.findAchievedRewardTiers(any())).thenReturn(
+            List.of(awardedLevel(root.getId(), 1), awardedLevel(root.getId(), 2)));
+
+        service.refreshLiveIncome(cycle.getId());
+
+        verify(ledgerEntryRepository, never()).save(argThat(e -> e.getIncomeType() == IncomeType.REWARD));
+    }
+
+    // A level reached but never awarded under any plan version is awarded once, from lifetime volume.
+    @Test
+    void liveRefreshAwardsOnlyTheMissingLevelFromLifetimeMatchedVolume() {
+        service = new CycleService(cycleRepository, associateRepository, legVolumeRepository, saleRepository,
+            compensationPlanVersionRepository, ledgerEntryRepository, rankTierRepository, royaltyBonusRateRepository,
+            rewardTierRepository, expenseRepository, walletRepository);
+
+        Associate root = associateFixture(null, null);
+        root.setRole(AssociateRole.ASSOCIATE);
+        root.setKycStatus(KycStatus.VERIFIED);
+        root.setCumulativeMatchedVolume(new BigDecimal("5700000"));
+        when(associateRepository.findAll()).thenReturn(List.of(root));
+
+        Cycle cycle = newCycle(CycleStatus.OPEN);
+        when(cycleRepository.findByIdForUpdate(cycle.getId())).thenReturn(Optional.of(cycle));
+        when(saleRepository.findByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(List.of());
+
+        CompensationPlanVersion planVersion = referencePlanVersionFixture();
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()))
+            .thenReturn(Optional.of(planVersion));
+        RewardTier tier2 = rewardTierFixture(planVersion.getId(), 2, new BigDecimal("2000000"), new BigDecimal("45000.00"));
+        when(rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(planVersion.getId())).thenReturn(List.of(
+            rewardTierFixture(planVersion.getId(), 1, new BigDecimal("1000000"), new BigDecimal("20000.00")),
+            tier2,
+            rewardTierFixture(planVersion.getId(), 3, new BigDecimal("4000000"), new BigDecimal("90000.00"))
+        ));
+        when(ledgerEntryRepository.findAchievedRewardTiers(any())).thenReturn(List.of(awardedLevel(root.getId(), 1)));
+
+        service.refreshLiveIncome(cycle.getId());
+
+        ArgumentCaptor<LedgerEntry> entryCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, org.mockito.Mockito.atLeastOnce()).save(entryCaptor.capture());
+        assertThat(entryCaptor.getAllValues().stream().filter(e -> e.getIncomeType() == IncomeType.REWARD))
+            .extracting(LedgerEntry::getSourceRef).containsExactly(tier2.getId());
+    }
+
+    private LedgerEntryRepository.AchievedRewardTierRow awardedLevel(UUID associateId, int tierLevel) {
+        return new LedgerEntryRepository.AchievedRewardTierRow() {
+            public UUID getAssociateId() { return associateId; }
+            public int getTierLevel() { return tierLevel; }
+            public String getDesignation() { return null; }
+        };
     }
 
     // -- Scale tests: ~600-associate tree --------------------------------------------------

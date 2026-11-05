@@ -202,8 +202,7 @@ class CycleCloseRewardIntegrationTest {
             .filter(e -> rootId.equals(e.getAssociateId()) && e.getIncomeType() == IncomeType.REWARD)
             .toList();
         // Still exactly one REWARD entry for this tier, still dated to the FIRST cycle -- the
-        // second close() found it via existsByAssociateIdAndIncomeTypeAndSourceRef (no cycleId
-        // filter) and skipped writing a second one.
+        // second close() found its level already awarded (any cycle) and skipped writing a second one.
         assertThat(rewardEntriesAfterSecondClose).hasSize(1);
         assertThat(rewardEntriesAfterSecondClose.get(0).getCycleId()).isEqualTo(firstCycleId);
     }
