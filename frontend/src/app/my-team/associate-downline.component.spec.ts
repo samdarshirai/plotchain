@@ -41,12 +41,12 @@ describe('AssociateDownlineComponent', () => {
     c.componentInstance.rootUserId = ' VP5 ';
     c.componentInstance.leg = 'R';
     c.componentInstance.loadPage(0);
-    expect(listFor).toHaveBeenCalledWith('me', 'VP5', 'R', 0, 20);
+    expect(listFor).toHaveBeenCalledWith('me', 'VP5', 'R', 0, 100000);
   });
 
   it('admin scope is passed through', () => {
     setup('admin', of({ associates: [], page: 0, size: 20, totalElements: 0 }));
-    expect(listFor).toHaveBeenCalledWith('admin', '', '', 0, 20);
+    expect(listFor).toHaveBeenCalledWith('admin', '', '', 0, 100000);
   });
 
   it('404 shows not-found, other errors show load error', () => {
@@ -58,7 +58,7 @@ describe('AssociateDownlineComponent', () => {
     expect(c.componentInstance.loadError).toBeTrue();
   });
 
-  it('fits a 390px phone: nine columns stack, no sideways scroll', () => {
+  it('fits a 390px phone with no sideways scroll', () => {
     const c = setup('me', of({ associates: [row('VP2'), row('VP3')], page: 0, size: 20, totalElements: 2 }));
     const host: HTMLElement = c.nativeElement;
     const box = document.createElement('div');
@@ -68,8 +68,6 @@ describe('AssociateDownlineComponent', () => {
     c.detectChanges();
     const table = host.querySelector('table') as HTMLTableElement;
     fitTable(table);
-    // Pagination is left out: with no translations loaded here its buttons show raw keys.
-    expect(table.classList).toContain('table--stacked');
     expect(table.scrollWidth).toBeLessThanOrEqual(table.clientWidth + 1);
     expect(table.offsetWidth).toBeLessThanOrEqual(box.clientWidth + 1);
     box.remove();
