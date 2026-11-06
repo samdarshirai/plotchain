@@ -8,7 +8,7 @@ import { AdminAssociatePage } from '../admin/models/admin-associate-page.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
 import { titleCase } from '../shared/utils/title-case';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 100000; // show all rows; backend caps at this
 const dateTime = (iso: string | null) => formatIst(iso);
 
 // View Associate Downline, shared by associates (scope 'me') and admins (scope 'admin').
@@ -65,17 +65,6 @@ const dateTime = (iso: string | null) => formatIst(iso);
             [rows]="rows"
             [emptyStateLabel]="'downlineView.emptyState' | translate"
           ></app-editable-table>
-
-          <div class="associate-directory__pagination" *ngIf="page">
-            <button type="button" class="associate-directory__pagination-action"
-              [disabled]="page.page === 0" (click)="loadPage(page.page - 1)">
-              {{ 'admin.associateDirectory.previousPageAction' | translate }}
-            </button>
-            <button type="button" class="associate-directory__pagination-action"
-              [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="loadPage(page.page + 1)">
-              {{ 'admin.associateDirectory.nextPageAction' | translate }}
-            </button>
-          </div>
         </div>
       </div>
     </div>

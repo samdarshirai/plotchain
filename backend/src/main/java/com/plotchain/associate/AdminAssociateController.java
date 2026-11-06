@@ -63,7 +63,7 @@ public class AdminAssociateController {
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size
     ) {
-        return adminAssociateService.listDownlineOf(null, rootUserId, leg, Math.max(page, 0), Math.min(size, 100));
+        return adminAssociateService.listDownlineOf(null, rootUserId, leg, Math.max(page, 0), Math.min(size, 100000));
     }
 
     @GetMapping("/{id}")
