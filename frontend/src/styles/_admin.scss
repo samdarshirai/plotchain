@@ -516,6 +516,7 @@
   td:nth-child(1) {
     font-family: var(--font-mono);
     font-size: 12.5px;
+    font-weight: 600;
     color: var(--text-muted);
   }
 
@@ -1405,17 +1406,14 @@
       overflow: hidden;
     }
 
-    th:nth-child(1) { width: 10%; }
-    th:nth-child(2) { width: 7%; }
-    th:nth-child(3), th:nth-child(4) { width: 8%; }
-    th:nth-child(5), th:nth-child(6) { width: 7%; }
-    th:nth-child(7) { width: 6%; }
-    th:nth-child(8) { width: 8%; }
-    th:nth-child(9) { width: 6%; }
-    th:nth-child(10) { width: 8%; }
-    th:nth-child(11) { width: 9%; }
-    th:nth-child(12) { width: 6%; }
-    th:nth-child(13) { width: 10%; }
+    th:nth-child(1) { width: 4%; }
+    th:nth-child(2) { width: 8%; }
+    th:nth-child(3) { width: 6%; }
+    th:nth-child(4), th:nth-child(9), th:nth-child(12) { width: 8%; }
+    th:nth-child(5), th:nth-child(6), th:nth-child(7), th:nth-child(8),
+    th:nth-child(10), th:nth-child(11) { width: 7%; }
+    th:nth-child(13) { width: 6%; }
+    th:nth-child(14) { width: 10%; }
 
     td {
       overflow-wrap: anywhere;
