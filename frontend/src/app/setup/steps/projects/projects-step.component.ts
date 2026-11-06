@@ -265,7 +265,7 @@ const PLOT_TYPE_LABELS: Record<PlotType, string> = {
               <tr class="editable-table__total">
                 <td>{{ 'common.total' | translate }}</td>
                 <td></td>
-                <td></td>
+                <td [attr.data-label]="'setup.projects.areaLabel' | translate">{{ totalArea }}</td>
                 <td></td>
                 <td [attr.data-label]="'setup.projects.priceLabel' | translate">{{ totalPrice | currency:'INR':'symbol':'1.0-0' }}</td>
                 <td></td>
@@ -337,6 +337,10 @@ export class ProjectsStepComponent implements OnInit, OnDestroy, SetupStepContro
   selectedProjectId: string | null = null;
   activeTab: 'plotList' | 'importCsv' = 'plotList';
   plotPage: PlotPageResponse | null = null;
+
+  get totalArea(): number {
+    return Math.round((this.plotPage?.plots ?? []).reduce((acc, p) => acc + (p.areaSqft ?? 0), 0) * 100) / 100;
+  }
 
   get totalPrice(): number {
     return (this.plotPage?.plots ?? []).reduce((acc, p) => acc + p.price, 0);

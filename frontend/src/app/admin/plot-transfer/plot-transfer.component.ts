@@ -10,7 +10,7 @@ import { BookingsEmiService } from '../admin-bookings-emi/bookings-emi.service';
 import { BookingPage, RegisterFilters } from '../admin-bookings-emi/bookings-emi.model';
 import { formatMoney, plotText } from '../admin-bookings-emi/bookings-emi.util';
 import { ProjectsPlotsService } from '../projects-plots/projects-plots.service';
-import { PlotGridItem } from '../../shared/utils/plot-grid.util';
+import { PlotGridItem, formatArea } from '../../shared/utils/plot-grid.util';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
@@ -115,7 +115,7 @@ const isoDate = (d: Date): string => {
               <td></td>
               <td></td>
               <td></td>
-              <td></td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.area' | translate">{{ areaFmt(sumOf('areaSqft')) }}</td>
               <td></td>
               <td class="add-plot-emi__num" [attr.data-label]="'admin.viewBookedPlot.col.extra' | translate">{{ money(sumOf('extraPrice')) }}</td>
               <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.discount' | translate">{{ money(sumOf('discount')) }}</td>
@@ -257,6 +257,7 @@ export class PlotTransferComponent implements OnInit {
   private translate = inject(TranslateService);
 
   money = formatMoney;
+  areaFmt = formatArea;
   plot = plotText;
 
   projects: Project[] = [];

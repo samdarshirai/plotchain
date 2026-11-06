@@ -8,6 +8,7 @@ import { BookingPage, RegisterFilters } from '../admin-bookings-emi/bookings-emi
 import { formatMoney, plotText } from '../admin-bookings-emi/bookings-emi.util';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { formatArea } from '../../shared/utils/plot-grid.util';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 
 const isoDate = (d: Date): string => {
@@ -113,7 +114,7 @@ const isoDate = (d: Date): string => {
               <td></td>
               <td></td>
               <td></td>
-              <td></td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.area' | translate">{{ areaFmt(sumOf('areaSqft')) }}</td>
               <td></td>
               <td class="add-plot-emi__num" [attr.data-label]="'admin.viewBookedPlot.col.extra' | translate">{{ money(sumOf('extraPrice')) }}</td>
               <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.discount' | translate">{{ money(sumOf('discount')) }}</td>
@@ -136,6 +137,7 @@ export class ViewCancelledPlotComponent implements OnInit {
   private projectsService = inject(ProjectsService);
 
   money = formatMoney;
+  areaFmt = formatArea;
   plot = plotText;
 
   projects: Project[] = [];

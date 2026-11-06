@@ -15,6 +15,17 @@ describe('BookingTableComponent', () => {
     expect(render('CORNER_PARK_FACING')).toBe('plotTile.type.CORNER_PARK_FACING');
   });
 
+  it('Total row sums the area column, labelled for stacked mode', () => {
+    TestBed.configureTestingModule({ imports: [BookingTableComponent, TranslateModule.forRoot()] });
+    const fixture = TestBed.createComponent(BookingTableComponent);
+    const row = (key: string, areaSqft: number | null) => ({ key, bookedAt: '2026-10-01', areaSqft, total: 0, paid: 0, rest: 0 });
+    fixture.componentRef.setInput('rows', [row('b1', 1200.5), row('b2', 1000), row('b3', null)]);
+    fixture.detectChanges();
+    const cell = (fixture.nativeElement as HTMLElement).querySelector('tfoot [data-label="plotBookings.table.area"]')!;
+    expect(cell.textContent!.trim()).toBe('2,200.5');
+    expect(cell.parentElement!.children.length).toBe(14);
+  });
+
   it('View popup lists only payments, with receipt no and a dash for an unconfirmed payment date', () => {
     TestBed.configureTestingModule({ imports: [BookingTableComponent, TranslateModule.forRoot()] });
     const fixture = TestBed.createComponent(BookingTableComponent);

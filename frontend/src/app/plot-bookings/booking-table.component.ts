@@ -96,7 +96,8 @@ export const saleRow = (s: Sale): BookingRow => ({
         <tfoot *ngIf="rows.length">
           <tr class="editable-table__total">
             <td>{{ 'common.total' | translate }}</td>
-            <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            <td></td><td></td><td></td><td></td><td></td><td></td>
+            <td class="booking-table__num" [attr.data-label]="'plotBookings.table.area' | translate">{{ area(sum('areaSqft')) }}</td>
             <td class="booking-table__num" [attr.data-label]="'plotBookings.table.price' | translate">{{ money(sum('price')) }}</td>
             <td class="booking-table__num" [attr.data-label]="'plotBookings.table.extraPrice' | translate">{{ money(sum('extraPrice')) }}</td>
             <td class="booking-table__num" [attr.data-label]="'plotBookings.table.totalPrice' | translate">{{ money(sum('total')) }}</td>
@@ -154,7 +155,7 @@ export class BookingTableComponent {
   money = (n: number | null | undefined): string => (n == null ? '—' : formatInr(n));
   area = formatArea;
 
-  sum(field: 'price' | 'extraPrice' | 'total' | 'paid' | 'rest'): number {
+  sum(field: 'areaSqft' | 'price' | 'extraPrice' | 'total' | 'paid' | 'rest'): number {
     return this.rows.reduce((acc, r) => acc + (r[field] ?? 0), 0);
   }
 

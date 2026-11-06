@@ -232,7 +232,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
                     <td *ngIf="fullTable"></td>
                     <td *ngIf="fullTable"></td>
                     <td *ngIf="fullTable"></td>
-                    <td></td>
+                    <td class="projects-plots__num" [attr.data-label]="'admin.projectsPlots.table.area' | translate">{{ areaText(sumPlots(areaOf)) }} {{ 'plotTile.sqft' | translate }}</td>
                     <td *ngIf="!readOnly"></td>
                     <td class="projects-plots__num" [attr.data-label]="(fullTable ? 'admin.projectsPlots.table.price' : 'admin.projectsPlots.table.total') | translate">{{ priceText(sumPlots(fullTable ? base : price)) }}</td>
                     <td class="projects-plots__num" *ngIf="fullTable" [attr.data-label]="'admin.projectsPlots.extraPriceLabel' | translate">{{ priceText(sumPlots(extra)) }}</td>
@@ -728,6 +728,7 @@ export class ProjectsPlotsComponent implements OnInit {
   }
 
   areaText = formatArea;
+  areaOf = (p: PlotGridItem): number => p.area;
   priceText = formatInr;
 
   protected errorBanner(err: HttpErrorResponse): Banner {

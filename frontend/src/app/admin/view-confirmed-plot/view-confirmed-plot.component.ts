@@ -8,6 +8,7 @@ import { FlashMessage, PaymentPage, PaymentRow } from '../admin-bookings-emi/boo
 import { formatMoney } from '../admin-bookings-emi/bookings-emi.util';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { formatArea } from '../../shared/utils/plot-grid.util';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 
 type Status = 'ENTERED' | 'PAID';
@@ -143,7 +144,7 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
               <td></td>
               <td></td>
               <td></td>
-              <td></td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.area' | translate">{{ areaFmt(sumOf('areaSqft')) }}</td>
               <td></td>
               <td></td>
               <td></td>
@@ -166,6 +167,7 @@ export class ViewConfirmedPlotComponent implements OnInit {
   private projectsService = inject(ProjectsService);
 
   money = formatMoney;
+  areaFmt = formatArea;
   key = keyOf;
 
   projects: Project[] = [];

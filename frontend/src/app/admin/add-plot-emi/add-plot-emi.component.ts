@@ -15,6 +15,7 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
 import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
 import { FormIssue } from '../../shared/validation/validation';
 import { ExportColumn, copyTable, exportCsv, exportExcel, printTable } from '../../shared/utils/table-export.util';
+import { formatArea } from '../../shared/utils/plot-grid.util';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 
 const round2 = (n: number): number => Math.round(n); // whole rupees
@@ -124,7 +125,7 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
               <td></td>
               <td></td>
               <td></td>
-              <td></td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.area' | translate">{{ areaFmt(sumOf('areaSqft')) }}</td>
               <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.price' | translate">{{ money(sumOf('listPrice')) }}</td>
               <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.discount' | translate">{{ money(sumOf('discount')) }}</td>
               <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.total' | translate">{{ money(sumOf('totalAmount')) }}</td>
@@ -298,6 +299,7 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
   readonly modes = PAYMENT_MODES;
   readonly today = utcDate();
   money = formatMoney;
+  areaFmt = formatArea;
   plot = plotText;
 
   projects: Project[] = [];
