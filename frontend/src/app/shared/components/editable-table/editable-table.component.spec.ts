@@ -339,3 +339,20 @@ describe('EditableTableComponent selection', () => {
     expect(emitted).toEqual([['a'], ['a', 'b'], []]);
   });
 });
+
+describe('EditableTableComponent custom total', () => {
+  it('uses column.total for the Total row cell', async () => {
+    await TestBed.configureTestingModule({ imports: [EditableTableComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(EditableTableComponent);
+    fixture.componentInstance.columns = [
+      { key: 'a', label: 'A', type: 'text', sum: true },
+      { key: 'avg', label: 'Avg', type: 'text', total: rows => `${rows.length} rows` }
+    ];
+    fixture.componentInstance.rows = [{ a: '₹10', avg: '1%' }, { a: '₹20', avg: '3%' }];
+    fixture.componentInstance.ngOnChanges();
+    fixture.detectChanges();
+    const cells = fixture.nativeElement.querySelectorAll('tfoot td');
+    expect(cells[0].textContent).toContain('₹30');
+    expect(cells[1].textContent).toContain('2 rows');
+  });
+});

@@ -36,6 +36,8 @@ export interface EditableTableColumn {
   icon?: string;
   // Optional: money column -- summed into the Total row (last row) from the cells' formatted text.
   sum?: boolean;
+  // Optional: custom Total-row text computed from all rows (e.g. a weighted average); wins over `sum`.
+  total?: (rows: Record<string, string | number>[]) => string;
 }
 
 // Sums a column of pre-formatted money cells ("₹1,00,000", "50,000", "10 INR") and formats the
@@ -184,7 +186,7 @@ export class EditableTableComponent implements OnChanges {
     const sums = this.columns.some(c => c.sum) && this.rows.length > 0;
     const label = this.translate?.instant('common.total') ?? 'Total';
     this.totalRow = sums
-      ? this.columns.map((c, i) => ({ label: c.label, value: c.sum ? sumColumn(this.rows.map(r => r[c.key])) : i === 0 ? label : '' }))
+      ? this.columns.map((c, i) => ({ label: c.label, value: c.total ? c.total(this.rows) : c.sum ? sumColumn(this.rows.map(r => r[c.key])) : i === 0 ? label : '' }))
       : null;
   }
 

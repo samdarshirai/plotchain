@@ -230,6 +230,8 @@ export class CycleManagementComponent implements OnInit {
   creditResult: WalletCreditingResult | null = null;
   creditError: 'conflict' | 'generic' | null = null;
   private status: CycleStatus | '' = '';
+  // Lifetime weighted average (all cycles' commission / all cycles' business); kept across status filters.
+  private lifetimeCommissionPct = '—';
 
   // Cycles have no fixed length: just how many days the open cycle has been running (start day = day 1).
   get daysElapsed(): number {
@@ -245,6 +247,7 @@ export class CycleManagementComponent implements OnInit {
 
   ngOnInit(): void {
     this.historyColumns = [
+      { key: 'sno', label: this.translate.instant('admin.cycleManagement.columnSNo'), type: 'text' },
       { key: 'period', label: this.translate.instant('admin.cycleManagement.columnPeriod'), type: 'text' },
       {
         key: 'status',
@@ -261,7 +264,7 @@ export class CycleManagementComponent implements OnInit {
       })),
       { key: 'tripExpense', label: this.translate.instant('admin.cycleManagement.columnTripExpense'), type: 'text', sum: true },
       { key: 'commissionExpense', label: this.translate.instant('admin.cycleManagement.columnCommissionExpense'), type: 'text', sum: true },
-      { key: 'commissionPct', label: this.translate.instant('admin.cycleManagement.columnCommissionPct'), type: 'text' },
+      { key: 'commissionPct', label: this.translate.instant('admin.cycleManagement.columnCommissionPct'), type: 'text', total: () => this.lifetimeCommissionPct },
       { key: 'actions', label: this.translate.instant('admin.cycleManagement.columnActions'), type: 'action' }
     ];
     this.loadPage(0);
@@ -298,17 +301,24 @@ export class CycleManagementComponent implements OnInit {
   // detail just leaves that row's income cells blank.
   private updateTableRows(): void {
     const cycles = this.page?.cycles ?? [];
-    this.historyRows = cycles.map(c => this.toRow(c, null));
+    this.historyRows = cycles.map((c, i) => this.toRow(c, null, i));
     if (!cycles.length) {
       return;
     }
-    forkJoin(cycles.map(c => this.cycleManagementService.detail(c.id).pipe(catchError(() => of(null))))).subscribe(
-      details => (this.historyRows = cycles.map((c, i) => this.toRow(c, details[i])))
-    );
+    forkJoin(cycles.map(c => this.cycleManagementService.detail(c.id).pipe(catchError(() => of(null))))).subscribe(details => {
+      if (!this.status) {
+        const ok = details.filter((d): d is CycleDetail => !!d);
+        const business = ok.reduce((a, d) => a + d.totalBusiness, 0);
+        const commission = ok.reduce((a, d) => a + d.totalGross + d.tripExpense, 0);
+        this.lifetimeCommissionPct = business > 0 ? ((commission / business) * 100).toFixed(2) + '%' : '—';
+      }
+      this.historyRows = cycles.map((c, i) => this.toRow(c, details[i], i));
+    });
   }
 
-  private toRow(cycle: CycleSummary, detail: CycleDetail | null): Record<string, string> {
+  private toRow(cycle: CycleSummary, detail: CycleDetail | null, index: number): Record<string, string> {
     const row: Record<string, string> = {
+      sno: String(index + 1),
       period: `${cycle.periodStart} – ${cycle.periodEnd ?? this.translate.instant('admin.cycleManagement.ongoing')}`,
       status: cycle.status
     };
