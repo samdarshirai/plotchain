@@ -161,6 +161,14 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
             <option value="CLOSED">{{ 'admin.cycleManagement.statusClosedOption' | translate }}</option>
           </select>
         </label>
+        <label>
+          {{ 'admin.cycleManagement.periodFromLabel' | translate }}
+          <input type="date" name="periodFrom" [(ngModel)]="periodFrom" [max]="periodTo || ''" (ngModelChange)="loadPage(0)" />
+        </label>
+        <label>
+          {{ 'admin.cycleManagement.periodToLabel' | translate }}
+          <input type="date" name="periodTo" [(ngModel)]="periodTo" [min]="periodFrom || ''" (ngModelChange)="loadPage(0)" />
+        </label>
       </div>
 
       <div class="card">
@@ -229,6 +237,8 @@ export class CycleManagementComponent implements OnInit {
   openError: string | null = null;
   creditResult: WalletCreditingResult | null = null;
   creditError: 'conflict' | 'generic' | null = null;
+  periodFrom = '';
+  periodTo = '';
   private status: CycleStatus | '' = '';
   // Lifetime weighted average (all cycles' commission / all cycles' business); kept across status filters.
   private lifetimeCommissionPct = '—';
@@ -283,7 +293,12 @@ export class CycleManagementComponent implements OnInit {
   protected loadPage(page: number): void {
     this.loadError = false;
     fetchAllPages((p, size) => this.cycleManagementService.list(this.status, p, size)).subscribe({
-      next: res => {
+      next: all => {
+        // Period filter: keep cycles overlapping [periodFrom, periodTo] (ISO dates compare as strings; an ongoing cycle has no end).
+        const res = {
+          ...all,
+          cycles: all.cycles.filter(c => (!this.periodFrom || (c.periodEnd ?? '9999-12-31') >= this.periodFrom) && (!this.periodTo || c.periodStart <= this.periodTo))
+        };
         this.page = res;
         this.updateTableRows();
         // Only an UNFILTERED load is informative about whether an OPEN cycle exists -- see
@@ -306,7 +321,7 @@ export class CycleManagementComponent implements OnInit {
       return;
     }
     forkJoin(cycles.map(c => this.cycleManagementService.detail(c.id).pipe(catchError(() => of(null))))).subscribe(details => {
-      if (!this.status) {
+      if (!this.status && !this.periodFrom && !this.periodTo) {
         const ok = details.filter((d): d is CycleDetail => !!d);
         const business = ok.reduce((a, d) => a + d.totalBusiness, 0);
         const commission = ok.reduce((a, d) => a + d.totalGross + d.tripExpense, 0);

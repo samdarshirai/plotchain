@@ -964,6 +964,8 @@
       "subtitle": "Review past settlement cycles and trigger the close for the current one.",
       "statusFilterLabel": "Status",
       "statusFilterAllOption": "All statuses",
+      "periodFromLabel": "Period From",
+      "periodToLabel": "Period To",
       "statusOpenOption": "Open",
       "statusCalculatingOption": "Calculating",
       "statusClosedOption": "Closed",
