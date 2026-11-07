@@ -35,7 +35,7 @@ import { BusinessReport, BusinessReportRow, ReportsService } from './reports.ser
             <table class="report__table">
               <thead>
                 <tr>
-                  <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'reports.column.number' | translate }}</th>
+                  <th scope="col" class="table__sno"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'reports.column.number' | translate }}</th>
                   <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'reports.column.paymentDate' | translate }}</th>
                   <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'reports.column.confirmDate' | translate }}</th>
                   <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'reports.column.associateId' | translate }}</th>
@@ -48,7 +48,7 @@ import { BusinessReport, BusinessReportRow, ReportsService } from './reports.ser
               <tbody>
                 <tr *ngIf="!leg.rows.length && !loading && !error"><td colspan="8" class="report__empty" role="status">{{ 'plotBookings.table.empty' | translate }}</td></tr>
                 <tr *ngFor="let r of leg.rows; let i = index">
-                  <td>{{ i + 1 }}</td>
+                  <td class="table__sno">{{ i + 1 }}</td>
                   <td>{{ r.paymentDate | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
                   <td>{{ r.confirmDate ? (r.confirmDate | date: 'd MMM y, h:mm:ss a' : '+0530') : '—' }}</td>
                   <td class="editable-table__cell--bold">{{ r.associateId }}</td>

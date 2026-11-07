@@ -1,5 +1,5 @@
 {
-  "common": { "total": "कुल" },
+  "common": { "total": "कुल", "serialNo": "क्र.सं." },
   "epins": {
     "errorUserIdRequired": "एसोसिएट आईडी दर्ज करें।",
     "errorNotFound": "ऐसा कोई पिन या एसोसिएट नहीं मिला।",

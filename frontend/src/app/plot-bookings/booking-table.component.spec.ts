@@ -23,7 +23,7 @@ describe('BookingTableComponent', () => {
     fixture.detectChanges();
     const cell = (fixture.nativeElement as HTMLElement).querySelector('tfoot [data-label="plotBookings.table.area"]')!;
     expect(cell.textContent!.trim()).toBe('2,200.5');
-    expect(cell.parentElement!.children.length).toBe(14);
+    expect(cell.parentElement!.children.length).toBe(15);
   });
 
   it('View popup lists only payments, with receipt no and a dash for an unconfirmed payment date', () => {
@@ -40,10 +40,11 @@ describe('BookingTableComponent', () => {
     const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.booking-table__installments tbody tr');
     expect(rows.length).toBe(2);
     const cells = (i: number) => Array.from(rows[i].querySelectorAll('td')).map(td => td.textContent!.trim());
-    expect(cells(0)[0]).toBe('—');
-    expect(cells(0)[2]).toBe('R-2');
-    expect(cells(1)[2]).toBe('R-1');
-    expect(cells(1)[4]).toBe('CHQ9');
+    expect(cells(0)[0]).toBe('1');
+    expect(cells(0)[1]).toBe('—');
+    expect(cells(0)[3]).toBe('R-2');
+    expect(cells(1)[3]).toBe('R-1');
+    expect(cells(1)[5]).toBe('CHQ9');
   });
 
   it('View popup shows an empty state when nothing has been paid yet', () => {
@@ -68,7 +69,7 @@ describe('BookingTableComponent', () => {
     fixture.detectChanges();
     const heads = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.booking-table__installments th')).map(th => th.textContent!.trim());
     expect(heads.map(h => h.replace(/^\S+(?=plotBookings)/, ''))).toEqual(
-      ['paymentDate', 'amount', 'receiptNo', 'mode', 'instrumentNo', 'date'].map(k => jasmine.stringMatching(`plotBookings.payments.${k}$`)) as any);
+      ['serialNo', 'paymentDate', 'amount', 'receiptNo', 'mode', 'instrumentNo', 'date'].map(k => jasmine.stringMatching(`${k === 'serialNo' ? 'common' : 'plotBookings.payments'}.${k}$`)) as any);
   });
 
   it('shows a dash when the plot type is missing', () => {

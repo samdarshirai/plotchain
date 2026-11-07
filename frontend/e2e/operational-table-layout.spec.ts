@@ -38,7 +38,7 @@ for (const screen of ['sales-register', 'associate-directory']) for (const width
     }
     if (screen === 'sales-register') {
       if (width > 768) {
-        expect(await table.locator('tbody td:nth-child(7) > span').evaluate(el => el.scrollWidth <= el.clientWidth)).toBeTruthy();
+        expect(await table.locator('tbody td:nth-child(8) > span').evaluate(el => el.scrollWidth <= el.clientWidth)).toBeTruthy();
       }
       await table.locator('input').fill('Review reason');
       await expect(table.locator('input')).toHaveValue('Review reason');

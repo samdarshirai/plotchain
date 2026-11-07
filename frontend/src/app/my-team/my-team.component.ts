@@ -63,6 +63,7 @@ const VIEWS: TeamView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'];
 
         <div class="associate-directory__table-wrap">
           <app-editable-table
+            [serialOffset]="page ? page.page * page.size : 0"
             [readOnly]="true"
             [columns]="columns"
             [rows]="rows"

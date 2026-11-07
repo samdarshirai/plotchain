@@ -95,7 +95,6 @@ export class NewsComponent implements OnInit {
   ngOnInit(): void {
     const t = (key: string) => this.translate.instant(`admin.news.${key}`);
     this.columns = [
-      { key: 'sNo', label: t('columnSNo'), type: 'text' },
       { key: 'date', label: t('date'), type: 'text' },
       { key: 'title', label: t('newsTitle'), type: 'text' },
       { key: 'body', label: t('body'), type: 'text' }
@@ -154,7 +153,6 @@ export class NewsComponent implements OnInit {
     this.service.list().subscribe({
       next: items => {
         this.rows = items.map((n, i) => ({
-          sNo: String(i + 1),
           date: n.newsDate,
           title: n.title,
           body: n.body

@@ -182,6 +182,7 @@ const RENDERED_FIELD_ERROR_KEYS = [
             [hidden]="!isExpanded('rewardTiers')"
           >
               <app-editable-table
+                [serial]="false"
                 [columns]="rewardTierColumns"
                 [rows]="rewardTierRows"
                 [addRowLabel]="'setup.compensation.addRewardTierRowLabel' | translate"
@@ -218,6 +219,7 @@ const RENDERED_FIELD_ERROR_KEYS = [
             [hidden]="!isExpanded('royalty')"
           >
               <app-editable-table
+                [serial]="false"
                 [columns]="royaltyColumns"
                 [rows]="royaltyRows"
                 [addRowLabel]="'setup.compensation.addRoyaltyRowLabel' | translate"

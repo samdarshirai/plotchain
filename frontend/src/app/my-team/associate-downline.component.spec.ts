@@ -24,16 +24,11 @@ describe('AssociateDownlineComponent', () => {
     return c;
   }
 
-  it('maps the nine columns, with dashes for missing mobile and activation date', () => {
+  it('maps the eight columns, with dashes for missing mobile and activation date', () => {
     const c = setup('me', of({ associates: [row('VP2', { phone: null, activatedAt: null, position: 'R' })], page: 0, size: 20, totalElements: 1 }));
-    expect(c.componentInstance.columns.length).toBe(9);
-    expect(c.componentInstance.rows[0]).toEqual(jasmine.objectContaining({ serial: '1', userId: 'VP2', phone: '—', activatedAt: '—', position: 'Right' }));
+    expect(c.componentInstance.columns.length).toBe(8);
+    expect(c.componentInstance.rows[0]).toEqual(jasmine.objectContaining({ userId: 'VP2', phone: '—', activatedAt: '—', position: 'Right' }));
     expect(c.componentInstance.rows[0]['joinedAt']).toMatch(/2026, \d{2}:\d{2}:\d{2}$/);
-  });
-
-  it('serial numbers continue across pages', () => {
-    const c = setup('me', of({ associates: [row('VP22'), row('VP23')], page: 1, size: 20, totalElements: 22 }));
-    expect(c.componentInstance.rows.map(r => r['serial'])).toEqual(['21', '22']);
   });
 
   it('search and leg are sent to the service; page resets to 0', () => {

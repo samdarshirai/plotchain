@@ -52,6 +52,7 @@ const PAGE_SIZE = 20;
         <table class="ticket-history__table" *ngIf="page.entries.length" [attr.aria-label]="'supportTickets.title' | translate">
           <thead>
             <tr>
+              <th scope="col" class="table__sno">{{ 'common.serialNo' | translate }}</th>
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">subject</span>{{ 'supportTickets.columnSubject' | translate }}</th>
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'supportTickets.columnStatus' | translate }}</th>
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'supportTickets.columnCreatedAt' | translate }}</th>
@@ -59,7 +60,8 @@ const PAGE_SIZE = 20;
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let t of page.entries; trackBy: trackById" class="ticket-history__row--clickable" tabindex="0" role="button" [attr.aria-label]="('supportTickets.openDetails' | translate) + ': ' + t.subject" (click)="open(t)" (keydown.enter)="open(t)" (keydown.space)="$event.preventDefault(); open(t)">
+            <tr *ngFor="let t of page.entries; let i = index; trackBy: trackById" class="ticket-history__row--clickable" tabindex="0" role="button" [attr.aria-label]="('supportTickets.openDetails' | translate) + ': ' + t.subject" (click)="open(t)" (keydown.enter)="open(t)" (keydown.space)="$event.preventDefault(); open(t)">
+              <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ page.page * page.size + i + 1 }}</td>
               <td><span class="ticket-history__subject">{{ t.subject }}</span><span class="ticket-history__description">{{ t.description }}</span></td>
               <td [attr.data-label]="'supportTickets.columnStatus' | translate">{{ 'supportTickets.status.' + t.status | translate }}</td>
               <td [attr.data-label]="'supportTickets.columnCreatedAt' | translate">{{ t.createdAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>

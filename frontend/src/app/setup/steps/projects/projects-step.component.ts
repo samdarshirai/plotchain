@@ -228,6 +228,7 @@ const PLOT_TYPE_LABELS: Record<PlotType, string> = {
           <table class="projects-step__plot-table">
             <thead>
               <tr>
+                <th class="table__sno">{{ 'common.serialNo' | translate }}</th>
                 <th><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'setup.projects.plotNoLabel' | translate }}</th>
                 <th><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'setup.projects.plotTypeLabel' | translate }}</th>
                 <th><span class="material-symbols-outlined th-icon" aria-hidden="true">square_foot</span>{{ 'setup.projects.areaLabel' | translate }}</th>
@@ -238,7 +239,8 @@ const PLOT_TYPE_LABELS: Record<PlotType, string> = {
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let plot of plotPage?.plots">
+              <tr *ngFor="let plot of plotPage?.plots; let i = index">
+                <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ i + 1 }}</td>
                 <td>{{ plot.plotNo }}</td>
                 <td>{{ plotTypeLabel(plot.plotType) }}</td>
                 <td>{{ plot.areaSqft }}</td>
@@ -263,6 +265,7 @@ const PLOT_TYPE_LABELS: Record<PlotType, string> = {
             </tbody>
             <tfoot *ngIf="plotPage?.plots?.length">
               <tr class="editable-table__total">
+                <td class="table__sno"></td>
                 <td>{{ 'common.total' | translate }}</td>
                 <td></td>
                 <td [attr.data-label]="'setup.projects.areaLabel' | translate">{{ totalArea }}</td>

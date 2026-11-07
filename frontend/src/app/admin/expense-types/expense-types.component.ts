@@ -105,7 +105,6 @@ export class ExpenseTypesComponent implements OnInit {
   ngOnInit(): void {
     const t = (key: string) => this.translate.instant(`admin.expenseTypes.${key}`);
     this.columns = [
-      { key: 'sNo', label: t('columnSNo'), type: 'text' },
       { key: 'name', label: t('expenseType'), type: 'text' },
       { key: 'status', label: t('status'), type: 'badge', badgeTone: v => (v === 'Active' ? 'success' : 'danger') as BadgeTone },
       { key: 'actions', label: t('columnAction'), type: 'action' }
@@ -167,7 +166,7 @@ export class ExpenseTypesComponent implements OnInit {
     this.service.list().subscribe({
       next: items => {
         this.items = items;
-        this.rows = items.map((e, i) => ({ sNo: String(i + 1), name: e.name, status: titleCase(e.status) }));
+        this.rows = items.map((e, i) => ({ name: e.name, status: titleCase(e.status) }));
       },
       error: () => (this.loadError = true)
     });

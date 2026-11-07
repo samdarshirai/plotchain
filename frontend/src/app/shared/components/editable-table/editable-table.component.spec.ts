@@ -28,6 +28,18 @@ describe('EditableTableComponent', () => {
     fixture.componentInstance.addRowLabel = 'Add row';
     fixture.componentInstance.removeRowLabel = 'Remove';
     fixture.componentInstance.emptyStateLabel = 'No rows yet';
+    fixture.componentInstance.serial = false;
+  });
+
+  it('serial column numbers rows first, continues from serialOffset, and skips the _total row', () => {
+    fixture.componentInstance.serial = true;
+    fixture.componentInstance.serialOffset = 20;
+    fixture.componentInstance.rows = [{ rank: '1' }, { rank: '2' }, { rank: 'Total', _total: '1' }];
+    fixture.detectChanges();
+    const heads = fixture.nativeElement.querySelectorAll('thead th');
+    expect(heads[0].textContent).toContain('S No');
+    const cells = [...fixture.nativeElement.querySelectorAll('tbody tr td.table__sno')].map((c: any) => c.textContent.trim());
+    expect(cells).toEqual(['21', '22', '']);
   });
 
   it('renders each data column and an accessible header for the remove action', () => {
@@ -357,6 +369,7 @@ describe('EditableTableComponent custom total', () => {
   it('uses column.total for the Total row cell', async () => {
     await TestBed.configureTestingModule({ imports: [EditableTableComponent] }).compileComponents();
     const fixture = TestBed.createComponent(EditableTableComponent);
+    fixture.componentInstance.serial = false;
     fixture.componentInstance.columns = [
       { key: 'a', label: 'A', type: 'text', sum: true },
       { key: 'avg', label: 'Avg', type: 'text', total: rows => `${rows.length} rows` }

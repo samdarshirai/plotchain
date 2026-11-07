@@ -79,6 +79,7 @@ const NO_FILTERS: TicketFilters = { status: '', associateId: '' };
           <table class="support-tickets__table" *ngIf="page?.entries?.length" [attr.aria-label]="'admin.supportTickets.title' | translate">
             <thead>
               <tr>
+                <th scope="col" class="table__sno">{{ 'common.serialNo' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.supportTickets.col.ticket' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.supportTickets.col.associate' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'admin.supportTickets.col.status' | translate }}</th>
@@ -86,9 +87,10 @@ const NO_FILTERS: TicketFilters = { status: '', associateId: '' };
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let t of page!.entries" class="support-tickets__row" tabindex="0"
+              <tr *ngFor="let t of page!.entries; let i = index" class="support-tickets__row" tabindex="0"
                 [class.support-tickets__row--selected]="t.id === selected?.id" [attr.aria-current]="t.id === selected?.id ? 'true' : null"
                 (click)="selectTicket(t)" (keydown.enter)="selectTicket(t)" (keydown.space)="selectTicket(t); $event.preventDefault()">
+                <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ (page?.page ?? 0) * (page?.size ?? 0) + i + 1 }}</td>
                 <td [attr.data-label]="'admin.supportTickets.col.ticket' | translate">
                   <strong>{{ t.subject }}</strong><br /><span class="support-tickets__sub">{{ snip(t.description) }}</span>
                 </td>

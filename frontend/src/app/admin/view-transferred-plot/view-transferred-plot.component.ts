@@ -54,7 +54,7 @@ const isoDate = (d: Date): string => {
           <table class="add-plot-emi__table" [attr.aria-label]="'admin.viewTransferredPlot.title' | translate">
             <thead>
               <tr>
-                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.viewBookedPlot.col.sNo' | translate }}</th>
+                <th scope="col" class="table__sno"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.viewBookedPlot.col.sNo' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.viewTransferredPlot.col.transferDate' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.addPlotEmi.col.associateId' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.addPlotEmi.col.associate' | translate }}</th>
@@ -68,7 +68,7 @@ const isoDate = (d: Date): string => {
             </thead>
             <tbody>
               <tr *ngFor="let r of page?.transfers; let i = index">
-                <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ i + 1 }}</td>
+                <td class="table__sno" [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ i + 1 }}</td>
                 <td [attr.data-label]="'admin.viewTransferredPlot.col.transferDate' | translate">{{ r.transferDate | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
                 <td class="editable-table__cell--bold" [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ r.associateCode || '—' }}</td>
                 <td class="editable-table__cell--bold" [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ r.associateName || '—' }}</td>

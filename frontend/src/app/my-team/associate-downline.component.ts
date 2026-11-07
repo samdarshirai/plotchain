@@ -86,7 +86,6 @@ export class AssociateDownlineComponent implements OnInit {
   ngOnInit(): void {
     const t = (k: string) => this.translate.instant('downlineView.' + k);
     this.columns = [
-      { key: 'serial', label: t('columnSerial'), type: 'text' },
       { key: 'status', label: t('columnStatus'), type: 'badge', badgeTone: v => this.statusTone(v) },
       { key: 'name', label: t('columnName'), type: 'text', bold: true },
       { key: 'userId', label: t('columnUserId'), type: 'text', bold: true },
@@ -106,7 +105,6 @@ export class AssociateDownlineComponent implements OnInit {
       next: res => {
         this.page = res;
         this.rows = res.associates.map((a, i) => ({
-          serial: String(res.page * res.size + i + 1),
           status: titleCase(a.status),
           name: a.name,
           userId: a.userId,

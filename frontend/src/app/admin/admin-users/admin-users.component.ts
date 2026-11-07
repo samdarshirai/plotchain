@@ -162,7 +162,6 @@ export class AdminUsersComponent implements OnInit {
   ngOnInit(): void {
     const t = (key: string) => this.translate.instant(`admin.adminUsers.${key}`);
     this.columns = [
-      { key: 'sNo', label: t('columnSNo'), type: 'text' },
       { key: 'userId', label: t('userId'), type: 'text' },
       { key: 'name', label: t('operatorName'), type: 'text' },
       { key: 'phone', label: t('mobileNo'), type: 'text' },
@@ -273,7 +272,6 @@ export class AdminUsersComponent implements OnInit {
       next: users => {
         this.users = users;
         this.rows = users.map((u, i) => ({
-          sNo: String(i + 1),
           userId: u.userId,
           name: u.name,
           phone: u.phone,

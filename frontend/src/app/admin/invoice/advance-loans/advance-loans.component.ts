@@ -137,6 +137,7 @@ import { FormIssue, collectIssues, errorMessage } from '../../../shared/validati
             <table class="invoice-loans__repayments" *ngIf="d.repayments.length">
               <thead>
                 <tr>
+                  <th class="table__sno">{{ 'common.serialNo' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.invoiceLoans.receiptNo' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.invoiceLoans.paymentDate' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.invoiceLoans.amount' | translate }}</th>
@@ -146,7 +147,8 @@ import { FormIssue, collectIssues, errorMessage } from '../../../shared/validati
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let r of d.repayments">
+                <tr *ngFor="let r of d.repayments; let i = index">
+                  <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ i + 1 }}</td>
                   <td [attr.data-label]="'admin.invoiceLoans.receiptNo' | translate"><a [routerLink]="['/admin/settings/payment-details/receipt', r.id]" target="_blank" rel="noopener">{{ r.receiptNo }}</a></td>
                   <td [attr.data-label]="'admin.invoiceLoans.paymentDate' | translate">{{ r.recordedAt ? (r.recordedAt | date: 'd MMM y, h:mm:ss a' : '+0530') : r.paymentDate }}</td>
                   <td [attr.data-label]="'admin.invoiceLoans.amount' | translate" [class.editable-table__cell--fit-md]="fit(r.amount) === 'md'" [class.editable-table__cell--fit-sm]="fit(r.amount) === 'sm'">{{ r.amount | number:'1.0-0' }}</td>
@@ -157,6 +159,7 @@ import { FormIssue, collectIssues, errorMessage } from '../../../shared/validati
               </tbody>
               <tfoot>
                 <tr class="editable-table__total">
+                  <td class="table__sno"></td>
                   <td>{{ 'common.total' | translate }}</td>
                   <td></td>
                   <td>{{ total(d.repayments) | number:'1.0-0' }}</td>
@@ -285,7 +288,6 @@ export class AdvanceLoansComponent implements OnInit {
   ngOnInit(): void {
     const t = (key: string) => this.translate.instant(`admin.invoiceLoans.${key}`);
     this.columns = [
-      { key: 'sNo', label: t('columnSNo'), type: 'text' },
       { key: 'date', label: t('loanDate'), type: 'text' },
       { key: 'userId', label: t('associateId'), type: 'text', bold: true },
       { key: 'name', ellipsis: true, label: t('associateName'), type: 'text', bold: true },
@@ -483,7 +485,6 @@ export class AdvanceLoansComponent implements OnInit {
       next: items => {
         this.items = items;
         this.rows = items.map((l, i) => ({
-          sNo: String(i + 1),
           date: l.loanDate,
           userId: l.associateUserId,
           name: l.associateName,

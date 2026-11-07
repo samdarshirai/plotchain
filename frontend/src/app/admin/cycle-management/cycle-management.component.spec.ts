@@ -88,7 +88,7 @@ describe('CycleManagementComponent', () => {
     fixture.detectChanges();
     const totals = Array.from(fixture.nativeElement.querySelectorAll('tfoot td') as NodeListOf<HTMLElement>).map(el => el.textContent?.trim());
     expect(totals.slice(4, 10)).toEqual(['₹1,100', '₹400', '₹50', '₹30', '₹1,600', '₹20']);
-    expect(totals[0]).toBe('common.total');
+    expect(totals[1]).toBe('common.total');
     expect(totals[totals.length - 2]).toMatch(/^\d+\.\d{2}%$/);
   });
 

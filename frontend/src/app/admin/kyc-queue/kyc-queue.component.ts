@@ -73,6 +73,7 @@ const MS_PER_DAY = 86_400_000;
         <div class="kyc-queue__table-scroll" role="region" tabindex="0"
           [attr.aria-label]="'admin.kycQueue.title' | translate">
           <app-editable-table
+            [serialOffset]="page ? page.page * page.size : 0"
             [readOnly]="true"
             [columns]="kycColumns"
             [rows]="kycRows"

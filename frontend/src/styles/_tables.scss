@@ -256,14 +256,19 @@ table.table--stacked {
   }
 
   // First column (period, name, ID) heads the card.
-  > tbody > tr > td:first-child:not([colspan]),
-  > tfoot > tr > td:first-child:not([colspan]) {
+  // S No (.table__sno) keeps its own label and sits above; the next cell heads the card.
+  > tbody > tr > td:first-child:not([colspan]):not(.table__sno),
+  > tbody > tr > td.table__sno + td:not([colspan]),
+  > tfoot > tr > td:first-child:not([colspan]):not(.table__sno),
+  > tfoot > tr > td.table__sno + td:not([colspan]) {
     grid-column: 1 / -1;
     font-weight: 600;
   }
 
-  > tbody > tr > td:first-child::before,
-  > tfoot > tr > td:first-child::before {
+  > tbody > tr > td:first-child:not(.table__sno)::before,
+  > tbody > tr > td.table__sno + td::before,
+  > tfoot > tr > td:first-child:not(.table__sno)::before,
+  > tfoot > tr > td.table__sno + td::before {
     display: none;
   }
 

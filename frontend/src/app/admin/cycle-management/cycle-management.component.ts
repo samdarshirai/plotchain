@@ -257,7 +257,6 @@ export class CycleManagementComponent implements OnInit {
 
   ngOnInit(): void {
     this.historyColumns = [
-      { key: 'sno', label: this.translate.instant('admin.cycleManagement.columnSNo'), type: 'text' },
       { key: 'period', label: this.translate.instant('admin.cycleManagement.columnPeriod'), type: 'text' },
       {
         key: 'status',
@@ -333,7 +332,6 @@ export class CycleManagementComponent implements OnInit {
 
   private toRow(cycle: CycleSummary, detail: CycleDetail | null, index: number): Record<string, string> {
     const row: Record<string, string> = {
-      sno: String(index + 1),
       period: `${cycle.periodStart} – ${cycle.periodEnd ?? this.translate.instant('admin.cycleManagement.ongoing')}`,
       status: cycle.status
     };
