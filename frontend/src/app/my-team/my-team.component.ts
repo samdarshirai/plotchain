@@ -103,8 +103,8 @@ export class MyTeamComponent implements OnInit {
     const t = (k: string) => this.translate.instant('admin.associateDirectory.' + k);
     this.viewTabs = VIEWS.map(id => ({ id, label: t('views.' + id) }));
     this.columns = [
-      { key: 'userId', label: t('columnUserId'), type: 'text' },
-      { key: 'name', label: t('columnName'), type: 'text' },
+      { key: 'userId', label: t('columnUserId'), type: 'text', bold: true },
+      { key: 'name', label: t('columnName'), type: 'text', bold: true },
       { key: 'sponsorUserId', label: t('columnSponsorId'), type: 'text' },
       { key: 'position', label: t('columnPosition'), type: 'text' },
       { key: 'status', label: t('columnStatus'), type: 'badge', badgeTone: v => this.statusTone(v) },

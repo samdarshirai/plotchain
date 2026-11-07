@@ -228,7 +228,7 @@ export class PayoutApprovalComponent implements OnInit {
 
   ngOnInit(): void {
     this.registerColumns = [
-      { key: 'associate', label: this.translate.instant('admin.payoutApproval.columnAssociate'), type: 'text' },
+      { key: 'associate', label: this.translate.instant('admin.payoutApproval.columnAssociate'), type: 'text', bold: true },
       { key: 'amount', label: this.translate.instant('admin.payoutApproval.columnAmount'), type: 'text', sum: true },
       {
         key: 'status',

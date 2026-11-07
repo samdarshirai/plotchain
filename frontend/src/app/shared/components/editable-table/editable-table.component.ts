@@ -30,6 +30,8 @@ export interface EditableTableColumn {
   // Optional: for fixed-height rows. The cell is marked so CSS can cut long text with "…", and its
   // full text goes in a `title` tooltip -- e.g. the Invoice registers' name/bank/remarks columns.
   ellipsis?: boolean;
+  // Optional: bold cell text -- used for Associate ID / Associate Name columns.
+  bold?: boolean;
   // Optional, for number columns in fixed-height rows: long values get a smaller font (see fitSize) instead of being cut.
   fitText?: boolean;
   // Optional header icon (Material Symbols name); defaults to a guess from `key`.
@@ -82,6 +84,7 @@ export function sumColumn(values: (string | number | undefined)[]): string {
             *ngFor="let column of columns"
             [attr.data-label]="column.label"
             [class.editable-table__cell--ellipsis]="!!column.ellipsis"
+            [class.editable-table__cell--bold]="!!column.bold"
             [class.editable-table__cell--fit-md]="column.fitText && fitSize(row[column.key]) === 'md'"
             [class.editable-table__cell--fit-sm]="column.fitText && fitSize(row[column.key]) === 'sm'"
             [attr.title]="column.ellipsis ? row[column.key] : null"

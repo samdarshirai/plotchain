@@ -44,7 +44,7 @@ import { EmiReportRow, ReportsService } from './reports.service';
             <tr *ngIf="rows && !rows.length && !loading && !error"><td colspan="6" class="report__empty" role="status">{{ 'plotBookings.table.empty' | translate }}</td></tr>
             <tr *ngFor="let r of rows; let i = index">
               <td>{{ i + 1 }}</td>
-              <td>{{ r.associateId }}</td>
+              <td class="editable-table__cell--bold">{{ r.associateId }}</td>
               <td>{{ r.name }}</td>
               <td>{{ r.paymentDate | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
               <td class="table-number">{{ money(r.amount) }}</td>

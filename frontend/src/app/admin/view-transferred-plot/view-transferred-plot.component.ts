@@ -70,8 +70,8 @@ const isoDate = (d: Date): string => {
               <tr *ngFor="let r of page?.transfers; let i = index">
                 <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ i + 1 }}</td>
                 <td [attr.data-label]="'admin.viewTransferredPlot.col.transferDate' | translate">{{ r.transferDate | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
-                <td [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ r.associateCode || '—' }}</td>
-                <td [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ r.associateName || '—' }}</td>
+                <td class="editable-table__cell--bold" [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ r.associateCode || '—' }}</td>
+                <td class="editable-table__cell--bold" [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ r.associateName || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.mobile' | translate">{{ r.associatePhone || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.project' | translate">{{ r.projectName || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.plot' | translate">{{ r.plotNo || '—' }}</td>

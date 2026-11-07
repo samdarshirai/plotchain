@@ -67,6 +67,19 @@ describe('EditableTableComponent', () => {
     expect(percentCell.classList).not.toContain('editable-table__cell--ellipsis');
   });
 
+  it('a bold column marks its cells bold; other columns are not', () => {
+    fixture.componentInstance.readOnly = true;
+    fixture.componentInstance.columns = [
+      { key: 'userId', label: 'Associate ID', type: 'text', bold: true },
+      { key: 'percent', label: 'Percent', type: 'text' }
+    ];
+    fixture.componentInstance.rows = [{ userId: 'PC1001', percent: '10' }];
+    fixture.detectChanges();
+    const [idCell, percentCell] = fixture.nativeElement.querySelectorAll('tbody tr')[0].querySelectorAll('td');
+    expect(idCell.classList).toContain('editable-table__cell--bold');
+    expect(percentCell.classList).not.toContain('editable-table__cell--bold');
+  });
+
   it('a fitText column steps the font down for long values so the whole number stays visible', () => {
     fixture.componentInstance.readOnly = true;
     fixture.componentInstance.columns = [

@@ -72,8 +72,8 @@ export const saleRow = (s: Sale): BookingRow => ({
           <ng-container *ngFor="let r of rows; trackBy: trackKey">
             <tr [class.booking-table__row--selected]="r.key === selectedKey" [attr.data-booking-id]="r.key">
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.bookingDate' | translate">{{ r.bookedAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
-              <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.associateId' | translate">{{ r.associateCode || '—' }}</td>
-              <td [attr.data-label]="'plotBookings.table.name' | translate">{{ r.associateName || '—' }}</td>
+              <td class="booking-table__mono editable-table__cell--bold" [attr.data-label]="'plotBookings.table.associateId' | translate">{{ r.associateCode || '—' }}</td>
+              <td class="editable-table__cell--bold" [attr.data-label]="'plotBookings.table.name' | translate">{{ r.associateName || '—' }}</td>
               <td class="booking-table__wrap" [attr.data-label]="'plotBookings.table.project' | translate">{{ r.projectName || '—' }}</td>
               <td [attr.data-label]="'plotBookings.table.plotType' | translate">{{ r.plotType ? ('plotTile.type.' + r.plotType | translate) : '—' }}</td>
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.plotNo' | translate">{{ r.plotNo || '—' }}</td>

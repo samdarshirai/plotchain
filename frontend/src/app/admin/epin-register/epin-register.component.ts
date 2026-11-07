@@ -160,7 +160,7 @@ type Panel =
                   <td>{{ 'admin.epinRegister.pinType.' + p.pinType | translate }}</td>
                   <td [attr.title]="p.batchId">{{ p.batchId.slice(0, 8) }}</td>
                   <td [class.epin-register__expired-date]="p.expired">{{ p.expiresAt ? datePipe.transform(p.expiresAt, 'd MMM y, h:mm:ss a', '+0530') : '—' }}</td>
-                  <td>{{ userId(p.allocatedTo) }}</td>
+                  <td class="editable-table__cell--bold">{{ userId(p.allocatedTo) }}</td>
                 </tr>
                 <tr *ngIf="!page?.epins?.length">
                   <td colspan="6">{{ 'admin.epinRegister.emptyState' | translate }}</td>

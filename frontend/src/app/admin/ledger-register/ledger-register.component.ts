@@ -34,6 +34,8 @@ interface ColumnSpec {
   value: (e: AdminLedgerEntry) => string;
 }
 
+const IDENTITY_KEYS = ['associateId', 'name', 'memberId'];
+
 const INCOME_TYPE_TABS = [
   { id: 'SUMMARY', labelKey: 'admin.ledgerRegister.summaryTab' },
   { id: '', labelKey: 'admin.ledgerRegister.incomeTypeFilterAllOption' },
@@ -292,7 +294,7 @@ export class LedgerRegisterComponent implements OnInit {
 
   private buildSummaryColumns(): EditableTableColumn[] {
     const t = (k: string) => this.translate.instant(k);
-    const text = (key: string, label: string, sum = true): EditableTableColumn => ({ key, label, type: 'text', sum });
+    const text = (key: string, label: string, sum = true): EditableTableColumn => ({ key, label, type: 'text', sum, bold: IDENTITY_KEYS.includes(key) });
     return [
       text('associateId', t('incomeStatement.columnAssociateId'), false),
       text('name', t('incomeStatement.columnAssociateName'), false),
@@ -313,6 +315,7 @@ export class LedgerRegisterComponent implements OnInit {
       label: this.translate.instant('incomeStatement.' + (c.labelKey.endsWith('Abbr') ? c.labelKey : 'column' + c.labelKey)),
       type: c.badge ? 'badge' : 'text',
       sum: ENTRY_SUM_KEYS.includes(c.key),
+      bold: IDENTITY_KEYS.includes(c.key),
       ...(c.badge ? { badgeTone: (v: string | number) => this.statusBadgeTone(v) } : {})
     }));
     if (this.incomeType === 'REWARD') {

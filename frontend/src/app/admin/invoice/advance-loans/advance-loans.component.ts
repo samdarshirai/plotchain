@@ -287,8 +287,8 @@ export class AdvanceLoansComponent implements OnInit {
     this.columns = [
       { key: 'sNo', label: t('columnSNo'), type: 'text' },
       { key: 'date', label: t('loanDate'), type: 'text' },
-      { key: 'userId', label: t('associateId'), type: 'text' },
-      { key: 'name', ellipsis: true, label: t('associateName'), type: 'text' },
+      { key: 'userId', label: t('associateId'), type: 'text', bold: true },
+      { key: 'name', ellipsis: true, label: t('associateName'), type: 'text', bold: true },
       { key: 'amount', fitText: true, label: t('amount'), type: 'text', sum: true },
       { key: 'previousDues', fitText: true, label: t('previousDues'), type: 'text', sum: true },
       { key: 'repaid', fitText: true, label: t('repaid'), type: 'text', sum: true },

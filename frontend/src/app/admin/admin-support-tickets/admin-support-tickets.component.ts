@@ -92,7 +92,7 @@ const NO_FILTERS: TicketFilters = { status: '', associateId: '' };
                 <td [attr.data-label]="'admin.supportTickets.col.ticket' | translate">
                   <strong>{{ t.subject }}</strong><br /><span class="support-tickets__sub">{{ snip(t.description) }}</span>
                 </td>
-                <td [attr.data-label]="'admin.supportTickets.col.associate' | translate">{{ t.associateName }}<br /><span class="support-tickets__id">{{ t.associateUserId }}</span></td>
+                <td class="editable-table__cell--bold" [attr.data-label]="'admin.supportTickets.col.associate' | translate">{{ t.associateName }}<br /><span class="support-tickets__id">{{ t.associateUserId }}</span></td>
                 <td [attr.data-label]="'admin.supportTickets.col.status' | translate">
                   <span class="support-tickets__chip support-tickets__chip--{{ t.status | lowercase }}">{{ 'admin.supportTickets.status.' + t.status | translate }}</span>
                 </td>

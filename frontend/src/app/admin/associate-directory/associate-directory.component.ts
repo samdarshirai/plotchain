@@ -214,8 +214,8 @@ export class AssociateDirectoryComponent implements OnInit {
   ngOnInit(): void {
     this.viewTabs = VIEWS.map(id => ({ id, label: this.translate.instant('admin.associateDirectory.views.' + id) }));
     this.directoryColumns = [
-      { key: 'userId', label: this.translate.instant('admin.associateDirectory.columnUserId'), type: 'text' },
-      { key: 'name', label: this.translate.instant('admin.associateDirectory.columnName'), type: 'text' },
+      { key: 'userId', label: this.translate.instant('admin.associateDirectory.columnUserId'), type: 'text', bold: true },
+      { key: 'name', label: this.translate.instant('admin.associateDirectory.columnName'), type: 'text', bold: true },
       { key: 'phone', label: this.translate.instant('admin.associateDirectory.columnPhone'), type: 'text' },
       { key: 'sponsorUserId', label: this.translate.instant('admin.associateDirectory.columnSponsorId'), type: 'text' },
       { key: 'position', label: this.translate.instant('admin.associateDirectory.columnPosition'), type: 'text' },

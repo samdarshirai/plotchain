@@ -31,6 +31,7 @@ const TAB_ROUTES = [
   { id: 'DOWNLINE', labelKey: 'incomeStatement.tabDownline', path: '/income-statement/downline' }
 ];
 
+const IDENTITY_KEYS = ['associateId', 'name', 'memberId'];
 const DOWNLINE_KEYS = ['sNo', 'paymentDate', 'associateId', 'name', 'direct', 'matching', 'royalty', 'rewards', 'totalIncome',
   'tds', 'processing', 'payable', 'paidStatus'];
 const DOWNLINE_MONEY = ['direct', 'matching', 'royalty', 'rewards', 'totalIncome', 'tds', 'processing', 'payable'] as const;
@@ -279,7 +280,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         const unpaid = this.translate.instant('incomeStatement.payStatusUnpaid');
         const tone = (v: string | number): BadgeTone => (v === paid ? 'success' : v === unpaid ? 'danger' : 'warning');
         this.statementColumns = rowKeys.map((key, i) => ({
-          key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const,
+          key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const, bold: IDENTITY_KEYS.includes(key),
           ...(key === 'paidStatus' ? { type: 'badge' as const, badgeTone: tone } : {})
         }));
       });
@@ -332,7 +333,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         const unpaid = this.translate.instant('incomeStatement.payStatusUnpaid');
         const tone = (v: string | number): BadgeTone => (v === paid ? 'success' : v === unpaid ? 'danger' : v ? 'warning' : 'default');
         this.statementColumns = DOWNLINE_KEYS.map((key, i) => ({
-          key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const,
+          key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const, bold: IDENTITY_KEYS.includes(key),
           ...(key === 'paidStatus' ? { type: 'badge' as const, badgeTone: tone } : {})
         }));
       });
@@ -402,7 +403,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       .get(keys.map(k => 'incomeStatement.column' + k))
       .pipe(takeUntil(this.destroyed$))
       .subscribe(t => {
-        this.statementColumns = rowKeys.map((key, i) => ({ key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const }));
+        this.statementColumns = rowKeys.map((key, i) => ({ key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const, bold: IDENTITY_KEYS.includes(key) }));
       });
   }
 
@@ -413,7 +414,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       .get(keys.map(k => 'incomeStatement.column' + k))
       .pipe(takeUntil(this.destroyed$))
       .subscribe(t => {
-        this.statementColumns = rowKeys.map((key, i) => ({ key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const }));
+        this.statementColumns = rowKeys.map((key, i) => ({ key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const, bold: IDENTITY_KEYS.includes(key) }));
       });
   }
 
@@ -424,7 +425,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       .get(keys.map(k => 'incomeStatement.column' + k))
       .pipe(takeUntil(this.destroyed$))
       .subscribe(t => {
-        this.statementColumns = rowKeys.map((key, i) => ({ key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const }));
+        this.statementColumns = rowKeys.map((key, i) => ({ key, label: t['incomeStatement.column' + keys[i]], type: 'text' as const, bold: IDENTITY_KEYS.includes(key) }));
       });
   }
 
@@ -496,7 +497,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroyed$))
       .subscribe(t => {
         const cols = ['period', ...MATCHING_KEYS, 'matchingBusiness', 'matchingIncome'];
-        this.statementColumns = cols.map((key, i) => ({ key, label: t[keys[i]], type: 'text' as const }));
+        this.statementColumns = cols.map((key, i) => ({ key, label: t[keys[i]], type: 'text' as const, bold: IDENTITY_KEYS.includes(key) }));
       });
   }
 

@@ -51,7 +51,7 @@ import { BusinessReport, BusinessReportRow, ReportsService } from './reports.ser
                   <td>{{ i + 1 }}</td>
                   <td>{{ r.paymentDate | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
                   <td>{{ r.confirmDate ? (r.confirmDate | date: 'd MMM y, h:mm:ss a' : '+0530') : '—' }}</td>
-                  <td>{{ r.associateId }}</td>
+                  <td class="editable-table__cell--bold">{{ r.associateId }}</td>
                   <td>{{ r.name }}</td>
                   <td>{{ r.project }}</td>
                   <td>{{ r.plotNumber }}</td>

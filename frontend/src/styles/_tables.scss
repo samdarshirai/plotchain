@@ -82,6 +82,11 @@ tr[aria-selected='true'] td {
 // the mockup renders these as bold colored text, not a filled pill, so this stays text-only.
 // Tone comes from the column's `badgeTone(value)` mapping; `--default` is the fallback for a
 // value the mapping doesn't recognize.
+// Associate ID / Name cells (editable-table `bold` column flag, or added by hand on plain tables).
+.editable-table__cell--bold {
+  font-weight: 600;
+}
+
 .editable-table__badge {
   font-weight: 600;
   white-space: nowrap;

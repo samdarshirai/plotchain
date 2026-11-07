@@ -80,8 +80,8 @@ const isoDate = (d: Date): string => {
               <tr *ngFor="let b of page?.bookings; let i = index">
                 <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ i + 1 }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.bookedOn' | translate">{{ b.bookedAt ? (b.bookedAt | date: 'd MMM y, h:mm:ss a' : '+0530') : '—' }}</td>
-                <td [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ b.associateCode || '—' }}</td>
-                <td [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ b.associateName || '—' }}</td>
+                <td class="editable-table__cell--bold" [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ b.associateCode || '—' }}</td>
+                <td class="editable-table__cell--bold" [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ b.associateName || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.mobile' | translate">{{ b.associatePhone || '—' }}</td>
                 <td [attr.data-label]="'admin.bookingsEmi.col.buyer' | translate">{{ b.buyerName || '—' }}</td>
                 <td [attr.data-label]="'admin.bookingsEmi.col.buyerMobile' | translate">{{ b.buyerPhone || '—' }}</td>

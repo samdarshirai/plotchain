@@ -308,9 +308,9 @@ export class KycQueueComponent implements OnInit {
   private updateTableData(): void {
     const isPending = this.activeStatus === 'PENDING';
     const columns: EditableTableColumn[] = [
-      { key: 'userId', label: this.translate.instant('admin.kycQueue.columnUserId'), type: 'text' },
+      { key: 'userId', label: this.translate.instant('admin.kycQueue.columnUserId'), type: 'text', bold: true },
       {
-        key: 'name',
+        key: 'name', bold: true,
         label: this.translate.instant('admin.kycQueue.columnName'),
         type: 'text',
         // Verified / Rejected tabs carry the status pill inline right after the name instead of

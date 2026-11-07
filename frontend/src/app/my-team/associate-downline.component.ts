@@ -88,8 +88,8 @@ export class AssociateDownlineComponent implements OnInit {
     this.columns = [
       { key: 'serial', label: t('columnSerial'), type: 'text' },
       { key: 'status', label: t('columnStatus'), type: 'badge', badgeTone: v => this.statusTone(v) },
-      { key: 'name', label: t('columnName'), type: 'text' },
-      { key: 'userId', label: t('columnUserId'), type: 'text' },
+      { key: 'name', label: t('columnName'), type: 'text', bold: true },
+      { key: 'userId', label: t('columnUserId'), type: 'text', bold: true },
       { key: 'phone', label: t('columnMobile'), type: 'text' },
       { key: 'sponsorUserId', label: t('columnSponsorId'), type: 'text' },
       { key: 'position', label: t('columnPosition'), type: 'text' },
