@@ -188,7 +188,6 @@ export class ExpensesComponent implements OnInit {
   ngOnInit(): void {
     const t = (key: string) => this.translate.instant(`admin.invoiceExpenses.${key}`);
     this.columns = [
-      { key: 'sNo', label: t('columnSNo'), type: 'text' },
       { key: 'date', label: t('expenseDate'), type: 'text' },
       { key: 'type', label: t('expenseType'), type: 'text' },
       { key: 'project', label: t('project'), type: 'text' },
@@ -313,7 +312,6 @@ export class ExpensesComponent implements OnInit {
 
   private toRow(e: ExpenseRow, i: number): Record<string, string> {
     return {
-      sNo: String(i + 1),
       date: e.expenseDate,
       type: e.expenseTypeName,
       project: e.projectName ?? '',

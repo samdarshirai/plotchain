@@ -61,7 +61,7 @@ const isoDate = (d: Date): string => {
           <table class="add-plot-emi__table" [attr.aria-label]="'admin.plotTransfer.title' | translate">
             <thead>
               <tr>
-                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.viewBookedPlot.col.sNo' | translate }}</th>
+                <th scope="col" class="table__sno"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.viewBookedPlot.col.sNo' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.addPlotEmi.col.bookedOn' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.addPlotEmi.col.associateId' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.addPlotEmi.col.associate' | translate }}</th>
@@ -81,7 +81,7 @@ const isoDate = (d: Date): string => {
             </thead>
             <tbody>
               <tr *ngFor="let b of page?.bookings; let i = index">
-                <td [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ i + 1 }}</td>
+                <td class="table__sno" [attr.data-label]="'admin.viewBookedPlot.col.sNo' | translate">{{ i + 1 }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.bookedOn' | translate">{{ b.bookedAt ? (b.bookedAt | date: 'd MMM y, h:mm:ss a' : '+0530') : '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ b.associateCode || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ b.associateName || '—' }}</td>
@@ -160,7 +160,7 @@ const isoDate = (d: Date): string => {
           <table class="add-plot-emi__table add-plot-emi__table--history">
             <thead>
               <tr>
-                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.addPlotEmi.hist.sNo' | translate }}</th>
+                <th scope="col" class="table__sno"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.addPlotEmi.hist.sNo' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.addPlotEmi.hist.paymentDate' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.addPlotEmi.hist.amount' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">credit_card</span>{{ 'admin.addPlotEmi.hist.mode' | translate }}</th>
@@ -172,7 +172,7 @@ const isoDate = (d: Date): string => {
             </thead>
             <tbody>
               <tr *ngFor="let i of history(b); let n = index">
-                <td [attr.data-label]="'admin.addPlotEmi.hist.sNo' | translate">{{ n + 1 }}</td>
+                <td class="table__sno" [attr.data-label]="'admin.addPlotEmi.hist.sNo' | translate">{{ n + 1 }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.hist.paymentDate' | translate">{{ dateTime(i.recordedAt) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.hist.amount' | translate">{{ money(i.amount) }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.hist.mode' | translate">{{ i.paymentMode ? ('admin.bookingsEmi.paymentMode.' + i.paymentMode | translate) : '—' }}</td>

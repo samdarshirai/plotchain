@@ -21,7 +21,7 @@ const RECENT_SALES_COUNT = 5;
       <p *ngIf="!loaded" class="recent-sales-table__loading">{{ 'dashboard.recentSalesLoading' | translate }}</p>
       <p *ngIf="loadError" class="recent-sales-table__error">{{ 'dashboard.recentSalesLoadError' | translate }}</p>
       <p *ngIf="!loadError && loaded && sales.length === 0" class="recent-sales-table__empty">{{ 'dashboard.recentSalesEmpty' | translate }}</p>
-      <app-editable-table *ngIf="sales.length" [readOnly]="true" [columns]="columns" [rows]="rows"></app-editable-table>
+      <app-editable-table *ngIf="sales.length" [readOnly]="true" [serial]="false" [columns]="columns" [rows]="rows"></app-editable-table>
     </div>
   `
 })

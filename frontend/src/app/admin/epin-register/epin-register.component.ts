@@ -140,6 +140,7 @@ type Panel =
             <table class="epin-register__table">
               <thead>
                 <tr>
+                  <th class="table__sno">{{ 'common.serialNo' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.epinRegister.colCode' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'admin.epinRegister.colStatus' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'admin.epinRegister.pinTypeLabel' | translate }}</th>
@@ -149,8 +150,9 @@ type Panel =
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let p of page?.epins" class="epin-register__row"
+                <tr *ngFor="let p of page?.epins; let i = index" class="epin-register__row"
                   [class.epin-register__row--selected]="p.id === selectedId" (click)="select(p)">
+                  <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ (page?.page ?? 0) * (page?.size ?? 0) + i + 1 }}</td>
                   <td class="epin-register__code">{{ p.code }}</td>
                   <td>
                     <span class="epin-register__chip" [ngClass]="chipClass(p)">
@@ -163,7 +165,7 @@ type Panel =
                   <td>{{ userId(p.allocatedTo) }}</td>
                 </tr>
                 <tr *ngIf="!page?.epins?.length">
-                  <td colspan="6">{{ 'admin.epinRegister.emptyState' | translate }}</td>
+                  <td colspan="7">{{ 'admin.epinRegister.emptyState' | translate }}</td>
                 </tr>
               </tbody>
             </table>

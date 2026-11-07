@@ -31,7 +31,7 @@ const TAB_ROUTES = [
   { id: 'DOWNLINE', labelKey: 'incomeStatement.tabDownline', path: '/income-statement/downline' }
 ];
 
-const DOWNLINE_KEYS = ['sNo', 'paymentDate', 'associateId', 'name', 'direct', 'matching', 'royalty', 'rewards', 'totalIncome',
+const DOWNLINE_KEYS = ['paymentDate', 'associateId', 'name', 'direct', 'matching', 'royalty', 'rewards', 'totalIncome',
   'tds', 'processing', 'payable', 'paidStatus'];
 const DOWNLINE_MONEY = ['direct', 'matching', 'royalty', 'rewards', 'totalIncome', 'tds', 'processing', 'payable'] as const;
 
@@ -152,7 +152,7 @@ const DATE_FORMAT = 'dd MMM yyyy';
         </div>
 
         <div class="income-statement__table">
-          <app-editable-table [readOnly]="true" [columns]="rewardTierColumns" [rows]="rewardTierRows"></app-editable-table>
+          <app-editable-table [readOnly]="true" [serial]="false" [columns]="rewardTierColumns" [rows]="rewardTierRows"></app-editable-table>
         </div>
 
         <h2 class="income-statement__reward-heading">{{ 'incomeStatement.achievedRewardsTitle' | translate }}</h2>
@@ -322,7 +322,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   // My Downline Income Report: one row per downline associate x cycle covering
   // Direct, Matching, Royalty and Rewards, then a Total row.
   private buildDownlineColumns(): void {
-    const keys = ['SNo', 'PaymentDate', 'AssociateId', 'AssociateName', 'DirectIncome', 'MatchingIncome', 'RoyaltyIncome', 'Rewards', 'TotalIncome',
+    const keys = ['PaymentDate', 'AssociateId', 'AssociateName', 'DirectIncome', 'MatchingIncome', 'RoyaltyIncome', 'Rewards', 'TotalIncome',
       'Tds', 'ProcessingFee', 'PayableAmount', 'PaidStatus'];
     this.translate
       .get(keys.map(k => 'incomeStatement.column' + k))
@@ -346,7 +346,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   private updateDownlineRows(): void {
     const rows = this.downlineAll.filter(r => !this.downlineCycleId || r.cycleId === this.downlineCycleId);
     const sums: Record<string, number> = Object.fromEntries(DOWNLINE_MONEY.map(k => [k, 0]));
-    const out = rows.map((r, i) => {
+    const out = rows.map(r => {
       const values: Record<string, number> = {
         direct: r.gross.DIRECT ?? 0,
         matching: r.gross.MATCHING ?? 0,
@@ -360,7 +360,6 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       DOWNLINE_MONEY.forEach(k => (sums[k] += values[k]));
       const status = r.paidCount === 0 ? 'payStatusUnpaid' : r.paidCount >= r.entryCount ? 'payStatusPaid' : 'payStatusPartial';
       return {
-        sNo: String(i + 1),
         paymentDate: r.paidAt ? formatIst(r.paidAt) : '—',
         associateId: r.associateUserId ?? '',
         name: r.associateName ?? '',
@@ -627,6 +626,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       return rows;
     }
     const total: Record<string, string> = Object.fromEntries(keys.map(k => [k, '']));
+    total['_total'] = '1';
     total[keys[0]] = this.translate.instant('incomeStatement.totalRow');
     Object.entries(sums).forEach(([k, v]) => (total[k] = this.formatCurrency(v)));
     return [...rows, total];

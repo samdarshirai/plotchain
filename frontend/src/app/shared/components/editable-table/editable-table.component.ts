@@ -69,6 +69,7 @@ export function sumColumn(values: (string | number | undefined)[]): string {
           <th scope="col" *ngIf="selectable" class="editable-table__select">
             <input type="checkbox" aria-label="Select all" [checked]="allSelected" (change)="toggleAll($any($event.target).checked)" />
           </th>
+          <th scope="col" *ngIf="serial" class="table__sno">{{ serialLabel }}</th>
           <th scope="col" *ngFor="let column of columns"><span class="material-symbols-outlined th-icon" aria-hidden="true">{{ column.icon ?? headerIcon(column.key) }}</span>{{ column.label }}</th>
           <th scope="col" *ngIf="!readOnly">{{ removeRowLabel }}</th>
         </tr>
@@ -78,6 +79,7 @@ export function sumColumn(values: (string | number | undefined)[]): string {
           <td *ngIf="selectable" class="editable-table__select">
             <input type="checkbox" aria-label="Select row" [checked]="selectedIds.includes('' + row['id'])" (click)="$event.stopPropagation()" (change)="toggleRow('' + row['id'], $any($event.target).checked)" />
           </td>
+          <td *ngIf="serial" class="table__sno" [attr.data-label]="serialLabel">{{ row['_total'] ? '' : serialOffset + i + 1 }}</td>
           <td
             *ngFor="let column of columns"
             [attr.data-label]="column.label"
@@ -144,6 +146,7 @@ export function sumColumn(values: (string | number | undefined)[]): string {
       <tfoot *ngIf="totalRow" class="editable-table__total">
         <tr>
           <td *ngIf="selectable"></td>
+          <td *ngIf="serial" class="table__sno"></td>
           <td *ngFor="let t of totalRow" [attr.data-label]="t.label">{{ t.value }}</td>
           <td *ngIf="!readOnly"></td>
         </tr>
@@ -151,7 +154,7 @@ export function sumColumn(values: (string | number | undefined)[]): string {
       <ng-template #emptyState>
         <tbody>
           <tr>
-            <td class="editable-table__empty" [attr.colspan]="(readOnly ? columns.length : columns.length + 1) + (selectable ? 1 : 0)">
+            <td class="editable-table__empty" [attr.colspan]="(readOnly ? columns.length : columns.length + 1) + (selectable ? 1 : 0) + (serial ? 1 : 0)">
               {{ emptyStateLabel }}
             </td>
           </tr>
@@ -168,12 +171,19 @@ export class EditableTableComponent implements OnChanges {
 
   totalRow: { label: string; value: string }[] | null = null;
   readonly headerIcon = headerIcon;
+  get serialLabel(): string {
+    return this.translate?.instant('common.serialNo') ?? 'S No';
+  }
   @Input({ required: true }) columns: EditableTableColumn[] = [];
   @Input({ required: true }) rows: Record<string, string | number>[] = [];
   @Input() addRowLabel = '';
   @Input() removeRowLabel = '';
   @Input() emptyStateLabel = '';
   @Input() readOnly = false;
+  // Leading S No column (row number, + serialOffset for paged lists). Off for tables that number themselves.
+  @Input() serial = true;
+  @Input() serialOffset = 0;
+  // A row carrying `_total` (a hand-built Total row) gets no number.
   @Input() actionTemplate?: TemplateRef<ActionCellContext>;
   // Optional row selection (rows must carry a string `id`). Parent owns the selected-ids list.
   @Input() selectable = false;

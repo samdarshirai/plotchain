@@ -76,7 +76,7 @@ describe('SupportTicketHistoryComponent', () => {
     expect(el.querySelectorAll('.ticket-history__reply').length).toBe(1); // only the answered row has the rail
     expect(el.querySelector('.ticket-history__awaiting')!.textContent).toContain('Awaiting a reply');
     expect(el.querySelector('table.ticket-history__table')!.getAttribute('aria-label')).toBe('Support Tickets');
-    expect(el.querySelectorAll('thead th[scope="col"]').length).toBe(4);
+    expect(el.querySelectorAll('thead th[scope="col"]').length).toBe(5);
   });
 
   it('renders hostile ticket text (subject, description, response) as literal text, never markup', () => {

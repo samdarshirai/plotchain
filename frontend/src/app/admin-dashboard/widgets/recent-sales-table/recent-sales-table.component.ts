@@ -19,7 +19,7 @@ import { EditableTableColumn, EditableTableComponent } from '../../../shared/com
       <h2 class="admin-recent-sales-table__label">{{ 'adminDashboard.recentSalesEyebrow' | translate }}</h2>
       <p *ngIf="!sales.length" class="admin-recent-sales-table__empty">{{ 'adminDashboard.recentSalesEmpty' | translate }}</p>
       <div *ngIf="sales.length" class="admin-recent-sales-table__scroll">
-        <app-editable-table [readOnly]="true" [columns]="columns" [rows]="rows"></app-editable-table>
+        <app-editable-table [readOnly]="true" [serial]="false" [columns]="columns" [rows]="rows"></app-editable-table>
       </div>
     </div>
   `

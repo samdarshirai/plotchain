@@ -104,7 +104,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
         <div class="projects-plots__table-wrap">
           <table class="projects-plots__table projects-plots__table--book">
             <thead><tr>
-              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.projectsPlots.table.sNo' | translate }}</th>
+              <th scope="col" class="table__sno"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.projectsPlots.table.sNo' | translate }}</th>
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'admin.projectsPlots.table.plot' | translate }}</th>
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'admin.projectsPlots.table.type' | translate }}</th>
               <th scope="col" class="projects-plots__num"><span class="material-symbols-outlined th-icon" aria-hidden="true">square_foot</span>{{ 'admin.projectsPlots.table.roadSize' | translate }}</th>
@@ -192,7 +192,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             <div class="projects-plots__table-wrap" *ngIf="view === 'table' && tableRows.length">
               <table class="projects-plots__table" [class.projects-plots__table--book]="fullTable">
                 <thead><tr>
-                  <th scope="col" *ngIf="fullTable"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.projectsPlots.table.sNo' | translate }}</th>
+                  <th scope="col" class="table__sno" *ngIf="fullTable"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.projectsPlots.table.sNo' | translate }}</th>
                   <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'admin.projectsPlots.table.plot' | translate }}</th>
                   <th scope="col" *ngIf="fullTable"><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'admin.projectsPlots.table.type' | translate }}</th>
                   <th scope="col" class="projects-plots__num" *ngIf="fullTable"><span class="material-symbols-outlined th-icon" aria-hidden="true">square_foot</span>{{ 'admin.projectsPlots.table.roadSize' | translate }}</th>
@@ -208,7 +208,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
                 <tbody>
                   <tr *ngFor="let p of tableRows; trackBy: trackPlot; let i = index" [attr.data-plot-id]="p.plotId" class="projects-plots__row"
                     [class.projects-plots__row--selected]="p.plotId === selectedPlotId">
-                    <td *ngIf="fullTable">{{ i + 1 }}</td>
+                    <td class="table__sno" *ngIf="fullTable">{{ i + 1 }}</td>
                     <td><button type="button" class="projects-plots__row-btn" [attr.aria-pressed]="p.plotId === selectedPlotId" (click)="selectPlot(p)">{{ p.plotNo }}</button>
                       <span class="projects-plots__corner" *ngIf="p.type === 'CORNER' && !fullTable">{{ 'plotTile.corner' | translate }}</span></td>
                     <td *ngIf="fullTable">{{ 'plotTile.type.' + p.type | translate }}</td>

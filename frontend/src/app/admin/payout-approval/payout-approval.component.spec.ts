@@ -251,9 +251,9 @@ describe('PayoutApprovalComponent', () => {
     expect(rowText).toContain('Requested');
     expect(rowText).not.toContain('REQUESTED');
 
-    // The status column is the 3rd column (index 2); get its badge element
+    // The status column is the 4th cell (S No first); get its badge element
     const statusColumnCells = fixture.nativeElement.querySelectorAll('.editable-table tbody tr td');
-    const statusCell = statusColumnCells[2];
+    const statusCell = statusColumnCells[3];
     const badgeElement = statusCell.querySelector('.editable-table__badge');
     expect(badgeElement?.classList.contains('editable-table__badge--warning')).toBeTrue();
   });
@@ -275,7 +275,7 @@ describe('PayoutApprovalComponent', () => {
     expect(rowText).not.toContain('APPROVED');
 
     const statusColumnCells = fixture.nativeElement.querySelectorAll('.editable-table tbody tr td');
-    const statusCell = statusColumnCells[2];
+    const statusCell = statusColumnCells[3];
     const badgeElement = statusCell.querySelector('.editable-table__badge');
     expect(badgeElement?.classList.contains('editable-table__badge--success')).toBeTrue();
   });
@@ -297,7 +297,7 @@ describe('PayoutApprovalComponent', () => {
     expect(rowText).not.toContain('REJECTED');
 
     const statusColumnCells = fixture.nativeElement.querySelectorAll('.editable-table tbody tr td');
-    const statusCell = statusColumnCells[2];
+    const statusCell = statusColumnCells[3];
     const badgeElement = statusCell.querySelector('.editable-table__badge');
     expect(badgeElement?.classList.contains('editable-table__badge--danger')).toBeTrue();
   });
@@ -319,7 +319,7 @@ describe('PayoutApprovalComponent', () => {
     expect(rowText).not.toContain('DISBURSED');
 
     const statusColumnCells = fixture.nativeElement.querySelectorAll('.editable-table tbody tr td');
-    const statusCell = statusColumnCells[2];
+    const statusCell = statusColumnCells[3];
     const badgeElement = statusCell.querySelector('.editable-table__badge');
     expect(badgeElement?.classList.contains('editable-table__badge--success')).toBeTrue();
   });

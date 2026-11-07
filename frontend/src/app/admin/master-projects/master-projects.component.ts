@@ -198,7 +198,6 @@ export class MasterProjectsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     const t = (key: string) => this.translate.instant(`admin.masterProjects.${key}`);
     this.columns = [
-      { key: 'sNo', label: t('columnSNo'), type: 'text' },
       { key: 'name', label: t('projectName'), type: 'text' },
       { key: 'type', label: t('type'), type: 'text' },
       { key: 'cityState', label: t('cityState'), type: 'text' },
@@ -338,7 +337,6 @@ export class MasterProjectsComponent implements OnInit, OnDestroy {
         this.projects = projects;
         const yes = this.translate.instant('admin.masterProjects.uploaded');
         this.rows = projects.map((p, i) => ({
-          sNo: String(i + 1),
           name: p.name,
           type: titleCase(p.type),
           cityState: [p.city, p.state].filter(Boolean).join(', ') || '—',

@@ -32,7 +32,7 @@ import { EmiReportRow, ReportsService } from './reports.service';
         <table class="report__table">
           <thead>
             <tr>
-              <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'reports.column.number' | translate }}</th>
+              <th scope="col" class="table__sno"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'reports.column.number' | translate }}</th>
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'reports.column.associateId' | translate }}</th>
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">person</span>{{ 'reports.column.name' | translate }}</th>
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'reports.column.paymentDate' | translate }}</th>
@@ -43,7 +43,7 @@ import { EmiReportRow, ReportsService } from './reports.service';
           <tbody>
             <tr *ngIf="rows && !rows.length && !loading && !error"><td colspan="6" class="report__empty" role="status">{{ 'plotBookings.table.empty' | translate }}</td></tr>
             <tr *ngFor="let r of rows; let i = index">
-              <td>{{ i + 1 }}</td>
+              <td class="table__sno">{{ i + 1 }}</td>
               <td>{{ r.associateId }}</td>
               <td>{{ r.name }}</td>
               <td>{{ r.paymentDate | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>

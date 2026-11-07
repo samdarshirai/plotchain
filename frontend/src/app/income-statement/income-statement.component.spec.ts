@@ -213,16 +213,16 @@ describe('IncomeStatementComponent', () => {
 
     it('lists each downline associate x cycle, then a Total row summing every money column', () => {
       const c = fixture.componentInstance;
-      expect(c.statementColumns.map(col => col.label)).toEqual(['S No', 'Payment Date', 'Associate ID', 'Name',
+      expect(c.statementColumns.map(col => col.label)).toEqual(['Payment Date', 'Associate ID', 'Name',
         'Direct Income', 'Matching Income', 'Royalty Income', 'Rewards', 'Total Income', 'TDS', 'Processing Fee', 'Payable Amount', 'Paid Status']);
       expect(c.statementRows[0]).toEqual({
-        sNo: '1', paymentDate: '20 Jan 2026, 15:30:00', associateId: 'AS002', name: 'Ravi',
+        paymentDate: '20 Jan 2026, 15:30:00', associateId: 'AS002', name: 'Ravi',
         direct: '₹1,000', matching: '₹500', royalty: '₹300', rewards: '₹200', totalIncome: '₹2,000', tds: '₹40', processing: '₹100',
         payable: '₹1,860', paidStatus: 'Partially Paid'
       });
       expect(c.statementRows[1]['paidStatus']).toBe('Unpaid');
       expect(c.statementRows[2]).toEqual({
-        sNo: 'Total', paymentDate: '', associateId: '', name: '',
+        _total: '1', paymentDate: 'Total', associateId: '', name: '',
         direct: '₹1,000', matching: '₹700', royalty: '₹300', rewards: '₹200', totalIncome: '₹2,200', tds: '₹44', processing: '₹110',
         payable: '₹2,046', paidStatus: ''
       });
@@ -275,7 +275,7 @@ describe('IncomeStatementComponent', () => {
       expect(c.statementRows.length).toBe(2);
       expect(c.statementRows[0]['associateId']).toBe('AS003');
       expect(c.statementRows[1]).toEqual({
-        sNo: 'Total', paymentDate: '', associateId: '', name: '', direct: '₹0', matching: '₹200',
+        _total: '1', paymentDate: 'Total', associateId: '', name: '', direct: '₹0', matching: '₹200',
         royalty: '₹0', rewards: '₹0', totalIncome: '₹200', tds: '₹4', processing: '₹10', payable: '₹186', paidStatus: ''
       });
       c.onDownlineCycleChange('c1');

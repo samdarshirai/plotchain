@@ -49,6 +49,7 @@ export const saleRow = (s: Sale): BookingRow => ({
       <table class="booking-table" [attr.aria-label]="label">
         <thead>
           <tr>
+            <th scope="col" class="table__sno">{{ 'common.serialNo' | translate }}</th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.table.bookingDate' | translate }}</th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'plotBookings.table.associateId' | translate }}</th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">person</span>{{ 'plotBookings.table.name' | translate }}</th>
@@ -67,10 +68,11 @@ export const saleRow = (s: Sale): BookingRow => ({
         </thead>
         <tbody>
           <tr class="booking-table__empty" *ngIf="!rows.length">
-            <td colspan="14">{{ 'plotBookings.table.empty' | translate }}</td>
+            <td colspan="15">{{ 'plotBookings.table.empty' | translate }}</td>
           </tr>
-          <ng-container *ngFor="let r of rows; trackBy: trackKey">
+          <ng-container *ngFor="let r of rows; let idx = index; trackBy: trackKey">
             <tr [class.booking-table__row--selected]="r.key === selectedKey" [attr.data-booking-id]="r.key">
+              <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ idx + 1 }}</td>
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.bookingDate' | translate">{{ r.bookedAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.associateId' | translate">{{ r.associateCode || '—' }}</td>
               <td [attr.data-label]="'plotBookings.table.name' | translate">{{ r.associateName || '—' }}</td>
@@ -95,6 +97,7 @@ export const saleRow = (s: Sale): BookingRow => ({
         </tbody>
         <tfoot *ngIf="rows.length">
           <tr class="editable-table__total">
+            <td class="table__sno"></td>
             <td>{{ 'common.total' | translate }}</td>
             <td></td><td></td><td></td><td></td><td></td><td></td>
             <td class="booking-table__num" [attr.data-label]="'plotBookings.table.area' | translate">{{ area(sum('areaSqft')) }}</td>
@@ -115,6 +118,7 @@ export const saleRow = (s: Sale): BookingRow => ({
         <div class="booking-modal__scroll">
           <table class="booking-table__installments">
             <thead><tr>
+              <th scope="col" class="table__sno">{{ 'common.serialNo' | translate }}</th>
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.payments.paymentDate' | translate }}</th>
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'plotBookings.payments.amount' | translate }}</th>
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">receipt_long</span>{{ 'plotBookings.payments.receiptNo' | translate }}</th>
@@ -123,8 +127,9 @@ export const saleRow = (s: Sale): BookingRow => ({
               <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.payments.date' | translate }}</th>
             </tr></thead>
             <tbody>
-              <tr *ngIf="!payments(r).length"><td colspan="6">{{ 'plotBookings.payments.empty' | translate }}</td></tr>
-              <tr *ngFor="let i of payments(r)">
+              <tr *ngIf="!payments(r).length"><td colspan="7">{{ 'plotBookings.payments.empty' | translate }}</td></tr>
+              <tr *ngFor="let i of payments(r); let n = index">
+                <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ n + 1 }}</td>
                 <td class="booking-table__mono" [attr.data-label]="'plotBookings.payments.paymentDate' | translate">{{ i.confirmedAt ? (i.confirmedAt | date: 'd MMM y, h:mm:ss a' : '+0530') : '—' }}</td>
                 <td class="booking-table__mono" [attr.data-label]="'plotBookings.payments.amount' | translate">{{ money(i.amount) }}</td>
                 <td class="booking-table__mono" [attr.data-label]="'plotBookings.payments.receiptNo' | translate">{{ i.receiptNo || '—' }}</td>
