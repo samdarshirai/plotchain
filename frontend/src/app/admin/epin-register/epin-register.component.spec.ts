@@ -267,11 +267,11 @@ describe('EPinRegisterComponent', () => {
 
   it('selects a row on click and loads its history into the detail seal', () => {
     flushInitial([pin(), pin({ id: 'p2', code: 'CODE-2' })]);
-    expect(fixture.nativeElement.textContent).toContain('admin.epinRegister.detailEmpty');
+    expect(fixture.nativeElement.querySelector('.epin-register__modal')).toBeNull();
     (fixture.nativeElement.querySelectorAll('.epin-register__row')[1] as HTMLElement).click();
     httpMock.expectOne('/api/admin/epins/p2/events').flush([]);
     fixture.detectChanges();
-    const detail = fixture.nativeElement.querySelector('.epin-register__detail');
+    const detail = fixture.nativeElement.querySelector('.epin-register__modal');
     expect(detail.textContent).toContain('CODE-2');
     expect(fixture.nativeElement.querySelector('.epin-register__row--selected').textContent).toContain('CODE-2');
   });
@@ -296,7 +296,7 @@ describe('EPinRegisterComponent', () => {
     c.select(pin() as never);
     httpMock.expectOne('/api/admin/epins/p1/events').flush([]);
     fixture.detectChanges();
-    const detail = () => fixture.nativeElement.querySelector('.epin-register__detail').textContent;
+    const detail = () => fixture.nativeElement.querySelector('.epin-register__modal').textContent;
     expect(detail()).toContain('admin.epinRegister.redeemPinAction');
     expect(detail()).toContain('admin.epinRegister.blockAction');
     expect(detail()).not.toContain('admin.epinRegister.unblockAction');
@@ -319,7 +319,7 @@ describe('EPinRegisterComponent', () => {
     const c = fixture.componentInstance;
     c.openPanel({ kind: 'allocate' });
     fixture.detectChanges();
-    const lookup = fixture.nativeElement.querySelector('.epin-register__detail app-associate-lookup');
+    const lookup = fixture.nativeElement.querySelector('.epin-register__modal app-associate-lookup');
     expect(lookup).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.epin-register__panel')).toBeNull();
     c.onAllocateAssociate({ id: 'a1' } as never);
@@ -347,9 +347,8 @@ describe('EPinRegisterComponent', () => {
     fixture.detectChanges();
     expect(c.selectedId).toBeNull();
     expect(fixture.nativeElement.querySelector('.epin-register__row--selected')).toBeNull();
-    const detail = fixture.nativeElement.querySelector('.epin-register__detail');
+    const detail = fixture.nativeElement.querySelector('.epin-register__modal');
     expect(detail.textContent).toContain('admin.epinRegister.allocateAction');
-    expect(detail.textContent).not.toContain('admin.epinRegister.detailEmpty');
     expect(detail.querySelector('.epin-register__detail-code')).toBeNull();
   });
 
@@ -375,8 +374,8 @@ describe('EPinRegisterComponent', () => {
     expect(fixture.nativeElement.querySelector('.epin-register__panel')).toBeNull();
   });
 
-  it('opens Redeem as a popup on row click of a live pin, keeping the detail aside', () => {
-    flushInitial([pin(), pin({ id: 'p2', status: 'USED' })]);
+  it('opens one popup with the pin detail and the redeem form on row click of a live pin', () => {
+    flushInitial([pin(), pin({ id: 'p2', code: 'CODE-2', status: 'USED' })]);
     const c = fixture.componentInstance;
     fixture.nativeElement.querySelector('.epin-register__row').click();
     httpMock.expectOne('/api/admin/epins/p1/events').flush([]);
@@ -384,7 +383,7 @@ describe('EPinRegisterComponent', () => {
     const modal = fixture.nativeElement.querySelector('.epin-register__modal');
     expect(modal.textContent).toContain('admin.epinRegister.redeemAction');
     expect(modal.textContent).toContain('CODE-1');
-    expect(fixture.nativeElement.querySelector('.epin-register__seal').textContent).toContain('admin.epinRegister.historyTitle');
+    expect(modal.textContent).toContain('admin.epinRegister.historyTitle');
     modal.querySelector('.brand-button--secondary').click();
     fixture.detectChanges();
     expect(c.panel).toBeNull();
@@ -393,6 +392,7 @@ describe('EPinRegisterComponent', () => {
     httpMock.expectOne('/api/admin/epins/p2/events').flush([]);
     fixture.detectChanges();
     expect(c.panel).toBeNull();
+    expect(fixture.nativeElement.querySelector('.epin-register__modal').textContent).toContain('CODE-2');
   });
 
   it('amount is the activation fee for TOPUP and 0 for REGISTRATION', () => {
