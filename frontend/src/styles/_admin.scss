@@ -560,13 +560,10 @@
 // A div, not a span: the table's `td > span` ellipsis rule would clip the second button.
 .associate-directory__row-actions {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap; // wrap (2 per line) so the Action column stays narrow and the table fits without stacking
   gap: 3px;
   max-width: 100%;
 }
-
-// Stacked cards have the room to wrap the buttons.
-.table--stacked .associate-directory__row-actions { flex-wrap: wrap; }
 
 .associate-directory__recalculate {
   min-height: 28px;
@@ -864,10 +861,7 @@
   padding: 3rem 1.5rem;
 }
 @media (min-width: 769px) {
-  .sales-register .card { overflow-x: auto; }
-
   .sales-register .editable-table {
-    min-width: 64rem;
     table-layout: fixed;
 
     thead th, tbody td { padding: 0.5rem; }
@@ -911,82 +905,6 @@
 
     label {
       min-width: 0;
-    }
-  }
-
-  .sales-register .editable-table {
-    table-layout: fixed;
-    width: 100%;
-  }
-
-  .sales-register .editable-table thead {
-    display: none;
-  }
-
-  .sales-register .editable-table tbody tr {
-    display: block;
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--border-subtle);
-  }
-
-  .sales-register .editable-table tbody td {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.375rem 0;
-    border-bottom: none;
-    text-align: right;
-    min-width: 0;
-
-    > * {
-      min-width: 0;
-    }
-  }
-
-  .sales-register .editable-table tbody td::before {
-    content: attr(data-label);
-    flex: 0 0 auto;
-    font-family: var(--font-mono);
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    text-align: left;
-  }
-
-  .sales-register .editable-table tbody td {
-    overflow-wrap: anywhere;
-    word-break: break-word;
-  }
-
-  // Buyer Name (2nd column -- 1st is Project Name) is the mobile card's title. It's a ledger data
-  // value promoted to card-title position, not a hero/heading figure -- the desktop table's
-  // equivalent field (`s.buyer`, Viraj_Acres_Settings.dc.html isSales section) is set weight 600
-  // with no font-family override, and DESIGN.md's own responsive section (sales_register/
-  // DESIGN.md line 128) already calls this "ledger-data mono weight" -- so it takes --font-mono,
-  // matching the rest of this screen's ledger typography, not --font-display.
-  .sales-register .editable-table tbody td:nth-child(2) {
-    font-family: var(--font-mono);
-    font-size: 1rem;
-    font-weight: 600;
-  }
-
-  .sales-register .editable-table td:nth-child(4),
-  .sales-register .editable-table td:nth-child(5),
-  .sales-register .editable-table td:nth-child(7),
-  .sales-register .editable-table td:nth-child(8) {
-    text-align: right;
-  }
-
-  .sales-register .editable-table td:last-child {
-    display: block;
-    text-align: left;
-    padding-top: 0.75rem;
-
-    &::before {
-      display: none;
     }
   }
 
@@ -2870,12 +2788,10 @@
 
 .payout-history .card:not(.payout-history__wallet-balance) {
   @extend %admin-screen-card;
-  overflow-x: auto;
 }
 
 .payout-history .editable-table {
   margin: 0;
-  min-width: 760px;
 }
 
 .payout-history .editable-table thead th {
@@ -3836,10 +3752,6 @@ button.tree-explorer__vacant-card {
   overflow: hidden;
 }
 
-.kyc-queue__table-scroll {
-  overflow-x: auto;
-}
-
 .kyc-queue__load-error,
 .kyc-queue__decision-error {
   margin: 0;
@@ -3850,7 +3762,6 @@ button.tree-explorer__vacant-card {
 // scrolls on narrow screens so review controls and pagination remain in view.
 .kyc-queue .editable-table {
   width: 100%;
-  min-width: 800px;
   table-layout: fixed;
   border-collapse: collapse;
 
@@ -3946,8 +3857,6 @@ button.tree-explorer__vacant-card {
 
 // Reviewed rows leave more room for the name and inline status pill.
 .kyc-queue--compact-table .editable-table {
-  min-width: 640px;
-
   th:nth-child(1) { width: 24%; }
   th:nth-child(2) { width: 44%; }
   th:nth-child(3) { width: 32%; }
@@ -4427,10 +4336,6 @@ button.tree-explorer__vacant-card {
 }
 
 // Recent sales: the main column's width, the project name the one column allowed to wrap.
-.admin-recent-sales-table__scroll {
-  overflow-x: auto;
-}
-
 .admin-recent-sales-table__empty {
   margin: 0;
   font-size: 0.875rem;
@@ -4713,7 +4618,7 @@ button.tree-explorer__vacant-card {
   &__code { font-family: var(--font-mono, monospace); }
 
   &__grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 1.5rem; align-items: start; }
-  &__table-wrap { @extend %admin-screen-card; overflow-x: auto; background: var(--surface-card); }
+  &__table-wrap { @extend %admin-screen-card; background: var(--surface-card); }
   &__table {
     width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums;
     th { @extend %admin-screen-table-head; text-align: left; white-space: nowrap; }
@@ -4862,7 +4767,7 @@ button.tree-explorer__vacant-card {
     button { padding: 0.375rem 0.75rem; border: 0; border-radius: 3px; background: transparent; color: var(--text-muted); font: 500 0.8125rem var(--font-sans); cursor: pointer; }
     button:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; } }
   &__view--on { background: var(--surface-card) !important; color: var(--text-primary) !important; box-shadow: 0 0 0 1px var(--border-subtle); }
-  &__table-wrap { position: relative; overflow-x: auto; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 0; }
+  &__table-wrap { position: relative; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 0; }
   &__table { width: 100%; border-collapse: collapse; font-size: 0.8125rem;
     th { padding: 0.875rem 0.3125rem; text-align: left; background: var(--surface-raised); border-bottom: none; font: 600 0.6875rem var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
     td { padding: 0.8125rem 0.3125rem; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); line-height: 1.25; font-family: var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -5096,8 +5001,8 @@ button.tree-explorer__vacant-card {
   text-decoration: underline; cursor: pointer; color: inherit; font-weight: 600; // same link-style retry as unit 5's banner
 }
 .ticket-history__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-.ticket-history .card { @extend %admin-screen-card; overflow-x: auto; }
-.ticket-history__table { width: 100%; margin: 0; min-width: 760px; border-collapse: collapse; }
+.ticket-history .card { @extend %admin-screen-card; }
+.ticket-history__table { width: 100%; margin: 0; border-collapse: collapse; }
 .ticket-history__table thead th { @extend %admin-screen-table-head; text-align: left; white-space: nowrap; }
 .ticket-history__table tbody td { @extend %admin-screen-table-cell; vertical-align: top; }
 .ticket-history__table tbody tr:last-child td { border-bottom: none; }
@@ -5412,10 +5317,9 @@ button.tree-explorer__vacant-card {
   max-width: 40rem;
 }
 
-// A card that holds only a data table lets the table run edge to edge (scrolls sideways when narrow).
+// A card that holds only a data table lets the table run edge to edge (stacks into cards when narrow).
 .card:has(> app-editable-table) {
   padding: 0;
-  overflow-x: auto;
 }
 
 .master-projects__actions {
@@ -6246,7 +6150,6 @@ button.tree-explorer__vacant-card {
 // Same as `.card:has(> app-editable-table)` above: the table runs edge to edge inside its card (this one is a plain <table>).
 .invoice-payments__table-card {
   padding: 0;
-  overflow-x: auto;
 }
 
 .invoice-payments__table {

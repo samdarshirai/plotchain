@@ -1,7 +1,7 @@
 // Support Tickets queue list (support-tickets unit 5): table, chips, pager, empty and loading states.
 .support-tickets {
   &__list { background: var(--surface-card); border-radius: var(--radius-sm); box-shadow: none;
-  border: 1px solid var(--border-subtle); overflow-x: auto; }
+  border: 1px solid var(--border-subtle); }
   &__table { width: 100%; border-collapse: collapse;
     th { text-align: left; padding: 0.75rem 0.5rem; font: 500 0.6875rem var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
     td { padding: 0.75rem 0.5rem; border-top: 1px solid var(--border-subtle); vertical-align: top; } }
