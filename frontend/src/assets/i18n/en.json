@@ -202,10 +202,7 @@
     "confirmedNote": "Booking confirmed. This plot is now yours as a completed sale.",
     "cancelledNote": "Booking cancelled. Unpaid installments were voided. The amount already paid stays on record.",
     "backToBookings": "Bookings",
-    "progressLabel": "{{percent}}% paid",
-    "previousPageAction": "Previous",
-    "nextPageAction": "Next",
-    "pageIndicator": "Page {{page}} of {{totalPages}}"
+    "progressLabel": "{{percent}}% paid"
   },
   "downlineView": {
     "title": "View Associate Downline",
@@ -505,9 +502,6 @@
     "noSourceRef": "—",
     "loadError": "Something went wrong loading your income statement. Please try again.",
     "emptyState": "No income entries match these filters.",
-    "previousPageAction": "Previous",
-    "nextPageAction": "Next",
-    "pageIndicator": "Page {{page}} of {{totalPages}}",
     "bflbAbbr": "BFLB",
     "bfrbAbbr": "BFRB",
     "nlbAbbr": "NLB",
@@ -644,9 +638,6 @@
     "retryAction": "Retry",
     "emptyState": "No messages yet. Use New Message to write to our team; replies will appear here.",
     "emptyStateFiltered": "No messages with this status. Try another status, or choose All statuses.",
-    "previousPageAction": "Previous",
-    "nextPageAction": "Next",
-    "pageIndicator": "Page {{page}} of {{totalPages}}",
     "new": {
       "title": "New Message",
       "subtitle": "Write to our team. Replies appear under View Messages.",
@@ -679,10 +670,7 @@
     "columnDisbursedAt": "Disbursed At",
     "emptyValuePlaceholder": "—",
     "loadError": "Something went wrong loading your payout history. Please try again.",
-    "emptyState": "No withdrawal requests to show yet.",
-    "previousPageAction": "Previous",
-    "nextPageAction": "Next",
-    "pageIndicator": "Page {{page}} of {{totalPages}}"
+    "emptyState": "No withdrawal requests to show yet."
   },
   "brand": {
     "fallbackMark": "VS",
@@ -844,8 +832,6 @@
       "recalculatingAction": "Recalculating…",
       "recalculatedAction": "Recalculated",
       "columnStatus": "Status",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
       "sponsorLabel": "Sponsor",
       "placementLabel": "Placement",
       "downlineLabel": "Downline (direct / total)",
@@ -953,9 +939,6 @@
       "showingSummary": "Showing {{shown}} of {{total}} {{status}}",
       "loadError": "Something went wrong loading the KYC queue. Try again.",
       "decisionError": "Could not save that decision. Please try again.",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
-      "pageIndicator": "Page {{page}} of {{totalPages}}",
       "emptyState": "No entries in this status."
     },
     "salesRegister": {
@@ -979,9 +962,6 @@
       "columnActions": "Actions",
       "loadError": "Something went wrong loading the sales register. Please try again.",
       "actionError": "Could not save that action. Please try again.",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
-      "pageIndicator": "Page {{page}} of {{totalPages}}",
       "emptyState": "No sales match these filters.",
       "voidReasonPlaceholder": "Reason for voiding",
       "voidAction": "Void",
@@ -1005,9 +985,6 @@
       "columnStatus": "Status",
       "columnActions": "Actions",
       "loadError": "Something went wrong loading cycle history. Please try again.",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
-      "pageIndicator": "Page {{page}} of {{totalPages}}",
       "emptyState": "No cycles match this filter.",
       "detailPeriodLabel": "Period",
       "detailStatusLabel": "Status",
@@ -1076,9 +1053,6 @@
       "status": { "OPEN": "Open", "IN_PROGRESS": "In progress", "RESOLVED": "Resolved", "CLOSED": "Closed" },
       "col": { "ticket": "Ticket", "associate": "Associate", "status": "Status", "logged": "Logged" },
       "loading": "Loading tickets",
-      "pager": "Page {{page}} of {{totalPages}} · {{count}} tickets",
-      "previous": "Previous",
-      "next": "Next",
       "empty": {
         "noTicketsTitle": "No tickets yet",
         "noTicketsBody": "When an associate reports a problem, log it here so it can be tracked to a reply.",
@@ -1341,9 +1315,6 @@
       "colCode": "E-Pin", "colStatus": "Status", "colBatch": "Batch", "colExpires": "Expires",
       "colHolder": "Holder", "colRedeemedTo": "Redeemed to", "colActions": "Actions",
       "emptyState": "No e-pins match these filters.",
-      "pageIndicator": "Page {{page}} of {{totalPages}}",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
       "loadError": "Could not load e-pins.",
       "errorConflict": "That action is not allowed in the pin's current state, or not enough pins are available.",
       "errorNotFound": "Pin or associate not found.",
@@ -1405,9 +1376,6 @@
       "fulfilError": "Could not save. Please try again.",
       "noSourceRef": "—",
       "loadError": "Something went wrong loading the ledger register. Please try again.",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
-      "pageIndicator": "Page {{page}} of {{totalPages}}",
       "emptyState": "No ledger entries match these filters."
     },
     "masterProjects": {
@@ -1507,7 +1475,6 @@
       "loading": "Loading bookings",
       "previous": "Previous",
       "next": "Next",
-      "pager": "Page {{page}} of {{totalPages}} · {{count}} bookings",
       "col": {
         "bookedOn": "Booking Date",
         "associateId": "Associate Id",
@@ -1666,9 +1633,6 @@
       "noReason": "—",
       "noBankReference": "—",
       "loadError": "Something went wrong loading the payout approval queue. Please try again.",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
-      "pageIndicator": "Page {{page}} of {{totalPages}}",
       "emptyState": "No withdrawal requests match these filters.",
       "approveAction": "Approve",
       "rejectAction": "Reject",
@@ -1874,8 +1838,6 @@
       "statusAvailableLabel": "Available",
       "statusBookedLabel": "Booked",
       "statusSoldLabel": "Sold",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
       "showingLabel": "Showing plots",
       "downloadTemplateAction": "Download CSV Template",
       "validateCsvAction": "Validate",
@@ -2017,10 +1979,7 @@
       "sectionFilterLabel": "Section",
       "allSectionsOption": "All",
       "systemActor": "System",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
-      "emptyState": "No changes recorded yet.",
-      "pageIndicator": "Page {{page}} of {{totalPages}}"
+      "emptyState": "No changes recorded yet."
     },
     "adminStats": {
       "totalAssociatesLabel": "Total Associates",
@@ -2158,14 +2117,6 @@
     "submit": "Submit",
     "transferred": "{{count}} PIN(s) transferred.",
     "errorCount": "Enter how many PINs to transfer."
-  },
-  "shared": {
-    "pager": {
-      "label": "Pagination",
-      "previous": "Previous",
-      "next": "Next",
-      "summary": "{{from}}–{{to}} of {{total}} · Page {{page}} of {{totalPages}}"
-    }
   },
   "impersonation": {
     "viewingAs": "Viewing as {{name}}",

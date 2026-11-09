@@ -10,9 +10,9 @@ import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/
 import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.component';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 import { titleCase } from '../../shared/utils/title-case';
 
-const PAGE_SIZE = 20;
 const MS_PER_DAY = 86_400_000;
 
 @Component({
@@ -73,7 +73,6 @@ const MS_PER_DAY = 86_400_000;
         <div class="kyc-queue__table-scroll" role="region" tabindex="0"
           [attr.aria-label]="'admin.kycQueue.title' | translate">
           <app-editable-table
-            [serialOffset]="page ? page.page * page.size : 0"
             [readOnly]="true"
             [columns]="kycColumns"
             [rows]="kycRows"
@@ -134,22 +133,6 @@ const MS_PER_DAY = 86_400_000;
           <span class="kyc-queue__summary">
             {{ 'admin.kycQueue.showingSummary' | translate: { shown: page.entries.length, total: page.totalElements, status: statusWord } }}
           </span>
-
-          <div class="kyc-queue__pagination">
-            <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
-              {{ 'admin.kycQueue.previousPageAction' | translate }}
-            </button>
-            <span class="kyc-queue__page-indicator">
-              {{ 'admin.kycQueue.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
-            </span>
-            <button
-              type="button"
-              [disabled]="(page.page + 1) * page.size >= page.totalElements"
-              (click)="goToPage(page.page + 1)"
-            >
-              {{ 'admin.kycQueue.nextPageAction' | translate }}
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -182,17 +165,6 @@ export class KycQueueComponent implements OnInit {
       { id: 'VERIFIED', label: `${this.translate.instant('admin.kycQueue.tabVerified')} ${this.counts?.verified ?? 0}` },
       { id: 'REJECTED', label: `${this.translate.instant('admin.kycQueue.tabRejected')} ${this.counts?.rejected ?? 0}` }
     ];
-  }
-
-  get currentPage(): number {
-    return (this.page?.page ?? 0) + 1;
-  }
-
-  get totalPages(): number {
-    if (!this.page || this.page.size === 0) {
-      return 1;
-    }
-    return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
   }
 
   get statusWord(): string {
@@ -230,25 +202,20 @@ export class KycQueueComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCounts();
-    this.loadPage(0);
+    this.loadPage();
   }
 
   onTabChange(status: string): void {
     this.activeStatus = status;
     this.cancelReject();
-    this.loadPage(0);
-  }
-
-  goToPage(page: number): void {
-    this.cancelReject();
-    this.loadPage(page);
+    this.loadPage();
   }
 
   approve(id: string): void {
     this.decisionError = false;
     this.kycQueueService.decide(id, 'VERIFIED').subscribe({
       next: () => {
-        this.loadPage(this.page?.page ?? 0);
+        this.loadPage();
         this.loadCounts();
       },
       error: () => (this.decisionError = true)
@@ -282,18 +249,18 @@ export class KycQueueComponent implements OnInit {
     this.kycQueueService.decide(this.rejectingId, 'REJECTED', this.rejectReason).subscribe({
       next: () => {
         this.cancelReject();
-        this.loadPage(this.page?.page ?? 0);
+        this.loadPage();
         this.loadCounts();
       },
       error: () => (this.decisionError = true)
     });
   }
 
-  private loadPage(page: number): void {
+  private loadPage(): void {
     this.loadError = false;
     this.decisionError = false;
     this.syncedAt = new Date();
-    this.kycQueueService.list(this.activeStatus, page, PAGE_SIZE).subscribe({
+    fetchAllPages((p, size) => this.kycQueueService.list(this.activeStatus, p, size)).subscribe({
       next: res => {
         this.page = res;
         this.updateTableData();

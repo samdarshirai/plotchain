@@ -35,7 +35,7 @@ describe('AssociateDirectoryComponent', () => {
 
     httpMock.expectOne('/api/associates')
       .flush([{ id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE', hasFreeSlot: true }]);
-    httpMock.expectOne('/api/admin/associates?page=0&size=20')
+    httpMock.expectOne('/api/admin/associates?page=0&size=100')
       .flush({ associates: [{ id: 'a1', userId: 'VP00001', name: 'Jane', designation: 'Sales Associate', kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: 'VP00000', position: 'L', lastActiveAt: null, role: 'ASSOCIATE' }], page: 0, size: 20, totalElements: 1 });
     flushCounts(httpMock, { '': 168, 'status=ACTIVE': 142, 'status=SUSPENDED': 26, 'kycStatus=PENDING': 11, 'kycStatus=VERIFIED': 100, 'excludeKycStatus=VERIFIED': 68, 'leg=L': 90, 'leg=R': 78 });
   });
@@ -48,8 +48,8 @@ describe('AssociateDirectoryComponent', () => {
   afterEach(() => httpMock.verify());
 
   it('marks a plot buyer in the name cell instead of adding a column', () => {
-    fixture.componentInstance.loadPage(0);
-    httpMock.expectOne('/api/admin/associates?page=0&size=20')
+    fixture.componentInstance.loadPage();
+    httpMock.expectOne('/api/admin/associates?page=0&size=100')
       .flush({ associates: [{ id: 'a1', userId: 'VP00001', name: 'Jane', designation: null, kycStatus: 'PENDING', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: 'VP00000', position: 'L', lastActiveAt: null, role: 'ASSOCIATE', plotBuyer: true }], page: 0, size: 20, totalElements: 1 });
 
     expect(fixture.componentInstance.directoryRows[0]['name']).toBe('Jane 🏞️');
@@ -67,7 +67,7 @@ describe('AssociateDirectoryComponent', () => {
     const req = httpMock.expectOne('/api/admin/associates/a1/suspend');
     req.flush({ id: 'a1', userId: 'VP00001', status: 'SUSPENDED' });
 
-    const reloadReq = httpMock.expectOne('/api/admin/associates?page=0&size=20');
+    const reloadReq = httpMock.expectOne('/api/admin/associates?page=0&size=100');
     reloadReq.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
     flushCounts(httpMock);
 
@@ -79,16 +79,16 @@ describe('AssociateDirectoryComponent', () => {
     const req = httpMock.expectOne('/api/admin/associates/a1/reactivate');
     req.flush({ id: 'a1', userId: 'VP00001', status: 'ACTIVE' });
 
-    const reloadReq = httpMock.expectOne('/api/admin/associates?page=0&size=20');
+    const reloadReq = httpMock.expectOne('/api/admin/associates?page=0&size=100');
     reloadReq.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
     flushCounts(httpMock);
 
   });
 
   it('shows a load error when the page reload fails, without silently doing nothing', () => {
-    fixture.componentInstance.goToPage(1);
+    fixture.componentInstance.loadPage();
 
-    const req = httpMock.expectOne('/api/admin/associates?page=1&size=20');
+    const req = httpMock.expectOne('/api/admin/associates?page=0&size=100');
     req.flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
 
@@ -186,8 +186,8 @@ describe('AssociateDirectoryComponent', () => {
       ({ id, userId: 'VP' + id, name, designation: null, kycStatus: 'VERIFIED', status, joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: null, position: null, lastActiveAt: null, role });
 
     function loadRows(): void {
-      fixture.componentInstance.goToPage(0);
-      httpMock.expectOne('/api/admin/associates?page=0&size=20').flush({
+      fixture.componentInstance.loadPage();
+      httpMock.expectOne('/api/admin/associates?page=0&size=100').flush({
         associates: [row('a1', 'Jane', 'ASSOCIATE', 'ACTIVE'), row('a2', 'Root', 'ADMIN', 'ACTIVE'), row('a3', 'Sam', 'ASSOCIATE', 'SUSPENDED')],
         page: 0, size: 20, totalElements: 3
       });
@@ -242,8 +242,8 @@ describe('AssociateDirectoryComponent', () => {
       ({ id, userId: 'VP' + id, name, designation: null, kycStatus: 'VERIFIED', status, joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: null, position: null, lastActiveAt: null, role });
 
     function loadRows(): void {
-      fixture.componentInstance.goToPage(0);
-      httpMock.expectOne('/api/admin/associates?page=0&size=20').flush({
+      fixture.componentInstance.loadPage();
+      httpMock.expectOne('/api/admin/associates?page=0&size=100').flush({
         associates: [row('a1', 'Jane', 'ASSOCIATE', 'ACTIVE')],
         page: 0, size: 20, totalElements: 1
       });
@@ -295,7 +295,7 @@ describe('AssociateDirectoryComponent', () => {
       const panel = fixture.debugElement.query(By.directive(NewAssociatePanelComponent)).componentInstance as NewAssociatePanelComponent;
       panel.created.emit({ associateId: 'new-id', userId: 'VP00099', temporaryPassword: 'Temp1234!', transactionPassword: 'Txn1234!' });
 
-      const reloadReq = httpMock.expectOne('/api/admin/associates?page=0&size=20');
+      const reloadReq = httpMock.expectOne('/api/admin/associates?page=0&size=100');
       reloadReq.flush({ associates: [], page: 0, size: 20, totalElements: 0 });
     flushCounts(httpMock);
 
@@ -304,40 +304,10 @@ describe('AssociateDirectoryComponent', () => {
     });
   });
 
-  describe('pagination controls', () => {
-    it('renders Previous/Next as real, natively-disable-able buttons', () => {
-      fixture.detectChanges();
-
-      const actions: HTMLButtonElement[] = Array.from(
-        fixture.nativeElement.querySelectorAll('.associate-directory__pagination-action')
-      );
-      expect(actions.length).toBe(2);
-      actions.forEach(action => expect(action.tagName).toBe('BUTTON'));
-      // Single page of results: both ends are at their bound, so both are natively disabled
-      // (not merely dimmed by a CSS-only modifier class the way they used to be).
-      expect(actions[0].disabled).toBeTrue();
-      expect(actions[1].disabled).toBeTrue();
-    });
-
-    it('advances a page when Next is clicked', () => {
-      fixture.componentInstance.page = { associates: [], page: 0, size: 20, totalElements: 45 } as any;
-      fixture.detectChanges();
-
-      const actions: HTMLButtonElement[] = Array.from(
-        fixture.nativeElement.querySelectorAll('.associate-directory__pagination-action')
-      );
-      expect(actions[1].disabled).toBeFalse();
-      actions[1].click();
-
-      httpMock.expectOne('/api/admin/associates?page=1&size=20')
-        .flush({ associates: [], page: 1, size: 20, totalElements: 45 });
-      expect(fixture.componentInstance.page?.page).toBe(1);
-    });
-  });
   describe('Edit (row action) + contact columns', () => {
     function loadRow(): void {
-      fixture.componentInstance.goToPage(0);
-      httpMock.expectOne('/api/admin/associates?page=0&size=20').flush({
+      fixture.componentInstance.loadPage();
+      httpMock.expectOne('/api/admin/associates?page=0&size=100').flush({
         associates: [{ id: 'a1', userId: 'VP00001', name: 'Jane', designation: null, kycStatus: 'VERIFIED', status: 'ACTIVE',
           joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: null, position: null, lastActiveAt: null, role: 'ASSOCIATE',
           phone: '9876543210', email: null }],
@@ -386,7 +356,7 @@ describe('AssociateDirectoryComponent with ?provision=1', () => {
     fixture.detectChanges();
 
     httpMock.expectOne('/api/associates').flush([]);
-    httpMock.expectOne('/api/admin/associates?page=0&size=20')
+    httpMock.expectOne('/api/admin/associates?page=0&size=100')
       .flush({ associates: [], page: 0, size: 20, totalElements: 0 });
 
     expect(fixture.componentInstance.modalOpen).toBeTrue();

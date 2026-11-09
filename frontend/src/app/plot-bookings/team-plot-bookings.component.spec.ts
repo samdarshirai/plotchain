@@ -5,7 +5,6 @@ import { ActivatedRoute } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
 import { By } from '@angular/platform-browser';
-import { PagerComponent } from '../shared/components/pager/pager.component';
 import { formatInr } from '../shared/utils/plot-grid.util';
 import { TeamPlotBookingsComponent } from './team-plot-bookings.component';
 

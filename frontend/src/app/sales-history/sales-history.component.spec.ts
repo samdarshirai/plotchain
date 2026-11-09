@@ -3,7 +3,6 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { By } from '@angular/platform-browser';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SalesHistoryComponent } from './sales-history.component';
-import { PagerComponent } from '../shared/components/pager/pager.component';
 import { formatInr } from '../shared/utils/plot-grid.util';
 
 describe('SalesHistoryComponent', () => {
@@ -16,8 +15,7 @@ describe('SalesHistoryComponent', () => {
       loadError: 'Something went wrong loading your sales history. Please try again.',
       emptyState: 'No sales to show yet.'
     },
-    plotBookings: { table: { bookingDate: 'Booking Date', associateId: 'Associate ID', name: 'Name', project: 'Project', plotType: 'Plot Type', plotNo: 'Plot No.', rate: 'Rate', area: 'Area', price: 'Price', extraPrice: 'Extra Price', totalPrice: 'Total Price', paid: 'Paid Amount', rest: 'Rest Amount', details: 'Details' } },
-    shared: { pager: { label: 'Pagination', previous: 'Previous', next: 'Next', summary: '{{from}}-{{to}} of {{total}}' } }
+    plotBookings: { table: { bookingDate: 'Booking Date', associateId: 'Associate ID', name: 'Name', project: 'Project', plotType: 'Plot Type', plotNo: 'Plot No.', rate: 'Rate', area: 'Area', price: 'Price', extraPrice: 'Extra Price', totalPrice: 'Total Price', paid: 'Paid Amount', rest: 'Rest Amount', details: 'Details' } }
   };
 
   const frTranslations = {

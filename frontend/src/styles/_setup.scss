@@ -2502,19 +2502,6 @@ app-setup-progress-rail {
   background: var(--surface-raised);
   color: var(--text-muted);
 }
-
-.projects-step__pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.projects-step__pagination-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
 .projects-step__csv-panel {
   display: flex;
   flex-direction: column;

@@ -9,12 +9,11 @@ import { AssociateDirectoryService } from './associate-directory.service';
 import { AdminAssociatePage, AdminAssociateFilters } from '../models/admin-associate-page.model';
 import { NewAssociatePanelComponent } from '../new-associate-panel/new-associate-panel.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
+import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 import { titleCase } from '../../shared/utils/title-case';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/tab-bar.component';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
-
-const PAGE_SIZE = 20;
 
 // Quick views over the directory. Green/Red are KYC-based: Green = VERIFIED, Red = anything else.
 // By Date lists newest joiners first.
@@ -98,7 +97,6 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
 
       <div class="associate-directory__table-wrap">
         <app-editable-table
-            [serialOffset]="page ? page.page * page.size : 0"
           [readOnly]="true"
           [columns]="directoryColumns"
           [rows]="directoryRows"
@@ -146,24 +144,6 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
           </div>
         </ng-template>
 
-        <div class="associate-directory__pagination" *ngIf="page">
-          <button
-            type="button"
-            class="associate-directory__pagination-action"
-            [disabled]="page.page === 0"
-            (click)="goToPage(page.page - 1)"
-          >
-            {{ 'admin.associateDirectory.previousPageAction' | translate }}
-          </button>
-          <button
-            type="button"
-            class="associate-directory__pagination-action"
-            [disabled]="(page.page + 1) * page.size >= page.totalElements"
-            (click)="goToPage(page.page + 1)"
-          >
-            {{ 'admin.associateDirectory.nextPageAction' | translate }}
-          </button>
-        </div>
       </div>
       </div>
     </div>
@@ -179,7 +159,7 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
     <app-new-associate-panel
       [open]="modalOpen"
       (closed)="closeProvisionModal()"
-      (created)="loadPage(page?.page ?? 0); loadCounts()"
+      (created)="loadPage(); loadCounts()"
     ></app-new-associate-panel>
   `
 })
@@ -231,7 +211,7 @@ export class AssociateDirectoryComponent implements OnInit {
       { key: 'transactionPassword', label: this.translate.instant('admin.associateDirectory.transactionPasswordLabel'), type: 'text', icon: 'lock' },
       { key: 'login', label: this.translate.instant('admin.associateDirectory.columnLogin'), type: 'action', icon: 'login' }
     ];
-    this.loadPage(0);
+    this.loadPage();
     this.loadCounts();
     if (this.route.snapshot.queryParamMap.has('provision')) {
       this.openProvisionModal();
@@ -242,31 +222,27 @@ export class AssociateDirectoryComponent implements OnInit {
 
   onSearchInput(value: string): void {
     this.search = value;
-    this.loadPage(0);
+    this.loadPage();
   }
 
   onViewChange(view: string): void {
     this.view = view as DirectoryView;
-    this.loadPage(0);
+    this.loadPage();
   }
 
   onStatusChange(value: string): void {
     this.status = value;
-    this.loadPage(0);
+    this.loadPage();
   }
 
   onJoinedFromChange(value: string): void {
     this.joinedFrom = value;
-    this.loadPage(0);
+    this.loadPage();
   }
 
   onJoinedToChange(value: string): void {
     this.joinedTo = value;
-    this.loadPage(0);
-  }
-
-  goToPage(page: number): void {
-    this.loadPage(page);
+    this.loadPage();
   }
 
   // Defensive role guard (the directory only lists associates today); rows can briefly outlive page.associates.
@@ -319,13 +295,13 @@ export class AssociateDirectoryComponent implements OnInit {
   }
 
   onEdited(): void {
-    this.loadPage(this.page?.page ?? 0);
+    this.loadPage();
   }
 
   suspend(id: string): void {
     this.actionError = false;
     this.associateDirectoryService.suspend(id).subscribe({
-      next: () => { this.loadPage(this.page?.page ?? 0); this.loadCounts(); },
+      next: () => { this.loadPage(); this.loadCounts(); },
       error: () => (this.actionError = true)
     });
   }
@@ -333,7 +309,7 @@ export class AssociateDirectoryComponent implements OnInit {
   reactivate(id: string): void {
     this.actionError = false;
     this.associateDirectoryService.reactivate(id).subscribe({
-      next: () => { this.loadPage(this.page?.page ?? 0); this.loadCounts(); },
+      next: () => { this.loadPage(); this.loadCounts(); },
       error: () => (this.actionError = true)
     });
   }
@@ -361,7 +337,7 @@ export class AssociateDirectoryComponent implements OnInit {
     return this.joinedFrom && this.joinedTo && this.joinedFrom > this.joinedTo ? 'From date is after To date. Pick a From date on or before the To date.' : undefined;
   }
 
-  loadPage(page: number): void {
+  loadPage(): void {
     if (this.rangeError) return;
     this.loadError = false;
     const filters: AdminAssociateFilters = {};
@@ -374,7 +350,7 @@ export class AssociateDirectoryComponent implements OnInit {
     if (this.status) filters.status = this.status;
     if (this.joinedFrom) filters.joinedFrom = this.joinedFrom;
     if (this.joinedTo) filters.joinedTo = this.joinedTo;
-    this.associateDirectoryService.list(filters, page, PAGE_SIZE).subscribe({
+    fetchAllPages((p, size) => this.associateDirectoryService.list(filters, p, size)).subscribe({
       next: res => {
         this.page = res;
         this.directoryRows = (this.page?.associates ?? []).map(a => ({

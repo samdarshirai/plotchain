@@ -27,15 +27,15 @@ describe('MyTeamComponent', () => {
     const c = TestBed.createComponent(MyTeamComponent);
     c.detectChanges();
     c.componentInstance.onViewChange('green');
-    expect(list).toHaveBeenCalledWith({ kycStatus: 'VERIFIED' }, 0, 20);
+    expect(list).toHaveBeenCalledWith({ kycStatus: 'VERIFIED' }, 0, 100);
   });
 
   it('left/right views filter by leg', () => {
     const c = TestBed.createComponent(MyTeamComponent);
     c.detectChanges();
     c.componentInstance.onViewChange('left');
-    expect(list).toHaveBeenCalledWith({ leg: 'L' }, 0, 20);
+    expect(list).toHaveBeenCalledWith({ leg: 'L' }, 0, 100);
     c.componentInstance.onViewChange('right');
-    expect(list).toHaveBeenCalledWith({ leg: 'R' }, 0, 20);
+    expect(list).toHaveBeenCalledWith({ leg: 'R' }, 0, 100);
   });
 });

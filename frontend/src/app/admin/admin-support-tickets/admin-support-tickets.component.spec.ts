@@ -82,14 +82,6 @@ describe('AdminSupportTicketsComponent', () => {
     listReq().flush(pageOf([tk('t1')]));
   });
 
-  it('pages: next requests page 1', () => {
-    boot([tk('t1')], 45);
-    el().querySelector<HTMLButtonElement>('.support-tickets__next')!.click();
-    const r = listReq();
-    expect(r.request.params.get('page')).toBe('1');
-    r.flush(pageOf([tk('t9')], 45, 1));
-  });
-
   it('a stale slow response never overwrites a newer one', () => {
     boot();
     fixture.componentInstance.applyFilter({ status: 'OPEN' });
@@ -121,7 +113,7 @@ describe('AdminSupportTicketsComponent', () => {
     expect(fixture.componentInstance.selected!.id).toBe('t1');
   });
 
-  it('resetting filters while the selected ticket sits on a later page does not claim a filter mismatch', () => {
+  it('resetting filters while the selected ticket is missing from the list does not claim a filter mismatch', () => {
     boot();
     fixture.componentInstance.applyFilter({ status: 'CLOSED' });
     listReq().flush(pageOf([tk('t3', { status: 'CLOSED' })]));
@@ -130,7 +122,7 @@ describe('AdminSupportTicketsComponent', () => {
     listReq().flush(pageOf([tk('t1')]));
     expect(fixture.componentInstance.filterMismatch).toBeTrue();
     fixture.componentInstance.resetFilters();
-    listReq().flush(pageOf([tk('t1')], 45)); // t3 exists, just on another page
+    listReq().flush(pageOf([tk('t1')])); // unfiltered: a missing ticket is not a filter mismatch
     expect(fixture.componentInstance.filterMismatch).toBeFalse();
     expect(fixture.componentInstance.selected!.id).toBe('t3');
   });

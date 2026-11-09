@@ -140,19 +140,6 @@
   font-size: 0.875rem;
   color: var(--text-muted);
 }
-
-.audit-log__pagination {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.audit-log__page-indicator {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
 @media (max-width: 700px) {
   // Below 700px there's no room for 4 columns on one line -- avatar stays top-left, summary
   // wraps beside it, and the section tag + timestamp each drop to their own row under the

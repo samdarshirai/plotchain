@@ -2,9 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuditLogService } from './audit-log.service';
+import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 import { AUDIT_LOG_SECTION_BACKEND_VALUES, AuditLogEntry, AuditLogPage, SECTION_FILTER_OPTIONS } from './audit-log.model';
-
-const PAGE_SIZE = 20;
 
 // Reverse of AUDIT_LOG_SECTION_BACKEND_VALUES (SCREAMING_SNAKE_CASE -> the camelCase key
 // 'settings.sections.<key>' expects) -- covers the 5 real Settings sections, which is all that
@@ -46,22 +45,6 @@ const SECTION_BACKEND_TO_KEY: Record<string, string> = Object.fromEntries(
           </li>
         </ul>
       </div>
-
-      <div class="audit-log__pagination" *ngIf="page">
-        <button type="button" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">
-          {{ 'settings.auditLog.previousPageAction' | translate }}
-        </button>
-        <span class="audit-log__page-indicator">
-          {{ 'settings.auditLog.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
-        </span>
-        <button
-          type="button"
-          [disabled]="(page.page + 1) * page.size >= page.totalElements"
-          (click)="goToPage(page.page + 1)"
-        >
-          {{ 'settings.auditLog.nextPageAction' | translate }}
-        </button>
-      </div>
     </div>
   `
 })
@@ -78,30 +61,13 @@ export class AuditLogComponent implements OnInit {
     return this.page?.entries ?? [];
   }
 
-  // 1-based for display. Minimum of 1 avoids "Page 1 of 0" when totalElements is 0 (a fresh
-  // post-launch instance's default state, before any settings change has ever been recorded).
-  get currentPage(): number {
-    return (this.page?.page ?? 0) + 1;
-  }
-
-  get totalPages(): number {
-    if (!this.page || this.page.size === 0) {
-      return 1;
-    }
-    return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
-  }
-
   ngOnInit(): void {
-    this.loadPage(0);
+    this.loadPage();
   }
 
   onSectionChange(value: string): void {
     this.selectedSection = value === 'all' ? null : value;
-    this.loadPage(0);
-  }
-
-  goToPage(page: number): void {
-    this.loadPage(page);
+    this.loadPage();
   }
 
   // "We don't have a name" is treated the same as "we don't have an actor" for display purposes:
@@ -150,7 +116,7 @@ export class AuditLogComponent implements OnInit {
       .join(' ');
   }
 
-  private loadPage(page: number): void {
-    this.auditLogService.list(this.selectedSection, page, PAGE_SIZE).subscribe(res => (this.page = res));
+  private loadPage(): void {
+    fetchAllPages((p, size) => this.auditLogService.list(this.selectedSection, p, size)).subscribe(res => (this.page = res));
   }
 }

@@ -214,10 +214,7 @@
     "confirmedNote": "Booking confirmed. This plot is now yours as a completed sale.",
     "cancelledNote": "Booking cancelled. Unpaid installments were voided. The amount already paid stays on record.",
     "backToBookings": "Bookings",
-    "progressLabel": "{{percent}}% paid",
-    "previousPageAction": "Previous",
-    "nextPageAction": "Next",
-    "pageIndicator": "Page {{page}} of {{totalPages}}"
+    "progressLabel": "{{percent}}% paid"
   },
   "downlineView": {
     "title": "एसोसिएट डाउनलाइन देखें",
@@ -517,9 +514,6 @@
     "noSourceRef": "—",
     "loadError": "Something went wrong loading your income statement. Please try again.",
     "emptyState": "No income entries match these filters.",
-    "previousPageAction": "Previous",
-    "nextPageAction": "Next",
-    "pageIndicator": "Page {{page}} of {{totalPages}}",
     "bflbAbbr": "BFLB",
     "bfrbAbbr": "BFRB",
     "nlbAbbr": "NLB",
@@ -615,9 +609,6 @@
     "retryAction": "Retry",
     "emptyState": "No messages yet. Use New Message to write to our team; replies will appear here.",
     "emptyStateFiltered": "No messages with this status. Try another status, or choose All statuses.",
-    "previousPageAction": "Previous",
-    "nextPageAction": "Next",
-    "pageIndicator": "Page {{page}} of {{totalPages}}",
     "new": {
       "title": "New Message",
       "subtitle": "Write to our team. Replies appear under View Messages.",
@@ -650,10 +641,7 @@
     "columnDisbursedAt": "Disbursed At",
     "emptyValuePlaceholder": "—",
     "loadError": "Something went wrong loading your payout history. Please try again.",
-    "emptyState": "No withdrawal requests to show yet.",
-    "previousPageAction": "Previous",
-    "nextPageAction": "Next",
-    "pageIndicator": "Page {{page}} of {{totalPages}}"
+    "emptyState": "No withdrawal requests to show yet."
   },
   "brand": {
     "fallbackMark": "VS",
@@ -814,8 +802,6 @@
       "recalculatingAction": "पुनर्गणना हो रही है…",
       "recalculatedAction": "पुनर्गणना हो गई",
       "columnStatus": "Status",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
       "sponsorLabel": "Sponsor",
       "placementLabel": "Placement",
       "downlineLabel": "Downline (direct / total)",
@@ -923,9 +909,6 @@
       "showingSummary": "Showing {{shown}} of {{total}} {{status}}",
       "loadError": "Something went wrong loading the KYC queue. Try again.",
       "decisionError": "Could not save that decision. Please try again.",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
-      "pageIndicator": "Page {{page}} of {{totalPages}}",
       "emptyState": "No entries in this status."
     },
     "salesRegister": {
@@ -949,9 +932,6 @@
       "columnActions": "Actions",
       "loadError": "Something went wrong loading the sales register. Please try again.",
       "actionError": "Could not save that action. Please try again.",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
-      "pageIndicator": "Page {{page}} of {{totalPages}}",
       "emptyState": "No sales match these filters.",
       "voidReasonPlaceholder": "Reason for voiding",
       "voidAction": "Void",
@@ -975,9 +955,6 @@
       "columnStatus": "Status",
       "columnActions": "Actions",
       "loadError": "Something went wrong loading cycle history. Please try again.",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
-      "pageIndicator": "Page {{page}} of {{totalPages}}",
       "emptyState": "No cycles match this filter.",
       "detailPeriodLabel": "Period",
       "detailStatusLabel": "Status",
@@ -1081,9 +1058,6 @@
       "fulfilError": "सहेज नहीं सका। कृपया पुनः प्रयास करें।",
       "noSourceRef": "—",
       "loadError": "Something went wrong loading the ledger register. Please try again.",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
-      "pageIndicator": "Page {{page}} of {{totalPages}}",
       "emptyState": "No ledger entries match these filters."
     },
     "supportTickets": {
@@ -1095,9 +1069,6 @@
       "status": { "OPEN": "Open", "IN_PROGRESS": "In progress", "RESOLVED": "Resolved", "CLOSED": "Closed" },
       "col": { "ticket": "Ticket", "associate": "Associate", "status": "Status", "logged": "Logged" },
       "loading": "Loading tickets",
-      "pager": "Page {{page}} of {{totalPages}} · {{count}} tickets",
-      "previous": "Previous",
-      "next": "Next",
       "empty": {
         "noTicketsTitle": "No tickets yet",
         "noTicketsBody": "When an associate reports a problem, log it here so it can be tracked to a reply.",
@@ -1417,7 +1388,6 @@
       "loading": "बुकिंग लोड हो रही हैं",
       "previous": "पिछला",
       "next": "अगला",
-      "pager": "पृष्ठ {{page}} / {{totalPages}} · {{count}} बुकिंग",
       "col": {
         "bookedOn": "बुकिंग तिथि",
         "associateId": "एसोसिएट आईडी",
@@ -1576,9 +1546,6 @@
       "noReason": "—",
       "noBankReference": "—",
       "loadError": "Something went wrong loading the payout approval queue. Please try again.",
-      "previousPageAction": "Previous",
-      "nextPageAction": "Next",
-      "pageIndicator": "Page {{page}} of {{totalPages}}",
       "emptyState": "No withdrawal requests match these filters.",
       "approveAction": "Approve",
       "rejectAction": "Reject",
@@ -1784,8 +1751,6 @@
       "statusAvailableLabel": "उपलब्ध",
       "statusBookedLabel": "बुक्ड",
       "statusSoldLabel": "बिका हुआ",
-      "previousPageAction": "पिछला",
-      "nextPageAction": "अगला",
       "showingLabel": "प्लॉट दिखाए जा रहे हैं",
       "downloadTemplateAction": "CSV टेम्पलेट डाउनलोड करें",
       "validateCsvAction": "सत्यापित करें",
@@ -1926,10 +1891,7 @@
       "sectionFilterLabel": "अनुभाग",
       "allSectionsOption": "सभी",
       "systemActor": "सिस्टम",
-      "previousPageAction": "पिछला",
-      "nextPageAction": "अगला",
-      "emptyState": "अभी तक कोई बदलाव दर्ज नहीं हुआ है।",
-      "pageIndicator": "पृष्ठ {{page}} में से {{totalPages}}"
+      "emptyState": "अभी तक कोई बदलाव दर्ज नहीं हुआ है।"
     },
     "adminStats": {
       "totalAssociatesLabel": "कुल एसोसिएट्स",
@@ -2067,14 +2029,6 @@
     "submit": "सबमिट",
     "transferred": "{{count}} पिन ट्रांसफर हुए।",
     "errorCount": "ट्रांसफर के लिए पिन की संख्या दर्ज करें।"
-  },
-  "shared": {
-    "pager": {
-      "label": "Pagination",
-      "previous": "Previous",
-      "next": "Next",
-      "summary": "{{from}}–{{to}} of {{total}} · Page {{page}} of {{totalPages}}"
-    }
   },
   "impersonation": {
     "viewingAs": "{{name}} के रूप में देख रहे हैं",

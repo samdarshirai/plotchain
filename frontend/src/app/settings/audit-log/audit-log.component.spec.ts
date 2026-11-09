@@ -46,7 +46,7 @@ describe('AuditLogComponent', () => {
   };
 
   function flushInitialLoad(page: AuditLogPage = namedEntryPage): void {
-    httpMock.expectOne('/api/company/audit-log?page=0&size=20').flush(page);
+    httpMock.expectOne('/api/company/audit-log?page=0&size=100').flush(page);
     fixture.detectChanges();
   }
 
@@ -107,7 +107,7 @@ describe('AuditLogComponent', () => {
     select.value = 'companyProfile';
     select.dispatchEvent(new Event('change'));
 
-    const req = httpMock.expectOne('/api/company/audit-log?page=0&size=20&section=COMPANY_PROFILE');
+    const req = httpMock.expectOne('/api/company/audit-log?page=0&size=100&section=COMPANY_PROFILE');
     expect(req.request.method).toBe('GET');
     req.flush(namedEntryPage);
   });
@@ -118,58 +118,12 @@ describe('AuditLogComponent', () => {
     const select: HTMLSelectElement = fixture.debugElement.query(By.css('select')).nativeElement;
     select.value = 'companyProfile';
     select.dispatchEvent(new Event('change'));
-    httpMock.expectOne('/api/company/audit-log?page=0&size=20&section=COMPANY_PROFILE').flush(namedEntryPage);
+    httpMock.expectOne('/api/company/audit-log?page=0&size=100&section=COMPANY_PROFILE').flush(namedEntryPage);
 
     select.value = 'all';
     select.dispatchEvent(new Event('change'));
-    const req = httpMock.expectOne('/api/company/audit-log?page=0&size=20');
+    const req = httpMock.expectOne('/api/company/audit-log?page=0&size=100');
     expect(req.request.params.has('section')).toBe(false);
     req.flush(namedEntryPage);
-  });
-
-  it('disables Previous on the first page and Next on the last page', () => {
-    flushInitialLoad({ ...namedEntryPage, page: 0, size: 20, totalElements: 1 });
-
-    const buttons = fixture.debugElement.queryAll(By.css('.audit-log__pagination button'));
-    const [previousButton, nextButton] = buttons;
-    expect(previousButton.nativeElement.disabled).toBe(true);
-    expect(nextButton.nativeElement.disabled).toBe(true);
-  });
-
-  it('enables Next and calls list() with the next page when more results remain', () => {
-    // page 0, size 20 (PAGE_SIZE), totalElements 25: (0+1)*20=20 < 25, so Next stays enabled.
-    flushInitialLoad({ ...namedEntryPage, page: 0, size: 20, totalElements: 25 });
-
-    const buttons = fixture.debugElement.queryAll(By.css('.audit-log__pagination button'));
-    const [previousButton, nextButton] = buttons;
-    expect(previousButton.nativeElement.disabled).toBe(true);
-    expect(nextButton.nativeElement.disabled).toBe(false);
-
-    nextButton.nativeElement.click();
-    const req = httpMock.expectOne('/api/company/audit-log?page=1&size=20');
-    expect(req.request.method).toBe('GET');
-    req.flush({ ...namedEntryPage, page: 1, size: 20, totalElements: 25 });
-  });
-
-  it('enables Previous and calls list() with the prior page once past page 0', () => {
-    flushInitialLoad({ ...namedEntryPage, page: 0, size: 20, totalElements: 25 });
-
-    const nextButton = fixture.debugElement.queryAll(By.css('.audit-log__pagination button'))[1];
-    nextButton.nativeElement.click();
-    // page 1, size 20, totalElements 25: (1+1)*20=40 >= 25, so Next is now disabled.
-    httpMock
-      .expectOne('/api/company/audit-log?page=1&size=20')
-      .flush({ ...namedEntryPage, page: 1, size: 20, totalElements: 25 });
-    fixture.detectChanges();
-
-    const buttons = fixture.debugElement.queryAll(By.css('.audit-log__pagination button'));
-    const [previousButton, nextButtonAfter] = buttons;
-    expect(previousButton.nativeElement.disabled).toBe(false);
-    expect(nextButtonAfter.nativeElement.disabled).toBe(true);
-
-    previousButton.nativeElement.click();
-    const req = httpMock.expectOne('/api/company/audit-log?page=0&size=20');
-    expect(req.request.method).toBe('GET');
-    req.flush({ ...namedEntryPage, page: 0, size: 20, totalElements: 25 });
   });
 });

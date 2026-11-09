@@ -7,10 +7,10 @@ import { AssociateLookupComponent } from '../../shared/components/associate-look
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { SUPPORT_TICKET_STATUSES, SupportTicket, SupportTicketPage, TicketFilters } from '../../support-tickets/support-ticket.model';
 import { SupportTicketService } from '../../support-tickets/support-ticket.service';
+import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 import { FlashMessage, snippet } from './admin-support-tickets.util';
 import { TicketSealComponent } from './ticket-seal.component';
 
-const PAGE_SIZE = 20;
 const NO_FILTERS: TicketFilters = { status: '', associateId: '' };
 
 @Component({
@@ -90,7 +90,7 @@ const NO_FILTERS: TicketFilters = { status: '', associateId: '' };
               <tr *ngFor="let t of page!.entries; let i = index" class="support-tickets__row" tabindex="0"
                 [class.support-tickets__row--selected]="t.id === selected?.id" [attr.aria-current]="t.id === selected?.id ? 'true' : null"
                 (click)="selectTicket(t)" (keydown.enter)="selectTicket(t)" (keydown.space)="selectTicket(t); $event.preventDefault()">
-                <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ (page?.page ?? 0) * (page?.size ?? 0) + i + 1 }}</td>
+                <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ i + 1 }}</td>
                 <td [attr.data-label]="'admin.supportTickets.col.ticket' | translate">
                   <strong>{{ t.subject }}</strong><br /><span class="support-tickets__sub">{{ snip(t.description) }}</span>
                 </td>
@@ -102,12 +102,6 @@ const NO_FILTERS: TicketFilters = { status: '', associateId: '' };
               </tr>
             </tbody>
           </table>
-
-          <div class="support-tickets__pager" *ngIf="page?.entries?.length">
-            <button type="button" class="brand-button brand-button--secondary support-tickets__prev" [disabled]="locked || page!.page === 0" (click)="goTo(page!.page - 1)">{{ 'admin.supportTickets.previous' | translate }}</button>
-            <span>{{ 'admin.supportTickets.pager' | translate: { page: page!.page + 1, totalPages: totalPages, count: page!.totalElements } }}</span>
-            <button type="button" class="brand-button brand-button--secondary support-tickets__next" [disabled]="locked || page!.page + 1 >= totalPages" (click)="goTo(page!.page + 1)">{{ 'admin.supportTickets.next' | translate }}</button>
-          </div>
         </div>
 
         <app-ticket-seal [ticket]="selected" [mode]="sealMode" [directory]="directory" [filterMismatch]="filterMismatch"
@@ -135,13 +129,8 @@ export class AdminSupportTicketsComponent implements OnInit {
   loading = false;
   locked = false; // true while a seal write is in flight: filters, pager, selection and Log freeze
   private seq = 0;
-  private currentPage = 0;
-
   snip = (t: string) => snippet(t);
   get hasFilters(): boolean { return !!(this.filters.status || this.filters.associateId); }
-  get totalPages(): number {
-    return !this.page || !this.page.size ? 1 : Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
-  }
 
   ngOnInit(): void {
     this.loadDirectory();
@@ -158,27 +147,25 @@ export class AdminSupportTicketsComponent implements OnInit {
     if (this.locked) { return; }
     this.filters = { ...this.filters, ...partial };
     this.filterMismatch = false;
-    this.load(0, true);
+    this.load(true);
   }
 
   resetFilters(): void {
     if (this.locked) { return; }
     this.filters = { ...NO_FILTERS };
     this.filterMismatch = false;
-    this.load(0, true);
+    this.load(true);
   }
 
-  // re-requests the last attempted page and re-checks whether the selection still matches the filters
-  reload(): void { this.load(this.currentPage, true); }
-  goTo(p: number): void { if (!this.locked) { this.load(p); } }
+  // re-requests the list and re-checks whether the selection still matches the filters
+  reload(): void { this.load(true); }
 
   // Latest-request-wins: a slow earlier response can never overwrite a newer one.
-  private load(p: number, checkMismatch = false): void {
+  private load(checkMismatch = false): void {
     const mine = ++this.seq;
-    this.currentPage = p;
     this.loading = true;
     this.loadError = false;
-    this.service.list(this.filters, p, PAGE_SIZE).subscribe({
+    fetchAllPages((p, size) => this.service.list(this.filters, p, size)).subscribe({
       next: res => {
         if (mine !== this.seq) { return; }
         this.loading = false;
@@ -218,6 +205,6 @@ export class AdminSupportTicketsComponent implements OnInit {
   onLogged(created: SupportTicket): void {
     this.selected = created;
     this.sealMode = 'respond';
-    this.load(0, true);
+    this.load(true);
   }
 }

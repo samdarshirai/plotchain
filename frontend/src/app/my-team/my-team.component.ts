@@ -4,13 +4,13 @@ import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MyTeamService } from './my-team.service';
+import { fetchAllPages } from '../shared/utils/fetch-all-pages';
 import { AdminAssociatePage, AdminAssociateFilters } from '../admin/models/admin-associate-page.model';
 import { FieldErrorComponent } from '../shared/components/field-error/field-error.component';
 import { TabBarComponent, TabDefinition } from '../shared/components/tab-bar/tab-bar.component';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
 import { titleCase } from '../shared/utils/title-case';
 
-const PAGE_SIZE = 20;
 // Same views as the admin directory: Green = KYC VERIFIED, Red = anything else, By Date = newest first.
 type TeamView = 'all' | 'green' | 'red' | 'left' | 'right' | 'byDate';
 const VIEWS: TeamView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'];
@@ -38,12 +38,12 @@ const VIEWS: TeamView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'];
             <span class="material-symbols-outlined" aria-hidden="true">search</span>
             <input type="text" class="associate-directory__search"
               [placeholder]="'admin.associateDirectory.searchPlaceholder' | translate"
-              (input)="search = $any($event.target).value; loadPage(0)" />
+              (input)="search = $any($event.target).value; loadPage()" />
           </span>
           <div class="associate-directory__filter-grid">
             <div class="associate-directory__filter-field">
               <label>{{ 'admin.associateDirectory.statusFilterLabel' | translate }}</label>
-              <select (change)="status = $any($event.target).value; loadPage(0)">
+              <select (change)="status = $any($event.target).value; loadPage()">
                 <option value="">{{ 'admin.associateDirectory.statusFilterAllOption' | translate }}</option>
                 <option value="ACTIVE">ACTIVE</option>
                 <option value="SUSPENDED">SUSPENDED</option>
@@ -51,11 +51,11 @@ const VIEWS: TeamView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'];
             </div>
             <div class="associate-directory__filter-field">
               <label>{{ 'admin.associateDirectory.joinedFromLabel' | translate }}</label>
-              <input type="date" (change)="joinedFrom = $any($event.target).value; loadPage(0)" />
+              <input type="date" (change)="joinedFrom = $any($event.target).value; loadPage()" />
             </div>
             <div class="associate-directory__filter-field">
               <label>{{ 'admin.associateDirectory.joinedToLabel' | translate }}</label>
-              <input type="date" (change)="joinedTo = $any($event.target).value; loadPage(0)" />
+              <input type="date" (change)="joinedTo = $any($event.target).value; loadPage()" />
               <app-field-error [message]="rangeError"></app-field-error>
             </div>
           </div>
@@ -63,23 +63,11 @@ const VIEWS: TeamView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'];
 
         <div class="associate-directory__table-wrap">
           <app-editable-table
-            [serialOffset]="page ? page.page * page.size : 0"
             [readOnly]="true"
             [columns]="columns"
             [rows]="rows"
             [emptyStateLabel]="'admin.associateDirectory.emptyState' | translate"
           ></app-editable-table>
-
-          <div class="associate-directory__pagination" *ngIf="page">
-            <button type="button" class="associate-directory__pagination-action"
-              [disabled]="page.page === 0" (click)="loadPage(page.page - 1)">
-              {{ 'admin.associateDirectory.previousPageAction' | translate }}
-            </button>
-            <button type="button" class="associate-directory__pagination-action"
-              [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="loadPage(page.page + 1)">
-              {{ 'admin.associateDirectory.nextPageAction' | translate }}
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -111,20 +99,20 @@ export class MyTeamComponent implements OnInit {
       { key: 'status', label: t('columnStatus'), type: 'badge', badgeTone: v => this.statusTone(v) },
       { key: 'joinedAt', label: t('columnRegistrationDate'), type: 'text' }
     ];
-    this.loadPage(0);
+    this.loadPage();
     this.loadCounts();
   }
 
   onViewChange(view: string): void {
     this.view = view as TeamView;
-    this.loadPage(0);
+    this.loadPage();
   }
 
   get rangeError(): string | undefined {
     return this.joinedFrom && this.joinedTo && this.joinedFrom > this.joinedTo ? 'From date is after To date. Pick a From date on or before the To date.' : undefined;
   }
 
-  loadPage(page: number): void {
+  loadPage(): void {
     if (this.rangeError) return;
     this.loadError = false;
     const filters: AdminAssociateFilters = {};
@@ -137,7 +125,7 @@ export class MyTeamComponent implements OnInit {
     if (this.status) filters.status = this.status;
     if (this.joinedFrom) filters.joinedFrom = this.joinedFrom;
     if (this.joinedTo) filters.joinedTo = this.joinedTo;
-    this.myTeamService.list(filters, page, PAGE_SIZE).subscribe({
+    fetchAllPages((p, size) => this.myTeamService.list(filters, p, size)).subscribe({
       next: res => {
         this.page = res;
         this.rows = res.associates.map(a => ({

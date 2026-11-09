@@ -46,9 +46,6 @@ describe('KycQueueComponent', () => {
           showingSummary: 'Showing {{shown}} of {{total}} {{status}}',
           loadError: 'Something went wrong loading the KYC queue. Try again.',
           decisionError: 'Could not save that decision. Please try again.',
-          previousPageAction: 'Previous',
-          nextPageAction: 'Next',
-          pageIndicator: 'Page {{page}} of {{totalPages}}',
           emptyState: 'No entries in this status.'
         }
       }
@@ -59,7 +56,7 @@ describe('KycQueueComponent', () => {
 
     httpMock.expectOne('/api/admin/kyc/counts')
       .flush({ pending: 1, verified: 4, rejected: 2 });
-    httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20')
+    httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=100')
       .flush({ entries: [{ id: 'a1', userId: 'VP00001', name: 'Jane', kycStatus: 'PENDING', joinedAt: '2026-01-01T00:00:00Z' }], page: 0, size: 20, totalElements: 1 });
   });
 
@@ -73,7 +70,7 @@ describe('KycQueueComponent', () => {
   it('reloads the queue when the status tab changes', () => {
     fixture.componentInstance.onTabChange('REJECTED');
 
-    const req = httpMock.expectOne('/api/admin/kyc?status=REJECTED&page=0&size=20');
+    const req = httpMock.expectOne('/api/admin/kyc?status=REJECTED&page=0&size=100');
     req.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
 
     expect(fixture.componentInstance.activeStatus).toBe('REJECTED');
@@ -82,7 +79,7 @@ describe('KycQueueComponent', () => {
   it('shows a load error when the tab-change reload fails, without silently doing nothing', () => {
     fixture.componentInstance.onTabChange('REJECTED');
 
-    const req = httpMock.expectOne('/api/admin/kyc?status=REJECTED&page=0&size=20');
+    const req = httpMock.expectOne('/api/admin/kyc?status=REJECTED&page=0&size=100');
     req.flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
 
@@ -98,7 +95,7 @@ describe('KycQueueComponent', () => {
     expect(req.request.body).toEqual({ decision: 'VERIFIED', reason: undefined });
     req.flush({ id: 'a1', userId: 'VP00001', name: 'Jane', kycStatus: 'VERIFIED', joinedAt: '2026-01-01T00:00:00Z' });
 
-    const reload = httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20');
+    const reload = httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=100');
     reload.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
     httpMock.expectOne('/api/admin/kyc/counts').flush({ pending: 0, verified: 0, rejected: 0 });
   });
@@ -117,7 +114,7 @@ describe('KycQueueComponent', () => {
     expect(req.request.body).toEqual({ decision: 'REJECTED', reason: 'Blurry PAN photo' });
     req.flush({ id: 'a1', userId: 'VP00001', name: 'Jane', kycStatus: 'REJECTED', joinedAt: '2026-01-01T00:00:00Z' });
 
-    const reload = httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20');
+    const reload = httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=100');
     reload.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
     httpMock.expectOne('/api/admin/kyc/counts').flush({ pending: 0, verified: 0, rejected: 0 });
 
@@ -133,7 +130,7 @@ describe('KycQueueComponent', () => {
     expect(req.request.body).toEqual({ decision: 'REJECTED', reason: 'Name mismatch' });
     req.flush({ id: 'a1', userId: 'VP00001', name: 'Jane', kycStatus: 'REJECTED', joinedAt: '2026-01-01T00:00:00Z' });
 
-    httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20')
+    httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=100')
       .flush({ entries: [], page: 0, size: 20, totalElements: 0 });
     httpMock.expectOne('/api/admin/kyc/counts').flush({ pending: 0, verified: 0, rejected: 0 });
   });
@@ -188,7 +185,7 @@ describe('KycQueueComponent', () => {
     expect(fixture.componentInstance.decisionError).toBe(true);
 
     fixture.componentInstance.onTabChange('REJECTED');
-    httpMock.expectOne('/api/admin/kyc?status=REJECTED&page=0&size=20')
+    httpMock.expectOne('/api/admin/kyc?status=REJECTED&page=0&size=100')
       .flush({ entries: [], page: 0, size: 20, totalElements: 0 });
 
     expect(fixture.componentInstance.decisionError).toBe(false);
@@ -215,11 +212,11 @@ describe('KycQueueComponent', () => {
     expect(summary?.textContent?.trim()).toBe('Showing 1 of 1 pending');
   });
 
-  it('puts the summary and pagination in one footer row', () => {
+  it('shows the summary in the footer and no pager', () => {
     fixture.detectChanges();
     const footer: HTMLElement | null = fixture.nativeElement.querySelector('.kyc-queue__footer');
     expect(footer?.querySelector('.kyc-queue__summary')).toBeTruthy();
-    expect(footer?.querySelector('.kyc-queue__pagination')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.kyc-queue__pagination')).toBeNull();
   });
 
   it('reloads counts after an approval decision', () => {
@@ -228,7 +225,7 @@ describe('KycQueueComponent', () => {
     const decisionReq = httpMock.expectOne('/api/admin/kyc/a1/decision');
     decisionReq.flush({ id: 'a1', userId: 'VP00001', name: 'Jane', kycStatus: 'VERIFIED', joinedAt: '2026-01-01T00:00:00Z' });
 
-    httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=20')
+    httpMock.expectOne('/api/admin/kyc?status=PENDING&page=0&size=100')
       .flush({ entries: [], page: 0, size: 20, totalElements: 0 });
     httpMock.expectOne('/api/admin/kyc/counts')
       .flush({ pending: 0, verified: 5, rejected: 2 });
@@ -236,33 +233,9 @@ describe('KycQueueComponent', () => {
     expect(fixture.componentInstance.counts).toEqual({ pending: 0, verified: 5, rejected: 2 });
   });
 
-  it('computes a 1-based current page and total pages from the loaded page', () => {
-    expect(fixture.componentInstance.currentPage).toBe(1);
-    expect(fixture.componentInstance.totalPages).toBe(1);
-  });
-
-  it('renders Prev/Next buttons and a page indicator, Prev disabled on page 1', () => {
-    fixture.detectChanges();
-
-    const prevButton: HTMLButtonElement = fixture.nativeElement.querySelector('.kyc-queue__pagination button:first-child');
-    expect(prevButton.disabled).toBeTrue();
-
-    const indicator: HTMLElement = fixture.nativeElement.querySelector('.kyc-queue__page-indicator');
-    expect(indicator.textContent).toContain('1');
-  });
-
-  it('clicking Next loads the next page', () => {
-    fixture.componentInstance.goToPage(1);
-
-    const req = httpMock.expectOne('/api/admin/kyc?status=PENDING&page=1&size=20');
-    req.flush({ entries: [], page: 1, size: 20, totalElements: 21 });
-
-    expect(fixture.componentInstance.page?.page).toBe(1);
-  });
-
   it('shows an empty-state row when the queue has no entries', () => {
     fixture.componentInstance.onTabChange('REJECTED');
-    httpMock.expectOne('/api/admin/kyc?status=REJECTED&page=0&size=20')
+    httpMock.expectOne('/api/admin/kyc?status=REJECTED&page=0&size=100')
       .flush({ entries: [], page: 0, size: 20, totalElements: 0 });
     fixture.detectChanges();
 
@@ -275,7 +248,7 @@ describe('KycQueueComponent', () => {
     expect(fixture.componentInstance.kycColumns.find(c => c.key === 'name')?.badgeKey).toBeUndefined();
 
     fixture.componentInstance.onTabChange('VERIFIED');
-    httpMock.expectOne('/api/admin/kyc?status=VERIFIED&page=0&size=20')
+    httpMock.expectOne('/api/admin/kyc?status=VERIFIED&page=0&size=100')
       .flush({
         entries: [{ id: 'v1', userId: 'VP00002', name: 'Sam', kycStatus: 'VERIFIED', joinedAt: '2026-01-01T00:00:00Z' }],
         page: 0, size: 20, totalElements: 1

@@ -5,9 +5,8 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { SupportTicketService } from '../support-tickets/support-ticket.service';
 import { SUPPORT_TICKET_STATUSES, SupportTicket, SupportTicketPage, SupportTicketStatus } from '../support-tickets/support-ticket.model';
+import { fetchAllPages } from '../shared/utils/fetch-all-pages';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
-
-const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-support-ticket-history',
@@ -61,7 +60,7 @@ const PAGE_SIZE = 20;
           </thead>
           <tbody>
             <tr *ngFor="let t of page.entries; let i = index; trackBy: trackById" class="ticket-history__row--clickable" tabindex="0" role="button" [attr.aria-label]="('supportTickets.openDetails' | translate) + ': ' + t.subject" (click)="open(t)" (keydown.enter)="open(t)" (keydown.space)="$event.preventDefault(); open(t)">
-              <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ page.page * page.size + i + 1 }}</td>
+              <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ i + 1 }}</td>
               <td><span class="ticket-history__subject">{{ t.subject }}</span><span class="ticket-history__description">{{ t.description }}</span></td>
               <td [attr.data-label]="'supportTickets.columnStatus' | translate">{{ 'supportTickets.status.' + t.status | translate }}</td>
               <td [attr.data-label]="'supportTickets.columnCreatedAt' | translate">{{ t.createdAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
@@ -72,18 +71,6 @@ const PAGE_SIZE = 20;
             </tr>
           </tbody>
         </table>
-      </div>
-
-      <div class="ticket-history__pagination" *ngIf="page && !loadError">
-        <span class="ticket-history__page-indicator">
-          {{ 'supportTickets.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}
-        </span>
-        <button type="button" class="brand-button brand-button--secondary ticket-history__prev" [attr.aria-disabled]="page.page === 0 ? 'true' : null" (click)="goToPage(page.page - 1)">
-          {{ 'supportTickets.previousPageAction' | translate }}
-        </button>
-        <button type="button" class="brand-button brand-button--secondary ticket-history__next" [attr.aria-disabled]="(page.page + 1) * page.size >= page.totalElements ? 'true' : null" (click)="goToPage(page.page + 1)">
-          {{ 'supportTickets.nextPageAction' | translate }}
-        </button>
       </div>
 
       <dialog #dlg class="ticket-history__dialog" aria-labelledby="ticket-history-dialog-title" (close)="selected = null" (click)="onDialogClick($event)">
@@ -110,24 +97,12 @@ export class SupportTicketHistoryComponent implements OnInit, OnDestroy {
   private service = inject(SupportTicketService);
   private destroyed$ = new Subject<void>();
   private seq = 0; // latest-request-wins: a slow older response never overwrites a newer one
-  private lastPage = 0; // last ATTEMPTED page, so Retry re-requests the page that failed
 
   readonly statuses = SUPPORT_TICKET_STATUSES;
   page: SupportTicketPage | null = null;
   loading = false;
   loadError = false;
   status: SupportTicketStatus | '' = '';
-
-  get currentPage(): number {
-    return (this.page?.page ?? 0) + 1;
-  }
-
-  get totalPages(): number {
-    if (!this.page || this.page.size === 0) {
-      return 1;
-    }
-    return Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
-  }
 
   @ViewChild('dlg', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
   selected: SupportTicket | null = null;
@@ -149,7 +124,7 @@ export class SupportTicketHistoryComponent implements OnInit, OnDestroy {
   trackById = (_: number, t: SupportTicket) => t.id;
 
   ngOnInit(): void {
-    this.loadPage(0);
+    this.loadPage();
   }
 
   ngOnDestroy(): void {
@@ -159,26 +134,18 @@ export class SupportTicketHistoryComponent implements OnInit, OnDestroy {
 
   onStatusChange(value: string): void {
     this.status = value as SupportTicketStatus | '';
-    this.loadPage(0);
-  }
-
-  goToPage(page: number): void {
-    if (this.loading || page < 0 || (this.page && page * this.page.size >= Math.max(this.page.totalElements, 1))) {
-      return; // aria-disabled buttons stay clickable (focus-safe), so enforce bounds and ignore clicks while a load is in flight
-    }
-    this.loadPage(page);
+    this.loadPage();
   }
 
   retry(): void {
-    this.loadPage(this.lastPage);
+    this.loadPage();
   }
 
-  private loadPage(page: number): void {
+  private loadPage(): void {
     const mine = ++this.seq;
-    this.lastPage = page;
     this.loading = true;
     this.loadError = false;
-    this.service.listMine(this.status, page, PAGE_SIZE).pipe(takeUntil(this.destroyed$)).subscribe({
+    fetchAllPages((p, size) => this.service.listMine(this.status, p, size)).pipe(takeUntil(this.destroyed$)).subscribe({
       next: res => {
         if (mine !== this.seq) { return; }
         this.page = res;
