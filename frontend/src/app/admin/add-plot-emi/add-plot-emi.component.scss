@@ -32,6 +32,8 @@
     &__table { font-size: 11px;
       th, td { padding-inline: 4px !important; } }
     &__actions { flex-wrap: wrap; }
+    &__actions--compact { flex-direction: column; gap: 4px;
+      .add-plot-emi__btn { min-height: 28px; padding: 0 10px; font-size: 11px; } }
   }
   &__pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; font-size: 13px; color: var(--text-muted); }
 

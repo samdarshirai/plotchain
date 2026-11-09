@@ -96,7 +96,7 @@ const isoDate = (d: Date): string => {
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.total' | translate">{{ money(b.totalAmount) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.paid' | translate">{{ money(b.paidAmount) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.remaining' | translate">{{ money(b.dueAmount) }}</td>
-                <td class="add-plot-emi__actions">
+                <td class="add-plot-emi__actions add-plot-emi__actions--compact">
                   <button type="button" class="brand-button add-plot-emi__btn" (click)="open(b)">{{ 'admin.viewBookedPlot.col.detail' | translate }}</button>
                   <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" (click)="openTransfer(b)">{{ 'admin.plotTransfer.transfer' | translate }}</button>
                 </td>
