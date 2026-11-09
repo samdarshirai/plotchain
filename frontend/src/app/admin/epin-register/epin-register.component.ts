@@ -5,6 +5,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule } from '@ngx-translate/core';
 import { EPinRegisterService } from './epin-register.service';
 import { AdminService } from '../admin.service';
+import { CompensationPlanService } from '../../setup/steps/compensation/compensation-plan.service';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { AssociateLookupComponent } from '../../shared/components/associate-lookup/associate-lookup.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
@@ -134,51 +135,10 @@ type Panel =
         <button type="button" class="brand-button brand-button--secondary" (click)="copyCodes()">{{ 'admin.epinRegister.copyAll' | translate }}</button>
       </div>
 
-      <div class="epin-register__grid">
-        <div class="epin-register__list">
-          <div class="epin-register__table-wrap">
-            <table class="epin-register__table">
-              <thead>
-                <tr>
-                  <th class="table__sno">{{ 'common.serialNo' | translate }}</th>
-                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.epinRegister.colCode' | translate }}</th>
-                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'admin.epinRegister.colStatus' | translate }}</th>
-                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'admin.epinRegister.pinTypeLabel' | translate }}</th>
-                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.epinRegister.colBatch' | translate }}</th>
-                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.epinRegister.colExpires' | translate }}</th>
-                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.epinRegister.colHolder' | translate }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let p of page?.epins; let i = index" class="epin-register__row"
-                  [class.epin-register__row--selected]="p.id === selectedId" (click)="select(p)">
-                  <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ (page?.page ?? 0) * (page?.size ?? 0) + i + 1 }}</td>
-                  <td class="epin-register__code">{{ p.code }}</td>
-                  <td>
-                    <span class="epin-register__chip" [ngClass]="chipClass(p)">
-                      {{ (p.expired ? 'admin.epinRegister.expiredChip' : 'admin.epinRegister.status.' + p.status) | translate }}
-                    </span>
-                  </td>
-                  <td>{{ 'admin.epinRegister.pinType.' + p.pinType | translate }}</td>
-                  <td>{{ p.batchId }}</td>
-                  <td [class.epin-register__expired-date]="p.expired">{{ p.expiresAt ? datePipe.transform(p.expiresAt, 'd MMM y, h:mm:ss a', '+0530') : '—' }}</td>
-                  <td class="editable-table__cell--bold">{{ userId(p.allocatedTo) }}</td>
-                </tr>
-                <tr *ngIf="!page?.epins?.length">
-                  <td colspan="7">{{ 'admin.epinRegister.emptyState' | translate }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-        </div>
-
-        <aside class="epin-register__detail">
-          <div class="epin-register__seal">
-            <ng-container *ngIf="panel?.kind === 'redeem'">
-              <div class="epin-register__seal-title">{{ 'admin.epinRegister.redeemAction' | translate }}</div>
+      <div class="epin-register__modal-overlay" *ngIf="panel?.kind === 'redeem'" (click)="closePanel()" (keydown.escape)="closePanel()">
+              <form class="epin-register__modal" role="dialog" aria-modal="true" aria-labelledby="epin-redeem-title" [class.was-submitted]="submitted" (ngSubmit)="submitRedeem()" (click)="$event.stopPropagation()" novalidate>
+              <h2 class="epin-register__modal-title" id="epin-redeem-title">{{ 'admin.epinRegister.redeemAction' | translate }}</h2>
               <div class="epin-register__detail-code">{{ redeemEpin?.code }}</div>
-              <form [class.was-submitted]="submitted" (ngSubmit)="submitRedeem()" novalidate>
                 <app-error-summary [issues]="issues"></app-error-summary>
                 <div class="epin-register__field">{{ 'admin.epinRegister.associateLabel' | translate }}
                   <app-associate-lookup [associates]="associates" [value]="redeemAssociateId"
@@ -197,7 +157,43 @@ type Panel =
                   <button type="button" class="brand-button brand-button--secondary" (click)="closePanel()">{{ 'admin.epinRegister.cancel' | translate }}</button>
                 </div>
               </form>
-            </ng-container>
+      </div>
+
+      <div class="epin-register__grid">
+        <div class="epin-register__list">
+          <div class="epin-register__table-wrap">
+            <table class="epin-register__table">
+              <thead>
+                <tr>
+                  <th class="table__sno">{{ 'common.serialNo' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.epinRegister.colBatch' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">pin</span>{{ 'admin.epinRegister.colCode' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.epinRegister.colAmount' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.epinRegister.colCreated' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.epinRegister.colAssociateId' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let p of page?.epins; let i = index" class="epin-register__row"
+                  [class.epin-register__row--selected]="p.id === selectedId" (click)="select(p)">
+                  <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ (page?.page ?? 0) * (page?.size ?? 0) + i + 1 }}</td>
+                  <td [attr.data-label]="'admin.epinRegister.colBatch' | translate">{{ p.batchId }}</td>
+                  <td class="epin-register__code" [attr.data-label]="'admin.epinRegister.colCode' | translate">{{ p.code }}</td>
+                  <td class="epin-register__amount" [attr.data-label]="'admin.epinRegister.colAmount' | translate">{{ amount(p) | currency:'INR':'symbol':'1.0-0' }}</td>
+                  <td [attr.data-label]="'admin.epinRegister.colCreated' | translate">{{ datePipe.transform(p.generatedAt, 'd MMM y, h:mm:ss a', '+0530') }}</td>
+                  <td class="editable-table__cell--bold" [attr.data-label]="'admin.epinRegister.colAssociateId' | translate">{{ userId(p.redeemedTo ?? p.allocatedTo) }}</td>
+                </tr>
+                <tr *ngIf="!page?.epins?.length">
+                  <td colspan="6">{{ 'admin.epinRegister.emptyState' | translate }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+        <aside class="epin-register__detail">
+          <div class="epin-register__seal">
             <ng-container *ngIf="panel?.kind === 'allocate'; else sealOther">
               <div class="epin-register__seal-title">{{ 'admin.epinRegister.allocateAction' | translate }}</div>
               <form [class.was-submitted]="submitted" (ngSubmit)="submitAllocate()" novalidate>
@@ -230,7 +226,7 @@ type Panel =
               </form>
             </ng-container>
             <ng-template #sealOther>
-            <ng-container *ngIf="panel?.kind !== 'redeem'">
+            <ng-container>
             <div class="epin-register__seal-title">{{ 'admin.epinRegister.detailTitle' | translate }}</div>
             <p *ngIf="!selected" class="epin-register__detail-empty">{{ 'admin.epinRegister.detailEmpty' | translate }}</p>
             <ng-container *ngIf="selected as p">
@@ -282,6 +278,8 @@ type Panel =
 export class EPinRegisterComponent implements OnInit {
   private service = inject(EPinRegisterService);
   private adminService = inject(AdminService);
+  private planService = inject(CompensationPlanService);
+  activationFee = 0;
   protected datePipe = inject(DatePipe);
 
   readonly statuses: EPinStatus[] = ['UNUSED', 'ALLOCATED', 'USED', 'BLOCKED'];
@@ -323,6 +321,7 @@ export class EPinRegisterComponent implements OnInit {
 
   ngOnInit(): void {
     this.adminService.listAssociates().subscribe(a => (this.associates = a));
+    this.planService.getCurrent().subscribe({ next: p => (this.activationFee = p.activationFee), error: () => (this.activationFee = 0) });
     this.loadPage(0);
   }
 
@@ -334,6 +333,10 @@ export class EPinRegisterComponent implements OnInit {
     return this.page?.epins.find(p => p.id === this.selectedId) ?? null;
   }
 
+  amount(p: EPin): number {
+    return p.pinType === 'TOPUP' ? this.activationFee : 0;
+  }
+
   chipClass(p: EPin): string {
     return 'epin-register__chip--' + (p.expired ? 'expired' : p.status.toLowerCase());
   }
@@ -343,6 +346,7 @@ export class EPinRegisterComponent implements OnInit {
     this.selectedId = p.id;
     this.events = [];
     this.loadEvents(p.id);
+    if (p.status === 'UNUSED' || p.status === 'ALLOCATED') this.openPanel({ kind: 'redeem', epin: p });
   }
 
   private loadEvents(id: string): void {

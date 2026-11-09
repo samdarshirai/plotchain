@@ -4645,6 +4645,10 @@ button.tree-explorer__vacant-card {
   }
   &__detail-empty { margin: 0; text-align: center; font-size: 0.875rem; color: var(--text-muted); }
   &__detail-head { display: flex; flex-direction: column; align-items: center; gap: 0.625rem; }
+  &__amount { white-space: nowrap; }
+  &__modal-overlay { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(12, 10, 11, .55); }
+  &__modal { display: flex; flex-direction: column; gap: 1rem; width: 440px; max-width: calc(100vw - 32px); box-sizing: border-box; padding: 24px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 5px; overflow-wrap: anywhere; }
+  &__modal-title { margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: 600; }
   &__detail-code { font: 500 1.25rem var(--font-mono, monospace); letter-spacing: 0.02em; overflow-wrap: anywhere; text-align: center; }
   &__meta {
     display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1rem; margin: 0; padding: 0.875rem 0;

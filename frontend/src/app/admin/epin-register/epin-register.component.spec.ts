@@ -21,6 +21,7 @@ describe('EPinRegisterComponent', () => {
 
   function flushInitial(epins: unknown[]) {
     httpMock.expectOne(r => r.url === '/api/associates').flush(associates);
+    httpMock.expectOne('/api/company/compensation').flush({ activationFee: 1100 });
     httpMock.expectOne(r => r.url === '/api/admin/epins').flush({ epins, page: 0, size: 20, totalElements: epins.length });
     fixture.detectChanges();
   }
@@ -43,7 +44,10 @@ describe('EPinRegisterComponent', () => {
   });
 
   it('shows the expired chip key and class for an expired pin', () => {
-    flushInitial([pin({ expired: true })]);
+    flushInitial([pin({ expired: true, status: 'USED' })]);
+    fixture.nativeElement.querySelector('.epin-register__row').click();
+    httpMock.expectOne('/api/admin/epins/p1/events').flush([]);
+    fixture.detectChanges();
     const chip = fixture.nativeElement.querySelector('.epin-register__chip--expired');
     expect(chip).not.toBeNull();
     expect(chip.textContent).toContain('admin.epinRegister.expiredChip');
@@ -326,6 +330,7 @@ describe('EPinRegisterComponent', () => {
 
   it('shows the total pin count in the header', () => {
     httpMock.expectOne(r => r.url === '/api/associates').flush(associates);
+    httpMock.expectOne('/api/company/compensation').flush({ activationFee: 1100 });
     httpMock.expectOne(r => r.url === '/api/admin/epins').flush({ epins: [pin()], page: 0, size: 20, totalElements: 37 });
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.epin-register__count').textContent).toContain('admin.epinRegister.pinsCount');
@@ -349,10 +354,10 @@ describe('EPinRegisterComponent', () => {
   });
 
   it('returns to Pin Detail when a row is selected while Allocate is open', () => {
-    flushInitial([pin()]);
+    flushInitial([pin({ status: 'USED' })]);
     const c = fixture.componentInstance;
     c.openPanel({ kind: 'allocate' });
-    c.select(pin() as never);
+    c.select(pin({ status: 'USED' }) as never);
     httpMock.expectOne('/api/admin/epins/p1/events').flush([]);
     fixture.detectChanges();
     expect(c.panel).toBeNull();
@@ -370,23 +375,31 @@ describe('EPinRegisterComponent', () => {
     expect(fixture.nativeElement.querySelector('.epin-register__panel')).toBeNull();
   });
 
-  it('renders Redeem in the seal in place of the pin detail, and closes it on row select', () => {
-    flushInitial([pin(), pin({ id: 'p2' })]);
+  it('opens Redeem as a popup on row click of a live pin, keeping the detail aside', () => {
+    flushInitial([pin(), pin({ id: 'p2', status: 'USED' })]);
     const c = fixture.componentInstance;
-    c.select(pin() as never);
+    fixture.nativeElement.querySelector('.epin-register__row').click();
     httpMock.expectOne('/api/admin/epins/p1/events').flush([]);
-    c.openPanel({ kind: 'redeem', epin: pin() as never });
     fixture.detectChanges();
-    const seal = fixture.nativeElement.querySelector('.epin-register__seal');
-    expect(fixture.nativeElement.querySelector('.epin-register__panel')).toBeNull();
-    expect(seal.textContent).toContain('admin.epinRegister.redeemAction');
-    expect(seal.textContent).toContain('CODE-1');
-    expect(seal.textContent).not.toContain('admin.epinRegister.historyTitle');
-    c.select(pin({ id: 'p2' }) as never);
+    const modal = fixture.nativeElement.querySelector('.epin-register__modal');
+    expect(modal.textContent).toContain('admin.epinRegister.redeemAction');
+    expect(modal.textContent).toContain('CODE-1');
+    expect(fixture.nativeElement.querySelector('.epin-register__seal').textContent).toContain('admin.epinRegister.historyTitle');
+    modal.querySelector('.brand-button--secondary').click();
+    fixture.detectChanges();
+    expect(c.panel).toBeNull();
+    expect(fixture.nativeElement.querySelector('.epin-register__modal')).toBeNull();
+    fixture.nativeElement.querySelectorAll('.epin-register__row')[1].click();
     httpMock.expectOne('/api/admin/epins/p2/events').flush([]);
     fixture.detectChanges();
     expect(c.panel).toBeNull();
-    expect(fixture.nativeElement.querySelector('.epin-register__seal').textContent).toContain('admin.epinRegister.historyTitle');
+  });
+
+  it('amount is the activation fee for TOPUP and 0 for REGISTRATION', () => {
+    flushInitial([]);
+    const c = fixture.componentInstance;
+    expect(c.amount(pin({ pinType: 'TOPUP' }) as never)).toBe(1100);
+    expect(c.amount(pin({ pinType: 'REGISTRATION' }) as never)).toBe(0);
   });
 
   it('ignores a history response that is still in flight when Allocate opens', () => {
