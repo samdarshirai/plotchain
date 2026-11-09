@@ -18,6 +18,7 @@ public interface EPinRepository extends JpaRepository<EPin, UUID> {
     // epin-domain unit 1 (Decision 3): defensive collision re-check for EPinService's
     // generation loop. The DB-level UNIQUE constraint on code (migration V33) is the real guarantee.
     boolean existsByCode(String code);
+    boolean existsByBatchId(Integer batchId);
 
     // View Associate Downline: [associateId, first activation redemption time] per associate.
     @Query("SELECT e.redeemedTo, MIN(e.redeemedAt) FROM EPin e WHERE e.redeemedTo IN :ids "
@@ -42,7 +43,7 @@ public interface EPinRepository extends JpaRepository<EPin, UUID> {
         @Param("status") EPinStatus status,
         @Param("pinType") EPinType pinType,
         @Param("redeemedTo") UUID redeemedTo,
-        @Param("batchId") UUID batchId,
+        @Param("batchId") Integer batchId,
         @Param("allocatedTo") UUID allocatedTo,
         @Param("expiredOnly") boolean expiredOnly,
         @Param("now") Instant now,
@@ -70,7 +71,7 @@ public interface EPinRepository extends JpaRepository<EPin, UUID> {
         AND (:batchId IS NULL OR e.batchId = :batchId)
         ORDER BY e.generatedAt, e.id
         """)
-    List<EPin> findAllocatable(@Param("now") Instant now, @Param("pinType") EPinType pinType, @Param("batchId") UUID batchId, Pageable pageable);
+    List<EPin> findAllocatable(@Param("now") Instant now, @Param("pinType") EPinType pinType, @Param("batchId") Integer batchId, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM EPin e WHERE e.id = :id")

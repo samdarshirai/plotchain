@@ -79,9 +79,20 @@ class EPinServiceTest {
         assertThat(saved).extracting(EPin::getCode).doesNotHaveDuplicates();
 
         assertThat(response.batchId()).isEqualTo(saved.get(0).getBatchId());
+        assertThat(response.batchId()).isBetween(10000, 99999);
         assertThat(response.count()).isEqualTo(3);
         assertThat(response.codes()).hasSize(3);
         assertThat(response.generatedAt()).isNotNull();
+    }
+
+    @Test
+    void generateBatchRetriesOnABatchIdCollision() {
+        when(epinRepository.existsByBatchId(any())).thenReturn(true, false);
+        when(epinRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        epinService.generateBatch(new CreateEPinBatchRequest(1), UUID.randomUUID());
+
+        verify(epinRepository, times(2)).existsByBatchId(any());
     }
 
     @Test
@@ -101,7 +112,7 @@ class EPinServiceTest {
     @Test
     void listReturnsAPageMappedToResponsesWithAllEPinFields() {
         UUID id = UUID.randomUUID();
-        UUID batchId = UUID.randomUUID();
+        Integer batchId = 12345;
         UUID generatedBy = UUID.randomUUID();
         UUID redeemedTo = UUID.randomUUID();
         UUID redeemedBy = UUID.randomUUID();
@@ -147,7 +158,7 @@ class EPinServiceTest {
     @Test
     void listPassesAllThreeFiltersAndThePageRequestThroughToSearchUnchanged() {
         UUID redeemedTo = UUID.randomUUID();
-        UUID batchId = UUID.randomUUID();
+        Integer batchId = 12345;
         when(epinRepository.search(any(), isNull(), any(), any(), any(), anyBoolean(), any(), any())).thenReturn(new PageImpl<>(List.of()));
 
         epinService.list(EPinStatus.UNUSED, null, redeemedTo, batchId, null, false, 2, 10);

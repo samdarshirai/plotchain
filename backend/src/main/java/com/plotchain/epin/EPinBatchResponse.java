@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record EPinBatchResponse(
-    UUID batchId,
+    Integer batchId,
     int count,
     List<String> codes,
     Instant generatedAt,

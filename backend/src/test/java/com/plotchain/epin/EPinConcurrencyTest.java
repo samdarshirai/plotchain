@@ -75,7 +75,7 @@ class EPinConcurrencyTest {
         return id;
     }
 
-    private UUID seedPin(UUID batchId, EPinStatus status, UUID allocatedTo, UUID generatedBy) {
+    private UUID seedPin(Integer batchId, EPinStatus status, UUID allocatedTo, UUID generatedBy) {
         EPin pin = new EPin();
         pin.setId(UUID.randomUUID());
         pin.setCode("c-" + UUID.randomUUID().toString().substring(0, 20)); // VARCHAR(24)
@@ -133,7 +133,7 @@ class EPinConcurrencyTest {
     void concurrentAdminRedeemsOfOnePinYieldExactlyOneSuccess() throws Exception {
         UUID admin = seedAssociate(AssociateStatus.ACTIVE, null, "L");
         UUID target = seedAssociate(AssociateStatus.ACTIVE, null, "R");
-        UUID pin = seedPin(UUID.randomUUID(), EPinStatus.UNUSED, null, admin);
+        UUID pin = seedPin(12345, EPinStatus.UNUSED, null, admin);
 
         int n = 6;
         List<Callable<Object>> tasks = new ArrayList<>();
@@ -153,7 +153,7 @@ class EPinConcurrencyTest {
         UUID holder = seedAssociate(AssociateStatus.ACTIVE, null, "L");
         UUID m1 = seedAssociate(AssociateStatus.PENDING, holder, "L");
         UUID m2 = seedAssociate(AssociateStatus.PENDING, holder, "R");
-        UUID pin = seedPin(UUID.randomUUID(), EPinStatus.ALLOCATED, holder, holder);
+        UUID pin = seedPin(12345, EPinStatus.ALLOCATED, holder, holder);
         String u1 = associateRepository.findById(m1).orElseThrow().getUserId();
         String u2 = associateRepository.findById(m2).orElseThrow().getUserId();
 
@@ -174,7 +174,7 @@ class EPinConcurrencyTest {
         UUID holder = seedAssociate(AssociateStatus.ACTIVE, null, "L");
         UUID r1 = seedAssociate(AssociateStatus.ACTIVE, null, "L");
         UUID r2 = seedAssociate(AssociateStatus.ACTIVE, null, "R");
-        UUID pin = seedPin(UUID.randomUUID(), EPinStatus.ALLOCATED, holder, holder);
+        UUID pin = seedPin(12345, EPinStatus.ALLOCATED, holder, holder);
         String u1 = associateRepository.findById(r1).orElseThrow().getUserId();
         String u2 = associateRepository.findById(r2).orElseThrow().getUserId();
 
@@ -194,7 +194,7 @@ class EPinConcurrencyTest {
     void concurrentAllocationsCompetingForTheLastPinsNeverDoubleAllocate() throws Exception {
         UUID admin = seedAssociate(AssociateStatus.ACTIVE, null, "L");
         UUID recipient = seedAssociate(AssociateStatus.ACTIVE, null, "R");
-        UUID batch = UUID.randomUUID();
+        Integer batch = 12345;
         for (int i = 0; i < 4; i++) {
             seedPin(batch, EPinStatus.UNUSED, null, admin);
         }
@@ -219,8 +219,8 @@ class EPinConcurrencyTest {
     void twoPinsActivatingTheSamePendingAssociateConcurrentlyYieldExactlyOneSuccess() throws Exception {
         UUID admin = seedAssociate(AssociateStatus.ACTIVE, null, "L");
         UUID pending = seedAssociate(AssociateStatus.PENDING, null, "R");
-        UUID pinA = seedPin(UUID.randomUUID(), EPinStatus.UNUSED, null, admin);
-        UUID pinB = seedPin(UUID.randomUUID(), EPinStatus.UNUSED, null, admin);
+        UUID pinA = seedPin(12345, EPinStatus.UNUSED, null, admin);
+        UUID pinB = seedPin(12345, EPinStatus.UNUSED, null, admin);
 
         List<Object> outcomes = race(List.of(
             () -> epinService.redeem(pinA, new RedeemEPinRequest(pending, RedemptionType.ACTIVATION, null), admin),

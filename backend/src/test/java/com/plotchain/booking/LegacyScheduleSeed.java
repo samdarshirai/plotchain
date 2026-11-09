@@ -19,7 +19,7 @@ final class LegacyScheduleSeed {
         jdbc.update("INSERT INTO epin (id, code, batch_id, status, generated_by, generated_at, redeemed_to, "
             + "redeemed_by, redeemed_at, redemption_type) VALUES (?, ?, ?, 'USED', ?, CURRENT_TIMESTAMP, ?, ?, "
             + "CURRENT_TIMESTAMP, 'ACTIVATION')", UUID.randomUUID(),
-            UUID.randomUUID().toString().substring(0, 24), UUID.randomUUID(), associateId, associateId, associateId);
+            UUID.randomUUID().toString().substring(0, 24), 12345, associateId, associateId, associateId);
     }
 
     static void dropEpins(JdbcTemplate jdbc, UUID associateId) {

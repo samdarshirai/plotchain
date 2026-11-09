@@ -8,7 +8,7 @@ import java.util.UUID;
 public record EPinResponse(
     UUID id,
     String code,
-    UUID batchId,
+    Integer batchId,
     EPinStatus status,
     EPinType pinType,
     UUID generatedBy,

@@ -43,7 +43,7 @@ public class EPinController {
             @RequestParam(required = false) EPinStatus status,
             @RequestParam(required = false) EPinType pinType,
             @RequestParam(required = false) UUID redeemedTo,
-            @RequestParam(required = false) UUID batchId,
+            @RequestParam(required = false) Integer batchId,
             @RequestParam(required = false) UUID allocatedTo,
             @RequestParam(defaultValue = "false") boolean expired,
             @RequestParam(defaultValue = "0") int page,

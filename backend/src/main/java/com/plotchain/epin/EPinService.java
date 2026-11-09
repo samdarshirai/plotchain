@@ -53,7 +53,10 @@ public class EPinService {
     // (Decision 3) before the row is built and saved.
     @Transactional
     public EPinBatchResponse generateBatch(CreateEPinBatchRequest request, UUID actorId) {
-        UUID batchId = UUID.randomUUID();
+        int batchId;
+        do {
+            batchId = java.util.concurrent.ThreadLocalRandom.current().nextInt(10000, 100000);
+        } while (epinRepository.existsByBatchId(batchId)); // ponytail: 90k pool, widen to 6 digits if nearly full
         Instant generatedAt = clock.instant();
         List<String> codes = new ArrayList<>();
 
@@ -85,7 +88,7 @@ public class EPinService {
     // null-safe pattern as LedgerService.adminList -- passed straight through to
     // EPinRepository.search unchanged. No batch-resolved associate enrichment (see
     // EPinResponse's own comment for why).
-    public EPinPageResponse list(EPinStatus status, EPinType pinType, UUID redeemedTo, UUID batchId, UUID allocatedTo,
+    public EPinPageResponse list(EPinStatus status, EPinType pinType, UUID redeemedTo, Integer batchId, UUID allocatedTo,
                                  boolean expiredOnly, int page, int size) {
         Page<EPin> result = epinRepository.search(status, pinType, redeemedTo, batchId, allocatedTo, expiredOnly,
             clock.instant(), PageRequest.of(page, size));

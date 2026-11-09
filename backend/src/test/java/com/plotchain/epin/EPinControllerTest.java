@@ -124,7 +124,7 @@ class EPinControllerTest {
     @Test
     void listReturns200WithFilters() throws Exception {
         UUID id = UUID.randomUUID();
-        UUID batchId = UUID.randomUUID();
+        Integer batchId = 12345;
         UUID redeemedTo = UUID.randomUUID();
         EPin epin = new EPin();
         epin.setId(id);
@@ -335,7 +335,7 @@ class EPinControllerTest {
         EPin unusedEPin = new EPin();
         unusedEPin.setId(epinId);
         unusedEPin.setCode("some-code");
-        unusedEPin.setBatchId(UUID.randomUUID());
+        unusedEPin.setBatchId(12345);
         unusedEPin.setStatus(EPinStatus.UNUSED);
         unusedEPin.setGeneratedBy(UUID.randomUUID());
         unusedEPin.setGeneratedAt(Instant.now());

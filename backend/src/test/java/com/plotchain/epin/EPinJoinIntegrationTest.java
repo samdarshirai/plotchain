@@ -64,7 +64,7 @@ class EPinJoinIntegrationTest {
         EPin e = new EPin();
         e.setId(UUID.randomUUID());
         e.setCode("C" + UUID.randomUUID().toString().substring(0, 8));
-        e.setBatchId(UUID.randomUUID());
+        e.setBatchId(12345);
         e.setStatus(EPinStatus.ALLOCATED);
         e.setAllocatedTo(holder);
         e.setGeneratedBy(holder);

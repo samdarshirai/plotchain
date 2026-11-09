@@ -46,7 +46,7 @@ class EPinRepositoryTest {
         return entityManager.persist(associate).getId();
     }
 
-    private EPin newEPin(String code, UUID batchId, UUID generatedBy) {
+    private EPin newEPin(String code, Integer batchId, UUID generatedBy) {
         EPin epin = new EPin();
         epin.setId(UUID.randomUUID());
         epin.setCode(code);
@@ -61,9 +61,9 @@ class EPinRepositoryTest {
     void duplicateCodeInsertIsRejectedByTheUniqueConstraint() {
         UUID adminId = persistAdmin();
         String code = "duplicate-code-value";
-        epinRepository.saveAndFlush(newEPin(code, UUID.randomUUID(), adminId));
+        epinRepository.saveAndFlush(newEPin(code, 12345, adminId));
 
-        assertThatThrownBy(() -> epinRepository.saveAndFlush(newEPin(code, UUID.randomUUID(), adminId)))
+        assertThatThrownBy(() -> epinRepository.saveAndFlush(newEPin(code, 12345, adminId)))
             .isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -72,7 +72,7 @@ class EPinRepositoryTest {
         UUID adminId = persistAdmin();
         UUID redeemedToId = persistAdmin();
         UUID linkedEntityId = UUID.randomUUID();
-        EPin epin = newEPin("code-for-roundtrip", UUID.randomUUID(), adminId);
+        EPin epin = newEPin("code-for-roundtrip", 12345, adminId);
         epin.setStatus(EPinStatus.USED);
         epin.setRedeemedTo(redeemedToId);
         epin.setRedeemedBy(adminId);
@@ -96,8 +96,8 @@ class EPinRepositoryTest {
         UUID adminId = persistAdmin();
         UUID associateA = persistAdmin();
         UUID associateB = persistAdmin();
-        UUID batchA = UUID.randomUUID();
-        UUID batchB = UUID.randomUUID();
+        Integer batchA = 11111;
+        Integer batchB = 22222;
 
         EPin unusedInBatchA = epinRepository.saveAndFlush(newEPin("code-1", batchA, adminId));
 
@@ -136,13 +136,13 @@ class EPinRepositoryTest {
     @Test
     void searchOrdersByGeneratedAtDescendingAndPaginatesCorrectly() {
         UUID adminId = persistAdmin();
-        EPin earlier = newEPin("code-earlier", UUID.randomUUID(), adminId);
+        EPin earlier = newEPin("code-earlier", 12345, adminId);
         earlier.setGeneratedAt(Instant.parse("2026-01-10T00:00:00Z"));
         epinRepository.saveAndFlush(earlier);
-        EPin later = newEPin("code-later", UUID.randomUUID(), adminId);
+        EPin later = newEPin("code-later", 12345, adminId);
         later.setGeneratedAt(Instant.parse("2026-01-20T00:00:00Z"));
         epinRepository.saveAndFlush(later);
-        EPin latest = newEPin("code-latest", UUID.randomUUID(), adminId);
+        EPin latest = newEPin("code-latest", 12345, adminId);
         latest.setGeneratedAt(Instant.parse("2026-01-30T00:00:00Z"));
         epinRepository.saveAndFlush(latest);
 
@@ -169,7 +169,7 @@ class EPinRepositoryTest {
         EPin epin = new EPin();
         epin.setId(UUID.randomUUID());
         epin.setCode("c-" + UUID.randomUUID().toString().substring(0, 20)); // epin.code is VARCHAR(24)
-        epin.setBatchId(UUID.randomUUID());
+        epin.setBatchId(12345);
         epin.setStatus(status);
         epin.setGeneratedBy(adminId);
         epin.setGeneratedAt(Instant.now());
@@ -353,12 +353,12 @@ class EPinRepositoryTest {
     void registerQueriesFilterByHolderTypeCodeAndStatus() {
         UUID admin = persistAdmin();
         UUID me = persistAdmin();
-        EPin reg = newEPin("AAA111", UUID.randomUUID(), admin);
+        EPin reg = newEPin("AAA111", 12345, admin);
         reg.setStatus(EPinStatus.ALLOCATED); reg.setAllocatedTo(me); reg.setAllocatedAt(Instant.now());
-        EPin top = newEPin("BBB222", UUID.randomUUID(), admin);
+        EPin top = newEPin("BBB222", 12345, admin);
         top.setStatus(EPinStatus.ALLOCATED); top.setAllocatedTo(me); top.setAllocatedAt(Instant.now());
         top.setPinType(EPinType.TOPUP);
-        EPin used = newEPin("CCC333", UUID.randomUUID(), admin);
+        EPin used = newEPin("CCC333", 12345, admin);
         used.setStatus(EPinStatus.USED); used.setAllocatedTo(me); used.setRedeemedBy(me); used.setRedeemedAt(Instant.now());
         epinRepository.saveAllAndFlush(List.of(reg, top, used));
         PageRequest pr = PageRequest.of(0, 20);

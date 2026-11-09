@@ -31,7 +31,7 @@ public class EPin {
     private String code;
 
     @Column(name = "batch_id", nullable = false)
-    private UUID batchId;
+    private Integer batchId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -116,8 +116,8 @@ public class EPin {
     public void setId(UUID id) { this.id = id; }
     public String getCode() { return code; }
     public void setCode(String code) { this.code = code; }
-    public UUID getBatchId() { return batchId; }
-    public void setBatchId(UUID batchId) { this.batchId = batchId; }
+    public Integer getBatchId() { return batchId; }
+    public void setBatchId(Integer batchId) { this.batchId = batchId; }
     public EPinStatus getStatus() { return status; }
     public void setStatus(EPinStatus status) { this.status = status; }
     public UUID getGeneratedBy() { return generatedBy; }

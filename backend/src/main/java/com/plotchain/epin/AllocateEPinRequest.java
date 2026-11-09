@@ -10,10 +10,10 @@ import java.util.UUID;
 public record AllocateEPinRequest(
     @NotNull UUID associateId,
     @Min(1) @Max(2000) int count,
-    UUID batchId,
+    Integer batchId,
     EPinType pinType
 ) {
-    public AllocateEPinRequest(UUID associateId, int count, UUID batchId) {
+    public AllocateEPinRequest(UUID associateId, int count, Integer batchId) {
         this(associateId, count, batchId, null);
     }
 }

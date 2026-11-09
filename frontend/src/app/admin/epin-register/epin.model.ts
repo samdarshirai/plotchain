@@ -5,7 +5,7 @@ export type EPinType = 'REGISTRATION' | 'TOPUP';
 export interface EPin {
   id: string;
   code: string;
-  batchId: string;
+  batchId: number;
   status: EPinStatus;
   pinType: EPinType;
   generatedBy: string;
@@ -42,7 +42,7 @@ export interface EPinFilters {
 }
 
 export interface EPinBatchResult {
-  batchId: string;
+  batchId: number;
   count: number;
   codes: string[];
   generatedAt: string;

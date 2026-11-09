@@ -8,14 +8,14 @@ describe('EPinRegisterComponent', () => {
   let httpMock: HttpTestingController;
 
   const pin = (over: Record<string, unknown> = {}) => ({
-    id: 'p1', code: 'CODE-1', batchId: 'batch-0001-xxxx', status: 'ALLOCATED', generatedBy: 'g', generatedAt: '2026-10-01T00:00:00Z',
+    id: 'p1', code: 'CODE-1', batchId: 10001, status: 'ALLOCATED', generatedBy: 'g', generatedAt: '2026-10-01T00:00:00Z',
     expiresAt: null, allocatedTo: 'a1', allocatedBy: 'g', allocatedAt: '2026-10-01T00:00:00Z', redeemedTo: null, redeemedBy: null,
     redeemedAt: null, redemptionType: null, linkedEntityId: null, blockedBy: null, blockedAt: null, blockReason: null, expired: false,
     ...over
   });
   const associates = [{ id: 'a1', userId: 'VP00001', name: 'Jane', role: 'ASSOCIATE', hasFreeSlot: true }];
 
-  const UUID = '123e4567-e89b-12d3-a456-426614174000';
+  const BATCH = 12345;
   const emptyPage = { epins: [], page: 0, size: 20, totalElements: 0 };
   const reload = () => httpMock.expectOne(r => r.url === '/api/admin/epins').flush(emptyPage);
 
@@ -84,7 +84,7 @@ describe('EPinRegisterComponent', () => {
     c.submitGenerate();
     const gen = httpMock.expectOne(r => r.method === 'POST' && r.url === '/api/admin/epins');
     expect(gen.request.body).toEqual({ count: 10, pinType: 'TOPUP' });
-    gen.flush({ batchId: UUID, count: 10, codes: [], generatedAt: 'now', expiresAt: null });
+    gen.flush({ batchId: BATCH, count: 10, codes: [], generatedAt: 'now', expiresAt: null });
     reload();
   });
 
@@ -93,12 +93,12 @@ describe('EPinRegisterComponent', () => {
     const c = fixture.componentInstance;
     c.generateCount = 2;
     c.submitGenerate();
-    httpMock.expectOne('/api/admin/epins').flush({ batchId: UUID, count: 2, codes: ['X1', 'X2'], generatedAt: 'now', expiresAt: null });
+    httpMock.expectOne('/api/admin/epins').flush({ batchId: BATCH, count: 2, codes: ['X1', 'X2'], generatedAt: 'now', expiresAt: null });
     httpMock.expectOne(r => r.url === '/api/admin/epins').flush({ epins: [], page: 0, size: 20, totalElements: 0 });
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('X1');
     expect(fixture.nativeElement.textContent).toContain('X2');
-    expect(fixture.nativeElement.textContent).toContain(UUID);
+    expect(fixture.nativeElement.textContent).toContain(String(BATCH));
   });
 
   it('shows an inline error message when allocate fails with 409', () => {
@@ -112,21 +112,19 @@ describe('EPinRegisterComponent', () => {
     expect(c.actionError).toBe('admin.epinRegister.errorConflict');
   });
 
-  it('shows the full batch id in the cell title', () => {
-    flushInitial([pin({ batchId: UUID })]);
-    const td = fixture.nativeElement.querySelector('tbody td[title]');
-    expect(td.getAttribute('title')).toBe(UUID);
-    expect(td.textContent.trim()).toBe(UUID.slice(0, 8));
+  it('shows the 5-digit batch id in the cell', () => {
+    flushInitial([pin({ batchId: BATCH })]);
+    expect(fixture.nativeElement.querySelector('tbody').textContent).toContain(String(BATCH));
   });
 
-  it('does not request on a malformed batch id but does on a valid UUID', () => {
+  it('does not request on a malformed batch id but does on a valid 5-digit one', () => {
     flushInitial([]);
     const c = fixture.componentInstance;
-    c.onBatchChange('123e45');
+    c.onBatchChange('123');
     httpMock.expectNone(r => r.url === '/api/admin/epins');
-    c.onBatchChange(' ' + UUID + ' ');
+    c.onBatchChange(' ' + BATCH + ' ');
     const req = httpMock.expectOne(r => r.url === '/api/admin/epins');
-    expect(req.request.params.get('batchId')).toBe(UUID);
+    expect(req.request.params.get('batchId')).toBe(String(BATCH));
     req.flush(emptyPage);
   });
 
@@ -171,7 +169,7 @@ describe('EPinRegisterComponent', () => {
   it('guards allocate associate, count and batch id', () => {
     flushInitial([]);
     const c = fixture.componentInstance;
-    const cases: [string, number, string][] = [['', 1, ''], ['a1', 0, ''], ['a1', 2001, ''], ['a1', 1, 'not-a-uuid']];
+    const cases: [string, number, string][] = [['', 1, ''], ['a1', 0, ''], ['a1', 2001, ''], ['a1', 1, 'not-5-digits']];
     for (const [a, n, b] of cases) {
       c.issues = [];
       c.allocateAssociateId = a; c.allocateCount = n; c.allocateBatchId = b;
@@ -183,10 +181,10 @@ describe('EPinRegisterComponent', () => {
   it('allocates with a valid batch id', () => {
     flushInitial([]);
     const c = fixture.componentInstance;
-    c.allocateAssociateId = 'a1'; c.allocateCount = 2; c.allocateBatchId = UUID;
+    c.allocateAssociateId = 'a1'; c.allocateCount = 2; c.allocateBatchId = String(BATCH);
     c.submitAllocate();
     const req = httpMock.expectOne('/api/admin/epins/allocate');
-    expect(req.request.body).toEqual({ associateId: 'a1', count: 2, batchId: UUID });
+    expect(req.request.body).toEqual({ associateId: 'a1', count: 2, batchId: String(BATCH) });
     req.flush({ associateId: 'a1', count: 2, pins: [] });
     reload();
   });

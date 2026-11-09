@@ -16,7 +16,7 @@ import { AllocateResult, EPin, EPinEvent, EPinFilters, EPinPage, EPinStatus, EPi
 
 const PAGE_SIZE = 100000; // show all rows; backend caps at this
 const MAX_COUNT = 2000;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const BATCH_RE = /^\d{5}$/;
 
 type Panel =
   | { kind: 'generate' }
@@ -160,7 +160,7 @@ type Panel =
                     </span>
                   </td>
                   <td>{{ 'admin.epinRegister.pinType.' + p.pinType | translate }}</td>
-                  <td [attr.title]="p.batchId">{{ p.batchId.slice(0, 8) }}</td>
+                  <td>{{ p.batchId }}</td>
                   <td [class.epin-register__expired-date]="p.expired">{{ p.expiresAt ? datePipe.transform(p.expiresAt, 'd MMM y, h:mm:ss a', '+0530') : '—' }}</td>
                   <td class="editable-table__cell--bold">{{ userId(p.allocatedTo) }}</td>
                 </tr>
@@ -242,7 +242,7 @@ type Panel =
               </div>
               <dl class="epin-register__meta">
                 <div><dt>{{ 'admin.epinRegister.pinTypeLabel' | translate }}</dt><dd>{{ 'admin.epinRegister.pinType.' + p.pinType | translate }}</dd></div>
-                <div><dt>{{ 'admin.epinRegister.colBatch' | translate }}</dt><dd class="epin-register__code">{{ p.batchId.slice(0, 8) }}</dd></div>
+                <div><dt>{{ 'admin.epinRegister.colBatch' | translate }}</dt><dd class="epin-register__code">{{ p.batchId }}</dd></div>
                 <div><dt>{{ 'admin.epinRegister.colExpires' | translate }}</dt><dd>{{ p.expiresAt ? datePipe.transform(p.expiresAt, 'd MMM y, h:mm:ss a', '+0530') : '—' }}</dd></div>
                 <div><dt>{{ 'admin.epinRegister.colHolder' | translate }}</dt><dd class="epin-register__code">{{ userId(p.allocatedTo) }}</dd></div>
                 <div><dt>{{ 'admin.epinRegister.colRedeemedTo' | translate }}</dt><dd class="epin-register__code">{{ userId(p.redeemedTo) }}</dd></div>
@@ -304,7 +304,7 @@ export class EPinRegisterComponent implements OnInit {
   generateExpiresLocal = '';
   generatePinType: EPinType = 'REGISTRATION';
   generatedCodes: string[] = [];
-  generatedBatchId = '';
+  generatedBatchId: number | '' = '';
   private appliedBatchId = '';
   private loadSeq = 0;
   private eventsSeq = 0;
@@ -370,7 +370,7 @@ export class EPinRegisterComponent implements OnInit {
   onBatchChange(v: string): void {
     this.batchId = v;
     const trimmed = (v ?? '').trim();
-    if (trimmed === '' || UUID_RE.test(trimmed)) {
+    if (trimmed === '' || BATCH_RE.test(trimmed)) {
       this.appliedBatchId = trimmed;
       this.loadPage(0);
     }
@@ -464,7 +464,7 @@ export class EPinRegisterComponent implements OnInit {
     if (!this.check([
       ['alloc-associate', 'Associate', this.allocateAssociateId ? null : EPinRegisterComponent.ASSOCIATE_MSG],
       ['alloc-count', 'Number of PINs', this.countMessage(this.allocateCount)],
-      ['alloc-batch', 'Batch ID', batch === '' || UUID_RE.test(batch) ? null : 'Batch ID is not valid. Paste the full batch ID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) or leave it empty.']
+      ['alloc-batch', 'Batch ID', batch === '' || BATCH_RE.test(batch) ? null : 'Batch ID is not valid. Enter the 5-digit batch ID or leave it empty.']
     ])) return;
     this.service.allocate(this.allocateAssociateId, this.allocateCount, batch || undefined, this.allocatePinType || undefined).subscribe({
       next: res => { this.allocateResult = res; this.loadPage(0); },
