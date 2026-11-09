@@ -167,14 +167,14 @@ class EPinControllerTest {
 
     @Test
     void listClampsAnOversizedPageSizeToTheServerSideMaximum() throws Exception {
-        when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 100))))
+        when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 100000))))
             .thenReturn(new PageImpl<>(List.of()));
 
-        mockMvc.perform(get("/api/admin/epins").param("size", "999999")
+        mockMvc.perform(get("/api/admin/epins").param("size", "9999999")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
-        verify(epinRepository).search(isNull(), isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 100)));
+        verify(epinRepository).search(isNull(), isNull(), isNull(), isNull(), isNull(), eq(false), any(), eq(PageRequest.of(0, 100000)));
     }
 
     @Test

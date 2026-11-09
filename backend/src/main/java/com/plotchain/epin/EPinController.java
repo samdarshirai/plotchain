@@ -49,7 +49,7 @@ public class EPinController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         page = Math.max(page, 0);
-        size = Math.min(size, 100);
+        size = Math.min(size, 100000);
         return epinService.list(status, pinType, redeemedTo, batchId, allocatedTo, expired, page, size);
     }
 

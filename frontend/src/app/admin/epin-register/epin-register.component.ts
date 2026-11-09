@@ -14,7 +14,7 @@ import { ErrorSummaryComponent } from '../../shared/components/error-summary/err
 import { FormIssue } from '../../shared/validation/validation';
 import { AllocateResult, EPin, EPinEvent, EPinFilters, EPinPage, EPinStatus, EPinType, RedemptionType } from './epin.model';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 100000; // show all rows; backend caps at this
 const MAX_COUNT = 2000;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -171,11 +171,6 @@ type Panel =
             </table>
           </div>
 
-          <div class="epin-register__pagination" *ngIf="page">
-            <span>{{ 'admin.epinRegister.pageIndicator' | translate: { page: currentPage, totalPages: totalPages } }}</span>
-            <button type="button" class="brand-button brand-button--secondary" [disabled]="page.page === 0" (click)="loadPage(page.page - 1)">{{ 'admin.epinRegister.previousPageAction' | translate }}</button>
-            <button type="button" class="brand-button brand-button--secondary" [disabled]="(page.page + 1) * page.size >= page.totalElements" (click)="loadPage(page.page + 1)">{{ 'admin.epinRegister.nextPageAction' | translate }}</button>
-          </div>
         </div>
 
         <aside class="epin-register__detail">
@@ -325,11 +320,6 @@ export class EPinRegisterComponent implements OnInit {
   issues: FormIssue[] = [];
   errs: Record<string, string> = {};
   events: EPinEvent[] = [];
-
-  get currentPage(): number { return (this.page?.page ?? 0) + 1; }
-  get totalPages(): number {
-    return !this.page || this.page.size === 0 ? 1 : Math.max(1, Math.ceil(this.page.totalElements / this.page.size));
-  }
 
   ngOnInit(): void {
     this.adminService.listAssociates().subscribe(a => (this.associates = a));
