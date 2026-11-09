@@ -39,11 +39,6 @@
     width: 100%;
   }
 
-  // Wide tables scroll inside their card.
-  .admin-recent-sales-table,
-  .epin-register__table-wrap {
-    overflow-x: auto;
-  }
 }
 
 // Associate screens share the same breakpoint.
@@ -99,10 +94,9 @@
     flex-wrap: wrap;
   }
 
-  // Table scrolls sideways inside its panel, same as Income Statement.
+  // Table stacks into cards when it doesn't fit (table-fit.ts).
   .projects-plots .projects-plots__table--book {
     table-layout: auto;
-    min-width: 900px;
   }
 
   .projects-plots .projects-plots__table th,
@@ -184,7 +178,6 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
 
     .card {
       min-width: 0;
-      overflow-x: auto;
     }
   }
 
@@ -400,11 +393,6 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
   .projects-plots__views button,
   .projects-plots__row-btn,
   .projects-plots__actions .brand-button { min-height: 44px; }
-}
-
-// Dense desktop ledgers retain readable columns and scroll within their cards on tablets.
-@media (min-width: 1024px) {
-  .news .editable-table { min-width: 48rem; }
 }
 
 // Give long project names the full content width beside a pinned tablet sidebar.

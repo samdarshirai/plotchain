@@ -106,7 +106,7 @@
     }
     input { accent-color: var(--brand-secondary); }
   }
-  &__scroll { max-width: 100%; overflow-x: auto; border: 1px solid var(--border-subtle); }
+  &__scroll { max-width: 100%; border: 1px solid var(--border-subtle); }
   // Reuse the shared table palette, Inter typography and cell padding.
   &__table {
     th { font-size: 0.6875rem; letter-spacing: 0.1em; text-transform: uppercase; }
